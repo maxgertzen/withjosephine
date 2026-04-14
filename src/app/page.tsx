@@ -35,7 +35,7 @@ export default function LandingPage() {
         <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
           <Image
             src={ABOUT_IMAGE}
-            alt="Sacred geometry and Akashic symbolism"
+            alt="Josephine"
             width={300}
             height={450}
             loading="lazy"
