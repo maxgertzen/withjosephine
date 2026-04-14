@@ -2,38 +2,56 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { GoldDivider } from "@/components/GoldDivider";
 import { mergeClasses } from "@/lib/utils";
 
-const STEPS = [
-  {
-    title: "Choose Your Reading",
-    description:
-      "Browse the offerings above, select the reading that calls to you, and complete your payment securely.",
-  },
-  {
-    title: "Share Your Details",
-    description:
-      "After payment, I'll send you everything you need — a simple form for your birth details and a personalised question menu.",
-  },
-  {
-    title: "Receive Your Reading",
-    description:
-      "Within 7 days, you'll receive a detailed voice note recording and a supporting PDF created entirely for you.",
-  },
-] as const;
+interface HowItWorksStep {
+  title: string;
+  description: string;
+}
+
+interface HowItWorksContent {
+  sectionTag: string;
+  heading: string;
+  steps: HowItWorksStep[];
+}
+
+const HOW_IT_WORKS_DEFAULTS: HowItWorksContent = {
+  sectionTag: "✦ Process",
+  heading: "how it works",
+  steps: [
+    {
+      title: "Choose Your Reading",
+      description:
+        "Browse the offerings above, select the reading that calls to you, and complete your payment securely.",
+    },
+    {
+      title: "Share Your Details",
+      description:
+        "After payment, I'll send you everything you need — a simple form for your birth details and a personalised question menu.",
+    },
+    {
+      title: "Receive Your Reading",
+      description:
+        "Within 7 days, you'll receive a detailed voice note recording and a supporting PDF created entirely for you.",
+    },
+  ],
+};
 
 interface HowItWorksProps {
+  content?: HowItWorksContent;
   className?: string;
 }
 
-export function HowItWorks({ className }: HowItWorksProps) {
+export function HowItWorks({ content, className }: HowItWorksProps) {
+  const { sectionTag, heading, steps } = content ?? HOW_IT_WORKS_DEFAULTS;
+
   return (
     <section
       id="how-it-works"
       className={mergeClasses("py-20 px-6 md:px-12", className)}
     >
-      <SectionHeading tag="✦ Process" heading="how it works" />
+      <SectionHeading tag={sectionTag} heading={heading} />
 
       <div className="mt-14 max-w-2xl mx-auto flex flex-col">
-        {STEPS.map((step, index) => (
+        {steps.map((step, index) => (
           <div key={step.title}>
             {index > 0 && <GoldDivider className="my-10" />}
             <div className="flex gap-6 items-start">

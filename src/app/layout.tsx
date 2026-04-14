@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "@/styles/globals.css";
 
@@ -16,16 +15,6 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 });
-
-export const metadata: Metadata = {
-  title: "Josephine — Soul Readings",
-  description:
-    "Your soul has patterns. Your chart reveals them. Your records explain why.",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-};
 
 export default function RootLayout({
   children,

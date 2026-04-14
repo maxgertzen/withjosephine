@@ -9,18 +9,35 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { useScrolled } from "@/hooks/useScrolled";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
-const NAV_LINKS = [
-  { label: "Readings", id: "readings" },
-  { label: "About", id: "about" },
-  { label: "How It Works", id: "how-it-works" },
-  { label: "Contact", id: "contact" },
-] as const;
+interface NavLink {
+  label: string;
+  sectionId: string;
+}
+
+interface NavigationContent {
+  brandName: string;
+  navLinks: NavLink[];
+  navCtaText: string;
+}
+
+const NAV_DEFAULTS: NavigationContent = {
+  brandName: "Josephine",
+  navLinks: [
+    { label: "Readings", sectionId: "readings" },
+    { label: "About", sectionId: "about" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Contact", sectionId: "contact" },
+  ],
+  navCtaText: "Book a Reading",
+};
 
 type NavigationProps = {
+  content?: NavigationContent;
   className?: string;
 };
 
-export function Navigation({ className }: NavigationProps) {
+export function Navigation({ content, className }: NavigationProps) {
+  const { brandName, navLinks, navCtaText } = content ?? NAV_DEFAULTS;
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);
@@ -44,7 +61,7 @@ export function Navigation({ className }: NavigationProps) {
         <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-[72px]">
           <Link href="/">
             <span className="font-display text-2xl italic text-j-deep">
-              Josephine
+              {brandName}
             </span>
           </Link>
 
@@ -53,11 +70,11 @@ export function Navigation({ className }: NavigationProps) {
             role="navigation"
             aria-label="Main navigation"
           >
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <button
-                key={link.id}
+                key={link.sectionId}
                 type="button"
-                onClick={() => scrollToSection(link.id)}
+                onClick={() => scrollToSection(link.sectionId)}
                 className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
               >
                 {link.label}
@@ -68,7 +85,7 @@ export function Navigation({ className }: NavigationProps) {
               size="sm"
               onClick={() => scrollToSection("contact")}
             >
-              Book a Reading
+              {navCtaText}
             </Button>
           </div>
 
@@ -96,11 +113,11 @@ export function Navigation({ className }: NavigationProps) {
           className="flex flex-col items-center gap-6"
           aria-label="Mobile navigation"
         >
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <button
-              key={link.id}
+              key={link.sectionId}
               type="button"
-              onClick={() => scrollToSection(link.id)}
+              onClick={() => scrollToSection(link.sectionId)}
               className="font-display text-[2.2rem] font-light italic text-j-deep transition-colors hover:text-j-midnight"
             >
               {link.label}
@@ -115,7 +132,7 @@ export function Navigation({ className }: NavigationProps) {
           size="default"
           onClick={() => scrollToSection("contact")}
         >
-          Book a Reading
+          {navCtaText}
         </Button>
       </div>
     </>
