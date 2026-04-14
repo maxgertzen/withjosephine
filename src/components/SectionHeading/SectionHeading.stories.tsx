@@ -11,27 +11,27 @@ type Story = StoryObj<typeof SectionHeading>;
 
 export const Default: Story = {
   args: {
-    tag: "Our Readings",
-    heading: "Explore Your Soul's Blueprint",
+    tag: "✦ Offerings",
+    heading: "readings",
     subheading:
-      "Every reading is a conversation between your chart, your records, and the patterns your soul chose this lifetime.",
+      "Each reading is created with care, entirely for you. Nothing is templated or generic.",
   },
 };
 
 export const WithoutTag: Story = {
   args: {
-    heading: "Explore Your Soul's Blueprint",
+    heading: "who i am + what this is",
     subheading:
-      "Every reading is a conversation between your chart, your records, and the patterns your soul chose this lifetime.",
+      "Each reading is created with care, entirely for you. Nothing is templated or generic.",
   },
 };
 
 export const LeftAligned: Story = {
   args: {
-    tag: "Our Readings",
-    heading: "Explore Your Soul's Blueprint",
+    tag: "✦ Process",
+    heading: "how it works",
     subheading:
-      "Every reading is a conversation between your chart, your records, and the patterns your soul chose this lifetime.",
+      "Each reading is created with care, entirely for you. Nothing is templated or generic.",
     align: "left",
   },
 };
