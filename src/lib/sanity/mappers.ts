@@ -18,7 +18,7 @@ export type MappedReading = {
 };
 
 export type MappedTestimonial = {
-  id: string | number;
+  id: string;
   quote: string;
   name: string;
   detail: string;
@@ -98,7 +98,7 @@ export function mapTestimonials(
 ): MappedTestimonial[] {
   if (sanityTestimonials.length === 0) {
     return TESTIMONIALS.map((t) => ({
-      id: t.id,
+      id: String(t.id),
       quote: t.quote,
       name: t.name,
       detail: t.detail,

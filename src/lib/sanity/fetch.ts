@@ -23,41 +23,91 @@ import type {
 } from "./types";
 
 export async function fetchLandingPage(): Promise<SanityLandingPage | null> {
-  return sanityClient.fetch(landingPageQuery);
+  try {
+    return await sanityClient.fetch(landingPageQuery);
+  } catch (error) {
+    console.error("fetchLandingPage failed:", error);
+    return null;
+  }
 }
 
 export async function fetchReadings(): Promise<SanityReading[]> {
-  return sanityClient.fetch(readingsQuery);
+  try {
+    return await sanityClient.fetch(readingsQuery);
+  } catch (error) {
+    console.error("fetchReadings failed:", error);
+    return [];
+  }
 }
 
 export async function fetchReading(slug: string): Promise<SanityReading | null> {
-  return sanityClient.fetch(readingBySlugQuery, { slug });
+  try {
+    return await sanityClient.fetch(readingBySlugQuery, { slug });
+  } catch (error) {
+    console.error("fetchReading failed:", error);
+    return null;
+  }
 }
 
 export async function fetchReadingSlugs(): Promise<{ slug: string }[]> {
-  return sanityClient.fetch(readingSlugsQuery);
+  try {
+    return await sanityClient.fetch(readingSlugsQuery);
+  } catch (error) {
+    console.error("fetchReadingSlugs failed:", error);
+    return [];
+  }
 }
 
 export async function fetchTestimonials(): Promise<SanityTestimonial[]> {
-  return sanityClient.fetch(testimonialsQuery);
+  try {
+    return await sanityClient.fetch(testimonialsQuery);
+  } catch (error) {
+    console.error("fetchTestimonials failed:", error);
+    return [];
+  }
 }
 
 export async function fetchFaqItems(): Promise<SanityFaqItem[]> {
-  return sanityClient.fetch(faqItemsQuery);
+  try {
+    return await sanityClient.fetch(faqItemsQuery);
+  } catch (error) {
+    console.error("fetchFaqItems failed:", error);
+    return [];
+  }
 }
 
 export async function fetchSiteSettings(): Promise<SanitySiteSettings | null> {
-  return sanityClient.fetch(siteSettingsQuery);
+  try {
+    return await sanityClient.fetch(siteSettingsQuery);
+  } catch (error) {
+    console.error("fetchSiteSettings failed:", error);
+    return null;
+  }
 }
 
 export async function fetchBookingPage(): Promise<SanityBookingPage | null> {
-  return sanityClient.fetch(bookingPageQuery);
+  try {
+    return await sanityClient.fetch(bookingPageQuery);
+  } catch (error) {
+    console.error("fetchBookingPage failed:", error);
+    return null;
+  }
 }
 
 export async function fetchThankYouPage(): Promise<SanityThankYouPage | null> {
-  return sanityClient.fetch(thankYouPageQuery);
+  try {
+    return await sanityClient.fetch(thankYouPageQuery);
+  } catch (error) {
+    console.error("fetchThankYouPage failed:", error);
+    return null;
+  }
 }
 
 export async function fetchTheme(): Promise<SanityTheme | null> {
-  return sanityClient.fetch(themeQuery);
+  try {
+    return await sanityClient.fetch(themeQuery);
+  } catch (error) {
+    console.error("fetchTheme failed:", error);
+    return null;
+  }
 }
