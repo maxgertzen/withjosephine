@@ -1,0 +1,129 @@
+import { defineField, defineType } from "sanity";
+
+export const reading = defineType({
+  name: "reading",
+  title: "Reading",
+  type: "document",
+  fields: [
+    defineField({
+      name: "name",
+      title: "Name",
+      type: "string",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "slug",
+      title: "Slug",
+      type: "slug",
+      options: { source: "name", maxLength: 96 },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "tag",
+      title: "Tag",
+      type: "string",
+      description: 'Category label (e.g. "Signature", "Astrology", "Soul Records")',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "subtitle",
+      title: "Subtitle",
+      type: "string",
+      description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
+    }),
+    defineField({
+      name: "price",
+      title: "Price (cents)",
+      type: "number",
+      description: "Price in cents (e.g. 17900 for $179)",
+      validation: (rule) => rule.required().min(0),
+    }),
+    defineField({
+      name: "priceDisplay",
+      title: "Display Price",
+      type: "string",
+      description: 'Formatted price shown to visitors (e.g. "$179")',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "valueProposition",
+      title: "Value Proposition",
+      type: "string",
+      description: "One-line hook shown on the reading card",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "briefDescription",
+      title: "Brief Description",
+      type: "text",
+      rows: 3,
+      description: "Short description shown on the reading card",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "expandedDetails",
+      title: "Expanded Details",
+      type: "array",
+      of: [{ type: "text", rows: 3 }],
+      description: "Paragraphs shown when the reading card is expanded",
+    }),
+    defineField({
+      name: "includes",
+      title: "What's Included",
+      type: "array",
+      of: [{ type: "string" }],
+      description: "Checklist items shown on the booking page",
+    }),
+    defineField({
+      name: "bookingSummary",
+      title: "Booking Summary",
+      type: "text",
+      rows: 3,
+      description: "Summary text shown on the booking page",
+    }),
+    defineField({
+      name: "requiresBirthChart",
+      title: "Requires Birth Chart",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
+      name: "requiresAkashic",
+      title: "Requires Akashic Details",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
+      name: "requiresQuestions",
+      title: "Requires Questions",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
+      name: "order",
+      title: "Display Order",
+      type: "number",
+      initialValue: 0,
+    }),
+    defineField({
+      name: "seo",
+      title: "SEO",
+      type: "object",
+      fields: [
+        defineField({ name: "metaTitle", title: "Meta Title", type: "string" }),
+        defineField({ name: "metaDescription", title: "Meta Description", type: "text", rows: 2 }),
+        defineField({ name: "ogImage", title: "OG Image", type: "image" }),
+      ],
+    }),
+  ],
+  orderings: [
+    {
+      title: "Display Order",
+      name: "order",
+      by: [{ field: "order", direction: "asc" }],
+    },
+  ],
+  preview: {
+    select: { title: "name", subtitle: "priceDisplay" },
+  },
+});

@@ -29,5 +29,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# sanity studio
+studio/node_modules/
+studio/dist/
+
 # MEMORY (local work tracking)
 MEMORY/
