@@ -10,14 +10,74 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { Footer } from "@/components/Footer";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 
-const ABOUT_IMAGE =
-  "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=520&q=80";
+const ABOUT_IMAGE = "/images/akasha.png";
 
 export default function LandingPage() {
   return (
     <>
       <Navigation />
       <Hero />
+
+      <section id="about" className="relative overflow-hidden py-24 px-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-20 -right-20 h-[350px] w-[350px] rounded-full border border-j-accent/[0.12]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-[50px] -right-[50px] h-[280px] w-[280px] rounded-full border border-j-accent/[0.08]"
+        />
+
+        <SectionHeading
+          tag="✦ About"
+          heading="who i am + what this is"
+        />
+        <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
+          <Image
+            src={ABOUT_IMAGE}
+            alt="Sacred geometry and Akashic symbolism"
+            width={300}
+            height={450}
+            loading="lazy"
+            className="w-full md:w-[300px] h-auto object-contain"
+          />
+          <div className="flex flex-col gap-5">
+            <p className="font-body text-base text-j-text leading-[1.9] font-light">
+              I found this work through my own search for purpose. Wanting to understand myself
+              more deeply, why I was the way I was, what I was here for, why certain patterns
+              kept showing up &mdash; this led me to astrology and then to the Akashic Records.
+            </p>
+            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
+              These two things together changed everything for me. And now I use them as a bridge
+              for others. Astrology maps your soul&rsquo;s blueprint through your birth chart.
+              Your gifts, your wounds, your patterns and your path.
+            </p>
+            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
+              The Akashic Records go even deeper. They&rsquo;re a spiritual record of your soul
+              across time. Every experience, every contract, every lesson your soul has carried
+              into this lifetime.
+            </p>
+            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
+              Together they create a level of understanding that&rsquo;s hard to describe until
+              you&rsquo;ve experienced it.
+            </p>
+            <div className="mt-4">
+              <p className="font-display text-lg italic text-j-text-muted">
+                With love,
+              </p>
+              <p className="font-display text-2xl italic text-j-deep tracking-wide">
+                Josephine
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <GoldDivider className="max-w-xs mx-auto" />
+
+      <HowItWorks />
+
+      <GoldDivider className="max-w-xs mx-auto" />
 
       <section id="readings" className="py-24 px-6">
         <SectionHeading
@@ -41,49 +101,6 @@ export default function LandingPage() {
           ))}
         </ul>
       </section>
-
-      <GoldDivider className="max-w-xs mx-auto" />
-
-      <section id="about" className="py-24 px-6">
-        <SectionHeading
-          tag="✦ About"
-          heading="who i am + what this is"
-        />
-        <div className="mt-14 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-[260px_1fr] gap-12 items-start">
-          <Image
-            src={ABOUT_IMAGE}
-            alt="Josephine in a meditative setting"
-            width={260}
-            height={380}
-            loading="lazy"
-            className="rounded-[20px] object-cover w-full md:w-[260px] h-[380px] shadow-j-soft"
-          />
-          <div className="flex flex-col gap-5">
-            <p className="font-body text-base text-j-text leading-relaxed">
-              I found this work the way most people find what they&rsquo;re meant to do &mdash; by
-              accident, through a door I didn&rsquo;t know was there. What started as curiosity
-              became a practice, and the practice became my life&rsquo;s work.
-            </p>
-            <p className="font-body text-base text-j-text leading-relaxed">
-              Astrology gave me a map. Your birth chart is a snapshot of the sky at the exact moment
-              you arrived &mdash; it shows your gifts, your wounds, your timing, and the themes that
-              keep showing up in your life.
-            </p>
-            <p className="font-body text-base text-j-text leading-relaxed">
-              The Akashic Records gave me access to the deeper layer &mdash; your soul across time.
-              Past lives, ancestral patterns, the &ldquo;why&rdquo; behind the &ldquo;what.&rdquo;
-              Together, they&rsquo;re the most powerful combination I&rsquo;ve found.
-            </p>
-            <p className="font-display text-lg italic text-j-text-heading mt-2">
-              With love, Josephine
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <GoldDivider className="max-w-xs mx-auto" />
-
-      <HowItWorks />
 
       <GoldDivider className="max-w-xs mx-auto" />
 

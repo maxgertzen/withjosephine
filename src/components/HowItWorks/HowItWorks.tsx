@@ -11,12 +11,12 @@ const STEPS = [
   {
     title: "Share Your Details",
     description:
-      "After payment, I\u2019ll send you everything you need \u2014 a simple form for your birth details and a personalised question menu.",
+      "After payment, I'll send you everything you need — a simple form for your birth details and a personalised question menu.",
   },
   {
     title: "Receive Your Reading",
     description:
-      "Within 7 days, you\u2019ll receive a detailed voice note recording and a supporting PDF created entirely for you.",
+      "Within 7 days, you'll receive a detailed voice note recording and a supporting PDF created entirely for you.",
   },
 ] as const;
 
@@ -30,7 +30,7 @@ export function HowItWorks({ className }: HowItWorksProps) {
       id="how-it-works"
       className={mergeClasses("py-20 px-6 md:px-12", className)}
     >
-      <SectionHeading tag="\u2726 Process" heading="how it works" />
+      <SectionHeading tag="✦ Process" heading="how it works" />
 
       <div className="mt-14 max-w-2xl mx-auto flex flex-col">
         {STEPS.map((step, index) => (

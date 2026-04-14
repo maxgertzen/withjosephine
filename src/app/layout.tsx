@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "Josephine — Soul Readings",
   description:
     "Your soul has patterns. Your chart reveals them. Your records explain why.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

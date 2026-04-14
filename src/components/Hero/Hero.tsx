@@ -35,75 +35,90 @@ export function Hero({ className }: HeroProps) {
   return (
     <section
       className={mergeClasses(
-        "relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-j-midnight",
+        "relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 py-28",
         className
       )}
+      style={{
+        background: "linear-gradient(160deg, var(--color-j-warm) 0%, var(--color-j-cream) 55%, #F2EDE3 100%)",
+      }}
     >
-      <Image
-        src="/images/hero-bg.jpg"
-        alt=""
-        fill
-        priority
-        className="object-cover opacity-30 mix-blend-soft-light"
-        sizes="100vw"
-      />
-
-      <StarField className="z-[1]" />
+      <StarField count={30} className="z-[1] opacity-[0.15]" />
 
       <CelestialOrb
         color="radial-gradient(circle, var(--color-j-gold) 0%, transparent 70%)"
+        size={500}
+        top="-15%"
+        left="-12%"
+        opacity={0.08}
+        blur={100}
+      />
+      <CelestialOrb
+        color="radial-gradient(circle, var(--color-j-blush) 0%, transparent 70%)"
         size={400}
-        top="-5%"
-        right="-5%"
-        opacity={0.15}
-      />
-      <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-rose) 0%, var(--color-j-blush) 40%, transparent 70%)"
-        size={300}
-        bottom="5%"
-        left="-3%"
+        bottom="-10%"
+        right="-10%"
         opacity={0.12}
+        blur={90}
       />
       <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-deep) 0%, var(--color-j-gold) 60%, transparent 70%)"
-        size={250}
-        top="40%"
-        left="45%"
-        opacity={0.1}
+        color="radial-gradient(circle, var(--color-j-gold) 0%, transparent 70%)"
+        size={200}
+        top="30%"
+        right="8%"
+        opacity={0.06}
+        blur={60}
       />
 
-      <MoonCrescent className="absolute top-[12%] right-[8%] z-[1] w-10 text-j-gold/20" />
-      <MoonCrescent className="absolute bottom-[18%] left-[6%] z-[1] w-7 rotate-180 text-j-gold/15" />
+      <MoonCrescent className="absolute bottom-[8%] right-[6%] z-[1] w-40 text-j-gold/[0.12]" />
+      <MoonCrescent className="absolute top-[14%] left-[4%] z-[1] w-[90px] text-j-gold/10" />
 
-      <div className="relative z-10 flex flex-col items-center gap-8 px-6 py-24">
+      <div className="relative z-10 flex max-w-[720px] flex-col items-center text-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
+          className="mb-6"
         >
           <Image
             src="/images/Logo.png"
             alt="Josephine Soul Readings"
-            width={400}
-            height={400}
+            width={480}
+            height={480}
             priority
-            className="h-auto w-[clamp(220px,50vw,400px)]"
+            className="h-auto w-[clamp(280px,40vw,480px)]"
           />
         </motion.div>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.6, ease: "easeOut" }}
-          className="max-w-md text-center font-display text-lg tracking-wide text-j-cream/70 sm:text-xl"
+          transition={{ duration: 0.9, delay: 0.3, ease: "easeOut" }}
+          className="mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-accent"
         >
-          Your soul has patterns. Your chart reveals them.
-          <br />
-          Your records explain why.
+          Astrologer&nbsp;&nbsp;+&nbsp;&nbsp;Akashic Record Reader
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.75, ease: "easeOut" }}
+          className="mb-12"
+        >
+          <p className="mb-4 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] font-light italic leading-[1.75] text-j-text">
+            Hi, I&rsquo;m Josephine.
+          </p>
+          <p className="mb-3 font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
+            I combine your birth chart and Akashic Records to help you understand your soul more deeply.
+            Your patterns, your purpose and your path.
+          </p>
+          <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
+            If you&rsquo;re here, you&rsquo;re probably ready to understand yourself on a level that changes everything.
+            Abundance, clarity, the right relationships, a real sense of direction. It&rsquo;s all in there.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
         >
@@ -112,6 +127,21 @@ export function Hero({ className }: HeroProps) {
           </Button>
         </motion.div>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.8 }}
+        onClick={handleScrollToReadings}
+        className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer"
+      >
+        <div
+          className="h-[50px] w-px"
+          style={{
+            background: "linear-gradient(to bottom, transparent, rgba(196, 164, 107, 0.5) 50%, transparent)",
+          }}
+        />
+      </motion.div>
     </section>
   );
 }
