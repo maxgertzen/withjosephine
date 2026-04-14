@@ -8,14 +8,20 @@ import { createClient } from "@sanity/client";
 import { generateTokensCss } from "../src/lib/theme/generate-tokens";
 import type { SanityTheme } from "../src/lib/sanity/types";
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2024-01-01",
-  useCdn: true,
-});
-
 async function main() {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  if (!projectId) {
+    console.log("No NEXT_PUBLIC_SANITY_PROJECT_ID — skipping token generation");
+    return;
+  }
+
+  const client = createClient({
+    projectId,
+    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+    apiVersion: "2024-01-01",
+    useCdn: true,
+  });
+
   console.log("Fetching theme from Sanity...");
 
   const theme = await client.fetch<SanityTheme | null>(
