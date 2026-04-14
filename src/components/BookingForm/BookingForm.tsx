@@ -53,9 +53,19 @@ export function BookingForm({ reading, content }: BookingFormProps) {
 
     setIsRedirecting(true);
 
-    const paymentUrl = new URL(reading.stripePaymentLink);
-    paymentUrl.searchParams.set("prefilled_email", trimmedEmail);
-    window.location.href = paymentUrl.toString();
+    const abort = (msg: string) => { setError(msg); setIsRedirecting(false); };
+
+    try {
+      const paymentUrl = new URL(reading.stripePaymentLink);
+      if (paymentUrl.protocol !== "https:" || !paymentUrl.hostname.endsWith(".stripe.com")) {
+        abort("Invalid payment link. Please contact support.");
+        return;
+      }
+      paymentUrl.searchParams.set("prefilled_email", trimmedEmail);
+      window.location.href = paymentUrl.toString();
+    } catch {
+      abort("Invalid payment link. Please contact support.");
+    }
   }
 
   return (
