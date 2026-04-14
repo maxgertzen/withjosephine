@@ -1,0 +1,62 @@
+/*
+ * Josephine Soul Readings — Design Tokens
+ * Source of truth for all brand colors, spacing, and visual properties.
+ * Consumed by Tailwind v4 via @theme directive in globals.css.
+ * Future: Sanity overrides these at build time.
+ */
+
+:root {
+  /* ── Brand Colors ── */
+  --j-midnight: #0D0B1A;
+  --j-deep: #1C1935;
+  --j-cream: #FAF8F4;
+  --j-warm: #F5F0E8;
+  --j-blush: #E8D5C4;
+  --j-rose: #BF9B8B;
+  --j-gold: #C4A46B;
+  --j-gold-light: #D4BC8B;
+  --j-text: #3D3633;
+  --j-muted: #7A6F6A;
+  --j-ivory: #FAFAF8;
+
+  /* ── Semantic Aliases ── */
+  --j-bg-primary: var(--j-cream);
+  --j-bg-section: var(--j-warm);
+  --j-bg-dark: var(--j-midnight);
+  --j-bg-interactive: var(--j-deep);
+  --j-text-primary: var(--j-text);
+  --j-text-heading: var(--j-midnight);
+  --j-text-muted: var(--j-muted);
+  --j-text-on-dark: var(--j-cream);
+  --j-accent: var(--j-gold);
+  --j-accent-light: var(--j-gold-light);
+
+  /* ── Color Channels (for opacity variants) ── */
+  --j-gold-rgb: 196, 164, 107;
+  --j-deep-rgb: 28, 25, 53;
+
+  /* ── Borders & Shadows ── */
+  --j-border-subtle: rgba(var(--j-gold-rgb), 0.2);
+  --j-border-gold: rgba(var(--j-gold-rgb), 0.4);
+  --j-shadow-soft: 0 2px 16px rgba(var(--j-deep-rgb), 0.04);
+  --j-shadow-card: 0 4px 24px rgba(var(--j-deep-rgb), 0.08);
+
+  /* ── Button Tokens ── */
+  --j-btn-bg: var(--j-deep);
+  --j-btn-text: var(--j-cream);
+  --j-btn-radius: 50px;
+
+  /* ── Spacing ── */
+  --j-section-px: clamp(1rem, 5vw, 4rem);
+  --j-section-py: clamp(3rem, 8vh, 6rem);
+  --j-content-max-w: 1200px;
+
+  /* ── Selection ── */
+  --j-selection-bg: rgba(var(--j-gold-rgb), 0.25);
+  --j-selection-text: var(--j-deep);
+
+  /* ── Scrollbar ── */
+  --j-scrollbar-track: var(--j-midnight);
+  --j-scrollbar-thumb: rgba(var(--j-gold-rgb), 0.4);
+  --j-scrollbar-thumb-hover: rgba(var(--j-gold-rgb), 0.7);
+}

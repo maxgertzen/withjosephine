@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./animations.css";
+
+@theme inline {
+  /* ── Brand Colors ── */
+  --color-j-midnight: var(--j-midnight);
+  --color-j-deep: var(--j-deep);
+  --color-j-cream: var(--j-cream);
+  --color-j-warm: var(--j-warm);
+  --color-j-blush: var(--j-blush);
+  --color-j-rose: var(--j-rose);
+  --color-j-gold: var(--j-gold);
+  --color-j-gold-light: var(--j-gold-light);
+  --color-j-text: var(--j-text);
+  --color-j-muted: var(--j-muted);
+  --color-j-ivory: var(--j-ivory);
+
+  /* ── Semantic Colors ── */
+  --color-j-bg-primary: var(--j-bg-primary);
+  --color-j-bg-section: var(--j-bg-section);
+  --color-j-bg-dark: var(--j-bg-dark);
+  --color-j-bg-interactive: var(--j-bg-interactive);
+  --color-j-text-primary: var(--j-text-primary);
+  --color-j-text-heading: var(--j-text-heading);
+  --color-j-text-muted: var(--j-text-muted);
+  --color-j-text-on-dark: var(--j-text-on-dark);
+  --color-j-accent: var(--j-accent);
+  --color-j-accent-light: var(--j-accent-light);
+
+  /* ── Font Families ── */
+  --font-display: var(--font-cormorant);
+  --font-body: var(--font-inter);
+
+  /* ── Shadows ── */
+  --shadow-j-soft: var(--j-shadow-soft);
+  --shadow-j-card: var(--j-shadow-card);
+
+  /* ── Border Colors ── */
+  --color-j-border-subtle: var(--j-border-subtle);
+  --color-j-border-gold: var(--j-border-gold);
+
+  /* ── Animations ── */
+  --animate-j-twinkle: twinkle 3s ease-in-out infinite;
+  --animate-j-float: floatSlow 6s ease-in-out infinite;
+  --animate-j-float-med: floatMed 5s ease-in-out infinite;
+  --animate-j-glow: glowPulse 4s ease-in-out infinite;
+  --animate-j-fade-in-up: fadeInUp 0.9s ease-out forwards;
+  --animate-j-fade-in: fadeIn 1.2s ease-out forwards;
+}
+
+/* ── Base Styles ── */
+::selection {
+  background: var(--j-selection-bg);
+  color: var(--j-selection-text);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--j-scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--j-scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--j-scrollbar-thumb-hover); }
