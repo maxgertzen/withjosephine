@@ -77,6 +77,29 @@ describe("BookingForm", () => {
     );
   });
 
+  it("shows error when payment link is not a Stripe domain", async () => {
+    const user = userEvent.setup();
+    const maliciousReading = { ...defaultReading, stripePaymentLink: "https://evil.com/steal" };
+    render(<BookingForm reading={maliciousReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
+    expect(window.location.href).toBe("");
+  });
+
+  it("shows error when payment link is not https", async () => {
+    const user = userEvent.setup();
+    const httpReading = { ...defaultReading, stripePaymentLink: "http://buy.stripe.com/test" };
+    render(<BookingForm reading={httpReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
+  });
+
   it("shows redirecting state after valid submit", async () => {
     const user = userEvent.setup();
     render(<BookingForm reading={defaultReading} content={defaultContent} />);

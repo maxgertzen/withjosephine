@@ -43,7 +43,7 @@ export function FaqSection({
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 
       <div className="mt-14 max-w-[700px] mx-auto flex flex-col gap-4">
