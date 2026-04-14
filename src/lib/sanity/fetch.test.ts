@@ -20,7 +20,8 @@ vi.mock("./client", () => ({
 
 import { sanityClient } from "./client";
 
-const mockFetch = vi.mocked(sanityClient.fetch);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockFetch = sanityClient.fetch as any;
 
 beforeEach(() => {
   mockFetch.mockReset();

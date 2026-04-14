@@ -9,13 +9,19 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { ContactForm } from "@/components/ContactForm";
 import { GoldDivider } from "@/components/GoldDivider";
 import { Footer } from "@/components/Footer";
-import { READINGS, TESTIMONIALS } from "@/data/readings";
 import {
   fetchLandingPage,
   fetchReadings,
   fetchTestimonials,
   fetchSiteSettings,
 } from "@/lib/sanity/fetch";
+import {
+  mapReadings,
+  mapTestimonials,
+  mapAbout,
+  mapNavContent,
+  mapFooterContent,
+} from "@/lib/sanity/mappers";
 
 export async function generateMetadata(): Promise<Metadata> {
   const landingPage = await fetchLandingPage();
@@ -42,57 +48,14 @@ export default async function LandingPage() {
       fetchSiteSettings(),
     ]);
 
-  const readings =
-    sanityReadings.length > 0
-      ? sanityReadings.map((r) => ({
-          id: r.slug,
-          tag: r.tag,
-          name: r.name,
-          price: r.priceDisplay,
-          valueProposition: r.valueProposition,
-          briefDescription: r.briefDescription,
-          expandedDetails: r.expandedDetails,
-        }))
-      : READINGS;
-
-  const testimonials =
-    sanityTestimonials.length > 0
-      ? sanityTestimonials.map((t) => ({
-          id: t._id,
-          quote: t.quote,
-          name: t.name,
-          detail: t.detail,
-        }))
-      : TESTIMONIALS;
-
-  const about = landingPage?.about;
-  const aboutImage = about?.imageUrl ?? "/images/akasha.png";
-  const aboutParagraphs = about?.paragraphs ?? [
-    "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up \u2014 this led me to astrology and then to the Akashic Records.",
-    "These two things together changed everything for me. And now I use them as a bridge for others. Astrology maps your soul\u2019s blueprint through your birth chart. Your gifts, your wounds, your patterns and your path.",
-    "The Akashic Records go even deeper. They\u2019re a spiritual record of your soul across time. Every experience, every contract, every lesson your soul has carried into this lifetime.",
-    "Together they create a level of understanding that\u2019s hard to describe until you\u2019ve experienced it.",
-  ];
-  const aboutSignoff = about?.signoff ?? "Josephine";
+  const readings = mapReadings(sanityReadings);
+  const testimonials = mapTestimonials(sanityTestimonials);
+  const about = mapAbout(landingPage);
+  const navContent = mapNavContent(siteSettings);
+  const footerContent = mapFooterContent(siteSettings);
 
   const readingsSection = landingPage?.readingsSection;
   const testimonialsSection = landingPage?.testimonialsSection;
-
-  const navContent = siteSettings
-    ? {
-        brandName: siteSettings.brandName,
-        navLinks: siteSettings.navLinks,
-        navCtaText: siteSettings.navCtaText,
-      }
-    : undefined;
-
-  const footerContent = siteSettings
-    ? {
-        brandName: siteSettings.brandName,
-        logoUrl: siteSettings.logoUrl || "/images/logo-default.png",
-        copyrightText: siteSettings.copyrightText,
-      }
-    : undefined;
 
   return (
     <>
@@ -110,12 +73,12 @@ export default async function LandingPage() {
         />
 
         <SectionHeading
-          tag={about?.sectionTag ?? "\u2726 About"}
-          heading={about?.heading ?? "who i am + what this is"}
+          tag={about.sectionTag}
+          heading={about.heading}
         />
         <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
           <Image
-            src={aboutImage}
+            src={about.imageUrl}
             alt="Josephine"
             width={300}
             height={450}
@@ -123,7 +86,7 @@ export default async function LandingPage() {
             className="w-full md:w-[300px] h-auto object-contain"
           />
           <div className="flex flex-col gap-5">
-            {aboutParagraphs.map((paragraph, index) => (
+            {about.paragraphs.map((paragraph, index) => (
               <p
                 key={index}
                 className={`font-body text-base leading-[1.9] font-light ${
@@ -138,7 +101,7 @@ export default async function LandingPage() {
                 With love,
               </p>
               <p className="font-display text-2xl italic text-j-deep tracking-wide">
-                {aboutSignoff}
+                {about.signoff}
               </p>
             </div>
           </div>
