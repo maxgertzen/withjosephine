@@ -1,0 +1,89 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, beforeEach } from "vitest";
+import { BookingForm } from "./BookingForm";
+
+const defaultReading = {
+  subtitle: "Soul Blueprint Reading",
+  price: "$179",
+  stripePaymentLink: "https://buy.stripe.com/test_abc123",
+};
+
+const defaultContent = {
+  emailLabel: "Your Email Address",
+  emailDisclaimer: "Your email is only used for this reading.",
+  paymentButtonText: "Continue to Payment",
+  securityNote: "Secure checkout",
+};
+
+describe("BookingForm", () => {
+  beforeEach(() => {
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { href: "" },
+    });
+  });
+
+  it("renders email input and submit button", () => {
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    expect(screen.getByLabelText("Your Email Address")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeInTheDocument();
+  });
+
+  it("renders reading subtitle and price", () => {
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    expect(screen.getByText("Soul Blueprint Reading")).toBeInTheDocument();
+    expect(screen.getByText("$179")).toBeInTheDocument();
+  });
+
+  it("shows error when submitting empty email", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your email address.");
+  });
+
+  it("shows error when submitting invalid email", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "not-an-email");
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid email address.");
+  });
+
+  it("shows error and disables button when payment link is missing", () => {
+    const readingWithoutLink = { ...defaultReading, stripePaymentLink: "" };
+    render(<BookingForm reading={readingWithoutLink} content={defaultContent} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Payment is not available at the moment.");
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
+  });
+
+  it("redirects to Stripe with prefilled email on valid submit", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(window.location.href).toBe(
+      "https://buy.stripe.com/test_abc123?prefilled_email=customer%40example.com"
+    );
+  });
+
+  it("shows redirecting state after valid submit", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
+
+    expect(screen.getByRole("button")).toHaveTextContent("Redirecting to payment\u2026");
+  });
+});
