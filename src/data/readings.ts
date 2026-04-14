@@ -12,6 +12,7 @@ export type Reading = {
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
+  stripePaymentLink: string;
 };
 
 export type Testimonial = {
@@ -50,6 +51,7 @@ export const READINGS: Reading[] = [
     requiresBirthChart: true,
     requiresAkashic: true,
     requiresQuestions: true,
+    stripePaymentLink: "",
   },
   {
     id: "birth-chart",
@@ -78,6 +80,7 @@ export const READINGS: Reading[] = [
     requiresBirthChart: true,
     requiresAkashic: false,
     requiresQuestions: false,
+    stripePaymentLink: "",
   },
   {
     id: "akashic-record",
@@ -106,6 +109,7 @@ export const READINGS: Reading[] = [
     requiresBirthChart: false,
     requiresAkashic: true,
     requiresQuestions: true,
+    stripePaymentLink: "",
   },
 ];
 
