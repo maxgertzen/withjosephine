@@ -176,6 +176,23 @@ describe("mapTestimonials", () => {
     expect(result[0].quote).toBe("Completely new testimonial text from CMS");
     expect(result[0].name).toBe("New Person");
   });
+
+  it("supports adding testimonials beyond the hardcoded set", () => {
+    const testimonials: SanityTestimonial[] = Array.from({ length: 5 }, (_, i) => ({
+      _id: `testimonial-${i + 1}`,
+      quote: `Quote ${i + 1}`,
+      name: `Person ${i + 1}`,
+      detail: `Reading ${i + 1}`,
+      order: i,
+    }));
+
+    const result = mapTestimonials(testimonials);
+
+    expect(result).toHaveLength(5);
+    expect(result[4].id).toBe("testimonial-5");
+    expect(result[4].quote).toBe("Quote 5");
+    expect(result[4].name).toBe("Person 5");
+  });
 });
 
 describe("mapAbout", () => {
