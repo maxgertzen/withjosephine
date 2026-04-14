@@ -2,6 +2,7 @@ import { READINGS, TESTIMONIALS } from "@/data/readings";
 import type {
   SanityReading,
   SanityTestimonial,
+  SanityFaqItem,
   SanityLandingPage,
   SanitySiteSettings,
 } from "./types";
@@ -41,6 +42,18 @@ export type MappedFooterContent = {
   brandName: string;
   logoUrl: string;
   copyrightText: string;
+};
+
+export type MappedFaqItem = {
+  id: string;
+  question: string;
+  answer: string;
+};
+
+export type MappedSocialLink = {
+  platform: string;
+  url: string;
+  label: string;
 };
 
 const ABOUT_DEFAULTS: MappedAbout = {
@@ -137,4 +150,26 @@ export function mapFooterContent(
     logoUrl: siteSettings.logoUrl || "/images/logo-default.png",
     copyrightText: siteSettings.copyrightText,
   };
+}
+
+export function mapFaqItems(
+  sanityFaqItems: SanityFaqItem[]
+): MappedFaqItem[] {
+  return sanityFaqItems.map((item) => ({
+    id: item._id,
+    question: item.question,
+    answer: item.answer,
+  }));
+}
+
+export function mapSocialLinks(
+  siteSettings: SanitySiteSettings | null
+): MappedSocialLink[] {
+  if (!siteSettings) return [];
+
+  return siteSettings.socialLinks.map((link) => ({
+    platform: link.platform,
+    url: link.url,
+    label: link.label,
+  }));
 }

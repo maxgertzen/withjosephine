@@ -9,18 +9,22 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { ContactForm } from "@/components/ContactForm";
 import { GoldDivider } from "@/components/GoldDivider";
 import { Footer } from "@/components/Footer";
+import { FaqSection } from "@/components/FaqSection";
 import {
   fetchLandingPage,
   fetchReadings,
   fetchTestimonials,
+  fetchFaqItems,
   fetchSiteSettings,
 } from "@/lib/sanity/fetch";
 import {
   mapReadings,
   mapTestimonials,
   mapAbout,
+  mapFaqItems,
   mapNavContent,
   mapFooterContent,
+  mapSocialLinks,
 } from "@/lib/sanity/mappers";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,19 +44,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  const [landingPage, sanityReadings, sanityTestimonials, siteSettings] =
+  const [landingPage, sanityReadings, sanityTestimonials, sanityFaqItems, siteSettings] =
     await Promise.all([
       fetchLandingPage(),
       fetchReadings(),
       fetchTestimonials(),
+      fetchFaqItems(),
       fetchSiteSettings(),
     ]);
 
   const readings = mapReadings(sanityReadings);
   const testimonials = mapTestimonials(sanityTestimonials);
+  const faqItems = mapFaqItems(sanityFaqItems);
   const about = mapAbout(landingPage);
   const navContent = mapNavContent(siteSettings);
   const footerContent = mapFooterContent(siteSettings);
+  const socialLinks = mapSocialLinks(siteSettings);
 
   const readingsSection = landingPage?.readingsSection;
   const testimonialsSection = landingPage?.testimonialsSection;
@@ -161,9 +168,13 @@ export default async function LandingPage() {
 
       <GoldDivider className="max-w-xs mx-auto" />
 
+      <FaqSection items={faqItems} />
+
+      {faqItems.length > 0 && <GoldDivider className="max-w-xs mx-auto" />}
+
       <ContactForm content={landingPage?.contactSection ?? undefined} />
 
-      <Footer content={footerContent} />
+      <Footer content={footerContent} socialLinks={socialLinks} />
     </>
   );
 }
