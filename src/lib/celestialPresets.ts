@@ -10,7 +10,7 @@ type OrbPreset = {
 
 export const PAGE_ORBS: OrbPreset[] = [
   {
-    color: "radial-gradient(circle, var(--color-j-gold) 0%, transparent 70%)",
+    color: "radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)",
     size: 300,
     top: "-5%",
     right: "-5%",

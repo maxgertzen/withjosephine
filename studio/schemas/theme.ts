@@ -1,12 +1,55 @@
 import { defineField, defineType } from "sanity";
 
-const colorField = (name: string, title: string, defaultValue: string) =>
+const BACKGROUND_PRESETS = [
+  { title: "Cream", value: "#FAF8F4" },
+  { title: "Warm Linen", value: "#F5F0E8" },
+  { title: "Ivory", value: "#FAFAF8" },
+  { title: "Snow", value: "#FFFAFA" },
+  { title: "Alabaster", value: "#F2F0EB" },
+];
+
+const DARK_PRESETS = [
+  { title: "Midnight", value: "#0D0B1A" },
+  { title: "Deep Indigo", value: "#1C1935" },
+  { title: "Charcoal", value: "#1A1A2E" },
+  { title: "Obsidian", value: "#0B0B0F" },
+];
+
+const ACCENT_PRESETS = [
+  { title: "Gold", value: "#C4A46B" },
+  { title: "Gold Light", value: "#D4BC8B" },
+  { title: "Amber", value: "#D4A853" },
+  { title: "Champagne", value: "#C9B77D" },
+  { title: "Copper", value: "#B87333" },
+];
+
+const SKIN_TONE_PRESETS = [
+  { title: "Blush", value: "#E8D5C4" },
+  { title: "Rose", value: "#BF9B8B" },
+  { title: "Dusty Rose", value: "#C9A9A6" },
+  { title: "Mauve", value: "#C4A4A7" },
+  { title: "Peach", value: "#E8C8B8" },
+];
+
+const TEXT_PRESETS = [
+  { title: "Warm Charcoal", value: "#3D3633" },
+  { title: "Soft Black", value: "#2B2826" },
+  { title: "Muted", value: "#7A6F6A" },
+  { title: "Stone", value: "#5C5652" },
+];
+
+const semanticColorField = (
+  name: string,
+  title: string,
+  description: string,
+  colorList: { title: string; value: string }[]
+) =>
   defineField({
     name,
     title,
-    type: "string",
-    initialValue: defaultValue,
-    validation: (rule) => rule.regex(/^#[0-9A-Fa-f]{6}$/, { name: "hex color" }),
+    type: "color",
+    description,
+    options: { colorList },
   });
 
 export const theme = defineType({
@@ -20,22 +63,92 @@ export const theme = defineType({
   fields: [
     defineField({
       name: "colors",
-      title: "Brand Colors",
+      title: "Colors",
       type: "object",
       group: "colors",
       fields: [
-        colorField("midnight", "Midnight (dark bg)", "#0D0B1A"),
-        colorField("deep", "Deep (buttons/interactive)", "#1C1935"),
-        colorField("cream", "Cream (main bg)", "#FAF8F4"),
-        colorField("warm", "Warm (section bg)", "#F5F0E8"),
-        colorField("blush", "Blush", "#E8D5C4"),
-        colorField("rose", "Rose", "#BF9B8B"),
-        colorField("gold", "Gold (accent)", "#C4A46B"),
-        colorField("goldLight", "Gold Light", "#D4BC8B"),
-        colorField("text", "Body Text", "#3D3633"),
-        colorField("muted", "Muted Text", "#7A6F6A"),
-        colorField("ivory", "Ivory", "#FAFAF8"),
+        semanticColorField(
+          "bgPrimary",
+          "Page Background",
+          "Main background color used across all pages",
+          BACKGROUND_PRESETS
+        ),
+        semanticColorField(
+          "bgSection",
+          "Section Background",
+          "Alternating section background (testimonials, about)",
+          BACKGROUND_PRESETS
+        ),
+        semanticColorField(
+          "bgDark",
+          "Dark Background",
+          "Footer and dark sections background",
+          DARK_PRESETS
+        ),
+        semanticColorField(
+          "bgInteractive",
+          "Button Background",
+          "Primary button and interactive element background",
+          DARK_PRESETS
+        ),
+        semanticColorField(
+          "textPrimary",
+          "Body Text",
+          "Main paragraph and body text color",
+          TEXT_PRESETS
+        ),
+        semanticColorField(
+          "textHeading",
+          "Heading Text",
+          "Section headings and titles color",
+          [...DARK_PRESETS, ...TEXT_PRESETS]
+        ),
+        semanticColorField(
+          "textMuted",
+          "Muted Text",
+          "Secondary text, captions, and metadata",
+          TEXT_PRESETS
+        ),
+        semanticColorField(
+          "textOnDark",
+          "Text on Dark",
+          "Text color used on dark backgrounds and buttons",
+          BACKGROUND_PRESETS
+        ),
+        semanticColorField(
+          "accent",
+          "Accent Color",
+          "Primary accent — decorative lines, highlights, active states",
+          ACCENT_PRESETS
+        ),
+        semanticColorField(
+          "accentLight",
+          "Accent Light",
+          "Lighter accent variant — subtle highlights and hover states",
+          ACCENT_PRESETS
+        ),
+        semanticColorField(
+          "blush",
+          "Blush",
+          "Soft warm tone for decorative orbs and gentle highlights",
+          SKIN_TONE_PRESETS
+        ),
+        semanticColorField(
+          "rose",
+          "Rose",
+          "Deeper warm tone for secondary decorative elements",
+          SKIN_TONE_PRESETS
+        ),
+        semanticColorField(
+          "ivory",
+          "Ivory",
+          "Card and elevated surface background color",
+          BACKGROUND_PRESETS
+        ),
       ],
+      options: {
+        columns: 2,
+      },
     }),
     defineField({
       name: "displayFont",

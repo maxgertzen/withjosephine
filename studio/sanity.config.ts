@@ -1,6 +1,7 @@
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 import { visionTool } from "@sanity/vision";
+import { colorInput } from "@sanity/color-input";
 import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 
@@ -12,6 +13,7 @@ export default defineConfig({
   plugins: [
     structureTool({ structure: deskStructure }),
     visionTool(),
+    colorInput(),
   ],
   schema: { types: schemaTypes },
   document: {

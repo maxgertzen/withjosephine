@@ -58,13 +58,13 @@ export function Hero({ content, className }: HeroProps) {
         className
       )}
       style={{
-        background: "linear-gradient(160deg, var(--color-j-warm) 0%, var(--color-j-cream) 55%, #F2EDE3 100%)",
+        background: "linear-gradient(160deg, var(--color-j-bg-section) 0%, var(--color-j-bg-primary) 55%, #F2EDE3 100%)",
       }}
     >
       <StarField count={30} className="z-[1] opacity-[0.15]" />
 
       <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-gold) 0%, transparent 70%)"
+        color="radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)"
         size={500}
         top="-15%"
         left="-12%"
@@ -80,7 +80,7 @@ export function Hero({ content, className }: HeroProps) {
         blur={90}
       />
       <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-gold) 0%, transparent 70%)"
+        color="radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)"
         size={200}
         top="30%"
         right="8%"
@@ -157,7 +157,7 @@ export function Hero({ content, className }: HeroProps) {
         <div
           className="h-[50px] w-px"
           style={{
-            background: "linear-gradient(to bottom, transparent, rgba(196, 164, 107, 0.5) 50%, transparent)",
+            background: "linear-gradient(to bottom, transparent, rgba(var(--j-accent-rgb), 0.5) 50%, transparent)",
           }}
         />
       </motion.div>

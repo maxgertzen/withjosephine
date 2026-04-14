@@ -1,17 +1,26 @@
-import type { SanityTheme } from "@/lib/sanity/types";
+import type { SanityTheme, SanityThemeColors } from "@/lib/sanity/types";
 
-const COLOR_MAP: Record<string, string> = {
-  midnight: "--j-midnight",
-  deep: "--j-deep",
-  cream: "--j-cream",
-  warm: "--j-warm",
-  blush: "--j-blush",
-  rose: "--j-rose",
-  gold: "--j-gold",
-  goldLight: "--j-gold-light",
-  text: "--j-text",
-  muted: "--j-muted",
-  ivory: "--j-ivory",
+type SemanticColorKey = keyof SanityThemeColors;
+
+type ColorConfig = {
+  semantic: string;
+  palette?: string;
+};
+
+const COLOR_CONFIG: Record<SemanticColorKey, ColorConfig> = {
+  bgPrimary: { semantic: "--j-bg-primary", palette: "--j-cream" },
+  bgSection: { semantic: "--j-bg-section", palette: "--j-warm" },
+  bgDark: { semantic: "--j-bg-dark", palette: "--j-midnight" },
+  bgInteractive: { semantic: "--j-bg-interactive", palette: "--j-deep" },
+  textPrimary: { semantic: "--j-text-primary", palette: "--j-text" },
+  textHeading: { semantic: "--j-text-heading" },
+  textMuted: { semantic: "--j-text-muted", palette: "--j-muted" },
+  textOnDark: { semantic: "--j-text-on-dark" },
+  accent: { semantic: "--j-accent", palette: "--j-gold" },
+  accentLight: { semantic: "--j-accent-light", palette: "--j-gold-light" },
+  blush: { semantic: "--j-blush" },
+  rose: { semantic: "--j-rose" },
+  ivory: { semantic: "--j-ivory" },
 };
 
 function hexToRgb(hex: string): string {
@@ -28,19 +37,33 @@ export function generateTokensCss(theme: SanityTheme | null): string {
   lines.push("/* Auto-generated from Sanity theme — do not edit manually */");
   lines.push(":root {");
 
-  for (const [key, cssVar] of Object.entries(COLOR_MAP)) {
-    const value = theme.colors[key as keyof typeof theme.colors];
-    if (value) {
-      lines.push(`  ${cssVar}: ${value};`);
+  const paletteAliases: string[] = [];
+
+  for (const [field, config] of Object.entries(COLOR_CONFIG)) {
+    const color = theme.colors[field as SemanticColorKey];
+    if (color?.hex) {
+      lines.push(`  ${config.semantic}: ${color.hex};`);
+    }
+    if (config.palette) {
+      paletteAliases.push(`  ${config.palette}: var(${config.semantic});`);
     }
   }
 
-  // RGB channels for opacity variants
-  if (theme.colors.gold) {
-    lines.push(`  --j-gold-rgb: ${hexToRgb(theme.colors.gold)};`);
+  lines.push("");
+  lines.push("  /* Palette aliases (derived from semantic vars) */");
+  lines.push(...paletteAliases);
+
+  lines.push("");
+  lines.push("  /* RGB channels for opacity variants */");
+  const accent = theme.colors.accent;
+  if (accent?.hex) {
+    lines.push(`  --j-accent-rgb: ${hexToRgb(accent.hex)};`);
+    lines.push(`  --j-gold-rgb: var(--j-accent-rgb);`);
   }
-  if (theme.colors.deep) {
-    lines.push(`  --j-deep-rgb: ${hexToRgb(theme.colors.deep)};`);
+  const bgInteractive = theme.colors.bgInteractive;
+  if (bgInteractive?.hex) {
+    lines.push(`  --j-bg-interactive-rgb: ${hexToRgb(bgInteractive.hex)};`);
+    lines.push(`  --j-deep-rgb: var(--j-bg-interactive-rgb);`);
   }
 
   lines.push("}");
