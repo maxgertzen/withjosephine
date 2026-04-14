@@ -5,11 +5,13 @@ import {
   mapAbout,
   mapNavContent,
   mapFooterContent,
+  mapFaqItems,
+  mapSocialLinks,
 } from "./mappers";
-import { READINGS, TESTIMONIALS } from "@/data/readings";
 import type {
   SanityReading,
   SanityTestimonial,
+  SanityFaqItem,
   SanityLandingPage,
   SanitySiteSettings,
 } from "./types";
@@ -305,5 +307,100 @@ describe("mapFooterContent", () => {
     const result = mapFooterContent(updated);
 
     expect(result?.copyrightText).toBe("Updated Copyright 2026");
+  });
+});
+
+const SANITY_FAQ_ITEM: SanityFaqItem = {
+  _id: "faq-1",
+  question: "How long does a reading take?",
+  answer: "You'll receive your reading within 7 business days.",
+  order: 0,
+};
+
+describe("mapFaqItems", () => {
+  it("returns empty array when Sanity returns no items", () => {
+    const result = mapFaqItems([]);
+
+    expect(result).toEqual([]);
+  });
+
+  it("maps Sanity FAQ items using _id as id", () => {
+    const result = mapFaqItems([SANITY_FAQ_ITEM]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("faq-1");
+    expect(result[0].question).toBe("How long does a reading take?");
+    expect(result[0].answer).toBe("You'll receive your reading within 7 business days.");
+  });
+
+  it("supports adding multiple FAQ items", () => {
+    const items: SanityFaqItem[] = Array.from({ length: 5 }, (_, i) => ({
+      _id: `faq-${i + 1}`,
+      question: `Question ${i + 1}`,
+      answer: `Answer ${i + 1}`,
+      order: i,
+    }));
+
+    const result = mapFaqItems(items);
+
+    expect(result).toHaveLength(5);
+    expect(result[4].id).toBe("faq-5");
+    expect(result[4].question).toBe("Question 5");
+  });
+
+  it("reflects FAQ content changes from CMS", () => {
+    const updated: SanityFaqItem = {
+      ...SANITY_FAQ_ITEM,
+      question: "Updated question from CMS",
+      answer: "Updated answer from CMS",
+    };
+
+    const result = mapFaqItems([updated]);
+
+    expect(result[0].question).toBe("Updated question from CMS");
+    expect(result[0].answer).toBe("Updated answer from CMS");
+  });
+});
+
+describe("mapSocialLinks", () => {
+  it("returns empty array when siteSettings is null", () => {
+    expect(mapSocialLinks(null)).toEqual([]);
+  });
+
+  it("returns empty array when socialLinks is empty", () => {
+    const settings: SanitySiteSettings = {
+      ...SANITY_SITE_SETTINGS,
+      socialLinks: [],
+    };
+
+    expect(mapSocialLinks(settings)).toEqual([]);
+  });
+
+  it("maps Sanity social links", () => {
+    const result = mapSocialLinks(SANITY_SITE_SETTINGS);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      platform: "tiktok",
+      url: "https://tiktok.com/@test",
+      label: "TikTok",
+    });
+  });
+
+  it("supports adding multiple social links", () => {
+    const settings: SanitySiteSettings = {
+      ...SANITY_SITE_SETTINGS,
+      socialLinks: [
+        { platform: "tiktok", url: "https://tiktok.com/@test", label: "TikTok" },
+        { platform: "instagram", url: "https://instagram.com/test", label: "Instagram" },
+        { platform: "email", url: "mailto:jo@example.com", label: "Email" },
+      ],
+    };
+
+    const result = mapSocialLinks(settings);
+
+    expect(result).toHaveLength(3);
+    expect(result[1].platform).toBe("instagram");
+    expect(result[2].platform).toBe("email");
   });
 });
