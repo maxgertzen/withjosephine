@@ -3,7 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
-import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
+import { FormField } from "@/components/FormField";
+import { errorClasses, isValidEmail } from "@/lib/formStyles";
 
 type BookingFormReading = {
   subtitle: string;
@@ -61,16 +62,13 @@ export function BookingForm({ reading, content }: BookingFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       <div>
-        <label htmlFor="booking-email" className={labelClasses}>
-          {content.emailLabel}
-        </label>
-        <input
+        <FormField
           id="booking-email"
+          label={content.emailLabel}
           type="email"
           name="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className={inputClasses}
           disabled={isRedirecting}
         />
         <p className="font-body text-xs text-j-muted mt-2">

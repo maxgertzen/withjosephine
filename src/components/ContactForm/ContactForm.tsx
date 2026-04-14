@@ -2,9 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { mergeClasses } from "@/lib/utils";
-import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
+import { errorClasses, isValidEmail } from "@/lib/formStyles";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Button } from "@/components/Button";
+import { FormField } from "@/components/FormField";
 
 interface ContactFormContent {
   sectionTag: string;
@@ -128,50 +129,36 @@ export function ContactForm({ content, className }: ContactFormProps) {
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-          <div>
-            <label htmlFor="contact-name" className={labelClasses}>
-              Your Name
-            </label>
-            <input
-              id="contact-name"
-              type="text"
-              name="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className={inputClasses}
-              disabled={isLoading}
-            />
-          </div>
+          <FormField
+            id="contact-name"
+            label="Your Name"
+            type="text"
+            name="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            disabled={isLoading}
+          />
 
-          <div>
-            <label htmlFor="contact-email" className={labelClasses}>
-              Your Email
-            </label>
-            <input
-              id="contact-email"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className={inputClasses}
-              disabled={isLoading}
-            />
-          </div>
+          <FormField
+            id="contact-email"
+            label="Your Email"
+            type="email"
+            name="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={isLoading}
+          />
 
-          <div>
-            <label htmlFor="contact-message" className={labelClasses}>
-              Your Message
-            </label>
-            <textarea
-              id="contact-message"
-              name="message"
-              rows={5}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              className={inputClasses}
-              disabled={isLoading}
-            />
-          </div>
+          <FormField
+            id="contact-message"
+            label="Your Message"
+            as="textarea"
+            name="message"
+            rows={5}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            disabled={isLoading}
+          />
 
           {errorMessage && (
             <p role="alert" className={errorClasses}>

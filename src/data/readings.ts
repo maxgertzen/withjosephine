@@ -16,7 +16,7 @@ export type Reading = {
 };
 
 export type Testimonial = {
-  id: number;
+  id: string;
   quote: string;
   name: string;
   detail: string;
@@ -115,21 +115,21 @@ export const READINGS: Reading[] = [
 
 export const TESTIMONIALS: Testimonial[] = [
   {
-    id: 1,
+    id: "1",
     quote:
       "I've had many readings over the years but nothing has come close to this. Josephine saw things in my chart and records that I had never spoken out loud to anyone. I listened to my voice note three times and cried each time — in the best possible way.",
     name: "Amelia R.",
     detail: "Soul Blueprint Reading",
   },
   {
-    id: 2,
+    id: "2",
     quote:
       "The Akashic reading answered the question I'd been circling for years. The accuracy was startling, and the warmth Josephine brought to it made everything feel safe. My PDF has been on my desk ever since.",
     name: "Charlotte M.",
     detail: "Akashic Record Reading",
   },
   {
-    id: 3,
+    id: "3",
     quote:
       "I booked the birth chart reading not really knowing what to expect. What I got was a level of self-understanding I didn't know was possible. It reframed everything. I finally understand why I am the way I am.",
     name: "Isabelle K.",

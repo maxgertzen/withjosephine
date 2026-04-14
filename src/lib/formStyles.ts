@@ -6,7 +6,7 @@ export const labelClasses =
 
 export const errorClasses = "font-body text-sm text-red-600";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function isValidEmail(value: string): boolean {
   return EMAIL_REGEX.test(value.trim());

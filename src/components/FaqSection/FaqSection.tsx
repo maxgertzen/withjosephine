@@ -57,6 +57,7 @@ export function FaqSection({
             >
               <button
                 type="button"
+                id={`faq-question-${item.id}`}
                 onClick={() => toggle(item.id)}
                 aria-expanded={isOpen}
                 aria-controls={`faq-answer-${item.id}`}
