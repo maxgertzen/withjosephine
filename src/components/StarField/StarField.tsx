@@ -5,13 +5,18 @@ interface StarFieldProps {
   className?: string;
 }
 
+function round(n: number, decimals: number) {
+  const factor = 10 ** decimals;
+  return Math.round(n * factor) / factor;
+}
+
 export function StarField({ count = 110, className }: StarFieldProps) {
   const stars = Array.from({ length: count }, (_, i) => ({
-    x: (Math.sin(i * 2.41) * 0.5 + 0.5) * 100,
-    y: (Math.cos(i * 1.73) * 0.5 + 0.5) * 100,
-    size: Math.abs(Math.sin(i * 3.14)) * 2 + 0.5,
-    duration: 2.5 + Math.abs(Math.cos(i * 1.31)) * 3.5,
-    delay: Math.abs(Math.sin(i * 2.17)) * 3,
+    x: round((Math.sin(i * 2.41) * 0.5 + 0.5) * 100, 2),
+    y: round((Math.cos(i * 1.73) * 0.5 + 0.5) * 100, 2),
+    size: round(Math.abs(Math.sin(i * 3.14)) * 2 + 0.5, 2),
+    duration: round(2.5 + Math.abs(Math.cos(i * 1.31)) * 3.5, 2),
+    delay: round(Math.abs(Math.sin(i * 2.17)) * 3, 2),
   }));
 
   return (
