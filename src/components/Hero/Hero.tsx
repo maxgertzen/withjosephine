@@ -7,7 +7,23 @@ import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { mergeClasses } from "@/lib/utils";
 
+interface HeroContent {
+  tagline: string;
+  introGreeting: string;
+  introBody: string;
+  ctaText: string;
+}
+
+const HERO_DEFAULTS: HeroContent = {
+  tagline: "Astrologer  +  Akashic Record Reader",
+  introGreeting: "Hi, I\u2019m Josephine.",
+  introBody:
+    "I combine your birth chart and Akashic Records to help you understand your soul more deeply. Your patterns, your purpose and your path.\n\nIf you\u2019re here, you\u2019re probably ready to understand yourself on a level that changes everything. Abundance, clarity, the right relationships, a real sense of direction. It\u2019s all in there.",
+  ctaText: "Explore Readings",
+};
+
 interface HeroProps {
+  content?: HeroContent;
   className?: string;
 }
 
@@ -27,7 +43,10 @@ function MoonCrescent({ className }: { className?: string }) {
   );
 }
 
-export function Hero({ className }: HeroProps) {
+export function Hero({ content, className }: HeroProps) {
+  const { tagline, introGreeting, introBody, ctaText } = content ?? HERO_DEFAULTS;
+  const [bodyFirst, bodySecond] = introBody.split("\n\n");
+
   const handleScrollToReadings = () => {
     document.getElementById("readings")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -95,7 +114,7 @@ export function Hero({ className }: HeroProps) {
           transition={{ duration: 0.9, delay: 0.3, ease: "easeOut" }}
           className="mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-accent"
         >
-          Astrologer&nbsp;&nbsp;+&nbsp;&nbsp;Akashic Record Reader
+          {tagline}
         </motion.p>
 
         <motion.div
@@ -105,16 +124,16 @@ export function Hero({ className }: HeroProps) {
           className="mb-12"
         >
           <p className="mb-4 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] font-light italic leading-[1.75] text-j-text">
-            Hi, I&rsquo;m Josephine.
+            {introGreeting}
           </p>
           <p className="mb-3 font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
-            I combine your birth chart and Akashic Records to help you understand your soul more deeply.
-            Your patterns, your purpose and your path.
+            {bodyFirst}
           </p>
-          <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
-            If you&rsquo;re here, you&rsquo;re probably ready to understand yourself on a level that changes everything.
-            Abundance, clarity, the right relationships, a real sense of direction. It&rsquo;s all in there.
-          </p>
+          {bodySecond && (
+            <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
+              {bodySecond}
+            </p>
+          )}
         </motion.div>
 
         <motion.div
@@ -123,7 +142,7 @@ export function Hero({ className }: HeroProps) {
           transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
         >
           <Button size="lg" onClick={handleScrollToReadings}>
-            Explore Readings
+            {ctaText}
           </Button>
         </motion.div>
       </div>

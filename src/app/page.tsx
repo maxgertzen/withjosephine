@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
@@ -8,15 +9,58 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { ContactForm } from "@/components/ContactForm";
 import { GoldDivider } from "@/components/GoldDivider";
 import { Footer } from "@/components/Footer";
-import { READINGS, TESTIMONIALS } from "@/data/readings";
+import {
+  fetchLandingPage,
+  fetchReadings,
+  fetchTestimonials,
+  fetchSiteSettings,
+} from "@/lib/sanity/fetch";
+import {
+  mapReadings,
+  mapTestimonials,
+  mapAbout,
+  mapNavContent,
+  mapFooterContent,
+} from "@/lib/sanity/mappers";
 
-const ABOUT_IMAGE = "/images/akasha.png";
+export async function generateMetadata(): Promise<Metadata> {
+  const landingPage = await fetchLandingPage();
+  const seo = landingPage?.seo;
 
-export default function LandingPage() {
+  return {
+    title: seo?.metaTitle ?? "Josephine — Soul Readings",
+    description:
+      seo?.metaDescription ??
+      "Your soul has patterns. Your chart reveals them. Your records explain why.",
+    icons: {
+      icon: "/favicon.ico",
+      apple: "/apple-touch-icon.png",
+    },
+  };
+}
+
+export default async function LandingPage() {
+  const [landingPage, sanityReadings, sanityTestimonials, siteSettings] =
+    await Promise.all([
+      fetchLandingPage(),
+      fetchReadings(),
+      fetchTestimonials(),
+      fetchSiteSettings(),
+    ]);
+
+  const readings = mapReadings(sanityReadings);
+  const testimonials = mapTestimonials(sanityTestimonials);
+  const about = mapAbout(landingPage);
+  const navContent = mapNavContent(siteSettings);
+  const footerContent = mapFooterContent(siteSettings);
+
+  const readingsSection = landingPage?.readingsSection;
+  const testimonialsSection = landingPage?.testimonialsSection;
+
   return (
     <>
-      <Navigation />
-      <Hero />
+      <Navigation content={navContent} />
+      <Hero content={landingPage?.hero ?? undefined} />
 
       <section id="about" className="relative overflow-hidden py-24 px-6">
         <div
@@ -29,12 +73,12 @@ export default function LandingPage() {
         />
 
         <SectionHeading
-          tag="✦ About"
-          heading="who i am + what this is"
+          tag={about.sectionTag}
+          heading={about.heading}
         />
         <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
           <Image
-            src={ABOUT_IMAGE}
+            src={about.imageUrl}
             alt="Josephine"
             width={300}
             height={450}
@@ -42,31 +86,22 @@ export default function LandingPage() {
             className="w-full md:w-[300px] h-auto object-contain"
           />
           <div className="flex flex-col gap-5">
-            <p className="font-body text-base text-j-text leading-[1.9] font-light">
-              I found this work through my own search for purpose. Wanting to understand myself
-              more deeply, why I was the way I was, what I was here for, why certain patterns
-              kept showing up &mdash; this led me to astrology and then to the Akashic Records.
-            </p>
-            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
-              These two things together changed everything for me. And now I use them as a bridge
-              for others. Astrology maps your soul&rsquo;s blueprint through your birth chart.
-              Your gifts, your wounds, your patterns and your path.
-            </p>
-            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
-              The Akashic Records go even deeper. They&rsquo;re a spiritual record of your soul
-              across time. Every experience, every contract, every lesson your soul has carried
-              into this lifetime.
-            </p>
-            <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
-              Together they create a level of understanding that&rsquo;s hard to describe until
-              you&rsquo;ve experienced it.
-            </p>
+            {about.paragraphs.map((paragraph, index) => (
+              <p
+                key={index}
+                className={`font-body text-base leading-[1.9] font-light ${
+                  index === 0 ? "text-j-text" : "text-j-text-muted"
+                }`}
+              >
+                {paragraph}
+              </p>
+            ))}
             <div className="mt-4">
               <p className="font-display text-lg italic text-j-text-muted">
                 With love,
               </p>
               <p className="font-display text-2xl italic text-j-deep tracking-wide">
-                Josephine
+                {about.signoff}
               </p>
             </div>
           </div>
@@ -75,18 +110,21 @@ export default function LandingPage() {
 
       <GoldDivider className="max-w-xs mx-auto" />
 
-      <HowItWorks />
+      <HowItWorks content={landingPage?.howItWorks ?? undefined} />
 
       <GoldDivider className="max-w-xs mx-auto" />
 
       <section id="readings" className="py-24 px-6">
         <SectionHeading
-          tag="✦ Offerings"
-          heading="readings"
-          subheading="Each reading is created with care, entirely for you. Nothing is templated or generic."
+          tag={readingsSection?.sectionTag ?? "\u2726 Offerings"}
+          heading={readingsSection?.heading ?? "readings"}
+          subheading={
+            readingsSection?.subheading ??
+            "Each reading is created with care, entirely for you. Nothing is templated or generic."
+          }
         />
         <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
-          {READINGS.map((reading) => (
+          {readings.map((reading) => (
             <li key={reading.id}>
               <ReadingCard
                 tag={reading.tag}
@@ -106,11 +144,11 @@ export default function LandingPage() {
 
       <section className="py-24 px-6">
         <SectionHeading
-          tag="✦ Kind Words"
-          heading="what others have said"
+          tag={testimonialsSection?.sectionTag ?? "\u2726 Kind Words"}
+          heading={testimonialsSection?.heading ?? "what others have said"}
         />
         <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {TESTIMONIALS.map((testimonial) => (
+          {testimonials.map((testimonial) => (
             <TestimonialCard
               key={testimonial.id}
               quote={testimonial.quote}
@@ -123,9 +161,9 @@ export default function LandingPage() {
 
       <GoldDivider className="max-w-xs mx-auto" />
 
-      <ContactForm />
+      <ContactForm content={landingPage?.contactSection ?? undefined} />
 
-      <Footer />
+      <Footer content={footerContent} />
     </>
   );
 }

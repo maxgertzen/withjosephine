@@ -7,10 +7,15 @@ import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { READINGS, getReadingById } from "@/data/readings";
+import { fetchReadingSlugs, fetchReading, fetchBookingPage } from "@/lib/sanity/fetch";
 import { inputClasses, labelClasses } from "@/lib/formStyles";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const sanitySlugs = await fetchReadingSlugs();
+  if (sanitySlugs.length > 0) {
+    return sanitySlugs.map((s) => ({ readingId: s.slug }));
+  }
   return READINGS.map((reading) => ({ readingId: reading.id }));
 }
 
@@ -20,11 +25,36 @@ type BookingPageProps = {
 
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
-  const reading = getReadingById(readingId);
+
+  const [sanityReading, bookingPage] = await Promise.all([
+    fetchReading(readingId),
+    fetchBookingPage(),
+  ]);
+
+  const reading = sanityReading
+    ? {
+        tag: sanityReading.tag,
+        name: sanityReading.name,
+        subtitle: sanityReading.subtitle,
+        price: sanityReading.priceDisplay,
+        bookingSummary: sanityReading.bookingSummary,
+        includes: sanityReading.includes,
+      }
+    : getReadingById(readingId);
 
   if (!reading) {
     notFound();
   }
+
+  const emailLabel = bookingPage?.emailLabel ?? "Your Email Address";
+  const emailDisclaimer =
+    bookingPage?.emailDisclaimer ?? "Your email is only used for this reading. I\u2019ll never share it.";
+  const paymentButtonText = bookingPage?.paymentButtonText ?? "Continue to Payment";
+  const securityNote = bookingPage?.securityNote ?? "Secure checkout \u00b7 Your details are safe";
+  const closingMessage =
+    bookingPage?.closingMessage ?? "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726";
+  const deliveryNote =
+    bookingPage?.deliveryNote ?? "You\u2019ll receive your voice note and PDF within 7 days of payment.";
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -80,7 +110,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             <div className="flex gap-3 items-start">
               <Clock className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
               <p className="font-body text-sm text-j-text-muted leading-relaxed">
-                You&rsquo;ll receive your voice note and PDF within 7 days of payment.
+                {deliveryNote}
               </p>
             </div>
             <div className="flex gap-3 items-start">
@@ -102,7 +132,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             <form action="#" className="flex flex-col gap-5">
               <div>
                 <label htmlFor="booking-email" className={labelClasses}>
-                  Your Email Address
+                  {emailLabel}
                 </label>
                 <input
                   id="booking-email"
@@ -111,7 +141,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
                   className={inputClasses}
                 />
                 <p className="font-body text-xs text-j-muted mt-2">
-                  Your email is only used for this reading. I&rsquo;ll never share it.
+                  {emailDisclaimer}
                 </p>
               </div>
 
@@ -123,19 +153,17 @@ export default async function BookingPage({ params }: BookingPageProps) {
               </div>
 
               <Button type="submit" size="lg" className="w-full text-center">
-                Continue to Payment
+                {paymentButtonText}
               </Button>
 
               <p className="font-body text-xs text-j-muted text-center">
-                Secure checkout · Your details are safe
+                {securityNote}
               </p>
             </form>
           </div>
 
-          <p className="font-display text-base italic text-j-text text-center mt-8">
-            I can&rsquo;t wait to connect with you through your reading.
-            <br />
-            With love, Josephine ✦
+          <p className="font-display text-base italic text-j-text text-center mt-8 whitespace-pre-line">
+            {closingMessage}
           </p>
         </div>
       </main>

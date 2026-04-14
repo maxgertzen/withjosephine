@@ -137,7 +137,7 @@ export function getReadingById(id: string): Reading | undefined {
   return READINGS.find((reading) => reading.id === id);
 }
 
-export function getRequiredDetails(reading: Reading): string[] {
+export function getRequiredDetails(reading: Pick<Reading, "requiresBirthChart" | "requiresAkashic" | "requiresQuestions">): string[] {
   const details = new Set<string>();
 
   if (reading.requiresBirthChart) {
