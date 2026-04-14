@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 interface StarFieldProps {
   count?: number;
@@ -17,7 +17,7 @@ export function StarField({ count = 110, className }: StarFieldProps) {
   return (
     <div
       aria-hidden="true"
-      className={cn(
+      className={mergeClasses(
         "absolute inset-0 overflow-hidden pointer-events-none",
         className
       )}

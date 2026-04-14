@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { GoldDivider } from "@/components/ui/GoldDivider";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
+import { GoldDivider } from "@/components/GoldDivider";
+import { mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
   tag: string;
@@ -32,7 +32,7 @@ export function ReadingCard({
 
   return (
     <div
-      className={cn(
+      className={mergeClasses(
         "bg-j-ivory border border-j-border-subtle rounded-[20px] p-8 relative overflow-hidden shadow-j-soft",
         className
       )}

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 interface CelestialOrbProps {
   color: string;
@@ -26,7 +26,7 @@ export function CelestialOrb({
   return (
     <div
       aria-hidden="true"
-      className={cn(
+      className={mergeClasses(
         "pointer-events-none rounded-full absolute j-animate-glow",
         className
       )}

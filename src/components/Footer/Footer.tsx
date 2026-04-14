@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 interface FooterProps {
   className?: string;
@@ -8,7 +8,7 @@ interface FooterProps {
 export function Footer({ className }: FooterProps) {
   return (
     <footer
-      className={cn(
+      className={mergeClasses(
         "border-t border-j-border-subtle py-8 px-6 text-center",
         className,
       )}

@@ -3,9 +3,9 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
-import { GoldDivider } from "@/components/ui/GoldDivider";
+import { mergeClasses } from "@/lib/utils";
+import { Button } from "@/components/Button";
+import { GoldDivider } from "@/components/GoldDivider";
 import { useScrolled } from "@/hooks/useScrolled";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 
@@ -33,7 +33,7 @@ export function Navigation({ className }: NavigationProps) {
   return (
     <>
       <nav
-        className={cn(
+        className={mergeClasses(
           "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out",
           scrolled
             ? "bg-j-cream/95 backdrop-blur-[10px] border-b border-j-border-subtle shadow-j-soft"
@@ -85,7 +85,7 @@ export function Navigation({ className }: NavigationProps) {
 
       <div
         aria-hidden={!menuOpen}
-        className={cn(
+        className={mergeClasses(
           "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out md:hidden",
           menuOpen
             ? "opacity-100 pointer-events-auto"

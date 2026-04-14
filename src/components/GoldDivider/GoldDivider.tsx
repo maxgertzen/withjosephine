@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 type GoldDividerProps = {
   className?: string;
@@ -7,7 +7,7 @@ type GoldDividerProps = {
 export function GoldDivider({ className }: GoldDividerProps) {
   return (
     <div
-      className={cn(
+      className={mergeClasses(
         "h-px bg-gradient-to-r from-transparent via-j-accent/50 to-transparent",
         className
       )}

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 interface SectionHeadingProps {
   tag?: string;
@@ -17,7 +17,7 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <div
-      className={cn(
+      className={mergeClasses(
         align === "center" ? "text-center" : "text-left",
         className,
       )}
@@ -32,7 +32,7 @@ export function SectionHeading({
       </h2>
       {subheading && (
         <p
-          className={cn(
+          className={mergeClasses(
             "font-body text-base text-j-text-muted mt-3 max-w-xl",
             align === "center" && "mx-auto",
           )}

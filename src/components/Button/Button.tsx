@@ -1,5 +1,5 @@
 import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
-import { cn } from "@/lib/utils";
+import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
   primary:
@@ -40,7 +40,7 @@ export function Button({
   children,
   ...rest
 }: ButtonProps) {
-  const classes = cn(variantStyles[variant], sizeStyles[size], className);
+  const classes = mergeClasses(variantStyles[variant], sizeStyles[size], className);
 
   if (href) {
     return (
