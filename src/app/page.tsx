@@ -10,8 +10,7 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { Footer } from "@/components/Footer";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 
-const ABOUT_IMAGE =
-  "https://images.unsplash.com/photo-1577344718665-3e7c0c1ecf6b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=520&q=80";
+const ABOUT_IMAGE = "/images/akasha.png";
 
 export default function LandingPage() {
   return (
@@ -33,14 +32,14 @@ export default function LandingPage() {
           tag="✦ About"
           heading="who i am + what this is"
         />
-        <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[260px_1fr] gap-16 items-start">
+        <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
           <Image
             src={ABOUT_IMAGE}
-            alt="Meditation and spiritual energy"
-            width={260}
-            height={380}
+            alt="Sacred geometry and Akashic symbolism"
+            width={300}
+            height={450}
             loading="lazy"
-            className="rounded-lg object-cover w-full md:w-[260px] h-[380px] opacity-[0.85] border border-j-accent/20"
+            className="w-full md:w-[300px] h-auto object-contain"
           />
           <div className="flex flex-col gap-5">
             <p className="font-body text-base text-j-text leading-[1.9] font-light">
