@@ -105,20 +105,29 @@ export type SanitySiteSettings = {
   contactEmail: string;
 };
 
+export type SanityColor = {
+  hex: string;
+  alpha?: number;
+};
+
+export type SanityThemeColors = {
+  bgPrimary: SanityColor;
+  bgSection: SanityColor;
+  bgDark: SanityColor;
+  bgInteractive: SanityColor;
+  textPrimary: SanityColor;
+  textHeading: SanityColor;
+  textMuted: SanityColor;
+  textOnDark: SanityColor;
+  accent: SanityColor;
+  accentLight: SanityColor;
+  blush: SanityColor;
+  rose: SanityColor;
+  ivory: SanityColor;
+};
+
 export type SanityTheme = {
-  colors: {
-    midnight: string;
-    deep: string;
-    cream: string;
-    warm: string;
-    blush: string;
-    rose: string;
-    gold: string;
-    goldLight: string;
-    text: string;
-    muted: string;
-    ivory: string;
-  };
+  colors: Partial<SanityThemeColors>;
   displayFont: string;
   bodyFont: string;
 };

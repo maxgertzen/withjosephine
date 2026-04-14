@@ -2,19 +2,25 @@ import { describe, it, expect } from "vitest";
 import { generateTokensCss, generateFontsModule } from "./generate-tokens";
 import type { SanityTheme } from "@/lib/sanity/types";
 
+function color(hex: string) {
+  return { hex, alpha: 1 };
+}
+
 const DEFAULT_THEME: SanityTheme = {
   colors: {
-    midnight: "#0D0B1A",
-    deep: "#1C1935",
-    cream: "#FAF8F4",
-    warm: "#F5F0E8",
-    blush: "#E8D5C4",
-    rose: "#BF9B8B",
-    gold: "#C4A46B",
-    goldLight: "#D4BC8B",
-    text: "#3D3633",
-    muted: "#7A6F6A",
-    ivory: "#FAFAF8",
+    bgPrimary: color("#FAF8F4"),
+    bgSection: color("#F5F0E8"),
+    bgDark: color("#0D0B1A"),
+    bgInteractive: color("#1C1935"),
+    textPrimary: color("#3D3633"),
+    textHeading: color("#0D0B1A"),
+    textMuted: color("#7A6F6A"),
+    textOnDark: color("#FAF8F4"),
+    accent: color("#C4A46B"),
+    accentLight: color("#D4BC8B"),
+    blush: color("#E8D5C4"),
+    rose: color("#BF9B8B"),
+    ivory: color("#FAFAF8"),
   },
   displayFont: "Cormorant Garamond",
   bodyFont: "Inter",
@@ -30,21 +36,32 @@ describe("generateTokensCss", () => {
     expect(generateTokensCss(theme)).toBe("");
   });
 
-  it("generates CSS with all color overrides", () => {
+  it("generates CSS with semantic color vars", () => {
     const css = generateTokensCss(DEFAULT_THEME);
 
     expect(css).toContain(":root {");
-    expect(css).toContain("--j-midnight: #0D0B1A;");
-    expect(css).toContain("--j-deep: #1C1935;");
-    expect(css).toContain("--j-gold: #C4A46B;");
+    expect(css).toContain("--j-bg-primary: #FAF8F4;");
+    expect(css).toContain("--j-bg-dark: #0D0B1A;");
+    expect(css).toContain("--j-accent: #C4A46B;");
     expect(css).toContain("--j-ivory: #FAFAF8;");
   });
 
-  it("generates RGB channels for gold and deep", () => {
+  it("generates palette aliases derived from semantic vars", () => {
     const css = generateTokensCss(DEFAULT_THEME);
 
-    expect(css).toContain("--j-gold-rgb:");
-    expect(css).toContain("--j-deep-rgb:");
+    expect(css).toContain("--j-cream: var(--j-bg-primary);");
+    expect(css).toContain("--j-midnight: var(--j-bg-dark);");
+    expect(css).toContain("--j-deep: var(--j-bg-interactive);");
+    expect(css).toContain("--j-gold: var(--j-accent);");
+  });
+
+  it("generates RGB channels for accent and bg-interactive", () => {
+    const css = generateTokensCss(DEFAULT_THEME);
+
+    expect(css).toContain("--j-accent-rgb:");
+    expect(css).toContain("--j-bg-interactive-rgb:");
+    expect(css).toContain("--j-gold-rgb: var(--j-accent-rgb);");
+    expect(css).toContain("--j-deep-rgb: var(--j-bg-interactive-rgb);");
   });
 
   it("reflects color changes from Sanity", () => {
@@ -52,24 +69,16 @@ describe("generateTokensCss", () => {
       ...DEFAULT_THEME,
       colors: {
         ...DEFAULT_THEME.colors,
-        gold: "#FF0000",
-        midnight: "#111111",
+        accent: color("#FF0000"),
+        bgDark: color("#111111"),
       },
     };
 
     const css = generateTokensCss(customTheme);
 
-    expect(css).toContain("--j-gold: #FF0000;");
-    expect(css).toContain("--j-midnight: #111111;");
-    expect(css).not.toContain("--j-gold: #C4A46B;");
-  });
-
-  it("only overrides colors that differ from defaults", () => {
-    const css = generateTokensCss(DEFAULT_THEME);
-
-    // When all values match defaults, we still generate them
-    // (the override file is the source of truth once created)
-    expect(css).toContain("--j-midnight:");
+    expect(css).toContain("--j-accent: #FF0000;");
+    expect(css).toContain("--j-bg-dark: #111111;");
+    expect(css).not.toContain("--j-accent: #C4A46B;");
   });
 });
 

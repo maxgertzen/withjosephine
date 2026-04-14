@@ -8,6 +8,7 @@
     "deploy": "sanity deploy"
   },
   "dependencies": {
+    "@sanity/color-input": "^4.0.7",
     "@sanity/vision": "^3.86.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

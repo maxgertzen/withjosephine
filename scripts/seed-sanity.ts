@@ -290,21 +290,24 @@ async function seed() {
   });
 
   // --- Theme ---
+  const themeColor = (hex: string) => ({ _type: "color", hex, alpha: 1 });
   transaction.createOrReplace({
     _id: "theme",
     _type: "theme",
     colors: {
-      midnight: "#0D0B1A",
-      deep: "#1C1935",
-      cream: "#FAF8F4",
-      warm: "#F5F0E8",
-      blush: "#E8D5C4",
-      rose: "#BF9B8B",
-      gold: "#C4A46B",
-      goldLight: "#D4BC8B",
-      text: "#3D3633",
-      muted: "#7A6F6A",
-      ivory: "#FAFAF8",
+      bgPrimary: themeColor("#FAF8F4"),
+      bgSection: themeColor("#F5F0E8"),
+      bgDark: themeColor("#0D0B1A"),
+      bgInteractive: themeColor("#1C1935"),
+      textPrimary: themeColor("#3D3633"),
+      textHeading: themeColor("#0D0B1A"),
+      textMuted: themeColor("#7A6F6A"),
+      textOnDark: themeColor("#FAF8F4"),
+      accent: themeColor("#C4A46B"),
+      accentLight: themeColor("#D4BC8B"),
+      blush: themeColor("#E8D5C4"),
+      rose: themeColor("#BF9B8B"),
+      ivory: themeColor("#FAFAF8"),
     },
     displayFont: "Cormorant Garamond",
     bodyFont: "Inter",
