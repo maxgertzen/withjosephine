@@ -14,6 +14,7 @@ export type SanityReading = {
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
+  stripePaymentLink?: string;
   seo?: SanitySeo;
 };
 

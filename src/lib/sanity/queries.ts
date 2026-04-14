@@ -35,6 +35,7 @@ export const readingsQuery = groq`
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
+    stripePaymentLink,
     seo
   }
 `;
@@ -56,6 +57,7 @@ export const readingBySlugQuery = groq`
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
+    stripePaymentLink,
     seo
   }
 `;

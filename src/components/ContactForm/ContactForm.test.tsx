@@ -1,8 +1,16 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ContactForm } from "./ContactForm";
 
+const WEB3FORMS_KEY = "test-access-key";
+
 describe("ContactForm", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_WEB3FORMS_KEY", WEB3FORMS_KEY);
+    vi.restoreAllMocks();
+  });
+
   it("renders hardcoded defaults when no content is provided", () => {
     render(<ContactForm />);
 
@@ -13,7 +21,7 @@ describe("ContactForm", () => {
 
   it("renders Sanity content when provided", () => {
     const content = {
-      sectionTag: "✦ Contact Us",
+      sectionTag: "\u2726 Contact Us",
       heading: "reach out anytime",
       description: "Custom description text here.",
       submitText: "Submit Now",
@@ -33,5 +41,145 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText("Your Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Your Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Your Message")).toBeInTheDocument();
+  });
+
+  it("shows error when name is empty", async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your name.");
+  });
+
+  it("shows error when email is empty", async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your email address.");
+  });
+
+  it("shows error when email format is invalid", async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "not-valid");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid email address.");
+  });
+
+  it("shows error when message is empty", async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a message.");
+  });
+
+  it("shows loading state during submission", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      () => new Promise(() => {})
+    );
+
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(screen.getByRole("button")).toHaveTextContent("Sending\u2026");
+  });
+
+  it("shows success message after successful submission", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), { status: 200 })
+    );
+
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("message sent")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Thank you for reaching out/)).toBeInTheDocument();
+  });
+
+  it("shows error message after failed submission", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ success: false }), { status: 200 })
+    );
+
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Something went wrong.");
+    });
+  });
+
+  it("shows error message on network failure", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Could not send your message.");
+    });
+  });
+
+  it("sends correct data to Web3Forms endpoint", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), { status: 200 })
+    );
+
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane Doe");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://api.web3forms.com/submit",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            access_key: WEB3FORMS_KEY,
+            name: "Jane Doe",
+            email: "jane@example.com",
+            message: "Hello there",
+            subject: "New message from Jane Doe",
+          }),
+        })
+      );
+    });
   });
 });

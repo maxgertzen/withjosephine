@@ -3,3 +3,11 @@ export const inputClasses =
 
 export const labelClasses =
   "font-body text-sm text-j-text-muted tracking-wide uppercase mb-2 block";
+
+export const errorClasses = "font-body text-sm text-red-600";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_REGEX.test(value.trim());
+}

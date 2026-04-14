@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Mic, Check } from "lucide-react";
-import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
+import { BookingForm } from "@/components/BookingForm";
 import { READINGS, getReadingById } from "@/data/readings";
 import { fetchReadingSlugs, fetchReading, fetchBookingPage } from "@/lib/sanity/fetch";
-import { inputClasses, labelClasses } from "@/lib/formStyles";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
 export async function generateStaticParams() {
@@ -39,6 +38,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
         price: sanityReading.priceDisplay,
         bookingSummary: sanityReading.bookingSummary,
         includes: sanityReading.includes,
+        stripePaymentLink: sanityReading.stripePaymentLink ?? "",
       }
     : getReadingById(readingId);
 
@@ -129,37 +129,19 @@ export default async function BookingPage({ params }: BookingPageProps) {
               and I&rsquo;ll send you everything you need once your booking is confirmed.
             </p>
 
-            <form action="#" className="flex flex-col gap-5">
-              <div>
-                <label htmlFor="booking-email" className={labelClasses}>
-                  {emailLabel}
-                </label>
-                <input
-                  id="booking-email"
-                  type="email"
-                  name="email"
-                  className={inputClasses}
-                />
-                <p className="font-body text-xs text-j-muted mt-2">
-                  {emailDisclaimer}
-                </p>
-              </div>
-
-              <GoldDivider className="my-2" />
-
-              <div className="flex items-center justify-between">
-                <span className="font-body text-sm text-j-text">{reading.subtitle}</span>
-                <span className="font-display text-xl italic text-j-accent">{reading.price}</span>
-              </div>
-
-              <Button type="submit" size="lg" className="w-full text-center">
-                {paymentButtonText}
-              </Button>
-
-              <p className="font-body text-xs text-j-muted text-center">
-                {securityNote}
-              </p>
-            </form>
+            <BookingForm
+              reading={{
+                subtitle: reading.subtitle,
+                price: reading.price,
+                stripePaymentLink: reading.stripePaymentLink,
+              }}
+              content={{
+                emailLabel,
+                emailDisclaimer,
+                paymentButtonText,
+                securityNote,
+              }}
+            />
           </div>
 
           <p className="font-display text-base italic text-j-text text-center mt-8 whitespace-pre-line">

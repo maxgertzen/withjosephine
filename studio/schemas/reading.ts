@@ -82,6 +82,13 @@ export const reading = defineType({
       description: "Summary text shown on the booking page",
     }),
     defineField({
+      name: "stripePaymentLink",
+      title: "Stripe Payment Link",
+      type: "url",
+      description: "Stripe Payment Link URL for this reading. Created in Stripe Dashboard → Payment Links.",
+      validation: (rule) => rule.uri({ scheme: ["https"] }),
+    }),
+    defineField({
       name: "requiresBirthChart",
       title: "Requires Birth Chart",
       type: "boolean",

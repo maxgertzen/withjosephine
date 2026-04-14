@@ -1,5 +1,8 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
 import { mergeClasses } from "@/lib/utils";
-import { inputClasses, labelClasses } from "@/lib/formStyles";
+import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Button } from "@/components/Button";
 
@@ -23,8 +26,93 @@ interface ContactFormProps {
   className?: string;
 }
 
+type FormStatus = "idle" | "loading" | "success" | "error";
+
+const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
+
 export function ContactForm({ content, className }: ContactFormProps) {
   const { sectionTag, heading, description, submitText } = content ?? CONTACT_DEFAULTS;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<FormStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage(null);
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedMessage = message.trim();
+
+    if (!trimmedName) { setErrorMessage("Please enter your name."); return; }
+    if (!trimmedEmail) { setErrorMessage("Please enter your email address."); return; }
+    if (!isValidEmail(trimmedEmail)) { setErrorMessage("Please enter a valid email address."); return; }
+    if (!trimmedMessage) { setErrorMessage("Please enter a message."); return; }
+
+    const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_KEY;
+    if (!accessKey) {
+      setErrorMessage("Contact form is not configured. Please try again later.");
+      return;
+    }
+
+    setStatus("loading");
+
+    try {
+      const response = await fetch(WEB3FORMS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_key: accessKey,
+          name: trimmedName,
+          email: trimmedEmail,
+          message: trimmedMessage,
+          subject: `New message from ${trimmedName}`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus("success");
+        setName("");
+        setEmail("");
+        setMessage("");
+      } else {
+        setStatus("error");
+        setErrorMessage("Something went wrong. Please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setErrorMessage("Could not send your message. Please try again later.");
+    }
+  }
+
+  const isLoading = status === "loading";
+
+  if (status === "success") {
+    return (
+      <section id="contact" className={mergeClasses("py-24 px-6", className)}>
+        <div className="max-w-lg mx-auto text-center">
+          <SectionHeading
+            tag={sectionTag}
+            heading="message sent"
+            className="mb-6"
+          />
+          <p className="font-body text-base text-j-text-muted">
+            Thank you for reaching out. I&rsquo;ll get back to you as soon as I can.
+          </p>
+          <div className="mt-8">
+            <Button type="button" variant="ghost" onClick={() => setStatus("idle")}>
+              Send another message
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="contact" className={mergeClasses("py-24 px-6", className)}>
@@ -39,7 +127,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           {description}
         </p>
 
-        <form action="#" className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
           <div>
             <label htmlFor="contact-name" className={labelClasses}>
               Your Name
@@ -48,7 +136,10 @@ export function ContactForm({ content, className }: ContactFormProps) {
               id="contact-name"
               type="text"
               name="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
               className={inputClasses}
+              disabled={isLoading}
             />
           </div>
 
@@ -60,7 +151,10 @@ export function ContactForm({ content, className }: ContactFormProps) {
               id="contact-email"
               type="email"
               name="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className={inputClasses}
+              disabled={isLoading}
             />
           </div>
 
@@ -72,12 +166,23 @@ export function ContactForm({ content, className }: ContactFormProps) {
               id="contact-message"
               name="message"
               rows={5}
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
               className={inputClasses}
+              disabled={isLoading}
             />
           </div>
 
+          {errorMessage && (
+            <p role="alert" className={errorClasses}>
+              {errorMessage}
+            </p>
+          )}
+
           <div className="text-center">
-            <Button type="submit">{submitText}</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Sending\u2026" : submitText}
+            </Button>
           </div>
         </form>
       </div>
