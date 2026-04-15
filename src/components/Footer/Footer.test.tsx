@@ -43,10 +43,29 @@ describe("Footer", () => {
     expect(screen.getByText(new RegExp(year))).toBeInTheDocument();
   });
 
+  it("renders legal links (privacy, terms, refunds) by default", () => {
+    render(<Footer />);
+
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+    expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute(
+      "href",
+      "/refund-policy",
+    );
+  });
+
   it("renders no social links when none provided", () => {
     render(<Footer />);
 
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    // Only legal links remain — no social platform labels.
+    expect(screen.queryByLabelText("TikTok")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Instagram")).not.toBeInTheDocument();
   });
 
   it("renders social links with correct hrefs and labels", () => {
@@ -56,9 +75,6 @@ describe("Footer", () => {
     ];
 
     render(<Footer socialLinks={socialLinks} />);
-
-    const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(2);
 
     const tiktokLink = screen.getByLabelText("TikTok");
     expect(tiktokLink).toHaveAttribute("href", "https://tiktok.com/@test");

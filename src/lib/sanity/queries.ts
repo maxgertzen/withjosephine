@@ -128,3 +128,18 @@ export const themeQuery = groq`
     bodyFont
   }
 `;
+
+export const legalPageBySlugQuery = groq`
+  *[_type == "legalPage" && slug.current == $slug][0] {
+    _id,
+    title,
+    "slug": slug.current,
+    tag,
+    lastUpdated,
+    body,
+    seo {
+      metaTitle,
+      metaDescription
+    }
+  }
+`;

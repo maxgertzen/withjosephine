@@ -53,6 +53,26 @@ describe("BookingForm", () => {
     expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
   });
 
+  it("disables button when terms checkbox is unchecked", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
+
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
+  });
+
+  it("disables button when cooling-off waiver is unchecked", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
+
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
+  });
+
   it("shows error and disables button when payment link is missing", () => {
     const readingWithoutLink = { ...defaultReading, stripePaymentLink: "" };
     render(<BookingForm reading={readingWithoutLink} content={defaultContent} />);
@@ -66,6 +86,8 @@ describe("BookingForm", () => {
     render(<BookingForm reading={defaultReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
     expect(window.location.href).toBe(
@@ -79,6 +101,8 @@ describe("BookingForm", () => {
     render(<BookingForm reading={maliciousReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
@@ -91,6 +115,8 @@ describe("BookingForm", () => {
     render(<BookingForm reading={httpReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
@@ -101,6 +127,8 @@ describe("BookingForm", () => {
     render(<BookingForm reading={defaultReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
     expect(screen.getByRole("button")).toHaveTextContent("Redirecting to payment\u2026");

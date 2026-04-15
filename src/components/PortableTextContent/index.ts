@@ -1,0 +1,1 @@
+export { PortableTextContent } from "./PortableTextContent";
