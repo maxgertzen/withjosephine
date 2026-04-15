@@ -13,6 +13,7 @@
 	"vars": {
 		"NEXT_PUBLIC_SANITY_PROJECT_ID": "e8jsb14m",
 		"NEXT_PUBLIC_SANITY_DATASET": "production",
+		"NEXT_PUBLIC_SANITY_STUDIO_URL": "https://withjosephine.sanity.studio",
 		"NEXT_PUBLIC_WEB3FORMS_KEY": "bceced8d-fc0d-4b8d-b4f3-760f1bc6fa1d"
 	}
 }

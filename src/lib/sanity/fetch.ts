@@ -1,7 +1,5 @@
-import { cache } from "react";
-import { draftMode } from "next/headers";
-import type { SanityClient } from "@sanity/client";
-import { sanityClient, sanityPreviewClient } from "./client";
+import { sanityClient } from "./client";
+import { sanityFetch } from "./live";
 import {
   landingPageQuery,
   readingsQuery,
@@ -28,68 +26,76 @@ import type {
 } from "./types";
 
 /**
- * Pick the right Sanity client for the current request.
+ * Thin wrappers around `sanityFetch` so call sites stay typed and ergonomic
+ * (`const data = await fetchX()` rather than `const { data } = await ...`).
  *
- * When `draftMode()` is enabled (via the Studio's Presentation iframe hitting
- * `/api/draft/enable?secret=...`), we fetch from the `previewDrafts`
- * perspective so Josephine sees unpublished edits. Otherwise we serve the
- * published CDN-cached perspective.
- *
- * `draftMode()` throws when called outside a request scope (e.g. during
- * `generateStaticParams` at build time). In that case the public client is
- * always the correct choice — static params are derived from published data.
+ * `sanityFetch` handles draft-mode switching and live revalidation tagging
+ * internally; outside a request scope (e.g. `generateStaticParams` at build)
+ * it falls back to the published perspective.
  */
-async function getClient(): Promise<SanityClient> {
-  try {
-    const { isEnabled } = await draftMode();
-    return isEnabled ? sanityPreviewClient : sanityClient;
-  } catch {
-    return sanityClient;
-  }
-}
 
 export async function fetchLandingPage(): Promise<SanityLandingPage | null> {
-  return (await getClient()).fetch(landingPageQuery);
+  const { data } = await sanityFetch({ query: landingPageQuery });
+  return data;
 }
 
 export async function fetchReadings(): Promise<SanityReading[]> {
-  return (await getClient()).fetch(readingsQuery);
+  const { data } = await sanityFetch({ query: readingsQuery });
+  return data ?? [];
 }
 
 export async function fetchReading(slug: string): Promise<SanityReading | null> {
-  return (await getClient()).fetch(readingBySlugQuery, { slug });
+  const { data } = await sanityFetch({
+    query: readingBySlugQuery,
+    params: { slug },
+  });
+  return data;
 }
 
+/**
+ * Bypasses `sanityFetch` because this is only ever called from
+ * `generateStaticParams`, which runs at build time outside any HTTP request
+ * scope — `sanityFetch`/`draftMode()` would throw there. Static params are
+ * always sourced from published documents anyway.
+ */
 export async function fetchReadingSlugs(): Promise<{ slug: string }[]> {
-  return (await getClient()).fetch(readingSlugsQuery);
+  return (await sanityClient.fetch(readingSlugsQuery)) ?? [];
 }
 
 export async function fetchTestimonials(): Promise<SanityTestimonial[]> {
-  return (await getClient()).fetch(testimonialsQuery);
+  const { data } = await sanityFetch({ query: testimonialsQuery });
+  return data ?? [];
 }
 
 export async function fetchFaqItems(): Promise<SanityFaqItem[]> {
-  return (await getClient()).fetch(faqItemsQuery);
+  const { data } = await sanityFetch({ query: faqItemsQuery });
+  return data ?? [];
 }
 
 export async function fetchSiteSettings(): Promise<SanitySiteSettings | null> {
-  return (await getClient()).fetch(siteSettingsQuery);
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  return data;
 }
 
 export async function fetchBookingPage(): Promise<SanityBookingPage | null> {
-  return (await getClient()).fetch(bookingPageQuery);
+  const { data } = await sanityFetch({ query: bookingPageQuery });
+  return data;
 }
 
 export async function fetchThankYouPage(): Promise<SanityThankYouPage | null> {
-  return (await getClient()).fetch(thankYouPageQuery);
+  const { data } = await sanityFetch({ query: thankYouPageQuery });
+  return data;
 }
 
 export async function fetchTheme(): Promise<SanityTheme | null> {
-  return (await getClient()).fetch(themeQuery);
+  const { data } = await sanityFetch({ query: themeQuery });
+  return data;
 }
 
-export const fetchLegalPage = cache(
-  async (slug: string): Promise<SanityLegalPage | null> => {
-    return (await getClient()).fetch(legalPageBySlugQuery, { slug });
-  },
-);
+export async function fetchLegalPage(slug: string): Promise<SanityLegalPage | null> {
+  const { data } = await sanityFetch({
+    query: legalPageBySlugQuery,
+    params: { slug },
+  });
+  return data;
+}

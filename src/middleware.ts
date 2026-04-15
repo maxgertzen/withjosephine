@@ -45,8 +45,8 @@ const CSP_DRAFT =
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io data:; " +
   "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://api.web3forms.com; " +
-  "frame-ancestors 'self' https://*.sanity.studio; " +
-  "frame-src 'self' https://*.sanity.studio; " +
+  "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io; " +
+  "frame-src 'self' https://*.sanity.studio https://*.sanity.io; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
   "form-action 'self' https://api.web3forms.com; " +

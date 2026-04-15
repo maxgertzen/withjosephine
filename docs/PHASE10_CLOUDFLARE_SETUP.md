@@ -31,20 +31,21 @@
 ```
 NEXT_PUBLIC_SANITY_PROJECT_ID=…
 NEXT_PUBLIC_SANITY_DATASET=production
-SANITY_READ_TOKEN=…
-SANITY_PREVIEW_SECRET=…
+NEXT_PUBLIC_SANITY_STUDIO_URL=…  # https://withjosephine.sanity.studio (or http://localhost:3333 locally)
+SANITY_READ_TOKEN=…              # Viewer-role token from Sanity Manage
 SANITY_WRITE_TOKEN=…             # only for seed scripts; never shipped
 NEXT_PUBLIC_WEB3FORMS_KEY=…
 SANITY_STUDIO_PROJECT_ID=…       # for scripts that call studio CLI
 SANITY_STUDIO_DATASET=production
 ```
 
+> Draft-mode validation is now handled by `next-sanity`'s `defineEnableDraftMode` — it authenticates each Studio session against Sanity's API using `SANITY_READ_TOKEN`. A separately-shared `SANITY_PREVIEW_SECRET` is **no longer required** anywhere.
+
 **`www/studio/.env`** — used by `pnpm studio:dev` and `pnpm studio:deploy`:
 ```
 SANITY_STUDIO_PROJECT_ID=…
 SANITY_STUDIO_DATASET=production
 SANITY_STUDIO_PREVIEW_URL=…      # see two-mode switch below
-SANITY_PREVIEW_SECRET=…          # MUST match the Worker's value
 ```
 
 **Two-mode `SANITY_STUDIO_PREVIEW_URL`** (baked into Studio bundle at deploy time):
@@ -64,6 +65,7 @@ Set in: GitHub repo → Settings → Secrets and variables → Actions.
 |---|---|
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | from Sanity Manage |
 | `NEXT_PUBLIC_SANITY_DATASET` | `production` |
+| `NEXT_PUBLIC_SANITY_STUDIO_URL` | `https://withjosephine.sanity.studio` (or hosted Studio URL) |
 
 **Secrets:**
 | Name | Source |
@@ -72,7 +74,7 @@ Set in: GitHub repo → Settings → Secrets and variables → Actions.
 | `CLOUDFLARE_API_TOKEN` | CF dashboard → My Profile → API Tokens → `Edit Cloudflare Workers` template |
 | `CLOUDFLARE_ACCOUNT_ID` | CF dashboard sidebar (right side, account ID copy button) |
 
-> The Worker's *runtime* secrets (`SANITY_READ_TOKEN`, `SANITY_PREVIEW_SECRET`) are NOT GitHub secrets — they live in CF dashboard env vars (next section). The CI only needs the build-time public env vars + Cloudflare credentials.
+> The Worker's *runtime* secret (`SANITY_READ_TOKEN`) is NOT a GitHub secret — it lives in CF dashboard env vars (next section). The CI only needs the build-time public env vars + Cloudflare credentials.
 
 ### Cloudflare Worker runtime env vars
 
@@ -82,11 +84,12 @@ Set in: CF dashboard → Workers & Pages → `withjosephine` → Settings → Va
 |---|---|---|
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | Plain text | from Sanity Manage |
 | `NEXT_PUBLIC_SANITY_DATASET` | Plain text | `production` |
+| `NEXT_PUBLIC_SANITY_STUDIO_URL` | Plain text | `https://withjosephine.sanity.studio` |
 | `NEXT_PUBLIC_WEB3FORMS_KEY` | Plain text | Web3Forms dashboard |
-| `SANITY_READ_TOKEN` | **Secret** | from local `.env.local` |
-| `SANITY_PREVIEW_SECRET` | **Secret** | from local `.env.local`; MUST match `studio/.env` |
+| `SANITY_READ_TOKEN` | **Secret** | Sanity Manage → API → Tokens → create with **Viewer** role |
 
 **Do NOT set:**
+- `SANITY_PREVIEW_SECRET` — obsolete since the migration to `defineEnableDraftMode` (validation now uses `SANITY_READ_TOKEN` against Sanity's API).
 - `SANITY_WRITE_TOKEN` — only for seed scripts running locally; never on the Worker.
 - `SANITY_STUDIO_*` — Studio doesn't run on the Worker.
 
@@ -121,6 +124,24 @@ Per the GitHub Actions table above. Without these, `wrangler-action` fails with 
 
 Push a trivial commit to `main` → watch GitHub Actions → confirm `deploy` job runs after the gates → confirm new build is live at `*.workers.dev` URL.
 
+### 5. Allow Worker URL in Sanity CORS Origins (one-time per host)
+
+Visual Editing's live subscription opens an authenticated request from the browser back to the Sanity Content Lake. The Studio iframe is served from a different origin than the Worker, so Sanity has to whitelist the Worker URL or the browser blocks the request and live preview never connects.
+
+For each host that the Studio's Presentation tool will iframe:
+
+```bash
+# From www/ (uses your Sanity CLI auth)
+pnpm dlx sanity cors add https://withjosephine.<acct>.workers.dev --credentials
+pnpm dlx sanity cors add https://preview.withjosephine.com         --credentials
+pnpm dlx sanity cors add https://withjosephine.com                 --credentials   # at launch only
+pnpm dlx sanity cors add http://localhost:3000                      --credentials   # local dev
+```
+
+`--credentials` is required — without it the browser drops the auth header and live preview falls back to silent failure.
+
+Verify in `manage.sanity.io` → API → CORS Origins. All four entries should show **Credentials: Allow**.
+
 ---
 
 ## Sanity Studio — interim preview wiring (before custom domain)
@@ -130,7 +151,6 @@ Until `preview.withjosephine.com` is live, point Studio at the workers.dev URL:
 ```bash
 # studio/.env
 SANITY_STUDIO_PREVIEW_URL=https://withjosephine.<your-account>.workers.dev
-SANITY_PREVIEW_SECRET=<same value as Worker secret>
 
 # Then:
 cd www
@@ -228,20 +248,19 @@ curl -sI https://preview.withjosephine.com | head -5
 curl -sI https://withjosephine.com | head -5
 # expected: connection refused / Hostinger parking page / NXDOMAIN — anything but the new site
 
-# 4. Draft enable rejects missing secret
+# 4. Draft enable rejects unauthenticated requests
 curl -sI https://preview.withjosephine.com/api/draft/enable
-# expected: HTTP/2 401
+# expected: HTTP/2 401 (no `sanity-preview-secret` from a real Studio session)
 
-# 5. Draft enable with valid secret → 307 redirect
-curl -sI "https://preview.withjosephine.com/api/draft/enable?secret=$SANITY_PREVIEW_SECRET"
-# expected: HTTP/2 307, location: /
-
-# 6. Draft response: noindex + uncached + relaxed CSP
+# 5. Draft response: noindex + uncached + relaxed CSP (bypass cookie set manually)
 curl -sI -b "__prerender_bypass=test" https://preview.withjosephine.com/ | grep -iE "x-robots-tag|cache-control|content-security-policy"
 # expected:
 #   cache-control: private, no-store, max-age=0
 #   x-robots-tag: noindex, nofollow
-#   content-security-policy: …frame-ancestors 'self' https://*.sanity.studio…
+#   content-security-policy: …frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io…
+
+# 6. End-to-end draft mode (must use Studio Presentation — `defineEnableDraftMode`
+# verifies the session against Sanity's API, so a curl-only path no longer works).
 
 # 7. Email routing
 # Send a test email from your phone to hello@withjosephine.com
@@ -289,7 +308,7 @@ When ready to launch:
 ## Anything you might be missing
 
 1. **Hostinger keeps holding the registration**, even after nameservers move to CF — that's fine. Renewals happen at Hostinger; DNS happens at CF.
-2. **`SANITY_PREVIEW_SECRET` sync** — Worker env, `studio/.env`, `www/.env.local` MUST hold the same value. Mismatch → Presentation 401s.
+2. **CORS Origins** — every host the Studio iframes must be in Sanity's CORS allowlist with `--credentials`. Missing entry → live preview silently fails to subscribe (no error in the iframe, just no updates).
 3. **`SANITY_WRITE_TOKEN` on the Worker** — must NOT be set. Double-check.
 4. **Old `out/` build artifacts** — `next.config.ts` no longer sets `output: "export"`. If you find any old script referencing `out/`, it's stale.
 5. **The previous Pages project at `withjosephine.pages.dev`** — once GHA is deploying the Worker successfully, decide: delete the old Pages project (cleanest) or leave it unlinked. It's currently the only "production" deploy, so DON'T delete until the Worker is verified live AND you're comfortable with workers.dev URL as the de-facto pre-launch URL.
@@ -300,8 +319,6 @@ When ready to launch:
 ## Rotation
 
 **`SANITY_READ_TOKEN`:** new token in Sanity Manage → update CF Worker secret → re-deploy (push trivial commit) → revoke old.
-
-**`SANITY_PREVIEW_SECRET`:** generate new → update CF Worker secret AND `studio/.env` AND `www/.env.local` → `pnpm studio:deploy` → push trivial commit → revoke old.
 
 **`CLOUDFLARE_API_TOKEN`:** rotate yearly. Generate new in CF dashboard → update GitHub secret → revoke old token → push trivial commit to verify.
 
