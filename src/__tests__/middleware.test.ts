@@ -59,18 +59,24 @@ describe("middleware CSP + draft hardening", () => {
     expect(res.headers.has("x-robots-tag")).toBe(false);
   });
 
-  it("public request on preview subdomain gets noindex (prevents pre-launch SEO leak)", () => {
+  it("public request on preview subdomain gets noindex AND Studio-friendly CSP", () => {
     const res = middleware(makeRequest({ hasDraft: false, host: "preview.withjosephine.com" }));
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
-    // CSP still strict — no draft cookie, no relaxation.
-    expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    // CSP must allow the Studio iframe even before draft mode is enabled —
+    // the Presentation tool iframes the host first, then triggers /api/draft/enable.
+    const csp = res.headers.get("content-security-policy");
+    expect(csp).toContain("frame-ancestors 'self' https://*.sanity.studio");
+    expect(csp).not.toContain("frame-ancestors 'none'");
   });
 
-  it("public request on workers.dev URL gets noindex", () => {
+  it("public request on workers.dev URL gets noindex AND Studio-friendly CSP", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, host: "withjosephine.user.workers.dev" }),
     );
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(res.headers.get("content-security-policy")).toContain(
+      "frame-ancestors 'self' https://*.sanity.studio",
+    );
   });
 
   it("draft request gets relaxed CSP, no-store cache, and noindex", () => {

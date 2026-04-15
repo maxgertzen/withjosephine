@@ -106,6 +106,29 @@ describe("/api/draft/enable", () => {
       GET(req as any),
     ).rejects.toMatchObject({ url: "/evil.com" });
   });
+
+  it("accepts Sanity Presentation params (sanity-preview-secret + sanity-preview-pathname)", async () => {
+    const { GET } = await import("../enable/route");
+    const req = new FakeNextRequest(
+      "https://example.com/api/draft/enable?sanity-preview-secret=test-secret&sanity-preview-perspective=drafts&sanity-preview-pathname=%2Fbook%2Fbirth-chart",
+    );
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      GET(req as any),
+    ).rejects.toMatchObject({ url: "/book/birth-chart" });
+    expect(enableSpy).toHaveBeenCalledOnce();
+  });
+
+  it("rejects Sanity Presentation request with wrong sanity-preview-secret (401)", async () => {
+    const { GET } = await import("../enable/route");
+    const req = new FakeNextRequest(
+      "https://example.com/api/draft/enable?sanity-preview-secret=wrong&sanity-preview-pathname=%2F",
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = (await GET(req as any)) as unknown as { status: number };
+    expect(res.status).toBe(401);
+    expect(enableSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe("/api/draft/disable", () => {
