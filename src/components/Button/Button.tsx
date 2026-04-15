@@ -1,4 +1,5 @@
 import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
+import Link from "next/link";
 import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
@@ -43,6 +44,23 @@ export function Button({
   const classes = mergeClasses(variantStyles[variant], sizeStyles[size], className);
 
   if (href) {
+    // Internal hrefs use next/link for soft navigation — this keeps React
+    // state alive across nav, so client components (e.g. ReadingCard's
+    // AnimatePresence) don't break when the user hits browser back.
+    const isInternal = href.startsWith("/") && !href.startsWith("//");
+
+    if (isInternal) {
+      return (
+        <Link
+          href={href}
+          className={classes}
+          {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {children}
+        </Link>
+      );
+    }
+
     return (
       <a
         href={href}
