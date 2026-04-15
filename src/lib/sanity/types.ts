@@ -138,3 +138,37 @@ export type SanitySeo = {
   metaDescription?: string;
   ogImage?: { asset: { url: string } };
 };
+
+/**
+ * A Portable Text block. The shape comes from Sanity's block editor output.
+ * We re-export a minimal structural type rather than pulling in the full
+ * `@sanity/types` dependency tree.
+ */
+export type SanityPortableTextBlock = {
+  _type: string;
+  _key?: string;
+  style?: string;
+  children?: Array<{
+    _type: "span";
+    _key?: string;
+    text: string;
+    marks?: string[];
+  }>;
+  markDefs?: Array<{
+    _type: string;
+    _key: string;
+    href?: string;
+  }>;
+  listItem?: "bullet" | "number";
+  level?: number;
+};
+
+export type SanityLegalPage = {
+  _id: string;
+  title: string;
+  slug: string;
+  tag?: string;
+  lastUpdated: string;
+  body: SanityPortableTextBlock[];
+  seo?: Pick<SanitySeo, "metaTitle" | "metaDescription">;
+};

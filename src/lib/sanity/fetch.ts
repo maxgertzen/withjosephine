@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { sanityClient } from "./client";
 import {
   landingPageQuery,
@@ -10,6 +11,7 @@ import {
   bookingPageQuery,
   thankYouPageQuery,
   themeQuery,
+  legalPageBySlugQuery,
 } from "./queries";
 import type {
   SanityLandingPage,
@@ -20,6 +22,7 @@ import type {
   SanityBookingPage,
   SanityThankYouPage,
   SanityTheme,
+  SanityLegalPage,
 } from "./types";
 
 export async function fetchLandingPage(): Promise<SanityLandingPage | null> {
@@ -61,3 +64,9 @@ export async function fetchThankYouPage(): Promise<SanityThankYouPage | null> {
 export async function fetchTheme(): Promise<SanityTheme | null> {
   return sanityClient.fetch(themeQuery);
 }
+
+export const fetchLegalPage = cache(
+  async (slug: string): Promise<SanityLegalPage | null> => {
+    return sanityClient.fetch(legalPageBySlugQuery, { slug });
+  },
+);

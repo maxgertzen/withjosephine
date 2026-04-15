@@ -28,4 +28,6 @@ export const deskStructure = (S: StructureBuilder) =>
       S.documentTypeListItem("reading").title("Readings"),
       S.documentTypeListItem("testimonial").title("Testimonials"),
       S.documentTypeListItem("faqItem").title("FAQ Items"),
+      S.divider(),
+      S.documentTypeListItem("legalPage").title("Legal Pages"),
     ]);

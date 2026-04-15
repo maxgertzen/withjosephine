@@ -4,6 +4,7 @@ import { faqItem } from "./faqItem";
 import { landingPage } from "./landingPage";
 import { bookingPage } from "./bookingPage";
 import { thankYouPage } from "./thankYouPage";
+import { legalPage } from "./legalPage";
 import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
 
@@ -14,6 +15,7 @@ export const schemaTypes = [
   landingPage,
   bookingPage,
   thankYouPage,
+  legalPage,
   siteSettings,
   theme,
 ];
