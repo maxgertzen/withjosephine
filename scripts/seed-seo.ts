@@ -21,6 +21,7 @@
  *   edited in Studio will NOT be overwritten — clear them in Studio first.
  */
 import { createClient, type SanityClient } from '@sanity/client';
+import type { SanitySeo } from '../src/lib/sanity/types';
 
 const client: SanityClient = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
@@ -93,7 +94,7 @@ type TargetDoc = {
   copy: SeoCopy;
 };
 
-type ExistingSeo = { metaTitle?: string; metaDescription?: string } | null;
+type ExistingSeo = Pick<SanitySeo, 'metaTitle' | 'metaDescription'> | null;
 
 function truncate(value: string | undefined, max = 80): string {
   if (!value) return '<empty>';
@@ -118,8 +119,11 @@ async function resolveTargets(): Promise<TargetDoc[]> {
     `*[_type == "legalPage" && slug.current in $slugs]{ _id, slug }`,
     { slugs: legalSlugs },
   );
+  const legalBySlug = new Map(
+    legalDocs.map((d) => [d.slug?.current, d] as const),
+  );
   for (const slug of legalSlugs) {
-    const doc = legalDocs.find((d) => d.slug?.current === slug);
+    const doc = legalBySlug.get(slug);
     if (doc) {
       targets.push({
         id: doc._id,
@@ -139,13 +143,14 @@ async function resolveTargets(): Promise<TargetDoc[]> {
 async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>> {
   const ids = targets.map((t) => t.id);
   const docs = await client.fetch<
-    Array<{ _id: string; seo?: { metaTitle?: string; metaDescription?: string } }>
+    Array<{ _id: string; seo?: ExistingSeo }>
   >(`*[_id in $ids]{ _id, seo }`, { ids });
+  const docsById = new Map(docs.map((d) => [d._id, d] as const));
 
   const state = new Map<string, ExistingSeo>();
   console.log('=== Pre-flight: current SEO state ===');
   for (const t of targets) {
-    const doc = docs.find((d) => d._id === t.id);
+    const doc = docsById.get(t.id);
     if (!doc) {
       console.log(`  ${t.label} (${t.id}): document not found on server`);
       state.set(t.id, null);
@@ -153,7 +158,7 @@ async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>
       const seo = doc.seo ?? {};
       state.set(t.id, seo);
       console.log(
-        `  ${t.label} (${t.id}): metaTitle=${truncate(seo.metaTitle)}, metaDescription=${truncate(seo.metaDescription)}`,
+        `  ${t.label} (${t.id}): metaTitle=${truncate(seo.metaTitle ?? undefined)}, metaDescription=${truncate(seo.metaDescription ?? undefined)}`,
       );
     }
   }
@@ -161,20 +166,24 @@ async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>
   return state;
 }
 
-async function seedTarget(
+/** Build a patch for a single target and report per-field outcome based on
+ *  preflight state. Returns the patch to be committed in a transaction, or
+ *  null if the document is missing on the server. */
+function buildPatch(
   target: TargetDoc,
   existing: ExistingSeo,
-): Promise<{ filled: number; skipped: number }> {
+): { patch: ReturnType<SanityClient['patch']> | null; filled: number; skipped: number } {
   if (existing === null) {
     console.log(`SKIP  ${target.label}: document missing on server`);
-    return { filled: 0, skipped: 2 };
+    return { patch: null, filled: 0, skipped: 2 };
   }
 
   let filled = 0;
   let skipped = 0;
 
-  // Patch builder: ensure seo object exists, then setIfMissing each field.
-  // setIfMissing is idempotent and will only write fields that have no value.
+  // setIfMissing is idempotent — only writes fields that have no value.
+  // Dotted paths are applied in patch order after the parent `seo: {}` is
+  // ensured, so partial-SEO documents still get their missing field filled.
   const patch = client
     .patch(target.id)
     .setIfMissing({ seo: {} })
@@ -183,14 +192,6 @@ async function seedTarget(
       'seo.metaDescription': target.copy.metaDescription,
     });
 
-  try {
-    await patch.commit();
-  } catch (err) {
-    console.error(`ERROR ${target.label}: patch failed —`, err);
-    throw err;
-  }
-
-  // Report per-field outcome based on preflight state.
   if (existing.metaTitle) {
     console.log(`SKIP  ${target.label}.seo.metaTitle (already set)`);
     skipped++;
@@ -206,7 +207,7 @@ async function seedTarget(
     filled++;
   }
 
-  return { filled, skipped };
+  return { patch, filled, skipped };
 }
 
 async function main(): Promise<void> {
@@ -221,12 +222,25 @@ async function main(): Promise<void> {
   const state = await preflight(targets);
 
   console.log('=== Patching ===');
+  const transaction = client.transaction();
   let totalFilled = 0;
   let totalSkipped = 0;
+  let queued = 0;
   for (const target of targets) {
-    const res = await seedTarget(target, state.get(target.id) ?? null);
-    totalFilled += res.filled;
-    totalSkipped += res.skipped;
+    const { patch, filled, skipped } = buildPatch(
+      target,
+      state.get(target.id) ?? null,
+    );
+    totalFilled += filled;
+    totalSkipped += skipped;
+    if (patch) {
+      transaction.patch(patch);
+      queued++;
+    }
+  }
+
+  if (queued > 0) {
+    await transaction.commit();
   }
 
   console.log('');
