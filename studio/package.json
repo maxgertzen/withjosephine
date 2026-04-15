@@ -8,15 +8,15 @@
     "deploy": "sanity deploy"
   },
   "dependencies": {
-    "@sanity/color-input": "^4.0.7",
-    "@sanity/vision": "^3.86.1",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "sanity": "^3.86.1",
+    "@sanity/color-input": "^6.0.4",
+    "@sanity/vision": "^5.21.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "^5.21.0",
     "styled-components": "^6.1.18"
   },
   "devDependencies": {
-    "@types/react": "^19.1.8",
+    "@types/react": "^19.2.14",
     "typescript": "^5.8.3"
   }
 }
