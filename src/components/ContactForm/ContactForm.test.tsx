@@ -43,45 +43,40 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText("Your Message")).toBeInTheDocument();
   });
 
-  it("shows error when name is empty", async () => {
-    const user = userEvent.setup();
+  it("disables button when all fields are empty", () => {
     render(<ContactForm />);
 
-    await user.click(screen.getByRole("button", { name: "Send Message" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your name.");
+    expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
 
-  it("shows error when email is empty", async () => {
+  it("disables button when only name is filled", async () => {
     const user = userEvent.setup();
     render(<ContactForm />);
 
     await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.click(screen.getByRole("button", { name: "Send Message" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your email address.");
+    expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
 
-  it("shows error when email format is invalid", async () => {
+  it("disables button when email format is invalid", async () => {
     const user = userEvent.setup();
     render(<ContactForm />);
 
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "not-valid");
-    await user.click(screen.getByRole("button", { name: "Send Message" }));
+    await user.type(screen.getByLabelText("Your Message"), "Hello");
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid email address.");
+    expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
 
-  it("shows error when message is empty", async () => {
+  it("disables button when message is empty", async () => {
     const user = userEvent.setup();
     render(<ContactForm />);
 
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.click(screen.getByRole("button", { name: "Send Message" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a message.");
+    expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
 
   it("shows loading state during submission", async () => {
@@ -177,6 +172,7 @@ describe("ContactForm", () => {
             email: "jane@example.com",
             message: "Hello there",
             subject: "New message from Jane Doe",
+            botcheck: "",
           }),
         })
       );

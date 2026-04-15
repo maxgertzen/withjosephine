@@ -3,9 +3,9 @@ import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
   primary:
-    "bg-j-bg-interactive text-j-text-on-dark rounded-[50px] font-body uppercase tracking-[0.12em] font-medium hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
+    "bg-j-bg-interactive text-j-text-on-dark rounded-[50px] font-body uppercase tracking-[0.12em] font-medium cursor-pointer hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-j-bg-interactive",
   ghost:
-    "bg-transparent text-j-text-muted hover:text-j-accent font-body uppercase tracking-[0.1em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
+    "bg-transparent text-j-text-muted cursor-pointer hover:text-j-accent font-body uppercase tracking-[0.1em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
 } as const;
 
 const sizeStyles = {
