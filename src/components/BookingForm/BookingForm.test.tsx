@@ -14,6 +14,8 @@ const defaultContent = {
   emailDisclaimer: "Your email is only used for this reading.",
   paymentButtonText: "Continue to Payment",
   securityNote: "Secure checkout",
+  entertainmentAcknowledgment:
+    "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.",
 };
 
 describe("BookingForm", () => {
@@ -58,6 +60,18 @@ describe("BookingForm", () => {
     render(<BookingForm reading={defaultReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
+    await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
+
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
+  });
+
+  it("disables button when entertainment acknowledgment is unchecked", async () => {
+    const user = userEvent.setup();
+    render(<BookingForm reading={defaultReading} content={defaultContent} />);
+
+    await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
+    await user.click(screen.getByLabelText(/Terms of Service/i));
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
 
     expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
@@ -69,6 +83,7 @@ describe("BookingForm", () => {
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
     await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
 
     expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
   });
@@ -87,6 +102,7 @@ describe("BookingForm", () => {
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
     await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
@@ -102,6 +118,7 @@ describe("BookingForm", () => {
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
     await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
@@ -116,6 +133,7 @@ describe("BookingForm", () => {
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
     await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
@@ -128,6 +146,7 @@ describe("BookingForm", () => {
 
     await user.type(screen.getByLabelText("Your Email Address"), "customer@example.com");
     await user.click(screen.getByLabelText(/Terms of Service/i));
+    await user.click(screen.getByLabelText(/entertainment purposes only/i));
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 

@@ -62,10 +62,10 @@ export function Navigation({ content, className }: NavigationProps) {
             <Image
               src="/images/header-logo.png"
               alt="Josephine Soul Readings"
-              width={60}
-              height={30}
+              width={140}
+              height={80}
               priority
-              className="h-auto w-[clamp(120px,8vw,160px)]"
+              // className="h-auto w-[clamp(120px,8vw,160px)]"
             />
           </Link>
 

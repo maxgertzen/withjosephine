@@ -59,6 +59,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
     bookingPage?.paymentButtonText ?? 'Continue to Payment';
   const securityNote =
     bookingPage?.securityNote ?? 'Secure checkout \u00b7 Your details are safe';
+  const entertainmentAcknowledgment =
+    bookingPage?.entertainmentAcknowledgment ??
+    'I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.';
   const closingMessage =
     bookingPage?.closingMessage ??
     'I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726';
@@ -164,6 +167,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
                 emailDisclaimer,
                 paymentButtonText,
                 securityNote,
+                entertainmentAcknowledgment,
               }}
             />
           </div>

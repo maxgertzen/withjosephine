@@ -18,6 +18,7 @@ type BookingFormContent = {
   emailDisclaimer: string;
   paymentButtonText: string;
   securityNote: string;
+  entertainmentAcknowledgment: string;
 };
 
 interface BookingFormProps {
@@ -28,6 +29,8 @@ interface BookingFormProps {
 export function BookingForm({ reading, content }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [entertainmentAcknowledged, setEntertainmentAcknowledged] =
+    useState(false);
   const [coolingOffWaived, setCoolingOffWaived] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -52,6 +55,13 @@ export function BookingForm({ reading, content }: BookingFormProps) {
 
     if (!termsAccepted) {
       setError("Please accept the Terms of Service and Refund Policy.");
+      return;
+    }
+
+    if (!entertainmentAcknowledged) {
+      setError(
+        "Please acknowledge that this reading is for entertainment purposes only.",
+      );
       return;
     }
 
@@ -126,6 +136,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
               className="text-j-accent hover:underline"
             >
               Terms of Service
+              <span className="sr-only"> (opens in a new tab)</span>
             </Link>{" "}
             and{" "}
             <Link
@@ -135,9 +146,27 @@ export function BookingForm({ reading, content }: BookingFormProps) {
               className="text-j-accent hover:underline"
             >
               Refund Policy
+              <span className="sr-only"> (opens in a new tab)</span>
             </Link>
             .
           </span>
+        </label>
+
+        <label
+          htmlFor="booking-entertainment"
+          className="flex items-start gap-3 font-body text-xs text-j-text leading-[1.6] cursor-pointer"
+        >
+          <input
+            id="booking-entertainment"
+            type="checkbox"
+            checked={entertainmentAcknowledged}
+            onChange={(event) =>
+              setEntertainmentAcknowledged(event.target.checked)
+            }
+            disabled={isRedirecting}
+            className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
+          />
+          <span>{content.entertainmentAcknowledgment}</span>
         </label>
 
         <label
@@ -188,6 +217,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
           paymentUnavailable ||
           !isValidEmail(email.trim()) ||
           !termsAccepted ||
+          !entertainmentAcknowledged ||
           !coolingOffWaived
         }
       >

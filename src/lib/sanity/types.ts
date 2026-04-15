@@ -81,6 +81,7 @@ export type SanityBookingPage = {
   emailDisclaimer: string;
   paymentButtonText: string;
   securityNote: string;
+  entertainmentAcknowledgment: string;
   closingMessage: string;
   deliveryNote: string;
   seo?: SanitySeo;
