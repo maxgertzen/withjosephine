@@ -115,6 +115,7 @@ export default async function PrivacyPage() {
             className="text-j-accent hover:underline"
           >
             Stripe&rsquo;s privacy policy
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
           .
         </li>

@@ -126,6 +126,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
               className="text-j-accent hover:underline"
             >
               Terms of Service
+              <span className="sr-only"> (opens in a new tab)</span>
             </Link>{" "}
             and{" "}
             <Link
@@ -135,6 +136,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
               className="text-j-accent hover:underline"
             >
               Refund Policy
+              <span className="sr-only"> (opens in a new tab)</span>
             </Link>
             .
           </span>
