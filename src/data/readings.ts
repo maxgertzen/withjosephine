@@ -145,7 +145,6 @@ export function getRequiredDetails(reading: Pick<Reading, "requiresBirthChart" |
   const details = new Set<string>();
 
   if (reading.requiresBirthChart) {
-    details.add("Full legal name");
     details.add("Date of birth");
     details.add("Time of birth (as exact as possible)");
     details.add("Place of birth");

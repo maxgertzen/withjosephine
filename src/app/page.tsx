@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import { Navigation } from "@/components/Navigation";
-import { Hero } from "@/components/Hero";
-import { SectionHeading } from "@/components/SectionHeading";
-import { ReadingCard } from "@/components/ReadingCard";
-import { HowItWorks } from "@/components/HowItWorks";
-import { TestimonialCard } from "@/components/TestimonialCard";
-import { ContactForm } from "@/components/ContactForm";
-import { GoldDivider } from "@/components/GoldDivider";
-import { Footer } from "@/components/Footer";
-import { FaqSection } from "@/components/FaqSection";
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { Navigation } from '@/components/Navigation';
+import { Hero } from '@/components/Hero';
+import { SectionHeading } from '@/components/SectionHeading';
+import { ReadingCard } from '@/components/ReadingCard';
+import { HowItWorks } from '@/components/HowItWorks';
+import { TestimonialCard } from '@/components/TestimonialCard';
+import { ContactForm } from '@/components/ContactForm';
+import { GoldDivider } from '@/components/GoldDivider';
+import { Footer } from '@/components/Footer';
+import { FaqSection } from '@/components/FaqSection';
 import {
   fetchLandingPage,
   fetchReadings,
   fetchTestimonials,
   fetchFaqItems,
   fetchSiteSettings,
-} from "@/lib/sanity/fetch";
+} from '@/lib/sanity/fetch';
 import {
   mapReadings,
   mapTestimonials,
@@ -25,33 +25,38 @@ import {
   mapNavContent,
   mapFooterContent,
   mapSocialLinks,
-} from "@/lib/sanity/mappers";
+} from '@/lib/sanity/mappers';
 
 export async function generateMetadata(): Promise<Metadata> {
   const landingPage = await fetchLandingPage();
   const seo = landingPage?.seo;
 
   return {
-    title: seo?.metaTitle ?? "Josephine — Soul Readings",
+    title: seo?.metaTitle ?? 'Josephine — Soul Readings',
     description:
       seo?.metaDescription ??
-      "Your soul has patterns. Your chart reveals them. Your records explain why.",
+      'Your soul has patterns. Your chart reveals them. Your records explain why.',
     icons: {
-      icon: "/favicon.ico",
-      apple: "/apple-touch-icon.png",
+      icon: '/favicon.ico',
+      apple: '/apple-touch-icon.png',
     },
   };
 }
 
 export default async function LandingPage() {
-  const [landingPage, sanityReadings, sanityTestimonials, sanityFaqItems, siteSettings] =
-    await Promise.all([
-      fetchLandingPage(),
-      fetchReadings(),
-      fetchTestimonials(),
-      fetchFaqItems(),
-      fetchSiteSettings(),
-    ]);
+  const [
+    landingPage,
+    sanityReadings,
+    sanityTestimonials,
+    sanityFaqItems,
+    siteSettings,
+  ] = await Promise.all([
+    fetchLandingPage(),
+    fetchReadings(),
+    fetchTestimonials(),
+    fetchFaqItems(),
+    fetchSiteSettings(),
+  ]);
 
   const readings = mapReadings(sanityReadings);
   const testimonials = mapTestimonials(sanityTestimonials);
@@ -79,10 +84,7 @@ export default async function LandingPage() {
           className="pointer-events-none absolute -top-[50px] -right-[50px] h-[280px] w-[280px] rounded-full border border-j-accent/[0.08]"
         />
 
-        <SectionHeading
-          tag={about.sectionTag}
-          heading={about.heading}
-        />
+        <SectionHeading tag={about.sectionTag} heading={about.heading} />
         <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
           <Image
             src={about.imageUrl}
@@ -97,7 +99,7 @@ export default async function LandingPage() {
               <p
                 key={index}
                 className={`font-body text-base leading-[1.9] font-light ${
-                  index === 0 ? "text-j-text" : "text-j-text-muted"
+                  index === 0 ? 'text-j-text' : 'text-j-text-muted'
                 }`}
               >
                 {paragraph}
@@ -123,11 +125,11 @@ export default async function LandingPage() {
 
       <section id="readings" className="py-24 px-6">
         <SectionHeading
-          tag={readingsSection?.sectionTag ?? "\u2726 Offerings"}
-          heading={readingsSection?.heading ?? "readings"}
+          tag={readingsSection?.sectionTag ?? '\u2726 Offerings'}
+          heading={readingsSection?.heading ?? 'readings'}
           subheading={
             readingsSection?.subheading ??
-            "Each reading is created with care, entirely for you. Nothing is templated or generic."
+            'Each reading is created with care, entirely for you. Nothing is templated or generic.'
           }
         />
         <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
@@ -151,8 +153,8 @@ export default async function LandingPage() {
 
       <section className="py-24 px-6">
         <SectionHeading
-          tag={testimonialsSection?.sectionTag ?? "\u2726 Kind Words"}
-          heading={testimonialsSection?.heading ?? "what others have said"}
+          tag={testimonialsSection?.sectionTag ?? '\u2726 Kind Words'}
+          heading={testimonialsSection?.heading ?? 'what others have said'}
         />
         <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial) => (

@@ -1,14 +1,19 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Mic, Check } from "lucide-react";
-import { GoldDivider } from "@/components/GoldDivider";
-import { StarField } from "@/components/StarField";
-import { CelestialOrb } from "@/components/CelestialOrb";
-import { Footer } from "@/components/Footer";
-import { BookingForm } from "@/components/BookingForm";
-import { READINGS, getReadingById } from "@/data/readings";
-import { fetchReadingSlugs, fetchReading, fetchBookingPage } from "@/lib/sanity/fetch";
-import { PAGE_ORBS } from "@/lib/celestialPresets";
+import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, Clock, Mic, Check } from 'lucide-react';
+import { GoldDivider } from '@/components/GoldDivider';
+import { StarField } from '@/components/StarField';
+import { CelestialOrb } from '@/components/CelestialOrb';
+import { Footer } from '@/components/Footer';
+import { BookingForm } from '@/components/BookingForm';
+import { READINGS, getReadingById } from '@/data/readings';
+import {
+  fetchReadingSlugs,
+  fetchReading,
+  fetchBookingPage,
+} from '@/lib/sanity/fetch';
+import { PAGE_ORBS } from '@/lib/celestialPresets';
 
 export async function generateStaticParams() {
   const sanitySlugs = await fetchReadingSlugs();
@@ -38,7 +43,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
         price: sanityReading.priceDisplay,
         bookingSummary: sanityReading.bookingSummary,
         includes: sanityReading.includes,
-        stripePaymentLink: sanityReading.stripePaymentLink ?? "",
+        stripePaymentLink: sanityReading.stripePaymentLink ?? '',
       }
     : getReadingById(readingId);
 
@@ -46,15 +51,20 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound();
   }
 
-  const emailLabel = bookingPage?.emailLabel ?? "Your Email Address";
+  const emailLabel = bookingPage?.emailLabel ?? 'Your Email Address';
   const emailDisclaimer =
-    bookingPage?.emailDisclaimer ?? "Your email is only used for this reading. I\u2019ll never share it.";
-  const paymentButtonText = bookingPage?.paymentButtonText ?? "Continue to Payment";
-  const securityNote = bookingPage?.securityNote ?? "Secure checkout \u00b7 Your details are safe";
+    bookingPage?.emailDisclaimer ??
+    'Your email is only used for this reading. I\u2019ll never share it.';
+  const paymentButtonText =
+    bookingPage?.paymentButtonText ?? 'Continue to Payment';
+  const securityNote =
+    bookingPage?.securityNote ?? 'Secure checkout \u00b7 Your details are safe';
   const closingMessage =
-    bookingPage?.closingMessage ?? "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726";
+    bookingPage?.closingMessage ??
+    'I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726';
   const deliveryNote =
-    bookingPage?.deliveryNote ?? "You\u2019ll receive your voice note and PDF within 7 days of payment.";
+    bookingPage?.deliveryNote ??
+    'You\u2019ll receive your voice note and PDF within 7 days of payment.';
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -72,7 +82,14 @@ export default async function BookingPage({ params }: BookingPageProps) {
           Back
         </Link>
         <Link href="/">
-          <span className="font-display text-xl italic text-j-deep">Josephine</span>
+          <Image
+            src="/images/header-logo.png"
+            alt="Josephine Soul Readings"
+            width={60}
+            height={30}
+            priority
+            className="h-auto w-[clamp(120px,8vw,160px)]"
+          />
         </Link>
       </header>
 
@@ -100,8 +117,13 @@ export default async function BookingPage({ params }: BookingPageProps) {
           <ul className="space-y-3">
             {reading.includes.map((item, index) => (
               <li key={index} className="flex gap-3">
-                <Check className="w-4 h-4 text-j-accent mt-0.5 shrink-0" strokeWidth={2} />
-                <span className="font-body text-sm text-j-text leading-relaxed">{item}</span>
+                <Check
+                  className="w-4 h-4 text-j-accent mt-0.5 shrink-0"
+                  strokeWidth={2}
+                />
+                <span className="font-body text-sm text-j-text leading-relaxed">
+                  {item}
+                </span>
               </li>
             ))}
           </ul>
@@ -116,7 +138,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
             <div className="flex gap-3 items-start">
               <Mic className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
               <p className="font-body text-sm text-j-text-muted leading-relaxed">
-                Detailed voice note recording + a supporting PDF created entirely for you.
+                Detailed voice note recording + a supporting PDF created
+                entirely for you.
               </p>
             </div>
           </div>
@@ -125,8 +148,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
         <div>
           <div className="bg-j-ivory border border-j-border-subtle rounded-[20px] p-8 shadow-j-soft">
             <p className="font-body text-sm text-j-text-muted leading-relaxed mb-6">
-              You&rsquo;re one step away from your reading. Please enter your email below
-              and I&rsquo;ll send you everything you need once your booking is confirmed.
+              You&rsquo;re one step away from your reading. Please enter your
+              email below and I&rsquo;ll send you everything you need once your
+              booking is confirmed.
             </p>
 
             <BookingForm
