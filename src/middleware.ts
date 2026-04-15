@@ -6,11 +6,17 @@ import { PRODUCTION_HOSTS } from "@/lib/constants";
  * adapt to whether the current request is in Sanity draft mode (which needs
  * to be iframed by Studio's Presentation tool) or is normal public traffic.
  *
- * - Public request  → strict CSP (matches previous `_headers` policy)
- * - Draft request   → relaxed CSP permitting Sanity Studio as frame-ancestor,
- *                     plus `Cache-Control: no-store` + `X-Robots-Tag: noindex`
- *                     so the edge never caches drafts and bots never index
- *                     a draft response.
+ * - Public apex (production) → strict CSP (matches previous `_headers` policy)
+ * - Preview host or draft    → relaxed CSP permitting Sanity Studio as
+ *                              frame-ancestor. Preview hosts (workers.dev,
+ *                              preview subdomain) need this even before draft
+ *                              mode is enabled, because Studio's Presentation
+ *                              tool iframes the host first, then triggers
+ *                              `/api/draft/enable` from inside the iframe.
+ * - Draft request            → also adds `Cache-Control: no-store` +
+ *                              `X-Robots-Tag: noindex` so the edge never
+ *                              caches drafts and bots never index a draft
+ *                              response.
  *
  * The static `public/_headers` keeps the headers that are identical for every
  * request (X-Content-Type-Options, Referrer-Policy, Permissions-Policy,
@@ -55,7 +61,11 @@ export function middleware(request: NextRequest) {
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
   const response = NextResponse.next();
 
-  response.headers.set("Content-Security-Policy", isDraft ? CSP_DRAFT : CSP_PUBLIC);
+  // Strict CSP only on the public apex without draft mode. Anywhere else
+  // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
+  // frame-ancestor for the Presentation tool's iframe to load at all.
+  const isStrict = isPublicApex && !isDraft;
+  response.headers.set("Content-Security-Policy", isStrict ? CSP_PUBLIC : CSP_DRAFT);
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");

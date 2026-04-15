@@ -4,13 +4,19 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Draft-mode entry point wired up by Sanity's presentationTool.
- * The Studio iframe calls `/api/draft/enable?secret=...&slug=...` to switch the
- * viewer into `previewDrafts` perspective for this tab only.
+ *
+ * Sanity's Presentation iframe calls this with its own param names
+ * (`?sanity-preview-secret=...&sanity-preview-pathname=...`); the runbook's
+ * verification curl uses the legacy `?secret=...&slug=...`. Both are accepted.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const secret = searchParams.get("secret");
-  const slug = searchParams.get("slug") ?? "/";
+  const secret =
+    searchParams.get("sanity-preview-secret") ?? searchParams.get("secret");
+  const slug =
+    searchParams.get("sanity-preview-pathname") ??
+    searchParams.get("slug") ??
+    "/";
 
   if (!process.env.SANITY_PREVIEW_SECRET || secret !== process.env.SANITY_PREVIEW_SECRET) {
     return new NextResponse("Unauthorized", { status: 401 });
