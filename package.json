@@ -15,7 +15,10 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "studio:dev": "pnpm --dir studio run dev",
+    "studio:build": "pnpm --dir studio run build",
+    "studio:deploy": "pnpm --dir studio run deploy"
   },
   "dependencies": {
     "@portabletext/react": "^6.0.3",
