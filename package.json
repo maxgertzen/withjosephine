@@ -28,6 +28,11 @@
     "react-dom": "19.1.0",
     "tailwind-merge": "^3.5.0"
   },
+  "pnpm": {
+    "overrides": {
+      "js-yaml@<3.14.2": "^3.14.2"
+    }
+  },
   "devDependencies": {
     "@storybook/nextjs": "^10.3.5",
     "@storybook/react": "^10.3.5",

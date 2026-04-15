@@ -1,0 +1,5 @@
+[[IgnoredVulns]]
+id = "GHSA-848j-6mx2-7j84"
+# elliptic 6.6.1 — transitive dev-only dep via @storybook/nextjs → node-polyfill-webpack-plugin.
+# No fixed version available upstream (6.6.1 is latest). Not shipped to production bundle.
+reason = "Dev-only transitive dep (Storybook build toolchain). No upstream fix available."
