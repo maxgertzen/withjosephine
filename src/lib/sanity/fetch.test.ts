@@ -10,119 +10,122 @@ import {
   fetchBookingPage,
   fetchThankYouPage,
   fetchTheme,
+  fetchLegalPage,
 } from "./fetch";
 
+// `sanityFetch` is the boundary — `defineLive` itself is exercised by Sanity's
+// own tests, so we just verify our wrappers pass the right query/params and
+// unwrap `.data` for callers.
+vi.mock("./live", () => ({
+  sanityFetch: vi.fn(),
+}));
+
+// `fetchReadingSlugs` skips `sanityFetch` (it runs at build time inside
+// `generateStaticParams`, where `draftMode()` is unavailable) and hits the raw
+// client directly. Mock that too.
 vi.mock("./client", () => ({
-  sanityClient: {
-    fetch: vi.fn(),
-  },
-  sanityPreviewClient: {
-    fetch: vi.fn(),
-  },
+  sanityClient: { fetch: vi.fn() },
 }));
 
-// Fetchers call draftMode() to select client; stub it so tests run outside
-// of a Next request scope.
-vi.mock("next/headers", () => ({
-  draftMode: vi.fn(async () => ({ isEnabled: false })),
-}));
-
+import { sanityFetch } from "./live";
 import { sanityClient } from "./client";
-
-const mockFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
+const mockFetch = vi.mocked(sanityFetch);
+const mockRawFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   mockFetch.mockReset();
+  mockRawFetch.mockReset();
 });
+
+function mockData<T>(data: T) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockFetch.mockResolvedValue({ data } as any);
+}
 
 describe("Sanity fetch layer", () => {
   it("fetchLandingPage returns the first landingPage document", async () => {
-    const mockData = { hero: { tagline: "Test" } };
-    mockFetch.mockResolvedValue(mockData);
-
-    const result = await fetchLandingPage();
-
-    expect(result).toEqual(mockData);
+    const data = { hero: { tagline: "Test" } };
+    mockData(data);
+    expect(await fetchLandingPage()).toEqual(data);
     expect(mockFetch).toHaveBeenCalledOnce();
   });
 
   it("fetchReadings returns an array of readings", async () => {
-    const mockData = [{ _id: "1", name: "Test Reading", slug: "test" }];
-    mockFetch.mockResolvedValue(mockData);
-
+    const data = [{ _id: "1", name: "Test Reading", slug: "test" }];
+    mockData(data);
     const result = await fetchReadings();
-
-    expect(result).toEqual(mockData);
+    expect(result).toEqual(data);
     expect(result).toHaveLength(1);
   });
 
-  it("fetchReading passes slug parameter", async () => {
-    const mockData = { _id: "1", name: "Soul Blueprint", slug: "soul-blueprint" };
-    mockFetch.mockResolvedValue(mockData);
-
-    const result = await fetchReading("soul-blueprint");
-
-    expect(result).toEqual(mockData);
-    expect(mockFetch).toHaveBeenCalledWith(expect.any(String), { slug: "soul-blueprint" });
+  it("fetchReadings returns [] when sanity returns null", async () => {
+    mockData(null);
+    expect(await fetchReadings()).toEqual([]);
   });
 
-  it("fetchReadingSlugs returns slug array", async () => {
-    const mockData = [{ slug: "soul-blueprint" }, { slug: "birth-chart" }];
-    mockFetch.mockResolvedValue(mockData);
+  it("fetchReading passes slug parameter", async () => {
+    const data = { _id: "1", name: "Soul Blueprint", slug: "soul-blueprint" };
+    mockData(data);
+    const result = await fetchReading("soul-blueprint");
+    expect(result).toEqual(data);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { slug: "soul-blueprint" } }),
+    );
+  });
 
+  it("fetchReadingSlugs returns slug array (uses raw client at build time)", async () => {
+    const data = [{ slug: "soul-blueprint" }, { slug: "birth-chart" }];
+    mockRawFetch.mockResolvedValue(data);
     const result = await fetchReadingSlugs();
-
-    expect(result).toEqual(mockData);
+    expect(result).toEqual(data);
     expect(result).toHaveLength(2);
+    expect(mockRawFetch).toHaveBeenCalledOnce();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("fetchReadingSlugs returns [] when sanity returns null", async () => {
+    mockRawFetch.mockResolvedValue(null);
+    expect(await fetchReadingSlugs()).toEqual([]);
   });
 
   it("fetchTestimonials returns an array", async () => {
-    mockFetch.mockResolvedValue([]);
-
-    const result = await fetchTestimonials();
-
-    expect(result).toEqual([]);
+    mockData([]);
+    expect(await fetchTestimonials()).toEqual([]);
   });
 
   it("fetchFaqItems returns an array", async () => {
-    mockFetch.mockResolvedValue([]);
-
-    const result = await fetchFaqItems();
-
-    expect(result).toEqual([]);
+    mockData([]);
+    expect(await fetchFaqItems()).toEqual([]);
   });
 
   it("fetchSiteSettings returns singleton or null", async () => {
-    mockFetch.mockResolvedValue(null);
-
-    const result = await fetchSiteSettings();
-
-    expect(result).toBeNull();
+    mockData(null);
+    expect(await fetchSiteSettings()).toBeNull();
   });
 
   it("fetchBookingPage returns singleton or null", async () => {
-    const mockData = { emailLabel: "Email", paymentButtonText: "Pay" };
-    mockFetch.mockResolvedValue(mockData);
-
-    const result = await fetchBookingPage();
-
-    expect(result).toEqual(mockData);
+    const data = { emailLabel: "Email", paymentButtonText: "Pay" };
+    mockData(data);
+    expect(await fetchBookingPage()).toEqual(data);
   });
 
   it("fetchThankYouPage returns singleton or null", async () => {
-    mockFetch.mockResolvedValue(null);
-
-    const result = await fetchThankYouPage();
-
-    expect(result).toBeNull();
+    mockData(null);
+    expect(await fetchThankYouPage()).toBeNull();
   });
 
   it("fetchTheme returns singleton or null", async () => {
-    const mockData = { displayFont: "Inter", bodyFont: "Inter" };
-    mockFetch.mockResolvedValue(mockData);
+    const data = { displayFont: "Inter", bodyFont: "Inter" };
+    mockData(data);
+    expect(await fetchTheme()).toEqual(data);
+  });
 
-    const result = await fetchTheme();
-
-    expect(result).toEqual(mockData);
+  it("fetchLegalPage passes slug parameter", async () => {
+    const data = { _id: "1", title: "Privacy", slug: "privacy" };
+    mockData(data);
+    expect(await fetchLegalPage("privacy")).toEqual(data);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { slug: "privacy" } }),
+    );
   });
 });
