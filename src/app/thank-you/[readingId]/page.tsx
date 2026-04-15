@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Check, Mail, FileText, Clock } from "lucide-react";
 import { Button } from "@/components/Button";
@@ -29,6 +30,17 @@ export async function generateStaticParams() {
 type ThankYouPageProps = {
   params: Promise<{ readingId: string }>;
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const thankYouPageContent = await fetchThankYouPage();
+  return {
+    title: thankYouPageContent?.seo?.metaTitle ?? "Thank You — Josephine",
+    description:
+      thankYouPageContent?.seo?.metaDescription ??
+      "Your reading is on its way. You\u2019ll receive a personal voice note and PDF within 7 days.",
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function ThankYouPage({ params }: ThankYouPageProps) {
   const { readingId } = await params;
