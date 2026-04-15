@@ -5,6 +5,7 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
+import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { READINGS, getReadingById, getRequiredDetails } from "@/data/readings";
 import { fetchReadingSlugs, fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
@@ -84,6 +85,7 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
+      <ThankYouGuard />
       <StarField count={30} className="opacity-[0.03]" />
       {PAGE_ORBS.map((orb, index) => (
         <CelestialOrb key={index} {...orb} />

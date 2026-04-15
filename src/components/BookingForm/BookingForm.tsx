@@ -107,7 +107,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
         <span className="font-display text-xl italic text-j-accent">{reading.price}</span>
       </div>
 
-      <Button type="submit" size="lg" className="w-full text-center" disabled={isRedirecting || paymentUnavailable}>
+      <Button type="submit" size="lg" className="w-full text-center" disabled={isRedirecting || paymentUnavailable || !isValidEmail(email.trim())}>
         {isRedirecting ? "Redirecting to payment\u2026" : content.paymentButtonText}
       </Button>
 

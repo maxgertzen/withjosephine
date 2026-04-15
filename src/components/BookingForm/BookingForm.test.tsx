@@ -38,23 +38,19 @@ describe("BookingForm", () => {
     expect(screen.getByText("$179")).toBeInTheDocument();
   });
 
-  it("shows error when submitting empty email", async () => {
-    const user = userEvent.setup();
+  it("disables button when email is empty", () => {
     render(<BookingForm reading={defaultReading} content={defaultContent} />);
 
-    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter your email address.");
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
   });
 
-  it("shows error when submitting invalid email", async () => {
+  it("disables button when email is invalid", async () => {
     const user = userEvent.setup();
     render(<BookingForm reading={defaultReading} content={defaultContent} />);
 
     await user.type(screen.getByLabelText("Your Email Address"), "not-an-email");
-    await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid email address.");
+    expect(screen.getByRole("button", { name: "Continue to Payment" })).toBeDisabled();
   });
 
   it("shows error and disables button when payment link is missing", () => {

@@ -70,6 +70,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           email: trimmedEmail,
           message: trimmedMessage,
           subject: `New message from ${trimmedName}`,
+          botcheck: "",
         }),
       });
 
@@ -128,6 +129,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+          <input type="checkbox" name="botcheck" className="hidden" aria-hidden="true" tabIndex={-1} autoComplete="off" />
           <div>
             <label htmlFor="contact-name" className={labelClasses}>
               Your Name
@@ -180,7 +182,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           )}
 
           <div className="text-center">
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !name.trim() || !isValidEmail(email.trim()) || !message.trim()}>
               {isLoading ? "Sending\u2026" : submitText}
             </Button>
           </div>
