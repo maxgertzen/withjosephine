@@ -6,7 +6,7 @@ describe("Navigation", () => {
   it("renders hardcoded defaults when no content is provided", () => {
     render(<Navigation />);
 
-    expect(screen.getAllByText("Josephine")).toHaveLength(1);
+    expect(screen.getByAltText("Josephine Soul Readings")).toBeInTheDocument();
     expect(screen.getAllByText("Readings")).toHaveLength(2); // desktop + mobile
     expect(screen.getAllByText("About")).toHaveLength(2);
     expect(screen.getAllByText("How It Works")).toHaveLength(2);
@@ -16,7 +16,6 @@ describe("Navigation", () => {
 
   it("renders Sanity content when provided", () => {
     const content = {
-      brandName: "Custom Brand",
       navLinks: [
         { label: "Services", sectionId: "services" },
         { label: "Info", sectionId: "info" },
@@ -26,7 +25,7 @@ describe("Navigation", () => {
 
     render(<Navigation content={content} />);
 
-    expect(screen.getAllByText("Custom Brand")).toHaveLength(1);
+    expect(screen.getByAltText("Josephine Soul Readings")).toBeInTheDocument();
     expect(screen.getAllByText("Services")).toHaveLength(2);
     expect(screen.getAllByText("Info")).toHaveLength(2);
     expect(screen.getAllByText("Get Started")).toHaveLength(2);
