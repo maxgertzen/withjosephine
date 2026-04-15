@@ -94,9 +94,11 @@ export default async function TermsPage() {
       </h2>
       <ul className="flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
         <li>
-          Provide accurate intake details (full name, date of birth, and
-          the photograph you submit). Readings are only as precise as the
-          details you provide.
+          Provide accurate intake details for the reading you booked. For
+          a Birth Chart Reading this means your date, time, and place of
+          birth. For an Akashic Record Reading it means your full name and
+          a recent photograph. A Soul Blueprint Reading requires both.
+          Readings are only as precise as the details you provide.
         </li>
         <li>
           Check the email inbox you used at checkout, including spam

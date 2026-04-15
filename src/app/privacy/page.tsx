@@ -57,10 +57,23 @@ export default async function PrivacyPage() {
           name and email address, which you provide when booking.
         </li>
         <li>
-          <strong className="font-medium">Reading details</strong> — your
-          full name, date of birth, and a recent photograph, which you
-          submit through the intake form after booking. These are the
-          inputs Josephine uses to prepare your reading, nothing more.
+          <strong className="font-medium">Reading details</strong> — the
+          inputs Josephine needs to prepare your reading, submitted through
+          the intake form after booking. What is collected depends on which
+          reading you book:
+          <ul className="mt-2 flex flex-col gap-2 list-disc pl-5">
+            <li>
+              <em>Birth Chart Reading</em> — your date, time, and place of
+              birth. No name or photograph is required.
+            </li>
+            <li>
+              <em>Akashic Record Reading</em> — your full name and a recent
+              photograph with your eyes open.
+            </li>
+            <li>
+              <em>Soul Blueprint Reading</em> — both of the above combined.
+            </li>
+          </ul>
         </li>
         <li>
           <strong className="font-medium">Payment information</strong> —
@@ -138,10 +151,11 @@ export default async function PrivacyPage() {
       </h2>
       <ul className="flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
         <li>
-          Reading details (intake form answers, name, date of birth, and
-          photo) are kept in Josephine&rsquo;s inbox and private Google
-          Drive until she has completed and delivered the reading, plus up
-          to <strong className="font-medium">30 days</strong> afterwards in
+          Reading details — which vary by reading and may include your
+          intake form answers, date of birth, name, and photograph — are
+          kept in Josephine&rsquo;s inbox and private Google Drive until
+          she has completed and delivered the reading, plus up to{" "}
+          <strong className="font-medium">30 days</strong> afterwards in
           case of follow-up questions. After that they are deleted.
         </li>
         <li>

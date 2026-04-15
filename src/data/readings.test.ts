@@ -60,7 +60,7 @@ describe("getRequiredDetails", () => {
       requiresQuestions: false,
     });
 
-    expect(details).toContain("Full legal name");
+    expect(details).not.toContain("Full legal name");
     expect(details).toContain("Date of birth");
     expect(details).toContain("Time of birth (as exact as possible)");
     expect(details).toContain("Place of birth");
