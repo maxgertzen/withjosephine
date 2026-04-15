@@ -16,6 +16,15 @@ vi.mock("./client", () => ({
   sanityClient: {
     fetch: vi.fn(),
   },
+  sanityPreviewClient: {
+    fetch: vi.fn(),
+  },
+}));
+
+// Fetchers call draftMode() to select client; stub it so tests run outside
+// of a Next request scope.
+vi.mock("next/headers", () => ({
+  draftMode: vi.fn(async () => ({ isEnabled: false })),
 }));
 
 import { sanityClient } from "./client";

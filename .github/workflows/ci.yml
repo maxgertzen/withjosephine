@@ -19,8 +19,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
 
+  # Independent of lint output — runs in parallel with lint-and-typecheck.
   security-audit:
-    needs: lint-and-typecheck
     permissions:
       contents: read
       security-events: write
@@ -47,22 +47,29 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm storybook:build
 
+  # Deploy the Cloudflare Worker (built via @opennextjs/cloudflare).
+  # Runs only on pushes to main — PRs do not deploy. All quality gates
+  # above (lint, typecheck, test, security-audit) must pass first.
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, test, security-audit]
+    needs: [lint-and-typecheck, test, security-audit, storybook]
     permissions:
       contents: read
       deployments: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - name: Build
-        run: pnpm build
+      - name: Build Worker bundle
+        run: pnpm cf:build
         env:
           NEXT_PUBLIC_WEB3FORMS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=withjosephine --branch=${{ github.head_ref || github.ref_name }}
+          command: deploy
+          # Worker runtime secrets (read by the deployed Worker, not the build)
+          # are configured via Cloudflare dashboard, not pushed from here.
+          # See docs/PHASE10_CLOUDFLARE_SETUP.md.
