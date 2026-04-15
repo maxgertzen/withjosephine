@@ -30,6 +30,23 @@ export const bookingPage = defineType({
       initialValue: "Secure checkout · Your details are safe",
     }),
     defineField({
+      name: "entertainmentAcknowledgment",
+      title: "Entertainment-Purposes Checkbox Label",
+      type: "text",
+      rows: 4,
+      description:
+        'US-compliance checkbox shown at checkout. Keep the phrase "for entertainment purposes only" verbatim — it is the recognised safe-harbour wording across NY, PA, MD, NV, TX, Santa Monica and Chicago fortune-telling / psychic-services statutes. Changing that phrase weakens chargeback defence and FTC §5 posture.',
+      initialValue:
+        "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.",
+      validation: (rule) =>
+        rule
+          .required()
+          .min(80)
+          .error(
+            'Entertainment-purposes checkbox copy is required and must include the safe-harbour phrase "for entertainment purposes only".',
+          ),
+    }),
+    defineField({
       name: "closingMessage",
       title: "Closing Message",
       type: "text",

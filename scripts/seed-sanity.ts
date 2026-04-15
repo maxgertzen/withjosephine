@@ -230,6 +230,8 @@ async function seed() {
     emailDisclaimer: "Your email is only used for this reading. I'll never share it.",
     paymentButtonText: "Continue to Payment",
     securityNote: "Secure checkout · Your details are safe",
+    entertainmentAcknowledgment:
+      "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.",
     closingMessage: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
     deliveryNote: "You'll receive your voice note and PDF within 7 days of payment.",
   });
