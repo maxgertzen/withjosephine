@@ -1,9 +1,10 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import type { MouseEvent } from "react";
+
 import { ROUTES } from "@/lib/constants";
 
 export function BackLink() {
@@ -26,8 +27,7 @@ export function BackLink() {
 
     // Only use history.back() if the previous page was on this site.
     const cameFromSameOrigin =
-      document.referrer &&
-      new URL(document.referrer).origin === window.location.origin;
+      document.referrer && new URL(document.referrer).origin === window.location.origin;
 
     if (cameFromSameOrigin && window.history.length > 1) {
       event.preventDefault();

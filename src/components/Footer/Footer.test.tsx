@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import { Footer } from "./Footer";
+import { describe, expect, it } from "vitest";
+
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
+
+import { Footer } from "./Footer";
 
 describe("Footer", () => {
   it("renders hardcoded defaults when no content is provided", () => {
@@ -46,18 +48,9 @@ describe("Footer", () => {
   it("renders legal links (privacy, terms, refunds) by default", () => {
     render(<Footer />);
 
-    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute(
-      "href",
-      "/privacy",
-    );
-    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute(
-      "href",
-      "/terms",
-    );
-    expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute(
-      "href",
-      "/refund-policy",
-    );
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+    expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute("href", "/refund-policy");
   });
 
   it("renders no social links when none provided", () => {

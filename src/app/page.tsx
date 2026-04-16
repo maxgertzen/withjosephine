@@ -1,49 +1,50 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import { draftMode } from 'next/headers';
-import { buildOpenGraph } from '@/lib/seoMetadata';
-import { isUnderConstruction } from '@/lib/featureFlags';
-import { UnderConstruction } from '@/components/UnderConstruction';
-import { Navigation } from '@/components/Navigation';
-import { Hero } from '@/components/Hero';
-import { SectionHeading } from '@/components/SectionHeading';
-import { ReadingCard } from '@/components/ReadingCard';
-import { HowItWorks } from '@/components/HowItWorks';
-import { TestimonialCard } from '@/components/TestimonialCard';
-import { ContactForm } from '@/components/ContactForm';
-import { GoldDivider } from '@/components/GoldDivider';
-import { Footer } from '@/components/Footer';
-import { FaqSection } from '@/components/FaqSection';
+import type { Metadata } from "next";
+import { draftMode } from "next/headers";
+import Image from "next/image";
+
+import { ContactForm } from "@/components/ContactForm";
+import { FaqSection } from "@/components/FaqSection";
+import { Footer } from "@/components/Footer";
+import { GoldDivider } from "@/components/GoldDivider";
+import { Hero } from "@/components/Hero";
+import { HowItWorks } from "@/components/HowItWorks";
+import { Navigation } from "@/components/Navigation";
+import { ReadingCard } from "@/components/ReadingCard";
+import { SectionHeading } from "@/components/SectionHeading";
+import { TestimonialCard } from "@/components/TestimonialCard";
+import { UnderConstruction } from "@/components/UnderConstruction";
+import { isUnderConstruction } from "@/lib/featureFlags";
 import {
+  fetchFaqItems,
   fetchLandingPage,
   fetchReadings,
-  fetchTestimonials,
-  fetchFaqItems,
   fetchSiteSettings,
+  fetchTestimonials,
   fetchUnderConstructionPage,
-} from '@/lib/sanity/fetch';
+} from "@/lib/sanity/fetch";
 import {
-  mapReadings,
-  mapTestimonials,
   mapAbout,
   mapFaqItems,
-  mapNavContent,
   mapFooterContent,
+  mapNavContent,
+  mapReadings,
   mapSocialLinks,
-} from '@/lib/sanity/mappers';
+  mapTestimonials,
+} from "@/lib/sanity/mappers";
+import { buildOpenGraph } from "@/lib/seoMetadata";
 
 export async function generateMetadata(): Promise<Metadata> {
   const landingPage = await fetchLandingPage();
   const seo = landingPage?.seo;
 
   return {
-    title: seo?.metaTitle ?? 'Josephine — Soul Readings',
+    title: seo?.metaTitle ?? "Josephine — Soul Readings",
     description:
       seo?.metaDescription ??
-      'Your soul has patterns. Your chart reveals them. Your records explain why.',
+      "Your soul has patterns. Your chart reveals them. Your records explain why.",
     icons: {
-      icon: '/favicon.ico',
-      apple: '/apple-touch-icon.png',
+      icon: "/favicon.ico",
+      apple: "/apple-touch-icon.png",
     },
     openGraph: buildOpenGraph(seo),
   };
@@ -57,19 +58,14 @@ export default async function LandingPage() {
     return <UnderConstruction content={underConstructionContent} />;
   }
 
-  const [
-    landingPage,
-    sanityReadings,
-    sanityTestimonials,
-    sanityFaqItems,
-    siteSettings,
-  ] = await Promise.all([
-    fetchLandingPage(),
-    fetchReadings(),
-    fetchTestimonials(),
-    fetchFaqItems(),
-    fetchSiteSettings(),
-  ]);
+  const [landingPage, sanityReadings, sanityTestimonials, sanityFaqItems, siteSettings] =
+    await Promise.all([
+      fetchLandingPage(),
+      fetchReadings(),
+      fetchTestimonials(),
+      fetchFaqItems(),
+      fetchSiteSettings(),
+    ]);
 
   const readings = mapReadings(sanityReadings);
   const testimonials = mapTestimonials(sanityTestimonials);
@@ -112,16 +108,14 @@ export default async function LandingPage() {
               <p
                 key={index}
                 className={`font-body text-base leading-[1.9] font-light ${
-                  index === 0 ? 'text-j-text' : 'text-j-text-muted'
+                  index === 0 ? "text-j-text" : "text-j-text-muted"
                 }`}
               >
                 {paragraph}
               </p>
             ))}
             <div className="mt-4">
-              <p className="font-display text-lg italic text-j-text-muted">
-                With love,
-              </p>
+              <p className="font-display text-lg italic text-j-text-muted">With love,</p>
               <p className="font-display text-2xl italic text-j-deep tracking-wide">
                 {about.signoff}
               </p>
@@ -138,11 +132,11 @@ export default async function LandingPage() {
 
       <section id="readings" className="py-24 px-6">
         <SectionHeading
-          tag={readingsSection?.sectionTag ?? '\u2726 Offerings'}
-          heading={readingsSection?.heading ?? 'readings'}
+          tag={readingsSection?.sectionTag ?? "\u2726 Offerings"}
+          heading={readingsSection?.heading ?? "readings"}
           subheading={
             readingsSection?.subheading ??
-            'Each reading is created with care, entirely for you. Nothing is templated or generic.'
+            "Each reading is created with care, entirely for you. Nothing is templated or generic."
           }
         />
         <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
@@ -167,8 +161,8 @@ export default async function LandingPage() {
 
       <section className="py-24 px-6">
         <SectionHeading
-          tag={testimonialsSection?.sectionTag ?? '\u2726 Kind Words'}
-          heading={testimonialsSection?.heading ?? 'what others have said'}
+          tag={testimonialsSection?.sectionTag ?? "\u2726 Kind Words"}
+          heading={testimonialsSection?.heading ?? "what others have said"}
         />
         <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           {testimonials.map((testimonial, index) => (

@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+.open-next
+.wrangler
+storybook-static
+studio
+pnpm-lock.yaml

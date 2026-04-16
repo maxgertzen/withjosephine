@@ -1,5 +1,5 @@
-import { SectionHeading } from "@/components/SectionHeading";
 import { GoldDivider } from "@/components/GoldDivider";
+import { SectionHeading } from "@/components/SectionHeading";
 import { mergeClasses } from "@/lib/utils";
 
 interface HowItWorksStep {
@@ -44,10 +44,7 @@ export function HowItWorks({ content, className }: HowItWorksProps) {
   const { sectionTag, heading, steps } = content ?? HOW_IT_WORKS_DEFAULTS;
 
   return (
-    <section
-      id="how-it-works"
-      className={mergeClasses("py-20 px-6 md:px-12", className)}
-    >
+    <section id="how-it-works" className={mergeClasses("py-20 px-6 md:px-12", className)}>
       <SectionHeading tag={sectionTag} heading={heading} />
 
       <div className="mt-14 max-w-2xl mx-auto flex flex-col">

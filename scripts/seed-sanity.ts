@@ -207,7 +207,8 @@ async function seed() {
     readingsSection: {
       sectionTag: "✦ Offerings",
       heading: "readings",
-      subheading: "Each reading is created with care, entirely for you. Nothing is templated or generic.",
+      subheading:
+        "Each reading is created with care, entirely for you. Nothing is templated or generic.",
     },
     testimonialsSection: {
       sectionTag: "✦ Kind Words",
@@ -232,7 +233,8 @@ async function seed() {
     securityNote: "Secure checkout · Your details are safe",
     entertainmentAcknowledgment:
       "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.",
-    closingMessage: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
+    closingMessage:
+      "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
     deliveryNote: "You'll receive your voice note and PDF within 7 days of payment.",
   });
 
@@ -264,7 +266,8 @@ async function seed() {
           "Within 7 days of receiving your details, I'll send you a detailed voice note recording and a supporting PDF created entirely for you.",
       },
     ],
-    closingMessage: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
+    closingMessage:
+      "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
     returnButtonText: "Return to Home",
   });
 

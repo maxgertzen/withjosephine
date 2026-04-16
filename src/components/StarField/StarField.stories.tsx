@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { StarField } from "./StarField";
 
 const meta: Meta<typeof StarField> = {

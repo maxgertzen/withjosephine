@@ -1,21 +1,17 @@
-import { draftMode } from "next/headers";
-import { VisualEditing } from "next-sanity/visual-editing";
-import { displayFont, bodyFont } from "@/lib/fonts.generated";
-import { SanityLive } from "@/lib/sanity/live";
-import { DisableDraftMode } from "@/components/DisableDraftMode";
-import { CloudflareAnalytics } from "@/components/CloudflareAnalytics";
-import { isAnalyticsEnabled } from "@/lib/featureFlags";
 import "@/styles/globals.css";
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { draftMode } from "next/headers";
+import { VisualEditing } from "next-sanity/visual-editing";
+
+import { CloudflareAnalytics } from "@/components/CloudflareAnalytics";
+import { DisableDraftMode } from "@/components/DisableDraftMode";
+import { isAnalyticsEnabled } from "@/lib/featureFlags";
+import { bodyFont, displayFont } from "@/lib/fonts.generated";
+import { SanityLive } from "@/lib/sanity/live";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled: isDraftMode } = await draftMode();
-  const analyticsToken = isAnalyticsEnabled()
-    ? process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN!
-    : null;
+  const analyticsToken = isAnalyticsEnabled() ? process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN! : null;
 
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>

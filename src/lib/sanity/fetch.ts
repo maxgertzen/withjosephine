@@ -1,33 +1,34 @@
 import { cache } from "react";
+
 import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import {
+  bookingPageQuery,
+  faqItemsQuery,
   landingPageQuery,
-  readingsQuery,
+  legalPageBySlugQuery,
+  notFoundPageQuery,
   readingBySlugQuery,
   readingSlugsQuery,
-  testimonialsQuery,
-  faqItemsQuery,
+  readingsQuery,
   siteSettingsQuery,
-  bookingPageQuery,
+  testimonialsQuery,
   thankYouPageQuery,
   themeQuery,
-  legalPageBySlugQuery,
   underConstructionPageQuery,
-  notFoundPageQuery,
 } from "./queries";
 import type {
-  SanityLandingPage,
-  SanityReading,
-  SanityTestimonial,
-  SanityFaqItem,
-  SanitySiteSettings,
   SanityBookingPage,
+  SanityFaqItem,
+  SanityLandingPage,
+  SanityLegalPage,
+  SanityNotFoundPage,
+  SanityReading,
+  SanitySiteSettings,
+  SanityTestimonial,
   SanityThankYouPage,
   SanityTheme,
-  SanityLegalPage,
   SanityUnderConstructionPage,
-  SanityNotFoundPage,
 } from "./types";
 
 /**
@@ -99,10 +100,12 @@ export const fetchTheme = cache(async (): Promise<SanityTheme | null> => {
   return data;
 });
 
-export const fetchUnderConstructionPage = cache(async (): Promise<SanityUnderConstructionPage | null> => {
-  const { data } = await sanityFetch({ query: underConstructionPageQuery });
-  return data;
-});
+export const fetchUnderConstructionPage = cache(
+  async (): Promise<SanityUnderConstructionPage | null> => {
+    const { data } = await sanityFetch({ query: underConstructionPageQuery });
+    return data;
+  },
+);
 
 export const fetchNotFoundPage = cache(async (): Promise<SanityNotFoundPage | null> => {
   const { data } = await sanityFetch({ query: notFoundPageQuery });

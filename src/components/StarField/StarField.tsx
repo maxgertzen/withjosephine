@@ -22,10 +22,7 @@ export function StarField({ count = 110, className }: StarFieldProps) {
   return (
     <div
       aria-hidden="true"
-      className={mergeClasses(
-        "absolute inset-0 overflow-hidden pointer-events-none",
-        className
-      )}
+      className={mergeClasses("absolute inset-0 overflow-hidden pointer-events-none", className)}
     >
       {stars.map((star, i) => (
         <div

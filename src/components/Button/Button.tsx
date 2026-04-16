@@ -1,5 +1,6 @@
-import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
 import Link from "next/link";
+import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
+
 import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
@@ -62,21 +63,14 @@ export function Button({
     }
 
     return (
-      <a
-        href={href}
-        className={classes}
-        {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
-      >
+      <a href={href} className={classes} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>
         {children}
       </a>
     );
   }
 
   return (
-    <button
-      className={classes}
-      {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}
-    >
+    <button className={classes} {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}>
       {children}
     </button>
   );

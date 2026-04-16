@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { fetchLegalPage } from "@/lib/sanity/fetch";
 import type { SanityLegalPage } from "@/lib/sanity/types";
 

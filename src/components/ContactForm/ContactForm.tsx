@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
-import { mergeClasses } from "@/lib/utils";
-import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
-import { SectionHeading } from "@/components/SectionHeading";
+import { type FormEvent, useRef, useState } from "react";
+
 import { Button } from "@/components/Button";
+import { SectionHeading } from "@/components/SectionHeading";
+import { errorClasses, inputClasses, isValidEmail, labelClasses } from "@/lib/formStyles";
+import { mergeClasses } from "@/lib/utils";
 
 interface ContactFormContent {
   sectionTag: string;
@@ -50,10 +51,22 @@ export function ContactForm({ content, className }: ContactFormProps) {
     const trimmedEmail = email.trim();
     const trimmedMessage = message.trim();
 
-    if (!trimmedName) { setErrorMessage("Please enter your name."); return; }
-    if (!trimmedEmail) { setErrorMessage("Please enter your email address."); return; }
-    if (!isValidEmail(trimmedEmail)) { setErrorMessage("Please enter a valid email address."); return; }
-    if (!trimmedMessage) { setErrorMessage("Please enter a message."); return; }
+    if (!trimmedName) {
+      setErrorMessage("Please enter your name.");
+      return;
+    }
+    if (!trimmedEmail) {
+      setErrorMessage("Please enter your email address.");
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setErrorMessage("Please enter a valid email address.");
+      return;
+    }
+    if (!trimmedMessage) {
+      setErrorMessage("Please enter a message.");
+      return;
+    }
 
     const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_KEY;
     if (!accessKey) {
@@ -103,11 +116,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
     return (
       <section id="contact" className={mergeClasses("py-24 px-6", className)}>
         <div className="max-w-lg mx-auto text-center">
-          <SectionHeading
-            tag={sectionTag}
-            heading="message sent"
-            className="mb-6"
-          />
+          <SectionHeading tag={sectionTag} heading="message sent" className="mb-6" />
           <p className="font-body text-base text-j-text-muted">
             Thank you for reaching out. I&rsquo;ll get back to you as soon as I can.
           </p>
@@ -124,18 +133,19 @@ export function ContactForm({ content, className }: ContactFormProps) {
   return (
     <section id="contact" className={mergeClasses("py-24 px-6", className)}>
       <div className="max-w-lg mx-auto">
-        <SectionHeading
-          tag={sectionTag}
-          heading={heading}
-          className="mb-6"
-        />
+        <SectionHeading tag={sectionTag} heading={heading} className="mb-6" />
 
-        <p className="font-body text-base text-j-text-muted text-center mb-12">
-          {description}
-        </p>
+        <p className="font-body text-base text-j-text-muted text-center mb-12">{description}</p>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-          <input type="checkbox" name="botcheck" className="hidden" aria-hidden="true" tabIndex={-1} autoComplete="off" />
+          <input
+            type="checkbox"
+            name="botcheck"
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+            autoComplete="off"
+          />
           <div>
             <label htmlFor="contact-name" className={labelClasses}>
               Your Name
@@ -200,7 +210,16 @@ export function ContactForm({ content, className }: ContactFormProps) {
           )}
 
           <div className="text-center">
-            <Button type="submit" disabled={isLoading || !name.trim() || !isValidEmail(email.trim()) || !message.trim() || !captchaToken}>
+            <Button
+              type="submit"
+              disabled={
+                isLoading ||
+                !name.trim() ||
+                !isValidEmail(email.trim()) ||
+                !message.trim() ||
+                !captchaToken
+              }
+            >
               {isLoading ? "Sending\u2026" : submitText}
             </Button>
           </div>

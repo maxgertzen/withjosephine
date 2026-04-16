@@ -4,17 +4,17 @@ Project-scoped Claude Code subagents that act as named specialist counsel for th
 
 ## Roster
 
-| Agent | Domain |
-|---|---|
-| `council-uk` | UK GDPR, CRA 2015, PECR, CCR 2013, CMA, ICO, DMCCA, HMRC sole-trader general posture |
-| `council-eu` | GDPR, CRD, ePrivacy, EU AI Act, DSA, SCCs, ODR, UCTD |
-| `council-us` | FTC §5, state psychic/fortune-telling statutes, CCPA/CPRA, CAN-SPAM, COPPA, ADA Title III, ROSCA |
-| `council-payments` | Stripe TOS, PCI SAQ-A, chargeback defence, card-network rules, descriptors, Checkout/Payment Links features |
-| `council-ops` | Sole-trader operations — IP, insurance, continuity, gift bookings, testimonials, address privacy, ICO registration, break-glass, booking caps |
-| `council-tax-uk` | HMRC self-assessment, SRT / non-residence, remittance basis / FIG regime, UK VAT threshold, Class 2/4 NI, MTD, DTA |
-| `council-tax-us` | US federal posture for foreign sole trader, state sales-tax nexus post-Wayfair, digital-service taxability, 1099-K, W-8BEN, Stripe Tax |
-| `council-tax-eu` | Non-Union OSS, place-of-supply for ESS, €10k micro-threshold (N/A here), member-state of identification, 10-yr record-keeping |
-| `council-tax-asia` | Thailand primary (180-day rule, Paw. 161/162 2024 reform, DTV/LTR visa, Thai PDPA, Thailand-UK DTA) + comparative SG/HK/MY/VN/PH/ID/JP |
+| Agent              | Domain                                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `council-uk`       | UK GDPR, CRA 2015, PECR, CCR 2013, CMA, ICO, DMCCA, HMRC sole-trader general posture                                                          |
+| `council-eu`       | GDPR, CRD, ePrivacy, EU AI Act, DSA, SCCs, ODR, UCTD                                                                                          |
+| `council-us`       | FTC §5, state psychic/fortune-telling statutes, CCPA/CPRA, CAN-SPAM, COPPA, ADA Title III, ROSCA                                              |
+| `council-payments` | Stripe TOS, PCI SAQ-A, chargeback defence, card-network rules, descriptors, Checkout/Payment Links features                                   |
+| `council-ops`      | Sole-trader operations — IP, insurance, continuity, gift bookings, testimonials, address privacy, ICO registration, break-glass, booking caps |
+| `council-tax-uk`   | HMRC self-assessment, SRT / non-residence, remittance basis / FIG regime, UK VAT threshold, Class 2/4 NI, MTD, DTA                            |
+| `council-tax-us`   | US federal posture for foreign sole trader, state sales-tax nexus post-Wayfair, digital-service taxability, 1099-K, W-8BEN, Stripe Tax        |
+| `council-tax-eu`   | Non-Union OSS, place-of-supply for ESS, €10k micro-threshold (N/A here), member-state of identification, 10-yr record-keeping                 |
+| `council-tax-asia` | Thailand primary (180-day rule, Paw. 161/162 2024 reform, DTV/LTR visa, Thai PDPA, Thailand-UK DTA) + comparative SG/HK/MY/VN/PH/ID/JP        |
 
 ## How to invoke a single specialist
 

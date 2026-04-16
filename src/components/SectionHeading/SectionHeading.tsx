@@ -16,12 +16,7 @@ export function SectionHeading({
   className,
 }: SectionHeadingProps) {
   return (
-    <div
-      className={mergeClasses(
-        align === "center" ? "text-center" : "text-left",
-        className,
-      )}
-    >
+    <div className={mergeClasses(align === "center" ? "text-center" : "text-left", className)}>
       {tag && (
         <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4">
           {tag}

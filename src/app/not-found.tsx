@@ -6,8 +6,7 @@ import type { SanityNotFoundPage } from "@/lib/sanity/types";
 const DEFAULTS: SanityNotFoundPage = {
   tag: "\u2726 Lost in the Stars",
   heading: "This page doesn\u2019t exist",
-  description:
-    "The path you followed leads nowhere \u2014 but the one home is always clear.",
+  description: "The path you followed leads nowhere \u2014 but the one home is always clear.",
   buttonText: "Return Home",
 };
 

@@ -1,10 +1,11 @@
 import { READINGS, TESTIMONIALS } from "@/data/readings";
+
 import type {
-  SanityReading,
-  SanityTestimonial,
   SanityFaqItem,
   SanityLandingPage,
+  SanityReading,
   SanitySiteSettings,
+  SanityTestimonial,
 } from "./types";
 
 export type MappedReading = {
@@ -93,9 +94,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
   }));
 }
 
-export function mapTestimonials(
-  sanityTestimonials: SanityTestimonial[]
-): MappedTestimonial[] {
+export function mapTestimonials(sanityTestimonials: SanityTestimonial[]): MappedTestimonial[] {
   if (sanityTestimonials.length === 0) {
     return TESTIMONIALS.map((t) => ({
       id: t.id,
@@ -113,9 +112,7 @@ export function mapTestimonials(
   }));
 }
 
-export function mapAbout(
-  landingPage: SanityLandingPage | null
-): MappedAbout {
+export function mapAbout(landingPage: SanityLandingPage | null): MappedAbout {
   const about = landingPage?.about;
   if (!about) return ABOUT_DEFAULTS;
 
@@ -129,7 +126,7 @@ export function mapAbout(
 }
 
 export function mapNavContent(
-  siteSettings: SanitySiteSettings | null
+  siteSettings: SanitySiteSettings | null,
 ): MappedNavContent | undefined {
   if (!siteSettings) return undefined;
 
@@ -141,7 +138,7 @@ export function mapNavContent(
 }
 
 export function mapFooterContent(
-  siteSettings: SanitySiteSettings | null
+  siteSettings: SanitySiteSettings | null,
 ): MappedFooterContent | undefined {
   if (!siteSettings) return undefined;
 
@@ -152,9 +149,7 @@ export function mapFooterContent(
   };
 }
 
-export function mapFaqItems(
-  sanityFaqItems: SanityFaqItem[]
-): MappedFaqItem[] {
+export function mapFaqItems(sanityFaqItems: SanityFaqItem[]): MappedFaqItem[] {
   return sanityFaqItems.map((item) => ({
     id: item._id,
     question: item.question,
@@ -164,9 +159,7 @@ export function mapFaqItems(
 
 const SAFE_URL_PROTOCOL = /^(https?:|mailto:)/;
 
-export function mapSocialLinks(
-  siteSettings: SanitySiteSettings | null
-): MappedSocialLink[] {
+export function mapSocialLinks(siteSettings: SanitySiteSettings | null): MappedSocialLink[] {
   if (!siteSettings) return [];
 
   return siteSettings.socialLinks

@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useState } from 'react';
-import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
-import { mergeClasses } from '@/lib/utils';
-import { Button } from '@/components/Button';
-import { GoldDivider } from '@/components/GoldDivider';
-import { useScrolled } from '@/hooks/useScrolled';
-import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
-import Image from 'next/image';
+import { Menu, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useState } from "react";
+
+import { Button } from "@/components/Button";
+import { GoldDivider } from "@/components/GoldDivider";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
+import { useScrolled } from "@/hooks/useScrolled";
+import { mergeClasses } from "@/lib/utils";
 
 interface NavLink {
   label: string;
@@ -22,12 +23,12 @@ interface NavigationContent {
 
 const NAV_DEFAULTS: NavigationContent = {
   navLinks: [
-    { label: 'Readings', sectionId: 'readings' },
-    { label: 'About', sectionId: 'about' },
-    { label: 'How It Works', sectionId: 'how-it-works' },
-    { label: 'Contact', sectionId: 'contact' },
+    { label: "Readings", sectionId: "readings" },
+    { label: "About", sectionId: "about" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Contact", sectionId: "contact" },
   ],
-  navCtaText: 'Book a Reading',
+  navCtaText: "Book a Reading",
 };
 
 type NavigationProps = {
@@ -42,7 +43,7 @@ export function Navigation({ content, className }: NavigationProps) {
   useLockBodyScroll(menuOpen);
 
   const scrollToSection = useCallback((id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   }, []);
 
@@ -50,10 +51,10 @@ export function Navigation({ content, className }: NavigationProps) {
     <>
       <nav
         className={mergeClasses(
-          'fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out',
+          "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out",
           scrolled
-            ? 'bg-j-cream/95 backdrop-blur-[10px] border-b border-j-border-subtle shadow-j-soft'
-            : 'bg-transparent',
+            ? "bg-j-cream/95 backdrop-blur-[10px] border-b border-j-border-subtle shadow-j-soft"
+            : "bg-transparent",
           className,
         )}
       >
@@ -84,11 +85,7 @@ export function Navigation({ content, className }: NavigationProps) {
                 {link.label}
               </button>
             ))}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => scrollToSection('readings')}
-            >
+            <Button variant="primary" size="sm" onClick={() => scrollToSection("readings")}>
               {navCtaText}
             </Button>
           </div>
@@ -97,7 +94,7 @@ export function Navigation({ content, className }: NavigationProps) {
             type="button"
             className="md:hidden text-j-deep"
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -107,16 +104,11 @@ export function Navigation({ content, className }: NavigationProps) {
       <div
         aria-hidden={!menuOpen}
         className={mergeClasses(
-          'fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out md:hidden',
-          menuOpen
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none',
+          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out md:hidden",
+          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >
-        <nav
-          className="flex flex-col items-center gap-6"
-          aria-label="Mobile navigation"
-        >
+        <nav className="flex flex-col items-center gap-6" aria-label="Mobile navigation">
           {navLinks.map((link) => (
             <button
               key={link.sectionId}
@@ -131,11 +123,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
         <GoldDivider className="w-24" />
 
-        <Button
-          variant="primary"
-          size="default"
-          onClick={() => scrollToSection('readings')}
-        >
+        <Button variant="primary" size="default" onClick={() => scrollToSection("readings")}>
           {navCtaText}
         </Button>
       </div>

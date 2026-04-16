@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
+
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ROUTES } from "@/lib/constants";
-import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
+import { errorClasses, inputClasses, isValidEmail, labelClasses } from "@/lib/formStyles";
 
 function CheckboxField({
   id,
@@ -61,8 +62,7 @@ interface BookingFormProps {
 export function BookingForm({ reading, content }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [entertainmentAcknowledged, setEntertainmentAcknowledged] =
-    useState(false);
+  const [entertainmentAcknowledged, setEntertainmentAcknowledged] = useState(false);
   const [coolingOffWaived, setCoolingOffWaived] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -91,16 +91,12 @@ export function BookingForm({ reading, content }: BookingFormProps) {
     }
 
     if (!entertainmentAcknowledged) {
-      setError(
-        "Please acknowledge that this reading is for entertainment purposes only.",
-      );
+      setError("Please acknowledge that this reading is for entertainment purposes only.");
       return;
     }
 
     if (!coolingOffWaived) {
-      setError(
-        "Please acknowledge that Josephine may begin preparing your reading immediately.",
-      );
+      setError("Please acknowledge that Josephine may begin preparing your reading immediately.");
       return;
     }
 
@@ -111,7 +107,10 @@ export function BookingForm({ reading, content }: BookingFormProps) {
 
     setIsRedirecting(true);
 
-    const abort = (msg: string) => { setError(msg); setIsRedirecting(false); };
+    const abort = (msg: string) => {
+      setError(msg);
+      setIsRedirecting(false);
+    };
 
     try {
       const paymentUrl = new URL(reading.stripePaymentLink);
@@ -141,9 +140,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
           className={inputClasses}
           disabled={isRedirecting}
         />
-        <p className="font-body text-xs text-j-muted mt-2">
-          {content.emailDisclaimer}
-        </p>
+        <p className="font-body text-xs text-j-muted mt-2">{content.emailDisclaimer}</p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -230,9 +227,7 @@ export function BookingForm({ reading, content }: BookingFormProps) {
         {isRedirecting ? "Redirecting to payment\u2026" : content.paymentButtonText}
       </Button>
 
-      <p className="font-body text-xs text-j-muted text-center">
-        {content.securityNote}
-      </p>
+      <p className="font-body text-xs text-j-muted text-center">{content.securityNote}</p>
     </form>
   );
 }

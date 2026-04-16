@@ -1,10 +1,6 @@
-import { describe, it, expect } from "vitest";
-import {
-  READINGS,
-  TESTIMONIALS,
-  getReadingById,
-  getRequiredDetails,
-} from "./readings";
+import { describe, expect, it } from "vitest";
+
+import { getReadingById, getRequiredDetails, READINGS, TESTIMONIALS } from "./readings";
 
 describe("readings data", () => {
   it("has three readings", () => {
