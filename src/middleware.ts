@@ -26,13 +26,13 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 
 const CSP_PUBLIC =
   "default-src 'self'; " +
-  "script-src 'self' 'unsafe-inline'; " +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+  "script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com; " +
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io data:; " +
-  "connect-src 'self' https://api.web3forms.com; " +
+  "connect-src 'self' https://api.web3forms.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "frame-ancestors 'none'; " +
-  "frame-src 'none'; " +
+  "frame-src https://hcaptcha.com https://*.hcaptcha.com; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
   "form-action 'self' https://api.web3forms.com; " +
@@ -40,13 +40,13 @@ const CSP_PUBLIC =
 
 const CSP_DRAFT =
   "default-src 'self'; " +
-  "script-src 'self' 'unsafe-inline'; " +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+  "script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com; " +
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io data:; " +
-  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://api.web3forms.com; " +
+  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://api.web3forms.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io; " +
-  "frame-src 'self' https://*.sanity.studio https://*.sanity.io; " +
+  "frame-src 'self' https://*.sanity.studio https://*.sanity.io https://hcaptcha.com https://*.hcaptcha.com; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
   "form-action 'self' https://api.web3forms.com; " +
