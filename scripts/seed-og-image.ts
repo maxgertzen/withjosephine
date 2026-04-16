@@ -68,9 +68,9 @@ async function main(): Promise<void> {
       }
 
       transaction
-        .patch(doc._id)
-        .setIfMissing({ seo: {} })
-        .setIfMissing({ "seo.ogImage": ogImageRef });
+        .patch(doc._id, (patch) =>
+          patch.setIfMissing({ seo: {} }).set({ "seo.ogImage": ogImageRef })
+        );
 
       console.log(`FILL  ${label}(${doc._id}): seo.ogImage`);
       patched++;

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
+import { ReadingIcon } from "@/components/ReadingIcon";
 import { mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
@@ -38,6 +39,11 @@ export function ReadingCard({
       )}
     >
       <GoldDivider className="absolute top-0 left-8 right-8" />
+
+      <ReadingIcon
+        slug={href.replace("/book/", "")}
+        className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24"
+      />
 
       <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
         {tag}
