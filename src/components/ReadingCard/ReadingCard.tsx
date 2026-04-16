@@ -9,6 +9,7 @@ import { ReadingIcon } from "@/components/ReadingIcon";
 import { mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
+  slug: string;
   tag: string;
   name: string;
   price: string;
@@ -20,6 +21,7 @@ export interface ReadingCardProps {
 }
 
 export function ReadingCard({
+  slug,
   tag,
   name,
   price,
@@ -41,7 +43,7 @@ export function ReadingCard({
       <GoldDivider className="absolute top-0 left-8 right-8" />
 
       <ReadingIcon
-        slug={href.replace("/book/", "")}
+        slug={slug}
         className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24"
       />
 

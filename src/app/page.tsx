@@ -149,6 +149,7 @@ export default async function LandingPage() {
           {readings.map((reading) => (
             <li key={reading.id}>
               <ReadingCard
+                slug={reading.id}
                 tag={reading.tag}
                 name={reading.name}
                 price={reading.price}

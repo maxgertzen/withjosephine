@@ -63,6 +63,10 @@ const components: PortableTextComponents = {
       const href = value?.href ?? "#";
       const className = "text-j-accent hover:underline";
 
+      if (!/^(https?:|mailto:|tel:|\/)/.test(href)) {
+        return <span className={className}>{children}</span>;
+      }
+
       if (href.startsWith("mailto:") || href.startsWith("tel:")) {
         return (
           <a href={href} className={className}>

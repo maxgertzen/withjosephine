@@ -141,6 +141,15 @@ export function getReadingById(id: string): Reading | undefined {
   return READINGS.find((reading) => reading.id === id);
 }
 
+export async function generateReadingStaticParams(): Promise<{ readingId: string }[]> {
+  const { fetchReadingSlugs } = await import("@/lib/sanity/fetch");
+  const sanitySlugs = await fetchReadingSlugs();
+  if (sanitySlugs.length > 0) {
+    return sanitySlugs.map((s) => ({ readingId: s.slug }));
+  }
+  return READINGS.map((reading) => ({ readingId: reading.id }));
+}
+
 export function getRequiredDetails(reading: Pick<Reading, "requiresBirthChart" | "requiresAkashic" | "requiresQuestions">): string[] {
   const details = new Set<string>();
 

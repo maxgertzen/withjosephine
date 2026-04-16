@@ -105,6 +105,8 @@ export const bookingPageQuery = groq`
     paymentButtonText,
     securityNote,
     entertainmentAcknowledgment,
+    coolingOffAcknowledgment,
+    formatNote,
     closingMessage,
     deliveryNote,
     seo
