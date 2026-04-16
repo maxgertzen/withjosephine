@@ -37,5 +37,7 @@ next-env.d.ts
 studio/node_modules/
 studio/dist/
 
-# MEMORY (local work tracking)
+# AI tooling (local work tracking)
+.claude/
 MEMORY/
+Plans/
