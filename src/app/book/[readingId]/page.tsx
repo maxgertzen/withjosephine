@@ -9,21 +9,11 @@ import { StarField } from '@/components/StarField';
 import { CelestialOrb } from '@/components/CelestialOrb';
 import { Footer } from '@/components/Footer';
 import { BookingForm } from '@/components/BookingForm';
-import { READINGS, getReadingById } from '@/data/readings';
-import {
-  fetchReadingSlugs,
-  fetchReading,
-  fetchBookingPage,
-} from '@/lib/sanity/fetch';
+import { getReadingById, generateReadingStaticParams } from '@/data/readings';
+import { fetchReading, fetchBookingPage } from '@/lib/sanity/fetch';
 import { PAGE_ORBS } from '@/lib/celestialPresets';
 
-export async function generateStaticParams() {
-  const sanitySlugs = await fetchReadingSlugs();
-  if (sanitySlugs.length > 0) {
-    return sanitySlugs.map((s) => ({ readingId: s.slug }));
-  }
-  return READINGS.map((reading) => ({ readingId: reading.id }));
-}
+export { generateReadingStaticParams as generateStaticParams };
 
 type BookingPageProps = {
   params: Promise<{ readingId: string }>;
@@ -90,6 +80,12 @@ export default async function BookingPage({ params }: BookingPageProps) {
   const entertainmentAcknowledgment =
     bookingPage?.entertainmentAcknowledgment ??
     'I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.';
+  const coolingOffAcknowledgment =
+    bookingPage?.coolingOffAcknowledgment ??
+    'I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.';
+  const formatNote =
+    bookingPage?.formatNote ??
+    'Detailed voice note recording + a supporting PDF created entirely for you.';
   const closingMessage =
     bookingPage?.closingMessage ??
     'I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726';
@@ -169,8 +165,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             <div className="flex gap-3 items-start">
               <Mic className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
               <p className="font-body text-sm text-j-text-muted leading-relaxed">
-                Detailed voice note recording + a supporting PDF created
-                entirely for you.
+                {formatNote}
               </p>
             </div>
           </div>
@@ -196,6 +191,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
                 paymentButtonText,
                 securityNote,
                 entertainmentAcknowledgment,
+                coolingOffAcknowledgment,
               }}
             />
           </div>

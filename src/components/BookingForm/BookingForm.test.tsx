@@ -16,6 +16,8 @@ const defaultContent = {
   securityNote: "Secure checkout",
   entertainmentAcknowledgment:
     "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.",
+  coolingOffAcknowledgment:
+    "I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.",
 };
 
 describe("BookingForm", () => {

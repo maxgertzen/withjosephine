@@ -47,6 +47,28 @@ export const bookingPage = defineType({
           ),
     }),
     defineField({
+      name: "coolingOffAcknowledgment",
+      title: "Cooling-Off Waiver Checkbox Label",
+      type: "text",
+      rows: 3,
+      description:
+        "EU/UK Consumer Contracts Regulations 2013 cooling-off waiver. Must communicate that the customer consents to immediate performance and waives their 14-day cancellation right.",
+      initialValue:
+        "I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.",
+      validation: (rule) =>
+        rule
+          .required()
+          .min(50)
+          .error("Cooling-off waiver checkbox copy is required."),
+    }),
+    defineField({
+      name: "formatNote",
+      title: "Format Note",
+      type: "string",
+      description: "Short description of what the customer receives (shown next to the mic icon).",
+      initialValue: "Detailed voice note recording + a supporting PDF created entirely for you.",
+    }),
+    defineField({
       name: "closingMessage",
       title: "Closing Message",
       type: "text",

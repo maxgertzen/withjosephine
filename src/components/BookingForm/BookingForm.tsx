@@ -1,11 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ROUTES } from "@/lib/constants";
 import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
+
+function CheckboxField({
+  id,
+  checked,
+  onChange,
+  disabled,
+  children,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex items-start gap-3 font-body text-xs text-j-text leading-[1.6] cursor-pointer"
+    >
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        disabled={disabled}
+        className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
+      />
+      <span>{children}</span>
+    </label>
+  );
+}
 
 type BookingFormReading = {
   subtitle: string;
@@ -19,6 +50,7 @@ type BookingFormContent = {
   paymentButtonText: string;
   securityNote: string;
   entertainmentAcknowledgment: string;
+  coolingOffAcknowledgment: string;
 };
 
 interface BookingFormProps {
@@ -115,78 +147,52 @@ export function BookingForm({ reading, content }: BookingFormProps) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <label
-          htmlFor="booking-terms"
-          className="flex items-start gap-3 font-body text-xs text-j-text leading-[1.6] cursor-pointer"
+        <CheckboxField
+          id="booking-terms"
+          checked={termsAccepted}
+          onChange={setTermsAccepted}
+          disabled={isRedirecting}
         >
-          <input
-            id="booking-terms"
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(event) => setTermsAccepted(event.target.checked)}
-            disabled={isRedirecting}
-            className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
-          />
-          <span>
-            I have read and agree to the{" "}
-            <Link
-              href={ROUTES.terms}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-j-accent hover:underline"
-            >
-              Terms of Service
-              <span className="sr-only"> (opens in a new tab)</span>
-            </Link>{" "}
-            and{" "}
-            <Link
-              href={ROUTES.refundPolicy}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-j-accent hover:underline"
-            >
-              Refund Policy
-              <span className="sr-only"> (opens in a new tab)</span>
-            </Link>
-            .
-          </span>
-        </label>
+          I have read and agree to the{" "}
+          <Link
+            href={ROUTES.terms}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-j-accent hover:underline"
+          >
+            Terms of Service
+            <span className="sr-only"> (opens in a new tab)</span>
+          </Link>{" "}
+          and{" "}
+          <Link
+            href={ROUTES.refundPolicy}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-j-accent hover:underline"
+          >
+            Refund Policy
+            <span className="sr-only"> (opens in a new tab)</span>
+          </Link>
+          .
+        </CheckboxField>
 
-        <label
-          htmlFor="booking-entertainment"
-          className="flex items-start gap-3 font-body text-xs text-j-text leading-[1.6] cursor-pointer"
+        <CheckboxField
+          id="booking-entertainment"
+          checked={entertainmentAcknowledged}
+          onChange={setEntertainmentAcknowledged}
+          disabled={isRedirecting}
         >
-          <input
-            id="booking-entertainment"
-            type="checkbox"
-            checked={entertainmentAcknowledged}
-            onChange={(event) =>
-              setEntertainmentAcknowledged(event.target.checked)
-            }
-            disabled={isRedirecting}
-            className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
-          />
-          <span>{content.entertainmentAcknowledgment}</span>
-        </label>
+          {content.entertainmentAcknowledgment}
+        </CheckboxField>
 
-        <label
-          htmlFor="booking-cooling-off"
-          className="flex items-start gap-3 font-body text-xs text-j-text leading-[1.6] cursor-pointer"
+        <CheckboxField
+          id="booking-cooling-off"
+          checked={coolingOffWaived}
+          onChange={setCoolingOffWaived}
+          disabled={isRedirecting}
         >
-          <input
-            id="booking-cooling-off"
-            type="checkbox"
-            checked={coolingOffWaived}
-            onChange={(event) => setCoolingOffWaived(event.target.checked)}
-            disabled={isRedirecting}
-            className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
-          />
-          <span>
-            I agree that Josephine may begin preparing my reading
-            immediately, and I understand I will lose my right to cancel
-            for a refund once I submit the intake form.
-          </span>
-        </label>
+          {content.coolingOffAcknowledgment}
+        </CheckboxField>
       </div>
 
       {paymentUnavailable && (

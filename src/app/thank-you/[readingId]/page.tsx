@@ -7,8 +7,8 @@ import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
-import { READINGS, getReadingById, getRequiredDetails } from "@/data/readings";
-import { fetchReadingSlugs, fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { getReadingById, getRequiredDetails, generateReadingStaticParams } from "@/data/readings";
+import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
@@ -19,13 +19,7 @@ const STEP_ICONS: Record<string, ComponentType<LucideProps>> = {
   clock: Clock,
 };
 
-export async function generateStaticParams() {
-  const sanitySlugs = await fetchReadingSlugs();
-  if (sanitySlugs.length > 0) {
-    return sanitySlugs.map((s) => ({ readingId: s.slug }));
-  }
-  return READINGS.map((reading) => ({ readingId: reading.id }));
-}
+export { generateReadingStaticParams as generateStaticParams };
 
 type ThankYouPageProps = {
   params: Promise<{ readingId: string }>;
