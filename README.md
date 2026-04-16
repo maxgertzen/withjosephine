@@ -56,25 +56,24 @@ pnpm studio:dev  # http://localhost:3333
 ## Project Structure
 
 ```
-www/
-├── public/              # Static assets (images, _headers)
-├── scripts/             # Seed and generation scripts
-├── src/
-│   ├── app/             # Next.js App Router pages
-│   │   ├── api/draft/   # Sanity draft mode endpoints
-│   │   ├── book/        # Booking pages (dynamic by reading)
-│   │   ├── thank-you/   # Post-purchase confirmation
-│   │   ├── privacy/     # Legal pages (privacy, terms, refund policy)
-│   │   └── ...
-│   ├── components/      # React components (co-located tests)
-│   ├── data/            # Static fallback data (readings, testimonials)
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/
-│   │   ├── sanity/      # Sanity client, queries, types, mappers
-│   │   └── ...          # Utilities, constants, feature flags
-│   └── styles/          # Tailwind tokens and overrides
-├── studio/              # Sanity Studio (separate package)
-└── docs/                # Project documentation
+public/              # Static assets (images, _headers)
+scripts/             # Seed and generation scripts
+src/
+  ├── app/             # Next.js App Router pages
+  │   ├── api/draft/   # Sanity draft mode endpoints
+  │   ├── book/        # Booking pages (dynamic by reading)
+  │   ├── thank-you/   # Post-purchase confirmation
+  │   ├── privacy/     # Legal pages (privacy, terms, refund policy)
+  │   └── ...
+  ├── components/      # React components (co-located tests)
+  ├── data/            # Static fallback data (readings, testimonials)
+  ├── hooks/           # Custom React hooks
+  ├── lib/
+  │   ├── sanity/      # Sanity client, queries, types, mappers
+  │   └── ...          # Utilities, constants, feature flags
+  └── styles/          # Tailwind tokens and overrides
+studio/              # Sanity Studio (separate package)
+docs/                # Project documentation
 ```
 
 ## Environment Variables
