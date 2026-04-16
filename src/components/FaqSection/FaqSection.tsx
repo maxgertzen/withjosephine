@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
+
 import { SectionHeading } from "@/components/SectionHeading";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 

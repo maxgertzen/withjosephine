@@ -42,11 +42,7 @@ function SoulBlueprintIcon({ className }: { className?: string }) {
         opacity="0.6"
         strokeLinejoin="round"
       />
-      <polygon
-        points="40,20 54,40 40,60 26,40"
-        opacity="0.45"
-        strokeLinejoin="round"
-      />
+      <polygon points="40,20 54,40 40,60 26,40" opacity="0.45" strokeLinejoin="round" />
       <circle cx="40" cy="40" r="2.5" fill="currentColor" opacity="0.7" stroke="none" />
       <line x1="40" y1="4" x2="40" y2="14" opacity="0.4" />
       <line x1="40" y1="66" x2="40" y2="76" opacity="0.4" />
@@ -78,11 +74,7 @@ function BirthChartIcon({ className }: { className?: string }) {
       <line x1="4" y1="40" x2="76" y2="40" opacity="0.25" />
       <line x1="14.5" y1="14.5" x2="65.5" y2="65.5" opacity="0.18" />
       <line x1="65.5" y1="14.5" x2="14.5" y2="65.5" opacity="0.18" />
-      <path
-        d="M44,22 A12,12 0 1,0 44,58 A9,9 0 1,1 44,22Z"
-        opacity="0.55"
-        strokeLinejoin="round"
-      />
+      <path d="M44,22 A12,12 0 1,0 44,58 A9,9 0 1,1 44,22Z" opacity="0.55" strokeLinejoin="round" />
       <circle cx="40" cy="4" r="2" fill="currentColor" opacity="0.6" stroke="none" />
       <circle cx="66" cy="40" r="1.8" fill="currentColor" opacity="0.55" stroke="none" />
       <circle cx="22" cy="58" r="1.5" fill="currentColor" opacity="0.45" stroke="none" />
@@ -105,16 +97,8 @@ function AkashicRecordIcon({ className }: { className?: string }) {
       aria-hidden="true"
     >
       <line x1="40" y1="28" x2="40" y2="68" opacity="0.5" />
-      <path
-        d="M40,28 Q38,30 14,34 L14,64 Q38,60 40,68Z"
-        opacity="0.45"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M40,28 Q42,30 66,34 L66,64 Q42,60 40,68Z"
-        opacity="0.45"
-        strokeLinejoin="round"
-      />
+      <path d="M40,28 Q38,30 14,34 L14,64 Q38,60 40,68Z" opacity="0.45" strokeLinejoin="round" />
+      <path d="M40,28 Q42,30 66,34 L66,64 Q42,60 40,68Z" opacity="0.45" strokeLinejoin="round" />
       <line x1="20" y1="40" x2="36" y2="38" opacity="0.25" />
       <line x1="20" y1="46" x2="36" y2="44" opacity="0.25" />
       <line x1="20" y1="52" x2="36" y2="50" opacity="0.25" />

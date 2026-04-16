@@ -152,7 +152,7 @@ const BODY_FONTS: Record<string, FontConfig> = {
 function getFontConfig(
   fontName: string | undefined,
   registry: Record<string, FontConfig>,
-  defaultName: string
+  defaultName: string,
 ): FontConfig {
   if (fontName && registry[fontName]) return registry[fontName];
   return registry[defaultName];

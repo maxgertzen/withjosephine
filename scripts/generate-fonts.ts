@@ -25,7 +25,7 @@ async function main() {
   console.log("Fetching theme fonts from Sanity...");
 
   const theme = await client.fetch<SanityTheme | null>(
-    `*[_type == "theme"][0] { displayFont, bodyFont }`
+    `*[_type == "theme"][0] { displayFont, bodyFont }`,
   );
 
   const module = generateFontsModule(theme);

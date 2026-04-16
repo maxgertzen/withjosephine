@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "motion/react";
+import Image from "next/image";
+
 import { Button } from "@/components/Button";
-import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
+import { StarField } from "@/components/StarField";
 import { mergeClasses } from "@/lib/utils";
 
 interface HeroContent {
@@ -29,16 +30,8 @@ interface HeroProps {
 
 function MoonCrescent({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 40 40"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M28 4a18 18 0 1 0 0 32A22 22 0 0 1 28 4Z"
-        fill="currentColor"
-      />
+    <svg viewBox="0 0 40 40" fill="none" aria-hidden="true" className={className}>
+      <path d="M28 4a18 18 0 1 0 0 32A22 22 0 0 1 28 4Z" fill="currentColor" />
     </svg>
   );
 }
@@ -55,10 +48,11 @@ export function Hero({ content, className }: HeroProps) {
     <section
       className={mergeClasses(
         "relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 py-28",
-        className
+        className,
       )}
       style={{
-        background: "linear-gradient(160deg, var(--color-j-bg-section) 0%, var(--color-j-bg-primary) 55%, #F2EDE3 100%)",
+        background:
+          "linear-gradient(160deg, var(--color-j-bg-section) 0%, var(--color-j-bg-primary) 55%, #F2EDE3 100%)",
       }}
     >
       <StarField count={30} className="z-[1] opacity-[0.15]" />
@@ -157,7 +151,8 @@ export function Hero({ content, className }: HeroProps) {
         <div
           className="h-[50px] w-px"
           style={{
-            background: "linear-gradient(to bottom, transparent, rgba(var(--j-accent-rgb), 0.5) 50%, transparent)",
+            background:
+              "linear-gradient(to bottom, transparent, rgba(var(--j-accent-rgb), 0.5) 50%, transparent)",
           }}
         />
       </motion.div>

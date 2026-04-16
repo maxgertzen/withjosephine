@@ -1,17 +1,18 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock, Mic, Check } from 'lucide-react';
-import { buildOpenGraph } from '@/lib/seoMetadata';
-import { GoldDivider } from '@/components/GoldDivider';
-import { StarField } from '@/components/StarField';
-import { CelestialOrb } from '@/components/CelestialOrb';
-import { Footer } from '@/components/Footer';
-import { BookingForm } from '@/components/BookingForm';
-import { getReadingById, generateReadingStaticParams } from '@/data/readings';
-import { fetchReading, fetchBookingPage } from '@/lib/sanity/fetch';
-import { PAGE_ORBS } from '@/lib/celestialPresets';
+import { ArrowLeft, Check, Clock, Mic } from "lucide-react";
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { BookingForm } from "@/components/BookingForm";
+import { CelestialOrb } from "@/components/CelestialOrb";
+import { Footer } from "@/components/Footer";
+import { GoldDivider } from "@/components/GoldDivider";
+import { StarField } from "@/components/StarField";
+import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { PAGE_ORBS } from "@/lib/celestialPresets";
+import { fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import { buildOpenGraph } from "@/lib/seoMetadata";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -19,9 +20,7 @@ type BookingPageProps = {
   params: Promise<{ readingId: string }>;
 };
 
-export async function generateMetadata({
-  params,
-}: BookingPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: BookingPageProps): Promise<Metadata> {
   const { readingId } = await params;
   const [sanityReading, bookingPage] = await Promise.all([
     fetchReading(readingId),
@@ -33,12 +32,12 @@ export async function generateMetadata({
   const title =
     sanityReading?.seo?.metaTitle ??
     bookingPage?.seo?.metaTitle ??
-    (readingName ? `Book ${readingName} — Josephine` : 'Book a Reading — Josephine');
+    (readingName ? `Book ${readingName} — Josephine` : "Book a Reading — Josephine");
 
   const description =
     sanityReading?.seo?.metaDescription ??
     bookingPage?.seo?.metaDescription ??
-    'Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.';
+    "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.";
 
   const seo = sanityReading?.seo ?? bookingPage?.seo;
 
@@ -61,7 +60,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
         price: sanityReading.priceDisplay,
         bookingSummary: sanityReading.bookingSummary,
         includes: sanityReading.includes,
-        stripePaymentLink: sanityReading.stripePaymentLink ?? '',
+        stripePaymentLink: sanityReading.stripePaymentLink ?? "",
       }
     : getReadingById(readingId);
 
@@ -69,29 +68,27 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound();
   }
 
-  const emailLabel = bookingPage?.emailLabel ?? 'Your Email Address';
+  const emailLabel = bookingPage?.emailLabel ?? "Your Email Address";
   const emailDisclaimer =
     bookingPage?.emailDisclaimer ??
-    'Your email is only used for this reading. I\u2019ll never share it.';
-  const paymentButtonText =
-    bookingPage?.paymentButtonText ?? 'Continue to Payment';
-  const securityNote =
-    bookingPage?.securityNote ?? 'Secure checkout \u00b7 Your details are safe';
+    "Your email is only used for this reading. I\u2019ll never share it.";
+  const paymentButtonText = bookingPage?.paymentButtonText ?? "Continue to Payment";
+  const securityNote = bookingPage?.securityNote ?? "Secure checkout \u00b7 Your details are safe";
   const entertainmentAcknowledgment =
     bookingPage?.entertainmentAcknowledgment ??
-    'I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.';
+    "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.";
   const coolingOffAcknowledgment =
     bookingPage?.coolingOffAcknowledgment ??
-    'I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.';
+    "I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.";
   const formatNote =
     bookingPage?.formatNote ??
-    'Detailed voice note recording + a supporting PDF created entirely for you.';
+    "Detailed voice note recording + a supporting PDF created entirely for you.";
   const closingMessage =
     bookingPage?.closingMessage ??
-    'I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726';
+    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726";
   const deliveryNote =
     bookingPage?.deliveryNote ??
-    'You\u2019ll receive your voice note and PDF within 7 days of payment.';
+    "You\u2019ll receive your voice note and PDF within 7 days of payment.";
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -128,9 +125,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
           <h1 className="font-display text-[clamp(2rem,5vw,3rem)] font-light italic text-j-text-heading leading-tight mt-2">
             {reading.name}
           </h1>
-          <p className="font-display text-2xl italic text-j-accent mt-2">
-            {reading.price}
-          </p>
+          <p className="font-display text-2xl italic text-j-accent mt-2">{reading.price}</p>
 
           <p className="font-display text-lg italic text-j-text leading-relaxed mt-6">
             {reading.bookingSummary}
@@ -144,13 +139,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
           <ul className="space-y-3">
             {reading.includes.map((item, index) => (
               <li key={index} className="flex gap-3">
-                <Check
-                  className="w-4 h-4 text-j-accent mt-0.5 shrink-0"
-                  strokeWidth={2}
-                />
-                <span className="font-body text-sm text-j-text leading-relaxed">
-                  {item}
-                </span>
+                <Check className="w-4 h-4 text-j-accent mt-0.5 shrink-0" strokeWidth={2} />
+                <span className="font-body text-sm text-j-text leading-relaxed">{item}</span>
               </li>
             ))}
           </ul>
@@ -158,15 +148,11 @@ export default async function BookingPage({ params }: BookingPageProps) {
           <div className="mt-8 flex flex-col gap-4">
             <div className="flex gap-3 items-start">
               <Clock className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
-              <p className="font-body text-sm text-j-text-muted leading-relaxed">
-                {deliveryNote}
-              </p>
+              <p className="font-body text-sm text-j-text-muted leading-relaxed">{deliveryNote}</p>
             </div>
             <div className="flex gap-3 items-start">
               <Mic className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
-              <p className="font-body text-sm text-j-text-muted leading-relaxed">
-                {formatNote}
-              </p>
+              <p className="font-body text-sm text-j-text-muted leading-relaxed">{formatNote}</p>
             </div>
           </div>
         </div>
@@ -174,9 +160,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
         <div>
           <div className="bg-j-ivory border border-j-border-subtle rounded-[20px] p-8 shadow-j-soft">
             <p className="font-body text-sm text-j-text-muted leading-relaxed mb-6">
-              You&rsquo;re one step away from your reading. Please enter your
-              email below and I&rsquo;ll send you everything you need once your
-              booking is confirmed.
+              You&rsquo;re one step away from your reading. Please enter your email below and
+              I&rsquo;ll send you everything you need once your booking is confirmed.
             </p>
 
             <BookingForm

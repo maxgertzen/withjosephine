@@ -1,9 +1,10 @@
-import Link from "next/link";
 import {
   PortableText,
   type PortableTextComponents,
   type PortableTextMarkComponentProps,
 } from "@portabletext/react";
+import Link from "next/link";
+
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 type LinkMark = {
@@ -20,14 +21,10 @@ const components: PortableTextComponents = {
       </p>
     ),
     h2: ({ children }) => (
-      <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">
-        {children}
-      </h2>
+      <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">{children}</h2>
     ),
     h3: ({ children }) => (
-      <h3 className="font-display text-xl italic text-j-text-heading mt-8 mb-3">
-        {children}
-      </h3>
+      <h3 className="font-display text-xl italic text-j-text-heading mt-8 mb-3">{children}</h3>
     ),
     blockquote: ({ children }) => (
       <blockquote className="border-l-2 border-j-accent pl-4 my-6 italic font-body text-j-text-muted leading-[1.9] font-light">
@@ -52,14 +49,9 @@ const components: PortableTextComponents = {
     number: ({ children }) => <li>{children}</li>,
   },
   marks: {
-    strong: ({ children }) => (
-      <strong className="font-medium">{children}</strong>
-    ),
+    strong: ({ children }) => <strong className="font-medium">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
-    link: ({
-      value,
-      children,
-    }: PortableTextMarkComponentProps<LinkMark>) => {
+    link: ({ value, children }: PortableTextMarkComponentProps<LinkMark>) => {
       const href = value?.href ?? "#";
       const className = "text-j-accent hover:underline";
 
@@ -84,12 +76,7 @@ const components: PortableTextComponents = {
       }
 
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={className}
-        >
+        <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
           {children}
           <span className="sr-only"> (opens in a new tab)</span>
         </a>

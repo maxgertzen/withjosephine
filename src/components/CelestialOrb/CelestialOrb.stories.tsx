@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { CelestialOrb } from "./CelestialOrb";
 
 const meta: Meta<typeof CelestialOrb> = {

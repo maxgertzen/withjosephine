@@ -1,17 +1,18 @@
+import type { LucideProps } from "lucide-react";
+import { Check, Clock, FileText, Mail } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, Mail, FileText, Clock } from "lucide-react";
+import type { ComponentType } from "react";
+
 import { Button } from "@/components/Button";
-import { GoldDivider } from "@/components/GoldDivider";
-import { StarField } from "@/components/StarField";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
+import { GoldDivider } from "@/components/GoldDivider";
+import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
-import { getReadingById, getRequiredDetails, generateReadingStaticParams } from "@/data/readings";
-import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { generateReadingStaticParams, getReadingById, getRequiredDetails } from "@/data/readings";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
-import type { ComponentType } from "react";
-import type { LucideProps } from "lucide-react";
+import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
 
 const STEP_ICONS: Record<string, ComponentType<LucideProps>> = {
   mail: Mail,
@@ -114,13 +115,9 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
             <span className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted">
               Your Reading
             </span>
-            <p className="font-display text-xl italic text-j-text-heading mt-1">
-              {reading.name}
-            </p>
+            <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          <span className="font-display text-2xl italic text-j-accent">
-            {reading.price}
-          </span>
+          <span className="font-display text-2xl italic text-j-accent">{reading.price}</span>
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
@@ -140,9 +137,7 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
                   <IconComponent className="w-5 h-5 text-j-accent" />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg italic text-j-text-heading">
-                    {step.title}
-                  </h3>
+                  <h3 className="font-display text-lg italic text-j-text-heading">{step.title}</h3>
                   <p className="font-body text-sm text-j-text-muted leading-relaxed mt-1">
                     {step.description}
                   </p>
@@ -150,7 +145,10 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
                     <ul className="mt-2 space-y-1">
                       {requirements.map((req, reqIndex) => (
                         <li key={reqIndex} className="flex gap-2 items-start">
-                          <Check className="w-3.5 h-3.5 text-j-accent mt-0.5 shrink-0" strokeWidth={2} />
+                          <Check
+                            className="w-3.5 h-3.5 text-j-accent mt-0.5 shrink-0"
+                            strokeWidth={2}
+                          />
                           <span className="font-body text-sm text-j-text-muted">{req}</span>
                         </li>
                       ))}

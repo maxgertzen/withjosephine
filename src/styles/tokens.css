@@ -9,19 +9,19 @@
 
 :root {
   /* ── Semantic Colors (source of truth) ── */
-  --j-bg-primary: #FAF8F4;
-  --j-bg-section: #F5F0E8;
-  --j-bg-dark: #0D0B1A;
-  --j-bg-interactive: #1C1935;
-  --j-text-primary: #3D3633;
-  --j-text-heading: #0D0B1A;
-  --j-text-muted: #7A6F6A;
-  --j-text-on-dark: #FAF8F4;
-  --j-accent: #C4A46B;
-  --j-accent-light: #D4BC8B;
-  --j-blush: #E8D5C4;
-  --j-rose: #BF9B8B;
-  --j-ivory: #FAFAF8;
+  --j-bg-primary: #faf8f4;
+  --j-bg-section: #f5f0e8;
+  --j-bg-dark: #0d0b1a;
+  --j-bg-interactive: #1c1935;
+  --j-text-primary: #3d3633;
+  --j-text-heading: #0d0b1a;
+  --j-text-muted: #7a6f6a;
+  --j-text-on-dark: #faf8f4;
+  --j-accent: #c4a46b;
+  --j-accent-light: #d4bc8b;
+  --j-blush: #e8d5c4;
+  --j-rose: #bf9b8b;
+  --j-ivory: #fafaf8;
   --j-violet: #a85dff;
   --j-violet-bright: #d9b8ff;
 

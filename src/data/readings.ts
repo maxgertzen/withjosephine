@@ -29,8 +29,7 @@ export const READINGS: Reading[] = [
     name: "The Soul Blueprint",
     subtitle: "Soul Blueprint Reading",
     price: "$179",
-    valueProposition:
-      "The most complete picture of your soul I can give you",
+    valueProposition: "The most complete picture of your soul I can give you",
     briefDescription:
       "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
     expandedDetails: [
@@ -59,8 +58,7 @@ export const READINGS: Reading[] = [
     name: "The Birth Chart Reading",
     subtitle: "Birth Chart Reading",
     price: "$99",
-    valueProposition:
-      "Understand yourself in a way that makes sense of your life",
+    valueProposition: "Understand yourself in a way that makes sense of your life",
     briefDescription:
       "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
     expandedDetails: [
@@ -88,8 +86,7 @@ export const READINGS: Reading[] = [
     name: "The Akashic Record Reading",
     subtitle: "Akashic Record Reading",
     price: "$79",
-    valueProposition:
-      "Direct answers from your soul's infinite records",
+    valueProposition: "Direct answers from your soul's infinite records",
     briefDescription:
       "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
     expandedDetails: [
@@ -150,7 +147,9 @@ export async function generateReadingStaticParams(): Promise<{ readingId: string
   return READINGS.map((reading) => ({ readingId: reading.id }));
 }
 
-export function getRequiredDetails(reading: Pick<Reading, "requiresBirthChart" | "requiresAkashic" | "requiresQuestions">): string[] {
+export function getRequiredDetails(
+  reading: Pick<Reading, "requiresBirthChart" | "requiresAkashic" | "requiresQuestions">,
+): string[] {
   const details = new Set<string>();
 
   if (reading.requiresBirthChart) {

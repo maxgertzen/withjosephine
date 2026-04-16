@@ -1,16 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-  fetchLandingPage,
-  fetchReadings,
-  fetchReading,
-  fetchReadingSlugs,
-  fetchTestimonials,
-  fetchFaqItems,
-  fetchSiteSettings,
   fetchBookingPage,
+  fetchFaqItems,
+  fetchLandingPage,
+  fetchLegalPage,
+  fetchReading,
+  fetchReadings,
+  fetchReadingSlugs,
+  fetchSiteSettings,
+  fetchTestimonials,
   fetchThankYouPage,
   fetchTheme,
-  fetchLegalPage,
 } from "./fetch";
 
 // `sanityFetch` is the boundary — `defineLive` itself is exercised by Sanity's
@@ -27,8 +28,8 @@ vi.mock("./client", () => ({
   sanityClient: { fetch: vi.fn() },
 }));
 
-import { sanityFetch } from "./live";
 import { sanityClient } from "./client";
+import { sanityFetch } from "./live";
 const mockFetch = vi.mocked(sanityFetch);
 const mockRawFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
 

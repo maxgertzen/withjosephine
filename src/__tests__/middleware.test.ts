@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Shim NextResponse.next() — we only need the mutable .headers Map.
 vi.mock("next/server", () => {
@@ -24,7 +24,7 @@ vi.mock("next/server", () => {
   };
 });
 
-import { middleware, DRAFT_COOKIE } from "../middleware";
+import { DRAFT_COOKIE, middleware } from "../middleware";
 
 function makeRequest({
   hasDraft,
@@ -67,9 +67,7 @@ describe("middleware CSP + draft hardening", () => {
     // Sanity now hosts Presentation at www.sanity.io (not just *.sanity.studio),
     // so both origins must be allowed as frame-ancestors.
     const csp = res.headers.get("content-security-policy");
-    expect(csp).toContain(
-      "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io",
-    );
+    expect(csp).toContain("frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io");
     expect(csp).not.toContain("frame-ancestors 'none'");
   });
 
@@ -86,9 +84,7 @@ describe("middleware CSP + draft hardening", () => {
   it("draft request gets relaxed CSP, no-store cache, and noindex", () => {
     const res = middleware(makeRequest({ hasDraft: true, host: "preview.withjosephine.com" }));
     const csp = res.headers.get("content-security-policy");
-    expect(csp).toContain(
-      "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io",
-    );
+    expect(csp).toContain("frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io");
     expect(csp).toContain("frame-src 'self' https://*.sanity.studio https://*.sanity.io");
     expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");

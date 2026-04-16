@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { ReadingCard } from "./ReadingCard";
 
 const meta: Meta<typeof ReadingCard> = {
@@ -21,8 +22,7 @@ const soulBlueprintData = {
   tag: "Signature",
   name: "The Soul Blueprint",
   price: "$179",
-  valueProposition:
-    "The most complete picture of your soul I can give you",
+  valueProposition: "The most complete picture of your soul I can give you",
   briefDescription:
     "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
   expandedDetails: [

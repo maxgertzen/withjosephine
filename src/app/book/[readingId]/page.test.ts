@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchReading: vi.fn(),
@@ -6,8 +6,8 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchReadingSlugs: vi.fn(),
 }));
 
-import { fetchReading, fetchBookingPage } from "@/lib/sanity/fetch";
-import type { SanityReading, SanityBookingPage } from "@/lib/sanity/types";
+import { fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import type { SanityBookingPage, SanityReading } from "@/lib/sanity/types";
 
 const mockFetchReading = vi.mocked(fetchReading);
 const mockFetchBookingPage = vi.mocked(fetchBookingPage);
@@ -75,9 +75,7 @@ beforeEach(() => {
 
 describe("BookingPage generateMetadata", () => {
   it("uses reading-level SEO fields when present", async () => {
-    mockFetchReading.mockResolvedValue(
-      sanityReading({ seo: SOUL_BLUEPRINT_SEO }),
-    );
+    mockFetchReading.mockResolvedValue(sanityReading({ seo: SOUL_BLUEPRINT_SEO }));
     mockFetchBookingPage.mockResolvedValue(bookingPage());
 
     const generateMetadata = await loadGenerateMetadata();
@@ -89,9 +87,7 @@ describe("BookingPage generateMetadata", () => {
 
   it("falls back to bookingPage.seo when reading has no seo", async () => {
     mockFetchReading.mockResolvedValue(sanityReading());
-    mockFetchBookingPage.mockResolvedValue(
-      bookingPage({ seo: BOOKING_PAGE_SEO }),
-    );
+    mockFetchBookingPage.mockResolvedValue(bookingPage({ seo: BOOKING_PAGE_SEO }));
 
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("soul-blueprint"));

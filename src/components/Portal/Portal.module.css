@@ -90,13 +90,7 @@
     rgba(var(--j-violet-rgb), 0.22) 315deg,
     rgba(var(--j-violet-bright-rgb), 0) 360deg
   );
-  mask: radial-gradient(
-    circle,
-    transparent 48%,
-    #000 57%,
-    #000 67%,
-    transparent 76%
-  );
+  mask: radial-gradient(circle, transparent 48%, #000 57%, #000 67%, transparent 76%);
   filter: blur(3px) saturate(1.2);
   animation: portalSpin 10s linear infinite;
 }

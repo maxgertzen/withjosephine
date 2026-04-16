@@ -1,21 +1,15 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"main": ".open-next/worker.js",
-	"name": "withjosephine",
-	"compatibility_date": "2025-04-01",
-	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-	"workers_dev": true,
-	"preview_urls": true,
-	"assets": {
-		"directory": ".open-next/assets",
-		"binding": "ASSETS"
-	},
-	"vars": {
-		"NEXT_PUBLIC_SANITY_PROJECT_ID": "e8jsb14m",
-		"NEXT_PUBLIC_SANITY_DATASET": "production",
-		"NEXT_PUBLIC_SANITY_STUDIO_URL": "https://withjosephine.sanity.studio",
-		"NEXT_PUBLIC_WEB3FORMS_KEY": "bceced8d-fc0d-4b8d-b4f3-760f1bc6fa1d",
-		"NEXT_PUBLIC_HCAPTCHA_SITEKEY": "50b2fe65-b00b-4b9e-ad62-3ba471098be2",
-		"NEXT_PUBLIC_UNDER_CONSTRUCTION": "1"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "withjosephine",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  // NEXT_PUBLIC_* vars are inlined at build time by Next.js.
+  // Set them in the Cloudflare dashboard: Workers > withjosephine > Settings > Variables.
 }

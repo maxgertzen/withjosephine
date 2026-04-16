@@ -1,6 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { generateTokensCss, generateFontsModule } from "./generate-tokens";
+import { describe, expect, it } from "vitest";
+
 import type { SanityTheme } from "@/lib/sanity/types";
+
+import { generateFontsModule, generateTokensCss } from "./generate-tokens";
 
 function color(hex: string) {
   return { hex, alpha: 1 };
