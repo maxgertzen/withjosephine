@@ -65,7 +65,7 @@ export function Navigation({ content, className }: NavigationProps) {
               width={140}
               height={80}
               priority
-              // className="h-auto w-[clamp(120px,8vw,160px)]"
+              className="h-auto w-[clamp(120px,8vw,160px)]"
             />
           </Link>
 

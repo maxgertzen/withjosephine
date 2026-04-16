@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -26,6 +27,30 @@ export async function generateStaticParams() {
 type BookingPageProps = {
   params: Promise<{ readingId: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: BookingPageProps): Promise<Metadata> {
+  const { readingId } = await params;
+  const [sanityReading, bookingPage] = await Promise.all([
+    fetchReading(readingId),
+    fetchBookingPage(),
+  ]);
+
+  const readingName = (sanityReading ?? getReadingById(readingId))?.name;
+
+  const title =
+    sanityReading?.seo?.metaTitle ??
+    bookingPage?.seo?.metaTitle ??
+    (readingName ? `Book ${readingName} — Josephine` : 'Book a Reading — Josephine');
+
+  const description =
+    sanityReading?.seo?.metaDescription ??
+    bookingPage?.seo?.metaDescription ??
+    'Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.';
+
+  return { title, description };
+}
 
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
