@@ -56,5 +56,13 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       message: "Shown in the FAQ section on the landing page.",
       locations: [{ title: "Landing Page", href: "/" }],
     }),
+    underConstructionPage: defineLocations({
+      message: "Shown when the site is in under-construction mode.",
+      locations: [{ title: "Landing Page", href: "/" }],
+    }),
+    notFoundPage: defineLocations({
+      message: "Shown for unknown routes (404).",
+      locations: [{ title: "404 Page", href: "/this-page-does-not-exist" }],
+    }),
   },
 };

@@ -12,6 +12,8 @@ import {
   thankYouPageQuery,
   themeQuery,
   legalPageBySlugQuery,
+  underConstructionPageQuery,
+  notFoundPageQuery,
 } from "./queries";
 import type {
   SanityLandingPage,
@@ -23,6 +25,8 @@ import type {
   SanityThankYouPage,
   SanityTheme,
   SanityLegalPage,
+  SanityUnderConstructionPage,
+  SanityNotFoundPage,
 } from "./types";
 
 /**
@@ -89,6 +93,16 @@ export async function fetchThankYouPage(): Promise<SanityThankYouPage | null> {
 
 export async function fetchTheme(): Promise<SanityTheme | null> {
   const { data } = await sanityFetch({ query: themeQuery });
+  return data;
+}
+
+export async function fetchUnderConstructionPage(): Promise<SanityUnderConstructionPage | null> {
+  const { data } = await sanityFetch({ query: underConstructionPageQuery });
+  return data;
+}
+
+export async function fetchNotFoundPage(): Promise<SanityNotFoundPage | null> {
+  const { data } = await sanityFetch({ query: notFoundPageQuery });
   return data;
 }
 

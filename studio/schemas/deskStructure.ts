@@ -6,6 +6,8 @@ export const SINGLETON_TYPES = new Set([
   "thankYouPage",
   "siteSettings",
   "theme",
+  "underConstructionPage",
+  "notFoundPage",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -24,6 +26,8 @@ export const deskStructure = (S: StructureBuilder) =>
       singletonListItem(S, "landingPage", "Landing Page"),
       singletonListItem(S, "bookingPage", "Booking Page"),
       singletonListItem(S, "thankYouPage", "Thank You Page"),
+      singletonListItem(S, "underConstructionPage", "Under Construction Page"),
+      singletonListItem(S, "notFoundPage", "404 Page"),
       S.divider(),
       S.documentTypeListItem("reading").title("Readings"),
       S.documentTypeListItem("testimonial").title("Testimonials"),

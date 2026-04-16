@@ -1,0 +1,306 @@
+/* ── Portal animation ─────────────────────────────────────
+   Spinning portal from the "404 Portal to Nowhere" concept.
+   Uses original violet/gold palette via design tokens.
+   ───────────────────────────────────────────────────────── */
+
+.wrapper {
+  position: relative;
+  width: min(80vw, 320px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+/* soft glow behind the ring */
+.aura {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(var(--j-violet-rgb), 0.14) 0%,
+    rgba(var(--j-violet-rgb), 0.07) 35%,
+    transparent 72%
+  );
+  filter: blur(28px);
+  animation: auraPulse 5s ease-in-out infinite;
+}
+
+/* concentric guide circles */
+.geometry,
+.geometry::before,
+.geometry::after {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.geometry {
+  width: 100%;
+  height: 100%;
+  opacity: 0.22;
+  border: 1px solid rgba(var(--j-accent-rgb), 0.26);
+  transform: rotate(12deg);
+}
+
+.geometry::before,
+.geometry::after {
+  content: "";
+  border: 1px solid rgba(var(--j-accent-rgb), 0.18);
+}
+
+.geometry::before {
+  transform: scale(0.78);
+}
+
+.geometry::after {
+  transform: scale(1.18);
+}
+
+/* spinning ring + inner glow */
+.portal {
+  position: relative;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  animation: portalFloat 5.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 34px rgba(var(--j-violet-rgb), 0.28));
+}
+
+.portal::before,
+.portal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* outer spinning conic ring */
+.portal::before {
+  background: conic-gradient(
+    from 0deg,
+    rgba(var(--j-violet-bright-rgb), 0) 0deg,
+    rgba(var(--j-violet-bright-rgb), 0.95) 18deg,
+    rgba(var(--j-violet-rgb), 0.28) 48deg,
+    rgba(var(--j-violet-bright-rgb), 0.85) 80deg,
+    rgba(var(--j-violet-rgb), 0.16) 115deg,
+    rgba(var(--j-violet-bright-rgb), 0.9) 155deg,
+    rgba(var(--j-violet-rgb), 0.2) 210deg,
+    rgba(var(--j-violet-bright-rgb), 0.85) 260deg,
+    rgba(var(--j-violet-rgb), 0.22) 315deg,
+    rgba(var(--j-violet-bright-rgb), 0) 360deg
+  );
+  mask: radial-gradient(
+    circle,
+    transparent 48%,
+    #000 57%,
+    #000 67%,
+    transparent 76%
+  );
+  filter: blur(3px) saturate(1.2);
+  animation: portalSpin 10s linear infinite;
+}
+
+/* inner turbulent glow */
+.portal::after {
+  inset: 12%;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(10, 3, 20, 1) 0%,
+      rgba(22, 6, 31, 0.98) 44%,
+      rgba(84, 24, 122, 0.65) 62%,
+      rgba(210, 165, 255, 0.12) 74%,
+      transparent 80%
+    ),
+    conic-gradient(
+      from 180deg,
+      rgba(196, 148, 255, 0),
+      rgba(196, 148, 255, 0.28),
+      rgba(111, 39, 160, 0.12),
+      rgba(196, 148, 255, 0.24),
+      rgba(196, 148, 255, 0)
+    );
+  filter: blur(10px);
+  animation: portalSpinReverse 16s linear infinite;
+}
+
+/* dark core with tiny stars */
+.core {
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    #020104 0%,
+    #0a0314 45%,
+    #150623 78%,
+    transparent 100%
+  );
+  box-shadow:
+    inset 0 0 38px rgba(var(--j-violet-rgb), 0.18),
+    0 0 36px rgba(var(--j-violet-rgb), 0.14);
+  overflow: hidden;
+}
+
+.core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 0%,
+    rgba(135, 78, 200, 0.1) 58%,
+    rgba(135, 78, 200, 0) 78%
+  );
+  animation: corePulse 4s ease-in-out infinite;
+}
+
+/* stars layer — rendered as a child element so it sits above ::after */
+.stars {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 1;
+  background:
+    radial-gradient(2.5px 2.5px at 20% 30%, #fff, transparent 50%),
+    radial-gradient(2px 2px at 68% 20%, #fff, transparent 50%),
+    radial-gradient(2.5px 2.5px at 62% 68%, #fff, transparent 50%),
+    radial-gradient(2px 2px at 35% 72%, rgba(255, 255, 255, 0.95), transparent 50%),
+    radial-gradient(2.5px 2.5px at 48% 42%, #fff, transparent 50%),
+    radial-gradient(1.5px 1.5px at 82% 55%, rgba(255, 255, 255, 0.9), transparent 50%),
+    radial-gradient(2px 2px at 15% 58%, rgba(255, 255, 255, 0.95), transparent 50%),
+    radial-gradient(1.5px 1.5px at 45% 18%, rgba(255, 255, 255, 0.85), transparent 50%),
+    radial-gradient(2px 2px at 75% 80%, rgba(255, 255, 255, 0.9), transparent 50%),
+    radial-gradient(1.5px 1.5px at 28% 48%, rgba(255, 255, 255, 0.85), transparent 50%),
+    radial-gradient(2px 2px at 55% 85%, rgba(255, 255, 255, 0.95), transparent 50%),
+    radial-gradient(1.5px 1.5px at 88% 38%, rgba(255, 255, 255, 0.85), transparent 50%);
+}
+
+/* bottom ripple arcs */
+.ripples {
+  position: absolute;
+  width: 100%;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 10px;
+  opacity: 0.36;
+}
+
+.ripples span {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--j-violet-rgb), 0.26);
+  filter: blur(1px);
+  animation: rippleMove 4.5s ease-in-out infinite;
+}
+
+.ripples span:nth-child(1) {
+  width: 160px;
+}
+
+.ripples span:nth-child(2) {
+  width: 210px;
+  animation-delay: 0.6s;
+}
+
+.ripples span:nth-child(3) {
+  width: 260px;
+  animation-delay: 1.2s;
+}
+
+/* ── Keyframes ───────────────────────────────────────── */
+
+@keyframes portalSpin {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.03);
+  }
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes portalSpinReverse {
+  from {
+    transform: rotate(360deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(0.98);
+  }
+  to {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes portalFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes auraPulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes corePulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes rippleMove {
+  0%,
+  100% {
+    transform: translateX(0) scaleX(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(10px) scaleX(1.05);
+    opacity: 0.7;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .wrapper {
+    width: min(92vw, 280px);
+  }
+
+  .ripples span:nth-child(1) {
+    width: 120px;
+  }
+
+  .ripples span:nth-child(2) {
+    width: 160px;
+  }
+
+  .ripples span:nth-child(3) {
+    width: 200px;
+  }
+}

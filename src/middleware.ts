@@ -24,9 +24,15 @@ import { PRODUCTION_HOSTS } from "@/lib/constants";
  */
 export const DRAFT_COOKIE = "__prerender_bypass";
 
+const isDev = process.env.NODE_ENV === "development";
+
+// React requires eval() in development for callstack reconstruction.
+// Never allow it in production.
+const devEval = isDev ? " 'unsafe-eval'" : "";
+
 const CSP_PUBLIC =
   "default-src 'self'; " +
-  "script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; " +
+  `script-src 'self' 'unsafe-inline'${devEval} https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; ` +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io data:; " +
@@ -40,7 +46,7 @@ const CSP_PUBLIC =
 
 const CSP_DRAFT =
   "default-src 'self'; " +
-  "script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; " +
+  `script-src 'self' 'unsafe-inline'${devEval} https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; ` +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io data:; " +

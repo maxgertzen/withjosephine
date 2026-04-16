@@ -7,6 +7,8 @@ import { thankYouPage } from "./thankYouPage";
 import { legalPage } from "./legalPage";
 import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
+import { underConstructionPage } from "./underConstructionPage";
+import { notFoundPage } from "./notFoundPage";
 
 export const schemaTypes = [
   reading,
@@ -18,4 +20,6 @@ export const schemaTypes = [
   legalPage,
   siteSettings,
   theme,
+  underConstructionPage,
+  notFoundPage,
 ];
