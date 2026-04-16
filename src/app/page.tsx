@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildOpenGraph } from '@/lib/seoMetadata';
+import { isUnderConstruction } from '@/lib/featureFlags';
+import { UnderConstruction } from '@/components/UnderConstruction';
 import { Navigation } from '@/components/Navigation';
 import { Hero } from '@/components/Hero';
 import { SectionHeading } from '@/components/SectionHeading';
@@ -46,6 +48,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
+  if (isUnderConstruction()) {
+    return <UnderConstruction />;
+  }
+
   const [
     landingPage,
     sanityReadings,
