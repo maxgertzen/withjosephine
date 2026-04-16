@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { mergeClasses } from "@/lib/utils";
 import { inputClasses, labelClasses, errorClasses, isValidEmail } from "@/lib/formStyles";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -36,8 +37,10 @@ export function ContactForm({ content, className }: ContactFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +74,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           message: trimmedMessage,
           subject: `New message from ${trimmedName}`,
           botcheck: "",
+          "h-captcha-response": captchaToken,
         }),
       });
 
@@ -81,6 +85,8 @@ export function ContactForm({ content, className }: ContactFormProps) {
         setName("");
         setEmail("");
         setMessage("");
+        setCaptchaToken(null);
+        captchaRef.current?.resetCaptcha();
       } else {
         setStatus("error");
         setErrorMessage("Something went wrong. Please try again.");
@@ -175,6 +181,18 @@ export function ContactForm({ content, className }: ContactFormProps) {
             />
           </div>
 
+          {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
+                reCaptchaCompat={false}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+          )}
+
           {errorMessage && (
             <p role="alert" className={errorClasses}>
               {errorMessage}
@@ -182,7 +200,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           )}
 
           <div className="text-center">
-            <Button type="submit" disabled={isLoading || !name.trim() || !isValidEmail(email.trim()) || !message.trim()}>
+            <Button type="submit" disabled={isLoading || !name.trim() || !isValidEmail(email.trim()) || !message.trim() || !captchaToken}>
               {isLoading ? "Sending\u2026" : submitText}
             </Button>
           </div>

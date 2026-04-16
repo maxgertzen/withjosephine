@@ -130,6 +130,28 @@ export const themeQuery = groq`
   }
 `;
 
+export const underConstructionPageQuery = groq`
+  *[_type == "underConstructionPage"][0] {
+    tag,
+    heading,
+    description,
+    "imageUrl": image.asset->url,
+    imageAlt,
+    contactText,
+    seo
+  }
+`;
+
+export const notFoundPageQuery = groq`
+  *[_type == "notFoundPage"][0] {
+    tag,
+    heading,
+    description,
+    buttonText,
+    seo
+  }
+`;
+
 export const legalPageBySlugQuery = groq`
   *[_type == "legalPage" && slug.current == $slug][0] {
     _id,

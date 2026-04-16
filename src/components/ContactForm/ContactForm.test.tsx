@@ -1,14 +1,30 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+let captchaOnVerify: ((token: string) => void) | undefined;
+
+vi.mock("@hcaptcha/react-hcaptcha", () => ({
+  default: ({ onVerify }: { onVerify?: (token: string) => void }) => {
+    captchaOnVerify = onVerify;
+    return <div data-testid="hcaptcha" />;
+  },
+}));
+
 import { ContactForm } from "./ContactForm";
 
 const WEB3FORMS_KEY = "test-access-key";
 
+function solveCaptcha() {
+  captchaOnVerify?.("mock-captcha-token");
+}
+
 describe("ContactForm", () => {
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_WEB3FORMS_KEY", WEB3FORMS_KEY);
+    vi.stubEnv("NEXT_PUBLIC_HCAPTCHA_SITEKEY", "50b2fe65-b00b-4b9e-ad62-3ba471098be2");
     vi.restoreAllMocks();
+    captchaOnVerify = undefined;
   });
 
   it("renders hardcoded defaults when no content is provided", () => {
@@ -35,12 +51,13 @@ describe("ContactForm", () => {
     expect(screen.queryByText("Send Message")).not.toBeInTheDocument();
   });
 
-  it("renders all form fields", () => {
+  it("renders all form fields and hCaptcha widget", () => {
     render(<ContactForm />);
 
     expect(screen.getByLabelText("Your Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Your Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Your Message")).toBeInTheDocument();
+    expect(screen.getByTestId("hcaptcha")).toBeInTheDocument();
   });
 
   it("disables button when all fields are empty", () => {
@@ -90,6 +107,7 @@ describe("ContactForm", () => {
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
     await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
     expect(screen.getByRole("button")).toHaveTextContent("Sending\u2026");
@@ -106,6 +124,7 @@ describe("ContactForm", () => {
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
     await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
     await waitFor(() => {
@@ -125,6 +144,7 @@ describe("ContactForm", () => {
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
     await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
     await waitFor(() => {
@@ -141,6 +161,7 @@ describe("ContactForm", () => {
     await user.type(screen.getByLabelText("Your Name"), "Jane");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
     await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
     await waitFor(() => {
@@ -148,7 +169,7 @@ describe("ContactForm", () => {
     });
   });
 
-  it("sends correct data to Web3Forms endpoint", async () => {
+  it("sends correct data including hCaptcha token to Web3Forms endpoint", async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ success: true }), { status: 200 })
@@ -159,6 +180,7 @@ describe("ContactForm", () => {
     await user.type(screen.getByLabelText("Your Name"), "Jane Doe");
     await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
     await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
     await waitFor(() => {
@@ -173,9 +195,21 @@ describe("ContactForm", () => {
             message: "Hello there",
             subject: "New message from Jane Doe",
             botcheck: "",
+            "h-captcha-response": "mock-captcha-token",
           }),
         })
       );
     });
+  });
+
+  it("disables submit button until captcha is verified", async () => {
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Your Name"), "Jane Doe");
+    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+
+    expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
 });

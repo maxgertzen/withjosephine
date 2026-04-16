@@ -134,6 +134,24 @@ export type SanityTheme = {
   bodyFont: string;
 };
 
+export type SanityUnderConstructionPage = {
+  tag: string;
+  heading: string;
+  description: string;
+  imageUrl?: string;
+  imageAlt: string;
+  contactText: string;
+  seo?: SanitySeo;
+};
+
+export type SanityNotFoundPage = {
+  tag: string;
+  heading: string;
+  description: string;
+  buttonText: string;
+  seo?: SanitySeo;
+};
+
 export type SanitySeo = {
   metaTitle?: string;
   metaDescription?: string;

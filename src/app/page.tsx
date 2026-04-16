@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { draftMode } from 'next/headers';
+import { buildOpenGraph } from '@/lib/seoMetadata';
+import { isUnderConstruction } from '@/lib/featureFlags';
+import { UnderConstruction } from '@/components/UnderConstruction';
 import { Navigation } from '@/components/Navigation';
 import { Hero } from '@/components/Hero';
 import { SectionHeading } from '@/components/SectionHeading';
@@ -16,6 +20,7 @@ import {
   fetchTestimonials,
   fetchFaqItems,
   fetchSiteSettings,
+  fetchUnderConstructionPage,
 } from '@/lib/sanity/fetch';
 import {
   mapReadings,
@@ -40,10 +45,18 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: '/favicon.ico',
       apple: '/apple-touch-icon.png',
     },
+    openGraph: buildOpenGraph(seo),
   };
 }
 
 export default async function LandingPage() {
+  const { isEnabled: isDraftMode } = await draftMode();
+
+  if (isUnderConstruction() && !isDraftMode) {
+    const underConstructionContent = await fetchUnderConstructionPage();
+    return <UnderConstruction content={underConstructionContent} />;
+  }
+
   const [
     landingPage,
     sanityReadings,
@@ -156,13 +169,14 @@ export default async function LandingPage() {
           tag={testimonialsSection?.sectionTag ?? '\u2726 Kind Words'}
           heading={testimonialsSection?.heading ?? 'what others have said'}
         />
-        <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
+        <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+          {testimonials.map((testimonial, index) => (
             <TestimonialCard
               key={testimonial.id}
               quote={testimonial.quote}
               name={testimonial.name}
               detail={testimonial.detail}
+              className={index === 0 ? "md:col-span-2" : undefined}
             />
           ))}
         </div>
