@@ -16,4 +16,3 @@ export const ROUTES = {
   terms: "/terms",
   refundPolicy: "/refund-policy",
 } as const;
-

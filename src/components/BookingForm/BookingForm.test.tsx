@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
 import { BookingForm } from "./BookingForm";
 
 const defaultReading = {
@@ -109,7 +110,7 @@ describe("BookingForm", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
     expect(window.location.href).toBe(
-      "https://buy.stripe.com/test_abc123?prefilled_email=customer%40example.com"
+      "https://buy.stripe.com/test_abc123?prefilled_email=customer%40example.com",
     );
   });
 
@@ -124,7 +125,9 @@ describe("BookingForm", () => {
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Invalid payment link. Please contact support.",
+    );
     expect(window.location.href).toBe("");
   });
 
@@ -139,7 +142,9 @@ describe("BookingForm", () => {
     await user.click(screen.getByLabelText(/Josephine may begin preparing my reading/i));
     await user.click(screen.getByRole("button", { name: "Continue to Payment" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Invalid payment link. Please contact support.");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Invalid payment link. Please contact support.",
+    );
   });
 
   it("shows redirecting state after valid submit", async () => {

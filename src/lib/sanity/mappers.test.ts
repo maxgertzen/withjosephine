@@ -1,19 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+
 import {
-  mapReadings,
-  mapTestimonials,
   mapAbout,
-  mapNavContent,
-  mapFooterContent,
   mapFaqItems,
+  mapFooterContent,
+  mapNavContent,
+  mapReadings,
   mapSocialLinks,
+  mapTestimonials,
 } from "./mappers";
 import type {
-  SanityReading,
-  SanityTestimonial,
   SanityFaqItem,
   SanityLandingPage,
+  SanityReading,
   SanitySiteSettings,
+  SanityTestimonial,
 } from "./types";
 
 const SANITY_READING: SanityReading = {
@@ -87,9 +88,7 @@ const SANITY_SITE_SETTINGS: SanitySiteSettings = {
     { label: "About Me", sectionId: "about" },
   ],
   navCtaText: "Book Now",
-  socialLinks: [
-    { platform: "tiktok", url: "https://tiktok.com/@test", label: "TikTok" },
-  ],
+  socialLinks: [{ platform: "tiktok", url: "https://tiktok.com/@test", label: "TikTok" }],
   copyrightText: "Josephine Readings Ltd.",
   contactEmail: "jo@example.com",
 };
@@ -212,10 +211,7 @@ describe("mapAbout", () => {
     expect(result.sectionTag).toBe("\u2726 My Story");
     expect(result.heading).toBe("about josephine");
     expect(result.imageUrl).toBe("https://cdn.sanity.io/images/test/about.png");
-    expect(result.paragraphs).toEqual([
-      "Paragraph from Sanity.",
-      "Second paragraph from Sanity.",
-    ]);
+    expect(result.paragraphs).toEqual(["Paragraph from Sanity.", "Second paragraph from Sanity."]);
     expect(result.signoff).toBe("Jo");
   });
 

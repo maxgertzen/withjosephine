@@ -28,7 +28,7 @@ export function CelestialOrb({
       aria-hidden="true"
       className={mergeClasses(
         "pointer-events-none rounded-full absolute j-animate-glow",
-        className
+        className,
       )}
       style={{
         background: color,

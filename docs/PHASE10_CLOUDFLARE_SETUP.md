@@ -2,6 +2,7 @@
 
 > **Status:** active, supersedes prior dashboard-auto-deploy draft.
 > **Architecture decisions** (Council + Max, 2026-04-15):
+>
 > 1. **Cloudflare Workers** via `@opennextjs/cloudflare` (NOT Pages)
 > 2. **GitHub Actions** with `wrangler-action` (NOT CF dashboard auto-deploy)
 > 3. **Pre-launch:** apex `withjosephine.com` stays dark; only `preview.withjosephine.com` is bound to the Worker
@@ -11,11 +12,11 @@
 
 ## The three environments
 
-| Env | Where it runs | URL | Audience | Sanity dataset |
-|---|---|---|---|---|
-| **Local dev** | Your laptop | `http://localhost:3000` | Max coding; Josephine occasionally via `pnpm studio:dev` | `production` |
-| **Preview** | Cloudflare Worker | `https://preview.withjosephine.com` | Josephine in Studio Presentation | `production` |
-| **Production** | Same Cloudflare Worker | `https://withjosephine.com` (LAUNCH ONLY) | Public visitors | `production` |
+| Env            | Where it runs          | URL                                       | Audience                                                 | Sanity dataset |
+| -------------- | ---------------------- | ----------------------------------------- | -------------------------------------------------------- | -------------- |
+| **Local dev**  | Your laptop            | `http://localhost:3000`                   | Max coding; Josephine occasionally via `pnpm studio:dev` | `production`   |
+| **Preview**    | Cloudflare Worker      | `https://preview.withjosephine.com`       | Josephine in Studio Presentation                         | `production`   |
+| **Production** | Same Cloudflare Worker | `https://withjosephine.com` (LAUNCH ONLY) | Public visitors                                          | `production`   |
 
 **One Worker, one Cloudflare project, one Sanity dataset.** The draft cookie (`__prerender_bypass`) is host-scoped — drafts on `preview` cannot leak to apex.
 
@@ -28,6 +29,7 @@
 ### Local files (gitignored)
 
 **`www/.env.local`** — used by `pnpm dev` and `pnpm cf:build`:
+
 ```
 NEXT_PUBLIC_SANITY_PROJECT_ID=…
 NEXT_PUBLIC_SANITY_DATASET=production
@@ -42,6 +44,7 @@ SANITY_STUDIO_DATASET=production
 > Draft-mode validation is now handled by `next-sanity`'s `defineEnableDraftMode` — it authenticates each Studio session against Sanity's API using `SANITY_READ_TOKEN`. A separately-shared `SANITY_PREVIEW_SECRET` is **no longer required** anywhere.
 
 **`www/studio/.env`** — used by `pnpm studio:dev` and `pnpm studio:deploy`:
+
 ```
 SANITY_STUDIO_PROJECT_ID=…
 SANITY_STUDIO_DATASET=production
@@ -49,6 +52,7 @@ SANITY_STUDIO_PREVIEW_URL=…      # see two-mode switch below
 ```
 
 **Two-mode `SANITY_STUDIO_PREVIEW_URL`** (baked into Studio bundle at deploy time):
+
 - Local Studio dev: `http://localhost:3000` → run `pnpm studio:dev`
 - Deployed Studio (interim, before preview subdomain is live): `https://<your-project>.<your-account>.workers.dev`
 - Deployed Studio (after preview subdomain is live): `https://preview.withjosephine.com`
@@ -74,21 +78,22 @@ Set in: GitHub repo → Settings → Secrets and variables → Actions.
 | `CLOUDFLARE_API_TOKEN` | CF dashboard → My Profile → API Tokens → `Edit Cloudflare Workers` template |
 | `CLOUDFLARE_ACCOUNT_ID` | CF dashboard sidebar (right side, account ID copy button) |
 
-> The Worker's *runtime* secret (`SANITY_READ_TOKEN`) is NOT a GitHub secret — it lives in CF dashboard env vars (next section). The CI only needs the build-time public env vars + Cloudflare credentials.
+> The Worker's _runtime_ secret (`SANITY_READ_TOKEN`) is NOT a GitHub secret — it lives in CF dashboard env vars (next section). The CI only needs the build-time public env vars + Cloudflare credentials.
 
 ### Cloudflare Worker runtime env vars
 
 Set in: CF dashboard → Workers & Pages → `withjosephine` → Settings → Variables and Secrets.
 
-| Name | Type | Source |
-|---|---|---|
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Plain text | from Sanity Manage |
-| `NEXT_PUBLIC_SANITY_DATASET` | Plain text | `production` |
-| `NEXT_PUBLIC_SANITY_STUDIO_URL` | Plain text | `https://withjosephine.sanity.studio` |
-| `NEXT_PUBLIC_WEB3FORMS_KEY` | Plain text | Web3Forms dashboard |
-| `SANITY_READ_TOKEN` | **Secret** | Sanity Manage → API → Tokens → create with **Viewer** role |
+| Name                            | Type       | Source                                                     |
+| ------------------------------- | ---------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Plain text | from Sanity Manage                                         |
+| `NEXT_PUBLIC_SANITY_DATASET`    | Plain text | `production`                                               |
+| `NEXT_PUBLIC_SANITY_STUDIO_URL` | Plain text | `https://withjosephine.sanity.studio`                      |
+| `NEXT_PUBLIC_WEB3FORMS_KEY`     | Plain text | Web3Forms dashboard                                        |
+| `SANITY_READ_TOKEN`             | **Secret** | Sanity Manage → API → Tokens → create with **Viewer** role |
 
 **Do NOT set:**
+
 - `SANITY_PREVIEW_SECRET` — obsolete since the migration to `defineEnableDraftMode` (validation now uses `SANITY_READ_TOKEN` against Sanity's API).
 - `SANITY_WRITE_TOKEN` — only for seed scripts running locally; never on the Worker.
 - `SANITY_STUDIO_*` — Studio doesn't run on the Worker.
@@ -102,11 +107,13 @@ Set in: CF dashboard → Workers & Pages → `withjosephine` → Settings → Va
 Two options — pick one:
 
 **Option A — from your laptop (recommended for first deploy):**
+
 ```bash
 cd www
 # Authenticates and creates the Worker if it doesn't exist.
 pnpm cf:build && pnpm dlx wrangler deploy
 ```
+
 Note the assigned URL: `https://withjosephine.<your-account>.workers.dev`
 
 **Option B — from CF dashboard:**
@@ -171,6 +178,7 @@ Open `https://withjosephine.sanity.studio` → click any document with a Present
 ### Step 1 — Inventory current DNS at Hostinger
 
 Log into Hostinger DNS panel for `withjosephine.com` and screenshot the full record list. Pay special attention to:
+
 - **MX records** (these route inbound mail — losing them = email outage)
 - **TXT records** (SPF, DMARC, DKIM, domain verification)
 - **A / AAAA / CNAME** records (anything Hostinger has set up by default)
@@ -183,6 +191,7 @@ Save the screenshot to `docs/DNS_INVENTORY_<date>.png` (gitignored).
 CF dashboard → Add a Domain → enter `withjosephine.com` → choose **Free** plan.
 
 CF will scan the existing DNS and import what it can find. **Verify every imported record matches your screenshot.** Add anything missing manually. Critical to get right:
+
 - All MX records (priority + target) for inbound mail
 - SPF TXT record (`v=spf1 include:_spf.mx.cloudflare.net ~all` — see Email Routing step)
 - Any TXT verification records for Sanity / Web3Forms / etc.

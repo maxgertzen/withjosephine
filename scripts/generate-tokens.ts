@@ -25,7 +25,7 @@ async function main() {
   console.log("Fetching theme from Sanity...");
 
   const theme = await client.fetch<SanityTheme | null>(
-    `*[_type == "theme"][0] { colors, displayFont, bodyFont }`
+    `*[_type == "theme"][0] { colors, displayFont, bodyFont }`,
   );
 
   const css = generateTokensCss(theme);

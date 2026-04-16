@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { Check } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
+
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ReadingIcon } from "@/components/ReadingIcon";
@@ -37,15 +38,12 @@ export function ReadingCard({
     <div
       className={mergeClasses(
         "bg-j-ivory border border-j-border-subtle rounded-[20px] p-8 relative overflow-hidden shadow-j-soft",
-        className
+        className,
       )}
     >
       <GoldDivider className="absolute top-0 left-8 right-8" />
 
-      <ReadingIcon
-        slug={slug}
-        className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24"
-      />
+      <ReadingIcon slug={slug} className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24" />
 
       <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
         {tag}
@@ -55,17 +53,13 @@ export function ReadingCard({
         {name}
       </h3>
 
-      <p className="font-display text-2xl italic text-j-accent mt-2">
-        {price}
-      </p>
+      <p className="font-display text-2xl italic text-j-accent mt-2">{price}</p>
 
       <p className="font-display text-lg italic text-j-text-primary leading-relaxed mt-4">
         {valueProposition}
       </p>
 
-      <p className="font-body text-sm text-j-text-muted leading-relaxed mt-3">
-        {briefDescription}
-      </p>
+      <p className="font-body text-sm text-j-text-muted leading-relaxed mt-3">{briefDescription}</p>
 
       <AnimatePresence initial={false}>
         {isExpanded && (

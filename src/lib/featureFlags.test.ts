@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { isUnderConstruction, isAnalyticsEnabled } from "./featureFlags";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { isAnalyticsEnabled, isUnderConstruction } from "./featureFlags";
 
 beforeEach(() => {
   vi.unstubAllEnvs();

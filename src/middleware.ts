@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { PRODUCTION_HOSTS } from "@/lib/constants";
 
 /**

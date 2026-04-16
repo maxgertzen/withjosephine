@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
-import { FaqSection } from "./FaqSection";
+import { describe, expect, it } from "vitest";
+
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
+
+import { FaqSection } from "./FaqSection";
 
 const FAQ_ITEMS: MappedFaqItem[] = [
   {
@@ -47,17 +49,13 @@ describe("FaqSection", () => {
 
     expect(screen.getByRole("region")).toBeInTheDocument();
     expect(
-      screen.getByText("You'll receive your reading within 7 business days.")
+      screen.getByText("You'll receive your reading within 7 business days."),
     ).toBeInTheDocument();
   });
 
   it("accepts custom section heading from Sanity", () => {
     render(
-      <FaqSection
-        items={FAQ_ITEMS}
-        sectionTag="✦ Questions"
-        heading="your questions answered"
-      />
+      <FaqSection items={FAQ_ITEMS} sectionTag="✦ Questions" heading="your questions answered" />,
     );
 
     expect(screen.getByText("your questions answered")).toBeInTheDocument();
@@ -75,7 +73,7 @@ describe("FaqSection", () => {
     expect(jsonLd.mainEntity).toHaveLength(2);
     expect(jsonLd.mainEntity[0].name).toBe("How long does a reading take?");
     expect(jsonLd.mainEntity[0].acceptedAnswer.text).toBe(
-      "You'll receive your reading within 7 business days."
+      "You'll receive your reading within 7 business days.",
     );
   });
 });

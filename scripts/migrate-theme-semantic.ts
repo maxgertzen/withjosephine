@@ -57,9 +57,7 @@ async function migrate() {
     bodyFont?: string;
   };
 
-  const existing = await client.fetch<OldTheme | null>(
-    `*[_type == "theme"][0]`
-  );
+  const existing = await client.fetch<OldTheme | null>(`*[_type == "theme"][0]`);
 
   if (!existing) {
     console.log("No theme document found — run seed-sanity.ts first");

@@ -9,8 +9,7 @@ const apiVersion = "2025-01-01";
  * editors when they click an editable region. Falls back to the local Studio
  * dev URL so visual editing works during `pnpm studio:dev`.
  */
-const studioUrl =
-  process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "http://localhost:3333";
+const studioUrl = process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "http://localhost:3333";
 
 /**
  * Single shared Sanity client. Perspective (`published` vs `drafts`) is

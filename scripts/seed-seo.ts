@@ -20,13 +20,13 @@
  *   To rewrite, edit COPY below and re-run. Fields a human has since
  *   edited in Studio will NOT be overwritten — clear them in Studio first.
  */
-import { createClient, type SanityClient } from '@sanity/client';
-import type { SanitySeo } from '../src/lib/sanity/types';
+import { createClient, type SanityClient } from "@sanity/client";
+import type { SanitySeo } from "../src/lib/sanity/types";
 
 const client: SanityClient = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
-  apiVersion: '2025-01-01',
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+  apiVersion: "2025-01-01",
   useCdn: false,
   token: process.env.SANITY_WRITE_TOKEN,
 });
@@ -38,32 +38,32 @@ type SeoCopy = { metaTitle: string; metaDescription: string };
  *  (metaTitle ≤60, metaDescription ≤160). */
 const COPY = {
   landingPage: {
-    metaTitle: 'Josephine — Astrology & Akashic Record Readings',
+    metaTitle: "Josephine — Astrology & Akashic Record Readings",
     metaDescription:
-      'Your soul has patterns. Your chart reveals them. Your records explain why. Personal astrology and Akashic Record readings delivered as voice notes and PDFs.',
+      "Your soul has patterns. Your chart reveals them. Your records explain why. Personal astrology and Akashic Record readings delivered as voice notes and PDFs.",
   },
-  'reading-soul-blueprint': {
-    metaTitle: 'Soul Blueprint Reading | Josephine — $179',
+  "reading-soul-blueprint": {
+    metaTitle: "Soul Blueprint Reading | Josephine — $179",
     metaDescription:
-      'The complete picture. Your birth chart, Akashic Records, and card pulls woven into one deeply personal reading. Voice note and PDF, delivered in 7 days.',
+      "The complete picture. Your birth chart, Akashic Records, and card pulls woven into one deeply personal reading. Voice note and PDF, delivered in 7 days.",
   },
-  'reading-birth-chart': {
-    metaTitle: 'Birth Chart Reading | Josephine — $99',
+  "reading-birth-chart": {
+    metaTitle: "Birth Chart Reading | Josephine — $99",
     metaDescription:
-      'What the stars already said about you. Core themes, natural gifts, and current patterns — written and spoken just for you. Delivered in 7 days.',
+      "What the stars already said about you. Core themes, natural gifts, and current patterns — written and spoken just for you. Delivered in 7 days.",
   },
-  'reading-akashic-record': {
-    metaTitle: 'Akashic Record Reading | Josephine — $79',
+  "reading-akashic-record": {
+    metaTitle: "Akashic Record Reading | Josephine — $79",
     metaDescription:
       "An Akashic Record reading that feels specific to you. Josephine delivers a voice note and PDF within 7 days. For when you're ready to remember what you carry.",
   },
   bookingPage: {
-    metaTitle: 'Book a Reading — Josephine',
+    metaTitle: "Book a Reading — Josephine",
     metaDescription:
       "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days. No call required — everything arrives when you're ready.",
   },
   thankYouPage: {
-    metaTitle: 'Thank You — Josephine',
+    metaTitle: "Thank You — Josephine",
     metaDescription:
       "Your reading is on its way. You'll receive a personal voice note and PDF within 7 days. In the meantime, there's nothing you need to do.",
   },
@@ -72,17 +72,17 @@ const COPY = {
 /** Legal pages are fetched by slug, not by fixed `_id`. */
 const LEGAL_COPY = {
   privacy: {
-    metaTitle: 'Privacy Policy — Josephine',
+    metaTitle: "Privacy Policy — Josephine",
     metaDescription:
-      'How Josephine Soul Readings handles your personal information. Plain language, no surprises. Your details stay yours.',
+      "How Josephine Soul Readings handles your personal information. Plain language, no surprises. Your details stay yours.",
   },
   terms: {
-    metaTitle: 'Terms of Service — Josephine',
+    metaTitle: "Terms of Service — Josephine",
     metaDescription:
-      'The terms that apply when you book a reading with Josephine. Written plainly so you know exactly what to expect.',
+      "The terms that apply when you book a reading with Josephine. Written plainly so you know exactly what to expect.",
   },
-  'refund-policy': {
-    metaTitle: 'Refund Policy — Josephine',
+  "refund-policy": {
+    metaTitle: "Refund Policy — Josephine",
     metaDescription:
       "Clear refund terms for all Josephine readings. What's covered, what isn't, and how to reach out if something feels off.",
   },
@@ -94,10 +94,10 @@ type TargetDoc = {
   copy: SeoCopy;
 };
 
-type ExistingSeo = Pick<SanitySeo, 'metaTitle' | 'metaDescription'> | null;
+type ExistingSeo = Pick<SanitySeo, "metaTitle" | "metaDescription"> | null;
 
 function truncate(value: string | undefined, max = 80): string {
-  if (!value) return '<empty>';
+  if (!value) return "<empty>";
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
@@ -105,23 +105,17 @@ async function resolveTargets(): Promise<TargetDoc[]> {
   // Singletons + readings: _id IS the COPY key. Readings get a friendlier label.
   const targets: TargetDoc[] = Object.entries(COPY).map(([id, copy]) => ({
     id,
-    label: id.startsWith('reading-')
-      ? `reading(${id.slice('reading-'.length)})`
-      : id,
+    label: id.startsWith("reading-") ? `reading(${id.slice("reading-".length)})` : id,
     copy,
   }));
 
   // Resolve legalPage _ids by slug.
   const legalSlugs = Object.keys(LEGAL_COPY);
-  const legalDocs = await client.fetch<
-    Array<{ _id: string; slug: { current: string } }>
-  >(
+  const legalDocs = await client.fetch<Array<{ _id: string; slug: { current: string } }>>(
     `*[_type == "legalPage" && slug.current in $slugs]{ _id, slug }`,
     { slugs: legalSlugs },
   );
-  const legalBySlug = new Map(
-    legalDocs.map((d) => [d.slug?.current, d] as const),
-  );
+  const legalBySlug = new Map(legalDocs.map((d) => [d.slug?.current, d] as const));
   for (const slug of legalSlugs) {
     const doc = legalBySlug.get(slug);
     if (doc) {
@@ -131,9 +125,7 @@ async function resolveTargets(): Promise<TargetDoc[]> {
         copy: LEGAL_COPY[slug as keyof typeof LEGAL_COPY],
       });
     } else {
-      console.warn(
-        `WARN  legalPage with slug "${slug}" not found on server — will be skipped.`,
-      );
+      console.warn(`WARN  legalPage with slug "${slug}" not found on server — will be skipped.`);
     }
   }
 
@@ -142,13 +134,14 @@ async function resolveTargets(): Promise<TargetDoc[]> {
 
 async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>> {
   const ids = targets.map((t) => t.id);
-  const docs = await client.fetch<
-    Array<{ _id: string; seo?: ExistingSeo }>
-  >(`*[_id in $ids]{ _id, seo }`, { ids });
+  const docs = await client.fetch<Array<{ _id: string; seo?: ExistingSeo }>>(
+    `*[_id in $ids]{ _id, seo }`,
+    { ids },
+  );
   const docsById = new Map(docs.map((d) => [d._id, d] as const));
 
   const state = new Map<string, ExistingSeo>();
-  console.log('=== Pre-flight: current SEO state ===');
+  console.log("=== Pre-flight: current SEO state ===");
   for (const t of targets) {
     const doc = docsById.get(t.id);
     if (!doc) {
@@ -162,7 +155,7 @@ async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>
       );
     }
   }
-  console.log('');
+  console.log("");
   return state;
 }
 
@@ -172,7 +165,7 @@ async function preflight(targets: TargetDoc[]): Promise<Map<string, ExistingSeo>
 function buildPatch(
   target: TargetDoc,
   existing: ExistingSeo,
-): { patch: ReturnType<SanityClient['patch']> | null; filled: number; skipped: number } {
+): { patch: ReturnType<SanityClient["patch"]> | null; filled: number; skipped: number } {
   if (existing === null) {
     console.log(`SKIP  ${target.label}: document missing on server`);
     return { patch: null, filled: 0, skipped: 2 };
@@ -184,13 +177,10 @@ function buildPatch(
   // setIfMissing is idempotent — only writes fields that have no value.
   // Dotted paths are applied in patch order after the parent `seo: {}` is
   // ensured, so partial-SEO documents still get their missing field filled.
-  const patch = client
-    .patch(target.id)
-    .setIfMissing({ seo: {} })
-    .setIfMissing({
-      'seo.metaTitle': target.copy.metaTitle,
-      'seo.metaDescription': target.copy.metaDescription,
-    });
+  const patch = client.patch(target.id).setIfMissing({ seo: {} }).setIfMissing({
+    "seo.metaTitle": target.copy.metaTitle,
+    "seo.metaDescription": target.copy.metaDescription,
+  });
 
   if (existing.metaTitle) {
     console.log(`SKIP  ${target.label}.seo.metaTitle (already set)`);
@@ -212,25 +202,22 @@ function buildPatch(
 
 async function main(): Promise<void> {
   if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
-    throw new Error('NEXT_PUBLIC_SANITY_PROJECT_ID is required');
+    throw new Error("NEXT_PUBLIC_SANITY_PROJECT_ID is required");
   }
   if (!process.env.SANITY_WRITE_TOKEN) {
-    throw new Error('SANITY_WRITE_TOKEN is required');
+    throw new Error("SANITY_WRITE_TOKEN is required");
   }
 
   const targets = await resolveTargets();
   const state = await preflight(targets);
 
-  console.log('=== Patching ===');
+  console.log("=== Patching ===");
   const transaction = client.transaction();
   let totalFilled = 0;
   let totalSkipped = 0;
   let queued = 0;
   for (const target of targets) {
-    const { patch, filled, skipped } = buildPatch(
-      target,
-      state.get(target.id) ?? null,
-    );
+    const { patch, filled, skipped } = buildPatch(target, state.get(target.id) ?? null);
     totalFilled += filled;
     totalSkipped += skipped;
     if (patch) {
@@ -243,7 +230,7 @@ async function main(): Promise<void> {
     await transaction.commit();
   }
 
-  console.log('');
+  console.log("");
   console.log(`Done. Filled ${totalFilled}, skipped ${totalSkipped}.`);
 }
 

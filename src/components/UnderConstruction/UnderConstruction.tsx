@@ -1,12 +1,12 @@
 import Image from "next/image";
+
 import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SanityUnderConstructionPage } from "@/lib/sanity/types";
 
 const DEFAULTS: SanityUnderConstructionPage = {
   tag: "✦ Something Beautiful is Coming",
   heading: "Josephine",
-  description:
-    "Coming soon — a space for soul readings, birth charts, and Akashic records.",
+  description: "Coming soon — a space for soul readings, birth charts, and Akashic records.",
   imageAlt: "Mystical gathering around a pyramid of light",
   contactText: "In the meantime, reach out at",
 };
@@ -16,8 +16,7 @@ interface UnderConstructionProps {
 }
 
 export function UnderConstruction({ content }: UnderConstructionProps) {
-  const { tag, heading, description, imageUrl, imageAlt, contactText } =
-    content ?? DEFAULTS;
+  const { tag, heading, description, imageUrl, imageAlt, contactText } = content ?? DEFAULTS;
 
   return (
     <div className="min-h-screen bg-j-cream flex flex-col items-center justify-center px-6 py-16 text-center">
@@ -29,9 +28,7 @@ export function UnderConstruction({ content }: UnderConstructionProps) {
         {heading}
       </h1>
 
-      <p className="font-display text-lg italic text-j-text-muted mt-4 max-w-md">
-        {description}
-      </p>
+      <p className="font-display text-lg italic text-j-text-muted mt-4 max-w-md">{description}</p>
 
       <Image
         src={imageUrl ?? "/images/under-construction.png"}

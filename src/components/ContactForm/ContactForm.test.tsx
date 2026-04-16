@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let captchaOnVerify: ((token: string) => void) | undefined;
 
@@ -98,9 +98,7 @@ describe("ContactForm", () => {
 
   it("shows loading state during submission", async () => {
     const user = userEvent.setup();
-    vi.spyOn(globalThis, "fetch").mockImplementation(
-      () => new Promise(() => {})
-    );
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {}));
 
     render(<ContactForm />);
 
@@ -116,7 +114,7 @@ describe("ContactForm", () => {
   it("shows success message after successful submission", async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ success: true }), { status: 200 })
+      new Response(JSON.stringify({ success: true }), { status: 200 }),
     );
 
     render(<ContactForm />);
@@ -136,7 +134,7 @@ describe("ContactForm", () => {
   it("shows error message after failed submission", async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ success: false }), { status: 200 })
+      new Response(JSON.stringify({ success: false }), { status: 200 }),
     );
 
     render(<ContactForm />);
@@ -171,9 +169,9 @@ describe("ContactForm", () => {
 
   it("sends correct data including hCaptcha token to Web3Forms endpoint", async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ success: true }), { status: 200 })
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
 
     render(<ContactForm />);
 
@@ -197,7 +195,7 @@ describe("ContactForm", () => {
             botcheck: "",
             "h-captcha-response": "mock-captcha-token",
           }),
-        })
+        }),
       );
     });
   });
