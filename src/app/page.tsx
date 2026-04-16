@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { draftMode } from 'next/headers';
 import { buildOpenGraph } from '@/lib/seoMetadata';
 import { isUnderConstruction } from '@/lib/featureFlags';
 import { UnderConstruction } from '@/components/UnderConstruction';
@@ -48,7 +49,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  if (isUnderConstruction()) {
+  const { isEnabled: isDraftMode } = await draftMode();
+
+  if (isUnderConstruction() && !isDraftMode) {
     return <UnderConstruction />;
   }
 

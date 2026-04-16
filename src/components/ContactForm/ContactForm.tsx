@@ -186,6 +186,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               <HCaptcha
                 ref={captchaRef}
                 sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
+                reCaptchaCompat={false}
                 onVerify={(token) => setCaptchaToken(token)}
                 onExpire={() => setCaptchaToken(null)}
               />
