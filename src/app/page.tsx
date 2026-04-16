@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { buildOpenGraph } from '@/lib/seoMetadata';
 import { Navigation } from '@/components/Navigation';
 import { Hero } from '@/components/Hero';
 import { SectionHeading } from '@/components/SectionHeading';
@@ -40,6 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: '/favicon.ico',
       apple: '/apple-touch-icon.png',
     },
+    openGraph: buildOpenGraph(seo),
   };
 }
 

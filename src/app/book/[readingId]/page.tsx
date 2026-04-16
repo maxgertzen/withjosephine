@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Mic, Check } from 'lucide-react';
+import { buildOpenGraph } from '@/lib/seoMetadata';
 import { GoldDivider } from '@/components/GoldDivider';
 import { StarField } from '@/components/StarField';
 import { CelestialOrb } from '@/components/CelestialOrb';
@@ -49,7 +50,9 @@ export async function generateMetadata({
     bookingPage?.seo?.metaDescription ??
     'Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.';
 
-  return { title, description };
+  const seo = sanityReading?.seo ?? bookingPage?.seo;
+
+  return { title, description, openGraph: buildOpenGraph(seo) };
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {

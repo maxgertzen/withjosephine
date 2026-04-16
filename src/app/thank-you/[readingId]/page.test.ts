@@ -88,4 +88,21 @@ describe("ThankYouPage generateMetadata", () => {
 
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
+
+  it("omits openGraph.images (thank-you pages are noindex)", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        seo: {
+          metaTitle: "Thank You",
+          metaDescription: "Desc",
+          ogImage: { asset: { url: "https://cdn.sanity.io/images/og.jpg" } },
+        },
+      }),
+    );
+
+    const generateMetadata = await loadGenerateMetadata();
+    const metadata = await generateMetadata();
+
+    expect(metadata.openGraph?.images).toBeUndefined();
+  });
 });

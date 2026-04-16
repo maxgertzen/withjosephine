@@ -154,4 +154,36 @@ describe("BookingPage generateMetadata", () => {
     expect(mockFetchReading).toHaveBeenCalledWith("soul-blueprint");
     expect(mockFetchBookingPage).toHaveBeenCalledOnce();
   });
+
+  it("includes ogImage in openGraph when reading seo has it", async () => {
+    mockFetchReading.mockResolvedValue(
+      sanityReading({
+        seo: {
+          metaTitle: "Soul Blueprint",
+          metaDescription: "Desc",
+          ogImage: { asset: { url: "https://cdn.sanity.io/images/og.jpg" } },
+        },
+      }),
+    );
+    mockFetchBookingPage.mockResolvedValue(bookingPage());
+
+    const generateMetadata = await loadGenerateMetadata();
+    const metadata = await generateMetadata(params("soul-blueprint"));
+
+    expect(metadata.openGraph).toEqual(
+      expect.objectContaining({
+        images: [{ url: "https://cdn.sanity.io/images/og.jpg" }],
+      }),
+    );
+  });
+
+  it("omits openGraph.images when no ogImage is set", async () => {
+    mockFetchReading.mockResolvedValue(sanityReading({ seo: SOUL_BLUEPRINT_SEO }));
+    mockFetchBookingPage.mockResolvedValue(bookingPage());
+
+    const generateMetadata = await loadGenerateMetadata();
+    const metadata = await generateMetadata(params("soul-blueprint"));
+
+    expect(metadata.openGraph?.images).toBeUndefined();
+  });
 });
