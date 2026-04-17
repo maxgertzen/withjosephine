@@ -27,6 +27,21 @@ export const WithoutTag: Story = {
   },
 };
 
+export const AsH1: Story = {
+  args: {
+    tag: "✦ Welcome",
+    heading: "readings",
+    as: "h1",
+  },
+};
+
+export const AsH3: Story = {
+  args: {
+    heading: "subsection heading",
+    as: "h3",
+  },
+};
+
 export const LeftAligned: Story = {
   args: {
     tag: "✦ Process",

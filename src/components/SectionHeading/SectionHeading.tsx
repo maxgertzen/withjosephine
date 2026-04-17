@@ -4,6 +4,7 @@ interface SectionHeadingProps {
   tag?: string;
   heading: string;
   subheading?: string;
+  as?: "h1" | "h2" | "h3";
   align?: "center" | "left";
   className?: string;
 }
@@ -12,6 +13,7 @@ export function SectionHeading({
   tag,
   heading,
   subheading,
+  as: HeadingTag = "h2",
   align = "center",
   className,
 }: SectionHeadingProps) {
@@ -22,9 +24,9 @@ export function SectionHeading({
           {tag}
         </span>
       )}
-      <h2 className="font-display text-[clamp(2rem,5vw,3.2rem)] font-light italic text-j-text-heading leading-tight">
+      <HeadingTag className="font-display text-[clamp(2rem,5vw,3.2rem)] font-light italic text-j-text-heading leading-tight">
         {heading}
-      </h2>
+      </HeadingTag>
       {subheading && (
         <p
           className={mergeClasses(

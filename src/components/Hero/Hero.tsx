@@ -86,6 +86,7 @@ export function Hero({ content, className }: HeroProps) {
       <MoonCrescent className="absolute top-[14%] left-[4%] z-[1] w-[90px] text-j-gold/10" />
 
       <div className="relative z-10 flex max-w-[720px] flex-col items-center text-center">
+        <h1 className="sr-only">Josephine Soul Readings</h1>
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}

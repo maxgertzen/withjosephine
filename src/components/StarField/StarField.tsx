@@ -10,7 +10,7 @@ function round(n: number, decimals: number) {
   return Math.round(n * factor) / factor;
 }
 
-export function StarField({ count = 110, className }: StarFieldProps) {
+export function StarField({ count = 50, className }: StarFieldProps) {
   const stars = Array.from({ length: count }, (_, i) => ({
     x: round((Math.sin(i * 2.41) * 0.5 + 0.5) * 100, 2),
     y: round((Math.cos(i * 1.73) * 0.5 + 0.5) * 100, 2),
