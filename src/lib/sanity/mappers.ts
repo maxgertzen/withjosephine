@@ -1,3 +1,4 @@
+import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 
 import type {
@@ -25,13 +26,7 @@ export type MappedTestimonial = {
   detail: string;
 };
 
-export type MappedAbout = {
-  sectionTag: string;
-  heading: string;
-  imageUrl: string;
-  paragraphs: string[];
-  signoff: string;
-};
+export type { MappedAbout } from "@/data/defaults";
 
 export type MappedNavContent = {
   brandName: string;
@@ -55,19 +50,6 @@ export type MappedSocialLink = {
   platform: string;
   url: string;
   label: string;
-};
-
-const ABOUT_DEFAULTS: MappedAbout = {
-  sectionTag: "\u2726 About",
-  heading: "who i am + what this is",
-  imageUrl: "/images/akasha.png",
-  paragraphs: [
-    "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up \u2014 this led me to astrology and then to the Akashic Records.",
-    "These two things together changed everything for me. And now I use them as a bridge for others. Astrology maps your soul\u2019s blueprint through your birth chart. Your gifts, your wounds, your patterns and your path.",
-    "The Akashic Records go even deeper. They\u2019re a spiritual record of your soul across time. Every experience, every contract, every lesson your soul has carried into this lifetime.",
-    "Together they create a level of understanding that\u2019s hard to describe until you\u2019ve experienced it.",
-  ],
-  signoff: "Josephine",
 };
 
 export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {

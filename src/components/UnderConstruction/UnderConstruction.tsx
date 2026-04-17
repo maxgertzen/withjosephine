@@ -31,7 +31,7 @@ export function UnderConstruction({ content }: UnderConstructionProps) {
       <p className="font-display text-lg italic text-j-text-muted mt-4 max-w-md">{description}</p>
 
       <Image
-        src={imageUrl ?? "/images/under-construction.png"}
+        src={imageUrl ?? "/images/under-construction.webp"}
         alt={imageAlt}
         width={480}
         height={480}

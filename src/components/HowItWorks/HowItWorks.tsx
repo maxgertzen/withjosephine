@@ -1,39 +1,7 @@
 import { GoldDivider } from "@/components/GoldDivider";
 import { SectionHeading } from "@/components/SectionHeading";
+import { HOW_IT_WORKS_DEFAULTS, type HowItWorksContent } from "@/data/defaults";
 import { mergeClasses } from "@/lib/utils";
-
-interface HowItWorksStep {
-  title: string;
-  description: string;
-}
-
-interface HowItWorksContent {
-  sectionTag: string;
-  heading: string;
-  steps: HowItWorksStep[];
-}
-
-const HOW_IT_WORKS_DEFAULTS: HowItWorksContent = {
-  sectionTag: "✦ Process",
-  heading: "how it works",
-  steps: [
-    {
-      title: "Choose Your Reading",
-      description:
-        "Browse the offerings above, select the reading that calls to you, and complete your payment securely.",
-    },
-    {
-      title: "Share Your Details",
-      description:
-        "After payment, I'll send you everything you need — a simple form for your birth details and a personalised question menu.",
-    },
-    {
-      title: "Receive Your Reading",
-      description:
-        "Within 7 days, you'll receive a detailed voice note recording and a supporting PDF created entirely for you.",
-    },
-  ],
-};
 
 interface HowItWorksProps {
   content?: HowItWorksContent;

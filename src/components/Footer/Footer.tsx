@@ -1,21 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { mergeClasses } from "@/lib/utils";
-
-interface FooterContent {
-  brandName: string;
-  logoUrl?: string;
-  copyrightText: string;
-}
-
-const FOOTER_DEFAULTS: FooterContent = {
-  brandName: "Josephine",
-  logoUrl: "/images/logo-default.png",
-  copyrightText: "Josephine. All rights reserved.",
-};
 
 const SOCIAL_LABELS: Record<string, string> = {
   instagram: "Instagram",
