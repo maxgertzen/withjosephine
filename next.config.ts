@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Cloudflare Workers cannot run the Next.js image optimization loader.
+    // Static images are pre-optimized to WebP via `pnpm optimize-images` (sharp).
     unoptimized: true,
   },
 };

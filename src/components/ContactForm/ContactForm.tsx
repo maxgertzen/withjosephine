@@ -5,23 +5,9 @@ import { type FormEvent, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { SectionHeading } from "@/components/SectionHeading";
+import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
 import { errorClasses, inputClasses, isValidEmail, labelClasses } from "@/lib/formStyles";
 import { mergeClasses } from "@/lib/utils";
-
-interface ContactFormContent {
-  sectionTag: string;
-  heading: string;
-  description: string;
-  submitText: string;
-}
-
-const CONTACT_DEFAULTS: ContactFormContent = {
-  sectionTag: "\u2726 Get in Touch",
-  heading: "i\u2019d love to hear from you",
-  description:
-    "If you have a question before you book, or you\u2019d simply like to say hello, please don\u2019t hesitate to reach out. I read every message personally.",
-  submitText: "Send Message",
-};
 
 interface ContactFormProps {
   content?: ContactFormContent;

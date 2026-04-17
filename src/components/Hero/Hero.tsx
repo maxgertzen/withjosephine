@@ -6,22 +6,8 @@ import Image from "next/image";
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { StarField } from "@/components/StarField";
+import { HERO_DEFAULTS, type HeroContent } from "@/data/defaults";
 import { mergeClasses } from "@/lib/utils";
-
-interface HeroContent {
-  tagline: string;
-  introGreeting: string;
-  introBody: string;
-  ctaText: string;
-}
-
-const HERO_DEFAULTS: HeroContent = {
-  tagline: "Astrologer  +  Akashic Record Reader",
-  introGreeting: "Hi, I\u2019m Josephine.",
-  introBody:
-    "I combine your birth chart and Akashic Records to help you understand your soul more deeply. Your patterns, your purpose and your path.\n\nIf you\u2019re here, you\u2019re probably ready to understand yourself on a level that changes everything. Abundance, clarity, the right relationships, a real sense of direction. It\u2019s all in there.",
-  ctaText: "Explore Readings",
-};
 
 interface HeroProps {
   content?: HeroContent;
@@ -94,7 +80,7 @@ export function Hero({ content, className }: HeroProps) {
           className="mb-6"
         >
           <Image
-            src="/images/Logo.png"
+            src="/images/Logo.webp"
             alt="Josephine Soul Readings"
             width={480}
             height={480}
