@@ -2,13 +2,28 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
   "name": "withjosephine",
-  "compatibility_date": "2025-04-01",
+  "compatibility_date": "2025-08-16",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
   "preview_urls": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1,
+    },
   },
   // NEXT_PUBLIC_* vars are inlined at build time by Next.js.
   // Set them in the Cloudflare dashboard: Workers > withjosephine > Settings > Variables.
