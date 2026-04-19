@@ -24,14 +24,18 @@ vi.mock("next/server", () => {
   };
 });
 
+import type { NextRequest } from "next/server";
+
 import { DRAFT_COOKIE, middleware } from "../middleware";
 
 function makeRequest({
   hasDraft,
   host = "withjosephine.com",
+  pathname = "/",
 }: {
   hasDraft: boolean;
   host?: string;
+  pathname?: string;
 }) {
   return {
     cookies: {
@@ -40,8 +44,9 @@ function makeRequest({
     headers: {
       get: (name: string) => (name.toLowerCase() === "host" ? host : null),
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+    nextUrl: { pathname },
+    method: "GET",
+  } as unknown as NextRequest;
 }
 
 describe("middleware CSP + draft hardening", () => {
