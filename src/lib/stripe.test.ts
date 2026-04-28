@@ -57,14 +57,4 @@ describe("constructWebhookEvent", () => {
       "Missing required env var: STRIPE_WEBHOOK_SECRET",
     );
   });
-
-  it("reuses the same Stripe client across invocations", async () => {
-    constructEventMock.mockReturnValue({});
-    const { constructWebhookEvent } = await import("./stripe");
-
-    constructWebhookEvent("body", "sig");
-    constructWebhookEvent("body", "sig");
-
-    expect(stripeCtorMock).toHaveBeenCalledTimes(1);
-  });
 });

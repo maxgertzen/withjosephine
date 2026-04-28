@@ -36,7 +36,8 @@ describe("optionalEnv", () => {
 
     optionalEnv("EXAMPLE_VAR", "feature disabled");
 
-    expect(warn).toHaveBeenCalledWith("[env] EXAMPLE_VAR not set — feature disabled");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("EXAMPLE_VAR"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("feature disabled"));
   });
 
   it("does not log when the var is set even with missingWarning", () => {

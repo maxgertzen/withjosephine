@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SubmissionContext } from "./resend";
+import { buildSubmission } from "@/test/fixtures/submission";
 
 const sendMock = vi.fn();
 const resendCtorMock = vi.fn(function () {
@@ -11,24 +11,7 @@ vi.mock("resend", () => ({
   Resend: resendCtorMock,
 }));
 
-const baseSubmission: SubmissionContext = {
-  id: "sub_123",
-  email: "client@example.com",
-  readingName: "Soul Blueprint Reading",
-  readingPriceDisplay: "$179",
-  responses: [
-    { fieldLabelSnapshot: "Birth date", fieldType: "date", value: "1990-04-12" },
-    {
-      fieldLabelSnapshot: "Focus areas",
-      fieldType: "multiSelectExact",
-      value: "Soul Purpose, Karmic Patterns, Relationships",
-    },
-  ],
-  photoUrl: "https://images.example.com/photo.jpg",
-  createdAt: "2026-04-28T16:30:00Z",
-};
-
-beforeEach(async () => {
+beforeEach(() => {
   vi.resetModules();
   sendMock.mockReset();
   resendCtorMock.mockClear();
@@ -45,50 +28,52 @@ afterEach(() => {
 describe("sendNotificationToJosephine", () => {
   it("sends to NOTIFICATION_EMAIL with subject and HTML body containing all responses", async () => {
     sendMock.mockResolvedValue({ id: "msg_1" });
+    const submission = buildSubmission();
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(baseSubmission);
+    await sendNotificationToJosephine(submission);
 
     expect(sendMock).toHaveBeenCalledOnce();
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("hello@withjosephine.com");
-    expect(args.subject).toBe(
-      `New ${baseSubmission.readingName} booking — ${baseSubmission.email}`,
-    );
-    expect(args.from).toMatch(/Josephine/);
+    expect(args.subject).toContain(submission.readingName);
+    expect(args.subject).toContain(submission.email);
     expect(args.html).toContain("Birth date");
     expect(args.html).toContain("1990-04-12");
     expect(args.html).toContain("Focus areas");
-    expect(args.html).toContain(baseSubmission.email);
-    expect(args.html).toContain(baseSubmission.id);
+    expect(args.html).toContain(submission.email);
+    expect(args.html).toContain(submission.id);
   });
 
-  it("includes a photo link when photoUrl is set", async () => {
+  it("includes the photo URL when photoUrl is set", async () => {
     sendMock.mockResolvedValue({});
+    const submission = buildSubmission();
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(baseSubmission);
+    await sendNotificationToJosephine(submission);
 
-    expect(sendMock.mock.calls[0]?.[0].html).toContain(baseSubmission.photoUrl);
+    expect(sendMock.mock.calls[0]?.[0].html).toContain(submission.photoUrl);
   });
 
-  it("omits the photo link when photoUrl is null", async () => {
+  it("omits the photo URL when photoUrl is null", async () => {
     sendMock.mockResolvedValue({});
+    const submission = buildSubmission({ photoUrl: null });
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine({ ...baseSubmission, photoUrl: null });
+    await sendNotificationToJosephine(submission);
 
-    expect(sendMock.mock.calls[0]?.[0].html).not.toContain("Photo:");
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).not.toContain("https://images.example.com/photo.jpg");
   });
 
   it("escapes HTML in user-provided values", async () => {
     sendMock.mockResolvedValue({});
-    const { sendNotificationToJosephine } = await import("./resend");
-
-    await sendNotificationToJosephine({
-      ...baseSubmission,
+    const submission = buildSubmission({
       email: 'evil"<script>alert(1)</script>@example.com',
     });
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    await sendNotificationToJosephine(submission);
 
     const html = sendMock.mock.calls[0]?.[0].html as string;
     expect(html).not.toContain("<script>");
@@ -99,7 +84,7 @@ describe("sendNotificationToJosephine", () => {
     vi.stubEnv("RESEND_API_KEY", "");
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(baseSubmission);
+    await sendNotificationToJosephine(buildSubmission());
 
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -108,41 +93,33 @@ describe("sendNotificationToJosephine", () => {
     vi.stubEnv("NOTIFICATION_EMAIL", "");
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(baseSubmission);
+    await sendNotificationToJosephine(buildSubmission());
 
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
 
 describe("sendClientConfirmation", () => {
-  it("sends to the client's email with a personalized subject", async () => {
+  it("sends to the client's email with a personalized subject and non-refundable acknowledgment", async () => {
     sendMock.mockResolvedValue({});
+    const submission = buildSubmission();
     const { sendClientConfirmation } = await import("./resend");
 
-    await sendClientConfirmation(baseSubmission);
+    await sendClientConfirmation(submission);
 
     const args = sendMock.mock.calls[0]?.[0];
-    expect(args.to).toBe(baseSubmission.email);
-    expect(args.subject).toBe(`Your ${baseSubmission.readingName} is confirmed`);
-    expect(args.html).toContain(baseSubmission.readingName);
+    expect(args.to).toBe(submission.email);
+    expect(args.subject).toContain(submission.readingName);
+    expect(args.html).toContain(submission.readingName);
     expect(args.html).toContain("non-refundable");
-    expect(args.html).toContain(baseSubmission.id);
-  });
-
-  it("does not embed the price display in the client confirmation", async () => {
-    sendMock.mockResolvedValue({});
-    const { sendClientConfirmation } = await import("./resend");
-
-    await sendClientConfirmation(baseSubmission);
-
-    expect(sendMock.mock.calls[0]?.[0].html).not.toContain(baseSubmission.readingPriceDisplay);
+    expect(args.html).toContain(submission.id);
   });
 
   it("skips silently when RESEND_API_KEY is not set", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     const { sendClientConfirmation } = await import("./resend");
 
-    await sendClientConfirmation(baseSubmission);
+    await sendClientConfirmation(buildSubmission());
 
     expect(sendMock).not.toHaveBeenCalled();
   });

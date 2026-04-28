@@ -63,7 +63,7 @@ describe("buildPhotoKey", () => {
 });
 
 describe("getSignedUploadUrl", () => {
-  it("calls getSignedUrl with PutObjectCommand built from the bucket, key, and content type", async () => {
+  it("signs a PutObjectCommand built from the bucket, key, content type, and 300s default expiry", async () => {
     getSignedUrlMock.mockResolvedValue("https://signed.example/url");
     const { getSignedUploadUrl } = await import("./r2");
 
@@ -75,9 +75,11 @@ describe("getSignedUploadUrl", () => {
       Key: "path/to/photo.jpg",
       ContentType: "image/jpeg",
     });
-    expect(getSignedUrlMock).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-      expiresIn: 300,
-    });
+
+    const [signedClient, signedCommand, signedOptions] = getSignedUrlMock.mock.calls[0]!;
+    expect(signedClient).toBe(s3CtorMock.mock.results[0]?.value);
+    expect(signedCommand).toBe(putObjectCommandCtor.mock.results[0]?.value);
+    expect(signedOptions).toEqual({ expiresIn: 300 });
   });
 
   it("respects custom expiresInSeconds", async () => {
@@ -86,9 +88,7 @@ describe("getSignedUploadUrl", () => {
 
     await getSignedUploadUrl("path/photo.jpg", "image/png", 60);
 
-    expect(getSignedUrlMock).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-      expiresIn: 60,
-    });
+    expect(getSignedUrlMock.mock.calls[0]?.[2]).toEqual({ expiresIn: 60 });
   });
 
   it("instantiates the S3 client with the R2 endpoint and credentials", async () => {

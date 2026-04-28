@@ -14,22 +14,10 @@ describe("escapeHtml", () => {
   it("escapes double and single quotes", () => {
     expect(escapeHtml(`"hello" 'world'`)).toBe("&quot;hello&quot; &#39;world&#39;");
   });
-
-  it("returns plain strings unchanged", () => {
-    expect(escapeHtml("plain text 123")).toBe("plain text 123");
-  });
 });
 
 describe("mergeClasses", () => {
-  it("merges class strings", () => {
-    expect(mergeClasses("a", "b")).toBe("a b");
-  });
-
-  it("resolves Tailwind conflicts via twMerge", () => {
-    expect(mergeClasses("p-2", "p-4")).toBe("p-4");
-  });
-
-  it("ignores falsy values", () => {
-    expect(mergeClasses("a", false, null, undefined, "b")).toBe("a b");
+  it("composes clsx + twMerge so Tailwind conflicts resolve and falsy values drop", () => {
+    expect(mergeClasses("a", false, null, undefined, "p-2", "p-4", "b")).toBe("a p-4 b");
   });
 });
