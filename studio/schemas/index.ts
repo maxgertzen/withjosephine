@@ -9,6 +9,10 @@ import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
 import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
+import { formField } from "./formField";
+import { formSection } from "./formSection";
+import { bookingForm } from "./bookingForm";
+import { submission } from "./submission";
 
 export const schemaTypes = [
   reading,
@@ -22,4 +26,8 @@ export const schemaTypes = [
   theme,
   underConstructionPage,
   notFoundPage,
+  formField,
+  formSection,
+  bookingForm,
+  submission,
 ];

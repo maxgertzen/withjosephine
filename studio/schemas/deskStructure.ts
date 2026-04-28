@@ -8,6 +8,7 @@ export const SINGLETON_TYPES = new Set([
   "theme",
   "underConstructionPage",
   "notFoundPage",
+  "bookingForm",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -15,6 +16,24 @@ const singletonListItem = (S: StructureBuilder, typeName: string, title: string)
     .title(title)
     .id(typeName)
     .child(S.document().schemaType(typeName).documentId(typeName));
+
+const submissionsByStatus = (
+  S: StructureBuilder,
+  title: string,
+  id: string,
+  status: "pending" | "paid" | "expired",
+) =>
+  S.listItem()
+    .title(title)
+    .id(id)
+    .child(
+      S.documentList()
+        .title(title)
+        .schemaType("submission")
+        .filter('_type == "submission" && status == $status')
+        .params({ status })
+        .defaultOrdering([{ field: "createdAt", direction: "desc" }]),
+    );
 
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
@@ -34,4 +53,22 @@ export const deskStructure = (S: StructureBuilder) =>
       S.documentTypeListItem("faqItem").title("FAQ Items"),
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
+      S.divider(),
+      S.listItem()
+        .title("📋 Bookings")
+        .id("bookingsGroup")
+        .child(
+          S.list()
+            .title("Bookings")
+            .items([
+              singletonListItem(S, "bookingForm", "Booking Form"),
+              S.divider(),
+              submissionsByStatus(S, "Pending Submissions", "submissionsPending", "pending"),
+              submissionsByStatus(S, "Paid Submissions", "submissionsPaid", "paid"),
+              submissionsByStatus(S, "Expired Submissions", "submissionsExpired", "expired"),
+              S.divider(),
+              S.documentTypeListItem("formField").title("Form Fields"),
+              S.documentTypeListItem("formSection").title("Form Sections"),
+            ]),
+        ),
     ]);

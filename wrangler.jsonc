@@ -6,10 +6,36 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
   "preview_urls": true,
+  // ─── Required environment ────────────────────────────────────────────────
+  // Server secrets (set via `wrangler secret put <NAME>` or CF dashboard →
+  // Workers → withjosephine → Settings → Variables → Secrets):
+  //   - STRIPE_WEBHOOK_SECRET      Stripe webhook signing secret (whsec_...)
+  //   - STRIPE_SECRET_KEY          Stripe secret key (sk_live_... or sk_test_...)
+  //   - RESEND_API_KEY             Resend API key with sending permission
+  //   - TURNSTILE_SECRET_KEY       Cloudflare Turnstile secret for the widget
+  //   - R2_ACCOUNT_ID              Cloudflare account ID hosting the R2 bucket
+  //   - R2_ACCESS_KEY_ID           R2 S3-API access key id
+  //   - R2_SECRET_ACCESS_KEY       R2 S3-API secret access key
+  //   - R2_BUCKET_NAME             R2 bucket name (withjosephine-booking-photos)
+  //   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
+  //
+  // Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
+  //   - NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  //   - NEXT_PUBLIC_SANITY_PROJECT_ID
+  //   - NEXT_PUBLIC_SANITY_DATASET
+  //   - NEXT_PUBLIC_SANITY_STUDIO_URL
+  // ─────────────────────────────────────────────────────────────────────────
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
   },
+  "r2_buckets": [
+    {
+      "binding": "BOOKING_PHOTOS",
+      "bucket_name": "withjosephine-booking-photos",
+      "preview_bucket_name": "withjosephine-booking-photos-preview",
+    },
+  ],
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,
