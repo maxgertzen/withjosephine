@@ -33,6 +33,8 @@ Set each via `wrangler secret put <NAME>` (prompts for the value) or in the Clou
 | `R2_BUCKET_NAME` | R2 bucket name | `withjosephine-booking-photos` |
 | `NOTIFICATION_EMAIL` | Inbox that receives new-booking notifications | `hello@withjosephine.com` (or chosen alias) |
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
+| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/reconcile` and `/api/cron/cleanup`. Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
+| `WEB3FORMS_KEY` | Web3Forms access key used server-side by `/api/contact` (replaces the old `NEXT_PUBLIC_WEB3FORMS_KEY` so the key is no longer exposed in the client bundle). | Web3Forms dashboard → Access Keys |
 
 Example:
 
@@ -122,6 +124,12 @@ NEXT_PUBLIC_SANITY_PROJECT_ID=your-value-here
 NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_SANITY_STUDIO_URL=http://localhost:3333
 SANITY_WRITE_TOKEN=your-value-here
+
+# Cron triggers
+CRON_SECRET=your-value-here
+
+# Web3Forms (server-side; replaces NEXT_PUBLIC_WEB3FORMS_KEY)
+WEB3FORMS_KEY=your-value-here
 ```
 
 ---

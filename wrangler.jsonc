@@ -19,6 +19,8 @@
   //   - R2_BUCKET_NAME             R2 bucket name (withjosephine-booking-photos)
   //   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
   //   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
+  //   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
+  //   - WEB3FORMS_KEY              Web3Forms access key used server-side by /api/contact
   //
   // Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
   //   - NEXT_PUBLIC_TURNSTILE_SITE_KEY
@@ -37,6 +39,12 @@
       "preview_bucket_name": "withjosephine-booking-photos-preview",
     },
   ],
+  // Cloudflare Cron Triggers — fire scheduled events that hit /api/cron/* via fetch.
+  //   - "0 */6 * * *" : reconcile every 6 hours (Stripe ↔ Sanity drift)
+  //   - "0 3 * * *"   : cleanup daily at 03:00 UTC (age out abandoned submissions, scrub old photos)
+  "triggers": {
+    "crons": ["0 */6 * * *", "0 3 * * *"],
+  },
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,

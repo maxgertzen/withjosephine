@@ -1,4 +1,4 @@
-import { createClient } from "next-sanity";
+import { createClient, type SanityClient } from "next-sanity";
 
 import { requireEnv } from "../env";
 
@@ -34,9 +34,9 @@ export const sanityClient = createClient({
  * environments without `SANITY_WRITE_TOKEN` set. `useCdn:false` is required
  * for writes.
  */
-let cachedWriteClient: ReturnType<typeof createClient> | null = null;
+let cachedWriteClient: SanityClient | null = null;
 
-export function getSanityWriteClient() {
+export function getSanityWriteClient(): SanityClient {
   if (cachedWriteClient) return cachedWriteClient;
   cachedWriteClient = createClient({
     projectId,

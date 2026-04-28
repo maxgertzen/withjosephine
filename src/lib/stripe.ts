@@ -18,3 +18,16 @@ export function constructWebhookEvent(
   const webhookSecret = requireEnv("STRIPE_WEBHOOK_SECRET");
   return getStripeClient().webhooks.constructEvent(rawBody, signature, webhookSecret);
 }
+
+export async function listRecentCompletedCheckoutSessions(
+  sinceUnixSeconds: number,
+): Promise<Stripe.Checkout.Session[]> {
+  const sessions: Stripe.Checkout.Session[] = [];
+  for await (const session of getStripeClient().checkout.sessions.list({
+    created: { gte: sinceUnixSeconds },
+    limit: 100,
+  })) {
+    if (session.status === "complete") sessions.push(session);
+  }
+  return sessions;
+}
