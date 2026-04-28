@@ -32,6 +32,7 @@ Set each via `wrangler secret put <NAME>` (prompts for the value) or in the Clou
 | `R2_SECRET_ACCESS_KEY` | R2 S3-API secret access key | Same flow as access key — shown once at creation |
 | `R2_BUCKET_NAME` | R2 bucket name | `withjosephine-booking-photos` |
 | `NOTIFICATION_EMAIL` | Inbox that receives new-booking notifications | `hello@withjosephine.com` (or chosen alias) |
+| `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
 
 Example:
 
@@ -45,6 +46,7 @@ wrangler secret put R2_ACCESS_KEY_ID
 wrangler secret put R2_SECRET_ACCESS_KEY
 wrangler secret put R2_BUCKET_NAME
 wrangler secret put NOTIFICATION_EMAIL
+wrangler secret put SANITY_WRITE_TOKEN
 ```
 
 `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a plain variable, not a secret — set it under **Variables → Variables** so it is inlined at build time.
@@ -119,6 +121,7 @@ R2_BUCKET_NAME=your-value-here
 NEXT_PUBLIC_SANITY_PROJECT_ID=your-value-here
 NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_SANITY_STUDIO_URL=http://localhost:3333
+SANITY_WRITE_TOKEN=your-value-here
 ```
 
 ---

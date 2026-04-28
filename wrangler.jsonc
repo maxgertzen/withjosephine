@@ -18,6 +18,7 @@
   //   - R2_SECRET_ACCESS_KEY       R2 S3-API secret access key
   //   - R2_BUCKET_NAME             R2 bucket name (withjosephine-booking-photos)
   //   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
+  //   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
   //
   // Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
   //   - NEXT_PUBLIC_TURNSTILE_SITE_KEY

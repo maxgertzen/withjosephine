@@ -3,6 +3,7 @@ import { cache } from "react";
 import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import {
+  bookingFormQuery,
   bookingPageQuery,
   faqItemsQuery,
   landingPageQuery,
@@ -18,6 +19,7 @@ import {
   underConstructionPageQuery,
 } from "./queries";
 import type {
+  SanityBookingForm,
   SanityBookingPage,
   SanityFaqItem,
   SanityLandingPage,
@@ -109,6 +111,11 @@ export const fetchUnderConstructionPage = cache(
 
 export const fetchNotFoundPage = cache(async (): Promise<SanityNotFoundPage | null> => {
   const { data } = await sanityFetch({ query: notFoundPageQuery });
+  return data;
+});
+
+export const fetchBookingForm = cache(async (): Promise<SanityBookingForm | null> => {
+  const { data } = await sanityFetch({ query: bookingFormQuery });
   return data;
 });
 

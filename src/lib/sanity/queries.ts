@@ -154,6 +154,38 @@ export const notFoundPageQuery = groq`
   }
 `;
 
+export const bookingFormQuery = groq`
+  *[_type == "bookingForm"][0] {
+    title,
+    intro,
+    description,
+    confirmationMessage,
+    nonRefundableNotice,
+    "sections": sections[]-> {
+      _id,
+      sectionTitle,
+      sectionDescription,
+      order,
+      "appliesToServices": appliesToServices[]->slug.current,
+      "fields": fields[]-> {
+        _id,
+        key,
+        label,
+        type,
+        placeholder,
+        helpText,
+        required,
+        system,
+        order,
+        multiSelectCount,
+        options,
+        validation,
+        "appliesToServices": appliesToServices[]->slug.current
+      }
+    } | order(order asc)
+  }
+`;
+
 export const legalPageBySlugQuery = groq`
   *[_type == "legalPage" && slug.current == $slug][0] {
     _id,

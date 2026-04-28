@@ -184,6 +184,63 @@ export type SanityPortableTextBlock = {
   level?: number;
 };
 
+export type SanityFormFieldType =
+  | "shortText"
+  | "longText"
+  | "email"
+  | "date"
+  | "time"
+  | "select"
+  | "multiSelectExact"
+  | "fileUpload"
+  | "consent";
+
+export type SanityFormFieldOption = {
+  value: string;
+  label: string;
+};
+
+export type SanityFormFieldValidation = {
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  patternErrorMessage?: string;
+};
+
+export type SanityFormField = {
+  _id: string;
+  key: string;
+  label: string;
+  type: SanityFormFieldType;
+  placeholder?: string;
+  helpText?: string;
+  required?: boolean;
+  system?: boolean;
+  order?: number;
+  multiSelectCount?: number;
+  options?: SanityFormFieldOption[];
+  validation?: SanityFormFieldValidation;
+  appliesToServices?: string[];
+};
+
+export type SanityFormSection = {
+  _id: string;
+  sectionTitle: string;
+  sectionDescription?: string;
+  order?: number;
+  appliesToServices?: string[];
+  fields: SanityFormField[];
+};
+
+export type SanityBookingForm = {
+  title: string;
+  intro?: string;
+  description?: string;
+  confirmationMessage?: string;
+  nonRefundableNotice: string;
+  sections: SanityFormSection[];
+};
+
 export type SanityLegalPage = {
   _id: string;
   title: string;
