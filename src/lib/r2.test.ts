@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendMock = vi.fn();
-const s3CtorMock = vi.fn(function MockS3(this: { send: unknown }) {
-  this.send = sendMock;
+const s3CtorMock = vi.fn(function () {
+  return { send: sendMock };
 });
-const putObjectCommandCtor = vi.fn(function MockPut(this: { input: unknown }, input: unknown) {
-  this.input = input;
+const putObjectCommandCtor = vi.fn(function (input: unknown) {
+  return { input };
 });
-const deleteObjectCommandCtor = vi.fn(function MockDel(this: { input: unknown }, input: unknown) {
-  this.input = input;
+const deleteObjectCommandCtor = vi.fn(function (input: unknown) {
+  return { input };
 });
 const getSignedUrlMock = vi.fn();
 

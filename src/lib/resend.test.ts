@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SubmissionContext } from "./resend";
 
 const sendMock = vi.fn();
-const resendCtorMock = vi.fn(function MockResend(this: { emails: unknown }) {
-  this.emails = { send: sendMock };
+const resendCtorMock = vi.fn(function () {
+  return { emails: { send: sendMock } };
 });
 
 vi.mock("resend", () => ({

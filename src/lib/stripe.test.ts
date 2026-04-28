@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const constructEventMock = vi.fn();
-const stripeCtorMock = vi.fn(function MockStripe(this: { webhooks: unknown }) {
-  this.webhooks = { constructEvent: constructEventMock };
+const stripeCtorMock = vi.fn(function () {
+  return { webhooks: { constructEvent: constructEventMock } };
 });
 
 vi.mock("stripe", () => ({
