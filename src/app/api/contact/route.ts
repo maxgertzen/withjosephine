@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getClientIp } from "@/lib/request";
+import { sendContactMessage } from "@/lib/resend";
 import { verifyTurnstileToken } from "@/lib/turnstile";
-
-const W3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
 
 type ContactRequestBody = {
   name: string;
@@ -46,37 +45,28 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ success: false, error: "Verification failed" }, { status: 400 });
   }
 
-  const accessKey = process.env.WEB3FORMS_KEY;
-  if (!accessKey) {
-    console.error("[contact] Web3Forms access key is not configured");
-    return NextResponse.json(
-      { success: false, error: "Contact form is not configured" },
-      { status: 500 },
-    );
-  }
-
   const trimmedName = parsedBody.name.trim();
   const trimmedEmail = parsedBody.email.trim();
   const trimmedMessage = parsedBody.message.trim();
 
-  const upstream = await fetch(W3FORMS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      access_key: accessKey,
+  try {
+    const result = await sendContactMessage({
       name: trimmedName,
       email: trimmedEmail,
       message: trimmedMessage,
-      subject: `New message from ${trimmedName}`,
-      botcheck: "",
-    }),
-  });
+    });
 
-  const data = (await upstream.json().catch(() => null)) as { success?: boolean } | null;
+    if (!result.resendId) {
+      console.error("[contact] Resend returned null id (env or send failure)");
+      return NextResponse.json(
+        { success: false, error: "Contact form is not configured" },
+        { status: 500 },
+      );
+    }
 
-  if (!upstream.ok || !data?.success) {
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[contact] Resend send failed", error);
     return NextResponse.json({ success: false }, { status: 502 });
   }
-
-  return NextResponse.json({ success: true });
 }

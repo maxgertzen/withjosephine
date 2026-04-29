@@ -4,9 +4,15 @@ vi.mock("@/lib/turnstile", () => ({
   verifyTurnstileToken: vi.fn(),
 }));
 
+vi.mock("@/lib/resend", () => ({
+  sendContactMessage: vi.fn(),
+}));
+
+import { sendContactMessage } from "@/lib/resend";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerify = vi.mocked(verifyTurnstileToken);
+const mockSend = vi.mocked(sendContactMessage);
 
 const VALID_BODY = {
   name: "Jane Doe",
@@ -17,11 +23,10 @@ const VALID_BODY = {
 
 beforeEach(() => {
   mockVerify.mockReset();
-  vi.stubEnv("WEB3FORMS_KEY", "wf-key-123");
+  mockSend.mockReset().mockResolvedValue({ resendId: "msg_contact" });
 });
 
 afterEach(() => {
-  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -53,26 +58,26 @@ describe("/api/contact", () => {
     const res = await callRoute({ ...VALID_BODY, botcheck: "spam" });
     expect(res.status).toBe(400);
     expect(mockVerify).not.toHaveBeenCalled();
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it("returns 400 when Turnstile verification fails", async () => {
     mockVerify.mockResolvedValueOnce(false);
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(400);
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("returns 500 when Web3Forms access key is missing", async () => {
-    vi.unstubAllEnvs();
+  it("returns 500 when Resend returns null id (env or send misconfig)", async () => {
     mockVerify.mockResolvedValueOnce(true);
+    mockSend.mockResolvedValueOnce({ resendId: null });
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(500);
   });
 
-  it("forwards trimmed payload to Web3Forms with empty botcheck", async () => {
+  it("forwards trimmed payload to sendContactMessage", async () => {
     mockVerify.mockResolvedValueOnce(true);
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }));
 
     const res = await callRoute({
       name: "  Jane Doe  ",
@@ -84,26 +89,17 @@ describe("/api/contact", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
-
-    const [url, options] = fetchSpy.mock.calls[0];
-    expect(url).toBe("https://api.web3forms.com/submit");
-    expect(options?.method).toBe("POST");
-    const forwarded = JSON.parse((options?.body as string) ?? "{}");
-    expect(forwarded).toEqual({
-      access_key: "wf-key-123",
+    expect(mockSend).toHaveBeenCalledWith({
       name: "Jane Doe",
       email: "jane@example.com",
       message: "Hello there",
-      subject: "New message from Jane Doe",
-      botcheck: "",
     });
   });
 
-  it("returns 502 when Web3Forms upstream fails", async () => {
+  it("returns 502 when Resend throws", async () => {
     mockVerify.mockResolvedValueOnce(true);
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false }), { status: 200 }),
-    );
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(502);

@@ -21,7 +21,6 @@
   //   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
   //   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
   //   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
-  //   - WEB3FORMS_KEY              Web3Forms access key used server-side by /api/contact
   //
   // Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
   //   - NEXT_PUBLIC_TURNSTILE_SITE_KEY

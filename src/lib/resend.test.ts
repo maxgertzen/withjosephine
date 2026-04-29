@@ -180,6 +180,69 @@ describe("sendDay7Delivery", () => {
   });
 });
 
+describe("sendContactMessage", () => {
+  it("sends to NOTIFICATION_EMAIL with reply-to set to the visitor's email", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_contact" } });
+    const { sendContactMessage } = await import("./resend");
+
+    const result = await sendContactMessage({
+      name: "Jane Doe",
+      email: "jane@example.com",
+      message: "First line\nSecond line",
+    });
+
+    expect(result.resendId).toBe("msg_contact");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("hello@withjosephine.com");
+    expect(args.replyTo).toBe("jane@example.com");
+    expect(args.subject).toBe("New message from Jane Doe");
+    expect(args.html).toContain("Jane Doe");
+    expect(args.html).toContain("jane@example.com");
+    expect(args.html).toContain("First line<br/>Second line");
+  });
+
+  it("escapes HTML in name, email, and message", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_contact" } });
+    const { sendContactMessage } = await import("./resend");
+
+    await sendContactMessage({
+      name: "<script>x</script>",
+      email: "evil@example.com",
+      message: "<img onerror=alert(1)>",
+    });
+
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).not.toContain("<script>x</script>");
+    expect(html).not.toContain("<img onerror=alert(1)>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("&lt;img");
+  });
+
+  it("returns null resendId when NOTIFICATION_EMAIL is missing", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "");
+    const { sendContactMessage } = await import("./resend");
+    const result = await sendContactMessage({
+      name: "Jane",
+      email: "jane@example.com",
+      message: "hi",
+    });
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("returns null resendId when RESEND_API_KEY is missing", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    const { sendContactMessage } = await import("./resend");
+    const result = await sendContactMessage({
+      name: "Jane",
+      email: "jane@example.com",
+      message: "hi",
+    });
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendDay7OverdueAlert", () => {
   it("sends to NOTIFICATION_EMAIL not the client", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7a" } });

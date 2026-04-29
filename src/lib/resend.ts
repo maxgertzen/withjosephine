@@ -213,6 +213,51 @@ export async function sendDay7Delivery(
   });
 }
 
+export type ContactMessage = {
+  name: string;
+  email: string;
+  message: string;
+};
+
+export async function sendContactMessage(
+  contact: ContactMessage,
+): Promise<EmailSendResult> {
+  const notificationEmail = process.env.NOTIFICATION_EMAIL;
+  if (!notificationEmail) {
+    console.warn("[resend] NOTIFICATION_EMAIL not set — skipping contact message");
+    return { resendId: null };
+  }
+
+  const client = getResendClient();
+  if (!client) {
+    console.warn("[resend] RESEND_API_KEY not set — skipping contact message");
+    return { resendId: null };
+  }
+
+  const safeName = escapeHtml(contact.name);
+  const safeEmail = escapeHtml(contact.email);
+  const safeMessage = escapeHtml(contact.message).replace(/\n/g, "<br/>");
+
+  const inner = `
+    <h1 style="font-family: ${EMAIL_BRAND.serifFamily}; color: ${EMAIL_BRAND.ink};">
+      New message from ${safeName}
+    </h1>
+    <p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p>
+    <hr style="border: none; border-top: 1px solid ${EMAIL_BRAND.divider}; margin: 24px 0;" />
+    <div style="white-space: pre-wrap;">${safeMessage}</div>
+  `;
+
+  const response = await client.emails.send({
+    from: FROM_ADDRESS,
+    to: notificationEmail,
+    replyTo: contact.email,
+    subject: `New message from ${contact.name}`,
+    html: renderEmailShell(inner, 640),
+  });
+
+  return { resendId: response.data?.id ?? null };
+}
+
 export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
   if (!notificationEmail) {

@@ -35,7 +35,6 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
 | `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
 | `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
-| `WEB3FORMS_KEY` | Web3Forms access key used server-side by `/api/contact` (replaces the old `NEXT_PUBLIC_WEB3FORMS_KEY` so the key is no longer exposed in the client bundle). | Web3Forms dashboard → Access Keys |
 
 Example:
 
