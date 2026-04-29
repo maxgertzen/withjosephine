@@ -19,4 +19,3 @@ export function LinkContent({ children, pendingLabel = "Loading" }: LinkContentP
   );
 }
 
-export { LinkContent as LinkSpinner };
