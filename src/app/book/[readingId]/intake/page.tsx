@@ -45,7 +45,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
       <header className="relative z-10 max-w-3xl mx-auto px-6 pt-8 flex items-center justify-between">
         <Link
-          href={`/book/${reading.slug}`}
+          href="/"
           className="font-body text-sm text-j-text-muted hover:text-j-accent transition-colors"
         >
           ← Back

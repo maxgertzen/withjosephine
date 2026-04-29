@@ -150,7 +150,7 @@ export default async function LandingPage() {
                 valueProposition={reading.valueProposition}
                 briefDescription={reading.briefDescription}
                 expandedDetails={reading.expandedDetails}
-                href={`/book/${reading.id}`}
+                href={`/book/${reading.id}/intake`}
               />
             </li>
           ))}
