@@ -148,6 +148,77 @@ export const submission = defineType({
       type: "datetime",
       description: "Set by the cleanup cron when an unpaid submission ages out.",
     }),
+    defineField({
+      name: "voiceNoteUrl",
+      title: "Voice Note URL",
+      type: "string",
+      description: "R2 URL for the voice note Josephine delivers (e.g. https://images.withjosephine.com/...).",
+    }),
+    defineField({
+      name: "pdfUrl",
+      title: "PDF URL",
+      type: "string",
+      description: "R2 URL for the supporting PDF Josephine delivers.",
+    }),
+    defineField({
+      name: "deliveredAt",
+      title: "Delivered At",
+      type: "datetime",
+      description:
+        "Set by Josephine in Studio when she has uploaded both voice note and PDF. Triggers the Day +7 client email.",
+    }),
+    defineField({
+      name: "emailsFired",
+      title: "Emails Fired",
+      type: "array",
+      description: "Audit log of every transactional email sent for this submission.",
+      of: [
+        {
+          type: "object",
+          name: "emailFiredEntry",
+          fields: [
+            defineField({
+              name: "type",
+              title: "Type",
+              type: "string",
+              description:
+                "Email kind. Mirrors the SPEC §15 Mixpanel email_sent type: one of order_confirmation, day2, day7, day14, abandonment.",
+              options: {
+                list: [
+                  { title: "Order confirmation", value: "order_confirmation" },
+                  { title: "Day +2 (I've started)", value: "day2" },
+                  { title: "Day +7 (delivery)", value: "day7" },
+                  { title: "Day +14 (post-delivery follow-up)", value: "day14" },
+                  { title: "Abandonment recovery", value: "abandonment" },
+                ],
+                layout: "dropdown",
+              },
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "sentAt",
+              title: "Sent At",
+              type: "datetime",
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "resendId",
+              title: "Resend ID",
+              type: "string",
+              description: "Resend message ID for traceability.",
+            }),
+          ],
+          preview: { select: { title: "type", subtitle: "sentAt" } },
+        },
+      ],
+      initialValue: [],
+    }),
+    defineField({
+      name: "abandonmentRecoveryFiredAt",
+      title: "Abandonment Recovery Fired At",
+      type: "datetime",
+      description: "Set when the abandonment-recovery cron fires its single recovery email.",
+    }),
   ],
   orderings: [
     {

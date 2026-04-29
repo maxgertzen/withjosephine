@@ -1,4 +1,26 @@
 import { defineField, defineType } from "sanity";
+import { nameFollowupField, typographyField } from "./_shared/typographyField";
+
+const ICON_KEYS = [
+  { title: "None", value: "none" },
+  { title: "Calendar", value: "calendar" },
+  { title: "Clock", value: "clock" },
+  { title: "Map pin", value: "map-pin" },
+  { title: "Camera", value: "camera" },
+  { title: "Bookmark", value: "bookmark" },
+  { title: "Star", value: "star" },
+];
+
+const HELPER_POSITIONS = [
+  { title: "After input (default)", value: "after" },
+  { title: "Before input", value: "before" },
+];
+
+const PLACE_AUTOCOMPLETE_PROVIDERS = [
+  { title: "GeoNames static (default)", value: "geonames-static" },
+  { title: "Geoapify (Phase 2)", value: "geoapify" },
+  { title: "None (plain text)", value: "none" },
+];
 
 export const formField = defineType({
   name: "formField",
@@ -44,6 +66,7 @@ export const formField = defineType({
           { title: "Multi-Select (exact count)", value: "multiSelectExact" },
           { title: "File Upload", value: "fileUpload" },
           { title: "Consent Checkbox", value: "consent" },
+          { title: "Place Autocomplete", value: "placeAutocomplete" },
         ],
         layout: "dropdown",
       },
@@ -61,6 +84,31 @@ export const formField = defineType({
       type: "text",
       rows: 2,
       description: "Secondary text shown beneath the input to guide the user.",
+    }),
+    defineField({
+      name: "clarificationNote",
+      title: "Clarification Note",
+      type: "text",
+      rows: 3,
+      description:
+        "Extra context shown alongside the field — typically italicised gold marginalia (e.g. ✦ note about birth time accuracy).",
+    }),
+    defineField({
+      name: "helperPosition",
+      title: "Helper Position",
+      type: "string",
+      description:
+        "Where the helper text renders. Default 'after'. Use 'before' for fields that need context before the input (e.g. photo upload).",
+      options: { list: HELPER_POSITIONS, layout: "radio" },
+      initialValue: "after",
+    }),
+    defineField({
+      name: "iconKey",
+      title: "Icon",
+      type: "string",
+      description: "Optional decorative icon rendered with the field label.",
+      options: { list: ICON_KEYS, layout: "dropdown" },
+      initialValue: "none",
     }),
     defineField({
       name: "required",
@@ -125,6 +173,19 @@ export const formField = defineType({
               description: "Visible text shown to the user.",
               validation: (rule) => rule.required(),
             }),
+            defineField({
+              name: "category",
+              title: "Category",
+              type: "string",
+              description: "Optional grouping label (e.g. 'Relationships', 'Purpose'). Used for §4 question grouping.",
+            }),
+            defineField({
+              name: "categoryOrder",
+              title: "Category Order",
+              type: "number",
+              description: "Display order of the category this option belongs to.",
+            }),
+            nameFollowupField(),
           ],
           preview: {
             select: { title: "label", subtitle: "value" },
@@ -132,6 +193,54 @@ export const formField = defineType({
         },
       ],
     }),
+    defineField({
+      name: "placeAutocompleteSource",
+      title: "Place Autocomplete Source",
+      type: "object",
+      description: "Provider used to look up place names. Only relevant for Place Autocomplete fields.",
+      hidden: ({ parent }) => parent?.type !== "placeAutocomplete",
+      fields: [
+        defineField({
+          name: "provider",
+          title: "Provider",
+          type: "string",
+          options: { list: PLACE_AUTOCOMPLETE_PROVIDERS, layout: "dropdown" },
+          initialValue: "geonames-static",
+        }),
+      ],
+    }),
+    defineField({
+      name: "fileUploadConfig",
+      title: "File Upload Config",
+      type: "object",
+      description: "MIME types, size limit, and EXIF stripping for file upload fields.",
+      hidden: ({ parent }) => parent?.type !== "fileUpload",
+      fields: [
+        defineField({
+          name: "mimeTypes",
+          title: "Accepted MIME Types",
+          type: "array",
+          of: [{ type: "string" }],
+          initialValue: ["image/jpeg", "image/png", "image/webp"],
+        }),
+        defineField({
+          name: "maxSizeMb",
+          title: "Max Size (MB)",
+          type: "number",
+          initialValue: 8,
+        }),
+        defineField({
+          name: "exifStrip",
+          title: "Strip EXIF on Upload",
+          type: "boolean",
+          initialValue: true,
+        }),
+      ],
+    }),
+    nameFollowupField(),
+    typographyField(
+      "Optional per-field typography override. Leave fields blank to inherit from the page defaults.",
+    ),
     defineField({
       name: "validation",
       title: "Validation Rules",

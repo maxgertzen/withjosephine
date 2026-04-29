@@ -35,6 +35,45 @@ const submissionsByStatus = (
         .defaultOrdering([{ field: "createdAt", direction: "desc" }]),
     );
 
+const PENDING_OVER_24H_FILTER =
+  '_type == "submission" && status == "pending" && dateTime(createdAt) < dateTime(now()) - 60*60*24';
+
+const submissionsPendingOver24h = (S: StructureBuilder) =>
+  S.listItem()
+    .title("Pending > 24h")
+    .id("submissionsPendingOver24h")
+    .child(
+      S.documentList()
+        .title("Pending > 24h")
+        .schemaType("submission")
+        .filter(PENDING_OVER_24H_FILTER)
+        .defaultOrdering([{ field: "createdAt", direction: "asc" }]),
+    );
+
+const submissionsPaidAwaitingDelivery = (S: StructureBuilder) =>
+  S.listItem()
+    .title("Paid awaiting delivery")
+    .id("submissionsPaidAwaitingDelivery")
+    .child(
+      S.documentList()
+        .title("Paid awaiting delivery")
+        .schemaType("submission")
+        .filter('_type == "submission" && status == "paid" && !defined(deliveredAt)')
+        .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
+    );
+
+const submissionsDelivered = (S: StructureBuilder) =>
+  S.listItem()
+    .title("Delivered")
+    .id("submissionsDelivered")
+    .child(
+      S.documentList()
+        .title("Delivered")
+        .schemaType("submission")
+        .filter('_type == "submission" && defined(deliveredAt)')
+        .defaultOrdering([{ field: "deliveredAt", direction: "desc" }]),
+    );
+
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
@@ -43,8 +82,6 @@ export const deskStructure = (S: StructureBuilder) =>
       singletonListItem(S, "theme", "Theme"),
       S.divider(),
       singletonListItem(S, "landingPage", "Landing Page"),
-      singletonListItem(S, "bookingPage", "Booking Page"),
-      singletonListItem(S, "thankYouPage", "Thank You Page"),
       singletonListItem(S, "underConstructionPage", "Under Construction Page"),
       singletonListItem(S, "notFoundPage", "404 Page"),
       S.divider(),
@@ -61,11 +98,17 @@ export const deskStructure = (S: StructureBuilder) =>
           S.list()
             .title("Bookings")
             .items([
+              singletonListItem(S, "bookingPage", "Booking Page"),
               singletonListItem(S, "bookingForm", "Booking Form"),
+              singletonListItem(S, "thankYouPage", "Thank You Page"),
               S.divider(),
               submissionsByStatus(S, "Pending Submissions", "submissionsPending", "pending"),
               submissionsByStatus(S, "Paid Submissions", "submissionsPaid", "paid"),
               submissionsByStatus(S, "Expired Submissions", "submissionsExpired", "expired"),
+              S.divider(),
+              submissionsPendingOver24h(S),
+              submissionsPaidAwaitingDelivery(S),
+              submissionsDelivered(S),
               S.divider(),
               S.documentTypeListItem("formField").title("Form Fields"),
               S.documentTypeListItem("formSection").title("Form Sections"),
