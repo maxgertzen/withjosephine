@@ -181,6 +181,11 @@ fire-and-forget — drift can happen on Sanity outages.
 - **What:** R2 access only needs three S3 operations (`PutObject` presign, `DeleteObject`, `ListObjectsV2`). The full `@aws-sdk/client-s3` package ships ~100 operations + middleware we don't use. `aws4fetch` is ~10 KB minified and signs SigV4 fetch calls; it covers the same surface.
 - **Action:** Replace `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` with `aws4fetch` in `src/lib/r2.ts`. Update `r2.test.ts` mocks. Estimated saving: 1–2 MiB compressed → real headroom against the 3 MiB limit.
 
+### Apex `withjosephine.com` returns 500 — investigate
+- **Source:** First successful deploy 2026-04-30. PR #41 deployed; `x-opennext: 1` header confirms our Worker is serving the apex, but `https://withjosephine.com/` returns HTTP 500 with `text/plain` body. `preview.withjosephine.com` correctly redirects to CF Access login (gate is working).
+- **Most likely causes:** (1) the `headers()` call in `src/app/page.tsx` runs in a context that throws under-construction-flag-checking; (2) `SANITY_READ_TOKEN` worker secret may be missing in CF dashboard so the `fetchUnderConstructionPage()` fetch fails; (3) `NEXT_PUBLIC_UNDER_CONSTRUCTION` env var may not be set on the Worker (we wrote it as a plain Var earlier — verify it exists).
+- **Action:** `pnpm exec wrangler tail` while hitting the apex once. The actual stack trace surfaces. Most likely a one-line config or env-var fix.
+
 ### D1 live-write smoke test (immediately post-deploy)
 - **Source:** ADR-001 acceptance.
 - **What:** First post-deploy verification that `/api/booking` actually
