@@ -34,6 +34,7 @@ import type {
 
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
+import { SubmitOverlay } from "./SubmitOverlay";
 
 type FieldValue = string | string[] | boolean;
 type FieldValues = Record<string, FieldValue>;
@@ -43,9 +44,9 @@ type IntakeFormProps = {
   readingName: string;
   sections: SanityFormSection[];
   nonRefundableNotice: string;
-  confirmationMessage?: string;
   submitLabel?: string;
   pagination?: SanityPagination;
+  loadingStateCopy?: string;
 };
 
 function initialValueFor(field: SanityFormField): FieldValue {
@@ -67,9 +68,9 @@ export function IntakeForm({
   readingName,
   sections,
   nonRefundableNotice,
-  confirmationMessage,
   submitLabel = "Continue to Payment",
   pagination,
+  loadingStateCopy,
 }: IntakeFormProps) {
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
@@ -121,7 +122,6 @@ export function IntakeForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSucceeded, setIsSucceeded] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [chipTick, setChipTick] = useState(0);
 
@@ -330,30 +330,25 @@ export function IntakeForm({
             ? "Some fields didn't pass validation. Please review and try again."
             : "Something went wrong submitting your form. Please try again.";
         setSubmitError(message);
+        setIsSubmitting(false);
         return;
       }
 
       const data = (await response.json()) as { paymentUrl?: string };
       if (!data.paymentUrl) {
         setSubmitError("Unexpected response. Please try again.");
+        setIsSubmitting(false);
         return;
       }
 
-      setIsSucceeded(true);
+      // Keep isSubmitting=true so the SubmitOverlay stays up until the
+      // browser finishes navigating to Stripe; otherwise the overlay would
+      // flicker off for one render before the page unloads.
       window.location.href = data.paymentUrl;
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
-    } finally {
       setIsSubmitting(false);
     }
-  }
-
-  if (isSucceeded && confirmationMessage) {
-    return (
-      <p className="font-display text-lg italic text-j-text leading-relaxed">
-        {confirmationMessage}
-      </p>
-    );
   }
 
   return (
@@ -369,8 +364,9 @@ export function IntakeForm({
         event.preventDefault();
       }}
       noValidate
-      className="flex flex-col gap-10"
+      className="relative flex flex-col gap-10"
     >
+      {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
       <input
         type="text"
         name={HONEYPOT_FIELD}

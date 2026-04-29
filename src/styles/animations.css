@@ -89,3 +89,9 @@
 .j-fade-in {
   animation: fadeIn 1.2s ease-out forwards;
 }
+@media (prefers-reduced-motion: reduce) {
+  .j-fade-in,
+  .j-fade-in-up {
+    animation: none;
+  }
+}

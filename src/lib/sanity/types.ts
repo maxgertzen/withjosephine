@@ -285,6 +285,7 @@ export type SanityBookingForm = {
   entryPageContent?: SanityEntryPageContent;
   consentBlock?: SanityConsentBlock;
   pagination?: SanityPagination;
+  loadingStateCopy?: string;
   sections: SanityFormSection[];
 };
 

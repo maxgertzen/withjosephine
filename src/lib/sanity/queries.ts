@@ -180,6 +180,7 @@ export const bookingFormQuery = groq`
         pageCount
       }
     },
+    loadingStateCopy,
     "sections": sections[]-> {
       _id,
       sectionTitle,

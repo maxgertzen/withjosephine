@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { IntakeForm } from "@/components/IntakeForm";
+import { BOOKING_ROUTES } from "@/lib/booking/constants";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 
@@ -75,29 +76,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <header
-        className="relative z-10 max-w-5xl mx-auto px-6 flex items-center justify-between border-b border-j-border-subtle"
-        style={{
-          paddingTop: "calc(1.5rem + env(safe-area-inset-top, 0px))",
-          paddingBottom: "1rem",
-        }}
-      >
-        <Link
-          href={`/book/${reading.slug}`}
-          className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2"
-        >
-          ‹ Back
-        </Link>
-        <span className="font-display italic text-lg md:text-xl text-j-text-heading tracking-wide">
-          Josephine Soul Readings
-        </span>
-        <Link
-          href="/about"
-          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2"
-        >
-          About Josephine
-        </Link>
-      </header>
+      <BookingFlowHeader backHref={BOOKING_ROUTES.letter(reading.slug)} />
 
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
         <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
@@ -121,8 +100,8 @@ export default async function IntakePage({ params }: IntakePageProps) {
               readingName={reading.name}
               sections={filteredSections}
               nonRefundableNotice={bookingForm.nonRefundableNotice}
-              confirmationMessage={bookingForm.confirmationMessage}
               pagination={bookingForm.pagination}
+              loadingStateCopy={bookingForm.loadingStateCopy}
             />
           </div>
         </article>

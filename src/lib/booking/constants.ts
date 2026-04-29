@@ -6,3 +6,9 @@ export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 export const BOOKING_API_ROUTE = "/api/booking";
 export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
+
+export const BOOKING_ROUTES = {
+  entry: (slug: string) => `/book/${slug}`,
+  letter: (slug: string) => `/book/${slug}/letter`,
+  intake: (slug: string) => `/book/${slug}/intake`,
+} as const;

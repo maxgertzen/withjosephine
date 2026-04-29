@@ -8,6 +8,7 @@ vi.mock("next/link", () => ({
       {children as React.ReactNode}
     </a>
   ),
+  useLinkStatus: () => ({ pending: false }),
 }));
 
 import ErrorPage from "../error";
