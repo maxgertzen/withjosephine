@@ -3,6 +3,7 @@ import { requireEnv } from "./env";
 const HEX_BYTES = 32;
 const HEX_LENGTH = HEX_BYTES * 2;
 const TEXT_ENCODER = new TextEncoder();
+const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
 
 let cachedKey: Promise<CryptoKey> | null = null;
 
@@ -50,45 +51,64 @@ function base64UrlDecode(encoded: string): string | null {
   }
 }
 
-async function computeHmacHex(submissionId: string): Promise<string> {
+function buildSigningPayload(submissionId: string, expiresAtSeconds: number): string {
+  return `${submissionId}|${expiresAtSeconds}`;
+}
+
+async function computeHmacHex(payload: string): Promise<string> {
   const key = await getSigningKey();
-  const signature = await crypto.subtle.sign("HMAC", key, TEXT_ENCODER.encode(submissionId));
+  const signature = await crypto.subtle.sign("HMAC", key, TEXT_ENCODER.encode(payload));
   return bufferToHex(signature);
 }
 
 /**
- * Token format: `{base64url(submissionId)}.{hmacHex}`. Holds the submissionId
- * inside the URL while preventing forgery via HMAC.
+ * Token format: `{base64url(submissionId)}.{expiresAtSeconds}.{hmacHex}`.
+ * The HMAC covers `${submissionId}|${expiresAtSeconds}` so neither part can
+ * be swapped without breaking the signature.
+ *
+ * Default TTL is one year — generous for a "your reading is ready" link
+ * that customers may bookmark, short enough that a leaked URL has bounded
+ * lifetime. Pass `ttlSeconds` to override (e.g. tighter for one-off shares).
  */
-export async function signListenToken(submissionId: string): Promise<string> {
-  const hmacHex = await computeHmacHex(submissionId);
-  return `${base64UrlEncode(submissionId)}.${hmacHex}`;
+export async function signListenToken(
+  submissionId: string,
+  ttlSeconds: number = ONE_YEAR_SECONDS,
+): Promise<string> {
+  const expiresAtSeconds = Math.floor(Date.now() / 1000) + ttlSeconds;
+  const payload = buildSigningPayload(submissionId, expiresAtSeconds);
+  const hmacHex = await computeHmacHex(payload);
+  return `${base64UrlEncode(submissionId)}.${expiresAtSeconds}.${hmacHex}`;
 }
 
 export type ListenTokenVerification =
-  | { valid: false }
-  | { valid: true; submissionId: string };
+  | { valid: false; reason: "malformed" | "bad-signature" | "expired" }
+  | { valid: true; submissionId: string; expiresAtSeconds: number };
 
 export async function verifyListenToken(token: string): Promise<ListenTokenVerification> {
-  const dotIndex = token.indexOf(".");
-  if (dotIndex <= 0) return { valid: false };
-  const idPart = token.slice(0, dotIndex);
-  const hmacPart = token.slice(dotIndex + 1);
+  const parts = token.split(".");
+  if (parts.length !== 3) return { valid: false, reason: "malformed" };
+  const [idPart, expiresPart, hmacPart] = parts as [string, string, string];
 
   const submissionId = base64UrlDecode(idPart);
-  if (!submissionId) return { valid: false };
+  if (!submissionId) return { valid: false, reason: "malformed" };
+
+  if (!/^\d+$/.test(expiresPart)) return { valid: false, reason: "malformed" };
+  const expiresAtSeconds = Number.parseInt(expiresPart, 10);
+  if (!Number.isFinite(expiresAtSeconds)) return { valid: false, reason: "malformed" };
 
   const signature = hexToBuffer(hmacPart);
-  if (!signature) return { valid: false };
+  if (!signature) return { valid: false, reason: "malformed" };
 
   const key = await getSigningKey();
-  const ok = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    signature,
-    TEXT_ENCODER.encode(submissionId),
-  );
-  return ok ? { valid: true, submissionId } : { valid: false };
+  const payload = buildSigningPayload(submissionId, expiresAtSeconds);
+  const ok = await crypto.subtle.verify("HMAC", key, signature, TEXT_ENCODER.encode(payload));
+  if (!ok) return { valid: false, reason: "bad-signature" };
+
+  if (Date.now() / 1000 >= expiresAtSeconds) {
+    return { valid: false, reason: "expired" };
+  }
+
+  return { valid: true, submissionId, expiresAtSeconds };
 }
 
 // Test-only: reset cached key so vi.stubEnv changes apply.

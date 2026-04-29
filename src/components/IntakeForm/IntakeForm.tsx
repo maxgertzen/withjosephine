@@ -1,7 +1,7 @@
 "use client";
 
-import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/Form/Checkbox";
 import { DatePicker } from "@/components/Form/DatePicker";
@@ -147,6 +147,8 @@ export function IntakeForm({
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [honeypot, setHoneypot] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileResolverRef = useRef<((token: string | null) => void) | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -235,6 +237,28 @@ export function IntakeForm({
     process.env.NODE_ENV !== "production" &&
     process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
   const turnstileRequired = Boolean(turnstileSiteKey) && !turnstileBypass;
+
+  const handleTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token);
+    turnstileResolverRef.current?.(token);
+    turnstileResolverRef.current = null;
+  }, []);
+
+  const handleTurnstileFailure = useCallback(() => {
+    setTurnstileToken(null);
+    turnstileResolverRef.current?.(null);
+    turnstileResolverRef.current = null;
+  }, []);
+
+  const requestFreshTurnstileToken = useCallback(async (): Promise<string | null> => {
+    if (!turnstileRequired) return "bypass";
+    if (!turnstileRef.current) return null;
+    return new Promise<string | null>((resolve) => {
+      turnstileResolverRef.current = resolve;
+      turnstileRef.current?.reset();
+      turnstileRef.current?.execute();
+    });
+  }, [turnstileRequired]);
 
   const totalPages = pages.length;
   const isFirstPage = currentPage === 0;
@@ -360,9 +384,13 @@ export function IntakeForm({
       return;
     }
 
-    if (turnstileRequired && !turnstileToken) {
-      setSubmitError("Please complete the verification challenge.");
-      return;
+    let submissionTurnstileToken: string | null = turnstileToken;
+    if (turnstileRequired) {
+      submissionTurnstileToken = await requestFreshTurnstileToken();
+      if (!submissionTurnstileToken) {
+        setSubmitError("Please complete the verification challenge.");
+        return;
+      }
     }
 
     const result = submissionSchema.safeParse(values);
@@ -396,7 +424,7 @@ export function IntakeForm({
         body: JSON.stringify({
           readingSlug: readingId,
           values: { ...result.data, ...followupResult.data, ...companionKeys },
-          turnstileToken: turnstileToken ?? "",
+          turnstileToken: submissionTurnstileToken ?? "",
           [HONEYPOT_FIELD]: honeypot,
           consentLabelSnapshot: consentField?.label ?? "",
         }),
@@ -524,6 +552,7 @@ export function IntakeForm({
                     disabled: isSubmitting,
                     timeUnknownPairs,
                     timeUnknownLabels,
+                    requestTurnstileToken: requestFreshTurnstileToken,
                   }),
                 )}
             </div>
@@ -550,13 +579,15 @@ export function IntakeForm({
         </section>
       ) : null}
 
-      {isFinalPage && turnstileRequired && turnstileSiteKey ? (
-        <div className="flex justify-center">
+      {turnstileRequired && turnstileSiteKey ? (
+        <div className="sr-only" aria-hidden="true">
           <Turnstile
+            ref={turnstileRef}
             siteKey={turnstileSiteKey}
-            onSuccess={setTurnstileToken}
-            onExpire={() => setTurnstileToken(null)}
-            onError={() => setTurnstileToken(null)}
+            options={{ execution: "execute", appearance: "interaction-only" }}
+            onSuccess={handleTurnstileSuccess}
+            onExpire={handleTurnstileFailure}
+            onError={handleTurnstileFailure}
           />
         </div>
       ) : null}
@@ -579,11 +610,12 @@ export function IntakeForm({
         }}
         isSubmitting={isSubmitting}
         nextDisabled={!currentPageValid}
-        submitDisabled={
-          isFinalPage && (!currentPageValid || (turnstileRequired && !turnstileToken))
-        }
+        submitDisabled={isFinalPage && !currentPageValid}
         submitLabel={submitLabel}
         savedIndicator={savedIndicator}
+        disabledHint={
+          !currentPageValid ? "Please complete the required fields above." : null
+        }
       />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>
@@ -599,10 +631,19 @@ type RenderContext = {
   disabled: boolean;
   timeUnknownPairs: Map<string, string>;
   timeUnknownLabels: Map<string, string>;
+  requestTurnstileToken: () => Promise<string | null>;
 };
 
 function renderField(field: SanityFormField, ctx: RenderContext) {
-  const { values, setValue, errors, disabled, timeUnknownPairs, timeUnknownLabels } = ctx;
+  const {
+    values,
+    setValue,
+    errors,
+    disabled,
+    timeUnknownPairs,
+    timeUnknownLabels,
+    requestTurnstileToken,
+  } = ctx;
   const id = `field-${field.key}`;
   const error = errors[field.key];
   const value = values[field.key];
@@ -762,6 +803,7 @@ function renderField(field: SanityFormField, ctx: RenderContext) {
           error={error}
           required={field.required}
           disabled={disabled}
+          requestTurnstileToken={requestTurnstileToken}
         />
       );
 

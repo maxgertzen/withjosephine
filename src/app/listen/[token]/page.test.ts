@@ -49,31 +49,47 @@ async function callPage(token: string) {
 
 describe("ListenPage gating", () => {
   it("404s when token verification fails", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: false });
+    mockVerify.mockResolvedValueOnce({ valid: false, reason: "bad-signature" });
     await expect(callPage("forged")).rejects.toThrow("__notfound__");
     expect(mockFind).not.toHaveBeenCalled();
   });
 
   it("404s when submission is not found", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: true, submissionId: "sub_1" });
+    mockVerify.mockResolvedValueOnce({
+      valid: true,
+      submissionId: "sub_1",
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     mockFind.mockResolvedValueOnce(null);
     await expect(callPage("ok")).rejects.toThrow("__notfound__");
   });
 
   it("404s when submission status is not paid", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: true, submissionId: "sub_1" });
+    mockVerify.mockResolvedValueOnce({
+      valid: true,
+      submissionId: "sub_1",
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     mockFind.mockResolvedValueOnce({ ...SUBMISSION, status: "pending" });
     await expect(callPage("ok")).rejects.toThrow("__notfound__");
   });
 
   it("404s when deliveredAt is not set", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: true, submissionId: "sub_1" });
+    mockVerify.mockResolvedValueOnce({
+      valid: true,
+      submissionId: "sub_1",
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     mockFind.mockResolvedValueOnce({ ...SUBMISSION, deliveredAt: undefined });
     await expect(callPage("ok")).rejects.toThrow("__notfound__");
   });
 
   it("404s when both voiceNoteUrl and pdfUrl are missing", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: true, submissionId: "sub_1" });
+    mockVerify.mockResolvedValueOnce({
+      valid: true,
+      submissionId: "sub_1",
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     mockFind.mockResolvedValueOnce({
       ...SUBMISSION,
       voiceNoteUrl: undefined,
@@ -83,7 +99,11 @@ describe("ListenPage gating", () => {
   });
 
   it("renders successfully when token + paid + deliveredAt + assets all present", async () => {
-    mockVerify.mockResolvedValueOnce({ valid: true, submissionId: "sub_1" });
+    mockVerify.mockResolvedValueOnce({
+      valid: true,
+      submissionId: "sub_1",
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     mockFind.mockResolvedValueOnce(SUBMISSION);
     await expect(callPage("ok")).resolves.toBeTruthy();
     expect(notFoundMock).not.toHaveBeenCalled();

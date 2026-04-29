@@ -28,6 +28,7 @@ type FileUploadProps = {
   required?: boolean;
   disabled?: boolean;
   uploadUrlEndpoint?: string;
+  requestTurnstileToken?: () => Promise<string | null>;
 };
 
 
@@ -38,7 +39,12 @@ type UploadUrlResponse = {
 
 async function requestSignedUrl(
   endpoint: string,
-  payload: { filename: string; contentType: string; size: number },
+  payload: {
+    filename: string;
+    contentType: string;
+    size: number;
+    turnstileToken: string;
+  },
 ): Promise<UploadUrlResponse> {
   const response = await fetch(endpoint, {
     method: "POST",
@@ -79,6 +85,7 @@ export function FileUpload({
   required,
   disabled,
   uploadUrlEndpoint = UPLOAD_URL_API_ROUTE,
+  requestTurnstileToken,
 }: FileUploadProps) {
   const [status, setStatus] = useState<UploadStatus>(value ? "done" : "idle");
   const [filename, setFilename] = useState<string>("");
@@ -101,10 +108,17 @@ export function FileUpload({
     setStatus("requesting");
 
     try {
+      const turnstileToken = (await requestTurnstileToken?.()) ?? "bypass";
+      if (!turnstileToken) {
+        setLocalError("Verification check failed. Please try again.");
+        setStatus("error");
+        return;
+      }
       const { uploadUrl, key } = await requestSignedUrl(uploadUrlEndpoint, {
         filename: file.name,
         contentType: file.type,
         size: file.size,
+        turnstileToken,
       });
       setStatus("uploading");
       await putToR2(uploadUrl, file);

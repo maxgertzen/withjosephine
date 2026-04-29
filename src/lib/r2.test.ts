@@ -68,38 +68,41 @@ describe("buildPhotoKey", () => {
 });
 
 describe("getSignedUploadUrl", () => {
-  it("signs a PutObjectCommand built from the bucket, key, content type, and 300s default expiry", async () => {
+  it("signs a PutObjectCommand with bucket, key, content type, content length, and 300s default expiry", async () => {
     getSignedUrlMock.mockResolvedValue("https://signed.example/url");
     const { getSignedUploadUrl } = await import("./r2");
 
-    const result = await getSignedUploadUrl("path/to/photo.jpg", "image/jpeg");
+    const result = await getSignedUploadUrl("path/to/photo.jpg", "image/jpeg", 1234);
 
     expect(result).toBe("https://signed.example/url");
     expect(putObjectCommandCtor).toHaveBeenCalledWith({
       Bucket: "bucket-test",
       Key: "path/to/photo.jpg",
       ContentType: "image/jpeg",
+      ContentLength: 1234,
     });
 
     const [signedClient, signedCommand, signedOptions] = getSignedUrlMock.mock.calls[0]!;
     expect(signedClient).toBe(s3CtorMock.mock.results[0]?.value);
     expect(signedCommand).toBe(putObjectCommandCtor.mock.results[0]?.value);
-    expect(signedOptions).toEqual({ expiresIn: 300 });
+    expect(signedOptions.expiresIn).toBe(300);
+    expect(signedOptions.unhoistableHeaders).toBeInstanceOf(Set);
+    expect((signedOptions.unhoistableHeaders as Set<string>).has("content-length")).toBe(true);
   });
 
   it("respects custom expiresInSeconds", async () => {
     getSignedUrlMock.mockResolvedValue("https://signed.example/url");
     const { getSignedUploadUrl } = await import("./r2");
 
-    await getSignedUploadUrl("path/photo.jpg", "image/png", 60);
+    await getSignedUploadUrl("path/photo.jpg", "image/png", 100, 60);
 
-    expect(getSignedUrlMock.mock.calls[0]?.[2]).toEqual({ expiresIn: 60 });
+    expect(getSignedUrlMock.mock.calls[0]?.[2].expiresIn).toBe(60);
   });
 
   it("instantiates the S3 client with the R2 endpoint and credentials", async () => {
     getSignedUrlMock.mockResolvedValue("u");
     const { getSignedUploadUrl } = await import("./r2");
-    await getSignedUploadUrl("k", "image/jpeg");
+    await getSignedUploadUrl("k", "image/jpeg", 100);
 
     expect(s3CtorMock).toHaveBeenCalledWith({
       region: "auto",
@@ -128,7 +131,7 @@ describe("missing env", () => {
   it("throws when R2_ACCOUNT_ID is missing", async () => {
     vi.stubEnv("R2_ACCOUNT_ID", "");
     const { getSignedUploadUrl } = await import("./r2");
-    await expect(getSignedUploadUrl("k", "image/jpeg")).rejects.toThrow(
+    await expect(getSignedUploadUrl("k", "image/jpeg", 100)).rejects.toThrow(
       "Missing required env var: R2_ACCOUNT_ID",
     );
   });

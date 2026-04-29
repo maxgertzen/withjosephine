@@ -36,6 +36,7 @@ function getBucketName(): string {
 export async function getSignedUploadUrl(
   key: string,
   contentType: string,
+  contentLength: number,
   expiresInSeconds = 300,
 ): Promise<string> {
   const client = getR2Client();
@@ -43,8 +44,12 @@ export async function getSignedUploadUrl(
     Bucket: getBucketName(),
     Key: key,
     ContentType: contentType,
+    ContentLength: contentLength,
   });
-  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+  return getSignedUrl(client, command, {
+    expiresIn: expiresInSeconds,
+    unhoistableHeaders: new Set(["content-length"]),
+  });
 }
 
 export type R2ObjectSummary = { key: string; lastModified: Date };

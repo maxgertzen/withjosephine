@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 import { ACCEPTED_PHOTO_MIME_SET, MAX_PHOTO_BYTES } from "@/lib/booking/constants";
 import { buildPhotoKey, getSignedUploadUrl } from "@/lib/r2";
+import { getClientIp } from "@/lib/request";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 type UploadUrlBody = {
   filename: unknown;
   contentType: unknown;
   size: unknown;
+  turnstileToken: unknown;
 };
 
 function isUploadUrlBody(body: unknown): body is UploadUrlBody {
@@ -25,7 +28,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { filename, contentType, size } = body;
+  const { filename, contentType, size, turnstileToken } = body;
+
+  if (typeof turnstileToken !== "string" || turnstileToken.length === 0) {
+    return NextResponse.json({ error: "Verification token is required" }, { status: 400 });
+  }
+  const ip = getClientIp(request);
+  const turnstileOk = await verifyTurnstileToken(turnstileToken, ip ?? undefined);
+  if (!turnstileOk) {
+    return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+  }
 
   if (typeof filename !== "string" || filename.length === 0) {
     return NextResponse.json({ error: "filename is required" }, { status: 400 });
@@ -47,7 +59,7 @@ export async function POST(request: Request) {
   const key = buildPhotoKey(tempId, filename);
 
   try {
-    const uploadUrl = await getSignedUploadUrl(key, contentType);
+    const uploadUrl = await getSignedUploadUrl(key, contentType, size);
     return NextResponse.json({ uploadUrl, key });
   } catch (error) {
     console.error("[upload-url] failed to sign", error);

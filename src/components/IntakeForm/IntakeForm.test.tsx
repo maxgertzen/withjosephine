@@ -6,17 +6,23 @@ import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm } from "./IntakeForm";
 
-vi.mock("@marsidev/react-turnstile", () => ({
-  Turnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => (
-    <button
-      type="button"
-      data-testid="turnstile-stub"
-      onClick={() => onSuccess("turnstile-token-stub")}
-    >
-      Verify
-    </button>
-  ),
-}));
+vi.mock("@marsidev/react-turnstile", () => {
+  const React = require("react");
+  return {
+    Turnstile: React.forwardRef(function MockTurnstile(
+      { onSuccess }: { onSuccess: (token: string) => void },
+      ref: React.Ref<{ reset: () => void; execute: () => void }>,
+    ) {
+      React.useImperativeHandle(ref, () => ({
+        reset: () => {},
+        execute: () => {
+          onSuccess("turnstile-token-stub");
+        },
+      }));
+      return <div data-testid="turnstile-stub" />;
+    }),
+  };
+});
 
 const SINGLE_PAGE_SECTIONS: SanityFormSection[] = [
   {
@@ -137,14 +143,24 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeDisabled();
   });
 
-  it("keeps submit disabled while Turnstile token is missing even if fields are filled", async () => {
+  it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
     const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test" }), {
+        status: 200,
+      }),
+    );
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeDisabled();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+    expect(body.turnstileToken).toBe("turnstile-token-stub");
   });
 
   it("submits and redirects to the payment URL on success", async () => {
@@ -165,7 +181,6 @@ describe("IntakeForm — single-page flow", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByTestId("turnstile-stub"));
     await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
 
     await waitFor(() => {
@@ -377,7 +392,6 @@ describe("IntakeForm — localStorage save/resume", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByTestId("turnstile-stub"));
     await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
 
     await waitFor(() => {
