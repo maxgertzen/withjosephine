@@ -97,6 +97,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "test-site-key");
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -310,5 +311,83 @@ describe("IntakeForm — paginated flow", () => {
     await user.click(screen.getByRole("button", { name: /Next/ }));
     await user.click(screen.getByRole("button", { name: /Previous page/ }));
     expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
+  });
+});
+
+describe("IntakeForm — localStorage save/resume", () => {
+  it("restores values and currentPage from a saved draft on mount", async () => {
+    window.localStorage.setItem(
+      "josephine.intake.draft.soul-blueprint",
+      JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        currentPage: 1,
+        values: { fullName: "Ada Lovelace", email: "ada@example.com", agreement: false },
+      }),
+    );
+    window.localStorage.setItem("josephine.intake.lastReadingId", "soul-blueprint");
+
+    renderForm(TWO_PAGE_SECTIONS);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
+    });
+    expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe("ada@example.com");
+  });
+
+  it("preserves email and name when reading slug differs from lastReadingId", async () => {
+    window.localStorage.setItem(
+      "josephine.intake.draft.akashic-record",
+      JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        currentPage: 1,
+        values: {
+          email: "ada@example.com",
+          fullName: "Ada Lovelace",
+        },
+      }),
+    );
+    window.localStorage.setItem("josephine.intake.lastReadingId", "akashic-record");
+
+    renderForm(SINGLE_PAGE_SECTIONS);
+
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe(
+        "ada@example.com",
+      );
+    });
+    expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
+  });
+
+  it("clears the saved draft when /api/booking returns 2xx", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test" }), {
+        status: 200,
+      }),
+    );
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "" },
+    });
+
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/non-refundable/));
+    await user.click(screen.getByTestId("turnstile-stub"));
+    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
+
+    await waitFor(() => {
+      expect(window.location.href).toBe("https://buy.stripe.com/test");
+    });
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
   });
 });

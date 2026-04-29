@@ -25,6 +25,14 @@ import {
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
 import { errorClasses } from "@/lib/formStyles";
+import {
+  clear as clearDraft,
+  type DraftValues,
+  getLastReadingId,
+  restore as restoreDraft,
+  save as saveDraft,
+  setLastReadingId,
+} from "@/lib/intake/localStorageDraft";
 import { timeChip } from "@/lib/intake/timeChip";
 import type {
   SanityFormField,
@@ -35,6 +43,7 @@ import type {
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
 import { SubmitOverlay } from "./SubmitOverlay";
+import { SwapToast } from "./SwapToast";
 
 type FieldValue = string | string[] | boolean;
 type FieldValues = Record<string, FieldValue>;
@@ -61,6 +70,16 @@ function flattenFields(sections: SanityFormSection[]): SanityFormField[] {
 
 function pageFieldKeys(page: IntakePage): string[] {
   return flattenFields(page).map((field) => field.key);
+}
+
+const SWAP_PRESERVED_KEYS = ["email", "legal_full_name", "anything_else"] as const;
+
+function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
+  const result: Partial<FieldValues> = {};
+  for (const key of SWAP_PRESERVED_KEYS) {
+    if (key in values) result[key] = values[key];
+  }
+  return result;
 }
 
 export function IntakeForm({
@@ -109,14 +128,16 @@ export function IntakeForm({
     [sections, readingId, pagination],
   );
 
-  const [currentPage, setCurrentPage] = useState(0);
-  const [values, setValues] = useState<FieldValues>(() => {
+  const defaultValues = useMemo<FieldValues>(() => {
     const seed: FieldValues = {};
     for (const field of allFields) {
       seed[field.key] = initialValueFor(field);
     }
     return seed;
-  });
+  }, [allFields]);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [values, setValues] = useState<FieldValues>(defaultValues);
   const [honeypot, setHoneypot] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -124,6 +145,39 @@ export function IntakeForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [chipTick, setChipTick] = useState(0);
+  const [isRestored, setIsRestored] = useState(false);
+  const [swappedFromReadingName, setSwappedFromReadingName] = useState<string | null>(null);
+  const restoredForReadingRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (restoredForReadingRef.current === readingId) return;
+    const previousReadingId = getLastReadingId();
+    let preservedFromSwap: Partial<FieldValues> | null = null;
+    if (previousReadingId && previousReadingId !== readingId) {
+      const previousDraft = restoreDraft(previousReadingId);
+      if (previousDraft) {
+        preservedFromSwap = pickPreservedFields(previousDraft.values);
+        setSwappedFromReadingName(readingName);
+      }
+    }
+    const restored = restoreDraft(readingId);
+    const seeded = {
+      ...defaultValues,
+      ...(restored?.values ?? {}),
+      ...(preservedFromSwap ?? {}),
+    } as FieldValues;
+    setValues(seeded);
+    if (typeof restored?.currentPage === "number") {
+      setCurrentPage(restored.currentPage);
+    }
+    if (restored?.savedAt) {
+      const parsed = new Date(restored.savedAt);
+      if (!Number.isNaN(parsed.getTime())) setLastSavedAt(parsed);
+    }
+    setLastReadingId(readingId);
+    restoredForReadingRef.current = readingId;
+    setIsRestored(true);
+  }, [readingId, readingName, defaultValues]);
 
   useEffect(() => {
     if (!lastSavedAt) return;
@@ -144,13 +198,30 @@ export function IntakeForm({
     );
   })();
 
-  function handleSaveLater() {
-    setLastSavedAt(new Date());
-    setChipTick((t) => t + 1);
-  }
-
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIntentRef = useRef(false);
+
+  function flushSave(nextValues: FieldValues, nextPage: number) {
+    const envelope = saveDraft(readingId, {
+      currentPage: nextPage,
+      values: nextValues as DraftValues,
+    });
+    if (envelope) setLastSavedAt(new Date(envelope.savedAt));
+  }
+
+  useEffect(() => {
+    if (!isRestored) return;
+    const handle = setTimeout(() => {
+      flushSave(values, currentPage);
+    }, 500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRestored, values, currentPage, readingId]);
+
+  function handleSaveLater() {
+    flushSave(values, currentPage);
+    setChipTick((t) => t + 1);
+  }
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileBypass =
@@ -235,7 +306,9 @@ export function IntakeForm({
       return;
     }
     setErrors({});
-    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
+    const nextPage = Math.min(currentPage + 1, totalPages - 1);
+    setCurrentPage(nextPage);
+    flushSave(values, nextPage);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -247,14 +320,12 @@ export function IntakeForm({
   function handleBack() {
     setSubmitError(null);
     setErrors({});
-    setCurrentPage((p) => {
-      const next = Math.max(p - 1, 0);
-      if (process.env.NODE_ENV !== "production") {
-         
-        console.log(`[IntakeForm] Back: ${p} → ${next}`);
-      }
-      return next;
-    });
+    const nextPage = Math.max(currentPage - 1, 0);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[IntakeForm] Back: ${currentPage} → ${nextPage}`);
+    }
+    setCurrentPage(nextPage);
+    flushSave(values, nextPage);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -344,6 +415,11 @@ export function IntakeForm({
       // Keep isSubmitting=true so the SubmitOverlay stays up until the
       // browser finishes navigating to Stripe; otherwise the overlay would
       // flicker off for one render before the page unloads.
+      try {
+        clearDraft(readingId);
+      } catch {
+        // localStorage failures must not block the redirect.
+      }
       window.location.href = data.paymentUrl;
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
@@ -352,6 +428,13 @@ export function IntakeForm({
   }
 
   return (
+    <>
+      {swappedFromReadingName ? (
+        <SwapToast
+          readingName={swappedFromReadingName}
+          onDismiss={() => setSwappedFromReadingName(null)}
+        />
+      ) : null}
     <form
       ref={formRef}
       onSubmit={handleSubmit}
@@ -498,6 +581,7 @@ export function IntakeForm({
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>
     </form>
+    </>
   );
 }
 
