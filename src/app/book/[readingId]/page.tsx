@@ -193,7 +193,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             </div>
           </div>
 
-          <div className="md:row-start-2 md:col-start-2 md:self-end">
+          <div className="md:row-start-2 md:col-start-2 md:place-self-center">
             <NavigationButton
               href={BOOKING_ROUTES.letter(reading.slug)}
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
