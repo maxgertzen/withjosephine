@@ -9,6 +9,7 @@ type PageNavProps = {
   onBack?: () => void;
   onSaveLater?: () => void;
   onNext?: () => void;
+  onSubmitIntent?: () => void;
   isSubmitting?: boolean;
   nextDisabled?: boolean;
   submitDisabled?: boolean;
@@ -25,6 +26,7 @@ export function PageNav({
   onBack,
   onSaveLater,
   onNext,
+  onSubmitIntent,
   isSubmitting = false,
   nextDisabled = false,
   submitDisabled = false,
@@ -74,6 +76,7 @@ export function PageNav({
             size="lg"
             className="min-h-14"
             disabled={submitDisabled || isSubmitting}
+            onClick={() => onSubmitIntent?.()}
           >
             {isSubmitting ? "Submitting…" : submitLabel}
           </Button>

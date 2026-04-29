@@ -123,6 +123,7 @@ export function IntakeForm({
   const [isSucceeded, setIsSucceeded] = useState(false);
 
   const formRef = useRef<HTMLFormElement | null>(null);
+  const submitIntentRef = useRef(false);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileBypass =
@@ -197,6 +198,9 @@ export function IntakeForm({
     }
     setErrors({});
     setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -213,6 +217,9 @@ export function IntakeForm({
       }
       return next;
     });
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -220,6 +227,16 @@ export function IntakeForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!submitIntentRef.current) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.warn("[IntakeForm] submit suppressed — no explicit submit intent");
+      }
+      return;
+    }
+    submitIntentRef.current = false;
+
     setSubmitError(null);
 
     if (!isFinalPage) {
@@ -432,6 +449,9 @@ export function IntakeForm({
         backHref={`/book/${readingId}`}
         onBack={handleBack}
         onNext={handleNext}
+        onSubmitIntent={() => {
+          submitIntentRef.current = true;
+        }}
         isSubmitting={isSubmitting}
         nextDisabled={!currentPageValid}
         submitDisabled={
