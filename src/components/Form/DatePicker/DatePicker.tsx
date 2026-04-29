@@ -155,7 +155,7 @@ export function DatePicker({
                 month: "flex flex-col gap-3",
                 month_caption:
                   "flex items-center justify-center gap-2 font-display italic text-base text-j-text-heading",
-                caption_label: "font-display italic text-base text-j-text-heading",
+                caption_label: "sr-only",
                 dropdowns: "flex gap-2 items-center",
                 dropdown:
                   "font-body text-sm bg-j-cream border border-j-border-subtle rounded-sm px-2 py-1 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
