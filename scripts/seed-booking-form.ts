@@ -279,7 +279,7 @@ const FIELDS: SeedFormField[] = [
   {
     _id: "formField-anythingElse",
     key: "anything_else",
-    label: "Is there anything else you would like me to know before your reading?",
+    label: "Your note",
     type: "longText",
     required: false,
     system: true,
@@ -347,8 +347,7 @@ const SECTIONS: SeedFormSection[] = [
   },
   {
     _id: "formSection-anythingElse",
-    sectionTitle: "Is there anything else you would like me to know before your reading?",
-    transitionLine: "And anything else you want me to carry into the reading.",
+    sectionTitle: "Anything else for me?",
     sectionDescription: "Optional — only if it feels right.",
     marginaliaLabel: "Anything else",
     pageBoundary: true,
