@@ -24,7 +24,8 @@
     "studio:dev": "pnpm --dir studio run dev",
     "studio:build": "pnpm --dir studio run build",
     "studio:deploy": "pnpm --dir studio run deploy",
-    "optimize-images": "tsx scripts/optimize-images.ts"
+    "optimize-images": "tsx scripts/optimize-images.ts",
+    "build-cities": "tsx scripts/build-cities-json.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
@@ -36,6 +37,7 @@
     "@sentry/nextjs": "^10.49.0",
     "clsx": "^2.1.1",
     "escape-html": "^1.0.3",
+    "fuse.js": "^7.3.0",
     "lucide-react": "^1.8.0",
     "motion": "^12.38.0",
     "next": "16.2.3",

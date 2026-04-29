@@ -73,6 +73,11 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
       return required ? schema : schema.optional();
     }
 
+    case "placeAutocomplete": {
+      const schema = z.string().min(1, "Please choose a place.");
+      return required ? schema : schema.optional();
+    }
+
     case "consent": {
       return z.literal(true, "Please acknowledge to continue.");
     }

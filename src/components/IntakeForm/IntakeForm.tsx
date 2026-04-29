@@ -8,6 +8,7 @@ import { DatePicker } from "@/components/Form/DatePicker";
 import { FileUpload } from "@/components/Form/FileUpload";
 import { Input } from "@/components/Form/Input";
 import { MultiSelectExact } from "@/components/Form/MultiSelectExact";
+import { PlaceAutocomplete } from "@/components/Form/PlaceAutocomplete";
 import { Select } from "@/components/Form/Select";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
@@ -228,12 +229,20 @@ export function IntakeForm({
 
     setIsSubmitting(true);
     try {
+      const companionKeys: Record<string, string> = {};
+      for (const field of allFields) {
+        if (field.type !== "placeAutocomplete") continue;
+        const companion = `${field.key}_geonameid`;
+        const v = values[companion];
+        if (typeof v === "string" && v !== "") companionKeys[companion] = v;
+      }
+
       const response = await fetch(BOOKING_API_ROUTE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           readingSlug: readingId,
-          values: { ...result.data, ...followupResult.data },
+          values: { ...result.data, ...followupResult.data, ...companionKeys },
           turnstileToken,
           [HONEYPOT_FIELD]: honeypot,
           consentLabelSnapshot: consentField?.label ?? "",
@@ -550,6 +559,26 @@ function renderField(field: SanityFormField, ctx: RenderContext) {
           label={field.label}
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
+          {...shellProps}
+          error={error}
+          required={field.required}
+          disabled={disabled}
+        />
+      );
+
+    case "placeAutocomplete":
+      return (
+        <PlaceAutocomplete
+          key={field._id}
+          id={id}
+          name={field.key}
+          label={field.label}
+          value={typeof value === "string" ? value : ""}
+          onChange={(next) => setValue(field.key, next)}
+          onGeonameIdChange={(geonameid) =>
+            setValue(`${field.key}_geonameid`, geonameid === null ? "" : String(geonameid))
+          }
+          placeholder={field.placeholder}
           {...shellProps}
           error={error}
           required={field.required}

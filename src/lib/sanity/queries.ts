@@ -199,6 +199,7 @@ export const bookingFormQuery = groq`
         helperPosition,
         clarificationNote,
         iconKey,
+        placeAutocompleteSource,
         required,
         system,
         order,

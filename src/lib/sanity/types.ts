@@ -193,7 +193,8 @@ export type SanityFormFieldType =
   | "select"
   | "multiSelectExact"
   | "fileUpload"
-  | "consent";
+  | "consent"
+  | "placeAutocomplete";
 
 export type SanityFormFieldNameFollowup = {
   enabled?: boolean;
@@ -228,6 +229,7 @@ export type SanityFormField = {
   helperPosition?: SanityFormHelperPosition;
   clarificationNote?: string;
   iconKey?: string;
+  placeAutocompleteSource?: string;
   required?: boolean;
   system?: boolean;
   order?: number;
