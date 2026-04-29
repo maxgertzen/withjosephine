@@ -107,7 +107,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
       <BookingFlowHeader backHref="/#readings" aboutLinkText={aboutJosephineLinkText} />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-x-16 md:gap-y-12 md:[grid-template-rows:1fr_auto]">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-x-16 md:gap-y-12 md:[grid-template-rows:auto_auto]">
           <div className="flex flex-col md:row-start-1 md:col-start-1">
             <span className="inline-block font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-6">
               <span aria-hidden="true" className="mr-2">
@@ -136,8 +136,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
             </Link>
           </div>
 
-          <div className="flex flex-col md:row-span-2 md:row-start-1 md:col-start-2">
-            <div className="relative flex items-center justify-center min-h-[260px] mb-8">
+          <div className="md:row-start-1 md:col-start-2">
+            <div className="relative flex items-center justify-center min-h-[260px]">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 m-auto h-[260px] w-[260px] rounded-full border border-j-accent/[0.12]"
@@ -151,49 +151,49 @@ export default async function BookingPage({ params }: BookingPageProps) {
                 className="relative w-[160px] h-[160px] md:w-[200px] md:h-[200px]"
               />
             </div>
+          </div>
 
-            <div className="md:mt-auto">
-              <h2 className="font-body text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-j-text-muted mb-4">
-                What&rsquo;s included
-              </h2>
-              <ul className="space-y-2 mb-6">
-                {reading.includedItems.map((item, index) => (
-                  <li
-                    key={index}
-                    className="flex gap-3 items-start font-body text-base text-j-text"
-                  >
-                    <Check
-                      className="w-[18px] h-[18px] text-j-accent shrink-0 mt-1"
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className="md:row-start-2 md:col-start-1">
+            <h2 className="font-body text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-j-text-muted mb-4">
+              What&rsquo;s included
+            </h2>
+            <ul className="space-y-2 mb-6">
+              {reading.includedItems.map((item, index) => (
+                <li
+                  key={index}
+                  className="flex gap-3 items-start font-body text-base text-j-text"
+                >
+                  <Check
+                    className="w-[18px] h-[18px] text-j-accent shrink-0 mt-1"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
 
-              <div className="flex flex-col gap-3 p-5 border border-j-border-subtle rounded-md bg-j-blush/[0.18]">
-                <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
-                  <Clock
-                    className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                  />
-                  <span>{deliveryNote}</span>
-                </div>
-                <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
-                  <Mic
-                    className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                  />
-                  <span>{deliverableNote}</span>
-                </div>
+            <div className="flex flex-col gap-3 p-5 border border-j-border-subtle rounded-md bg-j-blush/[0.18]">
+              <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
+                <Clock
+                  className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
+                  aria-hidden="true"
+                  strokeWidth={1.5}
+                />
+                <span>{deliveryNote}</span>
+              </div>
+              <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
+                <Mic
+                  className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
+                  aria-hidden="true"
+                  strokeWidth={1.5}
+                />
+                <span>{deliverableNote}</span>
               </div>
             </div>
           </div>
 
-          <div className="md:row-start-2 md:col-start-1 md:self-end">
+          <div className="md:row-start-2 md:col-start-2 md:self-end">
             <NavigationButton
               href={BOOKING_ROUTES.letter(reading.slug)}
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
