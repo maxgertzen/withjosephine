@@ -24,6 +24,15 @@ const nextConfig: NextConfig = {
       "**/next/dist/compiled/edge-runtime/**",
       "**/next/dist/compiled/@edge-runtime/**",
       "**/next/dist/compiled/compression/**",
+      // OG image generation (next/og ImageResponse). We never call it
+      // anywhere in src/. The wasm + edge runtime files alone are ~2.2 MiB.
+      "**/next/dist/compiled/@vercel/og/**",
+      "**/next/dist/server/og/**",
+      // React DOM ships 5 server-render entry points; we only execute one
+      // on the Worker. The legacy.* + browser variants are dead weight.
+      "**/react-dom/cjs/react-dom-server-legacy.*",
+      "**/react-dom/cjs/react-dom-server.browser.production.js",
+      "**/react-dom/cjs/react-dom-server.bun.production.js",
     ],
   },
 };
