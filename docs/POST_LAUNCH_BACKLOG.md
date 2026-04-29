@@ -171,6 +171,11 @@ fire-and-forget — drift can happen on Sanity outages.
 - **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
 - **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
 
+### Re-enable error tracking (Sentry was removed for bundle size)
+- **Source:** Worker bundle size analysis 2026-04-30. `@sentry/nextjs` and the surrounding `withSentryConfig` wrapper bloated the worker bundle from ~11 MiB to ~16 MiB on CI (where `SENTRY_AUTH_TOKEN` flips Sentry into full instrumentation mode), pushing it past the 3 MiB Cloudflare Workers free-tier compressed limit.
+- **What:** `@sentry/nextjs` package removed; `withSentryConfig` wrapper dropped from `next.config.ts`; `src/instrumentation.ts` is now a no-op stub; `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts` deleted; `src/app/error.tsx` and `src/app/global-error.tsx` switched from `Sentry.captureException` to `console.error`.
+- **Action:** When ready, swap to `@sentry/cloudflare` (workerd-targeted, much smaller) OR upgrade Workers to the paid plan ($5/mo for the 10 MiB limit, gives all of `@sentry/nextjs` headroom). Until then, error visibility is whatever lands in `wrangler tail` and `console.error` lines.
+
 ### Replace `@aws-sdk/client-s3` with `aws4fetch` to shrink the worker bundle
 - **Source:** Bundle-size analysis 2026-04-30. Worker compressed at 2.83 MiB, just under the 3 MiB free-tier limit. Top non-Next contributor is `@aws-sdk/client-s3` + the `@smithy/*` peer deps it pulls in.
 - **What:** R2 access only needs three S3 operations (`PutObject` presign, `DeleteObject`, `ListObjectsV2`). The full `@aws-sdk/client-s3` package ships ~100 operations + middleware we don't use. `aws4fetch` is ~10 KB minified and signs SigV4 fetch calls; it covers the same surface.

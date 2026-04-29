@@ -1,4 +1,3 @@
-import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -37,17 +36,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: "greatwhale-solutions-limited",
-  project: "javascript-nextjs",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  webpack: {
-    treeshake: {
-      removeDebugLogging: true,
-    },
-  },
-});
+// Sentry config (withSentryConfig wrapper) was causing the worker bundle
+// to bloat from 11 MiB to 16 MiB on CI because SENTRY_AUTH_TOKEN flips
+// Sentry into full instrumentation mode (per-file source-map metadata,
+// debug IDs, etc.). Worker exceeded the 3 MiB free-tier limit. Disabled
+// for now — error tracking on the booking flow is "nice-to-have" and is
+// captured in POST_LAUNCH_BACKLOG.md as a Phase 1.5 follow-up
+// (lighter @sentry/cloudflare integration, or upgrade to a paid plan).
+export default nextConfig;
 
 // Cloudflare Workers runtime wiring:
 // `pnpm cf:build` bundles the app via @opennextjs/cloudflare.
