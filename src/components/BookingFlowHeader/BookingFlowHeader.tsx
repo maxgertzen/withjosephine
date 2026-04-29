@@ -31,8 +31,9 @@ export function BookingFlowHeader({
         Josephine Soul Readings
       </span>
       <Link
-        href="/about"
+        href="/#about"
         className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2"
+        scroll={true}
       >
         {aboutLinkText}
       </Link>
