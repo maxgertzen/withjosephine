@@ -82,8 +82,11 @@ See `.env.local.example` for the full list. Key variables:
 
 - `NEXT_PUBLIC_SANITY_PROJECT_ID` / `NEXT_PUBLIC_SANITY_DATASET` — Sanity project
 - `SANITY_READ_TOKEN` — Server-side content fetching and draft mode
-- `NEXT_PUBLIC_WEB3FORMS_KEY` — Contact form submissions
-- `NEXT_PUBLIC_HCAPTCHA_SITEKEY` — Spam protection
+- `RESEND_API_KEY` / `NOTIFICATION_EMAIL` — transactional email (booking confirmations, contact form)
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` — Cloudflare Turnstile spam protection
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` — Payment Links + webhook
+- `R2_*` — booking-photo upload bucket
+- `LISTEN_TOKEN_SECRET` — HMAC secret signing `/listen/[token]` URLs
 - `NEXT_PUBLIC_UNDER_CONSTRUCTION` — Feature flag to show holding page
 - `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` — Cloudflare Web Analytics
 

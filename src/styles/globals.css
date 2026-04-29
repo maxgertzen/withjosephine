@@ -29,9 +29,15 @@
   --color-j-accent: var(--j-accent);
   --color-j-accent-light: var(--j-accent-light);
 
-  /* ── Font Families ── */
-  --font-display: var(--font-cormorant);
-  --font-body: var(--font-inter);
+  /* ── Font Families ──
+     The Tailwind tokens stay abstract (`font-display` / `font-body`).
+     The actual font family comes from next/font, which writes
+     `--font-display-source` and `--font-body-source` to <html> via the
+     fonts.generated.ts module. Swapping fonts in the Sanity theme only
+     changes which family those source variables hold — these mappings
+     stay untouched. */
+  --font-display: var(--font-display-source);
+  --font-body: var(--font-body-source);
 
   /* ── Shadows ── */
   --shadow-j-soft: var(--j-shadow-soft);
@@ -51,6 +57,15 @@
 }
 
 /* ── Base Styles ── */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 ::selection {
   background: var(--j-selection-bg);
   color: var(--j-selection-text);

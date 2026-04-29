@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 
+import type { Viewport } from "next";
 import { draftMode } from "next/headers";
 import { VisualEditing } from "next-sanity/visual-editing";
 
@@ -8,6 +9,12 @@ import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { isAnalyticsEnabled } from "@/lib/featureFlags";
 import { bodyFont, displayFont } from "@/lib/fonts.generated";
 import { SanityLive } from "@/lib/sanity/live";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled: isDraftMode } = await draftMode();

@@ -154,6 +154,72 @@ export const notFoundPageQuery = groq`
   }
 `;
 
+export const bookingFormQuery = groq`
+  *[_type == "bookingForm"][0] {
+    title,
+    intro,
+    description,
+    confirmationMessage,
+    nonRefundableNotice,
+    entryPageContent {
+      letterOpener,
+      letterBridge,
+      letterClosing,
+      dropCapCta,
+      dropCapCaption,
+      changeReadingLinkText,
+      aboutJosephineLinkText,
+      letterTitle
+    },
+    consentBlock {
+      trustLine
+    },
+    pagination {
+      overrides[] {
+        readingSlug,
+        pageCount
+      }
+    },
+    loadingStateCopy,
+    "sections": sections[]-> {
+      _id,
+      sectionTitle,
+      sectionDescription,
+      order,
+      pageBoundary,
+      marginaliaLabel,
+      transitionLine,
+      clarificationNote,
+      "appliesToServices": appliesToServices[]->slug.current,
+      "fields": fields[]-> {
+        _id,
+        key,
+        label,
+        type,
+        placeholder,
+        helpText,
+        helperPosition,
+        clarificationNote,
+        iconKey,
+        placeAutocompleteSource,
+        required,
+        system,
+        order,
+        multiSelectCount,
+        options[] {
+          value,
+          label,
+          category,
+          categoryOrder,
+          nameFollowup
+        },
+        validation,
+        "appliesToServices": appliesToServices[]->slug.current
+      }
+    } | order(order asc)
+  }
+`;
+
 export const legalPageBySlugQuery = groq`
   *[_type == "legalPage" && slug.current == $slug][0] {
     _id,

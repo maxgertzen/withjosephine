@@ -35,8 +35,8 @@ NEXT_PUBLIC_SANITY_PROJECT_ID=…
 NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_SANITY_STUDIO_URL=…  # https://withjosephine.sanity.studio (or http://localhost:3333 locally)
 SANITY_READ_TOKEN=…              # Viewer-role token from Sanity Manage
-SANITY_WRITE_TOKEN=…             # only for seed scripts; never shipped
-NEXT_PUBLIC_WEB3FORMS_KEY=…
+SANITY_WRITE_TOKEN=…             # for /api/booking submission writes + seed scripts
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=… # Cloudflare Turnstile site key
 SANITY_STUDIO_PROJECT_ID=…       # for scripts that call studio CLI
 SANITY_STUDIO_DATASET=production
 ```
@@ -74,9 +74,9 @@ Set in: GitHub repo → Settings → Secrets and variables → Actions.
 **Secrets:**
 | Name | Source |
 |---|---|
-| `NEXT_PUBLIC_WEB3FORMS_KEY` | Web3Forms dashboard |
 | `CLOUDFLARE_API_TOKEN` | CF dashboard → My Profile → API Tokens → `Edit Cloudflare Workers` template |
 | `CLOUDFLARE_ACCOUNT_ID` | CF dashboard sidebar (right side, account ID copy button) |
+| `SENTRY_AUTH_TOKEN` | Sentry project → Settings → Auth Tokens (used to upload sourcemaps at build) |
 
 > The Worker's _runtime_ secret (`SANITY_READ_TOKEN`) is NOT a GitHub secret — it lives in CF dashboard env vars (next section). The CI only needs the build-time public env vars + Cloudflare credentials.
 
@@ -89,8 +89,20 @@ Set in: CF dashboard → Workers & Pages → `withjosephine` → Settings → Va
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | Plain text | from Sanity Manage                                         |
 | `NEXT_PUBLIC_SANITY_DATASET`    | Plain text | `production`                                               |
 | `NEXT_PUBLIC_SANITY_STUDIO_URL` | Plain text | `https://withjosephine.sanity.studio`                      |
-| `NEXT_PUBLIC_WEB3FORMS_KEY`     | Plain text | Web3Forms dashboard                                        |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`| Plain text | Cloudflare Turnstile widget                                |
 | `SANITY_READ_TOKEN`             | **Secret** | Sanity Manage → API → Tokens → create with **Viewer** role |
+| `SANITY_WRITE_TOKEN`            | **Secret** | Sanity Manage → API → Tokens → create with **Editor** role (used by `/api/booking`) |
+| `STRIPE_SECRET_KEY`             | **Secret** | Stripe → Developers → API keys                             |
+| `STRIPE_WEBHOOK_SECRET`         | **Secret** | Stripe → Developers → Webhooks → endpoint signing secret   |
+| `RESEND_API_KEY`                | **Secret** | Resend → API Keys → Sending access scoped to apex          |
+| `NOTIFICATION_EMAIL`            | Plain text | `hello@withjosephine.com`                                  |
+| `TURNSTILE_SECRET_KEY`          | **Secret** | Cloudflare Turnstile widget secret                         |
+| `R2_ACCOUNT_ID`                 | **Secret** | CF dashboard account ID                                    |
+| `R2_ACCESS_KEY_ID`              | **Secret** | R2 → Manage R2 API tokens                                  |
+| `R2_SECRET_ACCESS_KEY`          | **Secret** | R2 → Manage R2 API tokens (shown once at creation)         |
+| `R2_BUCKET_NAME`                | Plain text | `withjosephine-booking-photos`                             |
+| `CRON_SECRET`                   | **Secret** | `openssl rand -hex 32`                                     |
+| `LISTEN_TOKEN_SECRET`           | **Secret** | `openssl rand -hex 32`                                     |
 
 **Do NOT set:**
 

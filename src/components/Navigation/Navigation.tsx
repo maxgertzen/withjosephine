@@ -85,7 +85,7 @@ export function Navigation({ content, className }: NavigationProps) {
                 {link.label}
               </button>
             ))}
-            <Button variant="primary" size="sm" onClick={() => scrollToSection("readings")}>
+            <Button variant="outlined" size="sm" onClick={() => scrollToSection("readings")}>
               {navCtaText}
             </Button>
           </div>
@@ -123,7 +123,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
         <GoldDivider className="w-24" />
 
-        <Button variant="primary" size="default" onClick={() => scrollToSection("readings")}>
+        <Button variant="outlined" size="default" onClick={() => scrollToSection("readings")}>
           {navCtaText}
         </Button>
       </div>

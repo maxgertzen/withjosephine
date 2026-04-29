@@ -33,32 +33,32 @@ const devEval = isDev ? " 'unsafe-eval'" : "";
 
 const CSP_PUBLIC =
   "default-src 'self'; " +
-  `script-src 'self' 'unsafe-inline'${devEval} https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; ` +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
+  `script-src 'self' 'unsafe-inline'${devEval} https://challenges.cloudflare.com https://static.cloudflareinsights.com; ` +
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
-  "img-src 'self' https://cdn.sanity.io data:; " +
-  "connect-src 'self' https://api.web3forms.com https://hcaptcha.com https://*.hcaptcha.com https://cloudflareinsights.com https://*.ingest.de.sentry.io; " +
+  "img-src 'self' https://cdn.sanity.io https://images.withjosephine.com data:; " +
+  "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com; " +
   "worker-src 'self' blob:; " +
   "frame-ancestors 'none'; " +
-  "frame-src https://hcaptcha.com https://*.hcaptcha.com; " +
+  "frame-src https://challenges.cloudflare.com; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
-  "form-action 'self' https://api.web3forms.com; " +
+  "form-action 'self'; " +
   "upgrade-insecure-requests";
 
 const CSP_DRAFT =
   "default-src 'self'; " +
-  `script-src 'self' 'unsafe-inline'${devEval} https://hcaptcha.com https://*.hcaptcha.com https://static.cloudflareinsights.com; ` +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com; " +
+  `script-src 'self' 'unsafe-inline'${devEval} https://challenges.cloudflare.com https://static.cloudflareinsights.com; ` +
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
-  "img-src 'self' https://cdn.sanity.io data:; " +
-  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://api.web3forms.com https://hcaptcha.com https://*.hcaptcha.com https://cloudflareinsights.com https://*.ingest.de.sentry.io; " +
+  "img-src 'self' https://cdn.sanity.io https://images.withjosephine.com data:; " +
+  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com; " +
   "worker-src 'self' blob:; " +
   "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io; " +
-  "frame-src 'self' https://*.sanity.studio https://*.sanity.io https://hcaptcha.com https://*.hcaptcha.com; " +
+  "frame-src 'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
-  "form-action 'self' https://api.web3forms.com; " +
+  "form-action 'self'; " +
   "upgrade-insecure-requests";
 
 export function middleware(request: NextRequest) {

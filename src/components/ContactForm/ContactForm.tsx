@@ -1,12 +1,13 @@
 "use client";
 
-import HCaptcha from "@hcaptcha/react-hcaptcha";
-import { type FormEvent, useRef, useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
-import { errorClasses, inputClasses, isValidEmail, labelClasses } from "@/lib/formStyles";
+import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
 import { mergeClasses } from "@/lib/utils";
 
 interface ContactFormProps {
@@ -16,7 +17,7 @@ interface ContactFormProps {
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
-const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
+const CONTACT_API_ROUTE = "/api/contact";
 
 export function ContactForm({ content, className }: ContactFormProps) {
   const { sectionTag, heading, description, submitText } = content ?? CONTACT_DEFAULTS;
@@ -24,10 +25,11 @@ export function ContactForm({ content, className }: ContactFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,39 +55,34 @@ export function ContactForm({ content, className }: ContactFormProps) {
       setErrorMessage("Please enter a message.");
       return;
     }
-
-    const accessKey = process.env.NEXT_PUBLIC_WEB3FORMS_KEY;
-    if (!accessKey) {
-      setErrorMessage("Contact form is not configured. Please try again later.");
+    if (!turnstileToken) {
+      setErrorMessage("Please complete the verification check.");
       return;
     }
 
     setStatus("loading");
 
     try {
-      const response = await fetch(WEB3FORMS_ENDPOINT, {
+      const response = await fetch(CONTACT_API_ROUTE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          access_key: accessKey,
           name: trimmedName,
           email: trimmedEmail,
           message: trimmedMessage,
-          subject: `New message from ${trimmedName}`,
+          turnstileToken,
           botcheck: "",
-          "h-captcha-response": captchaToken,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
-      if (data.success) {
+      if (response.ok && data?.success) {
         setStatus("success");
         setName("");
         setEmail("");
         setMessage("");
-        setCaptchaToken(null);
-        captchaRef.current?.resetCaptcha();
+        setTurnstileToken(null);
       } else {
         setStatus("error");
         setErrorMessage("Something went wrong. Please try again.");
@@ -132,65 +129,65 @@ export function ContactForm({ content, className }: ContactFormProps) {
             tabIndex={-1}
             autoComplete="off"
           />
-          <div>
-            <label htmlFor="contact-name" className={labelClasses}>
-              Your Name
-            </label>
+          <div className="relative">
             <input
               id="contact-name"
               type="text"
               name="name"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              placeholder=" "
               className={inputClasses}
               disabled={isLoading}
+              autoComplete="name"
             />
+            <FloatingLabel id="contact-name" label="Your name" />
           </div>
 
-          <div>
-            <label htmlFor="contact-email" className={labelClasses}>
-              Your Email
-            </label>
+          <div className="relative">
             <input
               id="contact-email"
               type="email"
               name="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              placeholder=" "
               className={inputClasses}
               disabled={isLoading}
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
             />
+            <FloatingLabel id="contact-email" label="Your email" />
           </div>
 
-          <div>
-            <label htmlFor="contact-message" className={labelClasses}>
-              Your Message
-            </label>
+          <div className="relative">
             <textarea
               id="contact-message"
               name="message"
               rows={5}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              className={inputClasses}
+              placeholder=" "
+              className={`${inputClasses} min-h-32`}
               disabled={isLoading}
             />
+            <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
 
-          {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
+          {turnstileSiteKey && (
             <div className="flex justify-center">
-              <HCaptcha
-                ref={captchaRef}
-                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
-                reCaptchaCompat={false}
-                onVerify={(token) => setCaptchaToken(token)}
-                onExpire={() => setCaptchaToken(null)}
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
               />
             </div>
           )}
 
           {errorMessage && (
-            <p role="alert" className={errorClasses}>
+            <p role="alert" className={`${errorClasses} text-center`}>
               {errorMessage}
             </p>
           )}
@@ -203,7 +200,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
                 !name.trim() ||
                 !isValidEmail(email.trim()) ||
                 !message.trim() ||
-                !captchaToken
+                !turnstileToken
               }
             >
               {isLoading ? "Sending\u2026" : submitText}

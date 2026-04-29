@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
+    "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "test": "vitest run",
@@ -23,27 +24,50 @@
     "studio:dev": "pnpm --dir studio run dev",
     "studio:build": "pnpm --dir studio run build",
     "studio:deploy": "pnpm --dir studio run deploy",
-    "optimize-images": "tsx scripts/optimize-images.ts"
+    "optimize-images": "tsx scripts/optimize-images.ts",
+    "build-cities": "tsx scripts/build-cities-json.ts"
   },
   "dependencies": {
-    "@hcaptcha/react-hcaptcha": "^2.0.2",
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0",
+    "@marsidev/react-turnstile": "^1.5.0",
     "@portabletext/react": "^6.0.3",
     "@sanity/client": "^7.21.0",
     "@sanity/visual-editing": "5.3.4",
     "@sentry/nextjs": "^10.49.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "escape-html": "^1.0.3",
+    "fuse.js": "^7.3.0",
     "lucide-react": "^1.8.0",
     "motion": "^12.38.0",
     "next": "16.2.3",
     "next-sanity": "^12.2.2",
     "react": "19.2.3",
+    "react-day-picker": "^9.14.0",
     "react-dom": "19.2.3",
-    "tailwind-merge": "^3.5.0"
+    "resend": "^6.0.0",
+    "stripe": "^22.0.0",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.0.0"
   },
   "pnpm": {
     "overrides": {
-      "js-yaml@<3.14.2": "^3.14.2"
-    }
+      "js-yaml@<3.14.2": "^3.14.2",
+      "fast-xml-parser@<5.7.0": "^5.7.0",
+      "postcss@<8.5.10": "^8.5.10",
+      "uuid@<14.0.0": "^14.0.0"
+    },
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "@tailwindcss/oxide",
+      "better-sqlite3",
+      "core-js-pure",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "workerd"
+    ]
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.19.1",
@@ -53,10 +77,13 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/escape-html": "^1.0.4",
     "@types/node": "^22.16.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "better-sqlite3": "^12.9.0",
     "eslint": "^9.28.0",
     "eslint-config-next": "16.2.3",
     "eslint-config-prettier": "^10.1.8",

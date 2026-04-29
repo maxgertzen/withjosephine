@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
 
+import { LinkContent } from "@/components/NavigationButton";
 import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
   primary:
     "bg-j-bg-interactive text-j-text-on-dark rounded-[50px] font-body uppercase tracking-[0.12em] font-medium cursor-pointer hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-j-bg-interactive",
+  outlined:
+    "bg-transparent text-j-deep border border-j-accent rounded-[50px] font-body uppercase tracking-[0.12em] font-medium cursor-pointer hover:bg-j-accent/10 hover:border-j-deep hover:text-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-j-accent",
   ghost:
     "bg-transparent text-j-text-muted cursor-pointer hover:text-j-accent font-body uppercase tracking-[0.1em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
 } as const;
@@ -57,7 +60,7 @@ export function Button({
           className={classes}
           {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
         >
-          {children}
+          <LinkContent>{children}</LinkContent>
         </Link>
       );
     }

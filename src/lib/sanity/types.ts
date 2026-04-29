@@ -184,6 +184,111 @@ export type SanityPortableTextBlock = {
   level?: number;
 };
 
+export type SanityFormFieldType =
+  | "shortText"
+  | "longText"
+  | "email"
+  | "date"
+  | "time"
+  | "select"
+  | "multiSelectExact"
+  | "fileUpload"
+  | "consent"
+  | "placeAutocomplete";
+
+export type SanityFormFieldNameFollowup = {
+  enabled?: boolean;
+  label?: string;
+  placeholder?: string;
+};
+
+export type SanityFormFieldOption = {
+  value: string;
+  label: string;
+  category?: string;
+  categoryOrder?: number;
+  nameFollowup?: SanityFormFieldNameFollowup;
+};
+
+export type SanityFormFieldValidation = {
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  patternErrorMessage?: string;
+};
+
+export type SanityFormHelperPosition = "before" | "after";
+
+export type SanityFormField = {
+  _id: string;
+  key: string;
+  label: string;
+  type: SanityFormFieldType;
+  placeholder?: string;
+  helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
+  iconKey?: string;
+  placeAutocompleteSource?: string;
+  required?: boolean;
+  system?: boolean;
+  order?: number;
+  multiSelectCount?: number;
+  options?: SanityFormFieldOption[];
+  validation?: SanityFormFieldValidation;
+  appliesToServices?: string[];
+};
+
+export type SanityFormSection = {
+  _id: string;
+  sectionTitle: string;
+  sectionDescription?: string;
+  order?: number;
+  pageBoundary?: boolean;
+  marginaliaLabel?: string;
+  transitionLine?: string;
+  clarificationNote?: string;
+  appliesToServices?: string[];
+  fields: SanityFormField[];
+};
+
+export type SanityPaginationOverride = {
+  readingSlug: string;
+  pageCount?: number;
+};
+
+export type SanityPagination = {
+  overrides?: SanityPaginationOverride[];
+};
+
+export type SanityEntryPageContent = {
+  letterOpener?: string;
+  letterBridge?: string;
+  letterClosing?: string;
+  dropCapCta?: string;
+  dropCapCaption?: string;
+  changeReadingLinkText?: string;
+  aboutJosephineLinkText?: string;
+  letterTitle?: string;
+};
+
+export type SanityConsentBlock = {
+  trustLine?: string;
+};
+
+export type SanityBookingForm = {
+  title: string;
+  intro?: string;
+  description?: string;
+  confirmationMessage?: string;
+  nonRefundableNotice: string;
+  entryPageContent?: SanityEntryPageContent;
+  consentBlock?: SanityConsentBlock;
+  pagination?: SanityPagination;
+  loadingStateCopy?: string;
+  sections: SanityFormSection[];
+};
+
 export type SanityLegalPage = {
   _id: string;
   title: string;

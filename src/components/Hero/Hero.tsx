@@ -122,7 +122,7 @@ export function Hero({ content, className }: HeroProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
         >
-          <Button size="lg" onClick={handleScrollToReadings}>
+          <Button variant="outlined" size="lg" onClick={handleScrollToReadings}>
             {ctaText}
           </Button>
         </motion.div>

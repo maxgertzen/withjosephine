@@ -1,4 +1,6 @@
-import { createClient } from "next-sanity";
+import { createClient, type SanityClient } from "next-sanity";
+
+import { requireEnv } from "../env";
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
@@ -25,3 +27,23 @@ export const sanityClient = createClient({
   useCdn: true,
   stega: { studioUrl },
 });
+
+/**
+ * Write-enabled client used by server routes that create documents (e.g.
+ * booking submissions). Lazy so importing this module doesn't blow up in build
+ * environments without `SANITY_WRITE_TOKEN` set. `useCdn:false` is required
+ * for writes.
+ */
+let cachedWriteClient: SanityClient | null = null;
+
+export function getSanityWriteClient(): SanityClient {
+  if (cachedWriteClient) return cachedWriteClient;
+  cachedWriteClient = createClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    token: requireEnv("SANITY_WRITE_TOKEN"),
+  });
+  return cachedWriteClient;
+}

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  fetchBookingForm,
   fetchBookingPage,
   fetchFaqItems,
   fetchLandingPage,
@@ -119,6 +120,12 @@ describe("Sanity fetch layer", () => {
     const data = { displayFont: "Inter", bodyFont: "Inter" };
     mockData(data);
     expect(await fetchTheme()).toEqual(data);
+  });
+
+  it("fetchBookingForm returns singleton or null", async () => {
+    const data = { title: "Intake", nonRefundableNotice: "no refund", sections: [] };
+    mockData(data);
+    expect(await fetchBookingForm()).toEqual(data);
   });
 
   it("fetchLegalPage passes slug parameter", async () => {

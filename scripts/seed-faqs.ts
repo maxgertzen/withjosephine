@@ -80,7 +80,9 @@ const FAQS = [
 
 async function main() {
   // Double-check we\u2019re not stomping on anything we don\u2019t own.
-  const existing = await client.fetch('*[_type == "faqItem"]{ _id, question }');
+  const existing = await client.fetch<Array<{ _id: string; question: string }>>(
+    '*[_type == "faqItem"]{ _id, question }',
+  );
   console.log(`Existing faqItem docs on server: ${existing.length}`);
   for (const row of existing) console.log(`  - ${row._id}: ${row.question}`);
 

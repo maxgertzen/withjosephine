@@ -1,2 +1,32 @@
 /* Auto-generated from Sanity theme — do not edit manually */
-/* Run `pnpm generate-tokens` to regenerate */
+:root {
+  --j-bg-primary: #FAF8F4;
+  --j-bg-section: #F5F0E8;
+  --j-bg-dark: #0D0B1A;
+  --j-bg-interactive: #1C1935;
+  --j-text-primary: #3D3633;
+  --j-text-heading: #0D0B1A;
+  --j-text-muted: #7A6F6A;
+  --j-text-on-dark: #FAF8F4;
+  --j-accent: #C4A46B;
+  --j-accent-light: #D4BC8B;
+  --j-blush: #E8D5C4;
+  --j-rose: #BF9B8B;
+  --j-ivory: #FAFAF8;
+
+  /* Palette aliases (derived from semantic vars) */
+  --j-cream: var(--j-bg-primary);
+  --j-warm: var(--j-bg-section);
+  --j-midnight: var(--j-bg-dark);
+  --j-deep: var(--j-bg-interactive);
+  --j-text: var(--j-text-primary);
+  --j-muted: var(--j-text-muted);
+  --j-gold: var(--j-accent);
+  --j-gold-light: var(--j-accent-light);
+
+  /* RGB channels for opacity variants */
+  --j-accent-rgb: 196, 164, 107;
+  --j-gold-rgb: var(--j-accent-rgb);
+  --j-bg-interactive-rgb: 28, 25, 53;
+  --j-deep-rgb: var(--j-bg-interactive-rgb);
+}

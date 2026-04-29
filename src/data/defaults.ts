@@ -81,6 +81,40 @@ export interface MappedAbout {
   signoff: string;
 }
 
+export interface EntryPageContent {
+  letterOpener: string;
+  letterBridge: string;
+  letterClosing: string;
+  dropCapCta: string;
+  dropCapCaption: string;
+  changeReadingLinkText: string;
+  aboutJosephineLinkText: string;
+}
+
+export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
+  letterOpener:
+    "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.",
+  letterBridge: "Take your time with this. There\u2019s no wrong answer.",
+  letterClosing:
+    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726",
+  dropCapCta: "Tell me about you \u2192",
+  dropCapCaption:
+    "The intake form \u2014 about five minutes. You\u2019ll review before paying.",
+  changeReadingLinkText: "Reading a different one? See all three \u2192",
+  aboutJosephineLinkText: "About Josephine",
+};
+
+export interface BookingInfoNotes {
+  deliveryNote: string;
+  deliverableNote: string;
+}
+
+export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
+  deliveryNote: "You\u2019ll receive your voice note and PDF within 7 days of payment.",
+  deliverableNote:
+    "Detailed voice note recording + a supporting PDF created entirely for you.",
+};
+
 export const ABOUT_DEFAULTS: MappedAbout = {
   sectionTag: "\u2726 About",
   heading: "who i am + what this is",

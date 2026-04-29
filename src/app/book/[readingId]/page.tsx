@@ -1,17 +1,17 @@
-import { ArrowLeft, Check, Clock, Mic } from "lucide-react";
+import { Check, Clock, Mic } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { BookingForm } from "@/components/BookingForm";
-import { CelestialOrb } from "@/components/CelestialOrb";
+import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
-import { GoldDivider } from "@/components/GoldDivider";
-import { StarField } from "@/components/StarField";
+import { NavigationButton } from "@/components/NavigationButton";
+import { ReadingIcon } from "@/components/ReadingIcon";
+import { BOOKING_INFO_DEFAULTS, ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { PAGE_ORBS } from "@/lib/celestialPresets";
-import { fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import { BOOKING_ROUTES } from "@/lib/booking/constants";
+import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import type { SanityReading } from "@/lib/sanity/types";
 import { buildOpenGraph } from "@/lib/seoMetadata";
 
 export { generateReadingStaticParams as generateStaticParams };
@@ -19,6 +19,41 @@ export { generateReadingStaticParams as generateStaticParams };
 type BookingPageProps = {
   params: Promise<{ readingId: string }>;
 };
+
+type ResolvedReading = {
+  slug: string;
+  tag: string;
+  name: string;
+  priceLabel: string;
+  shortDescription: string;
+  includedItems: string[];
+};
+
+function resolveReading(
+  readingId: string,
+  sanityReading: SanityReading | null,
+): ResolvedReading | null {
+  if (sanityReading) {
+    return {
+      slug: sanityReading.slug,
+      tag: sanityReading.tag,
+      name: sanityReading.name,
+      priceLabel: sanityReading.priceDisplay,
+      shortDescription: sanityReading.bookingSummary,
+      includedItems: sanityReading.includes,
+    };
+  }
+  const fallback = getReadingById(readingId);
+  if (!fallback) return null;
+  return {
+    slug: readingId,
+    tag: fallback.tag,
+    name: fallback.name,
+    priceLabel: fallback.price,
+    shortDescription: fallback.bookingSummary,
+    includedItems: fallback.includes,
+  };
+}
 
 export async function generateMetadata({ params }: BookingPageProps): Promise<Metadata> {
   const { readingId } = await params;
@@ -47,143 +82,125 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, bookingPage] = await Promise.all([
+  const [sanityReading, bookingPage, bookingForm] = await Promise.all([
     fetchReading(readingId),
     fetchBookingPage(),
+    fetchBookingForm(),
   ]);
 
-  const reading = sanityReading
-    ? {
-        tag: sanityReading.tag,
-        name: sanityReading.name,
-        subtitle: sanityReading.subtitle,
-        price: sanityReading.priceDisplay,
-        bookingSummary: sanityReading.bookingSummary,
-        includes: sanityReading.includes,
-        stripePaymentLink: sanityReading.stripePaymentLink ?? "",
-      }
-    : getReadingById(readingId);
-
+  const reading = resolveReading(readingId, sanityReading);
   if (!reading) {
     notFound();
   }
 
-  const emailLabel = bookingPage?.emailLabel ?? "Your Email Address";
-  const emailDisclaimer =
-    bookingPage?.emailDisclaimer ??
-    "Your email is only used for this reading. I\u2019ll never share it.";
-  const paymentButtonText = bookingPage?.paymentButtonText ?? "Continue to Payment";
-  const securityNote = bookingPage?.securityNote ?? "Secure checkout \u00b7 Your details are safe";
-  const entertainmentAcknowledgment =
-    bookingPage?.entertainmentAcknowledgment ??
-    "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.";
-  const coolingOffAcknowledgment =
-    bookingPage?.coolingOffAcknowledgment ??
-    "I agree that Josephine may begin preparing my reading immediately, and I understand I will lose my right to cancel for a refund once I submit the intake form.";
-  const formatNote =
-    bookingPage?.formatNote ??
-    "Detailed voice note recording + a supporting PDF created entirely for you.";
-  const closingMessage =
-    bookingPage?.closingMessage ??
-    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726";
-  const deliveryNote =
-    bookingPage?.deliveryNote ??
-    "You\u2019ll receive your voice note and PDF within 7 days of payment.";
+  const entry = bookingForm?.entryPageContent ?? {};
+  const changeReadingLinkText =
+    entry.changeReadingLinkText ?? ENTRY_PAGE_DEFAULTS.changeReadingLinkText;
+  const aboutJosephineLinkText =
+    entry.aboutJosephineLinkText ?? ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText;
+
+  const deliveryNote = bookingPage?.deliveryNote ?? BOOKING_INFO_DEFAULTS.deliveryNote;
+  const deliverableNote = bookingPage?.formatNote ?? BOOKING_INFO_DEFAULTS.deliverableNote;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <StarField count={50} className="opacity-[0.03]" />
-      {PAGE_ORBS.map((orb, index) => (
-        <CelestialOrb key={index} {...orb} />
-      ))}
+      <BookingFlowHeader backHref="/#readings" aboutLinkText={aboutJosephineLinkText} />
 
-      <header className="relative z-10 max-w-5xl mx-auto px-6 pt-8 flex items-center justify-between">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-body text-sm text-j-text-muted hover:text-j-accent transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Link>
-        <Link href="/">
-          <Image
-            src="/images/header-logo.png"
-            alt="Josephine Soul Readings"
-            width={60}
-            height={30}
-            priority
-            className="h-auto w-[clamp(120px,8vw,160px)]"
-          />
-        </Link>
-      </header>
-
-      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div>
-          <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
-            ✦ {reading.tag}
-          </span>
-          <h1 className="font-display text-[clamp(2rem,5vw,3rem)] font-light italic text-j-text-heading leading-tight mt-2">
-            {reading.name}
-          </h1>
-          <p className="font-display text-2xl italic text-j-accent mt-2">{reading.price}</p>
-
-          <p className="font-display text-lg italic text-j-text leading-relaxed mt-6">
-            {reading.bookingSummary}
-          </p>
-
-          <GoldDivider className="my-8" />
-
-          <h2 className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted mb-4">
-            What&rsquo;s included
-          </h2>
-          <ul className="space-y-3">
-            {reading.includes.map((item, index) => (
-              <li key={index} className="flex gap-3">
-                <Check className="w-4 h-4 text-j-accent mt-0.5 shrink-0" strokeWidth={2} />
-                <span className="font-body text-sm text-j-text leading-relaxed">{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-8 flex flex-col gap-4">
-            <div className="flex gap-3 items-start">
-              <Clock className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
-              <p className="font-body text-sm text-j-text-muted leading-relaxed">{deliveryNote}</p>
-            </div>
-            <div className="flex gap-3 items-start">
-              <Mic className="w-4 h-4 text-j-accent mt-0.5 shrink-0" />
-              <p className="font-body text-sm text-j-text-muted leading-relaxed">{formatNote}</p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="bg-j-ivory border border-j-border-subtle rounded-[20px] p-8 shadow-j-soft">
-            <p className="font-body text-sm text-j-text-muted leading-relaxed mb-6">
-              You&rsquo;re one step away from your reading. Please enter your email below and
-              I&rsquo;ll send you everything you need once your booking is confirmed.
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-x-16 md:gap-y-12 md:[grid-template-rows:auto_auto]">
+          <div className="flex flex-col md:row-start-1 md:col-start-1">
+            <span className="inline-block font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-6">
+              <span aria-hidden="true" className="mr-2">
+                ✦
+              </span>
+              {reading.tag}
+            </span>
+            <h1
+              id="entry-title"
+              className="font-display italic font-medium text-[clamp(2rem,5vw,3rem)] leading-tight text-j-text-heading mb-4"
+            >
+              {reading.name}
+            </h1>
+            <p className="font-display italic text-2xl text-j-accent mb-6">
+              {reading.priceLabel}
+            </p>
+            <p className="font-display italic text-lg leading-snug text-j-text max-w-[38ch] mb-6">
+              {reading.shortDescription}
             </p>
 
-            <BookingForm
-              reading={{
-                subtitle: reading.subtitle,
-                price: reading.price,
-                stripePaymentLink: reading.stripePaymentLink,
-              }}
-              content={{
-                emailLabel,
-                emailDisclaimer,
-                paymentButtonText,
-                securityNote,
-                entertainmentAcknowledgment,
-                coolingOffAcknowledgment,
-              }}
-            />
+            <Link
+              href="/#readings"
+              className="inline-block self-start font-display italic text-base text-j-text border-b border-j-border-gold pb-px hover:text-j-text-heading hover:border-j-accent transition-colors"
+            >
+              <em>{changeReadingLinkText}</em>
+            </Link>
           </div>
 
-          <p className="font-display text-base italic text-j-text text-center mt-8 whitespace-pre-line">
-            {closingMessage}
-          </p>
+          <div className="md:row-start-1 md:col-start-2">
+            <div className="relative flex items-center justify-center min-h-[260px]">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 m-auto h-[260px] w-[260px] rounded-full border border-j-accent/[0.12]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 m-auto h-[200px] w-[200px] rounded-full border border-j-accent/[0.08]"
+              />
+              <ReadingIcon
+                slug={reading.slug}
+                className="relative w-[160px] h-[160px] md:w-[200px] md:h-[200px]"
+              />
+            </div>
+          </div>
+
+          <div className="md:row-start-2 md:col-start-1">
+            <h2 className="font-body text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-j-text-muted mb-4">
+              What&rsquo;s included
+            </h2>
+            <ul className="space-y-2 mb-6">
+              {reading.includedItems.map((item, index) => (
+                <li
+                  key={index}
+                  className="flex gap-3 items-start font-body text-base text-j-text"
+                >
+                  <Check
+                    className="w-[18px] h-[18px] text-j-accent shrink-0 mt-1"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col gap-3 p-5 border border-j-border-subtle rounded-md bg-j-blush/[0.18]">
+              <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
+                <Clock
+                  className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
+                  aria-hidden="true"
+                  strokeWidth={1.5}
+                />
+                <span>{deliveryNote}</span>
+              </div>
+              <div className="flex gap-3 items-start font-body text-sm text-j-text leading-snug">
+                <Mic
+                  className="w-4 h-4 text-j-accent shrink-0 mt-0.5"
+                  aria-hidden="true"
+                  strokeWidth={1.5}
+                />
+                <span>{deliverableNote}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:row-start-2 md:col-start-2 md:justify-self-center md:self-start">
+            <NavigationButton
+              href={BOOKING_ROUTES.letter(reading.slug)}
+              className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+            >
+              Book this Reading →
+            </NavigationButton>
+          </div>
         </div>
       </main>
 
