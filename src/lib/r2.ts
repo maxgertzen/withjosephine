@@ -1,91 +1,137 @@
-import {
-  DeleteObjectCommand,
-  ListObjectsV2Command,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { AwsClient } from "aws4fetch";
 
 import { requireEnv } from "./env";
 
 const FILENAME_MAX_LENGTH = 80;
 const SAFE_FILENAME_CHARS = /[^a-z0-9._-]/g;
 
-let cachedClient: S3Client | null = null;
+let cachedClient: AwsClient | null = null;
+let cachedAccountId: string | null = null;
 
-function getR2Client(): S3Client {
-  if (cachedClient) return cachedClient;
-
-  const accountId = requireEnv("R2_ACCOUNT_ID");
-  const accessKeyId = requireEnv("R2_ACCESS_KEY_ID");
-  const secretAccessKey = requireEnv("R2_SECRET_ACCESS_KEY");
-
-  cachedClient = new S3Client({
+function getR2(): { client: AwsClient; accountId: string } {
+  if (cachedClient && cachedAccountId) {
+    return { client: cachedClient, accountId: cachedAccountId };
+  }
+  cachedAccountId = requireEnv("R2_ACCOUNT_ID");
+  cachedClient = new AwsClient({
+    accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
+    secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
+    service: "s3",
     region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
   });
-
-  return cachedClient;
+  return { client: cachedClient, accountId: cachedAccountId };
 }
 
 function getBucketName(): string {
   return requireEnv("R2_BUCKET_NAME");
 }
 
+function objectUrl(accountId: string, bucket: string, key: string): string {
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`;
+}
+
+/**
+ * Sign a PUT URL bound to a specific Content-Type and Content-Length so the
+ * actual upload must match the bytes the API claimed. Mirrors the S3 SDK's
+ * `getSignedUrl(PutObjectCommand)` flow but in ~10 KB instead of ~2 MiB.
+ */
 export async function getSignedUploadUrl(
   key: string,
   contentType: string,
   contentLength: number,
   expiresInSeconds = 300,
 ): Promise<string> {
-  const client = getR2Client();
-  const command = new PutObjectCommand({
-    Bucket: getBucketName(),
-    Key: key,
-    ContentType: contentType,
-    ContentLength: contentLength,
-  });
-  return getSignedUrl(client, command, {
-    expiresIn: expiresInSeconds,
-    unhoistableHeaders: new Set(["content-length"]),
-  });
+  const { client, accountId } = getR2();
+  const url = new URL(objectUrl(accountId, getBucketName(), key));
+  url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
+
+  const signed = await client.sign(
+    new Request(url.toString(), {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": String(contentLength),
+      },
+    }),
+    { aws: { signQuery: true } },
+  );
+  return signed.url;
 }
 
 export type R2ObjectSummary = { key: string; lastModified: Date };
 
+type ListBucketResultEntry = { Key?: string; LastModified?: string };
+
+function decodeXmlEntities(text: string): string {
+  return text
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'");
+}
+
+function parseListResponse(xml: string): {
+  contents: ListBucketResultEntry[];
+  isTruncated: boolean;
+  nextContinuationToken: string | null;
+} {
+  const isTruncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+  const tokenMatch = xml.match(/<NextContinuationToken>([^<]*)<\/NextContinuationToken>/);
+  const nextContinuationToken = tokenMatch ? decodeXmlEntities(tokenMatch[1]!) : null;
+  const contents: ListBucketResultEntry[] = [];
+  const contentRegex = /<Contents>([\s\S]*?)<\/Contents>/g;
+  let match: RegExpExecArray | null;
+  while ((match = contentRegex.exec(xml)) !== null) {
+    const block = match[1]!;
+    const keyMatch = block.match(/<Key>([^<]*)<\/Key>/);
+    const dateMatch = block.match(/<LastModified>([^<]*)<\/LastModified>/);
+    contents.push({
+      Key: keyMatch ? decodeXmlEntities(keyMatch[1]!) : undefined,
+      LastModified: dateMatch ? dateMatch[1]! : undefined,
+    });
+  }
+  return { contents, isTruncated, nextContinuationToken };
+}
+
 export async function listObjectsByPrefix(prefix: string): Promise<R2ObjectSummary[]> {
-  const client = getR2Client();
+  const { client, accountId } = getR2();
   const bucket = getBucketName();
   const summaries: R2ObjectSummary[] = [];
-  let continuationToken: string | undefined;
+  let continuationToken: string | null = null;
 
   do {
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix,
-        ContinuationToken: continuationToken,
-      }),
-    );
-    for (const object of response.Contents ?? []) {
-      if (!object.Key || !object.LastModified) continue;
-      summaries.push({ key: object.Key, lastModified: object.LastModified });
+    const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucket}`);
+    url.searchParams.set("list-type", "2");
+    url.searchParams.set("prefix", prefix);
+    if (continuationToken) {
+      url.searchParams.set("continuation-token", continuationToken);
     }
-    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    const response = await client.fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`R2 list failed: ${response.status} ${await response.text()}`);
+    }
+    const xml = await response.text();
+    const parsed = parseListResponse(xml);
+    for (const entry of parsed.contents) {
+      if (!entry.Key || !entry.LastModified) continue;
+      summaries.push({ key: entry.Key, lastModified: new Date(entry.LastModified) });
+    }
+    continuationToken = parsed.isTruncated ? parsed.nextContinuationToken : null;
   } while (continuationToken);
 
   return summaries;
 }
 
 export async function deleteObject(key: string): Promise<void> {
-  const client = getR2Client();
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: getBucketName(),
-      Key: key,
-    }),
-  );
+  const { client, accountId } = getR2();
+  const response = await client.fetch(objectUrl(accountId, getBucketName(), key), {
+    method: "DELETE",
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`R2 delete failed: ${response.status} ${await response.text()}`);
+  }
 }
 
 export function buildPhotoKey(submissionId: string, originalFilename: string): string {
@@ -95,4 +141,10 @@ export function buildPhotoKey(submissionId: string, originalFilename: string): s
     .slice(0, FILENAME_MAX_LENGTH);
   const timestamp = Date.now();
   return `submissions/${submissionId}/photo-${timestamp}-${sanitized}`;
+}
+
+// Test-only: reset cached clients so vi.stubEnv changes apply between tests.
+export function __resetR2ClientForTesting(): void {
+  cachedClient = null;
+  cachedAccountId = null;
 }
