@@ -61,7 +61,12 @@ type SeedFormField = {
     exifStrip: boolean;
   };
   placeAutocompleteSource?: { provider: "geonames-static" | "geoapify" | "none" };
-  validation?: { minLength?: number; maxLength?: number };
+  validation?: {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    patternErrorMessage?: string;
+  };
 };
 
 type SeedFormSection = {
@@ -119,10 +124,55 @@ const FIELDS: SeedFormField[] = [
     key: "legal_full_name",
     label: "Legal full name",
     type: "shortText",
-    required: true,
+    required: false,
     system: true,
     order: 40,
     validation: { minLength: 1, maxLength: 200 },
+  },
+  {
+    _id: "formField-firstName",
+    key: "first_name",
+    label: "First name",
+    type: "shortText",
+    required: true,
+    system: true,
+    order: 41,
+    validation: {
+      minLength: 1,
+      maxLength: 80,
+      pattern: "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
+      patternErrorMessage: "Please use letters only — no numbers or symbols.",
+    },
+  },
+  {
+    _id: "formField-middleName",
+    key: "middle_name",
+    label: "Middle name",
+    type: "shortText",
+    required: false,
+    system: true,
+    order: 42,
+    helpText: "Optional",
+    validation: {
+      maxLength: 80,
+      pattern: "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]*$",
+      patternErrorMessage: "Please use letters only — no numbers or symbols.",
+    },
+  },
+  {
+    _id: "formField-lastName",
+    key: "last_name",
+    label: "Last name",
+    type: "shortText",
+    required: true,
+    system: true,
+    order: 43,
+    validation: {
+      minLength: 1,
+      maxLength: 80,
+      pattern: "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
+      patternErrorMessage: "Please use letters only — no numbers or symbols.",
+    },
   },
   {
     _id: "formField-photo",
@@ -245,10 +295,15 @@ const SECTIONS: SeedFormSection[] = [
     _id: "formSection-page1-system",
     sectionTitle: "Two quick details to start.",
     transitionLine: "First — so I can find you in the records.",
-    marginaliaLabel: "Page 1",
+    marginaliaLabel: "Your name",
     pageBoundary: false,
     order: 10,
-    fieldRefs: ["formField-email", "formField-legalFullName"],
+    fieldRefs: [
+      "formField-email",
+      "formField-firstName",
+      "formField-middleName",
+      "formField-lastName",
+    ],
   },
   {
     _id: "formSection-photo",

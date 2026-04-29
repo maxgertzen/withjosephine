@@ -72,7 +72,14 @@ function pageFieldKeys(page: IntakePage): string[] {
   return flattenFields(page).map((field) => field.key);
 }
 
-const SWAP_PRESERVED_KEYS = ["email", "legal_full_name", "anything_else"] as const;
+const SWAP_PRESERVED_KEYS = [
+  "email",
+  "first_name",
+  "middle_name",
+  "last_name",
+  "legal_full_name",
+  "anything_else",
+] as const;
 
 function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
   const result: Partial<FieldValues> = {};
