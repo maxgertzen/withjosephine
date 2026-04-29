@@ -104,6 +104,13 @@ export async function markSubmissionExpired(
     .commit({ visibility: "sync" });
 }
 
+export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
+  const keys = await getSanityWriteClient().fetch<string[]>(
+    `*[_type == "submission" && defined(photoR2Key)].photoR2Key`,
+  );
+  return new Set(keys);
+}
+
 export async function listSubmissionsByStatusOlderThan(
   status: SubmissionStatus,
   cutoffIso: string,

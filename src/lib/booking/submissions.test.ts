@@ -15,6 +15,7 @@ import {
   buildSubmissionContext,
   deleteSubmissionAndPhoto,
   findSubmissionById,
+  listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
   listSubmissionsByStatusOlderThan,
   markSubmissionExpired,
@@ -269,6 +270,29 @@ describe("submissions lib", () => {
         { type: "order_confirmation", sentAt: "2026-04-30T01:00:00Z", resendId: "msg_oc" },
       ]);
       expect(patchCommit).toHaveBeenCalledWith({ visibility: "sync" });
+    });
+  });
+
+  describe("listAllReferencedPhotoKeys", () => {
+    it("returns the set of photoR2Key values for submissions with one set", async () => {
+      fetchMock.mockResolvedValueOnce([
+        "submissions/sub_1/photo.jpg",
+        "submissions/sub_2/photo.png",
+      ]);
+      const result = await listAllReferencedPhotoKeys();
+      expect(result).toBeInstanceOf(Set);
+      expect(result.has("submissions/sub_1/photo.jpg")).toBe(true);
+      expect(result.has("submissions/sub_2/photo.png")).toBe(true);
+      expect(result.size).toBe(2);
+      const [query] = fetchMock.mock.calls[0] as [string];
+      expect(query).toContain("defined(photoR2Key)");
+      expect(query).toContain(".photoR2Key");
+    });
+
+    it("returns an empty set when no submissions reference photos", async () => {
+      fetchMock.mockResolvedValueOnce([]);
+      const result = await listAllReferencedPhotoKeys();
+      expect(result.size).toBe(0);
     });
   });
 

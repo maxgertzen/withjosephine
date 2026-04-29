@@ -10,12 +10,16 @@ const putObjectCommandCtor = vi.fn(function (input: unknown) {
 const deleteObjectCommandCtor = vi.fn(function (input: unknown) {
   return { input };
 });
+const listObjectsV2CommandCtor = vi.fn(function (input: unknown) {
+  return { type: "ListObjectsV2", input };
+});
 const getSignedUrlMock = vi.fn();
 
 vi.mock("@aws-sdk/client-s3", () => ({
   S3Client: s3CtorMock,
   PutObjectCommand: putObjectCommandCtor,
   DeleteObjectCommand: deleteObjectCommandCtor,
+  ListObjectsV2Command: listObjectsV2CommandCtor,
 }));
 
 vi.mock("@aws-sdk/s3-request-presigner", () => ({
@@ -28,6 +32,7 @@ beforeEach(() => {
   s3CtorMock.mockClear();
   putObjectCommandCtor.mockClear();
   deleteObjectCommandCtor.mockClear();
+  listObjectsV2CommandCtor.mockClear();
   getSignedUrlMock.mockReset();
   vi.stubEnv("R2_ACCOUNT_ID", "acct_test");
   vi.stubEnv("R2_ACCESS_KEY_ID", "AKID");
@@ -132,5 +137,76 @@ describe("missing env", () => {
     vi.stubEnv("R2_BUCKET_NAME", "");
     const { deleteObject } = await import("./r2");
     await expect(deleteObject("k")).rejects.toThrow("Missing required env var: R2_BUCKET_NAME");
+  });
+});
+
+describe("listObjectsByPrefix", () => {
+  it("returns single-page results mapped to {key, lastModified}", async () => {
+    const ts = new Date("2026-04-20T12:00:00Z");
+    sendMock.mockResolvedValueOnce({
+      Contents: [
+        { Key: "submissions/a/photo.jpg", LastModified: ts },
+        { Key: "submissions/b/photo.png", LastModified: ts },
+      ],
+      IsTruncated: false,
+    });
+    const { listObjectsByPrefix } = await import("./r2");
+
+    const result = await listObjectsByPrefix("submissions/");
+
+    expect(result).toEqual([
+      { key: "submissions/a/photo.jpg", lastModified: ts },
+      { key: "submissions/b/photo.png", lastModified: ts },
+    ]);
+    expect(listObjectsV2CommandCtor).toHaveBeenCalledOnce();
+    expect(listObjectsV2CommandCtor.mock.calls[0]?.[0]).toMatchObject({
+      Bucket: "bucket-test",
+      Prefix: "submissions/",
+    });
+  });
+
+  it("paginates via NextContinuationToken until IsTruncated is false", async () => {
+    const ts = new Date("2026-04-20T12:00:00Z");
+    sendMock
+      .mockResolvedValueOnce({
+        Contents: [{ Key: "k1", LastModified: ts }],
+        IsTruncated: true,
+        NextContinuationToken: "token-1",
+      })
+      .mockResolvedValueOnce({
+        Contents: [{ Key: "k2", LastModified: ts }],
+        IsTruncated: false,
+      });
+    const { listObjectsByPrefix } = await import("./r2");
+
+    const result = await listObjectsByPrefix("submissions/");
+
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.key)).toEqual(["k1", "k2"]);
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(listObjectsV2CommandCtor.mock.calls[1]?.[0]).toMatchObject({
+      ContinuationToken: "token-1",
+    });
+  });
+
+  it("skips entries missing Key or LastModified", async () => {
+    sendMock.mockResolvedValueOnce({
+      Contents: [
+        { Key: "good", LastModified: new Date() },
+        { Key: undefined, LastModified: new Date() },
+        { Key: "no-date" },
+      ],
+      IsTruncated: false,
+    });
+    const { listObjectsByPrefix } = await import("./r2");
+    const result = await listObjectsByPrefix("submissions/");
+    expect(result.map((r) => r.key)).toEqual(["good"]);
+  });
+
+  it("returns empty array when no objects match the prefix", async () => {
+    sendMock.mockResolvedValueOnce({ Contents: undefined, IsTruncated: false });
+    const { listObjectsByPrefix } = await import("./r2");
+    const result = await listObjectsByPrefix("submissions/");
+    expect(result).toEqual([]);
   });
 });

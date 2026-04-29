@@ -1,4 +1,9 @@
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { requireEnv } from "./env";
@@ -40,6 +45,32 @@ export async function getSignedUploadUrl(
     ContentType: contentType,
   });
   return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+export type R2ObjectSummary = { key: string; lastModified: Date };
+
+export async function listObjectsByPrefix(prefix: string): Promise<R2ObjectSummary[]> {
+  const client = getR2Client();
+  const bucket = getBucketName();
+  const summaries: R2ObjectSummary[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+    for (const object of response.Contents ?? []) {
+      if (!object.Key || !object.LastModified) continue;
+      summaries.push({ key: object.Key, lastModified: object.LastModified });
+    }
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return summaries;
 }
 
 export async function deleteObject(key: string): Promise<void> {
