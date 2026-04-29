@@ -11,7 +11,7 @@ export function SlotBlock({ count, selected, status, limitMessage }: SlotBlockPr
   const slots = Array.from({ length: count }, (_, index) => selected[index] ?? null);
 
   return (
-    <div className="md:static sticky top-0 z-10 bg-j-cream/90 backdrop-blur-sm py-4 mb-4">
+    <div className="bg-j-blush/10 border border-j-border-subtle rounded-md p-4">
       <ul
         aria-label="Selected questions"
         className="grid grid-cols-1 gap-3 list-none p-0 m-0"

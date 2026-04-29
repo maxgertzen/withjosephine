@@ -205,7 +205,14 @@ export function IntakeForm({
   function handleBack() {
     setSubmitError(null);
     setErrors({});
-    setCurrentPage((p) => Math.max(p - 1, 0));
+    setCurrentPage((p) => {
+      const next = Math.max(p - 1, 0);
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log(`[IntakeForm] Back: ${p} → ${next}`);
+      }
+      return next;
+    });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -298,6 +305,14 @@ export function IntakeForm({
     <form
       ref={formRef}
       onSubmit={handleSubmit}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter") return;
+        const target = event.target as HTMLElement;
+        const tag = target.tagName;
+        if (tag === "TEXTAREA") return;
+        if (tag === "BUTTON" && (target as HTMLButtonElement).type === "submit") return;
+        event.preventDefault();
+      }}
       noValidate
       className="flex flex-col gap-10"
     >

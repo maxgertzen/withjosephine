@@ -145,13 +145,6 @@ export function MultiSelectExact({
         {required ? <span aria-hidden="true"> *</span> : null}
       </legend>
 
-      <SlotBlock
-        count={count}
-        selected={selectedOptions}
-        status={status}
-        limitMessage={limitMessage}
-      />
-
       {isCategorized ? (
         <div className="flex flex-col gap-6">
           {grouped.map((group) => (
@@ -175,6 +168,15 @@ export function MultiSelectExact({
           {options.map(renderCard)}
         </ul>
       )}
+
+      <div className="mt-6">
+        <SlotBlock
+          count={count}
+          selected={selectedOptions}
+          status={status}
+          limitMessage={limitMessage}
+        />
+      </div>
 
       {helpText ? (
         <p id={helpId} className="font-body text-xs text-j-text-muted mt-2">
