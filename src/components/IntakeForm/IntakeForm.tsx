@@ -132,6 +132,15 @@ export function IntakeForm({
   const currentSections = pages[currentPage] ?? [];
   const currentKeys = pageFieldKeys(currentSections);
 
+  const currentPageValid = useMemo(() => {
+    const pageSchema = buildPageSchema(allFields, currentKeys);
+    const followupSchema = buildNameFollowupSchema(
+      allFields.filter((field) => currentKeys.includes(field.key)),
+      values,
+    );
+    return pageSchema.safeParse(values).success && followupSchema.safeParse(values).success;
+  }, [allFields, currentKeys, values]);
+
   function setValue(key: string, value: FieldValue) {
     setValues((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) {
@@ -405,7 +414,8 @@ export function IntakeForm({
         onBack={handleBack}
         onNext={handleNext}
         isSubmitting={isSubmitting}
-        submitDisabled={isFinalPage && !turnstileToken}
+        nextDisabled={!currentPageValid}
+        submitDisabled={isFinalPage && (!turnstileToken || !currentPageValid)}
         submitLabel={submitLabel}
       />
 

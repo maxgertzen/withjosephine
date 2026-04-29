@@ -131,20 +131,18 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
-  it("blocks submission when Turnstile token is missing", async () => {
-    const user = userEvent.setup();
+  it("disables submit while required fields are empty", () => {
     renderForm();
-    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeDisabled();
   });
 
-  it("blocks submission and shows field errors when required fields are empty", async () => {
+  it("keeps submit disabled while Turnstile token is missing even if fields are filled", async () => {
     const user = userEvent.setup();
     renderForm();
-    await user.click(screen.getByTestId("turnstile-stub"));
-    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
-    const alerts = await screen.findAllByRole("alert");
-    expect(alerts.length).toBeGreaterThan(0);
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/non-refundable/));
+    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -195,12 +193,9 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.queryByRole("button", { name: /Continue to Payment/ })).toBeNull();
   });
 
-  it("blocks Next when current-page validation fails and stays on page 1", async () => {
-    const user = userEvent.setup();
+  it("disables Next while current-page validation is failing", () => {
     renderForm(TWO_PAGE_SECTIONS);
-    await user.click(screen.getByRole("button", { name: /Next/ }));
-    expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
   });
 
   it("advances to page 2 when current-page validation passes", async () => {

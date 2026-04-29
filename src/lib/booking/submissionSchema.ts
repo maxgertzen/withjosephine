@@ -16,37 +16,51 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
       let schema = z.string();
       const min = field.validation?.minLength;
       const max = field.validation?.maxLength;
-      if (typeof min === "number") schema = schema.min(min);
-      if (typeof max === "number") schema = schema.max(max);
+      if (typeof max === "number") {
+        schema = schema.max(max, `Please keep this under ${max} characters.`);
+      }
       const patternSource = field.validation?.pattern;
       if (patternSource) {
         try {
           schema = schema.regex(new RegExp(patternSource), {
-            message: field.validation?.patternErrorMessage ?? "Invalid format.",
+            message: field.validation?.patternErrorMessage ?? "Please check the format.",
           });
         } catch {
           // Sanity stored an invalid pattern — ignore rather than crash submissions.
         }
       }
-      return required ? schema.min(min ?? 1, "This field is required.") : schema.optional();
+      if (required) {
+        return schema.min(min ?? 1, "Please fill this in.");
+      }
+      if (typeof min === "number") {
+        return schema.min(min, `Please use at least ${min} characters.`).optional();
+      }
+      return schema.optional();
     }
 
     case "email": {
-      const schema = z.string().email("Please enter a valid email address.");
+      const schema = z
+        .string()
+        .min(1, "Please enter your email.")
+        .email("Please enter a valid email address.");
       return required ? schema : schema.optional();
     }
 
     case "date": {
       const schema = z.string().regex(ISO_DATE, "Please enter a valid date.");
-      return required ? schema : schema.optional();
+      return required
+        ? z.string().min(1, "Please pick a date.").regex(ISO_DATE, "Please enter a valid date.")
+        : schema.optional();
     }
 
     case "time": {
-      const schema = z.union([
-        z.string().regex(HHMM, "Please enter a valid time (HH:MM)."),
-        z.literal(TIME_UNKNOWN_SENTINEL),
-      ]);
-      return required ? schema : schema.optional();
+      const validTime = z.string().regex(HHMM, "Please enter a valid time (HH:MM).");
+      const schema = z.union([validTime, z.literal(TIME_UNKNOWN_SENTINEL)]);
+      if (!required) return schema.optional();
+      return z
+        .string()
+        .min(1, "Please enter a time, or check “I don\u2019t know”.")
+        .pipe(schema);
     }
 
     case "select": {

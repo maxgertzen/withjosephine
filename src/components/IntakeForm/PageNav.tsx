@@ -10,6 +10,7 @@ type PageNavProps = {
   onSaveLater?: () => void;
   onNext?: () => void;
   isSubmitting?: boolean;
+  nextDisabled?: boolean;
   submitDisabled?: boolean;
   submitLabel?: string;
   nextLabel?: string;
@@ -25,6 +26,7 @@ export function PageNav({
   onSaveLater,
   onNext,
   isSubmitting = false,
+  nextDisabled = false,
   submitDisabled = false,
   submitLabel = "Continue to payment →",
   nextLabel = "Next →",
@@ -80,6 +82,7 @@ export function PageNav({
             type="button"
             size="default"
             onClick={onNext}
+            disabled={nextDisabled}
             className="min-h-11"
           >
             {nextLabel}
