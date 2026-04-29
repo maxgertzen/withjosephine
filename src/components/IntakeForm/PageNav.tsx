@@ -17,6 +17,7 @@ type PageNavProps = {
   nextLabel?: string;
   saveLaterLabel?: string;
   savedIndicator?: React.ReactNode;
+  disabledHint?: string | null;
 };
 
 export function PageNav({
@@ -34,7 +35,10 @@ export function PageNav({
   nextLabel = "Next →",
   saveLaterLabel = "Save and continue later",
   savedIndicator,
+  disabledHint = null,
 }: PageNavProps) {
+  const showHint =
+    disabledHint !== null && (isFinalPage ? submitDisabled && !isSubmitting : nextDisabled);
   return (
     <nav
       aria-label="Form navigation"
@@ -69,7 +73,7 @@ export function PageNav({
         </button>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-2">
         {isFinalPage ? (
           <Button
             type="submit"
@@ -91,6 +95,15 @@ export function PageNav({
             {nextLabel}
           </Button>
         )}
+        {showHint ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="font-body text-xs italic text-j-text-muted text-right max-w-xs"
+          >
+            {disabledHint}
+          </p>
+        ) : null}
       </div>
 
       <div
