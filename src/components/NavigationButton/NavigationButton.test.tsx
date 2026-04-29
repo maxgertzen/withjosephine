@@ -32,7 +32,7 @@ describe("NavigationButton", () => {
 describe("NavigationButton with pending state", () => {
   vi.resetModules();
 
-  it("replaces the label with the spinner when pending", async () => {
+  it("renders the spinner over an invisible label so the button width does not shift", async () => {
     vi.doMock("next/link", async () => {
       const actual = await vi.importActual<typeof import("next/link")>("next/link");
       return {
@@ -48,7 +48,9 @@ describe("NavigationButton with pending state", () => {
     const { container } = render(
       <PendingButton href="/book/soul-blueprint">Book this Reading</PendingButton>,
     );
-    expect(screen.queryByText(/Book this Reading/)).toBeNull();
+    const labelEl = screen.getByText(/Book this Reading/);
+    expect(labelEl).toBeInTheDocument();
+    expect(labelEl.closest('[aria-hidden="true"]')).toHaveClass("invisible");
     expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
 
     vi.doUnmock("next/link");

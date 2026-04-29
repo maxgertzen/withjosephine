@@ -13,9 +13,17 @@ export function LinkContent({ children, pendingLabel = "Loading" }: LinkContentP
   const { pending } = useLinkStatus();
   if (!pending) return <>{children}</>;
   return (
-    <span aria-label={pendingLabel} className="inline-flex items-center justify-center gap-2">
-      <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+    <span className="relative inline-flex items-center justify-center">
+      <span aria-hidden="true" className="invisible">
+        {children}
+      </span>
+      <span
+        aria-label={pendingLabel}
+        role="status"
+        className="absolute inset-0 inline-flex items-center justify-center"
+      >
+        <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+      </span>
     </span>
   );
 }
-
