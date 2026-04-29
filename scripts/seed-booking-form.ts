@@ -307,13 +307,23 @@ const PAGINATION_OVERRIDES = [
   { _key: "birth-chart", readingSlug: "birth-chart", pageCount: 1 },
 ];
 
+function toReadingRefs(ids: string[] | undefined) {
+  if (!ids || ids.length === 0) return undefined;
+  return ids.map((id) => ({ _key: id, _type: "reference" as const, _ref: id }));
+}
+
 async function seedFields() {
   const existing = await client.fetch<Array<{ _id: string }>>(
     '*[_type == "formField"]{ _id }',
   );
   for (const field of FIELDS) {
     const wasThere = existing.some((row) => row._id === field._id);
-    const stub: IdentifiedSanityDocumentStub = { _type: "formField", ...field };
+    const { appliesToServices, ...rest } = field;
+    const stub: IdentifiedSanityDocumentStub = {
+      _type: "formField",
+      ...rest,
+      ...(appliesToServices ? { appliesToServices: toReadingRefs(appliesToServices) } : {}),
+    };
     await client.createIfNotExists(stub);
     console.log(`${wasThere ? "SKIP  " : "CREATE"} formField   ${field._id}`);
   }
@@ -325,10 +335,11 @@ async function seedSections() {
   );
   for (const section of SECTIONS) {
     const wasThere = existing.some((row) => row._id === section._id);
-    const { fieldRefs, ...rest } = section;
+    const { fieldRefs, appliesToServices, ...rest } = section;
     const stub: IdentifiedSanityDocumentStub = {
       _type: "formSection",
       ...rest,
+      ...(appliesToServices ? { appliesToServices: toReadingRefs(appliesToServices) } : {}),
       fields: fieldRefs.map((ref) => ({ _key: ref, _type: "reference", _ref: ref })),
     };
     await client.createIfNotExists(stub);

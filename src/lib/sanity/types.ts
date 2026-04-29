@@ -247,6 +247,7 @@ export type SanityFormSection = {
   pageBoundary?: boolean;
   marginaliaLabel?: string;
   transitionLine?: string;
+  clarificationNote?: string;
   appliesToServices?: string[];
   fields: SanityFormField[];
 };

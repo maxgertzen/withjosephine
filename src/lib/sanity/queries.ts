@@ -188,6 +188,7 @@ export const bookingFormQuery = groq`
       pageBoundary,
       marginaliaLabel,
       transitionLine,
+      clarificationNote,
       "appliesToServices": appliesToServices[]->slug.current,
       "fields": fields[]-> {
         _id,

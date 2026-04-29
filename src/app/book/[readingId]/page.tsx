@@ -123,14 +123,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
         >
           ‹ Back
         </Link>
-        <Image
-          src="/images/logo-default.png"
-          alt="Josephine Soul Readings"
-          width={189}
-          height={192}
-          priority
-          className="h-auto w-[110px] min-[375px]:w-[140px]"
-        />
+        <span className="font-display italic text-lg md:text-xl text-j-text-heading tracking-wide">
+          Josephine Soul Readings
+        </span>
         <Link
           href="/about"
           className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2"
@@ -218,6 +213,17 @@ export default async function BookingPage({ params }: BookingPageProps) {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
               />
+
+              <div className="relative flex justify-center mb-6">
+                <Image
+                  src="/images/logo-default.png"
+                  alt=""
+                  width={140}
+                  height={140}
+                  aria-hidden="true"
+                  className="h-auto w-[110px] min-[375px]:w-[140px]"
+                />
+              </div>
 
               <p className="relative font-display italic text-[1.25rem] md:text-[1.4rem] leading-snug text-j-text-heading mb-6">
                 {letterOpener}
