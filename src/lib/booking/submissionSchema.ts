@@ -5,7 +5,7 @@ import type { SanityFormField } from "@/lib/sanity/types";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^\d{2}:\d{2}$/;
 
-function buildFieldSchema(field: SanityFormField): ZodTypeAny {
+export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
   const required = field.required === true;
 
   switch (field.type) {

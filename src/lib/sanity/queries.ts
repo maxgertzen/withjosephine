@@ -174,11 +174,20 @@ export const bookingFormQuery = groq`
     consentBlock {
       trustLine
     },
+    pagination {
+      overrides[] {
+        readingSlug,
+        pageCount
+      }
+    },
     "sections": sections[]-> {
       _id,
       sectionTitle,
       sectionDescription,
       order,
+      pageBoundary,
+      marginaliaLabel,
+      transitionLine,
       "appliesToServices": appliesToServices[]->slug.current,
       "fields": fields[]-> {
         _id,

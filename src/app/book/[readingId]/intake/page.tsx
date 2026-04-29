@@ -88,6 +88,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
           sections={filteredSections}
           nonRefundableNotice={bookingForm.nonRefundableNotice}
           confirmationMessage={bookingForm.confirmationMessage}
+          pagination={bookingForm.pagination}
         />
       </main>
 

@@ -1,9 +1,8 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useRef, useState } from "react";
 
-import { Button } from "@/components/Button";
 import { Checkbox } from "@/components/Form/Checkbox";
 import { DatePicker } from "@/components/Form/DatePicker";
 import { FileUpload } from "@/components/Form/FileUpload";
@@ -12,10 +11,19 @@ import { MultiSelectExact } from "@/components/Form/MultiSelectExact";
 import { Select } from "@/components/Form/Select";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
+import { buildPageSchema } from "@/lib/booking/buildPageSchema";
 import { BOOKING_API_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { derivePages, type IntakePage } from "@/lib/booking/derivePages";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import { errorClasses } from "@/lib/formStyles";
-import type { SanityFormField, SanityFormSection } from "@/lib/sanity/types";
+import type {
+  SanityFormField,
+  SanityFormSection,
+  SanityPagination,
+} from "@/lib/sanity/types";
+
+import { PageIndicator } from "./PageIndicator";
+import { PageNav } from "./PageNav";
 
 type FieldValue = string | string[] | boolean;
 type FieldValues = Record<string, FieldValue>;
@@ -27,6 +35,7 @@ type IntakeFormProps = {
   nonRefundableNotice: string;
   confirmationMessage?: string;
   submitLabel?: string;
+  pagination?: SanityPagination;
 };
 
 function initialValueFor(field: SanityFormField): FieldValue {
@@ -39,6 +48,10 @@ function flattenFields(sections: SanityFormSection[]): SanityFormField[] {
   return sections.flatMap((section) => section.fields);
 }
 
+function pageFieldKeys(page: IntakePage): string[] {
+  return flattenFields(page).map((field) => field.key);
+}
+
 export function IntakeForm({
   readingId,
   readingName,
@@ -46,6 +59,7 @@ export function IntakeForm({
   nonRefundableNotice,
   confirmationMessage,
   submitLabel = "Continue to Payment",
+  pagination,
 }: IntakeFormProps) {
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
@@ -54,6 +68,12 @@ export function IntakeForm({
   );
   const submissionSchema = useMemo(() => buildSubmissionSchema(allFields), [allFields]);
 
+  const pages = useMemo(
+    () => derivePages(sections, { readingSlug: readingId, pagination }),
+    [sections, readingId, pagination],
+  );
+
+  const [currentPage, setCurrentPage] = useState(0);
   const [values, setValues] = useState<FieldValues>(() => {
     const seed: FieldValues = {};
     for (const field of allFields) {
@@ -68,7 +88,15 @@ export function IntakeForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSucceeded, setIsSucceeded] = useState(false);
 
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  const totalPages = pages.length;
+  const isFirstPage = currentPage === 0;
+  const isFinalPage = currentPage === totalPages - 1 || totalPages === 0;
+  const currentSections = pages[currentPage] ?? [];
+  const currentKeys = pageFieldKeys(currentSections);
 
   function setValue(key: string, value: FieldValue) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -81,9 +109,53 @@ export function IntakeForm({
     }
   }
 
+  function focusFirstError(fieldErrors: Record<string, string>) {
+    const firstKey = Object.keys(fieldErrors)[0];
+    if (!firstKey) return;
+    const el = formRef.current?.querySelector<HTMLElement>(`#field-${CSS.escape(firstKey)}`);
+    el?.focus();
+  }
+
+  function handleNext() {
+    setSubmitError(null);
+    const pageSchema = buildPageSchema(allFields, currentKeys);
+    const result = pageSchema.safeParse(values);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0];
+        if (typeof key === "string" && !fieldErrors[key]) {
+          fieldErrors[key] = issue.message;
+        }
+      }
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors);
+      return;
+    }
+    setErrors({});
+    setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function handleBack() {
+    setSubmitError(null);
+    setErrors({});
+    setCurrentPage((p) => Math.max(p - 1, 0));
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError(null);
+
+    if (!isFinalPage) {
+      handleNext();
+      return;
+    }
 
     if (!turnstileToken) {
       setSubmitError("Please complete the verification challenge.");
@@ -101,6 +173,7 @@ export function IntakeForm({
       }
       setErrors(fieldErrors);
       setSubmitError("Please fix the highlighted fields and try again.");
+      focusFirstError(fieldErrors);
       return;
     }
 
@@ -151,7 +224,12 @@ export function IntakeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-10">
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-10"
+    >
       <input
         type="text"
         name={HONEYPOT_FIELD}
@@ -163,9 +241,18 @@ export function IntakeForm({
         className="absolute left-[-9999px] h-0 w-0 opacity-0"
       />
 
-      {sections.map((section) => (
+      {totalPages > 0 ? (
+        <PageIndicator pageNumber={currentPage + 1} totalPages={totalPages} />
+      ) : null}
+
+      {currentSections.map((section) => (
         <section key={section._id} className="flex flex-col gap-6">
           <header>
+            {section.transitionLine ? (
+              <p className="font-display italic text-base text-j-text-muted mb-2">
+                {section.transitionLine}
+              </p>
+            ) : null}
             <h2 className="font-display text-2xl italic text-j-text-heading">
               {section.sectionTitle}
             </h2>
@@ -184,7 +271,7 @@ export function IntakeForm({
         </section>
       ))}
 
-      {consentField ? (
+      {isFinalPage && consentField ? (
         <section className="flex flex-col gap-4 bg-j-warm/40 border border-j-border-subtle rounded-2xl p-6">
           <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
             {nonRefundableNotice}
@@ -203,7 +290,7 @@ export function IntakeForm({
         </section>
       ) : null}
 
-      {turnstileSiteKey ? (
+      {isFinalPage && turnstileSiteKey ? (
         <div className="flex justify-center">
           <Turnstile
             siteKey={turnstileSiteKey}
@@ -220,14 +307,16 @@ export function IntakeForm({
         </p>
       ) : null}
 
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full text-center"
-        disabled={isSubmitting || !turnstileToken}
-      >
-        {isSubmitting ? "Submitting\u2026" : submitLabel}
-      </Button>
+      <PageNav
+        isFirstPage={isFirstPage}
+        isFinalPage={isFinalPage}
+        backHref={`/book/${readingId}`}
+        onBack={handleBack}
+        onNext={handleNext}
+        isSubmitting={isSubmitting}
+        submitDisabled={isFinalPage && !turnstileToken}
+        submitLabel={submitLabel}
+      />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>
     </form>

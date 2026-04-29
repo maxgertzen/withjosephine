@@ -228,8 +228,20 @@ export type SanityFormSection = {
   sectionTitle: string;
   sectionDescription?: string;
   order?: number;
+  pageBoundary?: boolean;
+  marginaliaLabel?: string;
+  transitionLine?: string;
   appliesToServices?: string[];
   fields: SanityFormField[];
+};
+
+export type SanityPaginationOverride = {
+  readingSlug: string;
+  pageCount?: number;
+};
+
+export type SanityPagination = {
+  overrides?: SanityPaginationOverride[];
 };
 
 export type SanityEntryPageContent = {
@@ -255,6 +267,7 @@ export type SanityBookingForm = {
   nonRefundableNotice: string;
   entryPageContent?: SanityEntryPageContent;
   consentBlock?: SanityConsentBlock;
+  pagination?: SanityPagination;
   sections: SanityFormSection[];
 };
 
