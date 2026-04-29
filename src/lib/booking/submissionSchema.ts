@@ -83,6 +83,10 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
     }
 
     case "fileUpload": {
+      const bypass =
+        process.env.NODE_ENV !== "production" &&
+        process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
+      if (bypass) return z.string().optional();
       const schema = z.string().min(1, "Please upload a file.");
       return required ? schema : schema.optional();
     }
