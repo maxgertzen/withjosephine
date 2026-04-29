@@ -10,7 +10,7 @@
     "prebuild": "pnpm generate-tokens && pnpm generate-fonts",
     "build": "next build",
     "cf:build": "pnpm build && opennextjs-cloudflare build && pnpm cf:strip-og",
-    "cf:strip-og": "rm -rf .open-next/server-functions/default/node_modules/.pnpm/next*/node_modules/next/dist/compiled/@vercel/og",
+    "cf:strip-og": "node scripts/strip-vercel-og.mjs",
     "start": "next start",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
