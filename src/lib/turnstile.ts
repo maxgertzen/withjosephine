@@ -10,6 +10,15 @@ type TurnstileResponse = {
 const VERIFY_ENDPOINT = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 export async function verifyTurnstileToken(token: string, ip?: string): Promise<boolean> {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.BOOKING_TURNSTILE_BYPASS === "1"
+  ) {
+    console.warn(
+      "[turnstile] BOOKING_TURNSTILE_BYPASS=1 — skipping verification (dev only)",
+    );
+    return true;
+  }
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
     console.warn("[turnstile] TURNSTILE_SECRET_KEY not set — rejecting verification");

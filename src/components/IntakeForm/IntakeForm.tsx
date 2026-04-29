@@ -125,6 +125,10 @@ export function IntakeForm({
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const turnstileBypass =
+    process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
+  const turnstileRequired = Boolean(turnstileSiteKey) && !turnstileBypass;
 
   const totalPages = pages.length;
   const isFirstPage = currentPage === 0;
@@ -216,7 +220,7 @@ export function IntakeForm({
       return;
     }
 
-    if (!turnstileToken) {
+    if (turnstileRequired && !turnstileToken) {
       setSubmitError("Please complete the verification challenge.");
       return;
     }
@@ -252,7 +256,7 @@ export function IntakeForm({
         body: JSON.stringify({
           readingSlug: readingId,
           values: { ...result.data, ...followupResult.data, ...companionKeys },
-          turnstileToken,
+          turnstileToken: turnstileToken ?? "",
           [HONEYPOT_FIELD]: honeypot,
           consentLabelSnapshot: consentField?.label ?? "",
         }),
@@ -390,7 +394,7 @@ export function IntakeForm({
         </section>
       ) : null}
 
-      {isFinalPage && turnstileSiteKey ? (
+      {isFinalPage && turnstileRequired && turnstileSiteKey ? (
         <div className="flex justify-center">
           <Turnstile
             siteKey={turnstileSiteKey}
@@ -415,7 +419,9 @@ export function IntakeForm({
         onNext={handleNext}
         isSubmitting={isSubmitting}
         nextDisabled={!currentPageValid}
-        submitDisabled={isFinalPage && (!turnstileToken || !currentPageValid)}
+        submitDisabled={
+          isFinalPage && (!currentPageValid || (turnstileRequired && !turnstileToken))
+        }
         submitLabel={submitLabel}
       />
 
