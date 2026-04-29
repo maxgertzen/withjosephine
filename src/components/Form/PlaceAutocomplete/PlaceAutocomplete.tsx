@@ -33,7 +33,7 @@ export function PlaceAutocomplete({
   helpText,
   helperPosition,
   clarificationNote,
-  placeholder = "Town and country",
+  placeholder = " ",
   error,
   required,
   disabled,
@@ -139,7 +139,7 @@ export function PlaceAutocomplete({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder ?? " "}
           disabled={disabled}
           required={required}
           autoComplete="off"

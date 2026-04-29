@@ -51,12 +51,12 @@ export function Textarea({
         rows={rows}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? " "}
         disabled={disabled}
         required={required}
         maxLength={maxLength}
         aria-invalid={error ? true : undefined}
-        className={inputClasses}
+        className={`${inputClasses} min-h-32`}
       />
     </FieldShell>
   );

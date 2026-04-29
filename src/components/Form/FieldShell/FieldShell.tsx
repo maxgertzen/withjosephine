@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { errorClasses, labelClasses } from "@/lib/formStyles";
+import { errorClasses, floatingLabelClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type FieldShellProps = {
@@ -41,17 +41,19 @@ export function FieldShell({
 
   return (
     <div data-field-shell aria-describedby={describedBy}>
-      <label htmlFor={id} className={labelClasses}>
-        {label}
-        {required ? <span aria-hidden="true"> *</span> : null}
-      </label>
       {clarificationNote ? (
-        <p className="font-display italic text-sm text-j-text-muted mt-1 mb-3">
+        <p className="font-display italic text-sm text-j-text-muted mb-2">
           {clarificationNote}
         </p>
       ) : null}
       {helperPosition === "before" ? helper : null}
-      {children}
+      <div className="relative">
+        {children}
+        <label htmlFor={id} className={floatingLabelClasses}>
+          {label}
+          {required ? <span aria-hidden="true"> *</span> : null}
+        </label>
+      </div>
       {helperPosition === "after" ? helper : null}
       {error ? (
         <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>

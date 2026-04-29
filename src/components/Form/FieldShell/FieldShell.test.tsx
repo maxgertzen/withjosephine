@@ -5,7 +5,7 @@ import { FieldShell } from "./FieldShell";
 
 describe("FieldShell", () => {
   it("renders helper text after the input by default", () => {
-    const { container } = render(
+    render(
       <FieldShell id="x" label="Field" helpText="Help me">
         <input id="x" data-testid="x" />
       </FieldShell>,
@@ -13,12 +13,12 @@ describe("FieldShell", () => {
 
     const inputEl = screen.getByTestId("x");
     const helper = screen.getByText("Help me");
-    const all = Array.from(container.querySelectorAll("[data-field-shell] > *"));
-    expect(all.indexOf(inputEl)).toBeLessThan(all.indexOf(helper));
+    const position = inputEl.compareDocumentPosition(helper);
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders helper text before the input when helperPosition is 'before'", () => {
-    const { container } = render(
+    render(
       <FieldShell id="x" label="Field" helpText="Help me" helperPosition="before">
         <input id="x" data-testid="x" />
       </FieldShell>,
@@ -26,8 +26,8 @@ describe("FieldShell", () => {
 
     const inputEl = screen.getByTestId("x");
     const helper = screen.getByText("Help me");
-    const all = Array.from(container.querySelectorAll("[data-field-shell] > *"));
-    expect(all.indexOf(helper)).toBeLessThan(all.indexOf(inputEl));
+    const position = inputEl.compareDocumentPosition(helper);
+    expect(position & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
   it("renders the clarification note above the input when provided", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { format, isValid, parse } from "date-fns";
+import { differenceInYears, format, isValid, parse } from "date-fns";
 import { useEffect, useId, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 
@@ -25,6 +25,7 @@ type DatePickerProps = {
   disabled?: boolean;
   min?: string;
   max?: string;
+  minAge?: number;
 };
 
 function parseIso(value: string): Date | undefined {
@@ -47,6 +48,7 @@ export function DatePicker({
   disabled,
   min,
   max,
+  minAge,
 }: DatePickerProps) {
   const popoverId = useId();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -74,6 +76,10 @@ export function DatePicker({
   const selected = parseIso(value);
   const minDate = min ? parseIso(min) : undefined;
   const maxDate = max ? parseIso(max) : undefined;
+  const ageWarning =
+    typeof minAge === "number" && selected
+      ? differenceInYears(new Date(), selected) < minAge
+      : false;
 
   function handleSelect(date: Date | undefined) {
     if (!date) {
@@ -122,7 +128,7 @@ export function DatePicker({
           value={draft}
           onChange={(event) => handleManualInput(event.target.value)}
           onFocus={() => setOpen(true)}
-          placeholder="DD MMM YYYY"
+          placeholder=" "
           disabled={disabled}
           required={required}
           autoComplete="bday"
@@ -133,6 +139,19 @@ export function DatePicker({
           className={inputClasses}
           onBlur={() => setManualDraft(null)}
         />
+        {ageWarning ? (
+          <p
+            data-testid="dob-age-warning"
+            role="note"
+            className="mt-2 font-display italic text-sm text-j-text-muted"
+          >
+            <span aria-hidden="true" className="text-j-accent mr-2">
+              ✦
+            </span>
+            That puts you under {minAge}. Please double-check the date — if it&rsquo;s
+            correct, no need to change a thing.
+          </p>
+        ) : null}
         {open ? (
           <div
             id={popoverId}

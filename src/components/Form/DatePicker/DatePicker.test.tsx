@@ -50,4 +50,50 @@ describe("DatePicker", () => {
     const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
     expect(input.value).toMatch(/12 Apr 1990/);
   });
+
+  it("renders a soft under-age warning when the value is below minAge", () => {
+    const todayYear = new Date().getFullYear();
+    const tenYearsAgo = `${todayYear - 10}-01-15`;
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value={tenYearsAgo}
+        onChange={vi.fn()}
+        minAge={18}
+      />,
+    );
+    expect(screen.getByTestId("dob-age-warning")).toHaveTextContent(/under 18/);
+  });
+
+  it("does not render the warning when the value is at or over the threshold", () => {
+    const todayYear = new Date().getFullYear();
+    const thirtyYearsAgo = `${todayYear - 30}-01-15`;
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value={thirtyYearsAgo}
+        onChange={vi.fn()}
+        minAge={18}
+      />,
+    );
+    expect(screen.queryByTestId("dob-age-warning")).toBeNull();
+  });
+
+  it("does not render the warning when the value is empty", () => {
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={vi.fn()}
+        minAge={18}
+      />,
+    );
+    expect(screen.queryByTestId("dob-age-warning")).toBeNull();
+  });
 });

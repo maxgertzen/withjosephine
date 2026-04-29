@@ -59,7 +59,7 @@ export function Input({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? " "}
         disabled={disabled}
         required={required}
         autoComplete={autoComplete ?? (type === "email" ? "email" : undefined)}

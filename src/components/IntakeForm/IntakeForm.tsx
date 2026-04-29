@@ -663,6 +663,7 @@ function renderField(field: SanityFormField, ctx: RenderContext) {
           error={error}
           required={field.required}
           disabled={disabled}
+          minAge={field.key === "date_of_birth" ? 18 : undefined}
         />
       );
 

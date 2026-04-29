@@ -115,7 +115,7 @@ export function TimePicker({
           onChange={(event) => handleManualInput(event.target.value)}
           onFocus={() => !inputDisabled && setOpen(true)}
           onBlur={() => setDraft(null)}
-          placeholder="HH:MM"
+          placeholder=" "
           disabled={inputDisabled}
           required={required && !isUnknown}
           autoComplete="off"
