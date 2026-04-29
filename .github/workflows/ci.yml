@@ -64,7 +64,6 @@ jobs:
       - name: Build Worker bundle
         run: pnpm cf:build
         env:
-          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3

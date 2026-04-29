@@ -129,8 +129,8 @@ SANITY_WRITE_TOKEN=your-value-here
 # Cron triggers
 CRON_SECRET=your-value-here
 
-# Web3Forms (server-side; replaces NEXT_PUBLIC_WEB3FORMS_KEY)
-WEB3FORMS_KEY=your-value-here
+# Listening-page HMAC token signing key
+LISTEN_TOKEN_SECRET=your-value-here
 ```
 
 ---
