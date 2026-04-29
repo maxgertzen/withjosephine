@@ -195,9 +195,18 @@ export type SanityFormFieldType =
   | "fileUpload"
   | "consent";
 
+export type SanityFormFieldNameFollowup = {
+  enabled?: boolean;
+  label?: string;
+  placeholder?: string;
+};
+
 export type SanityFormFieldOption = {
   value: string;
   label: string;
+  category?: string;
+  categoryOrder?: number;
+  nameFollowup?: SanityFormFieldNameFollowup;
 };
 
 export type SanityFormFieldValidation = {

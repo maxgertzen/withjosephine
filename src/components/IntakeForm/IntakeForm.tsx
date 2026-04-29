@@ -14,6 +14,11 @@ import { TimePicker } from "@/components/Form/TimePicker";
 import { buildPageSchema } from "@/lib/booking/buildPageSchema";
 import { BOOKING_API_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { derivePages, type IntakePage } from "@/lib/booking/derivePages";
+import {
+  isNameFollowupEnabled,
+  nameFollowupKey,
+} from "@/lib/booking/nameFollowup";
+import { buildNameFollowupSchema } from "@/lib/booking/nameFollowupSchema";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import { errorClasses } from "@/lib/formStyles";
 import type {
@@ -116,18 +121,34 @@ export function IntakeForm({
     el?.focus();
   }
 
+  function collectFieldErrors(
+    issues: { path: PropertyKey[]; message: string }[],
+  ): Record<string, string> {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of issues) {
+      const key = issue.path[0];
+      if (typeof key === "string" && !fieldErrors[key]) {
+        fieldErrors[key] = issue.message;
+      }
+    }
+    return fieldErrors;
+  }
+
   function handleNext() {
     setSubmitError(null);
     const pageSchema = buildPageSchema(allFields, currentKeys);
-    const result = pageSchema.safeParse(values);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const key = issue.path[0];
-        if (typeof key === "string" && !fieldErrors[key]) {
-          fieldErrors[key] = issue.message;
-        }
-      }
+    const pageResult = pageSchema.safeParse(values);
+    const followupSchema = buildNameFollowupSchema(
+      allFields.filter((field) => currentKeys.includes(field.key)),
+      values,
+    );
+    const followupResult = followupSchema.safeParse(values);
+    if (!pageResult.success || !followupResult.success) {
+      const issues = [
+        ...(pageResult.success ? [] : pageResult.error.issues),
+        ...(followupResult.success ? [] : followupResult.error.issues),
+      ];
+      const fieldErrors = collectFieldErrors(issues);
       setErrors(fieldErrors);
       focusFirstError(fieldErrors);
       return;
@@ -163,14 +184,14 @@ export function IntakeForm({
     }
 
     const result = submissionSchema.safeParse(values);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const key = issue.path[0];
-        if (typeof key === "string" && !fieldErrors[key]) {
-          fieldErrors[key] = issue.message;
-        }
-      }
+    const followupSchema = buildNameFollowupSchema(allFields, values);
+    const followupResult = followupSchema.safeParse(values);
+    if (!result.success || !followupResult.success) {
+      const issues = [
+        ...(result.success ? [] : result.error.issues),
+        ...(followupResult.success ? [] : followupResult.error.issues),
+      ];
+      const fieldErrors = collectFieldErrors(issues);
       setErrors(fieldErrors);
       setSubmitError("Please fix the highlighted fields and try again.");
       focusFirstError(fieldErrors);
@@ -184,7 +205,7 @@ export function IntakeForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           readingSlug: readingId,
-          values: result.data,
+          values: { ...result.data, ...followupResult.data },
           turnstileToken,
           [HONEYPOT_FIELD]: honeypot,
           consentLabelSnapshot: consentField?.label ?? "",
@@ -422,7 +443,13 @@ function renderField(
         />
       );
 
-    case "multiSelectExact":
+    case "multiSelectExact": {
+      const followupValues: Record<string, string> = {};
+      for (const option of field.options ?? []) {
+        if (!isNameFollowupEnabled(option)) continue;
+        const v = values[nameFollowupKey(option.value)];
+        followupValues[option.value] = typeof v === "string" ? v : "";
+      }
       return (
         <MultiSelectExact
           key={field._id}
@@ -437,8 +464,13 @@ function renderField(
           error={error}
           required={field.required}
           disabled={disabled}
+          nameFollowupValues={followupValues}
+          onNameFollowupChange={(optionValue, text) =>
+            setValue(nameFollowupKey(optionValue), text)
+          }
         />
       );
+    }
 
     case "fileUpload":
       return (

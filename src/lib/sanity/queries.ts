@@ -200,7 +200,13 @@ export const bookingFormQuery = groq`
         system,
         order,
         multiSelectCount,
-        options,
+        options[] {
+          value,
+          label,
+          category,
+          categoryOrder,
+          nameFollowup
+        },
         validation,
         "appliesToServices": appliesToServices[]->slug.current
       }
