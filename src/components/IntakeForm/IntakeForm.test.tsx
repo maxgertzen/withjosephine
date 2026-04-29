@@ -6,8 +6,8 @@ import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm } from "./IntakeForm";
 
-vi.mock("@marsidev/react-turnstile", () => {
-  const React = require("react");
+vi.mock("@marsidev/react-turnstile", async () => {
+  const React = await import("react");
   return {
     Turnstile: React.forwardRef(function MockTurnstile(
       { onSuccess }: { onSuccess: (token: string) => void },

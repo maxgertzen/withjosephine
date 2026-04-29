@@ -35,6 +35,10 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
 | `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
 | `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
+| `BOOKING_DB_DRIVER` | Set to `d1` on the deployed Worker. Local dev/tests default to `sqlite` (better-sqlite3 against `.local/booking.db` or `:memory:`). | Plain text |
+| `D1_ACCOUNT_ID` | CF account that owns the D1 database. Same value as `R2_ACCOUNT_ID`. | CF dashboard sidebar |
+| `D1_DATABASE_ID` | UUID of the D1 database. Returned by `pnpm exec wrangler d1 create withjosephine-bookings`. | wrangler create output |
+| `D1_API_TOKEN` | API token with **D1:Edit** scope. CF dashboard → My Profile → API Tokens → Create with `D1:Edit` permission scoped to the account. Used by the Worker to query the D1 HTTP API. | CF dashboard |
 
 Example:
 
@@ -50,7 +54,25 @@ pnpm exec wrangler secret put R2_BUCKET_NAME
 pnpm exec wrangler secret put NOTIFICATION_EMAIL
 pnpm exec wrangler secret put SANITY_WRITE_TOKEN
 pnpm exec wrangler secret put LISTEN_TOKEN_SECRET   # openssl rand -hex 32
+pnpm exec wrangler secret put D1_ACCOUNT_ID
+pnpm exec wrangler secret put D1_DATABASE_ID
+pnpm exec wrangler secret put D1_API_TOKEN
 ```
+
+### D1 database one-time setup
+
+```bash
+# Create the database (returns a database_id — save into D1_DATABASE_ID)
+pnpm exec wrangler d1 create withjosephine-bookings
+
+# Apply the initial schema migration
+pnpm exec wrangler d1 execute withjosephine-bookings --file migrations/0001_submissions.sql --remote
+
+# Verify
+pnpm exec wrangler d1 execute withjosephine-bookings --command "SELECT name FROM sqlite_master WHERE type='table'" --remote
+```
+
+Plain `BOOKING_DB_DRIVER=d1` lives under **Variables → Variables** (not a secret).
 
 `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a plain variable, not a secret — set it under **Variables → Variables** so it is inlined at build time.
 

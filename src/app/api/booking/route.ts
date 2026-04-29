@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
+import { createSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import { getClientIp } from "@/lib/request";
-import { getSanityWriteClient } from "@/lib/sanity/client";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType, SanityReading } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -39,16 +39,12 @@ function buildResponses(
   fields: SanityFormField[],
   values: Record<string, unknown>,
 ): Array<{
-  _key: string;
-  _type: "submissionResponse";
   fieldKey: string;
   fieldLabelSnapshot: string;
   fieldType: SanityFormFieldType;
   value: string;
 }> {
   return fields.map((field) => ({
-    _key: field._id,
-    _type: "submissionResponse" as const,
     fieldKey: field.key,
     fieldLabelSnapshot: field.label,
     fieldType: field.type,
@@ -140,34 +136,28 @@ export async function POST(request: Request) {
   const acknowledgedAt = new Date().toISOString();
   const submissionId = crypto.randomUUID();
 
-  const submissionDraft = {
-    _id: submissionId,
-    _type: "submission",
-    status: "pending",
-    serviceRef: { _type: "reference", _ref: reading._id },
-    email,
-    responses,
-    consentSnapshot: {
-      labelText: parsedBody.consentLabelSnapshot ?? "",
-      acknowledgedAt,
-      ipAddress: ip ?? undefined,
-    },
-    photoR2Key,
-    clientReferenceId: submissionId,
-    createdAt: acknowledgedAt,
-  };
-
-  let createdId: string;
   try {
-    const writeClient = getSanityWriteClient();
-    const created = await writeClient.create(submissionDraft, { visibility: "sync" });
-    createdId = created._id;
+    await createSubmission({
+      id: submissionId,
+      email,
+      status: "pending",
+      readingSlug: parsedBody.readingSlug,
+      readingName: reading.name,
+      readingPriceDisplay: reading.priceDisplay,
+      responses,
+      consentLabel: parsedBody.consentLabelSnapshot ?? null,
+      photoR2Key: photoR2Key ?? null,
+      clientReferenceId: submissionId,
+      createdAt: acknowledgedAt,
+      consentAcknowledgedAt: acknowledgedAt,
+      ipAddress: ip ?? null,
+    });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);
     return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
   }
 
-  const paymentUrl = buildPaymentUrl(reading, createdId, email);
+  const paymentUrl = buildPaymentUrl(reading, submissionId, email);
   if (!paymentUrl) {
     return NextResponse.json(
       { error: "Payment is not currently available for this reading." },
@@ -175,5 +165,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ paymentUrl, submissionId: createdId });
+  return NextResponse.json({ paymentUrl, submissionId });
 }

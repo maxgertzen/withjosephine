@@ -1,9 +1,16 @@
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { getSanityWriteClient } from "../sanity/client";
+import type { CreateSubmissionInput } from "./persistence/repository";
+import * as repo from "./persistence/repository";
+import {
+  mirrorAppendEmailFired,
+  mirrorSubmissionCreate,
+  mirrorSubmissionDelete,
+  mirrorSubmissionPatch,
+  mirrorUnsetPhotoKey,
+} from "./persistence/sanityMirror";
 
 const PHOTO_BASE_URL = "https://images.withjosephine.com";
-const LIST_QUERY_LIMIT = 500;
 
 export type SubmissionStatus = "pending" | "paid" | "expired";
 
@@ -48,77 +55,62 @@ export type SubmissionRecord = {
   } | null;
 };
 
-const SUBMISSION_PROJECTION = `{
-  _id,
-  status,
-  email,
-  responses,
-  photoR2Key,
-  stripeEventId,
-  stripeSessionId,
-  clientReferenceId,
-  createdAt,
-  paidAt,
-  expiredAt,
-  deliveredAt,
-  voiceNoteUrl,
-  pdfUrl,
-  emailsFired,
-  "reading": serviceRef->{ name, priceDisplay }
-}`;
+/**
+ * D1 (or local SQLite for dev/tests) is the sole source of truth for
+ * submissions. Sanity holds a one-way mirror that Studio can browse;
+ * mirror writes are fire-and-forget and never block the user.
+ * See ADR-001 for context.
+ */
+
+export type CreateSubmissionParams = CreateSubmissionInput & {
+  consentAcknowledgedAt: string;
+  ipAddress: string | null;
+};
+
+export async function createSubmission(params: CreateSubmissionParams): Promise<void> {
+  const { consentAcknowledgedAt, ipAddress, ...input } = params;
+  await repo.createSubmission(input);
+  void mirrorSubmissionCreate(input, consentAcknowledgedAt, ipAddress);
+}
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
-  const result = await getSanityWriteClient().fetch<SubmissionRecord | null>(
-    `*[_type == "submission" && _id == $id][0]${SUBMISSION_PROJECTION}`,
-    { id },
-  );
-  return result ?? null;
+  return repo.findSubmissionById(id);
 }
 
 export async function markSubmissionPaid(
   submissionId: string,
   paid: { stripeEventId: string; stripeSessionId: string; paidAt: string },
 ): Promise<void> {
-  await getSanityWriteClient()
-    .patch(submissionId)
-    .set({
-      status: "paid",
-      paidAt: paid.paidAt,
-      stripeEventId: paid.stripeEventId,
-      stripeSessionId: paid.stripeSessionId,
-    })
-    .commit({ visibility: "sync" });
+  await repo.markSubmissionPaid(submissionId, paid);
+  void mirrorSubmissionPatch(submissionId, {
+    status: "paid",
+    paidAt: paid.paidAt,
+    stripeEventId: paid.stripeEventId,
+    stripeSessionId: paid.stripeSessionId,
+  });
 }
 
 export async function markSubmissionExpired(
   submissionId: string,
   expired: { stripeEventId?: string; expiredAt: string },
 ): Promise<void> {
-  await getSanityWriteClient()
-    .patch(submissionId)
-    .set({
-      status: "expired",
-      expiredAt: expired.expiredAt,
-      ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
-    })
-    .commit({ visibility: "sync" });
+  await repo.markSubmissionExpired(submissionId, expired);
+  void mirrorSubmissionPatch(submissionId, {
+    status: "expired",
+    expiredAt: expired.expiredAt,
+    ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
+  });
 }
 
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
-  const keys = await getSanityWriteClient().fetch<string[]>(
-    `*[_type == "submission" && defined(photoR2Key)].photoR2Key`,
-  );
-  return new Set(keys);
+  return repo.listAllReferencedPhotoKeys();
 }
 
 export async function listSubmissionsByStatusOlderThan(
   status: SubmissionStatus,
   cutoffIso: string,
 ): Promise<SubmissionRecord[]> {
-  return getSanityWriteClient().fetch<SubmissionRecord[]>(
-    `*[_type == "submission" && status == $status && createdAt < $cutoff] | order(createdAt asc) [0...${LIST_QUERY_LIMIT}]${SUBMISSION_PROJECTION}`,
-    { status, cutoff: cutoffIso },
-  );
+  return repo.listSubmissionsByStatusOlderThan(status, cutoffIso);
 }
 
 export async function listPaidSubmissionsForEmail(
@@ -129,33 +121,15 @@ export async function listPaidSubmissionsForEmail(
     requireMissingDeliveredAt?: boolean;
   },
 ): Promise<SubmissionRecord[]> {
-  const filters = [
-    `_type == "submission"`,
-    `status == "paid"`,
-    `count((emailsFired[].type)[@ == $emailType]) == 0`,
-  ];
-  if (options.paidBefore) filters.push(`paidAt < $paidBefore`);
-  if (options.requireDeliveredAt) filters.push(`defined(deliveredAt)`);
-  if (options.requireMissingDeliveredAt) filters.push(`!defined(deliveredAt)`);
-
-  const params: Record<string, string> = { emailType };
-  if (options.paidBefore) params.paidBefore = options.paidBefore;
-
-  return getSanityWriteClient().fetch<SubmissionRecord[]>(
-    `*[${filters.join(" && ")}] | order(paidAt asc) [0...${LIST_QUERY_LIMIT}]${SUBMISSION_PROJECTION}`,
-    params,
-  );
+  return repo.listPaidSubmissionsForEmail(emailType, options);
 }
 
 export async function appendEmailFired(
   submissionId: string,
   entry: EmailFiredEntry,
 ): Promise<void> {
-  await getSanityWriteClient()
-    .patch(submissionId)
-    .setIfMissing({ emailsFired: [] })
-    .insert("after", "emailsFired[-1]", [entry])
-    .commit({ visibility: "sync" });
+  await repo.appendEmailFired(submissionId, entry);
+  void mirrorAppendEmailFired(submissionId, entry);
 }
 
 export async function deleteSubmissionAndPhoto(
@@ -173,7 +147,8 @@ export async function deleteSubmissionAndPhoto(
       );
     }
   }
-  await getSanityWriteClient().delete(submission._id);
+  await repo.deleteSubmission(submission._id);
+  void mirrorSubmissionDelete(submission._id);
   return { photoDeleted };
 }
 
@@ -187,10 +162,8 @@ export async function scrubSubmissionPhoto(
     console.error(`[cleanup] Failed to delete R2 photo ${submission.photoR2Key}`, error);
     return false;
   }
-  await getSanityWriteClient()
-    .patch(submission._id)
-    .unset(["photoR2Key"])
-    .commit({ visibility: "sync" });
+  await repo.unsetPhotoR2Key(submission._id);
+  void mirrorUnsetPhotoKey(submission._id);
   return true;
 }
 

@@ -141,6 +141,39 @@ load-bearing.
 
 ---
 
+## Persistence (ADR-001 follow-ups)
+
+D1 is the source of truth; Sanity is a one-way mirror. The mirror is
+fire-and-forget — drift can happen on Sanity outages.
+
+### D1 → Sanity reconcile cron
+- **Source:** ADR-001.
+- **What:** Periodic diff between D1 (truth) and Sanity (mirror) that
+  pushes any rows Sanity is missing or stale on. Belt-and-braces against
+  fire-and-forget mirror failures.
+- **Action:** Add `/api/cron/reconcile-mirror` route. Walk D1, fetch the
+  matching Sanity doc by `_id`, replay the create/patch if missing or
+  divergent on key fields (`status`, `paidAt`, `deliveredAt`, last
+  `emailsFired` entry).
+
+### Studio admin UX for `deliveredAt`
+- **Source:** ADR-001 acceptance.
+- **What:** Today there's no path for Josephine to mark a submission
+  delivered without running SQL. The CLI stopgap is
+  `scripts/mark-delivered.mts`. Properly: a small admin page at
+  `/admin/submissions` in the Next.js app, basic-auth gated, that lists
+  paid-but-undelivered submissions and lets her paste voice/PDF URLs +
+  click "mark delivered".
+- **Action:** Phase 1.5 task. Probably ~1 weekend.
+
+### Demote Sanity submission schema to read-only proxy
+- **Source:** ADR-001 future state.
+- **What:** Currently Studio shows submissions via the standard editable
+  document type. Edits get clobbered by mirror sync. Replace with a
+  custom Studio document type that fetches via API rather than holding
+  its own copy.
+- **Action:** Defer until ops actually use Studio for submissions.
+
 ## Phase 1.5 (planned, not deferred)
 
 These were always scoped out of Phase 1 by the booking-flow build PRD.
