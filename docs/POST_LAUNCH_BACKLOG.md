@@ -166,6 +166,16 @@ fire-and-forget — drift can happen on Sanity outages.
   click "mark delivered".
 - **Action:** Phase 1.5 task. Probably ~1 weekend.
 
+### D1 live-write smoke test (immediately post-deploy)
+- **Source:** ADR-001 acceptance.
+- **What:** First post-deploy verification that `/api/booking` actually
+  writes to prod D1 (not just our unit tests against in-memory SQLite).
+  Submit one real booking via the form (test data, junk email), confirm
+  the row appears in `wrangler d1 execute --command "SELECT * FROM submissions" --remote`,
+  then clean it up. Also confirm Sanity mirror landed via Studio.
+- **Action:** Run within an hour of the first post-merge deploy. If
+  drift, check Worker logs (`wrangler tail`) for D1-HTTP errors.
+
 ### Demote Sanity submission schema to read-only proxy
 - **Source:** ADR-001 future state.
 - **What:** Currently Studio shows submissions via the standard editable
