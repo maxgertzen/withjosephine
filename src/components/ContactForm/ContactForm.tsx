@@ -187,7 +187,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           )}
 
           {errorMessage && (
-            <p role="alert" className={errorClasses}>
+            <p role="alert" className={`${errorClasses} text-center`}>
               {errorMessage}
             </p>
           )}
