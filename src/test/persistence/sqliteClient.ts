@@ -3,7 +3,7 @@ import path from "node:path";
 
 import Database from "better-sqlite3";
 
-import type { SqlClient } from "./sqlClient";
+import type { SqlClient } from "@/lib/booking/persistence/sqlClient";
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), "migrations");
 

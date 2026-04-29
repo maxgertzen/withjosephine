@@ -171,6 +171,11 @@ fire-and-forget — drift can happen on Sanity outages.
 - **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
 - **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
 
+### Replace `@aws-sdk/client-s3` with `aws4fetch` to shrink the worker bundle
+- **Source:** Bundle-size analysis 2026-04-30. Worker compressed at 2.83 MiB, just under the 3 MiB free-tier limit. Top non-Next contributor is `@aws-sdk/client-s3` + the `@smithy/*` peer deps it pulls in.
+- **What:** R2 access only needs three S3 operations (`PutObject` presign, `DeleteObject`, `ListObjectsV2`). The full `@aws-sdk/client-s3` package ships ~100 operations + middleware we don't use. `aws4fetch` is ~10 KB minified and signs SigV4 fetch calls; it covers the same surface.
+- **Action:** Replace `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` with `aws4fetch` in `src/lib/r2.ts`. Update `r2.test.ts` mocks. Estimated saving: 1–2 MiB compressed → real headroom against the 3 MiB limit.
+
 ### D1 live-write smoke test (immediately post-deploy)
 - **Source:** ADR-001 acceptance.
 - **What:** First post-deploy verification that `/api/booking` actually
