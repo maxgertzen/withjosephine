@@ -143,7 +143,18 @@ export function IntakeForm({
       allFields.filter((field) => currentKeys.includes(field.key)),
       values,
     );
-    return pageSchema.safeParse(values).success && followupSchema.safeParse(values).success;
+    const pageResult = pageSchema.safeParse(values);
+    const followupResult = followupSchema.safeParse(values);
+    if (process.env.NODE_ENV !== "production" && (!pageResult.success || !followupResult.success)) {
+      // eslint-disable-next-line no-console
+      console.log("[IntakeForm] page invalid:", {
+        currentKeys,
+        values: Object.fromEntries(currentKeys.map((k) => [k, values[k]])),
+        pageIssues: pageResult.success ? [] : pageResult.error.issues,
+        followupIssues: followupResult.success ? [] : followupResult.error.issues,
+      });
+    }
+    return pageResult.success && followupResult.success;
   }, [allFields, currentKeys, values]);
 
   function setValue(key: string, value: FieldValue) {

@@ -184,6 +184,102 @@ describe("IntakeForm — single-page flow", () => {
   });
 });
 
+describe("IntakeForm — page 1 validation (production seed shape)", () => {
+  const PROD_SHAPE: SanityFormSection[] = [
+    {
+      _id: "formSection-page1-system",
+      sectionTitle: "Two quick details to start.",
+      fields: [
+        {
+          _id: "formField-email",
+          key: "email",
+          label: "Email",
+          type: "email",
+          required: true,
+          validation: { maxLength: 254 },
+        },
+        {
+          _id: "formField-legalFullName",
+          key: "legal_full_name",
+          label: "Legal full name",
+          type: "shortText",
+          required: true,
+          validation: { minLength: 1, maxLength: 200 },
+        },
+      ],
+    },
+    {
+      _id: "formSection-photo",
+      sectionTitle: "Your photo",
+      pageBoundary: true,
+      fields: [
+        {
+          _id: "formField-photo",
+          key: "photo",
+          label: "Photo",
+          type: "fileUpload",
+          required: true,
+        },
+      ],
+    },
+  ];
+
+  function renderProdShape() {
+    return render(
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="The Soul Blueprint"
+        sections={PROD_SHAPE}
+        nonRefundableNotice="..."
+      />,
+    );
+  }
+
+  it("disables Next when both required fields are empty", () => {
+    renderProdShape();
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+  });
+
+  it("keeps Next disabled when only the email is filled", async () => {
+    const user = userEvent.setup();
+    renderProdShape();
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+  });
+
+  it("keeps Next disabled when only the name is filled", async () => {
+    const user = userEvent.setup();
+    renderProdShape();
+    await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+  });
+
+  it("keeps Next disabled when the email format is invalid", async () => {
+    const user = userEvent.setup();
+    renderProdShape();
+    await user.type(screen.getByLabelText(/Email/), "not-an-email");
+    await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+  });
+
+  it("enables Next once both required fields are valid", async () => {
+    const user = userEvent.setup();
+    renderProdShape();
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
+    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
+  });
+
+  it("advances to page 2 when Next is clicked with valid page-1 input", async () => {
+    const user = userEvent.setup();
+    renderProdShape();
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByRole("heading", { name: "Your photo" })).toBeInTheDocument();
+  });
+});
+
 describe("IntakeForm — paginated flow", () => {
   it("shows only page-1 sections initially and a Next button instead of Submit", () => {
     renderForm(TWO_PAGE_SECTIONS);
