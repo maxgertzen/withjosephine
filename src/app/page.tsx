@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { draftMode } from "next/headers";
+import { draftMode, headers } from "next/headers";
 import Image from "next/image";
 
 import { ContactForm } from "@/components/ContactForm";
@@ -52,8 +52,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function LandingPage() {
   const { isEnabled: isDraftMode } = await draftMode();
+  const headersList = await headers();
+  const host = headersList.get("host");
 
-  if (isUnderConstruction() && !isDraftMode) {
+  if (isUnderConstruction(host) && !isDraftMode) {
     const underConstructionContent = await fetchUnderConstructionPage();
     return <UnderConstruction content={underConstructionContent} />;
   }
