@@ -54,9 +54,9 @@ describe("ContactForm", () => {
   it("renders all form fields and Turnstile widget", () => {
     render(<ContactForm />);
 
-    expect(screen.getByLabelText("Your Name")).toBeInTheDocument();
-    expect(screen.getByLabelText("Your Email")).toBeInTheDocument();
-    expect(screen.getByLabelText("Your Message")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your email")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your message")).toBeInTheDocument();
     expect(screen.getByTestId("turnstile-stub")).toBeInTheDocument();
   });
 
@@ -64,9 +64,9 @@ describe("ContactForm", () => {
     const user = userEvent.setup();
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
 
     expect(screen.getByRole("button", { name: "Send Message" })).toBeDisabled();
   });
@@ -77,9 +77,9 @@ describe("ContactForm", () => {
 
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
     solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
@@ -94,9 +94,9 @@ describe("ContactForm", () => {
 
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
     solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
@@ -114,9 +114,9 @@ describe("ContactForm", () => {
 
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
     solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
@@ -131,9 +131,9 @@ describe("ContactForm", () => {
 
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
     solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
@@ -150,9 +150,9 @@ describe("ContactForm", () => {
 
     render(<ContactForm />);
 
-    await user.type(screen.getByLabelText("Your Name"), "Jane Doe");
-    await user.type(screen.getByLabelText("Your Email"), "jane@example.com");
-    await user.type(screen.getByLabelText("Your Message"), "Hello there");
+    await user.type(screen.getByLabelText("Your name"), "Jane Doe");
+    await user.type(screen.getByLabelText("Your email"), "jane@example.com");
+    await user.type(screen.getByLabelText("Your message"), "Hello there");
     solveCaptcha();
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 

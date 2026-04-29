@@ -4,9 +4,10 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
-import { errorClasses, inputClasses, isValidEmail, labelClasses } from "@/lib/formStyles";
+import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
 import { mergeClasses } from "@/lib/utils";
 
 interface ContactFormProps {
@@ -128,49 +129,50 @@ export function ContactForm({ content, className }: ContactFormProps) {
             tabIndex={-1}
             autoComplete="off"
           />
-          <div>
-            <label htmlFor="contact-name" className={labelClasses}>
-              Your Name
-            </label>
+          <div className="relative">
             <input
               id="contact-name"
               type="text"
               name="name"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              placeholder=" "
               className={inputClasses}
               disabled={isLoading}
+              autoComplete="name"
             />
+            <FloatingLabel id="contact-name" label="Your name" />
           </div>
 
-          <div>
-            <label htmlFor="contact-email" className={labelClasses}>
-              Your Email
-            </label>
+          <div className="relative">
             <input
               id="contact-email"
               type="email"
               name="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              placeholder=" "
               className={inputClasses}
               disabled={isLoading}
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
             />
+            <FloatingLabel id="contact-email" label="Your email" />
           </div>
 
-          <div>
-            <label htmlFor="contact-message" className={labelClasses}>
-              Your Message
-            </label>
+          <div className="relative">
             <textarea
               id="contact-message"
               name="message"
               rows={5}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              className={inputClasses}
+              placeholder=" "
+              className={`${inputClasses} min-h-32`}
               disabled={isLoading}
             />
+            <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
 
           {turnstileSiteKey && (
