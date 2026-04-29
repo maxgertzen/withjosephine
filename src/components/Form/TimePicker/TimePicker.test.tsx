@@ -33,4 +33,75 @@ describe("TimePicker", () => {
     });
     expect(onChange).toHaveBeenCalledWith("07:30");
   });
+
+  it("renders the unknown toggle when the prop is provided", () => {
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={vi.fn()}
+        unknownToggle={{
+          label: "I don't know my birth time",
+          checked: false,
+          onChange: vi.fn(),
+        }}
+      />,
+    );
+    expect(screen.getByLabelText(/I don't know my birth time/)).toBeInTheDocument();
+  });
+
+  it("disables the time input when the unknown toggle is checked", () => {
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={vi.fn()}
+        unknownToggle={{
+          label: "I don't know my birth time",
+          checked: true,
+          onChange: vi.fn(),
+        }}
+      />,
+    );
+    expect(screen.getByLabelText(/Birth time/)).toBeDisabled();
+  });
+
+  it("treats a value of `unknown` as an unknown state with empty visible input", () => {
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value="unknown"
+        onChange={vi.fn()}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth time/) as HTMLInputElement;
+    expect(input).toBeDisabled();
+    expect(input.value).toBe("");
+  });
+
+  it("invokes the toggle onChange when the user clicks it", () => {
+    const onToggle = vi.fn();
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={vi.fn()}
+        unknownToggle={{
+          label: "I don't know my birth time",
+          checked: false,
+          onChange: onToggle,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(/I don't know my birth time/));
+    expect(onToggle).toHaveBeenCalledWith(true);
+  });
 });

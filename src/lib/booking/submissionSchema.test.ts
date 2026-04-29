@@ -47,6 +47,11 @@ describe("buildSubmissionSchema", () => {
     expect(schema.safeParse({ tob: "07:30" }).success).toBe(true);
   });
 
+  it("accepts the literal 'unknown' sentinel for time fields", () => {
+    const schema = buildSubmissionSchema([field({ key: "tob", type: "time", required: true })]);
+    expect(schema.safeParse({ tob: "unknown" }).success).toBe(true);
+  });
+
   it("constrains select to known values", () => {
     const schema = buildSubmissionSchema([
       field({

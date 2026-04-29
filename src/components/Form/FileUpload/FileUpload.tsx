@@ -9,6 +9,7 @@ import {
   UPLOAD_URL_API_ROUTE,
 } from "@/lib/booking/constants";
 import { errorClasses, labelClasses } from "@/lib/formStyles";
+import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 const ACCEPT_ATTR = ACCEPTED_PHOTO_MIME.join(",");
 
@@ -21,6 +22,8 @@ type FileUploadProps = {
   value: string;
   onChange: (key: string) => void;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -70,6 +73,8 @@ export function FileUpload({
   value,
   onChange,
   helpText,
+  helperPosition = "after",
+  clarificationNote,
   error,
   required,
   disabled,
@@ -124,12 +129,31 @@ export function FileUpload({
   const displayedError = error ?? localError;
   const busy = status === "requesting" || status === "uploading";
 
+  const helperEl = helpText ? (
+    <p
+      id={helpId}
+      className={`font-body text-xs text-j-text-muted ${
+        helperPosition === "before" ? "mt-1 mb-3" : "mt-2"
+      }`}
+    >
+      {helpText}
+    </p>
+  ) : null;
+
   return (
     <div>
       <label htmlFor={id} className={labelClasses}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
+
+      {clarificationNote ? (
+        <p className="font-display italic text-sm text-j-text-muted mt-1 mb-3">
+          {clarificationNote}
+        </p>
+      ) : null}
+
+      {helperPosition === "before" ? helperEl : null}
 
       {status === "done" ? (
         <div className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3">
@@ -169,11 +193,7 @@ export function FileUpload({
         </p>
       ) : null}
 
-      {helpText ? (
-        <p id={helpId} className="font-body text-xs text-j-text-muted mt-2">
-          {helpText}
-        </p>
-      ) : null}
+      {helperPosition === "after" ? helperEl : null}
 
       {displayedError ? (
         <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>

@@ -19,7 +19,10 @@ import {
   nameFollowupKey,
 } from "@/lib/booking/nameFollowup";
 import { buildNameFollowupSchema } from "@/lib/booking/nameFollowupSchema";
-import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
+import {
+  buildSubmissionSchema,
+  TIME_UNKNOWN_SENTINEL,
+} from "@/lib/booking/submissionSchema";
 import { errorClasses } from "@/lib/formStyles";
 import type {
   SanityFormField,
@@ -68,9 +71,34 @@ export function IntakeForm({
 }: IntakeFormProps) {
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
-    () => allFields.find((field) => field.type === "consent"),
+    () =>
+      allFields.find(
+        (field) => field.type === "consent" && !field.key.endsWith("_unknown"),
+      ),
     [allFields],
   );
+  const timeUnknownPairs = useMemo(() => {
+    const pairs = new Map<string, string>();
+    const fieldKeys = new Set(allFields.map((f) => f.key));
+    for (const field of allFields) {
+      if (field.type !== "time") continue;
+      const candidate = `${field.key}_unknown`;
+      if (fieldKeys.has(candidate)) pairs.set(field.key, candidate);
+    }
+    return pairs;
+  }, [allFields]);
+  const pairedUnknownKeys = useMemo(
+    () => new Set(timeUnknownPairs.values()),
+    [timeUnknownPairs],
+  );
+  const timeUnknownLabels = useMemo(() => {
+    const labels = new Map<string, string>();
+    for (const [timeKey, unknownKey] of timeUnknownPairs) {
+      const target = allFields.find((field) => field.key === unknownKey);
+      if (target) labels.set(timeKey, target.label);
+    }
+    return labels;
+  }, [allFields, timeUnknownPairs]);
   const submissionSchema = useMemo(() => buildSubmissionSchema(allFields), [allFields]);
 
   const pages = useMemo(
@@ -286,8 +314,21 @@ export function IntakeForm({
 
           <div className="flex flex-col gap-6">
             {section.fields
-              .filter((field) => field.type !== "consent")
-              .map((field) => renderField(field, values, setValue, errors, isSubmitting))}
+              .filter((field) => {
+                if (field.type === "consent") return false;
+                if (pairedUnknownKeys.has(field.key)) return false;
+                return true;
+              })
+              .map((field) =>
+                renderField(field, {
+                  values,
+                  setValue,
+                  errors,
+                  disabled: isSubmitting,
+                  timeUnknownPairs,
+                  timeUnknownLabels,
+                }),
+              )}
           </div>
         </section>
       ))}
@@ -344,16 +385,25 @@ export function IntakeForm({
   );
 }
 
-function renderField(
-  field: SanityFormField,
-  values: FieldValues,
-  setValue: (key: string, value: FieldValue) => void,
-  errors: Record<string, string>,
-  disabled: boolean,
-) {
+type RenderContext = {
+  values: FieldValues;
+  setValue: (key: string, value: FieldValue) => void;
+  errors: Record<string, string>;
+  disabled: boolean;
+  timeUnknownPairs: Map<string, string>;
+  timeUnknownLabels: Map<string, string>;
+};
+
+function renderField(field: SanityFormField, ctx: RenderContext) {
+  const { values, setValue, errors, disabled, timeUnknownPairs, timeUnknownLabels } = ctx;
   const id = `field-${field.key}`;
   const error = errors[field.key];
   const value = values[field.key];
+  const shellProps = {
+    helpText: field.helpText,
+    helperPosition: field.helperPosition,
+    clarificationNote: field.clarificationNote,
+  };
 
   switch (field.type) {
     case "shortText":
@@ -368,7 +418,7 @@ function renderField(
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
           placeholder={field.placeholder}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}
@@ -385,7 +435,7 @@ function renderField(
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
           placeholder={field.placeholder}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}
@@ -402,28 +452,47 @@ function renderField(
           label={field.label}
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}
         />
       );
 
-    case "time":
+    case "time": {
+      const unknownKey = timeUnknownPairs.get(field.key);
+      const unknownChecked = unknownKey ? values[unknownKey] === true : false;
+      const timeValue =
+        typeof value === "string" && value !== TIME_UNKNOWN_SENTINEL ? value : "";
+      const unknownLabel = unknownKey ? timeUnknownLabels.get(field.key) : undefined;
+
       return (
         <TimePicker
           key={field._id}
           id={id}
           name={field.key}
           label={field.label}
-          value={typeof value === "string" ? value : ""}
+          value={unknownChecked ? TIME_UNKNOWN_SENTINEL : timeValue}
           onChange={(next) => setValue(field.key, next)}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}
+          unknownToggle={
+            unknownKey && unknownLabel
+              ? {
+                  label: unknownLabel,
+                  checked: unknownChecked,
+                  onChange: (checked) => {
+                    setValue(unknownKey, checked);
+                    setValue(field.key, checked ? TIME_UNKNOWN_SENTINEL : "");
+                  },
+                }
+              : undefined
+          }
         />
       );
+    }
 
     case "select":
       return (
@@ -436,7 +505,7 @@ function renderField(
           onChange={(next) => setValue(field.key, next)}
           options={field.options ?? []}
           placeholder={field.placeholder}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}
@@ -481,7 +550,7 @@ function renderField(
           label={field.label}
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}

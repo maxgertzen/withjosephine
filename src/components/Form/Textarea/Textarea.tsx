@@ -1,5 +1,6 @@
 import { FieldShell } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
+import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type TextareaProps = {
   id: string;
@@ -10,6 +11,8 @@ type TextareaProps = {
   rows?: number;
   placeholder?: string;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -25,13 +28,23 @@ export function Textarea({
   rows = 5,
   placeholder,
   helpText,
+  helperPosition,
+  clarificationNote,
   error,
   required,
   disabled,
   maxLength,
 }: TextareaProps) {
   return (
-    <FieldShell id={id} label={label} required={required} helpText={helpText} error={error}>
+    <FieldShell
+      id={id}
+      label={label}
+      required={required}
+      helpText={helpText}
+      helperPosition={helperPosition}
+      clarificationNote={clarificationNote}
+      error={error}
+    >
       <textarea
         id={id}
         name={name}

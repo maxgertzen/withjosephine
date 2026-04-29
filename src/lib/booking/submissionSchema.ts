@@ -5,6 +5,8 @@ import type { SanityFormField } from "@/lib/sanity/types";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^\d{2}:\d{2}$/;
 
+export const TIME_UNKNOWN_SENTINEL = "unknown";
+
 export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
   const required = field.required === true;
 
@@ -40,7 +42,10 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
     }
 
     case "time": {
-      const schema = z.string().regex(HHMM, "Please enter a valid time (HH:MM).");
+      const schema = z.union([
+        z.string().regex(HHMM, "Please enter a valid time (HH:MM)."),
+        z.literal(TIME_UNKNOWN_SENTINEL),
+      ]);
       return required ? schema : schema.optional();
     }
 

@@ -216,6 +216,8 @@ export type SanityFormFieldValidation = {
   patternErrorMessage?: string;
 };
 
+export type SanityFormHelperPosition = "before" | "after";
+
 export type SanityFormField = {
   _id: string;
   key: string;
@@ -223,6 +225,9 @@ export type SanityFormField = {
   type: SanityFormFieldType;
   placeholder?: string;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
+  iconKey?: string;
   required?: boolean;
   system?: boolean;
   order?: number;

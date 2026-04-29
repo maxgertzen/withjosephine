@@ -1,6 +1,6 @@
 import { FieldShell } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
-import type { SanityFormFieldOption } from "@/lib/sanity/types";
+import type { SanityFormFieldOption, SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type SelectProps = {
   id: string;
@@ -11,6 +11,8 @@ type SelectProps = {
   options: SanityFormFieldOption[];
   placeholder?: string;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -25,12 +27,22 @@ export function Select({
   options,
   placeholder = "Select an option",
   helpText,
+  helperPosition,
+  clarificationNote,
   error,
   required,
   disabled,
 }: SelectProps) {
   return (
-    <FieldShell id={id} label={label} required={required} helpText={helpText} error={error}>
+    <FieldShell
+      id={id}
+      label={label}
+      required={required}
+      helpText={helpText}
+      helperPosition={helperPosition}
+      clarificationNote={clarificationNote}
+      error={error}
+    >
       <select
         id={id}
         name={name}

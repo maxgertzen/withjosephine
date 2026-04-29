@@ -1,5 +1,6 @@
 import { FieldShell } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
+import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type InputProps = {
   id: string;
@@ -10,10 +11,16 @@ type InputProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
   autoComplete?: string;
+  inputMode?: "text" | "email" | "numeric" | "decimal" | "tel" | "url" | "search";
+  autoCapitalize?: string;
+  spellCheck?: boolean;
+  enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
 };
 
 export function Input({
@@ -25,13 +32,27 @@ export function Input({
   onChange,
   placeholder,
   helpText,
+  helperPosition,
+  clarificationNote,
   error,
   required,
   disabled,
   autoComplete,
+  inputMode,
+  autoCapitalize,
+  spellCheck,
+  enterKeyHint,
 }: InputProps) {
   return (
-    <FieldShell id={id} label={label} required={required} helpText={helpText} error={error}>
+    <FieldShell
+      id={id}
+      label={label}
+      required={required}
+      helpText={helpText}
+      helperPosition={helperPosition}
+      clarificationNote={clarificationNote}
+      error={error}
+    >
       <input
         id={id}
         name={name}
@@ -41,7 +62,11 @@ export function Input({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        autoComplete={autoComplete}
+        autoComplete={autoComplete ?? (type === "email" ? "email" : undefined)}
+        inputMode={inputMode ?? (type === "email" ? "email" : undefined)}
+        autoCapitalize={autoCapitalize ?? (type === "email" ? "none" : undefined)}
+        spellCheck={spellCheck}
+        enterKeyHint={enterKeyHint}
         aria-invalid={error ? true : undefined}
         className={inputClasses}
       />

@@ -1,5 +1,6 @@
 import { FieldShell } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
+import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type DatePickerProps = {
   id: string;
@@ -8,6 +9,8 @@ type DatePickerProps = {
   value: string;
   onChange: (value: string) => void;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -22,6 +25,8 @@ export function DatePicker({
   value,
   onChange,
   helpText,
+  helperPosition,
+  clarificationNote,
   error,
   required,
   disabled,
@@ -29,7 +34,15 @@ export function DatePicker({
   max,
 }: DatePickerProps) {
   return (
-    <FieldShell id={id} label={label} required={required} helpText={helpText} error={error}>
+    <FieldShell
+      id={id}
+      label={label}
+      required={required}
+      helpText={helpText}
+      helperPosition={helperPosition}
+      clarificationNote={clarificationNote}
+      error={error}
+    >
       <input
         id={id}
         name={name}
