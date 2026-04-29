@@ -93,6 +93,10 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
     }
 
     case "consent": {
+      const bypass =
+        process.env.NODE_ENV !== "production" &&
+        process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
+      if (bypass) return z.boolean().optional();
       return z.literal(true, "Please acknowledge to continue.");
     }
 

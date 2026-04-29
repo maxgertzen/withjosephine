@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TimePicker } from "./TimePicker";
 
 describe("TimePicker", () => {
-  it("renders a time input", () => {
+  it("renders a text input that opens a time popover on focus", () => {
     render(
       <TimePicker
         id="birthTime"
@@ -14,10 +14,12 @@ describe("TimePicker", () => {
         onChange={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText(/Birth time/)).toHaveAttribute("type", "time");
+    const input = screen.getByLabelText(/Birth time/);
+    expect(input).toHaveAttribute("type", "text");
+    expect(input).toHaveAttribute("aria-haspopup", "dialog");
   });
 
-  it("emits onChange when the time changes", () => {
+  it("emits onChange when the user types a valid HH:MM", () => {
     const onChange = vi.fn();
     render(
       <TimePicker

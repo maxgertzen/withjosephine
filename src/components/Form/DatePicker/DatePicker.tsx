@@ -1,7 +1,5 @@
 "use client";
 
-import "react-day-picker/style.css";
-
 import { format, isValid, parse } from "date-fns";
 import { useEffect, useId, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
@@ -140,7 +138,7 @@ export function DatePicker({
             id={popoverId}
             role="dialog"
             aria-label="Choose a date"
-            className="absolute left-0 top-full mt-1 z-10 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-3"
+            className="absolute left-0 top-full mt-2 z-20 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
           >
             <DayPicker
               mode="single"
@@ -150,15 +148,35 @@ export function DatePicker({
               endMonth={maxDate}
               defaultMonth={selected ?? maxDate ?? new Date()}
               captionLayout="dropdown"
+              showOutsideDays
               classNames={{
-                root: "rdp-josephine font-body text-sm text-j-text",
+                root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
+                months: "flex flex-col gap-3",
+                month: "flex flex-col gap-3",
+                month_caption:
+                  "flex items-center justify-center gap-2 font-display italic text-base text-j-text-heading",
                 caption_label: "font-display italic text-base text-j-text-heading",
+                dropdowns: "flex gap-2 items-center",
+                dropdown:
+                  "font-body text-sm bg-j-cream border border-j-border-subtle rounded-sm px-2 py-1 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                nav: "flex items-center justify-between absolute inset-x-0 top-0 px-1 pointer-events-none",
+                button_previous:
+                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                button_next:
+                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                month_grid: "w-full border-collapse",
+                weekdays: "flex",
+                weekday:
+                  "flex-1 font-body text-[0.7rem] tracking-wider uppercase text-j-text-muted py-2 text-center",
+                week: "flex w-full",
+                day: "flex-1 text-center p-0",
                 day_button:
-                  "rounded-sm hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                selected:
-                  "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
+                  "w-9 h-9 inline-flex items-center justify-center font-body text-sm rounded-sm transition-colors hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                outside: "[&>button]:text-j-text-muted/50",
+                selected: "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
                 today: "[&>button]:font-semibold [&>button]:text-j-accent",
-                chevron: "fill-j-text-heading",
+                disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
+                chevron: "fill-j-text-heading w-4 h-4",
               }}
             />
           </div>
