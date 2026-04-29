@@ -166,6 +166,11 @@ fire-and-forget — drift can happen on Sanity outages.
   click "mark delivered".
 - **Action:** Phase 1.5 task. Probably ~1 weekend.
 
+### Static fallback prices in `src/data/readings.ts` may drift from Sanity
+- **Source:** Smoke test BUG-3 + post-discussion (Sanity now $129 for Soul Blueprint, fallback file still says $179).
+- **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
+- **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
+
 ### D1 live-write smoke test (immediately post-deploy)
 - **Source:** ADR-001 acceptance.
 - **What:** First post-deploy verification that `/api/booking` actually
