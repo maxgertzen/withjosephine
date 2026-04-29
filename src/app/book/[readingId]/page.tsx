@@ -107,8 +107,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
       <BookingFlowHeader backHref="/#readings" aboutLinkText={aboutJosephineLinkText} />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-16 md:items-stretch">
-          <div className="flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-x-16 md:gap-y-12 md:[grid-template-rows:1fr_auto]">
+          <div className="flex flex-col md:row-start-1 md:col-start-1">
             <span className="inline-block font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-6">
               <span aria-hidden="true" className="mr-2">
                 ✦
@@ -134,18 +134,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
             >
               <em>{changeReadingLinkText}</em>
             </Link>
-
-            <div className="md:mt-auto md:pt-12">
-              <NavigationButton
-                href={BOOKING_ROUTES.letter(reading.slug)}
-                className="inline-flex items-center justify-center min-h-14 min-w-[14rem] px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
-              >
-                Book this Reading →
-              </NavigationButton>
-            </div>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col md:row-span-2 md:row-start-1 md:col-start-2">
             <div className="relative flex items-center justify-center min-h-[260px] mb-8">
               <div
                 aria-hidden="true"
@@ -200,6 +191,15 @@ export default async function BookingPage({ params }: BookingPageProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="md:row-start-2 md:col-start-1 md:self-end">
+            <NavigationButton
+              href={BOOKING_ROUTES.letter(reading.slug)}
+              className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+            >
+              Book this Reading →
+            </NavigationButton>
           </div>
         </div>
       </main>
