@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { NavigationButton } from "@/components/NavigationButton";
+import { ReadingIcon } from "@/components/ReadingIcon";
 import { BOOKING_INFO_DEFAULTS, ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { BOOKING_ROUTES } from "@/lib/booking/constants";
@@ -105,34 +106,54 @@ export default async function BookingPage({ params }: BookingPageProps) {
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
       <BookingFlowHeader backHref="/#readings" aboutLinkText={aboutJosephineLinkText} />
 
-      <main className="relative z-10 max-w-2xl mx-auto px-6 py-16 flex flex-col">
-          <span className="inline-block font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-6">
-            <span aria-hidden="true" className="mr-2">
-              ✦
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-12 md:items-start mb-12">
+          <div className="flex flex-col">
+            <span className="inline-block font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-6">
+              <span aria-hidden="true" className="mr-2">
+                ✦
+              </span>
+              {reading.tag}
             </span>
-            {reading.tag}
-          </span>
-          <h1
-            id="entry-title"
-            className="font-display italic font-medium text-[clamp(2rem,5vw,3rem)] leading-tight text-j-text-heading mb-4"
-          >
-            {reading.name}
-          </h1>
-          <p className="font-display italic text-2xl text-j-accent mb-6">
-            {reading.priceLabel}
-          </p>
-          <p className="font-display italic text-lg leading-snug text-j-text max-w-[38ch] mb-6">
-            {reading.shortDescription}
-          </p>
+            <h1
+              id="entry-title"
+              className="font-display italic font-medium text-[clamp(2rem,5vw,3rem)] leading-tight text-j-text-heading mb-4"
+            >
+              {reading.name}
+            </h1>
+            <p className="font-display italic text-2xl text-j-accent mb-6">
+              {reading.priceLabel}
+            </p>
+            <p className="font-display italic text-lg leading-snug text-j-text max-w-[38ch] mb-6">
+              {reading.shortDescription}
+            </p>
 
-          <Link
-            href="/#readings"
-            className="inline-block self-start font-display italic text-base text-j-text border-b border-j-border-gold pb-px hover:text-j-text-heading hover:border-j-accent transition-colors mb-6"
-          >
-            <em>{changeReadingLinkText}</em>
-          </Link>
+            <Link
+              href="/#readings"
+              className="inline-block self-start font-display italic text-base text-j-text border-b border-j-border-gold pb-px hover:text-j-text-heading hover:border-j-accent transition-colors"
+            >
+              <em>{changeReadingLinkText}</em>
+            </Link>
+          </div>
 
-          <hr className="h-px w-full max-w-[280px] border-0 bg-gradient-to-r from-transparent via-j-accent/50 to-transparent my-6" />
+          <div className="relative flex items-center justify-center min-h-[280px]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 m-auto h-[280px] w-[280px] rounded-full border border-j-accent/[0.12]"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 m-auto h-[220px] w-[220px] rounded-full border border-j-accent/[0.08]"
+            />
+            <ReadingIcon
+              slug={reading.slug}
+              className="relative w-[180px] h-[180px] md:w-[220px] md:h-[220px]"
+            />
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto flex flex-col">
+          <hr className="h-px w-full max-w-[280px] border-0 bg-gradient-to-r from-transparent via-j-accent/50 to-transparent mb-8" />
 
           <h2 className="font-body text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-j-text-muted mb-4">
             What&rsquo;s included
@@ -174,10 +195,11 @@ export default async function BookingPage({ params }: BookingPageProps) {
 
           <NavigationButton
             href={BOOKING_ROUTES.letter(reading.slug)}
-            className="self-center inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+            className="self-center inline-flex items-center justify-center min-h-14 min-w-[14rem] px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
           >
             Book this Reading →
           </NavigationButton>
+        </div>
       </main>
 
       <Footer />

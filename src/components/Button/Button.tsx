@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type AnchorHTMLAttributes, type ButtonHTMLAttributes } from "react";
 
-import { LinkSpinner } from "@/components/NavigationButton";
+import { LinkContent } from "@/components/NavigationButton";
 import { mergeClasses } from "@/lib/utils";
 
 const variantStyles = {
@@ -58,8 +58,7 @@ export function Button({
           className={classes}
           {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
         >
-          {children}
-          <LinkSpinner />
+          <LinkContent>{children}</LinkContent>
         </Link>
       );
     }

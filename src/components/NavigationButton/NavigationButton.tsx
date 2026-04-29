@@ -1,22 +1,21 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-import { LinkSpinner } from "./LinkSpinner";
+import { LinkContent } from "./LinkSpinner";
 
 type NavigationButtonProps = Omit<ComponentProps<typeof Link>, "children"> & {
   children: ReactNode;
-  spinnerClassName?: string;
+  pendingLabel?: string;
 };
 
 export function NavigationButton({
   children,
-  spinnerClassName,
+  pendingLabel,
   ...linkProps
 }: NavigationButtonProps) {
   return (
     <Link {...linkProps}>
-      {children}
-      <LinkSpinner className={spinnerClassName} />
+      <LinkContent pendingLabel={pendingLabel}>{children}</LinkContent>
     </Link>
   );
 }

@@ -1,2 +1,2 @@
-export { LinkSpinner } from "./LinkSpinner";
+export { LinkContent, LinkSpinner } from "./LinkSpinner";
 export { NavigationButton } from "./NavigationButton";

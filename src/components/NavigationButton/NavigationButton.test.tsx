@@ -32,7 +32,7 @@ describe("NavigationButton", () => {
 describe("NavigationButton with pending state", () => {
   vi.resetModules();
 
-  it("renders the spinner alongside the label when pending", async () => {
+  it("replaces the label with the spinner when pending", async () => {
     vi.doMock("next/link", async () => {
       const actual = await vi.importActual<typeof import("next/link")>("next/link");
       return {
@@ -48,7 +48,7 @@ describe("NavigationButton with pending state", () => {
     const { container } = render(
       <PendingButton href="/book/soul-blueprint">Book this Reading</PendingButton>,
     );
-    expect(screen.getByText(/Book this Reading/)).toBeInTheDocument();
+    expect(screen.queryByText(/Book this Reading/)).toBeNull();
     expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
 
     vi.doUnmock("next/link");

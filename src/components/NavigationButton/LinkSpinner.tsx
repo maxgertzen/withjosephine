@@ -2,18 +2,21 @@
 
 import { Loader2 } from "lucide-react";
 import { useLinkStatus } from "next/link";
+import type { ReactNode } from "react";
 
-type LinkSpinnerProps = {
-  className?: string;
+type LinkContentProps = {
+  children: ReactNode;
+  pendingLabel?: string;
 };
 
-export function LinkSpinner({ className }: LinkSpinnerProps) {
+export function LinkContent({ children, pendingLabel = "Loading" }: LinkContentProps) {
   const { pending } = useLinkStatus();
-  if (!pending) return null;
+  if (!pending) return <>{children}</>;
   return (
-    <Loader2
-      aria-hidden="true"
-      className={`inline-block w-4 h-4 ml-2 align-middle animate-spin ${className ?? ""}`}
-    />
+    <span aria-label={pendingLabel} className="inline-flex items-center justify-center gap-2">
+      <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+    </span>
   );
 }
+
+export { LinkContent as LinkSpinner };

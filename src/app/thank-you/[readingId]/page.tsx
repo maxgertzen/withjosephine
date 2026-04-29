@@ -1,8 +1,6 @@
-import type { LucideProps } from "lucide-react";
-import { Check, Clock, FileText, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import type { ComponentType } from "react";
+import { notFound, redirect } from "next/navigation";
 
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
@@ -10,21 +8,23 @@ import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
-import { generateReadingStaticParams, getReadingById, getRequiredDetails } from "@/data/readings";
+import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
-
-const STEP_ICONS: Record<string, ComponentType<LucideProps>> = {
-  mail: Mail,
-  fileText: FileText,
-  clock: Clock,
-};
 
 export { generateReadingStaticParams as generateStaticParams };
 
 type ThankYouPageProps = {
   params: Promise<{ readingId: string }>;
+  searchParams: Promise<{ sessionId?: string | string[] }>;
 };
+
+const STRIPE_SESSION_PATTERN = /^cs_(test|live)_[A-Za-z0-9]+$/;
+
+function isValidStripeSession(sessionId: string | string[] | undefined): sessionId is string {
+  if (typeof sessionId !== "string") return false;
+  return STRIPE_SESSION_PATTERN.test(sessionId);
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const thankYouPageContent = await fetchThankYouPage();
@@ -32,13 +32,17 @@ export async function generateMetadata(): Promise<Metadata> {
     title: thankYouPageContent?.seo?.metaTitle ?? "Thank You — Josephine",
     description:
       thankYouPageContent?.seo?.metaDescription ??
-      "Your reading is on its way. You\u2019ll receive a personal voice note and PDF within 7 days.",
+      "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     robots: { index: false, follow: false },
   };
 }
 
-export default async function ThankYouPage({ params }: ThankYouPageProps) {
-  const { readingId } = await params;
+export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
+  const [{ readingId }, { sessionId }] = await Promise.all([params, searchParams]);
+
+  if (!isValidStripeSession(sessionId)) {
+    redirect("/");
+  }
 
   const [sanityReading, thankYouPageContent] = await Promise.all([
     fetchReading(readingId),
@@ -46,49 +50,24 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
   ]);
 
   const reading = sanityReading
-    ? {
-        name: sanityReading.name,
-        price: sanityReading.priceDisplay,
-        requiresBirthChart: sanityReading.requiresBirthChart,
-        requiresAkashic: sanityReading.requiresAkashic,
-        requiresQuestions: sanityReading.requiresQuestions,
-      }
-    : getReadingById(readingId);
+    ? { name: sanityReading.name, price: sanityReading.priceDisplay }
+    : (() => {
+        const fallback = getReadingById(readingId);
+        return fallback ? { name: fallback.name, price: fallback.price } : null;
+      })();
 
   if (!reading) {
     notFound();
   }
 
-  const requirements = getRequiredDetails(reading);
-
-  const heading = thankYouPageContent?.heading ?? "Thank you for booking";
+  const heading = thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
   const subheading =
     thankYouPageContent?.subheading ??
-    "I\u2019m really looking forward to reading for you. This is going to be special.";
+    "Your reading is in my hands now.";
   const closingMessage =
     thankYouPageContent?.closingMessage ??
-    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726";
+    "With love, Josephine \u2726";
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
-
-  const steps = thankYouPageContent?.steps ?? [
-    {
-      icon: "mail",
-      title: "Check your email",
-      description:
-        "I\u2019ll send you a confirmation email within the next hour with a link to your intake form.",
-    },
-    {
-      icon: "fileText",
-      title: "Fill in your details",
-      description: "So I can create your reading, I\u2019ll need:",
-    },
-    {
-      icon: "clock",
-      title: "Receive your reading",
-      description:
-        "Within 7 days of receiving your details, I\u2019ll send you a detailed voice note recording and a supporting PDF created entirely for you.",
-    },
-  ];
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -98,15 +77,15 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
         <CelestialOrb key={index} {...orb} />
       ))}
 
-      <main className="relative z-10 max-w-[800px] mx-auto px-6 py-20 text-center">
+      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center">
         <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <Check className="w-10 h-10 text-j-accent" strokeWidth={2.5} />
+          <Mail className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
         </div>
 
-        <h1 className="font-display text-[clamp(2rem,5vw,3.2rem)] font-light italic text-j-text-heading leading-tight">
+        <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
           {heading}
         </h1>
-        <p className="font-display text-lg italic text-j-text-muted mt-4 max-w-md mx-auto">
+        <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
           {subheading}
         </p>
 
@@ -122,47 +101,35 @@ export default async function ThankYouPage({ params }: ThankYouPageProps) {
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
-        <h2 className="font-display text-2xl italic text-j-text-heading mb-10">
-          What happens next
-        </h2>
-
-        <div className="max-w-lg mx-auto flex flex-col gap-8 text-left">
-          {steps.map((step, index) => {
-            const IconComponent = STEP_ICONS[step.icon] ?? Mail;
-            const isDetailsStep = step.icon === "fileText";
-
-            return (
-              <div key={index} className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-j-accent/10">
-                  <IconComponent className="w-5 h-5 text-j-accent" />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg italic text-j-text-heading">{step.title}</h3>
-                  <p className="font-body text-sm text-j-text-muted leading-relaxed mt-1">
-                    {step.description}
-                  </p>
-                  {isDetailsStep && requirements.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {requirements.map((req, reqIndex) => (
-                        <li key={reqIndex} className="flex gap-2 items-start">
-                          <Check
-                            className="w-3.5 h-3.5 text-j-accent mt-0.5 shrink-0"
-                            strokeWidth={2}
-                          />
-                          <span className="font-body text-sm text-j-text-muted">{req}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
+          <p>
+            A confirmation email is on its way to your inbox in the next minute or two — it
+            includes a copy of the answers you shared so you have them on hand. If you can&rsquo;t
+            find it, please check your promotions folder.
+          </p>
+          <p>
+            I&rsquo;ll begin your reading within the next two days, and I&rsquo;ll send a short
+            note when I do. Your voice note and PDF will arrive within{" "}
+            <span className="font-display italic text-j-accent">seven days</span>, sent to the
+            email you used at checkout.
+          </p>
+          <p>
+            If anything comes up — a question, a detail you forgot to mention, or anything that
+            doesn&rsquo;t look right in your confirmation — just reply to that email or write to
+            me at{" "}
+            <a
+              href="mailto:hello@withjosephine.com"
+              className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
+            >
+              hello@withjosephine.com
+            </a>
+            . It comes straight to me.
+          </p>
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
-        <p className="font-display text-base italic text-j-text max-w-sm mx-auto whitespace-pre-line">
+        <p className="font-display italic text-base text-j-text max-w-sm mx-auto whitespace-pre-line">
           {closingMessage}
         </p>
 

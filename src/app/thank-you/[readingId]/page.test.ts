@@ -57,7 +57,7 @@ describe("ThankYouPage generateMetadata", () => {
 
     expect(metadata.title).toBe("Thank You \u2014 Josephine");
     expect(metadata.description).toBe(
-      "Your reading is on its way. You\u2019ll receive a personal voice note and PDF within 7 days.",
+      "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );
   });
 
@@ -69,7 +69,7 @@ describe("ThankYouPage generateMetadata", () => {
 
     expect(metadata.title).toBe("Thank You \u2014 Josephine");
     expect(metadata.description).toBe(
-      "Your reading is on its way. You\u2019ll receive a personal voice note and PDF within 7 days.",
+      "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );
   });
 
