@@ -44,6 +44,7 @@ export function Textarea({
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={error}
+      multilineLabel
     >
       <textarea
         id={id}

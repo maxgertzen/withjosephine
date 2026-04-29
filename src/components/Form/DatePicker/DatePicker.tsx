@@ -4,7 +4,7 @@ import { differenceInYears, format, isValid, parse } from "date-fns";
 import { useEffect, useId, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 
-import { FieldShell } from "@/components/Form/FieldShell";
+import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
@@ -119,6 +119,7 @@ export function DatePicker({
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={error}
+      noLabel
     >
       <div ref={wrapperRef} className="relative">
         <input
@@ -139,6 +140,7 @@ export function DatePicker({
           className={inputClasses}
           onBlur={() => setManualDraft(null)}
         />
+        <FloatingLabel id={id} label={label} required={required} />
         {ageWarning ? (
           <p
             data-testid="dob-age-warning"

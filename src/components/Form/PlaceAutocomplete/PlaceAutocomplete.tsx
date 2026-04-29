@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { FieldShell } from "@/components/Form/FieldShell";
+import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import { type CityMatch, searchCities } from "@/lib/places/cities";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -124,6 +124,7 @@ export function PlaceAutocomplete({
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={error}
+      noLabel
     >
       <div ref={wrapperRef} className="relative">
         <input
@@ -157,6 +158,7 @@ export function PlaceAutocomplete({
           role="combobox"
           className={inputClasses}
         />
+        <FloatingLabel id={id} label={label} required={required} />
         {showMatches ? (
           <ul
             id={listboxId}
@@ -190,7 +192,7 @@ export function PlaceAutocomplete({
             role="status"
             className="absolute left-0 right-0 top-full mt-1 z-10 bg-j-ivory border border-j-border-subtle rounded-md px-4 py-3 font-display italic text-sm text-j-text-muted shadow-j-soft"
           >
-            Can&rsquo;t find your town?
+            Can&rsquo;t find your town? Try a more well-known place nearby.
           </p>
         ) : null}
       </div>

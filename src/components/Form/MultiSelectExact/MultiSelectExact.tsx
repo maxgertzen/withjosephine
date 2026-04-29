@@ -9,7 +9,7 @@ import {
   LIMIT_MESSAGE_TIMEOUT_MS,
   statusLineFor,
 } from "@/lib/booking/nameFollowup";
-import { errorClasses, labelClasses } from "@/lib/formStyles";
+import { errorClasses } from "@/lib/formStyles";
 import type { SanityFormFieldOption } from "@/lib/sanity/types";
 
 type MultiSelectExactProps = {
@@ -140,7 +140,7 @@ export function MultiSelectExact({
       aria-invalid={error ? true : undefined}
       aria-describedby={[errorId, helpId].filter(Boolean).join(" ") || undefined}
     >
-      <legend className={labelClasses}>
+      <legend className="sr-only">
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </legend>

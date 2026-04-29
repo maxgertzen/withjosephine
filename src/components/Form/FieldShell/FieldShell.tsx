@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
-import { errorClasses, floatingLabelClasses } from "@/lib/formStyles";
+import { errorClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+
+import { FloatingLabel } from "./FloatingLabel";
 
 type FieldShellProps = {
   id: string;
@@ -12,6 +14,8 @@ type FieldShellProps = {
   clarificationNote?: string;
   error?: string;
   children: ReactNode;
+  noLabel?: boolean;
+  multilineLabel?: boolean;
 };
 
 export function FieldShell({
@@ -23,6 +27,8 @@ export function FieldShell({
   clarificationNote,
   error,
   children,
+  noLabel = false,
+  multilineLabel = false,
 }: FieldShellProps) {
   const helpId = helpText ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -49,10 +55,14 @@ export function FieldShell({
       {helperPosition === "before" ? helper : null}
       <div className="relative">
         {children}
-        <label htmlFor={id} className={floatingLabelClasses}>
-          {label}
-          {required ? <span aria-hidden="true"> *</span> : null}
-        </label>
+        {noLabel ? null : (
+          <FloatingLabel
+            id={id}
+            label={label}
+            required={required}
+            multiline={multilineLabel}
+          />
+        )}
       </div>
       {helperPosition === "after" ? helper : null}
       {error ? (

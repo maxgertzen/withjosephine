@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { FieldShell } from "@/components/Form/FieldShell";
+import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -105,6 +105,7 @@ export function TimePicker({
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={error}
+      noLabel
     >
       <div ref={wrapperRef} className="relative">
         <input
@@ -125,6 +126,7 @@ export function TimePicker({
           aria-invalid={error ? true : undefined}
           className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
         />
+        <FloatingLabel id={id} label={label} required={required} />
         {open ? (
           <div
             id={popoverId}
