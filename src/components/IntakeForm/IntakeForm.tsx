@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/Form/Checkbox";
 import { DatePicker } from "@/components/Form/DatePicker";
@@ -25,6 +25,7 @@ import {
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
 import { errorClasses } from "@/lib/formStyles";
+import { timeChip } from "@/lib/intake/timeChip";
 import type {
   SanityFormField,
   SanityFormSection,
@@ -121,6 +122,32 @@ export function IntakeForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSucceeded, setIsSucceeded] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [chipTick, setChipTick] = useState(0);
+
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const interval = setInterval(() => setChipTick((t) => t + 1), 30_000);
+    return () => clearInterval(interval);
+  }, [lastSavedAt]);
+
+  const savedIndicator = (() => {
+    void chipTick;
+    if (!lastSavedAt) return null;
+    return (
+      <span className="font-display italic text-xs text-j-text-muted inline-flex items-center gap-1">
+        <span aria-hidden="true" className="text-j-accent">
+          ✦
+        </span>
+        {timeChip(lastSavedAt)}
+      </span>
+    );
+  })();
+
+  function handleSaveLater() {
+    setLastSavedAt(new Date());
+    setChipTick((t) => t + 1);
+  }
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIntentRef = useRef(false);
@@ -146,7 +173,7 @@ export function IntakeForm({
     const pageResult = pageSchema.safeParse(values);
     const followupResult = followupSchema.safeParse(values);
     if (process.env.NODE_ENV !== "production" && (!pageResult.success || !followupResult.success)) {
-      // eslint-disable-next-line no-console
+       
       console.log("[IntakeForm] page invalid:", {
         currentKeys,
         values: Object.fromEntries(currentKeys.map((k) => [k, values[k]])),
@@ -223,7 +250,7 @@ export function IntakeForm({
     setCurrentPage((p) => {
       const next = Math.max(p - 1, 0);
       if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
+         
         console.log(`[IntakeForm] Back: ${p} → ${next}`);
       }
       return next;
@@ -241,7 +268,7 @@ export function IntakeForm({
 
     if (!submitIntentRef.current) {
       if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
+         
         console.warn("[IntakeForm] submit suppressed — no explicit submit intent");
       }
       return;
@@ -460,6 +487,7 @@ export function IntakeForm({
         backHref={`/book/${readingId}`}
         onBack={handleBack}
         onNext={handleNext}
+        onSaveLater={handleSaveLater}
         onSubmitIntent={() => {
           submitIntentRef.current = true;
         }}
@@ -469,6 +497,7 @@ export function IntakeForm({
           isFinalPage && (!currentPageValid || (turnstileRequired && !turnstileToken))
         }
         submitLabel={submitLabel}
+        savedIndicator={savedIndicator}
       />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>

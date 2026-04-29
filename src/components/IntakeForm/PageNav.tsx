@@ -74,7 +74,7 @@ export function PageNav({
           <Button
             type="submit"
             size="lg"
-            className="min-h-14"
+            className="min-h-14 !font-display !italic !normal-case !tracking-normal !text-base !font-medium"
             disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
           >
