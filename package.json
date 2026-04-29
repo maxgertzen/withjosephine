@@ -53,8 +53,21 @@
   },
   "pnpm": {
     "overrides": {
-      "js-yaml@<3.14.2": "^3.14.2"
-    }
+      "js-yaml@<3.14.2": "^3.14.2",
+      "fast-xml-parser@<5.7.0": "^5.7.0",
+      "postcss@<8.5.10": "^8.5.10",
+      "uuid@<14.0.0": "^14.0.0"
+    },
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "@tailwindcss/oxide",
+      "better-sqlite3",
+      "core-js-pure",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "workerd"
+    ]
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.19.1",
