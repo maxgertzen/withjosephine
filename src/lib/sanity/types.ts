@@ -232,12 +232,29 @@ export type SanityFormSection = {
   fields: SanityFormField[];
 };
 
+export type SanityEntryPageContent = {
+  letterOpener?: string;
+  letterBridge?: string;
+  letterClosing?: string;
+  dropCapCta?: string;
+  dropCapCaption?: string;
+  changeReadingLinkText?: string;
+  aboutJosephineLinkText?: string;
+  letterTitle?: string;
+};
+
+export type SanityConsentBlock = {
+  trustLine?: string;
+};
+
 export type SanityBookingForm = {
   title: string;
   intro?: string;
   description?: string;
   confirmationMessage?: string;
   nonRefundableNotice: string;
+  entryPageContent?: SanityEntryPageContent;
+  consentBlock?: SanityConsentBlock;
   sections: SanityFormSection[];
 };
 

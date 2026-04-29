@@ -161,6 +161,19 @@ export const bookingFormQuery = groq`
     description,
     confirmationMessage,
     nonRefundableNotice,
+    entryPageContent {
+      letterOpener,
+      letterBridge,
+      letterClosing,
+      dropCapCta,
+      dropCapCaption,
+      changeReadingLinkText,
+      aboutJosephineLinkText,
+      letterTitle
+    },
+    consentBlock {
+      trustLine
+    },
     "sections": sections[]-> {
       _id,
       sectionTitle,
