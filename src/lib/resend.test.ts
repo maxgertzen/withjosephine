@@ -27,12 +27,13 @@ afterEach(() => {
 
 describe("sendNotificationToJosephine", () => {
   it("sends to NOTIFICATION_EMAIL with subject and HTML body containing all responses", async () => {
-    sendMock.mockResolvedValue({ id: "msg_1" });
+    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
     const submission = buildSubmission();
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(submission);
+    const result = await sendNotificationToJosephine(submission);
 
+    expect(result.resendId).toBe("msg_1");
     expect(sendMock).toHaveBeenCalledOnce();
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("hello@withjosephine.com");
@@ -46,7 +47,7 @@ describe("sendNotificationToJosephine", () => {
   });
 
   it("includes the photo URL when photoUrl is set", async () => {
-    sendMock.mockResolvedValue({});
+    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
     const submission = buildSubmission();
     const { sendNotificationToJosephine } = await import("./resend");
 
@@ -56,7 +57,7 @@ describe("sendNotificationToJosephine", () => {
   });
 
   it("omits the photo URL when photoUrl is null", async () => {
-    sendMock.mockResolvedValue({});
+    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
     const submission = buildSubmission({ photoUrl: null });
     const { sendNotificationToJosephine } = await import("./resend");
 
@@ -67,7 +68,7 @@ describe("sendNotificationToJosephine", () => {
   });
 
   it("escapes HTML in user-provided values", async () => {
-    sendMock.mockResolvedValue({});
+    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
     const submission = buildSubmission({
       email: 'evil"<script>alert(1)</script>@example.com',
     });
@@ -80,47 +81,126 @@ describe("sendNotificationToJosephine", () => {
     expect(html).toContain("&lt;script&gt;");
   });
 
-  it("skips silently when RESEND_API_KEY is not set", async () => {
+  it("returns null resendId when RESEND_API_KEY is not set", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(buildSubmission());
+    const result = await sendNotificationToJosephine(buildSubmission());
 
+    expect(result.resendId).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("skips silently when NOTIFICATION_EMAIL is not set", async () => {
+  it("returns null resendId when NOTIFICATION_EMAIL is not set", async () => {
     vi.stubEnv("NOTIFICATION_EMAIL", "");
     const { sendNotificationToJosephine } = await import("./resend");
 
-    await sendNotificationToJosephine(buildSubmission());
+    const result = await sendNotificationToJosephine(buildSubmission());
 
+    expect(result.resendId).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
 
-describe("sendClientConfirmation", () => {
-  it("sends to the client's email with a personalized subject and non-refundable acknowledgment", async () => {
-    sendMock.mockResolvedValue({});
+describe("sendOrderConfirmation", () => {
+  it("sends to client with SPEC §13.B verbatim subject and body", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
     const submission = buildSubmission();
-    const { sendClientConfirmation } = await import("./resend");
+    const { sendOrderConfirmation } = await import("./resend");
 
-    await sendClientConfirmation(submission);
+    const result = await sendOrderConfirmation(submission);
 
+    expect(result.resendId).toBe("msg_oc");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
-    expect(args.subject).toContain(submission.readingName);
+    expect(args.subject).toBe("Your reading is booked — here's what happens next");
+    expect(args.html).toContain("Hi Ada,");
+    expect(args.html).toContain(`Thank you for booking a ${submission.readingName}`);
+    expect(args.html).toContain("intake and your payment");
+    expect(args.html).toContain("within seven days");
+    expect(args.html).toContain("With love");
+    expect(args.html).toContain("Josephine");
+  });
+
+  it("HTML-escapes firstName before injecting", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission({ firstName: '<script>x</script>' });
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).not.toContain("<script>x</script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("returns null resendId when RESEND_API_KEY is missing", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(buildSubmission());
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendDay2Started", () => {
+  it("sends SPEC §13.C verbatim copy to client", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d2" } });
+    const submission = buildSubmission();
+    const { sendDay2Started } = await import("./resend");
+
+    const result = await sendDay2Started(submission);
+
+    expect(result.resendId).toBe("msg_d2");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe(submission.email);
+    expect(args.subject).toBe("A quick note — I've started your reading");
+    expect(args.html).toContain("Hi Ada,");
+    expect(args.html).toContain("sat down with your chart");
+    expect(args.html).toContain("not going to preview anything");
+    expect(args.html).toContain("within the next five days");
+  });
+});
+
+describe("sendDay7Delivery", () => {
+  it("includes the listening-page URL inside an anchor href", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
+    const submission = buildSubmission();
+    const url = "https://withjosephine.com/listen/abc123";
+    const { sendDay7Delivery } = await import("./resend");
+
+    const result = await sendDay7Delivery(submission, url);
+
+    expect(result.resendId).toBe("msg_d7");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Your reading is ready");
+    expect(args.html).toContain(`href="${url}"`);
     expect(args.html).toContain(submission.readingName);
-    expect(args.html).toContain("non-refundable");
+    expect(args.html).toContain("best with headphones");
+  });
+});
+
+describe("sendDay7OverdueAlert", () => {
+  it("sends to NOTIFICATION_EMAIL not the client", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7a" } });
+    const submission = buildSubmission();
+    const { sendDay7OverdueAlert } = await import("./resend");
+
+    const result = await sendDay7OverdueAlert(submission);
+
+    expect(result.resendId).toBe("msg_d7a");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("hello@withjosephine.com");
+    expect(args.to).not.toBe(submission.email);
+    expect(args.subject).toContain("overdue");
     expect(args.html).toContain(submission.id);
   });
 
-  it("skips silently when RESEND_API_KEY is not set", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    const { sendClientConfirmation } = await import("./resend");
-
-    await sendClientConfirmation(buildSubmission());
-
+  it("returns null resendId when NOTIFICATION_EMAIL missing", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "");
+    const { sendDay7OverdueAlert } = await import("./resend");
+    const result = await sendDay7OverdueAlert(buildSubmission());
+    expect(result.resendId).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });

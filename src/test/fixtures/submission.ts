@@ -3,11 +3,24 @@ import type { SubmissionContext } from "@/lib/resend";
 const BASE_SUBMISSION: SubmissionContext = {
   id: "sub_123",
   email: "client@example.com",
+  firstName: "Ada",
   readingName: "Soul Blueprint Reading",
   readingPriceDisplay: "$179",
   responses: [
-    { fieldLabelSnapshot: "Birth date", fieldType: "date", value: "1990-04-12" },
     {
+      fieldKey: "first_name",
+      fieldLabelSnapshot: "First name",
+      fieldType: "shortText",
+      value: "Ada",
+    },
+    {
+      fieldKey: "birth_date",
+      fieldLabelSnapshot: "Birth date",
+      fieldType: "date",
+      value: "1990-04-12",
+    },
+    {
+      fieldKey: "focus_areas",
       fieldLabelSnapshot: "Focus areas",
       fieldType: "multiSelectExact",
       value: "Soul Purpose, Karmic Patterns, Relationships",

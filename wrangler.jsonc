@@ -20,6 +20,7 @@
   //   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
   //   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
   //   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
+  //   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
   //   - WEB3FORMS_KEY              Web3Forms access key used server-side by /api/contact
   //
   // Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
@@ -39,11 +40,17 @@
       "preview_bucket_name": "withjosephine-booking-photos-preview",
     },
   ],
-  // Cloudflare Cron Triggers — fire scheduled events that hit /api/cron/* via fetch.
-  //   - "0 */6 * * *" : reconcile every 6 hours (Stripe ↔ Sanity drift)
-  //   - "0 3 * * *"   : cleanup daily at 03:00 UTC (age out abandoned submissions, scrub old photos)
+  // Cloudflare Cron Triggers. Note: OpenNext does not currently translate the
+  // `scheduled` event into a fetch — until a `scheduled` handler is added, each
+  // /api/cron/* route is invoked via external Bearer-authenticated curl
+  // (Authorization: Bearer ${CRON_SECRET}).
+  //
+  // Intended cadences (active once scheduled-handler dispatch is wired):
+  //   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + email-day-2 + email-day-7-deliver
+  //   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
+  //   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
   "triggers": {
-    "crons": ["0 */6 * * *", "0 3 * * *"],
+    "crons": ["0 */6 * * *", "0 3 * * *", "0 10 * * *"],
   },
   "observability": {
     "enabled": false,

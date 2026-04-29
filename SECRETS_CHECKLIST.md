@@ -19,7 +19,7 @@ If `node_modules` does not exist yet, `pnpm install` runs cleanly and this step 
 
 ## Cloudflare Workers secrets
 
-Set each via `wrangler secret put <NAME>` (prompts for the value) or in the Cloudflare dashboard at **Workers → withjosephine → Settings → Variables → Secrets**.
+Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or in the Cloudflare dashboard at **Workers → withjosephine → Settings → Variables → Secrets**. Wrangler is a local devDep — bare `wrangler` works only if it is also installed globally; `pnpm exec wrangler` is the portable form, and `pnpm wrangler …` will not work because `wrangler` is not a package.json script.
 
 | Env var | Description | Where to get it |
 |---|---|---|
@@ -33,22 +33,24 @@ Set each via `wrangler secret put <NAME>` (prompts for the value) or in the Clou
 | `R2_BUCKET_NAME` | R2 bucket name | `withjosephine-booking-photos` |
 | `NOTIFICATION_EMAIL` | Inbox that receives new-booking notifications | `hello@withjosephine.com` (or chosen alias) |
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
-| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/reconcile` and `/api/cron/cleanup`. Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
+| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
+| `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
 | `WEB3FORMS_KEY` | Web3Forms access key used server-side by `/api/contact` (replaces the old `NEXT_PUBLIC_WEB3FORMS_KEY` so the key is no longer exposed in the client bundle). | Web3Forms dashboard → Access Keys |
 
 Example:
 
 ```bash
-wrangler secret put STRIPE_WEBHOOK_SECRET
-wrangler secret put STRIPE_SECRET_KEY
-wrangler secret put RESEND_API_KEY
-wrangler secret put TURNSTILE_SECRET_KEY
-wrangler secret put R2_ACCOUNT_ID
-wrangler secret put R2_ACCESS_KEY_ID
-wrangler secret put R2_SECRET_ACCESS_KEY
-wrangler secret put R2_BUCKET_NAME
-wrangler secret put NOTIFICATION_EMAIL
-wrangler secret put SANITY_WRITE_TOKEN
+pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET
+pnpm exec wrangler secret put STRIPE_SECRET_KEY
+pnpm exec wrangler secret put RESEND_API_KEY
+pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
+pnpm exec wrangler secret put R2_ACCOUNT_ID
+pnpm exec wrangler secret put R2_ACCESS_KEY_ID
+pnpm exec wrangler secret put R2_SECRET_ACCESS_KEY
+pnpm exec wrangler secret put R2_BUCKET_NAME
+pnpm exec wrangler secret put NOTIFICATION_EMAIL
+pnpm exec wrangler secret put SANITY_WRITE_TOKEN
+pnpm exec wrangler secret put LISTEN_TOKEN_SECRET   # openssl rand -hex 32
 ```
 
 `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a plain variable, not a secret — set it under **Variables → Variables** so it is inlined at build time.

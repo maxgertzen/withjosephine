@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 import { escapeHtml } from "./utils";
 
-const FROM_ADDRESS = "Josephine <notifications@withjosephine.com>";
+const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
 const EMAIL_BRAND = {
   ink: "#1C1935",
@@ -14,6 +14,7 @@ const EMAIL_BRAND = {
 } as const;
 
 export type SubmissionResponse = {
+  fieldKey: string;
   fieldLabelSnapshot: string;
   fieldType: string;
   value: string;
@@ -22,12 +23,15 @@ export type SubmissionResponse = {
 export type SubmissionContext = {
   id: string;
   email: string;
+  firstName: string;
   readingName: string;
   readingPriceDisplay: string;
   responses: SubmissionResponse[];
   photoUrl: string | null;
   createdAt: string;
 };
+
+export type EmailSendResult = { resendId: string | null };
 
 let cachedClient: Resend | null = null;
 
@@ -38,12 +42,20 @@ function getResendClient(): Resend | null {
   return cachedClient;
 }
 
-function renderEmailShell(innerHtml: string, maxWidthPx = 640): string {
+function renderEmailShell(innerHtml: string, maxWidthPx = 560): string {
   return `
     <div style="font-family: ${EMAIL_BRAND.sansFamily}; color: ${EMAIL_BRAND.body}; max-width: ${maxWidthPx}px; line-height: 1.7;">
       ${innerHtml}
     </div>
   `;
+}
+
+function paragraph(text: string): string {
+  return `<p>${text}</p>`;
+}
+
+function signOff(): string {
+  return `<p style="margin-top: 24px;">With love,<br/>Josephine ✦</p>`;
 }
 
 function renderResponsesHtml(responses: SubmissionResponse[]): string {
@@ -64,17 +76,33 @@ function renderResponsesHtml(responses: SubmissionResponse[]): string {
   return `<table style="border-collapse: collapse; width: 100%; font-family: ${EMAIL_BRAND.sansFamily};">${rows}</table>`;
 }
 
-export async function sendNotificationToJosephine(submission: SubmissionContext): Promise<void> {
+async function sendOrSkip(args: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  warnPrefix: string;
+}): Promise<EmailSendResult> {
   const client = getResendClient();
   if (!client) {
-    console.warn("[resend] RESEND_API_KEY not set — skipping Josephine notification");
-    return;
+    console.warn(`[resend] RESEND_API_KEY not set — skipping ${args.warnPrefix}`);
+    return { resendId: null };
   }
+  const response = await client.emails.send({
+    from: FROM_ADDRESS,
+    to: args.to,
+    subject: args.subject,
+    html: args.html,
+  });
+  return { resendId: response.data?.id ?? null };
+}
 
+export async function sendNotificationToJosephine(
+  submission: SubmissionContext,
+): Promise<EmailSendResult> {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
   if (!notificationEmail) {
     console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Josephine notification");
-    return;
+    return { resendId: null };
   }
 
   const photoBlock = submission.photoUrl
@@ -97,45 +125,119 @@ export async function sendNotificationToJosephine(submission: SubmissionContext)
     ${renderResponsesHtml(submission.responses)}
   `;
 
-  await client.emails.send({
-    from: FROM_ADDRESS,
+  return sendOrSkip({
     to: notificationEmail,
     subject: `New ${submission.readingName} booking — ${submission.email}`,
-    html: renderEmailShell(inner),
+    html: renderEmailShell(inner, 640),
+    warnPrefix: "Josephine notification",
   });
 }
 
-export async function sendClientConfirmation(submission: SubmissionContext): Promise<void> {
-  const client = getResendClient();
-  if (!client) {
-    console.warn("[resend] RESEND_API_KEY not set — skipping client confirmation");
-    return;
+export async function sendOrderConfirmation(
+  submission: SubmissionContext,
+): Promise<EmailSendResult> {
+  const firstName = escapeHtml(submission.firstName);
+  const readingName = escapeHtml(submission.readingName);
+
+  const inner = [
+    paragraph(`Hi ${firstName},`),
+    paragraph(
+      `Thank you for booking a ${readingName} with me. I have your intake and your payment, and you don't need to do anything else.`,
+    ),
+    paragraph(
+      "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+    paragraph(
+      "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+    ),
+    signOff(),
+  ].join("");
+
+  return sendOrSkip({
+    to: submission.email,
+    subject: "Your reading is booked — here's what happens next",
+    html: renderEmailShell(inner),
+    warnPrefix: "order confirmation",
+  });
+}
+
+export async function sendDay2Started(submission: SubmissionContext): Promise<EmailSendResult> {
+  const firstName = escapeHtml(submission.firstName);
+
+  const inner = [
+    paragraph(`Hi ${firstName},`),
+    paragraph(
+      "Just a quick note to let you know I've sat down with your chart and your records this week. I always want my clients to know when the work begins, so it doesn't feel like silence on your end.",
+    ),
+    paragraph(
+      "I'm not going to preview anything — your reading should arrive whole, the way it's meant to. But I wanted you to know it's in good hands, and that I'm taking the time it asks for.",
+    ),
+    paragraph("You'll hear from me again when it's ready, within the next five days."),
+    signOff(),
+  ].join("");
+
+  return sendOrSkip({
+    to: submission.email,
+    subject: "A quick note — I've started your reading",
+    html: renderEmailShell(inner),
+    warnPrefix: "Day +2 started",
+  });
+}
+
+export async function sendDay7Delivery(
+  submission: SubmissionContext,
+  listenUrl: string,
+): Promise<EmailSendResult> {
+  const firstName = escapeHtml(submission.firstName);
+  const readingName = escapeHtml(submission.readingName);
+  const safeUrl = escapeHtml(listenUrl);
+
+  const inner = [
+    paragraph(`Hi ${firstName},`),
+    paragraph(`Your ${readingName} is ready. Everything is here:`),
+    `<p style="margin: 16px 0;"><a href="${safeUrl}" style="color: ${EMAIL_BRAND.ink}; text-decoration: underline;">${safeUrl}</a></p>`,
+    paragraph(
+      "The voice note is best with headphones, somewhere quiet. The PDF is yours to keep — print it, save it, mark it up, whatever feels right. Listen in one sitting if you can; some of it lands across a whole afternoon, not all at once.",
+    ),
+    paragraph(
+      "If anything you hear sits hard, or if a question opens up after, please write to me. I'd rather know than not.",
+    ),
+    signOff(),
+  ].join("");
+
+  return sendOrSkip({
+    to: submission.email,
+    subject: "Your reading is ready",
+    html: renderEmailShell(inner),
+    warnPrefix: "Day +7 delivery",
+  });
+}
+
+export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
+  const notificationEmail = process.env.NOTIFICATION_EMAIL;
+  if (!notificationEmail) {
+    console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Day +7 overdue alert");
+    return { resendId: null };
   }
 
   const inner = `
-    <h1 style="font-family: ${EMAIL_BRAND.serifFamily}; color: ${EMAIL_BRAND.ink}; font-weight: 400;">
-      Your ${escapeHtml(submission.readingName)} is confirmed
+    <h1 style="font-family: ${EMAIL_BRAND.serifFamily}; color: ${EMAIL_BRAND.ink};">
+      Reading overdue — past 7 days
     </h1>
-    <p>Thank you for booking your ${escapeHtml(submission.readingName)}.</p>
-    <p>
-      Your reading is being prepared. You'll receive your voice note and PDF
-      within 7 days at this email address.
-    </p>
+    <p>The following submission is past the 7-day delivery window and has no <code>deliveredAt</code> set:</p>
+    <p><strong>Client:</strong> ${escapeHtml(submission.email)}</p>
+    <p><strong>Reading:</strong> ${escapeHtml(submission.readingName)}</p>
+    <p><strong>Submission ID:</strong> ${escapeHtml(submission.id)}</p>
+    <p><strong>Created:</strong> ${escapeHtml(submission.createdAt)}</p>
     <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px; margin-top: 24px;">
-      By submitting your booking you acknowledged that readings are non-refundable
-      once work has begun.
-    </p>
-    <p style="margin-top: 24px;">— Josephine</p>
-    <hr style="border: none; border-top: 1px solid ${EMAIL_BRAND.divider}; margin: 32px 0 16px;" />
-    <p style="color: ${EMAIL_BRAND.muted}; font-size: 12px;">
-      Submission ID: ${escapeHtml(submission.id)}
+      Mark <code>deliveredAt</code> in Studio after uploading the voice note + PDF to fire the client delivery email.
     </p>
   `;
 
-  await client.emails.send({
-    from: FROM_ADDRESS,
-    to: submission.email,
-    subject: `Your ${submission.readingName} is confirmed`,
-    html: renderEmailShell(inner, 560),
+  return sendOrSkip({
+    to: notificationEmail,
+    subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
+    html: renderEmailShell(inner, 640),
+    warnPrefix: "Day +7 overdue alert",
   });
 }

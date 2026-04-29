@@ -11,9 +11,11 @@ vi.mock("../sanity/client", () => ({
 import { deleteObject } from "../r2";
 import { getSanityWriteClient } from "../sanity/client";
 import {
+  appendEmailFired,
   buildSubmissionContext,
   deleteSubmissionAndPhoto,
   findSubmissionById,
+  listPaidSubmissionsForEmail,
   listSubmissionsByStatusOlderThan,
   markSubmissionExpired,
   markSubmissionPaid,
@@ -27,12 +29,16 @@ const mockGetWriteClient = vi.mocked(getSanityWriteClient);
 const fetchMock = vi.fn();
 const patchSet = vi.fn();
 const patchUnset = vi.fn();
+const patchSetIfMissing = vi.fn();
+const patchInsert = vi.fn();
 const patchCommit = vi.fn();
 const deleteMock = vi.fn();
 
 const patchChain = {
   set: patchSet,
   unset: patchUnset,
+  setIfMissing: patchSetIfMissing,
+  insert: patchInsert,
   commit: patchCommit,
 };
 
@@ -40,6 +46,8 @@ beforeEach(() => {
   fetchMock.mockReset();
   patchSet.mockReset().mockReturnValue(patchChain);
   patchUnset.mockReset().mockReturnValue(patchChain);
+  patchSetIfMissing.mockReset().mockReturnValue(patchChain);
+  patchInsert.mockReset().mockReturnValue(patchChain);
   patchCommit.mockReset().mockResolvedValue(undefined);
   deleteMock.mockReset().mockResolvedValue(undefined);
   mockDeleteObject.mockReset().mockResolvedValue(undefined);
@@ -190,15 +198,51 @@ describe("submissions lib", () => {
   });
 
   describe("buildSubmissionContext", () => {
-    it("builds Resend context with photo URL from R2 key", () => {
-      const ctx = buildSubmissionContext(SUBMISSION);
+    it("builds Resend context with photo URL from R2 key and preserves fieldKey", () => {
+      const submission: SubmissionRecord = {
+        ...SUBMISSION,
+        responses: [
+          {
+            fieldKey: "first_name",
+            fieldLabelSnapshot: "First name",
+            fieldType: "shortText",
+            value: "Ada",
+          },
+        ],
+      };
+      const ctx = buildSubmissionContext(submission);
       expect(ctx.id).toBe("sub_1");
+      expect(ctx.firstName).toBe("Ada");
       expect(ctx.readingName).toBe("Soul Blueprint");
-      expect(ctx.readingPriceDisplay).toBe("$179");
       expect(ctx.photoUrl).toBe("https://images.withjosephine.com/submissions/sub_1/photo.jpg");
       expect(ctx.responses).toEqual([
-        { fieldLabelSnapshot: "Full name", fieldType: "shortText", value: "Ada" },
+        {
+          fieldKey: "first_name",
+          fieldLabelSnapshot: "First name",
+          fieldType: "shortText",
+          value: "Ada",
+        },
       ]);
+    });
+
+    it("falls back to legacy legal_full_name first token when first_name absent", () => {
+      const ctx = buildSubmissionContext({
+        ...SUBMISSION,
+        responses: [
+          {
+            fieldKey: "legal_full_name",
+            fieldLabelSnapshot: "Legal full name",
+            fieldType: "shortText",
+            value: "Ada Lovelace",
+          },
+        ],
+      });
+      expect(ctx.firstName).toBe("Ada");
+    });
+
+    it("falls back to 'there' when no name response present", () => {
+      const ctx = buildSubmissionContext({ ...SUBMISSION, responses: [] });
+      expect(ctx.firstName).toBe("there");
     });
 
     it("returns null photoUrl when no R2 key", () => {
@@ -210,6 +254,52 @@ describe("submissions lib", () => {
       const ctx = buildSubmissionContext({ ...SUBMISSION, reading: null });
       expect(ctx.readingName).toBe("your reading");
       expect(ctx.readingPriceDisplay).toBe("");
+    });
+  });
+
+  describe("appendEmailFired", () => {
+    it("seeds emailsFired array then inserts entry", async () => {
+      await appendEmailFired("sub_1", {
+        type: "order_confirmation",
+        sentAt: "2026-04-30T01:00:00Z",
+        resendId: "msg_oc",
+      });
+      expect(patchSetIfMissing).toHaveBeenCalledWith({ emailsFired: [] });
+      expect(patchInsert).toHaveBeenCalledWith("after", "emailsFired[-1]", [
+        { type: "order_confirmation", sentAt: "2026-04-30T01:00:00Z", resendId: "msg_oc" },
+      ]);
+      expect(patchCommit).toHaveBeenCalledWith({ visibility: "sync" });
+    });
+  });
+
+  describe("listPaidSubmissionsForEmail", () => {
+    it("filters by emailType not yet in emailsFired plus paidBefore cutoff", async () => {
+      fetchMock.mockResolvedValueOnce([SUBMISSION]);
+      const result = await listPaidSubmissionsForEmail("day2", {
+        paidBefore: "2026-04-28T00:00:00Z",
+      });
+      expect(result).toEqual([SUBMISSION]);
+      const [query, params] = fetchMock.mock.calls[0] as [string, Record<string, string>];
+      expect(query).toContain('status == "paid"');
+      expect(query).toContain("count((emailsFired[].type)[@ == $emailType])");
+      expect(query).toContain("paidAt < $paidBefore");
+      expect(params).toEqual({ emailType: "day2", paidBefore: "2026-04-28T00:00:00Z" });
+    });
+
+    it("adds defined(deliveredAt) filter when requireDeliveredAt is true", async () => {
+      fetchMock.mockResolvedValueOnce([]);
+      await listPaidSubmissionsForEmail("day7", { requireDeliveredAt: true });
+      const [query] = fetchMock.mock.calls[0] as [string, Record<string, string>];
+      expect(query).toContain("defined(deliveredAt)");
+    });
+
+    it("adds !defined(deliveredAt) filter when requireMissingDeliveredAt is true", async () => {
+      fetchMock.mockResolvedValueOnce([]);
+      await listPaidSubmissionsForEmail("day7-overdue-alert", {
+        requireMissingDeliveredAt: true,
+      });
+      const [query] = fetchMock.mock.calls[0] as [string, Record<string, string>];
+      expect(query).toContain("!defined(deliveredAt)");
     });
   });
 });

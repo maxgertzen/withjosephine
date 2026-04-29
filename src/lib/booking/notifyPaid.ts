@@ -1,5 +1,6 @@
-import { sendClientConfirmation, sendNotificationToJosephine } from "../resend";
+import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
+  appendEmailFired,
   buildSubmissionContext,
   markSubmissionPaid,
   type SubmissionRecord,
@@ -33,9 +34,25 @@ export async function applyPaidEvent(
     sendNotificationToJosephine(context).catch((error) => {
       console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
     }),
-    sendClientConfirmation(context).catch((error) => {
-      console.error(`[notifyPaid] Client email failed for ${submission._id}`, error);
-    }),
+    sendOrderConfirmation(context)
+      .then(async (result) => {
+        if (!result.resendId) return;
+        try {
+          await appendEmailFired(submission._id, {
+            type: "order_confirmation",
+            sentAt: new Date().toISOString(),
+            resendId: result.resendId,
+          });
+        } catch (error) {
+          console.error(
+            `[notifyPaid] emailsFired write failed for ${submission._id}`,
+            error,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
+      }),
   ]);
 
   return "applied";
