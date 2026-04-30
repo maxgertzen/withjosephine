@@ -117,4 +117,29 @@ describe("FileUpload", () => {
     expect(onChange).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("renders a preview thumbnail of the picked file once upload completes", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ uploadUrl: "https://r2.example/put", key: "submissions/x/photo" }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    const objectUrl = "blob:mock-preview-url";
+    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue(objectUrl);
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+
+    const { onChange } = setup();
+    uploadFile(screen.getByLabelText(/Photo/), makeFile("moon.jpg", "image/jpeg", 1024));
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("submissions/x/photo"));
+
+    const img = document.querySelector("img");
+    expect(img).toBeTruthy();
+    expect(img?.getAttribute("src")).toContain(objectUrl);
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+  });
 });

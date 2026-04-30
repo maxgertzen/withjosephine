@@ -1,5 +1,6 @@
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
+import { PHOTO_PUBLIC_URL_BASE } from "./constants";
 import type { CreateSubmissionInput } from "./persistence/repository";
 import * as repo from "./persistence/repository";
 import {
@@ -9,8 +10,6 @@ import {
   mirrorSubmissionPatch,
   mirrorUnsetPhotoKey,
 } from "./persistence/sanityMirror";
-
-const PHOTO_BASE_URL = "https://images.withjosephine.com";
 
 export type SubmissionStatus = "pending" | "paid" | "expired";
 
@@ -191,7 +190,7 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
     readingName: submission.reading?.name ?? "your reading",
     readingPriceDisplay: submission.reading?.priceDisplay ?? "",
     responses,
-    photoUrl: submission.photoR2Key ? `${PHOTO_BASE_URL}/${submission.photoR2Key}` : null,
+    photoUrl: submission.photoR2Key ? `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}` : null,
     createdAt: submission.createdAt,
   };
 }
