@@ -59,14 +59,22 @@ export function Navigation({ content, className }: NavigationProps) {
         )}
       >
         <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-[72px]">
-          <Link href="/">
+          <Link href="/" className="block">
             <Image
-              src="/images/header-logo.png"
+              src="/images/logo-horizontal.webp"
               alt="Josephine Soul Readings"
-              width={140}
-              height={80}
+              width={480}
+              height={160}
               priority
-              className="h-auto w-[clamp(120px,8vw,160px)]"
+              className="h-auto w-[140px] md:hidden"
+            />
+            <Image
+              src="/images/logo-horizontal-text.webp"
+              alt="Josephine Soul Readings"
+              width={480}
+              height={160}
+              priority
+              className="hidden h-auto w-[clamp(120px,8vw,160px)] md:block"
             />
           </Link>
 

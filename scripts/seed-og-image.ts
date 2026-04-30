@@ -1,7 +1,7 @@
 /**
  * Seed seo.ogImage on all Sanity documents that have the field.
  *
- * Uploads public/images/Logo.png to Sanity as an asset (if not already
+ * Uploads public/images/logo-main.png to Sanity as an asset (if not already
  * uploaded), then patches seo.ogImage on documents that don't have one.
  *
  * Uses setIfMissing — never overwrites a manually-set ogImage.
@@ -22,7 +22,7 @@ const client = createClient({
   token: process.env.SANITY_WRITE_TOKEN,
 });
 
-const LOGO_PATH = resolve(import.meta.dirname, "../public/images/Logo.png");
+const LOGO_PATH = resolve(import.meta.dirname, "../public/images/logo-main.png");
 
 const TARGETS = [
   { type: "landingPage", label: "landingPage" },
@@ -32,7 +32,7 @@ const TARGETS = [
 ] as const;
 
 async function uploadAsset(): Promise<string> {
-  console.log("Uploading Logo.png to Sanity...");
+  console.log("Uploading logo-main.png to Sanity...");
   const buffer = readFileSync(LOGO_PATH);
   const asset = await client.assets.upload("image", buffer, {
     filename: "og-image.png",

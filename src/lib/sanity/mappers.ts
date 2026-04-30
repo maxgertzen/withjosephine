@@ -126,7 +126,7 @@ export function mapFooterContent(
 
   return {
     brandName: siteSettings.brandName,
-    logoUrl: siteSettings.logoUrl || "/images/logo-default.png",
+    logoUrl: siteSettings.logoUrl || "/images/logo-main.webp",
     copyrightText: siteSettings.copyrightText,
   };
 }

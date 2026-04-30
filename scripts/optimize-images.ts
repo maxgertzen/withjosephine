@@ -12,7 +12,9 @@ const SRC_ROOT = path.resolve(__dirname, "../src");
 const TARGETS = [
   { file: "akasha.png", width: 600, quality: 80 },
   { file: "under-construction.png", width: 800, quality: 80 },
-  { file: "Logo.png", width: 480, quality: 85 },
+  { file: "logo-main.png", width: 960, quality: 85 },
+  { file: "logo-horizontal.png", width: 480, quality: 85 },
+  { file: "logo-horizontal-text.png", width: 480, quality: 85 },
 ];
 
 function updateSourceRefs(oldRef: string, newRef: string) {

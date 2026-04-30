@@ -86,10 +86,10 @@ export default async function LetterPage({ params }: LetterPageProps) {
 
             <div className="relative flex justify-center mb-6">
               <Image
-                src="/images/logo-default.png"
+                src="/images/logo-main.webp"
                 alt=""
-                width={140}
-                height={140}
+                width={280}
+                height={280}
                 aria-hidden="true"
                 className="h-auto w-[110px] min-[375px]:w-[140px]"
               />

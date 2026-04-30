@@ -291,7 +291,7 @@ describe("mapFooterContent", () => {
 
     const result = mapFooterContent(noLogo);
 
-    expect(result?.logoUrl).toBe("/images/logo-default.png");
+    expect(result?.logoUrl).toBe("/images/logo-main.webp");
   });
 
   it("reflects footer changes from CMS", () => {
