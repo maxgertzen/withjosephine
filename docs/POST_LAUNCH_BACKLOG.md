@@ -59,6 +59,11 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Infrastructure
 
+### D1 client: switch from HTTP REST to the workerd binding
+- **Source:** Submission 500 root-cause investigation 2026-04-30. Bad value of the `D1_DATABASE_ID` Worker secret silently produced `D1 HTTP 400: Invalid uuid` on every booking submit; the binding-path wouldn't have this failure mode at all.
+- **What:** `src/lib/booking/persistence/d1HttpClient.ts` calls Cloudflare's D1 REST API (`api.cloudflare.com/.../d1/database/{databaseId}/query`) using three Worker secrets (`D1_ACCOUNT_ID`, `D1_DATABASE_ID`, `D1_API_TOKEN`). The `wrangler.jsonc` *also* declares a proper D1 binding (`withjosephine_bookings`) which the Worker never uses. Switching to the binding deletes ~60 LoC of HTTP-client code, drops 3 unnecessary secrets, removes the per-request HTTPS roundtrip + auth-token rotation overhead, and eliminates this whole class of bugs.
+- **Action:** Replace `createD1HttpClient` with a binding-backed client that reads `env.withjosephine_bookings` (D1Database) and uses `prepare(sql).bind(...).all()` / `.run()`. Tests already use the SQLite-factory escape hatch in `sqlClient.ts` so the test path stays untouched. After landing, revoke the three D1_* secrets via `wrangler secret delete`.
+
 ### CI env block — remaining missing NEXT_PUBLIC_* vars
 - **Source:** Upload-url 400 investigation 2026-04-30. `NEXT_PUBLIC_*` vars are inlined at build time, so any var not in `.github/workflows/ci.yml` `env:` block is *missing in prod regardless of the GH variable being set*.
 - **Fixed 2026-04-30 in same PR as upload-url:** added `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `NEXT_PUBLIC_SANITY_STUDIO_URL` (the latter was already a GH var since 2026-04-15 but never forwarded).
