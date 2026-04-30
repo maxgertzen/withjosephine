@@ -27,14 +27,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         suppressHydrationWarning
       >
         {children}
-        {/*
-          Always-on. Subscribes the server to Sanity's content-change stream
-          and revalidates affected page caches — required for live preview to
-          update without a manual refresh.
-        */}
-        <SanityLive />
         {isDraftMode && (
           <>
+            {/*
+              Gated to draft mode only per Sanity's documented production
+              guidance (sanity.io/docs/help/nextjs-16-sanitylive-status).
+              Outside Studio Presentation we don't need browser-side live
+              updates — server tag-revalidation already covers freshness —
+              and rendering it on every public request triggers Sanity Live
+              connection attempts that the public CSP rightly blocks.
+            */}
+            <SanityLive />
             <VisualEditing />
             <DisableDraftMode />
           </>

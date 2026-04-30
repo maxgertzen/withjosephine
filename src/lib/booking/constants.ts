@@ -7,6 +7,8 @@ export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 export const BOOKING_API_ROUTE = "/api/booking";
 export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
 
+export const PHOTO_PUBLIC_URL_BASE = "https://images.withjosephine.com";
+
 export const BOOKING_ROUTES = {
   entry: (slug: string) => `/book/${slug}`,
   letter: (slug: string) => `/book/${slug}/letter`,

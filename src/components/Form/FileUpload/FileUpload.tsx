@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ACCEPTED_PHOTO_MIME,
   ACCEPTED_PHOTO_MIME_SET,
   MAX_PHOTO_BYTES,
+  PHOTO_PUBLIC_URL_BASE,
   UPLOAD_URL_API_ROUTE,
 } from "@/lib/booking/constants";
 import { errorClasses, labelClasses } from "@/lib/formStyles";
@@ -90,6 +92,24 @@ export function FileUpload({
   const [status, setStatus] = useState<UploadStatus>(value ? "done" : "idle");
   const [filename, setFilename] = useState<string>("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Local preview URL for the picked File. Computed in render via useMemo so
+  // we don't cascade a setState inside an effect; cleanup runs in a separate
+  // effect that revokes the previous URL whenever the file changes.
+  const objectUrl = useMemo(
+    () => (selectedFile ? URL.createObjectURL(selectedFile) : null),
+    [selectedFile],
+  );
+  useEffect(() => {
+    if (!objectUrl) return;
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
+
+  // Preview source priority:
+  //   1. fresh file from this session (object URL)
+  //   2. existing R2 key (e.g. resumed from a saved draft) → public CDN URL
+  const previewSrc = objectUrl ?? (value ? `${PHOTO_PUBLIC_URL_BASE}/${value}` : null);
 
   async function handleFile(file: File) {
     if (!ACCEPTED_PHOTO_MIME_SET.has(file.type)) {
@@ -105,6 +125,7 @@ export function FileUpload({
 
     setLocalError(null);
     setFilename(file.name);
+    setSelectedFile(file);
     setStatus("requesting");
 
     try {
@@ -136,6 +157,7 @@ export function FileUpload({
   function handleRemove() {
     setStatus("idle");
     setFilename("");
+    setSelectedFile(null);
     setLocalError(null);
     onChange("");
   }
@@ -173,14 +195,26 @@ export function FileUpload({
 
       {status === "done" ? (
         <div className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3">
-          <span className="font-body text-sm text-j-text truncate">
-            {filename || "Photo uploaded"}
-          </span>
+          <div className="flex items-center gap-3 min-w-0">
+            {previewSrc ? (
+              <Image
+                src={previewSrc}
+                alt=""
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded object-cover border border-j-border-subtle flex-none"
+                unoptimized
+              />
+            ) : null}
+            <span className="font-body text-sm text-j-text truncate">
+              {filename || "Photo uploaded"}
+            </span>
+          </div>
           <button
             type="button"
             onClick={handleRemove}
             disabled={disabled}
-            className="font-body text-xs uppercase tracking-wide text-j-accent hover:underline disabled:opacity-50"
+            className="font-body text-xs uppercase tracking-wide text-j-accent hover:underline disabled:opacity-50 flex-none"
           >
             Remove
           </button>
