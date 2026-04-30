@@ -214,7 +214,7 @@ export function FileUpload({
             type="button"
             onClick={handleRemove}
             disabled={disabled}
-            className="font-body text-xs uppercase tracking-wide text-j-accent hover:underline disabled:opacity-50 flex-none"
+            className="font-body text-xs uppercase tracking-wide text-j-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex-none"
           >
             Remove
           </button>
@@ -233,7 +233,7 @@ export function FileUpload({
             const file = event.target.files?.[0];
             if (file) handleFile(file);
           }}
-          className="block w-full font-body text-sm text-j-text file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-j-bg-interactive file:text-j-cream"
+          className="block w-full font-body text-sm text-j-text cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-j-bg-interactive file:text-j-cream file:cursor-pointer disabled:cursor-not-allowed disabled:file:cursor-not-allowed"
         />
       )}
 
