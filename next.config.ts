@@ -1,3 +1,4 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -21,6 +22,11 @@ const nextConfig: NextConfig = {
 // for now — error tracking on the booking flow is "nice-to-have" and is
 // captured in POST_LAUNCH_BACKLOG.md as a Phase 1.5 follow-up
 // (lighter @sentry/cloudflare integration, or upgrade to a paid plan).
+// Wire Cloudflare bindings into `next dev` so `getCloudflareContext()` works
+// during local development (matters once any code path reads from a binding —
+// e.g. the D1 booking-submissions DB). No-op outside dev.
+initOpenNextCloudflareForDev();
+
 export default nextConfig;
 
 // Cloudflare Workers runtime wiring:

@@ -1,7 +1,6 @@
 /**
  * Driver-agnostic SQL client. Production (Cloudflare Worker) uses the
- * Cloudflare D1 HTTPS REST API — no native modules permitted, no extra
- * runtime in the bundle.
+ * D1 workerd binding declared in wrangler.jsonc as `withjosephine_bookings`.
  *
  * For tests, the SQLite driver is registered at setup time via
  * `__registerSqliteFactory` from vitest.setup.ts. Doing it through a
@@ -42,8 +41,8 @@ function resolveDriver(): "d1" | "sqlite" {
 async function buildClient(): Promise<SqlClient> {
   const driver = resolveDriver();
   if (driver === "d1") {
-    const { createD1HttpClient } = await import("./d1HttpClient");
-    return createD1HttpClient();
+    const { createD1BindingClient } = await import("./d1BindingClient");
+    return createD1BindingClient();
   }
   if (!sqliteFactory) {
     throw new Error(

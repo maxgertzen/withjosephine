@@ -24,12 +24,10 @@
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
 	//   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
-	//   - D1_ACCOUNT_ID              CF account ID that owns the booking-submissions D1 database
-	//   - D1_DATABASE_ID             UUID of the D1 database (from `wrangler d1 create`)
-	//   - D1_API_TOKEN               CF API token with D1:Edit scope (used by the Worker to query D1 over HTTPS)
 	//
 	// Public vars (Variables → Variables on the Worker):
 	//   - BOOKING_DB_DRIVER          "d1" in production. Defaults to "sqlite" (local better-sqlite3) elsewhere.
+	//                                In production the Worker reaches D1 via the `withjosephine_bookings` binding below.
 	//
 	// Public vars (set as plain vars; NEXT_PUBLIC_* are inlined at build time):
 	//   - NEXT_PUBLIC_TURNSTILE_SITE_KEY
@@ -45,7 +43,6 @@
 		{
 			"binding": "BOOKING_PHOTOS",
 			"bucket_name": "withjosephine-booking-photos",
-			"preview_bucket_name": "withjosephine-booking-photos-preview",
 		},
 	],
 	// Cloudflare Cron Triggers. Note: OpenNext does not currently translate the

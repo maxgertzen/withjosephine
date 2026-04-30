@@ -36,9 +36,8 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
 | `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
 | `BOOKING_DB_DRIVER` | Set to `d1` on the deployed Worker. Local dev/tests default to `sqlite` (better-sqlite3 against `.local/booking.db` or `:memory:`). | Plain text |
-| `D1_ACCOUNT_ID` | CF account that owns the D1 database. Same value as `R2_ACCOUNT_ID`. | CF dashboard sidebar |
-| `D1_DATABASE_ID` | UUID of the D1 database. Returned by `pnpm exec wrangler d1 create withjosephine-bookings`. | wrangler create output |
-| `D1_API_TOKEN` | API token with **D1:Edit** scope. CF dashboard → My Profile → API Tokens → Create with `D1:Edit` permission scoped to the account. Used by the Worker to query the D1 HTTP API. | CF dashboard |
+
+In production, the Worker reaches D1 via the `withjosephine_bookings` binding declared in `wrangler.jsonc`. No `D1_*` secrets are required.
 
 Example:
 
@@ -54,15 +53,13 @@ pnpm exec wrangler secret put R2_BUCKET_NAME
 pnpm exec wrangler secret put NOTIFICATION_EMAIL
 pnpm exec wrangler secret put SANITY_WRITE_TOKEN
 pnpm exec wrangler secret put LISTEN_TOKEN_SECRET   # openssl rand -hex 32
-pnpm exec wrangler secret put D1_ACCOUNT_ID
-pnpm exec wrangler secret put D1_DATABASE_ID
-pnpm exec wrangler secret put D1_API_TOKEN
 ```
 
 ### D1 database one-time setup
 
 ```bash
-# Create the database (returns a database_id — save into D1_DATABASE_ID)
+# Create the database (returns a database_id — paste it into the
+# `d1_databases[0].database_id` field in wrangler.jsonc)
 pnpm exec wrangler d1 create withjosephine-bookings
 
 # Apply the initial schema migration
@@ -80,7 +77,7 @@ Plain `BOOKING_DB_DRIVER=d1` lives under **Variables → Variables** (not a secr
 
 ## R2 bucket
 
-1. CF dashboard → R2 → **Create bucket** → name `withjosephine-booking-photos`. Repeat for `withjosephine-booking-photos-preview` (used by `wrangler dev`).
+1. CF dashboard → R2 → **Create bucket** → name `withjosephine-booking-photos`.
 2. Open the production bucket → **Settings → Public access → Custom Domains** → connect `images.withjosephine.com`. DNS is on Cloudflare so the CNAME provisions automatically.
 3. **Lifecycle rules:** deferred. Object cleanup runs through the abandoned-submission cron in PR3 (which calls `deleteObject` from `src/lib/r2.ts`), so no automatic age-out rule is needed yet.
 4. Create an R2 API token scoped to **Object Read & Write** for both buckets and copy the access key id + secret into the secrets above.
