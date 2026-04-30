@@ -22,7 +22,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
-      <body className="bg-j-cream text-j-text font-body antialiased">
+      <body
+        className="bg-j-cream text-j-text font-body antialiased"
+        suppressHydrationWarning
+      >
         {children}
         {/*
           Always-on. Subscribes the server to Sanity's content-change stream
