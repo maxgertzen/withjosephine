@@ -80,10 +80,10 @@ export function Hero({ content, className }: HeroProps) {
           className="mb-6"
         >
           <Image
-            src="/images/Logo.webp"
+            src="/images/logo-main.webp"
             alt="Josephine Soul Readings"
-            width={480}
-            height={480}
+            width={960}
+            height={960}
             priority
             className="h-auto w-[clamp(280px,40vw,480px)]"
           />

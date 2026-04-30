@@ -7,7 +7,7 @@ describe("Navigation", () => {
   it("renders hardcoded defaults when no content is provided", () => {
     render(<Navigation />);
 
-    expect(screen.getByAltText("Josephine Soul Readings")).toBeInTheDocument();
+    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(2); // mobile + desktop logo
     expect(screen.getAllByText("Readings")).toHaveLength(2); // desktop + mobile
     expect(screen.getAllByText("About")).toHaveLength(2);
     expect(screen.getAllByText("How It Works")).toHaveLength(2);
@@ -26,7 +26,7 @@ describe("Navigation", () => {
 
     render(<Navigation content={content} />);
 
-    expect(screen.getByAltText("Josephine Soul Readings")).toBeInTheDocument();
+    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(2);
     expect(screen.getAllByText("Services")).toHaveLength(2);
     expect(screen.getAllByText("Info")).toHaveLength(2);
     expect(screen.getAllByText("Get Started")).toHaveLength(2);
