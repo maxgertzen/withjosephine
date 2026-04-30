@@ -14,14 +14,15 @@ const nextConfig: NextConfig = {
   //     deviates from a Google-fonts default. We use Cormorant + Inter via
   //     next/font/google, no custom metric loading.
   //   - turbo runtime variants — we don't use Turbopack
-  //   - edge-runtime primitives — we deploy via Node.js runtime, not edge
   //   - compression — Cloudflare compresses at the edge
+  //
+  // Do NOT add `compiled/edge-runtime/**` or `compiled/@edge-runtime/**`:
+  // OpenNext on workerd needs those ponyfills to initialize Next's per-request
+  // workStore — stripping them makes every server render throw at runtime.
   outputFileTracingExcludes: {
     "*": [
       "**/next/dist/server/capsize-font-metrics.json",
       "**/next/dist/compiled/next-server/app-page-turbo*.runtime.prod.js",
-      "**/next/dist/compiled/edge-runtime/**",
-      "**/next/dist/compiled/@edge-runtime/**",
       "**/next/dist/compiled/compression/**",
       // OG image generation (next/og ImageResponse). We never call it
       // anywhere in src/. The wasm + edge runtime files alone are ~2.2 MiB.

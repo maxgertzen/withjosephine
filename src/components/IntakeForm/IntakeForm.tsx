@@ -274,15 +274,6 @@ export function IntakeForm({
     );
     const pageResult = pageSchema.safeParse(values);
     const followupResult = followupSchema.safeParse(values);
-    if (process.env.NODE_ENV !== "production" && (!pageResult.success || !followupResult.success)) {
-       
-      console.log("[IntakeForm] page invalid:", {
-        currentKeys,
-        values: Object.fromEntries(currentKeys.map((k) => [k, values[k]])),
-        pageIssues: pageResult.success ? [] : pageResult.error.issues,
-        followupIssues: followupResult.success ? [] : followupResult.error.issues,
-      });
-    }
     return pageResult.success && followupResult.success;
   }, [allFields, currentKeys, values]);
 
@@ -352,9 +343,6 @@ export function IntakeForm({
     setSubmitError(null);
     setErrors({});
     const nextPage = Math.max(currentPage - 1, 0);
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[IntakeForm] Back: ${currentPage} → ${nextPage}`);
-    }
     setCurrentPage(nextPage);
     flushSave(values, nextPage);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
@@ -369,10 +357,6 @@ export function IntakeForm({
     event.preventDefault();
 
     if (!submitIntentRef.current) {
-      if (process.env.NODE_ENV !== "production") {
-         
-        console.warn("[IntakeForm] submit suppressed — no explicit submit intent");
-      }
       return;
     }
     submitIntentRef.current = false;
