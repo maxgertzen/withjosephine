@@ -7,8 +7,13 @@ on:
     branches: [main]
 
 env:
+  # NEXT_PUBLIC_* vars are inlined into the client/SSR bundle at build time —
+  # missing here means missing in production. Add new vars to BOTH this block
+  # AND `gh variable set` (or the GH UI) before relying on them.
   NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
   NEXT_PUBLIC_SANITY_DATASET: ${{ vars.NEXT_PUBLIC_SANITY_DATASET }}
+  NEXT_PUBLIC_SANITY_STUDIO_URL: ${{ vars.NEXT_PUBLIC_SANITY_STUDIO_URL }}
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
   NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
 
 jobs:

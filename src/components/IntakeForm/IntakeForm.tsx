@@ -251,14 +251,18 @@ export function IntakeForm({
   }, []);
 
   const requestFreshTurnstileToken = useCallback(async (): Promise<string | null> => {
-    if (!turnstileRequired) return "bypass";
-    if (!turnstileRef.current) return null;
+    // Dev-only explicit bypass via NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS=1.
+    // Never falls through to bypass when site key is missing in prod —
+    // sending a magic string to a real Turnstile-gated endpoint just gives
+    // the user "Verification failed" with no actionable signal.
+    if (turnstileBypass) return "bypass";
+    if (!turnstileSiteKey || !turnstileRef.current) return null;
     return new Promise<string | null>((resolve) => {
       turnstileResolverRef.current = resolve;
       turnstileRef.current?.reset();
       turnstileRef.current?.execute();
     });
-  }, [turnstileRequired]);
+  }, [turnstileBypass, turnstileSiteKey]);
 
   const totalPages = pages.length;
   const isFirstPage = currentPage === 0;
@@ -582,6 +586,16 @@ export function IntakeForm({
         </p>
       ) : null}
 
+      {!currentPageValid ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="font-body text-xs italic text-j-text-muted text-center mt-4"
+        >
+          Please complete the required fields above.
+        </p>
+      ) : null}
+
       <PageNav
         isFirstPage={isFirstPage}
         isFinalPage={isFinalPage}
@@ -597,9 +611,6 @@ export function IntakeForm({
         submitDisabled={isFinalPage && !currentPageValid}
         submitLabel={submitLabel}
         savedIndicator={savedIndicator}
-        disabledHint={
-          !currentPageValid ? "Please complete the required fields above." : null
-        }
       />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>

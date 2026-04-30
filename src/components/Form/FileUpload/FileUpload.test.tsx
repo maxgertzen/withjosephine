@@ -26,8 +26,13 @@ function uploadFile(input: HTMLElement, file: File) {
   fireEvent.change(input);
 }
 
-function setup(value = "") {
+function setup(
+  value = "",
+  options: { requestTurnstileToken?: () => Promise<string | null> } = {},
+) {
   const onChange = vi.fn();
+  const requestTurnstileToken =
+    options.requestTurnstileToken ?? (() => Promise.resolve("test-turnstile-token"));
   render(
     <FileUpload
       id="photo"
@@ -35,6 +40,7 @@ function setup(value = "") {
       label="Photo"
       value={value}
       onChange={onChange}
+      requestTurnstileToken={requestTurnstileToken}
     />,
   );
   return { onChange };
@@ -100,5 +106,15 @@ describe("FileUpload", () => {
     const { onChange } = setup("submissions/x/already-uploaded");
     await user.click(screen.getByRole("button", { name: /Remove/ }));
     expect(onChange).toHaveBeenCalledWith("");
+  });
+
+  it("shows a verification error and skips the upload when no Turnstile token is available", async () => {
+    const { onChange } = setup("", {
+      requestTurnstileToken: () => Promise.resolve(null),
+    });
+    uploadFile(screen.getByLabelText(/Photo/), makeFile("moon.jpg", "image/jpeg", 1024));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't verify the upload/i);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
