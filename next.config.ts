@@ -6,35 +6,12 @@ const nextConfig: NextConfig = {
     // Static images are pre-optimized to WebP via `pnpm optimize-images` (sharp).
     unoptimized: true,
   },
-  // Strip Next.js internals we don't ship to keep the worker under
-  // Cloudflare's 3 MiB free-tier compressed limit. Each of these files is
-  // pulled into the deploy artifact by Next's NFT tracer but never executes
-  // in our build:
-  //   - capsize-font-metrics.json (4.1 MiB) — only used if next/font
-  //     deviates from a Google-fonts default. We use Cormorant + Inter via
-  //     next/font/google, no custom metric loading.
-  //   - turbo runtime variants — we don't use Turbopack
-  //   - compression — Cloudflare compresses at the edge
-  //
-  // Do NOT add `compiled/edge-runtime/**` or `compiled/@edge-runtime/**`:
-  // OpenNext on workerd needs those ponyfills to initialize Next's per-request
-  // workStore — stripping them makes every server render throw at runtime.
-  outputFileTracingExcludes: {
-    "*": [
-      "**/next/dist/server/capsize-font-metrics.json",
-      "**/next/dist/compiled/next-server/app-page-turbo*.runtime.prod.js",
-      "**/next/dist/compiled/compression/**",
-      // OG image generation (next/og ImageResponse). We never call it
-      // anywhere in src/. The wasm + edge runtime files alone are ~2.2 MiB.
-      "**/next/dist/compiled/@vercel/og/**",
-      "**/next/dist/server/og/**",
-      // React DOM ships 5 server-render entry points; we only execute one
-      // on the Worker. The legacy.* + browser variants are dead weight.
-      "**/react-dom/cjs/react-dom-server-legacy.*",
-      "**/react-dom/cjs/react-dom-server.browser.production.js",
-      "**/react-dom/cjs/react-dom-server.bun.production.js",
-    ],
-  },
+  // `outputFileTracingExcludes` deliberately absent. Any non-empty value
+  // makes Next 16.2.x + OpenNext 1.19.4 + workerd duplicate
+  // `AsyncLocalStorage`, so per-request workStore is never initialized and
+  // every server render throws `InvariantError: Expected workStore to be
+  // initialized`. See docs/POST_LAUNCH_BACKLOG.md "Apex + preview 500" for
+  // the bisect log and the bundle-size narrowing follow-up.
 };
 
 // Sentry config (withSentryConfig wrapper) was causing the worker bundle

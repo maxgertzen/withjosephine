@@ -171,15 +171,44 @@ fire-and-forget — drift can happen on Sanity outages.
 - **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
 - **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
 
-### Re-enable error tracking (Sentry was removed for bundle size)
-- **Source:** Worker bundle size analysis 2026-04-30. `@sentry/nextjs` and the surrounding `withSentryConfig` wrapper bloated the worker bundle from ~11 MiB to ~16 MiB on CI (where `SENTRY_AUTH_TOKEN` flips Sentry into full instrumentation mode), pushing it past the 3 MiB Cloudflare Workers free-tier compressed limit.
-- **What:** `@sentry/nextjs` package removed; `withSentryConfig` wrapper dropped from `next.config.ts`; `src/instrumentation.ts` is now a no-op stub; `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts` deleted; `src/app/error.tsx` and `src/app/global-error.tsx` switched from `Sentry.captureException` to `console.error`.
-- **Action:** When ready, swap to `@sentry/cloudflare` (workerd-targeted, much smaller) OR upgrade Workers to the paid plan ($5/mo for the 10 MiB limit, gives all of `@sentry/nextjs` headroom). Until then, error visibility is whatever lands in `wrangler tail` and `console.error` lines.
+### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED 2026-04-30 (locally; not yet deployed)
 
-### Replace `@aws-sdk/client-s3` with `aws4fetch` to shrink the worker bundle
-- **Source:** Bundle-size analysis 2026-04-30. Worker compressed at 2.83 MiB, just under the 3 MiB free-tier limit. Top non-Next contributor is `@aws-sdk/client-s3` + the `@smithy/*` peer deps it pulls in.
-- **What:** R2 access only needs three S3 operations (`PutObject` presign, `DeleteObject`, `ListObjectsV2`). The full `@aws-sdk/client-s3` package ships ~100 operations + middleware we don't use. `aws4fetch` is ~10 KB minified and signs SigV4 fetch calls; it covers the same surface.
-- **Action:** Replace `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` with `aws4fetch` in `src/lib/r2.ts`. Update `r2.test.ts` mocks. Estimated saving: 1–2 MiB compressed → real headroom against the 3 MiB limit.
+**Root cause:** Next 16.2.x's `outputFileTracingExcludes` interacts badly with `@opennextjs/cloudflare` 1.19.4's bundler under workerd. Excluding even harmless files (e.g. the `capsize-font-metrics.json` static asset, the unused Turbopack runtime) causes Next's per-request `workAsyncStorage.run` wrapper to set the store on a different `AsyncLocalStorage` instance from the one Next's render code reads via `getStore()` — producing the InvariantError on every server render. Static assets and pure API handlers were unaffected because they don't read workStore.
+
+**Fix (commit pending):** Removed the entire `outputFileTracingExcludes` block from `next.config.ts`. Local repro (`pnpm cf:build && pnpm cf:dev`) returns HTTP 200 with full HTML on `/`, `/book/soul-blueprint`, and other dynamic routes; zero `InvariantError` in `wrangler tail`. Three quality gates green: typecheck, lint, 506/506 tests.
+
+**Bisect evidence (this session, in order):** All performed against the local `cf:dev` harness from PR #44.
+1. Gate `<SanityLive />` behind `{isDraftMode && ...}` — **NOT FIXED**, 500 + 10× InvariantError.
+2. Lazy-init `defineLive(...)` (move out of module top-level) — **NOT FIXED**, 500 + 8× InvariantError.
+3. Remove `await draftMode()` from RootLayout — **NOT FIXED**, 500 + 8× InvariantError.
+4. Remove ALL `outputFileTracingExcludes` — **FIXED**, 200 + 0 errors.
+5. Restore non-react-dom excludes (5 of 8) — back to 500.
+6. Restore only capsize + turbo excludes (2 of 8) — still 500.
+7. → Empty excludes block is the only working state.
+
+**Bundle-size implications (FOR FUTURE OPTIMIZATION — read carefully before re-adding excludes):**
+
+The original excludes were strips intended to keep the worker under Cloudflare's 3 MiB free-tier compressed limit. We're now on the paid plan (10 MiB limit) so the budget is no longer pressing. Empirical handler.mjs sizes observed during this bisect:
+- All 8 excludes: 13231 KiB
+- Two excludes (capsize + turbo): 13231 KiB
+- Zero excludes: **12697 KiB** — counterintuitively *smaller* than with excludes.
+
+Why excludes made the bundle bigger AND broke workStore: best current hypothesis is that when Next sees those paths excluded from tracing, it pulls in alternate (larger, polyfilled) fallback code paths that bundle a *separate* AsyncLocalStorage instance — and those paths are what end up in the OpenNext output, not the strips. So you pay a size penalty AND break workStore. This is upstream behavior, not something we can fix in our config.
+
+**Items deferred from this fix:**
+- **Cleaner narrowed exclude set.** I never bisected to a single load-bearing exclude — time-budget pressure and "fix it locally first" priority forced me to drop them all. Future work: bisect one-at-a-time (capsize, turbo, compression, vercel/og, server/og, react-dom-legacy, react-dom-browser, react-dom-bun) to find which specific entry triggers the duplication, then keep the safe ones. Ideally upstream the finding to OpenNext as an issue.
+- **OpenNext upstream issue.** Worth filing once we have a minimal repro: `outputFileTracingExcludes` causes workStore duplication on Next 16.2.x via OpenNext 1.19.4 / workerd. Reference Next discussion #86978 (sibling symptom) and OpenNext #1157 (different message, same Next-16.2-on-Workers class).
+- **Worker bundle compressed-size audit post-deploy.** Need to verify the 10 MiB limit isn't crossed on the next deploy; if it is, narrowing the excludes (per above) is the lever — the tradeoff is reintroducing the bug class.
+
+**Pre-fix attempts (2026-04-30, deployed but didn't move it):**
+- **PR #42** — restored `compiled/edge-runtime/**` + `compiled/@edge-runtime/**` NFT excludes (commit `d005f74` had stripped them on the wrong premise that workerd is "Node.js runtime"). Wrong cause, fix kept anyway.
+- **PR #43** — bumped `@opennextjs/cloudflare` 1.19.1 → 1.19.4, Next 16.2.3 → 16.2.4, wrangler 4.83.0 → 4.86.0. Wrong cause; bundle grew 2.58 → 3.91 MiB compressed.
+- **Workers paid plan** ($5/mo, 10 MiB compressed limit) upgraded — paid for, bundle no longer the constraint.
+
+### Re-enable error tracking via `@sentry/cloudflare`
+- **Source:** Worker bundle size analysis 2026-04-30. `@sentry/nextjs` removed because it bloated the worker bundle from ~11 MiB to ~16 MiB on CI (where `SENTRY_AUTH_TOKEN` flips Sentry into full instrumentation mode). With Workers paid plan now active (10 MiB compressed limit, currently using ~4 MiB), the headroom exists for a Sentry re-add — but the lighter `@sentry/cloudflare` package is still preferable.
+- **What:** `@sentry/nextjs` package removed; `withSentryConfig` wrapper dropped from `next.config.ts`; `src/instrumentation.ts` is now a no-op stub; `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts` deleted; `src/app/error.tsx` and `src/app/global-error.tsx` switched from `Sentry.captureException` to `console.error`.
+- **Action:** Add `@sentry/cloudflare` (workerd-targeted, much smaller). Until then, error visibility is whatever lands in `wrangler tail` and `console.error` lines.
 
 ### D1 live-write smoke test (immediately post-deploy)
 - **Source:** ADR-001 acceptance.
