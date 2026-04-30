@@ -43,7 +43,6 @@
 		{
 			"binding": "BOOKING_PHOTOS",
 			"bucket_name": "withjosephine-booking-photos",
-			"preview_bucket_name": "withjosephine-booking-photos-preview",
 		},
 	],
 	// Cloudflare Cron Triggers. Note: OpenNext does not currently translate the

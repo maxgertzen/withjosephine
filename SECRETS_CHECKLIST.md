@@ -77,7 +77,7 @@ Plain `BOOKING_DB_DRIVER=d1` lives under **Variables → Variables** (not a secr
 
 ## R2 bucket
 
-1. CF dashboard → R2 → **Create bucket** → name `withjosephine-booking-photos`. Repeat for `withjosephine-booking-photos-preview` (used by `wrangler dev`).
+1. CF dashboard → R2 → **Create bucket** → name `withjosephine-booking-photos`.
 2. Open the production bucket → **Settings → Public access → Custom Domains** → connect `images.withjosephine.com`. DNS is on Cloudflare so the CNAME provisions automatically.
 3. **Lifecycle rules:** deferred. Object cleanup runs through the abandoned-submission cron in PR3 (which calls `deleteObject` from `src/lib/r2.ts`), so no automatic age-out rule is needed yet.
 4. Create an R2 API token scoped to **Object Read & Write** for both buckets and copy the access key id + secret into the secrets above.
