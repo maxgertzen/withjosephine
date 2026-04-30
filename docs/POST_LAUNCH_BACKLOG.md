@@ -59,6 +59,14 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Infrastructure
 
+### CI env block — remaining missing NEXT_PUBLIC_* vars
+- **Source:** Upload-url 400 investigation 2026-04-30. `NEXT_PUBLIC_*` vars are inlined at build time, so any var not in `.github/workflows/ci.yml` `env:` block is *missing in prod regardless of the GH variable being set*.
+- **Fixed 2026-04-30 in same PR as upload-url:** added `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `NEXT_PUBLIC_SANITY_STUDIO_URL` (the latter was already a GH var since 2026-04-15 but never forwarded).
+- **Still open:**
+  - `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` — read by `src/app/layout.tsx:21` for Cloudflare Web Analytics. Currently absent → analytics never initializes in prod. Add to `vars` + `ci.yml` env block.
+  - `NEXT_PUBLIC_WEB3FORMS_KEY` is set as a SECRET, but `NEXT_PUBLIC_*` should be a (non-secret) variable; also web3forms was replaced with Resend per project decisions, so this is dead. Remove the leftover GH secret.
+- **Action:** when adding any new `NEXT_PUBLIC_*` env var, add it to BOTH `gh variable set` AND `ci.yml` env block in the same change.
+
 ### OpenNext `scheduled` handler dispatch
 - **Source:** PR-E shipping (`5abec07`) + every cron route added since.
 - **What:** `wrangler.jsonc` configures cron schedules but OpenNext does not
@@ -119,15 +127,6 @@ load-bearing.
 
 ## UX
 
-### BUG-2 — confirm floating label in a real browser
-- **Source:** Smoke test (false-positive flag).
-- **What:** Headless smoke reported `transform: none` on filled-state float
-  label. Code analysis says this IS the floated state — the CSS floats via
-  `top-1.5` + `text-[0.7rem]`, not via transform. `placeholder=" "` and
-  `peer` are correctly set on the input.
-- **Action:** One eyeball check in a real browser at 375px (focus email,
-  type, blur, see the label snap to top). No code expected.
-
 ### Manual end-to-end Stripe round-trip
 - **Source:** Punch 2 — partially covered by smoke agent (stopped before
   Stripe redirect).
@@ -171,7 +170,7 @@ fire-and-forget — drift can happen on Sanity outages.
 - **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
 - **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
 
-### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED 2026-04-30 (locally; not yet deployed)
+### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED + DEPLOYED 2026-04-30 (PR #44)
 
 **Root cause:** Next 16.2.x's `outputFileTracingExcludes` interacts badly with `@opennextjs/cloudflare` 1.19.4's bundler under workerd. Excluding even harmless files (e.g. the `capsize-font-metrics.json` static asset, the unused Turbopack runtime) causes Next's per-request `workAsyncStorage.run` wrapper to set the store on a different `AsyncLocalStorage` instance from the one Next's render code reads via `getStore()` — producing the InvariantError on every server render. Static assets and pure API handlers were unaffected because they don't read workStore.
 

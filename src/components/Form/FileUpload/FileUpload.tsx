@@ -108,9 +108,11 @@ export function FileUpload({
     setStatus("requesting");
 
     try {
-      const turnstileToken = (await requestTurnstileToken?.()) ?? "bypass";
+      const turnstileToken = await requestTurnstileToken?.();
       if (!turnstileToken) {
-        setLocalError("Verification check failed. Please try again.");
+        setLocalError(
+          "We couldn't verify the upload. Please refresh the page and try again, or contact us if the issue persists.",
+        );
         setStatus("error");
         return;
       }
