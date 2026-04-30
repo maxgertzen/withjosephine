@@ -20,8 +20,8 @@ This honours Max's "one source of truth" requirement (every write hits D1; Sanit
 | File | Role |
 |---|---|
 | `migrations/0001_submissions.sql` | Initial schema. Run once via `pnpm exec wrangler d1 execute`. |
-| `src/lib/booking/persistence/sqlClient.ts` | Driver-agnostic `dbQuery` / `dbExec`. Selects D1 HTTP or local SQLite via `BOOKING_DB_DRIVER`. |
-| `src/lib/booking/persistence/d1HttpClient.ts` | CF D1 REST API client (HTTPS via `D1_API_TOKEN`). Used only when `BOOKING_DB_DRIVER=d1`. |
+| `src/lib/booking/persistence/sqlClient.ts` | Driver-agnostic `dbQuery` / `dbExec`. Selects the D1 binding or local SQLite via `BOOKING_DB_DRIVER`. |
+| `src/lib/booking/persistence/d1BindingClient.ts` | D1 client backed by the `withjosephine_bookings` workerd binding (declared in `wrangler.jsonc`). Used when `BOOKING_DB_DRIVER=d1`. |
 | `src/lib/booking/persistence/sqliteClient.ts` | better-sqlite3 wrapper. Auto-applies migrations on first connection. Used in `next dev`, vitest. |
 | `src/lib/booking/persistence/repository.ts` | Typed CRUD against the abstraction. Single source of truth for submissions. |
 | `src/lib/booking/persistence/sanityMirror.ts` | One-way mirror writes to Sanity. Fire-and-forget; failures logged. |
