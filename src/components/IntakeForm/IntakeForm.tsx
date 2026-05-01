@@ -12,6 +12,7 @@ import { PlaceAutocomplete } from "@/components/Form/PlaceAutocomplete";
 import { Select } from "@/components/Form/Select";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
+import { identifySubmission, track } from "@/lib/analytics";
 import { buildPageSchema } from "@/lib/booking/buildPageSchema";
 import { BOOKING_API_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { derivePages, type IntakePage } from "@/lib/booking/derivePages";
@@ -222,14 +223,42 @@ export function IntakeForm({
     if (!isRestored) return;
     const handle = setTimeout(() => {
       flushSave(values, currentPage);
+      track("intake_save_auto", { reading_id: readingId, page_number: currentPage + 1 });
     }, 500);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRestored, values, currentPage, readingId]);
 
+  // Fire `intake_field_first_focus` exactly once per field per session.
+  // Form fields render with id `field-<key>`; capture-phase focusin lets
+  // us hear focus on all of them without threading onFocus through every
+  // form component. Set survives across page transitions so a user who
+  // bounces back to a previous page doesn't re-fire.
+  const focusedFieldsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    function onFocusIn(event: FocusEvent) {
+      const target = event.target as HTMLElement | null;
+      const id = target?.id ?? "";
+      if (!id.startsWith("field-")) return;
+      const fieldKey = id.slice("field-".length);
+      if (focusedFieldsRef.current.has(fieldKey)) return;
+      focusedFieldsRef.current.add(fieldKey);
+      track("intake_field_first_focus", {
+        reading_id: readingId,
+        field_key: fieldKey,
+        page_number: currentPage + 1,
+      });
+    }
+    form.addEventListener("focusin", onFocusIn);
+    return () => form.removeEventListener("focusin", onFocusIn);
+  }, [readingId, currentPage]);
+
   function handleSaveLater() {
     flushSave(values, currentPage);
     setChipTick((t) => t + 1);
+    track("intake_save_click", { reading_id: readingId, page_number: currentPage + 1 });
   }
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -269,6 +298,19 @@ export function IntakeForm({
   const isFinalPage = currentPage === totalPages - 1 || totalPages === 0;
   const currentSections = pages[currentPage] ?? [];
   const currentKeys = pageFieldKeys(currentSections);
+
+  // Fire `intake_page_view` once per page transition (and once on mount,
+  // after restore so we don't double-fire when localStorage hydrates a
+  // mid-flow draft).
+  useEffect(() => {
+    if (!isRestored) return;
+    if (totalPages === 0) return;
+    track("intake_page_view", {
+      reading_id: readingId,
+      page_number: currentPage + 1,
+      total_pages: totalPages,
+    });
+  }, [isRestored, readingId, currentPage, totalPages]);
 
   const currentPageValid = useMemo(() => {
     const pageSchema = buildPageSchema(allFields, currentKeys);
@@ -321,7 +363,13 @@ export function IntakeForm({
       values,
     );
     const followupResult = followupSchema.safeParse(values);
-    if (!pageResult.success || !followupResult.success) {
+    const validationPass = pageResult.success && followupResult.success;
+    track("intake_page_next_click", {
+      reading_id: readingId,
+      page_number: currentPage + 1,
+      validation_pass: validationPass,
+    });
+    if (!validationPass) {
       const issues = [
         ...(pageResult.success ? [] : pageResult.error.issues),
         ...(followupResult.success ? [] : followupResult.error.issues),
@@ -347,6 +395,11 @@ export function IntakeForm({
     setSubmitError(null);
     setErrors({});
     const nextPage = Math.max(currentPage - 1, 0);
+    track("intake_page_back_click", {
+      reading_id: readingId,
+      from_page: currentPage + 1,
+      to_page: nextPage + 1,
+    });
     setCurrentPage(nextPage);
     flushSave(values, nextPage);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
@@ -372,11 +425,19 @@ export function IntakeForm({
       return;
     }
 
+    const preflight = submissionSchema.safeParse(values);
+    const preflightFollowup = buildNameFollowupSchema(allFields, values).safeParse(values);
+    track("intake_submit_click", {
+      reading_id: readingId,
+      validation_pass: preflight.success && preflightFollowup.success,
+    });
+
     let submissionTurnstileToken: string | null = turnstileToken;
     if (turnstileRequired) {
       submissionTurnstileToken = await requestFreshTurnstileToken();
       if (!submissionTurnstileToken) {
         setSubmitError("Please complete the verification challenge.");
+        track("intake_submit_error", { reading_id: readingId, error_code: "turnstile_failed" });
         return;
       }
     }
@@ -393,6 +454,7 @@ export function IntakeForm({
       setErrors(fieldErrors);
       setSubmitError("Please fix the highlighted fields and try again.");
       focusFirstError(fieldErrors);
+      track("intake_submit_error", { reading_id: readingId, error_code: "validation_failed" });
       return;
     }
 
@@ -425,15 +487,27 @@ export function IntakeForm({
             : "Something went wrong submitting your form. Please try again.";
         setSubmitError(message);
         setIsSubmitting(false);
+        track("intake_submit_error", {
+          reading_id: readingId,
+          error_code: `http_${response.status}`,
+        });
         return;
       }
 
-      const data = (await response.json()) as { paymentUrl?: string };
-      if (!data.paymentUrl) {
+      const data = (await response.json()) as { paymentUrl?: string; submissionId?: string };
+      if (!data.paymentUrl || !data.submissionId) {
         setSubmitError("Unexpected response. Please try again.");
         setIsSubmitting(false);
+        track("intake_submit_error", { reading_id: readingId, error_code: "missing_payment_url" });
         return;
       }
+
+      track("intake_submit_success", { reading_id: readingId });
+      // Alias the auto-generated browser distinct_id to the submission UUID
+      // so server-side events (payment_success, email_sent, delivery_listened)
+      // from PR-F2 thread on the same identity.
+      identifySubmission(data.submissionId);
+      track("stripe_redirect", { reading_id: readingId, submission_id: data.submissionId });
 
       // Keep isSubmitting=true so the SubmitOverlay stays up until the
       // browser finishes navigating to Stripe; otherwise the overlay would
@@ -447,6 +521,7 @@ export function IntakeForm({
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
       setIsSubmitting(false);
+      track("intake_submit_error", { reading_id: readingId, error_code: "network_error" });
     }
   }
 

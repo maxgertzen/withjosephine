@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { PRODUCTION_HOSTS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
 
 /**
  * Edge middleware owns the Content-Security-Policy header because it has to
@@ -106,7 +107,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  const response = NextResponse.next();
+  // Geo-conditional consent header. Cloudflare's edge adds `cf-ipcountry`
+  // and `cf-region` to every incoming request before the worker sees it,
+  // so we can decide at the edge whether the visitor needs the banner.
+  // Outside CF (local `next dev`, tests), both headers are absent and
+  // requiresConsent() returns false → no banner, SDK inits unconditionally.
+  //
+  // We rewrite the request headers (via `NextResponse.next({ request })`)
+  // so the root layout can read CONSENT_HEADER via `headers()`. Setting
+  // it on the response would not be visible to RSC.
+  const country = request.headers.get("cf-ipcountry");
+  const region = request.headers.get("cf-region");
+  const requestHeaders = new Headers(request.headers);
+  if (requiresConsent(country, region)) {
+    requestHeaders.set(CONSENT_HEADER, "1");
+  }
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
   // (preview/workers.dev hosts, draft cookie) needs Studio as a valid

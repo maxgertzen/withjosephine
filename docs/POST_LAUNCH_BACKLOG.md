@@ -95,6 +95,67 @@ Each item: where it came from + why it was deferred + a one-line action.
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Core Web Vitals → Mixpanel via `useReportWebVitals`
+- **Source:** Next.js production checklist 2026-05-02. Next exposes
+  Core Web Vitals (LCP, FID, CLS, TTFB, INP) via `useReportWebVitals`
+  in `app/layout.tsx`. Currently we don't capture them anywhere
+  application-side; Cloudflare Web Analytics covers the basics at
+  the edge but they aren't sliced by reading_id, intake page number,
+  or other funnel dimensions.
+- **Action:** Add `useReportWebVitals` in a small client component on
+  the layout, send each metric as a `web_vitals` Mixpanel event with
+  properties `{ name, value, id, navigation_type, page_path }`.
+  Lets us correlate slow pages against funnel drop-off (e.g. "intake
+  page 3 has high LCP and 40% drop").
+- **Why deferred:** CF Web Analytics already captures aggregate Core
+  Web Vitals; this is partial duplication that pays off only once we
+  want the per-route slicing in Mixpanel funnels.
+
+### `@next/bundle-analyzer` wiring
+- **Source:** Next.js production checklist 2026-05-02. We have a
+  `www/Plans/bundle-size-reduction-phase2.md` doc but no analyzer
+  plugin on the build itself. Today we measure worker-bundle size
+  via wrangler output; we don't measure CLIENT bundle composition.
+- **Action:** Add `@next/bundle-analyzer` as a devDep, wire it through
+  `next.config.ts` gated on `ANALYZE=1`. Add `pnpm analyze` script.
+  Run before any client-bundle-impacting change.
+- **Why deferred:** No active client-bundle work right now; the worker
+  bundle is the active constraint and `outputFileTracingExcludes`
+  narrowing is the relevant lever for that.
+
+### `experimental_taintObjectReference` for server secrets
+- **Source:** Next.js production checklist 2026-05-02. Next's defense
+  against accidentally serializing server-only objects to the client.
+  Tainted objects throw if a Server Component tries to pass them to a
+  Client Component as a prop.
+- **Action:** Apply taint markers:
+  - `src/lib/sanity/client.ts` → taint the `SANITY_WRITE_TOKEN` carrier
+  - `src/lib/stripe.ts` → taint the Stripe client (uses `STRIPE_SECRET_KEY`)
+  - `src/lib/d1.ts` → taint the D1 binding wrapper
+  - `src/lib/r2.ts` → taint the R2 client (uses `R2_SECRET_ACCESS_KEY`)
+- **Why deferred:** None of these currently leak to client code; the
+  taint markers are belt-and-braces. Worth doing once a code-quality
+  pass resumes.
+
+### Generic delegated tracking listener (`data-mp-*`)
+- **Source:** Mixpanel best-practices research 2026-05-02. ChargeAfter's
+  `<EventTracker>` (libs/event-tracker/src/lib/components/EventTracker.tsx)
+  attaches a single delegated `click` listener at the app root and fires
+  `button_click` / `link_click` events for any element tagged with HTML
+  attributes (`track-id="my-button"`). Zero imports per call site, zero
+  new wrapper components.
+- **Action:** Add a delegated listener mounted from the root layout
+  that reads `data-mp-event` (event name) and `data-mp-*` (snake_case
+  properties) from the event target and fires `track(...)`. Coexists
+  with `<TrackedLink>` — typed wrappers stay for the SPEC §15 events
+  with strict property shapes; attribute tagging is for ad-hoc
+  additions that don't warrant a typed entry (e.g. generic `button_click`
+  with `button_name`).
+- **Why deferred:** Doesn't help with the SPEC §15 events (they need
+  type safety the attribute-tag pattern can't provide). Worth adding
+  once we want quick instrumentation on supplementary surfaces without
+  a tracking-plan revision.
+
 ### Dev / staging / production environment separation
 - **Source:** Soft-launch retrospective 2026-05-01. The apex was deployed
   wide-open with the under-construction page layered on as a page-level
@@ -302,6 +363,39 @@ These were always scoped out of Phase 1 by the booking-flow build PRD.
 
 Items not in current scope. Captured here so they don't drift; revisit
 after launch + the staging/dev separation work lands.
+
+### Server-side consent audit log
+- **Source:** Max 2026-05-02 (PR-F1 review). Today the visitor's
+  Accept/Decline choice for analytics consent lives only in their
+  browser's localStorage under `josephine.consent`. That's enough to
+  technically gate the SDK, but it's NOT a record we can produce if
+  challenged by a regulator (GDPR Article 7(1) — "the controller shall
+  be able to demonstrate that the data subject has consented").
+- **What's missing:** an audit trail proving *who* consented, *when*,
+  to *which version* of the privacy policy. localStorage can be cleared,
+  spoofed, or wiped between sessions; it's not evidence.
+- **Action:**
+  - Add a `consent_record` table in D1 (or a `consentRecord` document
+    type in Sanity if Josephine wants visibility in Studio): `{ id,
+    anonymous_visitor_id, accepted_at, policy_version, accepted_categories,
+    ip_hash, user_agent }`. The visitor ID is a random UUID generated
+    at first visit and stored in localStorage alongside the consent
+    state — never personal data.
+  - Add a `policyVersion` field on the privacy `legalPage` doc in
+    Sanity, manually incremented when material wording changes ship.
+    Read at consent-record write time.
+  - Add `/api/consent` route, called fire-and-forget from the Accept
+    handler in `<AnalyticsBootstrap>`. Body: `{ visitor_id, policy_version,
+    accepted_categories: ["analytics"] }`. Server hashes IP, captures
+    user agent, writes the row.
+  - Document the audit log itself in the privacy policy (it IS personal
+    data — recursive disclosure required). Section "Records of consent."
+- **Why deferred:** Regulatory enforcement risk for a single-practitioner
+  site at this scale is near-zero unless someone files a specific
+  complaint. The localStorage-only posture is a defensible starting
+  point; the audit log is the next maturity step before scale or
+  before adding marketing-driven processing (which the Phase-2
+  newsletter waitlist below would also need).
 
 ### "Fully booked" toggle with newsletter waitlist
 - **Source:** Max 2026-05-01. Once Josephine is taking real bookings,
