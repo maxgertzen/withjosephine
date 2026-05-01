@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { PRODUCTION_HOSTS } from "@/lib/constants";
+import { isUnderConstruction } from "@/lib/featureFlags";
 
 /**
  * Edge middleware owns the Content-Security-Policy header because it has to
@@ -24,6 +25,24 @@ import { PRODUCTION_HOSTS } from "@/lib/constants";
  * COOP/CORP). CSP lives here because it is not.
  */
 export const DRAFT_COOKIE = "__prerender_bypass";
+
+// Paths that must keep working on the production apex even when the holding
+// page is on. Everything else gets rewritten to `/` so it serves the holding
+// HTML. Rationale per entry:
+//   - /api/stripe/webhook : Stripe POSTs server-to-server; redirecting it would
+//                           drop events and silently break payment reconcile.
+//   - /api/cron/          : Cloudflare cron triggers hit these on the apex.
+//   - /listen/            : HMAC-tokenized delivery links sent in customer
+//                           emails; the bodies hardcode apex URLs (see
+//                           email-day-7-deliver/route.ts SITE_ORIGIN).
+const APEX_ALLOWLIST_PREFIXES = ["/api/stripe/webhook", "/api/cron/", "/listen/"];
+
+function isApexAllowlisted(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return APEX_ALLOWLIST_PREFIXES.some((prefix) =>
+    prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix,
+  );
+}
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -68,6 +87,25 @@ export function middleware(request: NextRequest) {
   // SEO on the apex. We treat anything other than the bare apex as "private".
   const host = request.headers.get("host") ?? "";
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
+  const { pathname } = request.nextUrl;
+
+  // Apex lockdown: when under-construction is on, every apex path that isn't
+  // allowlisted (Stripe webhook, crons, /listen/[token]) gets rewritten to `/`
+  // so it serves the holding HTML. Draft mode bypasses this so Studio's
+  // Presentation tool keeps working if it's ever pointed at apex (currently
+  // it points at preview). Page-level gate in src/app/page.tsx still fires
+  // for `/` itself — both layers must remain.
+  if (
+    isPublicApex &&
+    !isDraft &&
+    isUnderConstruction(host) &&
+    !isApexAllowlisted(pathname)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.rewrite(url);
+  }
+
   const response = NextResponse.next();
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
@@ -83,7 +121,6 @@ export function middleware(request: NextRequest) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 
-  const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/") || !pathname.includes(".")) {
     console.log(
       JSON.stringify({
