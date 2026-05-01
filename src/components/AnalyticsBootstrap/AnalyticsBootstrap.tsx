@@ -10,19 +10,6 @@ interface AnalyticsBootstrapProps {
   consentRequired: boolean;
 }
 
-/**
- * Decides whether to init Mixpanel + whether to render the consent
- * banner. Wired into root `layout.tsx`, runs once on the client.
- *
- * Three cases:
- * 1. `consentRequired === false` (visitor outside EU/EEA/UK/CH/CA)
- *    → init analytics immediately on mount, no banner.
- * 2. `consentRequired === true` and visitor previously chose
- *    → respect the choice from localStorage; init iff `granted`.
- * 3. `consentRequired === true` and no prior choice
- *    → render banner; init only after Accept click. Decline path
- *      writes `declined` so the banner stays dismissed forever.
- */
 export function AnalyticsBootstrap({ consentRequired }: AnalyticsBootstrapProps) {
   const [showBanner, setShowBanner] = useState(false);
 
@@ -37,11 +24,7 @@ export function AnalyticsBootstrap({ consentRequired }: AnalyticsBootstrapProps)
       return;
     }
     if (choice === null) {
-      // setState in effect is intentional here: localStorage is only
-      // available after mount, so the banner-vs-no-banner decision
-      // can't be made on the server. One synchronous setState on
-      // mount, no cascade — exactly what the rule warns against in
-      // the general case but not what we're doing.
+      // localStorage is mount-only; consent decision can't be made on the server.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowBanner(true);
     }

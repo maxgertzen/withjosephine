@@ -107,15 +107,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // Geo-conditional consent header. Cloudflare's edge adds `cf-ipcountry`
-  // and `cf-region` to every incoming request before the worker sees it,
-  // so we can decide at the edge whether the visitor needs the banner.
-  // Outside CF (local `next dev`, tests), both headers are absent and
-  // requiresConsent() returns false → no banner, SDK inits unconditionally.
-  //
-  // We rewrite the request headers (via `NextResponse.next({ request })`)
-  // so the root layout can read CONSENT_HEADER via `headers()`. Setting
-  // it on the response would not be visible to RSC.
+  // Header set on the request (not response) so RSC reads it via headers().
   const country = request.headers.get("cf-ipcountry");
   const region = request.headers.get("cf-region");
   const requestHeaders = new Headers(request.headers);

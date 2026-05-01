@@ -124,6 +124,19 @@ Each item: where it came from + why it was deferred + a one-line action.
   qualitatively. Also good moment to do the privacy-policy patch
   alongside the Web3Forms→Resend cleanup.
 
+### PR-F1 simplify-pass deferrals (code-quality follow-ups)
+**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Issues identified, judged not blocking the PR, captured here so they don't drift out of view.
+
+- **`process.env.*` reads in IntakeForm render path.** `IntakeForm.tsx:264–268` reads `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NODE_ENV`, and `NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS` on every render. Pre-existing pattern (not new in PR-F1) but worth hoisting to module scope or a single `useMemo`. Trivial impact unless this component re-renders many times per page (it doesn't today).
+
+- **AnalyticsBootstrap `consentRequired` effect re-run guard.** `AnalyticsBootstrap.tsx:48` — useEffect dep array is `[consentRequired]`. Today the prop is stable per request (computed once from server headers in the layout) so the effect runs once. If a future change ever makes `consentRequired` recompute on parent re-render, the effect would re-read localStorage and re-call `initAnalytics()` (idempotent today via `bootstrapped` guard, but fragile). Add an explicit "did we already run" ref-guard if the parent's render shape changes.
+
+- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Line ~45 has an `eslint-disable-next-line react-hooks/set-state-in-effect`. The justifying comment is correct (localStorage is mount-only) but the cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add the cookie banner copy from Sanity, or per-purpose consent granularity).
+
+- **`window.location.host` re-read in `initAnalytics()`.** `client.ts:42` — read inside the function. Today it's called once due to the `bootstrapped` guard, so no real cost. If init ever needs to support re-init (e.g. switching projects after consent change), hoist to module scope.
+
+- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc, then checks `body.some(_key === MIXPANEL_BLOCK_KEY)` to short-circuit. The fetch happens regardless. Acceptable today (script runs maybe 1–2 times in its lifetime); if reused as a template, swap the no-op check to a lightweight projection query.
+
 ### `intake_save_auto` event throttle + clear-button UX question
 - **Source:** Mixpanel quota review 2026-05-02. The autosave event
   fires every 500ms after a value change. A user typing a long

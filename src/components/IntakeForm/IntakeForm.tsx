@@ -229,12 +229,11 @@ export function IntakeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRestored, values, currentPage, readingId]);
 
-  // Fire `intake_field_first_focus` exactly once per field per session.
-  // Form fields render with id `field-<key>`; capture-phase focusin lets
-  // us hear focus on all of them without threading onFocus through every
-  // form component. Set survives across page transitions so a user who
-  // bounces back to a previous page doesn't re-fire.
+  // First-focus tracking: one event per field per session via delegated
+  // focusin so we don't have to thread onFocus through every form component.
   const focusedFieldsRef = useRef<Set<string>>(new Set());
+  const currentPageRef = useRef(currentPage);
+  currentPageRef.current = currentPage;
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
@@ -248,12 +247,12 @@ export function IntakeForm({
       track("intake_field_first_focus", {
         reading_id: readingId,
         field_key: fieldKey,
-        page_number: currentPage + 1,
+        page_number: currentPageRef.current + 1,
       });
     }
     form.addEventListener("focusin", onFocusIn);
     return () => form.removeEventListener("focusin", onFocusIn);
-  }, [readingId, currentPage]);
+  }, [readingId]);
 
   function handleSaveLater() {
     flushSave(values, currentPage);
@@ -299,9 +298,7 @@ export function IntakeForm({
   const currentSections = pages[currentPage] ?? [];
   const currentKeys = pageFieldKeys(currentSections);
 
-  // Fire `intake_page_view` once per page transition (and once on mount,
-  // after restore so we don't double-fire when localStorage hydrates a
-  // mid-flow draft).
+  // Wait for restore so we don't double-fire when localStorage hydrates a draft.
   useEffect(() => {
     if (!isRestored) return;
     if (totalPages === 0) return;
@@ -503,9 +500,6 @@ export function IntakeForm({
       }
 
       track("intake_submit_success", { reading_id: readingId });
-      // Alias the auto-generated browser distinct_id to the submission UUID
-      // so server-side events (payment_success, email_sent, delivery_listened)
-      // from PR-F2 thread on the same identity.
       identifySubmission(data.submissionId);
       track("stripe_redirect", { reading_id: readingId, submission_id: data.submissionId });
 

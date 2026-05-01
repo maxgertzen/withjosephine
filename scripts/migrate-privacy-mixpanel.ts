@@ -1,27 +1,6 @@
-/**
- * Splice Mixpanel sub-processor disclosure into the live privacy policy
- * document in Sanity. Idempotent: re-running checks for the inserted
- * Mixpanel block by `_key` and skips if already present.
- *
- * Changes (PR-F1, 2026-05-02):
- *   1. Insert a new Mixpanel processor block in the "Who it's shared
- *      with" section, between Cloudflare and the closing line.
- *   2. Replace `priv-b9` ("Basic technical data...") to drop the
- *      now-false sentence "No analytics or advertising cookies are
- *      used." Cloudflare's edge logging is unchanged.
- *   3. Replace `priv-b37` ("Cookies & tracking") to disclose Mixpanel,
- *      its localStorage usage, the EU/UK/CH/CA consent banner, and
- *      that there are still no advertising pixels.
- *   4. Replace `priv-b26` ("International access to your data") to add
- *      Mixpanel's US processing under DPF/SCCs.
- *   5. Bump `lastUpdated` to 2026-05-02.
- *
- * Preserves all other blocks verbatim (no gratuitous edits — see the
- * "fetch from Sanity origin first" project rule).
- *
- * Run:
- *   set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-mixpanel.ts
- */
+// Splice Mixpanel sub-processor disclosure into the live privacy policy.
+// Idempotent: skips if MIXPANEL_BLOCK_KEY is already present.
+// Run: set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-mixpanel.ts
 import { createClient } from "@sanity/client";
 
 const client = createClient({

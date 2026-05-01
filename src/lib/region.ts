@@ -1,37 +1,26 @@
-/**
- * Country / region rules for the geo-conditional consent banner.
- *
- * EU/EEA + UK + Switzerland operate under GDPR-aligned regimes that
- * require consent before non-essential analytics. California (CCPA/CPRA)
- * is a state-level addition: detected via Cloudflare's `request.cf.region`
- * when the country is the US.
- *
- * Cloudflare's `request.cf.country` returns ISO 3166-1 alpha-2 codes.
- * `request.cf.region` for the US is the state name (e.g. "California").
- */
+// Country/region rules for the geo-conditional consent banner.
+// `country` is ISO 3166-1 alpha-2 from Cloudflare's `cf-ipcountry`.
+// `region` for the US is the state name from `cf-region`.
 
-const EU_EEA_COUNTRIES: ReadonlyArray<string> = [
-  // EU member states
+const GDPR_ALIGNED_COUNTRIES: ReadonlySet<string> = new Set([
+  // EU
   "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
   "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
   "PL", "PT", "RO", "SK", "SI", "ES", "SE",
-  // EEA additions
+  // EEA
   "IS", "LI", "NO",
-  // UK + Switzerland (GDPR-aligned regimes)
+  // UK + Switzerland
   "GB", "CH",
-];
-
-const EU_EEA_SET = new Set(EU_EEA_COUNTRIES);
+]);
 
 export function requiresConsent(
   country: string | null,
   region: string | null,
 ): boolean {
   if (country == null) return false;
-  if (EU_EEA_SET.has(country)) return true;
+  if (GDPR_ALIGNED_COUNTRIES.has(country)) return true;
   if (country === "US" && region === "California") return true;
   return false;
 }
 
-/** Header name middleware writes; root layout reads via `headers()`. */
 export const CONSENT_HEADER = "x-josephine-consent-required";

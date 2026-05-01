@@ -1,24 +1,7 @@
-/**
- * Event taxonomy from SPEC §15. Properties are snake_case in the
- * implementation per Mixpanel's tracking-plan convention; SPEC §15
- * documents them in camelCase as a human-readable list. The mapping
- * is one-to-one and lives only at this boundary — call sites use
- * snake_case throughout.
- *
- * Adding a new event MUST update this file. The `track()` API is
- * typed against `ClientEventMap` so call sites stay honest.
- *
- * `abandoned_recovered` is intentionally absent — abandonment-recovery
- * was dropped from Phase 1 per project decisions (would touch users
- * who never reached the consent step).
- */
+// SPEC §15 event taxonomy. Property keys are snake_case in the
+// implementation; SPEC documents them in camelCase. abandoned_recovered
+// is intentionally absent (dropped from Phase 1).
 
-/**
- * Reading identifier — the Sanity slug. Typed as `string` rather than a
- * literal union because Josephine can add new readings in Studio
- * without a code change; analytics call sites accept whatever comes
- * from URL params or Sanity.
- */
 export type ReadingId = string;
 
 export type EntryCtaPosition = "drop-cap" | "verso-cta" | "back-link";
@@ -30,10 +13,6 @@ export type EmailType =
   | "day14"
   | "abandonment";
 
-/**
- * Client-side events (PR-F1). Server-side events live under
- * `ServerEventMap` and ship in PR-F2.
- */
 export type ClientEventMap = {
   entry_page_view: {
     reading_id: ReadingId;

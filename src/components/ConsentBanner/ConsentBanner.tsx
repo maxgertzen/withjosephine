@@ -9,16 +9,6 @@ interface ConsentBannerProps {
   onDecline: () => void;
 }
 
-/**
- * Consent banner shown only to visitors the edge identified as
- * requiring consent (EU/EEA/UK/CH + California). Two outcomes:
- * Accept → analytics init; Decline → analytics never init this session.
- *
- * Copy is hardcoded for v1. If we want Josephine to tune the wording,
- * promote to Sanity-backed (`siteSettings.consentBanner.{title,body,
- * acceptLabel,declineLabel}`) — but be aware that compliance UI usually
- * stays stable, so a Studio toggle there is more risk than benefit.
- */
 export function ConsentBanner({ onAccept, onDecline }: ConsentBannerProps) {
   return (
     <div
