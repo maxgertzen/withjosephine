@@ -57,7 +57,7 @@ const CSP_PUBLIC =
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io https://images.withjosephine.com data: blob:; " +
-  "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com; " +
+  "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com https://api-js.mixpanel.com https://api.mixpanel.com; " +
   "worker-src 'self' blob:; " +
   "frame-ancestors 'none'; " +
   "frame-src https://challenges.cloudflare.com; " +
@@ -72,7 +72,7 @@ const CSP_DRAFT =
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' https://cdn.sanity.io https://images.withjosephine.com data: blob:; " +
-  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com; " +
+  "connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://cloudflareinsights.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com https://images.withjosephine.com https://api-js.mixpanel.com https://api.mixpanel.com; " +
   "worker-src 'self' blob:; " +
   "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io; " +
   "frame-src 'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com; " +
