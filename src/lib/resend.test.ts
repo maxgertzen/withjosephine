@@ -100,6 +100,25 @@ describe("sendNotificationToJosephine", () => {
     expect(result.resendId).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
+
+  it("includes 'Amount paid' line when amountPaidDisplay is set", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_n" } });
+    const submission = buildSubmission({ amountPaidDisplay: "$99.00" });
+    const { sendNotificationToJosephine } = await import("./resend");
+    await sendNotificationToJosephine(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("Amount paid:");
+    expect(html).toContain("$99.00");
+  });
+
+  it("omits 'Amount paid' line when amountPaidDisplay is null", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_n" } });
+    const submission = buildSubmission({ amountPaidDisplay: null });
+    const { sendNotificationToJosephine } = await import("./resend");
+    await sendNotificationToJosephine(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).not.toContain("Amount paid:");
+  });
 });
 
 describe("sendOrderConfirmation", () => {
@@ -149,6 +168,33 @@ describe("sendOrderConfirmation", () => {
     expect(html).toContain(submission.readingName);
     expect(html).toContain("$129");
     expect(html).toContain("Delivery within 7 days");
+  });
+
+  it("renders the paid amount in the inset card when set", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission({
+      readingPriceDisplay: "$129",
+      amountPaidDisplay: "$99.00",
+    });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("$99.00");
+    // Strikethrough lives on the thank-you page (cents-level compare); the
+    // email surfaces what was paid.
+    expect(html).not.toContain("text-decoration: line-through");
+  });
+
+  it("falls back to list price when amountPaidDisplay is null", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission({
+      readingPriceDisplay: "$179",
+      amountPaidDisplay: null,
+    });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("$179");
   });
 
   it("HTML-escapes firstName before injecting", async () => {

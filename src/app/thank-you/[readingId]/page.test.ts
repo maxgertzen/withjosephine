@@ -18,11 +18,17 @@ vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
 }));
 
+vi.mock("@/lib/stripe", () => ({
+  retrieveCheckoutSession: vi.fn(),
+}));
+
 import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
 import type { SanityReading, SanityThankYouPage } from "@/lib/sanity/types";
+import { retrieveCheckoutSession } from "@/lib/stripe";
 
 const mockFetchThankYouPage = vi.mocked(fetchThankYouPage);
 const mockFetchReading = vi.mocked(fetchReading);
+const mockRetrieveSession = vi.mocked(retrieveCheckoutSession);
 
 function reading(overrides: Partial<SanityReading> = {}): SanityReading {
   return {
@@ -64,6 +70,8 @@ async function loadGenerateMetadata() {
 beforeEach(() => {
   mockFetchThankYouPage.mockReset();
   mockFetchReading.mockReset();
+  mockRetrieveSession.mockReset();
+  mockRetrieveSession.mockResolvedValue({ amount_total: null, currency: null } as never);
   redirectMock.mockClear();
   notFoundMock.mockClear();
 });
@@ -193,5 +201,55 @@ describe("ThankYouPage sessionId guard", () => {
     mockFetchThankYouPage.mockResolvedValue(thankYouPage());
     await expect(callPage({ sessionId: "cs_live_xyz789" })).resolves.toBeTruthy();
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("ThankYouPage paid amount", () => {
+  beforeEach(() => {
+    mockFetchReading.mockResolvedValue(reading());
+    mockFetchThankYouPage.mockResolvedValue(thankYouPage());
+  });
+
+  it("renders the discounted amount alongside the strikethrough list price", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 9900,
+      currency: "usd",
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("$179");
+    expect(html).toContain("$99.00");
+    expect(html).toContain("line-through");
+  });
+
+  it("renders only the paid amount when it equals the list price", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 17900,
+      currency: "usd",
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("$179.00");
+    expect(html).not.toContain("line-through");
+  });
+
+  it("renders the list price (no paid amount) when amount_total is null", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: null,
+      currency: null,
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("$179");
+    expect(html).not.toContain("line-through");
+  });
+
+  it("renders the list price when the Stripe API throws (fail-safe)", async () => {
+    mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("$179");
+    expect(html).not.toContain("line-through");
   });
 });

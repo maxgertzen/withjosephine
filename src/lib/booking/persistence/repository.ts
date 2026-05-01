@@ -24,6 +24,8 @@ type Row = {
   pdf_url: string | null;
   emails_fired_json: string;
   abandonment_recovery_fired_at: string | null;
+  amount_paid_cents: number | null;
+  amount_paid_currency: string | null;
 };
 
 function rowToRecord(row: Row): SubmissionRecord {
@@ -50,6 +52,8 @@ function rowToRecord(row: Row): SubmissionRecord {
     pdfUrl: row.pdf_url ?? undefined,
     emailsFired,
     reading,
+    amountPaidCents: row.amount_paid_cents,
+    amountPaidCurrency: row.amount_paid_currency,
   };
 }
 
@@ -97,13 +101,27 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
 
 export async function markSubmissionPaid(
   id: string,
-  paid: { stripeEventId: string; stripeSessionId: string; paidAt: string },
+  paid: {
+    stripeEventId: string;
+    stripeSessionId: string;
+    paidAt: string;
+    amountPaidCents: number | null;
+    amountPaidCurrency: string | null;
+  },
 ): Promise<void> {
   await dbExec(
     `UPDATE submissions
-     SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?
+     SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?,
+         amount_paid_cents = ?, amount_paid_currency = ?
      WHERE id = ?`,
-    [paid.paidAt, paid.stripeEventId, paid.stripeSessionId, id],
+    [
+      paid.paidAt,
+      paid.stripeEventId,
+      paid.stripeSessionId,
+      paid.amountPaidCents,
+      paid.amountPaidCurrency,
+      id,
+    ],
   );
 }
 

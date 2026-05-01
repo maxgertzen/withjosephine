@@ -44,6 +44,8 @@ const OVERDUE_SUBMISSION: SubmissionRecord = {
   createdAt: "2026-04-20T12:00:00Z",
   paidAt: "2026-04-20T12:00:00Z",
   reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  amountPaidCents: null,
+  amountPaidCurrency: null,
 };
 
 beforeEach(() => {

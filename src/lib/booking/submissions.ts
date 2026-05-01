@@ -1,6 +1,7 @@
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { PHOTO_PUBLIC_URL_BASE } from "./constants";
+import { formatAmountPaid } from "./formatAmount";
 import type { CreateSubmissionInput } from "./persistence/repository";
 import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
@@ -53,6 +54,8 @@ export type SubmissionRecord = {
     name: string;
     priceDisplay: string;
   } | null;
+  amountPaidCents: number | null;
+  amountPaidCurrency: string | null;
 };
 
 /**
@@ -79,7 +82,13 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
 
 export async function markSubmissionPaid(
   submissionId: string,
-  paid: { stripeEventId: string; stripeSessionId: string; paidAt: string },
+  paid: {
+    stripeEventId: string;
+    stripeSessionId: string;
+    paidAt: string;
+    amountPaidCents: number | null;
+    amountPaidCurrency: string | null;
+  },
 ): Promise<void> {
   await repo.markSubmissionPaid(submissionId, paid);
   runMirror(
@@ -88,6 +97,8 @@ export async function markSubmissionPaid(
       paidAt: paid.paidAt,
       stripeEventId: paid.stripeEventId,
       stripeSessionId: paid.stripeSessionId,
+      amountPaidCents: paid.amountPaidCents,
+      amountPaidCurrency: paid.amountPaidCurrency,
     }),
   );
 }
@@ -194,6 +205,7 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
     readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     responses,
     photoUrl: submission.photoR2Key ? `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}` : null,
     createdAt: submission.createdAt,

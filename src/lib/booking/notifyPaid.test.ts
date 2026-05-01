@@ -36,6 +36,8 @@ const SUBMISSION: SubmissionRecord = {
   responses: [],
   createdAt: "2026-04-28T12:00:00Z",
   reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  amountPaidCents: null,
+  amountPaidCurrency: null,
 };
 
 beforeEach(() => {
@@ -49,7 +51,13 @@ describe("applyPaidEvent", () => {
   it("returns alreadyApplied without side effects when stripeEventId matches", async () => {
     const result = await applyPaidEvent(
       { ...SUBMISSION, stripeEventId: "evt_1" },
-      { stripeEventId: "evt_1", stripeSessionId: "cs_1", paidAt: "2026-04-28T12:00:00Z" },
+      {
+        stripeEventId: "evt_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-04-28T12:00:00Z",
+        amountPaidCents: null,
+        amountPaidCurrency: null,
+      },
     );
 
     expect(result).toBe("alreadyApplied");
@@ -64,6 +72,8 @@ describe("applyPaidEvent", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
 
     expect(result).toBe("applied");
@@ -71,6 +81,8 @@ describe("applyPaidEvent", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
     expect(mockJosephine).toHaveBeenCalledOnce();
     expect(mockOrderConfirmation).toHaveBeenCalledOnce();
@@ -86,6 +98,8 @@ describe("applyPaidEvent", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
     expect(mockAppendEmailFired).not.toHaveBeenCalled();
   });
@@ -98,6 +112,8 @@ describe("applyPaidEvent", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
 
     expect(result).toBe("applied");
@@ -111,6 +127,8 @@ describe("applyPaidEvent", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
     expect(result).toBe("applied");
   });

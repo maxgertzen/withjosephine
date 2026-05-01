@@ -91,6 +91,8 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 12900,
+      amountPaidCurrency: "usd",
     });
     await flushFireAndForget();
 
@@ -183,6 +185,8 @@ describe("buildSubmissionContext", () => {
     photoR2Key: "submissions/sub_1/photo.jpg",
     createdAt: "2026-04-20T10:00:00Z",
     reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+    amountPaidCents: null,
+    amountPaidCurrency: null,
   };
 
   it("builds Resend context with photo URL and firstName extracted", () => {

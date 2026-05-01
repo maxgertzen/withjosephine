@@ -94,6 +94,8 @@ export async function mirrorSubmissionPatch(
     pdfUrl: string;
     stripeEventId: string;
     stripeSessionId: string;
+    amountPaidCents: number | null;
+    amountPaidCurrency: string | null;
   }>,
 ): Promise<void> {
   const client = getClient();
