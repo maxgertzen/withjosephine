@@ -78,7 +78,16 @@ export function initAnalytics(): void {
     debug: false,
     track_pageview: false,
     persistence: "localStorage",
-    ignore_dnt: false,
+    // ignore_dnt MUST be true. DNT was deprecated by W3C in 2019 — modern
+    // browsers ship it on by default in some modes (Brave, Firefox strict,
+    // Edge tracking protection, manual Chrome toggle), so respecting it
+    // silently breaks tracking for a meaningful slice of users WITHOUT
+    // gaining a meaningful privacy stance. Our actual consent posture is:
+    // the EU/EEA/UK/CH/CA geo-conditional banner gates init, IP is
+    // anonymized via `ip: false`, and no PII is included in event
+    // properties. Flipping ignore_dnt back to false would silently
+    // swallow every track() call for any visitor with DNT on.
+    ignore_dnt: true,
     ip: false,
     property_blacklist: ["$current_url", "$initial_referrer", "$referrer"],
   });
