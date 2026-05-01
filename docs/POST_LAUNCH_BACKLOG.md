@@ -95,6 +95,49 @@ Each item: where it came from + why it was deferred + a one-line action.
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Dev / staging / production environment separation
+- **Source:** Soft-launch retrospective 2026-05-01. The apex was deployed
+  wide-open with the under-construction page layered on as a page-level
+  flag that only gated `/`. Result: `/book/*`, `/api/*`, and legal pages
+  were all reachable on the supposedly-parked apex until PR #55 moved the
+  gate into middleware. Page-level feature flags are not access controls —
+  the project conflated "marketing toggle" with "environment gate" and
+  shipped prod without a closed-by-default posture.
+- **What's missing today:**
+  - No real staging environment. `preview.withjosephine.com` doubles as
+    Studio target, soft-launch booking surface, and de-facto staging —
+    no clean separation of concerns. There's no host where Max can test
+    a destructive change without affecting Becky's live bookings.
+  - No "production is closed by default" pattern. Every new route ships
+    publicly accessible the moment it lands on `main`, with the option
+    to layer access controls on after.
+  - GH Actions has one `vars` block — same env values for every build.
+    No way to point a "staging" deploy at a separate D1 / R2 / Stripe
+    test mode without fighting wrangler.
+  - CF Access is on `preview.` but that's a soft-launch hack, not a
+    permanent staging boundary. Once apex is unparked, the 2-email
+    allowlist on preview becomes obsolete and we lose the staging tier.
+- **Action (multi-step, post-launch):**
+  1. Provision a third Worker/D1/R2 trio for `staging.withjosephine.com`
+     (or rename current preview → staging once apex is live). Stripe
+     test mode keys, separate Sanity dataset, separate D1 binding.
+  2. Add `wrangler.staging.jsonc` (or use Wrangler environments) so
+     `pnpm deploy:staging` and `pnpm deploy:prod` are distinct paths.
+  3. Two GH Actions environments (`staging`, `production`) with their
+     own `vars` + secrets. Promotion = manual approval workflow, not
+     "merge to main = deploy to prod."
+  4. Default-closed posture for any future production environment:
+     ship it middleware-gated to a holding/coming-soon, with an
+     explicit env flag to open the gate. Document the open/close flip
+     as a release step, not a code change.
+  5. Lighthouse / PageSpeed runs against staging (representative perf)
+     before promotion, not against the live customer surface.
+- **Why this is debt, not a defect:** the site works for a single
+  practitioner with one customer in flight. The pattern only breaks
+  when (a) Max needs to test a destructive change without touching
+  production data, or (b) the next "private launch" mode happens and
+  someone forgets to gate at the middleware layer again.
+
 ---
 
 ## Code quality (nice-to-fix)
