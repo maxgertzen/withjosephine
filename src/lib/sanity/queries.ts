@@ -94,7 +94,8 @@ export const siteSettingsQuery = groq`
     navCtaText,
     socialLinks,
     copyrightText,
-    contactEmail
+    contactEmail,
+    consentBanner
   }
 `;
 
@@ -104,8 +105,6 @@ export const bookingPageQuery = groq`
     emailDisclaimer,
     paymentButtonText,
     securityNote,
-    entertainmentAcknowledgment,
-    coolingOffAcknowledgment,
     formatNote,
     closingMessage,
     deliveryNote,

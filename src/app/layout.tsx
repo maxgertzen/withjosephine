@@ -10,6 +10,7 @@ import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { isAnalyticsEnabled } from "@/lib/featureFlags";
 import { bodyFont, displayFont } from "@/lib/fonts.generated";
 import { CONSENT_HEADER } from "@/lib/region";
+import { fetchSiteSettings } from "@/lib/sanity/fetch";
 import { SanityLive } from "@/lib/sanity/live";
 
 export const viewport: Viewport = {
@@ -23,6 +24,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const analyticsToken = isAnalyticsEnabled() ? process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN! : null;
   const requestHeaders = await headers();
   const consentRequired = requestHeaders.get(CONSENT_HEADER) === "1";
+  const consentBannerContent =
+    consentRequired || isDraftMode
+      ? (await fetchSiteSettings())?.consentBanner ?? null
+      : null;
 
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
@@ -31,7 +36,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         suppressHydrationWarning
       >
         {children}
-        <AnalyticsBootstrap consentRequired={consentRequired} />
+        <AnalyticsBootstrap
+          consentRequired={consentRequired}
+          consentBannerContent={consentBannerContent}
+          previewMode={isDraftMode}
+        />
         {isDraftMode && (
           <>
             {/*

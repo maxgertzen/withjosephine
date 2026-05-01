@@ -81,8 +81,6 @@ export type SanityBookingPage = {
   emailDisclaimer: string;
   paymentButtonText: string;
   securityNote: string;
-  entertainmentAcknowledgment: string;
-  coolingOffAcknowledgment: string;
   formatNote: string;
   closingMessage: string;
   deliveryNote: string;
@@ -98,6 +96,14 @@ export type SanityThankYouPage = {
   seo?: SanitySeo;
 };
 
+export type SanityConsentBanner = {
+  title?: string;
+  body?: string;
+  privacyLinkText?: string;
+  acceptLabel?: string;
+  declineLabel?: string;
+};
+
 export type SanitySiteSettings = {
   brandName: string;
   logoUrl: string;
@@ -107,6 +113,7 @@ export type SanitySiteSettings = {
   socialLinks: { platform: string; url: string; label: string }[];
   copyrightText: string;
   contactEmail: string;
+  consentBanner?: SanityConsentBanner;
 };
 
 export type SanityColor = {

@@ -124,6 +124,87 @@ Each item: where it came from + why it was deferred + a one-line action.
   qualitatively. Also good moment to do the privacy-policy patch
   alongside the Web3Forms→Resend cleanup.
 
+### Audit: orphaned schema fields & components
+- **Source:** Surfaced 2026-05-02 from a Studio "required-field empty" error
+  on `bookingPage.entertainmentAcknowledgment` + `coolingOffAcknowledgment`.
+  Root cause: `<BookingForm>` component (the consumer of those fields) was
+  removed during the booking-flow rebuild (PRs PR-A → PR-E), but the schema
+  fields stayed behind as zombies. Fixed in this PR (PR-F1) — but no
+  one swept the rest of the codebase for the same class of issue.
+- **Action:** Walk every Sanity schema in `studio/schemas/` and confirm
+  each top-level field has at least one consumer in `src/`. Any field
+  with no consumer = candidate for removal (or revival, if the consumer
+  was lost). Likely suspects to inspect:
+  - `bookingPage` (already audited via this PR — clean now)
+  - `bookingForm` (large dynamic schema — check every field)
+  - `landingPage`, `siteSettings`, `bookingHero`, `thankYouPage`,
+    `underConstructionPage`, every `legalPage`, `reading`, `testimonial`,
+    `faqItem` — verify projection coverage
+  - Hero / About / How-It-Works sub-objects within `landingPage`
+- **Detection technique:** `grep -r "<fieldName>" src/lib/sanity/queries.ts`
+  → if not in any GROQ projection, it's orphaned. Also check
+  `src/lib/sanity/types.ts` for typed-but-unused fields.
+- **Why deferred:** Cross-cutting cleanup, low-priority compared to
+  feature work. Best done as one focused session before the apex
+  unparks for general traffic.
+
+### Audit: content elements that should be Sanity-editable but aren't
+- **Source:** Same 2026-05-02 retro. Several visible-to-customer
+  strings live as hardcoded JSX/constants in the codebase. Each one
+  is a "Josephine wants to tweak the wording" call to engineering
+  that shouldn't have to happen.
+- **Action:** Walk every customer-facing component and identify
+  hardcoded strings that aren't Sanity-backed. Candidates known
+  today (non-exhaustive):
+  - `<EntryPageView>` doesn't render copy, but the entry-page
+    layout in `/book/[reading]/page.tsx` has hardcoded "What's
+    included" header and the included-items rendering pattern
+  - `<NavigationButton>` / generic CTAs across the app — button
+    labels are usually Sanity-driven via `bookingPage.paymentButtonText`
+    etc. but verify every CTA in the booking flow has a Sanity
+    field (Hero CTA, Letter drop-cap, Intake submit/back/next,
+    SubmitOverlay copy)
+  - Form field validation messages (`zod` error strings) —
+    currently hardcoded; consider Sanity-editable per-error-type
+    if Josephine wants to soften specific error wording
+  - Footer copyright / accessibility strings
+  - 404 page copy (`/not-found`)
+  - Refund-policy / Privacy / Terms — Sanity-backed already,
+    but verify nothing falls through to a JSX fallback
+  - Email subject lines and inline HTML in `src/lib/resend.ts`
+    (currently inlined; backlog already has "Resend template IDs"
+    item — overlaps)
+- **Detection technique:** Search `src/components/**` for string
+  literals that look like customer-facing copy (anything passed to
+  React children with sentence-case/punctuation). Cross-reference
+  against existing Sanity schema; gaps are candidates.
+- **Why deferred:** Each new Sanity-editable field is schema +
+  GROQ projection + type + fallback default + seed migration +
+  `<VisualEditing>` overlay verification. Best batched into a
+  "make Studio editorial-complete" session rather than drip-feeding.
+
+### Code-quality: drop inferred return-type annotations
+- **Source:** Max 2026-05-02. Where a function's return type is inferred
+  by TypeScript correctly, an explicit annotation adds noise without
+  catching anything new. Examples in current codebase:
+  `): void` on `initAnalytics`, `track`, `identifySubmission`,
+  `_resetForTests`, `writeConsent`, `readConsent` (returns
+  `ConsentChoice | null`), `requiresConsent` (returns `boolean`),
+  `deriveEnvironment` (returns `string`), the migration scripts'
+  helper functions, and similar across `src/lib/**`.
+- **Rule going forward:** only annotate the return type when:
+  - It's a public API boundary (exported) AND the inference would be
+    a wider/narrower type than intended
+  - It's a recursive function (TS can't infer through recursion cleanly)
+  - The function is overloaded
+  - The function returns a complex generic that TS infers as `any`/wide
+- **Action:** sweep `src/lib/**` and `src/components/**` removing
+  redundant return-type annotations from local helpers and one-off
+  functions where inference is correct. Keep the annotations on
+  exported functions that are part of a public contract IF removing
+  them would make the inferred type unstable. ~30-min sweep across
+  the codebase, no behavior change.
+
 ### PR-F1 simplify-pass deferrals (code-quality follow-ups)
 **Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Issues identified, judged not blocking the PR, captured here so they don't drift out of view.
 

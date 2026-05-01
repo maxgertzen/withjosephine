@@ -1,5 +1,7 @@
 import { defineField, defineType } from "sanity";
 
+import { ConsentBannerInput } from "../components/ConsentBannerInput";
+
 export const siteSettings = defineType({
   name: "siteSettings",
   title: "Site Settings",
@@ -81,6 +83,46 @@ export const siteSettings = defineType({
       name: "contactEmail",
       title: "Contact Email",
       type: "string",
+    }),
+    defineField({
+      name: "consentBanner",
+      title: "Analytics Consent Banner",
+      description:
+        'Shown only to visitors in the EU/EEA, UK, Switzerland, and California (CCPA). Click "Preview consent banner" above to see your edits in a new tab. Layout is fixed; edit copy only.',
+      type: "object",
+      components: { input: ConsentBannerInput },
+      fields: [
+        defineField({
+          name: "title",
+          title: "Title",
+          type: "string",
+          description: 'Heading at the top of the banner (e.g. "A note on analytics")',
+        }),
+        defineField({
+          name: "body",
+          title: "Body Text",
+          type: "text",
+          rows: 3,
+          description:
+            'Plain text. Will be followed by the privacy-policy link automatically.',
+        }),
+        defineField({
+          name: "privacyLinkText",
+          title: "Privacy-Policy Link Text",
+          type: "string",
+          description: 'Link text that points to /privacy (e.g. "Read the privacy policy")',
+        }),
+        defineField({
+          name: "acceptLabel",
+          title: "Accept Button Label",
+          type: "string",
+        }),
+        defineField({
+          name: "declineLabel",
+          title: "Decline Button Label",
+          type: "string",
+        }),
+      ],
     }),
   ],
   preview: {
