@@ -95,6 +95,57 @@ Each item: where it came from + why it was deferred + a one-line action.
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Microsoft Clarity (session replay) — pair with Mixpanel
+- **Source:** Mixpanel + Clarity tooling discussion 2026-05-02. Mixpanel
+  answers "what % drop off at intake page 3"; Clarity answers "why did
+  THIS visitor bounce on intake page 3" via DOM-based session replays,
+  heatmaps, and rage-click detection. At soft-launch volumes (single
+  digits of bookings/week), the qualitative signal is more useful than
+  the quantitative one — but the right answer is to pair them, not
+  replace.
+- **Why Clarity vs Fullstory/Hotjar:** Free **forever**, unlimited
+  sessions, **auto-masks form inputs by default** (DOB, names, photos
+  redacted out of the box), better privacy posture than Fullstory.
+  Microsoft sub-processor — already common.
+- **Action:**
+  1. Sign up at clarity.microsoft.com → create project → get tracking ID.
+  2. Add a `<ClarityScript>` client component mounted from
+     `<AnalyticsBootstrap>` so it inherits the same geo-conditional
+     consent gate + non-prod opt-in. Tracking ID via
+     `NEXT_PUBLIC_CLARITY_PROJECT_ID` (3-place CI discipline as usual).
+  3. Update privacy policy to add Clarity as a sub-processor (session
+     replay category, data class explicitly noted) — Microsoft (US)
+     under DPF/SCCs, same template as the Mixpanel patch.
+  4. Verify masking is working in Clarity dashboard before pointing
+     traffic at it: confirm DOB / name / photo fields show as redacted
+     blocks, not actual content.
+- **Why deferred:** Phase-2 add. Mixpanel ships now; Clarity follows
+  once the funnel data starts filling in and we know what to look at
+  qualitatively. Also good moment to do the privacy-policy patch
+  alongside the Web3Forms→Resend cleanup.
+
+### `intake_save_auto` event throttle + clear-button UX question
+- **Source:** Mixpanel quota review 2026-05-02. The autosave event
+  fires every 500ms after a value change. A user typing a long
+  Akashic-record question for 10 minutes with frequent edits could
+  fire 100+ saves per session. Bounded but noisy.
+- **Throttle action:** Cap `intake_save_auto` to one event per 30
+  seconds per session, OR fire only on page transitions (not on
+  every value change). The localStorage save itself keeps happening
+  every 500ms — only the analytics event gets throttled.
+- **Open UX question (Max raised 2026-05-02):** Should the intake
+  form expose a manual "Clear saved draft" button so visitors can
+  abandon a half-filled form without it auto-restoring on next
+  visit? Today the only way to clear is: submit successfully (clears
+  via `clearDraft`), wait 30 days for TTL, or open DevTools and
+  delete localStorage manually. None are obvious to a casual visitor.
+  - Option A: Cleanup button in the form footer ("Start fresh →
+    clears saved draft"). Adds clarity but encourages discarding work.
+  - Option B: Auto-clear on idle timeout (e.g. no edits in 24h).
+    Less explicit; fewer accidents.
+  - Option C: Status quo. Trust that 30-day TTL handles it.
+  Decide before shipping the throttle.
+
 ### Core Web Vitals → Mixpanel via `useReportWebVitals`
 - **Source:** Next.js production checklist 2026-05-02. Next exposes
   Core Web Vitals (LCP, FID, CLS, TTFB, INP) via `useReportWebVitals`
@@ -157,6 +208,14 @@ Each item: where it came from + why it was deferred + a one-line action.
   a tracking-plan revision.
 
 ### Dev / staging / production environment separation
+**ELEVATED PRIORITY (2026-05-02)** — Max called this out as the
+underlying issue causing the per-PR "is this tracked / is this gated /
+is this safe?" overhead. This work should land sooner rather than later;
+the Mixpanel non-prod opt-in flag (PR-F1, `NEXT_PUBLIC_TRACK_NON_PROD`)
+is a bridge, not a substitute. **During soft-launch:** Becky books on
+preview. The non-prod gate would skip her events by default — set the
+opt-in flag on the preview deploy until apex is unparked, then unset.
+
 - **Source:** Soft-launch retrospective 2026-05-01. The apex was deployed
   wide-open with the under-construction page layered on as a page-level
   flag that only gated `/`. Result: `/book/*`, `/api/*`, and legal pages

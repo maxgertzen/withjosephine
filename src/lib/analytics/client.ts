@@ -37,7 +37,15 @@ import type { ClientEventMap, ClientEventName } from "./events";
  * forwarding discipline (.github/workflows/ci.yml + GH Actions vars).
  */
 
-let initialized = false;
+// Two flags, not one. `bootstrapped` is the idempotency guard for
+// initAnalytics() — set to true the first time it runs regardless of
+// whether the SDK actually inited. `mixpanelLive` is set ONLY when
+// mixpanel.init() actually ran (token present, on prod or opted in,
+// not blocked). track() uses both: if mixpanelLive → ship event;
+// else if bootstrapped → drop (init has already decided to no-op);
+// else → queue (init hasn't run yet, flush after init).
+let bootstrapped = false;
+let mixpanelLive = false;
 
 type QueuedEvent = {
   event: string;
@@ -62,14 +70,30 @@ function isHeadlessUserAgent(userAgent: string): boolean {
 }
 
 export function initAnalytics(): void {
-  if (initialized) return;
+  if (bootstrapped) return;
   if (typeof window === "undefined") return;
+  bootstrapped = true;
 
   const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
   if (!token) {
     // Drain the queue as a no-op so callers don't see indefinite growth
     // when the token isn't configured (local dev without .env.local).
-    initialized = true;
+    queue.length = 0;
+    return;
+  }
+
+  // Non-production environments (local, preview, workers-dev) skip
+  // tracking by default so dev events don't pollute the production
+  // Mixpanel project. Set NEXT_PUBLIC_TRACK_NON_PROD=1 in .env.local
+  // (or as a GH Actions var on the relevant deploy) to opt-in — needed
+  // when verifying new event wiring or running the booking flow against
+  // a non-prod host. Bridge until the dev/prod project split lands
+  // with the staging-tier work in POST_LAUNCH_BACKLOG.md.
+  const host = window.location.host;
+  const env = deriveEnvironment(host);
+  const isProduction = env === "production";
+  const trackNonProd = process.env.NEXT_PUBLIC_TRACK_NON_PROD === "1";
+  if (!isProduction && !trackNonProd) {
     queue.length = 0;
     return;
   }
@@ -92,10 +116,9 @@ export function initAnalytics(): void {
     property_blacklist: ["$current_url", "$initial_referrer", "$referrer"],
   });
 
-  const host = window.location.host;
   mixpanel.register({
     site_host: host,
-    environment: deriveEnvironment(host),
+    environment: env,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? "dev",
   });
 
@@ -103,7 +126,7 @@ export function initAnalytics(): void {
     mixpanel.register({ $ignore: true });
   }
 
-  initialized = true;
+  mixpanelLive = true;
 
   for (const item of queue) {
     mixpanel.track(item.event, item.properties);
@@ -116,13 +139,17 @@ export function track<E extends ClientEventName>(
   properties: ClientEventMap[E],
 ): void {
   const props = properties as Record<string, unknown>;
-  if (!initialized) {
-    queue.push({ event, properties: props });
+  if (mixpanelLive) {
+    mixpanel.track(event, props);
     return;
   }
-  if (typeof window === "undefined") return;
-  if (!process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) return;
-  mixpanel.track(event, props);
+  if (bootstrapped) {
+    // initAnalytics() already ran and decided to no-op (no token,
+    // non-prod without opt-in, etc.). Drop the event.
+    return;
+  }
+  // initAnalytics() hasn't run yet. Queue for flush.
+  queue.push({ event, properties: props });
 }
 
 /**
@@ -132,20 +159,20 @@ export function track<E extends ClientEventName>(
  * events from PR-F2) threads on the same identity.
  */
 export function identifySubmission(submissionId: string): void {
-  if (!initialized) return;
-  if (!process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) return;
+  if (!mixpanelLive) return;
   mixpanel.identify(submissionId);
 }
 
 export function isAnalyticsInitialized(): boolean {
-  return initialized;
+  return bootstrapped;
 }
 
 /**
- * Test-only: reset the module-scoped `initialized` flag and queue so
- * each test starts from a clean baseline. Not exported from `index.ts`.
+ * Test-only: reset the module-scoped flags and queue so each test
+ * starts from a clean baseline. Not exported from `index.ts`.
  */
 export function _resetForTests(): void {
-  initialized = false;
+  bootstrapped = false;
+  mixpanelLive = false;
   queue.length = 0;
 }

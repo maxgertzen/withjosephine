@@ -28,6 +28,12 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", TOKEN);
+  // Default to a production host so init runs in tests by default; the
+  // non-prod-opt-in gate has dedicated tests below.
+  Object.defineProperty(window, "location", {
+    value: { host: "withjosephine.com" },
+    configurable: true,
+  });
   // jsdom's default UA doesn't match the headless regex; explicit set
   // makes the test robust against future jsdom updates.
   Object.defineProperty(window.navigator, "userAgent", {
@@ -66,33 +72,36 @@ describe("initAnalytics", () => {
     );
   });
 
-  it("tags preview hosts as environment=preview", () => {
+  it("tags preview hosts as environment=preview (when opted in)", () => {
     Object.defineProperty(window, "location", {
       value: { host: "preview.withjosephine.com" },
       configurable: true,
     });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
     initAnalytics();
     expect(mixpanel.register).toHaveBeenCalledWith(
       expect.objectContaining({ environment: "preview" }),
     );
   });
 
-  it("tags workers.dev hosts as environment=workers-dev", () => {
+  it("tags workers.dev hosts as environment=workers-dev (when opted in)", () => {
     Object.defineProperty(window, "location", {
       value: { host: "withjosephine.maxgertzen.workers.dev" },
       configurable: true,
     });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
     initAnalytics();
     expect(mixpanel.register).toHaveBeenCalledWith(
       expect.objectContaining({ environment: "workers-dev" }),
     );
   });
 
-  it("tags everything else as environment=local", () => {
+  it("tags localhost as environment=local (when opted in)", () => {
     Object.defineProperty(window, "location", {
       value: { host: "localhost:3000" },
       configurable: true,
     });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
     initAnalytics();
     expect(mixpanel.register).toHaveBeenCalledWith(
       expect.objectContaining({ environment: "local" }),
@@ -142,6 +151,76 @@ describe("initAnalytics", () => {
     initAnalytics();
     expect(mixpanel.init).not.toHaveBeenCalled();
     expect(isAnalyticsInitialized()).toBe(true);
+  });
+});
+
+describe("non-production opt-in gate", () => {
+  it.each([
+    ["preview.withjosephine.com", "preview"],
+    ["withjosephine.maxgertzen.workers.dev", "workers-dev"],
+    ["localhost:3000", "local"],
+  ])("skips init by default on %s (env=%s)", (host) => {
+    Object.defineProperty(window, "location", {
+      value: { host },
+      configurable: true,
+    });
+    initAnalytics();
+    expect(mixpanel.init).not.toHaveBeenCalled();
+    expect(isAnalyticsInitialized()).toBe(true);
+  });
+
+  it("inits on non-prod when NEXT_PUBLIC_TRACK_NON_PROD=1 is set", () => {
+    Object.defineProperty(window, "location", {
+      value: { host: "preview.withjosephine.com" },
+      configurable: true,
+    });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
+    initAnalytics();
+    expect(mixpanel.init).toHaveBeenCalledOnce();
+  });
+
+  it("ignores any value other than '1' for the opt-in flag", () => {
+    Object.defineProperty(window, "location", {
+      value: { host: "preview.withjosephine.com" },
+      configurable: true,
+    });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "true");
+    initAnalytics();
+    expect(mixpanel.init).not.toHaveBeenCalled();
+  });
+
+  it.each(["withjosephine.com", "www.withjosephine.com"])(
+    "always inits on production host %s regardless of opt-in flag",
+    (host) => {
+      Object.defineProperty(window, "location", {
+        value: { host },
+        configurable: true,
+      });
+      vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", ""); // explicitly unset
+      initAnalytics();
+      expect(mixpanel.init).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("buffer is drained (not held forever) when init is skipped on non-prod", () => {
+    Object.defineProperty(window, "location", {
+      value: { host: "localhost:3000" },
+      configurable: true,
+    });
+    track("entry_page_view", {
+      reading_id: "soul-blueprint",
+      referrer: "",
+      viewport_width: 1024,
+    });
+    initAnalytics();
+    // After skipped init, isInitialized = true, queue cleared.
+    // Subsequent track() calls should not accumulate either:
+    track("intake_page_view", {
+      reading_id: "soul-blueprint",
+      page_number: 1,
+      total_pages: 6,
+    });
+    expect(mixpanel.track).not.toHaveBeenCalled();
   });
 });
 
