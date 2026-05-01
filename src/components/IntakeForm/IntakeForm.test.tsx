@@ -146,7 +146,7 @@ describe("IntakeForm — single-page flow", () => {
   it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test" }), {
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
         status: 200,
       }),
     );
@@ -166,7 +166,7 @@ describe("IntakeForm — single-page flow", () => {
   it("submits and redirects to the payment URL on success", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test" }), {
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
         status: 200,
       }),
     );
@@ -378,7 +378,7 @@ describe("IntakeForm — localStorage save/resume", () => {
   it("clears the saved draft when /api/booking returns 2xx", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test" }), {
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
         status: 200,
       }),
     );

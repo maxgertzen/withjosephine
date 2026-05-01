@@ -95,7 +95,221 @@ Each item: where it came from + why it was deferred + a one-line action.
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Microsoft Clarity (session replay) — pair with Mixpanel
+- **Source:** Mixpanel + Clarity tooling discussion 2026-05-02. Mixpanel
+  answers "what % drop off at intake page 3"; Clarity answers "why did
+  THIS visitor bounce on intake page 3" via DOM-based session replays,
+  heatmaps, and rage-click detection. At soft-launch volumes (single
+  digits of bookings/week), the qualitative signal is more useful than
+  the quantitative one — but the right answer is to pair them, not
+  replace.
+- **Why Clarity vs Fullstory/Hotjar:** Free **forever**, unlimited
+  sessions, **auto-masks form inputs by default** (DOB, names, photos
+  redacted out of the box), better privacy posture than Fullstory.
+  Microsoft sub-processor — already common.
+- **Action:**
+  1. Sign up at clarity.microsoft.com → create project → get tracking ID.
+  2. Add a `<ClarityScript>` client component mounted from
+     `<AnalyticsBootstrap>` so it inherits the same geo-conditional
+     consent gate + non-prod opt-in. Tracking ID via
+     `NEXT_PUBLIC_CLARITY_PROJECT_ID` (3-place CI discipline as usual).
+  3. Update privacy policy to add Clarity as a sub-processor (session
+     replay category, data class explicitly noted) — Microsoft (US)
+     under DPF/SCCs, same template as the Mixpanel patch.
+  4. Verify masking is working in Clarity dashboard before pointing
+     traffic at it: confirm DOB / name / photo fields show as redacted
+     blocks, not actual content.
+- **Why deferred:** Phase-2 add. Mixpanel ships now; Clarity follows
+  once the funnel data starts filling in and we know what to look at
+  qualitatively. Also good moment to do the privacy-policy patch
+  alongside the Web3Forms→Resend cleanup.
+
+### Audit: orphaned schema fields & components
+- **Source:** Surfaced 2026-05-02 from a Studio "required-field empty" error
+  on `bookingPage.entertainmentAcknowledgment` + `coolingOffAcknowledgment`.
+  Root cause: `<BookingForm>` component (the consumer of those fields) was
+  removed during the booking-flow rebuild (PRs PR-A → PR-E), but the schema
+  fields stayed behind as zombies. Fixed in this PR (PR-F1) — but no
+  one swept the rest of the codebase for the same class of issue.
+- **Action:** Walk every Sanity schema in `studio/schemas/` and confirm
+  each top-level field has at least one consumer in `src/`. Any field
+  with no consumer = candidate for removal (or revival, if the consumer
+  was lost). Likely suspects to inspect:
+  - `bookingPage` (already audited via this PR — clean now)
+  - `bookingForm` (large dynamic schema — check every field)
+  - `landingPage`, `siteSettings`, `bookingHero`, `thankYouPage`,
+    `underConstructionPage`, every `legalPage`, `reading`, `testimonial`,
+    `faqItem` — verify projection coverage
+  - Hero / About / How-It-Works sub-objects within `landingPage`
+- **Detection technique:** `grep -r "<fieldName>" src/lib/sanity/queries.ts`
+  → if not in any GROQ projection, it's orphaned. Also check
+  `src/lib/sanity/types.ts` for typed-but-unused fields.
+- **Why deferred:** Cross-cutting cleanup, low-priority compared to
+  feature work. Best done as one focused session before the apex
+  unparks for general traffic.
+
+### Audit: content elements that should be Sanity-editable but aren't
+- **Source:** Same 2026-05-02 retro. Several visible-to-customer
+  strings live as hardcoded JSX/constants in the codebase. Each one
+  is a "Josephine wants to tweak the wording" call to engineering
+  that shouldn't have to happen.
+- **Action:** Walk every customer-facing component and identify
+  hardcoded strings that aren't Sanity-backed. Candidates known
+  today (non-exhaustive):
+  - `<EntryPageView>` doesn't render copy, but the entry-page
+    layout in `/book/[reading]/page.tsx` has hardcoded "What's
+    included" header and the included-items rendering pattern
+  - `<NavigationButton>` / generic CTAs across the app — button
+    labels are usually Sanity-driven via `bookingPage.paymentButtonText`
+    etc. but verify every CTA in the booking flow has a Sanity
+    field (Hero CTA, Letter drop-cap, Intake submit/back/next,
+    SubmitOverlay copy)
+  - Form field validation messages (`zod` error strings) —
+    currently hardcoded; consider Sanity-editable per-error-type
+    if Josephine wants to soften specific error wording
+  - Footer copyright / accessibility strings
+  - 404 page copy (`/not-found`)
+  - Refund-policy / Privacy / Terms — Sanity-backed already,
+    but verify nothing falls through to a JSX fallback
+  - Email subject lines and inline HTML in `src/lib/resend.ts`
+    (currently inlined; backlog already has "Resend template IDs"
+    item — overlaps)
+- **Detection technique:** Search `src/components/**` for string
+  literals that look like customer-facing copy (anything passed to
+  React children with sentence-case/punctuation). Cross-reference
+  against existing Sanity schema; gaps are candidates.
+- **Why deferred:** Each new Sanity-editable field is schema +
+  GROQ projection + type + fallback default + seed migration +
+  `<VisualEditing>` overlay verification. Best batched into a
+  "make Studio editorial-complete" session rather than drip-feeding.
+
+### Code-quality: drop inferred return-type annotations
+- **Source:** Max 2026-05-02. Where a function's return type is inferred
+  by TypeScript correctly, an explicit annotation adds noise without
+  catching anything new. Examples in current codebase:
+  `): void` on `initAnalytics`, `track`, `identifySubmission`,
+  `_resetForTests`, `writeConsent`, `readConsent` (returns
+  `ConsentChoice | null`), `requiresConsent` (returns `boolean`),
+  `deriveEnvironment` (returns `string`), the migration scripts'
+  helper functions, and similar across `src/lib/**`.
+- **Rule going forward:** only annotate the return type when:
+  - It's a public API boundary (exported) AND the inference would be
+    a wider/narrower type than intended
+  - It's a recursive function (TS can't infer through recursion cleanly)
+  - The function is overloaded
+  - The function returns a complex generic that TS infers as `any`/wide
+- **Action:** sweep `src/lib/**` and `src/components/**` removing
+  redundant return-type annotations from local helpers and one-off
+  functions where inference is correct. Keep the annotations on
+  exported functions that are part of a public contract IF removing
+  them would make the inferred type unstable. ~30-min sweep across
+  the codebase, no behavior change.
+
+### PR-F1 simplify-pass deferrals (code-quality follow-ups)
+**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Issues identified, judged not blocking the PR, captured here so they don't drift out of view.
+
+- **`process.env.*` reads in IntakeForm render path.** `IntakeForm.tsx:264–268` reads `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NODE_ENV`, and `NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS` on every render. Pre-existing pattern (not new in PR-F1) but worth hoisting to module scope or a single `useMemo`. Trivial impact unless this component re-renders many times per page (it doesn't today).
+
+- **AnalyticsBootstrap `consentRequired` effect re-run guard.** `AnalyticsBootstrap.tsx:48` — useEffect dep array is `[consentRequired]`. Today the prop is stable per request (computed once from server headers in the layout) so the effect runs once. If a future change ever makes `consentRequired` recompute on parent re-render, the effect would re-read localStorage and re-call `initAnalytics()` (idempotent today via `bootstrapped` guard, but fragile). Add an explicit "did we already run" ref-guard if the parent's render shape changes.
+
+- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Line ~45 has an `eslint-disable-next-line react-hooks/set-state-in-effect`. The justifying comment is correct (localStorage is mount-only) but the cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add the cookie banner copy from Sanity, or per-purpose consent granularity).
+
+- **`window.location.host` re-read in `initAnalytics()`.** `client.ts:42` — read inside the function. Today it's called once due to the `bootstrapped` guard, so no real cost. If init ever needs to support re-init (e.g. switching projects after consent change), hoist to module scope.
+
+- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc, then checks `body.some(_key === MIXPANEL_BLOCK_KEY)` to short-circuit. The fetch happens regardless. Acceptable today (script runs maybe 1–2 times in its lifetime); if reused as a template, swap the no-op check to a lightweight projection query.
+
+### `intake_save_auto` event throttle + clear-button UX question
+- **Source:** Mixpanel quota review 2026-05-02. The autosave event
+  fires every 500ms after a value change. A user typing a long
+  Akashic-record question for 10 minutes with frequent edits could
+  fire 100+ saves per session. Bounded but noisy.
+- **Throttle action:** Cap `intake_save_auto` to one event per 30
+  seconds per session, OR fire only on page transitions (not on
+  every value change). The localStorage save itself keeps happening
+  every 500ms — only the analytics event gets throttled.
+- **Open UX question (Max raised 2026-05-02):** Should the intake
+  form expose a manual "Clear saved draft" button so visitors can
+  abandon a half-filled form without it auto-restoring on next
+  visit? Today the only way to clear is: submit successfully (clears
+  via `clearDraft`), wait 30 days for TTL, or open DevTools and
+  delete localStorage manually. None are obvious to a casual visitor.
+  - Option A: Cleanup button in the form footer ("Start fresh →
+    clears saved draft"). Adds clarity but encourages discarding work.
+  - Option B: Auto-clear on idle timeout (e.g. no edits in 24h).
+    Less explicit; fewer accidents.
+  - Option C: Status quo. Trust that 30-day TTL handles it.
+  Decide before shipping the throttle.
+
+### Core Web Vitals → Mixpanel via `useReportWebVitals`
+- **Source:** Next.js production checklist 2026-05-02. Next exposes
+  Core Web Vitals (LCP, FID, CLS, TTFB, INP) via `useReportWebVitals`
+  in `app/layout.tsx`. Currently we don't capture them anywhere
+  application-side; Cloudflare Web Analytics covers the basics at
+  the edge but they aren't sliced by reading_id, intake page number,
+  or other funnel dimensions.
+- **Action:** Add `useReportWebVitals` in a small client component on
+  the layout, send each metric as a `web_vitals` Mixpanel event with
+  properties `{ name, value, id, navigation_type, page_path }`.
+  Lets us correlate slow pages against funnel drop-off (e.g. "intake
+  page 3 has high LCP and 40% drop").
+- **Why deferred:** CF Web Analytics already captures aggregate Core
+  Web Vitals; this is partial duplication that pays off only once we
+  want the per-route slicing in Mixpanel funnels.
+
+### `@next/bundle-analyzer` wiring
+- **Source:** Next.js production checklist 2026-05-02. We have a
+  `www/Plans/bundle-size-reduction-phase2.md` doc but no analyzer
+  plugin on the build itself. Today we measure worker-bundle size
+  via wrangler output; we don't measure CLIENT bundle composition.
+- **Action:** Add `@next/bundle-analyzer` as a devDep, wire it through
+  `next.config.ts` gated on `ANALYZE=1`. Add `pnpm analyze` script.
+  Run before any client-bundle-impacting change.
+- **Why deferred:** No active client-bundle work right now; the worker
+  bundle is the active constraint and `outputFileTracingExcludes`
+  narrowing is the relevant lever for that.
+
+### `experimental_taintObjectReference` for server secrets
+- **Source:** Next.js production checklist 2026-05-02. Next's defense
+  against accidentally serializing server-only objects to the client.
+  Tainted objects throw if a Server Component tries to pass them to a
+  Client Component as a prop.
+- **Action:** Apply taint markers:
+  - `src/lib/sanity/client.ts` → taint the `SANITY_WRITE_TOKEN` carrier
+  - `src/lib/stripe.ts` → taint the Stripe client (uses `STRIPE_SECRET_KEY`)
+  - `src/lib/d1.ts` → taint the D1 binding wrapper
+  - `src/lib/r2.ts` → taint the R2 client (uses `R2_SECRET_ACCESS_KEY`)
+- **Why deferred:** None of these currently leak to client code; the
+  taint markers are belt-and-braces. Worth doing once a code-quality
+  pass resumes.
+
+### Generic delegated tracking listener (`data-mp-*`)
+- **Source:** Mixpanel best-practices research 2026-05-02. ChargeAfter's
+  `<EventTracker>` (libs/event-tracker/src/lib/components/EventTracker.tsx)
+  attaches a single delegated `click` listener at the app root and fires
+  `button_click` / `link_click` events for any element tagged with HTML
+  attributes (`track-id="my-button"`). Zero imports per call site, zero
+  new wrapper components.
+- **Action:** Add a delegated listener mounted from the root layout
+  that reads `data-mp-event` (event name) and `data-mp-*` (snake_case
+  properties) from the event target and fires `track(...)`. Coexists
+  with `<TrackedLink>` — typed wrappers stay for the SPEC §15 events
+  with strict property shapes; attribute tagging is for ad-hoc
+  additions that don't warrant a typed entry (e.g. generic `button_click`
+  with `button_name`).
+- **Why deferred:** Doesn't help with the SPEC §15 events (they need
+  type safety the attribute-tag pattern can't provide). Worth adding
+  once we want quick instrumentation on supplementary surfaces without
+  a tracking-plan revision.
+
 ### Dev / staging / production environment separation
+**ELEVATED PRIORITY (2026-05-02)** — Max called this out as the
+underlying issue causing the per-PR "is this tracked / is this gated /
+is this safe?" overhead. This work should land sooner rather than later;
+the Mixpanel non-prod opt-in flag (PR-F1, `NEXT_PUBLIC_TRACK_NON_PROD`)
+is a bridge, not a substitute. **During soft-launch:** Becky books on
+preview. The non-prod gate would skip her events by default — set the
+opt-in flag on the preview deploy until apex is unparked, then unset.
+
 - **Source:** Soft-launch retrospective 2026-05-01. The apex was deployed
   wide-open with the under-construction page layered on as a page-level
   flag that only gated `/`. Result: `/book/*`, `/api/*`, and legal pages
@@ -302,6 +516,39 @@ These were always scoped out of Phase 1 by the booking-flow build PRD.
 
 Items not in current scope. Captured here so they don't drift; revisit
 after launch + the staging/dev separation work lands.
+
+### Server-side consent audit log
+- **Source:** Max 2026-05-02 (PR-F1 review). Today the visitor's
+  Accept/Decline choice for analytics consent lives only in their
+  browser's localStorage under `josephine.consent`. That's enough to
+  technically gate the SDK, but it's NOT a record we can produce if
+  challenged by a regulator (GDPR Article 7(1) — "the controller shall
+  be able to demonstrate that the data subject has consented").
+- **What's missing:** an audit trail proving *who* consented, *when*,
+  to *which version* of the privacy policy. localStorage can be cleared,
+  spoofed, or wiped between sessions; it's not evidence.
+- **Action:**
+  - Add a `consent_record` table in D1 (or a `consentRecord` document
+    type in Sanity if Josephine wants visibility in Studio): `{ id,
+    anonymous_visitor_id, accepted_at, policy_version, accepted_categories,
+    ip_hash, user_agent }`. The visitor ID is a random UUID generated
+    at first visit and stored in localStorage alongside the consent
+    state — never personal data.
+  - Add a `policyVersion` field on the privacy `legalPage` doc in
+    Sanity, manually incremented when material wording changes ship.
+    Read at consent-record write time.
+  - Add `/api/consent` route, called fire-and-forget from the Accept
+    handler in `<AnalyticsBootstrap>`. Body: `{ visitor_id, policy_version,
+    accepted_categories: ["analytics"] }`. Server hashes IP, captures
+    user agent, writes the row.
+  - Document the audit log itself in the privacy policy (it IS personal
+    data — recursive disclosure required). Section "Records of consent."
+- **Why deferred:** Regulatory enforcement risk for a single-practitioner
+  site at this scale is near-zero unless someone files a specific
+  complaint. The localStorage-only posture is a defensible starting
+  point; the audit log is the next maturity step before scale or
+  before adding marketing-driven processing (which the Phase-2
+  newsletter waitlist below would also need).
 
 ### "Fully booked" toggle with newsletter waitlist
 - **Source:** Max 2026-05-01. Once Josephine is taking real bookings,

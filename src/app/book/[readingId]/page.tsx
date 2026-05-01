@@ -1,11 +1,10 @@
 import { Check, Clock, Mic } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EntryPageView, TrackedLink } from "@/components/BookingAnalytics";
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
-import { NavigationButton } from "@/components/NavigationButton";
 import { ReadingIcon } from "@/components/ReadingIcon";
 import { BOOKING_INFO_DEFAULTS, ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
@@ -128,12 +127,14 @@ export default async function BookingPage({ params }: BookingPageProps) {
               {reading.shortDescription}
             </p>
 
-            <Link
+            <TrackedLink
               href="/#readings"
+              event="change_reading_click"
+              properties={{ from_reading_id: reading.slug }}
               className="inline-block self-start font-display italic text-base text-j-text border-b border-j-border-gold pb-px hover:text-j-text-heading hover:border-j-accent transition-colors"
             >
               <em>{changeReadingLinkText}</em>
-            </Link>
+            </TrackedLink>
           </div>
 
           <div className="md:row-start-1 md:col-start-2">
@@ -194,16 +195,19 @@ export default async function BookingPage({ params }: BookingPageProps) {
           </div>
 
           <div className="md:row-start-2 md:col-start-2 md:justify-self-center md:self-start">
-            <NavigationButton
+            <TrackedLink
               href={BOOKING_ROUTES.letter(reading.slug)}
+              event="cta_click_intake"
+              properties={{ reading_id: reading.slug, position: "verso-cta" }}
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
             >
               Book this Reading →
-            </NavigationButton>
+            </TrackedLink>
           </div>
         </div>
       </main>
 
+      <EntryPageView readingId={reading.slug} />
       <Footer />
     </div>
   );

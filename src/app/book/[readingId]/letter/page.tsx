@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { TrackedLink } from "@/components/BookingAnalytics";
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
-import { NavigationButton } from "@/components/NavigationButton";
 import { ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { BOOKING_ROUTES } from "@/lib/booking/constants";
@@ -112,8 +112,10 @@ export default async function LetterPage({ params }: LetterPageProps) {
               {letterClosing}
             </p>
 
-            <NavigationButton
+            <TrackedLink
               href={BOOKING_ROUTES.intake(reading.slug)}
+              event="cta_click_intake"
+              properties={{ reading_id: reading.slug, position: "drop-cap" }}
               aria-label={`${dropCapCta} — go to intake form`}
               className="relative group block w-max max-w-full mx-auto px-4 py-3 font-display italic font-medium text-2xl text-j-deep leading-tight tracking-tight text-center border-b border-transparent hover:border-j-accent transition-colors"
               style={{ minHeight: "56px" }}
@@ -125,7 +127,7 @@ export default async function LetterPage({ params }: LetterPageProps) {
                 {ctaFirstChar}
               </span>
               <span>{ctaRest}</span>
-            </NavigationButton>
+            </TrackedLink>
 
             <span className="relative block font-body text-[13px] leading-relaxed text-j-text-muted text-center mt-2 max-w-[320px] mx-auto">
               {dropCapCaption}

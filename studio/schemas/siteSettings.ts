@@ -82,6 +82,45 @@ export const siteSettings = defineType({
       title: "Contact Email",
       type: "string",
     }),
+    defineField({
+      name: "consentBanner",
+      title: "Analytics Consent Banner",
+      description:
+        "Shown only to visitors in the EU/EEA, UK, Switzerland, and California (CCPA). To preview your edits, open the Presentation tab in the Studio toolbar — the banner force-renders on any page while you're editing. Layout is fixed; edit copy only.",
+      type: "object",
+      fields: [
+        defineField({
+          name: "title",
+          title: "Title",
+          type: "string",
+          description: 'Heading at the top of the banner (e.g. "A note on analytics")',
+        }),
+        defineField({
+          name: "body",
+          title: "Body Text",
+          type: "text",
+          rows: 3,
+          description:
+            'Plain text. Will be followed by the privacy-policy link automatically.',
+        }),
+        defineField({
+          name: "privacyLinkText",
+          title: "Privacy-Policy Link Text",
+          type: "string",
+          description: 'Link text that points to /privacy (e.g. "Read the privacy policy")',
+        }),
+        defineField({
+          name: "acceptLabel",
+          title: "Accept Button Label",
+          type: "string",
+        }),
+        defineField({
+          name: "declineLabel",
+          title: "Decline Button Label",
+          type: "string",
+        }),
+      ],
+    }),
   ],
   preview: {
     prepare: () => ({ title: "Site Settings" }),

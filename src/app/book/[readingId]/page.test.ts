@@ -50,8 +50,6 @@ function bookingPage(overrides: Partial<SanityBookingPage> = {}): SanityBookingP
     emailDisclaimer: "Only used for this reading.",
     paymentButtonText: "Continue to Payment",
     securityNote: "Secure checkout",
-    entertainmentAcknowledgment: "Entertainment purposes only.",
-    coolingOffAcknowledgment: "I agree that Josephine may begin preparing my reading immediately.",
     formatNote: "Detailed voice note recording + a supporting PDF created entirely for you.",
     closingMessage: "With love, Josephine",
     deliveryNote: "Within 7 days.",
