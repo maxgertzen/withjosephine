@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const constructEventMock = vi.fn();
 const fetchHttpClient = { type: "fetch-client" };
-const stripeCtorMock = vi.fn(function () {
-  return { webhooks: { constructEvent: constructEventMock } };
-}) as unknown as { (...args: unknown[]): unknown; createFetchHttpClient: () => unknown };
-stripeCtorMock.createFetchHttpClient = vi.fn(() => fetchHttpClient);
+const stripeCtorMock = Object.assign(
+  vi.fn(function () {
+    return { webhooks: { constructEvent: constructEventMock } };
+  }),
+  { createFetchHttpClient: vi.fn(() => fetchHttpClient) },
+);
 
 vi.mock("stripe", () => ({
   default: stripeCtorMock,
