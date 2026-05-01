@@ -1,7 +1,5 @@
 import { defineField, defineType } from "sanity";
 
-import { ConsentBannerInput } from "../components/ConsentBannerInput";
-
 export const siteSettings = defineType({
   name: "siteSettings",
   title: "Site Settings",
@@ -88,9 +86,8 @@ export const siteSettings = defineType({
       name: "consentBanner",
       title: "Analytics Consent Banner",
       description:
-        'Shown only to visitors in the EU/EEA, UK, Switzerland, and California (CCPA). Click "Preview consent banner" above to see your edits in a new tab. Layout is fixed; edit copy only.',
+        "Shown only to visitors in the EU/EEA, UK, Switzerland, and California (CCPA). To preview your edits, open the Presentation tab in the Studio toolbar — the banner force-renders on any page while you're editing. Layout is fixed; edit copy only.",
       type: "object",
-      components: { input: ConsentBannerInput },
       fields: [
         defineField({
           name: "title",
