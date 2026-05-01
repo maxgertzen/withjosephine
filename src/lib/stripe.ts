@@ -6,7 +6,13 @@ let cachedClient: Stripe | null = null;
 
 function getStripeClient(): Stripe {
   if (cachedClient) return cachedClient;
-  cachedClient = new Stripe(requireEnv("STRIPE_SECRET_KEY"));
+  // Cloudflare Workers: the Stripe SDK defaults to node:http which workerd
+  // doesn't expose — calls hang until the worker times out. createFetchHttpClient
+  // routes the SDK through global fetch, which workerd does support.
+  cachedClient = new Stripe(requireEnv("STRIPE_SECRET_KEY"), {
+    httpClient: Stripe.createFetchHttpClient(),
+    timeout: 5000,
+  });
   return cachedClient;
 }
 
