@@ -53,9 +53,16 @@ function signOff(): string {
   return `<p style="margin-top: 24px;">With love,<br/>Josephine ✦</p>`;
 }
 
+// File uploads are surfaced as a dedicated "Photo:" link block at the top
+// of the notification; consent toggles (e.g. "I don't know my birth time")
+// are answered structurally elsewhere in the response set, so listing them
+// as "Yes" / "No" rows is noise.
+const NOISE_FIELD_TYPES = new Set(["fileUpload", "consent"]);
+
 function renderResponsesHtml(responses: SubmissionResponse[]): string {
-  if (responses.length === 0) return "<p><em>No responses recorded.</em></p>";
-  const rows = responses
+  const visible = responses.filter((response) => !NOISE_FIELD_TYPES.has(response.fieldType));
+  if (visible.length === 0) return "<p><em>No responses recorded.</em></p>";
+  const rows = visible
     .map(
       (response) => `
         <tr>

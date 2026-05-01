@@ -233,6 +233,17 @@ describe("ThankYouPage paid amount", () => {
     expect(html).not.toContain("line-through");
   });
 
+  it("does not strike when paid is HIGHER than list (Stripe / Sanity drift, not a discount)", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 22900,
+      currency: "usd",
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("$229.00");
+    expect(html).not.toContain("line-through");
+  });
+
   it("renders the list price (no paid amount) when amount_total is null", async () => {
     mockRetrieveSession.mockResolvedValue({
       amount_total: null,

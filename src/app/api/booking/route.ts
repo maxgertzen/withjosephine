@@ -28,10 +28,20 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
   );
 }
 
-function stringifyValue(value: unknown): string {
-  if (Array.isArray(value)) return value.map(String).join(", ");
-  if (typeof value === "boolean") return value ? "true" : "false";
+function lookupLabel(field: SanityFormField, value: string): string {
+  return field.options?.find((option) => option.value === value)?.label ?? value;
+}
+
+function stringifyValue(value: unknown, field: SanityFormField): string {
+  if (Array.isArray(value)) {
+    if (field.type === "multiSelectExact" || field.type === "select") {
+      return value.map((item) => lookupLabel(field, String(item))).join(", ");
+    }
+    return value.map(String).join(", ");
+  }
+  if (typeof value === "boolean") return value ? "Yes" : "No";
   if (value == null) return "";
+  if (field.type === "select") return lookupLabel(field, String(value));
   return String(value);
 }
 
@@ -48,7 +58,7 @@ function buildResponses(
     fieldKey: field.key,
     fieldLabelSnapshot: field.label,
     fieldType: field.type,
-    value: stringifyValue(values[field.key]),
+    value: stringifyValue(values[field.key], field),
   }));
 }
 

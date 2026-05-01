@@ -127,6 +127,24 @@ load-bearing.
 
 ## UX
 
+### Pre-prod data cleanup (test smoke residue)
+- **Source:** Smoke session 2026-05-01.
+- **What:** Test bookings ran end-to-end against prod (CF Workers + real D1 + real Sanity + real R2). The submissions / mirrored Sanity docs / uploaded photos remain. We don't have a dedicated dev environment yet; everything lands in the prod stores.
+- **Action before opening real traffic:**
+  1. `pnpm wrangler d1 execute withjosephine-bookings --remote --command "DELETE FROM submissions WHERE email LIKE '%@gmail.com' OR email LIKE '%@example.com'"` — adjust filter to actual test emails.
+  2. Studio → Submissions → delete each test row that mirrored.
+  3. R2: delete the orphaned objects under `submissions/<id>/` for the deleted IDs (or wait for the orphan-reaper cron once it's running).
+- **Long-term fix:** stand up a real dev environment (separate D1 DB + Sanity dataset + R2 bucket + Stripe test mode wiring on dedicated subdomain like `dev.withjosephine.com`) so the next round of smoke testing doesn't pollute prod.
+
+### Stripe Payment Link prices ↔ Sanity priceDisplay drift (recurring class)
+- **Source:** Smoke session 2026-05-01 — Sanity Soul Blueprint shows `$129` but Stripe Payment Link still charges `$179`.
+- **What:** Sanity has two related fields per reading: `price` (cents, INTEGER) and `priceDisplay` (string). Both editable independently. The Stripe Payment Link is a separate config in Stripe dashboard. Three sources of truth, none reconciled. A Sanity edit to `priceDisplay` doesn't update Stripe; an edit to `price` doesn't update `priceDisplay` either.
+- **Symptoms today:** Sanity shows `priceDisplay: "$129"` + `price: 17900` (cents = $179). Customer is shown $129 throughout the booking flow but charged $179 on Stripe checkout. Thank-you page renders the actual Stripe-charged amount ($179) which now exceeds the listed price.
+- **Action:**
+  1. Pick the canonical price for each reading. Update Sanity `price` (cents) AND `priceDisplay` (string) together. Update the Stripe Payment Link price for that reading. Verify by ordering through.
+  2. Add a Sanity validation rule on `reading` that asserts `priceDisplay` is consistent with `price` (parses dollars-and-cents from the string and matches the cents field). Wouldn't catch Stripe drift but kills the Sanity-internal class.
+  3. Long-term: bake reading prices into a build-time constants file via prebuild script (same pattern as `tokens.override.css`). Drift becomes a build break.
+
 ### Manual end-to-end Stripe round-trip
 - **Source:** Punch 2 — partially covered by smoke agent (stopped before
   Stripe redirect).

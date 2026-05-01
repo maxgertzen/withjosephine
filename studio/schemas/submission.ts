@@ -8,6 +8,14 @@ export const submission = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "createdAt",
+      title: "Submitted At",
+      type: "datetime",
+      readOnly: true,
+      description: "When the customer submitted the intake form.",
+      initialValue: () => new Date().toISOString(),
+    }),
+    defineField({
       name: "status",
       title: "Status",
       type: "string",
@@ -131,12 +139,6 @@ export const submission = defineType({
       title: "Client Reference ID",
       type: "string",
       description: "Sent to Stripe as client_reference_id.",
-    }),
-    defineField({
-      name: "createdAt",
-      title: "Created At",
-      type: "datetime",
-      initialValue: () => new Date().toISOString(),
     }),
     defineField({
       name: "paidAt",

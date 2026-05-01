@@ -206,7 +206,7 @@ export function FileUpload({
                 unoptimized
               />
             ) : null}
-            <span className="font-body text-sm text-j-text truncate">
+            <span className="font-body text-sm text-j-text block min-w-0 flex-1 truncate">
               {filename || "Photo uploaded"}
             </span>
           </div>
