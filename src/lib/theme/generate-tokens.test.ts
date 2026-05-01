@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { SanityTheme } from "@/lib/sanity/types";
 
-import { generateFontsModule, generateTokensCss } from "./generate-tokens";
+import {
+  generateEmailTokensModule,
+  generateFontsModule,
+  generateTokensCss,
+} from "./generate-tokens";
 
 function color(hex: string) {
   return { hex, alpha: 1 };
@@ -143,5 +147,55 @@ describe("generateFontsModule", () => {
 
     expect(output).toContain("Lora");
     expect(output).toContain("Work_Sans");
+  });
+});
+
+describe("generateEmailTokensModule", () => {
+  it("emits brand-default tokens when theme is null", () => {
+    const output = generateEmailTokensModule(null);
+    expect(output).toContain("Auto-generated");
+    expect(output).toContain('ink: "#1C1935"');
+    expect(output).toContain('cream: "#FAF8F4"');
+    expect(output).toContain('gold: "#C4A46B"');
+  });
+
+  it("reflects color overrides from Sanity theme", () => {
+    const theme: SanityTheme = {
+      ...DEFAULT_THEME,
+      colors: { ...DEFAULT_THEME.colors, accent: color("#FF0000"), bgInteractive: color("#222222") },
+    };
+    const output = generateEmailTokensModule(theme);
+    expect(output).toContain('gold: "#FF0000"');
+    expect(output).toContain('ink: "#222222"');
+  });
+
+  it("emits email-safe display font stack with Georgia fallback", () => {
+    const output = generateEmailTokensModule(DEFAULT_THEME);
+    expect(output).toContain('serifFamily: "\'Cormorant Garamond\', Georgia, serif"');
+  });
+
+  it("emits email-safe body font stack with system fallbacks", () => {
+    const output = generateEmailTokensModule(DEFAULT_THEME);
+    expect(output).toContain(
+      'sansFamily: "Inter, -apple-system, Helvetica, Arial, sans-serif"',
+    );
+  });
+
+  it("uses overridden display font in the serif stack", () => {
+    const theme: SanityTheme = { ...DEFAULT_THEME, displayFont: "Playfair Display" };
+    const output = generateEmailTokensModule(theme);
+    expect(output).toContain("'Playfair Display', Georgia, serif");
+  });
+
+  it("uses overridden body font in the sans stack", () => {
+    const theme: SanityTheme = { ...DEFAULT_THEME, bodyFont: "Work Sans" };
+    const output = generateEmailTokensModule(theme);
+    expect(output).toContain("Work Sans, -apple-system, Helvetica, Arial, sans-serif");
+  });
+
+  it("exports a const-asserted emailTokens object", () => {
+    const output = generateEmailTokensModule(null);
+    expect(output).toContain("export const emailTokens");
+    expect(output).toContain("} as const;");
   });
 });

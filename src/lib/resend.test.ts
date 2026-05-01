@@ -122,6 +122,35 @@ describe("sendOrderConfirmation", () => {
     expect(args.html).toContain("Josephine");
   });
 
+  it("renders the typographic masthead + Soul Readings eyebrow", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(buildSubmission());
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain(">Josephine<");
+    expect(html).toContain(">Soul Readings<");
+  });
+
+  it("renders the centered headline 'Your reading is booked'", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(buildSubmission());
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("Your reading is booked");
+  });
+
+  it("renders the booking summary inset with reading name, price, and delivery window", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission({ readingPriceDisplay: "$129" });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("Your reading"); // eyebrow
+    expect(html).toContain(submission.readingName);
+    expect(html).toContain("$129");
+    expect(html).toContain("Delivery within 7 days");
+  });
+
   it("HTML-escapes firstName before injecting", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
     const submission = buildSubmission({ firstName: '<script>x</script>' });
@@ -132,6 +161,21 @@ describe("sendOrderConfirmation", () => {
     const html = sendMock.mock.calls[0]?.[0].html as string;
     expect(html).not.toContain("<script>x</script>");
     expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("HTML-escapes readingName and readingPriceDisplay before injecting", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission({
+      readingName: "Soul <Blueprint>",
+      readingPriceDisplay: "$129<script>",
+    });
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).not.toContain("Soul <Blueprint>");
+    expect(html).not.toContain("$129<script>");
+    expect(html).toContain("Soul &lt;Blueprint&gt;");
+    expect(html).toContain("$129&lt;script&gt;");
   });
 
   it("returns null resendId when RESEND_API_KEY is missing", async () => {

@@ -1,17 +1,11 @@
 import { Resend } from "resend";
 
+import { emailTokens } from "./theme/email-tokens.generated";
 import { escapeHtml } from "./utils";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
-const EMAIL_BRAND = {
-  ink: "#1C1935",
-  body: "#3D3633",
-  muted: "#7A6F6A",
-  divider: "#E8D5C4",
-  serifFamily: "'Cormorant Garamond', serif",
-  sansFamily: "Inter, sans-serif",
-} as const;
+const EMAIL_BRAND = emailTokens;
 
 export type SubmissionResponse = {
   fieldKey: string;
@@ -133,30 +127,84 @@ export async function sendNotificationToJosephine(
   });
 }
 
+function renderOrderConfirmationHtml(args: {
+  firstName: string;
+  readingName: string;
+  readingPriceDisplay: string;
+}): string {
+  const { firstName, readingName, readingPriceDisplay } = args;
+  const priceRow = readingPriceDisplay
+    ? `<span style="color: ${EMAIL_BRAND.muted};">Delivery within 7 days</span>&nbsp;&middot;&nbsp;<span>${readingPriceDisplay}</span>`
+    : `<span style="color: ${EMAIL_BRAND.muted};">Delivery within 7 days</span>`;
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: ${EMAIL_BRAND.warm};">
+      <tr><td align="center" style="padding: 48px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background: ${EMAIL_BRAND.cream}; border: 1px solid ${EMAIL_BRAND.divider}; border-radius: 4px;">
+
+          <tr><td align="center" style="padding: 44px 48px 8px 48px;">
+            <p style="margin: 0; font-family: ${EMAIL_BRAND.serifFamily}; font-weight: 500; font-size: 38px; color: ${EMAIL_BRAND.ink}; line-height: 1; letter-spacing: 0.005em;">Josephine</p>
+            <p style="margin: 10px 0 0 0; font-family: ${EMAIL_BRAND.sansFamily}; font-size: 11px; color: ${EMAIL_BRAND.muted}; letter-spacing: 0.32em; text-transform: uppercase;">Soul Readings</p>
+          </td></tr>
+
+          <tr><td align="center" style="padding: 32px 48px 8px 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td width="18%"><div style="border-top: 1px solid ${EMAIL_BRAND.gold};"></div></td>
+              <td align="center" style="padding: 0 16px; font-family: ${EMAIL_BRAND.serifFamily}; font-weight: 500; font-size: 28px; color: ${EMAIL_BRAND.ink}; line-height: 1.2; white-space: nowrap;">Your reading is booked</td>
+              <td width="18%"><div style="border-top: 1px solid ${EMAIL_BRAND.gold};"></div></td>
+            </tr></table>
+          </td></tr>
+
+          <tr><td style="padding: 32px 48px 16px 48px; font-family: ${EMAIL_BRAND.sansFamily}; color: ${EMAIL_BRAND.body}; line-height: 1.75; font-size: 16px;">
+            <p style="margin: 0 0 18px 0;">Hi ${firstName},</p>
+            <p style="margin: 0 0 18px 0;">Thank you for booking a ${readingName} with me. I have your intake and your payment, and you don't need to do anything else.</p>
+            <p style="margin: 0 0 18px 0;">I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.</p>
+            <p style="margin: 0 0 32px 0;">If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.</p>
+          </td></tr>
+
+          <tr><td style="padding: 0 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: ${EMAIL_BRAND.warm}; border-radius: 4px;"><tr>
+              <td style="padding: 20px 24px; font-family: ${EMAIL_BRAND.sansFamily}; color: ${EMAIL_BRAND.body};">
+                <p style="margin: 0 0 4px 0; font-size: 11px; color: ${EMAIL_BRAND.muted}; letter-spacing: 0.18em; text-transform: uppercase;">Your reading</p>
+                <p style="margin: 0 0 12px 0; font-family: ${EMAIL_BRAND.serifFamily}; font-size: 22px; color: ${EMAIL_BRAND.ink};">${readingName}</p>
+                <p style="margin: 0; font-size: 14px; color: ${EMAIL_BRAND.body};">${priceRow}</p>
+              </td>
+            </tr></table>
+          </td></tr>
+
+          <tr><td style="padding: 36px 48px 16px 48px; font-family: ${EMAIL_BRAND.serifFamily}; font-style: italic; font-size: 22px; color: ${EMAIL_BRAND.ink}; line-height: 1.4;">
+            <p style="margin: 0 0 4px 0;">With love,</p>
+            <p style="margin: 0;">Josephine <span style="color: ${EMAIL_BRAND.gold};">✦</span></p>
+          </td></tr>
+
+          <tr><td style="padding: 24px 48px 36px 48px; border-top: 1px solid ${EMAIL_BRAND.divider}; font-family: ${EMAIL_BRAND.sansFamily}; font-size: 12px; color: ${EMAIL_BRAND.muted}; line-height: 1.7;">
+            <p style="margin: 0;">
+              <a href="mailto:hello@withjosephine.com" style="color: ${EMAIL_BRAND.ink}; text-decoration: none;">hello@withjosephine.com</a>
+              &nbsp;&middot;&nbsp;
+              <a href="https://withjosephine.com" style="color: ${EMAIL_BRAND.ink}; text-decoration: none;">withjosephine.com</a>
+            </p>
+            <p style="margin: 8px 0 0 0;">Readings are offered for entertainment and personal reflection.</p>
+          </td></tr>
+
+        </table>
+      </td></tr>
+    </table>
+  `;
+}
+
 export async function sendOrderConfirmation(
   submission: SubmissionContext,
 ): Promise<EmailSendResult> {
-  const firstName = escapeHtml(submission.firstName);
-  const readingName = escapeHtml(submission.readingName);
-
-  const inner = [
-    paragraph(`Hi ${firstName},`),
-    paragraph(
-      `Thank you for booking a ${readingName} with me. I have your intake and your payment, and you don't need to do anything else.`,
-    ),
-    paragraph(
-      "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-    ),
-    paragraph(
-      "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
-    ),
-    signOff(),
-  ].join("");
+  const html = renderOrderConfirmationHtml({
+    firstName: escapeHtml(submission.firstName),
+    readingName: escapeHtml(submission.readingName),
+    readingPriceDisplay: escapeHtml(submission.readingPriceDisplay),
+  });
 
   return sendOrSkip({
     to: submission.email,
     subject: "Your reading is booked — here's what happens next",
-    html: renderEmailShell(inner),
+    html,
     warnPrefix: "order confirmation",
   });
 }
