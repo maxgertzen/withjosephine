@@ -10,6 +10,8 @@ export type PaidEventDetails = {
   stripeEventId: string;
   stripeSessionId: string;
   paidAt: string;
+  amountPaidCents: number | null;
+  amountPaidCurrency: string | null;
 };
 
 export type ApplyPaidResult = "applied" | "alreadyApplied";
@@ -28,6 +30,8 @@ export async function applyPaidEvent(
     paidAt: details.paidAt,
     stripeEventId: details.stripeEventId,
     stripeSessionId: details.stripeSessionId,
+    amountPaidCents: details.amountPaidCents,
+    amountPaidCurrency: details.amountPaidCurrency,
   });
 
   await Promise.all([

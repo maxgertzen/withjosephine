@@ -34,6 +34,8 @@ const SUBMISSION: SubmissionRecord = {
   voiceNoteUrl: "https://images.withjosephine.com/voice.m4a",
   pdfUrl: "https://images.withjosephine.com/reading.pdf",
   reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  amountPaidCents: null,
+  amountPaidCurrency: null,
 };
 
 beforeEach(() => {

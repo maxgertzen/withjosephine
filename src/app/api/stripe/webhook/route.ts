@@ -31,6 +31,8 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
     stripeEventId: event.id,
     stripeSessionId: session.id,
     paidAt: unixToIso(event.created),
+    amountPaidCents: session.amount_total ?? null,
+    amountPaidCurrency: session.currency ?? null,
   });
 }
 

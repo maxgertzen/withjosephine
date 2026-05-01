@@ -19,6 +19,10 @@ export function constructWebhookEvent(
   return getStripeClient().webhooks.constructEvent(rawBody, signature, webhookSecret);
 }
 
+export async function retrieveCheckoutSession(id: string): Promise<Stripe.Checkout.Session> {
+  return getStripeClient().checkout.sessions.retrieve(id);
+}
+
 export async function listRecentCompletedCheckoutSessions(
   sinceUnixSeconds: number,
 ): Promise<Stripe.Checkout.Session[]> {

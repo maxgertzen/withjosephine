@@ -34,6 +34,8 @@ const SUBMISSION: SubmissionRecord = {
   responses: [],
   createdAt: "2026-04-28T12:00:00Z",
   reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  amountPaidCents: null,
+  amountPaidCurrency: null,
 };
 
 beforeEach(() => {
@@ -84,6 +86,8 @@ describe("/api/cron/reconcile", () => {
       stripeEventId: "reconcile:cs_1",
       stripeSessionId: "cs_1",
       paidAt: "2024-04-28T08:00:00.000Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
   });
 

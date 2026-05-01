@@ -45,6 +45,8 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
     responses: [],
     createdAt: "2026-04-01T00:00:00Z",
     reading: null,
+    amountPaidCents: null,
+    amountPaidCurrency: null,
     ...overrides,
   };
 }

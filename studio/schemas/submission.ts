@@ -145,6 +145,19 @@ export const submission = defineType({
       description: "Set by the Stripe webhook handler when payment is confirmed.",
     }),
     defineField({
+      name: "amountPaidCents",
+      title: "Amount Paid (cents)",
+      type: "number",
+      description:
+        "Actual amount Stripe collected (in smallest currency unit, e.g. cents for USD). Differs from list price when a coupon is redeemed.",
+    }),
+    defineField({
+      name: "amountPaidCurrency",
+      title: "Amount Paid Currency",
+      type: "string",
+      description: "ISO currency code Stripe returned (lowercase, e.g. \"usd\").",
+    }),
+    defineField({
       name: "expiredAt",
       title: "Expired At",
       type: "datetime",

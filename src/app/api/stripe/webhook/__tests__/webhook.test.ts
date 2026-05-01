@@ -30,6 +30,8 @@ const SUBMISSION: SubmissionRecord = {
   responses: [],
   createdAt: "2026-04-28T12:00:00Z",
   reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  amountPaidCents: null,
+  amountPaidCurrency: null,
 };
 
 beforeEach(() => {
@@ -94,6 +96,35 @@ describe("/api/stripe/webhook", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2024-04-28T08:00:00.000Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+    });
+  });
+
+  it("forwards amount_total + currency from the session to applyPaidEvent", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_2",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: {
+        object: {
+          id: "cs_2",
+          client_reference_id: "sub_1",
+          amount_total: 9900,
+          currency: "usd",
+        },
+      },
+    } as never);
+    mockFind.mockResolvedValueOnce(SUBMISSION);
+
+    await callRoute("{}");
+
+    expect(mockApply).toHaveBeenCalledWith(SUBMISSION, {
+      stripeEventId: "evt_2",
+      stripeSessionId: "cs_2",
+      paidAt: "2024-04-28T08:00:00.000Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
     });
   });
 

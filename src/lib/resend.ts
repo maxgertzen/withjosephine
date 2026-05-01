@@ -20,6 +20,7 @@ export type SubmissionContext = {
   firstName: string;
   readingName: string;
   readingPriceDisplay: string;
+  amountPaidDisplay: string | null;
   responses: SubmissionResponse[];
   photoUrl: string | null;
   createdAt: string;
@@ -109,6 +110,9 @@ export async function sendNotificationToJosephine(
     </h1>
     <p><strong>Status:</strong> Paid</p>
     <p><strong>Price:</strong> ${escapeHtml(submission.readingPriceDisplay)}</p>
+    ${submission.amountPaidDisplay
+      ? `<p><strong>Amount paid:</strong> ${escapeHtml(submission.amountPaidDisplay)}</p>`
+      : ""}
     <p><strong>Client email:</strong> ${escapeHtml(submission.email)}</p>
     <p><strong>Submitted:</strong> ${escapeHtml(submission.createdAt)}</p>
     <p><strong>Submission ID:</strong> ${escapeHtml(submission.id)}</p>
@@ -127,14 +131,28 @@ export async function sendNotificationToJosephine(
   });
 }
 
+function renderInsetPrice(
+  readingPriceDisplay: string,
+  amountPaidDisplay: string | null,
+): string {
+  // The thank-you page shows the strikethrough-on-discount visual using
+  // cents-level comparison (Stripe `amount_total` vs Sanity `reading.price`).
+  // Email only has formatted strings, where Intl emits `"$179.00"` while
+  // Sanity stores `"$179"` — those never match by string. Rather than thread
+  // cents through the email render path, just surface what the customer paid.
+  return amountPaidDisplay ?? readingPriceDisplay;
+}
+
 function renderOrderConfirmationHtml(args: {
   firstName: string;
   readingName: string;
   readingPriceDisplay: string;
+  amountPaidDisplay: string | null;
 }): string {
-  const { firstName, readingName, readingPriceDisplay } = args;
-  const priceRow = readingPriceDisplay
-    ? `<span style="color: ${EMAIL_BRAND.muted};">Delivery within 7 days</span>&nbsp;&middot;&nbsp;<span>${readingPriceDisplay}</span>`
+  const { firstName, readingName, readingPriceDisplay, amountPaidDisplay } = args;
+  const priceCell = renderInsetPrice(readingPriceDisplay, amountPaidDisplay);
+  const priceRow = priceCell
+    ? `<span style="color: ${EMAIL_BRAND.muted};">Delivery within 7 days</span>&nbsp;&middot;&nbsp;<span>${priceCell}</span>`
     : `<span style="color: ${EMAIL_BRAND.muted};">Delivery within 7 days</span>`;
 
   return `
@@ -199,6 +217,9 @@ export async function sendOrderConfirmation(
     firstName: escapeHtml(submission.firstName),
     readingName: escapeHtml(submission.readingName),
     readingPriceDisplay: escapeHtml(submission.readingPriceDisplay),
+    amountPaidDisplay: submission.amountPaidDisplay
+      ? escapeHtml(submission.amountPaidDisplay)
+      : null,
   });
 
   return sendOrSkip({

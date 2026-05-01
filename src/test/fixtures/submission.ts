@@ -28,6 +28,7 @@ const BASE_SUBMISSION: SubmissionContext = {
   ],
   photoUrl: "https://images.example.com/photo.jpg",
   createdAt: "2026-04-28T16:30:00Z",
+  amountPaidDisplay: null,
 };
 
 export function buildSubmission(overrides: Partial<SubmissionContext> = {}): SubmissionContext {

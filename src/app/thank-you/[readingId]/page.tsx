@@ -9,8 +9,10 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { retrieveCheckoutSession } from "@/lib/stripe";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -24,6 +26,24 @@ const STRIPE_SESSION_PATTERN = /^cs_(test|live)_[A-Za-z0-9]+$/;
 function isValidStripeSession(sessionId: string | string[] | undefined): sessionId is string {
   if (typeof sessionId !== "string") return false;
   return STRIPE_SESSION_PATTERN.test(sessionId);
+}
+
+type PaidAmount = { display: string | null; cents: number | null };
+
+async function fetchPaidAmount(sessionId: string): Promise<PaidAmount> {
+  try {
+    const session = await retrieveCheckoutSession(sessionId);
+    const cents = session.amount_total ?? null;
+    return {
+      cents,
+      display: formatAmountPaid(cents, session.currency ?? undefined),
+    };
+  } catch (error) {
+    // Surface the rest of the page even if the Stripe API is briefly down —
+    // the customer's payment already succeeded if they're here.
+    console.warn(`[thank-you] Failed to retrieve session ${sessionId}`, error);
+    return { cents: null, display: null };
+  }
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,21 +64,27 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     redirect("/");
   }
 
-  const [sanityReading, thankYouPageContent] = await Promise.all([
+  const [sanityReading, thankYouPageContent, paidAmount] = await Promise.all([
     fetchReading(readingId),
     fetchThankYouPage(),
+    fetchPaidAmount(sessionId),
   ]);
 
   const reading = sanityReading
-    ? { name: sanityReading.name, price: sanityReading.priceDisplay }
+    ? { name: sanityReading.name, price: sanityReading.priceDisplay, cents: sanityReading.price }
     : (() => {
         const fallback = getReadingById(readingId);
-        return fallback ? { name: fallback.name, price: fallback.price } : null;
+        return fallback
+          ? { name: fallback.name, price: fallback.price, cents: null }
+          : null;
       })();
 
   if (!reading) {
     notFound();
   }
+
+  const showsDiscountedPrice =
+    paidAmount.cents !== null && reading.cents !== null && paidAmount.cents !== reading.cents;
 
   const heading = thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
   const subheading =
@@ -96,7 +122,16 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          <span className="font-display text-2xl italic text-j-accent">{reading.price}</span>
+          {showsDiscountedPrice ? (
+            <span className="font-display text-2xl italic flex items-baseline gap-2">
+              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+              <span className="text-j-accent">{paidAmount.display}</span>
+            </span>
+          ) : (
+            <span className="font-display text-2xl italic text-j-accent">
+              {paidAmount.display ?? reading.price}
+            </span>
+          )}
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />

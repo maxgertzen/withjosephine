@@ -68,12 +68,16 @@ describe("repository against in-memory SQLite", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
     });
     const record = await findSubmissionById("sub_1");
     expect(record?.status).toBe("paid");
     expect(record?.paidAt).toBe("2026-04-21T10:00:00Z");
     expect(record?.stripeEventId).toBe("evt_1");
     expect(record?.stripeSessionId).toBe("cs_1");
+    expect(record?.amountPaidCents).toBe(9900);
+    expect(record?.amountPaidCurrency).toBe("usd");
   });
 
   it("marks expired with optional Stripe event id", async () => {
@@ -113,6 +117,8 @@ describe("repository against in-memory SQLite", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-20T10:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
 
     let due = await listPaidSubmissionsForEmail("day2", { paidBefore: "2026-04-30T00:00:00Z" });
@@ -134,6 +140,8 @@ describe("repository against in-memory SQLite", () => {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
       paidAt: "2026-04-20T10:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
     });
 
     expect(
