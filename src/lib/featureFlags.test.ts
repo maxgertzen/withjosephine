@@ -4,6 +4,8 @@ import { isAnalyticsEnabled, isUnderConstruction } from "./featureFlags";
 
 beforeEach(() => {
   vi.unstubAllEnvs();
+  vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "");
+  vi.stubEnv("NEXT_PUBLIC_CF_ANALYTICS_TOKEN", "");
 });
 
 describe("isUnderConstruction", () => {
