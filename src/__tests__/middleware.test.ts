@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Shim NextResponse.next() — we only need the mutable .headers Map.
+// Shim NextResponse.next()/rewrite() — we only need .headers and .rewriteTo for assertions.
 vi.mock("next/server", () => {
   class FakeHeaders {
     private store = new Map<string, string>();
@@ -16,10 +16,16 @@ vi.mock("next/server", () => {
   }
   class FakeResponse {
     headers = new FakeHeaders();
+    rewriteTo: string | null = null;
   }
   return {
     NextResponse: {
       next: () => new FakeResponse(),
+      rewrite: (url: URL) => {
+        const r = new FakeResponse();
+        r.rewriteTo = url.pathname;
+        return r;
+      },
     },
   };
 });
@@ -44,10 +50,18 @@ function makeRequest({
     headers: {
       get: (name: string) => (name.toLowerCase() === "host" ? host : null),
     },
-    nextUrl: { pathname },
+    nextUrl: {
+      pathname,
+      clone: () => ({ pathname }),
+    },
     method: "GET",
   } as unknown as NextRequest;
 }
+
+beforeEach(() => {
+  vi.unstubAllEnvs();
+  vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "");
+});
 
 describe("middleware CSP + draft hardening", () => {
   it("public request on apex gets strict CSP and no Cache-Control/noindex", () => {
@@ -93,5 +107,94 @@ describe("middleware CSP + draft hardening", () => {
     expect(csp).toContain("frame-src 'self' https://*.sanity.studio https://*.sanity.io");
     expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
+});
+
+type RewriteResponse = { rewriteTo: string | null };
+
+describe("middleware apex lockdown (under-construction on)", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "1");
+  });
+
+  it("rewrites apex booking flow to / so it serves the holding page", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/book/soul-blueprint/intake" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBe("/");
+  });
+
+  it("rewrites apex thank-you, contact, draft-mode, booking API to /", () => {
+    const paths = [
+      "/thank-you/abc123",
+      "/api/contact",
+      "/api/booking",
+      "/api/booking/upload-url",
+      "/api/draft/enable",
+      "/privacy",
+      "/terms",
+      "/refund-policy",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} to be rewritten`).toBe("/");
+    }
+  });
+
+  it("does NOT rewrite Stripe webhook on apex (server-to-server must work)", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/api/stripe/webhook" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite cron endpoints on apex (CF cron triggers must work)", () => {
+    const paths = [
+      "/api/cron/reconcile",
+      "/api/cron/cleanup",
+      "/api/cron/email-day-2",
+      "/api/cron/email-day-7",
+      "/api/cron/email-day-7-deliver",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
+  });
+
+  it("does NOT rewrite /listen/[token] on apex (delivery emails hardcode apex URLs)", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/listen/c3ViXzE.deadbeef" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite on preview subdomain (preview is the working surface)", () => {
+    const res = middleware(
+      makeRequest({
+        hasDraft: false,
+        host: "preview.withjosephine.com",
+        pathname: "/book/soul-blueprint/intake",
+      }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite when draft mode is on (Studio Presentation must reach real routes)", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: true, pathname: "/book/soul-blueprint/intake" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
+  it("leaves `/` itself alone — page-level gate handles holding-page render", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
   });
 });
