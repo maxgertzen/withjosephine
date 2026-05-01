@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const constructEventMock = vi.fn();
-const stripeCtorMock = vi.fn(function () {
-  return { webhooks: { constructEvent: constructEventMock } };
-});
+const fetchHttpClient = { type: "fetch-client" };
+const stripeCtorMock = Object.assign(
+  vi.fn(function () {
+    return { webhooks: { constructEvent: constructEventMock } };
+  }),
+  { createFetchHttpClient: vi.fn(() => fetchHttpClient) },
+);
 
 vi.mock("stripe", () => ({
   default: stripeCtorMock,
@@ -33,13 +37,16 @@ describe("constructWebhookEvent", () => {
     expect(result).toBe(fakeEvent);
   });
 
-  it("instantiates the Stripe client with the secret key from env", async () => {
+  it("instantiates the Stripe client with the secret key, a fetch httpClient, and a timeout", async () => {
     constructEventMock.mockReturnValue({});
 
     const { constructWebhookEvent } = await import("./stripe");
     constructWebhookEvent("body", "sig");
 
-    expect(stripeCtorMock).toHaveBeenCalledWith("sk_test_123");
+    expect(stripeCtorMock).toHaveBeenCalledWith("sk_test_123", {
+      httpClient: fetchHttpClient,
+      timeout: 5000,
+    });
   });
 
   it("throws when STRIPE_SECRET_KEY is missing", async () => {
