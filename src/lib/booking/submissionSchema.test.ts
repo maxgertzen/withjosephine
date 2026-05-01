@@ -68,11 +68,12 @@ describe("buildSubmissionSchema", () => {
     expect(schema.safeParse({ tone: "warm" }).success).toBe(true);
   });
 
-  it("enforces exact count for multiSelectExact", () => {
+  it("enforces exact count for multiSelectExact when required", () => {
     const schema = buildSubmissionSchema([
       field({
         key: "focus",
         type: "multiSelectExact",
+        required: true,
         multiSelectCount: 2,
         options: [
           { value: "love", label: "Love" },
@@ -81,15 +82,42 @@ describe("buildSubmissionSchema", () => {
         ],
       }),
     ]);
+    expect(schema.safeParse({ focus: [] }).success).toBe(false);
     expect(schema.safeParse({ focus: ["love"] }).success).toBe(false);
     expect(schema.safeParse({ focus: ["love", "career", "purpose"] }).success).toBe(false);
     expect(schema.safeParse({ focus: ["love", "career"] }).success).toBe(true);
   });
 
-  it("requires consent literal true", () => {
-    const schema = buildSubmissionSchema([field({ key: "agree", type: "consent" })]);
+  it("allows blank or exact count for multiSelectExact when not required", () => {
+    const schema = buildSubmissionSchema([
+      field({
+        key: "focus",
+        type: "multiSelectExact",
+        required: false,
+        multiSelectCount: 2,
+        options: [
+          { value: "love", label: "Love" },
+          { value: "career", label: "Career" },
+          { value: "purpose", label: "Purpose" },
+        ],
+      }),
+    ]);
+    expect(schema.safeParse({ focus: [] }).success).toBe(true);
+    expect(schema.safeParse({ focus: ["love", "career"] }).success).toBe(true);
+    expect(schema.safeParse({ focus: ["love"] }).success).toBe(false);
+    expect(schema.safeParse({ focus: ["love", "career", "purpose"] }).success).toBe(false);
+  });
+
+  it("requires consent literal true when required", () => {
+    const schema = buildSubmissionSchema([field({ key: "agree", type: "consent", required: true })]);
     expect(schema.safeParse({ agree: false }).success).toBe(false);
     expect(schema.safeParse({ agree: true }).success).toBe(true);
+  });
+
+  it("accepts either consent value when not required", () => {
+    const schema = buildSubmissionSchema([field({ key: "tob_unknown", type: "consent", required: false })]);
+    expect(schema.safeParse({ tob_unknown: false }).success).toBe(true);
+    expect(schema.safeParse({ tob_unknown: true }).success).toBe(true);
   });
 
   it("requires non-empty file upload key when required", () => {
