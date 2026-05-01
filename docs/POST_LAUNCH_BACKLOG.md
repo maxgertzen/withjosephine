@@ -298,6 +298,64 @@ These were always scoped out of Phase 1 by the booking-flow build PRD.
 
 ---
 
+## Next-version features (Phase 2)
+
+Items not in current scope. Captured here so they don't drift; revisit
+after launch + the staging/dev separation work lands.
+
+### "Fully booked" toggle with newsletter waitlist
+- **Source:** Max 2026-05-01. Once Josephine is taking real bookings,
+  there will be periods where she's at capacity and needs to pause
+  intake without taking the site down.
+- **What:** A Sanity-controlled switch that, when enabled, replaces
+  the "Book a Reading" CTA with a "Fully booked for now" message and
+  a newsletter signup form. Visitors can opt in to be notified when
+  openings reappear.
+- **Sanity schema (proposed):**
+  - Site-wide kill switch on `siteSettings`: `acceptingNewBookings: boolean`.
+  - Per-reading override on each `reading` doc: `acceptingNewBookings: boolean`
+    (defaults to site-wide value if unset). Lets Josephine close
+    Soul Blueprint while keeping Akashic Record open.
+  - Editable copy fields on `siteSettings` for the closed state:
+    `fullyBookedHeading`, `fullyBookedMessage`, `waitlistOptInLabel`,
+    `waitlistConfirmationMessage`. All Sanity-driven, no hardcoded text.
+- **UX states:**
+  - **Open (current behavior):** reading card CTA → `/book/[reading]`.
+  - **Closed:** reading card CTA → opens an inline form (no route
+    change). Form fields: first name (optional), email (required,
+    validated), opt-in checkbox **unchecked by default** (GDPR/PECR
+    requires affirmative consent for marketing email).
+  - On submit: success state with confirmation copy + close button.
+- **Backend:**
+  - New `/api/waitlist` route. Turnstile-gated like `/api/contact`.
+  - Dual write: Sanity `waitlistSubscriber` doc (so Josephine sees
+    signups in Studio) + Resend Audience (for later broadcast).
+    Same dual-write pattern as bookings.
+  - Double opt-in flow recommended: signup writes a `pending` row,
+    sends a confirmation email with a tokenized link, link flips
+    row to `confirmed` and adds to Resend Audience. Demonstrates
+    consent for compliance.
+- **"Openings available" trigger:**
+  - V1: manual broadcast via Resend dashboard → Audience → Send
+    campaign. No code needed beyond getting them into the audience.
+  - V2 (later): Sanity field `nextOpeningAt: datetime` + cron
+    that fires the campaign automatically. Skip until v1 is in use.
+- **Privacy/legal updates required:**
+  - `/privacy` policy must add a section covering the marketing list
+    (purpose, lawful basis = consent, retention, withdrawal).
+  - Every email needs an unsubscribe link. Resend handles this in
+    their hosted templates — if we keep inline HTML emails, must
+    add the link manually + wire the Resend unsubscribe webhook.
+- **Scope estimate:** 1–2 days. Sanity schema add (4 fields + 1 doc
+  type) + IntakeForm conditional render + new `<WaitlistForm>`
+  component + `/api/waitlist` route + Resend Audience integration
+  + 2 email templates (confirmation + welcome) + privacy policy
+  copy update.
+- **Sequencing:** after PR-F (Mixpanel) + the dev/staging/prod
+  separation work. Phase-2 feature, not blocking initial launch.
+
+---
+
 ## How to use this doc
 
 When an item lands, delete it from this file. When a new "we'll defer
