@@ -1,5 +1,7 @@
 import { defineField, defineType } from "sanity";
 
+import { prepareSubmissionPreview } from "./submissionPreview";
+
 export const submission = defineType({
   name: "submission",
   title: "Submission",
@@ -228,6 +230,7 @@ export const submission = defineType({
     },
   ],
   preview: {
-    select: { title: "email", subtitle: "status", description: "createdAt" },
+    select: { email: "email", status: "status", createdAt: "createdAt", paidAt: "paidAt" },
+    prepare: prepareSubmissionPreview,
   },
 });

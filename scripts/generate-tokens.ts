@@ -5,39 +5,52 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@sanity/client";
-import { generateTokensCss } from "../src/lib/theme/generate-tokens";
+import {
+  generateEmailTokensModule,
+  generateTokensCss,
+} from "../src/lib/theme/generate-tokens";
 import type { SanityTheme } from "../src/lib/sanity/types";
 
-async function main() {
+async function fetchTheme(): Promise<SanityTheme | null> {
   const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
   if (!projectId) {
-    console.log("No NEXT_PUBLIC_SANITY_PROJECT_ID — skipping token generation");
-    return;
+    console.log("No NEXT_PUBLIC_SANITY_PROJECT_ID — using brand defaults");
+    return null;
   }
-
   const client = createClient({
     projectId,
     dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
     apiVersion: "2024-01-01",
     useCdn: true,
   });
-
   console.log("Fetching theme from Sanity...");
-
-  const theme = await client.fetch<SanityTheme | null>(
+  return client.fetch<SanityTheme | null>(
     `*[_type == "theme"][0] { colors, displayFont, bodyFont }`,
   );
+}
+
+async function main() {
+  const theme = await fetchTheme();
 
   const css = generateTokensCss(theme);
-
-  if (!css) {
+  if (css) {
+    const cssPath = resolve(import.meta.dirname, "../src/styles/tokens.override.css");
+    writeFileSync(cssPath, css + "\n", "utf-8");
+    console.log(`Wrote ${cssPath}`);
+  } else {
     console.log("No theme overrides found — skipping tokens.override.css");
-    return;
   }
 
-  const outputPath = resolve(import.meta.dirname, "../src/styles/tokens.override.css");
-  writeFileSync(outputPath, css + "\n", "utf-8");
-  console.log(`Wrote ${outputPath}`);
+  // Email tokens always emit — transactional emails import from this file
+  // and can't fall back to CSS variables. Defaults to brand values when
+  // Sanity is unreachable or no theme document exists.
+  const emailModule = generateEmailTokensModule(theme);
+  const emailPath = resolve(
+    import.meta.dirname,
+    "../src/lib/theme/email-tokens.generated.ts",
+  );
+  writeFileSync(emailPath, emailModule + "\n", "utf-8");
+  console.log(`Wrote ${emailPath}`);
 }
 
 main().catch((error) => {

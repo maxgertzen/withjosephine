@@ -77,9 +77,15 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
       const values = (field.options ?? []).map((option) => option.value);
       const item =
         values.length > 0 ? z.enum(values as [string, ...string[]]) : z.string();
-      return z
-        .array(item)
-        .length(count, `Please choose exactly ${count}.`);
+      if (required) {
+        return z.array(item).length(count, `Please choose exactly ${count}.`);
+      }
+      // Optional multiSelectExact: blank is acceptable, but if filled the
+      // count must still be exact (the field type's defining constraint).
+      return z.array(item).refine(
+        (arr) => arr.length === 0 || arr.length === count,
+        { message: `Please choose exactly ${count}, or leave blank.` },
+      );
     }
 
     case "fileUpload": {
@@ -101,6 +107,7 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
         process.env.NODE_ENV !== "production" &&
         process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
       if (bypass) return z.boolean().optional();
+      if (!required) return z.boolean().optional();
       return z.literal(true, "Please acknowledge to continue.");
     }
 

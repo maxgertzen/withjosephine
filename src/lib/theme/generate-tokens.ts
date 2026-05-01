@@ -70,6 +70,58 @@ export function generateTokensCss(theme: SanityTheme | null): string {
   return lines.join("\n");
 }
 
+const EMAIL_TOKEN_DEFAULTS = {
+  ink: "#1C1935",
+  body: "#3D3633",
+  muted: "#7A6F6A",
+  divider: "#E8D5C4",
+  cream: "#FAF8F4",
+  warm: "#F5F0E8",
+  gold: "#C4A46B",
+} as const;
+
+const EMAIL_COLOR_SOURCES: Record<keyof typeof EMAIL_TOKEN_DEFAULTS, SemanticColorKey> = {
+  ink: "bgInteractive",
+  body: "textPrimary",
+  muted: "textMuted",
+  divider: "blush",
+  cream: "bgPrimary",
+  warm: "bgSection",
+  gold: "accent",
+};
+
+export function generateEmailTokensModule(theme: SanityTheme | null): string {
+  const colors = (Object.keys(EMAIL_TOKEN_DEFAULTS) as Array<keyof typeof EMAIL_TOKEN_DEFAULTS>)
+    .map((tokenKey) => {
+      const sanityKey = EMAIL_COLOR_SOURCES[tokenKey];
+      const overrideHex = theme?.colors?.[sanityKey]?.hex;
+      const value = overrideHex ?? EMAIL_TOKEN_DEFAULTS[tokenKey];
+      return `  ${tokenKey}: "${value}",`;
+    })
+    .join("\n");
+
+  const displayFontName = theme?.displayFont && DISPLAY_FONTS[theme.displayFont]
+    ? theme.displayFont
+    : "Cormorant Garamond";
+  const bodyFontName = theme?.bodyFont && BODY_FONTS[theme.bodyFont]
+    ? theme.bodyFont
+    : "Inter";
+
+  const serifStack = `'${displayFontName}', Georgia, serif`;
+  const sansStack = `${bodyFontName}, -apple-system, Helvetica, Arial, sans-serif`;
+
+  return [
+    "/* Auto-generated from Sanity theme — do not edit manually */",
+    "export const emailTokens = {",
+    colors,
+    `  serifFamily: "${serifStack}",`,
+    `  sansFamily: "${sansStack}",`,
+    "} as const;",
+    "",
+    "export type EmailTokens = typeof emailTokens;",
+  ].join("\n");
+}
+
 type FontConfig = {
   importName: string;
   variable: string;

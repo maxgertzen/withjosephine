@@ -3,6 +3,7 @@ import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { PHOTO_PUBLIC_URL_BASE } from "./constants";
 import type { CreateSubmissionInput } from "./persistence/repository";
 import * as repo from "./persistence/repository";
+import { runMirror } from "./persistence/runMirror";
 import {
   mirrorAppendEmailFired,
   mirrorSubmissionCreate,
@@ -69,7 +70,7 @@ export type CreateSubmissionParams = CreateSubmissionInput & {
 export async function createSubmission(params: CreateSubmissionParams): Promise<void> {
   const { consentAcknowledgedAt, ipAddress, ...input } = params;
   await repo.createSubmission(input);
-  void mirrorSubmissionCreate(input, consentAcknowledgedAt, ipAddress);
+  runMirror(mirrorSubmissionCreate(input, consentAcknowledgedAt, ipAddress));
 }
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
@@ -81,12 +82,14 @@ export async function markSubmissionPaid(
   paid: { stripeEventId: string; stripeSessionId: string; paidAt: string },
 ): Promise<void> {
   await repo.markSubmissionPaid(submissionId, paid);
-  void mirrorSubmissionPatch(submissionId, {
-    status: "paid",
-    paidAt: paid.paidAt,
-    stripeEventId: paid.stripeEventId,
-    stripeSessionId: paid.stripeSessionId,
-  });
+  runMirror(
+    mirrorSubmissionPatch(submissionId, {
+      status: "paid",
+      paidAt: paid.paidAt,
+      stripeEventId: paid.stripeEventId,
+      stripeSessionId: paid.stripeSessionId,
+    }),
+  );
 }
 
 export async function markSubmissionExpired(
@@ -94,11 +97,13 @@ export async function markSubmissionExpired(
   expired: { stripeEventId?: string; expiredAt: string },
 ): Promise<void> {
   await repo.markSubmissionExpired(submissionId, expired);
-  void mirrorSubmissionPatch(submissionId, {
-    status: "expired",
-    expiredAt: expired.expiredAt,
-    ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
-  });
+  runMirror(
+    mirrorSubmissionPatch(submissionId, {
+      status: "expired",
+      expiredAt: expired.expiredAt,
+      ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
+    }),
+  );
 }
 
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
@@ -128,7 +133,7 @@ export async function appendEmailFired(
   entry: EmailFiredEntry,
 ): Promise<void> {
   await repo.appendEmailFired(submissionId, entry);
-  void mirrorAppendEmailFired(submissionId, entry);
+  runMirror(mirrorAppendEmailFired(submissionId, entry));
 }
 
 export async function deleteSubmissionAndPhoto(
@@ -147,7 +152,7 @@ export async function deleteSubmissionAndPhoto(
     }
   }
   await repo.deleteSubmission(submission._id);
-  void mirrorSubmissionDelete(submission._id);
+  runMirror(mirrorSubmissionDelete(submission._id));
   return { photoDeleted };
 }
 
@@ -162,7 +167,7 @@ export async function scrubSubmissionPhoto(
     return false;
   }
   await repo.unsetPhotoR2Key(submission._id);
-  void mirrorUnsetPhotoKey(submission._id);
+  runMirror(mirrorUnsetPhotoKey(submission._id));
   return true;
 }
 
