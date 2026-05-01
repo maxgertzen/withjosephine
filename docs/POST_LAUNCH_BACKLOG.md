@@ -124,6 +124,23 @@ Each item: where it came from + why it was deferred + a one-line action.
   qualitatively. Also good moment to do the privacy-policy patch
   alongside the Web3Forms→Resend cleanup.
 
+### Studio Preview button — local-dev URL fragility
+- **Source:** PR-F1 verification 2026-05-02. The "Preview consent banner"
+  button in Studio (and any future preview button using the same
+  `SANITY_STUDIO_PREVIEW_URL` env var) defaults to `http://localhost:3000`
+  when the env var is unset. Local Studio testing requires `pnpm dev`
+  running on that port AND the browser able to reach it from the
+  Studio context — flaky in practice.
+- **Action:**
+  - Confirm `SANITY_STUDIO_PREVIEW_URL` is set to `https://preview.withjosephine.com`
+    (or whichever host is canonical) on the deployed Studio
+    (`sanity.io/manage` → Project Settings → Deployments → env vars).
+  - Once apex is unparked, this should point at production
+    (`https://withjosephine.com`) since draft mode + Presentation
+    handles the live-preview overlay.
+  - Consider a two-target toggle in `ConsentBannerInput.tsx` (preview
+    vs production) once the staging tier lands.
+
 ### Audit: orphaned schema fields & components
 - **Source:** Surfaced 2026-05-02 from a Studio "required-field empty" error
   on `bookingPage.entertainmentAcknowledgment` + `coolingOffAcknowledgment`.
