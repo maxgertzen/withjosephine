@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { prepareSubmissionPreview } from "./submission";
+import { prepareSubmissionPreview } from "./submissionPreview";
 
 describe("prepareSubmissionPreview", () => {
   it("formats createdAt into the title in human-readable form", () => {
