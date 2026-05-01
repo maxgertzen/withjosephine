@@ -101,6 +101,39 @@ describe("sendNotificationToJosephine", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it("hides fileUpload + consent rows from the responses table (noise; photo shown separately)", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_n" } });
+    const submission = buildSubmission({
+      responses: [
+        {
+          fieldKey: "first_name",
+          fieldLabelSnapshot: "First name",
+          fieldType: "shortText",
+          value: "Ada",
+        },
+        {
+          fieldKey: "photo",
+          fieldLabelSnapshot: "A photo of yourself",
+          fieldType: "fileUpload",
+          value: "submissions/abc/photo.jpg",
+        },
+        {
+          fieldKey: "tob_unknown",
+          fieldLabelSnapshot: "I don't know my birth time",
+          fieldType: "consent",
+          value: "No",
+        },
+      ],
+    });
+    const { sendNotificationToJosephine } = await import("./resend");
+    await sendNotificationToJosephine(submission);
+    const html = sendMock.mock.calls[0]?.[0].html as string;
+    expect(html).toContain("First name");
+    expect(html).toContain("Ada");
+    expect(html).not.toContain("A photo of yourself");
+    expect(html).not.toContain("I don't know my birth time");
+  });
+
   it("includes 'Amount paid' line when amountPaidDisplay is set", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_n" } });
     const submission = buildSubmission({ amountPaidDisplay: "$99.00" });

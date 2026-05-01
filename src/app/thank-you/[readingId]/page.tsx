@@ -84,7 +84,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   }
 
   const showsDiscountedPrice =
-    paidAmount.cents !== null && reading.cents !== null && paidAmount.cents !== reading.cents;
+    paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
   const heading = thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
   const subheading =

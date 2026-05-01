@@ -160,4 +160,92 @@ describe("/api/booking", () => {
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(503);
   });
+
+  it("translates multiSelectExact option codes to labels in stored responses", async () => {
+    mockVerify.mockResolvedValueOnce(true);
+    mockReading.mockResolvedValueOnce(READING);
+    mockForm.mockResolvedValueOnce({
+      ...FORM,
+      sections: [
+        {
+          _id: "sec-1",
+          sectionTitle: "About",
+          fields: [
+            { _id: "f-email", key: "email", label: "Email", type: "email", required: true },
+            {
+              _id: "f-focus",
+              key: "focus",
+              label: "Pick 3",
+              type: "multiSelectExact",
+              required: true,
+              multiSelectCount: 2,
+              options: [
+                { value: "soul_purpose_lifetime", label: "Soul purpose this lifetime" },
+                { value: "embody_higher_self", label: "Embodying my higher self" },
+                { value: "ancestral_wounding", label: "Ancestral wounding" },
+              ],
+            },
+            { _id: "f-agree", key: "agreement", label: "I agree.", type: "consent", required: true },
+          ],
+        },
+      ],
+    });
+
+    await callRoute({
+      readingSlug: "soul-blueprint",
+      values: {
+        email: "ada@example.com",
+        focus: ["soul_purpose_lifetime", "embody_higher_self"],
+        agreement: true,
+      },
+      turnstileToken: "valid-token",
+      consentLabelSnapshot: "I agree.",
+    });
+
+    const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{
+      fieldKey: string;
+      value: string;
+    }>;
+    const focus = responses.find((r) => r.fieldKey === "focus");
+    expect(focus?.value).toBe("Soul purpose this lifetime, Embodying my higher self");
+  });
+
+  it("renders booleans as Yes/No in stored responses", async () => {
+    mockVerify.mockResolvedValueOnce(true);
+    mockReading.mockResolvedValueOnce(READING);
+    mockForm.mockResolvedValueOnce({
+      ...FORM,
+      sections: [
+        {
+          _id: "sec-1",
+          sectionTitle: "About",
+          fields: [
+            { _id: "f-email", key: "email", label: "Email", type: "email", required: true },
+            {
+              _id: "f-tob-unknown",
+              key: "tob_unknown",
+              label: "I don't know my birth time",
+              type: "consent",
+              required: false,
+            },
+            { _id: "f-agree", key: "agreement", label: "I agree.", type: "consent", required: true },
+          ],
+        },
+      ],
+    });
+
+    await callRoute({
+      readingSlug: "soul-blueprint",
+      values: { email: "ada@example.com", tob_unknown: false, agreement: true },
+      turnstileToken: "valid-token",
+      consentLabelSnapshot: "I agree.",
+    });
+
+    const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{
+      fieldKey: string;
+      value: string;
+    }>;
+    const tob = responses.find((r) => r.fieldKey === "tob_unknown");
+    expect(tob?.value).toBe("No");
+  });
 });
