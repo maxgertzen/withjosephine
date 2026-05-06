@@ -80,7 +80,8 @@
 		{
 			"binding": "withjosephine_bookings",
 			"database_name": "withjosephine-bookings",
-			"database_id": "176fe9a9-efcc-41e0-a409-20db90d09ea7"
+			"database_id": "176fe9a9-efcc-41e0-a409-20db90d09ea7",
+			"migrations_dir": "./migrations"
 		}
 	],
 	// NEXT_PUBLIC_* vars are inlined at build time by Next.js.
