@@ -14,6 +14,8 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 
+import { SentryCli } from "@sentry/cli";
+
 const ASSETS_DIR = resolve(".open-next/assets/_next/static");
 
 const { SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT } = process.env;
@@ -53,9 +55,6 @@ try {
         "SENTRY_PROJECT to enable. Maps will still be stripped from public output.",
     );
   } else {
-    // Lazy-load to avoid the ~200ms @sentry/cli + native binary import on the
-    // common skip path (local cf:build, dry CI without secrets).
-    const { default: SentryCli } = await import("@sentry/cli");
     const cli = new SentryCli(null, {
       authToken: SENTRY_AUTH_TOKEN,
       org: SENTRY_ORG,
