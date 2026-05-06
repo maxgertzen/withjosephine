@@ -45,6 +45,20 @@ Each item: where it came from + why it was deferred + a one-line action.
   non-Next inline script is the Cloudflare Insights beacon (already
   explicitly allowed by host).
 
+### AI-bot accessibility policy — decide what we want indexed
+- **Source:** Firewall events review 2026-05-06 (24h Security Events sample showed Claude-SearchBot blocked once on `/sitemap.xml`).
+- **What:** A "Manage AI bots" managed rule is currently active and is blocking AI-search crawlers (Anthropic, presumably also OpenAI / Perplexity / Google AI Overviews indexers). Default-deny posture inherited from the WAF default; never explicitly chosen.
+- **Decision needed (Max + Josephine):** Do we *want* the site indexed by AI-search? Trade-off:
+  - **Allow**: organic discovery via "best akashic record reader" / "soul blueprint reading" prompts in ChatGPT/Claude/Perplexity. New top-of-funnel channel that didn't exist 2 years ago. Low cost — these bots are well-behaved and crawl rarely.
+  - **Block (status quo)**: zero risk of AI tools quoting Josephine's voice/copy, training on practice descriptions, or surfacing prices/contact in summaries. Cleaner brand control. Loses the discovery channel.
+  - **Hybrid**: allow `Claude-SearchBot` + `OAI-SearchBot` + `PerplexityBot` (search/citation, link-back) but keep blocking `GPTBot` / `Google-Extended` / `ClaudeBot` / `CCBot` (training crawlers, no link-back).
+- **Action when decided:**
+  - CF Dashboard → Security → WAF → Managed Rules → "AI bot management": flip from block-all to allow-list, OR
+  - Add a custom rule with explicit UA allowlist for the chosen crawlers.
+  - Update `robots.txt` to match (currently doesn't differentiate).
+  - If allowing AI-search, verify `/sitemap.xml` returns 200 to those UAs (it currently 403s per the firewall log).
+- **No deadline.** Optional. Worth ~30 min of conversation with Josephine before deciding — her brand voice is a real asset and she may have a strong opinion either way.
+
 ### Build-time assertion that prod never carries the Turnstile bypass
 - **Source:** Code review (nice-to-fix), Security review F-2 (nice-to-have).
 - **What:** Three `process.env.NODE_ENV !== "production"` guards short-circuit
@@ -59,13 +73,9 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Infrastructure
 
-### CI env block — remaining missing NEXT_PUBLIC_* vars
-- **Source:** Upload-url 400 investigation 2026-04-30. `NEXT_PUBLIC_*` vars are inlined at build time, so any var not in `.github/workflows/ci.yml` `env:` block is *missing in prod regardless of the GH variable being set*.
-- **Fixed 2026-04-30 in same PR as upload-url:** added `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `NEXT_PUBLIC_SANITY_STUDIO_URL` (the latter was already a GH var since 2026-04-15 but never forwarded).
-- **Still open:**
-  - `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` — read by `src/app/layout.tsx:21` for Cloudflare Web Analytics. Currently absent → analytics never initializes in prod. Add to `vars` + `ci.yml` env block.
-  - `NEXT_PUBLIC_WEB3FORMS_KEY` is set as a SECRET, but `NEXT_PUBLIC_*` should be a (non-secret) variable; also web3forms was replaced with Resend per project decisions, so this is dead. Remove the leftover GH secret.
-- **Action:** when adding any new `NEXT_PUBLIC_*` env var, add it to BOTH `gh variable set` AND `ci.yml` env block in the same change.
+### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
+- **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
+- **Action (Max):** `gh secret delete NEXT_PUBLIC_WEB3FORMS_KEY` at the repo level. No code change.
 
 ### OpenNext `scheduled` handler dispatch
 - **Source:** PR-E shipping (`5abec07`) + every cron route added since.
@@ -78,16 +88,9 @@ Each item: where it came from + why it was deferred + a one-line action.
   small custom one in the Worker entry, or set up an external scheduler
   (GitHub Actions cron, CF Worker triggering itself, etc.).
 
-### Weekly reading-price drift check → Mixpanel event (Becky-facing)
-- **Source:** Max + Becky-ops decision 2026-05-06, follow-up to PR #66 (Sanity priceDisplay validation rule). The rule shows yellow warnings inside Studio, but only Becky's editorial sessions surface them — drift can sit unnoticed if she's not opening the affected reading doc.
-- **What:** New Worker cron `/api/cron/check-price-drift`. Once a week, scans all `*[_type == "reading"]` docs in the production Sanity dataset, parses each `priceDisplay` via the same `parseDisplayToCents` helper from `studio/schemas/reading.ts` (extract to a shared module — Studio + Worker both consume), compares against `price` (cents). For each drifty doc, fires a `pricing_drift_detected` Mixpanel event with `{ reading_slug, price_cents, price_display, parsed_display_cents, dataset }` properties via the server-side Mixpanel ingest helper.
-- **Notification path:** Mixpanel scheduled report (configured in Mixpanel UI by Max) subscribed to the `pricing_drift_detected` event, delivery email = Becky. Mixpanel handles the email send, NOT Resend — Resend is reserved for transactional booking flows. Becky gets at most one email per week if drift exists, none if everything's clean.
-- **Constraints (locked 2026-05-06):**
-  1. **Weekly only** — `0 12 * * 1` (Monday noon UTC) or similar. Not daily.
-  2. **Production only** — schedule lives in `wrangler.jsonc` `[env.production].triggers.crons` block; staging gets no schedule. Staging dataset auto-mirrors prod, so a staging cron would just duplicate alerts.
-  3. **No Resend** — Mixpanel-only notification path.
-- **Sequencing:** depends on **PR-F2** (server-side Mixpanel events) landing the workers-compatible `fetch` → `https://api-js.mixpanel.com/track` helper. Drift-check is a clean first user of that helper. Don't ship before PR-F2.
-- **Action:** small PR after PR-F2: extract `parseDisplayToCents` (currently in `studio/schemas/reading.ts`) to `src/lib/pricing.ts` (importable by Studio + Worker); add `/api/cron/check-price-drift` route mirroring existing `/api/cron/*` patterns (Authorization: Bearer CRON_SECRET); add weekly schedule to prod env in `wrangler.jsonc`; have Max wire the Mixpanel scheduled report → Becky's email manually.
+### Drift-check cron — Mixpanel scheduled report wiring (Max-action)
+- **Code shipped** in the same PR as this entry's removal: `/api/cron/check-price-drift` fires `pricing_drift_detected` to Mixpanel weekly (Mon 12:00 UTC, prod only).
+- **Open Max-action:** in the Mixpanel UI, create a saved report or scheduled email subscribed to the `pricing_drift_detected` event, delivery → Becky's email. Mixpanel handles the email send (not Resend). Until this is wired, the events fire silently.
 
 ### Resend template IDs
 - **Source:** PR-E spec.

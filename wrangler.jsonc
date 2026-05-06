@@ -54,11 +54,13 @@
 	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + email-day-2 + email-day-7-deliver
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
+	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
 	"triggers": {
 		"crons": [
 			"0 */6 * * *",
 			"0 3 * * *",
-			"0 10 * * *"
+			"0 10 * * *",
+			"0 12 * * 1"
 		],
 	},
 	"observability": {

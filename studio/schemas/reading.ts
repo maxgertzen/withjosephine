@@ -1,12 +1,6 @@
 import { defineField, defineType } from "sanity";
 
-const PRICE_DISPLAY_RE = /^\$(\d+)(?:\.(\d{2}))?$/;
-
-function parseDisplayToCents(value: string): number | null {
-  const match = value.match(PRICE_DISPLAY_RE);
-  if (!match) return null;
-  return Number(match[1]) * 100 + Number(match[2] ?? "0");
-}
+import { parseDisplayToCents } from "../../src/lib/pricing";
 
 export const reading = defineType({
   name: "reading",

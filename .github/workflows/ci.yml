@@ -14,6 +14,7 @@ env:
   NEXT_PUBLIC_SANITY_STUDIO_URL: ${{ vars.NEXT_PUBLIC_SANITY_STUDIO_URL }}
   NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
   NEXT_PUBLIC_MIXPANEL_TOKEN: ${{ vars.NEXT_PUBLIC_MIXPANEL_TOKEN }}
+  NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
   # Per-env vars also have repo-level defaults (prod values) so lint /
   # typecheck / test / storybook jobs inherit a working build env. The
   # deploy-* jobs override these with environment-scoped values below.
@@ -78,6 +79,7 @@ jobs:
       NEXT_PUBLIC_UNDER_CONSTRUCTION: ${{ vars.NEXT_PUBLIC_UNDER_CONSTRUCTION }}
       NEXT_PUBLIC_TRACK_NON_PROD: ${{ vars.NEXT_PUBLIC_TRACK_NON_PROD }}
       NEXT_PUBLIC_R2_PUBLIC_HOST: ${{ vars.NEXT_PUBLIC_R2_PUBLIC_HOST }}
+      NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
     permissions:
       contents: read
       deployments: write
@@ -112,6 +114,7 @@ jobs:
       NEXT_PUBLIC_UNDER_CONSTRUCTION: ${{ vars.NEXT_PUBLIC_UNDER_CONSTRUCTION }}
       NEXT_PUBLIC_TRACK_NON_PROD: ${{ vars.NEXT_PUBLIC_TRACK_NON_PROD }}
       NEXT_PUBLIC_R2_PUBLIC_HOST: ${{ vars.NEXT_PUBLIC_R2_PUBLIC_HOST }}
+      NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ vars.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
     permissions:
       contents: read
       deployments: write
