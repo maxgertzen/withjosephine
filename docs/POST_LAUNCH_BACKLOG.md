@@ -302,55 +302,7 @@ Each item: where it came from + why it was deferred + a one-line action.
   a tracking-plan revision.
 
 ### Dev / staging / production environment separation
-**ELEVATED PRIORITY (2026-05-02)** — Max called this out as the
-underlying issue causing the per-PR "is this tracked / is this gated /
-is this safe?" overhead. This work should land sooner rather than later;
-the Mixpanel non-prod opt-in flag (PR-F1, `NEXT_PUBLIC_TRACK_NON_PROD`)
-is a bridge, not a substitute. **During soft-launch:** Becky books on
-preview. The non-prod gate would skip her events by default — set the
-opt-in flag on the preview deploy until apex is unparked, then unset.
-
-- **Source:** Soft-launch retrospective 2026-05-01. The apex was deployed
-  wide-open with the under-construction page layered on as a page-level
-  flag that only gated `/`. Result: `/book/*`, `/api/*`, and legal pages
-  were all reachable on the supposedly-parked apex until PR #55 moved the
-  gate into middleware. Page-level feature flags are not access controls —
-  the project conflated "marketing toggle" with "environment gate" and
-  shipped prod without a closed-by-default posture.
-- **What's missing today:**
-  - No real staging environment. `preview.withjosephine.com` doubles as
-    Studio target, soft-launch booking surface, and de-facto staging —
-    no clean separation of concerns. There's no host where Max can test
-    a destructive change without affecting Becky's live bookings.
-  - No "production is closed by default" pattern. Every new route ships
-    publicly accessible the moment it lands on `main`, with the option
-    to layer access controls on after.
-  - GH Actions has one `vars` block — same env values for every build.
-    No way to point a "staging" deploy at a separate D1 / R2 / Stripe
-    test mode without fighting wrangler.
-  - CF Access is on `preview.` but that's a soft-launch hack, not a
-    permanent staging boundary. Once apex is unparked, the 2-email
-    allowlist on preview becomes obsolete and we lose the staging tier.
-- **Action (multi-step, post-launch):**
-  1. Provision a third Worker/D1/R2 trio for `staging.withjosephine.com`
-     (or rename current preview → staging once apex is live). Stripe
-     test mode keys, separate Sanity dataset, separate D1 binding.
-  2. Add `wrangler.staging.jsonc` (or use Wrangler environments) so
-     `pnpm deploy:staging` and `pnpm deploy:prod` are distinct paths.
-  3. Two GH Actions environments (`staging`, `production`) with their
-     own `vars` + secrets. Promotion = manual approval workflow, not
-     "merge to main = deploy to prod."
-  4. Default-closed posture for any future production environment:
-     ship it middleware-gated to a holding/coming-soon, with an
-     explicit env flag to open the gate. Document the open/close flip
-     as a release step, not a code change.
-  5. Lighthouse / PageSpeed runs against staging (representative perf)
-     before promotion, not against the live customer surface.
-- **Why this is debt, not a defect:** the site works for a single
-  practitioner with one customer in flight. The pattern only breaks
-  when (a) Max needs to test a destructive change without touching
-  production data, or (b) the next "private launch" mode happens and
-  someone forgets to gate at the middleware layer again.
+**Done — staged on `feat/staging-separation`, awaiting final merge to main.** Shipped via PR-S0 (#58, D1 migration runner), PR-S1 (provisioning, no PR), PR-S1.5 (#60, Sanity seed script), PR-S2 (#61, wrangler env split + per-env CI gates), PR-S3 (#62, staging Custom Domain), PR-S4 (operational — required-reviewer on prod env + CF token rotation), PR-S5a (#63, RESEND_DRY_RUN gate), PR-S5b1 (sanity-sync auto-mirror, branch open). Staging worker live at `staging.withjosephine.com` behind CF Access; preview retired. Final step: open feat/staging-separation → main PR, approve prod redeploy.
 
 ---
 
@@ -549,6 +501,25 @@ after launch + the staging/dev separation work lands.
   point; the audit log is the next maturity step before scale or
   before adding marketing-driven processing (which the Phase-2
   newsletter waitlist below would also need).
+
+### Embed Sanity Studio at `staging.withjosephine.com/studio` (nice-to-have)
+- **Source:** Max 2026-05-06, after surfacing that Sanity Studio's Presentation tool can't iframe `staging.withjosephine.com` cleanly when CF Access is in the way. Workaround in place today: open staging.withjosephine.com in another tab, complete Access login, then Presentation iframe carries the cookie (works only if CF Access SameSite=None and browser third-party-cookie policies cooperate — fragile to Privacy Sandbox tightening).
+- **What:** Mount Sanity Studio inside the Next.js worker at `staging.withjosephine.com/studio` using `next-sanity`'s `<NextStudio>` component. Studio shell + iframed preview content live on the same origin → Access cookie is first-party → no SameSite issue, no fragility.
+- **Scope:**
+  1. `pnpm add next-sanity sanity` to www (sanity already in studio/, lands in www too).
+  2. New route `src/app/studio/[[...index]]/page.tsx` mounting `<NextStudio config={config}>`.
+  3. Reference `studio/sanity.config.ts` so the embedded Studio uses the same schema (or extract to a shared module).
+  4. Sanity Project Settings → API → CORS Origins → add `https://staging.withjosephine.com`.
+  5. Optionally retire the hosted `withjosephine.sanity.studio` once embedded is verified — or keep it for prod-dataset edits without preview.
+- **Why deferred:** the cross-tab login workaround is good-enough today. The embed is the architecturally cleaner answer (canonical "co-locate Studio with preview origin" pattern) and removes the SameSite-cookie fragility — worth doing when the workaround starts breaking or when Becky / Josephine want a smoother editor flow.
+- **Effort:** 2–4 hours code + Sanity CORS config + verification.
+
+### Sanity webhook sync — extend to copy referenced assets
+- **Source:** PR-S5b1 sync endpoint scoping 2026-05-06.
+- **What:** `/api/sanity-sync` syncs document edits from prod → staging via Sanity webhook → HMAC-verified endpoint → `getSanityWriteClient().createOrReplace()`. Asset documents (`sanity.imageAsset`, `sanity.fileAsset`) are explicitly skipped by the endpoint — Sanity asset binaries are stored per-dataset in Sanity's CDN, and copying just the asset doc to staging produces broken CDN URLs (the binary lives in the prod dataset's CDN path, not staging's).
+- **Symptom:** if Becky uploads a NEW image in Studio (not editing existing), the doc's `image.asset._ref` points at a prod-only asset, and rendering on `staging.withjosephine.com` shows a broken image until a manual `pnpm seed:staging` re-seeds.
+- **Action:** When the sync endpoint receives a doc with `image.asset._ref` fields, fetch the referenced asset from prod (Sanity API) and write it to staging too — including binary upload via `client.assets.upload()`. Recurse through reference chains. Test against a doc with multiple image refs.
+- **Why deferred:** Becky's typical edits are text changes, not image uploads. The seed script is a manual recovery path until the asset auto-sync ships. Worth doing when image-upload edits become regular.
 
 ### "Fully booked" toggle with newsletter waitlist
 - **Source:** Max 2026-05-01. Once Josephine is taking real bookings,
