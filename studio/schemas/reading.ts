@@ -68,7 +68,7 @@ export const reading = defineType({
           if (displayCents !== cents) {
             return {
               level: "warning" as const,
-              message: `Display does not match Price (cents): "${value}" vs ${cents}¢ ($${(cents / 100).toFixed(2)}). Update one to match the other, or update the Stripe Payment Link to match the new price.`,
+              message: `Display does not match Price (cents): "${value}" vs ${cents}¢ ($${(cents / 100).toFixed(2)}). Update one to match the other — they describe the same listed price. (The Stripe Payment Link price is independent and can differ; coupons make the actual charged amount diverge by design.)`,
             };
           }
           return true;
