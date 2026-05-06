@@ -31,6 +31,12 @@ export type ServerEventMap = {
     submission_id: string;
     reading_id: string;
   };
+  pricing_drift_detected: {
+    reading_slug: string;
+    price_cents: number;
+    price_display: string;
+    parsed_display_cents: number | null;
+  };
 };
 
 export type ServerEventName = keyof ServerEventMap;
