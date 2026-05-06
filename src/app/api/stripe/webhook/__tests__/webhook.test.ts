@@ -13,6 +13,11 @@ vi.mock("@/lib/booking/notifyPaid", () => ({
   applyPaidEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/analytics/server", () => ({
+  serverTrack: vi.fn(),
+}));
+
+import { serverTrack } from "@/lib/analytics/server";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById, markSubmissionExpired } from "@/lib/booking/submissions";
@@ -22,6 +27,7 @@ const mockConstruct = vi.mocked(constructWebhookEvent);
 const mockFind = vi.mocked(findSubmissionById);
 const mockApply = vi.mocked(applyPaidEvent);
 const mockMarkExpired = vi.mocked(markSubmissionExpired);
+const mockServerTrack = vi.mocked(serverTrack);
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -29,7 +35,7 @@ const SUBMISSION: SubmissionRecord = {
   email: "client@example.com",
   responses: [],
   createdAt: "2026-04-28T12:00:00Z",
-  reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
 };
@@ -39,6 +45,7 @@ beforeEach(() => {
   mockFind.mockReset();
   mockApply.mockReset().mockResolvedValue("applied");
   mockMarkExpired.mockReset().mockResolvedValue(undefined);
+  mockServerTrack.mockReset().mockResolvedValue(undefined);
 });
 
 async function callRoute(
@@ -214,5 +221,80 @@ describe("/api/stripe/webhook", () => {
     const res = await callRoute("{}");
     expect(res.status).toBe(200);
     expect(mockMarkExpired).not.toHaveBeenCalled();
+  });
+
+  describe("analytics", () => {
+    it("fires payment_success once on first delivery of completed", async () => {
+      mockConstruct.mockReturnValueOnce({
+        id: "evt_a",
+        type: "checkout.session.completed",
+        created: 1714291200,
+        data: {
+          object: { id: "cs_a", client_reference_id: "sub_1", amount_total: 12900, currency: "usd" },
+        },
+      } as never);
+      mockFind.mockResolvedValueOnce(SUBMISSION);
+      mockApply.mockResolvedValueOnce("applied");
+
+      await callRoute("{}");
+
+      expect(mockServerTrack).toHaveBeenCalledOnce();
+      expect(mockServerTrack).toHaveBeenCalledWith("payment_success", {
+        distinct_id: "sub_1",
+        submission_id: "sub_1",
+        reading_id: "soul-blueprint",
+        amount_paid_cents: 12900,
+        currency: "usd",
+        stripe_session_id: "cs_a",
+      });
+    });
+
+    it("does NOT fire payment_success on idempotent retry", async () => {
+      mockConstruct.mockReturnValueOnce({
+        id: "evt_b",
+        type: "checkout.session.completed",
+        created: 1714291200,
+        data: { object: { id: "cs_b", client_reference_id: "sub_1" } },
+      } as never);
+      mockFind.mockResolvedValueOnce({ ...SUBMISSION, stripeEventId: "evt_b" });
+      mockApply.mockResolvedValueOnce("alreadyApplied");
+
+      await callRoute("{}");
+
+      expect(mockServerTrack).not.toHaveBeenCalled();
+    });
+
+    it("fires payment_expired when expired event newly applies", async () => {
+      mockConstruct.mockReturnValueOnce({
+        id: "evt_c",
+        type: "checkout.session.expired",
+        created: 1714291200,
+        data: { object: { id: "cs_c", client_reference_id: "sub_1" } },
+      } as never);
+      mockFind.mockResolvedValueOnce(SUBMISSION);
+
+      await callRoute("{}");
+
+      expect(mockServerTrack).toHaveBeenCalledWith("payment_expired", {
+        distinct_id: "sub_1",
+        submission_id: "sub_1",
+        reading_id: "soul-blueprint",
+        stripe_session_id: "cs_c",
+      });
+    });
+
+    it("does NOT fire payment_expired when already-applied dedupe trips", async () => {
+      mockConstruct.mockReturnValueOnce({
+        id: "evt_d",
+        type: "checkout.session.expired",
+        created: 1714291200,
+        data: { object: { id: "cs_d", client_reference_id: "sub_1" } },
+      } as never);
+      mockFind.mockResolvedValueOnce({ ...SUBMISSION, stripeEventId: "evt_d" });
+
+      await callRoute("{}");
+
+      expect(mockServerTrack).not.toHaveBeenCalled();
+    });
   });
 });

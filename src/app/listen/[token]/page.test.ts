@@ -16,6 +16,15 @@ vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
 }));
 
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => ({ get: () => null })),
+}));
+
+vi.mock("@/lib/analytics/server", () => ({
+  serverTrack: vi.fn(),
+  generateAnonymousDistinctId: vi.fn(() => "anon-test"),
+}));
+
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import { verifyListenToken } from "@/lib/listenToken";
@@ -33,7 +42,7 @@ const SUBMISSION: SubmissionRecord = {
   deliveredAt: "2026-04-29T12:00:00Z",
   voiceNoteUrl: "https://images.withjosephine.com/voice.m4a",
   pdfUrl: "https://images.withjosephine.com/reading.pdf",
-  reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
 };

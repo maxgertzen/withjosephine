@@ -6,15 +6,22 @@ const sendMock = vi.fn();
 const resendCtorMock = vi.fn(function () {
   return { emails: { send: sendMock } };
 });
+const serverTrackMock = vi.fn();
 
 vi.mock("resend", () => ({
   Resend: resendCtorMock,
+}));
+
+vi.mock("./analytics/server", () => ({
+  serverTrack: serverTrackMock,
+  generateAnonymousDistinctId: vi.fn(() => "anon-test"),
 }));
 
 beforeEach(() => {
   vi.resetModules();
   sendMock.mockReset();
   resendCtorMock.mockClear();
+  serverTrackMock.mockReset();
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubEnv("RESEND_API_KEY", "re_test");
   vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
@@ -498,5 +505,64 @@ describe("RESEND_DRY_RUN gate", () => {
 
     expect(result.resendId).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("email_sent server analytics", () => {
+  it("fires email_sent on real send with the right sub_type + submission_id", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission();
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    expect(serverTrackMock).toHaveBeenCalledOnce();
+    expect(serverTrackMock).toHaveBeenCalledWith("email_sent", {
+      distinct_id: submission.id,
+      sub_type: "order_confirmation",
+      submission_id: submission.id,
+      recipient_redacted: expect.stringContaining("***"),
+      resend_id_present: true,
+    });
+  });
+
+  it("uses anonymous distinct_id and null submission_id for contact_form", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_cf" } });
+    const { sendContactMessage } = await import("./resend");
+
+    await sendContactMessage({
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      message: "Hi",
+    });
+
+    expect(serverTrackMock).toHaveBeenCalledOnce();
+    const call = serverTrackMock.mock.calls[0];
+    expect(call?.[0]).toBe("email_sent");
+    const props = call?.[1] as Record<string, unknown>;
+    expect(props.sub_type).toBe("contact_form");
+    expect(props.submission_id).toBeNull();
+    expect(props.distinct_id).toBe("anon-test");
+  });
+
+  it("does NOT fire on RESEND_DRY_RUN", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const submission = buildSubmission();
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    expect(serverTrackMock).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire when RESEND_API_KEY is unset", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    const submission = buildSubmission();
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    expect(serverTrackMock).not.toHaveBeenCalled();
   });
 });
