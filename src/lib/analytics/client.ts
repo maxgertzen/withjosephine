@@ -2,7 +2,7 @@
 
 import mixpanel from "mixpanel-browser";
 
-import { PRODUCTION_HOSTS } from "@/lib/constants";
+import { deriveEnvironmentFromHost } from "@/lib/constants";
 
 import type { ClientEventMap, ClientEventName } from "./events";
 import { HEADLESS_UA_PATTERN } from "./headless";
@@ -22,13 +22,6 @@ type QueuedEvent = {
 const MAX_QUEUED_EVENTS = 100;
 const queue: QueuedEvent[] = [];
 
-function deriveEnvironment(host: string): string {
-  if (PRODUCTION_HOSTS.includes(host)) return "production";
-  if (host.startsWith("preview.")) return "preview";
-  if (host.endsWith(".workers.dev")) return "workers-dev";
-  return "local";
-}
-
 export function initAnalytics(): void {
   if (bootstrapped) return;
   if (typeof window === "undefined") return;
@@ -41,7 +34,7 @@ export function initAnalytics(): void {
   }
 
   const host = window.location.host;
-  const env = deriveEnvironment(host);
+  const env = deriveEnvironmentFromHost(host);
   const trackNonProd = process.env.NEXT_PUBLIC_TRACK_NON_PROD === "1";
   if (env !== "production" && !trackNonProd) {
     queue.length = 0;

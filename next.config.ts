@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
     // Static images are pre-optimized to WebP via `pnpm optimize-images` (sharp).
     unoptimized: true,
   },
+  // Emits client-bundle .map files alongside the JS chunks so sentry-cli
+  // can inject Debug IDs and upload them. The CI sourcemap-upload step
+  // deletes the .map files from .open-next/assets after upload, so they
+  // never reach the public asset output.
+  productionBrowserSourceMaps: true,
   // `outputFileTracingExcludes` deliberately absent. Any non-empty value
   // makes Next 16.2.x + OpenNext 1.19.4 + workerd duplicate
   // `AsyncLocalStorage`, so per-request workStore is never initialized and

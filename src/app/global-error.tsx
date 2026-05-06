@@ -3,6 +3,8 @@
 
 import { useEffect } from "react";
 
+import { captureException } from "@/lib/sentry-client";
+
 export default function GlobalError({
   error,
   reset,
@@ -12,6 +14,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[global-error]", error);
+    captureException(error);
   }, [error]);
   return (
     <html lang="en">
