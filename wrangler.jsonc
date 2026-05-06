@@ -84,6 +84,57 @@
 			"migrations_dir": "./migrations"
 		}
 	],
+	// Top-level (production) plain vars. Mirror in dashboard for visibility.
+	// `ENVIRONMENT` is read at runtime to assert bindings agree with the env
+	// (see src/lib/booking/envAssertions.ts).
+	"vars": {
+		"BOOKING_DB_DRIVER": "d1",
+		"ENVIRONMENT": "production"
+	},
+	// ─── Staging environment ────────────────────────────────────────────────
+	// Wrangler env blocks do NOT inherit from top-level — every binding has to
+	// be repeated. Deploy with `wrangler deploy --env staging`. Top-level
+	// (no --env flag) keeps deploying to the production worker `withjosephine`.
+	"env": {
+		"staging": {
+			"name": "withjosephine-staging",
+			"compatibility_date": "2025-08-16",
+			"compatibility_flags": [
+				"nodejs_compat",
+				"global_fetch_strictly_public"
+			],
+			"assets": {
+				"directory": ".open-next/assets",
+				"binding": "ASSETS"
+			},
+			"r2_buckets": [
+				{
+					"binding": "BOOKING_PHOTOS",
+					"bucket_name": "withjosephine-booking-photos-staging"
+				}
+			],
+			"d1_databases": [
+				{
+					"binding": "withjosephine_bookings",
+					"database_name": "withjosephine-bookings-staging",
+					"database_id": "4e1ea315-0628-40e6-a19b-527ad1ee4c4c",
+					"migrations_dir": "./migrations"
+				}
+			],
+			"triggers": {
+				"crons": [
+					"0 */6 * * *",
+					"0 3 * * *",
+					"0 10 * * *"
+				]
+			},
+			"vars": {
+				"BOOKING_DB_DRIVER": "d1",
+				"ENVIRONMENT": "staging",
+				"RESEND_DRY_RUN": "1"
+			}
+		}
+	}
 	// NEXT_PUBLIC_* vars are inlined at build time by Next.js.
 	// Set them in the Cloudflare dashboard: Workers > withjosephine > Settings > Variables.
 }
