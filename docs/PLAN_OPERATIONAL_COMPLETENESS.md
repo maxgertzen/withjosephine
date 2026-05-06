@@ -85,6 +85,27 @@ Followups (not in this branch):
 - **Visual preview** — added `pnpm email:preview` (Max-driven check). Renders all 6 emails to `email-previews/*.html` for browser-based parity verification against the legacy outputs in his inbox. Output dir gitignored.
 - The CRM-decoupling plan (project CLAUDE.md → "Post-launch future enhancements") is the durable answer once volume + Becky's needs justify it.
 
+### 2026-05-06 — Sub-PR #4 queued: Studio file-upload UI for Day-7 delivery (LAUNCH BLOCKER)
+
+Surfaced 2026-05-06 by Max's question: "where/how will Becky set up the file and assign it correctly?". Answer: today's flow is broken. The Sanity submission schema has `voiceNoteUrl` / `pdfUrl` as plain `string` fields — Studio renders them as text inputs, and there's no R2 admin upload surface. Becky has no way to put audio + PDF at a stable URL without an engineer running `pnpm tsx scripts/mark-delivered.mts` from a terminal.
+
+**Fix:** convert the schema fields to Sanity file assets. Becky drag-drops audio + PDF in Studio → Sanity CDN URL → set `deliveredAt` → day-7-deliver cron fires automatically (via Item #1's scheduled handler).
+
+**Files to touch (verify each via grep before assuming the list is complete):**
+- `studio/schemas/submission.ts` — `voiceNoteUrl: string` → `voiceNote: file`, `pdfUrl: string` → `readingPdf: file`. Sanity validation: required when `deliveredAt` is set.
+- `src/lib/booking/persistence/sanityMirror.ts` — `mirrorSubmissionPatch` patch shape changes. After Sanity asset upload, resolve `asset.url` and write that back to D1's URL columns (recommended) so the listen page consumer keeps its current shape.
+- `src/lib/booking/persistence/repository.ts` — D1 columns `voice_note_url` + `pdf_url` keep their TEXT type if we resolve `asset.url`; no D1 schema migration needed in that case.
+- `src/app/listen/[token]/...` — listen page reads `voiceNoteUrl` / `pdfUrl` from D1; no change if D1 stores resolved URL strings.
+- `src/app/api/cron/email-day-7-deliver/route.ts` — fires on `deliveredAt`; no change.
+- `scripts/mark-delivered.mts` — CLI stopgap, becomes obsolete after this lands. Delete or repurpose for testing.
+- Tests — existing tests use the URL-string shape; update fixtures + add a Sanity-asset round-trip test.
+
+**Data-migration consideration:** prod D1 + prod Sanity probably have ZERO completed deliveries today (Becky hasn't run the live flow yet). Verify before migrating: `wrangler d1 execute --remote --command "SELECT id, delivered_at FROM submissions WHERE delivered_at IS NOT NULL"`. If zero rows, the migration is "swap field type" — no backfill needed. If non-zero, write a migration that uploads each existing URL's content to Sanity assets OR keeps both shapes during a transition.
+
+**Effort:** ~2–4hr focused session. Schema migration + listen-page asset deref + mirror-write update + tests.
+
+**Status:** queued as the next sub-PR off this integration branch. After it lands, the integration branch merges to main as a single PR carrying all 4 items.
+
 ### 2026-05-06 — Item #2 landed: D1 → Sanity reconcile cron
 
 New `/api/cron/reconcile-mirror` route walks D1 submissions from the last 7 days, fetches the matching Sanity docs in a single `_id in $ids` GROQ query, and uses a pure `diffSubmission` helper (`src/lib/booking/persistence/reconcileMirror.ts`) to decide skip/create/patch per row. Compares 8 fields (status, paidAt, expiredAt, deliveredAt, voiceNoteUrl, pdfUrl, amountPaidCents, amountPaidCurrency) plus `emailsFired` array membership keyed by `(type, sentAt)`. Patch path uses existing `mirrorSubmissionPatch` + `mirrorAppendEmailFired` from `sanityMirror.ts` so semantics match the original mirror writes.
