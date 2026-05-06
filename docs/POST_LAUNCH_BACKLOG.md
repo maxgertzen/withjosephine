@@ -88,10 +88,6 @@ Each item: where it came from + why it was deferred + a one-line action.
   small custom one in the Worker entry, or set up an external scheduler
   (GitHub Actions cron, CF Worker triggering itself, etc.).
 
-### Drift-check cron — Mixpanel scheduled report wiring (Max-action)
-- **Code shipped** in the same PR as this entry's removal: `/api/cron/check-price-drift` fires `pricing_drift_detected` to Mixpanel weekly (Mon 12:00 UTC, prod only).
-- **Open Max-action:** in the Mixpanel UI, create a saved report or scheduled email subscribed to the `pricing_drift_detected` event, delivery → Becky's email. Mixpanel handles the email send (not Resend). Until this is wired, the events fire silently.
-
 ### Resend template IDs
 - **Source:** PR-E spec.
 - **What:** Email bodies are inlined HTML strings in `src/lib/resend.ts`.
