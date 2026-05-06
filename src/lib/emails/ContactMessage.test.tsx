@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
 import { ContactMessage } from "./ContactMessage";
-import { visibleText } from "./test-helpers";
+import { assertBrandTokens, visibleText } from "./test-helpers";
 
 const PROPS = {
   name: "Ada Lovelace",
@@ -40,7 +40,6 @@ describe("ContactMessage — visual parity with legacy resend.tsx", () => {
 
   it("uses serif font for heading + divider color from tokens", async () => {
     const html = await render(<ContactMessage {...PROPS} />);
-    expect(html).toMatch(/Cormorant Garamond/);
-    expect(html.toLowerCase()).toContain("#e8d5c4");
+    expect(() => assertBrandTokens(html, { serif: true, divider: true })).not.toThrow();
   });
 });

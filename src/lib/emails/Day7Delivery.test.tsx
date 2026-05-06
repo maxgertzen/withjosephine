@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
 import { Day7Delivery } from "./Day7Delivery";
-import { linkHrefs, visibleText } from "./test-helpers";
+import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
 
 const PROPS = {
   firstName: "Ada",
@@ -33,9 +33,9 @@ describe("Day7Delivery — visual parity with legacy resend.tsx", () => {
     expect(linkHrefs(html).has(PROPS.listenUrl)).toBe(true);
   });
 
-  it("uses the ink color #1C1935 from email tokens for the link", async () => {
+  it("uses the ink color from email tokens for the link", async () => {
     const html = await render(<Day7Delivery {...PROPS} />);
-    expect(html.toLowerCase()).toContain("#1c1935");
+    expect(() => assertBrandTokens(html, { ink: true })).not.toThrow();
   });
 
   it("escapes HTML in firstName + readingName", async () => {

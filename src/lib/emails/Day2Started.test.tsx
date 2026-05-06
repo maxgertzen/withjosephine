@@ -7,7 +7,7 @@ import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
 import { Day2Started } from "./Day2Started";
-import { visibleText } from "./test-helpers";
+import { assertBrandTokens, visibleText } from "./test-helpers";
 
 const FIRST_NAME = "Ada";
 
@@ -33,9 +33,9 @@ describe("Day2Started — visual parity with legacy resend.ts", () => {
     expect(html).toMatch(/Inter/);
   });
 
-  it("uses the body color #3D3633 from email tokens (legacy parity)", async () => {
+  it("uses the body color from email tokens (legacy parity)", async () => {
     const html = await render(<Day2Started firstName={FIRST_NAME} />);
-    expect(html.toLowerCase()).toContain("#3d3633");
+    expect(() => assertBrandTokens(html, { body: true })).not.toThrow();
   });
 
   it("escapes HTML in firstName", async () => {

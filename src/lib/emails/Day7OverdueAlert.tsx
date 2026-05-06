@@ -1,7 +1,5 @@
 import { Text } from "@react-email/components";
 
-import { emailTokens as t } from "@/lib/theme/email-tokens.generated";
-
 import { EmailShell } from "./EmailShell";
 import { LabelValueRow } from "./LabelValueRow";
 import { SerifHeading } from "./SerifHeading";
@@ -29,7 +27,7 @@ export function Day7OverdueAlert({
       <LabelValueRow label="Reading">{readingName}</LabelValueRow>
       <LabelValueRow label="Submission ID">{submissionId}</LabelValueRow>
       <LabelValueRow label="Created">{createdAt}</LabelValueRow>
-      <Text style={{ color: t.muted, fontSize: 14, marginTop: 24 }}>
+      <Text className="text-muted text-sm mt-6">
         Mark <code>deliveredAt</code> in Studio after uploading the voice note + PDF to fire the client delivery email.
       </Text>
     </EmailShell>

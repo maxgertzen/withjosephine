@@ -1,7 +1,6 @@
 import { Link, Text } from "@react-email/components";
 
 import type { SubmissionResponse } from "@/lib/resend";
-import { emailTokens as t } from "@/lib/theme/email-tokens.generated";
 
 import { EmailShell } from "./EmailShell";
 import { LabelValueRow } from "./LabelValueRow";
@@ -50,7 +49,7 @@ export function JosephineNotification({
           <Link href={photoUrl}>{photoUrl}</Link>
         </LabelValueRow>
       ) : null}
-      <SerifHeading as="h2" style={{ marginTop: 24 }}>
+      <SerifHeading as="h2" className="mt-6">
         Responses
       </SerifHeading>
       {visible.length === 0 ? (
@@ -58,33 +57,14 @@ export function JosephineNotification({
           <em>No responses recorded.</em>
         </Text>
       ) : (
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            fontFamily: t.sansFamily,
-          }}
-        >
+        <table className="font-sans w-full" style={{ borderCollapse: "collapse" }}>
           <tbody>
             {visible.map((r) => (
               <tr key={r.fieldKey}>
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    verticalAlign: "top",
-                    fontWeight: 600,
-                    color: t.body,
-                  }}
-                >
+                <td className="text-body align-top font-semibold" style={{ padding: "8px 12px" }}>
                   {r.fieldLabelSnapshot}
                 </td>
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    verticalAlign: "top",
-                    color: t.body,
-                  }}
-                >
+                <td className="text-body align-top" style={{ padding: "8px 12px" }}>
                   {r.value}
                 </td>
               </tr>

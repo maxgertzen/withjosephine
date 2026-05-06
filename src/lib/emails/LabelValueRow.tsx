@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 
 /**
  * Bold label followed by a value, both inline in a `<Text>` block. Used by
- * the Josephine-facing notification emails (booking summary + overdue
- * alert) to keep the visual rhythm consistent across rows.
+ * Josephine-facing notification emails for visual rhythm consistency.
  */
 export type LabelValueRowProps = {
   label: string;

@@ -1,8 +1,6 @@
 import { Hr } from "@react-email/components";
 import { Fragment } from "react";
 
-import { emailTokens as t } from "@/lib/theme/email-tokens.generated";
-
 import { EmailShell } from "./EmailShell";
 import { LabelValueRow } from "./LabelValueRow";
 import { SerifHeading } from "./SerifHeading";
@@ -21,7 +19,7 @@ export function ContactMessage({ name, email, message }: ContactMessageProps) {
       <LabelValueRow label="From">
         {name} &lt;{email}&gt;
       </LabelValueRow>
-      <Hr style={{ borderTop: `1px solid ${t.divider}`, margin: "24px 0" }} />
+      <Hr className="border-divider my-6" />
       <div style={{ whiteSpace: "pre-wrap" }}>
         {lines.map((line, index) => (
           <Fragment key={index}>

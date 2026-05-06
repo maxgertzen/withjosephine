@@ -41,32 +41,39 @@ export function linkHrefs(html: string): Set<string> {
 }
 
 /**
+ * Tailwind's `<Tailwind>` provider compiles classNames to inline rgb()
+ * values, while raw inline `color: #...` styles emit hex. To keep parity
+ * tests resilient to either form, we accept both representations of each
+ * brand token.
+ */
+const TOKEN_VARIANTS: Record<string, ReadonlyArray<string>> = {
+  ink: ["#1c1935", "rgb(28,25,53)"],
+  body: ["#3d3633", "rgb(61,54,51)"],
+  muted: ["#7a6f6a", "rgb(122,111,106)"],
+  divider: ["#e8d5c4", "rgb(232,213,196)"],
+  cream: ["#faf8f4", "rgb(250,248,244)"],
+  warm: ["#f5f0e8", "rgb(245,240,232)"],
+  gold: ["#c4a46b", "rgb(196,164,107)"],
+};
+
+/**
  * Assert that the rendered HTML uses the brand tokens we care about. Each
- * named token is checked for presence (case-insensitive). Pass only the
- * tokens that are load-bearing for the email — e.g. `signature` emails
- * don't necessarily need a `gold` accent.
+ * named token is checked for presence (case-insensitive, hex or rgb form).
+ * Pass only the tokens that are load-bearing for the email.
  */
 export function assertBrandTokens(
   html: string,
-  tokens: { serif?: boolean; ink?: boolean; gold?: boolean; cream?: boolean; warm?: boolean; body?: boolean },
+  tokens: { serif?: boolean; ink?: boolean; gold?: boolean; cream?: boolean; warm?: boolean; body?: boolean; muted?: boolean; divider?: boolean },
 ): void {
-  const haystack = html.toLowerCase();
+  const haystack = html.toLowerCase().replace(/\s+/g, "");
   if (tokens.serif && !/cormorant garamond/i.test(html)) {
     throw new Error("expected rendered HTML to use the Cormorant Garamond serif token");
   }
-  if (tokens.ink && !haystack.includes("#1c1935")) {
-    throw new Error("expected rendered HTML to use the ink token #1C1935");
-  }
-  if (tokens.gold && !haystack.includes("#c4a46b")) {
-    throw new Error("expected rendered HTML to use the gold token #C4A46B");
-  }
-  if (tokens.cream && !haystack.includes("#faf8f4")) {
-    throw new Error("expected rendered HTML to use the cream token #FAF8F4");
-  }
-  if (tokens.warm && !haystack.includes("#f5f0e8")) {
-    throw new Error("expected rendered HTML to use the warm token #F5F0E8");
-  }
-  if (tokens.body && !haystack.includes("#3d3633")) {
-    throw new Error("expected rendered HTML to use the body color token #3D3633");
+  for (const [name, variants] of Object.entries(TOKEN_VARIANTS)) {
+    if (tokens[name as keyof typeof tokens] !== true) continue;
+    const found = variants.some((v) => haystack.includes(v));
+    if (!found) {
+      throw new Error(`expected rendered HTML to use the ${name} token (any of: ${variants.join(", ")})`);
+    }
   }
 }

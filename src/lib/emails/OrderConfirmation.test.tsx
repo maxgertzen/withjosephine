@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
 import { OrderConfirmation } from "./OrderConfirmation";
-import { linkHrefs, visibleText } from "./test-helpers";
+import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
 
 const PROPS = {
   firstName: "Ada",
@@ -82,12 +82,10 @@ describe("OrderConfirmation — visual parity with legacy resend.tsx", () => {
   });
 
   it("uses the brand serif family + cream + warm + ink + gold tokens", async () => {
-    const html = (await render(<OrderConfirmation {...PROPS} />)).toLowerCase();
-    expect(html).toMatch(/cormorant garamond/);
-    expect(html).toContain("#faf8f4"); // cream
-    expect(html).toContain("#f5f0e8"); // warm
-    expect(html).toContain("#1c1935"); // ink
-    expect(html).toContain("#c4a46b"); // gold
+    const html = await render(<OrderConfirmation {...PROPS} />);
+    expect(() =>
+      assertBrandTokens(html, { serif: true, cream: true, warm: true, ink: true, gold: true }),
+    ).not.toThrow();
   });
 
   it("escapes HTML in firstName", async () => {
