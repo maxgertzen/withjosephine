@@ -78,6 +78,17 @@ Each item: where it came from + why it was deferred + a one-line action.
   small custom one in the Worker entry, or set up an external scheduler
   (GitHub Actions cron, CF Worker triggering itself, etc.).
 
+### Weekly reading-price drift check → Mixpanel event (Becky-facing)
+- **Source:** Max + Becky-ops decision 2026-05-06, follow-up to PR #66 (Sanity priceDisplay validation rule). The rule shows yellow warnings inside Studio, but only Becky's editorial sessions surface them — drift can sit unnoticed if she's not opening the affected reading doc.
+- **What:** New Worker cron `/api/cron/check-price-drift`. Once a week, scans all `*[_type == "reading"]` docs in the production Sanity dataset, parses each `priceDisplay` via the same `parseDisplayToCents` helper from `studio/schemas/reading.ts` (extract to a shared module — Studio + Worker both consume), compares against `price` (cents). For each drifty doc, fires a `pricing_drift_detected` Mixpanel event with `{ reading_slug, price_cents, price_display, parsed_display_cents, dataset }` properties via the server-side Mixpanel ingest helper.
+- **Notification path:** Mixpanel scheduled report (configured in Mixpanel UI by Max) subscribed to the `pricing_drift_detected` event, delivery email = Becky. Mixpanel handles the email send, NOT Resend — Resend is reserved for transactional booking flows. Becky gets at most one email per week if drift exists, none if everything's clean.
+- **Constraints (locked 2026-05-06):**
+  1. **Weekly only** — `0 12 * * 1` (Monday noon UTC) or similar. Not daily.
+  2. **Production only** — schedule lives in `wrangler.jsonc` `[env.production].triggers.crons` block; staging gets no schedule. Staging dataset auto-mirrors prod, so a staging cron would just duplicate alerts.
+  3. **No Resend** — Mixpanel-only notification path.
+- **Sequencing:** depends on **PR-F2** (server-side Mixpanel events) landing the workers-compatible `fetch` → `https://api-js.mixpanel.com/track` helper. Drift-check is a clean first user of that helper. Don't ship before PR-F2.
+- **Action:** small PR after PR-F2: extract `parseDisplayToCents` (currently in `studio/schemas/reading.ts`) to `src/lib/pricing.ts` (importable by Studio + Worker); add `/api/cron/check-price-drift` route mirroring existing `/api/cron/*` patterns (Authorization: Bearer CRON_SECRET); add weekly schedule to prod env in `wrangler.jsonc`; have Max wire the Mixpanel scheduled report → Becky's email manually.
+
 ### Resend template IDs
 - **Source:** PR-E spec.
 - **What:** Email bodies are inlined HTML strings in `src/lib/resend.ts`.
