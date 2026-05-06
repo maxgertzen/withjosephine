@@ -1,0 +1,142 @@
+import { decodeSignatureHeader, isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
+import { NextResponse } from "next/server";
+
+import { optionalEnv } from "@/lib/env";
+import { getSanityWriteClient } from "@/lib/sanity/client";
+
+/**
+ * Sanity → staging dataset auto-sync.
+ *
+ * Receives webhooks from the production Sanity dataset (configured manually
+ * in Project Settings → API → Webhooks) and mirrors the change into the
+ * staging dataset. The staging worker's NEXT_PUBLIC_SANITY_DATASET=staging
+ * makes `getSanityWriteClient()` resolve to the staging dataset.
+ *
+ * Drafts (`drafts.<id>`) are first-class — when "Trigger webhook when drafts
+ * are modified" is enabled in the Sanity webhook UI, draft changes sync too.
+ * That's what makes Presentation tool work post-sunset (the staging worker
+ * in draft mode reads `drafts.<id>` from staging and shows the in-flight
+ * edit).
+ *
+ * Auth: HMAC SHA-256 verification via Sanity's official `@sanity/webhook`
+ * toolkit (`isValidSignature`, `decodeSignatureHeader`). Endpoint returns
+ * 404 when the secret is unset (so the prod worker silently rejects sync
+ * attempts even though the route exists in the bundle — kept as plain text
+ * 404 to look like a real Next 404 rather than advertising the route's
+ * existence).
+ *
+ * Replay defense: signatures with a timestamp more than 5 minutes off from
+ * `Date.now()` are rejected before the HMAC check. The toolkit doesn't do
+ * this on its own — it only validates the math. Without it, a captured
+ * (timestamp, signature, body) triplet could be replayed indefinitely.
+ *
+ * Required Sanity webhook config (UI):
+ *   - URL: https://staging.withjosephine.com/api/sanity-sync
+ *   - Dataset: production
+ *   - Trigger on: Create, Update, Delete (all 3)
+ *   - HTTP method: POST
+ *   - Drafts: enabled (Advanced settings → "Trigger webhook when drafts are modified")
+ *   - Filter: _type != "sanity.imageAsset" && _type != "sanity.fileAsset"
+ *   - Projection (required — must set this exactly):
+ *       {
+ *         _id,
+ *         _type,
+ *         ...,
+ *         "_operation": delta::operation()
+ *       }
+ *   - Secret: <SANITY_WEBHOOK_SECRET> value (must match the worker secret)
+ */
+
+const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
+const REPLAY_WINDOW_MS = 5 * 60 * 1000;
+
+type SanityOperation = "create" | "update" | "delete";
+
+function isSanityOperation(value: unknown): value is SanityOperation {
+  return value === "create" || value === "update" || value === "delete";
+}
+
+function isTimestampFresh(timestampMs: number, now: number = Date.now()): boolean {
+  return Number.isFinite(timestampMs) && Math.abs(now - timestampMs) <= REPLAY_WINDOW_MS;
+}
+
+async function verifySignedRequest(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): Promise<boolean> {
+  let decoded: { timestamp: number; hashedPayload: string };
+  try {
+    decoded = decodeSignatureHeader(signatureHeader);
+  } catch {
+    return false;
+  }
+  if (!isTimestampFresh(decoded.timestamp)) return false;
+  return isValidSignature(rawBody, signatureHeader, secret);
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const secret = optionalEnv("SANITY_WEBHOOK_SECRET");
+  if (!secret) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  const signatureHeader = request.headers.get(SIGNATURE_HEADER_NAME);
+  if (!signatureHeader) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+  }
+
+  const rawBody = await request.text();
+  if (!(await verifySignedRequest(rawBody, signatureHeader, secret))) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  let payload: { _id?: string; _type?: string; _operation?: string } & Record<string, unknown>;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const operation = payload._operation;
+  if (!isSanityOperation(operation)) {
+    return NextResponse.json(
+      { error: "Missing or invalid _operation in payload (Sanity projection must include `\"_operation\": delta::operation()`)" },
+      { status: 400 },
+    );
+  }
+
+  const docId = payload._id;
+  if (!docId) {
+    return NextResponse.json({ error: "Missing _id in payload" }, { status: 400 });
+  }
+
+  if (payload._type && ASSET_TYPES.has(payload._type)) {
+    return NextResponse.json({ skipped: "asset type" }, { status: 200 });
+  }
+
+  const writeClient = getSanityWriteClient();
+
+  if (operation === "delete") {
+    await writeClient.delete(docId);
+    return NextResponse.json({ synced: docId, op: "delete" }, { status: 200 });
+  }
+
+  const docType = payload._type;
+  if (!docType) {
+    return NextResponse.json({ error: "Missing _type for create/update" }, { status: 400 });
+  }
+
+  // Strip the synthetic `_operation` field before writing — Sanity's GROQ
+  // projection injected it for us; it shouldn't land in the synced doc.
+  const docFields: Record<string, unknown> = { ...payload };
+  delete docFields._operation;
+
+  await writeClient.createOrReplace({
+    ...docFields,
+    _id: docId,
+    _type: docType,
+  });
+
+  return NextResponse.json({ synced: docId, op: operation }, { status: 200 });
+}
