@@ -12,13 +12,20 @@ export const PRODUCTION_HOSTS: ReadonlyArray<string> = [
 
 /**
  * Origin where R2-hosted booking photos are served from. Per-env via
- * NEXT_PUBLIC_R2_PUBLIC_HOST (prod: images.withjosephine.com, staging:
- * staging-images.withjosephine.com). Default-fallback is the prod host so a
- * missing GH variable fails to prod-safe behavior; the runtime startup
- * assertion in src/lib/booking/envAssertions.ts catches the
- * staging-with-prod-host misconfig on the first booking-api request.
+ * `NEXT_PUBLIC_R2_PUBLIC_HOST`: prod / staging GH Environment variables for
+ * deploys, repo-level for non-deploy CI jobs, `.env.local` for local dev,
+ * `vitest.config.ts` `test.env` for tests. The literal `process.env.NEXT_PUBLIC_*`
+ * access here is required for Next's build-time inlining; throwing on missing
+ * value forces every environment to declare it explicitly instead of leaning
+ * on a hardcoded default that would drift if the host ever changes.
  */
-export const R2_PUBLIC_ORIGIN = `https://${process.env.NEXT_PUBLIC_R2_PUBLIC_HOST ?? "images.withjosephine.com"}`;
+const r2PublicHost = process.env.NEXT_PUBLIC_R2_PUBLIC_HOST;
+if (!r2PublicHost) {
+  throw new Error(
+    "NEXT_PUBLIC_R2_PUBLIC_HOST is required — set it in your GH Environment / repo variables, .env.local, or vitest config",
+  );
+}
+export const R2_PUBLIC_ORIGIN = `https://${r2PublicHost}`;
 
 export const ROUTES = {
   home: "/",
