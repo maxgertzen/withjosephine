@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/data/readings.generated", () => ({
+  SANITY_READING_PRICES: {
+    "soul-blueprint": "$129",
+  },
+}));
 
 import {
   mapAbout,
@@ -94,13 +100,20 @@ const SANITY_SITE_SETTINGS: SanitySiteSettings = {
 };
 
 describe("mapReadings", () => {
-  it("returns hardcoded readings when Sanity array is empty", () => {
+  it("returns hardcoded readings when Sanity array is empty, with prices from generated map", () => {
     const result = mapReadings([]);
 
     expect(result).toHaveLength(3);
     expect(result[0].id).toBe("soul-blueprint");
     expect(result[0].name).toBe("The Soul Blueprint");
-    expect(result[0].price).toBe("$179");
+    expect(result[0].price).toBe("$129");
+  });
+
+  it("falls back to static price when generated map has no override for that slug", () => {
+    const result = mapReadings([]);
+
+    const birthChart = result.find((r) => r.id === "birth-chart");
+    expect(birthChart?.price).toBe("$99");
   });
 
   it("maps Sanity readings using slug as id and priceDisplay as price", () => {

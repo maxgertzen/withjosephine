@@ -78,6 +78,17 @@ Each item: where it came from + why it was deferred + a one-line action.
   small custom one in the Worker entry, or set up an external scheduler
   (GitHub Actions cron, CF Worker triggering itself, etc.).
 
+### Weekly reading-price drift check → Mixpanel event (Becky-facing)
+- **Source:** Max + Becky-ops decision 2026-05-06, follow-up to PR #66 (Sanity priceDisplay validation rule). The rule shows yellow warnings inside Studio, but only Becky's editorial sessions surface them — drift can sit unnoticed if she's not opening the affected reading doc.
+- **What:** New Worker cron `/api/cron/check-price-drift`. Once a week, scans all `*[_type == "reading"]` docs in the production Sanity dataset, parses each `priceDisplay` via the same `parseDisplayToCents` helper from `studio/schemas/reading.ts` (extract to a shared module — Studio + Worker both consume), compares against `price` (cents). For each drifty doc, fires a `pricing_drift_detected` Mixpanel event with `{ reading_slug, price_cents, price_display, parsed_display_cents, dataset }` properties via the server-side Mixpanel ingest helper.
+- **Notification path:** Mixpanel scheduled report (configured in Mixpanel UI by Max) subscribed to the `pricing_drift_detected` event, delivery email = Becky. Mixpanel handles the email send, NOT Resend — Resend is reserved for transactional booking flows. Becky gets at most one email per week if drift exists, none if everything's clean.
+- **Constraints (locked 2026-05-06):**
+  1. **Weekly only** — `0 12 * * 1` (Monday noon UTC) or similar. Not daily.
+  2. **Production only** — schedule lives in `wrangler.jsonc` `[env.production].triggers.crons` block; staging gets no schedule. Staging dataset auto-mirrors prod, so a staging cron would just duplicate alerts.
+  3. **No Resend** — Mixpanel-only notification path.
+- **Sequencing:** depends on **PR-F2** (server-side Mixpanel events) landing the workers-compatible `fetch` → `https://api-js.mixpanel.com/track` helper. Drift-check is a clean first user of that helper. Don't ship before PR-F2.
+- **Action:** small PR after PR-F2: extract `parseDisplayToCents` (currently in `studio/schemas/reading.ts`) to `src/lib/pricing.ts` (importable by Studio + Worker); add `/api/cron/check-price-drift` route mirroring existing `/api/cron/*` patterns (Authorization: Bearer CRON_SECRET); add weekly schedule to prod env in `wrangler.jsonc`; have Max wire the Mixpanel scheduled report → Becky's email manually.
+
 ### Resend template IDs
 - **Source:** PR-E spec.
 - **What:** Email bodies are inlined HTML strings in `src/lib/resend.ts`.
@@ -301,11 +312,6 @@ Each item: where it came from + why it was deferred + a one-line action.
   once we want quick instrumentation on supplementary surfaces without
   a tracking-plan revision.
 
-### Dev / staging / production environment separation
-**Done — staged on `feat/staging-separation`, awaiting final merge to main.** Shipped via PR-S0 (#58, D1 migration runner), PR-S1 (provisioning, no PR), PR-S1.5 (#60, Sanity seed script), PR-S2 (#61, wrangler env split + per-env CI gates), PR-S3 (#62, staging Custom Domain), PR-S4 (operational — required-reviewer on prod env + CF token rotation), PR-S5a (#63, RESEND_DRY_RUN gate), PR-S5b1 (sanity-sync auto-mirror, branch open). Staging worker live at `staging.withjosephine.com` behind CF Access; preview retired. Final step: open feat/staging-separation → main PR, approve prod redeploy.
-
----
-
 ## Code quality (nice-to-fix)
 
 All from the code review of the 38-commit pre-cleanup state. None are
@@ -345,14 +351,15 @@ load-bearing.
   3. R2: delete the orphaned objects under `submissions/<id>/` for the deleted IDs (or wait for the orphan-reaper cron once it's running).
 - **Long-term fix:** stand up a real dev environment (separate D1 DB + Sanity dataset + R2 bucket + Stripe test mode wiring on dedicated subdomain like `dev.withjosephine.com`) so the next round of smoke testing doesn't pollute prod.
 
-### Stripe Payment Link prices ↔ Sanity priceDisplay drift (recurring class)
-- **Source:** Smoke session 2026-05-01 — Sanity Soul Blueprint shows `$129` but Stripe Payment Link still charges `$179`.
-- **What:** Sanity has two related fields per reading: `price` (cents, INTEGER) and `priceDisplay` (string). Both editable independently. The Stripe Payment Link is a separate config in Stripe dashboard. Three sources of truth, none reconciled. A Sanity edit to `priceDisplay` doesn't update Stripe; an edit to `price` doesn't update `priceDisplay` either.
-- **Symptoms today:** Sanity shows `priceDisplay: "$129"` + `price: 17900` (cents = $179). Customer is shown $129 throughout the booking flow but charged $179 on Stripe checkout. Thank-you page renders the actual Stripe-charged amount ($179) which now exceeds the listed price.
-- **Action:**
-  1. Pick the canonical price for each reading. Update Sanity `price` (cents) AND `priceDisplay` (string) together. Update the Stripe Payment Link price for that reading. Verify by ordering through.
-  2. Add a Sanity validation rule on `reading` that asserts `priceDisplay` is consistent with `price` (parses dollars-and-cents from the string and matches the cents field). Wouldn't catch Stripe drift but kills the Sanity-internal class.
-  3. Long-term: bake reading prices into a build-time constants file via prebuild script (same pattern as `tokens.override.css`). Drift becomes a build break.
+### Reading prices — data reconcile + Stripe Payment Link sync (Max+Josephine)
+- **Source:** Smoke session 2026-05-01; full audit 2026-05-06.
+- **Code surfaces fixed in `fix/reading-price-drift-class`:**
+  - Sanity schema validation rule on `priceDisplay` warns when it disagrees with `price` (cents). Studio surfaces a yellow warning on any reading doc whose two fields don't agree.
+  - Prebuild `pnpm sync-readings-from-sanity` writes `src/data/readings.generated.ts` so the runtime fallback (Sanity outage path) tracks whatever Sanity last published. Static-fallback drift class closed.
+- **Still open (data, not code):**
+  - All three reading docs (production + staging) currently fail the validation as of 2026-05-06: `soul-blueprint` price=17900¢/display=$129; `birth-chart` price=9900¢/display=$89; `akashic-record` price=7900¢/display=$89.
+  - Max + Josephine: pick the canonical price for each reading, update `price` (cents) AND `priceDisplay` together in production Sanity, then update the matching Stripe Payment Link via the dashboard (Stripe prices are immutable — this is "create new Price + new Payment Link, swap URL on the reading doc, archive the old"). Staging mirror picks it up automatically through `/api/sanity-sync`.
+  - Once reconciled, consider flipping the schema rule from `warning` to `error` so future drift hard-fails Studio save.
 
 ### Manual end-to-end Stripe round-trip
 - **Source:** Punch 2 — partially covered by smoke agent (stopped before
@@ -391,11 +398,6 @@ fire-and-forget — drift can happen on Sanity outages.
   paid-but-undelivered submissions and lets her paste voice/PDF URLs +
   click "mark delivered".
 - **Action:** Phase 1.5 task. Probably ~1 weekend.
-
-### Static fallback prices in `src/data/readings.ts` may drift from Sanity
-- **Source:** Smoke test BUG-3 + post-discussion (Sanity now $129 for Soul Blueprint, fallback file still says $179).
-- **What:** `READINGS` fallback array in `src/data/readings.ts` only renders when the Sanity fetch fails. Today Sanity's Soul Blueprint is $129 but the fallback says $179, so a Sanity outage shows the wrong price. Same risk for any future price change Josephine makes in Studio.
-- **Action:** Either (a) periodically sync `READINGS` from Sanity (a script), (b) drop the fallback prices entirely and show a "reading temporarily unavailable" state on Sanity outage, or (c) bake the prices into the build via a prebuild script. (c) is the cleanest IMO — same pattern as `pnpm generate-tokens`.
 
 ### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED + DEPLOYED 2026-04-30 (PR #44)
 

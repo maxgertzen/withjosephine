@@ -1,5 +1,6 @@
 import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
+import { SANITY_READING_PRICES } from "@/data/readings.generated";
 
 import type {
   SanityFaqItem,
@@ -58,7 +59,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
       id: r.id,
       tag: r.tag,
       name: r.name,
-      price: r.price,
+      price: SANITY_READING_PRICES[r.id] ?? r.price,
       valueProposition: r.valueProposition,
       briefDescription: r.briefDescription,
       expandedDetails: r.expandedDetails,
