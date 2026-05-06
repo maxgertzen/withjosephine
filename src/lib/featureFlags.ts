@@ -1,4 +1,5 @@
 import { PRODUCTION_HOSTS } from "./constants";
+import { isFlagEnabled } from "./env";
 
 /**
  * Under-construction is host-aware: when the flag is on, ONLY the production
@@ -11,8 +12,7 @@ import { PRODUCTION_HOSTS } from "./constants";
  * the flag is on) — used by tests and any caller without a request context.
  */
 export function isUnderConstruction(host?: string | null): boolean {
-  const value = process.env.NEXT_PUBLIC_UNDER_CONSTRUCTION;
-  if (value !== "1" && value !== "true") return false;
+  if (!isFlagEnabled("NEXT_PUBLIC_UNDER_CONSTRUCTION")) return false;
   if (host == null) return true;
   return PRODUCTION_HOSTS.includes(host);
 }

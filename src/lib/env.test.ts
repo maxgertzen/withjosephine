@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { optionalEnv, requireEnv } from "./env";
+import { isFlagEnabled, optionalEnv, requireEnv } from "./env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -47,5 +47,32 @@ describe("optionalEnv", () => {
     optionalEnv("EXAMPLE_VAR", "feature disabled");
 
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("isFlagEnabled", () => {
+  it("returns true for '1'", () => {
+    vi.stubEnv("EXAMPLE_FLAG", "1");
+    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(true);
+  });
+
+  it("returns true for 'true'", () => {
+    vi.stubEnv("EXAMPLE_FLAG", "true");
+    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(true);
+  });
+
+  it("returns false for '0'", () => {
+    vi.stubEnv("EXAMPLE_FLAG", "0");
+    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
+  });
+
+  it("returns false when unset", () => {
+    vi.stubEnv("EXAMPLE_FLAG", "");
+    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
+  });
+
+  it("returns false for any other truthy-looking string", () => {
+    vi.stubEnv("EXAMPLE_FLAG", "yes");
+    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
   });
 });
