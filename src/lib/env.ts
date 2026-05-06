@@ -14,3 +14,12 @@ export function optionalEnv(name: string, missingWarning?: string): string | nul
   }
   return value;
 }
+
+/**
+ * Project convention for boolean env flags: "1" or "true" → on, anything else
+ * → off. Read at call-time so tests can override via vi.stubEnv between cases.
+ */
+export function isFlagEnabled(name: string): boolean {
+  const value = process.env[name];
+  return value === "1" || value === "true";
+}
