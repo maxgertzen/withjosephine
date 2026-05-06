@@ -2,7 +2,7 @@ import { Link, Text } from "@react-email/components";
 
 import { emailTokens as t } from "@/lib/theme/email-tokens.generated";
 
-import { EmailShell } from "./shell";
+import { EmailShell } from "./EmailShell";
 import { SignOff } from "./SignOff";
 
 export type Day7DeliveryProps = {

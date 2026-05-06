@@ -81,7 +81,8 @@ Components use `@react-email/components` primitives (`<Html>`, `<Body>`, `<Conta
 The legacy helper functions (`renderEmailShell`, `paragraph`, `signOff`, `renderResponsesHtml`, `renderInsetPrice`, `renderOrderConfirmationHtml`) are removed. `resend.ts` renamed to `resend.tsx` since it now contains JSX. Internal type `ContactMessage` renamed to `ContactPayload` to avoid collision with the imported `ContactMessage` component.
 
 Followups (not in this branch):
-- A `react-email dev` preview server would let Josephine + Becky see the rendered emails without sending. Defer until they ask.
+- **Sanity-editable email copy.** Max raised this 2026-05-06 — the migration moved from inline-HTML to React, but the body copy is still hardcoded in component source. Becky/Josephine still can't iterate copy without an engineer. Next-session candidate: add per-email `Sanity` schema fields (e.g. `emailContent.day2.body`, `emailContent.orderConfirmation.body` etc.), fetch at render time in `resend.tsx`, fall back to the hardcoded copy if the Sanity fetch fails. Works best with the CRM-decoupling plan as a continuum (this is the in-codebase intermediate step before fully outsourcing to a CRM).
+- **Visual preview** — added `pnpm email:preview` (Max-driven check). Renders all 6 emails to `email-previews/*.html` for browser-based parity verification against the legacy outputs in his inbox. Output dir gitignored.
 - The CRM-decoupling plan (project CLAUDE.md → "Post-launch future enhancements") is the durable answer once volume + Becky's needs justify it.
 
 ### 2026-05-06 — Item #2 landed: D1 → Sanity reconcile cron

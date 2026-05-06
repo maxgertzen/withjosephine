@@ -1,6 +1,6 @@
 import { Text } from "@react-email/components";
 
-import { EmailShell } from "./shell";
+import { EmailShell } from "./EmailShell";
 import { SignOff } from "./SignOff";
 
 export type Day2StartedProps = {

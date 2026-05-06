@@ -139,7 +139,7 @@ export function OrderConfirmation({
           </Section>
 
           {/* Inset price card */}
-          <Section style={{ padding: "0 48px" }}>
+          <div style={{ padding: "0 48px" }}>
             <Section style={{ backgroundColor: t.warm, borderRadius: 4, padding: "20px 24px" }}>
               <Text
                 style={{
@@ -176,7 +176,7 @@ export function OrderConfirmation({
                 <span>{price}</span>
               </Text>
             </Section>
-          </Section>
+          </div>
 
           {/* Signature */}
           <Section

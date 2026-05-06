@@ -38,9 +38,17 @@ describe("Day7Delivery — visual parity with legacy resend.tsx", () => {
     expect(html.toLowerCase()).toContain("#1c1935");
   });
 
-  it("escapes HTML in firstName", async () => {
-    const html = await render(<Day7Delivery {...PROPS} firstName="<x>" />);
-    expect(html).not.toContain("<x>Y");
-    expect(html).toContain("&lt;x&gt;");
+  it("escapes HTML in firstName + readingName", async () => {
+    const html = await render(
+      <Day7Delivery
+        {...PROPS}
+        firstName="<x-first>"
+        readingName="<x-reading>"
+      />,
+    );
+    expect(html).not.toContain("<x-first>");
+    expect(html).not.toContain("<x-reading>");
+    expect(html).toContain("&lt;x-first&gt;");
+    expect(html).toContain("&lt;x-reading&gt;");
   });
 });

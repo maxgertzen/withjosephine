@@ -1,9 +1,11 @@
-import { Heading, Link, Text } from "@react-email/components";
+import { Link, Text } from "@react-email/components";
 
 import type { SubmissionResponse } from "@/lib/resend";
 import { emailTokens as t } from "@/lib/theme/email-tokens.generated";
 
-import { EmailShell } from "./shell";
+import { EmailShell } from "./EmailShell";
+import { LabelValueRow } from "./LabelValueRow";
+import { SerifHeading } from "./SerifHeading";
 
 // File uploads surface as a dedicated "Photo:" link block; consent toggles
 // (e.g. "I don't know my birth time") are answered structurally elsewhere
@@ -34,41 +36,23 @@ export function JosephineNotification({
   const visible = responses.filter((r) => !NOISE_FIELD_TYPES.has(r.fieldType));
   return (
     <EmailShell maxWidth={640} preview={`New ${readingName} booking — ${email}`}>
-      <Heading as="h1" style={{ fontFamily: t.serifFamily, color: t.ink }}>
-        New {readingName} booking
-      </Heading>
-      <Text>
-        <strong>Status:</strong> Paid
-      </Text>
-      <Text>
-        <strong>Price:</strong> {readingPriceDisplay}
-      </Text>
+      <SerifHeading>New {readingName} booking</SerifHeading>
+      <LabelValueRow label="Status">Paid</LabelValueRow>
+      <LabelValueRow label="Price">{readingPriceDisplay}</LabelValueRow>
       {amountPaidDisplay ? (
-        <Text>
-          <strong>Amount paid:</strong> {amountPaidDisplay}
-        </Text>
+        <LabelValueRow label="Amount paid">{amountPaidDisplay}</LabelValueRow>
       ) : null}
-      <Text>
-        <strong>Client email:</strong> {email}
-      </Text>
-      <Text>
-        <strong>Submitted:</strong> {createdAt}
-      </Text>
-      <Text>
-        <strong>Submission ID:</strong> {submissionId}
-      </Text>
+      <LabelValueRow label="Client email">{email}</LabelValueRow>
+      <LabelValueRow label="Submitted">{createdAt}</LabelValueRow>
+      <LabelValueRow label="Submission ID">{submissionId}</LabelValueRow>
       {photoUrl ? (
-        <Text>
-          <strong>Photo:</strong>{" "}
+        <LabelValueRow label="Photo">
           <Link href={photoUrl}>{photoUrl}</Link>
-        </Text>
+        </LabelValueRow>
       ) : null}
-      <Heading
-        as="h2"
-        style={{ fontFamily: t.serifFamily, color: t.ink, marginTop: 24 }}
-      >
+      <SerifHeading as="h2" style={{ marginTop: 24 }}>
         Responses
-      </Heading>
+      </SerifHeading>
       {visible.length === 0 ? (
         <Text>
           <em>No responses recorded.</em>

@@ -92,11 +92,29 @@ describe("JosephineNotification — visual parity with legacy resend.tsx", () =>
     expect(text).not.toContain("Amount paid:");
   });
 
-  it("escapes HTML in user-controlled fields", async () => {
+  it("escapes HTML in every user-controlled field", async () => {
     const html = await render(
-      <JosephineNotification {...PROPS} email="<x@y>" />,
+      <JosephineNotification
+        {...PROPS}
+        readingName="<x-reading>"
+        email="<x-email>"
+        submissionId="<x-id>"
+        createdAt="<x-created>"
+        responses={[
+          {
+            fieldKey: "intent",
+            fieldLabelSnapshot: "<x-label>",
+            fieldType: "text",
+            value: "<x-value>",
+          },
+        ]}
+      />,
     );
-    expect(html).not.toContain("<x@y>");
-    expect(html).toContain("&lt;x@y&gt;");
+    for (const raw of ["<x-reading>", "<x-email>", "<x-id>", "<x-created>", "<x-label>", "<x-value>"]) {
+      expect(html).not.toContain(raw);
+    }
+    for (const escaped of ["&lt;x-reading&gt;", "&lt;x-email&gt;", "&lt;x-id&gt;", "&lt;x-created&gt;", "&lt;x-label&gt;", "&lt;x-value&gt;"]) {
+      expect(html).toContain(escaped);
+    }
   });
 });

@@ -138,10 +138,11 @@ describe("sendNotificationToJosephine", () => {
     const { sendNotificationToJosephine } = await import("./resend");
     await sendNotificationToJosephine(submission);
     const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("First name");
-    expect(html).toContain("Ada");
-    expect(html).not.toContain("A photo of yourself");
-    expect(html).not.toContain("I don't know my birth time");
+    const body = visibleText(html);
+    expect(body).toContain("First name");
+    expect(body).toContain("Ada");
+    expect(body).not.toContain("A photo of yourself");
+    expect(body).not.toContain("I don't know my birth time");
   });
 
   it("includes 'Amount paid' line when amountPaidDisplay is set", async () => {
@@ -149,9 +150,9 @@ describe("sendNotificationToJosephine", () => {
     const submission = buildSubmission({ amountPaidDisplay: "$99.00" });
     const { sendNotificationToJosephine } = await import("./resend");
     await sendNotificationToJosephine(submission);
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("Amount paid:");
-    expect(html).toContain("$99.00");
+    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
+    expect(body).toContain("Amount paid:");
+    expect(body).toContain("$99.00");
   });
 
   it("omits 'Amount paid' line when amountPaidDisplay is null", async () => {
@@ -159,8 +160,8 @@ describe("sendNotificationToJosephine", () => {
     const submission = buildSubmission({ amountPaidDisplay: null });
     const { sendNotificationToJosephine } = await import("./resend");
     await sendNotificationToJosephine(submission);
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).not.toContain("Amount paid:");
+    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
+    expect(body).not.toContain("Amount paid:");
   });
 });
 
@@ -199,8 +200,8 @@ describe("sendOrderConfirmation", () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
     const { sendOrderConfirmation } = await import("./resend");
     await sendOrderConfirmation(buildSubmission());
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("Your reading is booked");
+    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
+    expect(body).toContain("Your reading is booked");
   });
 
   it("renders the booking summary inset with reading name, price, and delivery window", async () => {
@@ -208,11 +209,11 @@ describe("sendOrderConfirmation", () => {
     const submission = buildSubmission({ readingPriceDisplay: "$129" });
     const { sendOrderConfirmation } = await import("./resend");
     await sendOrderConfirmation(submission);
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("Your reading"); // eyebrow
-    expect(html).toContain(submission.readingName);
-    expect(html).toContain("$129");
-    expect(html).toContain("Delivery within 7 days");
+    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
+    expect(body).toContain("Your reading"); // eyebrow
+    expect(body).toContain(submission.readingName);
+    expect(body).toContain("$129");
+    expect(body).toContain("Delivery within 7 days");
   });
 
   it("renders the paid amount in the inset card when set", async () => {
@@ -224,7 +225,7 @@ describe("sendOrderConfirmation", () => {
     const { sendOrderConfirmation } = await import("./resend");
     await sendOrderConfirmation(submission);
     const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("$99.00");
+    expect(visibleText(html)).toContain("$99.00");
     // Strikethrough lives on the thank-you page (cents-level compare); the
     // email surfaces what was paid.
     expect(html).not.toContain("text-decoration: line-through");
@@ -238,8 +239,8 @@ describe("sendOrderConfirmation", () => {
     });
     const { sendOrderConfirmation } = await import("./resend");
     await sendOrderConfirmation(submission);
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain("$179");
+    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
+    expect(body).toContain("$179");
   });
 
   it("HTML-escapes firstName before injecting", async () => {

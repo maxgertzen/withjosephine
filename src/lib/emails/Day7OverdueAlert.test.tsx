@@ -34,9 +34,20 @@ describe("Day7OverdueAlert — visual parity with legacy resend.tsx", () => {
     expect(html).toMatch(/Cormorant Garamond/);
   });
 
-  it("escapes HTML in user-supplied fields", async () => {
-    const html = await render(<Day7OverdueAlert {...PROPS} email="<x@y>" />);
-    expect(html).not.toContain("<x@y>");
-    expect(html).toContain("&lt;x@y&gt;");
+  it("escapes HTML in every user-supplied field", async () => {
+    const html = await render(
+      <Day7OverdueAlert
+        email="<x-email>"
+        readingName="<x-reading>"
+        submissionId="<x-id>"
+        createdAt="<x-created>"
+      />,
+    );
+    for (const raw of ["<x-email>", "<x-reading>", "<x-id>", "<x-created>"]) {
+      expect(html).not.toContain(raw);
+    }
+    for (const escaped of ["&lt;x-email&gt;", "&lt;x-reading&gt;", "&lt;x-id&gt;", "&lt;x-created&gt;"]) {
+      expect(html).toContain(escaped);
+    }
   });
 });

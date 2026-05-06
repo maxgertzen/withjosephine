@@ -39,3 +39,34 @@ export function linkHrefs(html: string): Set<string> {
   const anchors = Array.from(dom.querySelectorAll("a"));
   return new Set(anchors.map((a) => a.getAttribute("href") ?? ""));
 }
+
+/**
+ * Assert that the rendered HTML uses the brand tokens we care about. Each
+ * named token is checked for presence (case-insensitive). Pass only the
+ * tokens that are load-bearing for the email — e.g. `signature` emails
+ * don't necessarily need a `gold` accent.
+ */
+export function assertBrandTokens(
+  html: string,
+  tokens: { serif?: boolean; ink?: boolean; gold?: boolean; cream?: boolean; warm?: boolean; body?: boolean },
+): void {
+  const haystack = html.toLowerCase();
+  if (tokens.serif && !/cormorant garamond/i.test(html)) {
+    throw new Error("expected rendered HTML to use the Cormorant Garamond serif token");
+  }
+  if (tokens.ink && !haystack.includes("#1c1935")) {
+    throw new Error("expected rendered HTML to use the ink token #1C1935");
+  }
+  if (tokens.gold && !haystack.includes("#c4a46b")) {
+    throw new Error("expected rendered HTML to use the gold token #C4A46B");
+  }
+  if (tokens.cream && !haystack.includes("#faf8f4")) {
+    throw new Error("expected rendered HTML to use the cream token #FAF8F4");
+  }
+  if (tokens.warm && !haystack.includes("#f5f0e8")) {
+    throw new Error("expected rendered HTML to use the warm token #F5F0E8");
+  }
+  if (tokens.body && !haystack.includes("#3d3633")) {
+    throw new Error("expected rendered HTML to use the body color token #3D3633");
+  }
+}

@@ -13,6 +13,7 @@
     "cf:build": "pnpm build && opennextjs-cloudflare build && pnpm cf:strip-og && pnpm sentry:sourcemaps",
     "cf:strip-og": "node scripts/strip-vercel-og.mjs",
     "sentry:sourcemaps": "node scripts/upload-sourcemaps.mjs",
+    "email:preview": "tsx scripts/render-email-previews.ts",
     "cf:dev": "wrangler dev --port 8788",
     "start": "next start",
     "format": "prettier --write .",
