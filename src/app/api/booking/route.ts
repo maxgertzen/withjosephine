@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
@@ -81,6 +82,8 @@ function buildPaymentUrl(
 }
 
 export async function POST(request: Request) {
+  assertEnvironmentBindings();
+
   let parsedBody: unknown;
   try {
     parsedBody = await request.json();

@@ -8,6 +8,13 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./vitest.setup.ts",
     include: ["src/**/*.test.{ts,tsx}", "studio/**/*.test.{ts,tsx}", "scripts/**/*.test.{ts,tsx}"],
+    // Module-init env reads (e.g. R2_PUBLIC_ORIGIN in src/lib/constants.ts)
+    // happen before vitest.setup.ts runs, so per-test stubs can't help.
+    // These values are the source of truth for the test runtime — anything
+    // a test wants to vary must use vi.stubEnv().
+    env: {
+      NEXT_PUBLIC_R2_PUBLIC_HOST: "images.withjosephine.com",
+    },
   },
   resolve: {
     alias: {
