@@ -5,6 +5,7 @@ import mixpanel from "mixpanel-browser";
 import { PRODUCTION_HOSTS } from "@/lib/constants";
 
 import type { ClientEventMap, ClientEventName } from "./events";
+import { HEADLESS_UA_PATTERN } from "./headless";
 
 let bootstrapped = false;
 let mixpanelLive = false;
@@ -20,8 +21,6 @@ type QueuedEvent = {
 // somehow delayed (SSR-only path, broken bootstrap).
 const MAX_QUEUED_EVENTS = 100;
 const queue: QueuedEvent[] = [];
-
-const HEADLESS_UA_PATTERN = /headless|HeadlessChrome|Lighthouse|PhantomJS|Puppeteer|Playwright/i;
 
 function deriveEnvironment(host: string): string {
   if (PRODUCTION_HOSTS.includes(host)) return "production";

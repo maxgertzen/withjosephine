@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { Button } from "@/components/Button";
@@ -6,6 +7,7 @@ import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
+import { serverTrack } from "@/lib/analytics/server";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { verifyListenToken } from "@/lib/listenToken";
@@ -30,6 +32,17 @@ export default async function ListenPage({ params }: ListenPageProps) {
   if (submission.status !== "paid") notFound();
   if (!submission.deliveredAt) notFound();
   if (!submission.voiceNoteUrl && !submission.pdfUrl) notFound();
+
+  const userAgent = (await headers()).get("user-agent") ?? undefined;
+  void serverTrack(
+    "delivery_listened",
+    {
+      distinct_id: submission._id,
+      submission_id: submission._id,
+      reading_id: submission.reading?.slug ?? "",
+    },
+    { userAgent },
+  );
 
   const readingName = submission.reading?.name ?? "your reading";
 

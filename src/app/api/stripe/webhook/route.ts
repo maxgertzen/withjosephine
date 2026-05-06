@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
+import { serverTrack } from "@/lib/analytics/server";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import { findSubmissionById, markSubmissionExpired } from "@/lib/booking/submissions";
 import { constructWebhookEvent } from "@/lib/stripe";
@@ -27,13 +28,24 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
     return;
   }
 
-  await applyPaidEvent(submission, {
+  const result = await applyPaidEvent(submission, {
     stripeEventId: event.id,
     stripeSessionId: session.id,
     paidAt: unixToIso(event.created),
     amountPaidCents: session.amount_total ?? null,
     amountPaidCurrency: session.currency ?? null,
   });
+
+  if (result === "applied") {
+    void serverTrack("payment_success", {
+      distinct_id: submission._id,
+      submission_id: submission._id,
+      reading_id: submission.reading?.slug ?? "",
+      amount_paid_cents: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      stripe_session_id: session.id,
+    });
+  }
 }
 
 async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise<void> {
@@ -53,6 +65,13 @@ async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise
   await markSubmissionExpired(submission._id, {
     stripeEventId: event.id,
     expiredAt: unixToIso(event.created),
+  });
+
+  void serverTrack("payment_expired", {
+    distinct_id: submission._id,
+    submission_id: submission._id,
+    reading_id: submission.reading?.slug ?? "",
+    stripe_session_id: session.id,
   });
 }
 

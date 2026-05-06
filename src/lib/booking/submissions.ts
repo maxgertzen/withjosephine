@@ -51,6 +51,7 @@ export type SubmissionRecord = {
   pdfUrl?: string;
   emailsFired?: EmailFiredEntry[];
   reading: {
+    slug: string;
     name: string;
     priceDisplay: string;
   } | null;

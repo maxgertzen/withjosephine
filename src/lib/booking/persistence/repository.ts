@@ -32,8 +32,12 @@ function rowToRecord(row: Row): SubmissionRecord {
   const responses = JSON.parse(row.responses_json) as SubmissionRecord["responses"];
   const emailsFired = JSON.parse(row.emails_fired_json) as EmailFiredEntry[];
   const reading =
-    row.reading_name || row.reading_price_display
-      ? { name: row.reading_name ?? "", priceDisplay: row.reading_price_display ?? "" }
+    row.reading_slug || row.reading_name || row.reading_price_display
+      ? {
+          slug: row.reading_slug ?? "",
+          name: row.reading_name ?? "",
+          priceDisplay: row.reading_price_display ?? "",
+        }
       : null;
   return {
     _id: row.id,

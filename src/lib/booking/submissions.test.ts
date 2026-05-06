@@ -184,7 +184,7 @@ describe("buildSubmissionContext", () => {
     ],
     photoR2Key: "submissions/sub_1/photo.jpg",
     createdAt: "2026-04-20T10:00:00Z",
-    reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+    reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
     amountPaidCents: null,
     amountPaidCurrency: null,
   };

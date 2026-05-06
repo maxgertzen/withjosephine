@@ -33,7 +33,7 @@ const SUBMISSION: SubmissionRecord = {
   email: "client@example.com",
   responses: [],
   createdAt: "2026-04-28T12:00:00Z",
-  reading: { name: "Soul Blueprint", priceDisplay: "$179" },
+  reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
 };

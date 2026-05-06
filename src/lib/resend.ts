@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
+import type { EmailSubType } from "./analytics/server-events";
 import { isFlagEnabled } from "./env";
 import { emailTokens } from "./theme/email-tokens.generated";
 import { escapeHtml } from "./utils";
@@ -97,6 +99,8 @@ async function sendOrSkip(args: {
   subject: string;
   html: string;
   emailKind: string;
+  subType: EmailSubType;
+  submissionId: string | null;
   replyTo?: string;
 }): Promise<EmailSendResult> {
   // Dry-run is the more specific intent — check it before the API-key path so
@@ -117,7 +121,17 @@ async function sendOrSkip(args: {
     html: args.html,
     ...(args.replyTo ? { replyTo: args.replyTo } : {}),
   });
-  return { resendId: response.data?.id ?? null };
+  const resendId = response.data?.id ?? null;
+
+  void serverTrack("email_sent", {
+    distinct_id: args.submissionId ?? generateAnonymousDistinctId(),
+    sub_type: args.subType,
+    submission_id: args.submissionId,
+    recipient_redacted: redactRecipient(args.to),
+    resend_id_present: resendId !== null,
+  });
+
+  return { resendId };
 }
 
 export async function sendNotificationToJosephine(
@@ -157,6 +171,8 @@ export async function sendNotificationToJosephine(
     subject: `New ${submission.readingName} booking — ${submission.email}`,
     html: renderEmailShell(inner, 640),
     emailKind: "Josephine notification",
+    subType: "josephine_notification",
+    submissionId: submission.id,
   });
 }
 
@@ -256,6 +272,8 @@ export async function sendOrderConfirmation(
     subject: "Your reading is booked — here's what happens next",
     html,
     emailKind: "order confirmation",
+    subType: "order_confirmation",
+    submissionId: submission.id,
   });
 }
 
@@ -279,6 +297,8 @@ export async function sendDay2Started(submission: SubmissionContext): Promise<Em
     subject: "A quick note — I've started your reading",
     html: renderEmailShell(inner),
     emailKind: "Day +2 started",
+    subType: "day_2",
+    submissionId: submission.id,
   });
 }
 
@@ -308,6 +328,8 @@ export async function sendDay7Delivery(
     subject: "Your reading is ready",
     html: renderEmailShell(inner),
     emailKind: "Day +7 delivery",
+    subType: "day_7_delivery",
+    submissionId: submission.id,
   });
 }
 
@@ -345,6 +367,8 @@ export async function sendContactMessage(
     subject: `New message from ${contact.name}`,
     html: renderEmailShell(inner, 640),
     emailKind: "contact message",
+    subType: "contact_form",
+    submissionId: null,
   });
 }
 
@@ -374,5 +398,7 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
     html: renderEmailShell(inner, 640),
     emailKind: "Day +7 overdue alert",
+    subType: "day_7_overdue_alert",
+    submissionId: submission.id,
   });
 }
