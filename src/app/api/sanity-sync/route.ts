@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { optionalEnv } from "@/lib/env";
+import { base64UrlDecodeToBytes, verifyHmacSha256 } from "@/lib/hmac";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 /**
@@ -19,16 +20,23 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  *
  * Auth: HMAC SHA-256 signature in the `sanity-webhook-signature` header,
  * format `t=<unix-ms>,v1=<base64url-hmac>`, signed payload is
- * `${timestamp}.${rawBody}`. Verified against `SANITY_WEBHOOK_SECRET`.
- * Endpoint returns 404 when the secret is unset (so the prod worker silently
- * rejects sync attempts even though the route exists in the bundle).
+ * `${timestamp}.${rawBody}`. Verified against `SANITY_WEBHOOK_SECRET` via
+ * `crypto.subtle.verify` (timing-safe). Endpoint returns 404 when the
+ * secret is unset (so the prod worker silently rejects sync attempts even
+ * though the route exists in the bundle — kept as plain text 404 to look
+ * like a real Next 404 rather than advertising the route's existence).
+ *
+ * Replay defense: signatures with a timestamp more than 5 minutes off from
+ * `Date.now()` are rejected. Sanity's signing timestamp is unix-ms so the
+ * window is symmetric (covers both stale captures and clock-skewed
+ * forward-replay).
  *
  * Required Sanity webhook config (UI):
  *   - URL: https://staging.withjosephine.com/api/sanity-sync
  *   - Dataset: production
  *   - Trigger on: Create, Update, Delete (all 3)
  *   - HTTP method: POST
- *   - Drafts: enabled (Advanced settings)
+ *   - Drafts: enabled (Advanced settings → "Trigger webhook when drafts are modified")
  *   - Filter: _type != "sanity.imageAsset" && _type != "sanity.fileAsset"
  *   - Projection (required — must set this exactly):
  *       {
@@ -41,6 +49,7 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  */
 
 const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
+const REPLAY_WINDOW_MS = 5 * 60 * 1000;
 
 type SanityOperation = "create" | "update" | "delete";
 
@@ -60,47 +69,30 @@ function parseSignatureHeader(header: string): { timestamp: string; signature: s
   return { timestamp, signature };
 }
 
-function timingSafeEqual(expected: string, actual: string): boolean {
-  const encoder = new TextEncoder();
-  const expectedBytes = encoder.encode(expected);
-  const actualBytes = encoder.encode(actual);
-  if (expectedBytes.byteLength !== actualBytes.byteLength) return false;
-  let diff = 0;
-  for (let i = 0; i < expectedBytes.byteLength; i += 1) {
-    diff |= expectedBytes[i]! ^ actualBytes[i]!;
-  }
-  return diff === 0;
+function isTimestampFresh(timestamp: string, now: number = Date.now()): boolean {
+  const ts = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(ts)) return false;
+  return Math.abs(now - ts) <= REPLAY_WINDOW_MS;
 }
 
-async function computeSignature(timestamp: string, rawBody: string, secret: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signed = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(`${timestamp}.${rawBody}`),
-  );
-  return btoa(String.fromCharCode(...new Uint8Array(signed)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-async function verifySignature(rawBody: string, signatureHeader: string, secret: string): Promise<boolean> {
+async function verifySignature(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): Promise<boolean> {
   const parsed = parseSignatureHeader(signatureHeader);
   if (!parsed) return false;
-  const expected = await computeSignature(parsed.timestamp, rawBody, secret);
-  return timingSafeEqual(expected, parsed.signature);
+  if (!isTimestampFresh(parsed.timestamp)) return false;
+  const sigBytes = base64UrlDecodeToBytes(parsed.signature);
+  if (!sigBytes) return false;
+  return verifyHmacSha256(secret, `${parsed.timestamp}.${rawBody}`, sigBytes);
 }
 
 export async function POST(request: Request): Promise<Response> {
   const secret = optionalEnv("SANITY_WEBHOOK_SECRET");
   if (!secret) {
+    // Plain text 404 so an unconfigured prod worker looks like a normal Next
+    // not-found, not "this route exists, you're just unauthorized".
     return new NextResponse("Not Found", { status: 404 });
   }
 

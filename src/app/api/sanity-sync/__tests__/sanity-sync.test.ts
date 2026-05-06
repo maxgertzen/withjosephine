@@ -21,7 +21,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function signBody(body: string, secret: string, timestamp = "1234567890"): Promise<string> {
+async function signBody(body: string, secret: string, timestamp?: string): Promise<string> {
+  const ts = timestamp ?? String(Date.now());
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -32,13 +33,13 @@ async function signBody(body: string, secret: string, timestamp = "1234567890"):
   const signed = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(`${timestamp}.${body}`),
+    new TextEncoder().encode(`${ts}.${body}`),
   );
   const sig = btoa(String.fromCharCode(...new Uint8Array(signed)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
-  return `t=${timestamp},v1=${sig}`;
+  return `t=${ts},v1=${sig}`;
 }
 
 async function callRoute(rawBody: string, signatureHeader?: string): Promise<Response> {
@@ -191,5 +192,44 @@ describe("/api/sanity-sync", () => {
       name: "no type",
     });
     expect(res.status).toBe(400);
+  });
+
+  describe("replay defense", () => {
+    it("rejects signatures with timestamps older than 5 minutes (stale capture)", async () => {
+      const body = JSON.stringify({ _id: "x", _type: "reading", _operation: "create", name: "y" });
+      const stale = String(Date.now() - 6 * 60 * 1000);
+      const sig = await signBody(body, SECRET, stale);
+      const res = await callRoute(body, sig);
+      expect(res.status).toBe(401);
+      expect(createOrReplace).not.toHaveBeenCalled();
+    });
+
+    it("rejects signatures with timestamps too far in the future (clock-skew replay)", async () => {
+      const body = JSON.stringify({ _id: "x", _type: "reading", _operation: "create", name: "y" });
+      const future = String(Date.now() + 6 * 60 * 1000);
+      const sig = await signBody(body, SECRET, future);
+      const res = await callRoute(body, sig);
+      expect(res.status).toBe(401);
+      expect(createOrReplace).not.toHaveBeenCalled();
+    });
+
+    it("rejects tampered body even with a valid signature for the original body", async () => {
+      const originalBody = JSON.stringify({
+        _id: "reading-1",
+        _type: "reading",
+        _operation: "create",
+        name: "Original",
+      });
+      const sig = await signBody(originalBody, SECRET);
+      const tamperedBody = JSON.stringify({
+        _id: "reading-1",
+        _type: "reading",
+        _operation: "create",
+        name: "Tampered",
+      });
+      const res = await callRoute(tamperedBody, sig);
+      expect(res.status).toBe(401);
+      expect(createOrReplace).not.toHaveBeenCalled();
+    });
   });
 });
