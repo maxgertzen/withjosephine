@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 
+import { isFlagEnabled } from "./env";
 import { emailTokens } from "./theme/email-tokens.generated";
 import { escapeHtml } from "./utils";
 
@@ -35,6 +36,19 @@ function getResendClient(): Resend | null {
   if (!apiKey) return null;
   if (!cachedClient) cachedClient = new Resend(apiKey);
   return cachedClient;
+}
+
+/**
+ * Redact the local-part of an email address for logs: "ada@example.com" →
+ * "a***@example.com". Worker logs aren't a long-term store, but there's no
+ * upside to writing full recipient addresses to wrangler tail.
+ */
+function redactEmail(address: string): string {
+  return address.replace(/(^.)([^@]+)(?=@)/, "$1***");
+}
+
+function redactRecipient(to: string | string[]): string {
+  return Array.isArray(to) ? to.map(redactEmail).join(",") : redactEmail(to);
 }
 
 function renderEmailShell(innerHtml: string, maxWidthPx = 560): string {
@@ -82,11 +96,18 @@ async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
   html: string;
-  warnPrefix: string;
+  emailKind: string;
+  replyTo?: string;
 }): Promise<EmailSendResult> {
+  // Dry-run is the more specific intent — check it before the API-key path so
+  // staging without a real key still emits the dry-run signal we actually want.
+  if (isFlagEnabled("RESEND_DRY_RUN")) {
+    console.warn(`[resend] RESEND_DRY_RUN — skipping ${args.emailKind} (to=${redactRecipient(args.to)})`);
+    return { resendId: null };
+  }
   const client = getResendClient();
   if (!client) {
-    console.warn(`[resend] RESEND_API_KEY not set — skipping ${args.warnPrefix}`);
+    console.warn(`[resend] RESEND_API_KEY not set — skipping ${args.emailKind}`);
     return { resendId: null };
   }
   const response = await client.emails.send({
@@ -94,6 +115,7 @@ async function sendOrSkip(args: {
     to: args.to,
     subject: args.subject,
     html: args.html,
+    ...(args.replyTo ? { replyTo: args.replyTo } : {}),
   });
   return { resendId: response.data?.id ?? null };
 }
@@ -134,7 +156,7 @@ export async function sendNotificationToJosephine(
     to: notificationEmail,
     subject: `New ${submission.readingName} booking — ${submission.email}`,
     html: renderEmailShell(inner, 640),
-    warnPrefix: "Josephine notification",
+    emailKind: "Josephine notification",
   });
 }
 
@@ -233,7 +255,7 @@ export async function sendOrderConfirmation(
     to: submission.email,
     subject: "Your reading is booked — here's what happens next",
     html,
-    warnPrefix: "order confirmation",
+    emailKind: "order confirmation",
   });
 }
 
@@ -256,7 +278,7 @@ export async function sendDay2Started(submission: SubmissionContext): Promise<Em
     to: submission.email,
     subject: "A quick note — I've started your reading",
     html: renderEmailShell(inner),
-    warnPrefix: "Day +2 started",
+    emailKind: "Day +2 started",
   });
 }
 
@@ -285,7 +307,7 @@ export async function sendDay7Delivery(
     to: submission.email,
     subject: "Your reading is ready",
     html: renderEmailShell(inner),
-    warnPrefix: "Day +7 delivery",
+    emailKind: "Day +7 delivery",
   });
 }
 
@@ -304,12 +326,6 @@ export async function sendContactMessage(
     return { resendId: null };
   }
 
-  const client = getResendClient();
-  if (!client) {
-    console.warn("[resend] RESEND_API_KEY not set — skipping contact message");
-    return { resendId: null };
-  }
-
   const safeName = escapeHtml(contact.name);
   const safeEmail = escapeHtml(contact.email);
   const safeMessage = escapeHtml(contact.message).replace(/\n/g, "<br/>");
@@ -323,15 +339,13 @@ export async function sendContactMessage(
     <div style="white-space: pre-wrap;">${safeMessage}</div>
   `;
 
-  const response = await client.emails.send({
-    from: FROM_ADDRESS,
+  return sendOrSkip({
     to: notificationEmail,
     replyTo: contact.email,
     subject: `New message from ${contact.name}`,
     html: renderEmailShell(inner, 640),
+    emailKind: "contact message",
   });
-
-  return { resendId: response.data?.id ?? null };
 }
 
 export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
@@ -359,6 +373,6 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     to: notificationEmail,
     subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
     html: renderEmailShell(inner, 640),
-    warnPrefix: "Day +7 overdue alert",
+    emailKind: "Day +7 overdue alert",
   });
 }

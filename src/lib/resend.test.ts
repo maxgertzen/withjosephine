@@ -390,3 +390,113 @@ describe("sendDay7OverdueAlert", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
+
+describe("RESEND_DRY_RUN gate", () => {
+  it("skips sending when RESEND_DRY_RUN=1 and returns null resendId", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("also gates when RESEND_DRY_RUN='true' (matches project env-flag convention)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "true");
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT gate when RESEND_DRY_RUN='0' or other non-flag value", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "0");
+    sendMock.mockResolvedValue({ data: { id: "msg_off" } });
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(result.resendId).toBe("msg_off");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("gates BEFORE the API-key check (staging without RESEND_API_KEY still logs dry-run)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    vi.stubEnv("RESEND_API_KEY", "");
+    const warnSpy = vi.spyOn(console, "warn");
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+    const messages = warnSpy.mock.calls.map((args) => String(args[0]));
+    expect(messages.some((m) => m.includes("RESEND_DRY_RUN"))).toBe(true);
+    expect(messages.some((m) => m.includes("RESEND_API_KEY"))).toBe(false);
+  });
+
+  it("redacts recipient local-part in dry-run log (PII hygiene)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const warnSpy = vi.spyOn(console, "warn");
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(buildSubmission({ email: "ada@example.com" }));
+
+    const messages = warnSpy.mock.calls.map((args) => String(args[0]));
+    const dryRunLog = messages.find((m) => m.includes("RESEND_DRY_RUN"));
+    expect(dryRunLog).toBeDefined();
+    expect(dryRunLog).toContain("a***@example.com");
+    expect(dryRunLog).not.toContain("ada@example.com");
+  });
+
+  it("does not gate when RESEND_DRY_RUN is unset (default behavior)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "");
+    sendMock.mockResolvedValue({ data: { id: "msg_default" } });
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(result.resendId).toBe("msg_default");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("gates sendOrderConfirmation when RESEND_DRY_RUN=1", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const { sendOrderConfirmation } = await import("./resend");
+
+    const result = await sendOrderConfirmation(buildSubmission());
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("gates sendContactMessage when RESEND_DRY_RUN=1", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const { sendContactMessage } = await import("./resend");
+
+    const result = await sendContactMessage({
+      name: "Ada",
+      email: "ada@example.com",
+      message: "Hi",
+    });
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("gates sendDay7Delivery when RESEND_DRY_RUN=1 (covers delivery cron path)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const { sendDay7Delivery } = await import("./resend");
+
+    const result = await sendDay7Delivery(
+      buildSubmission(),
+      "https://example.com/listen/abc",
+    );
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+});
