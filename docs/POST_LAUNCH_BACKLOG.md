@@ -603,6 +603,22 @@ after launch + the staging/dev separation work lands.
 
 ---
 
+### Apex unpark — Stripe live-mode flip target (captured 2026-05-06 during PR-S1)
+
+Locked here because the dev/staging/prod separation plan deliberately scoped Stripe live-mode out (PR-S1 kept all 3 envs on test mode for now since prod apex is parked). When apex unparks for real customer traffic, this is the exact set of changes needed:
+
+1. **Stripe (Live mode)** — register a live webhook endpoint at `https://withjosephine.com/api/stripe/webhook`, subscribe to the same event set as the existing test-mode webhook. Capture the live signing secret.
+2. **Stripe (Live mode)** — create 3 new Payment Links (one per reading: Soul Blueprint $129, Birth Chart $99, Akashic Record $79) with `success_url = https://withjosephine.com/thank-you/{slug}?sessionId={CHECKOUT_SESSION_ID}`. Capture the URLs.
+2a. **Stripe (Test mode existing PLs)** — during PR-S1 (2026-05-06) the existing 3 test-mode PL success_urls were pointed at `https://staging.withjosephine.com/thank-you/...` so staging QA works while apex is parked. After live-mode PLs replace them in production Sanity (step 3 below), the test-mode set can stay pointing at staging permanently — staging is the only consumer of the test-mode set going forward.
+3. **Sanity production dataset** — update each `reading` doc's `stripePaymentLink` field to the new live-mode URL. Path: `*[_type == "reading" && slug.current == "<slug>"]`. Use Studio Presentation tool or `sanity documents create/replace` CLI mutation. Per the saved fetch-before-edit rule, fetch the live doc first, edit from that base.
+4. **Worker production secrets** — `wrangler secret put STRIPE_SECRET_KEY` (paste `sk_live_*`), `wrangler secret put STRIPE_WEBHOOK_SECRET` (paste live signing secret from step 1).
+5. **GH Environment production variables** — flip `NEXT_PUBLIC_UNDER_CONSTRUCTION` from `1` → `0`. Redeploy.
+6. **Becky-coordination** — only proceed after Becky's reading delivery is complete. Her current booking flow uses the test-mode PLs; flipping mid-flight strands her transaction in test mode while the dataset says live.
+
+Independence from staging-separation: this is fully orthogonal. None of the staging PRs depend on this; this doesn't block any staging PR. Lives in the apex-unpark plan when that's drafted.
+
+---
+
 ## How to use this doc
 
 When an item lands, delete it from this file. When a new "we'll defer
