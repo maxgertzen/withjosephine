@@ -1,9 +1,8 @@
-// Sentry server-side instrumentation disabled while we sit on the 3 MiB
-// Cloudflare Workers free-tier limit. @sentry/nextjs was bloating the
-// worker bundle from ~11 MiB to ~16 MiB. Re-enable as a Phase 1.5 task
-// once we either (a) move to the paid plan, or (b) switch to the
-// lighter @sentry/cloudflare integration which targets workerd directly.
-// See POST_LAUNCH_BACKLOG.md.
+// Cloudflare Workers Sentry init lives in custom-worker.ts via Sentry.withSentry,
+// which wraps every fetch and is the only entrypoint to the worker bundle in
+// production. instrumentation.ts is reserved for the Next.js Node-runtime path
+// (local `next dev`); intentionally left a no-op so dev sessions don't burn
+// Sentry quota or pollute the issue tracker.
 
 export function register(): void {
   // no-op

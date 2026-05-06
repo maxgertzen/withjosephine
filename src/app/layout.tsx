@@ -5,9 +5,7 @@ import { draftMode, headers } from "next/headers";
 import { VisualEditing } from "next-sanity/visual-editing";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
-import { CloudflareAnalytics } from "@/components/CloudflareAnalytics";
 import { DisableDraftMode } from "@/components/DisableDraftMode";
-import { isAnalyticsEnabled } from "@/lib/featureFlags";
 import { bodyFont, displayFont } from "@/lib/fonts.generated";
 import { CONSENT_HEADER } from "@/lib/region";
 import { fetchSiteSettings } from "@/lib/sanity/fetch";
@@ -21,7 +19,6 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled: isDraftMode } = await draftMode();
-  const analyticsToken = isAnalyticsEnabled() ? process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN! : null;
   const requestHeaders = await headers();
   const consentRequired = requestHeaders.get(CONSENT_HEADER) === "1";
   const consentBannerContent =
@@ -56,7 +53,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <DisableDraftMode />
           </>
         )}
-        {analyticsToken && <CloudflareAnalytics token={analyticsToken} />}
       </body>
     </html>
   );

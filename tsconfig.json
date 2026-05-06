@@ -29,5 +29,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "studio", "scripts"]
+  "exclude": ["node_modules", "studio", "scripts", "custom-worker.ts"]
 }
