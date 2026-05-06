@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/Button";
+import { captureException } from "@/lib/sentry-client";
 
 export default function ErrorPage({
   error,
@@ -13,6 +14,7 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     console.error("[error-page]", error);
+    captureException(error);
   }, [error]);
 
   return (

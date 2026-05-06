@@ -39,6 +39,10 @@
 	//   - NEXT_PUBLIC_SANITY_PROJECT_ID
 	//   - NEXT_PUBLIC_SANITY_DATASET
 	//   - NEXT_PUBLIC_SANITY_STUDIO_URL
+	//   - NEXT_PUBLIC_SENTRY_DSN          (optional) Sentry DSN for client-side
+	//                                     error capture from error.tsx /
+	//                                     global-error.tsx via @sentry/browser.
+	//                                     Unset = client capture disabled.
 	// ─────────────────────────────────────────────────────────────────────────
 	"assets": {
 		"directory": ".open-next/assets",

@@ -6,6 +6,12 @@ import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
 import { readConsent, writeConsent } from "@/lib/consent";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
+import { initSentryClient } from "@/lib/sentry-client";
+
+function bootstrapClientObservability(): void {
+  initAnalytics();
+  initSentryClient();
+}
 
 interface AnalyticsBootstrapProps {
   consentRequired: boolean;
@@ -23,12 +29,12 @@ export function AnalyticsBootstrap({
   useEffect(() => {
     if (previewMode) return;
     if (!consentRequired) {
-      initAnalytics();
+      bootstrapClientObservability();
       return;
     }
     const choice = readConsent();
     if (choice === "granted") {
-      initAnalytics();
+      bootstrapClientObservability();
       return;
     }
     if (choice === null) {
@@ -44,7 +50,7 @@ export function AnalyticsBootstrap({
       return;
     }
     writeConsent("granted");
-    initAnalytics();
+    bootstrapClientObservability();
     setShowBanner(false);
   }
 

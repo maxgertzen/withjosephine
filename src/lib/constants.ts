@@ -11,6 +11,18 @@ export const PRODUCTION_HOSTS: ReadonlyArray<string> = [
 ];
 
 /**
+ * Maps a `window.location.host` to a coarse environment label used by
+ * Mixpanel and Sentry to tag events. Mirrors the server-side equivalent in
+ * `src/lib/analytics/server.ts` (which reads from `ENVIRONMENT` instead).
+ */
+export function deriveEnvironmentFromHost(host: string): string {
+  if (PRODUCTION_HOSTS.includes(host)) return "production";
+  if (host.startsWith("preview.")) return "preview";
+  if (host.endsWith(".workers.dev")) return "workers-dev";
+  return "local";
+}
+
+/**
  * Origin where R2-hosted booking photos are served from. Per-env via
  * `NEXT_PUBLIC_R2_PUBLIC_HOST`: prod / staging GH Environment variables for
  * deploys, repo-level for non-deploy CI jobs, `.env.local` for local dev,
