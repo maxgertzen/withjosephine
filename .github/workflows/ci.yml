@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/staging-separation]
   pull_request:
-    branches: [main]
+    branches: [main, feat/staging-separation]
 
 # Workflow-level env reads ONLY repo-level vars (no environment context here).
 # Per-env vars live on each deploy job's env: block, where the job's
