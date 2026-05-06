@@ -12,7 +12,7 @@ Three backlog items from the post-PR-#72 priority list, bundled to one integrati
 | # | Item | Status | Source |
 |---|------|--------|--------|
 | 1 | OpenNext `scheduled` handler dispatch | landed (commit on branch) | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
-| 2 | D1 → Sanity reconcile cron | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Persistence (ADR-001) |
+| 2 | D1 → Sanity reconcile cron | landed (commit on branch) | `www/docs/POST_LAUNCH_BACKLOG.md` → Persistence (ADR-001) |
 | 3 | Resend template IDs (extract inline HTML) | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
 
 ### Why these three together
@@ -58,6 +58,18 @@ Branched off `main` at the post-PR-#72 SHA. Plan doc written. Items #1 and #2 wi
 ### 2026-05-06 — Item #1 landed: OpenNext scheduled handler
 
 `custom-worker.ts` now exposes a `scheduled` handler beside `fetch`. It looks up the wrangler `cron` schedule string in `src/lib/cron-routes.ts`'s `CRON_DISPATCH` map and dispatches internal fetches against the matching `/api/cron/*` paths. Each request carries `cf-cron: 1` so `isCronRequestAuthorized` accepts it (CRON_SECRET path remains for manual triggers). Origin is per-env (`withjosephine.com` vs `staging.withjosephine.com`) so request logs attribute correctly. `wrangler.jsonc` cron-block comments updated to reflect the new state. 709/709 tests pass (added 5 for the routes map). Bundle gzip 4098 KiB — no growth. Will need post-deploy verification: trigger a scheduled event via CF dashboard "Trigger" button on staging and confirm the route fires (visible in `wrangler tail`).
+
+### 2026-05-06 — Item #2 landed: D1 → Sanity reconcile cron
+
+New `/api/cron/reconcile-mirror` route walks D1 submissions from the last 7 days, fetches the matching Sanity docs in a single `_id in $ids` GROQ query, and uses a pure `diffSubmission` helper (`src/lib/booking/persistence/reconcileMirror.ts`) to decide skip/create/patch per row. Compares 8 fields (status, paidAt, expiredAt, deliveredAt, voiceNoteUrl, pdfUrl, amountPaidCents, amountPaidCurrency) plus `emailsFired` array membership keyed by `(type, sentAt)`. Patch path uses existing `mirrorSubmissionPatch` + `mirrorAppendEmailFired` from `sanityMirror.ts` so semantics match the original mirror writes.
+
+Wired into the `0 */6 * * *` schedule (alongside the existing reconcile + email crons). Listed in CRON_DISPATCH map; wrangler.jsonc comment updated.
+
+Limitation: the `create` path is intentionally NOT implemented. If a Sanity doc is missing entirely (i.e. the original create-mirror failed), we can't faithfully reconstruct the consent snapshot (`acknowledgedAt` + `IP` aren't in D1). Logged as `missing` in the cron summary; recovery requires a separate Studio admin action — that's item #3 in the original cluster, deliberately scoped out of this branch.
+
+Added `listSubmissionsCreatedAfter(cutoffIso)` helper to repository.ts (mirrors the existing `listSubmissionsByStatusOlderThan` pattern, no status filter).
+
+715/715 tests pass (+6 for the diff logic). Bundle gzip 4107 KiB (+9 KiB for new route + helper). Post-deploy verification: trigger a `0 */6 * * *` cron via CF dashboard, watch `wrangler tail` for the route fire + `{ checked, skipped, patched, missing }` summary.
 
 ## PR strategy
 

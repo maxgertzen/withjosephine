@@ -170,6 +170,19 @@ export async function listSubmissionsByStatusOlderThan(
   return rows.map(rowToRecord);
 }
 
+export async function listSubmissionsCreatedAfter(
+  cutoffIso: string,
+): Promise<SubmissionRecord[]> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+     WHERE created_at >= ?
+     ORDER BY created_at ASC
+     LIMIT ${LIST_LIMIT}`,
+    [cutoffIso],
+  );
+  return rows.map(rowToRecord);
+}
+
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
   const rows = await dbQuery<{ photo_r2_key: string }>(
     `SELECT photo_r2_key FROM submissions WHERE photo_r2_key IS NOT NULL`,

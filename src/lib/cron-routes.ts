@@ -11,6 +11,7 @@
 export const CRON_DISPATCH: Record<string, ReadonlyArray<string>> = {
   "0 */6 * * *": [
     "/api/cron/reconcile",
+    "/api/cron/reconcile-mirror",
     "/api/cron/email-day-2",
     "/api/cron/email-day-7-deliver",
   ],

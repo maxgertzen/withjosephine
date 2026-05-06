@@ -61,7 +61,7 @@
 	// Source of truth for schedule → routes mapping: `src/lib/cron-routes.ts`.
 	//
 	// Cadences:
-	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + email-day-2 + email-day-7-deliver
+	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + reconcile-mirror (D1 ↔ Sanity drift, ADR-001) + email-day-2 + email-day-7-deliver
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
