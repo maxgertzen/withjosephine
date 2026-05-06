@@ -42,6 +42,7 @@
     "@portabletext/react": "^6.0.3",
     "@sanity/client": "^7.21.0",
     "@sanity/visual-editing": "5.3.4",
+    "@sanity/webhook": "^4.0.4",
     "aws4fetch": "^1.0.20",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

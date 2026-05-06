@@ -26,6 +26,9 @@ importers:
       '@sanity/visual-editing':
         specifier: 5.3.4
         version: 5.3.4(@emotion/is-prop-valid@1.4.0)(@sanity/client@7.21.0)(@sanity/types@5.20.0(@types/react@19.2.14))(next@16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-is@19.2.5)(react@19.2.3)(styled-components@6.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.3)
+      '@sanity/webhook':
+        specifier: ^4.0.4
+        version: 4.0.4
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20

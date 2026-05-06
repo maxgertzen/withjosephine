@@ -1,7 +1,7 @@
+import { decodeSignatureHeader, isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
 import { NextResponse } from "next/server";
 
 import { optionalEnv } from "@/lib/env";
-import { base64UrlDecodeToBytes, verifyHmacSha256 } from "@/lib/hmac";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 /**
@@ -18,18 +18,17 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  * in draft mode reads `drafts.<id>` from staging and shows the in-flight
  * edit).
  *
- * Auth: HMAC SHA-256 signature in the `sanity-webhook-signature` header,
- * format `t=<unix-ms>,v1=<base64url-hmac>`, signed payload is
- * `${timestamp}.${rawBody}`. Verified against `SANITY_WEBHOOK_SECRET` via
- * `crypto.subtle.verify` (timing-safe). Endpoint returns 404 when the
- * secret is unset (so the prod worker silently rejects sync attempts even
- * though the route exists in the bundle — kept as plain text 404 to look
- * like a real Next 404 rather than advertising the route's existence).
+ * Auth: HMAC SHA-256 verification via Sanity's official `@sanity/webhook`
+ * toolkit (`isValidSignature`, `decodeSignatureHeader`). Endpoint returns
+ * 404 when the secret is unset (so the prod worker silently rejects sync
+ * attempts even though the route exists in the bundle — kept as plain text
+ * 404 to look like a real Next 404 rather than advertising the route's
+ * existence).
  *
  * Replay defense: signatures with a timestamp more than 5 minutes off from
- * `Date.now()` are rejected. Sanity's signing timestamp is unix-ms so the
- * window is symmetric (covers both stale captures and clock-skewed
- * forward-replay).
+ * `Date.now()` are rejected before the HMAC check. The toolkit doesn't do
+ * this on its own — it only validates the math. Without it, a captured
+ * (timestamp, signature, body) triplet could be replayed indefinitely.
  *
  * Required Sanity webhook config (UI):
  *   - URL: https://staging.withjosephine.com/api/sanity-sync
@@ -57,52 +56,38 @@ function isSanityOperation(value: unknown): value is SanityOperation {
   return value === "create" || value === "update" || value === "delete";
 }
 
-function parseSignatureHeader(header: string): { timestamp: string; signature: string } | null {
-  const parts = header.split(",").map((part) => part.trim());
-  let timestamp: string | null = null;
-  let signature: string | null = null;
-  for (const part of parts) {
-    if (part.startsWith("t=")) timestamp = part.slice(2);
-    else if (part.startsWith("v1=")) signature = part.slice(3);
-  }
-  if (!timestamp || !signature) return null;
-  return { timestamp, signature };
+function isTimestampFresh(timestampMs: number, now: number = Date.now()): boolean {
+  return Number.isFinite(timestampMs) && Math.abs(now - timestampMs) <= REPLAY_WINDOW_MS;
 }
 
-function isTimestampFresh(timestamp: string, now: number = Date.now()): boolean {
-  const ts = Number.parseInt(timestamp, 10);
-  if (!Number.isFinite(ts)) return false;
-  return Math.abs(now - ts) <= REPLAY_WINDOW_MS;
-}
-
-async function verifySignature(
+async function verifySignedRequest(
   rawBody: string,
   signatureHeader: string,
   secret: string,
 ): Promise<boolean> {
-  const parsed = parseSignatureHeader(signatureHeader);
-  if (!parsed) return false;
-  if (!isTimestampFresh(parsed.timestamp)) return false;
-  const sigBytes = base64UrlDecodeToBytes(parsed.signature);
-  if (!sigBytes) return false;
-  return verifyHmacSha256(secret, `${parsed.timestamp}.${rawBody}`, sigBytes);
+  let decoded: { timestamp: number; hashedPayload: string };
+  try {
+    decoded = decodeSignatureHeader(signatureHeader);
+  } catch {
+    return false;
+  }
+  if (!isTimestampFresh(decoded.timestamp)) return false;
+  return isValidSignature(rawBody, signatureHeader, secret);
 }
 
 export async function POST(request: Request): Promise<Response> {
   const secret = optionalEnv("SANITY_WEBHOOK_SECRET");
   if (!secret) {
-    // Plain text 404 so an unconfigured prod worker looks like a normal Next
-    // not-found, not "this route exists, you're just unauthorized".
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  const signatureHeader = request.headers.get("sanity-webhook-signature");
+  const signatureHeader = request.headers.get(SIGNATURE_HEADER_NAME);
   if (!signatureHeader) {
     return NextResponse.json({ error: "Missing signature" }, { status: 401 });
   }
 
   const rawBody = await request.text();
-  if (!(await verifySignature(rawBody, signatureHeader, secret))) {
+  if (!(await verifySignedRequest(rawBody, signatureHeader, secret))) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -142,8 +127,8 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Missing _type for create/update" }, { status: 400 });
   }
 
-  // Strip the synthetic `_operation` field before writing — Sanity projections
-  // injected it for us; it shouldn't land in the synced doc.
+  // Strip the synthetic `_operation` field before writing — Sanity's GROQ
+  // projection injected it for us; it shouldn't land in the synced doc.
   const docFields: Record<string, unknown> = { ...payload };
   delete docFields._operation;
 
