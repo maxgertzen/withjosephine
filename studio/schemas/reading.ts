@@ -1,5 +1,13 @@
 import { defineField, defineType } from "sanity";
 
+const PRICE_DISPLAY_RE = /^\$(\d+)(?:\.(\d{2}))?$/;
+
+function parseDisplayToCents(value: string): number | null {
+  const match = value.match(PRICE_DISPLAY_RE);
+  if (!match) return null;
+  return Number(match[1]) * 100 + Number(match[2] ?? "0");
+}
+
 export const reading = defineType({
   name: "reading",
   title: "Reading",
@@ -42,8 +50,29 @@ export const reading = defineType({
       name: "priceDisplay",
       title: "Display Price",
       type: "string",
-      description: 'Formatted price shown to visitors (e.g. "$179")',
-      validation: (rule) => rule.required(),
+      description: 'Formatted price shown to visitors (e.g. "$179"). Must agree with Price (cents) above.',
+      validation: (rule) =>
+        rule.required().custom((value, context) => {
+          if (typeof value !== "string") return true;
+          const parent = context.parent as { price?: number } | undefined;
+          const cents = parent?.price;
+          if (typeof cents !== "number") return true;
+
+          const displayCents = parseDisplayToCents(value);
+          if (displayCents === null) {
+            return {
+              level: "warning" as const,
+              message: 'Use "$N" or "$N.NN" format (e.g. "$179" or "$179.00").',
+            };
+          }
+          if (displayCents !== cents) {
+            return {
+              level: "warning" as const,
+              message: `Display does not match Price (cents): "${value}" vs ${cents}¢ ($${(cents / 100).toFixed(2)}). Update one to match the other, or update the Stripe Payment Link to match the new price.`,
+            };
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "valueProposition",

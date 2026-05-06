@@ -4,25 +4,19 @@
  */
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createClient } from "@sanity/client";
 import {
   generateEmailTokensModule,
   generateTokensCss,
 } from "../src/lib/theme/generate-tokens";
 import type { SanityTheme } from "../src/lib/sanity/types";
+import { createSanityBuildClient } from "./lib/sanity-build-client";
 
 async function fetchTheme(): Promise<SanityTheme | null> {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  if (!projectId) {
+  const client = createSanityBuildClient();
+  if (!client) {
     console.log("No NEXT_PUBLIC_SANITY_PROJECT_ID — using brand defaults");
     return null;
   }
-  const client = createClient({
-    projectId,
-    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-    apiVersion: "2024-01-01",
-    useCdn: true,
-  });
   console.log("Fetching theme from Sanity...");
   return client.fetch<SanityTheme | null>(
     `*[_type == "theme"][0] { colors, displayFont, bodyFont }`,
