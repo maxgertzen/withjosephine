@@ -34,7 +34,8 @@
     "migrate:list:local": "wrangler d1 migrations list withjosephine_bookings --local",
     "migrate:apply:prod": "wrangler d1 migrations apply withjosephine_bookings --remote",
     "migrate:apply:staging": "wrangler d1 migrations apply withjosephine_bookings --env staging --remote",
-    "migrate:apply:local": "wrangler d1 migrations apply withjosephine_bookings --local"
+    "migrate:apply:local": "wrangler d1 migrations apply withjosephine_bookings --local",
+    "seed:staging": "tsx scripts/seed-staging-dataset.ts"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.0",
