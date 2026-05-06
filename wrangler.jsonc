@@ -87,6 +87,10 @@
 	// Top-level (production) plain vars. Mirror in dashboard for visibility.
 	// `ENVIRONMENT` is read at runtime to assert bindings agree with the env
 	// (see src/lib/booking/envAssertions.ts).
+	// NOTE: production routes for `withjosephine.com` are bound as a Custom
+	// Domain in the CF dashboard (not declaratively here). If a future change
+	// adds a top-level `routes` array, it MUST NOT include `staging.*` —
+	// that hostname is owned by `env.staging.routes` below.
 	"vars": {
 		"BOOKING_DB_DRIVER": "d1",
 		"ENVIRONMENT": "production"
@@ -102,6 +106,17 @@
 			"compatibility_flags": [
 				"nodejs_compat",
 				"global_fetch_strictly_public"
+			],
+			// Custom Domain on staging.withjosephine.com. On `wrangler deploy --env staging`
+			// Cloudflare provisions DNS + TLS + worker route binding declaratively.
+			// CF Access policy on this hostname is configured manually in the Zero Trust
+			// dashboard (Wrangler does not manage Access).
+			"routes": [
+				{
+					"pattern": "staging.withjosephine.com",
+					"custom_domain": true,
+					"zone_name": "withjosephine.com"
+				}
 			],
 			"assets": {
 				"directory": ".open-next/assets",
