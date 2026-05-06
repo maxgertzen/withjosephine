@@ -13,7 +13,7 @@ Three backlog items from the post-PR-#72 priority list, bundled to one integrati
 |---|------|--------|--------|
 | 1 | OpenNext `scheduled` handler dispatch | landed (commit on branch) | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
 | 2 | D1 → Sanity reconcile cron | landed (commit on branch) | `www/docs/POST_LAUNCH_BACKLOG.md` → Persistence (ADR-001) |
-| 3 | Resend template IDs (extract inline HTML) | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
+| 3 | Resend templates → @react-email migration | landed via sub-PR | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
 
 ### Why these three together
 
@@ -58,6 +58,31 @@ Branched off `main` at the post-PR-#72 SHA. Plan doc written. Items #1 and #2 wi
 ### 2026-05-06 — Item #1 landed: OpenNext scheduled handler
 
 `custom-worker.ts` now exposes a `scheduled` handler beside `fetch`. It looks up the wrangler `cron` schedule string in `src/lib/cron-routes.ts`'s `CRON_DISPATCH` map and dispatches internal fetches against the matching `/api/cron/*` paths. Each request carries `cf-cron: 1` so `isCronRequestAuthorized` accepts it (CRON_SECRET path remains for manual triggers). Origin is per-env (`withjosephine.com` vs `staging.withjosephine.com`) so request logs attribute correctly. `wrangler.jsonc` cron-block comments updated to reflect the new state. 709/709 tests pass (added 5 for the routes map). Bundle gzip 4098 KiB — no growth. Will need post-deploy verification: trigger a scheduled event via CF dashboard "Trigger" button on staging and confirm the route fires (visible in `wrangler tail`).
+
+### 2026-05-06 — Item #4 landed: Resend → @react-email migration (via sub-PR)
+
+Sub-branched off this branch as `feat/resend-react-email`, opened sub-PR targeting `feat/operational-completeness` (CI trigger added to ci.yml so the sub-PR's checks fire). Migrated all 6 transactional emails from inlined HTML strings in `src/lib/resend.tsx` to React components in `src/lib/emails/`:
+
+- `Day2Started.tsx` (firstName)
+- `Day7Delivery.tsx` (firstName, readingName, listenUrl)
+- `Day7OverdueAlert.tsx` (email, readingName, submissionId, createdAt)
+- `ContactMessage.tsx` (name, email, message — multi-line preserved via `<br/>` segments)
+- `JosephineNotification.tsx` (full submission context + responses table + photo block)
+- `OrderConfirmation.tsx` (folio layout — header masthead, gold-rule title, body, inset price card, signature, footer)
+
+Components use `@react-email/components` primitives (`<Html>`, `<Body>`, `<Container>`, `<Section>`, `<Heading>`, `<Text>`, `<Link>`, `<Hr>`) for cross-client compatibility. `@react-email/render` converts to HTML server-side; the existing `sendOrSkip` keeps passing HTML strings to Resend (no Resend SDK pattern change).
+
+**TDD-first per user instruction** — for each email type: write parity test (red), write component (green), iterate. `src/lib/emails/test-helpers.ts` exposes `visibleText` (DOM text-content with React markers stripped) + `linkHrefs` (for href assertions). 31 new tests across 6 component test files. Existing `src/lib/resend.test.ts` updated to use `visibleText` for body assertions while keeping raw-HTML assertions for href/link checks.
+
+**Visual parity preserved per user instruction** — every text string + brand color token + link URL from the legacy renderer is asserted in the React component's render output. The `OrderConfirmation` folio layout (vellum & letter design) is preserved structurally with the same table-based row structure email clients need.
+
+746/746 tests pass (+31 new). Bundle gzip 4112 KiB (+5 KiB for react-email runtime) — well under the 6 MiB target. Lint + typecheck clean.
+
+The legacy helper functions (`renderEmailShell`, `paragraph`, `signOff`, `renderResponsesHtml`, `renderInsetPrice`, `renderOrderConfirmationHtml`) are removed. `resend.ts` renamed to `resend.tsx` since it now contains JSX. Internal type `ContactMessage` renamed to `ContactPayload` to avoid collision with the imported `ContactMessage` component.
+
+Followups (not in this branch):
+- A `react-email dev` preview server would let Josephine + Becky see the rendered emails without sending. Defer until they ask.
+- The CRM-decoupling plan (project CLAUDE.md → "Post-launch future enhancements") is the durable answer once volume + Becky's needs justify it.
 
 ### 2026-05-06 — Item #2 landed: D1 → Sanity reconcile cron
 

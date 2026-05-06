@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSubmission } from "@/test/fixtures/submission";
 
+import { visibleText } from "./emails/test-helpers";
+
 const sendMock = vi.fn();
 const resendCtorMock = vi.fn(function () {
   return { emails: { send: sendMock } };
@@ -46,11 +48,12 @@ describe("sendNotificationToJosephine", () => {
     expect(args.to).toBe("hello@withjosephine.com");
     expect(args.subject).toContain(submission.readingName);
     expect(args.subject).toContain(submission.email);
-    expect(args.html).toContain("Birth date");
-    expect(args.html).toContain("1990-04-12");
-    expect(args.html).toContain("Focus areas");
-    expect(args.html).toContain(submission.email);
-    expect(args.html).toContain(submission.id);
+    const body = visibleText(args.html);
+    expect(body).toContain("Birth date");
+    expect(body).toContain("1990-04-12");
+    expect(body).toContain("Focus areas");
+    expect(body).toContain(submission.email);
+    expect(body).toContain(submission.id);
   });
 
   it("includes the photo URL when photoUrl is set", async () => {
@@ -173,12 +176,13 @@ describe("sendOrderConfirmation", () => {
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
     expect(args.subject).toBe("Your reading is booked — here's what happens next");
-    expect(args.html).toContain("Hi Ada,");
-    expect(args.html).toContain(`Thank you for booking a ${submission.readingName}`);
-    expect(args.html).toContain("intake and your payment");
-    expect(args.html).toContain("within seven days");
-    expect(args.html).toContain("With love");
-    expect(args.html).toContain("Josephine");
+    const body = visibleText(args.html);
+    expect(body).toContain("Hi Ada,");
+    expect(body).toContain(`Thank you for booking a ${submission.readingName}`);
+    expect(body).toContain("intake and your payment");
+    expect(body).toContain("within seven days");
+    expect(body).toContain("With love");
+    expect(body).toContain("Josephine");
   });
 
   it("renders the typographic masthead + Soul Readings eyebrow", async () => {
@@ -186,8 +190,9 @@ describe("sendOrderConfirmation", () => {
     const { sendOrderConfirmation } = await import("./resend");
     await sendOrderConfirmation(buildSubmission());
     const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).toContain(">Josephine<");
-    expect(html).toContain(">Soul Readings<");
+    const body = visibleText(html);
+    expect(body).toContain("Josephine");
+    expect(body).toContain("Soul Readings");
   });
 
   it("renders the centered headline 'Your reading is booked'", async () => {
@@ -285,10 +290,11 @@ describe("sendDay2Started", () => {
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
     expect(args.subject).toBe("A quick note — I've started your reading");
-    expect(args.html).toContain("Hi Ada,");
-    expect(args.html).toContain("sat down with your chart");
-    expect(args.html).toContain("not going to preview anything");
-    expect(args.html).toContain("within the next five days");
+    const body = visibleText(args.html);
+    expect(body).toContain("Hi Ada,");
+    expect(body).toContain("sat down with your chart");
+    expect(body).toContain("not going to preview anything");
+    expect(body).toContain("within the next five days");
   });
 });
 
@@ -305,8 +311,9 @@ describe("sendDay7Delivery", () => {
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.subject).toBe("Your reading is ready");
     expect(args.html).toContain(`href="${url}"`);
-    expect(args.html).toContain(submission.readingName);
-    expect(args.html).toContain("best with headphones");
+    const body = visibleText(args.html);
+    expect(body).toContain(submission.readingName);
+    expect(body).toContain("best with headphones");
   });
 });
 
@@ -326,8 +333,9 @@ describe("sendContactMessage", () => {
     expect(args.to).toBe("hello@withjosephine.com");
     expect(args.replyTo).toBe("jane@example.com");
     expect(args.subject).toBe("New message from Jane Doe");
-    expect(args.html).toContain("Jane Doe");
-    expect(args.html).toContain("jane@example.com");
+    const body = visibleText(args.html);
+    expect(body).toContain("Jane Doe");
+    expect(body).toContain("jane@example.com");
     expect(args.html).toContain("First line<br/>Second line");
   });
 
@@ -386,7 +394,7 @@ describe("sendDay7OverdueAlert", () => {
     expect(args.to).toBe("hello@withjosephine.com");
     expect(args.to).not.toBe(submission.email);
     expect(args.subject).toContain("overdue");
-    expect(args.html).toContain(submission.id);
+    expect(visibleText(args.html)).toContain(submission.id);
   });
 
   it("returns null resendId when NOTIFICATION_EMAIL missing", async () => {
