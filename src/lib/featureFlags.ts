@@ -17,6 +17,3 @@ export function isUnderConstruction(host?: string | null): boolean {
   return PRODUCTION_HOSTS.includes(host);
 }
 
-export function isAnalyticsEnabled(): boolean {
-  return !!process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN;
-}

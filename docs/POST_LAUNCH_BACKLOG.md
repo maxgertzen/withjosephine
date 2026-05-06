@@ -432,10 +432,12 @@ Why excludes made the bundle bigger AND broke workStore: best current hypothesis
 - **PR #43** — bumped `@opennextjs/cloudflare` 1.19.1 → 1.19.4, Next 16.2.3 → 16.2.4, wrangler 4.83.0 → 4.86.0. Wrong cause; bundle grew 2.58 → 3.91 MiB compressed.
 - **Workers paid plan** ($5/mo, 10 MiB compressed limit) upgraded — paid for, bundle no longer the constraint.
 
-### Re-enable error tracking via `@sentry/cloudflare`
-- **Source:** Worker bundle size analysis 2026-04-30. `@sentry/nextjs` removed because it bloated the worker bundle from ~11 MiB to ~16 MiB on CI (where `SENTRY_AUTH_TOKEN` flips Sentry into full instrumentation mode). With Workers paid plan now active (10 MiB compressed limit, currently using ~4 MiB), the headroom exists for a Sentry re-add — but the lighter `@sentry/cloudflare` package is still preferable.
-- **What:** `@sentry/nextjs` package removed; `withSentryConfig` wrapper dropped from `next.config.ts`; `src/instrumentation.ts` is now a no-op stub; `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts` deleted; `src/app/error.tsx` and `src/app/global-error.tsx` switched from `Sentry.captureException` to `console.error`.
-- **Action:** Add `@sentry/cloudflare` (workerd-targeted, much smaller). Until then, error visibility is whatever lands in `wrangler tail` and `console.error` lines.
+### Sentry follow-ups (post-`@sentry/cloudflare` ship)
+- **Shipped:** server-side error capture via `Sentry.withSentry` wrap in `custom-worker.ts`. SDK is `@sentry/cloudflare` 10.51 (workerd-only). DSN is the kill switch — `wrangler secret put SENTRY_DSN` to enable per-env; unset = silent no-op. Bundle stayed at 4 MiB compressed (well under the 10 MiB ceiling). Council's full Path A scope adjusted mid-build: `@sentry/cloudflare` doesn't expose a browser/Node-runtime `Sentry.init`, so the originally planned `Sentry.captureException` calls inside `error.tsx`/`global-error.tsx` and the `instrumentation.ts` init were dropped. Server-side uncaught-throw capture from `Sentry.withSentry` is the entire current surface.
+- **Open follow-ups:**
+  1. **Client-side React error boundary capture** — add `@sentry/browser` (or `@sentry/react`) and call `captureException` from `error.tsx`/`global-error.tsx`. Closes the gap between server uncaught throws (covered) and browser-side React errors (currently `console.error`-only).
+  2. **Source maps upload** — explicitly deferred from the initial PR. Run `npx @sentry/wizard@latest -i sourcemaps` and add `upload_source_maps: true` to `wrangler.jsonc` (note: this requires `SENTRY_AUTH_TOKEN` GH secret + a Sentry CLI step in the deploy job).
+  3. **Validate against the open AsyncLocalStorage bug** — sentry-javascript#18842 affects the `@sentry/nextjs` `onRequestError` hook, which we deliberately avoided. Worth re-checking in 6 months; if upstream resolves it, `@sentry/nextjs` would unlock automatic request-context correlation that `@sentry/cloudflare` standalone doesn't provide.
 
 ### D1 live-write smoke test (immediately post-deploy)
 - **Source:** ADR-001 acceptance.

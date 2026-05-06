@@ -1,6 +1,10 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"main": ".open-next/worker.js",
+	// custom-worker.ts wraps .open-next/worker.js's fetch handler with
+	// Sentry.withSentry for error capture. Wrangler resolves the .open-next
+	// import after `opennextjs-cloudflare build` has produced it. See
+	// https://opennext.js.org/cloudflare/howtos/custom-worker.
+	"main": "custom-worker.ts",
 	"name": "withjosephine",
 	"compatibility_date": "2025-08-16",
 	"compatibility_flags": [
@@ -24,6 +28,7 @@
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
 	//   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
+	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
 	//
 	// Public vars (Variables → Variables on the Worker):
 	//   - BOOKING_DB_DRIVER          "d1" in production. Defaults to "sqlite" (local better-sqlite3) elsewhere.

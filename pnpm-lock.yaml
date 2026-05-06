@@ -29,6 +29,9 @@ importers:
       '@sanity/webhook':
         specifier: ^4.0.4
         version: 4.0.4
+      '@sentry/cloudflare':
+        specifier: ^10.51.0
+        version: 10.51.0
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
@@ -3181,6 +3184,19 @@ packages:
   '@sentry/browser@8.55.1':
     resolution: {integrity: sha512-OEn2eg8h3Mr7BmBGQ28BqbWehYA/NklZ0pAZB1FypPPl+kMd85AbaRdGTnaSjgmpc8bKbBO64edq4Y14sbCs5w==}
     engines: {node: '>=14.18'}
+
+  '@sentry/cloudflare@10.51.0':
+    resolution: {integrity: sha512-oDv2i70q25QPG9zN2GbdtkAjxBdvwHjZL+2aAuilDsagz+jUMq89EXrdh3RPdqnSlaTOqMJovIRDJVbTvpOCsg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@cloudflare/workers-types': ^4.x
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
+
+  '@sentry/core@10.51.0':
+    resolution: {integrity: sha512-Y45V/YXvVLEXmOdkbD1oG1gkRWFi9guCEGg3PlIlIpRjAbZUrvLGgjRJIc1E7XpSzmOnWbs5BbUxMv4PDaPj2w==}
+    engines: {node: '>=18'}
 
   '@sentry/core@8.55.1':
     resolution: {integrity: sha512-0ea+yDOgaijR3ba2al1QZxY0bZ9MBZq2a0G+2A0uCBpBkiXnpLFGVAo9UAlEikN1C4M8ROZYiuFU7yZCqacgLQ==}
@@ -11749,8 +11765,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@opentelemetry/api@1.9.1':
-    optional: true
+  '@opentelemetry/api@1.9.1': {}
 
   '@oxc-project/types@0.124.0': {}
 
@@ -12675,6 +12690,13 @@ snapshots:
       '@sentry-internal/replay': 8.55.1
       '@sentry-internal/replay-canvas': 8.55.1
       '@sentry/core': 8.55.1
+
+  '@sentry/cloudflare@10.51.0':
+    dependencies:
+      '@opentelemetry/api': 1.9.1
+      '@sentry/core': 10.51.0
+
+  '@sentry/core@10.51.0': {}
 
   '@sentry/core@8.55.1': {}
 
