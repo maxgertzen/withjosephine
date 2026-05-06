@@ -27,7 +27,14 @@
     "studio:build": "pnpm --dir studio run build",
     "studio:deploy": "pnpm --dir studio run deploy",
     "optimize-images": "tsx scripts/optimize-images.ts",
-    "build-cities": "tsx scripts/build-cities-json.ts"
+    "build-cities": "tsx scripts/build-cities-json.ts",
+    "migrate:create": "wrangler d1 migrations create withjosephine_bookings",
+    "migrate:list:prod": "wrangler d1 migrations list withjosephine_bookings --remote",
+    "migrate:list:staging": "wrangler d1 migrations list withjosephine_bookings --env staging --remote",
+    "migrate:list:local": "wrangler d1 migrations list withjosephine_bookings --local",
+    "migrate:apply:prod": "wrangler d1 migrations apply withjosephine_bookings --remote",
+    "migrate:apply:staging": "wrangler d1 migrations apply withjosephine_bookings --env staging --remote",
+    "migrate:apply:local": "wrangler d1 migrations apply withjosephine_bookings --local"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.0",
