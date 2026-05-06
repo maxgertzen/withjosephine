@@ -1,10 +1,13 @@
-// Wraps the OpenNext-generated worker fetch handler with Sentry error capture.
+// Wraps the OpenNext-generated worker fetch handler with Sentry error capture
+// AND adds a `scheduled` handler so wrangler cron triggers dispatch internally
+// instead of needing external Bearer-authenticated curl invocations.
 // OpenNext's customWorker pattern: re-import .open-next/worker.js after the
 // `opennextjs-cloudflare build` step has produced it, then wrangler bundles
 // this file and resolves the import. wrangler.jsonc `main` points here.
 import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
+import { dispatchPathsForCron } from "./src/lib/cron-routes";
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
@@ -28,6 +31,39 @@ function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
   return event;
 }
 
+// `scheduled` handler dispatches the wrangler cron triggers into internal
+// fetches against /api/cron/* routes. The `cf-cron` header satisfies
+// `isCronRequestAuthorized` without leaking CRON_SECRET into the dispatch
+// path (CF only sets that header on actual scheduled invocations, not on
+// public requests). Origin is per-env so request logs are correctly
+// attributed; pathname is what Next routes on.
+function originForEnv(env: CloudflareEnv): string {
+  return env.ENVIRONMENT === "staging"
+    ? "https://staging.withjosephine.com"
+    : "https://withjosephine.com";
+}
+
+const composedHandler: ExportedHandler<CloudflareEnv> = {
+  fetch: handler.fetch,
+  async scheduled(event, env, ctx) {
+    const paths = dispatchPathsForCron(event.cron);
+    if (paths.length === 0) {
+      console.warn(`[scheduled] no routes mapped for cron "${event.cron}"`);
+      return;
+    }
+    const origin = originForEnv(env);
+    const dispatch = paths.map(async (path) => {
+      const req = new Request(`${origin}${path}`, {
+        method: "POST",
+        headers: { "cf-cron": "1" },
+      });
+      const res = await handler.fetch!(req, env, ctx);
+      console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
+    });
+    await Promise.allSettled(dispatch);
+  },
+};
+
 export default Sentry.withSentry(
   (env: CloudflareEnv) => ({
     dsn: env.SENTRY_DSN,
@@ -38,7 +74,7 @@ export default Sentry.withSentry(
     sendDefaultPii: false,
     beforeSend: scrubSensitiveRequestData,
   }),
-  handler,
+  composedHandler,
 );
 
 // OpenNext exports Durable Object handlers from .open-next/worker.js — wrangler

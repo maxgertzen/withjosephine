@@ -11,7 +11,7 @@ Three backlog items from the post-PR-#72 priority list, bundled to one integrati
 
 | # | Item | Status | Source |
 |---|------|--------|--------|
-| 1 | OpenNext `scheduled` handler dispatch | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
+| 1 | OpenNext `scheduled` handler dispatch | landed (commit on branch) | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
 | 2 | D1 → Sanity reconcile cron | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Persistence (ADR-001) |
 | 3 | Resend template IDs (extract inline HTML) | not started | `www/docs/POST_LAUNCH_BACKLOG.md` → Infrastructure |
 
@@ -54,6 +54,10 @@ After each item lands, update the Status column above + add a short note in the 
 ### 2026-05-06 — branch + plan doc
 
 Branched off `main` at the post-PR-#72 SHA. Plan doc written. Items #1 and #2 will tackle the cron infrastructure together (#1 lands first, #2 builds on it). #4 is independent and can drop in any time. PR opens once all three land.
+
+### 2026-05-06 — Item #1 landed: OpenNext scheduled handler
+
+`custom-worker.ts` now exposes a `scheduled` handler beside `fetch`. It looks up the wrangler `cron` schedule string in `src/lib/cron-routes.ts`'s `CRON_DISPATCH` map and dispatches internal fetches against the matching `/api/cron/*` paths. Each request carries `cf-cron: 1` so `isCronRequestAuthorized` accepts it (CRON_SECRET path remains for manual triggers). Origin is per-env (`withjosephine.com` vs `staging.withjosephine.com`) so request logs attribute correctly. `wrangler.jsonc` cron-block comments updated to reflect the new state. 709/709 tests pass (added 5 for the routes map). Bundle gzip 4098 KiB — no growth. Will need post-deploy verification: trigger a scheduled event via CF dashboard "Trigger" button on staging and confirm the route fires (visible in `wrangler tail`).
 
 ## PR strategy
 
