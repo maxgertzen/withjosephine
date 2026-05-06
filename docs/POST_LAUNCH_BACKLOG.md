@@ -388,15 +388,11 @@ fire-and-forget — drift can happen on Sanity outages.
   divergent on key fields (`status`, `paidAt`, `deliveredAt`, last
   `emailsFired` entry).
 
-### Studio admin UX for `deliveredAt`
-- **Source:** ADR-001 acceptance.
-- **What:** Today there's no path for Josephine to mark a submission
-  delivered without running SQL. The CLI stopgap is
-  `scripts/mark-delivered.mts`. Properly: a small admin page at
-  `/admin/submissions` in the Next.js app, basic-auth gated, that lists
-  paid-but-undelivered submissions and lets her paste voice/PDF URLs +
-  click "mark delivered".
-- **Action:** Phase 1.5 task. Probably ~1 weekend.
+### Studio file-upload UI for `deliveredAt` (LAUNCH BLOCKER — sub-PR #4 on `feat/operational-completeness`)
+- **Source:** ADR-001 acceptance + 2026-05-06 surfacing during the operational-completeness branch (Max question: "where/how will Becky set up the file?"). Today's flow is broken for Becky: `voiceNoteUrl` / `pdfUrl` are URL strings in Sanity Studio (plain text inputs), with no R2 admin upload surface — only path is `pnpm tsx scripts/mark-delivered.mts` from a terminal, engineer-only.
+- **Fix:** convert the schema fields from `string` to `file` (Sanity asset). Becky drag-drops audio + PDF in Studio → Sanity CDN URL → set `deliveredAt` → day-7-deliver cron fires (now wired natively via Item #1 on the integration branch). Schema migration in `studio/schemas/submission.ts`; mirror-write update in `src/lib/booking/persistence/sanityMirror.ts`; verify listen-page consumer in `src/app/listen/[token]/...`. Full file list + data-migration considerations in project CLAUDE.md → "Files to touch for sub-PR #4".
+- **Effort:** ~2–4hr focused session.
+- **Status:** target on the same integration branch as the other operational-completeness items; merges to main with the rest as a single integration PR.
 
 ### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED + DEPLOYED 2026-04-30 (PR #44)
 
