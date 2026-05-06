@@ -1,6 +1,7 @@
 import { Text } from "@react-email/components";
 
 import { EmailShell } from "./EmailShell";
+import { SignOff } from "./SignOff";
 
 export type Day2StartedProps = {
   firstName: string;
@@ -19,11 +20,7 @@ export function Day2Started({ firstName }: Day2StartedProps) {
       <Text className="text-base leading-[1.75]">
         You&apos;ll hear from me again when it&apos;s ready, within the next five days.
       </Text>
-      <Text className="text-base leading-[1.75] mt-6">
-        With love,
-        <br />
-        Josephine ✦
-      </Text>
+      <SignOff />
     </EmailShell>
   );
 }

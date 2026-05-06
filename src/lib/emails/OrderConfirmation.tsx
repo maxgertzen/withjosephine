@@ -19,23 +19,13 @@ export type OrderConfirmationProps = {
   amountPaidDisplay: string | null;
 };
 
-/**
- * The thank-you page shows a strikethrough-on-discount visual using cents-
- * level comparison (Stripe `amount_total` vs Sanity `reading.price`). Email
- * only has formatted strings, where Intl emits `"$179.00"` while Sanity stores
- * `"$179"` — those never match by string. Surface what the customer paid.
- */
+// Email only has formatted-string prices; cents-level strikethrough lives
+// on the thank-you page. Surface what the customer paid (or list price if
+// the webhook hasn't filled amountPaidDisplay yet).
 function priceCell(readingPriceDisplay: string, amountPaidDisplay: string | null): string {
   return amountPaidDisplay ?? readingPriceDisplay;
 }
 
-// The folio layout is bespoke — masthead, gold-rule title, body, inset
-// price card, signature, footer — each section has unique typography that
-// doesn't share a common shape with the simpler emails. Plain `<p>` tags
-// inherit font-size from each parent `<Section>`'s style, which keeps the
-// per-section typography clean. Brand tokens (colors, fonts) flow through
-// the `<Tailwind>` provider's classNames; layout-specific values stay
-// inline.
 export function OrderConfirmation({
   firstName,
   readingName,
@@ -54,7 +44,7 @@ export function OrderConfirmation({
             className="bg-cream border border-divider rounded"
             style={{ maxWidth: 600, margin: "0 auto" }}
           >
-            {/* Header */}
+
             <Section className="text-center" style={{ padding: "44px 48px 8px 48px" }}>
               <p
                 className="font-serif text-ink"
@@ -70,7 +60,7 @@ export function OrderConfirmation({
               </p>
             </Section>
 
-            {/* Title with gold rule lines */}
+
             <Section className="text-center" style={{ padding: "32px 48px 8px 48px" }}>
               <table role="presentation" cellPadding={0} cellSpacing={0} border={0} width="100%">
                 <tbody>
@@ -93,7 +83,7 @@ export function OrderConfirmation({
               </table>
             </Section>
 
-            {/* Body */}
+
             <Section
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
@@ -110,7 +100,7 @@ export function OrderConfirmation({
               </p>
             </Section>
 
-            {/* Inset price card */}
+
             <div style={{ padding: "0 48px" }}>
               <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
                 <p
@@ -136,7 +126,7 @@ export function OrderConfirmation({
               </Section>
             </div>
 
-            {/* Signature */}
+
             <Section
               className="font-serif italic text-ink"
               style={{ padding: "36px 48px 16px 48px", fontSize: 22, lineHeight: 1.4 }}
@@ -147,7 +137,7 @@ export function OrderConfirmation({
               </p>
             </Section>
 
-            {/* Footer */}
+
             <Hr className="border-divider" style={{ margin: 0 }} />
             <Section
               className="font-sans text-muted"

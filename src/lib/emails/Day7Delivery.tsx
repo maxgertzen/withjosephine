@@ -1,6 +1,7 @@
 import { Link, Text } from "@react-email/components";
 
 import { EmailShell } from "./EmailShell";
+import { SignOff } from "./SignOff";
 
 export type Day7DeliveryProps = {
   firstName: string;
@@ -24,11 +25,7 @@ export function Day7Delivery({ firstName, readingName, listenUrl }: Day7Delivery
       <Text className="text-base leading-[1.75]">
         If anything you hear sits hard, or if a question opens up after, please write to me. I&apos;d rather know than not.
       </Text>
-      <Text className="text-base leading-[1.75] mt-6">
-        With love,
-        <br />
-        Josephine ✦
-      </Text>
+      <SignOff />
     </EmailShell>
   );
 }

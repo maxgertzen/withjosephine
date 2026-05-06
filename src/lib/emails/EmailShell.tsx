@@ -10,12 +10,6 @@ import type { ReactNode } from "react";
 
 import { emailTailwindConfig } from "./theme.config";
 
-/**
- * Shared envelope for every transactional email — sets the document
- * structure email clients need (`<Html>`, `<Head>`, `<Body>`) and wraps
- * children in the brand-themed `<Tailwind>` provider so child components
- * can use brand-token utility classes (`text-ink`, `font-serif`, etc.).
- */
 export type EmailShellProps = {
   preview?: string;
   maxWidth?: number;
