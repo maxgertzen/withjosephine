@@ -375,12 +375,12 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
   });
 
-  it("does not show the Start fresh button on first render with no saved draft", () => {
+  it("does not show the Clear form button on first render with no saved draft", () => {
     renderForm();
     expect(screen.queryByTestId("discard-draft-button")).toBeNull();
   });
 
-  it("shows the Start fresh button after Save and continue later", async () => {
+  it("shows the Clear form button after Save and continue later", async () => {
     const user = userEvent.setup();
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada");
@@ -390,9 +390,8 @@ describe("IntakeForm — localStorage save/resume", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears localStorage and resets values when Start fresh is confirmed", async () => {
+  it("clears localStorage and resets values when Yes, clear it is confirmed", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
@@ -401,6 +400,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     ).not.toBeNull();
 
     await user.click(await screen.findByTestId("discard-draft-button"));
+    await user.click(await screen.findByTestId("discard-draft-confirm-yes"));
 
     await waitFor(() => {
       expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("");
@@ -411,9 +411,8 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(screen.queryByTestId("discard-draft-button")).toBeNull();
   });
 
-  it("preserves the draft when Start fresh confirmation is cancelled", async () => {
+  it("preserves the draft when Keep it is clicked", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
@@ -421,6 +420,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(before).not.toBeNull();
 
     await user.click(await screen.findByTestId("discard-draft-button"));
+    await user.click(await screen.findByTestId("discard-draft-cancel"));
 
     expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe(
       "Ada Lovelace",
