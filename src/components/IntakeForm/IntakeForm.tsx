@@ -575,7 +575,10 @@ export function IntakeForm({
       />
 
       {totalPages > 0 ? (
-        <PageIndicator pageNumber={currentPage + 1} totalPages={totalPages} />
+        <div className="flex items-center justify-between gap-4">
+          <PageIndicator pageNumber={currentPage + 1} totalPages={totalPages} />
+          {lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null}
+        </div>
       ) : null}
 
       {currentSections.map((section) => (
@@ -701,9 +704,6 @@ export function IntakeForm({
         submitDisabled={isFinalPage && !currentPageValid}
         submitLabel={submitLabel}
         savedIndicator={savedIndicator}
-        discardDraftButton={
-          lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null
-        }
       />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>

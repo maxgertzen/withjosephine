@@ -11,7 +11,7 @@ afterEach(() => {
 describe("DiscardDraftButton", () => {
   it("renders the default label", () => {
     render(<DiscardDraftButton onConfirm={() => {}} />);
-    expect(screen.getByRole("button", { name: "Start fresh" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear form" })).toBeInTheDocument();
   });
 
   it("calls onConfirm when the user accepts the confirmation", async () => {
@@ -19,7 +19,7 @@ describe("DiscardDraftButton", () => {
     const onConfirm = vi.fn();
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<DiscardDraftButton onConfirm={onConfirm} />);
-    await user.click(screen.getByRole("button", { name: "Start fresh" }));
+    await user.click(screen.getByRole("button", { name: "Clear form" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -28,7 +28,7 @@ describe("DiscardDraftButton", () => {
     const onConfirm = vi.fn();
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<DiscardDraftButton onConfirm={onConfirm} />);
-    await user.click(screen.getByRole("button", { name: "Start fresh" }));
+    await user.click(screen.getByRole("button", { name: "Clear form" }));
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });
