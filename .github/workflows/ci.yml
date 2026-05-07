@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/staging-separation, feat/operational-completeness]
+    branches: [main, feat/staging-separation, feat/operational-completeness, feat/csp-nonce-and-audits]
   pull_request:
-    branches: [main, feat/staging-separation, feat/operational-completeness]
+    branches: [main, feat/staging-separation, feat/operational-completeness, feat/csp-nonce-and-audits]
 
 # Workflow-level env reads ONLY repo-level vars (no environment context here).
 # Per-env vars live on each deploy job's env: block, where the job's
@@ -68,7 +68,7 @@ jobs:
   # Per-env vars resolve from the GH `staging` environment because of
   # `environment: staging` below.
   deploy-staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/csp-nonce-and-audits')
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test, security-audit, storybook]
     environment: staging
