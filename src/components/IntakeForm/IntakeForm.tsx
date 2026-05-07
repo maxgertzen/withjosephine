@@ -62,6 +62,9 @@ type IntakeFormProps = {
   sections: SanityFormSection[];
   nonRefundableNotice: string;
   submitLabel?: string;
+  nextLabel?: string;
+  saveLaterLabel?: string;
+  pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
 };
@@ -102,7 +105,10 @@ export function IntakeForm({
   readingName,
   sections,
   nonRefundableNotice,
-  submitLabel = "Continue to Payment",
+  submitLabel,
+  nextLabel,
+  saveLaterLabel,
+  pageIndicatorTagline,
   pagination,
   loadingStateCopy,
 }: IntakeFormProps) {
@@ -590,7 +596,11 @@ export function IntakeForm({
 
       {totalPages > 0 ? (
         <div className="flex items-center justify-between gap-4">
-          <PageIndicator pageNumber={currentPage + 1} totalPages={totalPages} />
+          <PageIndicator
+            pageNumber={currentPage + 1}
+            totalPages={totalPages}
+            tagline={pageIndicatorTagline}
+          />
           {lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null}
         </div>
       ) : null}
@@ -718,6 +728,8 @@ export function IntakeForm({
         submitDisabled={isFinalPage && !currentPageValid}
         saveLaterDisabled={valuesUntouched}
         submitLabel={submitLabel}
+        nextLabel={nextLabel}
+        saveLaterLabel={saveLaterLabel}
         savedIndicator={savedIndicator}
       />
 

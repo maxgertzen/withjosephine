@@ -143,6 +143,40 @@ All fields (question, answer, order) are CONSUMED or PROJECTED.
 
 All fields (colors object with bgPrimary, bgSection, bgDark, bgInteractive, textPrimary, textHeading, textMuted, textOnDark, accent, accentLight, blush, rose, ivory; displayFont, bodyFont) are CONSUMED by theme composition and styling.
 
+## PROJECTED-BUT-UNUSED follow-up — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
+
+The follow-up audit on PROJECTED-BUT-UNUSED fields shipped per-field decisions:
+
+**Deleted (zero consumers in production code; relics of the pre-Stripe-Payment-Links BookingForm component or never-implemented surfaces):**
+- `bookingPage.emailLabel`
+- `bookingPage.emailDisclaimer`
+- `bookingPage.securityNote`
+- `bookingPage.closingMessage`
+- `bookingForm.title`
+- `bookingForm.intro`
+- `bookingForm.description`
+- `bookingForm.confirmationMessage`
+- `thankYouPage.steps`
+
+**Wired up (PROJECTED → CONSUMED via prop chain; previously orphaned but the semantic was correct):**
+- `bookingPage.paymentButtonText` → `<PageNav submitLabel>` via intake/page.tsx → IntakeForm prop chain.
+
+**New optional fields added (Becky-editable knobs surfaced by the H5/M4 copy carry-over):**
+- `bookingForm.nextButtonText` → PageNav `nextLabel`
+- `bookingForm.saveAndContinueLaterText` → PageNav `saveLaterLabel`
+- `bookingForm.pageIndicatorTagline` → PageIndicator `tagline` (renders as `Page 2 of 4 · {tagline}` when set)
+- `landingPage.contactSection.successHeading` → ContactForm success state heading
+- `landingPage.contactSection.successBody` → ContactForm success state body
+- `landingPage.contactSection.sendAnotherButtonText` → ContactForm reset button
+
+**Audit corrections (the audit doc had marked these "ambiguous" but verification found CONSUMED):**
+- `bookingForm.entryPageContent` and all nested fields — consumed at `/book/[readingId]/page.tsx:95` and `/book/[readingId]/letter/page.tsx:59`. CONSUMED.
+- `bookingForm.pagination.overrides` — consumed at `IntakeForm.tsx` via `derivePages(sections, { readingSlug, pagination })`. CONSUMED.
+- `bookingForm.loadingStateCopy` — consumed via prop chain (intake → IntakeForm → SubmitOverlay). CONSUMED. The "PROJECTED-BUT-UNUSED" classification was for the value not being seeded in the production Sanity dataset; that's a data-seed problem, addressed by `scripts/seed-quality-sweep-fields.mts`.
+- `bookingForm.nonRefundableNotice` — consumed at `IntakeForm.tsx:661` (cooling-off block above consent checkbox). The schema description "do not show in new flows" was stale; rewritten to reflect actual usage and `validation: required` added.
+
+**Schema deletions don't touch existing document data.** Production docs may carry orphan VALUES on the deleted field paths until manually cleaned. Acceptable — values were never read.
+
 ## Unambiguous orphans — DELETED 2026-05-07 in `feat/csp-nonce-and-audits`
 
 The following fields had zero references in queries.ts, types.ts, and any component/route. Deleted in this branch:

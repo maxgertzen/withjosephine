@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { IntakeForm } from "@/components/IntakeForm";
 import { BOOKING_ROUTES } from "@/lib/booking/constants";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
-import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
+import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
 
 type IntakePageProps = {
   params: Promise<{ readingId: string }>;
@@ -58,9 +58,10 @@ export async function generateMetadata({ params }: IntakePageProps): Promise<Met
 export default async function IntakePage({ params }: IntakePageProps) {
   const { readingId } = await params;
 
-  const [reading, bookingForm] = await Promise.all([
+  const [reading, bookingForm, bookingPage] = await Promise.all([
     fetchReading(readingId),
     fetchBookingForm(),
+    fetchBookingPage(),
   ]);
 
   if (!reading) {
@@ -102,6 +103,10 @@ export default async function IntakePage({ params }: IntakePageProps) {
               nonRefundableNotice={bookingForm.nonRefundableNotice}
               pagination={bookingForm.pagination}
               loadingStateCopy={bookingForm.loadingStateCopy}
+              submitLabel={bookingPage?.paymentButtonText}
+              nextLabel={bookingForm.nextButtonText}
+              saveLaterLabel={bookingForm.saveAndContinueLaterText}
+              pageIndicatorTagline={bookingForm.pageIndicatorTagline}
             />
           </div>
         </article>

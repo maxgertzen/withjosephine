@@ -6,28 +6,11 @@ export const bookingPage = defineType({
   type: "document",
   fields: [
     defineField({
-      name: "emailLabel",
-      title: "Email Label",
-      type: "string",
-      initialValue: "Your Email Address",
-    }),
-    defineField({
-      name: "emailDisclaimer",
-      title: "Email Disclaimer",
-      type: "string",
-      initialValue: "Your email is only used for this reading. I'll never share it.",
-    }),
-    defineField({
       name: "paymentButtonText",
       title: "Payment Button Text",
       type: "string",
-      initialValue: "Continue to Payment",
-    }),
-    defineField({
-      name: "securityNote",
-      title: "Security Note",
-      type: "string",
-      initialValue: "Secure checkout · Your details are safe",
+      description: "Submit-button label on the final page of the intake form.",
+      initialValue: "Continue to payment →",
     }),
     defineField({
       name: "formatNote",
@@ -35,13 +18,6 @@ export const bookingPage = defineType({
       type: "string",
       description: "Short description of what the customer receives (shown next to the mic icon).",
       initialValue: "Detailed voice note recording + a supporting PDF created entirely for you.",
-    }),
-    defineField({
-      name: "closingMessage",
-      title: "Closing Message",
-      type: "text",
-      rows: 2,
-      initialValue: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
     }),
     defineField({
       name: "deliveryNote",

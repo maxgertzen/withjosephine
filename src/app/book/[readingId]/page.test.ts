@@ -46,12 +46,8 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
 
 function bookingPage(overrides: Partial<SanityBookingPage> = {}): SanityBookingPage {
   return {
-    emailLabel: "Your Email",
-    emailDisclaimer: "Only used for this reading.",
-    paymentButtonText: "Continue to Payment",
-    securityNote: "Secure checkout",
+    paymentButtonText: "Continue to payment →",
     formatNote: "Detailed voice note recording + a supporting PDF created entirely for you.",
-    closingMessage: "With love, Josephine",
     deliveryNote: "Within 7 days.",
     ...overrides,
   };

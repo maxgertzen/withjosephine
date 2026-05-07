@@ -106,7 +106,7 @@ describe("Sanity fetch layer", () => {
   });
 
   it("fetchBookingPage returns singleton or null", async () => {
-    const data = { emailLabel: "Email", paymentButtonText: "Pay" };
+    const data = { paymentButtonText: "Pay", deliveryNote: "Within 7 days." };
     mockData(data);
     expect(await fetchBookingPage()).toEqual(data);
   });
@@ -123,7 +123,7 @@ describe("Sanity fetch layer", () => {
   });
 
   it("fetchBookingForm returns singleton or null", async () => {
-    const data = { title: "Intake", nonRefundableNotice: "no refund", sections: [] };
+    const data = { nonRefundableNotice: "no refund", sections: [] };
     mockData(data);
     expect(await fetchBookingForm()).toEqual(data);
   });

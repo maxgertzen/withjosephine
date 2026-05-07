@@ -85,6 +85,28 @@ export const landingPage = defineType({
         defineField({ name: "heading", title: "Heading", type: "string", initialValue: "i'd love to hear from you" }),
         defineField({ name: "description", title: "Description", type: "text", rows: 3 }),
         defineField({ name: "submitText", title: "Submit Button Text", type: "string", initialValue: "Send Message" }),
+        defineField({
+          name: "successHeading",
+          title: "Success State Heading",
+          type: "string",
+          description: "Heading shown after the contact form sends successfully.",
+          initialValue: "message sent",
+        }),
+        defineField({
+          name: "successBody",
+          title: "Success State Body",
+          type: "text",
+          rows: 3,
+          description: "Body copy shown after the contact form sends successfully.",
+          initialValue: "Thank you for reaching out. I'll get back to you as soon as I can.",
+        }),
+        defineField({
+          name: "sendAnotherButtonText",
+          title: "Send Another Button Text",
+          type: "string",
+          description: "Label on the button that resets the form to send a second message.",
+          initialValue: "Send another message",
+        }),
       ],
     }),
     defineField({

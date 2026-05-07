@@ -55,7 +55,6 @@ function thankYouPage(overrides: Partial<SanityThankYouPage> = {}): SanityThankY
   return {
     heading: "Thank you for booking",
     subheading: "I\u2019m really looking forward to reading for you.",
-    steps: [],
     closingMessage: "With love, Josephine",
     returnButtonText: "Return to Home",
     ...overrides,

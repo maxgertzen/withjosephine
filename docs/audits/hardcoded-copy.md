@@ -33,25 +33,25 @@ Each string tagged with editor-iteration-value:
 | H1 | `src/app/book/[readingId]/page.tsx:204` | `Book this Reading →` | Entry-page primary CTA | None | **MIGRATE** — add `bookingPage.bookReadingCtaText` |
 | H2 | `src/app/book/[readingId]/page.tsx:159` | `What's included` | Entry-page section header | None | **MIGRATE** — add `bookingPage.whatsIncludedHeading` |
 
-## HIGH — deferred to backlog
+## HIGH — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
 
-| # | File:line | String | Component | Sanity coverage | Why deferred |
-|---|-----------|--------|-----------|-----------------|--------------|
-| H3 | `src/components/IntakeForm/SubmitOverlay.tsx:5` | `One moment — taking you to checkout.` | IntakeForm submission overlay | `bookingForm.loadingStateCopy` (PROJECTED, IS wired through IntakeForm prop chain — verified at IntakeForm.tsx:542). Ships unedited because Sanity doc may not have a value seeded; defaulting to hardcoded. | Wire-up needs Sanity dataset seed migration to take effect. Defer to a focused "seed + wire" pass. |
-| H4 | `src/components/ContactForm/ContactForm.tsx:102-108` | `message sent` (heading), `Thank you for reaching out. I'll get back to you as soon as I can.` (body), `Send another message` (button) | Contact form success state | None | Schema-add work plus ContactForm prop-threading. Worthwhile but doesn't fit this branch's scope. |
-| H5 | `src/components/IntakeForm/PageNav.tsx:33-35` | `Continue to payment →`, `Next →`, `Save and continue later` | IntakeForm page-nav buttons | `bookingPage.paymentButtonText` exists (PROJECTED-BUT-UNUSED). `Next` / `Save and continue` have no schema. | Wire-up + 2 new fields. Defer to a focused "intake-form copy" pass. |
+| # | Item | Resolution |
+|---|------|------------|
+| H3 | SubmitOverlay loading state copy | Field was already wired (intake → IntakeForm `loadingStateCopy` prop → SubmitOverlay `text` prop). Production Sanity `bookingForm.loadingStateCopy` value seeded via `scripts/seed-quality-sweep-fields.mts`. No code change. |
+| H4 | ContactForm success-state heading + body + button | New schema fields `landingPage.contactSection.{successHeading, successBody, sendAnotherButtonText}` added. ContactForm reads from `content` prop with fallback to `CONTACT_DEFAULTS`. Production seed via the same script. |
+| H5 | IntakeForm PageNav labels | `bookingPage.paymentButtonText` wired through intake page → IntakeForm `submitLabel` → PageNav. New fields `bookingForm.nextButtonText` + `bookingForm.saveAndContinueLaterText` added and threaded. PageNav defaults preserved as fallback. |
 
 ---
 
-## MEDIUM — deferred to backlog
+## MEDIUM — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
 
-| # | File:line | String | Component | Sanity coverage | Why deferred |
-|---|-----------|--------|-----------|-----------------|--------------|
-| M1 | `src/app/error.tsx:24,28,32` | `✦ Something Went Wrong`, `an unexpected error occurred`, `We're sorry for the inconvenience...` | Route error boundary | None | Error boundary copy is engineering-adjacent; iteration value is real but lower-priority than primary funnel copy. |
-| M2 | `src/app/global-error.tsx:92-95` | `✦ Something Went Wrong`, `an unexpected error occurred` (inlined HTML version) | Global error boundary | None | Same as M1, plus inlined-HTML constraint — global-error.tsx must work even if root layout is broken, so Sanity fetches there are unsafe. Use a build-time bake or accept hardcoded. |
-| M3 | `src/components/Footer/Footer.tsx:25-29` | `LEGAL_LINKS` labels + `Built by Max Gertzen` | Footer | Legal labels (`Privacy`, `Terms`, `Refunds`) hardcoded; `Built by Max Gertzen` is Max-owned attribution. | Low Becky-iteration value; `Built by Max` should stay hardcoded by Max preference. |
-| M4 | `src/components/IntakeForm/PageIndicator.tsx:40` | `Page {n} of {n}`, `One short page` | IntakeForm page indicator | None | Mostly mechanical; iteration value is low-medium. Bundle with H5 if/when intake copy gets a focused pass. |
-| M5 | `src/components/IntakeForm/SwapToast.tsx:14` | `Switched to {readingName}. Your name and email are saved — start where you left off.` | Reading-swap transient toast | Was previously held in `bookingForm.swapToastCopy` but that schema field was deleted in this branch's orphan-audit pass (zero consumers). | Transient toast — low Becky-iteration value. Re-add the schema field only if Becky asks. |
+| # | Item | Resolution |
+|---|------|------------|
+| M1 | error.tsx — error boundary copy | DROPPED: kept hardcoded. Error boundary fires when render fails; Sanity could be the cause. Build-time bake possible but iteration value vs. complexity tradeoff doesn't justify it. |
+| M2 | global-error.tsx — inlined-HTML error fallback | DROPPED: kept hardcoded. Constraint is inherent — global-error.tsx must work even if root layout is broken, so Sanity fetches are unsafe by definition. |
+| M3 | Footer LEGAL_LINKS + "Built by Max Gertzen" | DROPPED: Max-owned attribution stays hardcoded by preference. |
+| M4 | PageIndicator copy | RESOLVED via H5 bundle. Added `bookingForm.pageIndicatorTagline` optional field that, when set, appends to the counter (`Page 2 of 4 · {tagline}`). Page-counter template itself stays hardcoded. |
+| M5 | SwapToast transient copy | DROPPED: `bookingForm.swapToastCopy` was deleted as orphan in `feat/csp-nonce-and-audits`. Re-add only if Becky asks for the iteration. |
 
 ---
 
