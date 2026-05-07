@@ -61,10 +61,10 @@ function generateNonce(): string {
 
 function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
   const { isDraft, nonce } = opts;
-  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com`;
+  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms`;
   const connectSrc = isDraft
-    ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`
-    : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`;
+    ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms`
+    : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms`;
   const frameAncestors = isDraft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
   const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`

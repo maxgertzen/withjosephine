@@ -64,34 +64,15 @@ Each item: where it came from + why it was deferred + a one-line action.
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
-### Microsoft Clarity (session replay) — pair with Mixpanel
-- **Source:** Mixpanel + Clarity tooling discussion 2026-05-02. Mixpanel
-  answers "what % drop off at intake page 3"; Clarity answers "why did
-  THIS visitor bounce on intake page 3" via DOM-based session replays,
-  heatmaps, and rage-click detection. At soft-launch volumes (single
-  digits of bookings/week), the qualitative signal is more useful than
-  the quantitative one — but the right answer is to pair them, not
-  replace.
-- **Why Clarity vs Fullstory/Hotjar:** Free **forever**, unlimited
-  sessions, **auto-masks form inputs by default** (DOB, names, photos
-  redacted out of the box), better privacy posture than Fullstory.
-  Microsoft sub-processor — already common.
-- **Action:**
-  1. Sign up at clarity.microsoft.com → create project → get tracking ID.
-  2. Add a `<ClarityScript>` client component mounted from
-     `<AnalyticsBootstrap>` so it inherits the same geo-conditional
-     consent gate + non-prod opt-in. Tracking ID via
-     `NEXT_PUBLIC_CLARITY_PROJECT_ID` (3-place CI discipline as usual).
-  3. Update privacy policy to add Clarity as a sub-processor (session
-     replay category, data class explicitly noted) — Microsoft (US)
-     under DPF/SCCs, same template as the Mixpanel patch.
-  4. Verify masking is working in Clarity dashboard before pointing
-     traffic at it: confirm DOB / name / photo fields show as redacted
-     blocks, not actual content.
-- **Why deferred:** Phase-2 add. Mixpanel ships now; Clarity follows
-  once the funnel data starts filling in and we know what to look at
-  qualitatively. Also good moment to do the privacy-policy patch
-  alongside the Web3Forms→Resend cleanup.
+### Microsoft Clarity (session replay) — wiring SHIPPED, provisioning pending
+- **Wiring shipped:** `<ClarityScript>` client component mounted from `<AnalyticsBootstrap>` (inherits consent gate + non-prod opt-in), external `<Script src="https://www.clarity.ms/tag/...">` form (CSP-compliant, no nonce concern), `shouldEnableClientObservability(host)` shared gate, CSP `script-src` + `connect-src` extended to `https://*.clarity.ms`, `NEXT_PUBLIC_CLARITY_PROJECT_ID` wired through `.env.local.example` + `.github/workflows/ci.yml`. Privacy policy patch script staged at `scripts/migrate-privacy-clarity.ts` (idempotent, mirrors the Mixpanel patch from PR #57).
+- **Outstanding Max-actions (sequence):**
+  1. Sign up at clarity.microsoft.com → create project → get the 10-char tracking ID.
+  2. Add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH repo Variables (Settings → Variables → Actions → New repository variable). Value = the tracking ID. No env-scoped override needed; same project for prod + staging (staging won't render Clarity unless `NEXT_PUBLIC_TRACK_NON_PROD=1` is also flipped).
+  3. Trigger a production deploy (re-run latest workflow) so the new build inlines the env var.
+  4. Visit the site, click around, confirm `https://www.clarity.ms/tag/<id>` script loads in DevTools Network without CSP errors.
+  5. Run `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-clarity.ts` against the production Sanity dataset (and again with staging dataset) to add the sub-processor disclosure to the privacy policy. Idempotent — safe to re-run.
+  6. Verify masking in Clarity dashboard: load a few real intake-form sessions, confirm DOB / first_name / last_name / photo fields render as redacted blocks, not actual content. ALL of these masks before opening real traffic.
 
 ### Audit: orphaned schema fields — projection cleanup carry-over
 - **Source:** Full audit performed in `feat/csp-nonce-and-audits`. Findings
@@ -144,40 +125,11 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 - **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
 
-### Core Web Vitals → Mixpanel via `useReportWebVitals`
-- **Source:** Next.js production checklist 2026-05-02. Next exposes
-  Core Web Vitals (LCP, FID, CLS, TTFB, INP) via `useReportWebVitals`
-  in `app/layout.tsx`. Currently we don't capture them anywhere
-  application-side; Cloudflare Web Analytics covers the basics at
-  the edge but they aren't sliced by reading_id, intake page number,
-  or other funnel dimensions.
-- **Action:** Add `useReportWebVitals` in a small client component on
-  the layout, send each metric as a `web_vitals` Mixpanel event with
-  properties `{ name, value, id, navigation_type, page_path }`.
-  Lets us correlate slow pages against funnel drop-off (e.g. "intake
-  page 3 has high LCP and 40% drop").
-- **Why deferred:** CF Web Analytics already captures aggregate Core
-  Web Vitals; this is partial duplication that pays off only once we
-  want the per-route slicing in Mixpanel funnels.
+### Core Web Vitals → Mixpanel — CLOSED-AS-DROPPED 2026-05-07
+- **Decision:** Dropped during the items-4/5/6 bundle planning. PerplexityResearcher confirmed Microsoft Clarity natively captures the three Google-ranked CWV metrics (LCP, INP, CLS) at p75 with session-replay correlation — strictly more useful than Mixpanel histograms. FID is deprecated (replaced by INP March 2024); FCP and TTFB are diagnostic, not Google-ranked. Quota wasn't the issue (~2,580 events/mo is 0.26% of Mixpanel's 1M free-tier cap), but the duplicate signal isn't worth one always-mounted client component plus per-route property slicing we can already get from Clarity's Performance widget. Locked by Max via AskUserQuestion.
 
-### Generic delegated tracking listener (`data-mp-*`)
-- **Source:** Mixpanel best-practices research 2026-05-02. ChargeAfter's
-  `<EventTracker>` (libs/event-tracker/src/lib/components/EventTracker.tsx)
-  attaches a single delegated `click` listener at the app root and fires
-  `button_click` / `link_click` events for any element tagged with HTML
-  attributes (`track-id="my-button"`). Zero imports per call site, zero
-  new wrapper components.
-- **Action:** Add a delegated listener mounted from the root layout
-  that reads `data-mp-event` (event name) and `data-mp-*` (snake_case
-  properties) from the event target and fires `track(...)`. Coexists
-  with `<TrackedLink>` — typed wrappers stay for the SPEC §15 events
-  with strict property shapes; attribute tagging is for ad-hoc
-  additions that don't warrant a typed entry (e.g. generic `button_click`
-  with `button_name`).
-- **Why deferred:** Doesn't help with the SPEC §15 events (they need
-  type safety the attribute-tag pattern can't provide). Worth adding
-  once we want quick instrumentation on supplementary surfaces without
-  a tracking-plan revision.
+### Generic delegated tracking listener (`data-mp-*`) — SHIPPED
+- Shipped as part of the items-4/5/6 bundle. `<DelegatedTracking />` mounted in `src/app/layout.tsx`, single bubble-phase `click` listener at `document` resolves `closest("[data-mp-event]")`, reads remaining `data-mp-*` attrs as snake_case properties, fires `trackUntyped(event, props)`. Typed `track()` remains the only entry-point for SPEC §15 events; `trackUntyped` is documented as "delegated path only" in `client.ts`.
 
 ## Code quality (nice-to-fix)
 

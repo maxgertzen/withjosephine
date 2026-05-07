@@ -5,6 +5,7 @@ import { draftMode, headers } from "next/headers";
 import { VisualEditing } from "next-sanity/visual-editing";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
+import { DelegatedTracking } from "@/components/DelegatedTracking";
 import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { bodyFont, displayFont } from "@/lib/fonts.generated";
 import { CONSENT_HEADER } from "@/lib/region";
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           consentBannerContent={consentBannerContent}
           previewMode={isDraftMode}
         />
+        <DelegatedTracking />
         {isDraftMode && (
           <>
             {/*

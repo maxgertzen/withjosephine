@@ -19,6 +19,7 @@ import {
   isAnalyticsInitialized,
   track,
   trackThrottled,
+  trackUntyped,
 } from "./client";
 
 const TOKEN = "test-token";
@@ -333,6 +334,32 @@ describe("trackThrottled", () => {
       30_000,
     );
     expect(mixpanel.track).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("trackUntyped", () => {
+  it("forwards arbitrary event names to mixpanel.track post-init", () => {
+    initAnalytics();
+    trackUntyped("button_click", { button_name: "hero_cta" });
+    expect(mixpanel.track).toHaveBeenCalledWith("button_click", {
+      button_name: "hero_cta",
+    });
+  });
+
+  it("queues calls before init and flushes them on init", () => {
+    trackUntyped("link_click", { link_id: "footer_about" });
+    expect(mixpanel.track).not.toHaveBeenCalled();
+    initAnalytics();
+    expect(mixpanel.track).toHaveBeenCalledWith("link_click", {
+      link_id: "footer_about",
+    });
+  });
+
+  it("drops events when bootstrapped without a token (no-op silently)", () => {
+    vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "");
+    initAnalytics();
+    trackUntyped("button_click", { button_name: "x" });
+    expect(mixpanel.track).not.toHaveBeenCalled();
   });
 });
 

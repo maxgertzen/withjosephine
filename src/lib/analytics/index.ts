@@ -4,6 +4,7 @@ export {
   isAnalyticsInitialized,
   track,
   trackThrottled,
+  trackUntyped,
 } from "./client";
 export type {
   ClientEventMap,
