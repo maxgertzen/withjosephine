@@ -18,6 +18,7 @@ import {
   initAnalytics,
   isAnalyticsInitialized,
   track,
+  trackThrottled,
 } from "./client";
 
 const TOKEN = "test-token";
@@ -270,6 +271,68 @@ describe("track buffer", () => {
     });
     initAnalytics();
     expect(mixpanel.track).not.toHaveBeenCalled();
+  });
+});
+
+describe("trackThrottled", () => {
+  it("fires the first call and drops subsequent calls within the interval", () => {
+    initAnalytics();
+    trackThrottled(
+      "intake_save_auto",
+      { reading_id: "soul-blueprint", page_number: 1 },
+      30_000,
+    );
+    trackThrottled(
+      "intake_save_auto",
+      { reading_id: "soul-blueprint", page_number: 1 },
+      30_000,
+    );
+    expect(mixpanel.track).toHaveBeenCalledOnce();
+  });
+
+  it("fires again once the interval elapses", () => {
+    initAnalytics();
+    const realDateNow = Date.now;
+    let now = 1_000_000;
+    Date.now = () => now;
+    try {
+      trackThrottled(
+        "intake_save_auto",
+        { reading_id: "soul-blueprint", page_number: 1 },
+        30_000,
+      );
+      now += 29_999;
+      trackThrottled(
+        "intake_save_auto",
+        { reading_id: "soul-blueprint", page_number: 1 },
+        30_000,
+      );
+      expect(mixpanel.track).toHaveBeenCalledOnce();
+      now += 1;
+      trackThrottled(
+        "intake_save_auto",
+        { reading_id: "soul-blueprint", page_number: 1 },
+        30_000,
+      );
+      expect(mixpanel.track).toHaveBeenCalledTimes(2);
+    } finally {
+      Date.now = realDateNow;
+    }
+  });
+
+  it("throttles per event name independently", () => {
+    initAnalytics();
+    trackThrottled(
+      "intake_save_auto",
+      { reading_id: "soul-blueprint", page_number: 1 },
+      30_000,
+    );
+    trackThrottled(
+      "intake_save_click",
+      { reading_id: "soul-blueprint", page_number: 1 },
+      30_000,
+    );
+    expect(mixpanel.track).toHaveBeenCalledTimes(2);
   });
 });
 

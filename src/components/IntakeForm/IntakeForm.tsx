@@ -12,7 +12,7 @@ import { PlaceAutocomplete } from "@/components/Form/PlaceAutocomplete";
 import { Select } from "@/components/Form/Select";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
-import { identifySubmission, track } from "@/lib/analytics";
+import { identifySubmission, track, trackThrottled } from "@/lib/analytics";
 import { buildPageSchema } from "@/lib/booking/buildPageSchema";
 import { BOOKING_API_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { derivePages, type IntakePage } from "@/lib/booking/derivePages";
@@ -34,7 +34,6 @@ import {
   save as saveDraft,
   setLastReadingId,
 } from "@/lib/intake/localStorageDraft";
-import { timeChip } from "@/lib/intake/timeChip";
 import type {
   SanityFormField,
   SanityFormSection,
@@ -43,11 +42,17 @@ import type {
 
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
+import { SavedIndicator } from "./SavedIndicator";
 import { SubmitOverlay } from "./SubmitOverlay";
 import { SwapToast } from "./SwapToast";
 
 type FieldValue = string | string[] | boolean;
 type FieldValues = Record<string, FieldValue>;
+
+// Throttle the `intake_save_auto` Mixpanel event to once per 30s. The
+// localStorage flush still happens every 500ms; only the analytics event
+// is rate-limited to keep the funnel signal-to-noise high.
+const SAVE_AUTO_TRACK_INTERVAL_MS = 30_000;
 
 type IntakeFormProps = {
   readingId: string;
@@ -195,18 +200,7 @@ export function IntakeForm({
     return () => clearInterval(interval);
   }, [lastSavedAt]);
 
-  const savedIndicator = (() => {
-    void chipTick;
-    if (!lastSavedAt) return null;
-    return (
-      <span className="font-display italic text-xs text-j-text-muted inline-flex items-center gap-1">
-        <span aria-hidden="true" className="text-j-accent">
-          ✦
-        </span>
-        {timeChip(lastSavedAt)}
-      </span>
-    );
-  })();
+  const savedIndicator = <SavedIndicator lastSavedAt={lastSavedAt} chipTick={chipTick} />;
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIntentRef = useRef(false);
@@ -223,7 +217,11 @@ export function IntakeForm({
     if (!isRestored) return;
     const handle = setTimeout(() => {
       flushSave(values, currentPage);
-      track("intake_save_auto", { reading_id: readingId, page_number: currentPage + 1 });
+      trackThrottled(
+        "intake_save_auto",
+        { reading_id: readingId, page_number: currentPage + 1 },
+        SAVE_AUTO_TRACK_INTERVAL_MS,
+      );
     }, 500);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
