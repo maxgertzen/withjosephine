@@ -14,10 +14,6 @@ import { initSentryClient } from "@/lib/sentry-client";
 function bootstrapClientObservability(): void {
   initAnalytics();
   initSentryClient();
-  // Clarity Consent API v2 — required for EEA/UK/CH since Oct 31, 2025.
-  // The Clarity bootstrap snippet stages a window.clarity() queue, so this
-  // call is buffered and replayed once the tag finishes loading.
-  clarityConsent(true);
 }
 
 interface AnalyticsBootstrapProps {
@@ -41,6 +37,7 @@ export function AnalyticsBootstrap({
     consentEffectRanRef.current = true;
     if (!consentRequired) {
       bootstrapClientObservability();
+      clarityConsent(true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setObservabilityLive(true);
       return;
@@ -48,6 +45,7 @@ export function AnalyticsBootstrap({
     const choice = readConsent();
     if (choice === "granted") {
       bootstrapClientObservability();
+      clarityConsent(true);
       setObservabilityLive(true);
       return;
     }
@@ -64,6 +62,7 @@ export function AnalyticsBootstrap({
     }
     writeConsent("granted");
     bootstrapClientObservability();
+    clarityConsent(true);
     setObservabilityLive(true);
     setShowBanner(false);
   }

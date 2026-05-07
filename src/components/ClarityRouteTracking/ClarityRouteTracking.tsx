@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+import type { ClarityWindow } from "@/lib/clarity";
+
 // App Router soft navigations don't fire the Clarity tag's own page-detect
 // handler, so the multi-step intake flow (`/book/<reading>` → `/letter` →
 // `/intake`) shows up as one page in replays without this. Initial-load is
@@ -10,12 +12,6 @@ import { useEffect, useRef } from "react";
 // only fire on actual path changes.
 //
 // Docs: github.com/microsoft/clarity/issues/175
-
-type ClaritySetFn = (command: "set", key: "page", value: string) => void;
-
-interface ClarityWindow extends Window {
-  clarity?: ClaritySetFn;
-}
 
 export function ClarityRouteTracking() {
   const pathname = usePathname();
