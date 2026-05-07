@@ -157,24 +157,15 @@ Each item: where it came from + why it was deferred + a one-line action.
   `<VisualEditing>` overlay verification. Best batched into a
   "make Studio editorial-complete" session rather than drip-feeding.
 
-### Code-quality: drop inferred return-type annotations (broader sweep)
-- **Source:** Max 2026-05-02. Six named exports addressed in PR #78 (Bundle 3) — `initAnalytics`, `track`, `trackThrottled`, `identifySubmission`, `isAnalyticsInitialized`, `_resetForTests`, `writeConsent`, `readConsent`, `deriveEnvironmentFromHost`. Broader sweep across `src/lib/**` and `src/components/**` still open.
-- **Rule going forward:** only annotate the return type when:
-  - It's a public API boundary (exported) AND the inference would be
-    a wider/narrower type than intended
-  - It's a recursive function (TS can't infer through recursion cleanly)
-  - The function is overloaded
-  - The function returns a complex generic that TS infers as `any`/wide
-- **Action:** sweep remaining files for redundant return-type annotations on local helpers and one-off functions where inference is correct. Keep annotations on exported functions whose inference would be unstable.
+### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
 
-### PR-F1 simplify-pass deferrals (remaining)
-**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Two of the original five items closed in PR #77 (Bundle 2 — `consentEffectRanRef` ref-guard + `<SavedIndicator>` extraction). Remaining:
+**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Three of five original items closed across PR #77 (Bundle 2 — `consentEffectRanRef` ref-guard + `<SavedIndicator>` extraction) and PR #79 (Bundle 4 — confirmed-and-rejected `process.env.*` hoist; see "Why kept inline" below). Remaining:
 
-- **`process.env.*` reads in IntakeForm render path.** Tried hoisting to module scope in Bundle 2; reverted because tests rely on `vi.stubEnv` in `beforeEach`, which can't reach module-init reads. Hoist had zero runtime benefit (Next inlines `NEXT_PUBLIC_*` at build time). Re-open if the test stub pattern itself changes.
+- **Why `process.env.*` reads in IntakeForm render path were KEPT inline (durable rationale, do not re-propose).** Tried hoisting to both module scope (Bundle 2) and `useMemo([], [])` (Bundle 4); both reverted. Root reason: Next's webpack DefinePlugin already inlines `NEXT_PUBLIC_*` as string literals at build time. The "inline reads" in source compile to bare constants in the output bundle. Module-scope hoist has the same runtime cost AND breaks `vi.stubEnv` test stubs. `useMemo` has the same runtime cost AS the inline reads PLUS hook overhead (cache lookup, deps-array compare). The inline reads ARE the optimal pattern at this build pipeline. Saved as memory `feedback_next_publicenv_inlining.md`.
 
 - **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add per-purpose consent granularity).
 
-- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Hoist if/when re-init support is added (currently not on the roadmap).
+- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Hoist if/when re-init support is added (currently not on the roadmap). Eager module-scope read is unsafe (SSR breaks); lazy module-scope cache is identical work to the function-scope cache.
 
 - **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
 
