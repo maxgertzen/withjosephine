@@ -14,6 +14,6 @@ export const errorClasses = "font-body text-sm text-red-600";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function isValidEmail(value: string): boolean {
+export function isValidEmail(value: string) {
   return EMAIL_REGEX.test(value.trim());
 }

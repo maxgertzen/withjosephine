@@ -11,7 +11,7 @@ import { isFlagEnabled } from "./env";
  * omitted, falls back to the legacy global behaviour (any host shows UC when
  * the flag is on) — used by tests and any caller without a request context.
  */
-export function isUnderConstruction(host?: string | null): boolean {
+export function isUnderConstruction(host?: string | null) {
   if (!isFlagEnabled("NEXT_PUBLIC_UNDER_CONSTRUCTION")) return false;
   if (host == null) return true;
   return PRODUCTION_HOSTS.includes(host);

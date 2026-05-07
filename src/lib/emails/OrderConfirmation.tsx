@@ -22,7 +22,7 @@ export type OrderConfirmationProps = {
 // Email only has formatted-string prices; cents-level strikethrough lives
 // on the thank-you page. Surface what the customer paid (or list price if
 // the webhook hasn't filled amountPaidDisplay yet).
-function priceCell(readingPriceDisplay: string, amountPaidDisplay: string | null): string {
+function priceCell(readingPriceDisplay: string, amountPaidDisplay: string | null) {
   return amountPaidDisplay ?? readingPriceDisplay;
 }
 

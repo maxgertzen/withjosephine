@@ -1,4 +1,4 @@
-export function requireEnv(name: string): string {
+export function requireEnv(name: string) {
   const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required env var: ${name}`);
@@ -6,7 +6,7 @@ export function requireEnv(name: string): string {
   return value;
 }
 
-export function optionalEnv(name: string, missingWarning?: string): string | null {
+export function optionalEnv(name: string, missingWarning?: string) {
   const value = process.env[name];
   if (!value) {
     if (missingWarning) console.warn(`[env] ${name} not set — ${missingWarning}`);
@@ -19,7 +19,7 @@ export function optionalEnv(name: string, missingWarning?: string): string | nul
  * Project convention for boolean env flags: "1" or "true" → on, anything else
  * → off. Read at call-time so tests can override via vi.stubEnv between cases.
  */
-export function isFlagEnabled(name: string): boolean {
+export function isFlagEnabled(name: string) {
   const value = process.env[name];
   return value === "1" || value === "true";
 }

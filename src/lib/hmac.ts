@@ -94,7 +94,7 @@ export function hexToBytes(hex: string, expectedByteLength?: number): Uint8Array
  * over network timing. Length mismatch is allowed to short-circuit (a stable
  * secret has a stable length).
  */
-export function timingSafeStringEqual(a: string, b: string): boolean {
+export function timingSafeStringEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) {
@@ -105,6 +105,6 @@ export function timingSafeStringEqual(a: string, b: string): boolean {
 
 // Test-only: clear cached CryptoKeys. Most tests don't need this since the
 // cache is keyed by secret string, but helpful when forcing a re-import.
-export function __resetHmacKeyCache(): void {
+export function __resetHmacKeyCache() {
   keyCache.clear();
 }

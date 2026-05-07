@@ -48,11 +48,11 @@ function getResendClient(): Resend | null {
  * "a***@example.com". Worker logs aren't a long-term store, but there's no
  * upside to writing full recipient addresses to wrangler tail.
  */
-function redactEmail(address: string): string {
+function redactEmail(address: string) {
   return address.replace(/(^.)([^@]+)(?=@)/, "$1***");
 }
 
-function redactRecipient(to: string | string[]): string {
+function redactRecipient(to: string | string[]) {
   return Array.isArray(to) ? to.map(redactEmail).join(",") : redactEmail(to);
 }
 

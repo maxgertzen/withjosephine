@@ -1,4 +1,4 @@
-export function getClientIp(request: Request): string | null {
+export function getClientIp(request: Request) {
   const cfIp = request.headers.get("cf-connecting-ip");
   if (cfIp) return cfIp;
   const xff = request.headers.get("x-forwarded-for");
