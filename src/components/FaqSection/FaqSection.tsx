@@ -10,12 +10,14 @@ interface FaqSectionProps {
   items: MappedFaqItem[];
   sectionTag?: string;
   heading?: string;
+  nonce?: string;
 }
 
 export function FaqSection({
   items,
   sectionTag = "\u2726 FAQ",
   heading = "frequently asked questions",
+  nonce,
 }: FaqSectionProps) {
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export function FaqSection({
 
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 

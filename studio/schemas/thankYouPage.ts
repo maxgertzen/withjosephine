@@ -12,52 +12,6 @@ export const thankYouPage = defineType({
       initialValue: "Thank you for booking",
     }),
     defineField({
-      name: "heroLine",
-      title: "Hero Line",
-      type: "string",
-      description:
-        "Cormorant italic hero line shown on the custom /book/thank-you page (e.g. 'Thank you. I've got everything I need.').",
-    }),
-    defineField({
-      name: "body",
-      title: "Body",
-      type: "array",
-      description: "Rich text body shown on the custom thank-you page beneath the hero line.",
-      of: [
-        {
-          type: "block",
-          styles: [{ title: "Normal", value: "normal" }],
-          marks: {
-            decorators: [
-              { title: "Italic", value: "em" },
-              { title: "Strong", value: "strong" },
-            ],
-            annotations: [
-              {
-                name: "link",
-                type: "object",
-                title: "Link",
-                fields: [
-                  defineField({
-                    name: "href",
-                    type: "string",
-                    title: "URL",
-                    validation: (rule) => rule.required(),
-                  }),
-                ],
-              },
-            ],
-          },
-        },
-      ],
-    }),
-    defineField({
-      name: "signOff",
-      title: "Sign-Off",
-      type: "string",
-      description: "Closing line on the custom thank-you page (e.g. 'With love, Josephine ✦').",
-    }),
-    defineField({
       name: "subheading",
       title: "Subheading",
       type: "text",

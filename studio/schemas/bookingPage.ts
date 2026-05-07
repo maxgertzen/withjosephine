@@ -50,6 +50,20 @@ export const bookingPage = defineType({
       initialValue: "You'll receive your voice note and PDF within 7 days of payment.",
     }),
     defineField({
+      name: "whatsIncludedHeading",
+      title: "Entry Page — What's Included Heading",
+      type: "string",
+      description: "Section header above the included-items list on the booking entry page.",
+      initialValue: "What's included",
+    }),
+    defineField({
+      name: "bookReadingCtaText",
+      title: "Entry Page — Book Reading CTA",
+      type: "string",
+      description: "Primary CTA button label on the booking entry page (right column).",
+      initialValue: "Book this Reading →",
+    }),
+    defineField({
       name: "seo",
       title: "SEO",
       type: "object",

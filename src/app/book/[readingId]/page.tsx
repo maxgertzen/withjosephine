@@ -100,6 +100,10 @@ export default async function BookingPage({ params }: BookingPageProps) {
 
   const deliveryNote = bookingPage?.deliveryNote ?? BOOKING_INFO_DEFAULTS.deliveryNote;
   const deliverableNote = bookingPage?.formatNote ?? BOOKING_INFO_DEFAULTS.deliverableNote;
+  const whatsIncludedHeading =
+    bookingPage?.whatsIncludedHeading ?? BOOKING_INFO_DEFAULTS.whatsIncludedHeading;
+  const bookReadingCtaText =
+    bookingPage?.bookReadingCtaText ?? BOOKING_INFO_DEFAULTS.bookReadingCtaText;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -156,7 +160,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
 
           <div className="md:row-start-2 md:col-start-1">
             <h2 className="font-body text-[0.75rem] font-semibold tracking-[0.2em] uppercase text-j-text-muted mb-4">
-              What&rsquo;s included
+              {whatsIncludedHeading}
             </h2>
             <ul className="space-y-2 mb-6">
               {reading.includedItems.map((item, index) => (
@@ -201,7 +205,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
               properties={{ reading_id: reading.slug, position: "verso-cta" }}
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
             >
-              Book this Reading →
+              {bookReadingCtaText}
             </TrackedLink>
           </div>
         </div>

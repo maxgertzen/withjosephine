@@ -108,6 +108,8 @@ export const bookingPageQuery = groq`
     formatNote,
     closingMessage,
     deliveryNote,
+    whatsIncludedHeading,
+    bookReadingCtaText,
     seo
   }
 `;

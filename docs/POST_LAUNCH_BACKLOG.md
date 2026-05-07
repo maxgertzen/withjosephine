@@ -27,17 +27,6 @@ Each item: where it came from + why it was deferred + a one-line action.
 - **Action:** Resend dashboard → Domains → confirm `withjosephine.com` verified.
   Send a test from the dashboard before opening the form to traffic.
 
-### S-5. Nonce-based CSP migration
-- **Source:** Security review.
-- **What:** CSP currently allows `script-src 'unsafe-inline'` because Next.js
-  App Router uses inline scripts for hydration data. This is an XSS
-  amplifier. No known DOM-XSS sinks in current code (React handles
-  escaping; user input is `escapeHtml`'d in email templates), but the
-  defensive layer is missing.
-- **Action:** Migrate to nonce-based CSP via Next.js middleware. The only
-  non-Next inline script is the Cloudflare Insights beacon (already
-  explicitly allowed by host).
-
 ### AI-bot accessibility policy — decide what we want indexed
 - **Source:** Firewall events review 2026-05-06 (24h Security Events sample showed Claude-SearchBot blocked once on `/sitemap.xml`).
 - **What:** A "Manage AI bots" managed rule is currently active and is blocking AI-search crawlers (Anthropic, presumably also OpenAI / Perplexity / Google AI Overviews indexers). Default-deny posture inherited from the WAF default; never explicitly chosen.
@@ -55,6 +44,12 @@ Each item: where it came from + why it was deferred + a one-line action.
 ---
 
 ## Infrastructure
+
+### Staging-tier provisioning runbook — DOCUMENTED 2026-05-07 in `feat/csp-nonce-and-audits`
+- **Source:** `staging.withjosephine.com/book/soul-blueprint/intake` returned 404 for ~24h after the staging tier shipped (PR-S series). Root cause: Sanity `staging` dataset was created Private (default), and `sanityClient` is `useCdn:true` with no token, so customer-facing queries went unauthenticated → null → `notFound()`. Pages with static fallbacks (entry, letter) rendered fine and masked the issue. Fix was a one-toggle dashboard change (flip dataset visibility → Public).
+- **Captured at:** [`docs/STAGING_RUNBOOK.md`](./STAGING_RUNBOOK.md). Provisioning checklist + the dataset-visibility gotcha + verification protocol (smoke the deepest page in a flow, not just the entry).
+- **PAI memory:** `feedback_sanity_client_token.md` + `feedback_static_fallbacks_can_mask_outages.md`.
+- **Action:** Reference the runbook when standing up the next non-prod env (dev?). No standalone code work.
 
 ### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
 - **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
@@ -98,64 +93,44 @@ Each item: where it came from + why it was deferred + a one-line action.
   qualitatively. Also good moment to do the privacy-policy patch
   alongside the Web3Forms→Resend cleanup.
 
-### Audit: orphaned schema fields & components
-- **Source:** Surfaced 2026-05-02 from a Studio "required-field empty" error
-  on `bookingPage.entertainmentAcknowledgment` + `coolingOffAcknowledgment`.
-  Root cause: `<BookingForm>` component (the consumer of those fields) was
-  removed during the booking-flow rebuild (PRs PR-A → PR-E), but the schema
-  fields stayed behind as zombies. Fixed in this PR (PR-F1) — but no
-  one swept the rest of the codebase for the same class of issue.
-- **Action:** Walk every Sanity schema in `studio/schemas/` and confirm
-  each top-level field has at least one consumer in `src/`. Any field
-  with no consumer = candidate for removal (or revival, if the consumer
-  was lost). Likely suspects to inspect:
-  - `bookingPage` (already audited via this PR — clean now)
-  - `bookingForm` (large dynamic schema — check every field)
-  - `landingPage`, `siteSettings`, `bookingHero`, `thankYouPage`,
-    `underConstructionPage`, every `legalPage`, `reading`, `testimonial`,
-    `faqItem` — verify projection coverage
-  - Hero / About / How-It-Works sub-objects within `landingPage`
-- **Detection technique:** `grep -r "<fieldName>" src/lib/sanity/queries.ts`
-  → if not in any GROQ projection, it's orphaned. Also check
-  `src/lib/sanity/types.ts` for typed-but-unused fields.
-- **Why deferred:** Cross-cutting cleanup, low-priority compared to
-  feature work. Best done as one focused session before the apex
-  unparks for general traffic.
+### Audit: orphaned schema fields — projection cleanup carry-over
+- **Source:** Full audit performed in `feat/csp-nonce-and-audits`. Findings
+  doc: `www/docs/audits/orphan-schema-fields.md`. 5 unambiguous orphans
+  deleted in that branch (`bookingForm.consentBlock` + nested `rows` +
+  `hairlineBeforeKey`, `bookingForm.swapToastCopy`, `thankYouPage.heroLine`,
+  `thankYouPage.body`, `thankYouPage.signOff`).
+- **What's left:** ~13 PROJECTED-BUT-UNUSED fields that are in `queries.ts`
+  + `types.ts` but no component reads them — Becky fills them in Studio,
+  nothing happens. Examples: `bookingPage.{emailLabel,emailDisclaimer,
+  paymentButtonText,securityNote}`, `bookingForm.{title,intro,description,
+  confirmationMessage,nonRefundableNotice,pagination,loadingStateCopy}`
+  (some wired through prop chain, some not — see audit doc for the full
+  per-field landscape). `thankYouPage.steps` is in the same bucket.
+- **Action:** For each PROJECTED-BUT-UNUSED field, decide one of:
+  1. Wire it up in the component that should read it (preserve content
+     editability), OR
+  2. Delete from `queries.ts` + `types.ts` + schema (admit it's dead).
+- **Why deferred:** Per-field judgment call; not mechanical enough to
+  blanket-fix. Best as one focused session.
 
-### Audit: content elements that should be Sanity-editable but aren't
-- **Source:** Same 2026-05-02 retro. Several visible-to-customer
-  strings live as hardcoded JSX/constants in the codebase. Each one
-  is a "Josephine wants to tweak the wording" call to engineering
-  that shouldn't have to happen.
-- **Action:** Walk every customer-facing component and identify
-  hardcoded strings that aren't Sanity-backed. Candidates known
-  today (non-exhaustive):
-  - `<EntryPageView>` doesn't render copy, but the entry-page
-    layout in `/book/[reading]/page.tsx` has hardcoded "What's
-    included" header and the included-items rendering pattern
-  - `<NavigationButton>` / generic CTAs across the app — button
-    labels are usually Sanity-driven via `bookingPage.paymentButtonText`
-    etc. but verify every CTA in the booking flow has a Sanity
-    field (Hero CTA, Letter drop-cap, Intake submit/back/next,
-    SubmitOverlay copy)
-  - Form field validation messages (`zod` error strings) —
-    currently hardcoded; consider Sanity-editable per-error-type
-    if Josephine wants to soften specific error wording
-  - Footer copyright / accessibility strings
-  - 404 page copy (`/not-found`)
-  - Refund-policy / Privacy / Terms — Sanity-backed already,
-    but verify nothing falls through to a JSX fallback
-  - Email subject lines and inline HTML in `src/lib/resend.ts`
-    (currently inlined; backlog already has "Resend template IDs"
-    item — overlaps)
-- **Detection technique:** Search `src/components/**` for string
-  literals that look like customer-facing copy (anything passed to
-  React children with sentence-case/punctuation). Cross-reference
-  against existing Sanity schema; gaps are candidates.
-- **Why deferred:** Each new Sanity-editable field is schema +
-  GROQ projection + type + fallback default + seed migration +
-  `<VisualEditing>` overlay verification. Best batched into a
-  "make Studio editorial-complete" session rather than drip-feeding.
+### Audit: hardcoded customer-facing copy — HIGH/MED carry-over
+- **Source:** Full audit performed in `feat/csp-nonce-and-audits`. Findings
+  doc: `www/docs/audits/hardcoded-copy.md`. 2 HIGH items shipped in that
+  branch (`bookingPage.whatsIncludedHeading`, `bookingPage.bookReadingCtaText`
+  with seed script `scripts/seed-booking-page-entry-copy.mts`).
+- **What's left (HIGH, deferred):**
+  - **H3** SubmitOverlay copy — wire-up via existing `bookingForm.loadingStateCopy`
+    (PROJECTED-BUT-UNUSED; needs Sanity dataset seed too).
+  - **H4** ContactForm success-state heading + body + button — 3 new fields, ContactForm prop-threading.
+  - **H5** IntakeForm PageNav labels (`Continue to payment`, `Next`, `Save and continue later`) — partial wire-up to `bookingPage.paymentButtonText` + 2 new fields.
+- **What's left (MEDIUM, deferred):**
+  - **M1/M2** error.tsx + global-error.tsx error-boundary copy — engineering-adjacent; global-error.tsx must work even if root layout broken (so Sanity fetches there are unsafe; use build-time bake or accept hardcoded).
+  - **M3** Footer LEGAL_LINKS labels + `Built by Max Gertzen` — Max-owned; defer.
+  - **M4** PageIndicator copy — bundle with H5.
+  - **M5** SwapToast text — `bookingForm.swapToastCopy` was deleted as orphan in this branch's audit pass (zero consumers); re-add the schema field if Becky asks.
+- **LOW items** stay in code per audit doc (validation messages, a11y labels, error-recovery buttons).
+- **Out-of-scope by design:** email-template copy in `src/lib/emails/**` and `src/lib/resend.ts` — slated for separate CRM migration path (CLAUDE.md "Email automation → outsource to a CRM" 2026-05-06).
+- **Why deferred:** Each migration is schema + GROQ + type + fallback default + seed migration + visual-editing overlay verification. Best batched into a focused "Studio editorial completeness" session.
 
 ### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
 
@@ -301,12 +276,24 @@ fire-and-forget — drift can happen on Sanity outages.
   6. Listen page renders both audio + PDF download.
   7. If Becky stalls past 7d, alert cron fires once to Josephine (no duplicate alerts on subsequent ticks).
 
-#### Sub-PR #4b — Studio queue view (FOLLOW-UP, post-#4a bake)
+#### Sub-PRs #4b + #4c — RE-SCOPE BLOCKER (locked 2026-05-07)
+
+**Both deferred pending a broader email-stack rediscussion.** Originally next-up after the #4a bake; the call now is to NOT build #4b or #4c in-codebase before deciding whether the email layer should move to a CRM (Mailchimp / similar — see CLAUDE.md "Post-launch future enhancements → Email automation → outsource to a CRM"). If the CRM migration lands first, parts of #4c (digest cron + per-booking notification) likely move into the CRM's automation layer; building them in-codebase now risks throwaway work.
+
+**Scope of the rediscussion (must happen before any #4b/#4c implementation):**
+- Which CRM (Mailchimp working assumption, but unconfirmed with Becky).
+- What email types migrate: booking transactionals (`order_confirmation`, `day_2`, `day_7_delivery`, `day_7_overdue_alert`)? Marketing? Digest reminders to Becky?
+- What stays in-code: admin notifications (Josephine alert), ICS attachment on per-booking email (calendar-attachment generation isn't a CRM primitive), `/api/sanity-sync` mirror cron.
+- The Studio queue pane (#4b) is independent of email — could ship standalone if the CRM discussion stalls. Council-locked split rationale (research artefacts in `www/MEMORY/WORK/20260507-045653_subpr4-studio-file-upload-day7-delivery/PRD.md`) still stands.
+
+Original scope kept below for reference.
+
+#### Sub-PR #4b — Studio queue view (FOLLOW-UP, parked pending rediscussion)
 - **Scope.** Custom Sanity Structure pane "Awaiting delivery" — pinned in Studio sidebar, GROQ-filtered to `_type == "submission" && status == "paid" && !defined(deliveredAt)`, sorted by `paidAt asc` (oldest first). Submission preview subtitle shows days-since-paid as plain text (e.g. "Day 4 of 7"). No traffic-light badges yet — defer until Becky asks.
 - **Reuses from 4a.** The `isDeliverable()` predicate inverse for the filter; the GROQ shape from `fetchDeliverableSubmissions()`.
 - **Effort.** ~1 day.
 
-#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, ships with 4b)
+#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, parked pending rediscussion)
 - **Scope.** (1) New Resend cron `email-becky-digest` at 09:00 ET that fires only when ≥1 submission is overdue (>7d since paid + no `deliveredAt`) OR due within 48h. New Sanity siteSettings field `practitionerOpsEmail` for the recipient (Becky's address). Threshold-triggered = no fixed cadence — silence on quiet days is the signal. (2) ICS attachment on the per-booking notification email (sent at payment time): `.ics` file with `METHOD:PUBLISH` (NOT REQUEST — avoids attendee-response UI), `VTIMEZONE` block + `TZID`-qualified `DTSTART`/`DTEND`, deadline = `paidAt + 6d` (24h buffer before the 7d SLA). Auto-populates Becky's calendar without OAuth.
 - **Declined options (durable record):** 48h-before-deadline single-shot reminders (overlap with digest); Telegram/Pushover phone push (channel proliferation, all sources warn against it at this scale).
 - **Reuses from 4a.** `isDeliverable()` for the digest filter.

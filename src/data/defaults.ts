@@ -107,12 +107,16 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
 export interface BookingInfoNotes {
   deliveryNote: string;
   deliverableNote: string;
+  whatsIncludedHeading: string;
+  bookReadingCtaText: string;
 }
 
 export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
   deliveryNote: "You\u2019ll receive your voice note and PDF within 7 days of payment.",
   deliverableNote:
     "Detailed voice note recording + a supporting PDF created entirely for you.",
+  whatsIncludedHeading: "What\u2019s included",
+  bookReadingCtaText: "Book this Reading \u2192",
 };
 
 export const ABOUT_DEFAULTS: MappedAbout = {

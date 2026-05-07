@@ -13,6 +13,7 @@ import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
 import { UnderConstruction } from "@/components/UnderConstruction";
+import { NONCE_HEADER } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import {
   fetchFaqItems,
@@ -181,7 +182,7 @@ export default async function LandingPage() {
 
       <GoldDivider className="max-w-xs mx-auto" />
 
-      <FaqSection items={faqItems} />
+      <FaqSection items={faqItems} nonce={headersList.get(NONCE_HEADER) ?? undefined} />
 
       {faqItems.length > 0 && <GoldDivider className="max-w-xs mx-auto" />}
 

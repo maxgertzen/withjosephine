@@ -1,75 +1,4 @@
-import { defineArrayMember, defineField, defineType } from "sanity";
-
-const consentRowField = defineArrayMember({
-  type: "object",
-  name: "consentRow",
-  fields: [
-    defineField({
-      name: "key",
-      title: "Stable Key",
-      type: "string",
-      description:
-        "Stable identifier used by the form runtime (e.g. 'entertainment', 'cooling_off', 'terms_privacy', 'newsletter'). Do not change after first save.",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "labelRichText",
-      title: "Label (rich text)",
-      type: "array",
-      description: "Consent label shown beside the checkbox. Supports inline links (Terms, Privacy).",
-      of: [
-        {
-          type: "block",
-          styles: [{ title: "Normal", value: "normal" }],
-          lists: [],
-          marks: {
-            decorators: [
-              { title: "Italic", value: "em" },
-              { title: "Strong", value: "strong" },
-            ],
-            annotations: [
-              {
-                name: "link",
-                type: "object",
-                title: "Link",
-                fields: [
-                  defineField({
-                    name: "href",
-                    type: "string",
-                    title: "URL",
-                    validation: (rule) => rule.required(),
-                  }),
-                ],
-              },
-            ],
-          },
-        },
-      ],
-    }),
-    defineField({ name: "required", title: "Required", type: "boolean", initialValue: true }),
-    defineField({
-      name: "helperText",
-      title: "Helper Text",
-      type: "text",
-      rows: 2,
-      description: "Optional supporting copy shown beneath the consent label.",
-    }),
-    defineField({
-      name: "optionalCaption",
-      title: "Optional Caption",
-      type: "string",
-      description: "Small caption rendered above non-required rows (e.g. 'Optional').",
-    }),
-  ],
-  preview: {
-    select: { title: "key", subtitle: "required" },
-    prepare(value: { title?: unknown; subtitle?: unknown }) {
-      const title = typeof value.title === "string" ? value.title : "consent row";
-      const required = value.subtitle === true ? "required" : "optional";
-      return { title, subtitle: required };
-    },
-  },
-});
+import { defineField, defineType } from "sanity";
 
 export const bookingForm = defineType({
   name: "bookingForm",
@@ -139,30 +68,6 @@ export const bookingForm = defineType({
       options: { collapsible: true, collapsed: false },
     }),
     defineField({
-      name: "consentBlock",
-      title: "Consent Block",
-      type: "object",
-      description:
-        "Four-row consent group rendered on the final intake page. Stable keys per row power the runtime contract.",
-      fields: [
-        defineField({
-          name: "rows",
-          title: "Consent Rows",
-          type: "array",
-          of: [consentRowField],
-          description: "Order matters: entertainment, cooling_off, terms_privacy, newsletter.",
-        }),
-        defineField({
-          name: "hairlineBeforeKey",
-          title: "Hairline Before Key",
-          type: "string",
-          description:
-            "Render a 1px gold hairline divider above the row whose key matches this value (e.g. 'newsletter').",
-        }),
-      ],
-      options: { collapsible: true, collapsed: false },
-    }),
-    defineField({
       name: "pagination",
       title: "Pagination",
       type: "object",
@@ -203,16 +108,6 @@ export const bookingForm = defineType({
       type: "string",
       description: "Shown in the submit overlay while we hand off to Stripe.",
       initialValue: "One moment — taking you to checkout.",
-    }),
-    defineField({
-      name: "swapToastCopy",
-      title: "Reading-Swap Toast Copy",
-      type: "text",
-      rows: 2,
-      description:
-        "Shown when the user changes reading mid-form. Use the {readingName} token to interpolate the new reading.",
-      initialValue:
-        "Switched to {readingName}. Your name and email are saved — start where you left off.",
     }),
     defineField({
       name: "confirmationMessage",
