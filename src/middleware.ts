@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { PRODUCTION_HOSTS, R2_PUBLIC_ORIGIN } from "@/lib/constants";
+import { NONCE_HEADER, PRODUCTION_HOSTS, R2_PUBLIC_ORIGIN } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
 
@@ -51,8 +51,6 @@ const isDev = process.env.NODE_ENV === "development";
 // Never allow it in production.
 const devEval = isDev ? " 'unsafe-eval'" : "";
 
-export const NONCE_HEADER = "x-nonce";
-
 function generateNonce(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -61,14 +59,14 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { draft: boolean; nonce: string }): string {
-  const { draft, nonce } = opts;
+function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
+  const { isDraft, nonce } = opts;
   const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com`;
-  const connectSrc = draft
+  const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`;
-  const frameAncestors = draft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
-  const frameSrc = draft
+  const frameAncestors = isDraft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
+  const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
     : `https://challenges.cloudflare.com`;
   return (
@@ -139,7 +137,7 @@ export function middleware(request: NextRequest) {
   // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
   // frame-ancestor for the Presentation tool's iframe to load at all.
   const isStrict = isPublicApex && !isDraft;
-  response.headers.set("Content-Security-Policy", buildCsp({ draft: !isStrict, nonce }));
+  response.headers.set("Content-Security-Policy", buildCsp({ isDraft: !isStrict, nonce }));
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");

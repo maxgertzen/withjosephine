@@ -1,5 +1,7 @@
 export const CONTACT_EMAIL = "hello@withjosephine.com";
 
+export const NONCE_HEADER = "x-nonce";
+
 /**
  * Hosts that count as the live production site. Anything else (preview
  * subdomains, *.workers.dev URLs, localhost) is treated as private and gets

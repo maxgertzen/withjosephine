@@ -21,23 +21,18 @@ const client = createClient({
   token: process.env.SANITY_WRITE_TOKEN,
 });
 
-const existing = await client.fetch(
-  `*[_type == "bookingPage"][0]{ _id, whatsIncludedHeading, bookReadingCtaText }`,
-);
+const docId = await client.fetch<string | null>(`*[_type == "bookingPage"][0]._id`);
 
-if (!existing?._id) {
+if (!docId) {
   console.log(`[${dataset}] No bookingPage doc found — schema initialValue will seed on first edit.`);
   process.exit(0);
 }
 
-const patch: Record<string, string> = {};
-if (!existing.whatsIncludedHeading) patch.whatsIncludedHeading = "What’s included";
-if (!existing.bookReadingCtaText) patch.bookReadingCtaText = "Book this Reading →";
-
-if (Object.keys(patch).length === 0) {
-  console.log(`[${dataset}] bookingPage already has both fields — no patch needed.`);
-  process.exit(0);
-}
-
-await client.patch(existing._id).set(patch).commit();
-console.log(`[${dataset}] Patched bookingPage:`, patch);
+await client
+  .patch(docId)
+  .setIfMissing({
+    whatsIncludedHeading: "What’s included",
+    bookReadingCtaText: "Book this Reading →",
+  })
+  .commit();
+console.log(`[${dataset}] Seeded missing bookingPage entry-page fields on ${docId}.`);
