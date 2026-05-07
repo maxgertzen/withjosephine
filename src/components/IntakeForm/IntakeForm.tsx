@@ -569,6 +569,11 @@ export function IntakeForm({
       }}
       noValidate
       className="relative flex flex-col gap-10"
+      // Defense-in-depth on top of Clarity's Strict masking mode. Belt-and-
+      // braces guarantees DOB, names, photos, free-text answers render as
+      // redacted blocks in session replays even if a custom-rendered field
+      // bypasses Strict's input-tag auto-detection.
+      data-clarity-mask="True"
     >
       {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
       <input

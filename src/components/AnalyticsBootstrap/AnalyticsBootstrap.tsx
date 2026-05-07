@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ClarityRouteTracking } from "@/components/ClarityRouteTracking";
 import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
+import { clarityConsent } from "@/lib/clarity-consent";
 import { readConsent, writeConsent } from "@/lib/consent";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { initSentryClient } from "@/lib/sentry-client";
@@ -12,6 +14,10 @@ import { initSentryClient } from "@/lib/sentry-client";
 function bootstrapClientObservability(): void {
   initAnalytics();
   initSentryClient();
+  // Clarity Consent API v2 — required for EEA/UK/CH since Oct 31, 2025.
+  // The Clarity bootstrap snippet stages a window.clarity() queue, so this
+  // call is buffered and replayed once the tag finishes loading.
+  clarityConsent(true);
 }
 
 interface AnalyticsBootstrapProps {
@@ -73,7 +79,12 @@ export function AnalyticsBootstrap({
 
   return (
     <>
-      {observabilityLive ? <ClarityScript /> : null}
+      {observabilityLive ? (
+        <>
+          <ClarityScript />
+          <ClarityRouteTracking />
+        </>
+      ) : null}
       {showBanner ? (
         <ConsentBanner
           onAccept={handleAccept}

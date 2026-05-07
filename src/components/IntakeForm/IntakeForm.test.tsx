@@ -122,6 +122,15 @@ function renderForm(sections = SINGLE_PAGE_SECTIONS) {
   );
 }
 
+describe("IntakeForm — Clarity masking", () => {
+  it("renders the form element with data-clarity-mask='True' so PII is redacted in replays", () => {
+    renderForm();
+    const form = document.querySelector("form");
+    expect(form).not.toBeNull();
+    expect(form?.getAttribute("data-clarity-mask")).toBe("True");
+  });
+});
+
 describe("IntakeForm — single-page flow", () => {
   it("renders sections and the non-refundable notice above the consent block", () => {
     renderForm();

@@ -194,7 +194,13 @@ export function FileUpload({
       {helperPosition === "before" ? helperEl : null}
 
       {status === "done" ? (
-        <div className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3">
+        <div
+          className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3"
+          // Clarity replays a captured DOM snapshot from the visitor's browser
+          // cache — including any `<img src="blob:...">` thumbnail. Mask the
+          // preview container so the photo isn't exposed in replays.
+          data-clarity-mask="True"
+        >
           <div className="flex items-center gap-3 min-w-0">
             {previewSrc ? (
               <Image
