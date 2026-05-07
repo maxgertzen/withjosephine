@@ -45,6 +45,12 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Infrastructure
 
+### Staging-tier provisioning runbook — DOCUMENTED 2026-05-07 in `feat/csp-nonce-and-audits`
+- **Source:** `staging.withjosephine.com/book/soul-blueprint/intake` returned 404 for ~24h after the staging tier shipped (PR-S series). Root cause: Sanity `staging` dataset was created Private (default), and `sanityClient` is `useCdn:true` with no token, so customer-facing queries went unauthenticated → null → `notFound()`. Pages with static fallbacks (entry, letter) rendered fine and masked the issue. Fix was a one-toggle dashboard change (flip dataset visibility → Public).
+- **Captured at:** [`docs/STAGING_RUNBOOK.md`](./STAGING_RUNBOOK.md). Provisioning checklist + the dataset-visibility gotcha + verification protocol (smoke the deepest page in a flow, not just the entry).
+- **PAI memory:** `feedback_sanity_client_token.md` + `feedback_static_fallbacks_can_mask_outages.md`.
+- **Action:** Reference the runbook when standing up the next non-prod env (dev?). No standalone code work.
+
 ### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
 - **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
 - **Action (Max):** `gh secret delete NEXT_PUBLIC_WEB3FORMS_KEY` at the repo level. No code change.
@@ -270,12 +276,24 @@ fire-and-forget — drift can happen on Sanity outages.
   6. Listen page renders both audio + PDF download.
   7. If Becky stalls past 7d, alert cron fires once to Josephine (no duplicate alerts on subsequent ticks).
 
-#### Sub-PR #4b — Studio queue view (FOLLOW-UP, post-#4a bake)
+#### Sub-PRs #4b + #4c — RE-SCOPE BLOCKER (locked 2026-05-07)
+
+**Both deferred pending a broader email-stack rediscussion.** Originally next-up after the #4a bake; the call now is to NOT build #4b or #4c in-codebase before deciding whether the email layer should move to a CRM (Mailchimp / similar — see CLAUDE.md "Post-launch future enhancements → Email automation → outsource to a CRM"). If the CRM migration lands first, parts of #4c (digest cron + per-booking notification) likely move into the CRM's automation layer; building them in-codebase now risks throwaway work.
+
+**Scope of the rediscussion (must happen before any #4b/#4c implementation):**
+- Which CRM (Mailchimp working assumption, but unconfirmed with Becky).
+- What email types migrate: booking transactionals (`order_confirmation`, `day_2`, `day_7_delivery`, `day_7_overdue_alert`)? Marketing? Digest reminders to Becky?
+- What stays in-code: admin notifications (Josephine alert), ICS attachment on per-booking email (calendar-attachment generation isn't a CRM primitive), `/api/sanity-sync` mirror cron.
+- The Studio queue pane (#4b) is independent of email — could ship standalone if the CRM discussion stalls. Council-locked split rationale (research artefacts in `www/MEMORY/WORK/20260507-045653_subpr4-studio-file-upload-day7-delivery/PRD.md`) still stands.
+
+Original scope kept below for reference.
+
+#### Sub-PR #4b — Studio queue view (FOLLOW-UP, parked pending rediscussion)
 - **Scope.** Custom Sanity Structure pane "Awaiting delivery" — pinned in Studio sidebar, GROQ-filtered to `_type == "submission" && status == "paid" && !defined(deliveredAt)`, sorted by `paidAt asc` (oldest first). Submission preview subtitle shows days-since-paid as plain text (e.g. "Day 4 of 7"). No traffic-light badges yet — defer until Becky asks.
 - **Reuses from 4a.** The `isDeliverable()` predicate inverse for the filter; the GROQ shape from `fetchDeliverableSubmissions()`.
 - **Effort.** ~1 day.
 
-#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, ships with 4b)
+#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, parked pending rediscussion)
 - **Scope.** (1) New Resend cron `email-becky-digest` at 09:00 ET that fires only when ≥1 submission is overdue (>7d since paid + no `deliveredAt`) OR due within 48h. New Sanity siteSettings field `practitionerOpsEmail` for the recipient (Becky's address). Threshold-triggered = no fixed cadence — silence on quiet days is the signal. (2) ICS attachment on the per-booking notification email (sent at payment time): `.ics` file with `METHOD:PUBLISH` (NOT REQUEST — avoids attendee-response UI), `VTIMEZONE` block + `TZID`-qualified `DTSTART`/`DTEND`, deadline = `paidAt + 6d` (24h buffer before the 7d SLA). Auto-populates Becky's calendar without OAuth.
 - **Declined options (durable record):** 48h-before-deadline single-shot reminders (overlap with digest); Telegram/Pushover phone push (channel proliferation, all sources warn against it at this scale).
 - **Reuses from 4a.** `isDeliverable()` for the digest filter.
