@@ -49,7 +49,6 @@ const SUBMISSION_INPUT = {
   ],
   consentLabel: "I acknowledge",
   photoR2Key: "submissions/sub_1/photo.jpg",
-  clientReferenceId: "sub_1",
   createdAt: "2026-04-20T10:00:00Z",
   consentAcknowledgedAt: "2026-04-20T10:00:00Z",
   ipAddress: "1.2.3.4",

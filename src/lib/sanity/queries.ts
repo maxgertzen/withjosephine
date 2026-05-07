@@ -170,9 +170,6 @@ export const bookingFormQuery = groq`
       aboutJosephineLinkText,
       letterTitle
     },
-    consentBlock {
-      trustLine
-    },
     pagination {
       overrides[] {
         readingSlug,

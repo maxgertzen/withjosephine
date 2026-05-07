@@ -144,12 +144,6 @@ export const submission = defineType({
       description: "Stripe Checkout Session ID associated with the paid event.",
     }),
     defineField({
-      name: "clientReferenceId",
-      title: "Client Reference ID",
-      type: "string",
-      description: "Sent to Stripe as client_reference_id.",
-    }),
-    defineField({
       name: "paidAt",
       title: "Paid At",
       type: "datetime",
@@ -259,12 +253,6 @@ export const submission = defineType({
         },
       ],
       initialValue: [],
-    }),
-    defineField({
-      name: "abandonmentRecoveryFiredAt",
-      title: "Abandonment Recovery Fired At",
-      type: "datetime",
-      description: "Set when the abandonment-recovery cron fires its single recovery email.",
     }),
   ],
   orderings: [

@@ -160,7 +160,6 @@ export async function POST(request: Request) {
       responses,
       consentLabel: parsedBody.consentLabelSnapshot ?? null,
       photoR2Key: photoR2Key ?? null,
-      clientReferenceId: submissionId,
       createdAt: acknowledgedAt,
       consentAcknowledgedAt: acknowledgedAt,
       ipAddress: ip ?? null,

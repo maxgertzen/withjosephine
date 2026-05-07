@@ -15,7 +15,6 @@ type Row = {
   photo_r2_key: string | null;
   stripe_event_id: string | null;
   stripe_session_id: string | null;
-  client_reference_id: string | null;
   created_at: string;
   paid_at: string | null;
   expired_at: string | null;
@@ -23,7 +22,6 @@ type Row = {
   voice_note_url: string | null;
   pdf_url: string | null;
   emails_fired_json: string;
-  abandonment_recovery_fired_at: string | null;
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
 };
@@ -47,7 +45,6 @@ function rowToRecord(row: Row): SubmissionRecord {
     photoR2Key: row.photo_r2_key ?? undefined,
     stripeEventId: row.stripe_event_id ?? undefined,
     stripeSessionId: row.stripe_session_id ?? undefined,
-    clientReferenceId: row.client_reference_id ?? undefined,
     createdAt: row.created_at,
     paidAt: row.paid_at ?? undefined,
     expiredAt: row.expired_at ?? undefined,
@@ -71,7 +68,6 @@ export type CreateSubmissionInput = {
   responses: SubmissionRecord["responses"];
   consentLabel: string | null;
   photoR2Key: string | null;
-  clientReferenceId: string | null;
   createdAt: string;
 };
 
@@ -79,8 +75,8 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
   await dbExec(
     `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
-       responses_json, consent_label, photo_r2_key, client_reference_id, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       responses_json, consent_label, photo_r2_key, created_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -91,7 +87,6 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       JSON.stringify(input.responses),
       input.consentLabel,
       input.photoR2Key,
-      input.clientReferenceId,
       input.createdAt,
     ],
   );

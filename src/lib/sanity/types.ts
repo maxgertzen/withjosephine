@@ -279,10 +279,6 @@ export type SanityEntryPageContent = {
   letterTitle?: string;
 };
 
-export type SanityConsentBlock = {
-  trustLine?: string;
-};
-
 export type SanityBookingForm = {
   title: string;
   intro?: string;
@@ -290,7 +286,6 @@ export type SanityBookingForm = {
   confirmationMessage?: string;
   nonRefundableNotice: string;
   entryPageContent?: SanityEntryPageContent;
-  consentBlock?: SanityConsentBlock;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
   sections: SanityFormSection[];

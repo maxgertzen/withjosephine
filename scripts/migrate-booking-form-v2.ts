@@ -49,7 +49,6 @@ type ConsentRow = {
 
 type ConsentBlock = {
   _type: "consentBlock";
-  trustLine: string;
   hairlineBeforeKey: string;
   rows: ConsentRow[];
 };
@@ -109,9 +108,6 @@ const ENTRY_PAGE_VERBATIM: Required<EntryPageContent> = {
   changeReadingLinkText: "Reading a different one? See all three →",
   aboutJosephineLinkText: "About Josephine",
 };
-
-const CONSENT_TRUST_LINE =
-  "Every reading is read by me, written by me, and made only for you. There's no template underneath.";
 
 const CONSENT_ENTERTAINMENT_TEXT =
   "I understand that this reading is provided for entertainment purposes only. It is not a substitute for medical, psychological, legal, or financial advice. I will not rely on it as a factual prediction or guarantee of future outcomes.";
@@ -242,7 +238,6 @@ function planConsentBlockMutations(
   if (!existing.consentBlock) {
     const consentBlock: ConsentBlock = {
       _type: "consentBlock",
-      trustLine: CONSENT_TRUST_LINE,
       hairlineBeforeKey: "newsletter",
       rows: buildConsentRows(coolingOffText),
     };
