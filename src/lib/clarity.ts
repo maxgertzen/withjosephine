@@ -7,8 +7,15 @@
 // Microsoft Clarity client API reference:
 //   learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-api
 
+export type ConsentDimension = "granted" | "denied";
+
+export interface ConsentV2Settings {
+  ad_Storage: ConsentDimension;
+  analytics_Storage: ConsentDimension;
+}
+
 export interface ClarityFn {
-  (command: "consent", granted: boolean): void;
+  (command: "consentv2", settings: ConsentV2Settings): void;
   (command: "set", key: string, value: string): void;
 }
 
