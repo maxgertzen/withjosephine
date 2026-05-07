@@ -25,6 +25,7 @@ import {
   buildSubmissionSchema,
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
+import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import { errorClasses } from "@/lib/formStyles";
 import {
   clear as clearDraft,
@@ -569,6 +570,11 @@ export function IntakeForm({
       }}
       noValidate
       className="relative flex flex-col gap-10"
+      // Defense-in-depth on top of Clarity's Strict masking mode. Belt-and-
+      // braces guarantees DOB, names, photos, free-text answers render as
+      // redacted blocks in session replays even if a custom-rendered field
+      // bypasses Strict's input-tag auto-detection.
+      {...CLARITY_MASK_PROPS}
     >
       {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
       <input

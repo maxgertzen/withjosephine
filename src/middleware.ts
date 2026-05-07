@@ -61,10 +61,12 @@ function generateNonce(): string {
 
 function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
   const { isDraft, nonce } = opts;
-  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms`;
+  // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
+  // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
+  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
   const connectSrc = isDraft
-    ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms`
-    : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms`;
+    ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
+    : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
   const frameAncestors = isDraft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
   const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`

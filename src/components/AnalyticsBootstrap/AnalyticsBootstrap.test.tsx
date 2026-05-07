@@ -6,7 +6,12 @@ vi.mock("@/lib/analytics", () => ({
   initAnalytics: vi.fn(),
 }));
 
+vi.mock("@/lib/clarity-consent", () => ({
+  clarityConsent: vi.fn(),
+}));
+
 import { initAnalytics } from "@/lib/analytics";
+import { clarityConsent } from "@/lib/clarity-consent";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 
@@ -83,6 +88,41 @@ describe("AnalyticsBootstrap", () => {
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("declined");
       expect(initAnalytics).not.toHaveBeenCalled();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Clarity Consent API v2", () => {
+    it("calls clarityConsent(true) on the no-banner-needed path", async () => {
+      await act(async () => {
+        render(<AnalyticsBootstrap consentRequired={false} />);
+      });
+      expect(clarityConsent).toHaveBeenCalledWith(true);
+    });
+
+    it("calls clarityConsent(true) when accepting the banner", async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        render(<AnalyticsBootstrap consentRequired={true} />);
+      });
+      await user.click(screen.getByRole("button", { name: "Accept" }));
+      expect(clarityConsent).toHaveBeenCalledWith(true);
+    });
+
+    it("does NOT call clarityConsent when declining the banner", async () => {
+      const user = userEvent.setup();
+      await act(async () => {
+        render(<AnalyticsBootstrap consentRequired={true} />);
+      });
+      await user.click(screen.getByRole("button", { name: "Decline" }));
+      expect(clarityConsent).not.toHaveBeenCalled();
+    });
+
+    it("calls clarityConsent(true) when prior consent was 'granted'", async () => {
+      window.localStorage.setItem(STORAGE_KEY, "granted");
+      await act(async () => {
+        render(<AnalyticsBootstrap consentRequired={true} />);
+      });
+      expect(clarityConsent).toHaveBeenCalledWith(true);
     });
   });
 });

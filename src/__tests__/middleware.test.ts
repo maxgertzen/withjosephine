@@ -109,15 +109,19 @@ describe("middleware CSP + draft hardening", () => {
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
 
-  it("CSP allows Microsoft Clarity for script-src and connect-src", () => {
+  it("CSP allows Microsoft Clarity origins for script-src and connect-src", () => {
     const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
     const csp = apex.headers.get("content-security-policy") ?? "";
     const scriptDirective = csp.split(";").find((d) => d.trim().startsWith("script-src"));
     const connectDirective = csp.split(";").find((d) => d.trim().startsWith("connect-src"));
-    // Wildcard (*.clarity.ms) covers www.clarity.ms (entry point) and any
-    // Clarity sub-script that loads from o.clarity.ms / c.clarity.ms etc.
+    // Wildcard (*.clarity.ms) covers www.clarity.ms entry + collection subdomains.
+    // c.bing.com is Microsoft's beacon endpoint Clarity routes telemetry through;
+    // both directives need it per the docs (script-src for the snippet that calls
+    // it, connect-src for the actual fetch).
     expect(scriptDirective).toContain("https://*.clarity.ms");
+    expect(scriptDirective).toContain("https://c.bing.com");
     expect(connectDirective).toContain("https://*.clarity.ms");
+    expect(connectDirective).toContain("https://c.bing.com");
   });
 });
 

@@ -142,4 +142,27 @@ describe("FileUpload", () => {
     expect(img?.getAttribute("src")).toContain(objectUrl);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
   });
+
+  it("masks the preview thumbnail container with data-clarity-mask='True'", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ uploadUrl: "https://r2.example/put", key: "submissions/y/photo" }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-preview");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+
+    const { onChange } = setup();
+    uploadFile(screen.getByLabelText(/Photo/), makeFile("sun.jpg", "image/jpeg", 1024));
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("submissions/y/photo"));
+
+    const masked = document.querySelector('[data-clarity-mask="True"]');
+    expect(masked).not.toBeNull();
+    expect(masked?.querySelector("img")).not.toBeNull();
+  });
 });

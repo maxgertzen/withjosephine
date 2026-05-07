@@ -10,6 +10,7 @@ import {
   PHOTO_PUBLIC_URL_BASE,
   UPLOAD_URL_API_ROUTE,
 } from "@/lib/booking/constants";
+import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import { errorClasses, labelClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
@@ -194,7 +195,13 @@ export function FileUpload({
       {helperPosition === "before" ? helperEl : null}
 
       {status === "done" ? (
-        <div className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3">
+        <div
+          className="flex items-center justify-between gap-3 bg-white/50 border border-j-border-subtle rounded-lg px-4 py-3"
+          // Clarity replays a captured DOM snapshot from the visitor's browser
+          // cache — including any `<img src="blob:...">` thumbnail. Mask the
+          // preview container so the photo isn't exposed in replays.
+          {...CLARITY_MASK_PROPS}
+        >
           <div className="flex items-center gap-3 min-w-0">
             {previewSrc ? (
               <Image

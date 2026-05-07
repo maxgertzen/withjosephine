@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ClarityRouteTracking } from "@/components/ClarityRouteTracking";
 import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
+import { clarityConsent } from "@/lib/clarity-consent";
 import { readConsent, writeConsent } from "@/lib/consent";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { initSentryClient } from "@/lib/sentry-client";
@@ -35,6 +37,7 @@ export function AnalyticsBootstrap({
     consentEffectRanRef.current = true;
     if (!consentRequired) {
       bootstrapClientObservability();
+      clarityConsent(true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setObservabilityLive(true);
       return;
@@ -42,6 +45,7 @@ export function AnalyticsBootstrap({
     const choice = readConsent();
     if (choice === "granted") {
       bootstrapClientObservability();
+      clarityConsent(true);
       setObservabilityLive(true);
       return;
     }
@@ -58,6 +62,7 @@ export function AnalyticsBootstrap({
     }
     writeConsent("granted");
     bootstrapClientObservability();
+    clarityConsent(true);
     setObservabilityLive(true);
     setShowBanner(false);
   }
@@ -73,7 +78,12 @@ export function AnalyticsBootstrap({
 
   return (
     <>
-      {observabilityLive ? <ClarityScript /> : null}
+      {observabilityLive ? (
+        <>
+          <ClarityScript />
+          <ClarityRouteTracking />
+        </>
+      ) : null}
       {showBanner ? (
         <ConsentBanner
           onAccept={handleAccept}
