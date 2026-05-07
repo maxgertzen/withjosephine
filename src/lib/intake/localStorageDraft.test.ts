@@ -50,7 +50,7 @@ describe("localStorageDraft.restore", () => {
     expect(restored?.currentPage).toBe(0);
   });
 
-  it("returns null and clears the key when older than 30 days", () => {
+  it("returns null and clears the key when older than the idle TTL", () => {
     const stale = {
       version: DRAFT_VERSION,
       savedAt: new Date(Date.now() - DRAFT_TTL_MS - 1000).toISOString(),
@@ -60,6 +60,33 @@ describe("localStorageDraft.restore", () => {
     window.localStorage.setItem(KEY, JSON.stringify(stale));
     expect(restore(READING)).toBeNull();
     expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("clears drafts last saved 73h ago (past 72h idle cutoff)", () => {
+    const ms73h = 73 * 60 * 60 * 1000;
+    const stale = {
+      version: DRAFT_VERSION,
+      savedAt: new Date(Date.now() - ms73h).toISOString(),
+      currentPage: 0,
+      values: {},
+    };
+    window.localStorage.setItem(KEY, JSON.stringify(stale));
+    expect(restore(READING)).toBeNull();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("preserves drafts last saved 71h ago (under 72h idle cutoff)", () => {
+    const ms71h = 71 * 60 * 60 * 1000;
+    const fresh = {
+      version: DRAFT_VERSION,
+      savedAt: new Date(Date.now() - ms71h).toISOString(),
+      currentPage: 1,
+      values: { email: "still@here.com" },
+    };
+    window.localStorage.setItem(KEY, JSON.stringify(fresh));
+    const restored = restore(READING);
+    expect(restored?.values).toEqual({ email: "still@here.com" });
+    expect(restored?.currentPage).toBe(1);
   });
 
   it("returns null and clears the key on version mismatch", () => {

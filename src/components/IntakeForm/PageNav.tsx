@@ -17,6 +17,7 @@ type PageNavProps = {
   nextLabel?: string;
   saveLaterLabel?: string;
   savedIndicator?: React.ReactNode;
+  discardDraftButton?: React.ReactNode;
 };
 
 export function PageNav({
@@ -34,6 +35,7 @@ export function PageNav({
   nextLabel = "Next →",
   saveLaterLabel = "Save and continue later",
   savedIndicator,
+  discardDraftButton,
 }: PageNavProps) {
   return (
     <nav
@@ -95,9 +97,10 @@ export function PageNav({
 
       <div
         aria-live="polite"
-        className="md:col-span-3 flex justify-center min-h-6 text-xs text-j-text-muted font-body"
+        className="md:col-span-3 flex flex-wrap justify-center items-center gap-x-3 gap-y-1 min-h-6 text-xs text-j-text-muted font-body"
       >
         {savedIndicator}
+        {discardDraftButton}
       </div>
     </nav>
   );

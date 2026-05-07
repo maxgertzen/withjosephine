@@ -144,16 +144,6 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 - **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
 
-### Intake form clear-saved-draft UX question
-- **Source:** Max 2026-05-02 (the throttle item itself shipped in PR #77 — `trackThrottled` helper + 30s gate). Open UX question remains:
-- **Question:** Should the intake form expose a manual "Clear saved draft" button so visitors can abandon a half-filled form without it auto-restoring on next visit? Today the only way to clear is: submit successfully (clears via `clearDraft`), wait 30 days for TTL, or open DevTools and delete localStorage manually. None are obvious to a casual visitor.
-  - Option A: Cleanup button in the form footer ("Start fresh →
-    clears saved draft"). Adds clarity but encourages discarding work.
-  - Option B: Auto-clear on idle timeout (e.g. no edits in 24h).
-    Less explicit; fewer accidents.
-  - Option C: Status quo. Trust that 30-day TTL handles it.
-  Decide before shipping the throttle.
-
 ### Core Web Vitals → Mixpanel via `useReportWebVitals`
 - **Source:** Next.js production checklist 2026-05-02. Next exposes
   Core Web Vitals (LCP, FID, CLS, TTFB, INP) via `useReportWebVitals`

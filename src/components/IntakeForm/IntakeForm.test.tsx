@@ -375,6 +375,61 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
   });
 
+  it("does not show the Start fresh button on first render with no saved draft", () => {
+    renderForm();
+    expect(screen.queryByTestId("discard-draft-button")).toBeNull();
+  });
+
+  it("shows the Start fresh button after Save and continue later", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    expect(
+      await screen.findByTestId("discard-draft-button"),
+    ).toBeInTheDocument();
+  });
+
+  it("clears localStorage and resets values when Start fresh is confirmed", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).not.toBeNull();
+
+    await user.click(await screen.findByTestId("discard-draft-button"));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("");
+    });
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).toBeNull();
+    expect(screen.queryByTestId("discard-draft-button")).toBeNull();
+  });
+
+  it("preserves the draft when Start fresh confirmation is cancelled", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    const before = window.localStorage.getItem("josephine.intake.draft.soul-blueprint");
+    expect(before).not.toBeNull();
+
+    await user.click(await screen.findByTestId("discard-draft-button"));
+
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe(
+      "Ada Lovelace",
+    );
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).toBe(before);
+  });
+
   it("clears the saved draft when /api/booking returns 2xx", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(

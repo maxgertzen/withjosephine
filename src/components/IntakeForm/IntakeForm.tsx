@@ -40,6 +40,7 @@ import type {
   SanityPagination,
 } from "@/lib/sanity/types";
 
+import { DiscardDraftButton } from "./DiscardDraftButton";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
 import { SavedIndicator } from "./SavedIndicator";
@@ -204,6 +205,10 @@ export function IntakeForm({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIntentRef = useRef(false);
+  // One-shot guard: set when the user discards a draft so the next autosave
+  // tick (which would otherwise fire 500ms after the reset and re-save the
+  // empty defaults) is skipped. The flag clears itself on the next tick.
+  const justDiscardedRef = useRef(false);
 
   function flushSave(nextValues: FieldValues, nextPage: number) {
     const envelope = saveDraft(readingId, {
@@ -215,6 +220,10 @@ export function IntakeForm({
 
   useEffect(() => {
     if (!isRestored) return;
+    if (justDiscardedRef.current) {
+      justDiscardedRef.current = false;
+      return;
+    }
     const handle = setTimeout(() => {
       flushSave(values, currentPage);
       trackThrottled(
@@ -256,6 +265,20 @@ export function IntakeForm({
     flushSave(values, currentPage);
     setChipTick((t) => t + 1);
     track("intake_save_click", { reading_id: readingId, page_number: currentPage + 1 });
+  }
+
+  function handleDiscardDraft() {
+    track("intake_clear_draft_click", {
+      reading_id: readingId,
+      page_number: currentPage + 1,
+    });
+    justDiscardedRef.current = true;
+    clearDraft(readingId);
+    setValues(defaultValues);
+    setCurrentPage(0);
+    setLastSavedAt(null);
+    setErrors({});
+    setSubmitError(null);
   }
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -678,6 +701,9 @@ export function IntakeForm({
         submitDisabled={isFinalPage && !currentPageValid}
         submitLabel={submitLabel}
         savedIndicator={savedIndicator}
+        discardDraftButton={
+          lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null
+        }
       />
 
       <p className="sr-only">{`Booking form for ${readingName}`}</p>

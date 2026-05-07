@@ -27,9 +27,13 @@ export function BookingFlowHeader({
       >
         {backLabel}
       </NavigationButton>
-      <span className="font-display italic text-lg md:text-xl text-j-text-heading tracking-wide">
+      <Link
+        href="/"
+        aria-label="Josephine Soul Readings — home"
+        className="font-display italic text-lg md:text-xl text-j-text-heading tracking-wide hover:text-j-accent transition-colors"
+      >
         Josephine Soul Readings
-      </span>
+      </Link>
       <Link
         href="/#about"
         className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2"
