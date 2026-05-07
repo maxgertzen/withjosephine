@@ -27,13 +27,6 @@ Each item: where it came from + why it was deferred + a one-line action.
 - **Action:** Resend dashboard → Domains → confirm `withjosephine.com` verified.
   Send a test from the dashboard before opening the form to traffic.
 
-### F-11. Constant-time comparison in cron-auth
-- **Source:** Security review (FYI severity).
-- **What:** `src/lib/booking/cron-auth.ts:16` does `===` string compare on the
-  bearer token. Theoretically allows timing attacks against `CRON_SECRET`.
-  Practical risk on CF Workers is near-zero given network jitter.
-- **Action:** Replace with a byte-loop or use the same HMAC pattern as listenToken.
-
 ### S-5. Nonce-based CSP migration
 - **Source:** Security review.
 - **What:** CSP currently allows `script-src 'unsafe-inline'` because Next.js
@@ -59,16 +52,6 @@ Each item: where it came from + why it was deferred + a one-line action.
   - If allowing AI-search, verify `/sitemap.xml` returns 200 to those UAs (it currently 403s per the firewall log).
 - **No deadline.** Optional. Worth ~30 min of conversation with Josephine before deciding — her brand voice is a real asset and she may have a strong opinion either way.
 
-### Build-time assertion that prod never carries the Turnstile bypass
-- **Source:** Code review (nice-to-fix), Security review F-2 (nice-to-have).
-- **What:** Three `process.env.NODE_ENV !== "production"` guards short-circuit
-  to false in prod builds — verified empirically in the worker bundle.
-  But if a deploy ever sets `NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS=1`, that
-  variant is inlined at build time and would be present (still dead code
-  due to the AND with NODE_ENV, but worth a belt-and-braces check).
-- **Action:** `next.config.mjs` or pretest script that throws when
-  `NODE_ENV === "production"` and any bypass flag is truthy.
-
 ---
 
 ## Infrastructure
@@ -76,25 +59,6 @@ Each item: where it came from + why it was deferred + a one-line action.
 ### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
 - **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
 - **Action (Max):** `gh secret delete NEXT_PUBLIC_WEB3FORMS_KEY` at the repo level. No code change.
-
-### OpenNext `scheduled` handler dispatch
-- **Source:** PR-E shipping (`5abec07`) + every cron route added since.
-- **What:** `wrangler.jsonc` configures cron schedules but OpenNext does not
-  expose a `scheduled` handler that translates them into fetches. Today the
-  reconcile + cleanup + day-2 + day-7 + day-7-deliver routes are triggered
-  externally via `Authorization: Bearer ${CRON_SECRET}` curl. The schedules
-  in wrangler are aspirational.
-- **Action:** Either upstream a `scheduled` handler to OpenNext, write a
-  small custom one in the Worker entry, or set up an external scheduler
-  (GitHub Actions cron, CF Worker triggering itself, etc.).
-
-### Resend template IDs
-- **Source:** PR-E spec.
-- **What:** Email bodies are inlined HTML strings in `src/lib/resend.ts`.
-  SPEC §13 mentioned using Resend template IDs (`template_order_confirmation`
-  etc.) for editor-friendly copy iteration.
-- **Action:** Provision Resend templates, swap `client.emails.send({ html })`
-  to `client.emails.send({ react: ... })` or the templates API.
 
 ### `/api/booking/upload-url` architectural alternative
 - **Source:** Code review (S-4 long-term fix).
@@ -193,56 +157,30 @@ Each item: where it came from + why it was deferred + a one-line action.
   `<VisualEditing>` overlay verification. Best batched into a
   "make Studio editorial-complete" session rather than drip-feeding.
 
-### Code-quality: drop inferred return-type annotations
-- **Source:** Max 2026-05-02. Where a function's return type is inferred
-  by TypeScript correctly, an explicit annotation adds noise without
-  catching anything new. Examples in current codebase:
-  `): void` on `initAnalytics`, `track`, `identifySubmission`,
-  `_resetForTests`, `writeConsent`, `readConsent` (returns
-  `ConsentChoice | null`), `requiresConsent` (returns `boolean`),
-  `deriveEnvironment` (returns `string`), the migration scripts'
-  helper functions, and similar across `src/lib/**`.
+### Code-quality: drop inferred return-type annotations (broader sweep)
+- **Source:** Max 2026-05-02. Six named exports addressed in PR #78 (Bundle 3) — `initAnalytics`, `track`, `trackThrottled`, `identifySubmission`, `isAnalyticsInitialized`, `_resetForTests`, `writeConsent`, `readConsent`, `deriveEnvironmentFromHost`. Broader sweep across `src/lib/**` and `src/components/**` still open.
 - **Rule going forward:** only annotate the return type when:
   - It's a public API boundary (exported) AND the inference would be
     a wider/narrower type than intended
   - It's a recursive function (TS can't infer through recursion cleanly)
   - The function is overloaded
   - The function returns a complex generic that TS infers as `any`/wide
-- **Action:** sweep `src/lib/**` and `src/components/**` removing
-  redundant return-type annotations from local helpers and one-off
-  functions where inference is correct. Keep the annotations on
-  exported functions that are part of a public contract IF removing
-  them would make the inferred type unstable. ~30-min sweep across
-  the codebase, no behavior change.
+- **Action:** sweep remaining files for redundant return-type annotations on local helpers and one-off functions where inference is correct. Keep annotations on exported functions whose inference would be unstable.
 
-### PR-F1 simplify-pass deferrals (code-quality follow-ups)
-**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Issues identified, judged not blocking the PR, captured here so they don't drift out of view.
+### PR-F1 simplify-pass deferrals (remaining)
+**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Two of the original five items closed in PR #77 (Bundle 2 — `consentEffectRanRef` ref-guard + `<SavedIndicator>` extraction). Remaining:
 
-- **`process.env.*` reads in IntakeForm render path.** `IntakeForm.tsx:264–268` reads `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NODE_ENV`, and `NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS` on every render. Pre-existing pattern (not new in PR-F1) but worth hoisting to module scope or a single `useMemo`. Trivial impact unless this component re-renders many times per page (it doesn't today).
+- **`process.env.*` reads in IntakeForm render path.** Tried hoisting to module scope in Bundle 2; reverted because tests rely on `vi.stubEnv` in `beforeEach`, which can't reach module-init reads. Hoist had zero runtime benefit (Next inlines `NEXT_PUBLIC_*` at build time). Re-open if the test stub pattern itself changes.
 
-- **AnalyticsBootstrap `consentRequired` effect re-run guard.** `AnalyticsBootstrap.tsx:48` — useEffect dep array is `[consentRequired]`. Today the prop is stable per request (computed once from server headers in the layout) so the effect runs once. If a future change ever makes `consentRequired` recompute on parent re-render, the effect would re-read localStorage and re-call `initAnalytics()` (idempotent today via `bootstrapped` guard, but fragile). Add an explicit "did we already run" ref-guard if the parent's render shape changes.
+- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add per-purpose consent granularity).
 
-- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Line ~45 has an `eslint-disable-next-line react-hooks/set-state-in-effect`. The justifying comment is correct (localStorage is mount-only) but the cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add the cookie banner copy from Sanity, or per-purpose consent granularity).
+- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Hoist if/when re-init support is added (currently not on the roadmap).
 
-- **`window.location.host` re-read in `initAnalytics()`.** `client.ts:42` — read inside the function. Today it's called once due to the `bootstrapped` guard, so no real cost. If init ever needs to support re-init (e.g. switching projects after consent change), hoist to module scope.
+- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
 
-- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc, then checks `body.some(_key === MIXPANEL_BLOCK_KEY)` to short-circuit. The fetch happens regardless. Acceptable today (script runs maybe 1–2 times in its lifetime); if reused as a template, swap the no-op check to a lightweight projection query.
-
-### `intake_save_auto` event throttle + clear-button UX question
-- **Source:** Mixpanel quota review 2026-05-02. The autosave event
-  fires every 500ms after a value change. A user typing a long
-  Akashic-record question for 10 minutes with frequent edits could
-  fire 100+ saves per session. Bounded but noisy.
-- **Throttle action:** Cap `intake_save_auto` to one event per 30
-  seconds per session, OR fire only on page transitions (not on
-  every value change). The localStorage save itself keeps happening
-  every 500ms — only the analytics event gets throttled.
-- **Open UX question (Max raised 2026-05-02):** Should the intake
-  form expose a manual "Clear saved draft" button so visitors can
-  abandon a half-filled form without it auto-restoring on next
-  visit? Today the only way to clear is: submit successfully (clears
-  via `clearDraft`), wait 30 days for TTL, or open DevTools and
-  delete localStorage manually. None are obvious to a casual visitor.
+### Intake form clear-saved-draft UX question
+- **Source:** Max 2026-05-02 (the throttle item itself shipped in PR #77 — `trackThrottled` helper + 30s gate). Open UX question remains:
+- **Question:** Should the intake form expose a manual "Clear saved draft" button so visitors can abandon a half-filled form without it auto-restoring on next visit? Today the only way to clear is: submit successfully (clears via `clearDraft`), wait 30 days for TTL, or open DevTools and delete localStorage manually. None are obvious to a casual visitor.
   - Option A: Cleanup button in the form footer ("Start fresh →
     clears saved draft"). Adds clarity but encourages discarding work.
   - Option B: Auto-clear on idle timeout (e.g. no edits in 24h).
@@ -266,32 +204,6 @@ Each item: where it came from + why it was deferred + a one-line action.
   Web Vitals; this is partial duplication that pays off only once we
   want the per-route slicing in Mixpanel funnels.
 
-### `@next/bundle-analyzer` wiring
-- **Source:** Next.js production checklist 2026-05-02. We have a
-  `www/Plans/bundle-size-reduction-phase2.md` doc but no analyzer
-  plugin on the build itself. Today we measure worker-bundle size
-  via wrangler output; we don't measure CLIENT bundle composition.
-- **Action:** Add `@next/bundle-analyzer` as a devDep, wire it through
-  `next.config.ts` gated on `ANALYZE=1`. Add `pnpm analyze` script.
-  Run before any client-bundle-impacting change.
-- **Why deferred:** No active client-bundle work right now; the worker
-  bundle is the active constraint and `outputFileTracingExcludes`
-  narrowing is the relevant lever for that.
-
-### `experimental_taintObjectReference` for server secrets
-- **Source:** Next.js production checklist 2026-05-02. Next's defense
-  against accidentally serializing server-only objects to the client.
-  Tainted objects throw if a Server Component tries to pass them to a
-  Client Component as a prop.
-- **Action:** Apply taint markers:
-  - `src/lib/sanity/client.ts` → taint the `SANITY_WRITE_TOKEN` carrier
-  - `src/lib/stripe.ts` → taint the Stripe client (uses `STRIPE_SECRET_KEY`)
-  - `src/lib/d1.ts` → taint the D1 binding wrapper
-  - `src/lib/r2.ts` → taint the R2 client (uses `R2_SECRET_ACCESS_KEY`)
-- **Why deferred:** None of these currently leak to client code; the
-  taint markers are belt-and-braces. Worth doing once a code-quality
-  pass resumes.
-
 ### Generic delegated tracking listener (`data-mp-*`)
 - **Source:** Mixpanel best-practices research 2026-05-02. ChargeAfter's
   `<EventTracker>` (libs/event-tracker/src/lib/components/EventTracker.tsx)
@@ -313,25 +225,11 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Code quality (nice-to-fix)
 
-All from the code review of the 38-commit pre-cleanup state. None are
-load-bearing.
+Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, build-time Turnstile bypass assertion, TrustLine cleanup, `clientReferenceId` orphan removal (+ D1 column drop via migration `0003`), `abandonmentRecoveryFiredAt` orphan removal, `void chipTick` refactor, `letter/page.tsx` IIFE simplification, `intake_save_auto` throttle, `@next/bundle-analyzer` wiring, `experimental_taintObjectReference` markers, partial inferred-return-type sweep.
 
-- **TrustLine component unused.** `src/components/IntakeForm/TrustLine.tsx`
-  is exported, tested, and never rendered. Either wire it in (final-page
-  consent block) or delete it + its test + the `consentBlock.trustLine`
-  Sanity projection.
-- **`clientReferenceId` always equals `_id`.** `src/app/api/booking/route.ts`
-  sets both to the same UUID. Either drop the field from schema or document
-  why it exists separately from `_id`.
-- **`void chipTick` re-render trigger.** `src/components/IntakeForm/IntakeForm.tsx:195-206`
-  uses `void chipTick;` to force a 30s re-render on the saved-time chip.
-  Cleaner via `useMemo([..., chipTick])` or extracting a `<SavedIndicator />`
-  child component.
 - **`legal_full_name` in `SWAP_PRESERVED_KEYS`.** Kept as a fallback for
   pre-migration localStorage drafts. Drafts have a 30-day TTL — drop after
   2026-05-29 with confidence.
-- **`letter/page.tsx` IIFE simplification.** The fallback IIFE at lines
-  51-58 reduces to `getReadingById(readingId) ? { slug: readingId } : null`.
 - **3× `fetchBookingForm` per `/book` flow.** Each of `/book/[id]`,
   `/letter`, `/intake` calls it independently. `cache()`-wrapped per request,
   so 3 separate Worker invocations = 3 fetches. Acceptable today; if Sanity
