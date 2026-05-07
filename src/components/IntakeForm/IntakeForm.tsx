@@ -150,8 +150,14 @@ export function IntakeForm({
     return seed;
   }, [allFields]);
 
+  const defaultValuesSnapshot = useMemo(() => JSON.stringify(defaultValues), [defaultValues]);
+
   const [currentPage, setCurrentPage] = useState(0);
   const [values, setValues] = useState<FieldValues>(defaultValues);
+  const valuesUntouched = useMemo(
+    () => JSON.stringify(values) === defaultValuesSnapshot,
+    [values, defaultValuesSnapshot],
+  );
   const [honeypot, setHoneypot] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
@@ -224,6 +230,7 @@ export function IntakeForm({
       justDiscardedRef.current = false;
       return;
     }
+    if (valuesUntouched) return;
     const handle = setTimeout(() => {
       flushSave(values, currentPage);
       trackThrottled(
@@ -234,7 +241,7 @@ export function IntakeForm({
     }, 500);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRestored, values, currentPage, readingId]);
+  }, [isRestored, values, currentPage, readingId, valuesUntouched]);
 
   // First-focus tracking: one event per field per session via delegated
   // focusin so we don't have to thread onFocus through every form component.
@@ -262,6 +269,7 @@ export function IntakeForm({
   }, [readingId]);
 
   function handleSaveLater() {
+    if (valuesUntouched) return;
     flushSave(values, currentPage);
     setChipTick((t) => t + 1);
     track("intake_save_click", { reading_id: readingId, page_number: currentPage + 1 });
@@ -702,6 +710,7 @@ export function IntakeForm({
         isSubmitting={isSubmitting}
         nextDisabled={!currentPageValid}
         submitDisabled={isFinalPage && !currentPageValid}
+        saveLaterDisabled={valuesUntouched}
         submitLabel={submitLabel}
         savedIndicator={savedIndicator}
       />

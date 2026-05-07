@@ -13,6 +13,7 @@ type PageNavProps = {
   isSubmitting?: boolean;
   nextDisabled?: boolean;
   submitDisabled?: boolean;
+  saveLaterDisabled?: boolean;
   submitLabel?: string;
   nextLabel?: string;
   saveLaterLabel?: string;
@@ -30,6 +31,7 @@ export function PageNav({
   isSubmitting = false,
   nextDisabled = false,
   submitDisabled = false,
+  saveLaterDisabled = false,
   submitLabel = "Continue to payment →",
   nextLabel = "Next →",
   saveLaterLabel = "Save and continue later",
@@ -63,7 +65,8 @@ export function PageNav({
         <button
           type="button"
           onClick={onSaveLater}
-          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer"
+          disabled={saveLaterDisabled}
+          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-j-text-muted"
         >
           {saveLaterLabel}
         </button>

@@ -380,6 +380,30 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(screen.queryByTestId("discard-draft-button")).toBeNull();
   });
 
+  it("disables Save and continue later when no fields have been touched", () => {
+    renderForm();
+    expect(
+      screen.getByRole("button", { name: /Save and continue later/ }),
+    ).toBeDisabled();
+  });
+
+  it("enables Save and continue later once any field has a value", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "A");
+    expect(
+      screen.getByRole("button", { name: /Save and continue later/ }),
+    ).toBeEnabled();
+  });
+
+  it("does not autosave an empty-defaults draft on mount", async () => {
+    renderForm();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).toBeNull();
+  });
+
   it("shows the Clear form button after Save and continue later", async () => {
     const user = userEvent.setup();
     renderForm();
