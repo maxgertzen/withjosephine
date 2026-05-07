@@ -54,6 +54,10 @@ export type ClientEventMap = {
     reading_id: ReadingId;
     page_number: number;
   };
+  intake_clear_draft_click: {
+    reading_id: ReadingId;
+    page_number: number;
+  };
   intake_submit_click: {
     reading_id: ReadingId;
     validation_pass: boolean;

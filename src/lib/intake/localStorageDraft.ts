@@ -1,7 +1,10 @@
 export const DRAFT_KEY_PREFIX = "josephine.intake.draft.";
 export const LAST_READING_ID_KEY = "josephine.intake.lastReadingId";
 export const DRAFT_VERSION = 1;
-export const DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+// Idle cutoff: drafts whose `savedAt` is older than this on next restore are
+// silently cleared. `savedAt` updates on every save (autosaves fire on every
+// edit, debounced 500ms), so this is effectively a "no edits in 72h" timer.
+export const DRAFT_TTL_MS = 72 * 60 * 60 * 1000;
 
 export type DraftValues = Record<string, string | string[] | boolean>;
 

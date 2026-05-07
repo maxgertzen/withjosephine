@@ -375,6 +375,90 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
   });
 
+  it("does not show the Clear form button on first render with no saved draft", () => {
+    renderForm();
+    expect(screen.queryByTestId("discard-draft-button")).toBeNull();
+  });
+
+  it("disables Save and continue later when no fields have been touched", () => {
+    renderForm();
+    expect(
+      screen.getByRole("button", { name: /Save and continue later/ }),
+    ).toBeDisabled();
+  });
+
+  it("enables Save and continue later once any field has a value", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "A");
+    expect(
+      screen.getByRole("button", { name: /Save and continue later/ }),
+    ).toBeEnabled();
+  });
+
+  it("does not autosave an empty-defaults draft on mount", async () => {
+    vi.useFakeTimers();
+    try {
+      renderForm();
+      await vi.advanceTimersByTimeAsync(600);
+      expect(
+        window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+      ).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows the Clear form button after Save and continue later", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    expect(
+      await screen.findByTestId("discard-draft-button"),
+    ).toBeInTheDocument();
+  });
+
+  it("clears localStorage and resets values when Yes, clear it is confirmed", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).not.toBeNull();
+
+    await user.click(await screen.findByTestId("discard-draft-button"));
+    await user.click(await screen.findByTestId("discard-draft-confirm-yes"));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("");
+    });
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).toBeNull();
+    expect(screen.queryByTestId("discard-draft-button")).toBeNull();
+  });
+
+  it("preserves the draft when Keep it is clicked", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
+    const before = window.localStorage.getItem("josephine.intake.draft.soul-blueprint");
+    expect(before).not.toBeNull();
+
+    await user.click(await screen.findByTestId("discard-draft-button"));
+    await user.click(await screen.findByTestId("discard-draft-cancel"));
+
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe(
+      "Ada Lovelace",
+    );
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+    ).toBe(before);
+  });
+
   it("clears the saved draft when /api/booking returns 2xx", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
