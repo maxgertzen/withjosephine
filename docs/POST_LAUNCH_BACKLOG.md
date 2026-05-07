@@ -388,15 +388,42 @@ fire-and-forget — drift can happen on Sanity outages.
   divergent on key fields (`status`, `paidAt`, `deliveredAt`, last
   `emailsFired` entry).
 
-### Studio admin UX for `deliveredAt`
-- **Source:** ADR-001 acceptance.
-- **What:** Today there's no path for Josephine to mark a submission
-  delivered without running SQL. The CLI stopgap is
-  `scripts/mark-delivered.mts`. Properly: a small admin page at
-  `/admin/submissions` in the Next.js app, basic-auth gated, that lists
-  paid-but-undelivered submissions and lets her paste voice/PDF URLs +
-  click "mark delivered".
-- **Action:** Phase 1.5 task. Probably ~1 weekend.
+### Sub-PR #4 — Becky operational layer (split into 4a / 4b / 4c, decided 2026-05-07)
+
+**Background.** ADR-001 acceptance + 2026-05-06 + 2026-05-07 surfacing during the operational-completeness branch. Today's flow is broken for Becky: `voiceNoteUrl` / `pdfUrl` are URL strings in Sanity Studio (plain text inputs), there's no queue/visibility surface, and the only delivery path is `pnpm tsx scripts/mark-delivered.mts` from an engineer terminal.
+
+**Decided 2026-05-07 (research + 4-voice council debate).** Path B+ (D1 columns kept; cron mirrors Sanity → D1 at fire time, listen page unchanged). Decision artefacts: `www/MEMORY/WORK/20260507-045653_subpr4-studio-file-upload-day7-delivery/PRD.md`. Research from Perplexity / Claude / Gemini and council of 4 (SaaS ops architect / solo creator / CS specialist / minimum-mechanism architect) all converged on:
+- Sanity is Becky's surface; D1 stays source-of-truth via the existing mirror (no new D1 columns).
+- Airtight gate = artifact existence as the readiness flag, atomic GROQ predicate at cron fire time. Sanity schema validation is defense in depth; the cron-time GROQ is what's load-bearing.
+- Queue surface = pinned Sanity Structure pane, NOT a dashboard tool. Belongs in 4b.
+- Digest = threshold-triggered (≥1 item due in <48h or overdue), NOT fixed-cadence. Belongs in 4c.
+- Sequence = ship 4a alone, bake 1 week, then 4b + 4c bundled.
+- Shared `isDeliverable(submission)` predicate built once in 4a, reused by 4b/4c (queue filter, digest filter, ICS deadline computation).
+
+#### Sub-PR #4a — file upload + airtight delivery gate ✅ MERGED 2026-05-07 (PR #74)
+- **Scope shipped.** Schema flip (`voiceNote: file`, `readingPdf: file`, validation `required when deliveredAt set` + cross-field gate on `deliveredAt`). New `isDeliverable()` predicate (with unit tests) + `fetchDeliverableSubmissions()` / `fetchUndeliveredSubmissionIds()` GROQ helpers. Day-7-deliver cron sources candidates from Sanity, dereferences `voiceNote.asset->url` + `readingPdf.asset->url`, writes URLs + `deliveredAt` to D1, then sends. Day-7 alert cron queries Sanity for `!defined(deliveredAt)` (not D1 — avoids the race between Becky setting `deliveredAt` and the deliver cron running). `mirrorSubmissionPatch` patch shape drops the 3 delivery fields. `scripts/mark-delivered.mts` deleted. D1 schema unchanged; listen page unchanged; `repository.ts` `Row` / `rowToRecord` unchanged.
+- **Status.** Merged into `feat/operational-completeness` as commit `2d183f4`. Now in 1-week bake against Becky's first real reading. Once verified, integration branch → main as a single PR.
+- **Bake checklist (manual smoke).**
+  1. Becky uploads voice + PDF in Studio → schema validation accepts both files.
+  2. Becky sets `deliveredAt` without files → schema validation BLOCKS save (defense in depth).
+  3. Becky sets `deliveredAt` with both files → schema validation accepts.
+  4. Cron-time GROQ predicate fires → D1 `delivered_at` + `voice_note_url` + `pdf_url` populated within one cron tick.
+  5. Customer Day-7 email arrives with valid `/listen/<token>` URL.
+  6. Listen page renders both audio + PDF download.
+  7. If Becky stalls past 7d, alert cron fires once to Josephine (no duplicate alerts on subsequent ticks).
+
+#### Sub-PR #4b — Studio queue view (FOLLOW-UP, post-#4a bake)
+- **Scope.** Custom Sanity Structure pane "Awaiting delivery" — pinned in Studio sidebar, GROQ-filtered to `_type == "submission" && status == "paid" && !defined(deliveredAt)`, sorted by `paidAt asc` (oldest first). Submission preview subtitle shows days-since-paid as plain text (e.g. "Day 4 of 7"). No traffic-light badges yet — defer until Becky asks.
+- **Reuses from 4a.** The `isDeliverable()` predicate inverse for the filter; the GROQ shape from `fetchDeliverableSubmissions()`.
+- **Effort.** ~1 day.
+
+#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, ships with 4b)
+- **Scope.** (1) New Resend cron `email-becky-digest` at 09:00 ET that fires only when ≥1 submission is overdue (>7d since paid + no `deliveredAt`) OR due within 48h. New Sanity siteSettings field `practitionerOpsEmail` for the recipient (Becky's address). Threshold-triggered = no fixed cadence — silence on quiet days is the signal. (2) ICS attachment on the per-booking notification email (sent at payment time): `.ics` file with `METHOD:PUBLISH` (NOT REQUEST — avoids attendee-response UI), `VTIMEZONE` block + `TZID`-qualified `DTSTART`/`DTEND`, deadline = `paidAt + 6d` (24h buffer before the 7d SLA). Auto-populates Becky's calendar without OAuth.
+- **Declined options (durable record):** 48h-before-deadline single-shot reminders (overlap with digest); Telegram/Pushover phone push (channel proliferation, all sources warn against it at this scale).
+- **Reuses from 4a.** `isDeliverable()` for the digest filter.
+- **Effort.** ~1 day.
+
+**Why split (locked rationale):** schema migrations on live Sanity always surface edge cases (existing string-field docs, asset reference shape mismatches). Shipping the gate alone lets it bake under real Becky usage before layering visibility + ping surfaces on top of it. Council 3/4 endorsed the split; the dissenter (M4, minimum-mechanism architect) conceded once migration risk was named.
 
 ### Apex + preview 500 (`InvariantError: Expected workStore to be initialized`) — FIXED + DEPLOYED 2026-04-30 (PR #44)
 

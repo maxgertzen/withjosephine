@@ -134,7 +134,7 @@ describe("repository against in-memory SQLite", () => {
     expect(due).toEqual([]);
   });
 
-  it("listPaidSubmissionsForEmail respects requireDeliveredAt and requireMissingDeliveredAt", async () => {
+  it("markSubmissionDelivered writes deliveredAt + URL strings to D1", async () => {
     await createSubmission(BASE_INPUT);
     await markSubmissionPaid("sub_1", {
       stripeEventId: "evt_1",
@@ -143,14 +143,16 @@ describe("repository against in-memory SQLite", () => {
       amountPaidCents: null,
       amountPaidCurrency: null,
     });
-
-    expect(
-      await listPaidSubmissionsForEmail("day7", { requireDeliveredAt: true }),
-    ).toEqual([]);
-    expect(
-      (await listPaidSubmissionsForEmail("day7-overdue-alert", { requireMissingDeliveredAt: true }))
-        .length,
-    ).toBe(1);
+    const { markSubmissionDelivered } = await import("./repository");
+    await markSubmissionDelivered("sub_1", {
+      deliveredAt: "2026-04-27T10:00:00Z",
+      voiceNoteUrl: "https://cdn.sanity.io/files/.../voice.m4a",
+      pdfUrl: "https://cdn.sanity.io/files/.../reading.pdf",
+    });
+    const record = await findSubmissionById("sub_1");
+    expect(record?.deliveredAt).toBe("2026-04-27T10:00:00Z");
+    expect(record?.voiceNoteUrl).toBe("https://cdn.sanity.io/files/.../voice.m4a");
+    expect(record?.pdfUrl).toBe("https://cdn.sanity.io/files/.../reading.pdf");
   });
 
   it("listAllReferencedPhotoKeys returns the set of non-null keys", async () => {

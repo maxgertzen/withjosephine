@@ -54,13 +54,14 @@
 			"bucket_name": "withjosephine-booking-photos",
 		},
 	],
-	// Cloudflare Cron Triggers. Note: OpenNext does not currently translate the
-	// `scheduled` event into a fetch — until a `scheduled` handler is added, each
-	// /api/cron/* route is invoked via external Bearer-authenticated curl
-	// (Authorization: Bearer ${CRON_SECRET}).
+	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
+	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
+	// header satisfies `isCronRequestAuthorized`). The CRON_SECRET-bearer-curl
+	// path remains as a manual-trigger fallback; both paths are accepted.
+	// Source of truth for schedule → routes mapping: `src/lib/cron-routes.ts`.
 	//
-	// Intended cadences (active once scheduled-handler dispatch is wired):
-	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + email-day-2 + email-day-7-deliver
+	// Cadences:
+	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + reconcile-mirror (D1 ↔ Sanity drift, ADR-001) + email-day-2 + email-day-7-deliver
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)

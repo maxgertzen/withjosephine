@@ -1,6 +1,15 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, type Rule } from "sanity";
 
 import { prepareSubmissionPreview } from "./submissionPreview";
+
+const requireWhenDeliveredAtSet =
+  (errorMessage: string) =>
+  (rule: Rule) =>
+    rule.custom((value, context) => {
+      const parent = context.parent as { deliveredAt?: string } | undefined;
+      if (parent?.deliveredAt && !value) return errorMessage;
+      return true;
+    });
 
 export const submission = defineType({
   name: "submission",
@@ -166,23 +175,44 @@ export const submission = defineType({
       description: "Set by the cleanup cron when an unpaid submission ages out.",
     }),
     defineField({
-      name: "voiceNoteUrl",
-      title: "Voice Note URL",
-      type: "string",
-      description: "R2 URL for the voice note Josephine delivers (e.g. https://images.withjosephine.com/...).",
+      name: "voiceNote",
+      title: "Voice Note",
+      type: "file",
+      description:
+        "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
+      options: { accept: "audio/*" },
+      validation: requireWhenDeliveredAtSet(
+        "Upload the voice note before setting Delivered At.",
+      ),
     }),
     defineField({
-      name: "pdfUrl",
-      title: "PDF URL",
-      type: "string",
-      description: "R2 URL for the supporting PDF Josephine delivers.",
+      name: "readingPdf",
+      title: "Reading PDF",
+      type: "file",
+      description:
+        "Drag the supporting PDF here. Required before you can mark this reading delivered.",
+      options: { accept: "application/pdf" },
+      validation: requireWhenDeliveredAtSet(
+        "Upload the reading PDF before setting Delivered At.",
+      ),
     }),
     defineField({
       name: "deliveredAt",
       title: "Delivered At",
       type: "datetime",
       description:
-        "Set by Josephine in Studio when she has uploaded both voice note and PDF. Triggers the Day +7 client email.",
+        "Set this only after BOTH files (Voice Note + Reading PDF) are uploaded. The customer's Day +7 delivery email will fire at the next cron tick after this is set.",
+      validation: (rule) =>
+        rule.custom((value, context) => {
+          if (!value) return true;
+          const parent = context.parent as
+            | { voiceNote?: unknown; readingPdf?: unknown }
+            | undefined;
+          if (!parent?.voiceNote || !parent?.readingPdf) {
+            return "Upload Voice Note and Reading PDF before setting Delivered At.";
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "emailsFired",

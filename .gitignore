@@ -58,3 +58,4 @@ scripts/migration-log-v2.json
 *.db-journal
 *.db-wal
 *.db-shm
+email-previews/

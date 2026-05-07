@@ -156,6 +156,18 @@ export async function unsetPhotoR2Key(id: string): Promise<void> {
   await dbExec(`UPDATE submissions SET photo_r2_key = NULL WHERE id = ?`, [id]);
 }
 
+export async function markSubmissionDelivered(
+  id: string,
+  delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions
+     SET delivered_at = ?, voice_note_url = ?, pdf_url = ?
+     WHERE id = ?`,
+    [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, id],
+  );
+}
+
 export async function listSubmissionsByStatusOlderThan(
   status: SubmissionStatus,
   cutoffIso: string,
@@ -170,6 +182,19 @@ export async function listSubmissionsByStatusOlderThan(
   return rows.map(rowToRecord);
 }
 
+export async function listSubmissionsCreatedAfter(
+  cutoffIso: string,
+): Promise<SubmissionRecord[]> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+     WHERE created_at >= ?
+     ORDER BY created_at ASC
+     LIMIT ${LIST_LIMIT}`,
+    [cutoffIso],
+  );
+  return rows.map(rowToRecord);
+}
+
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
   const rows = await dbQuery<{ photo_r2_key: string }>(
     `SELECT photo_r2_key FROM submissions WHERE photo_r2_key IS NOT NULL`,
@@ -179,11 +204,7 @@ export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
 
 export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
-  options: {
-    paidBefore?: string;
-    requireDeliveredAt?: boolean;
-    requireMissingDeliveredAt?: boolean;
-  },
+  options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
   const filters = [`status = 'paid'`, `instr(emails_fired_json, ?) = 0`];
   const params: SqlValue[] = [`"type":"${emailType}"`];
@@ -191,8 +212,6 @@ export async function listPaidSubmissionsForEmail(
     filters.push(`paid_at < ?`);
     params.push(options.paidBefore);
   }
-  if (options.requireDeliveredAt) filters.push(`delivered_at IS NOT NULL`);
-  if (options.requireMissingDeliveredAt) filters.push(`delivered_at IS NULL`);
 
   const rows = await dbQuery<Row>(
     `SELECT * FROM submissions
