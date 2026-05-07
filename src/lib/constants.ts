@@ -15,7 +15,7 @@ export const PRODUCTION_HOSTS: ReadonlyArray<string> = [
  * Mixpanel and Sentry to tag events. Mirrors the server-side equivalent in
  * `src/lib/analytics/server.ts` (which reads from `ENVIRONMENT` instead).
  */
-export function deriveEnvironmentFromHost(host: string): string {
+export function deriveEnvironmentFromHost(host: string) {
   if (PRODUCTION_HOSTS.includes(host)) return "production";
   if (host.startsWith("preview.")) return "preview";
   if (host.endsWith(".workers.dev")) return "workers-dev";

@@ -10,6 +10,7 @@
     "sync-readings-from-sanity": "tsx scripts/sync-readings-from-sanity.ts",
     "prebuild": "pnpm generate-tokens && pnpm generate-fonts && pnpm sync-readings-from-sanity",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "cf:build": "pnpm build && opennextjs-cloudflare build && pnpm cf:strip-og && pnpm sentry:sourcemaps",
     "cf:strip-og": "node scripts/strip-vercel-og.mjs",
     "sentry:sourcemaps": "node scripts/upload-sourcemaps.mjs",
@@ -87,6 +88,7 @@
     ]
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.5",
     "@opennextjs/cloudflare": "1.19.4",
     "@sentry/cli": "^3.4.1",
     "@storybook/nextjs": "^10.3.5",

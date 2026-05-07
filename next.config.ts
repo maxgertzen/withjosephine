@@ -1,3 +1,4 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
@@ -21,6 +22,10 @@ if (process.env.CI === "true" && process.env.NODE_ENV === "production") {
 }
 
 const nextConfig: NextConfig = {
+  // See `src/lib/taint.ts` for the consumer-side helper.
+  experimental: {
+    taint: true,
+  },
   images: {
     // Cloudflare Workers cannot run the Next.js image optimization loader.
     // Static images are pre-optimized to WebP via `pnpm optimize-images` (sharp).
@@ -51,7 +56,10 @@ const nextConfig: NextConfig = {
 // e.g. the D1 booking-submissions DB). No-op outside dev.
 initOpenNextCloudflareForDev();
 
-export default nextConfig;
+// Run `pnpm analyze` to open the client-bundle treemap.
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+
+export default withBundleAnalyzer(nextConfig);
 
 // Cloudflare Workers runtime wiring:
 // `pnpm cf:build` bundles the app via @opennextjs/cloudflare.

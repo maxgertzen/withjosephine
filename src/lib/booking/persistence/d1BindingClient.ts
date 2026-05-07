@@ -1,5 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
+import { taintServerObject } from "@/lib/taint";
+
 import type { SqlClient, SqlValue } from "./sqlClient";
 
 const BOOKINGS_BINDING_NAME = "withjosephine_bookings" as const;
@@ -47,7 +49,7 @@ async function getDb(): Promise<D1Database> {
 }
 
 export function createD1BindingClient(): SqlClient {
-  return {
+  const client: SqlClient = {
     async query(sql, params = []) {
       const db = await getDb();
       const result = await db.prepare(sql).bind(...params).all();
@@ -59,4 +61,9 @@ export function createD1BindingClient(): SqlClient {
       return { rowsWritten: result.meta?.rows_written ?? result.meta?.changes ?? 0 };
     },
   };
+  taintServerObject(
+    "D1 SQL client exposes raw query/exec; do not pass to client components.",
+    client,
+  );
+  return client;
 }
