@@ -1,6 +1,25 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
+const PRODUCTION_BYPASS_FLAGS = [
+  "BOOKING_TURNSTILE_BYPASS",
+  "NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS",
+] as const;
+
+// Belt-and-braces against a CI/deploy build picking up a dev bypass flag.
+// Scoped to CI=true (GitHub Actions, etc.) so local `pnpm build` keeps
+// working even when developers have these set in `.env.local` for `next dev`.
+if (process.env.CI === "true" && process.env.NODE_ENV === "production") {
+  for (const flag of PRODUCTION_BYPASS_FLAGS) {
+    if (process.env[flag] && process.env[flag] !== "0") {
+      throw new Error(
+        `[next.config] ${flag}=${process.env[flag]} in a production CI build. ` +
+          `Bypass flags are dev-only — refusing to build.`,
+      );
+    }
+  }
+}
+
 const nextConfig: NextConfig = {
   images: {
     // Cloudflare Workers cannot run the Next.js image optimization loader.

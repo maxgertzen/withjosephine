@@ -1,4 +1,5 @@
 import { optionalEnv } from "../env";
+import { timingSafeStringEqual } from "../hmac";
 
 const CF_CRON_HEADER = "cf-cron";
 const AUTH_HEADER = "authorization";
@@ -13,5 +14,5 @@ export function isCronRequestAuthorized(request: Request): boolean {
   const provided = request.headers.get(AUTH_HEADER);
   if (!provided?.startsWith(BEARER_PREFIX)) return false;
 
-  return provided.slice(BEARER_PREFIX.length) === expected;
+  return timingSafeStringEqual(provided.slice(BEARER_PREFIX.length), expected);
 }

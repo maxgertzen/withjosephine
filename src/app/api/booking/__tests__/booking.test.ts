@@ -129,7 +129,7 @@ describe("/api/booking", () => {
     expect(body.fieldErrors).toBeDefined();
   });
 
-  it("creates submission with self-referencing clientReferenceId and returns paymentUrl", async () => {
+  it("creates submission and returns paymentUrl with Stripe client_reference_id query param", async () => {
     mockVerify.mockResolvedValueOnce(true);
     mockReading.mockResolvedValueOnce(READING);
     mockForm.mockResolvedValueOnce(FORM);
@@ -142,7 +142,6 @@ describe("/api/booking", () => {
     expect(createSubmissionMock).toHaveBeenCalledOnce();
     const input = createSubmissionMock.mock.calls[0][0];
     expect(input.id).toBe(body.submissionId);
-    expect(input.clientReferenceId).toBe(body.submissionId);
     expect(input.email).toBe("ada@example.com");
     expect(input.ipAddress).toBe("1.2.3.4");
     expect(input.readingSlug).toBe("soul-blueprint");

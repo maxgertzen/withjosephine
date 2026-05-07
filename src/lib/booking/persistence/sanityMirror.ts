@@ -73,7 +73,6 @@ export async function mirrorSubmissionCreate(
           ipAddress: ip ?? undefined,
         },
         photoR2Key: input.photoR2Key ?? undefined,
-        clientReferenceId: input.clientReferenceId ?? undefined,
         createdAt: input.createdAt,
       },
       { visibility: "async" },

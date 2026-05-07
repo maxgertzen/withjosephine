@@ -48,10 +48,9 @@ export default async function LetterPage({ params }: LetterPageProps) {
 
   const reading = sanityReading
     ? { slug: sanityReading.slug }
-    : (() => {
-        const fallback = getReadingById(readingId);
-        return fallback ? { slug: readingId } : null;
-      })();
+    : getReadingById(readingId)
+      ? { slug: readingId }
+      : null;
 
   if (!reading) {
     notFound();

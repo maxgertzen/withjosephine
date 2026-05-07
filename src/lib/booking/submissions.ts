@@ -42,7 +42,6 @@ export type SubmissionRecord = {
   photoR2Key?: string;
   stripeEventId?: string;
   stripeSessionId?: string;
-  clientReferenceId?: string;
   createdAt: string;
   paidAt?: string;
   expiredAt?: string;

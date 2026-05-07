@@ -143,15 +143,8 @@ export const bookingForm = defineType({
       title: "Consent Block",
       type: "object",
       description:
-        "Trust line + four-row consent group rendered on the final intake page. Stable keys per row power the runtime contract.",
+        "Four-row consent group rendered on the final intake page. Stable keys per row power the runtime contract.",
       fields: [
-        defineField({
-          name: "trustLine",
-          title: "Trust Line",
-          type: "text",
-          rows: 2,
-          description: "Italic Cormorant trust paragraph shown above the consent rows.",
-        }),
         defineField({
           name: "rows",
           title: "Consent Rows",
