@@ -14,9 +14,6 @@ const COMPARED_FIELDS = [
   "status",
   "paidAt",
   "expiredAt",
-  "deliveredAt",
-  "voiceNoteUrl",
-  "pdfUrl",
   "amountPaidCents",
   "amountPaidCurrency",
 ] as const;
@@ -28,9 +25,6 @@ export type SanityMirrorSnapshot = {
   status?: SubmissionRecord["status"];
   paidAt?: string;
   expiredAt?: string;
-  deliveredAt?: string;
-  voiceNoteUrl?: string;
-  pdfUrl?: string;
   amountPaidCents?: number | null;
   amountPaidCurrency?: string | null;
   emailsFired?: EmailFiredEntry[];

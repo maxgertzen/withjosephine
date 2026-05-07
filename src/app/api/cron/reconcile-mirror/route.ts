@@ -33,7 +33,7 @@ async function reconcileMirror(): Promise<Summary> {
   const sanity = getSanityWriteClient();
   const sanityDocs = await sanity.fetch<SanityMirrorSnapshot[]>(
     `*[_type == "submission" && _id in $ids]{
-      _id, status, paidAt, expiredAt, deliveredAt, voiceNoteUrl, pdfUrl,
+      _id, status, paidAt, expiredAt,
       amountPaidCents, amountPaidCurrency, emailsFired
     }`,
     { ids },

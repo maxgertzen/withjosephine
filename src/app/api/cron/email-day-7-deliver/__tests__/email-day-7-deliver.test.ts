@@ -17,6 +17,11 @@ vi.mock("@/lib/booking/submissions", () => ({
     createdAt: "2026-04-28T12:00:00Z",
   }),
   listPaidSubmissionsForEmail: vi.fn(),
+  markSubmissionDelivered: vi.fn(),
+}));
+
+vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
+  fetchDeliverableSubmissions: vi.fn(),
 }));
 
 vi.mock("@/lib/listenToken", () => ({
@@ -28,9 +33,11 @@ vi.mock("@/lib/resend", () => ({
 }));
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
+import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
   appendEmailFired,
   listPaidSubmissionsForEmail,
+  markSubmissionDelivered,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { signListenToken } from "@/lib/listenToken";
@@ -38,28 +45,36 @@ import { sendDay7Delivery } from "@/lib/resend";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockList = vi.mocked(listPaidSubmissionsForEmail);
+const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
+const mockMarkDelivered = vi.mocked(markSubmissionDelivered);
 const mockSign = vi.mocked(signListenToken);
 const mockSend = vi.mocked(sendDay7Delivery);
 const mockAppend = vi.mocked(appendEmailFired);
 
-const DELIVERED_SUBMISSION: SubmissionRecord = {
+const PAID_SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
   status: "paid",
   email: "client@example.com",
   responses: [],
   createdAt: "2026-04-22T12:00:00Z",
   paidAt: "2026-04-22T12:00:00Z",
-  deliveredAt: "2026-04-29T12:00:00Z",
-  voiceNoteUrl: "https://images.withjosephine.com/voice.m4a",
-  pdfUrl: "https://images.withjosephine.com/reading.pdf",
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
 };
 
+const DELIVERABLE = {
+  _id: "sub_1",
+  deliveredAt: "2026-04-29T12:00:00Z",
+  voiceNoteUrl: "https://cdn.sanity.io/files/.../voice.m4a",
+  pdfUrl: "https://cdn.sanity.io/files/.../reading.pdf",
+};
+
 beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
+  mockFetchDeliverable.mockReset().mockResolvedValue([]);
+  mockMarkDelivered.mockReset().mockResolvedValue(undefined);
   mockSign.mockReset().mockResolvedValue("c3ViXzE.deadbeef");
   mockSend.mockReset().mockResolvedValue({ resendId: "msg_d7" });
   mockAppend.mockReset().mockResolvedValue(undefined);
@@ -77,18 +92,33 @@ describe("/api/cron/email-day-7-deliver", () => {
     expect(res.status).toBe(401);
   });
 
-  it("queries listings with requireDeliveredAt and emailType day7", async () => {
+  it("queries D1 candidates with day7 emailType and no delivery filters", async () => {
     mockAuth.mockReturnValueOnce(true);
     await callRoute();
-    expect(mockList).toHaveBeenCalledWith("day7", { requireDeliveredAt: true });
+    expect(mockList).toHaveBeenCalledWith("day7", {});
   });
 
-  it("computes listening URL via signListenToken and fires delivery email", async () => {
+  it("skips when no candidates exist (no Sanity round-trip)", async () => {
     mockAuth.mockReturnValueOnce(true);
-    mockList.mockResolvedValueOnce([DELIVERED_SUBMISSION]);
+    mockList.mockResolvedValueOnce([]);
     const res = await callRoute();
     const body = await res.json();
-    expect(body).toEqual({ processed: 1, sent: 1, skipped: 0 });
+    expect(body).toEqual({ processed: 0, sent: 0, skipped: 0, awaitingAssets: 0 });
+    expect(mockFetchDeliverable).not.toHaveBeenCalled();
+  });
+
+  it("delivers candidates that Sanity reports deliverable", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+    const res = await callRoute();
+    const body = await res.json();
+    expect(body).toEqual({ processed: 1, sent: 1, skipped: 0, awaitingAssets: 0 });
+    expect(mockMarkDelivered).toHaveBeenCalledWith("sub_1", {
+      deliveredAt: DELIVERABLE.deliveredAt,
+      voiceNoteUrl: DELIVERABLE.voiceNoteUrl,
+      pdfUrl: DELIVERABLE.pdfUrl,
+    });
     expect(mockSign).toHaveBeenCalledWith("sub_1");
     const sendArgs = mockSend.mock.calls[0];
     expect(sendArgs?.[1]).toBe("https://withjosephine.com/listen/c3ViXzE.deadbeef");
@@ -98,12 +128,27 @@ describe("/api/cron/email-day-7-deliver", () => {
     );
   });
 
-  it("skips submissions where deliveredAt is null in case the query bypassed filter", async () => {
+  it("counts candidates Sanity reports as awaiting assets and does not deliver them", async () => {
     mockAuth.mockReturnValueOnce(true);
-    mockList.mockResolvedValueOnce([{ ...DELIVERED_SUBMISSION, deliveredAt: undefined }]);
+    mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+    mockFetchDeliverable.mockResolvedValueOnce([]);
     const res = await callRoute();
     const body = await res.json();
-    expect(body).toEqual({ processed: 1, sent: 0, skipped: 1 });
+    expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 1 });
+    expect(mockMarkDelivered).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
+    expect(mockAppend).not.toHaveBeenCalled();
+  });
+
+  it("skips when Resend returns no resendId (does not append emailsFired)", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+    mockSend.mockResolvedValueOnce({ resendId: null });
+    const res = await callRoute();
+    const body = await res.json();
+    expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });
+    expect(mockMarkDelivered).toHaveBeenCalled();
+    expect(mockAppend).not.toHaveBeenCalled();
   });
 });

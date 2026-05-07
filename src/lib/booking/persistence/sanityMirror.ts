@@ -89,9 +89,6 @@ export async function mirrorSubmissionPatch(
     status: SubmissionRecord["status"];
     paidAt: string;
     expiredAt: string;
-    deliveredAt: string;
-    voiceNoteUrl: string;
-    pdfUrl: string;
     stripeEventId: string;
     stripeSessionId: string;
     amountPaidCents: number | null;

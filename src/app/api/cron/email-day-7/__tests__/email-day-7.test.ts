@@ -19,11 +19,16 @@ vi.mock("@/lib/booking/submissions", () => ({
   listPaidSubmissionsForEmail: vi.fn(),
 }));
 
+vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
+  fetchUndeliveredSubmissionIds: vi.fn(),
+}));
+
 vi.mock("@/lib/resend", () => ({
   sendDay7OverdueAlert: vi.fn(),
 }));
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
+import { fetchUndeliveredSubmissionIds } from "@/lib/booking/persistence/sanityDelivery";
 import {
   appendEmailFired,
   listPaidSubmissionsForEmail,
@@ -33,6 +38,7 @@ import { sendDay7OverdueAlert } from "@/lib/resend";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockList = vi.mocked(listPaidSubmissionsForEmail);
+const mockFetchUndelivered = vi.mocked(fetchUndeliveredSubmissionIds);
 const mockSend = vi.mocked(sendDay7OverdueAlert);
 const mockAppend = vi.mocked(appendEmailFired);
 
@@ -51,6 +57,7 @@ const OVERDUE_SUBMISSION: SubmissionRecord = {
 beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
+  mockFetchUndelivered.mockReset().mockResolvedValue(new Set());
   mockSend.mockReset().mockResolvedValue({ resendId: "msg_alert" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
@@ -67,18 +74,26 @@ describe("/api/cron/email-day-7", () => {
     expect(res.status).toBe(401);
   });
 
-  it("queries with paidBefore cutoff and requireMissingDeliveredAt", async () => {
+  it("queries D1 with paidBefore cutoff and no delivery filter", async () => {
     mockAuth.mockReturnValueOnce(true);
     await callRoute();
     expect(mockList).toHaveBeenCalledWith("day7-overdue-alert", {
       paidBefore: expect.any(String),
-      requireMissingDeliveredAt: true,
     });
   });
 
-  it("sends overdue alert and appends emailsFired entry", async () => {
+  it("skips when no candidates (no Sanity round-trip)", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    const res = await callRoute();
+    const body = await res.json();
+    expect(body).toEqual({ processed: 0, alerted: 0, skipped: 0 });
+    expect(mockFetchUndelivered).not.toHaveBeenCalled();
+  });
+
+  it("alerts when Sanity confirms candidate is still undelivered", async () => {
     mockAuth.mockReturnValueOnce(true);
     mockList.mockResolvedValueOnce([OVERDUE_SUBMISSION]);
+    mockFetchUndelivered.mockResolvedValueOnce(new Set(["sub_1"]));
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, alerted: 1, skipped: 0 });
@@ -89,9 +104,10 @@ describe("/api/cron/email-day-7", () => {
     );
   });
 
-  it("skips submission when deliveredAt becomes set between query and processing", async () => {
+  it("skips when Sanity reports submission has been delivered since the D1 query", async () => {
     mockAuth.mockReturnValueOnce(true);
-    mockList.mockResolvedValueOnce([{ ...OVERDUE_SUBMISSION, deliveredAt: "2026-04-29T00:00:00Z" }]);
+    mockList.mockResolvedValueOnce([OVERDUE_SUBMISSION]);
+    mockFetchUndelivered.mockResolvedValueOnce(new Set());
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, alerted: 0, skipped: 1 });
