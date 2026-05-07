@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
@@ -25,9 +25,12 @@ export function AnalyticsBootstrap({
   previewMode = false,
 }: AnalyticsBootstrapProps) {
   const [showBanner, setShowBanner] = useState(previewMode);
+  const consentEffectRanRef = useRef(false);
 
   useEffect(() => {
     if (previewMode) return;
+    if (consentEffectRanRef.current) return;
+    consentEffectRanRef.current = true;
     if (!consentRequired) {
       bootstrapClientObservability();
       return;

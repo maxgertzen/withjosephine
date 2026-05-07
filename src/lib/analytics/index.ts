@@ -1,4 +1,10 @@
-export { identifySubmission, initAnalytics, isAnalyticsInitialized, track } from "./client";
+export {
+  identifySubmission,
+  initAnalytics,
+  isAnalyticsInitialized,
+  track,
+  trackThrottled,
+} from "./client";
 export type {
   ClientEventMap,
   ClientEventName,

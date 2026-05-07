@@ -86,6 +86,26 @@ export function track<E extends ClientEventName>(
   queue.push({ event, properties: props });
 }
 
+const lastTrackedAt = new Map<string, number>();
+
+/**
+ * Rate-limited `track`. Drops calls that fire within `intervalMs` of the
+ * previous emission for the SAME event name. Use for high-frequency emitters
+ * (autosave ticks, scroll progress) where the funnel signal is "user is
+ * still engaged" rather than "fire-on-every-change."
+ */
+export function trackThrottled<E extends ClientEventName>(
+  event: E,
+  properties: ClientEventMap[E],
+  intervalMs: number,
+): void {
+  const now = Date.now();
+  const last = lastTrackedAt.get(event) ?? 0;
+  if (now - last < intervalMs) return;
+  lastTrackedAt.set(event, now);
+  track(event, properties);
+}
+
 export function identifySubmission(submissionId: string): void {
   if (!mixpanelLive) return;
   mixpanel.identify(submissionId);
@@ -99,4 +119,5 @@ export function _resetForTests(): void {
   bootstrapped = false;
   mixpanelLive = false;
   queue.length = 0;
+  lastTrackedAt.clear();
 }
