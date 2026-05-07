@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 type DiscardDraftButtonProps = {
   onConfirm: () => void;
@@ -12,24 +12,19 @@ export function DiscardDraftButton({ onConfirm }: DiscardDraftButtonProps) {
   const [mode, setMode] = useState<Mode>("idle");
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
-  // Set when the user dismisses confirming-mode without confirming, so the
-  // next render of the idle trigger restores keyboard focus to it. Cleared
-  // after the focus call lands.
-  const returnFocusToTriggerRef = useRef(false);
+  const prevModeRef = useRef<Mode>("idle");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const prev = prevModeRef.current;
+    prevModeRef.current = mode;
     if (mode === "confirming") {
       cancelRef.current?.focus();
-      return;
-    }
-    if (returnFocusToTriggerRef.current) {
-      returnFocusToTriggerRef.current = false;
+    } else if (prev === "confirming") {
       triggerRef.current?.focus();
     }
   }, [mode]);
 
   function handleCancel() {
-    returnFocusToTriggerRef.current = true;
     setMode("idle");
   }
 

@@ -66,7 +66,7 @@ export function PageNav({
           type="button"
           onClick={onSaveLater}
           disabled={saveLaterDisabled}
-          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-j-text-muted"
+          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-j-text-muted"
         >
           {saveLaterLabel}
         </button>

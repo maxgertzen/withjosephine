@@ -397,11 +397,16 @@ describe("IntakeForm — localStorage save/resume", () => {
   });
 
   it("does not autosave an empty-defaults draft on mount", async () => {
-    renderForm();
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    expect(
-      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
-    ).toBeNull();
+    vi.useFakeTimers();
+    try {
+      renderForm();
+      await vi.advanceTimersByTimeAsync(600);
+      expect(
+        window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
+      ).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("shows the Clear form button after Save and continue later", async () => {
