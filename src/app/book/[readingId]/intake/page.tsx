@@ -63,22 +63,6 @@ export default async function IntakePage({ params }: IntakePageProps) {
     fetchBookingForm(),
   ]);
 
-  console.log(
-    JSON.stringify({
-      type: "intake-debug",
-      readingId,
-      readingFound: !!reading,
-      readingName: reading?.name,
-      readingSlug: reading?.slug,
-      bookingFormFound: !!bookingForm,
-      bookingFormTitle: bookingForm?.title,
-      bookingFormSectionsLen: bookingForm?.sections?.length,
-      hasNonRefundableNotice: !!bookingForm?.nonRefundableNotice,
-      sanityDataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
-      hasReadToken: !!process.env.SANITY_READ_TOKEN,
-    }),
-  );
-
   if (!reading) {
     notFound();
   }
