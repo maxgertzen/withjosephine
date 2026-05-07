@@ -84,6 +84,8 @@ export type SanityBookingPage = {
   formatNote: string;
   closingMessage: string;
   deliveryNote: string;
+  whatsIncludedHeading?: string;
+  bookReadingCtaText?: string;
   seo?: SanitySeo;
 };
 
