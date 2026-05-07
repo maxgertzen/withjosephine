@@ -51,35 +51,46 @@ const isDev = process.env.NODE_ENV === "development";
 // Never allow it in production.
 const devEval = isDev ? " 'unsafe-eval'" : "";
 
-const CSP_PUBLIC =
-  "default-src 'self'; " +
-  `script-src 'self' 'unsafe-inline'${devEval} https://challenges.cloudflare.com; ` +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-  "font-src 'self' https://fonts.gstatic.com; " +
-  `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} data: blob:; ` +
-  `connect-src 'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com; ` +
-  "worker-src 'self' blob:; " +
-  "frame-ancestors 'none'; " +
-  "frame-src https://challenges.cloudflare.com; " +
-  "object-src 'none'; " +
-  "base-uri 'self'; " +
-  "form-action 'self'; " +
-  "upgrade-insecure-requests";
+export const NONCE_HEADER = "x-nonce";
 
-const CSP_DRAFT =
-  "default-src 'self'; " +
-  `script-src 'self' 'unsafe-inline'${devEval} https://challenges.cloudflare.com; ` +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-  "font-src 'self' https://fonts.gstatic.com; " +
-  `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} data: blob:; ` +
-  `connect-src 'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com; ` +
-  "worker-src 'self' blob:; " +
-  "frame-ancestors 'self' https://*.sanity.studio https://*.sanity.io; " +
-  "frame-src 'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com; " +
-  "object-src 'none'; " +
-  "base-uri 'self'; " +
-  "form-action 'self'; " +
-  "upgrade-insecure-requests";
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function buildCsp(opts: { draft: boolean; nonce: string }): string {
+  const { draft, nonce } = opts;
+  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com`;
+  const connectSrc = draft
+    ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`
+    : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com`;
+  const frameAncestors = draft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
+  const frameSrc = draft
+    ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
+    : `https://challenges.cloudflare.com`;
+  return (
+    "default-src 'self'; " +
+    `script-src ${scriptSrc}; ` +
+    // style-src deliberately keeps 'unsafe-inline': Tailwind v4 + next/font emit
+    // inline <style> blocks, and the threat model for inline styles (defacement,
+    // not arbitrary code execution) doesn't justify the engineering cost of a
+    // style nonce. Script-src is the load-bearing XSS gate.
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} data: blob:; ` +
+    `connect-src ${connectSrc}; ` +
+    "worker-src 'self' blob:; " +
+    `frame-ancestors ${frameAncestors}; ` +
+    `frame-src ${frameSrc}; ` +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self'; " +
+    "upgrade-insecure-requests"
+  );
+}
 
 export function middleware(request: NextRequest) {
   const isDraft = request.cookies.has(DRAFT_COOKIE);
@@ -114,13 +125,21 @@ export function middleware(request: NextRequest) {
   if (requiresConsent(country, region)) {
     requestHeaders.set(CONSENT_HEADER, "1");
   }
+
+  // Per-request CSP nonce. Forwarded to RSC via x-nonce so layouts can read it
+  // via headers() and propagate to <Script> / inline-script consumers (e.g.
+  // FaqSection's JSON-LD tag). Next's own runtime auto-applies this nonce to
+  // the hydration scripts it emits when the request header is present.
+  const nonce = generateNonce();
+  requestHeaders.set(NONCE_HEADER, nonce);
+
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
   // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
   // frame-ancestor for the Presentation tool's iframe to load at all.
   const isStrict = isPublicApex && !isDraft;
-  response.headers.set("Content-Security-Policy", isStrict ? CSP_PUBLIC : CSP_DRAFT);
+  response.headers.set("Content-Security-Policy", buildCsp({ draft: !isStrict, nonce }));
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");

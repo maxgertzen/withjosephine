@@ -181,7 +181,7 @@ export default async function LandingPage() {
 
       <GoldDivider className="max-w-xs mx-auto" />
 
-      <FaqSection items={faqItems} />
+      <FaqSection items={faqItems} nonce={headersList.get("x-nonce") ?? undefined} />
 
       {faqItems.length > 0 && <GoldDivider className="max-w-xs mx-auto" />}
 
