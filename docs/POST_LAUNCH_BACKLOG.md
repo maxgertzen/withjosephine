@@ -400,10 +400,17 @@ fire-and-forget — drift can happen on Sanity outages.
 - Sequence = ship 4a alone, bake 1 week, then 4b + 4c bundled.
 - Shared `isDeliverable(submission)` predicate built once in 4a, reused by 4b/4c (queue filter, digest filter, ICS deadline computation).
 
-#### Sub-PR #4a — file upload + airtight delivery gate (LAUNCH BLOCKER, in flight 2026-05-07)
-- **Scope.** Schema flip (`voiceNote: file`, `readingPdf: file`, validation `required when deliveredAt set`). New `isDeliverable()` predicate + `fetchDeliverableSubmissions()` GROQ helper. Day-7-deliver cron sources candidates from Sanity, dereferences `voiceNote.asset->url` + `readingPdf.asset->url`, writes URLs + `deliveredAt` to D1, then sends. Day-7 alert cron queries Sanity for `!defined(deliveredAt)` (not D1 — avoids the race between Becky setting `deliveredAt` and the deliver cron running). `mirrorSubmissionPatch` patch shape drops the 3 delivery fields. `scripts/mark-delivered.mts` deleted. D1 schema unchanged; listen page unchanged; repository.ts unchanged.
-- **Effort.** ~3–4hr.
-- **Status.** Target on `feat/operational-completeness`; merges to main with the rest of the integration branch as a single PR after a 1-week bake against Becky's first real reading.
+#### Sub-PR #4a — file upload + airtight delivery gate ✅ MERGED 2026-05-07 (PR #74)
+- **Scope shipped.** Schema flip (`voiceNote: file`, `readingPdf: file`, validation `required when deliveredAt set` + cross-field gate on `deliveredAt`). New `isDeliverable()` predicate (with unit tests) + `fetchDeliverableSubmissions()` / `fetchUndeliveredSubmissionIds()` GROQ helpers. Day-7-deliver cron sources candidates from Sanity, dereferences `voiceNote.asset->url` + `readingPdf.asset->url`, writes URLs + `deliveredAt` to D1, then sends. Day-7 alert cron queries Sanity for `!defined(deliveredAt)` (not D1 — avoids the race between Becky setting `deliveredAt` and the deliver cron running). `mirrorSubmissionPatch` patch shape drops the 3 delivery fields. `scripts/mark-delivered.mts` deleted. D1 schema unchanged; listen page unchanged; `repository.ts` `Row` / `rowToRecord` unchanged.
+- **Status.** Merged into `feat/operational-completeness` as commit `2d183f4`. Now in 1-week bake against Becky's first real reading. Once verified, integration branch → main as a single PR.
+- **Bake checklist (manual smoke).**
+  1. Becky uploads voice + PDF in Studio → schema validation accepts both files.
+  2. Becky sets `deliveredAt` without files → schema validation BLOCKS save (defense in depth).
+  3. Becky sets `deliveredAt` with both files → schema validation accepts.
+  4. Cron-time GROQ predicate fires → D1 `delivered_at` + `voice_note_url` + `pdf_url` populated within one cron tick.
+  5. Customer Day-7 email arrives with valid `/listen/<token>` URL.
+  6. Listen page renders both audio + PDF download.
+  7. If Becky stalls past 7d, alert cron fires once to Josephine (no duplicate alerts on subsequent ticks).
 
 #### Sub-PR #4b — Studio queue view (FOLLOW-UP, post-#4a bake)
 - **Scope.** Custom Sanity Structure pane "Awaiting delivery" — pinned in Studio sidebar, GROQ-filtered to `_type == "submission" && status == "paid" && !defined(deliveredAt)`, sorted by `paidAt asc` (oldest first). Submission preview subtitle shows days-since-paid as plain text (e.g. "Day 4 of 7"). No traffic-light badges yet — defer until Becky asks.
