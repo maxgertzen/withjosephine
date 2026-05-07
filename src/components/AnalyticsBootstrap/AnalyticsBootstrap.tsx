@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
 import { readConsent, writeConsent } from "@/lib/consent";
@@ -25,6 +26,7 @@ export function AnalyticsBootstrap({
   previewMode = false,
 }: AnalyticsBootstrapProps) {
   const [showBanner, setShowBanner] = useState(previewMode);
+  const [observabilityLive, setObservabilityLive] = useState(false);
   const consentEffectRanRef = useRef(false);
 
   useEffect(() => {
@@ -33,16 +35,18 @@ export function AnalyticsBootstrap({
     consentEffectRanRef.current = true;
     if (!consentRequired) {
       bootstrapClientObservability();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setObservabilityLive(true);
       return;
     }
     const choice = readConsent();
     if (choice === "granted") {
       bootstrapClientObservability();
+      setObservabilityLive(true);
       return;
     }
     if (choice === null) {
       // localStorage is mount-only; consent decision can't be made on the server.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowBanner(true);
     }
   }, [consentRequired, previewMode]);
@@ -54,6 +58,7 @@ export function AnalyticsBootstrap({
     }
     writeConsent("granted");
     bootstrapClientObservability();
+    setObservabilityLive(true);
     setShowBanner(false);
   }
 
@@ -66,12 +71,16 @@ export function AnalyticsBootstrap({
     setShowBanner(false);
   }
 
-  if (!showBanner) return null;
   return (
-    <ConsentBanner
-      onAccept={handleAccept}
-      onDecline={handleDecline}
-      content={consentBannerContent}
-    />
+    <>
+      {observabilityLive ? <ClarityScript /> : null}
+      {showBanner ? (
+        <ConsentBanner
+          onAccept={handleAccept}
+          onDecline={handleDecline}
+          content={consentBannerContent}
+        />
+      ) : null}
+    </>
   );
 }

@@ -108,6 +108,17 @@ describe("middleware CSP + draft hardening", () => {
     expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
+
+  it("CSP allows Microsoft Clarity for script-src and connect-src", () => {
+    const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const csp = apex.headers.get("content-security-policy") ?? "";
+    const scriptDirective = csp.split(";").find((d) => d.trim().startsWith("script-src"));
+    const connectDirective = csp.split(";").find((d) => d.trim().startsWith("connect-src"));
+    // Wildcard (*.clarity.ms) covers www.clarity.ms (entry point) and any
+    // Clarity sub-script that loads from o.clarity.ms / c.clarity.ms etc.
+    expect(scriptDirective).toContain("https://*.clarity.ms");
+    expect(connectDirective).toContain("https://*.clarity.ms");
+  });
 });
 
 type RewriteResponse = { rewriteTo: string | null };

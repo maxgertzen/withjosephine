@@ -3,6 +3,7 @@
 import mixpanel from "mixpanel-browser";
 
 import { deriveEnvironmentFromHost } from "@/lib/constants";
+import { shouldEnableClientObservability } from "@/lib/observability-gate";
 
 import type { ClientEventMap, ClientEventName } from "./events";
 import { HEADLESS_UA_PATTERN } from "./headless";
@@ -34,9 +35,7 @@ export function initAnalytics() {
   }
 
   const host = window.location.host;
-  const env = deriveEnvironmentFromHost(host);
-  const trackNonProd = process.env.NEXT_PUBLIC_TRACK_NON_PROD === "1";
-  if (env !== "production" && !trackNonProd) {
+  if (!shouldEnableClientObservability(host)) {
     queue.length = 0;
     return;
   }
@@ -56,7 +55,7 @@ export function initAnalytics() {
 
   mixpanel.register({
     site_host: host,
-    environment: env,
+    environment: deriveEnvironmentFromHost(host),
     app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? "dev",
   });
 
@@ -84,6 +83,23 @@ export function track<E extends ClientEventName>(
   if (bootstrapped) return;
   if (queue.length >= MAX_QUEUED_EVENTS) return;
   queue.push({ event, properties: props });
+}
+
+/**
+ * Loose-typed escape hatch for the delegated `data-mp-*` listener. Not
+ * for direct use — every SPEC §15 event has a typed entry in
+ * `ClientEventMap` and must go through `track()`. This path exists so
+ * ad-hoc `<button data-mp-event="…" data-mp-…="…">` instrumentation
+ * doesn't have to widen the typed map for every surface.
+ */
+export function trackUntyped(event: string, properties: Record<string, unknown>) {
+  if (mixpanelLive) {
+    mixpanel.track(event, properties);
+    return;
+  }
+  if (bootstrapped) return;
+  if (queue.length >= MAX_QUEUED_EVENTS) return;
+  queue.push({ event, properties });
 }
 
 const lastTrackedAt = new Map<string, number>();
