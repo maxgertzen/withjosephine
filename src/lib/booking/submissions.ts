@@ -131,13 +131,16 @@ export async function listSubmissionsByStatusOlderThan(
 
 export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
-  options: {
-    paidBefore?: string;
-    requireDeliveredAt?: boolean;
-    requireMissingDeliveredAt?: boolean;
-  },
+  options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
   return repo.listPaidSubmissionsForEmail(emailType, options);
+}
+
+export async function markSubmissionDelivered(
+  submissionId: string,
+  delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
+): Promise<void> {
+  await repo.markSubmissionDelivered(submissionId, delivery);
 }
 
 export async function appendEmailFired(
