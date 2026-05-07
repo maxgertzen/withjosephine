@@ -5,7 +5,7 @@ const CF_CRON_HEADER = "cf-cron";
 const AUTH_HEADER = "authorization";
 const BEARER_PREFIX = "Bearer ";
 
-export function isCronRequestAuthorized(request: Request): boolean {
+export function isCronRequestAuthorized(request: Request) {
   if (request.headers.get(CF_CRON_HEADER)) return true;
 
   const expected = optionalEnv("CRON_SECRET");

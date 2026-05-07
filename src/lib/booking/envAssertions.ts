@@ -20,7 +20,7 @@ export type Environment = "production" | "staging";
 
 export const STAGING_SUFFIX = "-staging";
 
-export function assertEnvironmentBindings(): void {
+export function assertEnvironmentBindings() {
   const environment = optionalEnv("ENVIRONMENT");
   const bucketName = optionalEnv("R2_BUCKET_NAME");
 

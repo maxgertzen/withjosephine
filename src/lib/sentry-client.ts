@@ -23,7 +23,7 @@ function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
   return event;
 }
 
-export function initSentryClient(): void {
+export function initSentryClient() {
   if (bootstrapped) return;
   if (typeof window === "undefined") return;
   bootstrapped = true;
@@ -50,16 +50,16 @@ export function initSentryClient(): void {
   }
 }
 
-export function captureException(error: unknown): void {
+export function captureException(error: unknown) {
   if (!live) return;
   Sentry.captureException(error);
 }
 
-export function isSentryInitialized(): boolean {
+export function isSentryInitialized() {
   return bootstrapped;
 }
 
-export function _resetForTests(): void {
+export function _resetForTests() {
   bootstrapped = false;
   live = false;
 }

@@ -1,6 +1,6 @@
 import type { SanityFormField, SanityFormSection } from "@/lib/sanity/types";
 
-function appliesToReading(services: string[] | undefined, readingSlug: string): boolean {
+function appliesToReading(services: string[] | undefined, readingSlug: string) {
   if (!services || services.length === 0) return true;
   return services.includes(readingSlug);
 }

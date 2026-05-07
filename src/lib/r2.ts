@@ -9,7 +9,7 @@ const SAFE_FILENAME_CHARS = /[^a-z0-9._-]/g;
 let cachedClient: AwsClient | null = null;
 let cachedAccountId: string | null = null;
 
-function getR2(): { client: AwsClient; accountId: string } {
+function getR2() {
   if (cachedClient && cachedAccountId) {
     return { client: cachedClient, accountId: cachedAccountId };
   }
@@ -27,11 +27,11 @@ function getR2(): { client: AwsClient; accountId: string } {
   return { client: cachedClient, accountId: cachedAccountId };
 }
 
-function getBucketName(): string {
+function getBucketName() {
   return requireEnv("R2_BUCKET_NAME");
 }
 
-function objectUrl(accountId: string, bucket: string, key: string): string {
+function objectUrl(accountId: string, bucket: string, key: string) {
   const encodedKey = key.split("/").map(encodeURIComponent).join("/");
   return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`;
 }
@@ -68,7 +68,7 @@ export type R2ObjectSummary = { key: string; lastModified: Date };
 
 type ListBucketResultEntry = { Key?: string; LastModified?: string };
 
-function decodeXmlEntities(text: string): string {
+function decodeXmlEntities(text: string) {
   return text
     .replaceAll("&amp;", "&")
     .replaceAll("&lt;", "<")
@@ -149,7 +149,7 @@ export function buildPhotoKey(submissionId: string, originalFilename: string): s
 }
 
 // Test-only: reset cached clients so vi.stubEnv changes apply between tests.
-export function __resetR2ClientForTesting(): void {
+export function __resetR2ClientForTesting() {
   cachedClient = null;
   cachedAccountId = null;
 }

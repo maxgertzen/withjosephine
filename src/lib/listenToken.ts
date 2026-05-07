@@ -14,7 +14,7 @@ const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
 
-function buildSigningPayload(submissionId: string, expiresAtSeconds: number): string {
+function buildSigningPayload(submissionId: string, expiresAtSeconds: number) {
   return `${submissionId}|${expiresAtSeconds}`;
 }
 
@@ -72,6 +72,6 @@ export async function verifyListenToken(token: string): Promise<ListenTokenVerif
 }
 
 // Test-only: kept as a thin alias so existing test imports keep working.
-export function __resetListenTokenCache(): void {
+export function __resetListenTokenCache() {
   __resetHmacKeyCache();
 }
