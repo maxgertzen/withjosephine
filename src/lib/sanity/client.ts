@@ -1,6 +1,7 @@
 import { createClient, type SanityClient } from "next-sanity";
 
 import { requireEnv } from "../env";
+import { taintServerObject } from "../taint";
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
@@ -45,5 +46,9 @@ export function getSanityWriteClient(): SanityClient {
     useCdn: false,
     token: requireEnv("SANITY_WRITE_TOKEN"),
   });
+  taintServerObject(
+    "Sanity write client carries SANITY_WRITE_TOKEN; do not pass to client components.",
+    cachedWriteClient,
+  );
   return cachedWriteClient;
 }

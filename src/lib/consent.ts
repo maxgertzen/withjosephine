@@ -4,7 +4,7 @@ const STORAGE_KEY = "josephine.consent";
 
 export type ConsentChoice = "granted" | "declined";
 
-export function readConsent(): ConsentChoice | null {
+export function readConsent() {
   if (typeof window === "undefined") return null;
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
@@ -14,7 +14,7 @@ export function readConsent(): ConsentChoice | null {
   }
 }
 
-export function writeConsent(choice: ConsentChoice): void {
+export function writeConsent(choice: ConsentChoice) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEY, choice);

@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
 import { requireEnv } from "./env";
+import { taintServerObject } from "./taint";
 
 let cachedClient: Stripe | null = null;
 
@@ -13,6 +14,10 @@ function getStripeClient(): Stripe {
     httpClient: Stripe.createFetchHttpClient(),
     timeout: 5000,
   });
+  taintServerObject(
+    "Stripe client carries STRIPE_SECRET_KEY; do not pass to client components.",
+    cachedClient,
+  );
   return cachedClient;
 }
 

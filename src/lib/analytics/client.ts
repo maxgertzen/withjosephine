@@ -22,7 +22,7 @@ type QueuedEvent = {
 const MAX_QUEUED_EVENTS = 100;
 const queue: QueuedEvent[] = [];
 
-export function initAnalytics(): void {
+export function initAnalytics() {
   if (bootstrapped) return;
   if (typeof window === "undefined") return;
   bootstrapped = true;
@@ -75,7 +75,7 @@ export function initAnalytics(): void {
 export function track<E extends ClientEventName>(
   event: E,
   properties: ClientEventMap[E],
-): void {
+) {
   const props = properties as Record<string, unknown>;
   if (mixpanelLive) {
     mixpanel.track(event, props);
@@ -98,7 +98,7 @@ export function trackThrottled<E extends ClientEventName>(
   event: E,
   properties: ClientEventMap[E],
   intervalMs: number,
-): void {
+) {
   const now = Date.now();
   const last = lastTrackedAt.get(event) ?? 0;
   if (now - last < intervalMs) return;
@@ -106,16 +106,16 @@ export function trackThrottled<E extends ClientEventName>(
   track(event, properties);
 }
 
-export function identifySubmission(submissionId: string): void {
+export function identifySubmission(submissionId: string) {
   if (!mixpanelLive) return;
   mixpanel.identify(submissionId);
 }
 
-export function isAnalyticsInitialized(): boolean {
+export function isAnalyticsInitialized() {
   return bootstrapped;
 }
 
-export function _resetForTests(): void {
+export function _resetForTests() {
   bootstrapped = false;
   mixpanelLive = false;
   queue.length = 0;

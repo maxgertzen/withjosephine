@@ -1,6 +1,7 @@
 import { AwsClient } from "aws4fetch";
 
 import { requireEnv } from "./env";
+import { taintServerObject } from "./taint";
 
 const FILENAME_MAX_LENGTH = 80;
 const SAFE_FILENAME_CHARS = /[^a-z0-9._-]/g;
@@ -19,6 +20,10 @@ function getR2(): { client: AwsClient; accountId: string } {
     service: "s3",
     region: "auto",
   });
+  taintServerObject(
+    "R2 AwsClient carries R2_SECRET_ACCESS_KEY; do not pass to client components.",
+    cachedClient,
+  );
   return { client: cachedClient, accountId: cachedAccountId };
 }
 
