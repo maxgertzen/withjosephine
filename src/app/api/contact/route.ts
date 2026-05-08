@@ -57,6 +57,10 @@ export async function POST(request: Request): Promise<Response> {
       message: trimmedMessage,
     });
 
+    // TODO: leaky-abstraction backlog — see POST_LAUNCH_BACKLOG.md "Resend
+    // EmailSendResult discriminated union". Routes shouldn't need to re-read
+    // RESEND_DRY_RUN to interpret a null resendId; sendOrSkip should signal
+    // intentional-skip vs config-failure via a discriminator.
     if (!result.resendId && !isFlagEnabled("RESEND_DRY_RUN")) {
       console.error("[contact] Resend returned null id (env or send failure)");
       return NextResponse.json(

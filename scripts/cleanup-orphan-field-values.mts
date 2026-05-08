@@ -30,7 +30,7 @@ const client = createClient({
 });
 
 // Maps document type → orphan field paths to unset.
-const ORPHANS: Record<string, string[]> = {
+const ORPHANS = {
   // Removed in feat/csp-nonce-and-audits (audit pass 1).
   // bookingForm: consentBlock + nested rows + hairlineBeforeKey + swapToastCopy.
   // thankYouPage: heroLine + body + signOff.
@@ -48,7 +48,7 @@ const ORPHANS: Record<string, string[]> = {
   ],
   bookingPage: ["emailLabel", "emailDisclaimer", "securityNote", "closingMessage"],
   thankYouPage: ["heroLine", "body", "signOff", "steps"],
-};
+} as const satisfies Record<string, readonly string[]>;
 
 for (const [docType, paths] of Object.entries(ORPHANS)) {
   const docId = await client.fetch<string | null>(`*[_type == $type][0]._id`, { type: docType });
@@ -56,7 +56,7 @@ for (const [docType, paths] of Object.entries(ORPHANS)) {
     console.log(`[${dataset}] No ${docType} doc found — skipping.`);
     continue;
   }
-  await client.patch(docId).unset(paths).commit();
+  await client.patch(docId).unset([...paths]).commit();
   console.log(`[${dataset}] ${docType}: unset orphan paths [${paths.join(", ")}] on ${docId}.`);
 }
 
