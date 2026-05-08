@@ -69,11 +69,23 @@ describe("/api/contact", () => {
   });
 
   it("returns 500 when Resend returns null id (env or send misconfig)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "");
     mockVerify.mockResolvedValueOnce(true);
     mockSend.mockResolvedValueOnce({ resendId: null });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(500);
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 200 when Resend returns null id under RESEND_DRY_RUN (staging path)", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    mockVerify.mockResolvedValueOnce(true);
+    mockSend.mockResolvedValueOnce({ resendId: null });
+    const res = await callRoute(VALID_BODY);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true });
+    vi.unstubAllEnvs();
   });
 
   it("forwards trimmed payload to sendContactMessage", async () => {

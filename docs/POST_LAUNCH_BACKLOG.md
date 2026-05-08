@@ -74,6 +74,34 @@ Each item: where it came from + why it was deferred + a one-line action.
   5. Run `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-clarity.ts` against the production Sanity dataset (and again with staging dataset) to add the sub-processor disclosure to the privacy policy. Idempotent — safe to re-run.
   6. Verify masking in Clarity dashboard: load a few real intake-form sessions, confirm DOB / first_name / last_name / photo fields render as redacted blocks, not actual content. ALL of these masks before opening real traffic.
 
+### Pre-checkout review step on intake form (NEXT-UP after PR #86 merges)
+
+- **Source:** Max 2026-05-08 staging smoke. Currently the final intake page shows only the consent block + "Continue to payment" button — the user has no way to review their answers without backing up page-by-page.
+- **What:** Add an inline `<ReviewSummary>` block on the final page, above the consent block. Each previous-page section renders as a card showing the user's filled answers, with an "Edit" link per card that navigates back to that page (preserving values). Consent block + Continue to payment stay where they are; no new pagination page.
+- **Implementation sketch:**
+  - New component `src/components/IntakeForm/ReviewSummary.tsx` — receives `pages: IntakePage[]`, `values: FieldValues`, `currentPageIndex: number`, `onEdit: (pageIndex: number) => void`. Renders only when `isFinalPage`.
+  - Group cards by section (use the section's `sectionTitle` and `marginaliaLabel`).
+  - For each card, render fields + their current values in a tight 2-column grid (or stacked on mobile). Skip the consent field (it lives in its own block below) and any conditional fields whose `appliesToServices` excludes the current reading.
+  - "Edit" link calls `onEdit(pageIndex)` which sets `currentPage` back to that page. localStorage state is already preserved across page navigation.
+  - Consider collapsing each card by default (show section name + first 2-3 fields, "show all" expand) for forms with many fields like Soul Blueprint.
+- **Visual:** match the existing card aesthetic (blush-bordered, ivory-bg, gold accents). Minimal — read-only data display, no input affordances.
+- **Effort:** ~1-2 hours, single feature branch off main after PR #86 merges. Test plan: manually walk through Soul Blueprint / Birth Chart / Akashic Record on staging, edit a value via the link, confirm it round-trips. New IntakeForm tests for the summary render path.
+- **Tradeoff:** the final page gets longer (review + consent + button). For Soul Blueprint with lots of fields the scroll could be substantial. Collapsed-by-default cards mitigate this.
+
+### Resend `EmailSendResult` discriminated union
+
+- **Source:** /simplify quality reviewer flag in `fix/staging-smoke-followups` (PR #86, 2026-05-08).
+- **What:** `sendOrSkip` returns `{ resendId: null }` for three distinct outcomes: dry-run skipped (intentional, success-equivalent), `RESEND_API_KEY` missing (config failure), and Resend send failure. Six callers (booking, contact, 3 crons, Josephine notification) currently can't distinguish these without re-reading env flags. Contact route now does `!isFlagEnabled("RESEND_DRY_RUN")` to disambiguate — leaks Resend's internal flag awareness up to the route boundary.
+- **Action:** Widen `EmailSendResult` to a discriminated union — `{ status: "sent"; resendId: string } | { status: "skipped"; reason: "dry_run" | "no_api_key" | "no_recipient" } | { status: "failed"; error: string }`. Each caller branches on `status`. Contact route's TODO at `route.ts` becomes a clean `if (result.status === "failed") return 500`. Touches every email caller — own PR.
+- **Why deferred:** Surgical 3-liner unblocks staging; the proper boundary fix is its own PR. Touches 6+ callers + the lib + tests across each.
+
+### Sanity write-client helper extraction (`scripts/_lib/sanity-write-client.mts`)
+
+- **Source:** /simplify reuse reviewer flag in `fix/staging-smoke-followups` (PR #86, 2026-05-08). Tipping point reached: 3 scripts (`seed-booking-page-entry-copy.mts`, `seed-quality-sweep-fields.mts`, `cleanup-orphan-field-values.mts`) now duplicate the same env-load + token guard + `createClient` boilerplate (~22 lines each).
+- **What:** Extract `scripts/_lib/sanity-write-client.mts` exporting `loadDotEnv()` + `createSanityWriteClient()` returning `{ client, dataset }`. Migrate the 3 callers to the helper.
+- **Action:** New file under `scripts/_lib/`, refactor 3 existing scripts to ~3 lines of setup each. Mechanical, low risk.
+- **Why deferred:** Out of scope for the staging-smoke fix bundle. Worth a focused 30-minute pass; pre-empt the 4th copy.
+
 ### Defaults-merge convention drift across content components
 
 - **Source:** /simplify reuse reviewer flag in `feat/quality-sweep-projections-copy-types` (PR #85, 2026-05-07).

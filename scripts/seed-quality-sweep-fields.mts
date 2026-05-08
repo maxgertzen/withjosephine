@@ -21,15 +21,26 @@ const client = createClient({
   token: process.env.SANITY_WRITE_TOKEN,
 });
 
+const CANONICAL_PAYMENT_BUTTON_TEXT = "Continue to payment →";
+
 const bookingPageId = await client.fetch<string | null>(`*[_type == "bookingPage"][0]._id`);
 if (bookingPageId) {
-  await client
-    .patch(bookingPageId)
-    .setIfMissing({
-      paymentButtonText: "Continue to payment →",
-    })
-    .commit();
-  console.log(`[${dataset}] bookingPage paymentButtonText seeded if missing on ${bookingPageId}.`);
+  // Force-set paymentButtonText to the canonical sentence-case + arrow form. The
+  // existing dataset value was the pre-PR-#85 schema default ("Continue to Payment"),
+  // which setIfMissing wouldn't overwrite — but nothing customized it manually,
+  // so set() is safe and matches the new schema initialValue.
+  const existing = await client.fetch<{ paymentButtonText?: string }>(
+    `*[_id == $id][0]{paymentButtonText}`,
+    { id: bookingPageId },
+  );
+  if (existing.paymentButtonText !== CANONICAL_PAYMENT_BUTTON_TEXT) {
+    await client.patch(bookingPageId).set({ paymentButtonText: CANONICAL_PAYMENT_BUTTON_TEXT }).commit();
+    console.log(
+      `[${dataset}] bookingPage.paymentButtonText updated ${JSON.stringify(existing.paymentButtonText)} → ${JSON.stringify(CANONICAL_PAYMENT_BUTTON_TEXT)} on ${bookingPageId}.`,
+    );
+  } else {
+    console.log(`[${dataset}] bookingPage.paymentButtonText already canonical on ${bookingPageId}.`);
+  }
 } else {
   console.log(`[${dataset}] No bookingPage doc found — schema initialValue will seed on first edit.`);
 }

@@ -44,7 +44,27 @@ A new environment isn't done until **every** item below is checked. Skipping any
 ### 3. R2 bucket
 
 - [ ] `pnpm wrangler r2 bucket create withjosephine-booking-photos-<env>`.
-- [ ] CF Dashboard → R2 → bucket → Settings → CORS → allow the env's origin.
+
+- [ ] **Expand R2 API token bucket access** to include the new bucket. CF Dashboard → R2 → Manage R2 API Tokens → find the worker's S3-API token → Edit → Bucket access → either "Apply to all buckets" OR add `withjosephine-booking-photos-<env>` to the specific-buckets list. **This is the step that bit us 2026-05-08** — the staging bucket was created with correct CORS, but the existing R2 API token (used by both prod and staging workers) was scoped to the prod bucket only. PUTs against the staging bucket returned `403 AccessDenied` with no CORS headers, and the browser surfaced this as a misleading "No 'Access-Control-Allow-Origin' header is present" error. Cleaner long-term: create a separate token per env (defense in depth), then `pnpm wrangler secret put R2_ACCESS_KEY_ID --env <name>` + `R2_SECRET_ACCESS_KEY` with the new pair.
+
+- [ ] **CF Dashboard → R2 → `withjosephine-booking-photos-<env>` → Settings → CORS Policy → Edit.** Paste this JSON (replace `<env>`):
+
+  ```json
+  [
+    {
+      "AllowedOrigins": ["https://<env>.withjosephine.com", "http://localhost:3000"],
+      "AllowedMethods": ["GET", "PUT", "HEAD"],
+      "AllowedHeaders": ["*"],
+      "ExposeHeaders": ["ETag"],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+  ```
+
+  Wildcard `AllowedHeaders` matches the production policy and covers `Content-Type` + `Content-Length` (which the upload path's signed PUT sends).
+
+- [ ] **Verify before declaring step done — script-based, not dashboard-toast-based.** Run a write probe with the worker's actual access key against the new bucket. Quick inline: load `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` from `.env.local` (or the worker's secret values), use `aws4fetch` to sign a 60-second PUT URL against `<bucket>/_probe/test.txt`, fetch it. Expect HTTP 200. If 403 with `<Code>AccessDenied</Code>` → token scope is wrong. If 403 with `<Code>InvalidAccessKeyId</Code>` → wrong key entirely. If 403 with `<Code>SignatureDoesNotMatch</Code>` → secret value or clock skew. Then attempt a real upload from `https://<env>.withjosephine.com/book/soul-blueprint/intake` end-to-end before declaring done.
+
 - [ ] Bind in `wrangler.jsonc` → `env.<name>.r2_buckets[0]`.
 
 ### 4. Worker secrets (CRITICAL — this is the step that bit us 2026-05-07)
