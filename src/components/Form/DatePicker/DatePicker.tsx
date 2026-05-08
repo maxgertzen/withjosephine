@@ -9,7 +9,7 @@ import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 const ISO_DATE = "yyyy-MM-dd";
-const HUMAN_DATE = "d MMM yyyy";
+const SLASH_DATE = "dd/MM/yyyy";
 
 type DatePickerProps = {
   id: string;
@@ -32,6 +32,13 @@ function parseIso(value: string): Date | undefined {
   if (!value) return undefined;
   const parsed = parse(value, ISO_DATE, new Date());
   return isValid(parsed) ? parsed : undefined;
+}
+
+function autoformatSlash(text: string): string {
+  const digits = text.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 export function DatePicker({
@@ -60,7 +67,7 @@ export function DatePicker({
       ? manualDraft
       : (() => {
           const parsed = parseIso(value);
-          return parsed ? format(parsed, HUMAN_DATE) : value;
+          return parsed ? format(parsed, SLASH_DATE) : value;
         })();
 
   useEffect(() => {
@@ -76,6 +83,13 @@ export function DatePicker({
   const selected = parseIso(value);
   const minDate = min ? parseIso(min) : undefined;
   const maxDate = max ? parseIso(max) : undefined;
+  const [month, setMonth] = useState<Date | undefined>(selected ?? maxDate);
+
+  useEffect(() => {
+    if (selected) setMonth(selected);
+    // selected is recomputed each render; key off the stable string value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
   const ageWarning =
     typeof minAge === "number" && selected
       ? differenceInYears(new Date(), selected) < minAge
@@ -94,19 +108,17 @@ export function DatePicker({
   }
 
   function handleManualInput(text: string) {
-    setManualDraft(text);
-    if (text === "") {
+    const formatted = autoformatSlash(text);
+    setManualDraft(formatted);
+    if (formatted === "") {
       onChange("");
       return;
     }
-    const iso = parse(text, ISO_DATE, new Date());
-    if (isValid(iso)) {
-      onChange(format(iso, ISO_DATE));
-      return;
-    }
-    const human = parse(text, HUMAN_DATE, new Date());
-    if (isValid(human)) {
-      onChange(format(human, ISO_DATE));
+    if (formatted.length === 10) {
+      const slashed = parse(formatted, SLASH_DATE, new Date());
+      if (isValid(slashed)) {
+        onChange(format(slashed, ISO_DATE));
+      }
     }
   }
 
@@ -167,7 +179,8 @@ export function DatePicker({
               onSelect={handleSelect}
               startMonth={minDate}
               endMonth={maxDate}
-              defaultMonth={selected ?? maxDate ?? new Date()}
+              month={month ?? new Date()}
+              onMonthChange={setMonth}
               captionLayout="dropdown"
               showOutsideDays
               classNames={{

@@ -36,6 +36,39 @@ describe("TimePicker", () => {
     expect(onChange).toHaveBeenCalledWith("07:30");
   });
 
+  it("auto-inserts the colon as the user types digits", () => {
+    const onChange = vi.fn();
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth time/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "0730" } });
+    expect(input.value).toBe("07:30");
+    expect(onChange).toHaveBeenCalledWith("07:30");
+  });
+
+  it("strips non-digits as the user types", () => {
+    const onChange = vi.fn();
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth time/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "abc07-30xyz" } });
+    expect(input.value).toBe("07:30");
+  });
+
   it("renders the unknown toggle when the prop is provided", () => {
     render(
       <TimePicker
