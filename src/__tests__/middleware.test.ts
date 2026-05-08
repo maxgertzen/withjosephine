@@ -123,6 +123,13 @@ describe("middleware CSP + draft hardening", () => {
     expect(connectDirective).toContain("https://*.clarity.ms");
     expect(connectDirective).toContain("https://c.bing.com");
   });
+
+  it("CSP img-src allows clarity.ms so the Clarity tracking pixel (c.gif) can load", () => {
+    const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const csp = apex.headers.get("content-security-policy") ?? "";
+    const imgDirective = csp.split(";").find((d) => d.trim().startsWith("img-src"));
+    expect(imgDirective).toContain("https://*.clarity.ms");
+  });
 });
 
 type RewriteResponse = { rewriteTo: string | null };

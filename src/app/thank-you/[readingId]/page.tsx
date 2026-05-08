@@ -1,6 +1,7 @@
 import { Mail } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { Fragment, type ReactNode } from "react";
 
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
@@ -11,7 +12,8 @@ import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
-import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { CONTACT_EMAIL } from "@/lib/constants";
+import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
 import { retrieveCheckoutSession } from "@/lib/stripe";
 
 export { generateReadingStaticParams as generateStaticParams };
@@ -29,6 +31,19 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
 }
 
 type PaidAmount = { display: string | null; cents: number | null };
+
+const SLOT_SPLIT = /(\{[a-zA-Z]+\})/g;
+const SLOT_MATCH = /^\{([a-zA-Z]+)\}$/;
+
+function renderWithSlots(template: string, slots: Record<string, ReactNode>): ReactNode {
+  return template.split(SLOT_SPLIT).map((part, index) => {
+    const match = SLOT_MATCH.exec(part);
+    if (match && slots[match[1]] !== undefined) {
+      return <Fragment key={index}>{slots[match[1]]}</Fragment>;
+    }
+    return <Fragment key={index}>{part}</Fragment>;
+  });
+}
 
 async function fetchPaidAmount(sessionId: string): Promise<PaidAmount> {
   try {
@@ -64,9 +79,10 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     redirect("/");
   }
 
-  const [sanityReading, thankYouPageContent, paidAmount] = await Promise.all([
+  const [sanityReading, thankYouPageContent, siteSettings, paidAmount] = await Promise.all([
     fetchReading(readingId),
     fetchThankYouPage(),
+    fetchSiteSettings(),
     fetchPaidAmount(sessionId),
   ]);
 
@@ -90,10 +106,22 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   const subheading =
     thankYouPageContent?.subheading ??
     "Your reading is in my hands now.";
+  const readingLabel = thankYouPageContent?.readingLabel ?? "Your Reading";
+  const confirmationBody =
+    thankYouPageContent?.confirmationBody ??
+    "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.";
+  const timelineBody =
+    thankYouPageContent?.timelineBody ??
+    "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.";
+  const deliveryDaysPhrase = thankYouPageContent?.deliveryDaysPhrase ?? "seven days";
+  const contactBody =
+    thankYouPageContent?.contactBody ??
+    "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.";
   const closingMessage =
     thankYouPageContent?.closingMessage ??
     "With love, Josephine \u2726";
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
+  const contactEmail = siteSettings?.contactEmail || CONTACT_EMAIL;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -118,7 +146,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
           <div className="text-left">
             <span className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted">
-              Your Reading
+              {readingLabel}
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
@@ -137,28 +165,25 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p>
-            A confirmation email is on its way to your inbox in the next minute or two — it
-            includes a copy of the answers you shared so you have them on hand. If you can&rsquo;t
-            find it, please check your promotions folder.
+          <p className="whitespace-pre-line">{confirmationBody}</p>
+          <p className="whitespace-pre-line">
+            {renderWithSlots(timelineBody, {
+              deliveryDays: (
+                <span className="font-display italic text-j-accent">{deliveryDaysPhrase}</span>
+              ),
+            })}
           </p>
-          <p>
-            I&rsquo;ll begin your reading within the next two days, and I&rsquo;ll send a short
-            note when I do. Your voice note and PDF will arrive within{" "}
-            <span className="font-display italic text-j-accent">seven days</span>, sent to the
-            email you used at checkout.
-          </p>
-          <p>
-            If anything comes up — a question, a detail you forgot to mention, or anything that
-            doesn&rsquo;t look right in your confirmation — just reply to that email or write to
-            me at{" "}
-            <a
-              href="mailto:hello@withjosephine.com"
-              className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
-            >
-              hello@withjosephine.com
-            </a>
-            . It comes straight to me.
+          <p className="whitespace-pre-line">
+            {renderWithSlots(contactBody, {
+              email: (
+                <a
+                  href={`mailto:${contactEmail}`}
+                  className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
+                >
+                  {contactEmail}
+                </a>
+              ),
+            })}
           </p>
         </div>
 

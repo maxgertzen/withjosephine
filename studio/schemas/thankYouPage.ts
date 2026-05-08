@@ -19,6 +19,51 @@ export const thankYouPage = defineType({
       initialValue: "I'm really looking forward to reading for you. This is going to be special.",
     }),
     defineField({
+      name: "readingLabel",
+      title: "Reading Card Label",
+      type: "string",
+      description: 'Small label above the reading name on the order card (e.g. "Your Reading").',
+      initialValue: "Your Reading",
+    }),
+    defineField({
+      name: "confirmationBody",
+      title: "Confirmation Email Paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "First paragraph below the order card. Describes what the customer will receive in their inbox.",
+      initialValue:
+        "A confirmation email is on its way to your inbox in the next minute or two — it includes a copy of the answers you shared so you have them on hand. If you can't find it, please check your promotions folder.",
+    }),
+    defineField({
+      name: "timelineBody",
+      title: "Timeline Paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Second paragraph. Sets expectations for delivery time. Use {deliveryDays} as a placeholder for the highlighted '7 days' phrase.",
+      initialValue:
+        "I'll begin your reading within the next two days, and I'll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.",
+    }),
+    defineField({
+      name: "deliveryDaysPhrase",
+      title: "Highlighted Delivery Phrase",
+      type: "string",
+      description:
+        'The accented phrase substituted into the timeline paragraph at {deliveryDays} (e.g. "seven days").',
+      initialValue: "seven days",
+    }),
+    defineField({
+      name: "contactBody",
+      title: "Contact Paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Third paragraph inviting the customer to reply if anything's off. Use {email} as a placeholder for the contact email link from Site Settings.",
+      initialValue:
+        "If anything comes up — a question, a detail you forgot to mention, or anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
+    }),
+    defineField({
       name: "closingMessage",
       title: "Closing Message",
       type: "text",

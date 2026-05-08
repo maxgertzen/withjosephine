@@ -27,7 +27,9 @@ export function AnalyticsBootstrap({
   consentBannerContent,
   previewMode = false,
 }: AnalyticsBootstrapProps) {
-  const [showBanner, setShowBanner] = useState(previewMode);
+  const [showBanner, setShowBanner] = useState(
+    previewMode && consentBannerContent?.hideInPreview !== true,
+  );
   const [observabilityLive, setObservabilityLive] = useState(false);
   const consentEffectRanRef = useRef(false);
 

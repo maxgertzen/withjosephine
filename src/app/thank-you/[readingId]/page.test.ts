@@ -4,6 +4,7 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchThankYouPage: vi.fn(),
   fetchReading: vi.fn(),
   fetchReadingSlugs: vi.fn(),
+  fetchSiteSettings: vi.fn(),
 }));
 
 const redirectMock = vi.fn(() => {

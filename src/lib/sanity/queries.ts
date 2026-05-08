@@ -114,6 +114,11 @@ export const thankYouPageQuery = groq`
   *[_type == "thankYouPage"][0] {
     heading,
     subheading,
+    readingLabel,
+    confirmationBody,
+    timelineBody,
+    deliveryDaysPhrase,
+    contactBody,
     closingMessage,
     returnButtonText,
     seo
