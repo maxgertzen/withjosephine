@@ -14,7 +14,12 @@ import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
 import { identifySubmission, track, trackThrottled } from "@/lib/analytics";
 import { buildPageSchema } from "@/lib/booking/buildPageSchema";
-import { BOOKING_API_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
+import {
+  BOOKING_API_ROUTE,
+  COMPANION_SUFFIX_GEONAMEID,
+  COMPANION_SUFFIX_UNKNOWN,
+  HONEYPOT_FIELD,
+} from "@/lib/booking/constants";
 import { derivePages, type IntakePage } from "@/lib/booking/derivePages";
 import {
   isNameFollowupEnabled,
@@ -44,12 +49,11 @@ import type {
 import { DiscardDraftButton } from "./DiscardDraftButton";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
+import { ReviewSummary } from "./ReviewSummary";
 import { SavedIndicator } from "./SavedIndicator";
 import { SubmitOverlay } from "./SubmitOverlay";
 import { SwapToast } from "./SwapToast";
-
-type FieldValue = string | string[] | boolean;
-type FieldValues = Record<string, FieldValue>;
+import type { FieldValue, FieldValues } from "./types";
 
 // Throttle the `intake_save_auto` Mixpanel event to once per 30s. The
 // localStorage flush still happens every 500ms; only the analytics event
@@ -116,7 +120,8 @@ export function IntakeForm({
   const consentField = useMemo(
     () =>
       allFields.find(
-        (field) => field.type === "consent" && !field.key.endsWith("_unknown"),
+        (field) =>
+          field.type === "consent" && !field.key.endsWith(COMPANION_SUFFIX_UNKNOWN),
       ),
     [allFields],
   );
@@ -125,7 +130,7 @@ export function IntakeForm({
     const fieldKeys = new Set(allFields.map((f) => f.key));
     for (const field of allFields) {
       if (field.type !== "time") continue;
-      const candidate = `${field.key}_unknown`;
+      const candidate = `${field.key}${COMPANION_SUFFIX_UNKNOWN}`;
       if (fieldKeys.has(candidate)) pairs.set(field.key, candidate);
     }
     return pairs;
@@ -424,23 +429,31 @@ export function IntakeForm({
     }
   }
 
-  function handleBack() {
+  function navigateToPage(targetPageIndex: number) {
     setSubmitError(null);
     setErrors({});
-    const nextPage = Math.max(currentPage - 1, 0);
     track("intake_page_back_click", {
       reading_id: readingId,
       from_page: currentPage + 1,
-      to_page: nextPage + 1,
+      to_page: targetPageIndex + 1,
     });
-    setCurrentPage(nextPage);
-    flushSave(values, nextPage);
+    setCurrentPage(targetPageIndex);
+    flushSave(values, targetPageIndex);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  }
+
+  function handleBack() {
+    navigateToPage(Math.max(currentPage - 1, 0));
+  }
+
+  function handleReviewEdit(targetPageIndex: number) {
+    if (targetPageIndex === currentPage) return;
+    navigateToPage(targetPageIndex);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -496,7 +509,7 @@ export function IntakeForm({
       const companionKeys: Record<string, string> = {};
       for (const field of allFields) {
         if (field.type !== "placeAutocomplete") continue;
-        const companion = `${field.key}_geonameid`;
+        const companion = `${field.key}${COMPANION_SUFFIX_GEONAMEID}`;
         const v = values[companion];
         if (typeof v === "string" && v !== "") companionKeys[companion] = v;
       }
@@ -664,6 +677,15 @@ export function IntakeForm({
           </div>
         </section>
       ))}
+
+      {isFinalPage ? (
+        <ReviewSummary
+          pages={pages}
+          values={values}
+          currentPageIndex={currentPage}
+          onEdit={handleReviewEdit}
+        />
+      ) : null}
 
       {isFinalPage && consentField ? (
         <section className="flex flex-col gap-4 bg-j-warm/40 border border-j-border-subtle rounded-2xl p-6">
@@ -932,7 +954,10 @@ function renderField(field: SanityFormField, ctx: RenderContext) {
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
           onGeonameIdChange={(geonameid) =>
-            setValue(`${field.key}_geonameid`, geonameid === null ? "" : String(geonameid))
+            setValue(
+              `${field.key}${COMPANION_SUFFIX_GEONAMEID}`,
+              geonameid === null ? "" : String(geonameid),
+            )
           }
           placeholder={field.placeholder}
           {...shellProps}

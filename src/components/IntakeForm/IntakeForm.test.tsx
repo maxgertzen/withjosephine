@@ -336,6 +336,33 @@ describe("IntakeForm — paginated flow", () => {
     await user.click(screen.getByRole("button", { name: /Previous page/ }));
     expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
   });
+
+  it("renders the review summary on the final page summarizing previous-page sections", async () => {
+    const user = userEvent.setup();
+    renderForm(TWO_PAGE_SECTIONS);
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByTestId("review-summary")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Your details" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+  });
+
+  it("does not render the review summary on non-final pages", () => {
+    renderForm(TWO_PAGE_SECTIONS);
+    expect(screen.queryByTestId("review-summary")).not.toBeInTheDocument();
+  });
+
+  it("returns the user to the section's page when Edit is clicked from the review", async () => {
+    const user = userEvent.setup();
+    renderForm(TWO_PAGE_SECTIONS);
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    await user.click(screen.getByRole("button", { name: "Edit Your details" }));
+    expect(screen.getByLabelText(/Full name/)).toHaveValue("Ada Lovelace");
+    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
+  });
 });
 
 describe("IntakeForm — localStorage save/resume", () => {

@@ -35,10 +35,10 @@ function pad(n: number): string {
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
 const MINUTES = Array.from({ length: 12 }, (_, i) => pad(i * 5));
 
-function formatDisplay(value: string): string {
-  if (!value || value === TIME_UNKNOWN_SENTINEL) return "";
-  if (HHMM.test(value)) return value;
-  return value;
+function autoformatTime(text: string): string {
+  const digits = text.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 export function TimePicker({
@@ -61,7 +61,7 @@ export function TimePicker({
   const [draft, setDraft] = useState<string | null>(null);
 
   const isUnknown = value === TIME_UNKNOWN_SENTINEL || unknownToggle?.checked === true;
-  const visible = draft !== null ? draft : isUnknown ? "" : formatDisplay(value);
+  const visible = draft !== null ? draft : isUnknown ? "" : value;
   const inputDisabled = disabled || isUnknown;
 
   const [hh, mm] = (() => {
@@ -86,13 +86,14 @@ export function TimePicker({
   }
 
   function handleManualInput(text: string) {
-    setDraft(text);
-    if (text === "") {
+    const formatted = autoformatTime(text);
+    setDraft(formatted);
+    if (formatted === "") {
       onChange("");
       return;
     }
-    if (HHMM.test(text)) {
-      onChange(text);
+    if (HHMM.test(formatted)) {
+      onChange(formatted);
     }
   }
 

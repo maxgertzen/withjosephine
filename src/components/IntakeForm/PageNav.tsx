@@ -77,7 +77,7 @@ export function PageNav({
           <Button
             type="submit"
             size="lg"
-            className="min-h-14 !font-display !italic !normal-case !tracking-normal !text-base !font-medium"
+            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium"
             disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
           >
@@ -89,7 +89,7 @@ export function PageNav({
             size="default"
             onClick={onNext}
             disabled={nextDisabled}
-            className="min-h-11"
+            className="min-h-11 whitespace-nowrap"
           >
             {nextLabel}
           </Button>

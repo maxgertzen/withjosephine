@@ -20,7 +20,7 @@ describe("DatePicker", () => {
     expect(input).toHaveAttribute("aria-haspopup", "dialog");
   });
 
-  it("emits an ISO date when the user types a valid ISO string", () => {
+  it("emits an ISO date when the user types a complete DD/MM/YYYY string", () => {
     const onChange = vi.fn();
     render(
       <DatePicker
@@ -32,12 +32,29 @@ describe("DatePicker", () => {
       />,
     );
     fireEvent.change(screen.getByLabelText(/Birth date/), {
-      target: { value: "1990-04-12" },
+      target: { value: "12/04/1990" },
     });
     expect(onChange).toHaveBeenCalledWith("1990-04-12");
   });
 
-  it("formats an existing ISO value as a human-readable date for display", () => {
+  it("auto-inserts slashes as the user types digits", () => {
+    const onChange = vi.fn();
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "12041990" } });
+    expect(input.value).toBe("12/04/1990");
+    expect(onChange).toHaveBeenCalledWith("1990-04-12");
+  });
+
+  it("formats an existing ISO value as DD/MM/YYYY for display", () => {
     render(
       <DatePicker
         id="birthDate"
@@ -48,7 +65,7 @@ describe("DatePicker", () => {
       />,
     );
     const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
-    expect(input.value).toMatch(/12 Apr 1990/);
+    expect(input.value).toBe("12/04/1990");
   });
 
   it("renders a soft under-age warning when the value is below minAge", () => {
