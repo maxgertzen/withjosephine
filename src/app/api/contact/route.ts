@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isFlagEnabled } from "@/lib/env";
 import { getClientIp } from "@/lib/request";
 import { sendContactMessage } from "@/lib/resend";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -56,7 +57,7 @@ export async function POST(request: Request): Promise<Response> {
       message: trimmedMessage,
     });
 
-    if (!result.resendId) {
+    if (!result.resendId && !isFlagEnabled("RESEND_DRY_RUN")) {
       console.error("[contact] Resend returned null id (env or send failure)");
       return NextResponse.json(
         { success: false, error: "Contact form is not configured" },
