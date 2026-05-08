@@ -90,6 +90,14 @@ export const siteSettings = defineType({
       type: "object",
       fields: [
         defineField({
+          name: "hideInPreview",
+          title: "Hide banner in Studio preview",
+          type: "boolean",
+          description:
+            "Tick this to hide the banner inside the Studio Presentation iframe so you can edit pages underneath. Real visitors are unaffected — the banner still shows for GDPR/CCPA regions in production.",
+          initialValue: false,
+        }),
+        defineField({
           name: "title",
           title: "Title",
           type: "string",

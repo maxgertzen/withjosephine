@@ -125,4 +125,26 @@ describe("AnalyticsBootstrap", () => {
       expect(clarityConsent).toHaveBeenCalledWith(true);
     });
   });
+
+  describe("previewMode (Studio Presentation iframe)", () => {
+    it("renders the banner by default in preview mode so editors can edit copy", async () => {
+      await act(async () => {
+        render(<AnalyticsBootstrap consentRequired={false} previewMode={true} />);
+      });
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("hides the banner in preview mode when consentBanner.hideInPreview is true", async () => {
+      await act(async () => {
+        render(
+          <AnalyticsBootstrap
+            consentRequired={false}
+            previewMode={true}
+            consentBannerContent={{ hideInPreview: true }}
+          />,
+        );
+      });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
 });

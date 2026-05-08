@@ -91,12 +91,18 @@ export type SanityBookingPage = {
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;
+  readingLabel?: string;
+  confirmationBody?: string;
+  timelineBody?: string;
+  deliveryDaysPhrase?: string;
+  contactBody?: string;
   closingMessage: string;
   returnButtonText: string;
   seo?: SanitySeo;
 };
 
 export type SanityConsentBanner = {
+  hideInPreview?: boolean;
   title?: string;
   body?: string;
   privacyLinkText?: string;
