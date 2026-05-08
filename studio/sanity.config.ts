@@ -7,39 +7,62 @@ import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
 
-const previewOrigin =
-  process.env.SANITY_STUDIO_PREVIEW_URL ?? "http://localhost:3000";
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID!;
 
-export default defineConfig({
-  name: "josephine",
-  title: "Josephine Soul Readings",
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID!,
-  dataset: process.env.SANITY_STUDIO_DATASET || "production",
-  plugins: [
-    presentationTool({
-      resolve: presentationResolve,
-      previewUrl: {
-        initial: previewOrigin,
-        previewMode: {
-          enable: "/api/draft/enable",
-        },
-      },
-    }),
-    structureTool({ structure: deskStructure }),
-    visionTool(),
-    colorInput(),
-  ],
-  schema: { types: schemaTypes },
-  document: {
-    actions: (prev, { schemaType }) => {
-      if (SINGLETON_TYPES.has(schemaType)) {
-        return prev.filter(
-          ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action)
-        );
-      }
-      return prev;
+const sharedPlugins = (previewOrigin: string) => [
+  presentationTool({
+    resolve: presentationResolve,
+    previewUrl: {
+      initial: previewOrigin,
+      previewMode: { enable: "/api/draft/enable" },
     },
-    newDocumentOptions: (prev) =>
-      prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
+  }),
+  structureTool({ structure: deskStructure }),
+  visionTool(),
+  colorInput(),
+];
+
+export default defineConfig([
+  {
+    name: "production",
+    title: "Production",
+    subtitle: "withjosephine.com",
+    projectId,
+    dataset: "production",
+    basePath: "/production",
+    plugins: sharedPlugins("https://withjosephine.com"),
+    schema: { types: schemaTypes },
+    document: {
+      actions: (prev, { schemaType }) => {
+        if (SINGLETON_TYPES.has(schemaType)) {
+          return prev.filter(
+            ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
+          );
+        }
+        return prev;
+      },
+      newDocumentOptions: (prev) => prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
+    },
   },
-});
+  {
+    name: "staging",
+    title: "Staging",
+    subtitle: "staging.withjosephine.com",
+    projectId,
+    dataset: "staging",
+    basePath: "/staging",
+    plugins: sharedPlugins("https://staging.withjosephine.com"),
+    schema: { types: schemaTypes },
+    document: {
+      actions: (prev, { schemaType }) => {
+        if (SINGLETON_TYPES.has(schemaType)) {
+          return prev.filter(
+            ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
+          );
+        }
+        return prev;
+      },
+      newDocumentOptions: (prev) => prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
+    },
+  },
+]);
