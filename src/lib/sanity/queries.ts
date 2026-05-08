@@ -101,12 +101,8 @@ export const siteSettingsQuery = groq`
 
 export const bookingPageQuery = groq`
   *[_type == "bookingPage"][0] {
-    emailLabel,
-    emailDisclaimer,
     paymentButtonText,
-    securityNote,
     formatNote,
-    closingMessage,
     deliveryNote,
     whatsIncludedHeading,
     bookReadingCtaText,
@@ -118,7 +114,6 @@ export const thankYouPageQuery = groq`
   *[_type == "thankYouPage"][0] {
     heading,
     subheading,
-    steps,
     closingMessage,
     returnButtonText,
     seo
@@ -157,10 +152,6 @@ export const notFoundPageQuery = groq`
 
 export const bookingFormQuery = groq`
   *[_type == "bookingForm"][0] {
-    title,
-    intro,
-    description,
-    confirmationMessage,
     nonRefundableNotice,
     entryPageContent {
       letterOpener,
@@ -179,6 +170,9 @@ export const bookingFormQuery = groq`
       }
     },
     loadingStateCopy,
+    nextButtonText,
+    saveAndContinueLaterText,
+    pageIndicatorTagline,
     "sections": sections[]-> {
       _id,
       sectionTitle,

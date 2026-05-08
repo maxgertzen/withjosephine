@@ -44,7 +44,6 @@ const READING: SanityReading = {
 };
 
 const FORM: SanityBookingForm = {
-  title: "Intake",
   nonRefundableNotice: "no refund",
   sections: [
     {

@@ -72,17 +72,16 @@ export type SanityLandingPage = {
     heading: string;
     description: string;
     submitText: string;
+    successHeading?: string;
+    successBody?: string;
+    sendAnotherButtonText?: string;
   };
   seo?: SanitySeo;
 };
 
 export type SanityBookingPage = {
-  emailLabel: string;
-  emailDisclaimer: string;
-  paymentButtonText: string;
-  securityNote: string;
+  paymentButtonText?: string;
   formatNote: string;
-  closingMessage: string;
   deliveryNote: string;
   whatsIncludedHeading?: string;
   bookReadingCtaText?: string;
@@ -92,7 +91,6 @@ export type SanityBookingPage = {
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;
-  steps: { icon: string; title: string; description: string }[];
   closingMessage: string;
   returnButtonText: string;
   seo?: SanitySeo;
@@ -282,14 +280,13 @@ export type SanityEntryPageContent = {
 };
 
 export type SanityBookingForm = {
-  title: string;
-  intro?: string;
-  description?: string;
-  confirmationMessage?: string;
   nonRefundableNotice: string;
   entryPageContent?: SanityEntryPageContent;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  nextButtonText?: string;
+  saveAndContinueLaterText?: string;
+  pageIndicatorTagline?: string;
   sections: SanityFormSection[];
 };
 

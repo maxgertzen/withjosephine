@@ -30,6 +30,9 @@ export interface ContactFormContent {
   heading: string;
   description: string;
   submitText: string;
+  successHeading?: string;
+  successBody?: string;
+  sendAnotherButtonText?: string;
 }
 
 export const CONTACT_DEFAULTS: ContactFormContent = {
@@ -38,6 +41,9 @@ export const CONTACT_DEFAULTS: ContactFormContent = {
   description:
     "If you have a question before you book, or you\u2019d simply like to say hello, please don\u2019t hesitate to reach out. I read every message personally.",
   submitText: "Send Message",
+  successHeading: "message sent",
+  successBody: "Thank you for reaching out. I\u2019ll get back to you as soon as I can.",
+  sendAnotherButtonText: "Send another message",
 };
 
 export interface HowItWorksStep {

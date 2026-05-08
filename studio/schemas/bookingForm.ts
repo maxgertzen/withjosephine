@@ -6,27 +6,6 @@ export const bookingForm = defineType({
   type: "document",
   fields: [
     defineField({
-      name: "title",
-      title: "Page Title",
-      type: "string",
-      description: "Heading shown at the top of the intake form page.",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "intro",
-      title: "Intro Copy",
-      type: "text",
-      rows: 4,
-      description: "Welcome paragraph displayed above the first form section.",
-    }),
-    defineField({
-      name: "description",
-      title: "Description",
-      type: "text",
-      rows: 4,
-      description: "Secondary descriptive copy shown beneath the intro.",
-    }),
-    defineField({
       name: "sections",
       title: "Sections",
       type: "array",
@@ -110,22 +89,37 @@ export const bookingForm = defineType({
       initialValue: "One moment — taking you to checkout.",
     }),
     defineField({
-      name: "confirmationMessage",
-      title: "Confirmation Message",
-      type: "text",
-      rows: 4,
-      description: "Message shown to the user after a successful submission.",
+      name: "nextButtonText",
+      title: "Next Page Button Text",
+      type: "string",
+      description: "Label on the page-advance button shown on every page except the last.",
+      initialValue: "Next →",
+    }),
+    defineField({
+      name: "saveAndContinueLaterText",
+      title: "Save and Continue Later Text",
+      type: "string",
+      description: "Label on the centre nav button that saves a draft and lets the visitor leave.",
+      initialValue: "Save and continue later",
+    }),
+    defineField({
+      name: "pageIndicatorTagline",
+      title: "Page Indicator Tagline",
+      type: "string",
+      description:
+        "Optional short note appended to the page counter (e.g. 'almost done'). Renders as 'Page 2 of 4 · {tagline}'. Leave blank to omit.",
     }),
     defineField({
       name: "nonRefundableNotice",
-      title: "Non-Refundable Notice (legacy)",
+      title: "Cooling-Off Notice",
       type: "text",
       rows: 3,
       description:
-        "Legacy no-refund disclosure. Superseded by Consent Block → cooling_off row. Kept for historical data; do not show in new flows.",
+        "Body copy rendered above the cooling-off consent checkbox on the final page. Required.",
+      validation: (rule) => rule.required(),
     }),
   ],
   preview: {
-    select: { title: "title" },
+    prepare: () => ({ title: "Booking Form" }),
   },
 });

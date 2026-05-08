@@ -19,33 +19,6 @@ export const thankYouPage = defineType({
       initialValue: "I'm really looking forward to reading for you. This is going to be special.",
     }),
     defineField({
-      name: "steps",
-      title: "What Happens Next",
-      type: "array",
-      of: [
-        {
-          type: "object",
-          fields: [
-            defineField({
-              name: "icon",
-              title: "Icon",
-              type: "string",
-              options: {
-                list: [
-                  { title: "Mail", value: "mail" },
-                  { title: "FileText", value: "fileText" },
-                  { title: "Clock", value: "clock" },
-                ],
-              },
-            }),
-            defineField({ name: "title", title: "Title", type: "string" }),
-            defineField({ name: "description", title: "Description", type: "text", rows: 3 }),
-          ],
-          preview: { select: { title: "title" } },
-        },
-      ],
-    }),
-    defineField({
       name: "closingMessage",
       title: "Closing Message",
       type: "text",

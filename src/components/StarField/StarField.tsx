@@ -5,7 +5,7 @@ interface StarFieldProps {
   className?: string;
 }
 
-function round(n: number, decimals: number) {
+function round(n: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(n * factor) / factor;
 }

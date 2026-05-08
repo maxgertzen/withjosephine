@@ -20,7 +20,16 @@ type FormStatus = "idle" | "loading" | "success" | "error";
 const CONTACT_API_ROUTE = "/api/contact";
 
 export function ContactForm({ content, className }: ContactFormProps) {
-  const { sectionTag, heading, description, submitText } = content ?? CONTACT_DEFAULTS;
+  const merged = { ...CONTACT_DEFAULTS, ...content };
+  const {
+    sectionTag,
+    heading,
+    description,
+    submitText,
+    successHeading,
+    successBody,
+    sendAnotherButtonText,
+  } = merged;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -99,13 +108,11 @@ export function ContactForm({ content, className }: ContactFormProps) {
     return (
       <section id="contact" className={mergeClasses("py-24 px-6", className)}>
         <div className="max-w-lg mx-auto text-center">
-          <SectionHeading tag={sectionTag} heading="message sent" className="mb-6" />
-          <p className="font-body text-base text-j-text-muted">
-            Thank you for reaching out. I&rsquo;ll get back to you as soon as I can.
-          </p>
+          <SectionHeading tag={sectionTag} heading={successHeading ?? ""} className="mb-6" />
+          <p className="font-body text-base text-j-text-muted">{successBody}</p>
           <div className="mt-8">
             <Button type="button" variant="ghost" onClick={() => setStatus("idle")}>
-              Send another message
+              {sendAnotherButtonText}
             </Button>
           </div>
         </div>

@@ -74,44 +74,20 @@ Each item: where it came from + why it was deferred + a one-line action.
   5. Run `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-clarity.ts` against the production Sanity dataset (and again with staging dataset) to add the sub-processor disclosure to the privacy policy. Idempotent — safe to re-run.
   6. Verify masking in Clarity dashboard: load a few real intake-form sessions, confirm DOB / first_name / last_name / photo fields render as redacted blocks, not actual content. ALL of these masks before opening real traffic.
 
-### Audit: orphaned schema fields — projection cleanup carry-over
-- **Source:** Full audit performed in `feat/csp-nonce-and-audits`. Findings
-  doc: `www/docs/audits/orphan-schema-fields.md`. 5 unambiguous orphans
-  deleted in that branch (`bookingForm.consentBlock` + nested `rows` +
-  `hairlineBeforeKey`, `bookingForm.swapToastCopy`, `thankYouPage.heroLine`,
-  `thankYouPage.body`, `thankYouPage.signOff`).
-- **What's left:** ~13 PROJECTED-BUT-UNUSED fields that are in `queries.ts`
-  + `types.ts` but no component reads them — Becky fills them in Studio,
-  nothing happens. Examples: `bookingPage.{emailLabel,emailDisclaimer,
-  paymentButtonText,securityNote}`, `bookingForm.{title,intro,description,
-  confirmationMessage,nonRefundableNotice,pagination,loadingStateCopy}`
-  (some wired through prop chain, some not — see audit doc for the full
-  per-field landscape). `thankYouPage.steps` is in the same bucket.
-- **Action:** For each PROJECTED-BUT-UNUSED field, decide one of:
-  1. Wire it up in the component that should read it (preserve content
-     editability), OR
-  2. Delete from `queries.ts` + `types.ts` + schema (admit it's dead).
-- **Why deferred:** Per-field judgment call; not mechanical enough to
-  blanket-fix. Best as one focused session.
+### Defaults-merge convention drift across content components
 
-### Audit: hardcoded customer-facing copy — HIGH/MED carry-over
-- **Source:** Full audit performed in `feat/csp-nonce-and-audits`. Findings
-  doc: `www/docs/audits/hardcoded-copy.md`. 2 HIGH items shipped in that
-  branch (`bookingPage.whatsIncludedHeading`, `bookingPage.bookReadingCtaText`
-  with seed script `scripts/seed-booking-page-entry-copy.mts`).
-- **What's left (HIGH, deferred):**
-  - **H3** SubmitOverlay copy — wire-up via existing `bookingForm.loadingStateCopy`
-    (PROJECTED-BUT-UNUSED; needs Sanity dataset seed too).
-  - **H4** ContactForm success-state heading + body + button — 3 new fields, ContactForm prop-threading.
-  - **H5** IntakeForm PageNav labels (`Continue to payment`, `Next`, `Save and continue later`) — partial wire-up to `bookingPage.paymentButtonText` + 2 new fields.
-- **What's left (MEDIUM, deferred):**
-  - **M1/M2** error.tsx + global-error.tsx error-boundary copy — engineering-adjacent; global-error.tsx must work even if root layout broken (so Sanity fetches there are unsafe; use build-time bake or accept hardcoded).
-  - **M3** Footer LEGAL_LINKS labels + `Built by Max Gertzen` — Max-owned; defer.
-  - **M4** PageIndicator copy — bundle with H5.
-  - **M5** SwapToast text — `bookingForm.swapToastCopy` was deleted as orphan in this branch's audit pass (zero consumers); re-add the schema field if Becky asks.
-- **LOW items** stay in code per audit doc (validation messages, a11y labels, error-recovery buttons).
-- **Out-of-scope by design:** email-template copy in `src/lib/emails/**` and `src/lib/resend.ts` — slated for separate CRM migration path (CLAUDE.md "Email automation → outsource to a CRM" 2026-05-06).
-- **Why deferred:** Each migration is schema + GROQ + type + fallback default + seed migration + visual-editing overlay verification. Best batched into a focused "Studio editorial completeness" session.
+- **Source:** /simplify reuse reviewer flag in `feat/quality-sweep-projections-copy-types` (PR #85, 2026-05-07).
+- **What:** ContactForm now uses per-field merge (`{ ...CONTACT_DEFAULTS, ...content }`), but Hero / HowItWorks / Footer / Navigation still use all-or-nothing fallback (`content ?? DEFAULTS`). The two forms behave differently the moment a partial Sanity doc exists — `?? DEFAULTS` drops every default the moment the doc is non-null, so any new optional field silently renders `undefined`. This is dormant today (those components don't have optional fields), but the next time someone extends e.g. `HeroContent`, they'll trip the same bug class ContactForm just escaped from.
+- **Action:** Migrate Hero / HowItWorks / Footer / Navigation to the same `{ ...DEFAULTS, ...content }` shape. Mechanical, low risk, blast radius small (each component is a leaf with stable prop shape).
+- **Why deferred:** Not blocking. Worth a focused 30-minute pass in the next sweep.
+
+### Audit: orphaned schema fields — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
+
+PROJECTED-BUT-UNUSED follow-up complete. 9 fields deleted, 1 wired up (`bookingPage.paymentButtonText` → PageNav), 6 new optional fields added (PageNav nav copy, PageIndicator tagline, ContactForm success state). 4 audit "ambiguous" entries verified as CONSUMED (`bookingForm.entryPageContent.*`, `bookingForm.pagination.overrides`, `bookingForm.loadingStateCopy`, `bookingForm.nonRefundableNotice` — schema description fixed). Full per-field landscape in `www/docs/audits/orphan-schema-fields.md`. Manual seed via `scripts/seed-quality-sweep-fields.mts` against production + staging (Max-action).
+
+### Audit: hardcoded customer-facing copy — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
+
+H3/H4/H5 shipped (SubmitOverlay loading copy via Sanity seed; ContactForm success state via `landingPage.contactSection` extension; IntakeForm PageNav labels via `bookingPage.paymentButtonText` + new `bookingForm.nextButtonText` + `saveAndContinueLaterText`). M1/M2/M3/M5 dropped with durable rationale. M4 PageIndicator resolved via new `bookingForm.pageIndicatorTagline` optional knob. Email-template copy remains out-of-scope (CRM migration path). Full landscape in `www/docs/audits/hardcoded-copy.md`.
 
 ### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
 
@@ -133,7 +109,7 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Code quality (nice-to-fix)
 
-Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, build-time Turnstile bypass assertion, TrustLine cleanup, `clientReferenceId` orphan removal (+ D1 column drop via migration `0003`), `abandonmentRecoveryFiredAt` orphan removal, `void chipTick` refactor, `letter/page.tsx` IIFE simplification, `intake_save_auto` throttle, `@next/bundle-analyzer` wiring, `experimental_taintObjectReference` markers, partial inferred-return-type sweep.
+Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, build-time Turnstile bypass assertion, TrustLine cleanup, `clientReferenceId` orphan removal (+ D1 column drop via migration `0003`), `abandonmentRecoveryFiredAt` orphan removal, `void chipTick` refactor, `letter/page.tsx` IIFE simplification, `intake_save_auto` throttle, `@next/bundle-analyzer` wiring, `experimental_taintObjectReference` markers. Inferred-return-type sweep across components/routes — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types` (Explore-agent enumeration found Bundle 4 + earlier sweeps had already covered all but one helper in StarField.tsx; remaining src/lib/** functions retain explicit annotations from PR #79).
 
 - **`legal_full_name` in `SWAP_PRESERVED_KEYS`.** Kept as a fallback for
   pre-migration localStorage drafts. Drafts have a 30-day TTL — drop after

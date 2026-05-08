@@ -142,14 +142,14 @@ describe("IntakeForm — single-page flow", () => {
   it("renders the Submit button (not Next) when form is single-page", () => {
     renderForm();
     expect(
-      screen.getByRole("button", { name: /Continue to Payment/ }),
+      screen.getByRole("button", { name: /Continue to payment/i }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
   it("disables submit while required fields are empty", () => {
     renderForm();
-    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeDisabled();
   });
 
   it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
@@ -163,8 +163,8 @@ describe("IntakeForm — single-page flow", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeEnabled();
-    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
@@ -190,7 +190,7 @@ describe("IntakeForm — single-page flow", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -311,7 +311,7 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
     expect(screen.getByRole("button", { name: /Next/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Continue to Payment/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Continue to payment/i })).toBeNull();
   });
 
   it("disables Next while current-page validation is failing", () => {
@@ -325,7 +325,7 @@ describe("IntakeForm — paginated flow", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.click(screen.getByRole("button", { name: /Next/ }));
     expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Continue to Payment/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeInTheDocument();
   });
 
   it("returns to the previous page when Previous-page is clicked", async () => {
@@ -485,7 +485,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByRole("button", { name: /Continue to Payment/ }));
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
 
     await waitFor(() => {
       expect(window.location.href).toBe("https://buy.stripe.com/test");
