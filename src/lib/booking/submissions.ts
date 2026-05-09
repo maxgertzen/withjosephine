@@ -56,6 +56,7 @@ export type SubmissionRecord = {
   } | null;
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
+  recipientUserId: string | null;
 };
 
 /**
@@ -80,6 +81,12 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
   return repo.findSubmissionById(id);
 }
 
+export async function findSubmissionRecipientUserId(
+  id: string,
+): Promise<{ submissionId: string; recipientUserId: string | null } | null> {
+  return repo.findSubmissionRecipientUserId(id);
+}
+
 export async function markSubmissionPaid(
   submissionId: string,
   paid: {
@@ -88,6 +95,7 @@ export async function markSubmissionPaid(
     paidAt: string;
     amountPaidCents: number | null;
     amountPaidCurrency: string | null;
+    recipientUserId?: string | null;
   },
 ): Promise<void> {
   await repo.markSubmissionPaid(submissionId, paid);
@@ -140,6 +148,13 @@ export async function markSubmissionDelivered(
   delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
 ): Promise<void> {
   await repo.markSubmissionDelivered(submissionId, delivery);
+}
+
+export async function setSubmissionRecipientUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await repo.setSubmissionRecipientUser(submissionId, userId);
 }
 
 export async function appendEmailFired(

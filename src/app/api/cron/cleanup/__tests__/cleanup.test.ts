@@ -47,6 +47,7 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
     reading: null,
     amountPaidCents: null,
     amountPaidCurrency: null,
+    recipientUserId: null,
     ...overrides,
   };
 }

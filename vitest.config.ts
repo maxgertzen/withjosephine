@@ -14,11 +14,18 @@ export default defineConfig({
     // a test wants to vary must use vi.stubEnv().
     env: {
       NEXT_PUBLIC_R2_PUBLIC_HOST: "images.withjosephine.com",
+      NEXT_PUBLIC_SANITY_PROJECT_ID: "test-project",
+      NEXT_PUBLIC_SANITY_DATASET: "test-dataset",
     },
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      // `server-only` is a Next.js-runtime guard that throws on import
+      // in any non-server context. Vitest's jsdom environment trips that
+      // guard, so route the import to a no-op stub for tests. Production
+      // bundling honors the real module via Next's build pipeline.
+      "server-only": path.resolve(__dirname, "src/test/server-only.stub.ts"),
     },
   },
 });

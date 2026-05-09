@@ -43,6 +43,14 @@ export function createSqliteClient(): SqlClient & { close: () => void } {
       const info = stmt.run(...(params as unknown[]));
       return { rowsWritten: info.changes };
     },
+    async batch(statements) {
+      const txn = db.transaction((batch: ReadonlyArray<{ sql: string; params?: ReadonlyArray<unknown> }>) => {
+        for (const s of batch) {
+          db.prepare(s.sql).run(...((s.params ?? []) as unknown[]));
+        }
+      });
+      txn(statements);
+    },
     close() {
       db.close();
     },

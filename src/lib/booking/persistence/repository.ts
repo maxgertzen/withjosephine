@@ -24,6 +24,7 @@ type Row = {
   emails_fired_json: string;
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
+  recipient_user_id: string | null;
 };
 
 function rowToRecord(row: Row): SubmissionRecord {
@@ -55,6 +56,7 @@ function rowToRecord(row: Row): SubmissionRecord {
     reading,
     amountPaidCents: row.amount_paid_cents,
     amountPaidCurrency: row.amount_paid_currency,
+    recipientUserId: row.recipient_user_id ?? null,
   };
 }
 
@@ -98,6 +100,25 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
   return row ? rowToRecord(row) : null;
 }
 
+/**
+ * Narrow lookup for the listen-page auth gate. Returns only the
+ * recipient_user_id (and the submission id, for audit threading) — avoids
+ * the SELECT * + JSON.parse that `findSubmissionById` does on every audio
+ * Range request. Hot path: requireListenSession runs on every page render
+ * AND every audio chunk, so this is read 5–10× per playback session.
+ */
+export async function findSubmissionRecipientUserId(
+  id: string,
+): Promise<{ submissionId: string; recipientUserId: string | null } | null> {
+  const rows = await dbQuery<{ id: string; recipient_user_id: string | null }>(
+    `SELECT id, recipient_user_id FROM submissions WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return { submissionId: row.id, recipientUserId: row.recipient_user_id };
+}
+
 export async function markSubmissionPaid(
   id: string,
   paid: {
@@ -106,12 +127,18 @@ export async function markSubmissionPaid(
     paidAt: string;
     amountPaidCents: number | null;
     amountPaidCurrency: string | null;
+    recipientUserId?: string | null;
   },
 ): Promise<void> {
+  // Fold recipient_user_id into the same UPDATE so callers never observe
+  // the half-applied state (status=paid + recipient_user_id=NULL). When
+  // omitted, the COALESCE preserves the existing value so this is safe to
+  // call from non-payment paths that want to update only the paid columns.
   await dbExec(
     `UPDATE submissions
      SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?,
-         amount_paid_cents = ?, amount_paid_currency = ?
+         amount_paid_cents = ?, amount_paid_currency = ?,
+         recipient_user_id = COALESCE(?, recipient_user_id)
      WHERE id = ?`,
     [
       paid.paidAt,
@@ -119,6 +146,7 @@ export async function markSubmissionPaid(
       paid.stripeSessionId,
       paid.amountPaidCents,
       paid.amountPaidCurrency,
+      paid.recipientUserId ?? null,
       id,
     ],
   );
@@ -149,6 +177,16 @@ export async function deleteSubmission(id: string): Promise<void> {
 
 export async function unsetPhotoR2Key(id: string): Promise<void> {
   await dbExec(`UPDATE submissions SET photo_r2_key = NULL WHERE id = ?`, [id]);
+}
+
+export async function setSubmissionRecipientUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET recipient_user_id = ? WHERE id = ?`,
+    [userId, submissionId],
+  );
 }
 
 export async function markSubmissionDelivered(

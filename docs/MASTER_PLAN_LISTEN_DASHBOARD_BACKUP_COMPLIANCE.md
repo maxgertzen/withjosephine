@@ -52,7 +52,7 @@ D1 tables added:
 - Better Auth's session/user tables (or hand-rolled equivalents): scoped per-submissionId, no global account model
 
 Sanity submission schema additions:
-- `listenedAt: datetime` (Phase 2) — first successful magic-link verification writes; null until then
+- `listenedAt: datetime` (Phase 2) — first successful audio-Range request to `/api/listen/[id]/audio` writes via `setIfMissing`; null until then. **Trigger updated 2026-05-10 from "magic-link verify" to "audio-range" per Max's PM-decision D-3** (audio-range = actual play signal; session-create only proves access intent). See `MEMORY/WORK/20260509-202915_phase1-magic-link-listen/PRD.md` → `## Decisions → Session 2/3 design decisions`.
 
 ### File-system + R2 architecture (Phase 3 establishes)
 
@@ -121,7 +121,7 @@ Sentry:
 
 ```
 Phase 1 (user-model auth) ──provides──▶ requireListenSession() ──used-by──▶ Phase 4 (cascade), Phase 5 (claim flow)
-Phase 1 (auth) ──provides──▶ signIn hook ──used-by──▶ Phase 2 (listenedAt write)
+Phase 1 (audio route) ──provides──▶ /api/listen/[id]/audio Range handler ──used-by──▶ Phase 2 (listenedAt write fires here, NOT signIn — D-3)
 Phase 1 (user table) ──provides──▶ user.id ──used-by──▶ Phase 5 (purchaser_user_id, recipient_user_id)
 Phase 2 (schema) ──provides──▶ listenedAt field ──used-by──▶ Phase 3 (backed-up), Phase 4 (cascade target)
 Phase 3 (backup) ──provides──▶ deletion-replay hook ──used-by──▶ Phase 4 (deletion log)
@@ -131,7 +131,7 @@ Phase 5 (gift schema) ──extends──▶ submission table; depends on Phase 
 
 **Phase 4 has a circular dependency with Phase 1** (Phase 1 needs the audit table; Phase 4 designs it). Resolution: **Phase 1 ships its OWN minimal `listen_audit` schema in its migration**; Phase 4 extends it if needed. Document this in both PRDs.
 
-**Phase 2 listenedAt depends on Phase 1's auth event hook.** If Phase 2 ships first (out of sequence), use a server-action stub that sets `listenedAt` on listen-page mount until Phase 1 lands. Locked sequencing 1→2→3→4 avoids this.
+**Phase 2 listenedAt depends on Phase 1's audio-range route handler** (session 2 of Phase 1's 3-session plan). Trigger is `/api/listen/[id]/audio` first-Range response per submission, NOT session-create / magic-link redeem (decision D-3 locked 2026-05-10). Locked sequencing 1→2→3→4→5 avoids out-of-order shipping. Phase 2 PRD ISC-15 + ISC-16 + ISC-A3 reflect this trigger.
 
 ---
 
