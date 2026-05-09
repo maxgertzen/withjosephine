@@ -191,6 +191,9 @@ export function IntakeForm({
       const previousDraft = restoreDraft(previousReadingId);
       if (previousDraft) {
         preservedFromSwap = pickPreservedFields(previousDraft.values);
+        // setState-in-effect intentional: surface the swap-toast on reading change.
+        // Refactor to derived state queued in POST_LAUNCH_BACKLOG.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSwappedFromReadingName(readingName);
       }
     }
@@ -259,6 +262,9 @@ export function IntakeForm({
   // focusin so we don't have to thread onFocus through every form component.
   const focusedFieldsRef = useRef<Set<string>>(new Set());
   const currentPageRef = useRef(currentPage);
+  // Mirror currentPage to a ref so the document-level focusin listener (set
+  // up in the next useEffect) sees the latest page without re-binding.
+  // eslint-disable-next-line react-hooks/refs
   currentPageRef.current = currentPage;
   useEffect(() => {
     const form = formRef.current;
@@ -618,6 +624,14 @@ export function IntakeForm({
         </div>
       ) : null}
 
+      {/*
+        renderField's per-field tree closes over requestFreshTurnstileToken,
+        which reads turnstileRef.current. The ref access is intentional —
+        the callback is invoked at submit time, not during render — but
+        the new react-hooks/refs rule flags the closure capture itself.
+        Refactor queued in POST_LAUNCH_BACKLOG.
+      */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       {currentSections.map((section) => (
         <section
           key={section._id}
