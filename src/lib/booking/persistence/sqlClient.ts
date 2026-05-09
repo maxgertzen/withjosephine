@@ -16,6 +16,11 @@
 
 export type SqlValue = string | number | null;
 
+export type SqlStatement = {
+  sql: string;
+  params?: ReadonlyArray<SqlValue>;
+};
+
 export type SqlClient = {
   query<T extends Record<string, SqlValue> = Record<string, SqlValue>>(
     sql: string,
@@ -25,6 +30,14 @@ export type SqlClient = {
     sql: string,
     params?: ReadonlyArray<SqlValue>,
   ): Promise<{ rowsWritten: number }>;
+  /**
+   * Execute multiple statements atomically. D1's native `db.batch()`
+   * pipelines them in a single transaction; the SQLite test client wraps
+   * them in a transaction. Use for redeem-flow writes that must succeed
+   * together (e.g. consume magic link + insert session) so a mid-sequence
+   * failure can't leave the database in a half-redeemed state.
+   */
+  batch(statements: ReadonlyArray<SqlStatement>): Promise<void>;
 };
 
 type ClientFactory = () => SqlClient | Promise<SqlClient>;
@@ -74,6 +87,11 @@ export async function dbExec(
 ): Promise<{ rowsWritten: number }> {
   const client = await getClient();
   return client.exec(sql, params);
+}
+
+export async function dbBatch(statements: ReadonlyArray<SqlStatement>): Promise<void> {
+  const client = await getClient();
+  return client.batch(statements);
 }
 
 /**

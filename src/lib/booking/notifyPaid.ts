@@ -1,3 +1,6 @@
+import "server-only";
+
+import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
   appendEmailFired,
@@ -22,8 +25,8 @@ export async function applyPaidEvent(
 ): Promise<ApplyPaidResult> {
   if (submission.stripeEventId === details.stripeEventId) return "alreadyApplied";
 
-  await markSubmissionPaid(submission._id, details);
-
+  // Build the email context once — needed for both user-name extraction
+  // (firstName) and the actual email fan-out below.
   const context = buildSubmissionContext({
     ...submission,
     status: "paid",
@@ -33,6 +36,21 @@ export async function applyPaidEvent(
     amountPaidCents: details.amountPaidCents,
     amountPaidCurrency: details.amountPaidCurrency,
   });
+
+  // Identity: same email = same user. Resolved BEFORE the paid UPDATE so
+  // recipient_user_id rides the same statement (markSubmissionPaid's
+  // single UPDATE writes paid_at + status + recipient_user_id together) —
+  // closes the observable `paid AND recipient_user_id IS NULL` window
+  // that day-7 cron / Sanity mirror could previously witness.
+  let recipientUserId: string | null = null;
+  try {
+    const { userId } = await getOrCreateUser({ email: submission.email, name: context.firstName });
+    recipientUserId = userId;
+  } catch (error) {
+    console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
+  }
+
+  await markSubmissionPaid(submission._id, { ...details, recipientUserId });
 
   await Promise.all([
     sendNotificationToJosephine(context).catch((error) => {

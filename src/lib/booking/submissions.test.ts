@@ -186,6 +186,7 @@ describe("buildSubmissionContext", () => {
     reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
     amountPaidCents: null,
     amountPaidCurrency: null,
+    recipientUserId: null,
   };
 
   it("builds Resend context with photo URL and firstName extracted", () => {

@@ -20,14 +20,24 @@ vi.mock("./submissions", () => ({
   }),
 }));
 
+vi.mock("../auth/users", () => ({
+  getOrCreateUser: vi.fn(),
+}));
+
+import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import { applyPaidEvent } from "./notifyPaid";
-import { appendEmailFired, markSubmissionPaid, type SubmissionRecord } from "./submissions";
+import {
+  appendEmailFired,
+  markSubmissionPaid,
+  type SubmissionRecord,
+} from "./submissions";
 
 const mockMarkPaid = vi.mocked(markSubmissionPaid);
 const mockJosephine = vi.mocked(sendNotificationToJosephine);
 const mockOrderConfirmation = vi.mocked(sendOrderConfirmation);
 const mockAppendEmailFired = vi.mocked(appendEmailFired);
+const mockGetOrCreateUser = vi.mocked(getOrCreateUser);
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -38,6 +48,7 @@ const SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
 };
 
 beforeEach(() => {
@@ -45,6 +56,9 @@ beforeEach(() => {
   mockJosephine.mockReset().mockResolvedValue({ resendId: "msg_j" });
   mockOrderConfirmation.mockReset().mockResolvedValue({ resendId: "msg_oc" });
   mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
+  mockGetOrCreateUser
+    .mockReset()
+    .mockResolvedValue({ userId: "user_test_1", isNew: true });
 });
 
 describe("applyPaidEvent", () => {
@@ -67,7 +81,7 @@ describe("applyPaidEvent", () => {
     expect(mockAppendEmailFired).not.toHaveBeenCalled();
   });
 
-  it("marks paid, fires both Resend emails, and writes order_confirmation to emailsFired", async () => {
+  it("marks paid (with recipientUserId folded in), fires both Resend emails, and writes order_confirmation to emailsFired", async () => {
     const result = await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
@@ -83,6 +97,7 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      recipientUserId: "user_test_1",
     });
     expect(mockJosephine).toHaveBeenCalledOnce();
     expect(mockOrderConfirmation).toHaveBeenCalledOnce();
@@ -131,5 +146,43 @@ describe("applyPaidEvent", () => {
       amountPaidCurrency: null,
     });
     expect(result).toBe("applied");
+  });
+
+  it("creates a user from submission.email + extracted firstName before the paid UPDATE", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+    });
+
+    expect(mockGetOrCreateUser).toHaveBeenCalledWith({
+      email: "client@example.com",
+      name: "Ada",
+    });
+    // Order assertion: getOrCreateUser must run BEFORE markSubmissionPaid
+    // so recipient_user_id rides the same UPDATE statement (fix #11).
+    const userOrder = mockGetOrCreateUser.mock.invocationCallOrder[0]!;
+    const paidOrder = mockMarkPaid.mock.invocationCallOrder[0]!;
+    expect(userOrder).toBeLessThan(paidOrder);
+  });
+
+  it("still applies the paid state with recipientUserId=null when user-create throws", async () => {
+    mockGetOrCreateUser.mockRejectedValueOnce(new Error("D1 down"));
+    const result = await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+    });
+    expect(result).toBe("applied");
+    expect(mockMarkPaid).toHaveBeenCalledWith("sub_1", expect.objectContaining({
+      recipientUserId: null,
+    }));
+    // Email fan-out still happens.
+    expect(mockJosephine).toHaveBeenCalledOnce();
+    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
   });
 });
