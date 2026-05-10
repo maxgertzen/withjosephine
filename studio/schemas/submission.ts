@@ -209,6 +209,14 @@ export const submission = defineType({
         }),
     }),
     defineField({
+      name: "listenedAt",
+      title: "Listened At",
+      type: "datetime",
+      description:
+        "First time the customer hit play on the audio. Written by the audio proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      readOnly: true,
+    }),
+    defineField({
       name: "emailsFired",
       title: "Emails Fired",
       type: "array",

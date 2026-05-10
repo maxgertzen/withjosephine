@@ -19,6 +19,10 @@ vi.mock("./analytics/server", () => ({
   generateAnonymousDistinctId: vi.fn(() => "anon-test"),
 }));
 
+vi.mock("./sanity/fetch", () => ({
+  fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
+}));
+
 beforeEach(() => {
   vi.resetModules();
   sendMock.mockReset();
@@ -572,6 +576,55 @@ describe("email_sent server analytics", () => {
 
     await sendOrderConfirmation(submission);
 
+    expect(serverTrackMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendMagicLink", () => {
+  it("sends to the recipient with the magic-link URL embedded", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml" } });
+    const { sendMagicLink } = await import("./resend");
+
+    const result = await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
+    });
+
+    expect(result.resendId).toBe("msg_ml");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("ada@example.com");
+    expect(args.subject).toBe("Open your reading");
+    expect(args.html).toContain(
+      "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
+    );
+  });
+
+  it("emits email_sent with sub_type=magic_link and null submission_id", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml" } });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
+    });
+
+    const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(props.sub_type).toBe("magic_link");
+    expect(props.submission_id).toBeNull();
+    expect(props.distinct_id).toBe("anon-test");
+  });
+
+  it("returns null resendId on RESEND_DRY_RUN without firing", async () => {
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    const { sendMagicLink } = await import("./resend");
+
+    const result = await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://example.com/x",
+    });
+
+    expect(result.resendId).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
   });
 });

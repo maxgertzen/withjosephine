@@ -96,6 +96,27 @@
 			"migrations_dir": "./migrations"
 		}
 	],
+	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
+	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
+	// rules in the CF dashboard (see POST_LAUNCH_BACKLOG.md "WAF rate-limit
+	// rules"). The bindings below are the burst-protection layer.
+	"ratelimits": [
+		{
+			"name": "LISTEN_AUTH_SEND_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 5, "period": 60 }
+		},
+		{
+			"name": "LISTEN_AUTH_VERIFY_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 10, "period": 60 }
+		},
+		{
+			"name": "LISTEN_ASSET_LIMITER",
+			"namespace_id": "1003",
+			"simple": { "limit": 60, "period": 60 }
+		}
+	],
 	// Top-level (production) plain vars. Mirror in dashboard for visibility.
 	// `ENVIRONMENT` is read at runtime to assert bindings agree with the env
 	// (see src/lib/booking/envAssertions.ts).
@@ -146,6 +167,23 @@
 					"database_name": "withjosephine-bookings-staging",
 					"database_id": "4e1ea315-0628-40e6-a19b-527ad1ee4c4c",
 					"migrations_dir": "./migrations"
+				}
+			],
+			"ratelimits": [
+				{
+					"name": "LISTEN_AUTH_SEND_LIMITER",
+					"namespace_id": "2001",
+					"simple": { "limit": 5, "period": 60 }
+				},
+				{
+					"name": "LISTEN_AUTH_VERIFY_LIMITER",
+					"namespace_id": "2002",
+					"simple": { "limit": 10, "period": 60 }
+				},
+				{
+					"name": "LISTEN_ASSET_LIMITER",
+					"namespace_id": "2003",
+					"simple": { "limit": 60, "period": 60 }
 				}
 			],
 			"triggers": {

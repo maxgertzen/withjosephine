@@ -7,6 +7,7 @@ import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import {
   mirrorAppendEmailFired,
+  mirrorMarkSubmissionListened,
   mirrorSubmissionCreate,
   mirrorSubmissionDelete,
   mirrorSubmissionPatch,
@@ -87,6 +88,17 @@ export async function findSubmissionRecipientUserId(
   return repo.findSubmissionRecipientUserId(id);
 }
 
+export async function findSubmissionListenContext(
+  id: string,
+): Promise<{
+  submissionId: string;
+  recipientUserId: string | null;
+  voiceNoteUrl: string | null;
+  pdfUrl: string | null;
+} | null> {
+  return repo.findSubmissionListenContext(id);
+}
+
 export async function markSubmissionPaid(
   submissionId: string,
   paid: {
@@ -141,6 +153,20 @@ export async function listPaidSubmissionsForEmail(
   options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
   return repo.listPaidSubmissionsForEmail(emailType, options);
+}
+
+export async function listSubmissionsByRecipientUserId(
+  userId: string,
+): Promise<SubmissionRecord[]> {
+  return repo.listSubmissionsByRecipientUserId(userId);
+}
+
+/**
+ * First-listen signal. Fire-and-forget: caller schedules via runMirror so the
+ * audio response never blocks on Sanity. Idempotent via Sanity's setIfMissing.
+ */
+export function scheduleListenedAtMirror(submissionId: string, listenedAt: string): void {
+  runMirror(mirrorMarkSubmissionListened(submissionId, listenedAt));
 }
 
 export async function markSubmissionDelivered(

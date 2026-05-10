@@ -125,6 +125,46 @@ export const thankYouPageQuery = groq`
   }
 `;
 
+export const myReadingsPageQuery = groq`
+  *[_type == "myReadingsPage"][0] {
+    listHeading,
+    listSubheading,
+    openButtonLabel,
+    emptyHeading,
+    emptyCtaLabel,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel
+  }
+`;
+
+export const magicLinkVerifyPageQuery = groq`
+  *[_type == "magicLinkVerifyPage"][0] {
+    confirmHeading,
+    confirmBody,
+    confirmEmailLabel,
+    confirmButtonLabel,
+    confirmFootnote,
+    restedHeading,
+    restedBody,
+    restedCtaLabel
+  }
+`;
+
+export const emailMagicLinkQuery = groq`
+  *[_type == "emailMagicLink"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
 export const themeQuery = groq`
   *[_type == "theme"][0] {
     colors,

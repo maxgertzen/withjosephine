@@ -22,8 +22,6 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-type UpsertRow = { id: string; is_new: number };
-
 export async function getOrCreateUser(args: {
   email: string;
   name?: string | null;
@@ -33,28 +31,28 @@ export async function getOrCreateUser(args: {
   if (!email) throw new Error("getOrCreateUser: email is required");
 
   const now = args.now ?? Date.now();
-  const id = crypto.randomUUID();
+  const candidateId = crypto.randomUUID();
   const name = args.name?.trim() || null;
 
-  // Single-statement upsert: INSERT…ON CONFLICT DO UPDATE SET id=id (no-op
-  // on the existing row) + RETURNING returns the canonical row's id whether
-  // it was just inserted or already existed. The `(created_at = ?) AS is_new`
-  // expression discriminates new-vs-existing without a second query —
-  // collapses 2 RTT → 1 RTT for the existing-user case AND closes the
-  // rows-written-as-discriminator portability risk (SQLite's behavior for
-  // ON CONFLICT DO NOTHING's `changes()` count is implementation-defined).
-  const rows = await dbQuery<UpsertRow>(
+  // Single-statement upsert: INSERT…ON CONFLICT DO UPDATE SET id=id keeps
+  // the canonical (existing) row's id when the email already exists. We
+  // compare the RETURNING id against the candidate we tried to insert —
+  // equality means INSERT succeeded (new row), inequality means UPDATE
+  // no-op preserved a pre-existing different id. UUID collision is
+  // ~2^-122; immune to clock-collision bugs that timestamp-based
+  // discriminators have when two calls land in the same millisecond.
+  const rows = await dbQuery<{ id: string }>(
     `INSERT INTO user (id, email, name, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(email) DO UPDATE SET id=id
-     RETURNING id, (created_at = ?) AS is_new`,
-    [id, email, name, now, now, now],
+     RETURNING id`,
+    [candidateId, email, name, now, now],
   );
   const row = rows[0];
   if (!row) {
     throw new Error(`getOrCreateUser: upsert returned no row for ${email}`);
   }
-  return { userId: row.id, isNew: row.is_new === 1 };
+  return { userId: row.id, isNew: row.id === candidateId };
 }
 
 /**

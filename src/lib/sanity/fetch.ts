@@ -5,9 +5,12 @@ import { sanityFetch } from "./live";
 import {
   bookingFormQuery,
   bookingPageQuery,
+  emailMagicLinkQuery,
   faqItemsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
+  magicLinkVerifyPageQuery,
+  myReadingsPageQuery,
   notFoundPageQuery,
   readingBySlugQuery,
   readingSlugsQuery,
@@ -21,9 +24,12 @@ import {
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityEmailMagicLink,
   SanityFaqItem,
   SanityLandingPage,
   SanityLegalPage,
+  SanityMagicLinkVerifyPage,
+  SanityMyReadingsPage,
   SanityNotFoundPage,
   SanityReading,
   SanitySiteSettings,
@@ -130,5 +136,24 @@ export const fetchLegalPage = cache(async (slug: string): Promise<SanityLegalPag
     query: legalPageBySlugQuery,
     params: { slug },
   });
+  return data;
+});
+
+export const fetchMyReadingsPage = cache(async (): Promise<SanityMyReadingsPage | null> => {
+  const { data } = await sanityFetch<SanityMyReadingsPage | null>({ query: myReadingsPageQuery });
+  return data;
+});
+
+export const fetchMagicLinkVerifyPage = cache(
+  async (): Promise<SanityMagicLinkVerifyPage | null> => {
+    const { data } = await sanityFetch<SanityMagicLinkVerifyPage | null>({
+      query: magicLinkVerifyPageQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink | null> => {
+  const { data } = await sanityFetch<SanityEmailMagicLink | null>({ query: emailMagicLinkQuery });
   return data;
 });

@@ -101,22 +101,46 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
 }
 
 /**
- * Narrow lookup for the listen-page auth gate. Returns only the
- * recipient_user_id (and the submission id, for audit threading) — avoids
- * the SELECT * + JSON.parse that `findSubmissionById` does on every audio
- * Range request. Hot path: requireListenSession runs on every page render
- * AND every audio chunk, so this is read 5–10× per playback session.
+ * Narrow lookup for the listen-page auth gate + asset routes. Returns
+ * just enough columns to authorize the request and proxy the asset —
+ * skips the SELECT * + 2× JSON.parse that `findSubmissionById` does.
+ * Hot path: every audio Range chunk hits this 5–10× per playback.
  */
-export async function findSubmissionRecipientUserId(
+export async function findSubmissionListenContext(
   id: string,
-): Promise<{ submissionId: string; recipientUserId: string | null } | null> {
-  const rows = await dbQuery<{ id: string; recipient_user_id: string | null }>(
-    `SELECT id, recipient_user_id FROM submissions WHERE id = ? LIMIT 1`,
+): Promise<{
+  submissionId: string;
+  recipientUserId: string | null;
+  voiceNoteUrl: string | null;
+  pdfUrl: string | null;
+} | null> {
+  const rows = await dbQuery<{
+    id: string;
+    recipient_user_id: string | null;
+    voice_note_url: string | null;
+    pdf_url: string | null;
+  }>(
+    `SELECT id, recipient_user_id, voice_note_url, pdf_url
+       FROM submissions WHERE id = ? LIMIT 1`,
     [id],
   );
   const row = rows[0];
   if (!row) return null;
-  return { submissionId: row.id, recipientUserId: row.recipient_user_id };
+  return {
+    submissionId: row.id,
+    recipientUserId: row.recipient_user_id,
+    voiceNoteUrl: row.voice_note_url,
+    pdfUrl: row.pdf_url,
+  };
+}
+
+/** Back-compat shim — auth gate only needs the user-id half. */
+export async function findSubmissionRecipientUserId(
+  id: string,
+): Promise<{ submissionId: string; recipientUserId: string | null } | null> {
+  const ctx = await findSubmissionListenContext(id);
+  if (!ctx) return null;
+  return { submissionId: ctx.submissionId, recipientUserId: ctx.recipientUserId };
 }
 
 export async function markSubmissionPaid(
@@ -224,6 +248,19 @@ export async function listSubmissionsCreatedAfter(
      ORDER BY created_at ASC
      LIMIT ${LIST_LIMIT}`,
     [cutoffIso],
+  );
+  return rows.map(rowToRecord);
+}
+
+export async function listSubmissionsByRecipientUserId(
+  userId: string,
+): Promise<SubmissionRecord[]> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+     WHERE recipient_user_id = ? AND status = 'paid' AND delivered_at IS NOT NULL
+     ORDER BY created_at DESC
+     LIMIT ${LIST_LIMIT}`,
+    [userId],
   );
   return rows.map(rowToRecord);
 }
