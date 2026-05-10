@@ -125,6 +125,80 @@ export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
   bookReadingCtaText: "Book this Reading \u2192",
 };
 
+export interface MyReadingsPageContent {
+  listHeading: string;
+  listSubheading: string;
+  openButtonLabel: string;
+  emptyHeading: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+}
+
+export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
+  listHeading: "Your readings",
+  listSubheading: "Gathered here, ready when you are.",
+  openButtonLabel: "Open your reading",
+  emptyHeading: "Your readings will appear here once they’re delivered.",
+  emptyCtaLabel: "Explore Readings",
+  signInHeading: "Welcome back",
+  signInBody:
+    "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
+  signInButtonLabel: "Send me a link",
+  signInFootnote: "Your reading is still here, exactly as it was.",
+  checkEmailHeading: "Check your email",
+  checkEmailBody:
+    "If we have a reading on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
+  checkEmailResendLabel: "Send another",
+};
+
+export interface MagicLinkVerifyPageContent {
+  confirmHeading: string;
+  confirmBody: string;
+  confirmEmailLabel: string;
+  confirmButtonLabel: string;
+  confirmFootnote: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+}
+
+export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
+  confirmHeading: "Confirm your email",
+  confirmBody: "Type the email you used to book — we’ll open your reading from there.",
+  confirmEmailLabel: "Email",
+  confirmButtonLabel: "Continue",
+  confirmFootnote: "Your reading is still here, exactly as it was.",
+  restedHeading: "This link has rested",
+  restedBody:
+    "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one — it’ll arrive in a moment.",
+  restedCtaLabel: "Send me a fresh link",
+};
+
+export interface EmailMagicLinkContent {
+  subject: string;
+  preview: string;
+  greeting: string;
+  body: string[];
+  signOff: string | null;
+}
+
+export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
+  subject: "Open your reading",
+  preview: "Open your reading",
+  greeting: "Hi,",
+  body: [
+    "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
+    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+  ],
+  signOff: null,
+};
+
 export const ABOUT_DEFAULTS: MappedAbout = {
   sectionTag: "\u2726 About",
   heading: "who i am + what this is",

@@ -6,7 +6,8 @@ export type EmailSubType =
   | "day_2"
   | "day_7_delivery"
   | "day_7_overdue_alert"
-  | "contact_form";
+  | "contact_form"
+  | "magic_link";
 
 export type ServerEventMap = {
   payment_success: {

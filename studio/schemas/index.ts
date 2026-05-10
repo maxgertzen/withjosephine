@@ -9,6 +9,9 @@ import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
 import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
+import { myReadingsPage } from "./myReadingsPage";
+import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
+import { emailMagicLink } from "./emailMagicLink";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
@@ -26,6 +29,9 @@ export const schemaTypes = [
   theme,
   underConstructionPage,
   notFoundPage,
+  myReadingsPage,
+  magicLinkVerifyPage,
+  emailMagicLink,
   formField,
   formSection,
   bookingForm,

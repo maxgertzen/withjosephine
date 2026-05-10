@@ -6,6 +6,7 @@ vi.mock("../r2", () => ({
 
 vi.mock("./persistence/sanityMirror", () => ({
   mirrorAppendEmailFired: vi.fn(),
+  mirrorMarkSubmissionListened: vi.fn(),
   mirrorSubmissionCreate: vi.fn(),
   mirrorSubmissionDelete: vi.fn(),
   mirrorSubmissionPatch: vi.fn(),
@@ -21,6 +22,7 @@ import {
   deleteSubmissionAndPhoto,
   findSubmissionById,
   markSubmissionPaid,
+  scheduleListenedAtMirror,
   scrubSubmissionPhoto,
   type SubmissionRecord,
 } from "./submissions";
@@ -31,6 +33,7 @@ const mockMirrorPatch = vi.mocked(mirror.mirrorSubmissionPatch);
 const mockMirrorAppend = vi.mocked(mirror.mirrorAppendEmailFired);
 const mockMirrorDelete = vi.mocked(mirror.mirrorSubmissionDelete);
 const mockMirrorUnsetPhoto = vi.mocked(mirror.mirrorUnsetPhotoKey);
+const mockMirrorMarkListened = vi.mocked(mirror.mirrorMarkSubmissionListened);
 
 const SUBMISSION_INPUT = {
   id: "sub_1",
@@ -61,6 +64,7 @@ beforeEach(() => {
   mockMirrorAppend.mockReset().mockResolvedValue(undefined);
   mockMirrorDelete.mockReset().mockResolvedValue(undefined);
   mockMirrorUnsetPhoto.mockReset().mockResolvedValue(undefined);
+  mockMirrorMarkListened.mockReset().mockResolvedValue(undefined);
 });
 
 async function flushFireAndForget() {
@@ -165,6 +169,12 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     const result = await scrubSubmissionPhoto({ _id: "sub_x" });
     expect(result).toBe(false);
     expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("scheduleListenedAtMirror delegates to the Sanity setIfMissing mirror", async () => {
+    scheduleListenedAtMirror("sub_42", "2026-05-10T12:00:00Z");
+    await flushFireAndForget();
+    expect(mockMirrorMarkListened).toHaveBeenCalledWith("sub_42", "2026-05-10T12:00:00Z");
   });
 });
 

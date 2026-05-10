@@ -131,6 +131,21 @@ export async function mirrorAppendEmailFired(
   }
 }
 
+// First-write-wins via setIfMissing — concurrent listens both commit
+// but only the earliest write lands.
+export async function mirrorMarkSubmissionListened(
+  id: string,
+  listenedAt: string,
+): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+  try {
+    await client.patch(id).setIfMissing({ listenedAt }).commit({ visibility: "async" });
+  } catch (error) {
+    console.error(`[sanityMirror] listenedAt write failed for ${id}`, error);
+  }
+}
+
 export async function mirrorUnsetPhotoKey(id: string): Promise<void> {
   const client = getClient();
   if (!client) return;

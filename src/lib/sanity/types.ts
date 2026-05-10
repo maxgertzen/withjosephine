@@ -88,6 +88,40 @@ export type SanityBookingPage = {
   seo?: SanitySeo;
 };
 
+export type SanityMyReadingsPage = {
+  listHeading: string;
+  listSubheading: string;
+  openButtonLabel: string;
+  emptyHeading: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+};
+
+export type SanityMagicLinkVerifyPage = {
+  confirmHeading: string;
+  confirmBody: string;
+  confirmEmailLabel: string;
+  confirmButtonLabel: string;
+  confirmFootnote: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+};
+
+export type SanityEmailMagicLink = {
+  subject: string;
+  preview: string;
+  greeting: string;
+  body: string[];
+  signOff: string | null;
+};
+
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;

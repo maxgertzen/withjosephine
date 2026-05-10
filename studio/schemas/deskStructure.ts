@@ -9,6 +9,9 @@ export const SINGLETON_TYPES = new Set([
   "underConstructionPage",
   "notFoundPage",
   "bookingForm",
+  "myReadingsPage",
+  "magicLinkVerifyPage",
+  "emailMagicLink",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -84,6 +87,19 @@ export const deskStructure = (S: StructureBuilder) =>
       singletonListItem(S, "landingPage", "Landing Page"),
       singletonListItem(S, "underConstructionPage", "Under Construction Page"),
       singletonListItem(S, "notFoundPage", "404 Page"),
+      S.divider(),
+      S.listItem()
+        .title("✉️  Customer copy")
+        .id("customerCopyGroup")
+        .child(
+          S.list()
+            .title("Customer copy")
+            .items([
+              singletonListItem(S, "myReadingsPage", "My Readings Page"),
+              singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
+              singletonListItem(S, "emailMagicLink", "Email — Magic Link"),
+            ]),
+        ),
       S.divider(),
       S.documentTypeListItem("reading").title("Readings"),
       S.documentTypeListItem("testimonial").title("Testimonials"),

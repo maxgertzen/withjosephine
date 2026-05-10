@@ -8,9 +8,12 @@ import {
   findSubmissionById,
   listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
+  listSubmissionsByRecipientUserId,
   listSubmissionsByStatusOlderThan,
+  markSubmissionDelivered,
   markSubmissionExpired,
   markSubmissionPaid,
+  setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
 
@@ -173,5 +176,58 @@ describe("repository against in-memory SQLite", () => {
     await createSubmission(BASE_INPUT);
     await deleteSubmission("sub_1");
     expect(await findSubmissionById("sub_1")).toBeNull();
+  });
+
+  describe("listSubmissionsByRecipientUserId", () => {
+    async function seedDeliveredFor(userId: string, id: string, createdAt: string) {
+      await createSubmission({ ...BASE_INPUT, id, createdAt });
+      await markSubmissionPaid(id, {
+        stripeEventId: `evt_${id}`,
+        stripeSessionId: `cs_${id}`,
+        paidAt: createdAt,
+        amountPaidCents: null,
+        amountPaidCurrency: null,
+        recipientUserId: userId,
+      });
+      await markSubmissionDelivered(id, {
+        deliveredAt: createdAt,
+        voiceNoteUrl: `https://cdn.sanity.io/${id}.m4a`,
+        pdfUrl: `https://cdn.sanity.io/${id}.pdf`,
+      });
+    }
+
+    it("returns paid + delivered submissions for the given user, newest first", async () => {
+      await seedDeliveredFor("user_a", "sub_old", "2026-04-01T00:00:00Z");
+      await seedDeliveredFor("user_a", "sub_new", "2026-05-01T00:00:00Z");
+      await seedDeliveredFor("user_b", "sub_other", "2026-05-02T00:00:00Z");
+
+      const list = await listSubmissionsByRecipientUserId("user_a");
+      expect(list.map((r) => r._id)).toEqual(["sub_new", "sub_old"]);
+    });
+
+    it("excludes pending submissions even when recipient_user_id is set", async () => {
+      await createSubmission({ ...BASE_INPUT, id: "sub_pending" });
+      await setSubmissionRecipientUser("sub_pending", "user_a");
+      const list = await listSubmissionsByRecipientUserId("user_a");
+      expect(list).toEqual([]);
+    });
+
+    it("excludes paid-but-not-delivered submissions", async () => {
+      await createSubmission(BASE_INPUT);
+      await markSubmissionPaid("sub_1", {
+        stripeEventId: "evt_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-05-01T00:00:00Z",
+        amountPaidCents: null,
+        amountPaidCurrency: null,
+        recipientUserId: "user_a",
+      });
+      const list = await listSubmissionsByRecipientUserId("user_a");
+      expect(list).toEqual([]);
+    });
+
+    it("returns empty list for users with no submissions", async () => {
+      expect(await listSubmissionsByRecipientUserId("nobody")).toEqual([]);
+    });
   });
 });

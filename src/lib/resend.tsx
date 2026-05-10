@@ -8,6 +8,7 @@ import { Day2Started } from "./emails/Day2Started";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
 import { JosephineNotification } from "./emails/JosephineNotification";
+import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { isFlagEnabled } from "./env";
 
@@ -180,6 +181,34 @@ export async function sendDay7Delivery(
     emailKind: "Day +7 delivery",
     subType: "day_7_delivery",
     submissionId: submission.id,
+  });
+}
+
+export async function sendMagicLink(args: {
+  to: string;
+  magicLinkUrl: string;
+}): Promise<EmailSendResult> {
+  // Lazy imports scope the Sanity fetch to test runs that don't mock it.
+  const { EMAIL_MAGIC_LINK_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailMagicLink } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailMagicLink().catch(() => null);
+  const copy = { ...EMAIL_MAGIC_LINK_DEFAULTS, ...(sanity ?? {}) };
+  const html = await render(
+    <MagicLink
+      magicLinkUrl={args.magicLinkUrl}
+      preview={copy.preview}
+      greeting={copy.greeting}
+      body={copy.body}
+      signOff={copy.signOff}
+    />,
+  );
+  return sendOrSkip({
+    to: args.to,
+    subject: copy.subject,
+    html,
+    emailKind: "magic link",
+    subType: "magic_link",
+    submissionId: null,
   });
 }
 
