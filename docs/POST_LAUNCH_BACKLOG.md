@@ -342,20 +342,10 @@ Why excludes made the bundle bigger AND broke workStore: best current hypothesis
 - **What:** `src/lib/auth/users.ts` `normalizeEmail` does `.trim().toLowerCase()` only — no `.normalize('NFC')`. A user whose email client autocompletes a decomposed form (`café@x.com`) while Stripe stored the precomposed form (`café@x.com`) will be locked out at email-match.
 - **Action:** Add `.normalize('NFC')` in `normalizeEmail`; apply at both write (getOrCreateUser) and read (redeemMagicLink) sites. Bundle with the auth-polish PR.
 
-#### A-2. `findUserByEmail` enumeration-leak hardening contract
-- **Source:** Code review Pentester [LOW-8] + Quality + Engineer (3-lens convergence) 2026-05-10.
-- **What:** `findUserByEmail` is exported but currently unused inside Phase 1 auth code. When session 2 (`POST /api/auth/magic-link`) lands, the route MUST return identical 200/200 + identical timing regardless of whether the email is known — otherwise the API leaks "is this email a Josephine customer?" Sensitive (paid spiritual reading is GDPR Art. 9 special category data).
-- **Action:** Add JSDoc warning to `findUserByEmail` declaring the silent-200 contract. Implement in session 2 route with a constant-time delay (e.g. `await sleep(jitteredAvg)` whether-or-not-found) + identical response shape. Verify with a test that fires both known + unknown email and asserts the response shape + timing are within tolerance.
-
 #### A-3. Constant-time token-hash comparison
 - **Source:** Code review Engineer [NIT] 2026-05-10.
 - **What:** SQLite `WHERE token_hash = ?` short-circuits string equality; over a high-volume endpoint with timing observability this leaks bits. Practical risk is low because the attacker would need to generate the SHA-256 hash *prefix* (not the raw token), but defense-in-depth is cheap.
 - **Action:** Phase 4 hardening. Apply `crypto.timingSafeEqual` after the lookup in `redeemMagicLink` + `getActiveSession`. Or accept the residual risk and document.
-
-#### A-4. `LISTEN_AUTH_SECRET` env wiring
-- **Source:** Code review Engineer [BUG] 2026-05-10. `dailySalt` accepts a `secret` param but no caller ever sources it from env. Test file declares its own constant.
-- **What:** PRD-specified daily-rotating IP-hash salt has no production binding committed. If a route ever calls `hashIp(ip)` without an env-sourced secret, IP hashes degenerate to `crypto.subtle.digest("SHA-256", "undefined:" + day + ":" + ip)` — still privacy-preserving but no cross-incident-secret rotation.
-- **Action:** Session 2 (routes layer). Add `LISTEN_AUTH_SECRET` to wrangler.jsonc + `.env.example`. Wire through every `hashIp` call site in the auth routes.
 
 #### A-5. Session cookie rotation on use
 - **Source:** Code review Engineer [surprise] 2026-05-10.
@@ -401,11 +391,6 @@ These are noise-level items the 5-vantage review surfaced. Bundle into one `/sim
 - **What:** `migrations/0004_listen_auth.sql:1` says "user-keyed (iter 2)"; `listenSession.ts` header has "Identity model (iter 2)" preamble. Iteration numbers belong in git, not the source.
 - **Action:** Strip iteration markers; keep substantive content.
 
-#### B-6. Drop or fix the aspirational "reconcile pass" comment in `notifyPaid.ts`
-- **Source:** Code review Quality [NOISE] 2026-05-10.
-- **What:** Pre-fix-#11, `notifyPaid.ts` had a comment claiming `recipient_user_id` would backfill on the next reconcile pass. Fix #11 folded the recipient_user_id write into the main paid UPDATE — so the comment is now stale (and was a lie when written; no such reconcile exists).
-- **Action:** Verify the comment is gone after fix #11 lands. If not, remove it.
-
 #### B-7. Drop tautological `constants` describe block
 - **Source:** Code review Engineer [NIT] 2026-05-10.
 - **What:** `src/lib/auth/listenSession.test.ts` has a `describe("constants")` block asserting literal numbers (`MAGIC_LINK_TTL_MS === 24*60*60*1000`). This is testing TypeScript, not behavior.
@@ -416,20 +401,10 @@ These are noise-level items the 5-vantage review surfaced. Bundle into one `/sim
 - **What:** Current "different day, different hash" test uses `Date.UTC(2026, 4, 9, 12, 0, 0)` + 24h, which works but is fragile across timezone/locale assumptions.
 - **Action:** Construct `day1 = day_n * 86_400_000` and `day2 = (day_n+1) * 86_400_000` explicitly so the test asserts the floor-arithmetic boundary directly.
 
-#### B-9. `notifyPaid.test.ts` should assert call ordering
-- **Source:** Code review Engineer [BUG-test] 2026-05-10.
-- **What:** Test mocks both getOrCreateUser and setSubmissionRecipientUser but doesn't pin that `markSubmissionPaid` runs before user-create — the comment in source says it does, no test enforces it. (After fix #11, ordering changes again — still worth pinning.)
-- **Action:** Use `mock.invocationCallOrder` to assert the sequence matches the source's comment.
-
 #### B-10. Add explicit "forwarded-link Level 1 success path" test
 - **Source:** Code review Engineer [BUG-test] 2026-05-10.
 - **What:** No test explicitly frames the case "issued for alice; redeem with claimedEmail='alice@example.com' succeeds and grants alice's session". The current happy-path test covers this mechanically but not as the documented Level 1 hardening property.
 - **Action:** Add a clearly-named test asserting the property + invariant comment.
-
-#### B-11. `UserRecord` type alias
-- **Source:** Code review Reuse [NEW-PATTERN] 2026-05-10.
-- **What:** `Promise<{ id: string; email: string } | null>` is declared in `findUserByEmail` and `findUserById`; will appear in more call sites as session 2 routes land.
-- **Action:** `export type UserRecord = { id: string; email: string };` in `src/lib/auth/users.ts`.
 
 ---
 
