@@ -139,6 +139,52 @@ export async function deleteObject(key: string): Promise<void> {
   }
 }
 
+/**
+ * Server-side PUT of an in-memory body. Used by the Phase 4 Art. 20 export
+ * endpoint to upload a ZIP under `exports/`. Throws on non-2xx so the caller
+ * can surface the failure to the user.
+ */
+export async function putObject(
+  key: string,
+  body: ArrayBuffer | Uint8Array,
+  contentType: string,
+): Promise<void> {
+  const { client, accountId } = getR2();
+  // Blob wrap normalises Uint8Array/ArrayBuffer to a `BodyInit` shape the
+  // worker fetch typing accepts. TS narrows Uint8Array<ArrayBufferLike> in
+  // a way that's incompatible with BlobPart's stricter ArrayBuffer constraint
+  // (the SharedArrayBuffer carve-out); the cast is safe at runtime since
+  // workerd never produces SharedArrayBuffer-backed Uint8Arrays from fflate.
+  const blob = new Blob([body as BlobPart], { type: contentType });
+  const response = await client.fetch(objectUrl(accountId, getBucketName(), key), {
+    method: "PUT",
+    headers: { "Content-Type": contentType, "Content-Length": String(body.byteLength) },
+    body: blob,
+  });
+  if (!response.ok) {
+    throw new Error(`R2 PUT failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+/**
+ * Pre-signed GET URL for download. Phase 4 Art. 20 export uses this to
+ * deliver the bundle ZIP without exposing the R2 bucket publicly. Default
+ * 7-day expiry matches the locked PRD spec.
+ */
+export async function getSignedDownloadUrl(
+  key: string,
+  expiresInSeconds = 7 * 24 * 60 * 60,
+): Promise<string> {
+  const { client, accountId } = getR2();
+  const url = new URL(objectUrl(accountId, getBucketName(), key));
+  url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
+  const signed = await client.sign(
+    new Request(url.toString(), { method: "GET" }),
+    { aws: { signQuery: true } },
+  );
+  return signed.url;
+}
+
 export function buildPhotoKey(submissionId: string, originalFilename: string): string {
   const sanitized = originalFilename
     .toLowerCase()

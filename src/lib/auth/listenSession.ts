@@ -44,6 +44,7 @@ import {
 import {
   findSubmissionRecipientUserId,
 } from "@/lib/booking/submissions";
+import { sha256Hex } from "@/lib/hmac";
 
 import { findUserById, normalizeEmail } from "./users";
 
@@ -65,7 +66,9 @@ export type AuditEventType =
   | "listen_session_revoked"
   | "listen_cross_user_denied"
   | "export_request"
-  | "deletion_request";
+  | "export_throttled"
+  | "deletion_request"
+  | "admin_auth_failed";
 
 export type RedeemResult =
   | { ok: true; userId: string; sessionId: string; cookieValue: string }
@@ -102,11 +105,6 @@ function randomToken(byteLength = 32): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 function dailySalt(secret: string, now: number = Date.now()): string {
   const day = Math.floor(now / (24 * 60 * 60 * 1000));
