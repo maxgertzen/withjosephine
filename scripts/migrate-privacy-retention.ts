@@ -10,10 +10,14 @@
 // via NEXT_PUBLIC_SANITY_DATASET=staging for the second pass.
 import { createClient } from "@sanity/client";
 
-import {
-  READING_CONTENT_RETENTION_YEARS,
-  TAX_RETENTION_YEARS,
-} from "../src/lib/compliance/retention";
+// Mirror of `src/lib/compliance/retention.ts` constants. Inlined here because
+// `retention.ts` imports `server-only` (Next runtime guard), which throws
+// when `tsx` runs the script outside Next's build pipeline. Keep these two
+// values in lockstep with retention.ts — if the constants ever change
+// (HMRC-locked at 6yr today; reading-content locked at 3yr per Privacy
+// Counsel), update both files in the same PR.
+const READING_CONTENT_RETENTION_YEARS = 3;
+const TAX_RETENTION_YEARS = 6;
 
 const client = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
