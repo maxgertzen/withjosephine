@@ -164,6 +164,16 @@ export type SanityListenPage = {
   assetTroubleMailtoSubject: string;
 };
 
+export type SanityThankYouOverride = {
+  readingSlug: string;
+  heading?: string;
+  subheading?: string;
+  confirmationBody?: string;
+  timelineBody?: string;
+  contactBody?: string;
+  closingMessage?: string;
+};
+
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;
@@ -174,6 +184,7 @@ export type SanityThankYouPage = {
   contactBody?: string;
   closingMessage: string;
   returnButtonText: string;
+  overrides?: SanityThankYouOverride[];
   seo?: SanitySeo;
 };
 

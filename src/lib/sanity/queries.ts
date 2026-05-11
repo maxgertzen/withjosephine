@@ -121,6 +121,15 @@ export const thankYouPageQuery = groq`
     contactBody,
     closingMessage,
     returnButtonText,
+    "overrides": overrides[]{
+      "readingSlug": reading->slug.current,
+      heading,
+      subheading,
+      confirmationBody,
+      timelineBody,
+      contactBody,
+      closingMessage
+    },
     seo
   }
 `;

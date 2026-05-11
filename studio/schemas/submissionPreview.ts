@@ -14,15 +14,19 @@ function formatLong(value: unknown): string | null {
   return date ? longDateFormatter.format(date) : null;
 }
 
-function trimmedString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed === "" ? null : trimmed;
+function responseValue(responses: unknown, key: string): string | null {
+  if (!Array.isArray(responses)) return null;
+  for (const entry of responses) {
+    if (typeof entry?.value !== "string") continue;
+    const trimmed = entry.value.trim();
+    if (entry.fieldKey === key && trimmed !== "") return trimmed;
+  }
+  return null;
 }
 
-function buildTitle(firstName: unknown, lastName: unknown, email: unknown): string {
-  const first = trimmedString(firstName);
-  const last = trimmedString(lastName);
+function buildTitle(responses: unknown, email: unknown): string {
+  const first = responseValue(responses, "first_name");
+  const last = responseValue(responses, "last_name");
   if (first && last) return `${first} ${last}`;
   if (first) return first;
   if (typeof email === "string" && email !== "") return email;
@@ -76,7 +80,7 @@ function buildSubtitle(args: {
 
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
   return {
-    title: buildTitle(selection.firstName, selection.lastName, selection.email),
+    title: buildTitle(selection.responses, selection.email),
     subtitle: buildSubtitle({
       status: selection.status,
       createdAt: selection.createdAt,

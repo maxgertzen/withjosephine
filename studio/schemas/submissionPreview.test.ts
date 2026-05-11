@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { buildPreview, prepareSubmissionPreview } from "./submissionPreview";
 
-const NAME_FIELDS = { firstName: "Marie", lastName: "Dupont" };
+const NAME_RESPONSES = [
+  { fieldKey: "first_name", fieldType: "shortText", value: "Marie" },
+  { fieldKey: "last_name", fieldType: "shortText", value: "Dupont" },
+];
+
+const NAME_FIELDS = { responses: NAME_RESPONSES };
 
 describe("prepareSubmissionPreview — title", () => {
   it("renders full name when both first_name and last_name responses are present", () => {
@@ -15,32 +20,35 @@ describe("prepareSubmissionPreview — title", () => {
     expect(result.title).toBe("Marie Dupont");
   });
 
-  it("renders first name alone when lastName is missing", () => {
+  it("renders first name alone when last_name response is missing", () => {
     const result = prepareSubmissionPreview({
-      firstName: "Marie",
+      responses: [NAME_RESPONSES[0]],
       email: "marie@example.com",
       status: "pending",
     });
     expect(result.title).toBe("Marie");
   });
 
-  it("falls back to email when neither name field is present", () => {
+  it("falls back to email when no name responses present", () => {
     const result = prepareSubmissionPreview({
+      responses: [],
       email: "alice@example.com",
       status: "pending",
     });
     expect(result.title).toBe("alice@example.com");
   });
 
-  it('falls back to "no name" when both name fields and email are missing', () => {
-    const result = prepareSubmissionPreview({ status: "pending" });
+  it('falls back to "no name" when responses and email are both missing', () => {
+    const result = prepareSubmissionPreview({ responses: [], status: "pending" });
     expect(result.title).toBe("no name");
   });
 
-  it("ignores name values that are empty or whitespace-only", () => {
+  it("ignores response values that are empty or whitespace-only", () => {
     const result = prepareSubmissionPreview({
-      firstName: "   ",
-      lastName: "",
+      responses: [
+        { fieldKey: "first_name", value: "   " },
+        { fieldKey: "last_name", value: "" },
+      ],
       email: "alice@example.com",
       status: "pending",
     });

@@ -102,11 +102,11 @@ export const deskStructure = (S: StructureBuilder) =>
       singletonListItem(S, "notFoundPage", "404 Page"),
       S.divider(),
       S.listItem()
-        .title("✉️  Customer copy")
-        .id("customerCopyGroup")
+        .title("✉️  Customer emails & pages")
+        .id("customerEmailsAndPagesGroup")
         .child(
           S.list()
-            .title("Customer copy")
+            .title("Customer emails & pages")
             .items([
               singletonListItem(S, "listenPage", "Listen Page"),
               singletonListItem(S, "myReadingsPage", "My Readings Page"),

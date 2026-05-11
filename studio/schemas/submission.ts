@@ -230,12 +230,13 @@ export const submission = defineType({
               title: "Type",
               type: "string",
               description:
-                "Email kind. Mirrors the SPEC §15 Mixpanel email_sent type: one of order_confirmation, day2, day7, day14, abandonment.",
+                "Email kind. Mirrors the EmailFiredType union in src/lib/booking/submissions.ts.",
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
                   { title: "Day +2 (I've started)", value: "day2" },
                   { title: "Day +7 (delivery)", value: "day7" },
+                  { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
                 ],
@@ -277,8 +278,7 @@ export const submission = defineType({
       paidAt: "paidAt",
       deliveredAt: "deliveredAt",
       listenedAt: "listenedAt",
-      firstName: 'responses[fieldKey == "first_name"][0].value',
-      lastName: 'responses[fieldKey == "last_name"][0].value',
+      responses: "responses",
     },
     prepare: prepareSubmissionPreview,
   },
