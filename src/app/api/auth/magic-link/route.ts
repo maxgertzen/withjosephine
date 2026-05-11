@@ -9,10 +9,9 @@ import { findUserByEmail } from "@/lib/auth/users";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { sendMagicLink } from "@/lib/resend";
 
-// Uniform response across all branches (no enumeration leak); Resend
-// send rides runMirror so timing doesn't betray known-vs-unknown.
-// Rate-limit is the one exception: it fires before email lookup so any
-// input from the throttled IP hits the same throttled response.
+// Uniform response across known/unknown email (no enumeration leak); Resend send
+// rides runMirror so timing doesn't betray either. Throttle fires before email
+// lookup so any throttled IP hits the same response regardless of email.
 export async function POST(request: Request) {
   const { email, next: rawNext } = await readEmailAndNext(request);
   const cleanNext = safeNext(rawNext);
@@ -35,8 +34,6 @@ export async function POST(request: Request) {
       const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? new URL(request.url).origin;
       const verifyUrl = new URL("/auth/verify", origin);
       verifyUrl.searchParams.set("token", token);
-      // /my-readings is the default landing, so don't bother round-tripping it;
-      // only listen-page next URLs carry the submissionId that needs preserving.
       if (isListenNext(cleanNext)) verifyUrl.searchParams.set("next", cleanNext);
       runMirror(
         sendMagicLink({ to: user.email, magicLinkUrl: verifyUrl.toString() }).then(() => {}),

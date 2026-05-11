@@ -5,11 +5,8 @@ import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { isListenNext, safeNext } from "@/lib/auth/safeNext";
 
-// All failures redirect to a rested-link surface — same copy for every
-// failure mode, no information leak. When the original click was bound
-// to a /listen/[id] flow, we stay in-context on that page (carries the
-// submissionId so the re-issue CTA can ask for a fresh link); otherwise
-// fall back to the global /auth/verify card.
+// Same surface for every failure mode — no information leak. Listen-next stays
+// in-context so the re-issue CTA keeps the submissionId.
 function restedRedirect(origin: string, next: string, token: string): NextResponse {
   if (isListenNext(next)) {
     const url = new URL(next, origin);

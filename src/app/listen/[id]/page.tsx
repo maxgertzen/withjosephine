@@ -39,10 +39,7 @@ export default async function ListenPage({
 
   const copy: ListenViewProps["copy"] = { ...LISTEN_PAGE_DEFAULTS, ...(sanity ?? {}) };
 
-  // ?sent=1 takes precedence over any authentication state for the listen
-  // flow — the user has just submitted the form; show check-email even if
-  // they happen to already have an active session (matches /my-readings'
-  // tie-break behaviour from D-2).
+  // ?sent=1 wins over an active session — user just submitted the form.
   if (search.sent === "1") {
     return <ListenView copy={copy} state={{ kind: "checkEmail", submissionId: id }} />;
   }
@@ -66,18 +63,13 @@ function resolveAuthenticatedState(args: {
   submission: SubmissionRecord | null;
   welcome: string | undefined;
 }): ListenViewState {
-  // Uniform "sign-in" surface for unauthenticated, mismatched, AND
-  // unknown-submission cases. No enumeration leak about whether a given
-  // submission id exists for someone else.
+  // Uniform signIn for no-session / cross-user / unknown-submission — no enumeration leak.
   if (!args.session) return { kind: "signIn", submissionId: args.id };
   if (!args.submission) return { kind: "signIn", submissionId: args.id };
   if (args.submission.recipientUserId !== args.session.userId) {
     return { kind: "signIn", submissionId: args.id };
   }
 
-  // Owned by this session: route to delivered surface only when the
-  // reading actually has assets to play; otherwise show the
-  // brand-voiced "asset trouble" state (D-4).
   const hasAssets = Boolean(args.submission.voiceNoteUrl || args.submission.pdfUrl);
   const isDeliverable =
     args.submission.status === "paid" && args.submission.deliveredAt && hasAssets;
