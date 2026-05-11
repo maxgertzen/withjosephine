@@ -3,6 +3,7 @@ import { structureTool } from "sanity/structure";
 import { presentationTool } from "sanity/presentation";
 import { visionTool } from "@sanity/vision";
 import { colorInput } from "@sanity/color-input";
+import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
@@ -39,6 +40,9 @@ export default defineConfig([
             ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
           );
         }
+        if (schemaType === "submission") {
+          return [...prev, deleteCustomerDataAction];
+        }
         return prev;
       },
       newDocumentOptions: (prev) => prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
@@ -59,6 +63,9 @@ export default defineConfig([
           return prev.filter(
             ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
           );
+        }
+        if (schemaType === "submission") {
+          return [...prev, deleteCustomerDataAction];
         }
         return prev;
       },

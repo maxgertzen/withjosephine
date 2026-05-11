@@ -232,6 +232,35 @@ export async function sendMagicLink(args: {
   });
 }
 
+/**
+ * Phase 4 — GDPR Art. 20 data-portability delivery. Plain-text HTML, no
+ * marketing copy, just the pre-signed R2 URL with its expiry window. Lives
+ * here rather than in a React Email template because the body is one
+ * structural sentence + a link — a full React component would be ceremony.
+ */
+export async function sendPrivacyExportEmail(args: {
+  to: string;
+  downloadUrl: string;
+  submissionCount: number;
+  expiryDays: number;
+}): Promise<EmailSendResult> {
+  const html = [
+    `<p>Your Josephine data export is ready.</p>`,
+    `<p>It contains the data we hold for your ${args.submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).</p>`,
+    `<p><a href="${args.downloadUrl}">Download your export (ZIP)</a></p>`,
+    `<p>This link expires in ${args.expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.</p>`,
+    `<p>With love,<br/>Josephine</p>`,
+  ].join("\n");
+  return sendOrSkip({
+    to: args.to,
+    subject: "Your Josephine data export",
+    html,
+    emailKind: "privacy export",
+    subType: "privacy_export",
+    submissionId: null,
+  });
+}
+
 export type ContactPayload = {
   name: string;
   email: string;

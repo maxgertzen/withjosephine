@@ -90,6 +90,18 @@ export function hexToBytes(hex: string, expectedByteLength?: number): Uint8Array
 }
 
 /**
+ * SHA-256 hex digest. Shared util — used for daily-rotating IP/UA hashes in
+ * listen-session auth and for stable email-hash audit identifiers in the
+ * Phase 4 deletion cascade. Unsalted; callers add their own salt when they
+ * need rotation (`dailySalt(secret, now)` in listenSession.ts).
+ */
+export async function sha256Hex(value: string): Promise<string> {
+  const data = TEXT_ENCODER.encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return bytesToHex(digest);
+}
+
+/**
  * Constant-time string comparison. Use for shared-secret bearer-token checks
  * where `===` would short-circuit on first mismatch and leak prefix length
  * over network timing. Length mismatch is allowed to short-circuit (a stable
