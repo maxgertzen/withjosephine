@@ -6,6 +6,7 @@ import {
   type CreateSubmissionInput,
   deleteSubmission,
   findSubmissionById,
+  insertFinancialRecord,
   listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
   listSubmissionsByRecipientUserId,
@@ -16,6 +17,7 @@ import {
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
+import { dbQuery } from "./sqlClient";
 
 const BASE_INPUT: CreateSubmissionInput = {
   id: "sub_1",
@@ -228,6 +230,65 @@ describe("repository against in-memory SQLite", () => {
 
     it("returns empty list for users with no submissions", async () => {
       expect(await listSubmissionsByRecipientUserId("nobody")).toEqual([]);
+    });
+  });
+
+  describe("insertFinancialRecord", () => {
+    it("writes a row into financial_records", async () => {
+      await insertFinancialRecord({
+        submissionId: "sub_1",
+        userId: "user_test_1",
+        email: "ada@example.com",
+        paidAt: "2026-04-21T10:00:00.000Z",
+        amountPaidCents: 9900,
+        amountPaidCurrency: "usd",
+        country: "GB",
+        stripeSessionId: "cs_1",
+        retainedUntil: "2032-04-21T10:00:00.000Z",
+      });
+
+      const rows = await dbQuery<{
+        submission_id: string;
+        user_id: string | null;
+        email: string;
+        paid_at: string;
+        amount_paid_cents: number;
+        amount_paid_currency: string;
+        country: string | null;
+        stripe_session_id: string;
+        retained_until: string;
+      }>(`SELECT * FROM financial_records WHERE submission_id = ?`, ["sub_1"]);
+      expect(rows).toHaveLength(1);
+      const row = rows[0]!;
+      expect(row.user_id).toBe("user_test_1");
+      expect(row.email).toBe("ada@example.com");
+      expect(row.amount_paid_cents).toBe(9900);
+      expect(row.country).toBe("GB");
+      expect(row.retained_until).toBe("2032-04-21T10:00:00.000Z");
+    });
+
+    it("is idempotent — a second insert for the same submission_id is ignored", async () => {
+      const input = {
+        submissionId: "sub_2",
+        userId: null,
+        email: "leo@example.com",
+        paidAt: "2026-04-21T10:00:00.000Z",
+        amountPaidCents: 7900,
+        amountPaidCurrency: "usd",
+        country: null,
+        stripeSessionId: "cs_2",
+        retainedUntil: "2032-04-21T10:00:00.000Z",
+      };
+      await insertFinancialRecord(input);
+      // Same key, different amount — second insert should be ignored, not updated.
+      await insertFinancialRecord({ ...input, amountPaidCents: 99999 });
+
+      const rows = await dbQuery<{ amount_paid_cents: number }>(
+        `SELECT amount_paid_cents FROM financial_records WHERE submission_id = ?`,
+        ["sub_2"],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.amount_paid_cents).toBe(7900);
     });
   });
 });

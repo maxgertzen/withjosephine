@@ -71,6 +71,7 @@ describe("applyPaidEvent", () => {
         paidAt: "2026-04-28T12:00:00Z",
         amountPaidCents: null,
         amountPaidCurrency: null,
+        country: null,
       },
     );
 
@@ -88,17 +89,23 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
 
     expect(result).toBe("applied");
-    expect(mockMarkPaid).toHaveBeenCalledWith("sub_1", {
-      stripeEventId: "evt_1",
-      stripeSessionId: "cs_1",
-      paidAt: "2026-04-28T12:00:00Z",
-      amountPaidCents: null,
-      amountPaidCurrency: null,
-      recipientUserId: "user_test_1",
-    });
+    expect(mockMarkPaid).toHaveBeenCalledWith(
+      "sub_1",
+      {
+        stripeEventId: "evt_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-04-28T12:00:00Z",
+        amountPaidCents: null,
+        amountPaidCurrency: null,
+        country: null,
+        recipientUserId: "user_test_1",
+      },
+      undefined,
+    );
     expect(mockJosephine).toHaveBeenCalledOnce();
     expect(mockOrderConfirmation).toHaveBeenCalledOnce();
     expect(mockAppendEmailFired).toHaveBeenCalledOnce();
@@ -115,6 +122,7 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
     expect(mockAppendEmailFired).not.toHaveBeenCalled();
   });
@@ -129,6 +137,7 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
 
     expect(result).toBe("applied");
@@ -144,6 +153,7 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
     expect(result).toBe("applied");
   });
@@ -155,6 +165,7 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
 
     expect(mockGetOrCreateUser).toHaveBeenCalledWith({
@@ -168,6 +179,46 @@ describe("applyPaidEvent", () => {
     expect(userOrder).toBeLessThan(paidOrder);
   });
 
+  it("passes a financial_records mirror to markSubmissionPaid when amount + currency present (atomic dbBatch)", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00.000Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+      country: "GB",
+    });
+
+    expect(mockMarkPaid).toHaveBeenCalledWith(
+      "sub_1",
+      expect.any(Object),
+      {
+        submissionId: "sub_1",
+        userId: "user_test_1",
+        email: "client@example.com",
+        paidAt: "2026-04-28T12:00:00.000Z",
+        amountPaidCents: 9900,
+        amountPaidCurrency: "usd",
+        country: "GB",
+        stripeSessionId: "cs_1",
+      },
+    );
+  });
+
+  it("omits the financial mirror when amount or currency is null", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00.000Z",
+      amountPaidCents: null,
+      amountPaidCurrency: "usd",
+      country: null,
+    });
+
+    const call = mockMarkPaid.mock.calls[0]!;
+    expect(call[2]).toBeUndefined();
+  });
+
   it("still applies the paid state with recipientUserId=null when user-create throws", async () => {
     mockGetOrCreateUser.mockRejectedValueOnce(new Error("D1 down"));
     const result = await applyPaidEvent(SUBMISSION, {
@@ -176,11 +227,14 @@ describe("applyPaidEvent", () => {
       paidAt: "2026-04-28T12:00:00Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
     expect(result).toBe("applied");
-    expect(mockMarkPaid).toHaveBeenCalledWith("sub_1", expect.objectContaining({
-      recipientUserId: null,
-    }));
+    expect(mockMarkPaid).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ recipientUserId: null }),
+      undefined,
+    );
     // Email fan-out still happens.
     expect(mockJosephine).toHaveBeenCalledOnce();
     expect(mockOrderConfirmation).toHaveBeenCalledOnce();

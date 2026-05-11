@@ -1,8 +1,9 @@
+import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { PHOTO_PUBLIC_URL_BASE } from "./constants";
 import { formatAmountPaid } from "./formatAmount";
-import type { CreateSubmissionInput } from "./persistence/repository";
+import type { CreateSubmissionInput, FinancialRecordInput } from "./persistence/repository";
 import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import {
@@ -13,6 +14,7 @@ import {
   mirrorSubmissionPatch,
   mirrorUnsetPhotoKey,
 } from "./persistence/sanityMirror";
+import { dbBatch } from "./persistence/sqlClient";
 
 export type SubmissionStatus = "pending" | "paid" | "expired";
 
@@ -70,12 +72,29 @@ export type SubmissionRecord = {
 export type CreateSubmissionParams = CreateSubmissionInput & {
   consentAcknowledgedAt: string;
   ipAddress: string | null;
+  // Phase 4 — Art. 6 + Art. 9 ack timestamps. Nullable for legacy callers /
+  // tests; the booking POST path must populate both.
+  art6AcknowledgedAt?: string | null;
+  art9AcknowledgedAt?: string | null;
 };
 
 export async function createSubmission(params: CreateSubmissionParams): Promise<void> {
-  const { consentAcknowledgedAt, ipAddress, ...input } = params;
+  const {
+    consentAcknowledgedAt,
+    ipAddress,
+    art6AcknowledgedAt,
+    art9AcknowledgedAt,
+    ...input
+  } = params;
   await repo.createSubmission(input);
-  runMirror(mirrorSubmissionCreate(input, consentAcknowledgedAt, ipAddress));
+  runMirror(
+    mirrorSubmissionCreate(input, {
+      consentAcknowledgedAt,
+      ipAddress,
+      art6AcknowledgedAt: art6AcknowledgedAt ?? null,
+      art9AcknowledgedAt: art9AcknowledgedAt ?? null,
+    }),
+  );
 }
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
@@ -99,6 +118,8 @@ export async function findSubmissionListenContext(
   return repo.findSubmissionListenContext(id);
 }
 
+export type FinancialMirror = Omit<FinancialRecordInput, "retainedUntil">;
+
 export async function markSubmissionPaid(
   submissionId: string,
   paid: {
@@ -109,8 +130,22 @@ export async function markSubmissionPaid(
     amountPaidCurrency: string | null;
     recipientUserId?: string | null;
   },
+  // Phase 4 — when provided, the paid UPDATE and the financial_records INSERT
+  // submit as a single atomic D1 batch. The 6yr-retention row is computed
+  // from `paidAt` so callers never accidentally diverge from policy.
+  financial?: FinancialMirror,
 ): Promise<void> {
-  await repo.markSubmissionPaid(submissionId, paid);
+  if (financial) {
+    await dbBatch([
+      repo.buildMarkSubmissionPaidStatement(submissionId, paid),
+      repo.buildInsertFinancialRecordStatement({
+        ...financial,
+        retainedUntil: computeFinancialRetainedUntil(financial.paidAt),
+      }),
+    ]);
+  } else {
+    await repo.markSubmissionPaid(submissionId, paid);
+  }
   runMirror(
     mirrorSubmissionPatch(submissionId, {
       status: "paid",

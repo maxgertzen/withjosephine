@@ -104,18 +104,61 @@ export const submission = defineType({
       name: "consentSnapshot",
       title: "Consent Snapshot",
       type: "object",
-      description: "Frozen record of the consent terms the user agreed to at submission.",
+      description:
+        "Frozen record of the consent terms the user agreed to at submission. Phase 4: art6Consent + art9Consent are the GDPR audit fields; labelText/acknowledgedAt are retained read-only for legacy rows.",
       fields: [
         defineField({
+          name: "art6Consent",
+          title: "Art. 6 Consent (ordinary processing)",
+          type: "object",
+          description: "Explicit acknowledgment of name/email/birth-data/photo/intake processing.",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
+          name: "art9Consent",
+          title: "Art. 9 Consent (special-category, explicit)",
+          type: "object",
+          description:
+            "Explicit consent for special-category processing — birth chart + intake answers may reveal spiritual/philosophical beliefs (ICO Art. 9 guidance).",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
           name: "labelText",
-          title: "Consent Label Text",
+          title: "Legacy Consent Label Text",
           type: "text",
-          description: "Exact wording the user saw and accepted.",
+          description: "Pre-Phase-4 single-checkbox label. Read-only for new submissions.",
+          readOnly: true,
         }),
         defineField({
           name: "acknowledgedAt",
-          title: "Acknowledged At",
+          title: "Legacy Acknowledged At",
           type: "datetime",
+          description: "Pre-Phase-4 timestamp. Read-only for new submissions.",
+          readOnly: true,
         }),
         defineField({
           name: "ipAddress",

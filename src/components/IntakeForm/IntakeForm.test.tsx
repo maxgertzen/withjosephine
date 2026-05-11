@@ -162,6 +162,8 @@ describe("IntakeForm — single-page flow", () => {
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/processing my booking details/));
+    await user.click(screen.getByLabelText(/explicitly consent/));
     await user.click(screen.getByLabelText(/non-refundable/));
     expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
@@ -170,6 +172,51 @@ describe("IntakeForm — single-page flow", () => {
     });
     const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
     expect(body.turnstileToken).toBe("turnstile-token-stub");
+  });
+
+  it("blocks submission with per-checkbox errors when Art. 6 or Art. 9 unchecked", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/non-refundable/));
+    // Check only the Art. 6 consent — Art. 9 deliberately left unchecked.
+    await user.click(screen.getByLabelText(/processing my booking details/));
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
+    // The Art. 9 checkbox should show an inline error; Art. 6 should not.
+    await waitFor(() => {
+      const art9 = screen.getByLabelText(/explicitly consent/) as HTMLInputElement;
+      expect(art9.getAttribute("aria-invalid") ?? "false").toBe("true");
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("includes art6Consent and art9Consent flags in the booking POST body", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
+        status: 200,
+      }),
+    );
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "" },
+    });
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/processing my booking details/));
+    await user.click(screen.getByLabelText(/explicitly consent/));
+    await user.click(screen.getByLabelText(/non-refundable/));
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+    expect(body.art6Consent).toBe(true);
+    expect(body.art9Consent).toBe(true);
   });
 
   it("submits and redirects to the payment URL on success", async () => {
@@ -189,6 +236,8 @@ describe("IntakeForm — single-page flow", () => {
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/processing my booking details/));
+    await user.click(screen.getByLabelText(/explicitly consent/));
     await user.click(screen.getByLabelText(/non-refundable/));
     await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
 
@@ -511,6 +560,8 @@ describe("IntakeForm — localStorage save/resume", () => {
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+    await user.click(screen.getByLabelText(/processing my booking details/));
+    await user.click(screen.getByLabelText(/explicitly consent/));
     await user.click(screen.getByLabelText(/non-refundable/));
     await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
 
