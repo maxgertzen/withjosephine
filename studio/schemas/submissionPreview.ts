@@ -24,13 +24,10 @@ function responseValue(responses: unknown, key: string): string | null {
   return null;
 }
 
-function buildTitle(responses: unknown, email: unknown): string {
+function fullNameOrNull(responses: unknown): string | null {
   const first = responseValue(responses, "first_name");
   const last = responseValue(responses, "last_name");
-  if (first && last) return `${first} ${last}`;
-  if (first) return first;
-  if (typeof email === "string" && email !== "") return email;
-  return "no name";
+  return first && last ? `${first} ${last}` : null;
 }
 
 function dayCounter(paidAt: Date, now: Date): string {
@@ -41,56 +38,54 @@ function dayCounter(paidAt: Date, now: Date): string {
     : `Day ${day} of ${DELIVERY_WINDOW_DAYS}`;
 }
 
-function emailSuffix(email: unknown): string {
-  return typeof email === "string" && email !== "" ? ` · ${email}` : "";
-}
-
-function buildSubtitle(args: {
+function buildDates(args: {
   status: unknown;
   createdAt: unknown;
   paidAt: unknown;
   deliveredAt: unknown;
   listenedAt: unknown;
-  email: unknown;
   now: Date;
 }): string {
   const deliveredDate = parseIso(args.deliveredAt);
   if (deliveredDate) {
     const deliveredLabel = `Delivered ${longDateFormatter.format(deliveredDate)}`;
     const listenedLabel = formatLong(args.listenedAt);
-    const base = listenedLabel
-      ? `${deliveredLabel} · Listened ${listenedLabel}`
-      : deliveredLabel;
-    return `${base}${emailSuffix(args.email)}`;
+    return listenedLabel ? `${deliveredLabel} · Listened ${listenedLabel}` : deliveredLabel;
   }
 
   const paidDate = parseIso(args.paidAt);
   if (args.status === "paid" && paidDate) {
-    return `Paid ${longDateFormatter.format(paidDate)} · ${dayCounter(paidDate, args.now)}${emailSuffix(args.email)}`;
+    return `Paid ${longDateFormatter.format(paidDate)} · ${dayCounter(paidDate, args.now)}`;
   }
 
   const createdLabel = formatLong(args.createdAt);
   if (createdLabel && args.status !== "expired") {
-    return `Submitted ${createdLabel}${emailSuffix(args.email)}`;
+    return `Submitted ${createdLabel}`;
   }
 
-  const statusLabel = typeof args.status === "string" && args.status !== "" ? args.status : "pending";
-  return `${statusLabel}${emailSuffix(args.email)}`;
+  return typeof args.status === "string" && args.status !== "" ? args.status : "pending";
 }
 
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
-  return {
-    title: buildTitle(selection.responses, selection.email),
-    subtitle: buildSubtitle({
-      status: selection.status,
-      createdAt: selection.createdAt,
-      paidAt: selection.paidAt,
-      deliveredAt: selection.deliveredAt,
-      listenedAt: selection.listenedAt,
-      email: selection.email,
-      now,
-    }),
-  };
+  const fullName = fullNameOrNull(selection.responses);
+  const email = typeof selection.email === "string" && selection.email !== "" ? selection.email : null;
+  const dates = buildDates({
+    status: selection.status,
+    createdAt: selection.createdAt,
+    paidAt: selection.paidAt,
+    deliveredAt: selection.deliveredAt,
+    listenedAt: selection.listenedAt,
+    now,
+  });
+
+  if (fullName) {
+    const subtitleParts = email ? [email, dates] : [dates];
+    return { title: fullName, subtitle: subtitleParts.join(" · ") };
+  }
+  if (email) {
+    return { title: email, subtitle: dates };
+  }
+  return { title: "no name", subtitle: dates };
 }
 
 export function prepareSubmissionPreview(selection: Record<string, unknown>) {
