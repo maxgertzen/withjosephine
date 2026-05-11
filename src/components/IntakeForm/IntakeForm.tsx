@@ -72,6 +72,11 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  // In `redeem` mode the form UPDATES an existing pre-paid submission and
+  // skips Stripe. Caller passes the submissionId + a success redirect URL.
+  mode?: "create" | "redeem";
+  redeemSubmissionId?: string;
+  redeemSuccessUrl?: string;
 };
 
 function initialValueFor(field: SanityFormField): FieldValue {
@@ -116,6 +121,9 @@ export function IntakeForm({
   pageIndicatorTagline,
   pagination,
   loadingStateCopy,
+  mode = "create",
+  redeemSubmissionId,
+  redeemSuccessUrl,
 }: IntakeFormProps) {
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
@@ -200,7 +208,7 @@ export function IntakeForm({
         preservedFromSwap = pickPreservedFields(previousDraft.values);
         // setState-in-effect intentional: surface the swap-toast on reading change.
         // Refactor to derived state queued in POST_LAUNCH_BACKLOG.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setSwappedFromReadingName(readingName);
       }
     }
@@ -271,7 +279,7 @@ export function IntakeForm({
   const currentPageRef = useRef(currentPage);
   // Mirror currentPage to a ref so the document-level focusin listener (set
   // up in the next useEffect) sees the latest page without re-binding.
-  // eslint-disable-next-line react-hooks/refs
+   
   currentPageRef.current = currentPage;
   useEffect(() => {
     const form = formRef.current;
@@ -538,18 +546,25 @@ export function IntakeForm({
         if (typeof v === "string" && v !== "") companionKeys[companion] = v;
       }
 
-      const response = await fetch(BOOKING_API_ROUTE, {
+      const endpoint =
+        mode === "redeem" ? "/api/booking/gift-redeem" : BOOKING_API_ROUTE;
+      const requestBody: Record<string, unknown> = {
+        readingSlug: readingId,
+        values: { ...result.data, ...followupResult.data, ...companionKeys },
+        turnstileToken: submissionTurnstileToken ?? "",
+        [HONEYPOT_FIELD]: honeypot,
+        consentLabelSnapshot: consentField?.label ?? "",
+        art6Consent,
+        art9Consent,
+      };
+      if (mode === "redeem" && redeemSubmissionId) {
+        requestBody.submissionId = redeemSubmissionId;
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          readingSlug: readingId,
-          values: { ...result.data, ...followupResult.data, ...companionKeys },
-          turnstileToken: submissionTurnstileToken ?? "",
-          [HONEYPOT_FIELD]: honeypot,
-          consentLabelSnapshot: consentField?.label ?? "",
-          art6Consent,
-          art9Consent,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -563,6 +578,28 @@ export function IntakeForm({
           reading_id: readingId,
           error_code: `http_${response.status}`,
         });
+        return;
+      }
+
+      if (mode === "redeem") {
+        const redeemData = (await response.json()) as { submissionId?: string; redirectUrl?: string };
+        if (!redeemData.submissionId) {
+          setSubmitError("Unexpected response. Please try again.");
+          setIsSubmitting(false);
+          track("intake_submit_error", { reading_id: readingId, error_code: "missing_redeem_id" });
+          return;
+        }
+        track("intake_submit_success", { reading_id: readingId });
+        identifySubmission(redeemData.submissionId);
+        try {
+          clearDraft(readingId);
+        } catch {
+          // localStorage failures must not block the redirect.
+        }
+        window.location.href =
+          redeemData.redirectUrl ??
+          redeemSuccessUrl ??
+          `/thank-you/${redeemData.submissionId}?gift=1`;
         return;
       }
 
@@ -651,7 +688,7 @@ export function IntakeForm({
         the new react-hooks/refs rule flags the closure capture itself.
         Refactor queued in POST_LAUNCH_BACKLOG.
       */}
-      {/* eslint-disable-next-line react-hooks/refs */}
+      { }
       {currentSections.map((section) => (
         <section
           key={section._id}

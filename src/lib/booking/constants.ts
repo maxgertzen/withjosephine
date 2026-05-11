@@ -14,8 +14,11 @@ export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
 
 export const PHOTO_PUBLIC_URL_BASE = R2_PUBLIC_ORIGIN;
 
+export const BOOKING_API_GIFT_ROUTE = "/api/booking/gift";
+
 export const BOOKING_ROUTES = {
   entry: (slug: string) => `/book/${slug}`,
   letter: (slug: string) => `/book/${slug}/letter`,
   intake: (slug: string) => `/book/${slug}/intake`,
+  gift: (slug: string) => `/book/${slug}/gift`,
 } as const;

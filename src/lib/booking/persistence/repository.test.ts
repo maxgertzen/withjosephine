@@ -6,14 +6,17 @@ import {
   type CreateSubmissionInput,
   deleteSubmission,
   findSubmissionById,
+  findUnclaimedGiftByTokenHash,
   insertFinancialRecord,
   listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
   listSubmissionsByRecipientUserId,
   listSubmissionsByStatusOlderThan,
+  markGiftClaimSent,
   markSubmissionDelivered,
   markSubmissionExpired,
   markSubmissionPaid,
+  redeemGiftSubmission,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
@@ -289,6 +292,129 @@ describe("repository against in-memory SQLite", () => {
       );
       expect(rows).toHaveLength(1);
       expect(rows[0]?.amount_paid_cents).toBe(7900);
+    });
+  });
+
+  describe("gift claim flow (Phase 5)", () => {
+    const GIFT_INPUT: CreateSubmissionInput = {
+      ...BASE_INPUT,
+      id: "sub_gift",
+      isGift: true,
+      recipientEmail: "bob@example.com",
+      giftDeliveryMethod: "self_send",
+      responses: [],
+    };
+
+    it("findUnclaimedGiftByTokenHash returns the matching gift submission", async () => {
+      await createSubmission(GIFT_INPUT);
+      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
+      const found = await findUnclaimedGiftByTokenHash("deadbeef-hash");
+      expect(found?._id).toBe("sub_gift");
+      expect(found?.isGift).toBe(true);
+    });
+
+    it("findUnclaimedGiftByTokenHash returns null when no match", async () => {
+      await createSubmission(GIFT_INPUT);
+      const found = await findUnclaimedGiftByTokenHash("no-such-hash");
+      expect(found).toBeNull();
+    });
+
+    it("findUnclaimedGiftByTokenHash returns null after the gift is claimed", async () => {
+      await createSubmission(GIFT_INPUT);
+      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
+      await redeemGiftSubmission("sub_gift", {
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
+        ],
+        recipientUserId: "user_bob",
+        claimedAtIso: "2026-05-12T01:00:00Z",
+      });
+      const found = await findUnclaimedGiftByTokenHash("deadbeef-hash");
+      expect(found).toBeNull();
+    });
+
+    it("redeemGiftSubmission updates responses + claimed_at + recipient_user_id", async () => {
+      await createSubmission(GIFT_INPUT);
+      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
+      await redeemGiftSubmission("sub_gift", {
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
+        ],
+        recipientUserId: "user_bob",
+        claimedAtIso: "2026-05-12T01:00:00Z",
+      });
+      const record = await findSubmissionById("sub_gift");
+      expect(record?.responses[0]?.value).toBe("Bob");
+      expect(record?.giftClaimedAt).toBe("2026-05-12T01:00:00Z");
+      expect(record?.recipientUserId).toBe("user_bob");
+    });
+
+    it("listPaidSubmissionsForEmail excludes paid-but-unclaimed gifts", async () => {
+      await createSubmission({
+        ...GIFT_INPUT,
+        id: "gift_unclaimed",
+        recipientEmail: "claire@example.com",
+      });
+      await markSubmissionPaid("gift_unclaimed", {
+        stripeEventId: "evt_g",
+        stripeSessionId: "cs_g",
+        paidAt: "2026-05-01T00:00:00Z",
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+      });
+
+      const due = await listPaidSubmissionsForEmail("day2", {});
+      expect(due.map((r) => r._id)).not.toContain("gift_unclaimed");
+    });
+
+    it("listPaidSubmissionsForEmail includes gifts AFTER recipient claims", async () => {
+      await createSubmission({
+        ...GIFT_INPUT,
+        id: "gift_claimed",
+        recipientEmail: "dani@example.com",
+      });
+      await markSubmissionPaid("gift_claimed", {
+        stripeEventId: "evt_g2",
+        stripeSessionId: "cs_g2",
+        paidAt: "2026-05-01T00:00:00Z",
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+      });
+      await markGiftClaimSent("gift_claimed", "hash-2", "2026-05-01T01:00:00Z");
+      await redeemGiftSubmission("gift_claimed", {
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Dani" },
+        ],
+        recipientUserId: "user_dani",
+        claimedAtIso: "2026-05-02T00:00:00Z",
+      });
+
+      const due = await listPaidSubmissionsForEmail("day2", {});
+      expect(due.map((r) => r._id)).toContain("gift_claimed");
+    });
+
+    it("redeemGiftSubmission is idempotent — second call after claim does not overwrite", async () => {
+      await createSubmission(GIFT_INPUT);
+      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
+      await redeemGiftSubmission("sub_gift", {
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
+        ],
+        recipientUserId: "user_bob",
+        claimedAtIso: "2026-05-12T01:00:00Z",
+      });
+      // Second attempt — should be a no-op because gift_claimed_at is set
+      await redeemGiftSubmission("sub_gift", {
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Evil" },
+        ],
+        recipientUserId: "user_attacker",
+        claimedAtIso: "2026-05-13T00:00:00Z",
+      });
+      const record = await findSubmissionById("sub_gift");
+      expect(record?.responses[0]?.value).toBe("Bob");
+      expect(record?.recipientUserId).toBe("user_bob");
+      expect(record?.giftClaimedAt).toBe("2026-05-12T01:00:00Z");
     });
   });
 });

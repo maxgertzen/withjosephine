@@ -4,9 +4,11 @@ import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import {
   bookingFormQuery,
+  bookingGiftFormQuery,
   bookingPageQuery,
   emailDay2StartedQuery,
   emailDay7DeliveryQuery,
+  emailGiftPurchaseConfirmationQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   faqItemsQuery,
@@ -27,9 +29,11 @@ import {
 } from "./queries";
 import type {
   SanityBookingForm,
+  SanityBookingGiftForm,
   SanityBookingPage,
   SanityEmailDay2Started,
   SanityEmailDay7Delivery,
+  SanityEmailGiftPurchaseConfirmation,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
   SanityFaqItem,
@@ -139,6 +143,11 @@ export const fetchBookingForm = cache(async (): Promise<SanityBookingForm | null
   return data;
 });
 
+export const fetchBookingGiftForm = cache(async (): Promise<SanityBookingGiftForm | null> => {
+  const { data } = await sanityFetch<SanityBookingGiftForm | null>({ query: bookingGiftFormQuery });
+  return data;
+});
+
 export const fetchLegalPage = cache(async (slug: string): Promise<SanityLegalPage | null> => {
   const { data } = await sanityFetch<SanityLegalPage | null>({
     query: legalPageBySlugQuery,
@@ -177,6 +186,15 @@ export const fetchEmailOrderConfirmation = cache(
   async (): Promise<SanityEmailOrderConfirmation | null> => {
     const { data } = await sanityFetch<SanityEmailOrderConfirmation | null>({
       query: emailOrderConfirmationQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailGiftPurchaseConfirmation = cache(
+  async (): Promise<SanityEmailGiftPurchaseConfirmation | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmation | null>({
+      query: emailGiftPurchaseConfirmationQuery,
     });
     return data;
   },

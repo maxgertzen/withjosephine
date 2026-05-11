@@ -99,6 +99,16 @@ const SUBMISSION_BASE = {
   recipientUserId: "user_a",
   photoR2Key: "submissions/sub_1/photo.jpg",
   stripeSessionId: "cs_test_1",
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 function happyPathMocks() {

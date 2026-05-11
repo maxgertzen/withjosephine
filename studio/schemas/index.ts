@@ -15,10 +15,12 @@ import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailDay2Started } from "./emailDay2Started";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
+import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
 import { listenPage } from "./listenPage";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
+import { bookingGiftForm } from "./bookingGiftForm";
 import { submission } from "./submission";
 
 export const schemaTypes = [
@@ -39,9 +41,11 @@ export const schemaTypes = [
   emailDay7Delivery,
   emailDay2Started,
   emailOrderConfirmation,
+  emailGiftPurchaseConfirmation,
   listenPage,
   formField,
   formSection,
   bookingForm,
+  bookingGiftForm,
   submission,
 ];

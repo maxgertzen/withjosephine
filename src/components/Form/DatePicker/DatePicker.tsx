@@ -89,7 +89,7 @@ export function DatePicker({
     // setState-in-effect is intentional here — keep calendar month synced to the
     // typed value when navigating across months. Refactor to derived state queued
     // in POST_LAUNCH_BACKLOG (react-hooks/refs sweep).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (selected) setMonth(selected);
     // selected is recomputed each render; key off the stable string value.
     // eslint-disable-next-line react-hooks/exhaustive-deps

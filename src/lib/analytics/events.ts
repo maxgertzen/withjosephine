@@ -73,6 +73,24 @@ export type ClientEventMap = {
     reading_id: ReadingId;
     submission_id: string;
   };
+  gift_toggle_selected: {
+    reading_id: ReadingId;
+    mode: "for_me" | "as_gift";
+  };
+  gift_submit_click: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+    validation_pass: boolean;
+  };
+  gift_submit_success: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+  };
+  gift_submit_error: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+    error_code: string;
+  };
 };
 
 export type ClientEventName = keyof ClientEventMap;

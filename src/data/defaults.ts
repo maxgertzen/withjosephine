@@ -95,6 +95,9 @@ export interface EntryPageContent {
   dropCapCaption: string;
   changeReadingLinkText: string;
   aboutJosephineLinkText: string;
+  giftToggleForMeLabel: string;
+  giftToggleAsGiftLabel: string;
+  giftToggleHelper: string;
 }
 
 export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
@@ -108,6 +111,9 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
     "The intake form \u2014 about five minutes. You\u2019ll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three \u2192",
   aboutJosephineLinkText: "About Josephine",
+  giftToggleForMeLabel: "For myself",
+  giftToggleAsGiftLabel: "Send as a gift",
+  giftToggleHelper: "",
 };
 
 export interface BookingInfoNotes {
@@ -123,6 +129,85 @@ export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
     "Detailed voice note recording + a supporting PDF created entirely for you.",
   whatsIncludedHeading: "What\u2019s included",
   bookReadingCtaText: "Book this Reading \u2192",
+};
+
+export interface BookingGiftFormContent {
+  heading: string;
+  subheading: string;
+  deliveryMethodLabel: string;
+  deliveryMethodSelfSendLabel: string;
+  deliveryMethodSelfSendHelper: string;
+  deliveryMethodScheduledLabel: string;
+  deliveryMethodScheduledHelper: string;
+  purchaserFirstNameLabel: string;
+  purchaserFirstNameHelper: string;
+  purchaserEmailLabel: string;
+  purchaserEmailHelper: string;
+  recipientNameLabelSelfSend: string;
+  recipientNamePlaceholderSelfSend: string;
+  recipientNameLabelScheduled: string;
+  recipientNameHelperScheduled: string;
+  recipientEmailLabel: string;
+  recipientEmailHelper: string;
+  giftMessageLabel: string;
+  giftMessagePlaceholder: string;
+  sendAtSectionLabel: string;
+  sendAtPresetNow: string;
+  sendAtPresetWeek: string;
+  sendAtPresetMonth: string;
+  sendAtCustomLabel: string;
+  consentIntro: string;
+  nonRefundableNotice: string;
+  art6ConsentLabel: string;
+  coolingOffConsentLabel: string;
+  termsConsentLabel: string;
+  submitButtonSelfSend: string;
+  submitButtonScheduled: string;
+  loadingStateCopy: string;
+  antiAbuseCapHeading: string;
+  antiAbuseCapBody: string;
+}
+
+export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
+  heading: "A reading, given.",
+  subheading: "",
+  deliveryMethodLabel: "How should it travel?",
+  deliveryMethodSelfSendLabel: "I\u2019ll send the link myself",
+  deliveryMethodSelfSendHelper:
+    "You\u2019ll receive a private link by email. Forward it to them in your own words.",
+  deliveryMethodScheduledLabel: "Schedule the email",
+  deliveryMethodScheduledHelper: "We\u2019ll email them on the date you choose.",
+  purchaserFirstNameLabel: "Your first name",
+  purchaserFirstNameHelper: "So we can tell them who it\u2019s from.",
+  purchaserEmailLabel: "Your email",
+  purchaserEmailHelper: "Your receipt + a copy of the gift link will arrive here.",
+  recipientNameLabelSelfSend: "Who\u2019s this for? (optional)",
+  recipientNamePlaceholderSelfSend:
+    "my sister, Maya, the friend who keeps mentioning her chart\u2026",
+  recipientNameLabelScheduled: "Their first name",
+  recipientNameHelperScheduled: "We\u2019ll address the email to them.",
+  recipientEmailLabel: "Their email",
+  recipientEmailHelper:
+    "Used only to send the claim email at the time you choose.",
+  giftMessageLabel: "A note for them (optional)",
+  giftMessagePlaceholder: "A word for them, if you like\u2026",
+  sendAtSectionLabel: "When should it arrive?",
+  sendAtPresetNow: "Right away",
+  sendAtPresetWeek: "On a chosen morning",
+  sendAtPresetMonth: "At a specific moment",
+  sendAtCustomLabel: "Choose the date and time",
+  consentIntro: "Before this travels onward \u2014",
+  nonRefundableNotice:
+    "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
+  art6ConsentLabel: "I understand this is for reflection, not advice.",
+  coolingOffConsentLabel: "I understand gifts are non-refundable.",
+  termsConsentLabel: "I agree to the terms and privacy notice.",
+  submitButtonSelfSend: "Send this gift",
+  submitButtonScheduled: "Prepare this gift",
+  loadingStateCopy: "One moment \u2014 taking you to checkout.",
+  antiAbuseCapHeading: "A gentle pause",
+  antiAbuseCapBody:
+    "We\u2019re holding a gift for this person already. Please give them a moment to open it before sending another.",
 };
 
 export interface MyReadingsPageContent {
@@ -231,6 +316,54 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
     "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
+export interface EmailGiftPurchaseConfirmationContent {
+  subjectSelfSend: string;
+  subjectScheduled: string;
+  previewSelfSend: string;
+  previewScheduled: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineSelfSend: string;
+  heroLineScheduled: string;
+  greeting: string;
+  detailLineSelfSend: string;
+  detailLineScheduled: string;
+  shareButtonLabel: string;
+  shareUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirmationContent = {
+  subjectSelfSend: "Your gift is ready to share",
+  subjectScheduled: "Your gift is scheduled",
+  previewSelfSend: "Your shareable link is inside.",
+  previewScheduled: "We’ll send it to {recipientName} on {sendAtDisplay}.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLineSelfSend: "A reading, ready for them",
+  heroLineScheduled: "A reading, on its way",
+  greeting: "Hi {purchaserFirstName},",
+  detailLineSelfSend:
+    "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+  detailLineScheduled:
+    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  shareButtonLabel: "OPEN GIFT LINK",
+  shareUrlHelper:
+    "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivery within 7 days of claim",
+  refundLine:
+    "If something changes before {recipientName} opens the link, write to me and we’ll arrange a full refund. After they’ve started their intake, the work is on its way and the reading is theirs.",
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",

@@ -25,7 +25,23 @@ type Row = {
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
   recipient_user_id: string | null;
+  is_gift: number | null;
+  purchaser_user_id: string | null;
+  recipient_email: string | null;
+  gift_delivery_method: string | null;
+  gift_send_at: string | null;
+  gift_message: string | null;
+  gift_claim_token_hash: string | null;
+  gift_claim_email_fired_at: string | null;
+  gift_claimed_at: string | null;
+  gift_cancelled_at: string | null;
 };
+
+export type GiftDeliveryMethod = "self_send" | "scheduled";
+
+function parseGiftDeliveryMethod(value: string | null): GiftDeliveryMethod | null {
+  return value === "self_send" || value === "scheduled" ? value : null;
+}
 
 function rowToRecord(row: Row): SubmissionRecord {
   const responses = JSON.parse(row.responses_json) as SubmissionRecord["responses"];
@@ -57,6 +73,16 @@ function rowToRecord(row: Row): SubmissionRecord {
     amountPaidCents: row.amount_paid_cents,
     amountPaidCurrency: row.amount_paid_currency,
     recipientUserId: row.recipient_user_id ?? null,
+    isGift: (row.is_gift ?? 0) === 1,
+    purchaserUserId: row.purchaser_user_id ?? null,
+    recipientEmail: row.recipient_email ?? null,
+    giftDeliveryMethod: parseGiftDeliveryMethod(row.gift_delivery_method),
+    giftSendAt: row.gift_send_at ?? null,
+    giftMessage: row.gift_message ?? null,
+    giftClaimTokenHash: row.gift_claim_token_hash ?? null,
+    giftClaimEmailFiredAt: row.gift_claim_email_fired_at ?? null,
+    giftClaimedAt: row.gift_claimed_at ?? null,
+    giftCancelledAt: row.gift_cancelled_at ?? null,
   };
 }
 
@@ -71,14 +97,25 @@ export type CreateSubmissionInput = {
   consentLabel: string | null;
   photoR2Key: string | null;
   createdAt: string;
+  // Phase 5 gift columns. Optional so all existing self-purchase call sites
+  // remain unchanged; the gift booking route is the only caller that sets
+  // them. recipient_user_id stays NULL for gifts until the recipient claims.
+  isGift?: boolean;
+  purchaserUserId?: string | null;
+  recipientEmail?: string | null;
+  giftDeliveryMethod?: GiftDeliveryMethod | null;
+  giftSendAt?: string | null;
+  giftMessage?: string | null;
 };
 
 export async function createSubmission(input: CreateSubmissionInput): Promise<void> {
   await dbExec(
     `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
-       responses_json, consent_label, photo_r2_key, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       responses_json, consent_label, photo_r2_key, created_at,
+       is_gift, purchaser_user_id, recipient_email, gift_delivery_method,
+       gift_send_at, gift_message
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -90,7 +127,51 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       input.consentLabel,
       input.photoR2Key,
       input.createdAt,
+      input.isGift ? 1 : 0,
+      input.purchaserUserId ?? null,
+      input.recipientEmail ?? null,
+      input.giftDeliveryMethod ?? null,
+      input.giftSendAt ?? null,
+      input.giftMessage ?? null,
     ],
+  );
+}
+
+/**
+ * Anti-abuse cap (Phase 5 ISC-12a). Counts gifts addressed to this
+ * recipient_email that are still in flight (not yet claimed, not cancelled).
+ * The booking-gift route rejects when the count is ≥ 3.
+ */
+export async function countActivePendingGiftsForRecipient(
+  recipientEmail: string,
+): Promise<number> {
+  const rows = await dbQuery<{ count: number }>(
+    `SELECT COUNT(*) AS count FROM submissions
+     WHERE is_gift = 1
+       AND recipient_email = ?
+       AND gift_claimed_at IS NULL
+       AND gift_cancelled_at IS NULL`,
+    [recipientEmail],
+  );
+  return rows[0]?.count ?? 0;
+}
+
+/**
+ * Phase 5 — self_send mode. Records that the gift's claim URL was generated
+ * and emailed to the purchaser at this moment. The same column does double
+ * duty for the scheduled-mode cron (Session 2), which writes it at fire time.
+ */
+export async function markGiftClaimSent(
+  submissionId: string,
+  tokenHash: string,
+  firedAtIso: string,
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions
+        SET gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = ?
+      WHERE id = ?`,
+    [tokenHash, firedAtIso, submissionId],
   );
 }
 
@@ -98,6 +179,57 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
   const rows = await dbQuery<Row>(`SELECT * FROM submissions WHERE id = ? LIMIT 1`, [id]);
   const row = rows[0];
   return row ? rowToRecord(row) : null;
+}
+
+/**
+ * Looks up a gift submission by the SHA-256 hash of its raw claim token.
+ * Returns null when there's no match, when the gift was already claimed,
+ * or when it was cancelled — all three resolve to the same dead-link UX.
+ */
+export async function findUnclaimedGiftByTokenHash(
+  tokenHash: string,
+): Promise<SubmissionRecord | null> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+       WHERE gift_claim_token_hash = ?
+         AND is_gift = 1
+         AND gift_claimed_at IS NULL
+         AND gift_cancelled_at IS NULL
+       LIMIT 1`,
+    [tokenHash],
+  );
+  const row = rows[0];
+  return row ? rowToRecord(row) : null;
+}
+
+/**
+ * Updates the existing gift submission row in place with the recipient's
+ * intake responses, marks claimed, and links their user id. Status stays
+ * `paid` — payment landed at purchase, not at claim.
+ */
+export async function redeemGiftSubmission(
+  submissionId: string,
+  input: {
+    responses: SubmissionRecord["responses"];
+    recipientUserId: string;
+    claimedAtIso: string;
+  },
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions
+        SET responses_json = ?,
+            recipient_user_id = ?,
+            gift_claimed_at = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_claimed_at IS NULL`,
+    [
+      JSON.stringify(input.responses),
+      input.recipientUserId,
+      input.claimedAtIso,
+      submissionId,
+    ],
+  );
 }
 
 /**
@@ -323,7 +455,15 @@ export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
   options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
-  const filters = [`status = 'paid'`, `instr(emails_fired_json, ?) = 0`];
+  // Gift rows are `paid` from the moment Stripe fires, but they're NOT
+  // eligible for Day-2 / Day-7 emails until the recipient has claimed
+  // (responses[] populated, gift_claimed_at set). Self-purchase rows
+  // always pass via the `is_gift = 0` arm.
+  const filters = [
+    `status = 'paid'`,
+    `instr(emails_fired_json, ?) = 0`,
+    `(is_gift = 0 OR gift_claimed_at IS NOT NULL)`,
+  ];
   const params: SqlValue[] = [`"type":"${emailType}"`];
   if (options.paidBefore) {
     filters.push(`paid_at < ?`);
