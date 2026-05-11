@@ -21,6 +21,7 @@ vi.mock("./analytics/server", () => ({
 
 vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
+  fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -314,11 +315,13 @@ describe("sendDay7Delivery", () => {
 
     expect(result.resendId).toBe("msg_d7");
     const args = sendMock.mock.calls[0]?.[0];
-    expect(args.subject).toBe("Your reading is ready");
+    expect(args.subject).toBe(`Your ${submission.readingName} is ready`);
     expect(args.html).toContain(`href="${url}"`);
     const body = visibleText(args.html);
-    expect(body).toContain(submission.readingName);
-    expect(body).toContain("best with headphones");
+    expect(body).toContain(`Your ${submission.readingName} is here.`);
+    expect(body).toContain("Open it whenever the timing feels right");
+    expect(body).toContain("signs you into your reading for the next seven days");
+    expect(body).toContain("Open your reading");
   });
 });
 

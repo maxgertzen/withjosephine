@@ -408,6 +408,50 @@ These are noise-level items the 5-vantage review surfaced. Bundle into one `/sim
 
 ---
 
+## Phase 1 session 3 — /simplify deferrals + Pentester deferrals (LAUNCH-BLOCKING)
+
+Surfaced by the 3-reviewer /simplify pass + Pentester gate on `feat/listen-session3-redesign` 2026-05-11. The session-3 fixes that landed in-PR are recorded in the PRD verification block; the items below were filed as a follow-up so the main PR stayed scoped.
+
+**Hard gate: every item in this section is launch-blocking** (consistent with the session 1+2 deferral policy).
+
+#### S3-A1. `findSubmissionById` timing-oracle on `/listen/[id]`
+- **Source:** Pentester HIGH-1, 2026-05-11.
+- **What:** Logged-in attacker probing `/listen/[id]` with a random submissionId triggers a D1 SELECT regardless. Index hit vs miss is timing-distinguishable, so a session-bearing attacker can enumerate "submission exists" without ownership.
+- **Why accepted-for-now:** Submission IDs are opaque CUID2 (~2^140 search space). The leak is binary "exists in D1" with no recipient/content info. Any logged-in user can already enumerate their own readings via `/my-readings`; this is a strictly weaker primitive.
+- **Action:** Defer to Phase 4 hardening alongside the `crypto.timingSafeEqual` work (A-3). Cheap fix when it lands: speculatively call `findSubmissionRecipientUserId` even on no-session paths and discard, so all 3 signIn-producing branches do the same I/O.
+
+#### S3-B1. Extract `applyTemplateVars(text, { firstName, readingName })` helper
+- **Source:** /simplify Reuse R-3, 2026-05-11.
+- **What:** Three sites template `{firstName}` / `{readingName}`: `Day7Delivery.tsx#template`, `resend.tsx#sendDay7Delivery` (subject), `ListenView.tsx#fillTemplate` (heading). Each is 2–3 lines of `replaceAll`. Drift class: someone adds `{readingPriceDisplay}` to one site, others silently miss it.
+- **Action:** Lift to `src/lib/emails/template.ts` (or `src/lib/templating.ts`) exporting `applyTemplateVars(text, vars: Partial<{ firstName: string; readingName: string }>)`. Reuse from all 3 sites.
+
+#### S3-B2. Typed `ListenOutcome` union shared across listen-page state + redirect routes
+- **Source:** /simplify Quality Q-4, 2026-05-11.
+- **What:** Three files (`src/app/listen/[id]/page.tsx`, `src/app/api/auth/magic-link/route.ts`, `src/app/api/auth/magic-link/verify/route.ts`) all reference the string literals `"sent"`, `"rested"`, `"throttled"` in URL search params / search-param checks. Drift risk: rename one without renaming the others.
+- **Action:** Extract `type ListenOutcome = "sent" | "rested" | "throttled"` to a shared module (e.g. `src/lib/auth/listenOutcomes.ts`) + use across the 3 files.
+
+#### S3-B3. State-forgery UX defense for `?error=rested` / `?sent=1` (Pentester LOW-1)
+- **Source:** Pentester LOW-1, 2026-05-11.
+- **What:** Attacker who knows a victim's submissionId can craft `https://withjosephine.com/listen/sub_x?error=rested` and trick the victim into clicking "Send me a fresh link". The form posts to `/api/auth/magic-link` which only sends email to the user-typed address — no destructive primitive. Confusion-only.
+- **Action:** Accept. Document residual risk in privacy/security notes when launching. No code change.
+
+#### S3-B4. Sanity-editor mailto subject header injection (Pentester LOW-2)
+- **Source:** Pentester LOW-2, 2026-05-11.
+- **What:** `copy.throttledMailtoSubject` / `copy.assetTroubleMailtoSubject` flow through `encodeURIComponent` then into a `mailto:` URL. Some mail clients still decode `%0D%0A` into header lines (`Cc:`, `Bcc:`). Threat actor must already be a Sanity editor — within their authorized role.
+- **Action:** Accept OR add a Studio-side validation rule rejecting CR/LF in those fields. One-liner if it ships.
+
+#### S3-B5. Audit row on magic-link throttle (Pentester LOW-3)
+- **Source:** Pentester LOW-3, 2026-05-11.
+- **What:** `/api/auth/magic-link` throttle fires before user lookup, so `user_id` is unknown. Currently silent. `writeAudit` accepts `userId: null`; filling this in would distinguish "throttled bursts from one IP" from "no traffic" in the audit table.
+- **Action:** Add a `link_send_throttled` event_type + write on the rate-limit branch with `user_id: null`. Cheap addition for forensics.
+
+#### S3-B6. Welcome-back ribbon — masked-email reveal in State 4
+- **Source:** UX Engineer spec — "Check your email" + masked email + send-another link.
+- **What:** The current `CheckEmailCard` doesn't actually render a masked email (no email is known at that point — the user just submitted the form to the listen page route which doesn't echo the submitted email back). The spec is aspirational; needs either (a) a query-param-encoded masked-email pass-through, or (b) "Check the email you just entered" copy that doesn't require the address.
+- **Action:** UX Engineer pass to decide between (a) and (b). Pure copy decision if (b); ~10 lines if (a).
+
+---
+
 ## Phase 1.5 (planned, not deferred)
 
 These were always scoped out of Phase 1 by the booking-flow build PRD.

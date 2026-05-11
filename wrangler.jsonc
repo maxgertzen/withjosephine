@@ -27,7 +27,7 @@
 	//   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
-	//   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
+	//   - LISTEN_TOKEN_SECRET        HMAC secret used as IP-audit salt for listen-session auth (32-byte hex)
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
 	//
 	// Public vars (Variables → Variables on the Worker):

@@ -199,6 +199,99 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   signOff: null,
 };
 
+export interface EmailDay7DeliveryContent {
+  subjectTemplate: string;
+  preview: string;
+  greeting: string;
+  lineReady: string;
+  comfortLine: string;
+  openButtonLabel: string;
+  signedInDisclosure: string;
+  comfortFollowUp: string;
+  signOff: string | null;
+}
+
+export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
+  subjectTemplate: "Your {readingName} is ready",
+  preview: "A short note before you press play.",
+  greeting: "Hi {firstName},",
+  lineReady: "Your {readingName} is here.",
+  comfortLine:
+    "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+  openButtonLabel: "Open your reading",
+  signedInDisclosure:
+    "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
+  comfortFollowUp:
+    "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+  signOff: null,
+};
+
+export interface ListenPageContent {
+  welcomeRibbon: string;
+  deliveredHeading: string;
+  deliveredSubheading: string;
+  voiceNoteLabel: string;
+  pdfLabel: string;
+  pdfButtonLabel: string;
+  closerLine1: string;
+  closerLine2: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+  throttledHeading: string;
+  throttledBody: string;
+  throttledMailtoLabel: string;
+  throttledMailtoSubject: string;
+  assetTroubleHeading: string;
+  assetTroubleBody: string;
+  assetTroubleTryAgainLabel: string;
+  assetTroubleMailtoLabel: string;
+  assetTroubleMailtoSubject: string;
+}
+
+export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
+  welcomeRibbon: "Welcome back. You’re signed in for the next seven days.",
+  deliveredHeading: "Your {readingName} is ready",
+  deliveredSubheading: "Best with headphones, somewhere quiet.",
+  voiceNoteLabel: "Voice note",
+  pdfLabel: "Supporting PDF",
+  pdfButtonLabel: "Download PDF",
+  closerLine1:
+    "If anything you hear sits hard, or if a question opens up after, please write to me. I’d rather know than not.",
+  closerLine2: "With love, Josephine ✦",
+  signInHeading: "Welcome back",
+  signInBody:
+    "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
+  signInButtonLabel: "Send me a link",
+  signInFootnote: "Your reading is still here, exactly as it was.",
+  checkEmailHeading: "Check your email",
+  checkEmailBody:
+    "If we have a reading on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
+  checkEmailResendLabel: "Send another",
+  restedHeading: "This link has rested",
+  restedBody:
+    "This link’s already been opened — sometimes that’s because you clicked it on another device. No problem — we’ll send a fresh one.",
+  restedCtaLabel: "Send me a fresh link",
+  throttledHeading: "One moment",
+  throttledBody:
+    "We’ve sent a few links already. Try again in a few minutes — or write to me directly and I’ll sort it out.",
+  throttledMailtoLabel: "Write to Josephine",
+  throttledMailtoSubject: "Trouble opening my reading",
+  assetTroubleHeading: "This page is taking a moment",
+  assetTroubleBody:
+    "The reading is here — sometimes the connection isn’t. Try again in a minute, or write to me and I’ll make sure it reaches you.",
+  assetTroubleTryAgainLabel: "Try again",
+  assetTroubleMailtoLabel: "Write to Josephine",
+  assetTroubleMailtoSubject: "Trouble opening my reading",
+};
+
 export const ABOUT_DEFAULTS: MappedAbout = {
   sectionTag: "\u2726 About",
   heading: "who i am + what this is",

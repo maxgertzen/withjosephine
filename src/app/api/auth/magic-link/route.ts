@@ -4,23 +4,29 @@ import { isValidAuthEmail } from "@/lib/auth/emailValidation";
 import { issueMagicLink } from "@/lib/auth/listenSession";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
+import { isListenNext, safeNext } from "@/lib/auth/safeNext";
 import { findUserByEmail } from "@/lib/auth/users";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { sendMagicLink } from "@/lib/resend";
 
-const SAFE_NEXT = /^\/(listen\/[A-Za-z0-9_-]+|my-readings)\/?$/;
-
-// Uniform response across all branches (no enumeration leak); Resend
-// send rides runMirror so timing doesn't betray known-vs-unknown.
+// Uniform response across known/unknown email (no enumeration leak); Resend send
+// rides runMirror so timing doesn't betray either. Throttle fires before email
+// lookup so any throttled IP hits the same response regardless of email.
 export async function POST(request: Request) {
-  const { email, next } = await readEmailAndNext(request);
+  const { email, next: rawNext } = await readEmailAndNext(request);
+  const cleanNext = safeNext(rawNext);
   const contentType = request.headers.get("content-type") ?? "";
   const wantsHtml =
     contentType.includes("application/x-www-form-urlencoded") ||
     contentType.includes("multipart/form-data");
 
   const allowed = await checkRateLimit("LISTEN_AUTH_SEND_LIMITER", getClientIpKey(request));
-  if (allowed && isValidAuthEmail(email)) {
+  if (!allowed) {
+    if (wantsHtml) return htmlRedirect(request, cleanNext, "throttled");
+    return new NextResponse(null, { status: 429 });
+  }
+
+  if (isValidAuthEmail(email)) {
     const user = await findUserByEmail(email);
     if (user) {
       const audit = await getRequestAuditContext(request);
@@ -28,19 +34,27 @@ export async function POST(request: Request) {
       const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? new URL(request.url).origin;
       const verifyUrl = new URL("/auth/verify", origin);
       verifyUrl.searchParams.set("token", token);
-      const cleanNext = next && SAFE_NEXT.test(next) ? next : null;
-      if (cleanNext) verifyUrl.searchParams.set("next", cleanNext);
+      if (isListenNext(cleanNext)) verifyUrl.searchParams.set("next", cleanNext);
       runMirror(
         sendMagicLink({ to: user.email, magicLinkUrl: verifyUrl.toString() }).then(() => {}),
       );
     }
   }
 
-  if (wantsHtml) {
-    const origin = new URL(request.url).origin;
-    return NextResponse.redirect(new URL("/my-readings?sent=1", origin), { status: 303 });
-  }
+  if (wantsHtml) return htmlRedirect(request, cleanNext, "sent");
   return new NextResponse(null, { status: 204 });
+}
+
+function htmlRedirect(
+  request: Request,
+  cleanNext: string,
+  outcome: "sent" | "throttled",
+): NextResponse {
+  const origin = new URL(request.url).origin;
+  const target = new URL(cleanNext, origin);
+  if (outcome === "throttled") target.searchParams.set("error", "throttled");
+  else target.searchParams.set("sent", "1");
+  return NextResponse.redirect(target, { status: 303 });
 }
 
 function formString(form: FormData | null, key: string): string {
