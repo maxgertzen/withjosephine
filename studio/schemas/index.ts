@@ -13,6 +13,8 @@ import { myReadingsPage } from "./myReadingsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
+import { emailDay2Started } from "./emailDay2Started";
+import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { listenPage } from "./listenPage";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
@@ -35,6 +37,8 @@ export const schemaTypes = [
   magicLinkVerifyPage,
   emailMagicLink,
   emailDay7Delivery,
+  emailDay2Started,
+  emailOrderConfirmation,
   listenPage,
   formField,
   formSection,

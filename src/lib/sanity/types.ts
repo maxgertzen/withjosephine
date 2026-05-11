@@ -122,6 +122,31 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
+export type SanityEmailOrderConfirmation = {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  greeting: string;
+  thanksLine: string;
+  timelineLine: string;
+  contactLine: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailDay2Started = {
+  subject: string;
+  preview: string;
+  greeting: string;
+  body: string[];
+  signOff: string | null;
+};
+
 export type SanityEmailDay7Delivery = {
   subjectTemplate: string;
   preview: string;

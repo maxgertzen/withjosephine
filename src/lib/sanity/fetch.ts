@@ -5,8 +5,10 @@ import { sanityFetch } from "./live";
 import {
   bookingFormQuery,
   bookingPageQuery,
+  emailDay2StartedQuery,
   emailDay7DeliveryQuery,
   emailMagicLinkQuery,
+  emailOrderConfirmationQuery,
   faqItemsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
@@ -26,8 +28,10 @@ import {
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityEmailDay2Started,
   SanityEmailDay7Delivery,
   SanityEmailMagicLink,
+  SanityEmailOrderConfirmation,
   SanityFaqItem,
   SanityLandingPage,
   SanityLegalPage,
@@ -165,6 +169,22 @@ export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink 
 export const fetchEmailDay7Delivery = cache(async (): Promise<SanityEmailDay7Delivery | null> => {
   const { data } = await sanityFetch<SanityEmailDay7Delivery | null>({
     query: emailDay7DeliveryQuery,
+  });
+  return data;
+});
+
+export const fetchEmailOrderConfirmation = cache(
+  async (): Promise<SanityEmailOrderConfirmation | null> => {
+    const { data } = await sanityFetch<SanityEmailOrderConfirmation | null>({
+      query: emailOrderConfirmationQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailDay2Started = cache(async (): Promise<SanityEmailDay2Started | null> => {
+  const { data } = await sanityFetch<SanityEmailDay2Started | null>({
+    query: emailDay2StartedQuery,
   });
   return data;
 });

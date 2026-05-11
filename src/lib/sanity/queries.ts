@@ -174,6 +174,35 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
+export const emailOrderConfirmationQuery = groq`
+  *[_type == "emailOrderConfirmation"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    greeting,
+    thanksLine,
+    timelineLine,
+    contactLine,
+    cardLabel,
+    cardDeliveryLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailDay2StartedQuery = groq`
+  *[_type == "emailDay2Started"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
 export const emailDay7DeliveryQuery = groq`
   *[_type == "emailDay7Delivery"][0] {
     subjectTemplate,

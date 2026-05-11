@@ -10,34 +10,39 @@ import {
   Tailwind,
 } from "@react-email/components";
 
+import type { EmailOrderConfirmationContent } from "@/data/defaults";
+
 import { emailTailwindConfig } from "./theme.config";
 
-export type OrderConfirmationProps = {
+export type OrderConfirmationVars = {
   firstName: string;
   readingName: string;
   readingPriceDisplay: string;
   amountPaidDisplay: string | null;
 };
 
-// Email only has formatted-string prices; cents-level strikethrough lives
-// on the thank-you page. Surface what the customer paid (or list price if
-// the webhook hasn't filled amountPaidDisplay yet).
-function priceCell(readingPriceDisplay: string, amountPaidDisplay: string | null) {
-  return amountPaidDisplay ?? readingPriceDisplay;
+export type OrderConfirmationProps = {
+  vars: OrderConfirmationVars;
+  copy: EmailOrderConfirmationContent;
+};
+
+function template(text: string, vars: OrderConfirmationVars): string {
+  return text
+    .replaceAll("{firstName}", vars.firstName)
+    .replaceAll("{readingName}", vars.readingName);
 }
 
-export function OrderConfirmation({
-  firstName,
-  readingName,
-  readingPriceDisplay,
-  amountPaidDisplay,
-}: OrderConfirmationProps) {
-  const price = priceCell(readingPriceDisplay, amountPaidDisplay);
+function priceCell(vars: OrderConfirmationVars): string {
+  return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
+}
+
+export function OrderConfirmation({ vars, copy }: OrderConfirmationProps) {
+  const price = priceCell(vars);
 
   return (
     <Html lang="en">
       <Head />
-      <Preview>Your reading is booked — here&apos;s what happens next</Preview>
+      <Preview>{copy.preview}</Preview>
       <Tailwind config={emailTailwindConfig}>
         <Body className="bg-warm m-0 p-0">
           <Container
@@ -50,13 +55,13 @@ export function OrderConfirmation({
                 className="font-serif text-ink"
                 style={{ margin: 0, fontWeight: 500, fontSize: 38, lineHeight: 1, letterSpacing: "0.005em" }}
               >
-                Josephine
+                {copy.brandName}
               </p>
               <p
                 className="font-sans text-muted uppercase"
                 style={{ margin: "10px 0 0 0", fontSize: 11, letterSpacing: "0.32em" }}
               >
-                Soul Readings
+                {copy.brandSubtitle}
               </p>
             </Section>
 
@@ -73,7 +78,7 @@ export function OrderConfirmation({
                       className="font-serif text-ink"
                       style={{ padding: "0 16px", fontWeight: 500, fontSize: 28, lineHeight: 1.2, whiteSpace: "nowrap" }}
                     >
-                      Your reading is booked
+                      {copy.heroLine}
                     </td>
                     <td width="18%">
                       <div className="border-t border-gold" />
@@ -88,16 +93,10 @@ export function OrderConfirmation({
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>Hi {firstName},</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                Thank you for booking a {readingName} with me. I have your intake and your payment, and you don&apos;t need to do anything else.
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                I&apos;ll begin your reading in the next day or two. You&apos;ll hear a short note from me when I do, just so you know it&apos;s underway. Your voice note and PDF will arrive within seven days, to this email address.
-              </p>
-              <p style={{ margin: "0 0 32px 0" }}>
-                If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.
-              </p>
+              <p style={{ margin: "0 0 18px 0" }}>{template(copy.greeting, vars)}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{template(copy.thanksLine, vars)}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.timelineLine}</p>
+              <p style={{ margin: "0 0 32px 0" }}>{copy.contactLine}</p>
             </Section>
 
 
@@ -107,19 +106,19 @@ export function OrderConfirmation({
                   className="font-sans text-muted uppercase"
                   style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
                 >
-                  Your reading
+                  {copy.cardLabel}
                 </p>
                 <p
                   className="font-serif text-ink"
                   style={{ margin: "0 0 12px 0", fontSize: 22 }}
                 >
-                  {readingName}
+                  {vars.readingName}
                 </p>
                 <p
                   className="font-sans text-body"
                   style={{ margin: 0, fontSize: 14 }}
                 >
-                  <span className="text-muted">Delivery within 7 days</span>
+                  <span className="text-muted">{copy.cardDeliveryLine}</span>
                   &nbsp;&middot;&nbsp;
                   <span>{price}</span>
                 </p>
@@ -131,10 +130,8 @@ export function OrderConfirmation({
               className="font-serif italic text-ink"
               style={{ padding: "36px 48px 16px 48px", fontSize: 22, lineHeight: 1.4 }}
             >
-              <p style={{ margin: "0 0 4px 0" }}>With love,</p>
-              <p style={{ margin: 0 }}>
-                Josephine <span className="text-gold">✦</span>
-              </p>
+              <p style={{ margin: "0 0 4px 0" }}>{copy.signOffLine1}</p>
+              <p style={{ margin: 0 }}>{copy.signOffLine2}</p>
             </Section>
 
 
@@ -152,9 +149,7 @@ export function OrderConfirmation({
                   withjosephine.com
                 </Link>
               </p>
-              <p style={{ margin: "8px 0 0 0" }}>
-                Readings are offered for entertainment and personal reflection.
-              </p>
+              <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
             </Section>
           </Container>
         </Body>

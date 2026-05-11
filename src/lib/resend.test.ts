@@ -22,6 +22,8 @@ vi.mock("./analytics/server", () => ({
 vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
+  fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
+  fetchEmailDay2Started: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -181,7 +183,7 @@ describe("sendOrderConfirmation", () => {
     expect(result.resendId).toBe("msg_oc");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
-    expect(args.subject).toBe("Your reading is booked — here's what happens next");
+    expect(args.subject).toBe("Your reading is booked — here’s what happens next");
     const body = visibleText(args.html);
     expect(body).toContain("Hi Ada,");
     expect(body).toContain(`Thank you for booking a ${submission.readingName}`);
@@ -295,7 +297,7 @@ describe("sendDay2Started", () => {
     expect(result.resendId).toBe("msg_d2");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
-    expect(args.subject).toBe("A quick note — I've started your reading");
+    expect(args.subject).toBe("A quick note — I’ve started your reading");
     const body = visibleText(args.html);
     expect(body).toContain("Hi Ada,");
     expect(body).toContain("sat down with your chart");

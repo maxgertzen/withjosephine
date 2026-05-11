@@ -132,18 +132,25 @@ export async function sendNotificationToJosephine(
 export async function sendOrderConfirmation(
   submission: SubmissionContext,
 ): Promise<EmailSendResult> {
+  const { EMAIL_ORDER_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailOrderConfirmation } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailOrderConfirmation().catch(() => null);
+  const copy = { ...EMAIL_ORDER_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(
     <OrderConfirmation
-      firstName={submission.firstName}
-      readingName={submission.readingName}
-      readingPriceDisplay={submission.readingPriceDisplay}
-      amountPaidDisplay={submission.amountPaidDisplay}
+      vars={{
+        firstName: submission.firstName,
+        readingName: submission.readingName,
+        readingPriceDisplay: submission.readingPriceDisplay,
+        amountPaidDisplay: submission.amountPaidDisplay,
+      }}
+      copy={copy}
     />,
   );
 
   return sendOrSkip({
     to: submission.email,
-    subject: "Your reading is booked — here's what happens next",
+    subject: copy.subject,
     html,
     emailKind: "order confirmation",
     subType: "order_confirmation",
@@ -152,10 +159,14 @@ export async function sendOrderConfirmation(
 }
 
 export async function sendDay2Started(submission: SubmissionContext): Promise<EmailSendResult> {
-  const html = await render(<Day2Started firstName={submission.firstName} />);
+  const { EMAIL_DAY2_STARTED_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailDay2Started } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailDay2Started().catch(() => null);
+  const copy = { ...EMAIL_DAY2_STARTED_DEFAULTS, ...(sanity ?? {}) };
+  const html = await render(<Day2Started vars={{ firstName: submission.firstName }} copy={copy} />);
   return sendOrSkip({
     to: submission.email,
-    subject: "A quick note — I've started your reading",
+    subject: copy.subject,
     html,
     emailKind: "Day +2 started",
     subType: "day_2",
