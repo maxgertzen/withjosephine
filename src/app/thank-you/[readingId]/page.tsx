@@ -102,22 +102,28 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
-  const heading = thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
+  const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === readingId);
+
+  const heading =
+    override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
   const subheading =
-    thankYouPageContent?.subheading ??
-    "Your reading is in my hands now.";
+    override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.";
   const readingLabel = thankYouPageContent?.readingLabel ?? "Your Reading";
   const confirmationBody =
+    override?.confirmationBody ??
     thankYouPageContent?.confirmationBody ??
     "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.";
   const timelineBody =
+    override?.timelineBody ??
     thankYouPageContent?.timelineBody ??
     "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.";
   const deliveryDaysPhrase = thankYouPageContent?.deliveryDaysPhrase ?? "seven days";
   const contactBody =
+    override?.contactBody ??
     thankYouPageContent?.contactBody ??
     "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.";
   const closingMessage =
+    override?.closingMessage ??
     thankYouPageContent?.closingMessage ??
     "With love, Josephine \u2726";
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";

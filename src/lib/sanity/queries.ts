@@ -121,6 +121,15 @@ export const thankYouPageQuery = groq`
     contactBody,
     closingMessage,
     returnButtonText,
+    "overrides": overrides[]{
+      "readingSlug": reading->slug.current,
+      heading,
+      subheading,
+      confirmationBody,
+      timelineBody,
+      contactBody,
+      closingMessage
+    },
     seo
   }
 `;
@@ -157,6 +166,35 @@ export const magicLinkVerifyPageQuery = groq`
 
 export const emailMagicLinkQuery = groq`
   *[_type == "emailMagicLink"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailOrderConfirmationQuery = groq`
+  *[_type == "emailOrderConfirmation"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    greeting,
+    thanksLine,
+    timelineLine,
+    contactLine,
+    cardLabel,
+    cardDeliveryLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailDay2StartedQuery = groq`
+  *[_type == "emailDay2Started"][0] {
     subject,
     preview,
     greeting,

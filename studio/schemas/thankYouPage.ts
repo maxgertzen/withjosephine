@@ -77,6 +77,71 @@ export const thankYouPage = defineType({
       initialValue: "Return to Home",
     }),
     defineField({
+      name: "overrides",
+      title: "Per-reading overrides",
+      type: "array",
+      description:
+        "Optional. Override specific fields for individual readings. Any field left empty falls back to the default above. Add one entry per reading that needs custom copy.",
+      of: [
+        {
+          type: "object",
+          name: "thankYouOverride",
+          fields: [
+            defineField({
+              name: "reading",
+              title: "Reading",
+              type: "reference",
+              to: [{ type: "reading" }],
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "heading",
+              title: "Heading override",
+              type: "string",
+            }),
+            defineField({
+              name: "subheading",
+              title: "Subheading override",
+              type: "text",
+              rows: 2,
+            }),
+            defineField({
+              name: "confirmationBody",
+              title: "Confirmation paragraph override",
+              type: "text",
+              rows: 3,
+            }),
+            defineField({
+              name: "timelineBody",
+              title: "Timeline paragraph override",
+              type: "text",
+              rows: 3,
+              description: "Use {deliveryDays} as a placeholder if you want the accented phrase.",
+            }),
+            defineField({
+              name: "contactBody",
+              title: "Contact paragraph override",
+              type: "text",
+              rows: 3,
+              description: "Use {email} as a placeholder for the contact email link.",
+            }),
+            defineField({
+              name: "closingMessage",
+              title: "Closing message override",
+              type: "text",
+              rows: 2,
+            }),
+          ],
+          preview: {
+            select: { readingName: "reading.name" },
+            prepare: ({ readingName }) => ({
+              title: readingName ? `Override · ${readingName}` : "Override (reading not set)",
+            }),
+          },
+        },
+      ],
+    }),
+    defineField({
       name: "seo",
       title: "SEO",
       type: "object",

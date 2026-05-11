@@ -114,6 +114,13 @@ export async function mirrorSubmissionDelete(id: string): Promise<void> {
   }
 }
 
+// Sanity array items must each carry a unique `_key`. Deriving from
+// `type|sentAt` keeps the key stable across re-mirrors (reconcile cron
+// won't double-insert the same entry under a new key).
+function sanityKeyForEmailFired(entry: EmailFiredEntry): string {
+  return `${entry.type}-${entry.sentAt}`.replace(/[^A-Za-z0-9_-]/g, "-");
+}
+
 export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
@@ -124,7 +131,7 @@ export async function mirrorAppendEmailFired(
     await client
       .patch(id)
       .setIfMissing({ emailsFired: [] })
-      .insert("after", "emailsFired[-1]", [entry])
+      .insert("after", "emailsFired[-1]", [{ ...entry, _key: sanityKeyForEmailFired(entry) }])
       .commit({ visibility: "async" });
   } catch (error) {
     console.error(`[sanityMirror] emailsFired append failed for ${id}`, error);

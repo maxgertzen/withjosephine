@@ -445,6 +445,16 @@ Surfaced by the 3-reviewer /simplify pass + Pentester gate on `feat/listen-sessi
 - **What:** `/api/auth/magic-link` throttle fires before user lookup, so `user_id` is unknown. Currently silent. `writeAudit` accepts `userId: null`; filling this in would distinguish "throttled bursts from one IP" from "no traffic" in the audit table.
 - **Action:** Add a `link_send_throttled` event_type + write on the rate-limit branch with `user_id: null`. Cheap addition for forensics.
 
+#### S3-B7. `fetchCopyWithDefaults(loadDefaults, loadFetcher)` helper for Resend send paths
+- **Source:** /simplify Reuse review on Phase 2 batch 2, 2026-05-11.
+- **What:** Four send functions in `src/lib/resend.tsx` (`sendMagicLink`, `sendDay7Delivery`, `sendOrderConfirmation`, `sendDay2Started`) repeat the identical 4-line shape: lazy `await import(defaults)` + lazy `await import(fetch)` + `fetchX().catch(() => null)` + `{ ...DEFAULTS, ...(sanity ?? {}) }`. A `fetchCopyWithDefaults<T>(loadDefaults, loadFetcher)` helper would collapse 16 lines → 4 and centralize the swallow-error policy.
+- **Why deferred:** The lazy-import is the load-bearing part (avoids pulling the Sanity client into the Resend worker bundle when emails are skipped). Abstracting the dynamic-import callbacks makes the bundler analysis harder to read. Land alongside S3-B1's `interpolate()` so the email-send path gets one canonical 2-line pattern in one PR.
+
+#### S3-B8. Thank-you override fallback chain — drop the dead hardcoded literals
+- **Source:** /simplify Quality review on Phase 2 batch 2, 2026-05-11.
+- **What:** `src/app/thank-you/[readingId]/page.tsx:105-126` has 6 fields using `override?.x ?? thankYouPageContent?.x ?? "hardcoded literal"`. The seed script (`scripts/seed-customer-emails-and-pages.mts` + existing `seed-content-wiring-sweep.mts`) makes the middle term guaranteed-present in any seeded dataset, so the hardcoded literal tail is dead in practice — only live as belt-and-braces if the singleton is ever deleted.
+- **Why deferred:** Belt-and-braces value is small but real. Fixing means trusting the seed script to be the sole source of truth, which is a stronger guarantee than the current code accepts. Land when the editorial workflow has 1+ week of stable runtime.
+
 #### S3-B6. Welcome-back ribbon — masked-email reveal in State 4
 - **Source:** UX Engineer spec — "Check your email" + masked email + send-another link.
 - **What:** The current `CheckEmailCard` doesn't actually render a masked email (no email is known at that point — the user just submitted the form to the listen page route which doesn't echo the submitted email back). The spec is aspirational; needs either (a) a query-param-encoded masked-email pass-through, or (b) "Check the email you just entered" copy that doesn't require the address.
