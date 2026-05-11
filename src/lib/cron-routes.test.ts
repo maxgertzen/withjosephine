@@ -35,4 +35,8 @@ describe("dispatchPathsForCron", () => {
   it("returns an empty array for an unknown schedule (no throw)", () => {
     expect(dispatchPathsForCron("* * * * *")).toEqual([]);
   });
+
+  it("maps the weekly backup schedule to the backup route", () => {
+    expect(dispatchPathsForCron("0 3 * * 1")).toEqual(["/api/cron/backup-sanity-dataset"]);
+  });
 });
