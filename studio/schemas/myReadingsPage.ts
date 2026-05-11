@@ -6,6 +6,12 @@ export const myReadingsPage = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "title",
+      type: "string",
+      hidden: true,
+      initialValue: "My Readings Page",
+    }),
+    defineField({
       name: "listHeading",
       title: "List — Heading",
       type: "string",

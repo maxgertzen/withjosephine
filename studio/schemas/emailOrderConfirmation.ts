@@ -13,6 +13,12 @@ export const emailOrderConfirmation = defineType({
   ],
   fields: [
     defineField({
+      name: "title",
+      type: "string",
+      hidden: true,
+      initialValue: "Email — Order Confirmation",
+    }),
+    defineField({
       name: "subject",
       title: "Subject",
       type: "string",

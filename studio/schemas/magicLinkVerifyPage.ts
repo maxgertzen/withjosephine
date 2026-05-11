@@ -6,6 +6,12 @@ export const magicLinkVerifyPage = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "title",
+      type: "string",
+      hidden: true,
+      initialValue: "Magic Link — Confirm Email Page",
+    }),
+    defineField({
       name: "confirmHeading",
       title: "Confirm form — heading",
       type: "string",

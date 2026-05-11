@@ -6,6 +6,12 @@ export const emailDay2Started = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "title",
+      type: "string",
+      hidden: true,
+      initialValue: "Email — Day 2 (I've Started)",
+    }),
+    defineField({
       name: "subject",
       title: "Subject",
       type: "string",
