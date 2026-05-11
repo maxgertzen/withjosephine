@@ -153,6 +153,10 @@ Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Launch smoke test plan — single source of truth
+
+Stage-by-stage smoke tests (A = run NOW; B = before main-merge with staging secrets set; C = after main-merge on production; D = operational, separate from launch) live in **[`docs/LAUNCH_SMOKE_TEST_PLAN.md`](./LAUNCH_SMOKE_TEST_PLAN.md)**. The file is the authoritative checklist for "what still needs to be verified" before the production go-live and is referenced from the soft-launch hold gate in the project root `CLAUDE.md`.
+
 ### Phase 4 — production secrets + R2 lifecycle (POST-MERGE OF `feat/listen-redesign-and-gifting` → `main`)
 
 Phase 4 ships flag-off-by-absence: every vendor helper returns `vendorNotConfigured` until its env vars are populated, and the cascade reports the missing-config as a `partialFailures` entry but still completes the in-house data scrub (D1 + R2 + Sanity). These are the production-only actions to actually turn the vendor calls on — run after `feat/listen-redesign-and-gifting` merges to `main`. Staging secrets are out of scope for this runbook (set them on the staging worker as part of the bake; see `STAGING_RUNBOOK.md` for that flow).
@@ -229,7 +233,27 @@ Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful
 - **HMAC email_hash in `deletion_log` (Pentester LOW-4).** Currently unsalted SHA-256 — rainbow-table feasible if a `deletion_log` dump leaks. **Trigger:** any incident-class event involving D1 read access from outside the worker. Cheap fix: HMAC with a server secret.
 - **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. Folds into the existing `S-3. WAF rate-limit rules` backlog item above — add the admin route to the WAF allowlist when that lands.
 
-### Brevo Phase 1 — pre-vetting via support ticket (LAUNCH-BLOCKING for newsletter)
+### Brevo Phase 1 — parallel-safe (NOT launch-blocking — 2026-05-11 re-tier)
+
+**De-blocked 2026-05-11.** Earlier framing called Brevo Phase 1 "LAUNCH-BLOCKING" but the dependency wasn't real on inspection:
+
+- Transactional email continues through Resend (the existing path — Order Confirmation, Day-2, Day-7 delivery emails all work without Brevo).
+- No newsletter signup form exists on the site yet. The website can launch with no newsletter and add one 1–2 weeks later.
+- The Phase 4 cascade integration is provider-agnostic by design — without `BREVO_API_KEY`, the cascade gracefully returns `brevo-contact: not configured` + `brevo-smtp-log: not configured` partial-failures and the rest of the cascade (R2 / Sanity / D1 / Stripe / Mixpanel) completes normally.
+- Switching providers is ~30 min of code work — write `<provider>Delete.ts` mirroring `brevoDelete.ts` shape + swap two import lines in `cascadeDeleteUser.ts`. **Fallback ranked picks per the 2026-05-11 vendor research:** (1) Beehiiv — strongest explicit astrology acceptance, publishes astrology-newsletter promo content; (2) Mailchimp — scrutinise-not-ban for astrology; (3) Resend Broadcasts — no content prohibitions but Schrems-III exposure for EU customers.
+
+**What stays from the original plan:**
+- Vetting ticket with Frosina at Brevo (#5354963) — keep in flight. Becky sent the initial reply, Max sent the technical follow-up 2026-05-11. If Brevo clears the account, ship Phase 1 on Brevo as planned. Free option.
+- Cascade code under `src/lib/compliance/vendors/brevoDelete.ts` — keep as-is. Env-var-gated, no harm to leave in.
+- 0.2% complaint / 2% bounce / 1% unsubscribe thresholds — useful operational knowledge if/when Brevo Phase 1 ships.
+
+**Trigger conditions for vendor swap:**
+- Brevo vetting drags >2 weeks past 2026-05-11 OR rejects → switch to Beehiiv.
+- Brevo's `SANITY_BACKUP_ENABLED`-style flag in code already exists implicitly via env-var absence — no further code work needed to "turn Brevo off" — just don't set `BREVO_API_KEY`.
+
+Below is the original Phase 1 launch checklist for reference (still useful when Brevo eventually ships, just no longer launch-gating):
+
+### Brevo Phase 1 — pre-vetting via support ticket (operational, parallel-safe)
 
 - **Source:** Direct read of Brevo's Acceptable Use Policy PDF (`Anti-spam policy | Brevo`, 2026-05-11). Section E names "Clairvoyance, fortune telling and astrology" as a regulated/sensitive industry where *"you must pass through a vetting process via our support team before starting to send"*. Akashic Records + birth-chart readings + Soul Blueprint fall under this category. **Not optional — the policy phrasing is contractual ("must"), not advisory.**
 - **What:** Email `support@brevo.com` BEFORE the first newsletter send (and BEFORE Phase 3 transactional migration). Describe the business: astrology + Akashic Record readings + birth charts, EU residency required (France/Germany/Belgium DC), audience separation in place (newsletter list ≠ paid-customer list), no email attachments (binaries delivered via magic-link-gated R2/Sanity proxy, not over Brevo), double-opt-in on the newsletter form. Request confirmation that the account is cleared for this content category.
