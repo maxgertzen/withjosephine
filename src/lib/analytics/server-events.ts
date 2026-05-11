@@ -8,7 +8,8 @@ export type EmailSubType =
   | "day_7_overdue_alert"
   | "contact_form"
   | "magic_link"
-  | "privacy_export";
+  | "privacy_export"
+  | "gift_purchase_confirmation";
 
 export type ServerEventMap = {
   payment_success: {
@@ -22,6 +23,12 @@ export type ServerEventMap = {
     submission_id: string;
     reading_id: string;
     stripe_session_id: string;
+  };
+  gift_purchased: {
+    submission_id: string;
+    reading_id: string;
+    delivery_method: "self_send" | "scheduled";
+    send_at: string | null;
   };
   email_sent: {
     sub_type: EmailSubType;

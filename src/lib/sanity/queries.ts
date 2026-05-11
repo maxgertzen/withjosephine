@@ -193,6 +193,30 @@ export const emailOrderConfirmationQuery = groq`
   }
 `;
 
+export const emailGiftPurchaseConfirmationQuery = groq`
+  *[_type == "emailGiftPurchaseConfirmation"][0] {
+    subjectSelfSend,
+    subjectScheduled,
+    previewSelfSend,
+    previewScheduled,
+    brandName,
+    brandSubtitle,
+    heroLineSelfSend,
+    heroLineScheduled,
+    greeting,
+    detailLineSelfSend,
+    detailLineScheduled,
+    shareButtonLabel,
+    shareUrlHelper,
+    cardLabel,
+    cardDeliveryLine,
+    refundLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
 export const emailDay2StartedQuery = groq`
   *[_type == "emailDay2Started"][0] {
     subject,
@@ -290,7 +314,10 @@ export const bookingFormQuery = groq`
       dropCapCaption,
       changeReadingLinkText,
       aboutJosephineLinkText,
-      letterTitle
+      letterTitle,
+      giftToggleForMeLabel,
+      giftToggleAsGiftLabel,
+      giftToggleHelper
     },
     pagination {
       overrides[] {
@@ -338,6 +365,45 @@ export const bookingFormQuery = groq`
         "appliesToServices": appliesToServices[]->slug.current
       }
     } | order(order asc)
+  }
+`;
+
+export const bookingGiftFormQuery = groq`
+  *[_type == "bookingGiftForm"][0] {
+    heading,
+    subheading,
+    deliveryMethodLabel,
+    deliveryMethodSelfSendLabel,
+    deliveryMethodSelfSendHelper,
+    deliveryMethodScheduledLabel,
+    deliveryMethodScheduledHelper,
+    purchaserFirstNameLabel,
+    purchaserFirstNameHelper,
+    purchaserEmailLabel,
+    purchaserEmailHelper,
+    recipientNameLabelSelfSend,
+    recipientNamePlaceholderSelfSend,
+    recipientNameLabelScheduled,
+    recipientNameHelperScheduled,
+    recipientEmailLabel,
+    recipientEmailHelper,
+    giftMessageLabel,
+    giftMessagePlaceholder,
+    sendAtSectionLabel,
+    sendAtPresetNow,
+    sendAtPresetWeek,
+    sendAtPresetMonth,
+    sendAtCustomLabel,
+    consentIntro,
+    nonRefundableNotice,
+    art6ConsentLabel,
+    coolingOffConsentLabel,
+    termsConsentLabel,
+    submitButtonSelfSend,
+    submitButtonScheduled,
+    loadingStateCopy,
+    antiAbuseCapHeading,
+    antiAbuseCapBody
   }
 `;
 

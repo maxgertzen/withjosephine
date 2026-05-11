@@ -40,6 +40,16 @@ const OWNED_DELIVERED: SubmissionRecord = {
   amountPaidCents: null,
   amountPaidCurrency: null,
   recipientUserId: "user_1",
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 beforeEach(() => {

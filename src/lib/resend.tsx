@@ -7,6 +7,7 @@ import { ContactMessage } from "./emails/ContactMessage";
 import { Day2Started } from "./emails/Day2Started";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
+import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./emails/GiftPurchaseConfirmation";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
@@ -155,6 +156,68 @@ export async function sendOrderConfirmation(
     emailKind: "order confirmation",
     subType: "order_confirmation",
     submissionId: submission.id,
+  });
+}
+
+export type GiftPurchaseConfirmationInput = {
+  submissionId: string;
+  purchaserEmail: string;
+  purchaserFirstName: string;
+  readingName: string;
+  readingPriceDisplay: string;
+  amountPaidDisplay: string | null;
+  recipientName: string | null;
+  giftMessage: string | null;
+} & (
+  | { variant: "self_send"; claimUrl: string; sendAtDisplay?: never }
+  | { variant: "scheduled"; sendAtDisplay: string; claimUrl?: never }
+);
+
+export async function sendGiftPurchaseConfirmation(
+  input: GiftPurchaseConfirmationInput,
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftPurchaseConfirmation } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailGiftPurchaseConfirmation().catch(() => null);
+  const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
+
+  const vars: GiftPurchaseConfirmationVars =
+    input.variant === "self_send"
+      ? {
+          variant: "self_send",
+          claimUrl: input.claimUrl,
+          purchaserFirstName: input.purchaserFirstName,
+          readingName: input.readingName,
+          readingPriceDisplay: input.readingPriceDisplay,
+          amountPaidDisplay: input.amountPaidDisplay,
+          recipientName: input.recipientName,
+          giftMessage: input.giftMessage,
+        }
+      : {
+          variant: "scheduled",
+          sendAtDisplay: input.sendAtDisplay,
+          purchaserFirstName: input.purchaserFirstName,
+          readingName: input.readingName,
+          readingPriceDisplay: input.readingPriceDisplay,
+          amountPaidDisplay: input.amountPaidDisplay,
+          recipientName: input.recipientName,
+          giftMessage: input.giftMessage,
+        };
+
+  const subject = input.variant === "self_send" ? copy.subjectSelfSend : copy.subjectScheduled;
+  const interpolatedSubject = subject
+    .replaceAll("{recipientName}", input.recipientName ?? "your recipient")
+    .replaceAll("{sendAtDisplay}", input.variant === "scheduled" ? input.sendAtDisplay : "");
+
+  const html = await render(<GiftPurchaseConfirmation vars={vars} copy={copy} />);
+
+  return sendOrSkip({
+    to: input.purchaserEmail,
+    subject: interpolatedSubject,
+    html,
+    emailKind: `gift purchase confirmation (${input.variant})`,
+    subType: "gift_purchase_confirmation",
+    submissionId: input.submissionId,
   });
 }
 

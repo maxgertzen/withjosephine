@@ -139,6 +139,28 @@ export type SanityEmailOrderConfirmation = {
   footerDisclaimer: string;
 };
 
+export type SanityEmailGiftPurchaseConfirmation = {
+  subjectSelfSend: string;
+  subjectScheduled: string;
+  previewSelfSend: string;
+  previewScheduled: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineSelfSend: string;
+  heroLineScheduled: string;
+  greeting: string;
+  detailLineSelfSend: string;
+  detailLineScheduled: string;
+  shareButtonLabel: string;
+  shareUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
 export type SanityEmailDay2Started = {
   subject: string;
   preview: string;
@@ -395,6 +417,46 @@ export type SanityEntryPageContent = {
   changeReadingLinkText?: string;
   aboutJosephineLinkText?: string;
   letterTitle?: string;
+  giftToggleForMeLabel?: string;
+  giftToggleAsGiftLabel?: string;
+  giftToggleHelper?: string;
+};
+
+export type SanityBookingGiftForm = {
+  heading?: string;
+  subheading?: string;
+  deliveryMethodLabel?: string;
+  deliveryMethodSelfSendLabel?: string;
+  deliveryMethodSelfSendHelper?: string;
+  deliveryMethodScheduledLabel?: string;
+  deliveryMethodScheduledHelper?: string;
+  purchaserFirstNameLabel?: string;
+  purchaserFirstNameHelper?: string;
+  purchaserEmailLabel?: string;
+  purchaserEmailHelper?: string;
+  recipientNameLabelSelfSend?: string;
+  recipientNamePlaceholderSelfSend?: string;
+  recipientNameLabelScheduled?: string;
+  recipientNameHelperScheduled?: string;
+  recipientEmailLabel?: string;
+  recipientEmailHelper?: string;
+  giftMessageLabel?: string;
+  giftMessagePlaceholder?: string;
+  sendAtSectionLabel?: string;
+  sendAtPresetNow?: string;
+  sendAtPresetWeek?: string;
+  sendAtPresetMonth?: string;
+  sendAtCustomLabel?: string;
+  consentIntro?: string;
+  nonRefundableNotice?: string;
+  art6ConsentLabel?: string;
+  coolingOffConsentLabel?: string;
+  termsConsentLabel?: string;
+  submitButtonSelfSend?: string;
+  submitButtonScheduled?: string;
+  loadingStateCopy?: string;
+  antiAbuseCapHeading?: string;
+  antiAbuseCapBody?: string;
 };
 
 export type SanityBookingForm = {

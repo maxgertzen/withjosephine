@@ -9,12 +9,14 @@ export const SINGLETON_TYPES = new Set([
   "underConstructionPage",
   "notFoundPage",
   "bookingForm",
+  "bookingGiftForm",
   "myReadingsPage",
   "magicLinkVerifyPage",
   "emailMagicLink",
   "emailDay7Delivery",
   "emailDay2Started",
   "emailOrderConfirmation",
+  "emailGiftPurchaseConfirmation",
   "listenPage",
 ]);
 
@@ -114,6 +116,11 @@ export const deskStructure = (S: StructureBuilder) =>
               singletonListItem(S, "myReadingsPage", "My Readings Page"),
               singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
               singletonListItem(S, "emailOrderConfirmation", "Email — Order Confirmation"),
+              singletonListItem(
+                S,
+                "emailGiftPurchaseConfirmation",
+                "Email — Gift Purchase Confirmation",
+              ),
               singletonListItem(S, "emailDay2Started", "Email — Day 2 (I've Started)"),
               singletonListItem(S, "emailDay7Delivery", "Email — Day-7 Delivery"),
               singletonListItem(S, "emailMagicLink", "Email — Magic Link"),
@@ -137,6 +144,7 @@ export const deskStructure = (S: StructureBuilder) =>
             .items([
               singletonListItem(S, "bookingPage", "Booking Page"),
               singletonListItem(S, "bookingForm", "Booking Form"),
+              singletonListItem(S, "bookingGiftForm", "Booking Gift Form"),
               singletonListItem(S, "thankYouPage", "Thank You Page"),
               S.documentTypeListItem("formField").title("Form Fields"),
               S.documentTypeListItem("formSection").title("Form Sections"),

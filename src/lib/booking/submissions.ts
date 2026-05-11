@@ -24,7 +24,8 @@ export type EmailFiredType =
   | "day7"
   | "day7-overdue-alert"
   | "day14"
-  | "abandonment";
+  | "abandonment"
+  | "gift_purchase_confirmation";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
@@ -60,6 +61,16 @@ export type SubmissionRecord = {
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   recipientUserId: string | null;
+  isGift: boolean;
+  purchaserUserId: string | null;
+  recipientEmail: string | null;
+  giftDeliveryMethod: "self_send" | "scheduled" | null;
+  giftSendAt: string | null;
+  giftMessage: string | null;
+  giftClaimTokenHash: string | null;
+  giftClaimEmailFiredAt: string | null;
+  giftClaimedAt: string | null;
+  giftCancelledAt: string | null;
 };
 
 /**
@@ -99,6 +110,33 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
   return repo.findSubmissionById(id);
+}
+
+/**
+ * Updates the existing gift submission with the recipient's intake responses,
+ * marks it claimed, and links the recipient's user id. Mirrors to Sanity.
+ * Status stays `paid` — payment landed at purchase, not at claim.
+ */
+export async function redeemGiftSubmission(params: {
+  submissionId: string;
+  responses: SubmissionRecord["responses"];
+  recipientUserId: string;
+  claimedAtIso: string;
+  art9AcknowledgedAt: string;
+}): Promise<void> {
+  await repo.redeemGiftSubmission(params.submissionId, {
+    responses: params.responses,
+    recipientUserId: params.recipientUserId,
+    claimedAtIso: params.claimedAtIso,
+  });
+  runMirror(
+    mirrorSubmissionPatch(params.submissionId, {
+      giftClaimedAt: params.claimedAtIso,
+      recipientUserId: params.recipientUserId,
+      responses: params.responses,
+      art9AcknowledgedAt: params.art9AcknowledgedAt,
+    }),
+  );
 }
 
 export async function findSubmissionRecipientUserId(
@@ -224,6 +262,14 @@ export async function appendEmailFired(
 ): Promise<void> {
   await repo.appendEmailFired(submissionId, entry);
   runMirror(mirrorAppendEmailFired(submissionId, entry));
+}
+
+export async function markGiftClaimSent(
+  submissionId: string,
+  tokenHash: string,
+  firedAtIso: string,
+): Promise<void> {
+  await repo.markGiftClaimSent(submissionId, tokenHash, firedAtIso);
 }
 
 export async function deleteSubmissionAndPhoto(

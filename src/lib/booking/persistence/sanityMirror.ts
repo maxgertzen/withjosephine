@@ -96,6 +96,15 @@ export async function mirrorSubmissionCreate(
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,
+        ...(input.isGift
+          ? {
+              isGift: true,
+              recipientEmail: input.recipientEmail ?? undefined,
+              giftDeliveryMethod: input.giftDeliveryMethod ?? undefined,
+              giftSendAt: input.giftSendAt ?? undefined,
+              giftMessage: input.giftMessage ?? undefined,
+            }
+          : {}),
       },
       { visibility: "async" },
     );
@@ -114,13 +123,39 @@ export async function mirrorSubmissionPatch(
     stripeSessionId: string;
     amountPaidCents: number | null;
     amountPaidCurrency: string | null;
+    // Phase 5 — gift redemption patch fields.
+    responses: SubmissionRecord["responses"];
+    giftClaimedAt: string;
+    recipientUserId: string;
+    art9AcknowledgedAt: string;
   }>,
 ): Promise<void> {
   const client = getClient();
   if (!client) return;
 
+  // Sanity requires `_key` on each array item. Inject keys for responses
+  // (the only array-type field in this patch) so writes don't reject.
+  const sanitized: Record<string, unknown> = { ...patch };
+  if (patch.responses) {
+    sanitized.responses = patch.responses.map((response, index) => ({
+      _key: `${response.fieldKey}-${index}`,
+      _type: "submissionResponse" as const,
+      ...response,
+    }));
+  }
+  if (patch.art9AcknowledgedAt) {
+    // Mirror the recipient's Art. 9 ack into the existing consentSnapshot
+    // shape. The purchaser's Art. 6 was already written at purchase time;
+    // we only set art9 here at claim time.
+    sanitized["consentSnapshot.art9Consent"] = {
+      labelText: ART9_CONSENT_LABEL,
+      acknowledgedAt: patch.art9AcknowledgedAt,
+    };
+    delete sanitized.art9AcknowledgedAt;
+  }
+
   try {
-    await client.patch(id).set(patch).commit({ visibility: "async" });
+    await client.patch(id).set(sanitized).commit({ visibility: "async" });
   } catch (error) {
     console.error(`[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`, error);
   }
