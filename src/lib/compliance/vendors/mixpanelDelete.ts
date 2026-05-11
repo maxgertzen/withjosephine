@@ -6,6 +6,7 @@ import "server-only";
  * Verified 2026-05-11 against:
  * https://developer.mixpanel.com/reference/create-deletion
  * https://developer.mixpanel.com/reference/gdpr-api
+ * https://docs.mixpanel.com/docs/privacy/end-user-data-management
  *
  * Note this is the modern Data Deletion API — NOT the legacy `$delete`
  * engage profile delete (which only removes the profile row, leaving the
@@ -18,10 +19,14 @@ import "server-only";
  * return 200 with no effect. If Josephine's project ever moves residency,
  * the hardcoded base URL below MUST change in lockstep.
  *
- * Auth: belt-and-suspenders pattern documented in the API reference —
- * Bearer header (service-account token) AND project token in the
- * `?token=` query param. The Bearer authenticates the principal; the
- * token disambiguates the project.
+ * Auth: HTTP Basic with the service-account username:secret pair returned
+ * by Mixpanel's "Add Service Account" dialog (Project Settings → Service
+ * Accounts). The API reference UI misleadingly labels this surface
+ * "Bearer" — operationally it's `Authorization: Basic base64(username:secret)`.
+ * The project token still rides in `?token=...` as belt-and-suspenders:
+ * Basic authenticates the principal, the token disambiguates the project.
+ * (Personal OAuth tokens from user settings DO use Bearer, but those are
+ * user-tied and inappropriate for a server-side cascade.)
  *
  * `distinct_id` matching is literal. Verified in this codebase that we
  * track with `submission._id` as the distinct_id (see analytics/client.ts,
@@ -43,8 +48,9 @@ export async function createMixpanelDataDeletion(
   }
 
   const projectToken = optionalEnv("NEXT_PUBLIC_MIXPANEL_TOKEN");
-  const serviceAccountToken = optionalEnv("MIXPANEL_SERVICE_ACCOUNT_TOKEN");
-  if (!projectToken || !serviceAccountToken) return vendorNotConfigured("mixpanel");
+  const username = optionalEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME");
+  const secret = optionalEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET");
+  if (!projectToken || !username || !secret) return vendorNotConfigured("mixpanel");
 
   try {
     const response = await fetch(
@@ -52,7 +58,7 @@ export async function createMixpanelDataDeletion(
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${serviceAccountToken}`,
+          Authorization: `Basic ${btoa(`${username}:${secret}`)}`,
           "Content-Type": "application/json",
           Accept: "application/json",
         },

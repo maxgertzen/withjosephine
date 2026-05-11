@@ -6,7 +6,8 @@ const fetchMock = vi.fn();
 
 beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "proj_token_abc");
-  vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_TOKEN", "svc_token_xyz");
+  vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME", "josephine-cascade.svc");
+  vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET", "super-secret-xyz");
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -23,8 +24,16 @@ describe("createMixpanelDataDeletion", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns vendorNotConfigured when service-account token missing", async () => {
-    vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_TOKEN", "");
+  it("returns vendorNotConfigured when service-account username missing", async () => {
+    vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME", "");
+    const result = await createMixpanelDataDeletion(["sub_1"]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns vendorNotConfigured when service-account secret missing", async () => {
+    vi.stubEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET", "");
     const result = await createMixpanelDataDeletion(["sub_1"]);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain("not configured");
@@ -38,7 +47,7 @@ describe("createMixpanelDataDeletion", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("POSTs to US data-deletions/v3.0 with project token in query + Bearer header + GDPR body", async () => {
+  it("POSTs with project token in query + HTTP Basic auth (base64 username:secret) + GDPR body", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ tracking_id: "task_777" }), { status: 201 }),
     );
@@ -49,7 +58,9 @@ describe("createMixpanelDataDeletion", () => {
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://mixpanel.com/api/app/data-deletions/v3.0?token=proj_token_abc");
     expect(init.method).toBe("POST");
-    expect(init.headers.Authorization).toBe("Bearer svc_token_xyz");
+    expect(init.headers.Authorization).toBe(
+      `Basic ${btoa("josephine-cascade.svc:super-secret-xyz")}`,
+    );
     expect(init.headers["Content-Type"]).toBe("application/json");
     expect(JSON.parse(init.body as string)).toEqual({
       distinct_ids: ["sub_1", "sub_2"],
