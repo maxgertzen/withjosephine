@@ -70,6 +70,27 @@ Each item: where it came from + why it was deferred + a one-line action.
 - **Why deferred:** R2 bucket creation, lifecycle, Bucket Locks, KMS, and Sanity token issuance are all CF/Sanity dashboard operations Max owns. Code ships gated; nothing depends on the cron firing until the flag is on.
 - **Restore drill:** Annual, documented in Phase 4 PRD's compliance runbook (separate session). Not in scope here.
 
+### Phase 3.5 — close voice-note + reading-PDF RPO gap (council-decided 2026-05-11)
+
+**Decision (4-vantage council on `Option A — Sanity webhook → R2 auto-backup` vs `Option B — Becky uploads directly to R2`):** **A-NOW, B-decision deferred** with explicit trigger conditions. 3 vantages (Backend Architect, Cost Analyst, SRE) said A-NOW-B-LATER; the Practitioner-Ops vantage pushed back on B ever happening — Becky-continuity + custom-uploader-as-vendor-risk are real concerns. Re-evaluate B against those when a trigger fires, don't auto-flip.
+
+**The gap.** The Phase 3 weekly cron protects submission TEXT data adequately (D1 source of truth + reconcile-mirror + R2 backup = 4 layers). But voice notes + reading PDFs live ONLY in Sanity until next Monday's cron, so RPO for those binaries is up to 7 days. If Sanity loses a binary in that window the customer's reading is unrecoverable without re-recording.
+
+**Option A scope (~1 session of dev work):**
+- Sanity outbound webhook configured at manage.sanity.io → API → Webhooks. Fires on `_type == "submission"` document changes (covers voiceNote / readingPdf asset uploads).
+- New route `/api/sanity-webhook` — HMAC-verifies the payload (Sanity signs with a shared secret), walks the doc for new asset refs, immediately copies each to the existing `BACKUPS_BUCKET` R2 bucket under a `live/` prefix (separate from the weekly `backups/weekly|monthly/` namespace).
+- Idempotency by R2 key = Sanity asset `_id`. Re-delivery overwrites identically.
+- Extend the existing orphan-reaper cron pattern to walk Sanity assets weekly and reconcile against R2 `live/`. Catches webhooks Sanity silently dropped (their docs guarantee at-least-once with 5 retries over ~24h — but defense in depth).
+- Becky's flow is unchanged. Backup is invisible to her.
+
+**Triggers to revisit B (Becky-uploads-directly-to-R2):**
+- Becky sustains ≥50 readings/month — at that volume Sanity Asset bill crosses $13/mo and R2-as-primary pays back in ~11 months. Re-platform cost from A→B is ~16h (R2 plumbing already exists), not the full 24h of a cold B.
+- Sanity has any binary-asset incident.
+- A forced Sanity Studio refactor lands for unrelated reasons (SDK upgrade breaks Phase 2 dashboard) — bundle B into that session.
+- At any of these, run a fresh decision against the Practitioner-Ops concern (Becky-continuity + custom-uploader-as-new-vendor-risk) before committing to B.
+
+**Out of scope for this entry:** daily-cron-instead-of-weekly (rejected because event-driven webhook is a superior RPO win at similar cost) and Google Sheets as third-store (doesn't solve the binary-asset gap; submission text is already protected three ways).
+
 ### Phase 3 backup cron — security follow-ups (Pentester deferrals)
 
 Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items deferred to backlog:
