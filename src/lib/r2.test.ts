@@ -1,3 +1,9 @@
+// @vitest-environment node
+// R2 signing builds Requests with `Content-Length`, which the Fetch spec
+// marks as a forbidden header that browser-shaped environments (happy-dom,
+// jsdom) silently drop. Cloudflare Workers (the production runtime) does
+// not enforce that restriction. Run this file in the Node environment so
+// the test mirrors what the worker actually sees.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const signMock = vi.fn();

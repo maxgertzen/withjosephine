@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: "jsdom",
+    environment: "happy-dom",
     setupFiles: "./vitest.setup.ts",
     include: ["src/**/*.test.{ts,tsx}", "studio/**/*.test.{ts,tsx}", "scripts/**/*.test.{ts,tsx}"],
     // Module-init env reads (e.g. R2_PUBLIC_ORIGIN in src/lib/constants.ts)

@@ -10,6 +10,23 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ## Security
 
+### GDPR sub-processor disclosure migrations — code ready, Max runs against Sanity
+
+- **Source:** Audit performed 2026-05-11 on the live `legalPage-privacy` document + `siteSettings.consentBanner.body` (project CLAUDE.md soft-launch hold-gate item #7). Six disclosure gaps + 1 banner gap surfaced.
+- **What landed in code (PR `feat/privacy-subprocessor-audit`, off main):**
+  - `scripts/migrate-consent-banner-clarity.ts` — rewrites the consent banner body so it discloses Microsoft Clarity alongside Mixpanel. Refuses to overwrite if Becky has edited the body away from the seed copy.
+  - `scripts/migrate-privacy-subprocessors-2026-05.ts` — bundled migration on `legalPage-privacy`. Seven operations, each independently idempotent: rewrite `priv-b8` (Payment info — amount/currency/billing country), rewrite `priv-b14` (Stripe — EU-US DPF + SCCs), remove `priv-b15` (Web3Forms — stale), rewrite `priv-b18` (Sanity — disclose intake/photo/voice/PDF storage), rewrite `priv-b19` (Cloudflare — Workers/D1/R2/Turnstile/Email Routing), insert `priv-resend-2026-05` (Resend — transactional + contact form), insert `priv-sentry-2026-05` (Sentry — error monitoring, PII scrubbed). `lastUpdated` only advances, never moves backwards.
+- **Max-action — run order (staging first, then production for BOTH scripts):**
+  1. `set -a && source .env.local && set +a && NEXT_PUBLIC_SANITY_DATASET=staging pnpm tsx scripts/migrate-privacy-subprocessors-2026-05.ts`
+  2. Spot-check at `staging.withjosephine.com/privacy` that the seven changes landed and read correctly.
+  3. `set -a && source .env.local && set +a && NEXT_PUBLIC_SANITY_DATASET=staging pnpm tsx scripts/migrate-consent-banner-clarity.ts`
+  4. Spot-check at `staging.withjosephine.com` (force the banner via the Sanity Studio "hide banner in Studio preview" toggle if needed; or visit from an EU geo).
+  5. Re-run BOTH scripts against staging once more to confirm the idempotency no-ops fire ("nothing to do" / "already up to date").
+  6. Repeat steps 1+3 without the staging env override to apply against production.
+  7. Verify on `withjosephine.com/privacy` + the live banner.
+- **Why deferred:** Production Sanity writes are Max-actions per project convention (no AI-driven writes to legal-text artefacts).
+- **Folds into:** Soft-launch hold-gate item #7 in project CLAUDE.md. Closes that item.
+
 ### S-3. WAF rate-limit rules
 - **Source:** Security review.
 - **What:** No per-IP throttling on `/api/booking`, `/api/contact`, or
