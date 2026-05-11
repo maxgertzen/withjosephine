@@ -74,8 +74,6 @@ function buildSubtitle(args: {
   return `${statusLabel}${emailSuffix(args.email)}`;
 }
 
-// `now` is split out so tests can inject a fixed clock; Sanity itself only
-// calls `prepareSubmissionPreview(selection)` with the schema-matching signature.
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
   return {
     title: buildTitle(selection.firstName, selection.lastName, selection.email),

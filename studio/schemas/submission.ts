@@ -3,10 +3,6 @@ import { defineField, defineType, type CustomValidator } from "sanity";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
-// Sanity's validation builders (FileRule, StringRule, ...) aren't a clean
-// subtype hierarchy under `Rule`, so a helper that returns the input rule
-// won't type-check. Encoding the rule-agnostic part as a `CustomValidator`
-// factory lets each call site type-narrow the rule itself.
 const requireWhenDeliveredAtSet =
   (errorMessage: string): CustomValidator<unknown> =>
   (value, context) => {
