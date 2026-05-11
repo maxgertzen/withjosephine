@@ -97,6 +97,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
     entry.changeReadingLinkText ?? ENTRY_PAGE_DEFAULTS.changeReadingLinkText;
   const aboutJosephineLinkText =
     entry.aboutJosephineLinkText ?? ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText;
+  const giftToggleAsGiftLabel =
+    entry.giftToggleAsGiftLabel ?? ENTRY_PAGE_DEFAULTS.giftToggleAsGiftLabel;
 
   const deliveryNote = bookingPage?.deliveryNote ?? BOOKING_INFO_DEFAULTS.deliveryNote;
   const deliverableNote = bookingPage?.formatNote ?? BOOKING_INFO_DEFAULTS.deliverableNote;
@@ -198,7 +200,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             </div>
           </div>
 
-          <div className="md:row-start-2 md:col-start-2 md:justify-self-center md:self-start">
+          <div className="md:row-start-2 md:col-start-2 md:self-start flex flex-col gap-3 items-center">
             <TrackedLink
               href={BOOKING_ROUTES.letter(reading.slug)}
               event="cta_click_intake"
@@ -206,6 +208,20 @@ export default async function BookingPage({ params }: BookingPageProps) {
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
             >
               {bookReadingCtaText}
+            </TrackedLink>
+            <TrackedLink
+              href={BOOKING_ROUTES.gift(reading.slug)}
+              event="gift_toggle_selected"
+              properties={{ reading_id: reading.slug, mode: "as_gift" }}
+              className="inline-flex items-center justify-center min-h-12 min-w-[14rem] w-full md:w-auto px-8 py-3 bg-transparent text-j-deep border border-j-deep/40 rounded-[50px] font-display italic font-medium text-sm hover:border-j-deep hover:bg-j-warm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+            >
+              <span aria-hidden="true" className="text-j-accent mr-2">
+                ✦
+              </span>
+              {giftToggleAsGiftLabel}
+              <span aria-hidden="true" className="ml-2">
+                →
+              </span>
             </TrackedLink>
           </div>
         </div>

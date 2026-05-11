@@ -174,6 +174,125 @@ Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items
 
 Stage-by-stage smoke tests (A = run NOW; B = before main-merge with staging secrets set; C = after main-merge on production; D = operational, separate from launch) live in **[`docs/LAUNCH_SMOKE_TEST_PLAN.md`](./LAUNCH_SMOKE_TEST_PLAN.md)**. The file is the authoritative checklist for "what still needs to be verified" before the production go-live and is referenced from the soft-launch hold gate in the project root `CLAUDE.md`.
 
+### Phase 5 Session 1a — server-side scaffold UNCOMMITTED on `feat/listen-redesign-and-gifting` (2026-05-12)
+
+**Status:** 14/41 ISC of Phase 5 verified on the working tree. Schema + route + Stripe webhook gift branch + Alice's `GiftPurchaseConfirmation` Resend template + Sanity doctype + Sanity mirror passthrough + Studio submission gift fields — **all in the working tree, NOT committed yet**. Lint + typecheck + build + tests green (1115/1116, same pre-existing flake). PRD: `www/MEMORY/WORK/20260509-202915_phase5-gifting/PRD.md` (`phase: complete`, `progress: 14/41`).
+
+**Mid-session scope growth:** PRD grew from 36 → 41 ISC after `gift_delivery_method` dimension added. Purchaser picks `self_send` (we email Alice a shareable URL at webhook time, she forwards manually) or `scheduled` (cron sends the claim email at Alice's chosen date+time — Session 2 work). Both modes use the same `gift_claim_email_fired_at` column for the 3-tier refund cliff gate.
+
+**Next-session prerequisite (do this BEFORE Session 1b UI work):** Session 1b is a FRESH quality-gate session with PM + UX expert + UI designer per Max's explicit instruction (2026-05-12). Resume prompt + 8 pre-scaffold journey questions at `www/MEMORY/WORK/20260509-202915_phase5-gifting/SESSION_1B_PROMPT.md`. /simplify + Pentester deferred to that session.
+
+**Commit-shape recommendation:** two commits before pushing — Session 1a (server-side) then Session 1b (UI). Migration `0007_gifting.sql` runs alongside main-merge per existing cadence.
+
+**Sanity studio post-deploy:** when Sanity Studio publishes, `emailGiftPurchaseConfirmation` will appear as a new singleton under "✉️ Customer emails & pages". Becky can edit subject/preview/hero/detail/refund copy per delivery-mode variant. Defaults in `src/data/defaults.ts` → `EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS` are draft brand-voice placeholders that the Session 1b quality-gate locks down with Becky.
+
+### Phase 5 Session 1b — `/simplify` deferred follow-ups (2026-05-12)
+
+After the 3-agent `/simplify` sweep on the Session 1b + redemption-flow diff. High-leverage refactors deferred to keep this iteration small + reviewable. Capture-not-bury per Max's explicit instruction.
+
+- **Extract shared booking-route helpers** — `lookupLabel`, `stringifyValue`, `buildResponses`, body honeypot/consent/turnstile guards, schema-build + safe-parse + fieldError reducer. All ~100 lines duplicated verbatim between `src/app/api/booking/route.ts` and `src/app/api/booking/gift-redeem/route.ts`. Target: a single `src/lib/booking/responseBuilder.ts` (pure helpers) + `src/lib/booking/validateBookingRequest.ts` (async guard returning a discriminated `{ ok: true, fields, validatedValues, ip, reading, bookingForm } | { ok: false, response }`). Routes shrink to ~60 lines each. Trigger: next time either route changes.
+- **Replace `GiftForm.tsx` hand-rolled fields with `Form/*` components** — currently 475 lines; lots of repeated `<label className=… htmlFor=…><input className=…>`. `Form/Input`, `Form/Textarea`, `Form/Checkbox`, `Form/FieldShell`, `Form/DatePicker` already exist and are used by IntakeForm. Expected: ~150 line reduction + visual consistency. The `<input type="datetime-local">` for the send-at picker is the loudest mismatch — should use `Form/DatePicker` + `Form/TimePicker` per the brand-driven-no-native-controls rule (`feedback_no_native_browser_dialogs.md` analog).
+- **Lift IntakeForm `mode === "redeem"` branch to caller via `onSubmit` callback prop** — currently the form carries both create and redeem submit paths internally with parallel-but-different success handling. Cleaner shape: `IntakeForm` takes `onSubmit: (payload) => Promise<{redirectUrl: string}>`; the entry page passes the Stripe-going version, `gift/intake/page.tsx` passes the redeem version. Decouples a 600-line form from two concerns it shouldn't own. Trigger: next time IntakeForm gets another mode/branch.
+- **Share `GiftDeliveryMethod` type across files** — `"self_send" | "scheduled"` is declared inline in `gift/route.ts` and `GiftForm.tsx`, plus exported from `repository.ts`. Add a `GIFT_DELIVERY_METHODS = { SELF_SEND: "self_send", SCHEDULED: "scheduled" } as const` alongside the existing exported type and reuse the constants in radio `value=` strings + comparisons. Same rule for the `mode: "create" | "redeem"` literal on IntakeForm.
+
+### Phase 5 — Session 2 (gift-send-claim cron + recipient claim flow extension)
+
+**Not yet built.** Session 1b shipped the `self_send` path end-to-end (purchaser gets shareable link at Stripe webhook time, forwards manually; recipient clicks → claim page → intake → redeem). The `scheduled` mode purchase is shipped but the cron that fires the claim email at the purchaser's chosen `gift_send_at` is NOT yet built. Without it, scheduled gifts sit in D1 indefinitely.
+
+- **ISC-16: New cron `/api/cron/gift-send-claim-emails`** runs hourly. Query: `submissions WHERE is_gift = 1 AND gift_delivery_method = 'scheduled' AND gift_send_at <= now AND gift_claim_email_fired_at IS NULL AND gift_cancelled_at IS NULL`.
+- **ISC-17: For each match** — generate a fresh claim token via `issueGiftClaimToken()`, store its hash via `markGiftClaimSent`, fire a claim email to `recipient_email` via Resend. New email template `GiftClaimEmail.tsx` + Sanity doctype `emailGiftClaim`.
+- **ISC-18: Mark `gift_claim_email_fired_at = now`** after successful Resend send (the `markGiftClaimSent` helper already writes this).
+- **ISC-19: Resend cron logic** — if `gift_claim_email_fired_at + 7d < now AND gift_claimed_at IS NULL`, re-send (max 2 retries). After 30 days unclaimed, mark `unclaimed_abandoned` and surface to Becky in Studio.
+- Tests for each branch.
+- Trigger conditions: not launch-blocking on `self_send` alone, but launch-blocking if Max+Josephine plan to advertise scheduled-mode publicly. Surface this decision before main-merge of `feat/listen-redesign-and-gifting`.
+
+### Phase 5 — Session 3 (purchaser self-service `/my-gifts` surface)
+
+**Not yet built.** Purchasers currently have no visibility into pending gifts after purchase confirmation. The 2026-05-11 PRD lock dissolved the original "cancel + refund" flow (ISC-29 + ISC-30) into a non-refundable policy where the purchaser can instead **edit the recipient** (email/name/send-at) pre-claim-email-fire. Also: the purchaser must be able to control the automatic send for `scheduled` mode and resend the link to themselves anytime before claim (per Max 2026-05-12).
+
+- **ISC-26: `/my-gifts` page** — purchaser sees list of their gifts with status (`Scheduled to send <date>` / `Sent — waiting for recipient` / `Recipient is preparing` / `Delivered <date>`). No "listened" status (private to recipient, ISC-A5).
+- **ISC-27: Purchaser does NOT see recipient's intake answers / voice note / PDF** — status-only surface.
+- **ISC-28-edit-recipient: Pre-fire edit affordance** — change `recipient_email`, `recipient_name`, `gift_send_at` while `gift_claim_email_fired_at IS NULL`. Sanity mirror patches accordingly. New API route `POST /api/gifts/[id]/edit-recipient` with magic-link-gated authz against `purchaser_user_id`.
+- **ISC-31-control-send (Max 2026-05-12)**: for `scheduled` mode — postpone/expedite `gift_send_at`, or flip mode from `scheduled` → `self_send` (cancels the auto-send, surfaces the shareable URL to the purchaser). Both gated on `gift_claim_email_fired_at IS NULL`.
+- **ISC-32-resend-link (Max 2026-05-12)**: for `self_send` mode — purchaser can request a resend of the original shareable claim URL to their own email. Rate-limited per-submission (1/hour, 3/day) to avoid abuse. Useful for lost-email recovery. Available anytime before `gift_claimed_at`.
+- Magic-link authz reuses Phase 1 `listenSession` model but scoped to `purchaser_user_id` (not `recipient_user_id`).
+- Tests for each branch + Studio admin override for edge cases.
+- Trigger conditions: not launch-blocking; ship after `self_send` path soaks for ≥2 weeks post-launch and customer-support requests for edit/resend become actionable signal.
+
+### Phase 5 Session 4 — Multi-agent gift-flow review (REQUIRED, blocks Stage B + main-merge)
+
+Locked 2026-05-12 by Max. After Phase 5 Sessions 1b + 2 + 3 are all on `feat/phase-5-gifting` and merged into `feat/listen-redesign-and-gifting`, **do NOT proceed directly to Stage B smoke tests or main-merge.** First run a dedicated multi-agent review session that audits the entire gift flow end-to-end. Only after this session and its fixes ship do we move to Stage B.
+
+**Why this gate exists:** the gift flow accumulated decisions across Sessions 1a / 1b / 2 / 3 with mid-flight policy changes (no-refunds override, ask-for-first-name, edit-recipient-instead-of-cancel, scheduled-vs-self_send dual-mode). A single coherent review pass against the FINAL shipped surface — not the historical decisions — is the right way to catch journey gaps, UX rough edges, code-quality regressions, and security holes that only emerge from end-to-end inspection.
+
+**Roles to spawn (council format — use the Thinking skill's Council mode, not ad-hoc Agent calls):**
+
+- **Product Manager** — journey coverage, feature-completeness against PRD, edge-case enumeration, customer-support exposure
+- **UX expert** — flow fidelity at 375px mobile-first, friction points, brand-voice landing, recipient-side experience continuity, lost-email recovery affordances
+- **UI Designer (Quiet Archivist brand voice)** — visual coherence across entry → gift form → claim → intake → thank-you → listen-page, vellum aesthetic discipline, design-token hygiene
+- **Copywriter** — Cormorant/Inter cadence, sentence-level voice, copy in claim email + recipient claim landing + intake page + thank-you, Becky-editable Sanity copy slots for every customer-facing string
+- **QA agent (separate spawn, after the 4 above synthesize)** — comprehensive flow + edge-case verification matrix; output is a structured pass/fail report
+
+**Audit dimensions (each dimension produces concrete findings + council-resolved decisions):**
+
+1. **Flow completeness** — every flow and edge case is covered:
+   - Purchaser self_send → forwards link → recipient claims → recipient fills intake → delivery
+   - Purchaser scheduled → cron fires at chosen time → recipient claims → recipient fills intake → delivery
+   - Purchaser hits 3-active-gifts anti-abuse cap
+   - Purchaser submits with recipient_email = purchaser_email (rejection path)
+   - Purchaser misses a required field, gets field-level error
+   - Recipient clicks already-claimed token → "already opened" page
+   - Recipient clicks claim with valid token → cookie set → /gift/intake renders
+   - Recipient submits intake with email NOT matching recipient_email → 422 with surfaced copy
+   - Recipient submits intake with email match → submission redeemed → /thank-you/[id]?gift=1
+   - Recipient closes browser mid-intake → returns via claim link → cookie may have expired → re-validate token
+   - Purchaser edits recipient pre-cron-fire (Session 3) — happy path + already-fired guard
+   - Purchaser resends self-send link to themselves (Session 3) — rate-limit branch
+   - Purchaser cancels-as-no-refund (Session 3 — flip mode to self_send) — pre/post fire
+   - Scheduled-mode email bounce (recipient typed wrong email) — Becky operational surface
+   - Day-2 + Day-7 crons gated on `gift_claimed_at IS NOT NULL` — no spurious sends to unclaimed gifts
+   - Stripe webhook retry after gift purchase already processed — idempotent gift_purchase_confirmation email
+
+2. **UI / UX improvements on the shipped surface** — every page revisited against brand voice + mobile-first + accessibility (Designer + UX councils):
+   - Entry page primary CTA + secondary outline pill stack
+   - Gift form (`/book/[slug]/gift`) — 14 form fields + 3 consents + send-at picker + soft message counter
+   - Claim page invalid/no-token graceful states
+   - Gift intake page — variant copy vs the existing self-purchase intake
+   - Thank-you page `?gift=1` variant — should it differ from self-purchase?
+   - Purchase confirmation email (self_send + scheduled discriminated variants)
+   - Recipient claim email (NEW — built in Session 2)
+   - All Sanity-editable copy slots audited for clarity + Becky-as-editor naming
+
+3. **Code correctness review** (use `/simplify` skill + add Council for architectural decisions):
+   - Confirm shared booking-route helper extraction (Session 1b deferral) is still the right call OR re-evaluate
+   - Confirm IntakeForm `mode` prop is the cleanest seam OR refactor to `onSubmit` callback
+   - GiftForm hand-rolled fields vs `Form/*` components — final call on whether to migrate
+   - Cron design for `scheduled` mode (Session 2) — race conditions, retry semantics, abandonment handling
+   - `/my-gifts` (Session 3) — Phase 1 magic-link reuse vs purpose-built session, authz scoping
+
+4. **Thorough security review** (Pentester skill + Council):
+   - End-to-end token / cookie / claim flow with all session combinations (cookie + token vs cookie-only vs token-only vs neither)
+   - Edit-recipient (Session 3) authorization — purchaser_user_id scoping
+   - Rate limits on resend-link (Session 3) — abuse / enumeration / cost-amplification
+   - Email enumeration via 422 on recipient mismatch
+   - PII handling in scheduled-claim cron (Session 2) — what's logged, what's in Resend, what's in Sentry
+   - GDPR cascade-delete behavior for partially-claimed gifts
+   - Stripe metadata leak vectors revisited with the final shape
+
+5. **Council decisioning** — wherever the 4 (or 5 incl. QA) agents diverge, run a structured Council vantage debate. Resolved decisions land in a new `MEMORY/WORK/<timestamp>_phase5-session4-review/DECISIONS.md` doc with explicit Max-in-loop AskUserQuestion for anything that needs his call.
+
+**Output of the review session:**
+- `MEMORY/WORK/<timestamp>_phase5-session4-review/PRD.md` with atomic ISC enumerating EVERY fix surfaced by the council
+- Implemented fixes for all council-agreed findings (UI polish, copy locks, code refactors, security hardening)
+- A **flow inventory document** — every customer-facing flow with the exact preconditions, steps, and observable assertions. This document is the SOURCE for the Stage B smoke test instructions (see below).
+
+**Follow-up: revisit deferred items** — after Session 4 fixes ship, audit `POST_LAUNCH_BACKLOG.md` for any items that can be folded in cheaply, minimizing pre-launch tech debt. Specifically the Session 1b `/simplify`-deferred refactors (extract booking-route helpers, GiftForm-to-Form-components, IntakeForm onSubmit callback, share GiftDeliveryMethod constants) — each runs through the SAME council review (UX/UI/Designer/Copywriter/Code) before landing. Do NOT bulk-merge deferred items without council coverage; the whole point of this gate is to avoid silent quality regressions during a polish pass.
+
+**Stage B — derived from Session 4's flow inventory (not from a generic template):**
+- Stage B smoke test instructions are written AGAINST the flow inventory document that comes out of Session 4. Every flow enumerated in audit dimension #1 above gets a corresponding Stage B step with preconditions + actions + assertions + rollback signal.
+- Existing `LAUNCH_SMOKE_TEST_PLAN.md` Stage B template stays as the umbrella structure; the gift-specific steps slot in as a sub-section authored from the flow inventory.
+- Only AFTER Stage B passes on staging do we main-merge `feat/listen-redesign-and-gifting` → `main`.
+
 ### Phase 4 — production secrets + R2 lifecycle (POST-MERGE OF `feat/listen-redesign-and-gifting` → `main`)
 
 Phase 4 ships flag-off-by-absence: every vendor helper returns `vendorNotConfigured` until its env vars are populated, and the cascade reports the missing-config as a `partialFailures` entry but still completes the in-house data scrub (D1 + R2 + Sanity). These are the production-only actions to actually turn the vendor calls on — run after `feat/listen-redesign-and-gifting` merges to `main`. Staging secrets are out of scope for this runbook (set them on the staging worker as part of the bake; see `STAGING_RUNBOOK.md` for that flow).
@@ -259,13 +378,20 @@ Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful
 - The Phase 4 cascade integration is provider-agnostic by design — without `BREVO_API_KEY`, the cascade gracefully returns `brevo-contact: not configured` + `brevo-smtp-log: not configured` partial-failures and the rest of the cascade (R2 / Sanity / D1 / Stripe / Mixpanel) completes normally.
 - Switching providers is ~30 min of code work — write `<provider>Delete.ts` mirroring `brevoDelete.ts` shape + swap two import lines in `cascadeDeleteUser.ts`. **Fallback ranked picks per the 2026-05-11 vendor research:** (1) Beehiiv — strongest explicit astrology acceptance, publishes astrology-newsletter promo content; (2) Mailchimp — scrutinise-not-ban for astrology; (3) Resend Broadcasts — no content prohibitions but Schrems-III exposure for EU customers.
 
+**Brevo's 2026-05-11 reply (Frosina, ticket #5354963):**
+> *"We have reviewed the information provided… `news.withjosephine.com` has been successfully authenticated… However, since the website `withjosephine.com` is currently still under construction and not yet live, we are unfortunately unable to complete the full account review at this stage. Our compliance team needs to be able to verify the website and its content as part of the standard validation process. Additionally, as Max rightly flagged, your business falls under Section E of our Acceptable Use Policy (clairvoyance, fortune telling and astrology), which requires a dedicated review by our compliance team. We would ask you to reach back out to us once your website is live."*
+
+Net: domain auth ✓, account-level review deferred to post-launch (Brevo-side requirement, not a code dependency), Section E review will happen post-launch as a dedicated compliance pass. Externally confirms the demotion above.
+
+**Post-launch action (after apex unpark):** reply on ticket #5354963 with (a) the live URL `withjosephine.com`, (b) the opt-in form URL (when the newsletter form ships), (c) a sample newsletter (Becky drafts).
+
 **What stays from the original plan:**
-- Vetting ticket with Frosina at Brevo (#5354963) — keep in flight. Becky sent the initial reply, Max sent the technical follow-up 2026-05-11. If Brevo clears the account, ship Phase 1 on Brevo as planned. Free option.
+- Vetting ticket with Frosina at Brevo (#5354963) — keep open. Reply post-launch.
 - Cascade code under `src/lib/compliance/vendors/brevoDelete.ts` — keep as-is. Env-var-gated, no harm to leave in.
 - 0.2% complaint / 2% bounce / 1% unsubscribe thresholds — useful operational knowledge if/when Brevo Phase 1 ships.
 
 **Trigger conditions for vendor swap:**
-- Brevo vetting drags >2 weeks past 2026-05-11 OR rejects → switch to Beehiiv.
+- Brevo's post-launch review drags >2 weeks after the live-site reply OR rejects → switch to Beehiiv.
 - Brevo's `SANITY_BACKUP_ENABLED`-style flag in code already exists implicitly via env-var absence — no further code work needed to "turn Brevo off" — just don't set `BREVO_API_KEY`.
 
 Below is the original Phase 1 launch checklist for reference (still useful when Brevo eventually ships, just no longer launch-gating):
