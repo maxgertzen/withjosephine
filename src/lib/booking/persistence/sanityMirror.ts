@@ -9,8 +9,26 @@
 
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
+import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
 import type { CreateSubmissionInput } from "./repository";
+
+type MirrorCreateConsent = {
+  consentAcknowledgedAt: string;
+  ipAddress: string | null;
+  art6AcknowledgedAt: string | null;
+  art9AcknowledgedAt: string | null;
+};
+
+// `null` ackAt skips the field entirely (Sanity drops null/undefined keys on
+// create); a present ackAt produces a `{ labelText, acknowledgedAt }` object
+// whose label is locked to the constants the form actually rendered.
+function ackBlock(
+  label: string,
+  ackAt: string | null,
+): { labelText: string; acknowledgedAt: string } | undefined {
+  return ackAt ? { labelText: label, acknowledgedAt: ackAt } : undefined;
+}
 
 type SanityWritable = ReturnType<typeof getSanityWriteClient>;
 
@@ -46,8 +64,7 @@ async function findReadingRef(
 
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
-  consentAcknowledgedAt: string,
-  ip: string | null,
+  consent: MirrorCreateConsent,
 ): Promise<void> {
   const client = getClient();
   if (!client) return;
@@ -68,9 +85,14 @@ export async function mirrorSubmissionCreate(
         email: input.email,
         responses: responsesWithKeys,
         consentSnapshot: {
+          // Phase 4 — Art. 6 + Art. 9 labels are sourced from
+          // intakeConsent.ts so the UI and the audit record cannot diverge.
+          // Legacy labelText/acknowledgedAt remain populated for read-back.
           labelText: input.consentLabel ?? "",
-          acknowledgedAt: consentAcknowledgedAt,
-          ipAddress: ip ?? undefined,
+          acknowledgedAt: consent.consentAcknowledgedAt,
+          ipAddress: consent.ipAddress ?? undefined,
+          art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
+          art9Consent: ackBlock(ART9_CONSENT_LABEL, consent.art9AcknowledgedAt),
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,

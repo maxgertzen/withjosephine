@@ -34,6 +34,7 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
     paidAt: unixToIso(event.created),
     amountPaidCents: session.amount_total ?? null,
     amountPaidCurrency: session.currency ?? null,
+    country: session.customer_details?.address?.country ?? null,
   });
 
   if (result === "applied") {

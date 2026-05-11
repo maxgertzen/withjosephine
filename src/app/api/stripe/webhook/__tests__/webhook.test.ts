@@ -105,7 +105,33 @@ describe("/api/stripe/webhook", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
+  });
+
+  it("forwards customer_details.address.country to applyPaidEvent for financial_records", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_3",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: {
+        object: {
+          id: "cs_3",
+          client_reference_id: "sub_1",
+          amount_total: 9900,
+          currency: "usd",
+          customer_details: { address: { country: "GB" } },
+        },
+      },
+    } as never);
+    mockFind.mockResolvedValueOnce(SUBMISSION);
+
+    await callRoute("{}");
+
+    expect(mockApply).toHaveBeenCalledWith(
+      SUBMISSION,
+      expect.objectContaining({ country: "GB" }),
+    );
   });
 
   it("forwards amount_total + currency from the session to applyPaidEvent", async () => {
@@ -132,6 +158,7 @@ describe("/api/stripe/webhook", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: 9900,
       amountPaidCurrency: "usd",
+      country: null,
     });
   });
 

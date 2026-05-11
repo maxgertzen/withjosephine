@@ -15,6 +15,8 @@ type BookingRequestBody = {
   values: Record<string, unknown>;
   turnstileToken: string;
   consentLabelSnapshot?: string;
+  art6Consent: boolean;
+  art9Consent: boolean;
   [HONEYPOT_FIELD]?: string;
 };
 
@@ -25,7 +27,9 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
     typeof candidate.readingSlug === "string" &&
     typeof candidate.turnstileToken === "string" &&
     typeof candidate.values === "object" &&
-    candidate.values !== null
+    candidate.values !== null &&
+    typeof candidate.art6Consent === "boolean" &&
+    typeof candidate.art9Consent === "boolean"
   );
 }
 
@@ -100,6 +104,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
+  // Phase 4 — both Art. 6 (ordinary processing) and Art. 9 (special-category,
+  // explicit) consents are required at submission time. UI guards this with
+  // per-checkbox inline errors; this is the server-side defense in depth.
+  if (!parsedBody.art6Consent || !parsedBody.art9Consent) {
+    return NextResponse.json(
+      { error: "Both required consents (Art. 6 and Art. 9) must be acknowledged." },
+      { status: 400 },
+    );
+  }
+
   const ip = getClientIp(request);
 
   const turnstileOk = await verifyTurnstileToken(parsedBody.turnstileToken, ip ?? undefined);
@@ -163,6 +177,8 @@ export async function POST(request: Request) {
       createdAt: acknowledgedAt,
       consentAcknowledgedAt: acknowledgedAt,
       ipAddress: ip ?? null,
+      art6AcknowledgedAt: acknowledgedAt,
+      art9AcknowledgedAt: acknowledgedAt,
     });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);

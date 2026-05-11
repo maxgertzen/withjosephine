@@ -1,5 +1,5 @@
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
-import { dbExec, dbQuery, type SqlValue } from "./sqlClient";
+import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
 const LIST_LIMIT = 500;
 
@@ -143,28 +143,30 @@ export async function findSubmissionRecipientUserId(
   return { submissionId: ctx.submissionId, recipientUserId: ctx.recipientUserId };
 }
 
-export async function markSubmissionPaid(
+export type MarkSubmissionPaidInput = {
+  stripeEventId: string;
+  stripeSessionId: string;
+  paidAt: string;
+  amountPaidCents: number | null;
+  amountPaidCurrency: string | null;
+  recipientUserId?: string | null;
+};
+
+// Fold recipient_user_id into the same UPDATE so callers never observe
+// the half-applied state (status=paid + recipient_user_id=NULL). When
+// omitted, the COALESCE preserves the existing value so this is safe to
+// call from non-payment paths that want to update only the paid columns.
+export function buildMarkSubmissionPaidStatement(
   id: string,
-  paid: {
-    stripeEventId: string;
-    stripeSessionId: string;
-    paidAt: string;
-    amountPaidCents: number | null;
-    amountPaidCurrency: string | null;
-    recipientUserId?: string | null;
-  },
-): Promise<void> {
-  // Fold recipient_user_id into the same UPDATE so callers never observe
-  // the half-applied state (status=paid + recipient_user_id=NULL). When
-  // omitted, the COALESCE preserves the existing value so this is safe to
-  // call from non-payment paths that want to update only the paid columns.
-  await dbExec(
-    `UPDATE submissions
-     SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?,
-         amount_paid_cents = ?, amount_paid_currency = ?,
-         recipient_user_id = COALESCE(?, recipient_user_id)
-     WHERE id = ?`,
-    [
+  paid: MarkSubmissionPaidInput,
+): SqlStatement {
+  return {
+    sql: `UPDATE submissions
+          SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?,
+              amount_paid_cents = ?, amount_paid_currency = ?,
+              recipient_user_id = COALESCE(?, recipient_user_id)
+          WHERE id = ?`,
+    params: [
       paid.paidAt,
       paid.stripeEventId,
       paid.stripeSessionId,
@@ -173,7 +175,15 @@ export async function markSubmissionPaid(
       paid.recipientUserId ?? null,
       id,
     ],
-  );
+  };
+}
+
+export async function markSubmissionPaid(
+  id: string,
+  paid: MarkSubmissionPaidInput,
+): Promise<void> {
+  const stmt = buildMarkSubmissionPaidStatement(id, paid);
+  await dbExec(stmt.sql, stmt.params ?? []);
 }
 
 export async function markSubmissionExpired(
@@ -197,6 +207,43 @@ export async function markSubmissionExpired(
 
 export async function deleteSubmission(id: string): Promise<void> {
   await dbExec(`DELETE FROM submissions WHERE id = ?`, [id]);
+}
+
+export type FinancialRecordInput = {
+  submissionId: string;
+  userId: string | null;
+  email: string;
+  paidAt: string;
+  amountPaidCents: number;
+  amountPaidCurrency: string;
+  country: string | null;
+  stripeSessionId: string;
+  retainedUntil: string;
+};
+
+export function buildInsertFinancialRecordStatement(input: FinancialRecordInput): SqlStatement {
+  return {
+    sql: `INSERT OR IGNORE INTO financial_records (
+            submission_id, user_id, email, paid_at, amount_paid_cents,
+            amount_paid_currency, country, stripe_session_id, retained_until
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [
+      input.submissionId,
+      input.userId,
+      input.email,
+      input.paidAt,
+      input.amountPaidCents,
+      input.amountPaidCurrency,
+      input.country,
+      input.stripeSessionId,
+      input.retainedUntil,
+    ],
+  };
+}
+
+export async function insertFinancialRecord(input: FinancialRecordInput): Promise<void> {
+  const stmt = buildInsertFinancialRecordStatement(input);
+  await dbExec(stmt.sql, stmt.params ?? []);
 }
 
 export async function unsetPhotoR2Key(id: string): Promise<void> {

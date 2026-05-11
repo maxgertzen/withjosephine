@@ -31,6 +31,7 @@ import {
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
+import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
 import { errorClasses } from "@/lib/formStyles";
 import {
   clear as clearDraft,
@@ -175,6 +176,12 @@ export function IntakeForm({
   const turnstileRef = useRef<TurnstileInstance | null>(null);
   const turnstileResolverRef = useRef<((token: string | null) => void) | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Phase 4 — Art. 6 + Art. 9 consents are session-fresh (not persisted in
+  // draft) so each submission attempt records an explicit, in-the-moment ack.
+  const [art6Consent, setArt6Consent] = useState(false);
+  const [art9Consent, setArt9Consent] = useState(false);
+  const [art6Error, setArt6Error] = useState<string | undefined>(undefined);
+  const [art9Error, setArt9Error] = useState<string | undefined>(undefined);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -479,9 +486,16 @@ export function IntakeForm({
 
     const preflight = submissionSchema.safeParse(values);
     const preflightFollowup = buildNameFollowupSchema(allFields, values).safeParse(values);
+    // Phase 4 consents are validated locally — both must be true to submit.
+    // Per-checkbox inline errors are set so the user can see which one they
+    // missed without scanning a generic banner.
+    const art6Ok = art6Consent;
+    const art9Ok = art9Consent;
+    setArt6Error(art6Ok ? undefined : "Please acknowledge to continue.");
+    setArt9Error(art9Ok ? undefined : "Please acknowledge to continue.");
     track("intake_submit_click", {
       reading_id: readingId,
-      validation_pass: preflight.success && preflightFollowup.success,
+      validation_pass: preflight.success && preflightFollowup.success && art6Ok && art9Ok,
     });
 
     let submissionTurnstileToken: string | null = turnstileToken;
@@ -497,14 +511,18 @@ export function IntakeForm({
     const result = submissionSchema.safeParse(values);
     const followupSchema = buildNameFollowupSchema(allFields, values);
     const followupResult = followupSchema.safeParse(values);
-    if (!result.success || !followupResult.success) {
+    if (!result.success || !followupResult.success || !art6Ok || !art9Ok) {
       const issues = [
         ...(result.success ? [] : result.error.issues),
         ...(followupResult.success ? [] : followupResult.error.issues),
       ];
       const fieldErrors = collectFieldErrors(issues);
       setErrors(fieldErrors);
-      setSubmitError("Please fix the highlighted fields and try again.");
+      setSubmitError(
+        !art6Ok || !art9Ok
+          ? "Both required acknowledgments below must be checked to continue."
+          : "Please fix the highlighted fields and try again.",
+      );
       focusFirstError(fieldErrors);
       track("intake_submit_error", { reading_id: readingId, error_code: "validation_failed" });
       return;
@@ -529,6 +547,8 @@ export function IntakeForm({
           turnstileToken: submissionTurnstileToken ?? "",
           [HONEYPOT_FIELD]: honeypot,
           consentLabelSnapshot: consentField?.label ?? "",
+          art6Consent,
+          art9Consent,
         }),
       });
 
@@ -706,6 +726,34 @@ export function IntakeForm({
           <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
             {nonRefundableNotice}
           </p>
+          <Checkbox
+            id="field-art6-consent"
+            name="art6Consent"
+            checked={art6Consent}
+            onChange={(checked) => {
+              setArt6Consent(checked);
+              if (checked) setArt6Error(undefined);
+            }}
+            error={art6Error}
+            disabled={isSubmitting}
+            required
+          >
+            {ART6_CONSENT_LABEL}
+          </Checkbox>
+          <Checkbox
+            id="field-art9-consent"
+            name="art9Consent"
+            checked={art9Consent}
+            onChange={(checked) => {
+              setArt9Consent(checked);
+              if (checked) setArt9Error(undefined);
+            }}
+            error={art9Error}
+            disabled={isSubmitting}
+            required
+          >
+            {ART9_CONSENT_LABEL}
+          </Checkbox>
           <Checkbox
             id={`field-${consentField.key}`}
             name={consentField.key}

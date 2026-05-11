@@ -81,11 +81,13 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     const record = await findSubmissionById("sub_1");
     expect(record?._id).toBe("sub_1");
     expect(mockMirrorCreate).toHaveBeenCalledOnce();
-    const [input, ackAt, ip] = mockMirrorCreate.mock.calls[0]!;
+    const [input, consent] = mockMirrorCreate.mock.calls[0]!;
     expect(input.id).toBe("sub_1");
     expect(input.email).toBe("ada@example.com");
-    expect(ackAt).toBe("2026-04-20T10:00:00Z");
-    expect(ip).toBe("1.2.3.4");
+    expect(consent.consentAcknowledgedAt).toBe("2026-04-20T10:00:00Z");
+    expect(consent.ipAddress).toBe("1.2.3.4");
+    expect(consent.art6AcknowledgedAt).toBeNull();
+    expect(consent.art9AcknowledgedAt).toBeNull();
   });
 
   it("markSubmissionPaid updates D1 and triggers mirror patch", async () => {

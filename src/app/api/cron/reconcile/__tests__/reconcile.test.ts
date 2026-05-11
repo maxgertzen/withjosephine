@@ -88,6 +88,7 @@ describe("/api/cron/reconcile", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
   });
 
