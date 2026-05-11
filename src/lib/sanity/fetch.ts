@@ -5,10 +5,12 @@ import { sanityFetch } from "./live";
 import {
   bookingFormQuery,
   bookingPageQuery,
+  emailDay7DeliveryQuery,
   emailMagicLinkQuery,
   faqItemsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
+  listenPageQuery,
   magicLinkVerifyPageQuery,
   myReadingsPageQuery,
   notFoundPageQuery,
@@ -24,10 +26,12 @@ import {
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityEmailDay7Delivery,
   SanityEmailMagicLink,
   SanityFaqItem,
   SanityLandingPage,
   SanityLegalPage,
+  SanityListenPage,
   SanityMagicLinkVerifyPage,
   SanityMyReadingsPage,
   SanityNotFoundPage,
@@ -155,5 +159,17 @@ export const fetchMagicLinkVerifyPage = cache(
 
 export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink | null> => {
   const { data } = await sanityFetch<SanityEmailMagicLink | null>({ query: emailMagicLinkQuery });
+  return data;
+});
+
+export const fetchEmailDay7Delivery = cache(async (): Promise<SanityEmailDay7Delivery | null> => {
+  const { data } = await sanityFetch<SanityEmailDay7Delivery | null>({
+    query: emailDay7DeliveryQuery,
+  });
+  return data;
+});
+
+export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {
+  const { data } = await sanityFetch<SanityListenPage | null>({ query: listenPageQuery });
   return data;
 });

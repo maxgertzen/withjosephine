@@ -12,6 +12,8 @@ import { notFoundPage } from "./notFoundPage";
 import { myReadingsPage } from "./myReadingsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
+import { emailDay7Delivery } from "./emailDay7Delivery";
+import { listenPage } from "./listenPage";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
@@ -32,6 +34,8 @@ export const schemaTypes = [
   myReadingsPage,
   magicLinkVerifyPage,
   emailMagicLink,
+  emailDay7Delivery,
+  listenPage,
   formField,
   formSection,
   bookingForm,

@@ -165,6 +165,52 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
+export const emailDay7DeliveryQuery = groq`
+  *[_type == "emailDay7Delivery"][0] {
+    subjectTemplate,
+    preview,
+    greeting,
+    lineReady,
+    comfortLine,
+    openButtonLabel,
+    signedInDisclosure,
+    comfortFollowUp,
+    signOff
+  }
+`;
+
+export const listenPageQuery = groq`
+  *[_type == "listenPage"][0] {
+    welcomeRibbon,
+    deliveredHeading,
+    deliveredSubheading,
+    voiceNoteLabel,
+    pdfLabel,
+    pdfButtonLabel,
+    closerLine1,
+    closerLine2,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel,
+    restedHeading,
+    restedBody,
+    restedCtaLabel,
+    throttledHeading,
+    throttledBody,
+    throttledMailtoLabel,
+    throttledMailtoSubject,
+    assetTroubleHeading,
+    assetTroubleBody,
+    assetTroubleTryAgainLabel,
+    assetTroubleMailtoLabel,
+    assetTroubleMailtoSubject
+  }
+`;
+
 export const themeQuery = groq`
   *[_type == "theme"][0] {
     colors,

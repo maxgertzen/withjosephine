@@ -188,9 +188,9 @@ describe("middleware apex lockdown (under-construction on)", () => {
     }
   });
 
-  it("does NOT rewrite /listen/[token] on apex (delivery emails hardcode apex URLs)", () => {
+  it("does NOT rewrite /listen/[id] on apex (delivery emails hardcode apex URLs)", () => {
     const res = middleware(
-      makeRequest({ hasDraft: false, pathname: "/listen/c3ViXzE.deadbeef" }),
+      makeRequest({ hasDraft: false, pathname: "/listen/sub_abc123" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
   });

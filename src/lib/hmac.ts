@@ -1,7 +1,8 @@
 /**
  * Shared HMAC-SHA256 + base64url + hex helpers used by every signed-payload
- * surface in the app: `/listen/<token>` (`listenToken.ts`), the Sanity sync
- * webhook (`/api/sanity-sync`), and any future receiver. Centralising here
+ * surface in the app: the cron-auth headers (`booking/cron-auth.ts`), the
+ * Sanity sync webhook (`/api/sanity-sync`), the magic-link session module
+ * (`auth/listenSession.ts`), and any future receiver. Centralising here
  * keeps the encoding / cache / `crypto.subtle.verify` discipline in one place
  * — receivers never roll their own timing-safe compare or base64url math.
  */

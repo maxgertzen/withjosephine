@@ -12,6 +12,8 @@ export const SINGLETON_TYPES = new Set([
   "myReadingsPage",
   "magicLinkVerifyPage",
   "emailMagicLink",
+  "emailDay7Delivery",
+  "listenPage",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -95,9 +97,11 @@ export const deskStructure = (S: StructureBuilder) =>
           S.list()
             .title("Customer copy")
             .items([
+              singletonListItem(S, "listenPage", "Listen Page"),
               singletonListItem(S, "myReadingsPage", "My Readings Page"),
               singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
               singletonListItem(S, "emailMagicLink", "Email — Magic Link"),
+              singletonListItem(S, "emailDay7Delivery", "Email — Day-7 Delivery"),
             ]),
         ),
       S.divider(),

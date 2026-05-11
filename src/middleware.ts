@@ -33,8 +33,9 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //   - /api/stripe/webhook : Stripe POSTs server-to-server; redirecting it would
 //                           drop events and silently break payment reconcile.
 //   - /api/cron/          : Cloudflare cron triggers hit these on the apex.
-//   - /listen/            : HMAC-tokenized delivery links sent in customer
-//                           emails; the bodies hardcode apex URLs (see
+//   - /listen/            : Submission-scoped delivery links sent in customer
+//                           emails; auth-gated by magic-link cookie. The
+//                           email bodies hardcode apex URLs (see
 //                           email-day-7-deliver/route.ts SITE_ORIGIN).
 const APEX_ALLOWLIST_PREFIXES = ["/api/stripe/webhook", "/api/cron/", "/listen/"];
 
@@ -102,7 +103,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
-  // allowlisted (Stripe webhook, crons, /listen/[token]) gets rewritten to `/`
+  // allowlisted (Stripe webhook, crons, /listen/[id]) gets rewritten to `/`
   // so it serves the holding HTML. Draft mode bypasses this so Studio's
   // Presentation tool keeps working if it's ever pointed at apex (currently
   // it points at preview). Page-level gate in src/app/page.tsx still fires

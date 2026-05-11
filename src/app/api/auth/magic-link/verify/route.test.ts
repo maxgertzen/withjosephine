@@ -54,7 +54,7 @@ describe("POST /api/auth/magic-link/verify", () => {
     expect(setCookie).toContain("Max-Age=604800");
   });
 
-  it("redirects to a safe `next` path when supplied", async () => {
+  it("redirects to a safe `next` path with ?welcome=1 when next is a listen page", async () => {
     redeemMock.mockResolvedValue({
       ok: true,
       userId: "user_1",
@@ -65,7 +65,9 @@ describe("POST /api/auth/magic-link/verify", () => {
     const response = await POST(
       form({ token: "abc", email: "ada@example.com", next: "/listen/sub_42" }),
     );
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/listen/sub_42");
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/listen/sub_42?welcome=1",
+    );
   });
 
   it("clamps unsafe `next` paths to /my-readings", async () => {
@@ -129,5 +131,28 @@ describe("POST /api/auth/magic-link/verify", () => {
       "https://withjosephine.com/auth/verify?error=rested",
     );
     expect(redeemMock).not.toHaveBeenCalled();
+  });
+
+  it("on failure with listen next: redirects to /listen/[id]?error=rested (stay in-flow)", async () => {
+    redeemMock.mockResolvedValue({ ok: false, reason: "already_consumed" });
+    const { POST } = await import("./route");
+    const response = await POST(
+      form({ token: "abc", email: "ada@example.com", next: "/listen/sub_42" }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/listen/sub_42?error=rested",
+    );
+  });
+
+  it("rate-limited with listen next: redirects to /listen/[id]?error=rested", async () => {
+    rateLimitMock.mockResolvedValue(false);
+    const { POST } = await import("./route");
+    const response = await POST(
+      form({ token: "abc", email: "ada@example.com", next: "/listen/sub_42" }),
+    );
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/listen/sub_42?error=rested",
+    );
   });
 });

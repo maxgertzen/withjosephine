@@ -83,12 +83,12 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("returns 204 silently when rate-limited", async () => {
+  it("returns 429 when rate-limited (JSON branch surfaces throttle status)", async () => {
     rateLimitMock.mockResolvedValue(false);
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
     const response = await POST(jsonRequest({ email: "ada@example.com" }));
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(429);
     expect(findUserMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -165,14 +165,50 @@ describe("POST /api/auth/magic-link — form branch", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("redirects to /my-readings?sent=1 when rate-limited (silent throttle)", async () => {
+  it("redirects to /my-readings?error=throttled when rate-limited (State 5c trigger)", async () => {
     rateLimitMock.mockResolvedValue(false);
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
     const response = await POST(formRequest({ email: "ada@example.com" }));
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings?sent=1");
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/my-readings?error=throttled",
+    );
     expect(findUserMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("honors a /listen/[id] next on the success redirect", async () => {
+    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
+    const { POST } = await import("./route");
+    const response = await POST(
+      formRequest({ email: "ada@example.com", next: "/listen/sub_123" }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/listen/sub_123?sent=1",
+    );
+  });
+
+  it("honors a /listen/[id] next on the throttled redirect", async () => {
+    rateLimitMock.mockResolvedValue(false);
+    const { POST } = await import("./route");
+    const response = await POST(
+      formRequest({ email: "ada@example.com", next: "/listen/sub_123" }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      "https://withjosephine.com/listen/sub_123?error=throttled",
+    );
+  });
+
+  it("strips an unsafe `next` and falls back to /my-readings", async () => {
+    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
+    const { POST } = await import("./route");
+    const response = await POST(
+      formRequest({ email: "ada@example.com", next: "https://evil.example.com" }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings?sent=1");
   });
 });

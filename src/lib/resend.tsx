@@ -167,16 +167,25 @@ export async function sendDay7Delivery(
   submission: SubmissionContext,
   listenUrl: string,
 ): Promise<EmailSendResult> {
+  // Lazy imports scope the Sanity fetch to test runs that don't mock it.
+  const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailDay7Delivery().catch(() => null);
+  const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...(sanity ?? {}) };
+  const subject = copy.subjectTemplate.replaceAll("{readingName}", submission.readingName);
   const html = await render(
     <Day7Delivery
-      firstName={submission.firstName}
-      readingName={submission.readingName}
-      listenUrl={listenUrl}
+      vars={{
+        firstName: submission.firstName,
+        readingName: submission.readingName,
+        listenUrl,
+      }}
+      copy={copy}
     />,
   );
   return sendOrSkip({
     to: submission.email,
-    subject: "Your reading is ready",
+    subject,
     html,
     emailKind: "Day +7 delivery",
     subType: "day_7_delivery",

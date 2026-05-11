@@ -12,6 +12,7 @@ import React from "react";
 
 import { render } from "@react-email/render";
 
+import { EMAIL_DAY7_DELIVERY_DEFAULTS } from "../src/data/defaults";
 import { ContactMessage } from "../src/lib/emails/ContactMessage";
 import { Day2Started } from "../src/lib/emails/Day2Started";
 import { Day7Delivery } from "../src/lib/emails/Day7Delivery";
@@ -47,9 +48,12 @@ const previews = [
   {
     name: "03-day-7-delivery",
     element: React.createElement(Day7Delivery, {
-      firstName: "Ada",
-      readingName: "Soul Blueprint",
-      listenUrl: "https://withjosephine.com/listen/preview-token",
+      vars: {
+        firstName: "Ada",
+        readingName: "Soul Blueprint",
+        listenUrl: "https://withjosephine.com/listen/sub_preview",
+      },
+      copy: EMAIL_DAY7_DELIVERY_DEFAULTS,
     }),
   },
   {

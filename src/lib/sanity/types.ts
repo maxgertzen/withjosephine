@@ -122,6 +122,48 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
+export type SanityEmailDay7Delivery = {
+  subjectTemplate: string;
+  preview: string;
+  greeting: string;
+  lineReady: string;
+  comfortLine: string;
+  openButtonLabel: string;
+  signedInDisclosure: string;
+  comfortFollowUp: string;
+  signOff: string | null;
+};
+
+export type SanityListenPage = {
+  welcomeRibbon: string;
+  deliveredHeading: string;
+  deliveredSubheading: string;
+  voiceNoteLabel: string;
+  pdfLabel: string;
+  pdfButtonLabel: string;
+  closerLine1: string;
+  closerLine2: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+  throttledHeading: string;
+  throttledBody: string;
+  throttledMailtoLabel: string;
+  throttledMailtoSubject: string;
+  assetTroubleHeading: string;
+  assetTroubleBody: string;
+  assetTroubleTryAgainLabel: string;
+  assetTroubleMailtoLabel: string;
+  assetTroubleMailtoSubject: string;
+};
+
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;
