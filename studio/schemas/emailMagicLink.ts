@@ -6,12 +6,6 @@ export const emailMagicLink = defineType({
   type: "document",
   fields: [
     defineField({
-      name: "title",
-      type: "string",
-      hidden: true,
-      initialValue: "Email — Magic Link",
-    }),
-    defineField({
       name: "subject",
       title: "Subject",
       type: "string",

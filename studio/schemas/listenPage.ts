@@ -15,12 +15,6 @@ export const listenPage = defineType({
   ],
   fields: [
     defineField({
-      name: "title",
-      type: "string",
-      hidden: true,
-      initialValue: "Listen Page",
-    }),
-    defineField({
       name: "welcomeRibbon",
       title: "Welcome ribbon",
       type: "string",
