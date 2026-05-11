@@ -49,12 +49,23 @@ export interface R2MultipartUpload {
   abort(): Promise<void>;
 }
 
+export interface R2PutOptions {
+  httpMetadata?: R2HTTPMetadata;
+  customMetadata?: Record<string, string>;
+}
+
 export interface R2Bucket {
   createMultipartUpload(
     key: string,
     options?: R2CreateMultipartUploadOptions,
   ): Promise<R2MultipartUpload>;
   get(key: string): Promise<R2ObjectBody | null>;
+  head(key: string): Promise<R2Object | null>;
+  put(
+    key: string,
+    value: ReadableStream<Uint8Array> | ArrayBuffer | ArrayBufferView | Blob | string | Uint8Array,
+    options?: R2PutOptions,
+  ): Promise<R2Object>;
 }
 
 declare global {

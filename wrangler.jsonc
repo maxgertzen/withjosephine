@@ -32,6 +32,11 @@
 	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
 	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked
 	//                                export token does NOT grant write access. Scoped to project datasets.
+	//   - SANITY_BACKUP_WEBHOOK_SECRET   HMAC shared secret for the per-upload webhook at
+	//                                /api/sanity-backup-webhook. Distinct from SANITY_WEBHOOK_SECRET
+	//                                (which gates /api/sanity-sync) — separate rotation, separate
+	//                                blast-radius if compromised. One value per environment, set
+	//                                identically in the Sanity dashboard webhook config + the worker secret.
 	//
 	// Public vars used by the backup cron (set as Variables, plain text):
 	//   - SANITY_BACKUP_ENABLED      Deploy-flag gate for /api/cron/backup-sanity-dataset. Set to "1"

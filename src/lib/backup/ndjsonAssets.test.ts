@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractAssetRefs } from "./ndjsonAssets";
+import { collectAssetRefsFromDoc,extractAssetRefs } from "./ndjsonAssets";
 
 function streamOfText(text: string): ReadableStream<Uint8Array> {
   const bytes = new TextEncoder().encode(text);
@@ -160,5 +160,50 @@ describe("extractAssetRefs", () => {
     const result = await extractAssetRefs(streamOfText(ndjson));
     expect(result.refs).toEqual([]);
     expect(result.recordCount).toBe(1);
+  });
+});
+
+describe("collectAssetRefsFromDoc", () => {
+  it("extracts voiceNote, readingPdf, and photoR2Key from a single doc", () => {
+    expect(
+      collectAssetRefsFromDoc({
+        _id: "sub_1",
+        voiceNote: { asset: { _ref: "file-aaa-mp3" } },
+        readingPdf: { asset: { _ref: "file-bbb-pdf" } },
+        photoR2Key: "submissions/sub_1/photo-1.jpg",
+      }),
+    ).toEqual([
+      { kind: "sanityFile", id: "file-aaa-mp3" },
+      { kind: "sanityFile", id: "file-bbb-pdf" },
+      { kind: "r2Photo", key: "submissions/sub_1/photo-1.jpg" },
+    ]);
+  });
+
+  it("returns an empty array for a doc with no asset fields", () => {
+    expect(collectAssetRefsFromDoc({ _id: "x", title: "no assets" })).toEqual([]);
+  });
+
+  it("returns an empty array for non-object inputs", () => {
+    expect(collectAssetRefsFromDoc(null)).toEqual([]);
+    expect(collectAssetRefsFromDoc("a string")).toEqual([]);
+    expect(collectAssetRefsFromDoc(42)).toEqual([]);
+  });
+
+  it("deduplicates when both fields point at the same asset", () => {
+    expect(
+      collectAssetRefsFromDoc({
+        voiceNote: { asset: { _ref: "file-shared-mp3" } },
+        readingPdf: { asset: { _ref: "file-shared-mp3" } },
+      }),
+    ).toEqual([{ kind: "sanityFile", id: "file-shared-mp3" }]);
+  });
+
+  it("ignores empty refs and empty photoR2Key", () => {
+    expect(
+      collectAssetRefsFromDoc({
+        voiceNote: { asset: { _ref: "" } },
+        photoR2Key: "",
+      }),
+    ).toEqual([]);
   });
 });
