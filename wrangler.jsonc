@@ -29,6 +29,14 @@
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
 	//   - LISTEN_TOKEN_SECRET        HMAC secret used as IP-audit salt for listen-session auth (32-byte hex)
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
+	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
+	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked
+	//                                export token does NOT grant write access. Scoped to project datasets.
+	//
+	// Public vars used by the backup cron (set as Variables, plain text):
+	//   - SANITY_BACKUP_ENABLED      Deploy-flag gate for /api/cron/backup-sanity-dataset. Set to "1"
+	//                                once BACKUPS_BUCKET is provisioned + lifecycle/Bucket-Locks applied
+	//                                + SANITY_EXPORT_TOKEN secret put. Cron exits early when off.
 	//
 	// Public vars (Variables → Variables on the Worker):
 	//   - BOOKING_DB_DRIVER          "d1" in production. Defaults to "sqlite" (local better-sqlite3) elsewhere.
@@ -53,6 +61,10 @@
 			"binding": "BOOKING_PHOTOS",
 			"bucket_name": "withjosephine-booking-photos",
 		},
+		{
+			"binding": "BACKUPS_BUCKET",
+			"bucket_name": "josephine-backups",
+		},
 	],
 	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
 	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
@@ -65,12 +77,14 @@
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
+	//   - "0 3 * * 1"   : backup-sanity-dataset (weekly NDJSON snapshot + assets → BACKUPS_BUCKET)
 	"triggers": {
 		"crons": [
 			"0 */6 * * *",
 			"0 3 * * *",
 			"0 10 * * *",
-			"0 12 * * 1"
+			"0 12 * * 1",
+			"0 3 * * 1"
 		],
 	},
 	"observability": {
@@ -159,6 +173,10 @@
 				{
 					"binding": "BOOKING_PHOTOS",
 					"bucket_name": "withjosephine-booking-photos-staging"
+				},
+				{
+					"binding": "BACKUPS_BUCKET",
+					"bucket_name": "josephine-backups-staging"
 				}
 			],
 			"d1_databases": [
@@ -190,7 +208,8 @@
 				"crons": [
 					"0 */6 * * *",
 					"0 3 * * *",
-					"0 10 * * *"
+					"0 10 * * *",
+					"0 3 * * 1"
 				]
 			},
 			"vars": {

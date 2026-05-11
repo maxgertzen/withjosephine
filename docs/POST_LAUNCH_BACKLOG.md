@@ -51,6 +51,44 @@ Each item: where it came from + why it was deferred + a one-line action.
 - **PAI memory:** `feedback_sanity_client_token.md` + `feedback_static_fallbacks_can_mask_outages.md`.
 - **Action:** Reference the runbook when standing up the next non-prod env (dev?). No standalone code work.
 
+### R2 backups bucket + Sanity Export token provisioning (Phase 3 prerequisite — Max-action)
+
+- **Source:** Phase 3 backup cron PR (Sanity dataset NDJSON snapshot → R2). Cron + binding shipped behind a `SANITY_BACKUP_ENABLED` deploy flag so the code is ready in advance; provisioning is what flips it on.
+- **What's required before flipping `SANITY_BACKUP_ENABLED=1`:**
+  1. Create R2 bucket `josephine-backups` (production) and `josephine-backups-staging` (staging) via CF dashboard → R2 → Create bucket. Same account that hosts `withjosephine-booking-photos`.
+  2. Attach lifecycle rules per bucket:
+     - prefix `backups/weekly/` → expire after 90 days
+     - prefix `backups/monthly/` → expire after 1095 days (3 years, matches reading-content retention)
+  3. Apply R2 **Bucket Locks** per prefix (write-once immutable retention). Locks must MATCH the lifecycle expirations so a compromised API token can't shorten retention:
+     - prefix `backups/weekly/` → retention 90 days, mode = Compliance
+     - prefix `backups/monthly/` → retention 1095 days, mode = Compliance
+  4. Create a distinct KMS key for the backups buckets (defence against primary R2 key compromise leaking cold copies). CF Dashboard → R2 → bucket → Settings → Encryption.
+  5. Generate a Sanity **Viewer** API token at manage.sanity.io → Project → API → Add API token. Read-only scope, restricted to the production dataset. Repeat for staging.
+  6. `pnpm wrangler secret put SANITY_EXPORT_TOKEN` against the production worker (and `--env staging` against staging) with the matching Viewer tokens.
+  7. CF Dashboard → Workers → withjosephine (+ withjosephine-staging) → Settings → Variables → add public var `SANITY_BACKUP_ENABLED = 1`.
+- **Verification:** manually trigger the cron after provisioning — `curl -H "Authorization: Bearer $CRON_SECRET" https://withjosephine.com/api/cron/backup-sanity-dataset`. Should return 200 JSON with `success: true`, non-zero `ndjsonBytes`, and `assetCount`. Then check R2 dashboard for `backups/weekly/<YYYY-Www>/dataset.ndjson` + assets subtree.
+- **Why deferred:** R2 bucket creation, lifecycle, Bucket Locks, KMS, and Sanity token issuance are all CF/Sanity dashboard operations Max owns. Code ships gated; nothing depends on the cron firing until the flag is on.
+- **Restore drill:** Annual, documented in Phase 4 PRD's compliance runbook (separate session). Not in scope here.
+
+### Phase 3 backup cron — security follow-ups (Pentester deferrals)
+
+Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items deferred to backlog:
+
+- **MED-2: Bound NDJSON line length + per-`uploadPart` timeout.** `extractAssetRefs` accumulates `pending` until a `\n` is found — a single multi-MB JSON line (e.g. future Portable Text body on a submission) would buffer entirely in Worker memory. Mitigation: reject lines > ~5 MiB. Separately, `streamToR2Multipart`'s `uploadPart` has no timeout — a hung upload would burn the 15-min scheduled wall clock. Wrap with a timeout race. Trigger: file once submission docs gain Portable Text bodies, OR after the first cron run that takes >5 min wall-clock.
+- **LOW-3: Document last-writer-wins semantics + Bucket-Lock-mode interaction.** Two concurrent backup invocations (manual curl + scheduled trigger) on the same period produce two `createMultipartUpload` flows, both `complete()`ing the same key — last writer overwrites. Once Bucket Locks ship (Max-action), the mode choice (Compliance vs Governance) determines whether the second `complete()` is rejected. Recommendation: Governance mode so "fresh-snapshot-wins" semantics are preserved for retries. Document in the Max-action provisioning entry above.
+- **LOW-4: Extend `scrubSensitiveRequestData` in `custom-worker.ts` to scrub `event.extra.ref.key`** on the backup-cron Sentry-capture path. The asset ref includes a sanitized customer-supplied filename which is a marginal PII surface in admin-only Sentry. Same posture as the existing listen-page URL scrub. Two-line change.
+
+### Phase 3 backup cron — `extractAssetRefs` line-splitter O(N²) on long records
+- **Source:** /simplify Efficiency reviewer on Phase 3 PR (EFF-6).
+- **What:** `src/lib/backup/ndjsonAssets.ts` builds the in-flight string buffer via `pending += decoder.decode(...)` and repeatedly `pending.slice(newlineIdx + 1)` after each line. For a Sanity export where one doc emits a ≥100 KB line (e.g. large Portable Text or embedded images in a future doc-type), the per-line tail-realloc cost is quadratic. At soft-launch (~10 KB total NDJSON) it's irrelevant.
+- **Action:** Switch the line walk to an offset-based scan, OR pipe through `TextDecoderStream` + a `TransformStream` that splits on `\n` natively. ~10 lines.
+- **Trigger:** filing now so the line is in view; defer execution until either (a) cron `durationMs` for the dataset-NDJSON walk crosses ~1s, or (b) any submission doc lands a multi-KB Portable Text body in Sanity. Neither is true today.
+
+### Phase 3 backup cron — tee Sanity export stream to skip the R2 re-read
+- **Source:** /simplify Efficiency reviewer on Phase 3 PR (EFF-1).
+- **What:** Today the cron streams Sanity export → R2 multipart, then does a separate `bucket.get(ndjsonKey)` to walk asset refs. Reviewer suggested `body.tee()` to split the source stream into two consumers in parallel. Deferred because tee'd ReadableStreams in the Streams spec queue unbounded for the slower consumer — if R2 upload throughput lags Sanity download (likely at projected scale), the JS-side queue can exceed Workers' 128 MiB request-memory ceiling. The current re-read is memory-bounded; the R2 GET round-trip costs ~$0.0004 per backup (Class B op, negligible).
+- **Action:** If R2 GET cost or cron wall-clock duration ever becomes the bottleneck, revisit with bounded backpressure (e.g. a `TransformStream` with a small `highWaterMark` on the slow branch) instead of naive `tee()`.
+
 ### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
 - **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
 - **Action (Max):** `gh secret delete NEXT_PUBLIC_WEB3FORMS_KEY` at the repo level. No code change.
