@@ -1,15 +1,19 @@
-import { defineField, defineType, type Rule } from "sanity";
+import { defineField, defineType, type CustomValidator } from "sanity";
 
+import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
+// Sanity's validation builders (FileRule, StringRule, ...) aren't a clean
+// subtype hierarchy under `Rule`, so a helper that returns the input rule
+// won't type-check. Encoding the rule-agnostic part as a `CustomValidator`
+// factory lets each call site type-narrow the rule itself.
 const requireWhenDeliveredAtSet =
-  (errorMessage: string) =>
-  (rule: Rule) =>
-    rule.custom((value, context) => {
-      const parent = context.parent as { deliveredAt?: string } | undefined;
-      if (parent?.deliveredAt && !value) return errorMessage;
-      return true;
-    });
+  (errorMessage: string): CustomValidator<unknown> =>
+  (value, context) => {
+    const parent = context.parent as { deliveredAt?: string } | undefined;
+    if (parent?.deliveredAt && !value) return errorMessage;
+    return true;
+  };
 
 export const submission = defineType({
   name: "submission",
@@ -130,6 +134,7 @@ export const submission = defineType({
       title: "Photo R2 Key",
       type: "string",
       description: "R2 object key — not the URL.",
+      components: { input: PhotoR2Preview },
     }),
     defineField({
       name: "stripeEventId",
@@ -175,9 +180,8 @@ export const submission = defineType({
       description:
         "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
       options: { accept: "audio/*" },
-      validation: requireWhenDeliveredAtSet(
-        "Upload the voice note before setting Delivered At.",
-      ),
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
     }),
     defineField({
       name: "readingPdf",
@@ -186,9 +190,8 @@ export const submission = defineType({
       description:
         "Drag the supporting PDF here. Required before you can mark this reading delivered.",
       options: { accept: "application/pdf" },
-      validation: requireWhenDeliveredAtSet(
-        "Upload the reading PDF before setting Delivered At.",
-      ),
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
     }),
     defineField({
       name: "deliveredAt",
@@ -271,7 +274,16 @@ export const submission = defineType({
     },
   ],
   preview: {
-    select: { email: "email", status: "status", createdAt: "createdAt", paidAt: "paidAt" },
+    select: {
+      email: "email",
+      status: "status",
+      createdAt: "createdAt",
+      paidAt: "paidAt",
+      deliveredAt: "deliveredAt",
+      listenedAt: "listenedAt",
+      firstName: 'responses[fieldKey == "first_name"][0].value',
+      lastName: 'responses[fieldKey == "last_name"][0].value',
+    },
     prepare: prepareSubmissionPreview,
   },
 });

@@ -22,42 +22,21 @@ const singletonListItem = (S: StructureBuilder, typeName: string, title: string)
     .id(typeName)
     .child(S.document().schemaType(typeName).documentId(typeName));
 
-const submissionsByStatus = (
-  S: StructureBuilder,
-  title: string,
-  id: string,
-  status: "pending" | "paid" | "expired",
-) =>
+const awaitingPayment = (S: StructureBuilder) =>
   S.listItem()
-    .title(title)
-    .id(id)
+    .title("🟡 Awaiting payment")
+    .id("submissionsAwaitingPayment")
     .child(
       S.documentList()
-        .title(title)
+        .title("Awaiting payment")
         .schemaType("submission")
-        .filter('_type == "submission" && status == $status')
-        .params({ status })
+        .filter('_type == "submission" && status == "pending"')
         .defaultOrdering([{ field: "createdAt", direction: "desc" }]),
     );
 
-const PENDING_OVER_24H_FILTER =
-  '_type == "submission" && status == "pending" && dateTime(createdAt) < dateTime(now()) - 60*60*24';
-
-const submissionsPendingOver24h = (S: StructureBuilder) =>
+const paidAwaitingDelivery = (S: StructureBuilder) =>
   S.listItem()
-    .title("Pending > 24h")
-    .id("submissionsPendingOver24h")
-    .child(
-      S.documentList()
-        .title("Pending > 24h")
-        .schemaType("submission")
-        .filter(PENDING_OVER_24H_FILTER)
-        .defaultOrdering([{ field: "createdAt", direction: "asc" }]),
-    );
-
-const submissionsPaidAwaitingDelivery = (S: StructureBuilder) =>
-  S.listItem()
-    .title("Paid awaiting delivery")
+    .title("🟠 Paid awaiting delivery")
     .id("submissionsPaidAwaitingDelivery")
     .child(
       S.documentList()
@@ -67,16 +46,48 @@ const submissionsPaidAwaitingDelivery = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
-const submissionsDelivered = (S: StructureBuilder) =>
+const deliveredListened = (S: StructureBuilder) =>
   S.listItem()
-    .title("Delivered")
-    .id("submissionsDelivered")
+    .title("✓ Listened")
+    .id("submissionsDeliveredListened")
     .child(
       S.documentList()
-        .title("Delivered")
+        .title("Listened")
         .schemaType("submission")
-        .filter('_type == "submission" && defined(deliveredAt)')
+        .filter('_type == "submission" && defined(deliveredAt) && defined(listenedAt)')
+        .defaultOrdering([{ field: "listenedAt", direction: "desc" }]),
+    );
+
+const deliveredNotListened = (S: StructureBuilder) =>
+  S.listItem()
+    .title("○ Not listened")
+    .id("submissionsDeliveredNotListened")
+    .child(
+      S.documentList()
+        .title("Not listened")
+        .schemaType("submission")
+        .filter('_type == "submission" && defined(deliveredAt) && !defined(listenedAt)')
         .defaultOrdering([{ field: "deliveredAt", direction: "desc" }]),
+    );
+
+const deliveredGroup = (S: StructureBuilder) =>
+  S.listItem()
+    .title("🟢 Delivered")
+    .id("submissionsDelivered")
+    .child(
+      S.list()
+        .title("Delivered")
+        .items([deliveredListened(S), deliveredNotListened(S)]),
+    );
+
+const submissionsRoot = (S: StructureBuilder) =>
+  S.listItem()
+    .title("📬 Submissions")
+    .id("submissionsRoot")
+    .child(
+      S.list()
+        .title("Submissions")
+        .items([awaitingPayment(S), paidAwaitingDelivery(S), deliveredGroup(S)]),
     );
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -111,25 +122,18 @@ export const deskStructure = (S: StructureBuilder) =>
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),
+      submissionsRoot(S),
+      S.divider(),
       S.listItem()
-        .title("📋 Bookings")
-        .id("bookingsGroup")
+        .title("📋 Booking Configuration")
+        .id("bookingConfigurationGroup")
         .child(
           S.list()
-            .title("Bookings")
+            .title("Booking Configuration")
             .items([
               singletonListItem(S, "bookingPage", "Booking Page"),
               singletonListItem(S, "bookingForm", "Booking Form"),
               singletonListItem(S, "thankYouPage", "Thank You Page"),
-              S.divider(),
-              submissionsByStatus(S, "Pending Submissions", "submissionsPending", "pending"),
-              submissionsByStatus(S, "Paid Submissions", "submissionsPaid", "paid"),
-              submissionsByStatus(S, "Expired Submissions", "submissionsExpired", "expired"),
-              S.divider(),
-              submissionsPendingOver24h(S),
-              submissionsPaidAwaitingDelivery(S),
-              submissionsDelivered(S),
-              S.divider(),
               S.documentTypeListItem("formField").title("Form Fields"),
               S.documentTypeListItem("formSection").title("Form Sections"),
             ]),

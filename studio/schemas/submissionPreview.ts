@@ -1,27 +1,96 @@
-const previewDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+const longDateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
 
-const previewPaidDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-});
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DELIVERY_WINDOW_DAYS = 7;
 
-function formatIso(value: unknown, formatter: Intl.DateTimeFormat) {
+function parseIso(value: unknown): Date | null {
   if (typeof value !== "string" || value === "") return null;
   const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) return null;
-  return formatter.format(new Date(parsed));
+  return Number.isNaN(parsed) ? null : new Date(parsed);
+}
+
+function formatLong(value: unknown): string | null {
+  const date = parseIso(value);
+  return date ? longDateFormatter.format(date) : null;
+}
+
+function trimmedString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function buildTitle(firstName: unknown, lastName: unknown, email: unknown): string {
+  const first = trimmedString(firstName);
+  const last = trimmedString(lastName);
+  if (first && last) return `${first} ${last}`;
+  if (first) return first;
+  if (typeof email === "string" && email !== "") return email;
+  return "no name";
+}
+
+function dayCounter(paidAt: Date, now: Date): string {
+  const elapsed = Math.max(0, now.getTime() - paidAt.getTime());
+  const day = Math.max(1, Math.floor(elapsed / DAY_MS) + 1);
+  return day > DELIVERY_WINDOW_DAYS
+    ? `Day ${day} — overdue`
+    : `Day ${day} of ${DELIVERY_WINDOW_DAYS}`;
+}
+
+function emailSuffix(email: unknown): string {
+  return typeof email === "string" && email !== "" ? ` · ${email}` : "";
+}
+
+function buildSubtitle(args: {
+  status: unknown;
+  createdAt: unknown;
+  paidAt: unknown;
+  deliveredAt: unknown;
+  listenedAt: unknown;
+  email: unknown;
+  now: Date;
+}): string {
+  const deliveredDate = parseIso(args.deliveredAt);
+  if (deliveredDate) {
+    const deliveredLabel = `Delivered ${longDateFormatter.format(deliveredDate)}`;
+    const listenedLabel = formatLong(args.listenedAt);
+    const base = listenedLabel
+      ? `${deliveredLabel} · Listened ${listenedLabel}`
+      : deliveredLabel;
+    return `${base}${emailSuffix(args.email)}`;
+  }
+
+  const paidDate = parseIso(args.paidAt);
+  if (args.status === "paid" && paidDate) {
+    return `Paid ${longDateFormatter.format(paidDate)} · ${dayCounter(paidDate, args.now)}${emailSuffix(args.email)}`;
+  }
+
+  const createdLabel = formatLong(args.createdAt);
+  if (createdLabel && args.status !== "expired") {
+    return `Submitted ${createdLabel}${emailSuffix(args.email)}`;
+  }
+
+  const statusLabel = typeof args.status === "string" && args.status !== "" ? args.status : "pending";
+  return `${statusLabel}${emailSuffix(args.email)}`;
+}
+
+// `now` is split out so tests can inject a fixed clock; Sanity itself only
+// calls `prepareSubmissionPreview(selection)` with the schema-matching signature.
+export function buildPreview(selection: Record<string, unknown>, now: Date) {
+  return {
+    title: buildTitle(selection.firstName, selection.lastName, selection.email),
+    subtitle: buildSubtitle({
+      status: selection.status,
+      createdAt: selection.createdAt,
+      paidAt: selection.paidAt,
+      deliveredAt: selection.deliveredAt,
+      listenedAt: selection.listenedAt,
+      email: selection.email,
+      now,
+    }),
+  };
 }
 
 export function prepareSubmissionPreview(selection: Record<string, unknown>) {
-  const { email, status, createdAt, paidAt } = selection;
-  const created = formatIso(createdAt, previewDateFormatter) ?? "no date";
-  const emailLabel = typeof email === "string" && email !== "" ? email : "no email";
-  const statusLabel = typeof status === "string" && status !== "" ? status : "pending";
-  const paidLabel = formatIso(paidAt, previewPaidDateFormatter);
-  return {
-    title: `${created} — ${emailLabel}`,
-    subtitle: paidLabel ? `${statusLabel} · paid ${paidLabel}` : statusLabel,
-  };
+  return buildPreview(selection, new Date());
 }
