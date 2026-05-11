@@ -9,6 +9,8 @@ export type AssetRef =
   | { kind: "sanityFile"; id: string } // matches Sanity asset _ref, e.g. "file-abc-mp3"
   | { kind: "r2Photo"; key: string }; // matches photoR2Key in submission doc
 
+export type SanityFileRef = Extract<AssetRef, { kind: "sanityFile" }>;
+
 export interface ExtractAssetRefsResult {
   refs: AssetRef[];
   recordCount: number;
@@ -49,6 +51,16 @@ export async function extractAssetRefs(
 }
 
 /**
+ * Single-doc variant. Used by the per-upload webhook where Sanity hands us
+ * one document at a time instead of an NDJSON stream.
+ */
+export function collectAssetRefsFromDoc(doc: unknown): AssetRef[] {
+  const dedup = new Map<string, AssetRef>();
+  collectFromRecord(doc, dedup);
+  return Array.from(dedup.values());
+}
+
+/**
  * Returns true if the line was a valid record (counted in recordCount), false
  * if blank or malformed JSON.
  */
@@ -60,6 +72,10 @@ function collectFromLine(line: string, dedup: Map<string, AssetRef>): boolean {
   } catch {
     return false;
   }
+  return collectFromRecord(doc, dedup);
+}
+
+function collectFromRecord(doc: unknown, dedup: Map<string, AssetRef>): boolean {
   if (!doc || typeof doc !== "object") return false;
   const record = doc as Record<string, unknown>;
 

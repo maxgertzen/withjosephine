@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { buildFileUrl, buildImageUrl, parseAssetId } from "@sanity/asset-utils";
 import * as Sentry from "@sentry/cloudflare";
 import { NextResponse } from "next/server";
 
@@ -13,6 +12,7 @@ import {
 } from "@/lib/backup/period";
 import { isValidPhotoR2Key } from "@/lib/backup/photoKeyValidation";
 import { streamToR2Multipart } from "@/lib/backup/r2Multipart";
+import { fetchSanityAssetStream } from "@/lib/backup/sanityAsset";
 import {
   fetchSanityExportStream,
   SanityExportError,
@@ -182,13 +182,7 @@ async function uploadOneAsset(
   ref: AssetRef,
 ): Promise<{ bytesUploaded: number }> {
   try {
-    const body =
-      ref.kind === "sanityFile"
-        ? await fetchSanityAssetStream(ref.id, ctx.sanityProjectId, ctx.sanityDataset)
-        : await fetchR2PhotoStream(ref.key, ctx.bookingPhotos);
-    const key = buildAssetKey(ctx.periodPrefix, ref);
-    const result = await streamToR2Multipart({ bucket: ctx.backupsBucket, key, source: body });
-    return { bytesUploaded: result.bytesUploaded };
+    return await streamAssetToBackup(ctx, ref);
   } catch (error) {
     Sentry.captureException(error, {
       tags: { cron: "backup-sanity-dataset", stage: "asset-walk" },
@@ -198,24 +192,32 @@ async function uploadOneAsset(
   }
 }
 
-async function fetchSanityAssetStream(
-  assetId: string,
-  projectId: string,
-  dataset: string,
-): Promise<ReadableStream<Uint8Array>> {
-  const url = resolveSanityCdnUrl(assetId, projectId, dataset);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ASSET_FETCH_TIMEOUT_MS);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`Sanity CDN fetch failed: ${response.status} ${url}`);
+// AbortController/timer must wrap the WHOLE fetch → multipart-upload cycle.
+// `fetchSanityAssetStream` resolves on response headers; body consumption
+// happens inside `streamToR2Multipart`. Clearing the timer before the upload
+// completes would leave a stalled body transfer uncovered by the timeout.
+async function streamAssetToBackup(
+  ctx: BackupContext,
+  ref: AssetRef,
+): Promise<{ bytesUploaded: number }> {
+  const key = buildAssetKey(ctx.periodPrefix, ref);
+  if (ref.kind === "sanityFile") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ASSET_FETCH_TIMEOUT_MS);
+    try {
+      const { body } = await fetchSanityAssetStream(
+        ref.id,
+        ctx.sanityProjectId,
+        ctx.sanityDataset,
+        { signal: controller.signal },
+      );
+      return await streamToR2Multipart({ bucket: ctx.backupsBucket, key, source: body });
+    } finally {
+      clearTimeout(timer);
     }
-    if (!response.body) throw new Error(`Sanity CDN returned no body: ${url}`);
-    return response.body;
-  } finally {
-    clearTimeout(timer);
   }
+  const body = await fetchR2PhotoStream(ref.key, ctx.bookingPhotos);
+  return streamToR2Multipart({ bucket: ctx.backupsBucket, key, source: body });
 }
 
 async function fetchR2PhotoStream(
@@ -240,12 +242,6 @@ function buildAssetKey(periodPrefix: string, ref: AssetRef): string {
     return `backups/${periodPrefix}/assets/sanity/${ref.id}`;
   }
   return `backups/${periodPrefix}/assets/r2/${ref.key}`;
-}
-
-function resolveSanityCdnUrl(assetId: string, projectId: string, dataset: string): string {
-  const parts = parseAssetId(assetId);
-  if (parts.type === "file") return buildFileUrl({ ...parts, projectId, dataset });
-  return buildImageUrl({ ...parts, projectId, dataset });
 }
 
 export const POST = handle;
