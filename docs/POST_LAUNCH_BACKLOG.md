@@ -153,6 +153,66 @@ Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
+### Phase 4 — production secrets + R2 lifecycle (POST-MERGE OF `feat/listen-redesign-and-gifting` → `main`)
+
+Phase 4 ships flag-off-by-absence: every vendor helper returns `vendorNotConfigured` until its env vars are populated, and the cascade reports the missing-config as a `partialFailures` entry but still completes the in-house data scrub (D1 + R2 + Sanity). These are the production-only actions to actually turn the vendor calls on — run after `feat/listen-redesign-and-gifting` merges to `main`. Staging secrets are out of scope for this runbook (set them on the staging worker as part of the bake; see `STAGING_RUNBOOK.md` for that flow).
+
+Run from `www/` with the production Cloudflare Workers binding (no `--env` flag — `wrangler` defaults to production).
+
+```bash
+# 1. Admin API key — gates the Sanity Studio "Delete customer data" doc action
+#    via X-Admin-Token header. Without it, the admin endpoint returns 404
+#    to all callers and Becky can't cascade-delete.
+#    Generate locally: openssl rand -base64 32
+#    Save to password manager BEFORE pasting into wrangler.
+wrangler secret put ADMIN_API_KEY
+
+# 2. Mixpanel service-account credentials — HTTP Basic auth pair from
+#    Mixpanel Project Settings → Service Accounts → "Add Service Account"
+#    (role: Admin, US region, expires: Never). The "Add" dialog shows
+#    username + secret ONCE — copy both immediately. Without these, the
+#    cascade's Mixpanel data-deletions call returns "mixpanel: not configured"
+#    partial-failure and Mixpanel event/profile data is NOT deleted.
+wrangler secret put MIXPANEL_SERVICE_ACCOUNT_USERNAME
+wrangler secret put MIXPANEL_SERVICE_ACCOUNT_SECRET
+
+# 3. Brevo API key — DO NOT SET until Brevo Phase 1 vetting ticket has
+#    cleared (see "Brevo Phase 1 — pre-vetting via support ticket" below).
+#    Without it, cascade reports "brevo-contact: not configured" +
+#    "brevo-smtp-log: not configured" partial-failures. Acceptable until
+#    Brevo Phase 1 ships — Brevo isn't carrying any customer data yet.
+# wrangler secret put BREVO_API_KEY
+```
+
+**R2 lifecycle on `exports/` prefix (production bucket).** GDPR Art. 20 export ZIPs accumulate without an expiry policy. CF Dashboard → R2 → `withjosephine-booking-photos` → Settings → Object lifecycle rules → Add rule:
+
+- Rule name: `exports-7d-expiry`
+- Prefix: `exports/`
+- Action: `Delete uploaded objects after 7 Days`
+- Enabled: ✓
+
+(The pre-signed download URLs already expire after 7 days; this rule garbage-collects the underlying R2 objects so they don't keep counting against storage.)
+
+**Verify after each secret lands:**
+
+```bash
+# Confirm the worker sees them (does NOT print the value, only the names):
+wrangler secret list | grep -E "ADMIN_API_KEY|MIXPANEL_SERVICE"
+```
+
+**End-to-end smoke-test (after ADMIN_API_KEY + Mixpanel pair both set):**
+
+1. Open Sanity Studio at `withjosephine.sanity.studio/production`.
+2. Pick a real submission doc (or a test one — cascade is irreversible per Stripe Redaction, so use a test row first).
+3. Click "Delete customer data" → type `DELETE` → paste the admin token → click "Run cascade delete".
+4. Toast should say "Customer data cascade complete" (success) or list partial-failures (Brevo `not configured` is expected pre-vetting).
+5. Query `deletion_log` in production D1 — expect TWO rows for that user_id: `action='started'` with `started_at` populated, then `action='completed'` with `completed_at` populated + `mixpanel_task_id` non-null + `stripe_redaction_job_id` non-null.
+6. Confirm in Mixpanel: the data deletion request appears in Project Settings → Data Deletion Requests (state may be `pending` / `processing` for up to 30 days — that's the vendor SLA).
+7. Confirm in Stripe Dashboard: the Redaction Job appears under Settings → Privacy → Redaction Jobs with status `validating` → `ready` → (manual `/run` trigger TBD via reconciliation cron in a future phase).
+8. Re-trigger the doc action on the same submission → expect Studio toast "no recipient user" (idempotency holds; the row has already been deleted).
+
+If any step fails, the cascade is non-destructive on first failure (each step wraps in try/catch + records the failure into `deletion_log.partial_failures_json` rather than rolling back). Investigate the partial-failure string and re-run after fixing.
+
 ### Phase 4b — deferred follow-ups (filed during PR — defer triggers below)
 
 Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful of items that didn't make the in-PR cut. Each has an explicit trigger condition for when to revisit.
