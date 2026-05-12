@@ -9,9 +9,22 @@ import type { MyGiftsPageContent } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 
+/**
+ * Phase 5 Session 4b — B6.22. Narrow view-model for the client-side action
+ * controls. Only the fields the buttons actually need; intentionally NOT
+ * `SubmissionRecord` so we never accidentally serialize purchaser email,
+ * financial fields, or any other server-side PII to the browser bundle.
+ */
+export type GiftCardData = {
+  _id: string;
+  responses: SubmissionRecord["responses"];
+  recipientEmail: string | null;
+  giftSendAt: string | null;
+};
+
 /** Client-side action controls for a single GiftCard on /my-gifts. */
 type Props = {
-  gift: SubmissionRecord;
+  gift: GiftCardData;
   status: GiftStatus;
   copy: MyGiftsPageContent;
 };
@@ -35,7 +48,7 @@ function EditRecipientControl({
   gift,
   copy,
 }: {
-  gift: SubmissionRecord;
+  gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
   const router = useRouter();
@@ -192,7 +205,7 @@ function FlipToSelfSendControl({
   gift,
   copy,
 }: {
-  gift: SubmissionRecord;
+  gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
   const router = useRouter();
@@ -251,7 +264,7 @@ function ResendLinkControl({
   gift,
   copy,
 }: {
-  gift: SubmissionRecord;
+  gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
   const router = useRouter();

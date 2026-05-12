@@ -198,4 +198,31 @@ describe("GiftCardActions — JSON-fetch contract", () => {
       expect(label).toBeTruthy();
     });
   });
+
+  // Phase 5 Session 4b — B6.22 narrow projection.
+  it("accepts the narrow GiftCardData shape (no purchaser email / no financial fields)", () => {
+    // Compile-time + runtime check: a record carrying ONLY the GiftCardData
+    // fields renders without errors. If GiftCardActions tried to read
+    // purchaser email or amountPaidCents, the call below would throw or
+    // typescript would fail the build.
+    const narrowGift = {
+      _id: "sub_narrow_1",
+      responses: [
+        {
+          fieldKey: "recipient_name",
+          fieldLabelSnapshot: "Recipient name",
+          fieldType: "text",
+          value: "Sky",
+        },
+      ],
+      recipientEmail: "sky@example.com",
+      giftSendAt: "2026-12-01T17:00:00.000Z",
+    };
+    const { getByRole } = render(
+      <GiftCardActions gift={narrowGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+    );
+    expect(
+      getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+    ).toBeTruthy();
+  });
 });
