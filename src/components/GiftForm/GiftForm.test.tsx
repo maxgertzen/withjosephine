@@ -193,4 +193,44 @@ describe("GiftForm", () => {
     fireEvent.change(textarea, { target: { value: "x".repeat(220) } });
     expect(screen.getByTestId("gift-message-counter")).toBeInTheDocument();
   });
+
+  // Phase 5 Session 4b — LB-6 a11y. Closes WCAG 3.3.1 + 4.1.2 gap.
+  describe("a11y (LB-6)", () => {
+    it("wires aria-describedby + aria-invalid on errored fields", async () => {
+      const user = userEvent.setup();
+      render(<GiftForm {...READING_PROPS} />);
+      await user.click(screen.getByRole("button", { name: /send this gift/i }));
+
+      const firstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      expect(firstName).toHaveAttribute("aria-invalid", "true");
+      const describedBy = firstName.getAttribute("aria-describedby") ?? "";
+      expect(describedBy).toMatch(/gift-purchaser-first-name-error/);
+      const errorEl = document.getElementById("gift-purchaser-first-name-error");
+      expect(errorEl?.textContent).toMatch(/first name is required/i);
+    });
+
+    it("focuses the first errored field on submit", async () => {
+      const user = userEvent.setup();
+      render(<GiftForm {...READING_PROPS} />);
+      await user.click(screen.getByRole("button", { name: /send this gift/i }));
+
+      const firstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      expect(document.activeElement).toBe(firstName);
+    });
+
+    it("submit-button ✦ is aria-hidden", () => {
+      render(<GiftForm {...READING_PROPS} />);
+      const btn = screen.getByRole("button", { name: /send this gift/i });
+      // The accessible name from screen-reader API does not include the
+      // aria-hidden glyph. Verify the glyph is rendered with aria-hidden.
+      const hiddenSpans = btn.querySelectorAll('[aria-hidden="true"]');
+      expect(hiddenSpans.length).toBeGreaterThan(0);
+      const text = Array.from(hiddenSpans).map((s) => s.textContent).join("");
+      expect(text).toMatch(/✦/);
+    });
+  });
 });

@@ -156,6 +156,18 @@ describe("/api/booking/gift", () => {
     expect(body.fieldErrors.recipientEmail).toBeTruthy();
   });
 
+  // Session 4b GAP-6: purchaserEmail length cap (Pentester LOW-3 parity)
+  it("rejects purchaserEmail exceeding RFC 5321 254-char cap", async () => {
+    const longLocal = "p".repeat(245);
+    const res = await callRoute({
+      ...SELF_SEND_BODY,
+      purchaserEmail: `${longLocal}@example.com`, // 257 chars
+    });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.purchaserEmail).toBeTruthy();
+  });
+
   it("rejects scheduled mode missing recipient + send-at", async () => {
     const res = await callRoute({
       ...SELF_SEND_BODY,
@@ -234,6 +246,9 @@ describe("/api/booking/gift", () => {
     const body = await res.json();
     expect(body.paymentUrl).toContain("buy.stripe.com");
     expect(body.paymentUrl).toContain("client_reference_id=");
+    // Phase 5 Session 4b — B5.15. Purchaser email must NEVER appear in the
+    // payment URL — see buildPaymentUrl comment for rationale.
+    expect(body.paymentUrl).not.toContain("prefilled_email");
     expect(createSubmissionMock).toHaveBeenCalledTimes(1);
     const persisted = createSubmissionMock.mock.calls[0]![0];
     expect(persisted.isGift).toBe(true);

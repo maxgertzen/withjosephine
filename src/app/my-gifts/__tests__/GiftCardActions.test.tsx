@@ -166,4 +166,63 @@ describe("GiftCardActions — JSON-fetch contract", () => {
     fireEvent.click(getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.resendLinkCtaLabel }));
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });
+
+  // Phase 5 Session 4b — GAP-2 + GAP-12 a11y bundle.
+  describe("a11y (GAP-2 + GAP-12)", () => {
+    it("edit-recipient drawer has a visible heading + aria-labelledby form", () => {
+      const { container, getByRole } = render(
+        <GiftCardActions gift={baseGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+      );
+      fireEvent.click(
+        getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+      );
+      const heading = container.querySelector("h3");
+      expect(heading?.textContent).toMatch(/edit recipient/i);
+      const form = container.querySelector("form");
+      const headingId = heading?.getAttribute("id");
+      expect(headingId).toBeTruthy();
+      expect(form?.getAttribute("aria-labelledby")).toBe(headingId);
+    });
+
+    it("send-at input has matching label association via htmlFor + id", () => {
+      const { container, getByRole } = render(
+        <GiftCardActions gift={baseGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+      );
+      fireEvent.click(
+        getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+      );
+      const input = container.querySelector("input[type='datetime-local']");
+      const inputId = input?.getAttribute("id");
+      expect(inputId).toBeTruthy();
+      const label = container.querySelector(`label[for='${inputId}']`);
+      expect(label).toBeTruthy();
+    });
+  });
+
+  // Phase 5 Session 4b — B6.22 narrow projection.
+  it("accepts the narrow GiftCardData shape (no purchaser email / no financial fields)", () => {
+    // Compile-time + runtime check: a record carrying ONLY the GiftCardData
+    // fields renders without errors. If GiftCardActions tried to read
+    // purchaser email or amountPaidCents, the call below would throw or
+    // typescript would fail the build.
+    const narrowGift = {
+      _id: "sub_narrow_1",
+      responses: [
+        {
+          fieldKey: "recipient_name",
+          fieldLabelSnapshot: "Recipient name",
+          fieldType: "text",
+          value: "Sky",
+        },
+      ],
+      recipientEmail: "sky@example.com",
+      giftSendAt: "2026-12-01T17:00:00.000Z",
+    };
+    const { getByRole } = render(
+      <GiftCardActions gift={narrowGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+    );
+    expect(
+      getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+    ).toBeTruthy();
+  });
 });

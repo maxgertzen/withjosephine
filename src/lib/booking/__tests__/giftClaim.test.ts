@@ -1,6 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { issueGiftClaimToken } from "../giftClaim";
+vi.mock("@/lib/booking/persistence/repository", () => ({
+  findUnclaimedGiftByTokenHash: vi.fn(),
+}));
+
+import { findUnclaimedGiftByTokenHash } from "@/lib/booking/persistence/repository";
+
+import { issueGiftClaimToken, verifyGiftClaimToken } from "../giftClaim";
+
+const mockFind = vi.mocked(findUnclaimedGiftByTokenHash);
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -45,5 +53,45 @@ describe("issueGiftClaimToken", () => {
   it("never embeds the raw token in the hash output", async () => {
     const issued = await issueGiftClaimToken();
     expect(issued.tokenHash.includes(issued.token)).toBe(false);
+  });
+});
+
+// Phase 5 Session 4b — B5.16 constant-time validation. Garbage tokens and
+// shape-valid-unknown tokens must both perform a hash + a DB lookup so the
+// wall-clock timing leaks nothing about why a lookup failed.
+describe("verifyGiftClaimToken — constant-time validation (B5.16)", () => {
+  beforeEach(() => {
+    mockFind.mockReset().mockResolvedValue(null);
+  });
+
+  it("garbage tokens still issue a DB lookup", async () => {
+    const result = await verifyGiftClaimToken("not-a-hex-token");
+    expect(result).toBeNull();
+    expect(mockFind).toHaveBeenCalledTimes(1);
+  });
+
+  it("empty string still issues a DB lookup", async () => {
+    const result = await verifyGiftClaimToken("");
+    expect(result).toBeNull();
+    expect(mockFind).toHaveBeenCalledTimes(1);
+  });
+
+  it("non-string input still issues a DB lookup", async () => {
+    const result = await verifyGiftClaimToken(undefined);
+    expect(result).toBeNull();
+    expect(mockFind).toHaveBeenCalledTimes(1);
+  });
+
+  it("valid-shape unknown token issues a DB lookup", async () => {
+    const result = await verifyGiftClaimToken("a".repeat(64));
+    expect(result).toBeNull();
+    expect(mockFind).toHaveBeenCalledTimes(1);
+  });
+
+  it("valid-shape known token returns the match", async () => {
+    mockFind.mockResolvedValueOnce({ _id: "sub_gift_1" } as never);
+    const result = await verifyGiftClaimToken("a".repeat(64));
+    expect(result).toEqual({ _id: "sub_gift_1" });
+    expect(mockFind).toHaveBeenCalledTimes(1);
   });
 });

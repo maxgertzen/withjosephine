@@ -47,6 +47,24 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Gift cancelled" }, { status: 409 });
   }
 
+  // Phase 5 Session 4b — B5.17 cooldown. Walk emails_fired_json for the
+  // most recent `gift_claim_regenerate` entry; reject if within 5 minutes.
+  // Defends Resend cost + customer-inbox spam from repeated admin clicks
+  // (the admin recovery primitive is meant for "I lost my link" support
+  // tickets, not a bulk retry loop).
+  const COOLDOWN_MS = 5 * 60 * 1000;
+  const lastRegenIso = (submission.emailsFired ?? [])
+    .filter((e) => e.type === "gift_claim_regenerate")
+    .map((e) => Date.parse(e.sentAt))
+    .filter((t) => !Number.isNaN(t))
+    .sort((a, b) => b - a)[0];
+  if (lastRegenIso !== undefined && Date.now() - lastRegenIso < COOLDOWN_MS) {
+    return NextResponse.json(
+      { error: "Cooldown active — wait 5 minutes between regenerations" },
+      { status: 429 },
+    );
+  }
+
   // For self_send mode the purchaser is the holder of the link; for scheduled
   // the recipient is. Either way, regenerating means resending the new link
   // to the same party that should have received it.
@@ -89,6 +107,14 @@ export async function POST(request: Request): Promise<Response> {
   await markGiftClaimSent(submission._id, tokenHash, nowIso);
   await appendEmailFired(submission._id, {
     type: "gift_claim",
+    sentAt: nowIso,
+    resendId: result.resendId,
+  });
+  // Phase 5 Session 4b — B5.17. Separate audit entry powers the cooldown
+  // walk above without overloading the semantics of the `gift_claim`
+  // entry that an automated dispatch path also writes.
+  await appendEmailFired(submission._id, {
+    type: "gift_claim_regenerate",
     sentAt: nowIso,
     resendId: result.resendId,
   });

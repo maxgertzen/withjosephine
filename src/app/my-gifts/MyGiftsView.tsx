@@ -12,7 +12,21 @@ import { type GiftStatus, giftStatusFor } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
-import { GiftCardActions } from "./GiftCardActions";
+import { GiftCardActions, type GiftCardData } from "./GiftCardActions";
+
+/**
+ * Phase 5 Session 4b — B6.22. Build the narrow client-side view-model from
+ * the full server-side record. Drops purchaser email + financial fields +
+ * stripe ids so they never enter the React tree of the client component.
+ */
+function toGiftCardData(gift: SubmissionRecord): GiftCardData {
+  return {
+    _id: gift._id,
+    responses: gift.responses,
+    recipientEmail: gift.recipientEmail,
+    giftSendAt: gift.giftSendAt,
+  };
+}
 
 export type MyGiftsViewProps = {
   copy: MyGiftsPageContent;
@@ -89,7 +103,7 @@ function GiftCard({ gift, copy }: { gift: SubmissionRecord; copy: MyGiftsPageCon
             {statusLine(status, copy)}
           </p>
         </div>
-        <GiftCardActions gift={gift} status={status} copy={copy} />
+        <GiftCardActions gift={toGiftCardData(gift)} status={status} copy={copy} />
       </div>
     </li>
   );

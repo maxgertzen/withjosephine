@@ -134,6 +134,9 @@ export async function mirrorSubmissionPatch(
     giftDeliveryMethod: "self_send" | "scheduled";
     giftClaimTokenHash: string;
     giftClaimEmailFiredAt: string;
+    // Phase 5 Session 4b — LB-4 cascade purchaser pseudonymisation.
+    purchaserUserId: string | null;
+    email: string;
   }>,
 ): Promise<void> {
   const client = getClient();

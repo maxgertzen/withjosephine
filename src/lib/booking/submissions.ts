@@ -27,7 +27,8 @@ export type EmailFiredType =
   | "abandonment"
   | "gift_purchase_confirmation"
   | "gift_claim"
-  | "gift_resend";
+  | "gift_resend"
+  | "gift_claim_regenerate";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
@@ -242,6 +243,21 @@ export async function listGiftsByPurchaserUserId(
   return repo.listGiftsByPurchaserUserId(userId);
 }
 
+/**
+ * Phase 5 Session 4b — B6.20. Atomic resend-link lock acquire. See
+ * repo.acquireGiftResendLock for full semantics.
+ */
+export async function acquireGiftResendLock(
+  id: string,
+  args: { lockUntilMs: number; nowMs: number },
+): Promise<boolean> {
+  return repo.acquireGiftResendLock(id, args);
+}
+
+export async function releaseGiftResendLock(id: string): Promise<void> {
+  return repo.releaseGiftResendLock(id);
+}
+
 export type EditGiftRecipientPatch = repo.EditGiftRecipientPatch;
 
 /**
@@ -321,6 +337,26 @@ export async function markGiftClaimSent(
   firedAtIso: string,
 ): Promise<void> {
   await repo.markGiftClaimSent(submissionId, tokenHash, firedAtIso);
+}
+
+/**
+ * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
+ * Pseudonymises a purchaser-owned gift submission whose recipient has
+ * already claimed. See `repo.pseudonymisePurchaserGift` for full semantics.
+ */
+export async function pseudonymisePurchaserGift(
+  submission: Pick<SubmissionRecord, "_id" | "responses">,
+): Promise<void> {
+  await repo.pseudonymisePurchaserGift(submission._id, submission.responses);
+  runMirror(
+    mirrorSubmissionPatch(submission._id, {
+      purchaserUserId: null,
+      email: "",
+      responses: submission.responses.filter(
+        (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
+      ),
+    }),
+  );
 }
 
 export async function deleteSubmissionAndPhoto(

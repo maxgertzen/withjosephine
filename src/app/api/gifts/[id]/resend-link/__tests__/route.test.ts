@@ -18,6 +18,8 @@ vi.mock("@/lib/auth/listenSession", async () => {
 const findSubmissionMock = vi.fn();
 const markMock = vi.fn();
 const appendEmailFiredMock = vi.fn();
+const acquireLockMock = vi.fn();
+const releaseLockMock = vi.fn();
 vi.mock("@/lib/booking/submissions", async () => {
   const actual = await vi.importActual<typeof import("@/lib/booking/submissions")>(
     "@/lib/booking/submissions",
@@ -27,6 +29,8 @@ vi.mock("@/lib/booking/submissions", async () => {
     findSubmissionById: findSubmissionMock,
     markGiftClaimSent: markMock,
     appendEmailFired: appendEmailFiredMock,
+    acquireGiftResendLock: acquireLockMock,
+    releaseGiftResendLock: releaseLockMock,
   };
 });
 
@@ -71,6 +75,8 @@ beforeEach(() => {
   findSubmissionMock.mockReset();
   markMock.mockReset().mockResolvedValue(undefined);
   appendEmailFiredMock.mockReset().mockResolvedValue(undefined);
+  acquireLockMock.mockReset().mockResolvedValue(true);
+  releaseLockMock.mockReset().mockResolvedValue(undefined);
   issueTokenMock.mockReset().mockResolvedValue({
     token: "a".repeat(64),
     tokenHash: "n".repeat(64),
@@ -166,5 +172,31 @@ describe("POST /api/gifts/[id]/resend-link", () => {
     expect(res.status).toBe(502);
     expect(markMock).not.toHaveBeenCalled();
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
+  });
+
+  // Phase 5 Session 4b — B6.20 atomic lock.
+  it("returns 429 when the atomic lock is already held (concurrent POST)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(gift());
+    acquireLockMock.mockResolvedValueOnce(false); // someone else has the lock
+    const res = await callRoute();
+    expect(res.status).toBe(429);
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(markMock).not.toHaveBeenCalled();
+  });
+
+  it("releases the atomic lock after success", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(gift());
+    await callRoute();
+    expect(releaseLockMock).toHaveBeenCalledWith("sub_gift");
+  });
+
+  it("releases the atomic lock after Resend failure (502)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(gift());
+    sendMock.mockResolvedValueOnce({ resendId: null });
+    await callRoute();
+    expect(releaseLockMock).toHaveBeenCalledWith("sub_gift");
   });
 });

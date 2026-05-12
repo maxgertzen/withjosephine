@@ -7,6 +7,11 @@ import { DurableObject } from "cloudflare:workers";
  *
  * On `nextAlarmMs === null` (claim succeeded, cancelled, abandoned, or
  * out of retries), the DO clears its storage so it doesn't accumulate.
+ *
+ * **Logging discipline (Phase 5 Session 4b — B5.19):** only `submissionId`
+ * may appear in console output from this file. No raw emails, no Resend
+ * message IDs, no token material, no recipient/purchaser names.
+ * `wrangler tail` is shared; treating logs as if they're public-readable.
  */
 
 export type GiftClaimSchedulerEnv = {

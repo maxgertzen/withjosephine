@@ -110,6 +110,14 @@ function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
   return result;
 }
 
+/**
+ * Phase 5 Session 4b — B8.29 decision: the `mode` prop discriminates two
+ * submit pipelines (`create` -> /api/booking, `redeem` -> /api/booking/gift-redeem).
+ * The spec's trigger to refactor to `onSubmit` callback prop was "if a
+ * third mode value is added." Today only 2 modes exist; ship-as-is.
+ * If a 3rd mode is ever needed, add an `onSubmit` callback instead of a
+ * third branch.
+ */
 export function IntakeForm({
   readingId,
   readingName,

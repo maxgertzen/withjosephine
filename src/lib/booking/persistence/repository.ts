@@ -138,21 +138,26 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
 }
 
 /**
- * Anti-abuse cap (Phase 5 ISC-12a). Counts gifts addressed to this
- * recipient_email that are still in flight (not yet claimed, not cancelled).
- * The booking-gift route rejects when the count is ≥ 3.
+ * Anti-abuse cap (Phase 5 ISC-12a + Session 4b LB-3). Counts gifts addressed to
+ * this recipient_email that are still in flight (not yet claimed, not cancelled).
+ * The booking-gift route rejects at purchase when the count is ≥ 3; gift-redeem
+ * route re-checks at claim time to cover the self_send-mode bypass where
+ * recipient_email is NULL at purchase. The current submission is excluded from
+ * the count when `excludeSubmissionId` is provided so a gift doesn't gate itself.
  */
 export async function countActivePendingGiftsForRecipient(
   recipientEmail: string,
+  options?: { excludeSubmissionId?: string },
 ): Promise<number> {
-  const rows = await dbQuery<{ count: number }>(
-    `SELECT COUNT(*) AS count FROM submissions
+  const excludeId = options?.excludeSubmissionId;
+  const baseSql = `SELECT COUNT(*) AS count FROM submissions
      WHERE is_gift = 1
        AND recipient_email = ?
        AND gift_claimed_at IS NULL
-       AND gift_cancelled_at IS NULL`,
-    [recipientEmail],
-  );
+       AND gift_cancelled_at IS NULL`;
+  const rows = excludeId
+    ? await dbQuery<{ count: number }>(`${baseSql} AND id != ?`, [recipientEmail, excludeId])
+    : await dbQuery<{ count: number }>(baseSql, [recipientEmail]);
   return rows[0]?.count ?? 0;
 }
 
@@ -339,6 +344,37 @@ export async function markSubmissionExpired(
 
 export async function deleteSubmission(id: string): Promise<void> {
   await dbExec(`DELETE FROM submissions WHERE id = ?`, [id]);
+}
+
+/**
+ * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
+ *
+ * Purchaser-owned gift submissions where the recipient is a distinct user
+ * who has already claimed: pseudonymise — the recipient holds contract-base
+ * Art. 6(1)(b) data that must survive the purchaser's erasure. We NULL the
+ * purchaser identifiers (`purchaser_user_id`, top-level `email`) and scrub
+ * `purchaser_first_name` from `responses_json`. We keep the gift fields
+ * (`gift_claim_token_hash`, `gift_claimed_at`, `recipient_user_id`, etc.)
+ * so the recipient's claim/listen path remains intact.
+ *
+ * Caller passes the existing `responses` so we don't re-issue a SELECT just
+ * to derive the scrubbed array.
+ */
+export async function pseudonymisePurchaserGift(
+  id: string,
+  existingResponses: SubmissionRecord["responses"],
+): Promise<void> {
+  const scrubbed = existingResponses.filter(
+    (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
+  );
+  await dbExec(
+    `UPDATE submissions
+        SET purchaser_user_id = NULL,
+            email = '',
+            responses_json = ?
+      WHERE id = ?`,
+    [JSON.stringify(scrubbed), id],
+  );
 }
 
 export type FinancialRecordInput = {
@@ -555,6 +591,40 @@ export async function flipGiftToSelfSend(
     [args.tokenHash, args.firedAtIso, id],
   );
   return result.rowsWritten > 0;
+}
+
+/**
+ * Phase 5 Session 4b — B6.20. Atomic lock acquire for the resend-link
+ * route. Returns true when this caller successfully acquired the lock
+ * (first writer wins), false when another caller holds an unexpired lock.
+ * The lock TTL is short (60s) — long enough to cover Resend's worst-case
+ * latency, short enough that a crashed in-flight resend doesn't perma-
+ * block the customer. Callers are expected to release the lock on
+ * completion (success or failure) via `releaseGiftResendLock`.
+ */
+export async function acquireGiftResendLock(
+  id: string,
+  args: { lockUntilMs: number; nowMs: number },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_resend_lock_until = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'self_send'
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL
+        AND (gift_resend_lock_until IS NULL OR gift_resend_lock_until < ?)`,
+    [args.lockUntilMs, id, args.nowMs],
+  );
+  return result.rowsWritten > 0;
+}
+
+export async function releaseGiftResendLock(id: string): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET gift_resend_lock_until = NULL WHERE id = ?`,
+    [id],
+  );
 }
 
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {

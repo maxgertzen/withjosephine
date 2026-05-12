@@ -83,6 +83,21 @@ async function dispatchGiftPurchaseConfirmation(
 ): Promise<void> {
   if (!submission || !submission.giftDeliveryMethod) return;
 
+  // Phase 5 Session 4b — B5.18 metadata canary. Surfaces drift between
+  // Stripe session metadata (set on the Payment Link by /api/booking/gift)
+  // and the persisted submission's `isGift` truth. If Stripe metadata
+  // contradicts the row, log + continue — the row is the source of truth,
+  // but the warn signals a Stripe-link misconfiguration (e.g. someone hand-
+  // edited a Payment Link and forgot the `metadata[is_gift]=true` query
+  // parameter).
+  const metadataIsGift = session.metadata?.is_gift;
+  const submissionIsGift = String(submission.isGift);
+  if (metadataIsGift !== undefined && metadataIsGift !== submissionIsGift) {
+    console.warn(
+      `[stripe-webhook] gift metadata mismatch for ${submission._id} — session=${metadataIsGift} submission=${submissionIsGift}`,
+    );
+  }
+
   const readingName = submission.reading?.name ?? "reading";
   const readingPriceDisplay = submission.reading?.priceDisplay ?? "";
   const amountPaidDisplay = formatAmountPaid(

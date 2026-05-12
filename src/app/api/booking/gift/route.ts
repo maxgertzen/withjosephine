@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import {
+  HONEYPOT_FIELD,
+  MAX_ACTIVE_GIFTS_PER_RECIPIENT,
+  MAX_EMAIL_CHARS,
+} from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
+import { stripTemplateTags } from "@/lib/booking/giftPersonas";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
 import { getClientIp } from "@/lib/request";
@@ -11,12 +16,10 @@ import type { SanityReading } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_EMAIL_CHARS = 254; // RFC 5321 forward-path length cap
 const MAX_GIFT_MESSAGE_CHARS = 280;
 const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
-const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
 type DeliveryMethod = "self_send" | "scheduled";
 
@@ -60,6 +63,11 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
   const purchaserEmail = body.purchaserEmail.trim().toLowerCase();
   if (!EMAIL_RE.test(purchaserEmail)) {
     errors.push({ field: "purchaserEmail", message: "Enter a valid email address." });
+  } else if (purchaserEmail.length > MAX_EMAIL_CHARS) {
+    errors.push({
+      field: "purchaserEmail",
+      message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+    });
   }
 
   const purchaserFirstName = body.purchaserFirstName.trim();
@@ -168,7 +176,6 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
 function buildPaymentUrl(
   reading: SanityReading,
   submissionId: string,
-  purchaserEmail: string,
   deliveryMethod: DeliveryMethod,
 ): string | null {
   if (!reading.stripePaymentLink) return null;
@@ -180,7 +187,11 @@ function buildPaymentUrl(
   }
   if (url.protocol !== "https:" || !url.hostname.endsWith(".stripe.com")) return null;
   url.searchParams.set("client_reference_id", submissionId);
-  url.searchParams.set("prefilled_email", purchaserEmail);
+  // Phase 5 Session 4b — B5.15. `prefilled_email` deliberately omitted so
+  // the purchaser's email never appears as a URL query parameter (the URL
+  // is returned to the client and then loaded as a top-level navigation;
+  // including PII there exposes it in browser history, Referer headers to
+  // Stripe's CDN, and the user's clipboard if they copy the link).
   url.searchParams.set("metadata[is_gift]", "true");
   url.searchParams.set("metadata[gift_delivery_method]", deliveryMethod);
   return url.toString();
@@ -227,10 +238,20 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
-  const purchaserFirstName = parsedBody.purchaserFirstName.trim();
+  // Phase 5 Session 4b — B7.26. Strip `{tag}` patterns from purchaser-
+  // controlled fields. These values flow into email-template variables
+  // (`{purchaserFirstName}`, `{recipientName}`, body copy), so a literal
+  // `{recipientName}` in user input could otherwise hijack subsequent
+  // template substitution downstream. Stripping at the boundary keeps the
+  // template-engine layer simple and the storage layer clean.
+  const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
-  const recipientName = parsedBody.recipientName?.trim() ?? null;
-  const giftMessage = parsedBody.giftMessage?.trim() || null;
+  const recipientName = parsedBody.recipientName
+    ? stripTemplateTags(parsedBody.recipientName.trim())
+    : null;
+  const giftMessage = parsedBody.giftMessage
+    ? stripTemplateTags(parsedBody.giftMessage.trim()) || null
+    : null;
 
   // Anti-abuse cap is only enforceable when we have the recipient email at
   // purchase time. self_send mode may submit without one — the cap re-checks
@@ -309,7 +330,6 @@ export async function POST(request: Request): Promise<Response> {
   const paymentUrl = buildPaymentUrl(
     reading,
     submissionId,
-    purchaserEmail,
     parsedBody.deliveryMethod,
   );
   if (!paymentUrl) {

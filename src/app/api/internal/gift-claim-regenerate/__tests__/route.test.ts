@@ -180,4 +180,50 @@ describe("/api/internal/gift-claim-regenerate", () => {
       }),
     );
   });
+
+  // Phase 5 Session 4b — B5.17 cooldown.
+  describe("5-minute cooldown (B5.17)", () => {
+    it("returns 429 when a gift_claim_regenerate fired within the last 5 minutes", async () => {
+      const recentIso = new Date(Date.now() - 60 * 1000).toISOString();
+      mockFind.mockResolvedValueOnce({
+        ...SCHEDULED_GIFT,
+        emailsFired: [
+          { type: "gift_claim_regenerate", sentAt: recentIso, resendId: "msg_prev" },
+        ],
+      });
+      const res = await callRoute({
+        headers: { "x-do-secret": "test-secret" },
+        body: { submissionId: "sub_gift" },
+      });
+      expect(res.status).toBe(429);
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it("allows regeneration when the last entry is past the cooldown window", async () => {
+      const longAgoIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      mockFind.mockResolvedValueOnce({
+        ...SCHEDULED_GIFT,
+        emailsFired: [
+          { type: "gift_claim_regenerate", sentAt: longAgoIso, resendId: "msg_prev" },
+        ],
+      });
+      const res = await callRoute({
+        headers: { "x-do-secret": "test-secret" },
+        body: { submissionId: "sub_gift" },
+      });
+      expect(res.status).toBe(200);
+      expect(mockSend).toHaveBeenCalled();
+    });
+
+    it("appends a gift_claim_regenerate entry alongside gift_claim on success", async () => {
+      mockFind.mockResolvedValueOnce(SCHEDULED_GIFT);
+      await callRoute({
+        headers: { "x-do-secret": "test-secret" },
+        body: { submissionId: "sub_gift" },
+      });
+      const types = mockAppend.mock.calls.map((c) => c[1].type);
+      expect(types).toContain("gift_claim");
+      expect(types).toContain("gift_claim_regenerate");
+    });
+  });
 });

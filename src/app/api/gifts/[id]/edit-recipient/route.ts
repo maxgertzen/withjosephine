@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
+import { MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
+import { stripTemplateTags } from "@/lib/booking/giftPersonas";
 import { editGiftRecipient } from "@/lib/booking/submissions";
 import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_EMAIL_CHARS = 254; // RFC 5321 forward-path length cap
 const MAX_RECIPIENT_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
 const MIN_SEND_AT_OFFSET_MS = 5 * 60 * 1000;
@@ -67,7 +68,10 @@ function validate(
   }
 
   if (body.recipientName !== undefined) {
-    const trimmed = body.recipientName.trim();
+    // Phase 5 Session 4b — B7.26. Strip template-tag patterns at the
+    // edit boundary too — keeps `gift_send_at` reschedules from
+    // introducing the very payload the purchase-time validator blocks.
+    const trimmed = stripTemplateTags(body.recipientName.trim());
     if (trimmed.length === 0) {
       errors.push({ field: "recipientName", message: "Recipient name can’t be blank." });
     } else if (trimmed.length > MAX_RECIPIENT_NAME_CHARS) {
