@@ -106,8 +106,20 @@ function EditRecipientControl({
     );
   }
 
+  const sendAtInputId = `gift-${gift._id}-send-at`;
+  const headingId = `gift-${gift._id}-edit-heading`;
   return (
-    <form onSubmit={onSubmit} className="w-full sm:w-80 flex flex-col gap-3 bg-j-cream/60 border border-j-blush rounded-lg p-4">
+    <form
+      onSubmit={onSubmit}
+      aria-labelledby={headingId}
+      className="w-full sm:w-80 flex flex-col gap-3 bg-j-cream/60 border border-j-blush rounded-lg p-4"
+    >
+      <h3
+        id={headingId}
+        className="font-display italic text-base text-j-text-heading"
+      >
+        Edit recipient
+      </h3>
       <Input
         id={`gift-${gift._id}-recipient-name`}
         name="recipientName"
@@ -128,16 +140,23 @@ function EditRecipientControl({
         error={fieldErrors.recipientEmail}
         autoComplete="off"
       />
-      <label className="flex flex-col gap-1">
+      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
         <span className="font-body text-xs text-j-text-muted">Send at</span>
         <input
+          id={sendAtInputId}
           type="datetime-local"
           value={giftSendAt}
           onChange={(e) => setGiftSendAt(e.target.value)}
+          aria-describedby={
+            fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+          }
+          aria-invalid={Boolean(fieldErrors.giftSendAt)}
           className="rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent"
         />
         {fieldErrors.giftSendAt ? (
-          <span className="font-body text-xs text-j-rose">{fieldErrors.giftSendAt}</span>
+          <span id={`${sendAtInputId}-error`} className="font-body text-xs text-j-rose">
+            {fieldErrors.giftSendAt}
+          </span>
         ) : null}
       </label>
       {topError ? (
@@ -278,8 +297,16 @@ function ResendLinkControl({
 
 /**
  * Convert an ISO timestamp to the `YYYY-MM-DDTHH:mm` format `datetime-local`
- * inputs expect. The picker presents the value in the user's local timezone;
- * we round-trip to UTC ISO on submit so the server stores TZ-correct.
+ * inputs expect.
+ *
+ * - **Timezone display:** uses `Date#getFullYear/Month/Date/Hours/Minutes` so
+ *   the picker shows the time in the user's LOCAL timezone (intentional UX —
+ *   the recipient's gift will arrive at what the purchaser thinks "8pm
+ *   Thursday" means in their own zone). We round-trip back to UTC ISO on
+ *   submit so D1 stores TZ-correct.
+ * - **Seconds truncation:** the picker's value has minute granularity only.
+ *   We truncate to `HH:mm`; the server treats `gift_send_at` as
+ *   minute-precision throughout, so this is lossy by design.
  */
 function toDatetimeLocalValue(iso: string): string {
   const d = new Date(iso);

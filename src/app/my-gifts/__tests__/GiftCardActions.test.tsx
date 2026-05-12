@@ -166,4 +166,36 @@ describe("GiftCardActions — JSON-fetch contract", () => {
     fireEvent.click(getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.resendLinkCtaLabel }));
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });
+
+  // Phase 5 Session 4b — GAP-2 + GAP-12 a11y bundle.
+  describe("a11y (GAP-2 + GAP-12)", () => {
+    it("edit-recipient drawer has a visible heading + aria-labelledby form", () => {
+      const { container, getByRole } = render(
+        <GiftCardActions gift={baseGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+      );
+      fireEvent.click(
+        getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+      );
+      const heading = container.querySelector("h3");
+      expect(heading?.textContent).toMatch(/edit recipient/i);
+      const form = container.querySelector("form");
+      const headingId = heading?.getAttribute("id");
+      expect(headingId).toBeTruthy();
+      expect(form?.getAttribute("aria-labelledby")).toBe(headingId);
+    });
+
+    it("send-at input has matching label association via htmlFor + id", () => {
+      const { container, getByRole } = render(
+        <GiftCardActions gift={baseGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
+      );
+      fireEvent.click(
+        getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
+      );
+      const input = container.querySelector("input[type='datetime-local']");
+      const inputId = input?.getAttribute("id");
+      expect(inputId).toBeTruthy();
+      const label = container.querySelector(`label[for='${inputId}']`);
+      expect(label).toBeTruthy();
+    });
+  });
 });
