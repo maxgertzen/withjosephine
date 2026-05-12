@@ -1,8 +1,11 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 
+import { Checkbox } from "@/components/Form/Checkbox";
+import { Input } from "@/components/Form/Input";
+import { Textarea } from "@/components/Form/Textarea";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { BookingGiftFormContent } from "@/data/defaults";
 import type { ReadingId } from "@/lib/analytics";
@@ -48,35 +51,25 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     process.env.NODE_ENV !== "production" &&
     process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
 
-  // Refs for focus-on-error a11y. After validate() returns errors, we focus
-  // the first errored field so screen-reader users hear the message
-  // immediately and keyboard users land where they need to type.
-  const purchaserFirstNameRef = useRef<HTMLInputElement>(null);
-  const purchaserEmailRef = useRef<HTMLInputElement>(null);
-  const recipientNameRef = useRef<HTMLInputElement>(null);
-  const recipientEmailRef = useRef<HTMLInputElement>(null);
-  const giftSendAtRef = useRef<HTMLInputElement>(null);
-  const art6ConsentRef = useRef<HTMLInputElement>(null);
-  const coolingOffConsentRef = useRef<HTMLInputElement>(null);
-  const termsConsentRef = useRef<HTMLInputElement>(null);
-
-  // Ordered focus targets — first matching error wins.
-  const focusOrder: Array<[keyof FieldErrors, React.RefObject<HTMLInputElement | null>]> = [
-    ["purchaserFirstName", purchaserFirstNameRef],
-    ["purchaserEmail", purchaserEmailRef],
-    ["recipientName", recipientNameRef],
-    ["recipientEmail", recipientEmailRef],
-    ["giftSendAt", giftSendAtRef],
-    ["art6Consent", art6ConsentRef],
-    ["coolingOffConsent", coolingOffConsentRef],
-    ["termsConsent", termsConsentRef],
+  const focusOrder: Array<[keyof FieldErrors, string]> = [
+    ["purchaserFirstName", "gift-purchaser-first-name"],
+    ["purchaserEmail", "gift-purchaser-email"],
+    ["recipientName", "gift-recipient-name"],
+    ["recipientEmail", "gift-recipient-email"],
+    ["giftSendAt", "gift-send-at"],
+    ["art6Consent", "gift-art6-consent"],
+    ["coolingOffConsent", "gift-cooling-off-consent"],
+    ["termsConsent", "gift-terms-consent"],
   ];
 
   function focusFirstError(errs: FieldErrors): void {
-    for (const [key, ref] of focusOrder) {
-      if (errs[key as string] && ref.current) {
-        ref.current.focus();
-        return;
+    for (const [key, elementId] of focusOrder) {
+      if (errs[key as string]) {
+        const el = document.getElementById(elementId);
+        if (el instanceof HTMLElement) {
+          el.focus();
+          return;
+        }
       }
     }
   }
@@ -293,146 +286,63 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       <div className="border-t border-j-border-gold/20" aria-hidden="true" />
 
       <div className="flex flex-col gap-5">
-        <label htmlFor="gift-purchaser-first-name" className="flex flex-col gap-1.5">
-          <span className="font-display italic text-base text-j-text-heading">
-            {copy.purchaserFirstNameLabel}
-          </span>
-          <input
-            id="gift-purchaser-first-name"
-            ref={purchaserFirstNameRef}
-            type="text"
-            value={purchaserFirstName}
-            onChange={(e) => setPurchaserFirstName(e.target.value)}
-            maxLength={80}
-            aria-describedby={
-              fieldErrors.purchaserFirstName
-                ? "gift-purchaser-first-name-error gift-purchaser-first-name-help"
-                : "gift-purchaser-first-name-help"
-            }
-            aria-invalid={Boolean(fieldErrors.purchaserFirstName)}
-            className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
-          />
-          <span id="gift-purchaser-first-name-help" className="font-body text-xs text-j-text-muted">
-            {copy.purchaserFirstNameHelper}
-          </span>
-          {fieldErrors.purchaserFirstName ? (
-            <span id="gift-purchaser-first-name-error" className="font-body text-xs text-j-rose">
-              {fieldErrors.purchaserFirstName}
-            </span>
-          ) : null}
-        </label>
+        <Input
+          id="gift-purchaser-first-name"
+          name="purchaserFirstName"
+          label={copy.purchaserFirstNameLabel}
+          value={purchaserFirstName}
+          onChange={setPurchaserFirstName}
+          helpText={copy.purchaserFirstNameHelper}
+          error={fieldErrors.purchaserFirstName}
+        />
 
-        <label htmlFor="gift-purchaser-email" className="flex flex-col gap-1.5">
-          <span className="font-display italic text-base text-j-text-heading">
-            {copy.purchaserEmailLabel}
-          </span>
-          <input
-            id="gift-purchaser-email"
-            ref={purchaserEmailRef}
-            type="email"
-            value={purchaserEmail}
-            onChange={(e) => setPurchaserEmail(e.target.value)}
-            autoComplete="email"
-            aria-describedby={
-              fieldErrors.purchaserEmail
-                ? "gift-purchaser-email-error gift-purchaser-email-help"
-                : "gift-purchaser-email-help"
-            }
-            aria-invalid={Boolean(fieldErrors.purchaserEmail)}
-            className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
-          />
-          <span id="gift-purchaser-email-help" className="font-body text-xs text-j-text-muted">
-            {copy.purchaserEmailHelper}
-          </span>
-          {fieldErrors.purchaserEmail ? (
-            <span id="gift-purchaser-email-error" className="font-body text-xs text-j-rose">
-              {fieldErrors.purchaserEmail}
-            </span>
-          ) : null}
-        </label>
+        <Input
+          id="gift-purchaser-email"
+          name="purchaserEmail"
+          label={copy.purchaserEmailLabel}
+          type="email"
+          value={purchaserEmail}
+          onChange={setPurchaserEmail}
+          autoComplete="email"
+          helpText={copy.purchaserEmailHelper}
+          error={fieldErrors.purchaserEmail}
+        />
 
-        <label htmlFor="gift-recipient-name" className="flex flex-col gap-1.5">
-          <span className="font-display italic text-base text-j-text-heading">
-            {isScheduled ? copy.recipientNameLabelScheduled : copy.recipientNameLabelSelfSend}
-          </span>
-          <input
-            id="gift-recipient-name"
-            ref={recipientNameRef}
-            type="text"
-            value={recipientName}
-            onChange={(e) => setRecipientName(e.target.value)}
-            maxLength={80}
-            placeholder={
-              isScheduled ? undefined : copy.recipientNamePlaceholderSelfSend
-            }
-            aria-describedby={
-              fieldErrors.recipientName
-                ? isScheduled
-                  ? "gift-recipient-name-error gift-recipient-name-help"
-                  : "gift-recipient-name-error"
-                : isScheduled
-                  ? "gift-recipient-name-help"
-                  : undefined
-            }
-            aria-invalid={Boolean(fieldErrors.recipientName)}
-            className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
-          />
-          {isScheduled ? (
-            <span id="gift-recipient-name-help" className="font-body text-xs text-j-text-muted">
-              {copy.recipientNameHelperScheduled}
-            </span>
-          ) : null}
-          {fieldErrors.recipientName ? (
-            <span id="gift-recipient-name-error" className="font-body text-xs text-j-rose">
-              {fieldErrors.recipientName}
-            </span>
-          ) : null}
-        </label>
+        <Input
+          id="gift-recipient-name"
+          name="recipientName"
+          label={isScheduled ? copy.recipientNameLabelScheduled : copy.recipientNameLabelSelfSend}
+          value={recipientName}
+          onChange={setRecipientName}
+          placeholder={isScheduled ? undefined : copy.recipientNamePlaceholderSelfSend}
+          helpText={isScheduled ? copy.recipientNameHelperScheduled : undefined}
+          error={fieldErrors.recipientName}
+        />
 
         {isScheduled ? (
-          <label htmlFor="gift-recipient-email" className="flex flex-col gap-1.5">
-            <span className="font-display italic text-base text-j-text-heading">
-              {copy.recipientEmailLabel}
-            </span>
-            <input
-              id="gift-recipient-email"
-              ref={recipientEmailRef}
-              type="email"
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              autoComplete="off"
-              aria-describedby={
-                fieldErrors.recipientEmail
-                  ? "gift-recipient-email-error gift-recipient-email-help"
-                  : "gift-recipient-email-help"
-              }
-              aria-invalid={Boolean(fieldErrors.recipientEmail)}
-              className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
-            />
-            <span id="gift-recipient-email-help" className="font-body text-xs text-j-text-muted">
-              {copy.recipientEmailHelper}
-            </span>
-            {fieldErrors.recipientEmail ? (
-              <span id="gift-recipient-email-error" className="font-body text-xs text-j-rose">
-                {fieldErrors.recipientEmail}
-              </span>
-            ) : null}
-          </label>
+          <Input
+            id="gift-recipient-email"
+            name="recipientEmail"
+            label={copy.recipientEmailLabel}
+            type="email"
+            value={recipientEmail}
+            onChange={setRecipientEmail}
+            autoComplete="off"
+            helpText={copy.recipientEmailHelper}
+            error={fieldErrors.recipientEmail}
+          />
         ) : null}
 
-        <label htmlFor="gift-message" className="flex flex-col gap-1.5">
-          <span className="font-display italic text-base text-j-text-heading">
-            {copy.giftMessageLabel}
-          </span>
-          <textarea
+        <div className="flex flex-col gap-1.5">
+          <Textarea
             id="gift-message"
+            name="giftMessage"
+            label={copy.giftMessageLabel}
             value={giftMessage}
-            onChange={(e) =>
-              setGiftMessage(e.target.value.slice(0, GIFT_MESSAGE_MAX))
-            }
-            maxLength={GIFT_MESSAGE_MAX}
+            onChange={(value) => setGiftMessage(value.slice(0, GIFT_MESSAGE_MAX))}
+            rows={5}
             placeholder={copy.giftMessagePlaceholder}
-            className="min-h-32 rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base italic text-j-text placeholder:italic placeholder:text-j-text-muted focus:outline-none focus:border-j-accent"
+            maxLength={GIFT_MESSAGE_MAX}
           />
           {showCounter ? (
             <span
@@ -442,7 +352,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
               {messageRemaining}
             </span>
           ) : null}
-        </label>
+        </div>
 
         {isScheduled ? (
           <fieldset className="flex flex-col gap-2">
@@ -455,7 +365,6 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
               </span>
               <input
                 id="gift-send-at"
-                ref={giftSendAtRef}
                 type="datetime-local"
                 value={giftSendAt}
                 onChange={(e) => setGiftSendAt(e.target.value)}
@@ -485,68 +394,33 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         <p className="font-body text-sm text-j-text leading-relaxed whitespace-pre-line">
           {copy.nonRefundableNotice}
         </p>
-        <label htmlFor="gift-art6-consent" className="flex gap-3 items-start py-2 cursor-pointer">
-          <input
-            id="gift-art6-consent"
-            ref={art6ConsentRef}
-            type="checkbox"
-            checked={art6Consent}
-            onChange={(e) => setArt6Consent(e.target.checked)}
-            aria-describedby={fieldErrors.art6Consent ? "gift-art6-consent-error" : undefined}
-            aria-invalid={Boolean(fieldErrors.art6Consent)}
-            className="mt-1 accent-j-deep"
-          />
-          <span className="flex-1 font-body text-sm text-j-text">
-            {copy.art6ConsentLabel}
-          </span>
-        </label>
-        {fieldErrors.art6Consent ? (
-          <span id="gift-art6-consent-error" className="font-body text-xs text-j-rose">
-            {fieldErrors.art6Consent}
-          </span>
-        ) : null}
-        <label htmlFor="gift-cooling-off-consent" className="flex gap-3 items-start py-2 cursor-pointer">
-          <input
-            id="gift-cooling-off-consent"
-            ref={coolingOffConsentRef}
-            type="checkbox"
-            checked={coolingOffConsent}
-            onChange={(e) => setCoolingOffConsent(e.target.checked)}
-            aria-describedby={
-              fieldErrors.coolingOffConsent ? "gift-cooling-off-consent-error" : undefined
-            }
-            aria-invalid={Boolean(fieldErrors.coolingOffConsent)}
-            className="mt-1 accent-j-deep"
-          />
-          <span className="flex-1 font-body text-sm text-j-text">
-            {copy.coolingOffConsentLabel}
-          </span>
-        </label>
-        {fieldErrors.coolingOffConsent ? (
-          <span id="gift-cooling-off-consent-error" className="font-body text-xs text-j-rose">
-            {fieldErrors.coolingOffConsent}
-          </span>
-        ) : null}
-        <label htmlFor="gift-terms-consent" className="flex gap-3 items-start py-2 cursor-pointer">
-          <input
-            id="gift-terms-consent"
-            ref={termsConsentRef}
-            type="checkbox"
-            checked={termsConsent}
-            onChange={(e) => setTermsConsent(e.target.checked)}
-            aria-describedby={fieldErrors.termsConsent ? "gift-terms-consent-error" : undefined}
-            aria-invalid={Boolean(fieldErrors.termsConsent)}
-            className="mt-1 accent-j-deep"
-          />
-          <span className="flex-1 font-body text-sm text-j-text">
-            {copy.termsConsentLabel}
-          </span>
-        </label>
-        {fieldErrors.termsConsent ? (
-          <span id="gift-terms-consent-error" className="font-body text-xs text-j-rose">
-            {fieldErrors.termsConsent}
-          </span>
-        ) : null}
+        <Checkbox
+          id="gift-art6-consent"
+          name="art6Consent"
+          checked={art6Consent}
+          onChange={setArt6Consent}
+          error={fieldErrors.art6Consent}
+        >
+          {copy.art6ConsentLabel}
+        </Checkbox>
+        <Checkbox
+          id="gift-cooling-off-consent"
+          name="coolingOffConsent"
+          checked={coolingOffConsent}
+          onChange={setCoolingOffConsent}
+          error={fieldErrors.coolingOffConsent}
+        >
+          {copy.coolingOffConsentLabel}
+        </Checkbox>
+        <Checkbox
+          id="gift-terms-consent"
+          name="termsConsent"
+          checked={termsConsent}
+          onChange={setTermsConsent}
+          error={fieldErrors.termsConsent}
+        >
+          {copy.termsConsentLabel}
+        </Checkbox>
       </div>
 
       {antiAbuseHit ? (
