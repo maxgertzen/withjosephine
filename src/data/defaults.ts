@@ -242,6 +242,59 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   checkEmailResendLabel: "Send another",
 };
 
+export interface MyGiftsPageContent {
+  listHeading: string;
+  listSubheading: string;
+  emptyHeading: string;
+  emptyBody: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  statusScheduledLabel: string;
+  statusSelfSendReadyLabel: string;
+  statusSentLabel: string;
+  statusPreparingLabel: string;
+  statusDeliveredLabel: string;
+  statusCancelledLabel: string;
+  editRecipientCtaLabel: string;
+  flipToSelfSendCtaLabel: string;
+  resendLinkCtaLabel: string;
+  privacyNote: string;
+}
+
+export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
+  listHeading: "Your gifts",
+  listSubheading: "Every reading you’ve sent, gathered in one quiet place.",
+  emptyHeading: "No gifts here yet.",
+  emptyBody: "When you send a reading to someone, you’ll find its status here.",
+  emptyCtaLabel: "Send a reading",
+  signInHeading: "Welcome back",
+  signInBody:
+    "Tell us the email you used to send a gift, and we’ll send a fresh link to manage it.",
+  signInButtonLabel: "Send me a link",
+  signInFootnote: "Your gifts are still here, exactly as you left them.",
+  checkEmailHeading: "Check your email",
+  checkEmailBody:
+    "If we have a gift on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
+  checkEmailResendLabel: "Send another",
+  statusScheduledLabel: "Scheduled to send",
+  statusSelfSendReadyLabel: "Link ready to share",
+  statusSentLabel: "Sent — waiting for them to open it",
+  statusPreparingLabel: "They’re preparing their reading",
+  statusDeliveredLabel: "Delivered",
+  statusCancelledLabel: "Cancelled",
+  editRecipientCtaLabel: "Edit recipient",
+  flipToSelfSendCtaLabel: "Send the link myself instead",
+  resendLinkCtaLabel: "Resend the link to me",
+  privacyNote:
+    "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
+};
+
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
   confirmBody: string;

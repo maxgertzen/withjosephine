@@ -4,7 +4,7 @@ import { isValidAuthEmail } from "@/lib/auth/emailValidation";
 import { issueMagicLink } from "@/lib/auth/listenSession";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
-import { isListenNext, safeNext } from "@/lib/auth/safeNext";
+import { safeNext } from "@/lib/auth/safeNext";
 import { findUserByEmail } from "@/lib/auth/users";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { sendMagicLink } from "@/lib/resend";
@@ -34,7 +34,10 @@ export async function POST(request: Request) {
       const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? new URL(request.url).origin;
       const verifyUrl = new URL("/auth/verify", origin);
       verifyUrl.searchParams.set("token", token);
-      if (isListenNext(cleanNext)) verifyUrl.searchParams.set("next", cleanNext);
+      // safeNext already collapses anything non-allowlisted to /my-readings;
+      // forward whenever the caller asked for a specific non-default target
+      // (listen page, /my-gifts) so verify lands them back where they came from.
+      if (cleanNext !== "/my-readings") verifyUrl.searchParams.set("next", cleanNext);
       runMirror(
         sendMagicLink({ to: user.email, magicLinkUrl: verifyUrl.toString() }).then(() => {}),
       );

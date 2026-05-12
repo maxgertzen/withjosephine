@@ -215,18 +215,24 @@ Architecture pivoted at session start: Max picked Durable Object alarms over the
 - **REUSE — `sendAndRecord` helper.** Pattern "send via Resend, append `emails_fired_json` only when `resendId !== null`" recurs in 5+ places (`giftClaimDispatch` × 2 branches, regenerate route, day-7-deliver cron, applyPaidEvent). Webhook gift branch has the inverse pattern (unconditional append — preserves attempt log including dry-run; may or may not be intentional). Worth extracting once the right semantic per call site is locked.
 - **REUSE — `EmailShell` for `GiftClaimEmail` + `GiftPurchaseConfirmation` + `OrderConfirmation`.** All three reimplement the Html/Head/Preview/Tailwind/Body/Container frame inline. Half the email suite already uses `EmailShell`. The gift family is just inconsistent. Risk: snapshot-test fallout. Defer until a Session 4 + UX review can audit visual diff at the same time.
 
-### Phase 5 — Session 3 (purchaser self-service `/my-gifts` surface)
+### Phase 5 — Session 3 — SHIPPED 2026-05-12 on `feat/phase-5-session-3-my-gifts`
 
-**Not yet built.** Purchasers currently have no visibility into pending gifts after purchase confirmation. The 2026-05-11 PRD lock dissolved the original "cancel + refund" flow (ISC-29 + ISC-30) into a non-refundable policy where the purchaser can instead **edit the recipient** (email/name/send-at) pre-claim-email-fire. Also: the purchaser must be able to control the automatic send for `scheduled` mode and resend the link to themselves anytime before claim (per Max 2026-05-12).
+Purchaser self-service surface (`/my-gifts`) + 3 mutation routes (`edit-recipient`, `cancel-auto-send`, `resend-link`) + DO `/cancel` endpoint. Magic-link `listenSession` reused for purchaser scope (authorized via `purchaser_user_id`). See `www/MEMORY/WORK/20260512-130515_phase5-session-3-my-gifts/PRD.md` for the 61 atomic ISC + /simplify + Pentester verification blocks. 1248 / 1248 tests green; no new secrets, no D1 migration.
 
-- **ISC-26: `/my-gifts` page** — purchaser sees list of their gifts with status (`Scheduled to send <date>` / `Sent — waiting for recipient` / `Recipient is preparing` / `Delivered <date>`). No "listened" status (private to recipient, ISC-A5).
-- **ISC-27: Purchaser does NOT see recipient's intake answers / voice note / PDF** — status-only surface.
-- **ISC-28-edit-recipient: Pre-fire edit affordance** — change `recipient_email`, `recipient_name`, `gift_send_at` while `gift_claim_email_fired_at IS NULL`. Sanity mirror patches accordingly. New API route `POST /api/gifts/[id]/edit-recipient` with magic-link-gated authz against `purchaser_user_id`.
-- **ISC-31-control-send (Max 2026-05-12)**: for `scheduled` mode — postpone/expedite `gift_send_at`, or flip mode from `scheduled` → `self_send` (cancels the auto-send, surfaces the shareable URL to the purchaser). Both gated on `gift_claim_email_fired_at IS NULL`.
-- **ISC-32-resend-link (Max 2026-05-12)**: for `self_send` mode — purchaser can request a resend of the original shareable claim URL to their own email. Rate-limited per-submission (1/hour, 3/day) to avoid abuse. Useful for lost-email recovery. Available anytime before `gift_claimed_at`.
-- Magic-link authz reuses Phase 1 `listenSession` model but scoped to `purchaser_user_id` (not `recipient_user_id`).
-- Tests for each branch + Studio admin override for edge cases.
-- Trigger conditions: not launch-blocking; ship after `self_send` path soaks for ≥2 weeks post-launch and customer-support requests for edit/resend become actionable signal.
+### Phase 5 — Session 3 — deferred follow-ups (Pentester + /simplify findings filed at ship-time)
+
+- **MEDIUM-1 — `/api/gifts/[id]/resend-link` rate-limit TOCTOU.** `giftResendRateLimit` walks `emails_fired_json` non-atomically; concurrent requests can both pass before either appends. Atomic gating before send would break send-first-then-persist (Resend transients would brick the prior token). Accepted-and-documented at ship time. **Trigger to fix:** any abuse report from Becky OR sustained `gift_resend` volume >10/purchaser/day in production logs. Fix path: add `gift_resend_in_flight_at` short-TTL column gated by conditional UPDATE, OR move to an atomic SQL-JSON count predicate in `markGiftClaimSent`.
+- **LOW-1 — `cancel-auto-send` pre-cancel alarm race.** ~tens-of-ms window where alarm fires between `authorizeGiftPurchaser` and `cancelGiftAlarm`. Purchaser would receive a self_send confirmation pointing at an already-overwritten token hash → dead URL. UX-confusing but not security-relevant. **Trigger to fix:** Session 4 council review picks up the atomic-flip-with-placeholder-hash refactor as part of the broader cancel-then-flip-then-send-vs-send-then-flip-then-cancel debate.
+- **LOW-2 — `edit-recipient` own-email check has plus-aliasing + Unicode bypass.** `victim+gift@gmail.com !== victim@gmail.com` passes the check; ZWSP inside the local-part survives `[^\s@]+`. Same accept-and-document posture as Session 1b's universal-plus-aliasing finding. Gifts are non-refundable so purchaser-self-claim has no economic exploit.
+- **LOW-3 — `recipientEmail` length cap missing.** 1-line fix (`if (trimmed.length > 254) errors.push(...)`). Defer as polish.
+- **LOW-4 — `listGiftsByPurchaserUserId` returns `SELECT *` to a Server Component.** Currently safe (no `"use client"` boundary downstream). **Trigger to fix:** any future PR adding `"use client"` anywhere downstream of `MyGiftsView`. Fix path: project the query to the minimal column set `giftStatusFor` + view need, OR map to a `GiftCardData` view-model before passing down.
+- **INFO-1 — 401 vs 404 timing differential in `authorizeGiftPurchaser`** (unauthorized short-circuits before DB read). Only distinguishable to attackers who already have a session cookie. Accept.
+
+**Reuse / Quality deferrals** (would still be welcome but low leverage):
+- Shared `<AuthGatedPage>` page-chrome component for `/my-gifts` + `/my-readings` — Session 4 council review can pick up.
+- `GIFT_DELIVERY` constants object — TS union narrowing is already type-safe; nice-to-have.
+- `isDefaultNext(path)` helper in `safeNext.ts` — collapse the call-site literal duplication.
+- Sanity Studio document actions on submission doctype (Becky-facing) — explicitly deferred from Session 3 per Max's brief; revisit at Session 4 multi-agent review.
 
 ### Phase 5 Session 4 — Multi-agent gift-flow review (REQUIRED, blocks Stage B + main-merge)
 

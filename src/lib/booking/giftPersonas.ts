@@ -15,3 +15,18 @@ export function recipientNameFor(submission: SubmissionRecord): string {
     submission.responses.find((r) => r.fieldKey === "recipient_name")?.value?.trim() || "there"
   );
 }
+
+/**
+ * Surface label for the purchaser's `/my-gifts` listing: prefer the name
+ * Alice typed, fall back to the recipient email so she can still identify
+ * the gift, and finally to a soft sentinel when neither is present
+ * (self-send mode where she chose to skip both).
+ */
+export function recipientLabelFor(submission: SubmissionRecord): string {
+  const named = submission.responses
+    .find((r) => r.fieldKey === "recipient_name")
+    ?.value?.trim();
+  if (named) return named;
+  if (submission.recipientEmail) return submission.recipientEmail;
+  return "your recipient";
+}

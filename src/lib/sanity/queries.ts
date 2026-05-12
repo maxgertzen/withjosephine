@@ -151,6 +151,33 @@ export const myReadingsPageQuery = groq`
   }
 `;
 
+export const myGiftsPageQuery = groq`
+  *[_type == "myGiftsPage"][0] {
+    listHeading,
+    listSubheading,
+    emptyHeading,
+    emptyBody,
+    emptyCtaLabel,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel,
+    statusScheduledLabel,
+    statusSelfSendReadyLabel,
+    statusSentLabel,
+    statusPreparingLabel,
+    statusDeliveredLabel,
+    statusCancelledLabel,
+    editRecipientCtaLabel,
+    flipToSelfSendCtaLabel,
+    resendLinkCtaLabel,
+    privacyNote
+  }
+`;
+
 export const magicLinkVerifyPageQuery = groq`
   *[_type == "magicLinkVerifyPage"][0] {
     confirmHeading,

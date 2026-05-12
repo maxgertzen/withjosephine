@@ -17,6 +17,7 @@ import {
   legalPageBySlugQuery,
   listenPageQuery,
   magicLinkVerifyPageQuery,
+  myGiftsPageQuery,
   myReadingsPageQuery,
   notFoundPageQuery,
   readingBySlugQuery,
@@ -43,6 +44,7 @@ import type {
   SanityLegalPage,
   SanityListenPage,
   SanityMagicLinkVerifyPage,
+  SanityMyGiftsPage,
   SanityMyReadingsPage,
   SanityNotFoundPage,
   SanityReading,
@@ -160,6 +162,11 @@ export const fetchLegalPage = cache(async (slug: string): Promise<SanityLegalPag
 
 export const fetchMyReadingsPage = cache(async (): Promise<SanityMyReadingsPage | null> => {
   const { data } = await sanityFetch<SanityMyReadingsPage | null>({ query: myReadingsPageQuery });
+  return data;
+});
+
+export const fetchMyGiftsPage = cache(async (): Promise<SanityMyGiftsPage | null> => {
+  const { data } = await sanityFetch<SanityMyGiftsPage | null>({ query: myGiftsPageQuery });
   return data;
 });
 

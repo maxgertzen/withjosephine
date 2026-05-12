@@ -103,6 +103,31 @@ export type SanityMyReadingsPage = {
   checkEmailResendLabel: string;
 };
 
+export type SanityMyGiftsPage = {
+  listHeading: string;
+  listSubheading: string;
+  emptyHeading: string;
+  emptyBody: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  statusScheduledLabel: string;
+  statusSelfSendReadyLabel: string;
+  statusSentLabel: string;
+  statusPreparingLabel: string;
+  statusDeliveredLabel: string;
+  statusCancelledLabel: string;
+  editRecipientCtaLabel: string;
+  flipToSelfSendCtaLabel: string;
+  resendLinkCtaLabel: string;
+  privacyNote: string;
+};
+
 export type SanityMagicLinkVerifyPage = {
   confirmHeading: string;
   confirmBody: string;

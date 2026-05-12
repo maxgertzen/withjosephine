@@ -42,6 +42,16 @@ declare global {
 export class GiftClaimScheduler extends DurableObject<GiftClaimSchedulerEnv> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    if (request.method === "POST" && url.pathname === "/cancel") {
+      // Idempotent: deleteAlarm + deleteAll both no-op on missing state.
+      // Lets the purchaser flip scheduled→self_send without racing the alarm.
+      await this.ctx.storage.deleteAlarm();
+      await this.ctx.storage.deleteAll();
+      return new Response(JSON.stringify({ cancelled: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
     if (request.method !== "POST" || url.pathname !== "/schedule") {
       return new Response("Not found", { status: 404 });
     }
@@ -61,7 +71,7 @@ export class GiftClaimScheduler extends DurableObject<GiftClaimSchedulerEnv> {
     }
 
     await this.ctx.storage.put("submissionId", submissionId);
-    // Resets retryCount when the same DO is re-scheduled (e.g. admin
+    // Resets retryCount when the same DO is re-scheduled (e.g. purchaser
     // edits `gift_send_at` after the original alarm was set).
     await this.ctx.storage.put("retryCount", 0);
     await this.ctx.storage.setAlarm(fireAtMs);

@@ -11,6 +11,7 @@ export const SINGLETON_TYPES = new Set([
   "bookingForm",
   "bookingGiftForm",
   "myReadingsPage",
+  "myGiftsPage",
   "magicLinkVerifyPage",
   "emailMagicLink",
   "emailDay7Delivery",
@@ -115,6 +116,7 @@ export const deskStructure = (S: StructureBuilder) =>
             .items([
               singletonListItem(S, "listenPage", "Listen Page"),
               singletonListItem(S, "myReadingsPage", "My Readings Page"),
+              singletonListItem(S, "myGiftsPage", "My Gifts Page"),
               singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
               singletonListItem(S, "emailOrderConfirmation", "Email — Order Confirmation"),
               singletonListItem(
