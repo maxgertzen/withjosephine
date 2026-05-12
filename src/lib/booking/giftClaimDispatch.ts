@@ -1,11 +1,6 @@
-/**
- * Gift-claim email dispatcher.
- *
- * **Logging discipline (Phase 5 Session 4b — B5.19):** if you add a
- * `console.*` to this file, log only `submissionId`. No raw emails, no
- * Resend message IDs, no token material, no recipient/purchaser names.
- * `wrangler tail` is shared with the team; treat logs as public-readable.
- */
+// Logs from this file may contain only `submissionId`. `wrangler tail` is
+// shared — no emails, Resend IDs, tokens, or names.
+
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { sendGiftClaimEmail } from "@/lib/resend";
 

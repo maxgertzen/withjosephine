@@ -149,9 +149,7 @@ export const myGiftsPage = defineType({
         "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
     }),
 
-    // Phase 5 Session 5 — T7 + GAP-3. Edit-recipient drawer + per-action
-    // copy moves out of GiftCardActions.tsx into Sanity. Becky-editable
-    // without a deploy.
+    // Edit-recipient drawer + per-action copy. Becky-editable without a deploy.
     defineField({
       name: "editRecipientFormTitle",
       title: "Edit recipient drawer — heading",

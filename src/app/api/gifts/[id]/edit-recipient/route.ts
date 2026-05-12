@@ -68,9 +68,8 @@ function validate(
   }
 
   if (body.recipientName !== undefined) {
-    // Phase 5 Session 4b — B7.26. Strip template-tag patterns at the
-    // edit boundary too — keeps `gift_send_at` reschedules from
-    // introducing the very payload the purchase-time validator blocks.
+    // Strip template-tag patterns at the edit boundary — same defense as
+    // the purchase-time validator.
     const trimmed = stripTemplateTags(body.recipientName.trim());
     if (trimmed.length === 0) {
       errors.push({ field: "recipientName", message: "Recipient name can’t be blank." });

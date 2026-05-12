@@ -123,18 +123,15 @@ export async function mirrorSubmissionPatch(
     stripeSessionId: string;
     amountPaidCents: number | null;
     amountPaidCurrency: string | null;
-    // Phase 5 — gift redemption patch fields.
     responses: SubmissionRecord["responses"];
     giftClaimedAt: string;
     recipientUserId: string;
     art9AcknowledgedAt: string;
-    // Phase 5 Session 3 — purchaser-side edits and self-send flips.
     recipientEmail: string;
     giftSendAt: string | null;
     giftDeliveryMethod: GiftDeliveryMethod;
     giftClaimTokenHash: string;
     giftClaimEmailFiredAt: string;
-    // Phase 5 Session 4b — LB-4 cascade purchaser pseudonymisation.
     purchaserUserId: string | null;
     email: string;
   }>,

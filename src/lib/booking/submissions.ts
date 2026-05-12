@@ -90,8 +90,7 @@ export type SubmissionRecord = {
 export type CreateSubmissionParams = CreateSubmissionInput & {
   consentAcknowledgedAt: string;
   ipAddress: string | null;
-  // Phase 4 — Art. 6 + Art. 9 ack timestamps. Nullable for legacy callers /
-  // tests; the booking POST path must populate both.
+  // Nullable for legacy callers and tests; the booking POST path populates both.
   art6AcknowledgedAt?: string | null;
   art9AcknowledgedAt?: string | null;
 };
@@ -175,9 +174,9 @@ export async function markSubmissionPaid(
     amountPaidCurrency: string | null;
     recipientUserId?: string | null;
   },
-  // Phase 4 — when provided, the paid UPDATE and the financial_records INSERT
-  // submit as a single atomic D1 batch. The 6yr-retention row is computed
-  // from `paidAt` so callers never accidentally diverge from policy.
+  // When provided, the paid UPDATE and financial_records INSERT submit as a
+  // single atomic D1 batch. retainedUntil is derived from paidAt so callers
+  // can't diverge from the 6yr-retention policy.
   financial?: FinancialMirror,
 ): Promise<void> {
   if (financial) {

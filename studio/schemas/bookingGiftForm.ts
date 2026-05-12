@@ -284,9 +284,8 @@ export const bookingGiftForm = defineType({
         "We're holding a gift for this person already. Please give them a moment to open it before sending another.",
     }),
 
-    // Validation strings (Phase 5 Session 5 — T6.18). Inline field-level
-    // errors shown when the purchaser tries to submit with an empty/invalid
-    // field. Kept in Sanity so Becky can soften phrasing without a deploy.
+    // Validation strings — inline field-level errors shown when the purchaser
+    // tries to submit with an empty/invalid field.
     defineField({
       name: "firstNameRequiredError",
       title: "Validation — first name required",
@@ -353,7 +352,6 @@ export const bookingGiftForm = defineType({
       initialValue: "Network problem. Please try again.",
     }),
 
-    // Send-at timezone hint (Phase 5 Session 5 — T6.24).
     defineField({
       name: "sendAtTimezoneHint",
       title: "Send-at — timezone preview prefix",

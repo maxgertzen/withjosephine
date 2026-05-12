@@ -72,8 +72,6 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
-  // In `redeem` mode the form UPDATES an existing pre-paid submission and
-  // skips Stripe. Caller passes the submissionId + a success redirect URL.
   mode?: "create" | "redeem";
   redeemSubmissionId?: string;
   redeemSuccessUrl?: string;
@@ -133,14 +131,7 @@ export function IntakeForm({
   redeemSubmissionId,
   redeemSuccessUrl,
 }: IntakeFormProps) {
-  // Phase 5 Session 5 — GAP-10. In `redeem` mode (gift recipient flow) we
-  // scope the localStorage draft by submission id rather than reading slug
-  // so multiple recipients claiming the same reading from the same browser
-  // don't share a draft, and so the recipient's draft doesn't bleed into a
-  // future direct-purchase of the same reading from the same device. We
-  // intentionally use the submission id (NOT the raw claim token, which is
-  // already discarded after first use); the submission id is already a
-  // non-secret server-issued UUID surfaced in the gift-claim cookie.
+  // See DECISIONS.local.md — IntakeForm draft autosave key includes redeem-mode submissionId.
   const draftScope =
     mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
   const allFields = useMemo(() => flattenFields(sections), [sections]);
@@ -224,9 +215,6 @@ export function IntakeForm({
       const previousDraft = restoreDraft(previousReadingId);
       if (previousDraft) {
         preservedFromSwap = pickPreservedFields(previousDraft.values);
-        // setState-in-effect intentional: surface the swap-toast on reading change.
-        // Refactor to derived state queued in POST_LAUNCH_BACKLOG.
-         
         setSwappedFromReadingName(readingName);
       }
     }
@@ -512,9 +500,6 @@ export function IntakeForm({
 
     const preflight = submissionSchema.safeParse(values);
     const preflightFollowup = buildNameFollowupSchema(allFields, values).safeParse(values);
-    // Phase 4 consents are validated locally — both must be true to submit.
-    // Per-checkbox inline errors are set so the user can see which one they
-    // missed without scanning a generic banner.
     const art6Ok = art6Consent;
     const art9Ok = art9Consent;
     setArt6Error(art6Ok ? undefined : "Please acknowledge to continue.");

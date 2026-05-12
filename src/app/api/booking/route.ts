@@ -104,9 +104,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // Phase 4 — both Art. 6 (ordinary processing) and Art. 9 (special-category,
-  // explicit) consents are required at submission time. UI guards this with
-  // per-checkbox inline errors; this is the server-side defense in depth.
+  // Both Art. 6 + Art. 9 consents required server-side; UI is defense in depth.
   if (!parsedBody.art6Consent || !parsedBody.art9Consent) {
     return NextResponse.json(
       { error: "Both required consents (Art. 6 and Art. 9) must be acknowledged." },
@@ -153,9 +151,8 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
-  // Phase 5 Session 4b — GAP-7. RFC 5321 254-char email cap parity with
-  // /api/booking/gift; defends against pathologically long emails being
-  // persisted to D1 and ferried to Stripe Payment Link URLs.
+  // RFC 5321 254-char cap — also defends against pathologically long emails
+  // being ferried to Stripe Payment Link URLs.
   if (email.length > MAX_EMAIL_CHARS) {
     return NextResponse.json(
       {

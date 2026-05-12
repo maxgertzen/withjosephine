@@ -1,27 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
 
-/**
- * Storage:
- *   - submissionId : string  — set at /schedule, read by alarm()
- *   - retryCount   : number  — incremented before each non-first send
- *
- * On `nextAlarmMs === null` (claim succeeded, cancelled, abandoned, or
- * out of retries), the DO clears its storage so it doesn't accumulate.
- *
- * **Logging discipline (Phase 5 Session 4b — B5.19):** only `submissionId`
- * may appear in console output from this file. No raw emails, no Resend
- * message IDs, no token material, no recipient/purchaser names.
- * `wrangler tail` is shared; treating logs as if they're public-readable.
- */
+// Logs from this file may contain only `submissionId` — `wrangler tail` is
+// shared. No raw emails, Resend message IDs, tokens, or recipient names.
 
 export type GiftClaimSchedulerEnv = {
   DO_DISPATCH_SECRET?: string;
   NEXT_PUBLIC_SITE_ORIGIN?: string;
-  // Service binding back to the same worker (declared in `wrangler.jsonc` →
-  // `services: [{ binding: "SELF", service: "<worker-name>" }]`). Lets `alarm()`
-  // dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
-  // taking the public-edge HTTPS round-trip. Optional so unit tests can stub
-  // it; production deploys always provide it.
+  // Service binding to the same worker. Lets alarm() dispatch in-isolate
+  // instead of taking the public-edge HTTPS round-trip. Optional so unit
+  // tests can stub it.
   SELF?: Fetcher;
 };
 

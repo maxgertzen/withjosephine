@@ -189,11 +189,7 @@ function buildPaymentUrl(
   }
   if (url.protocol !== "https:" || !url.hostname.endsWith(".stripe.com")) return null;
   url.searchParams.set("client_reference_id", submissionId);
-  // Phase 5 Session 4b — B5.15. `prefilled_email` deliberately omitted so
-  // the purchaser's email never appears as a URL query parameter (the URL
-  // is returned to the client and then loaded as a top-level navigation;
-  // including PII there exposes it in browser history, Referer headers to
-  // Stripe's CDN, and the user's clipboard if they copy the link).
+  // See DECISIONS.local.md — Stripe prefilled_email omitted from Payment Link.
   url.searchParams.set("metadata[is_gift]", "true");
   url.searchParams.set("metadata[gift_delivery_method]", deliveryMethod);
   return url.toString();
@@ -240,12 +236,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
-  // Phase 5 Session 4b — B7.26. Strip `{tag}` patterns from purchaser-
-  // controlled fields. These values flow into email-template variables
-  // (`{purchaserFirstName}`, `{recipientName}`, body copy), so a literal
-  // `{recipientName}` in user input could otherwise hijack subsequent
-  // template substitution downstream. Stripping at the boundary keeps the
-  // template-engine layer simple and the storage layer clean.
+  // See DECISIONS.local.md — stripTemplateTags at the booking boundary.
   const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName

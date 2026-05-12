@@ -98,9 +98,8 @@ export type CreateSubmissionInput = {
   consentLabel: string | null;
   photoR2Key: string | null;
   createdAt: string;
-  // Phase 5 gift columns. Optional so all existing self-purchase call sites
-  // remain unchanged; the gift booking route is the only caller that sets
-  // them. recipient_user_id stays NULL for gifts until the recipient claims.
+  // Optional so existing self-purchase call sites stay unchanged; only the
+  // gift booking route sets these.
   isGift?: boolean;
   purchaserUserId?: string | null;
   recipientEmail?: string | null;
@@ -139,12 +138,10 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
 }
 
 /**
- * Anti-abuse cap (Phase 5 ISC-12a + Session 4b LB-3). Counts gifts addressed to
- * this recipient_email that are still in flight (not yet claimed, not cancelled).
- * The booking-gift route rejects at purchase when the count is ≥ 3; gift-redeem
- * route re-checks at claim time to cover the self_send-mode bypass where
- * recipient_email is NULL at purchase. The current submission is excluded from
- * the count when `excludeSubmissionId` is provided so a gift doesn't gate itself.
+ * Counts in-flight gifts addressed to this recipient_email (not claimed, not
+ * cancelled). Used at both purchase-time gate and claim-time re-check to cover
+ * the self_send bypass where recipient_email is NULL at purchase.
+ * `excludeSubmissionId` keeps a gift from gating itself.
  */
 export async function countActivePendingGiftsForRecipient(
   recipientEmail: string,
@@ -163,9 +160,9 @@ export async function countActivePendingGiftsForRecipient(
 }
 
 /**
- * Phase 5 — self_send mode. Records that the gift's claim URL was generated
- * and emailed to the purchaser at this moment. The same column does double
- * duty for the scheduled-mode cron (Session 2), which writes it at fire time.
+ * Records that the gift claim URL was generated and emailed. The same column
+ * does double duty for self_send (purchaser receives) and scheduled-mode
+ * (DO alarm fires it to the recipient at gift_send_at).
  */
 export async function markGiftClaimSent(
   submissionId: string,

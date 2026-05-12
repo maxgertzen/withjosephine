@@ -1,6 +1,5 @@
-// SPEC §15 event taxonomy. Property keys are snake_case in the
-// implementation; SPEC documents them in camelCase. abandoned_recovered
-// is intentionally absent (dropped from Phase 1).
+// Property keys are snake_case in the implementation (SPEC §15 documents them
+// in camelCase). abandoned_recovered is intentionally absent.
 
 export type ReadingId = string;
 

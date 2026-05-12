@@ -286,9 +286,9 @@ export async function cascadeDeleteUser(
     await deleteSanityAssetsForSubmission(submission._id, partialFailures);
   }
 
-  // Phase 5 Session 4b — LB-4 purchaser walk. Find every gift this user
-  // purchased and apply the pseudonymise-vs-delete branch documented at
-  // the top of this file. Skip rows already handled by the recipient walk.
+  // Purchaser walk: find every gift this user purchased and apply the
+  // pseudonymise-vs-delete branch documented at the top of this file. Skip
+  // rows already handled by the recipient walk.
   const recipientWalkIds = new Set(submissionIds);
   let purchaserGifts: SubmissionRecord[] = [];
   try {
