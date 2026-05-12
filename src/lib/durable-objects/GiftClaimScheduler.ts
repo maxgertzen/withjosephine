@@ -17,6 +17,12 @@ import { DurableObject } from "cloudflare:workers";
 export type GiftClaimSchedulerEnv = {
   DO_DISPATCH_SECRET?: string;
   NEXT_PUBLIC_SITE_ORIGIN?: string;
+  // Service binding back to the same worker (declared in `wrangler.jsonc` →
+  // `services: [{ binding: "SELF", service: "<worker-name>" }]`). Lets `alarm()`
+  // dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
+  // taking the public-edge HTTPS round-trip. Optional so unit tests can stub
+  // it; production deploys always provide it.
+  SELF?: Fetcher;
 };
 
 type DispatchResponse = {
@@ -41,6 +47,7 @@ declare global {
     GIFT_CLAIM_SCHEDULER?: GiftClaimSchedulerNamespace;
     DO_DISPATCH_SECRET?: string;
     NEXT_PUBLIC_SITE_ORIGIN?: string;
+    SELF?: Fetcher;
   }
 }
 
@@ -104,8 +111,16 @@ export class GiftClaimScheduler extends DurableObject<GiftClaimSchedulerEnv> {
       return;
     }
 
-    const origin = defaultOrigin(this.env);
-    const res = await fetch(`${origin}/api/internal/gift-claim-dispatch`, {
+    // Prefer the `SELF` service binding (in-isolate fetch — same worker,
+    // no public-edge round-trip, lower latency, exempt from rate-limits and
+    // Access policies). Falls back to a public-edge fetch only in dev/test
+    // contexts where the binding isn't wired (existing unit tests stub
+    // `globalThis.fetch` and don't provide a `SELF` Fetcher).
+    const dispatchUrl = this.env.SELF
+      ? "https://internal/api/internal/gift-claim-dispatch"
+      : `${defaultOrigin(this.env)}/api/internal/gift-claim-dispatch`;
+    const dispatcher = this.env.SELF ?? globalThis;
+    const res = await dispatcher.fetch(dispatchUrl, {
       method: "POST",
       headers: {
         "content-type": "application/json",

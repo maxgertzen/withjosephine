@@ -224,4 +224,30 @@ describe("GiftClaimScheduler.alarm", () => {
     expect(storage.alarmAtMs).toBeNull();
     expect(storage.deletedAll).toBe(false);
   });
+
+  it("uses env.SELF.fetch (service binding) when the binding is provided", async () => {
+    const storage = makeStorage();
+    await storage.api.put("submissionId", "sub_gift");
+    await storage.api.put("retryCount", 0);
+
+    const selfFetchMock = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ outcome: "first_send", nextAlarmMs: 9_999_999_999 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const envWithSelf: GiftClaimSchedulerEnv = {
+      ...ENV,
+      SELF: { fetch: selfFetchMock } as unknown as Fetcher,
+    };
+
+    const scheduler = new GiftClaimScheduler(makeCtx(storage) as never, envWithSelf as never);
+    await scheduler.alarm();
+
+    expect(selfFetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).not.toHaveBeenCalled();
+    const [url, init] = selfFetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://internal/api/internal/gift-claim-dispatch");
+    expect((init.headers as Record<string, string>)["x-do-secret"]).toBe("test-secret");
+  });
 });

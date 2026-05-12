@@ -135,6 +135,14 @@
 	"migrations": [
 		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
 	],
+	// Self-binding (`env.SELF`) lets the GiftClaimScheduler Durable Object
+	// dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
+	// taking a public-edge HTTPS round-trip. Same worker name; wrangler ≥3
+	// supports self-bindings declaratively. Without this, alarm dispatch
+	// pays edge latency + is subject to public WAF rules + Access policies.
+	"services": [
+		{ "binding": "SELF", "service": "withjosephine" }
+	],
 	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
 	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
 	// rules in the CF dashboard (see POST_LAUNCH_BACKLOG.md "WAF rate-limit
@@ -219,6 +227,9 @@
 			},
 			"migrations": [
 				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
+			],
+			"services": [
+				{ "binding": "SELF", "service": "withjosephine-staging" }
 			],
 			"ratelimits": [
 				{
