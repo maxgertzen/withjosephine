@@ -52,27 +52,27 @@ describe("optionalEnv", () => {
 
 describe("isFlagEnabled", () => {
   it("returns true for '1'", () => {
-    vi.stubEnv("EXAMPLE_FLAG", "1");
-    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(true);
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(true);
   });
 
   it("returns true for 'true'", () => {
-    vi.stubEnv("EXAMPLE_FLAG", "true");
-    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(true);
+    vi.stubEnv("RESEND_DRY_RUN", "true");
+    expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(true);
   });
 
   it("returns false for '0'", () => {
-    vi.stubEnv("EXAMPLE_FLAG", "0");
-    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
+    vi.stubEnv("RESEND_DRY_RUN", "0");
+    expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(false);
   });
 
   it("returns false when unset", () => {
-    vi.stubEnv("EXAMPLE_FLAG", "");
-    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
+    vi.stubEnv("RESEND_DRY_RUN", "");
+    expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(false);
   });
 
   it("returns false for any other truthy-looking string", () => {
-    vi.stubEnv("EXAMPLE_FLAG", "yes");
-    expect(isFlagEnabled("EXAMPLE_FLAG")).toBe(false);
+    vi.stubEnv("RESEND_DRY_RUN", "yes");
+    expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(false);
   });
 });
