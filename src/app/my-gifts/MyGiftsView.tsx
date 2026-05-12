@@ -8,16 +8,49 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
-import { type GiftStatus, giftStatusFor } from "@/lib/booking/giftStatus";
+import {
+  giftResendRateLimit,
+  type GiftStatus,
+  giftStatusFor,
+} from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
-import { GiftCardActions, type GiftCardData } from "./GiftCardActions";
+import {
+  GiftCardActions,
+  type GiftCardData,
+  type ResendVerdictSummary,
+} from "./GiftCardActions";
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+function computeResendVerdict(gift: SubmissionRecord): ResendVerdictSummary | undefined {
+  if (gift.giftDeliveryMethod !== "self_send") return undefined;
+  const nowMs = Date.now();
+  const verdict = giftResendRateLimit(gift.emailsFired, nowMs);
+  if (verdict.allowed) return { allowed: true };
+  // Compute when the hour-cap or day-cap window rolls forward enough to
+  // allow another send. The cap is set against the most recent gift_resend
+  // entry; nextAvailable = oldestEntryInWindow + windowMs.
+  const resendsMs = (gift.emailsFired ?? [])
+    .filter((e) => e.type === "gift_resend")
+    .map((e) => Date.parse(e.sentAt))
+    .filter((t) => Number.isFinite(t))
+    .sort((a, b) => a - b);
+  const windowMs = verdict.reason === "hour_cap" ? ONE_HOUR_MS : ONE_DAY_MS;
+  const oldestInWindow = resendsMs.find((t) => nowMs - t < windowMs) ?? nowMs;
+  const nextAvailableAt = new Date(oldestInWindow + windowMs).toISOString();
+  return { allowed: false, reason: verdict.reason, nextAvailableAt };
+}
 
 /**
  * Phase 5 Session 4b — B6.22. Build the narrow client-side view-model from
  * the full server-side record. Drops purchaser email + financial fields +
  * stripe ids so they never enter the React tree of the client component.
+ * Pre-computed `resendVerdict` exposes only the verdict the UI needs to
+ * disable the CTA + render a "next available at" hint, without leaking
+ * raw `emailsFired` entries (which carry Resend message IDs).
  */
 function toGiftCardData(gift: SubmissionRecord): GiftCardData {
   return {
@@ -25,6 +58,7 @@ function toGiftCardData(gift: SubmissionRecord): GiftCardData {
     responses: gift.responses,
     recipientEmail: gift.recipientEmail,
     giftSendAt: gift.giftSendAt,
+    resendVerdict: computeResendVerdict(gift),
   };
 }
 

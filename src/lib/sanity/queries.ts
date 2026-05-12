@@ -477,7 +477,17 @@ export const bookingGiftFormQuery = groq`
     submitButtonScheduled,
     loadingStateCopy,
     antiAbuseCapHeading,
-    antiAbuseCapBody
+    antiAbuseCapBody,
+    firstNameRequiredError,
+    emailInvalidError,
+    recipientNameRequiredError,
+    recipientEmailRequiredError,
+    sendAtRequiredError,
+    consentRequiredError,
+    verificationError,
+    genericError,
+    networkError,
+    sendAtTimezoneHint
   }
 `;
 

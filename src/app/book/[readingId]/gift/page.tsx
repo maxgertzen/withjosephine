@@ -87,6 +87,19 @@ function mergeCopy(
     loadingStateCopy: sanity.loadingStateCopy ?? defaults.loadingStateCopy,
     antiAbuseCapHeading: sanity.antiAbuseCapHeading ?? defaults.antiAbuseCapHeading,
     antiAbuseCapBody: sanity.antiAbuseCapBody ?? defaults.antiAbuseCapBody,
+    firstNameRequiredError:
+      sanity.firstNameRequiredError ?? defaults.firstNameRequiredError,
+    emailInvalidError: sanity.emailInvalidError ?? defaults.emailInvalidError,
+    recipientNameRequiredError:
+      sanity.recipientNameRequiredError ?? defaults.recipientNameRequiredError,
+    recipientEmailRequiredError:
+      sanity.recipientEmailRequiredError ?? defaults.recipientEmailRequiredError,
+    sendAtRequiredError: sanity.sendAtRequiredError ?? defaults.sendAtRequiredError,
+    consentRequiredError: sanity.consentRequiredError ?? defaults.consentRequiredError,
+    verificationError: sanity.verificationError ?? defaults.verificationError,
+    genericError: sanity.genericError ?? defaults.genericError,
+    networkError: sanity.networkError ?? defaults.networkError,
+    sendAtTimezoneHint: sanity.sendAtTimezoneHint ?? defaults.sendAtTimezoneHint,
   };
 }
 

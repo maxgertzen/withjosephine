@@ -11,6 +11,33 @@ import { BOOKING_API_GIFT_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants"
 type DeliveryMethod = "self_send" | "scheduled";
 type FieldErrors = Partial<Record<string, string>>;
 
+/**
+ * Live preview of the user's `datetime-local` choice, formatted in their
+ * browser's resolved timezone. Renders nothing for empty input so the
+ * label-area doesn't reflow.
+ */
+function TimezonePreview({ value, template }: { value: string; template: string }) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsed);
+  const message = template.replace(/\{date\}/g, formatted);
+  return (
+    <span
+      aria-live="polite"
+      className="font-body text-xs text-j-text-muted italic mt-1"
+    >
+      {message}
+    </span>
+  );
+}
+
 const GIFT_MESSAGE_MAX = 280;
 const GIFT_MESSAGE_COUNTER_REVEAL = 220;
 
@@ -79,19 +106,19 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   function validate(): FieldErrors {
     const errs: FieldErrors = {};
     if (!purchaserFirstName.trim()) {
-      errs.purchaserFirstName = "Your first name is required.";
+      errs.purchaserFirstName = copy.firstNameRequiredError;
     }
     if (!purchaserEmail.trim()) {
-      errs.purchaserEmail = "Enter a valid email address.";
+      errs.purchaserEmail = copy.emailInvalidError;
     }
     if (deliveryMethod === "scheduled") {
-      if (!recipientName.trim()) errs.recipientName = "Recipient name is required.";
-      if (!recipientEmail.trim()) errs.recipientEmail = "Enter a valid recipient email.";
-      if (!giftSendAt) errs.giftSendAt = "Pick when the gift should arrive.";
+      if (!recipientName.trim()) errs.recipientName = copy.recipientNameRequiredError;
+      if (!recipientEmail.trim()) errs.recipientEmail = copy.recipientEmailRequiredError;
+      if (!giftSendAt) errs.giftSendAt = copy.sendAtRequiredError;
     }
-    if (!art6Consent) errs.art6Consent = "Required to proceed.";
-    if (!coolingOffConsent) errs.coolingOffConsent = "Required to proceed.";
-    if (!termsConsent) errs.termsConsent = "Required to proceed.";
+    if (!art6Consent) errs.art6Consent = copy.consentRequiredError;
+    if (!coolingOffConsent) errs.coolingOffConsent = copy.consentRequiredError;
+    if (!termsConsent) errs.termsConsent = copy.consentRequiredError;
     return errs;
   }
 
@@ -116,7 +143,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
     const token = turnstileBypass ? "bypass" : turnstileToken;
     if (!token) {
-      setTopLevelError("Please complete the verification step and try again.");
+      setTopLevelError(copy.verificationError);
       return;
     }
 
@@ -166,7 +193,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       }
       if (!res.ok || !json.paymentUrl) {
         setFieldErrors(json.fieldErrors ?? {});
-        setTopLevelError(json.error ?? "Something went wrong. Please try again.");
+        setTopLevelError(json.error ?? copy.genericError);
         track("gift_submit_error", {
           reading_id: readingSlug,
           delivery_method: deliveryMethod,
@@ -182,7 +209,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       });
       window.location.assign(json.paymentUrl);
     } catch {
-      setTopLevelError("Network problem. Please try again.");
+      setTopLevelError(copy.networkError);
       track("gift_submit_error", {
         reading_id: readingSlug,
         delivery_method: deliveryMethod,
@@ -465,6 +492,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
                   {fieldErrors.giftSendAt}
                 </span>
               ) : null}
+              <TimezonePreview value={giftSendAt} template={copy.sendAtTimezoneHint} />
             </label>
           </fieldset>
         ) : null}

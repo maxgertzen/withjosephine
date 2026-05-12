@@ -22,6 +22,19 @@ export type GiftCardData = {
   responses: SubmissionRecord["responses"];
   recipientEmail: string | null;
   giftSendAt: string | null;
+  /**
+   * Pre-computed rate-limit verdict for the resend-link control. Lives here
+   * rather than on `emailsFired` so the client bundle never sees raw email-
+   * fired entries (which carry Resend message IDs + recipient hints).
+   */
+  resendVerdict?: ResendVerdictSummary;
+};
+
+export type ResendVerdictSummary = {
+  allowed: boolean;
+  reason?: "hour_cap" | "day_cap";
+  /** ISO timestamp when the next resend is allowed. */
+  nextAvailableAt?: string;
 };
 
 /** Client-side action controls for a single GiftCard on /my-gifts. */
@@ -44,6 +57,30 @@ export function GiftCardActions({ gift, status, copy }: Props) {
     return <ResendLinkControl gift={gift} copy={copy} />;
   }
   return null;
+}
+
+/**
+ * Live readout of the chosen send-at instant in the purchaser's browser TZ.
+ * Lives next to the `datetime-local` input so the purchaser can sanity-check
+ * "8pm Thursday" actually means what they think it does after the
+ * UTC-round-trip on submit.
+ */
+function EditSendAtTimezonePreview({ value }: { value: string }) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsed);
+  return (
+    <span aria-live="polite" className="font-body text-[0.7rem] italic text-j-text-muted">
+      Arrives {formatted} in your timezone.
+    </span>
+  );
 }
 
 function editRecipientErrorLabel(code: string | null): string | null {
@@ -155,6 +192,7 @@ function EditRecipientControl({
             {action.fieldErrors.giftSendAt}
           </span>
         ) : null}
+        <EditSendAtTimezonePreview value={giftSendAt} />
       </label>
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
@@ -237,6 +275,28 @@ function resendErrorLabel(code: string | null): string | null {
   return "Couldn’t resend the link. Please try again.";
 }
 
+function formatNextAvailable(iso: string): string {
+  const next = new Date(iso);
+  if (Number.isNaN(next.getTime())) return "shortly";
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(next);
+}
+
+function rateLimitMessageFor(verdict: ResendVerdictSummary | undefined): string | null {
+  if (!verdict || verdict.allowed) return null;
+  const when = verdict.nextAvailableAt ? formatNextAvailable(verdict.nextAvailableAt) : "shortly";
+  if (verdict.reason === "hour_cap") {
+    return `You can resend again at ${when}.`;
+  }
+  if (verdict.reason === "day_cap") {
+    return `You’ve hit today’s limit. Try again at ${when}.`;
+  }
+  return `Try again at ${when}.`;
+}
+
 function ResendLinkControl({
   gift,
   copy,
@@ -246,6 +306,9 @@ function ResendLinkControl({
 }) {
   const router = useRouter();
   const action = useMutationAction(`/api/gifts/${gift._id}/resend-link`);
+  const verdict = gift.resendVerdict;
+  const blocked = Boolean(verdict && !verdict.allowed);
+  const blockedMessage = rateLimitMessageFor(verdict);
 
   async function onClick() {
     const result = await action.run();
@@ -254,9 +317,17 @@ function ResendLinkControl({
 
   return (
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      <Button variant="outlined" size="sm" disabled={action.submitting} onClick={onClick}>
+      <Button
+        variant="outlined"
+        size="sm"
+        disabled={action.submitting || blocked}
+        onClick={onClick}
+      >
         {action.submitting ? "Sending…" : copy.resendLinkCtaLabel}
       </Button>
+      {blockedMessage ? (
+        <p className="font-body text-xs text-j-text-muted italic">{blockedMessage}</p>
+      ) : null}
       <InlineError message={resendErrorLabel(action.topError)} />
     </div>
   );

@@ -523,6 +523,16 @@ export type SanityBookingGiftForm = {
   loadingStateCopy?: string;
   antiAbuseCapHeading?: string;
   antiAbuseCapBody?: string;
+  firstNameRequiredError?: string;
+  emailInvalidError?: string;
+  recipientNameRequiredError?: string;
+  recipientEmailRequiredError?: string;
+  sendAtRequiredError?: string;
+  consentRequiredError?: string;
+  verificationError?: string;
+  genericError?: string;
+  networkError?: string;
+  sendAtTimezoneHint?: string;
 };
 
 export type SanityBookingForm = {

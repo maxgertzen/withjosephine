@@ -166,6 +166,16 @@ export interface BookingGiftFormContent {
   loadingStateCopy: string;
   antiAbuseCapHeading: string;
   antiAbuseCapBody: string;
+  firstNameRequiredError: string;
+  emailInvalidError: string;
+  recipientNameRequiredError: string;
+  recipientEmailRequiredError: string;
+  sendAtRequiredError: string;
+  consentRequiredError: string;
+  verificationError: string;
+  genericError: string;
+  networkError: string;
+  sendAtTimezoneHint: string;
 }
 
 export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
@@ -208,6 +218,16 @@ export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
   antiAbuseCapHeading: "A gentle pause",
   antiAbuseCapBody:
     "There\u2019s already a reading waiting for this person. Give them a quiet moment to open it before sending another.",
+  firstNameRequiredError: "Your first name is required.",
+  emailInvalidError: "Enter a valid email address.",
+  recipientNameRequiredError: "Recipient name is required.",
+  recipientEmailRequiredError: "Enter a valid recipient email.",
+  sendAtRequiredError: "Pick when the gift should arrive.",
+  consentRequiredError: "Required to proceed.",
+  verificationError: "Please complete the verification step and try again.",
+  genericError: "Something went wrong. Please try again.",
+  networkError: "Network problem. Please try again.",
+  sendAtTimezoneHint: "This will arrive {date} in your timezone.",
 };
 
 export interface MyReadingsPageContent {

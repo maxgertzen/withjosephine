@@ -283,6 +283,86 @@ export const bookingGiftForm = defineType({
       initialValue:
         "We're holding a gift for this person already. Please give them a moment to open it before sending another.",
     }),
+
+    // Validation strings (Phase 5 Session 5 — T6.18). Inline field-level
+    // errors shown when the purchaser tries to submit with an empty/invalid
+    // field. Kept in Sanity so Becky can soften phrasing without a deploy.
+    defineField({
+      name: "firstNameRequiredError",
+      title: "Validation — first name required",
+      type: "string",
+      group: "submit",
+      initialValue: "Your first name is required.",
+    }),
+    defineField({
+      name: "emailInvalidError",
+      title: "Validation — purchaser email invalid",
+      type: "string",
+      group: "submit",
+      initialValue: "Enter a valid email address.",
+    }),
+    defineField({
+      name: "recipientNameRequiredError",
+      title: "Validation — recipient name required",
+      type: "string",
+      group: "submit",
+      initialValue: "Recipient name is required.",
+    }),
+    defineField({
+      name: "recipientEmailRequiredError",
+      title: "Validation — recipient email required",
+      type: "string",
+      group: "submit",
+      initialValue: "Enter a valid recipient email.",
+    }),
+    defineField({
+      name: "sendAtRequiredError",
+      title: "Validation — send date required",
+      type: "string",
+      group: "submit",
+      initialValue: "Pick when the gift should arrive.",
+    }),
+    defineField({
+      name: "consentRequiredError",
+      title: "Validation — consent required",
+      type: "string",
+      description:
+        "Shown on each of the 3 consent checkboxes when left unchecked.",
+      group: "submit",
+      initialValue: "Required to proceed.",
+    }),
+    defineField({
+      name: "verificationError",
+      title: "Top-level — Turnstile verification failed",
+      type: "string",
+      group: "submit",
+      initialValue: "Please complete the verification step and try again.",
+    }),
+    defineField({
+      name: "genericError",
+      title: "Top-level — generic submission error",
+      type: "string",
+      group: "submit",
+      initialValue: "Something went wrong. Please try again.",
+    }),
+    defineField({
+      name: "networkError",
+      title: "Top-level — network error",
+      type: "string",
+      group: "submit",
+      initialValue: "Network problem. Please try again.",
+    }),
+
+    // Send-at timezone hint (Phase 5 Session 5 — T6.24).
+    defineField({
+      name: "sendAtTimezoneHint",
+      title: "Send-at — timezone preview prefix",
+      type: "string",
+      group: "sendAt",
+      description:
+        "Prefixes the live preview shown under the date/time picker. Use {date} to substitute the formatted date+time string (e.g. 'This will arrive {date} in your timezone').",
+      initialValue: "This will arrive {date} in your timezone.",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "Booking Gift Form" }),
