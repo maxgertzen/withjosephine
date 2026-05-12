@@ -182,6 +182,27 @@ Closes 4 of the 6 Session 5 deferrals (GIFT_DELIVERY const sweep, AuthGatedPage 
 
 Tests: 1319 / 1319 (+6 new Studio-action unit tests). Typecheck + lint + build all green. `/simplify` 3-vantage sweep + Pentester re-audit run on the combined Session 5+6 diff. No new Sanity migrations required this session.
 
+### Phase 5 Session 7 — perf, refactor, staging verify, Becky guide — SHIPPED 2026-05-12 (`feat/listen-redesign-and-gifting`)
+
+Closes the three /simplify-deferred refactors flagged in PR #86 reviewers (defaults-merge convention drift, `EmailSendResult` discriminated union, `sanity-write-client.mts` helper extraction), publishes a Becky-facing customer-journey smoke-test guide, verifies staging deploy + secrets + D1 migrations, and a magic-string sweep across the env/feature-flag helpers.
+
+- **W1** happy-dom swap — auto-pass; shipped on main in PR #104 / commit `d586e93`. Baseline 1321/1321 tests was already running on happy-dom (~37s env setup).
+- **W2.1** Hero / HowItWorks / Footer / Navigation migrated from `content ?? DEFAULTS` whole-object fallback to `{ ...DEFAULTS, ...content }` spread merge. `FooterContent.logoUrl` widened to `string | null | undefined` so explicit `null` is the typed sentinel for "hide logo". Test updated to cover both omitted-→-default and explicit-null-→-hide. Commit `0bec189`.
+- **W2.2** `EmailSendResult` discriminated union — 4 variants (`sent` / `dry_run` / `skipped` / `failed`). `sendOrSkip` wraps Resend send in try/catch and returns `kind: "failed"`. Contact route switch-dispatches on `kind`; the `isFlagEnabled("RESEND_DRY_RUN")` leak is removed. `sendAndRecord` adapter narrows on `kind === "sent"` before writing the email_fired audit row. Stripe webhook keeps its sentinel-append pattern via new `getResendId(result)` helper. 10 sender exports + 9 test files updated. Commit `0c5036f`.
+- **W2.3** `scripts/_lib/sanity-write-client.mts` helper extracted; all 13 `scripts/migrate-*.{ts,mts}` files migrated. Optional `{ apiVersion, dataset, readOnly }` overrides. `migrate-theme-semantic.ts` env-var standardized from `SANITY_API_TOKEN` → `SANITY_WRITE_TOKEN`. `tsconfig.scripts.json` gained `allowImportingTsExtensions`. Commit `edf4b8f`.
+- **W3** Staging verification — D1 reports "No migrations to apply" (all 9 of 0001–0009 applied to `withjosephine_bookings --env staging`). Wrangler secrets list — 19/21 set; `SANITY_EXPORT_TOKEN` + `SANITY_BACKUP_WEBHOOK_SECRET` not set (flag-gated by `SANITY_BACKUP_ENABLED=0`). CI `deploy-staging` job ✓ on the Session 7 HEAD.
+- **W4** `www/docs/BECKY_SMOKE_TEST_GUIDE.md` (362 lines) — 8 customer journeys: self-purchase booking + listen, self-send gift, scheduled gift, /my-readings repeat customer, /my-gifts (3 sub-flows), contact form, Studio regenerate gift claim, GDPR cascade delete. Each closes with ✅ Passed / ❌ If-it-didn't. Commit `a66122d`.
+- **CI fixes** — Setup action now installs studio deps (`pnpm --dir studio install --no-frozen-lockfile`) so vitest's `studio/**/*.test.{ts,tsx}` include pattern resolves `@sanity/icons`. Closes 5 consecutive failures since Session 6 shipped regenerateGiftClaim.test.ts. Commits `73fe215` + `ef4acc3`.
+- **/simplify follow-ups + magic-string sweep:**
+  - Notification-email guard duplication lifted to `requireNotificationEmail(subType)`.
+  - `EMAIL_LABELS: Record<EmailSubType, string>` added next to `EmailSubType` in `src/lib/analytics/server-events.ts` — single source of truth for human-readable log labels.
+  - `sendOrSkip` collapsed: dropped duplicate `emailKind: string` parameter; takes only typed `subType: EmailSubType` and derives the label.
+  - `isFlagEnabled(name: string)` → `isFlagEnabled(name: FeatureFlag)` — 3-member union of the flags actually used.
+  - `requireEnv(name: string)` / `optionalEnv(name: string)` → typed `EnvVar` union of all 19 env vars used via these helpers.
+  Commits `896fe20` + `dc9991e` + `99f6b46`.
+
+Tests: 1323/1323 (+2 vs baseline 1321 — W2.1 added 1 explicit-null Footer test, contact route gained 1 for the new failed-kind path). Pentester re-audit on W2.2 → GO. Net diff +700 / -300 LOC including the 362-line Becky doc. CI all 5 jobs green on `99f6b46`; staging deploy verified.
+
 ---
 
 ## Pre-launch punch list — DONE
