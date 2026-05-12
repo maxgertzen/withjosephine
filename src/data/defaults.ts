@@ -15,7 +15,7 @@ export const HERO_DEFAULTS: HeroContent = {
 
 export interface FooterContent {
   brandName: string;
-  logoUrl?: string;
+  logoUrl?: string | null;
   copyrightText: string;
 }
 

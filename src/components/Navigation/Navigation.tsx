@@ -37,7 +37,7 @@ type NavigationProps = {
 };
 
 export function Navigation({ content, className }: NavigationProps) {
-  const { navLinks, navCtaText } = content ?? NAV_DEFAULTS;
+  const { navLinks, navCtaText } = { ...NAV_DEFAULTS, ...content };
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);
