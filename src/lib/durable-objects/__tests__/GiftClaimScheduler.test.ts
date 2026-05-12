@@ -26,6 +26,7 @@ function makeStorage(): Storage & {
     get<T = unknown>(key: string): Promise<T | undefined>;
     put<T>(key: string, value: T): Promise<void>;
     setAlarm(ms: number): Promise<void>;
+    deleteAlarm(): Promise<void>;
     deleteAll(): Promise<void>;
   };
 } {
@@ -43,6 +44,9 @@ function makeStorage(): Storage & {
     },
     async setAlarm(ms: number): Promise<void> {
       state.alarmAtMs = ms;
+    },
+    async deleteAlarm(): Promise<void> {
+      state.alarmAtMs = null;
     },
     async deleteAll(): Promise<void> {
       state.deletedAll = true;
@@ -108,6 +112,34 @@ describe("GiftClaimScheduler.fetch — /schedule", () => {
     const req = new Request("https://do/other", { method: "POST", body: "{}" });
     const res = await scheduler.fetch(req);
     expect(res.status).toBe(404);
+  });
+});
+
+describe("GiftClaimScheduler.fetch — /cancel", () => {
+  it("clears alarm and storage", async () => {
+    const storage = makeStorage();
+    await storage.api.put("submissionId", "sub_gift");
+    await storage.api.put("retryCount", 1);
+    await storage.api.setAlarm(1_800_000_000_000);
+
+    const scheduler = new GiftClaimScheduler(makeCtx(storage) as never, ENV as never);
+    const req = new Request("https://do/cancel", { method: "POST", body: "{}" });
+    const res = await scheduler.fetch(req);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ cancelled: true });
+    expect(storage.alarmAtMs).toBeNull();
+    expect(storage.deletedAll).toBe(true);
+    expect(storage.data.size).toBe(0);
+  });
+
+  it("is idempotent when nothing is stored", async () => {
+    const storage = makeStorage();
+    const scheduler = new GiftClaimScheduler(makeCtx(storage) as never, ENV as never);
+    const req = new Request("https://do/cancel", { method: "POST", body: "{}" });
+    const res = await scheduler.fetch(req);
+    expect(res.status).toBe(200);
+    expect(storage.alarmAtMs).toBeNull();
   });
 });
 

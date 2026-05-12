@@ -444,6 +444,119 @@ export async function listSubmissionsByRecipientUserId(
   return rows.map(rowToRecord);
 }
 
+/**
+ * Phase 5 Session 3 — `/my-gifts` page query. Returns every gift submission
+ * the purchaser has ever bought, regardless of status: pre-fire, fired,
+ * claimed, delivered, cancelled. Ordering is newest-first so the most
+ * recent purchase appears at the top.
+ */
+export async function listGiftsByPurchaserUserId(
+  userId: string,
+): Promise<SubmissionRecord[]> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+     WHERE purchaser_user_id = ? AND is_gift = 1
+     ORDER BY created_at DESC
+     LIMIT ${LIST_LIMIT}`,
+    [userId],
+  );
+  return rows.map(rowToRecord);
+}
+
+export type EditGiftRecipientPatch = {
+  recipientEmail?: string;
+  recipientName?: string;
+  giftSendAt?: string | null;
+};
+
+/**
+ * Pre-fire edit. UPDATE guards with `gift_claim_email_fired_at IS NULL`
+ * so a concurrent alarm fire can't be retroactively un-fired. Returns
+ * `false` when the row was either not found, already fired, claimed,
+ * or cancelled — callers translate that into a 409.
+ *
+ * recipient_name lives in `responses_json` (Phase 5 1b lock); the
+ * surrounding submissions wrapper handles that update via the Sanity
+ * mirror, not this raw repo helper. Repo-level edits keep to the
+ * top-level columns.
+ */
+export async function editGiftRecipient(
+  id: string,
+  patch: EditGiftRecipientPatch,
+  existingResponses: SubmissionRecord["responses"],
+): Promise<{ updated: boolean; responses: SubmissionRecord["responses"] }> {
+  const sets: string[] = [];
+  const params: SqlValue[] = [];
+  if (patch.recipientEmail !== undefined) {
+    sets.push("recipient_email = ?");
+    params.push(patch.recipientEmail);
+  }
+  if (patch.giftSendAt !== undefined) {
+    sets.push("gift_send_at = ?");
+    params.push(patch.giftSendAt);
+  }
+  let responses = existingResponses;
+  if (patch.recipientName !== undefined) {
+    responses = upsertResponseField(existingResponses, {
+      fieldKey: "recipient_name",
+      fieldLabelSnapshot: "Recipient name",
+      fieldType: "text",
+      value: patch.recipientName,
+    });
+    sets.push("responses_json = ?");
+    params.push(JSON.stringify(responses));
+  }
+  if (sets.length === 0) return { updated: true, responses };
+  params.push(id);
+  const result = await dbExec(
+    `UPDATE submissions
+        SET ${sets.join(", ")}
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    params,
+  );
+  return { updated: result.rowsWritten > 0, responses };
+}
+
+function upsertResponseField(
+  existing: SubmissionRecord["responses"],
+  entry: SubmissionRecord["responses"][number],
+): SubmissionRecord["responses"] {
+  const index = existing.findIndex((r) => r.fieldKey === entry.fieldKey);
+  if (index === -1) return [...existing, entry];
+  const next = existing.slice();
+  next[index] = { ...next[index], ...entry };
+  return next;
+}
+
+/**
+ * Phase 5 Session 3 — purchaser flips scheduled→self_send.
+ * Writes are pre-fire so the WHERE-guard mirrors `editGiftRecipient`.
+ */
+export async function flipGiftToSelfSend(
+  id: string,
+  args: { tokenHash: string; firedAtIso: string },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_delivery_method = 'self_send',
+            gift_send_at = NULL,
+            gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'scheduled'
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    [args.tokenHash, args.firedAtIso, id],
+  );
+  return result.rowsWritten > 0;
+}
+
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
   const rows = await dbQuery<{ photo_r2_key: string }>(
     `SELECT photo_r2_key FROM submissions WHERE photo_r2_key IS NOT NULL`,

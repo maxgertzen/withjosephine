@@ -10,6 +10,7 @@ import { theme } from "./theme";
 import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
 import { myReadingsPage } from "./myReadingsPage";
+import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
@@ -37,6 +38,7 @@ export const schemaTypes = [
   underConstructionPage,
   notFoundPage,
   myReadingsPage,
+  myGiftsPage,
   magicLinkVerifyPage,
   emailMagicLink,
   emailDay7Delivery,

@@ -128,6 +128,12 @@ export async function mirrorSubmissionPatch(
     giftClaimedAt: string;
     recipientUserId: string;
     art9AcknowledgedAt: string;
+    // Phase 5 Session 3 — purchaser-side edits and self-send flips.
+    recipientEmail: string;
+    giftSendAt: string | null;
+    giftDeliveryMethod: "self_send" | "scheduled";
+    giftClaimTokenHash: string;
+    giftClaimEmailFiredAt: string;
   }>,
 ): Promise<void> {
   const client = getClient();

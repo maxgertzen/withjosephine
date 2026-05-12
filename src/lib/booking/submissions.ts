@@ -26,7 +26,8 @@ export type EmailFiredType =
   | "day14"
   | "abandonment"
   | "gift_purchase_confirmation"
-  | "gift_claim";
+  | "gift_claim"
+  | "gift_resend";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
@@ -233,6 +234,55 @@ export async function listSubmissionsByRecipientUserId(
   userId: string,
 ): Promise<SubmissionRecord[]> {
   return repo.listSubmissionsByRecipientUserId(userId);
+}
+
+export async function listGiftsByPurchaserUserId(
+  userId: string,
+): Promise<SubmissionRecord[]> {
+  return repo.listGiftsByPurchaserUserId(userId);
+}
+
+export type EditGiftRecipientPatch = repo.EditGiftRecipientPatch;
+
+/**
+ * Apply a purchaser-initiated patch to a gift submission. Caller passes the
+ * already-fetched `existing` record so the repo helper doesn't re-issue a
+ * SELECT * just to derive the responses array for the recipient_name upsert.
+ */
+export async function editGiftRecipient(
+  submissionId: string,
+  patch: EditGiftRecipientPatch,
+  existing: SubmissionRecord,
+): Promise<{ updated: boolean }> {
+  const result = await repo.editGiftRecipient(submissionId, patch, existing.responses);
+  if (result.updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        ...(patch.recipientEmail !== undefined ? { recipientEmail: patch.recipientEmail } : {}),
+        ...(patch.giftSendAt !== undefined ? { giftSendAt: patch.giftSendAt } : {}),
+        ...(patch.recipientName !== undefined ? { responses: result.responses } : {}),
+      }),
+    );
+  }
+  return { updated: result.updated };
+}
+
+export async function flipGiftToSelfSend(
+  submissionId: string,
+  args: { tokenHash: string; firedAtIso: string },
+): Promise<boolean> {
+  const updated = await repo.flipGiftToSelfSend(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftDeliveryMethod: "self_send",
+        giftSendAt: null,
+        giftClaimTokenHash: args.tokenHash,
+        giftClaimEmailFiredAt: args.firedAtIso,
+      }),
+    );
+  }
+  return updated;
 }
 
 /**
