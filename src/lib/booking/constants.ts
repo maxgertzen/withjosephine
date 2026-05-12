@@ -20,6 +20,19 @@ export const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
 export const MAX_EMAIL_CHARS = 254;
 
+/**
+ * Gift delivery method codes used at the API + DB layer. Mirror these
+ * exactly when comparing `submission.giftDeliveryMethod`. Importing this
+ * const instead of typing the literal protects against typos at every
+ * `=== "self_send" / "scheduled"` site across the codebase.
+ */
+export const GIFT_DELIVERY = {
+  selfSend: "self_send",
+  scheduled: "scheduled",
+} as const;
+
+export type GiftDeliveryMethod = (typeof GIFT_DELIVERY)[keyof typeof GIFT_DELIVERY];
+
 export const BOOKING_ROUTES = {
   entry: (slug: string) => `/book/${slug}`,
   letter: (slug: string) => `/book/${slug}/letter`,

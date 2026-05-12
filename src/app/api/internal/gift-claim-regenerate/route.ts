@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
+import { sendAndRecord } from "@/lib/booking/sendAndRecord";
 import {
   appendEmailFired,
   findSubmissionById,
@@ -81,18 +82,24 @@ export async function POST(request: Request): Promise<Response> {
   // the prior valid token when Resend is unavailable (dry-run / missing key /
   // network throw): the old hash is overwritten, gift_claim_email_fired_at
   // advances, and no replacement email reaches the customer.
-  const result = await sendGiftClaimEmail({
+  const sendResult = await sendAndRecord({
     submissionId: submission._id,
-    recipientEmail: targetEmail,
-    recipientName: recipientNameFor(submission),
-    purchaserFirstName: purchaserFirstNameFor(submission),
-    readingName: submission.reading?.name ?? "reading",
-    giftMessage: submission.giftMessage ?? null,
-    variant: "first_send",
-    claimUrl,
+    type: "gift_claim",
+    nowIso,
+    send: () =>
+      sendGiftClaimEmail({
+        submissionId: submission._id,
+        recipientEmail: targetEmail,
+        recipientName: recipientNameFor(submission),
+        purchaserFirstName: purchaserFirstNameFor(submission),
+        readingName: submission.reading?.name ?? "reading",
+        giftMessage: submission.giftMessage ?? null,
+        variant: "first_send",
+        claimUrl,
+      }),
   });
 
-  if (result.resendId === null) {
+  if (sendResult.resendId === null) {
     return NextResponse.json(
       {
         outcome: "send_failed",
@@ -105,18 +112,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   await markGiftClaimSent(submission._id, tokenHash, nowIso);
-  await appendEmailFired(submission._id, {
-    type: "gift_claim",
-    sentAt: nowIso,
-    resendId: result.resendId,
-  });
   // Phase 5 Session 4b — B5.17. Separate audit entry powers the cooldown
   // walk above without overloading the semantics of the `gift_claim`
-  // entry that an automated dispatch path also writes.
+  // entry that sendAndRecord just wrote.
   await appendEmailFired(submission._id, {
     type: "gift_claim_regenerate",
     sentAt: nowIso,
-    resendId: result.resendId,
+    resendId: sendResult.resendId,
   });
 
   return NextResponse.json({

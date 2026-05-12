@@ -5,8 +5,8 @@ import {
   type DeliverableSubmission,
   fetchDeliverableSubmissions,
 } from "@/lib/booking/persistence/sanityDelivery";
+import { sendAndRecord } from "@/lib/booking/sendAndRecord";
 import {
-  appendEmailFired,
   buildSubmissionContext,
   listPaidSubmissionsForEmail,
   markSubmissionDelivered,
@@ -42,15 +42,12 @@ async function deliverOne(
 
   const listenUrl = `${SITE_ORIGIN}/listen/${refreshed._id}`;
   const context = buildSubmissionContext(refreshed);
-  const result = await sendDay7Delivery(context, listenUrl);
-  if (!result.resendId) return "skipped";
-
-  await appendEmailFired(refreshed._id, {
+  const sendResult = await sendAndRecord({
+    submissionId: refreshed._id,
     type: "day7",
-    sentAt: new Date().toISOString(),
-    resendId: result.resendId,
+    send: () => sendDay7Delivery(context, listenUrl),
   });
-  return "sent";
+  return sendResult.appended ? "sent" : "skipped";
 }
 
 async function runCron(): Promise<{

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
+import { sendAndRecord } from "@/lib/booking/sendAndRecord";
 import {
-  appendEmailFired,
   buildSubmissionContext,
   listPaidSubmissionsForEmail,
   type SubmissionRecord,
@@ -15,14 +15,12 @@ const MS_PER_HOUR = 60 * 60 * 1000;
 async function processOne(submission: SubmissionRecord): Promise<"sent" | "skipped"> {
   if (submission.status !== "paid") return "skipped";
   const context = buildSubmissionContext(submission);
-  const result = await sendDay2Started(context);
-  if (!result.resendId) return "skipped";
-  await appendEmailFired(submission._id, {
+  const result = await sendAndRecord({
+    submissionId: submission._id,
     type: "day2",
-    sentAt: new Date().toISOString(),
-    resendId: result.resendId,
+    send: () => sendDay2Started(context),
   });
-  return "sent";
+  return result.appended ? "sent" : "skipped";
 }
 
 async function runCron(): Promise<{ processed: number; sent: number; skipped: number }> {

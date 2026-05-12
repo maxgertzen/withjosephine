@@ -10,7 +10,8 @@ import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { sendGiftClaimEmail } from "@/lib/resend";
 
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
-import { appendEmailFired, findSubmissionById, markGiftClaimSent } from "./submissions";
+import { sendAndRecord } from "./sendAndRecord";
+import { findSubmissionById, markGiftClaimSent } from "./submissions";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -85,46 +86,46 @@ export async function dispatchGiftClaim(
 
   if (isFirstSend) {
     const { tokenHash, claimUrl } = await issueGiftClaimToken();
-    const result = await sendGiftClaimEmail({
+    // Side-effecting send path: markGiftClaimSent must AND-pair with the
+    // emails_fired entry, so the helper's standard append-on-success
+    // wrapping isn't quite enough — we keep both calls inside the same
+    // `if (resendId)` block. sendAndRecord still owns the append.
+    const sendResult = await sendAndRecord({
       submissionId: submission._id,
-      recipientEmail,
-      recipientName,
-      purchaserFirstName,
-      readingName,
-      giftMessage,
-      variant: "first_send",
-      claimUrl,
+      type: "gift_claim",
+      nowIso,
+      send: () =>
+        sendGiftClaimEmail({
+          submissionId: submission._id,
+          recipientEmail,
+          recipientName,
+          purchaserFirstName,
+          readingName,
+          giftMessage,
+          variant: "first_send",
+          claimUrl,
+        }),
     });
-
-    if (result.resendId !== null) {
+    if (sendResult.appended) {
       await markGiftClaimSent(submission._id, tokenHash, nowIso);
-      await appendEmailFired(submission._id, {
-        type: "gift_claim",
-        sentAt: nowIso,
-        resendId: result.resendId,
-      });
     }
-
     return { outcome: "first_send", nextAlarmMs: input.nowMs + SEVEN_DAYS_MS };
   }
 
-  const result = await sendGiftClaimEmail({
+  await sendAndRecord({
     submissionId: submission._id,
-    recipientEmail,
-    recipientName,
-    purchaserFirstName,
-    readingName,
-    giftMessage,
-    variant: "reminder",
+    type: "gift_claim",
+    nowIso,
+    send: () =>
+      sendGiftClaimEmail({
+        submissionId: submission._id,
+        recipientEmail,
+        recipientName,
+        purchaserFirstName,
+        readingName,
+        giftMessage,
+        variant: "reminder",
+      }),
   });
-
-  if (result.resendId !== null) {
-    await appendEmailFired(submission._id, {
-      type: "gift_claim",
-      sentAt: nowIso,
-      resendId: result.resendId,
-    });
-  }
-
   return { outcome: "reminder", nextAlarmMs: input.nowMs + SEVEN_DAYS_MS };
 }
