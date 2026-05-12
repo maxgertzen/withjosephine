@@ -39,7 +39,7 @@ import "server-only";
  *  - Each step is wrapped in try/catch — partial failures accumulate into
  *    `partialFailures: string[]` and the cascade continues. The customer's
  *    "active systems" are scrubbed even if a single vendor call fails;
- *    the partial-failure list is what Becky chases.
+ *    the operator follows up on entries in the partial-failure list.
  *
  * Order (correctness-critical):
  *  Per submission:

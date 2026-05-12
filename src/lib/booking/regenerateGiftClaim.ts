@@ -1,12 +1,13 @@
-import { sendGiftClaimEmail } from "../resend";
+import { redactEmail, sendGiftClaimEmail } from "../resend";
 import { GIFT_DELIVERY } from "./constants";
 import { issueGiftClaimToken } from "./giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
+import type { GiftDeliveryMethod } from "./persistence/repository";
 import { sendAndRecord } from "./sendAndRecord";
 import { appendEmailFired, findSubmissionById, markGiftClaimSent } from "./submissions";
 
 export type RegenerateGiftClaimOutcome =
-  | { ok: true; deliveryMethod: "self_send" | "scheduled"; targetEmailRedacted: string }
+  | { ok: true; deliveryMethod: GiftDeliveryMethod; targetEmailRedacted: string }
   | {
       ok: false;
       reason:
@@ -17,15 +18,11 @@ export type RegenerateGiftClaimOutcome =
         | "cooldown"
         | "missing_target_email"
         | "send_failed";
-      deliveryMethod?: "self_send" | "scheduled";
+      deliveryMethod?: GiftDeliveryMethod;
       targetEmailRedacted?: string;
     };
 
 const COOLDOWN_MS = 5 * 60 * 1000;
-
-function redactEmail(email: string): string {
-  return email.replace(/(^.)([^@]+)(?=@)/, "$1***");
-}
 
 export async function regenerateGiftClaim(submissionId: string): Promise<RegenerateGiftClaimOutcome> {
   const submission = await findSubmissionById(submissionId);

@@ -18,6 +18,7 @@ vi.mock("@/lib/booking/submissions", async () => {
 
 vi.mock("@/lib/resend", () => ({
   sendGiftClaimEmail: vi.fn(),
+  redactEmail: (address: string) => address.replace(/(^.)([^@]+)(?=@)/, "$1***"),
 }));
 
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";

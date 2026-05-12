@@ -13,14 +13,8 @@ import { emailTailwindConfig } from "./theme.config";
 export type EmailShellProps = {
   preview?: string;
   maxWidth?: number;
-  /**
-   * When true, EmailShell renders only Html/Head/Preview/Tailwind/Body and the
-   * consumer renders its own `<Container>`. Used by templates whose card
-   * styling diverges from the generic 560px shell (the cream-card 600px gift
-   * and order-confirmation templates).
-   */
+  /** When true, skip the wrapping Container so the consumer can render its own. */
   bareContainer?: boolean;
-  /** Body className override. Bareshell consumers use a lighter background. */
   bodyClassName?: string;
   children: ReactNode;
 };

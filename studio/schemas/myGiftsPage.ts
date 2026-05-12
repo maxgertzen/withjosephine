@@ -149,7 +149,6 @@ export const myGiftsPage = defineType({
         "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
     }),
 
-    // Edit-recipient drawer + per-action copy. Becky-editable without a deploy.
     defineField({
       name: "editRecipientFormTitle",
       title: "Edit recipient drawer — heading",

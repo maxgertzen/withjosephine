@@ -13,12 +13,8 @@ import { sendDay7OverdueAlert } from "@/lib/resend";
 const DAYS_PAST_PAID = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * Asks Sanity which of the D1 alert candidates are still undelivered, rather
- * than reading D1's `delivered_at` (which lags Sanity by up to a cron interval
- * and would alert prematurely between Becky setting `deliveredAt` and the
- * delivery cron mirroring it down).
- */
+// Sanity-not-D1 read prevents premature alerts during the lag window between
+// Studio setting deliveredAt and the delivery cron mirroring it down.
 
 async function alertOne(submission: SubmissionRecord): Promise<"alerted" | "skipped"> {
   if (submission.status !== "paid") return "skipped";
