@@ -323,6 +323,26 @@ export async function markGiftClaimSent(
   await repo.markGiftClaimSent(submissionId, tokenHash, firedAtIso);
 }
 
+/**
+ * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
+ * Pseudonymises a purchaser-owned gift submission whose recipient has
+ * already claimed. See `repo.pseudonymisePurchaserGift` for full semantics.
+ */
+export async function pseudonymisePurchaserGift(
+  submission: Pick<SubmissionRecord, "_id" | "responses">,
+): Promise<void> {
+  await repo.pseudonymisePurchaserGift(submission._id, submission.responses);
+  runMirror(
+    mirrorSubmissionPatch(submission._id, {
+      purchaserUserId: null,
+      email: "",
+      responses: submission.responses.filter(
+        (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
+      ),
+    }),
+  );
+}
+
 export async function deleteSubmissionAndPhoto(
   submission: Pick<SubmissionRecord, "_id" | "photoR2Key">,
 ): Promise<{ photoDeleted: boolean }> {

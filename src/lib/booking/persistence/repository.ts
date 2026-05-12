@@ -346,6 +346,37 @@ export async function deleteSubmission(id: string): Promise<void> {
   await dbExec(`DELETE FROM submissions WHERE id = ?`, [id]);
 }
 
+/**
+ * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
+ *
+ * Purchaser-owned gift submissions where the recipient is a distinct user
+ * who has already claimed: pseudonymise — the recipient holds contract-base
+ * Art. 6(1)(b) data that must survive the purchaser's erasure. We NULL the
+ * purchaser identifiers (`purchaser_user_id`, top-level `email`) and scrub
+ * `purchaser_first_name` from `responses_json`. We keep the gift fields
+ * (`gift_claim_token_hash`, `gift_claimed_at`, `recipient_user_id`, etc.)
+ * so the recipient's claim/listen path remains intact.
+ *
+ * Caller passes the existing `responses` so we don't re-issue a SELECT just
+ * to derive the scrubbed array.
+ */
+export async function pseudonymisePurchaserGift(
+  id: string,
+  existingResponses: SubmissionRecord["responses"],
+): Promise<void> {
+  const scrubbed = existingResponses.filter(
+    (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
+  );
+  await dbExec(
+    `UPDATE submissions
+        SET purchaser_user_id = NULL,
+            email = '',
+            responses_json = ?
+      WHERE id = ?`,
+    [JSON.stringify(scrubbed), id],
+  );
+}
+
 export type FinancialRecordInput = {
   submissionId: string;
   userId: string | null;

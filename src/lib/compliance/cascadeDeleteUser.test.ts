@@ -7,7 +7,9 @@ vi.mock("../auth/users", () => ({
 
 vi.mock("../booking/submissions", () => ({
   listSubmissionsByRecipientUserId: vi.fn(),
+  listGiftsByPurchaserUserId: vi.fn(),
   deleteSubmissionAndPhoto: vi.fn(),
+  pseudonymisePurchaserGift: vi.fn(),
 }));
 
 vi.mock("../sanity/client", () => ({
@@ -35,7 +37,9 @@ import { findUserById } from "../auth/users";
 import { dbQuery } from "../booking/persistence/sqlClient";
 import {
   deleteSubmissionAndPhoto,
+  listGiftsByPurchaserUserId,
   listSubmissionsByRecipientUserId,
+  pseudonymisePurchaserGift,
 } from "../booking/submissions";
 import { getSanityWriteClient } from "../sanity/client";
 import { retrieveCheckoutSession } from "../stripe";
@@ -46,6 +50,8 @@ import { createStripeRedactionJob } from "./vendors/stripeRedaction";
 
 const mockFindUser = vi.mocked(findUserById);
 const mockListSubs = vi.mocked(listSubmissionsByRecipientUserId);
+const mockListGifts = vi.mocked(listGiftsByPurchaserUserId);
+const mockPseudonymise = vi.mocked(pseudonymisePurchaserGift);
 const mockDeleteR2 = vi.mocked(deleteSubmissionAndPhoto);
 const mockGetSanity = vi.mocked(getSanityWriteClient);
 const mockStripeSession = vi.mocked(retrieveCheckoutSession);
@@ -65,6 +71,8 @@ beforeEach(() => {
 
   mockFindUser.mockReset();
   mockListSubs.mockReset();
+  mockListGifts.mockReset().mockResolvedValue([]);
+  mockPseudonymise.mockReset().mockResolvedValue(undefined);
   mockDeleteR2.mockReset().mockResolvedValue({ photoDeleted: true });
   mockGetSanity.mockReset();
   mockStripeSession.mockReset();
@@ -281,6 +289,111 @@ describe("wasUserDeleted", () => {
     expect(await wasUserDeleted("user_a")).toBe(false);
     await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
     expect(await wasUserDeleted("user_a")).toBe(true);
+  });
+});
+
+describe("cascadeDeleteUser — LB-4 purchaser walk (Phase 5 Session 4b)", () => {
+  const GIFT_PURCHASE_BASE = {
+    ...SUBMISSION_BASE,
+    _id: "gift_1",
+    isGift: true,
+    purchaserUserId: "user_a",
+    photoR2Key: undefined,
+    stripeSessionId: "cs_gift_1",
+    responses: [
+      {
+        fieldKey: "purchaser_first_name",
+        fieldLabelSnapshot: "Your first name",
+        fieldType: "text",
+        value: "Ada",
+      },
+      {
+        fieldKey: "recipient_name",
+        fieldLabelSnapshot: "Recipient name",
+        fieldType: "text",
+        value: "Belinda",
+      },
+    ],
+  };
+
+  it("pseudonymises a claimed gift where recipient is a distinct user", async () => {
+    happyPathMocks();
+    mockListSubs.mockResolvedValueOnce([]); // user_a is the purchaser, not the recipient
+    mockListGifts.mockResolvedValueOnce([
+      {
+        ...GIFT_PURCHASE_BASE,
+        recipientUserId: "user_b", // distinct from purchaser
+        giftClaimedAt: "2026-05-01T10:00:00Z",
+      },
+    ]);
+
+    const result = await cascadeDeleteUser("user_a", {
+      performedBy: "admin@withjosephine.com",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockPseudonymise).toHaveBeenCalledWith({
+      _id: "gift_1",
+      responses: GIFT_PURCHASE_BASE.responses,
+    });
+    // gift row NOT deleted — recipient's claim path must survive
+    expect(mockDeleteR2).not.toHaveBeenCalledWith(
+      expect.objectContaining({ _id: "gift_1" }),
+    );
+  });
+
+  it("fully deletes an unclaimed gift (recipient_user_id IS NULL)", async () => {
+    happyPathMocks();
+    mockListSubs.mockResolvedValueOnce([]);
+    mockListGifts.mockResolvedValueOnce([
+      {
+        ...GIFT_PURCHASE_BASE,
+        recipientUserId: null, // not yet claimed
+      },
+    ]);
+
+    const result = await cascadeDeleteUser("user_a", {
+      performedBy: "admin@withjosephine.com",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockPseudonymise).not.toHaveBeenCalled();
+    expect(mockDeleteR2).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: "gift_1" }),
+    );
+  });
+
+  it("skips purchaser-walk rows already handled by the recipient walk (self-purchase)", async () => {
+    happyPathMocks();
+    // recipient walk surfaces the self-purchase
+    mockListSubs.mockResolvedValueOnce([
+      { ...GIFT_PURCHASE_BASE, recipientUserId: "user_a" },
+    ]);
+    // purchaser walk surfaces the same row
+    mockListGifts.mockResolvedValueOnce([
+      { ...GIFT_PURCHASE_BASE, recipientUserId: "user_a" },
+    ]);
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    // Pseudonymise must NOT be called for the row already deleted by recipient walk.
+    expect(mockPseudonymise).not.toHaveBeenCalled();
+    // deleteSubmissionAndPhoto called ONCE (the recipient walk).
+    expect(mockDeleteR2).toHaveBeenCalledTimes(1);
+  });
+
+  it("includes purchaser-walk submission ids in the audit log", async () => {
+    happyPathMocks();
+    mockListSubs.mockResolvedValueOnce([]);
+    mockListGifts.mockResolvedValueOnce([
+      { ...GIFT_PURCHASE_BASE, recipientUserId: "user_b" },
+    ]);
+
+    const result = await cascadeDeleteUser("user_a", {
+      performedBy: "admin@withjosephine.com",
+    });
+
+    expect(result.submissionIds).toContain("gift_1");
   });
 });
 
