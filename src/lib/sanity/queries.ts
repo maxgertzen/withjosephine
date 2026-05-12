@@ -174,7 +174,21 @@ export const myGiftsPageQuery = groq`
     editRecipientCtaLabel,
     flipToSelfSendCtaLabel,
     resendLinkCtaLabel,
-    privacyNote
+    privacyNote,
+    editRecipientFormTitle,
+    editRecipientFormRecipientNameLabel,
+    editRecipientFormRecipientEmailLabel,
+    editRecipientFormSendAtLabel,
+    editRecipientSaveButtonLabel,
+    editRecipientSavingLabel,
+    editRecipientCancelButtonLabel,
+    flipConfirmCtaLabel,
+    flipSwitchingLabel,
+    resendSendingLabel,
+    resendThrottledMessage,
+    actionGenericError,
+    actionNetworkError,
+    actionClosedError
   }
 `;
 

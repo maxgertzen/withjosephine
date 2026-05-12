@@ -83,11 +83,14 @@ function EditSendAtTimezonePreview({ value }: { value: string }) {
   );
 }
 
-function editRecipientErrorLabel(code: string | null): string | null {
+function editRecipientErrorLabel(
+  code: string | null,
+  copy: MyGiftsPageContent,
+): string | null {
   if (!code) return null;
-  if (code === "network") return "Network problem. Please try again.";
-  if (code === "http_409") return "This gift can’t be edited anymore.";
-  return "Couldn’t save those changes. Please try again.";
+  if (code === "network") return copy.actionNetworkError;
+  if (code === "http_409") return copy.actionClosedError;
+  return copy.actionGenericError;
 }
 
 function EditRecipientControl({
@@ -141,7 +144,7 @@ function EditRecipientControl({
 
   const sendAtInputId = `gift-${gift._id}-send-at`;
   const headingId = `gift-${gift._id}-edit-heading`;
-  const topError = unchangedError ?? editRecipientErrorLabel(action.topError);
+  const topError = unchangedError ?? editRecipientErrorLabel(action.topError, copy);
   return (
     <form
       onSubmit={onSubmit}
@@ -152,13 +155,13 @@ function EditRecipientControl({
         id={headingId}
         className="font-display italic text-base text-j-text-heading"
       >
-        Edit recipient
+        {copy.editRecipientFormTitle}
       </h3>
       <Input
         id={`gift-${gift._id}-recipient-name`}
         name="recipientName"
         type="text"
-        label="Recipient name"
+        label={copy.editRecipientFormRecipientNameLabel}
         value={recipientName}
         onChange={setRecipientName}
         error={action.fieldErrors.recipientName}
@@ -168,14 +171,14 @@ function EditRecipientControl({
         id={`gift-${gift._id}-recipient-email`}
         name="recipientEmail"
         type="email"
-        label="Recipient email"
+        label={copy.editRecipientFormRecipientEmailLabel}
         value={recipientEmail}
         onChange={setRecipientEmail}
         error={action.fieldErrors.recipientEmail}
         autoComplete="off"
       />
       <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
-        <span className="font-body text-xs text-j-text-muted">Send at</span>
+        <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
         <input
           id={sendAtInputId}
           type="datetime-local"
@@ -207,10 +210,10 @@ function EditRecipientControl({
           }}
           disabled={action.submitting}
         >
-          Cancel
+          {copy.editRecipientCancelButtonLabel}
         </Button>
         <Button type="submit" variant="primary" size="sm" disabled={action.submitting}>
-          {action.submitting ? "Saving…" : "Save changes"}
+          {action.submitting ? copy.editRecipientSavingLabel : copy.editRecipientSaveButtonLabel}
         </Button>
       </div>
     </form>
@@ -219,10 +222,13 @@ function EditRecipientControl({
 
 const ARM_RESET_MS = 5000;
 
-function flipToSelfSendErrorLabel(code: string | null): string | null {
+function flipToSelfSendErrorLabel(
+  code: string | null,
+  copy: MyGiftsPageContent,
+): string | null {
   if (!code) return null;
-  if (code === "network") return "Network problem. Please try again.";
-  return "Couldn’t switch this gift. Please try again.";
+  if (code === "network") return copy.actionNetworkError;
+  return copy.actionGenericError;
 }
 
 function FlipToSelfSendControl({
@@ -255,24 +261,26 @@ function FlipToSelfSendControl({
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
       {armed ? (
         <Button variant="primary" size="sm" disabled={action.submitting} onClick={onConfirm}>
-          {action.submitting ? "Switching…" : "Tap again to confirm"}
+          {action.submitting ? copy.flipSwitchingLabel : copy.flipConfirmCtaLabel}
         </Button>
       ) : (
         <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
           {copy.flipToSelfSendCtaLabel}
         </Button>
       )}
-      <InlineError message={flipToSelfSendErrorLabel(action.topError)} />
+      <InlineError message={flipToSelfSendErrorLabel(action.topError, copy)} />
     </div>
   );
 }
 
-function resendErrorLabel(code: string | null): string | null {
+function resendErrorLabel(
+  code: string | null,
+  copy: MyGiftsPageContent,
+): string | null {
   if (!code) return null;
-  if (code === "rate_limited")
-    return "You’ve already resent this recently. Try again in a little while.";
-  if (code === "network") return "Network problem. Please try again.";
-  return "Couldn’t resend the link. Please try again.";
+  if (code === "rate_limited") return copy.resendThrottledMessage;
+  if (code === "network") return copy.actionNetworkError;
+  return copy.actionGenericError;
 }
 
 function formatNextAvailable(iso: string): string {
@@ -323,12 +331,12 @@ function ResendLinkControl({
         disabled={action.submitting || blocked}
         onClick={onClick}
       >
-        {action.submitting ? "Sending…" : copy.resendLinkCtaLabel}
+        {action.submitting ? copy.resendSendingLabel : copy.resendLinkCtaLabel}
       </Button>
       {blockedMessage ? (
         <p className="font-body text-xs text-j-text-muted italic">{blockedMessage}</p>
       ) : null}
-      <InlineError message={resendErrorLabel(action.topError)} />
+      <InlineError message={resendErrorLabel(action.topError, copy)} />
     </div>
   );
 }

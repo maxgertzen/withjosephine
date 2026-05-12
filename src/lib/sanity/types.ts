@@ -126,6 +126,20 @@ export type SanityMyGiftsPage = {
   flipToSelfSendCtaLabel: string;
   resendLinkCtaLabel: string;
   privacyNote: string;
+  editRecipientFormTitle?: string;
+  editRecipientFormRecipientNameLabel?: string;
+  editRecipientFormRecipientEmailLabel?: string;
+  editRecipientFormSendAtLabel?: string;
+  editRecipientSaveButtonLabel?: string;
+  editRecipientSavingLabel?: string;
+  editRecipientCancelButtonLabel?: string;
+  flipConfirmCtaLabel?: string;
+  flipSwitchingLabel?: string;
+  resendSendingLabel?: string;
+  resendThrottledMessage?: string;
+  actionGenericError?: string;
+  actionNetworkError?: string;
+  actionClosedError?: string;
 };
 
 export type SanityGiftClaimPage = {

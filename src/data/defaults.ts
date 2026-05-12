@@ -285,6 +285,20 @@ export interface MyGiftsPageContent {
   flipToSelfSendCtaLabel: string;
   resendLinkCtaLabel: string;
   privacyNote: string;
+  editRecipientFormTitle: string;
+  editRecipientFormRecipientNameLabel: string;
+  editRecipientFormRecipientEmailLabel: string;
+  editRecipientFormSendAtLabel: string;
+  editRecipientSaveButtonLabel: string;
+  editRecipientSavingLabel: string;
+  editRecipientCancelButtonLabel: string;
+  flipConfirmCtaLabel: string;
+  flipSwitchingLabel: string;
+  resendSendingLabel: string;
+  resendThrottledMessage: string;
+  actionGenericError: string;
+  actionNetworkError: string;
+  actionClosedError: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -313,6 +327,21 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   resendLinkCtaLabel: "Resend the link to me",
   privacyNote:
     "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
+  editRecipientFormTitle: "Edit recipient",
+  editRecipientFormRecipientNameLabel: "Recipient name",
+  editRecipientFormRecipientEmailLabel: "Recipient email",
+  editRecipientFormSendAtLabel: "Send at",
+  editRecipientSaveButtonLabel: "Save changes",
+  editRecipientSavingLabel: "Saving…",
+  editRecipientCancelButtonLabel: "Cancel",
+  flipConfirmCtaLabel: "Tap again to confirm",
+  flipSwitchingLabel: "Switching…",
+  resendSendingLabel: "Sending…",
+  resendThrottledMessage:
+    "You’ve already resent this recently. Try again in a little while.",
+  actionGenericError: "Something went wrong. Please try again.",
+  actionNetworkError: "Network problem. Please try again.",
+  actionClosedError: "This gift can’t be edited anymore.",
 };
 
 export interface GiftClaimPageContent {
