@@ -219,24 +219,52 @@ Architecture pivoted at session start: Max picked Durable Object alarms over the
 
 Purchaser self-service surface (`/my-gifts`) + 3 mutation routes (`edit-recipient`, `cancel-auto-send`, `resend-link`) + DO `/cancel` endpoint. Magic-link `listenSession` reused for purchaser scope (authorized via `purchaser_user_id`). See `www/MEMORY/WORK/20260512-130515_phase5-session-3-my-gifts/PRD.md` for the 61 atomic ISC + /simplify + Pentester verification blocks. 1248 / 1248 tests green; no new secrets, no D1 migration.
 
+### Phase 5 — Session 4b — SHIPPED 2026-05-12 (PR #109, squash `0ad4bb2` on `feat/listen-redesign-and-gifting`)
+
+Stripe live-mode blocker sweep + every new Pentester finding + every Session-3 corroborated Pentester deferral. Self-review audit (`SELF_REVIEW.md`) walked Session 4 ship-claims vs reality; 18/25 ✅, 5 partial, 2 missed → 13 GAPs surfaced. Of those: GAPs 1, 2, 4, 5, 6, 7, 12 SHIPPED inline; GAPs 8, 9, 13 absorbed by other tranches; GAPs 3, 10, 11 deferred (3 = T7 carry-over copy work; 10, 11 = production-signal-required, see below).
+
+**Shipped (T1–T3 of the original Session 4b plan):**
+- ✅ **LB-3 anti-abuse cap claim-time re-check** (commit `88a7043`) — closes self_send mode bypass
+- ✅ **LB-4 GDPR Art. 17 cascade purchaser walk** (commit `7ada206`) — pseudonymise-vs-delete branching for purchaser-owned gifts
+- ✅ **LB-6 + GAP-1/2/12 GiftForm + GiftCardActions a11y bundle** (commit `c4e41fc`) — WCAG 3.3.1 + 4.1.2
+- ✅ **B5.14–B5.19 + B7.26** (commits `29b7e71`, `8c0f690`) — every new Session-4 Pentester finding: idempotency, prefilled_email drop, constant-time tokens, regenerate cooldown, metadata canary, logging discipline, {tag} sanitisation
+- ✅ **B6.20–B6.23** (commits `0c8a854`, `579a7d6`, `c3a9dc3`, `8c0f690`) — every Session-3 corroborated Pentester deferral: resend-link TOCTOU atomic lock, cancel-auto-send atomic-flip-first, GiftCardData narrow projection, 401/404 timing parity
+- ✅ **Audit-surfaced GAPs 4, 5, 6, 7** (commits `486e87e`, prior `88a7043`) — ZWSP JSDoc, MAX_EMAIL_CHARS hoist, purchaserEmail length cap (Pentester LOW-3 parity miss), booking-route email handling
+- ✅ **Ship-as-decision: B8.29 IntakeForm mode prop + B8.33 isDefaultNext helper** (commit `ef78869`) — inline JSDoc replaces a "defer-with-trigger" entry
+
+**Tests: 1272 → 1304** (32 new). Typecheck + lint + build + CI all green at merge.
+
+**Migration:** `0009_gift_resend_lock.sql` (additive: adds `gift_resend_lock_until INTEGER` column to `submissions`).
+- ✅ Applied to **staging** D1 2026-05-12 (alongside catch-up of 0005–0008 which were also pending on staging).
+- ⏸ **NOT applied to production** — production main is at PR #89, which doesn't use any of these columns. Production migration is gated on the eventual `feat/listen-redesign-and-gifting` → `main` merge.
+
+**Carry-over** (T4–T8 sections below) cluster naturally as a "Session 5 — polish + refactor" PR.
+
+### Phase 5 — Session 4b — production-signal-required follow-ups (NEW, legitimate defer-with-trigger)
+
+Items surfaced during Session 4b self-review that genuinely depend on production signal — NOT context-cap deferrals.
+
+- **GAP-10 — Partial-intake recovery for gift recipients.** Recipient who fills 7-of-10 intake fields and closes the browser loses everything. Booking form has localStorage save/resume; gift intake doesn't. **Trigger:** first "lost my answers" customer-support ticket. **Fix path:** localStorage save/resume keyed by claim-token-hash.
+- **GAP-11 — Copywriter pass on Studio field descriptions.** The Session 4 council's Copywriter persona surfaced 8+ Becky-friendly description rewrites in `studio/schemas/*.ts` that weren't shipped. **Trigger:** Becky onboarding kickoff (she actually opens Studio and gets confused by a description). **Fix path:** one focused pass on description fields across the customer-emails schemas.
+
 ### Phase 5 — Session 3 — deferred follow-ups (status after Session 4 review)
 
-- ~~**MEDIUM-1 — `/api/gifts/[id]/resend-link` rate-limit TOCTOU.**~~ Re-corroborated by Session 4 Pentester; **still deferred** with same rationale. Trigger unchanged: abuse report OR sustained gift_resend volume >10/purchaser/day.
-- ~~**LOW-1 — `cancel-auto-send` pre-cancel alarm race.**~~ Re-corroborated by Session 4 Pentester; **still deferred**. Trigger: any "recipient got email after I cancelled" report.
+- ✅ **MEDIUM-1 — `/api/gifts/[id]/resend-link` rate-limit TOCTOU.** **SHIPPED in Session 4b** (PR #109, commit `0c8a854`). New `gift_resend_lock_until` column (migration `0009_gift_resend_lock.sql`); `acquireGiftResendLock` / `releaseGiftResendLock` repo helpers; route uses try/finally with 60s TTL lock. Concurrent-request race test green.
+- ✅ **LOW-1 — `cancel-auto-send` pre-cancel alarm race.** **SHIPPED in Session 4b** (PR #109, commit `579a7d6`). Atomic-flip-first redesign: conditional D1 UPDATE with placeholder hash WHERE `gift_claim_email_fired_at IS NULL` (0 rows → 409); cancel DO alarm (idempotent); issue fresh token; send purchaser self-send-confirmation email; final UPDATE swaps placeholder for real hash. Closes the millisecond race.
 - ✅ **LOW-2 — `edit-recipient` own-email check plus-aliasing + Unicode bypass.** **SHIPPED in Session 4** (PR `feat/phase-5-session-4-review`). New `ownEmailKey()` helper in `src/lib/booking/emailNormalize.ts` does NFKC + plus-strip; used in both `gift/route.ts` purchaser-vs-recipient check AND `edit-recipient/route.ts`. Unit tests at `src/lib/booking/__tests__/emailNormalize.test.ts`. Route tests cover the bypass case in both routes.
-- ✅ **LOW-3 — `recipientEmail` length cap missing.** **SHIPPED in Session 4**. `MAX_EMAIL_CHARS = 254` (RFC 5321) added to `gift/route.ts` + `edit-recipient/route.ts`. Test coverage in both route test files.
-- ~~**LOW-4 — `listGiftsByPurchaserUserId` returns `SELECT *` to a Server Component.**~~ Still deferred; trigger unchanged ("use client" boundary added downstream of MyGiftsView).
-- ~~**INFO-1 — 401 vs 404 timing differential.**~~ Still deferred; informational only.
+- ✅ **LOW-3 — `recipientEmail` length cap missing.** **SHIPPED in Session 4**. `MAX_EMAIL_CHARS = 254` (RFC 5321) added to `gift/route.ts` + `edit-recipient/route.ts`. Test coverage in both route test files. (Session 4b GAP-6 extended this to `purchaserEmail` too, closing the audit-surfaced Pentester miss.)
+- ✅ **LOW-4 — `listGiftsByPurchaserUserId` returns `SELECT *` to a Server Component.** **SHIPPED in Session 4b** (PR #109, commit `c3a9dc3`). New `GiftCardData` narrow projection — only the columns `/my-gifts` page actually renders. No purchaser email / financial fields serialized to the client component.
+- ✅ **INFO-1 — 401 vs 404 timing differential.** **SHIPPED in Session 4b** (PR #109, commit `8c0f690`). `authorizeGiftPurchaser` performs a no-op `findSubmissionById('<placeholder>')` on the 401 path to match 404 timing.
 
 **UX nits surfaced after staging deploy (2026-05-12, Max) — Session 4 dispositions:**
 - ✅ **Footer touches last gift card on `/my-gifts`** — **SHIPPED in Session 4** (M-1). Footer lifted out of `<main>` in `MyGiftsView.tsx` with explicit `mt-12` breathing room.
 - ✅ **Action buttons need in-button loading state** — **SHIPPED in Session 4** as part of LB-1 fix (see below). New client component `src/app/my-gifts/GiftCardActions.tsx` replaces the broken `ActionForm`; each action surfaces local pending state via React state hooks.
 
-**Reuse / Quality deferrals** (Session 4 dispositions):
-- ~~Shared `<AuthGatedPage>` page-chrome~~ — Still deferred; **trigger**: any third auth-gated dashboard added.
-- ~~`GIFT_DELIVERY` constants object~~ — Still deferred; **trigger**: any new gift-delivery-method enum value added.
-- ~~`isDefaultNext(path)` helper~~ — Still deferred; **trigger**: third call-site duplicating the literal.
-- ~~Sanity Studio document actions on submission doctype (Becky-facing)~~ — Still deferred; **trigger**: Becky requests Studio buttons in lieu of CLI scripts.
+**Reuse / Quality deferrals** (Session 4 dispositions, updated after Session 4b):
+- ~~Shared `<AuthGatedPage>` page-chrome~~ — **Still deferred (Session 4b T8 carry-over)**; **trigger**: any third auth-gated dashboard added.
+- ~~`GIFT_DELIVERY` constants object~~ — **Still deferred (Session 4b T8 carry-over)**; **trigger**: any new gift-delivery-method enum value added.
+- ✅ **`isDefaultNext(path)` helper** — **SHIPPED-AS-DECISION in Session 4b** (PR #109, commit `ef78869`). Inline documentation explains the simpler-shape-today rationale + the explicit re-trigger ("third call-site duplicating the literal").
+- ~~Sanity Studio document actions on submission doctype (Becky-facing)~~ — **Still deferred (Session 4b T8 carry-over)**; **trigger**: Becky requests Studio buttons in lieu of CLI scripts.
 
 ### Phase 5 — Session 4 — SHIPPED 2026-05-12 (PR `feat/phase-5-session-4-review`)
 
@@ -271,15 +299,13 @@ Multi-agent council review (PM + UX + UI Designer + Copywriter + QA + Pentester)
 - `DECISIONS.md` — synthesised findings + dispositions
 - `FLOW_INVENTORY.md` — Stage B source-of-truth (every customer-facing flow with preconditions + steps + assertions)
 
-### Phase 5 — Session 4 — HIGH-priority deferrals (block Stripe live-mode flip, NOT Stage B staging bake)
+### Phase 5 — Session 4 — HIGH-priority deferrals — ✅ ALL SHIPPED in Session 4b (PR #109)
 
-These are launch-blockers BEFORE apex unpark + Stripe live-mode flip, but DO NOT block Stage B staging tests since soft-launch has no real customers. Each is filed with an explicit trigger and recommended fix path.
+- ✅ **LB-3 — anti-abuse cap claim-time re-check** — commit `88a7043`. `countActivePendingGiftsForRecipient` extended with `excludeSubmissionId`; gift-redeem route gate added between email-match and redeem; 5 new tests (2 route + 3 repository).
+- ✅ **LB-4 — GDPR Art. 17 cascade purchaser walk** — commit `7ada206`. `cascadeDeleteUser` enumerates `listGiftsByPurchaserUserId` in parallel with the recipient walk; pseudonymises purchaser fields when recipient already claimed (preserves contract-base Art. 6(1)(b) data); full-deletes when recipient hasn't claimed yet. 4 new cascade tests.
+- ✅ **LB-6 — GiftForm + GiftCardActions a11y wiring** — commit `c4e41fc`. All 8 GiftForm fields wired with `id` + `aria-describedby` + `aria-invalid`; focus-on-error via `useRef`; `✦` wrapped in `<span aria-hidden="true">`; drawer heading + form `aria-labelledby`; send-at input label association. WCAG 3.3.1 + 4.1.2 compliant.
 
-- **LB-3 — Anti-abuse cap claim-time re-check missing.** `gift/route.ts:219-221` has an explicit comment promising a claim-time re-check; `gift-redeem/route.ts` does NOT call `countActivePendingGiftsForRecipient`. For `self_send` mode with blank `recipient_email` at purchase, the cap is bypassed; purchaser can buy N gifts and forward all N claim URLs to the same recipient. **Trigger to ship:** BEFORE Stripe live-mode flip (apex unpark). **Fix path:** in `gift-redeem/route.ts` after recipient email is known (from intake form), call `countActivePendingGiftsForRecipient(submittedEmail, {excludeSubmissionId})`; deny with 422 if cap reached. ~30 min of focused work + tests.
-- **LB-4 — GDPR Art. 17 cascade does not walk purchaser-owned gifts.** `src/lib/compliance/cascadeDeleteUser.ts:211` only enumerates `listSubmissionsByRecipientUserId`. A purchaser exercising Art. 17 has their user row deleted but their email + purchaser_first_name + IP + Stripe session id survives on every `submissions` row where they are `purchaser_user_id`. **Trigger to ship:** BEFORE Stripe live-mode flip (GDPR launch posture). **Fix path:** concat `listGiftsByPurchaserUserId(userId)` into the cascade walk; pseudonymise (NULL purchaser_user_id, scrub email + purchaser_first_name from responses_json) rather than delete to preserve the recipient's contract-base Art. 6(1)(b) data when applicable. Touch test fixtures + add explicit Pentester re-audit on the new path.
-- **LB-6 — GiftForm a11y wiring (WCAG 3.3.1 + 4.1.2).** Field error spans aren't programmatically tied to inputs via `aria-describedby`/`aria-invalid`; no focus management on submit failure; `✦` literal inside submit button label is announced by screen readers. 8 fields affected. **Trigger to ship:** BEFORE Stripe live-mode flip OR Stage B accessibility test OR external audit. **Fix path:** mechanical wiring pass — add `id` + `aria-describedby` + `aria-invalid` to all 8 fields; wrap `✦` in `<span aria-hidden>`; add `useRef` + focus-on-error pattern.
-
-### Phase 5 — Session 4 — visual polish + Sanity copy extraction deferrals
+### Phase 5 — Session 4b — carry-over (visual polish + Sanity copy extraction)
 
 These are NOT launch-blockers (the surface is functional + on-brand-enough) but represent council-agreed polish. Each gets a concrete trigger.
 
@@ -290,33 +316,44 @@ These are NOT launch-blockers (the surface is functional + on-brand-enough) but 
 - **D-9 — Resend-link UI rate-limit feedback.** Current behavior: route returns 429 + client shows "You've already resent this recently…" generic message. Could show specific window (1h / 24h) + when the button becomes available again. **Trigger:** rate-limit hit count >=3 per purchaser in production logs, OR Becky reports CS confusion. **Fix:** read `gift_resend` entries from `emails_fired_json` server-side, surface `lastResendAt` + `nextAvailableAt` to the client component.
 - **D-10 — claimUrl rendered on `/thank-you/[id]?gift=1` for self_send.** Currently the purchaser learns the shareable URL only from the email. PM flagged single-channel delivery as a CS landmine. **Trigger:** first "I paid but never got my gift link" support ticket OR Becky reports email-delivery friction. **Fix:** thank-you page reads `gift_claim_token_hash` presence + status, fetches the claim URL via a same-origin server helper, renders as primary CTA "Copy your gift link" + plain-text fallback.
 
-### Phase 5 — Session 4 — new Pentester findings (all defer-with-trigger)
+### Phase 5 — Session 4 — new Pentester findings — ✅ ALL SHIPPED in Session 4b (PR #109)
 
-- **NEW-MED-1 — `dispatchGiftPurchaseConfirmation` is NOT idempotent within the first-apply window.** Webhook applies the paid event idempotently, but if the Worker dies between `applyPaidEvent` commit and `markGiftClaimSent`/`appendEmailFired` landing, the gift confirmation email is silently lost. **Trigger:** first purchaser writes "I paid but never got the confirmation email." Currently mitigated by `gift-claim-regenerate` admin script.
-- **NEW-MED-3 — Stripe `prefilled_email` in `paymentUrl` URL.** Purchaser email ends up in browser history + Referer to Stripe. Currently low-impact. **Trigger:** privacy review finding OR Stripe deprecation of `prefilled_email`. **Fix:** drop the prefill, accept Stripe form starting empty.
-- **NEW-LOW-1 — Token-validity timing leak.** `verifyGiftClaimToken` short-circuits on shape mismatch before SHA-256 + DB lookup; an attacker can distinguish "garbage" from "well-formed-but-invalid". Negligible in practice. **Trigger:** security audit flags it.
-- **NEW-LOW-2 — `gift-claim-regenerate` lacks per-submission rate-limit + staff-IP allowlist.** Corroborates Session 2 LOW. Operator-only via shared secret. **Trigger:** any operator incident OR session 2 LOW trigger.
-- **NEW-LOW-3 — Stripe `metadata[is_gift]` is purchaser-controlled in the URL.** Webhook re-derives `is_gift` from D1, not metadata, so it's informational only today. **Trigger:** any analytics/CRM read of `session.metadata.is_gift` is added. **Fix:** add a warn-log integrity canary on metadata-vs-D1 mismatch.
-- **NEW-INFO-1 — submissionId logged in DO output.** Joinable to email via D1 if logs leak. No raw emails / no Resend headers / no token material in logs. Acceptable posture; documented.
+- ✅ **NEW-MED-1 — `dispatchGiftPurchaseConfirmation` idempotency** — commit `29b7e71`. Pre-append `gift_purchase_confirmation` to `emails_fired_json` BEFORE Resend send; webhook retry short-circuits on duplicate type for the same submission. Retry test in `webhook.test.ts`.
+- ✅ **NEW-MED-3 — Stripe `prefilled_email` dropped** — commit `29b7e71`. `buildPaymentUrl` no longer sets `prefilled_email` on the Payment Link URL.
+- ✅ **NEW-LOW-1 — Token-validity timing leak closed** — commit `29b7e71`. `verifyGiftClaimToken` always hashes + always issues DB lookup, regardless of shape mismatch.
+- ✅ **NEW-LOW-2 — `gift-claim-regenerate` 5-min cooldown** — commit `8c0f690`. New `gift_claim_regenerate` `EmailFiredType` + per-submission cooldown via `emails_fired_json` walk. 429 on cooldown hit.
+- ✅ **NEW-LOW-3 — Stripe metadata integrity canary** — commit `29b7e71`. Webhook gift branch warn-logs on `session.metadata.is_gift !== String(submission.isGift)`.
+- ✅ **NEW-INFO-1 — DO logging discipline documented** — commit `8c0f690`. JSDoc audit confirms only `submissionId` logged across `GiftClaimScheduler`, `giftClaimDispatch`, and the internal dispatch route. No raw emails / Resend IDs / token material.
 
-### Phase 5 — Session 4 — /simplify-deferred fixes
+### Phase 5 — Session 4b — carry-over (/simplify-deferred fixes)
 
-Surfaced during the Session 4 /simplify 3-vantage review on the final diff. All defer-with-explicit-trigger.
+All defer-with-trigger from the Session 4 /simplify review. Status after Session 4b closes (PR #109): NONE of these shipped in 4b. They cluster as the "DX refactor + Sanity copy extraction" tail for a future polish PR.
 
-- **Sanity-editable copy slots for `/my-gifts` action surfaces.** `GiftCardActions.tsx` hardcodes ~12 customer-facing strings (drawer field labels "Recipient name" / "Recipient email" / "Send at", "Save changes" / "Cancel" / "Tap again to confirm", "Saving…" / "Switching…" / "Sending…", and 5 error/throttle messages). Becky can't tune these from Studio today. **Trigger:** Becky requests to edit any of these strings, OR a focused copy-pass before Stripe live-mode flip. **Fix path:** add ~10 fields to `myGiftsPage` doctype + extend `MY_GIFTS_PAGE_DEFAULTS` + extend `migrate-gift-copy-2026-05.ts` (or a new migration).
+- **Sanity-editable copy slots for `/my-gifts` action surfaces.** `GiftCardActions.tsx` hardcodes ~14 customer-facing strings (drawer field labels, button states "Saving…" / "Switching…" / "Sending…", and 5 error/throttle messages). **Trigger:** Becky requests to edit any of these strings, OR a focused copy-pass before Stripe live-mode flip. **Fix path:** add ~14 fields to `myGiftsPage` doctype + extend `MY_GIFTS_PAGE_DEFAULTS` + new migration script.
 - **`useMutationAction` hook + `<InlineError>` primitive.** The 3 action controls in `GiftCardActions.tsx` share an identical `submitting + topError + try/catch/finally + router.refresh()` scaffold (~40 lines duplicated). **Trigger:** any 4th mutation surface lands on `/my-gifts` or `/my-readings`. **Fix path:** extract `useMutationAction<T>({endpoint, body?, onResultStatus})` returning `{submitting, topError, run}`.
 - **`jsonPost<T>(url, body)` helper.** Identical POST + 422-branch + network-catch pattern in `GiftForm.tsx:110-141` + 3× in `GiftCardActions.tsx`. **Trigger:** any 4th client-fetched mutation lands.
-- **Server actions + `revalidatePath('/my-gifts')` instead of `router.refresh()`.** Each mutation action triggers a full RSC re-fetch (D1 + Sanity + reading lookups); for `edit-recipient` (purely local field edits) and `resend-link` (no visible state delta) this is pure overhead. **Trigger:** `/my-gifts` page TTFB exceeds 500ms P95 after any action OR Worker CPU duration alerts. **Fix path:** convert 3 mutation routes to Server Actions; have them return the updated `SubmissionRecord` for optimistic local updates.
+- **Server actions + `revalidatePath('/my-gifts')` instead of `router.refresh()`.** Feasibility-gated on CF Workers + OpenNext compatibility (verify before committing). Each mutation action triggers a full RSC re-fetch today. **Trigger:** `/my-gifts` page TTFB exceeds 500ms P95 after any action OR Worker CPU duration alerts OR `useMutationAction` hook lands (above). **Fix path:** convert 3 mutation routes to Server Actions; have them return the updated `SubmissionRecord` for optimistic local updates.
 
-### Phase 5 — Session 4 — refactor deferrals (council-reviewed, low leverage today)
+### Phase 5 — Session 4b — carry-over (refactor deferrals)
 
-All defer-with-explicit-trigger. The council agreed each is correct to defer; the trigger captures what would change the calculus.
+All defer-with-trigger, except where noted as SHIPPED-in-4b below.
 
 - `sendAndRecord` helper extraction — pattern is 5×, each call site has different post-send invariants. **Trigger:** any pattern divergence (e.g., a new email type appends to a different log shape).
 - `EmailShell` consistency for GiftClaim + GiftPurchaseConfirmation + OrderConfirmation — snapshot-test fallout. **Trigger:** next email-template touch that involves visual refactor.
-- IntakeForm `mode` prop refactor to `onSubmit` callback — current `mode` prop is the simpler shape. **Trigger:** third mode value added.
+- ✅ **IntakeForm `mode` prop refactor** — **SHIPPED-AS-DECISION in Session 4b** (PR #109, commit `ef78869`). Inline JSDoc captures the simpler-shape-today rationale + retrigger: "third mode value added."
 - GiftForm migrate to `Form/*` components — large refactor; Form/* API hasn't stabilised. **Trigger:** `Form/*` API documentation lands + at least one other complex form migrated successfully.
-- {tag} substitution sanitization in email templates — purchaser-controlled but React-text-escaped (no XSS). **Trigger:** any user report of confusing `{...}` substring rendering.
+- ✅ **`{tag}` substitution sanitisation** — **SHIPPED in Session 4b** (PR #109, commit `29b7e71`, B7.26). `stripTemplateTags` helper strips `{...}` from purchaser-controlled inputs (`purchaserFirstName`, `giftMessage`, `recipientName`) at form-submit time in both gift route + edit-recipient route.
+
+#### Session 4b T4–T8 carry-over (originally scoped, deferred at PR boundary)
+
+These are real follow-up work that didn't fit PR #109 — the agent shipped T1-T3 (Stripe blockers + every Pentester finding + every Session-3-corroborated finding) and stopped before the polish/refactor tail. Each item below has a clear path; they cluster as a "Session 5 — polish + refactor" PR.
+
+- **T4 — DO `env.SELF` service binding.** `GiftClaimScheduler.alarm()` POSTs over the public edge instead of in-isolate. ~20 min change once wrangler config + env type update are wired. **Trigger:** 100+ scheduled gifts/month OR observable alarm-latency tail.
+- **T5 — `jsonPost<T>` + `useMutationAction` + Server Actions migration.** See "/simplify-deferred fixes" section above.
+- **T6 — Visual polish:** D-1 vellum framing on GiftForm + `/gift/claim`; D-2 `giftClaimPage` + `giftIntakePage` doctypes + migration; D-7 GiftForm validation strings to Sanity; D-8 timezone preview on send-at picker; D-9 resend-link UI rate-limit feedback; D-10 claimUrl on `/thank-you/[id]?gift=1` for self_send.
+- **T7 — `/my-gifts` Sanity copy extraction.** See "/simplify-deferred fixes" first bullet above.
+- **T8 — Refactor cluster.** `sendAndRecord` helper, `EmailShell` consistency, GiftForm → `Form/*` primitives, `<AuthGatedPage>` chrome extraction, `GIFT_DELIVERY` const table, Sanity Studio document actions on submission doctype.
+- **Final gates not yet run on Session 4b diff:** end-to-end `Skill("simplify")` 3-vantage sweep + `Agent(Pentester)` re-audit. Both queued for the polish PR.
 
 ### Phase 5 Session 4 — Multi-agent gift-flow review (ARCHIVED — SHIPPED 2026-05-12)
 
