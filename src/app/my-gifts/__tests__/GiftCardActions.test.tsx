@@ -118,7 +118,15 @@ describe("GiftCardActions — JSON-fetch contract", () => {
   });
 
   it("flip-to-self-send: requires 2-stage confirm (single click does NOT fetch)", () => {
-    const fetchMock = vi.fn();
+    // Mock returns a 200 Response so the post-confirm async chain doesn't
+    // log an unhandled rejection — the test itself only cares about the
+    // call count + URL, not the eventual outcome.
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const { getByRole } = render(

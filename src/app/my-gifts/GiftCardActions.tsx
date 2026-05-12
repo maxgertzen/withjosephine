@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { useMutationAction } from "@/lib/hooks/useMutationAction";
 
 /**
  * Phase 5 Session 4b — B6.22. Narrow view-model for the client-side action
@@ -44,6 +46,13 @@ export function GiftCardActions({ gift, status, copy }: Props) {
   return null;
 }
 
+function editRecipientErrorLabel(code: string | null): string | null {
+  if (!code) return null;
+  if (code === "network") return "Network problem. Please try again.";
+  if (code === "http_409") return "This gift can’t be edited anymore.";
+  return "Couldn’t save those changes. Please try again.";
+}
+
 function EditRecipientControl({
   gift,
   copy,
@@ -53,7 +62,6 @@ function EditRecipientControl({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const initialName =
     gift.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
   const initialEmail = gift.recipientEmail ?? "";
@@ -62,14 +70,13 @@ function EditRecipientControl({
   const [recipientName, setRecipientName] = useState(initialName);
   const [recipientEmail, setRecipientEmail] = useState(initialEmail);
   const [giftSendAt, setGiftSendAt] = useState(initialSendAt);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [topError, setTopError] = useState<string | null>(null);
+  const [unchangedError, setUnchangedError] = useState<string | null>(null);
+
+  const action = useMutationAction(`/api/gifts/${gift._id}/edit-recipient`);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
-    setFieldErrors({});
-    setTopError(null);
+    setUnchangedError(null);
     const body: Record<string, unknown> = {};
     if (recipientName.trim() !== initialName) body.recipientName = recipientName.trim();
     if (recipientEmail.trim() !== initialEmail) body.recipientEmail = recipientEmail.trim();
@@ -77,37 +84,13 @@ function EditRecipientControl({
       body.giftSendAt = giftSendAt ? new Date(giftSendAt).toISOString() : null;
     }
     if (Object.keys(body).length === 0) {
-      setTopError("Change something before saving.");
-      setSubmitting(false);
+      setUnchangedError("Change something before saving.");
       return;
     }
-    try {
-      const res = await fetch(`/api/gifts/${gift._id}/edit-recipient`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (res.status === 422) {
-        const json = (await res.json()) as { fieldErrors?: Array<{ field: string; message: string }> };
-        const errs: Record<string, string> = {};
-        for (const e of json.fieldErrors ?? []) errs[e.field] = e.message;
-        setFieldErrors(errs);
-        return;
-      }
-      if (res.status === 409) {
-        setTopError("This gift can’t be edited anymore.");
-        return;
-      }
-      if (!res.ok) {
-        setTopError("Couldn’t save those changes. Please try again.");
-        return;
-      }
+    const result = await action.run(body);
+    if (result.ok) {
       setOpen(false);
       router.refresh();
-    } catch {
-      setTopError("Network problem. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -121,6 +104,7 @@ function EditRecipientControl({
 
   const sendAtInputId = `gift-${gift._id}-send-at`;
   const headingId = `gift-${gift._id}-edit-heading`;
+  const topError = unchangedError ?? editRecipientErrorLabel(action.topError);
   return (
     <form
       onSubmit={onSubmit}
@@ -140,7 +124,7 @@ function EditRecipientControl({
         label="Recipient name"
         value={recipientName}
         onChange={setRecipientName}
-        error={fieldErrors.recipientName}
+        error={action.fieldErrors.recipientName}
         autoComplete="off"
       />
       <Input
@@ -150,7 +134,7 @@ function EditRecipientControl({
         label="Recipient email"
         value={recipientEmail}
         onChange={setRecipientEmail}
-        error={fieldErrors.recipientEmail}
+        error={action.fieldErrors.recipientEmail}
         autoComplete="off"
       />
       <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
@@ -161,22 +145,18 @@ function EditRecipientControl({
           value={giftSendAt}
           onChange={(e) => setGiftSendAt(e.target.value)}
           aria-describedby={
-            fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
           }
-          aria-invalid={Boolean(fieldErrors.giftSendAt)}
+          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
           className="rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent"
         />
-        {fieldErrors.giftSendAt ? (
+        {action.fieldErrors.giftSendAt ? (
           <span id={`${sendAtInputId}-error`} className="font-body text-xs text-j-rose">
-            {fieldErrors.giftSendAt}
+            {action.fieldErrors.giftSendAt}
           </span>
         ) : null}
       </label>
-      {topError ? (
-        <p role="alert" className="font-body text-xs text-j-rose">
-          {topError}
-        </p>
-      ) : null}
+      <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
         <Button
           type="button"
@@ -184,15 +164,15 @@ function EditRecipientControl({
           size="sm"
           onClick={() => {
             setOpen(false);
-            setFieldErrors({});
-            setTopError(null);
+            setUnchangedError(null);
+            action.reset();
           }}
-          disabled={submitting}
+          disabled={action.submitting}
         >
           Cancel
         </Button>
-        <Button type="submit" variant="primary" size="sm" disabled={submitting}>
-          {submitting ? "Saving…" : "Save changes"}
+        <Button type="submit" variant="primary" size="sm" disabled={action.submitting}>
+          {action.submitting ? "Saving…" : "Save changes"}
         </Button>
       </div>
     </form>
@@ -200,6 +180,12 @@ function EditRecipientControl({
 }
 
 const ARM_RESET_MS = 5000;
+
+function flipToSelfSendErrorLabel(code: string | null): string | null {
+  if (!code) return null;
+  if (code === "network") return "Network problem. Please try again.";
+  return "Couldn’t switch this gift. Please try again.";
+}
 
 function FlipToSelfSendControl({
   gift,
@@ -210,54 +196,45 @@ function FlipToSelfSendControl({
 }) {
   const router = useRouter();
   const [armed, setArmed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [topError, setTopError] = useState<string | null>(null);
+  const action = useMutationAction(`/api/gifts/${gift._id}/cancel-auto-send`);
 
   useEffect(() => {
-    if (!armed || submitting) return;
+    if (!armed || action.submitting) return;
     const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
     return () => clearTimeout(t);
-  }, [armed, submitting]);
+  }, [armed, action.submitting]);
 
   async function onConfirm() {
-    setSubmitting(true);
-    setTopError(null);
-    try {
-      const res = await fetch(`/api/gifts/${gift._id}/cancel-auto-send`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        setTopError("Couldn’t switch this gift. Please try again.");
-        setArmed(false);
-        return;
-      }
+    const result = await action.run();
+    if (result.ok) {
       router.refresh();
-    } catch {
-      setTopError("Network problem. Please try again.");
+    } else {
       setArmed(false);
-    } finally {
-      setSubmitting(false);
     }
   }
 
   return (
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
       {armed ? (
-        <Button variant="primary" size="sm" disabled={submitting} onClick={onConfirm}>
-          {submitting ? "Switching…" : "Tap again to confirm"}
+        <Button variant="primary" size="sm" disabled={action.submitting} onClick={onConfirm}>
+          {action.submitting ? "Switching…" : "Tap again to confirm"}
         </Button>
       ) : (
         <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
           {copy.flipToSelfSendCtaLabel}
         </Button>
       )}
-      {topError ? (
-        <p role="alert" className="font-body text-xs text-j-rose">
-          {topError}
-        </p>
-      ) : null}
+      <InlineError message={flipToSelfSendErrorLabel(action.topError)} />
     </div>
   );
+}
+
+function resendErrorLabel(code: string | null): string | null {
+  if (!code) return null;
+  if (code === "rate_limited")
+    return "You’ve already resent this recently. Try again in a little while.";
+  if (code === "network") return "Network problem. Please try again.";
+  return "Couldn’t resend the link. Please try again.";
 }
 
 function ResendLinkControl({
@@ -268,42 +245,19 @@ function ResendLinkControl({
   copy: MyGiftsPageContent;
 }) {
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [topError, setTopError] = useState<string | null>(null);
+  const action = useMutationAction(`/api/gifts/${gift._id}/resend-link`);
 
   async function onClick() {
-    setSubmitting(true);
-    setTopError(null);
-    try {
-      const res = await fetch(`/api/gifts/${gift._id}/resend-link`, {
-        method: "POST",
-      });
-      if (res.status === 429) {
-        setTopError("You’ve already resent this recently. Try again in a little while.");
-        return;
-      }
-      if (!res.ok) {
-        setTopError("Couldn’t resend the link. Please try again.");
-        return;
-      }
-      router.refresh();
-    } catch {
-      setTopError("Network problem. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    const result = await action.run();
+    if (result.ok) router.refresh();
   }
 
   return (
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      <Button variant="outlined" size="sm" disabled={submitting} onClick={onClick}>
-        {submitting ? "Sending…" : copy.resendLinkCtaLabel}
+      <Button variant="outlined" size="sm" disabled={action.submitting} onClick={onClick}>
+        {action.submitting ? "Sending…" : copy.resendLinkCtaLabel}
       </Button>
-      {topError ? (
-        <p role="alert" className="font-body text-xs text-j-rose">
-          {topError}
-        </p>
-      ) : null}
+      <InlineError message={resendErrorLabel(action.topError)} />
     </div>
   );
 }
