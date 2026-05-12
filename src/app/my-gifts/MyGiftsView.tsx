@@ -12,6 +12,8 @@ import { type GiftStatus, giftStatusFor } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
+import { GiftCardActions } from "./GiftCardActions";
+
 export type MyGiftsViewProps = {
   copy: MyGiftsPageContent;
   state:
@@ -36,8 +38,8 @@ export function MyGiftsView({ copy, state }: MyGiftsViewProps) {
         ) : (
           <SignInCard copy={copy} />
         )}
-        <Footer />
       </main>
+      <Footer className="relative z-10 mt-12" />
     </div>
   );
 }
@@ -87,45 +89,9 @@ function GiftCard({ gift, copy }: { gift: SubmissionRecord; copy: MyGiftsPageCon
             {statusLine(status, copy)}
           </p>
         </div>
-        <GiftActions gift={gift} status={status} copy={copy} />
+        <GiftCardActions gift={gift} status={status} copy={copy} />
       </div>
     </li>
-  );
-}
-
-function GiftActions({
-  gift,
-  status,
-  copy,
-}: {
-  gift: SubmissionRecord;
-  status: GiftStatus;
-  copy: MyGiftsPageContent;
-}) {
-  const editEndpoint = `/api/gifts/${gift._id}/edit-recipient`;
-  const flipEndpoint = `/api/gifts/${gift._id}/cancel-auto-send`;
-  const resendEndpoint = `/api/gifts/${gift._id}/resend-link`;
-  if (status.kind === "scheduled") {
-    return (
-      <div className="flex flex-col gap-3">
-        <ActionForm action={editEndpoint} label={copy.editRecipientCtaLabel} />
-        <ActionForm action={flipEndpoint} label={copy.flipToSelfSendCtaLabel} />
-      </div>
-    );
-  }
-  if (status.kind === "self_send_ready") {
-    return <ActionForm action={resendEndpoint} label={copy.resendLinkCtaLabel} />;
-  }
-  return null;
-}
-
-function ActionForm({ action, label }: { action: string; label: string }) {
-  return (
-    <form method="POST" action={action}>
-      <Button type="submit" variant="outlined">
-        {label}
-      </Button>
-    </form>
   );
 }
 

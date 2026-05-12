@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
@@ -10,6 +11,7 @@ import type { SanityReading } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_CHARS = 254; // RFC 5321 forward-path length cap
 const MAX_GIFT_MESSAGE_CHARS = 280;
 const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
@@ -97,6 +99,11 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
         field: "recipientEmail",
         message: "Enter a valid recipient email address.",
       });
+    } else if (recipientEmail.length > MAX_EMAIL_CHARS) {
+      errors.push({
+        field: "recipientEmail",
+        message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+      });
     }
     if (!body.giftSendAt) {
       errors.push({ field: "giftSendAt", message: "Pick when the gift should be sent." });
@@ -129,14 +136,23 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
         field: "recipientEmail",
         message: "Enter a valid recipient email address.",
       });
+    } else if (recipientEmail && recipientEmail.length > MAX_EMAIL_CHARS) {
+      errors.push({
+        field: "recipientEmail",
+        message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+      });
     }
   }
 
-  if (recipientEmail && recipientEmail === purchaserEmail) {
-    errors.push({
-      field: "recipientEmail",
-      message: "The recipient must be someone other than you.",
-    });
+  if (recipientEmail) {
+    const purchaserKey = ownEmailKey(purchaserEmail);
+    const recipientKey = ownEmailKey(recipientEmail);
+    if (recipientKey === purchaserKey) {
+      errors.push({
+        field: "recipientEmail",
+        message: "The recipient must be someone other than you.",
+      });
+    }
   }
 
   if (body.giftMessage && body.giftMessage.length > MAX_GIFT_MESSAGE_CHARS) {

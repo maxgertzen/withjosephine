@@ -107,3 +107,36 @@ describe("GiftPurchaseConfirmation — scheduled variant", () => {
     expect(text).toContain("Bob");
   });
 });
+
+describe("GiftPurchaseConfirmation — refund-policy honesty", () => {
+  // Regression guard for Phase 5 Session 4 LB-2: the prior default `refundLine`
+  // promised a full refund, contradicting the locked flat non-refundable policy.
+  it("does NOT promise a refund in the self_send variant", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={SELF_SEND_VARS}
+          copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS}
+        />,
+      ),
+    );
+    expect(text.toLowerCase()).not.toContain("arrange a full refund");
+    expect(text).toMatch(/non-refundable once payment is complete/i);
+    // Points at the purchaser's self-service surface, not "write to me".
+    expect(text.toLowerCase()).toContain("withjosephine.com/my-gifts");
+  });
+
+  it("does NOT promise a refund in the scheduled variant", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={SCHEDULED_VARS}
+          copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS}
+        />,
+      ),
+    );
+    expect(text.toLowerCase()).not.toContain("arrange a full refund");
+    expect(text).toMatch(/non-refundable once payment is complete/i);
+    expect(text.toLowerCase()).toContain("withjosephine.com/my-gifts");
+  });
+});

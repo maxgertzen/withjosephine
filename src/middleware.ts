@@ -33,11 +33,20 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //   - /api/stripe/webhook : Stripe POSTs server-to-server; redirecting it would
 //                           drop events and silently break payment reconcile.
 //   - /api/cron/          : Cloudflare cron triggers hit these on the apex.
+//   - /api/internal/      : Durable-Object alarm dispatch + admin recovery
+//                           scripts post here over public HTTPS using the apex
+//                           origin; rewrite would silently drop every
+//                           scheduled-mode gift claim email.
 //   - /listen/            : Submission-scoped delivery links sent in customer
 //                           emails; auth-gated by magic-link cookie. The
 //                           email bodies hardcode apex URLs (see
 //                           email-day-7-deliver/route.ts SITE_ORIGIN).
-const APEX_ALLOWLIST_PREFIXES = ["/api/stripe/webhook", "/api/cron/", "/listen/"];
+const APEX_ALLOWLIST_PREFIXES = [
+  "/api/stripe/webhook",
+  "/api/cron/",
+  "/api/internal/",
+  "/listen/",
+];
 
 function isApexAllowlisted(pathname: string): boolean {
   if (pathname === "/") return true;

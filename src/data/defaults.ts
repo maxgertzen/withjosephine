@@ -207,7 +207,7 @@ export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
   loadingStateCopy: "One moment \u2014 taking you to checkout.",
   antiAbuseCapHeading: "A gentle pause",
   antiAbuseCapBody:
-    "We\u2019re holding a gift for this person already. Please give them a moment to open it before sending another.",
+    "There\u2019s already a reading waiting for this person. Give them a quiet moment to open it before sending another.",
 };
 
 export interface MyReadingsPageContent {
@@ -284,8 +284,8 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   checkEmailResendLabel: "Send another",
   statusScheduledLabel: "Scheduled to send",
   statusSelfSendReadyLabel: "Link ready to share",
-  statusSentLabel: "Sent — waiting for them to open it",
-  statusPreparingLabel: "They’re preparing their reading",
+  statusSentLabel: "Sent — resting in their inbox",
+  statusPreparingLabel: "In Josephine’s hands",
   statusDeliveredLabel: "Delivered",
   statusCancelledLabel: "Cancelled",
   editRecipientCtaLabel: "Edit recipient",
@@ -410,13 +410,13 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirm
     "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
   detailLineScheduled:
     "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
-  shareButtonLabel: "OPEN GIFT LINK",
+  shareButtonLabel: "Share the link",
   shareUrlHelper:
     "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine:
-    "If something changes before {recipientName} opens the link, write to me and we’ll arrange a full refund. After they’ve started their intake, the work is on its way and the reading is theirs.",
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at withjosephine.com/my-gifts.",
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
@@ -460,7 +460,7 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   bodyReminder:
     "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
   giftMessageLabel: "A note from {purchaserFirstName}",
-  claimButtonLabel: "OPEN YOUR GIFT",
+  claimButtonLabel: "Open your gift",
   claimUrlHelper:
     "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
   cardLabel: "The gift",

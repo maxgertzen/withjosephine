@@ -18,9 +18,9 @@ export function recipientNameFor(submission: SubmissionRecord): string {
 
 /**
  * Surface label for the purchaser's `/my-gifts` listing: prefer the name
- * Alice typed, fall back to the recipient email so she can still identify
- * the gift, and finally to a soft sentinel when neither is present
- * (self-send mode where she chose to skip both).
+ * the purchaser typed, fall back to the recipient email so they can still
+ * identify the gift, and finally to a soft sentinel when neither is present
+ * (self-send mode where the purchaser chose to skip both).
  */
 export function recipientLabelFor(submission: SubmissionRecord): string {
   const named = submission.responses
