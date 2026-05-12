@@ -80,7 +80,7 @@ beforeEach(() => {
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
   mockMarkDelivered.mockReset().mockResolvedValue(undefined);
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_d7" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
 
@@ -147,7 +147,7 @@ describe("/api/cron/email-day-7-deliver", () => {
     mockAuth.mockReturnValueOnce(true);
     mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
     mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });

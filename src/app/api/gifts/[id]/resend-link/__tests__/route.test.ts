@@ -82,7 +82,7 @@ beforeEach(() => {
     tokenHash: "n".repeat(64),
     claimUrl: "https://test.local/gift/claim?token=" + "a".repeat(64),
   });
-  sendMock.mockReset().mockResolvedValue({ resendId: "msg_resend" });
+  sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_resend" });
 });
 
 afterEach(() => {
@@ -167,7 +167,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   it("returns 502 when Resend send fails (state untouched)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(gift());
-    sendMock.mockResolvedValueOnce({ resendId: null });
+    sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     expect(res.status).toBe(502);
     expect(markMock).not.toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   it("releases the atomic lock after Resend failure (502)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(gift());
-    sendMock.mockResolvedValueOnce({ resendId: null });
+    sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     await callRoute();
     expect(releaseLockMock).toHaveBeenCalledWith("sub_gift");
   });

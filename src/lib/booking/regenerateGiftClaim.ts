@@ -91,7 +91,7 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
         }),
     });
 
-    if (sendResult.resendId === null) {
+    if (sendResult.kind !== "sent") {
       return {
         ok: false,
         reason: "send_failed",

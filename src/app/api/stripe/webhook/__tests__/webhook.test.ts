@@ -13,6 +13,8 @@ vi.mock("@/lib/booking/submissions", () => ({
 
 vi.mock("@/lib/resend", () => ({
   sendGiftPurchaseConfirmation: vi.fn(),
+  getResendId: (result: { kind: string; resendId?: string }) =>
+    result.kind === "sent" ? (result.resendId ?? null) : null,
 }));
 
 vi.mock("@/lib/booking/giftClaim", () => ({
@@ -99,7 +101,7 @@ beforeEach(() => {
   });
   mockMarkGiftClaimSent.mockReset().mockResolvedValue(undefined);
   mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
-  mockSendGiftConfirmation.mockReset().mockResolvedValue({ resendId: "msg_g1" });
+  mockSendGiftConfirmation.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_g1" });
   mockDoFetch.mockReset().mockResolvedValue(new Response("{}", { status: 200 }));
   mockDoGet.mockReset().mockReturnValue({ fetch: mockDoFetch });
   mockDoIdFromName.mockReset().mockImplementation((name: string) => ({
@@ -619,7 +621,7 @@ describe("/api/stripe/webhook", () => {
       mockConstruct.mockReturnValueOnce(event("evt_g_retry", "sub_gift_self") as never);
       mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
       mockApply.mockResolvedValueOnce("applied");
-      mockSendGiftConfirmation.mockResolvedValueOnce({ resendId: "re_1" });
+      mockSendGiftConfirmation.mockResolvedValueOnce({ kind: "sent", resendId: "re_1" });
       await callRoute("{}");
       expect(mockSendGiftConfirmation).toHaveBeenCalledTimes(1);
 
@@ -655,7 +657,7 @@ describe("/api/stripe/webhook", () => {
       mockConstruct.mockReturnValueOnce(mismatched as never);
       mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
       mockApply.mockResolvedValueOnce("applied");
-      mockSendGiftConfirmation.mockResolvedValueOnce({ resendId: "re_x" });
+      mockSendGiftConfirmation.mockResolvedValueOnce({ kind: "sent", resendId: "re_x" });
 
       await callRoute("{}");
 

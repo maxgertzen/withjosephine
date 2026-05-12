@@ -69,7 +69,7 @@ beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchUndelivered.mockReset().mockResolvedValue(new Set());
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_alert" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_alert" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
 

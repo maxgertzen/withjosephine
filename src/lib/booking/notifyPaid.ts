@@ -79,7 +79,7 @@ export async function applyPaidEvent(
     }),
     sendOrderConfirmation(context)
       .then(async (result) => {
-        if (!result.resendId) return;
+        if (result.kind !== "sent") return;
         try {
           await appendEmailFired(submission._id, {
             type: "order_confirmation",

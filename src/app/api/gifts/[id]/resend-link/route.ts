@@ -81,7 +81,7 @@ export async function POST(
       variant: GIFT_DELIVERY.selfSend,
       claimUrl,
     });
-    if (send.resendId === null) {
+    if (send.kind !== "sent") {
       return NextResponse.json({ error: "Send failed" }, { status: 502 });
     }
 

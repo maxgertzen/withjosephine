@@ -36,7 +36,15 @@ export type SubmissionContext = {
   createdAt: string;
 };
 
-export type EmailSendResult = { resendId: string | null };
+export type EmailSendResult =
+  | { kind: "sent"; resendId: string }
+  | { kind: "dry_run" }
+  | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" }
+  | { kind: "failed"; error: string };
+
+export function getResendId(result: EmailSendResult): string | null {
+  return result.kind === "sent" ? result.resendId : null;
+}
 
 let cachedClient: Resend | null = null;
 
@@ -69,25 +77,30 @@ async function sendOrSkip(args: {
   submissionId: string | null;
   replyTo?: string;
 }): Promise<EmailSendResult> {
-  // Dry-run is the more specific intent — check it before the API-key path so
-  // staging without a real key still emits the dry-run signal we actually want.
   if (isFlagEnabled("RESEND_DRY_RUN")) {
     console.warn(`[resend] RESEND_DRY_RUN — skipping ${args.emailKind} (to=${redactRecipient(args.to)})`);
-    return { resendId: null };
+    return { kind: "dry_run" };
   }
   const client = getResendClient();
   if (!client) {
     console.warn(`[resend] RESEND_API_KEY not set — skipping ${args.emailKind}`);
-    return { resendId: null };
+    return { kind: "skipped", reason: "no_api_key" };
   }
-  const response = await client.emails.send({
-    from: FROM_ADDRESS,
-    to: args.to,
-    subject: args.subject,
-    html: args.html,
-    ...(args.replyTo ? { replyTo: args.replyTo } : {}),
-  });
-  const resendId = response.data?.id ?? null;
+  let resendId: string | null;
+  try {
+    const response = await client.emails.send({
+      from: FROM_ADDRESS,
+      to: args.to,
+      subject: args.subject,
+      html: args.html,
+      ...(args.replyTo ? { replyTo: args.replyTo } : {}),
+    });
+    resendId = response.data?.id ?? null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[resend] send failed for ${args.emailKind}: ${message}`);
+    return { kind: "failed", error: message };
+  }
 
   void serverTrack("email_sent", {
     distinct_id: args.submissionId ?? generateAnonymousDistinctId(),
@@ -97,7 +110,10 @@ async function sendOrSkip(args: {
     resend_id_present: resendId !== null,
   });
 
-  return { resendId };
+  if (resendId === null) {
+    return { kind: "failed", error: "Resend returned no id" };
+  }
+  return { kind: "sent", resendId };
 }
 
 export async function sendNotificationToJosephine(
@@ -106,7 +122,7 @@ export async function sendNotificationToJosephine(
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
   if (!notificationEmail) {
     console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Josephine notification");
-    return { resendId: null };
+    return { kind: "skipped", reason: "no_notification_email" };
   }
 
   const html = await render(
@@ -384,7 +400,7 @@ export async function sendContactMessage(contact: ContactPayload): Promise<Email
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
   if (!notificationEmail) {
     console.warn("[resend] NOTIFICATION_EMAIL not set — skipping contact message");
-    return { resendId: null };
+    return { kind: "skipped", reason: "no_notification_email" };
   }
 
   const html = await render(
@@ -406,7 +422,7 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
   if (!notificationEmail) {
     console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Day +7 overdue alert");
-    return { resendId: null };
+    return { kind: "skipped", reason: "no_notification_email" };
   }
 
   const html = await render(

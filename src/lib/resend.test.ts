@@ -4,6 +4,10 @@ import { buildSubmission } from "@/test/fixtures/submission";
 
 import { visibleText } from "./emails/test-helpers";
 
+type Result = { kind: string; resendId?: string };
+const getResendId = (r: Result): string | null =>
+  r.kind === "sent" ? (r.resendId ?? null) : null;
+
 const sendMock = vi.fn();
 const resendCtorMock = vi.fn(function () {
   return { emails: { send: sendMock } };
@@ -49,7 +53,7 @@ describe("sendNotificationToJosephine", () => {
 
     const result = await sendNotificationToJosephine(submission);
 
-    expect(result.resendId).toBe("msg_1");
+    expect(getResendId(result)).toBe("msg_1");
     expect(sendMock).toHaveBeenCalledOnce();
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("hello@withjosephine.com");
@@ -104,7 +108,7 @@ describe("sendNotificationToJosephine", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -114,7 +118,7 @@ describe("sendNotificationToJosephine", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -180,7 +184,7 @@ describe("sendOrderConfirmation", () => {
 
     const result = await sendOrderConfirmation(submission);
 
-    expect(result.resendId).toBe("msg_oc");
+    expect(getResendId(result)).toBe("msg_oc");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
     expect(args.subject).toBe("Your reading is booked — here’s what happens next");
@@ -281,7 +285,7 @@ describe("sendOrderConfirmation", () => {
     vi.stubEnv("RESEND_API_KEY", "");
     const { sendOrderConfirmation } = await import("./resend");
     const result = await sendOrderConfirmation(buildSubmission());
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
@@ -294,7 +298,7 @@ describe("sendDay2Started", () => {
 
     const result = await sendDay2Started(submission);
 
-    expect(result.resendId).toBe("msg_d2");
+    expect(getResendId(result)).toBe("msg_d2");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
     expect(args.subject).toBe("A quick note — I’ve started your reading");
@@ -315,7 +319,7 @@ describe("sendDay7Delivery", () => {
 
     const result = await sendDay7Delivery(submission, url);
 
-    expect(result.resendId).toBe("msg_d7");
+    expect(getResendId(result)).toBe("msg_d7");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.subject).toBe(`Your ${submission.readingName} is ready`);
     expect(args.html).toContain(`href="${url}"`);
@@ -338,7 +342,7 @@ describe("sendContactMessage", () => {
       message: "First line\nSecond line",
     });
 
-    expect(result.resendId).toBe("msg_contact");
+    expect(getResendId(result)).toBe("msg_contact");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("hello@withjosephine.com");
     expect(args.replyTo).toBe("jane@example.com");
@@ -374,7 +378,7 @@ describe("sendContactMessage", () => {
       email: "jane@example.com",
       message: "hi",
     });
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -386,7 +390,7 @@ describe("sendContactMessage", () => {
       email: "jane@example.com",
       message: "hi",
     });
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
@@ -399,7 +403,7 @@ describe("sendDay7OverdueAlert", () => {
 
     const result = await sendDay7OverdueAlert(submission);
 
-    expect(result.resendId).toBe("msg_d7a");
+    expect(getResendId(result)).toBe("msg_d7a");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("hello@withjosephine.com");
     expect(args.to).not.toBe(submission.email);
@@ -411,7 +415,7 @@ describe("sendDay7OverdueAlert", () => {
     vi.stubEnv("NOTIFICATION_EMAIL", "");
     const { sendDay7OverdueAlert } = await import("./resend");
     const result = await sendDay7OverdueAlert(buildSubmission());
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
@@ -423,7 +427,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -433,7 +437,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -444,7 +448,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBe("msg_off");
+    expect(getResendId(result)).toBe("msg_off");
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
@@ -456,7 +460,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     const messages = warnSpy.mock.calls.map((args) => String(args[0]));
     expect(messages.some((m) => m.includes("RESEND_DRY_RUN"))).toBe(true);
@@ -484,7 +488,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(result.resendId).toBe("msg_default");
+    expect(getResendId(result)).toBe("msg_default");
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
@@ -494,7 +498,7 @@ describe("RESEND_DRY_RUN gate", () => {
 
     const result = await sendOrderConfirmation(buildSubmission());
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -508,7 +512,7 @@ describe("RESEND_DRY_RUN gate", () => {
       message: "Hi",
     });
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -521,7 +525,7 @@ describe("RESEND_DRY_RUN gate", () => {
       "https://example.com/listen/abc",
     );
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
@@ -595,7 +599,7 @@ describe("sendMagicLink", () => {
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
     });
 
-    expect(result.resendId).toBe("msg_ml");
+    expect(getResendId(result)).toBe("msg_ml");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("ada@example.com");
     expect(args.subject).toBe("Open your reading");
@@ -628,7 +632,7 @@ describe("sendMagicLink", () => {
       magicLinkUrl: "https://example.com/x",
     });
 
-    expect(result.resendId).toBeNull();
+    expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
   });

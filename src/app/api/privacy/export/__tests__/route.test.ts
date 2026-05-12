@@ -32,7 +32,7 @@ vi.mock("@/lib/r2", () => ({
     .mockResolvedValue("https://r2.example.com/exports/user_a/1.zip?sig=abc"),
 }));
 vi.mock("@/lib/resend", () => ({
-  sendPrivacyExportEmail: vi.fn().mockResolvedValue({ resendId: "resend_xyz" }),
+  sendPrivacyExportEmail: vi.fn().mockResolvedValue({ kind: "sent", resendId: "resend_xyz" }),
 }));
 vi.mock("@/lib/compliance/cascadeDeleteUser", () => ({
   wasUserDeleted: vi.fn().mockResolvedValue(false),
@@ -125,7 +125,7 @@ beforeEach(() => {
   mockSignedUrl
     .mockReset()
     .mockResolvedValue("https://r2.example.com/exports/user_a/1.zip?sig=abc");
-  mockEmail.mockReset().mockResolvedValue({ resendId: "resend_xyz" });
+  mockEmail.mockReset().mockResolvedValue({ kind: "sent", resendId: "resend_xyz" });
   fetchMock.mockReset().mockResolvedValue(new Response(new Uint8Array([1, 2, 3, 4]), { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
 });

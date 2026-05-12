@@ -78,7 +78,7 @@ beforeEach(() => {
     tokenHash: "h".repeat(64),
     claimUrl: "https://test.local/gift/claim?token=" + "a".repeat(64),
   });
-  sendMock.mockReset().mockResolvedValue({ resendId: "msg_flip" });
+  sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_flip" });
   stubFetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ cancelled: true })));
   (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER = {
     idFromName: idFromNameMock,
@@ -131,7 +131,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
   it("returns 502 when Resend send fails (row remains in self_send with provisional token)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
-    sendMock.mockResolvedValueOnce({ resendId: null });
+    sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     expect(res.status).toBe(502);
     // Phase 5 Session 4b — atomic flip happens BEFORE send, so the row IS

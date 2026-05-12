@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { isFlagEnabled } from "@/lib/env";
 import { getClientIp } from "@/lib/request";
 import { sendContactMessage } from "@/lib/resend";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -57,21 +56,22 @@ export async function POST(request: Request): Promise<Response> {
       message: trimmedMessage,
     });
 
-    // TODO: leaky-abstraction backlog — see POST_LAUNCH_BACKLOG.md "Resend
-    // EmailSendResult discriminated union". Routes shouldn't need to re-read
-    // RESEND_DRY_RUN to interpret a null resendId; sendOrSkip should signal
-    // intentional-skip vs config-failure via a discriminator.
-    if (!result.resendId && !isFlagEnabled("RESEND_DRY_RUN")) {
-      console.error("[contact] Resend returned null id (env or send failure)");
-      return NextResponse.json(
-        { success: false, error: "Contact form is not configured" },
-        { status: 500 },
-      );
+    switch (result.kind) {
+      case "sent":
+      case "dry_run":
+        return NextResponse.json({ success: true });
+      case "skipped":
+        console.error(`[contact] skipped: ${result.reason}`);
+        return NextResponse.json(
+          { success: false, error: "Contact form is not configured" },
+          { status: 500 },
+        );
+      case "failed":
+        console.error(`[contact] send failed: ${result.error}`);
+        return NextResponse.json({ success: false }, { status: 502 });
     }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[contact] Resend send failed", error);
+    console.error("[contact] unexpected error", error);
     return NextResponse.json({ success: false }, { status: 502 });
   }
 }

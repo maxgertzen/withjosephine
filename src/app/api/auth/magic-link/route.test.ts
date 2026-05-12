@@ -14,7 +14,7 @@ vi.mock("@/lib/auth/requestAudit", () => ({
   getClientIpKey: vi.fn().mockReturnValue("1.2.3.4"),
 }));
 vi.mock("@/lib/resend", () => ({
-  sendMagicLink: vi.fn().mockResolvedValue({ resendId: "msg_1" }),
+  sendMagicLink: vi.fn().mockResolvedValue({ kind: "sent", resendId: "msg_1" }),
 }));
 
 import { issueMagicLink } from "@/lib/auth/listenSession";
@@ -31,7 +31,7 @@ beforeEach(() => {
   findUserMock.mockReset();
   issueMock.mockReset().mockResolvedValue({ token: "tkn", expiresAt: 0 });
   rateLimitMock.mockReset().mockResolvedValue(true);
-  sendMock.mockReset().mockResolvedValue({ resendId: "msg_1" });
+  sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_1" });
   vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "https://withjosephine.com");
 });
 

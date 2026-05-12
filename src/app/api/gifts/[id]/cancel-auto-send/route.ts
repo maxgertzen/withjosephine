@@ -79,14 +79,10 @@ export async function POST(
     variant: GIFT_DELIVERY.selfSend,
     claimUrl,
   });
-  if (send.resendId === null) {
+  if (send.kind !== "sent") {
     return NextResponse.json({ error: "Send failed" }, { status: 502 });
   }
 
-  // Replace the provisional token hash with the real one. Re-uses the
-  // flipGiftToSelfSend helper — its WHERE-guard is now permissive (we're
-  // already in self_send mode + fired_at is set) so it won't update. Use
-  // markGiftClaimSent which updates by id without the pre-fire guard.
   await markGiftClaimSent(id, tokenHash, nowIso);
 
   await appendEmailFired(id, {

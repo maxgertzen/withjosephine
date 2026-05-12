@@ -12,7 +12,7 @@ import {
   markGiftClaimSent,
   markSubmissionExpired,
 } from "@/lib/booking/submissions";
-import { sendGiftPurchaseConfirmation } from "@/lib/resend";
+import { getResendId, sendGiftPurchaseConfirmation } from "@/lib/resend";
 import { constructWebhookEvent } from "@/lib/stripe";
 
 const SIGNATURE_HEADER = "stripe-signature";
@@ -141,7 +141,7 @@ async function dispatchGiftPurchaseConfirmation(
     await appendEmailFired(submission._id, {
       type: "gift_purchase_confirmation",
       sentAt: nowIso,
-      resendId: result.resendId,
+      resendId: getResendId(result),
     });
     return;
   }
@@ -164,7 +164,7 @@ async function dispatchGiftPurchaseConfirmation(
   await appendEmailFired(submission._id, {
     type: "gift_purchase_confirmation",
     sentAt: nowIso,
-    resendId: result.resendId,
+    resendId: getResendId(result),
   });
 }
 

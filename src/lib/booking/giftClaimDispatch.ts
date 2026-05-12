@@ -1,6 +1,3 @@
-// Logs from this file may contain only `submissionId`. `wrangler tail` is
-// shared — no emails, Resend IDs, tokens, or names.
-
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { sendGiftClaimEmail } from "@/lib/resend";
 
@@ -28,18 +25,6 @@ export type GiftClaimDispatchInput = {
   nowMs: number;
 };
 
-/**
- * Pure async dispatcher. Reads D1 + sends via Resend. Decides the next
- * alarm timestamp the caller (DO `alarm()`) should set, or null to stop.
- *
- * Idempotency: re-firing the same alarm against unchanged D1 state lands in
- * the same outcome — claimed/cancelled/abandoned all return `stop`; the
- * first-send path only fires when `gift_claim_email_fired_at IS NULL`.
- *
- * Resend failure (`resendId === null`, e.g. RESEND_DRY_RUN or missing key)
- * does NOT mark the email fired AND does NOT append `emails_fired_json`,
- * so the next alarm cycle retries from the same state.
- */
 export async function dispatchGiftClaim(
   input: GiftClaimDispatchInput,
 ): Promise<GiftClaimDispatchOutcome> {
@@ -82,10 +67,6 @@ export async function dispatchGiftClaim(
 
   if (isFirstSend) {
     const { tokenHash, claimUrl } = await issueGiftClaimToken();
-    // Side-effecting send path: markGiftClaimSent must AND-pair with the
-    // emails_fired entry, so the helper's standard append-on-success
-    // wrapping isn't quite enough — we keep both calls inside the same
-    // `if (resendId)` block. sendAndRecord still owns the append.
     const sendResult = await sendAndRecord({
       submissionId: submission._id,
       type: "gift_claim",

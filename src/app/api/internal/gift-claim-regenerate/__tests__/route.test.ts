@@ -73,7 +73,7 @@ beforeEach(() => {
     tokenHash: "newhash".padEnd(64, "0"),
     claimUrl: "https://withjosephine.com/gift/claim?token=" + "a".repeat(64),
   });
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_regen" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_regen" });
   vi.stubEnv("DO_DISPATCH_SECRET", "test-secret");
 });
 
@@ -157,7 +157,7 @@ describe("/api/internal/gift-claim-regenerate", () => {
 
   it("returns 502 and does NOT persist when Resend returns null resendId (preserves prior token)", async () => {
     mockFind.mockResolvedValueOnce(SCHEDULED_GIFT);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute({
       headers: { "x-do-secret": "test-secret" },
       body: { submissionId: "sub_gift" },

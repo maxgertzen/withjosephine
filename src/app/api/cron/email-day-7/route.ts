@@ -20,7 +20,7 @@ async function alertOne(submission: SubmissionRecord): Promise<"alerted" | "skip
   if (submission.status !== "paid") return "skipped";
   const context = buildSubmissionContext(submission);
   const result = await sendDay7OverdueAlert(context);
-  if (!result.resendId) return "skipped";
+  if (result.kind !== "sent") return "skipped";
   await appendEmailFired(submission._id, {
     type: "day7-overdue-alert",
     sentAt: new Date().toISOString(),

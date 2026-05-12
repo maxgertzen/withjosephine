@@ -63,8 +63,8 @@ const SUBMISSION: SubmissionRecord = {
 
 beforeEach(() => {
   mockMarkPaid.mockReset().mockResolvedValue(undefined);
-  mockJosephine.mockReset().mockResolvedValue({ resendId: "msg_j" });
-  mockOrderConfirmation.mockReset().mockResolvedValue({ resendId: "msg_oc" });
+  mockJosephine.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_j" });
+  mockOrderConfirmation.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_oc" });
   mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
   mockGetOrCreateUser
     .mockReset()
@@ -125,7 +125,7 @@ describe("applyPaidEvent", () => {
   });
 
   it("does not append emailsFired when order confirmation returns null resendId", async () => {
-    mockOrderConfirmation.mockResolvedValueOnce({ resendId: null });
+    mockOrderConfirmation.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",

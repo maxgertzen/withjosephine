@@ -75,7 +75,7 @@ beforeEach(() => {
     tokenHash: "b".repeat(64),
     claimUrl: "https://withjosephine.com/gift/claim?token=" + "a".repeat(64),
   });
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_gift_claim_1" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_gift_claim_1" });
 });
 
 describe("dispatchGiftClaim — stop branches", () => {
@@ -195,7 +195,7 @@ describe("dispatchGiftClaim — first_send", () => {
 
   it("does NOT mark fired or append when Resend returns null resendId", async () => {
     mockFind.mockResolvedValueOnce(BASE_SUBMISSION);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const result = await dispatchGiftClaim({
       submissionId: "sub_gift",
       retryCount: 0,
@@ -238,7 +238,7 @@ describe("dispatchGiftClaim — reminder", () => {
       ...BASE_SUBMISSION,
       giftClaimEmailFiredAt: new Date(NOW_MS - SEVEN_DAYS_MS - 1).toISOString(),
     });
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const result = await dispatchGiftClaim({
       submissionId: "sub_gift",
       retryCount: 1,
