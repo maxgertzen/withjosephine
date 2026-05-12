@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import { MagicLinkEmailForm } from "@/components/Auth/MagicLinkEmailForm";
+import { AuthGatedPage } from "@/components/AuthGatedPage/AuthGatedPage";
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
@@ -82,10 +82,13 @@ export function MyGiftsView({ copy, state }: MyGiftsViewProps) {
       <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20">
         {state.kind === "list" ? (
           <GiftsList gifts={state.gifts} copy={copy} />
-        ) : state.kind === "checkEmail" ? (
-          <CheckYourEmailCard copy={copy} />
         ) : (
-          <SignInCard copy={copy} />
+          <AuthGatedPage
+            state={state.kind}
+            copy={copy}
+            magicLinkNext="/my-gifts"
+            resendHref="/my-gifts"
+          />
         )}
       </main>
       <Footer className="relative z-10 mt-12" />
@@ -177,41 +180,6 @@ function EmptyState({ copy }: { copy: MyGiftsPageContent }) {
   );
 }
 
-function SignInCard({ copy }: { copy: MyGiftsPageContent }) {
-  return (
-    <div className="max-w-md mx-auto bg-j-ivory border border-j-blush rounded-2xl p-10">
-      <h1 className="font-display italic text-3xl text-j-text-heading text-center">
-        {copy.signInHeading}
-      </h1>
-      <p className="font-body text-base text-j-text mt-4 text-center leading-[1.6]">
-        {copy.signInBody}
-      </p>
-      <MagicLinkEmailForm
-        action="/api/auth/magic-link"
-        submitLabel={copy.signInButtonLabel}
-        emailLabel="Email"
-        hiddenFields={{ next: "/my-gifts" }}
-      />
-      <p className="font-display italic text-base text-j-text-muted mt-8 text-center">
-        {copy.signInFootnote}
-      </p>
-    </div>
-  );
-}
-
-function CheckYourEmailCard({ copy }: { copy: MyGiftsPageContent }) {
-  return (
-    <div className="max-w-md mx-auto bg-j-ivory border border-j-blush rounded-2xl p-10 text-center">
-      <h1 className="font-display italic text-3xl text-j-text-heading">{copy.checkEmailHeading}</h1>
-      <p className="font-body text-base text-j-text mt-4 leading-[1.6]">{copy.checkEmailBody}</p>
-      <p className="font-display italic text-base text-j-text-muted mt-8">
-        <a href="/my-gifts" className="underline">
-          {copy.checkEmailResendLabel}
-        </a>
-      </p>
-    </div>
-  );
-}
 
 function formatDate(iso: string): string {
   return format(parseISO(iso), "MMMM d, yyyy");

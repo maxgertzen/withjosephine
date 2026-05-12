@@ -230,12 +230,7 @@ export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
   sendAtTimezoneHint: "This will arrive {date} in your timezone.",
 };
 
-export interface MyReadingsPageContent {
-  listHeading: string;
-  listSubheading: string;
-  openButtonLabel: string;
-  emptyHeading: string;
-  emptyCtaLabel: string;
+export interface AuthGatedPageContent {
   signInHeading: string;
   signInBody: string;
   signInButtonLabel: string;
@@ -243,6 +238,14 @@ export interface MyReadingsPageContent {
   checkEmailHeading: string;
   checkEmailBody: string;
   checkEmailResendLabel: string;
+}
+
+export interface MyReadingsPageContent extends AuthGatedPageContent {
+  listHeading: string;
+  listSubheading: string;
+  openButtonLabel: string;
+  emptyHeading: string;
+  emptyCtaLabel: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -262,19 +265,12 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   checkEmailResendLabel: "Send another",
 };
 
-export interface MyGiftsPageContent {
+export interface MyGiftsPageContent extends AuthGatedPageContent {
   listHeading: string;
   listSubheading: string;
   emptyHeading: string;
   emptyBody: string;
   emptyCtaLabel: string;
-  signInHeading: string;
-  signInBody: string;
-  signInButtonLabel: string;
-  signInFootnote: string;
-  checkEmailHeading: string;
-  checkEmailBody: string;
-  checkEmailResendLabel: string;
   statusScheduledLabel: string;
   statusSelfSendReadyLabel: string;
   statusSentLabel: string;
