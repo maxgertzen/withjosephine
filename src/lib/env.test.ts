@@ -9,42 +9,42 @@ afterEach(() => {
 
 describe("requireEnv", () => {
   it("returns the value when the env var is set", () => {
-    vi.stubEnv("EXAMPLE_VAR", "hello");
-    expect(requireEnv("EXAMPLE_VAR")).toBe("hello");
+    vi.stubEnv("ADMIN_API_KEY", "hello");
+    expect(requireEnv("ADMIN_API_KEY")).toBe("hello");
   });
 
   it("throws when the env var is missing", () => {
-    vi.stubEnv("EXAMPLE_VAR", "");
-    expect(() => requireEnv("EXAMPLE_VAR")).toThrow("Missing required env var: EXAMPLE_VAR");
+    vi.stubEnv("ADMIN_API_KEY", "");
+    expect(() => requireEnv("ADMIN_API_KEY")).toThrow("Missing required env var: ADMIN_API_KEY");
   });
 });
 
 describe("optionalEnv", () => {
   it("returns the value when the env var is set", () => {
-    vi.stubEnv("EXAMPLE_VAR", "hello");
-    expect(optionalEnv("EXAMPLE_VAR")).toBe("hello");
+    vi.stubEnv("ADMIN_API_KEY", "hello");
+    expect(optionalEnv("ADMIN_API_KEY")).toBe("hello");
   });
 
   it("returns null when the env var is missing", () => {
-    vi.stubEnv("EXAMPLE_VAR", "");
-    expect(optionalEnv("EXAMPLE_VAR")).toBeNull();
+    vi.stubEnv("ADMIN_API_KEY", "");
+    expect(optionalEnv("ADMIN_API_KEY")).toBeNull();
   });
 
   it("logs a warning when missingWarning is provided and the var is missing", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.stubEnv("EXAMPLE_VAR", "");
+    vi.stubEnv("ADMIN_API_KEY", "");
 
-    optionalEnv("EXAMPLE_VAR", "feature disabled");
+    optionalEnv("ADMIN_API_KEY", "feature disabled");
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("EXAMPLE_VAR"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("ADMIN_API_KEY"));
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("feature disabled"));
   });
 
   it("does not log when the var is set even with missingWarning", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.stubEnv("EXAMPLE_VAR", "value");
+    vi.stubEnv("ADMIN_API_KEY", "value");
 
-    optionalEnv("EXAMPLE_VAR", "feature disabled");
+    optionalEnv("ADMIN_API_KEY", "feature disabled");
 
     expect(warn).not.toHaveBeenCalled();
   });
