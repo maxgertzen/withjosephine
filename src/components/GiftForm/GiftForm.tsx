@@ -3,6 +3,7 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import { type FormEvent, useRef, useState } from "react";
 
+import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { BookingGiftFormContent } from "@/data/defaults";
 import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
@@ -10,33 +11,6 @@ import { BOOKING_API_GIFT_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants"
 
 type DeliveryMethod = "self_send" | "scheduled";
 type FieldErrors = Partial<Record<string, string>>;
-
-/**
- * Live preview of the user's `datetime-local` choice, formatted in their
- * browser's resolved timezone. Renders nothing for empty input so the
- * label-area doesn't reflow.
- */
-function TimezonePreview({ value, template }: { value: string; template: string }) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  const formatted = new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
-  const message = template.replace(/\{date\}/g, formatted);
-  return (
-    <span
-      aria-live="polite"
-      className="font-body text-xs text-j-text-muted italic mt-1"
-    >
-      {message}
-    </span>
-  );
-}
 
 const GIFT_MESSAGE_MAX = 280;
 const GIFT_MESSAGE_COUNTER_REVEAL = 220;

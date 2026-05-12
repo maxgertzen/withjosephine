@@ -244,6 +244,36 @@ export const myGiftsPage = defineType({
         "Shown when an edit hits the API after the claim email already fired — purchaser can no longer change recipient details.",
       initialValue: "This gift can’t be edited anymore.",
     }),
+    defineField({
+      name: "editRecipientSendAtPreviewTemplate",
+      title: "Edit drawer — timezone preview template",
+      type: "string",
+      description:
+        "Live preview shown under the edit-recipient drawer's send-at picker. Use {date} as a placeholder for the formatted weekday + month + day + time string.",
+      initialValue: "Arrives {date} in your timezone.",
+    }),
+    defineField({
+      name: "resendRetryAfterHourTemplate",
+      title: "Resend link — hour-cap retry message",
+      type: "string",
+      description:
+        "Shown beneath the resend CTA when the 1-per-hour cap is hit. Use {when} as a placeholder for the formatted next-available time.",
+      initialValue: "You can resend again at {when}.",
+    }),
+    defineField({
+      name: "resendRetryAfterDayTemplate",
+      title: "Resend link — day-cap retry message",
+      type: "string",
+      description:
+        "Shown beneath the resend CTA when the 3-per-day cap is hit. Use {when} as a placeholder for the formatted next-available time.",
+      initialValue: "You’ve hit today’s limit. Try again at {when}.",
+    }),
+    defineField({
+      name: "resendRetryFallbackLabel",
+      title: "Resend link — retry fallback (when timestamp unparseable)",
+      type: "string",
+      initialValue: "shortly",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "My Gifts Page" }),

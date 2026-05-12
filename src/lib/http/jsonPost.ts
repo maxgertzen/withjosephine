@@ -16,12 +16,11 @@
  * presentation hooks — UI copy strings live in the Sanity-editable layer,
  * not here.
  *
- * **Carve-out:** `/api/booking/gift` is intentionally NOT routed through
- * this helper. That route's 422 response means "anti-abuse cap hit" (not
- * field validation) AND ships `fieldErrors` as an OBJECT
- * (`{recipientEmail: "msg"}`) rather than the array shape (`[{field, message}]`)
- * this helper extracts. Forcing it through here would either break the
- * shape contract or require dual-shape parsing that hides the asymmetry.
+ * Does NOT cover `/api/booking/gift` — that route's validation-failure
+ * response ships `fieldErrors` as an object (`{recipientEmail: "msg"}`)
+ * rather than the array shape `[{field, message}]` this helper extracts,
+ * and its 422 means anti-abuse-cap rather than field validation. Use raw
+ * fetch + the route-specific response shape there.
  */
 export type JsonPostResult<T> = {
   ok: boolean;

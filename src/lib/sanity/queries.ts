@@ -188,7 +188,11 @@ export const myGiftsPageQuery = groq`
     resendThrottledMessage,
     actionGenericError,
     actionNetworkError,
-    actionClosedError
+    actionClosedError,
+    editRecipientSendAtPreviewTemplate,
+    resendRetryAfterHourTemplate,
+    resendRetryAfterDayTemplate,
+    resendRetryFallbackLabel
   }
 `;
 

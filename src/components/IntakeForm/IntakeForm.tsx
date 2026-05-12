@@ -637,7 +637,7 @@ export function IntakeForm({
       // browser finishes navigating to Stripe; otherwise the overlay would
       // flicker off for one render before the page unloads.
       try {
-        clearDraft(readingId);
+        clearDraft(draftScope);
       } catch {
         // localStorage failures must not block the redirect.
       }

@@ -299,6 +299,10 @@ export interface MyGiftsPageContent {
   actionGenericError: string;
   actionNetworkError: string;
   actionClosedError: string;
+  editRecipientSendAtPreviewTemplate: string;
+  resendRetryAfterHourTemplate: string;
+  resendRetryAfterDayTemplate: string;
+  resendRetryFallbackLabel: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -342,6 +346,10 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   actionGenericError: "Something went wrong. Please try again.",
   actionNetworkError: "Network problem. Please try again.",
   actionClosedError: "This gift can’t be edited anymore.",
+  editRecipientSendAtPreviewTemplate: "Arrives {date} in your timezone.",
+  resendRetryAfterHourTemplate: "You can resend again at {when}.",
+  resendRetryAfterDayTemplate: "You’ve hit today’s limit. Try again at {when}.",
+  resendRetryFallbackLabel: "shortly",
 };
 
 export interface GiftClaimPageContent {

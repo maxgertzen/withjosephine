@@ -140,6 +140,10 @@ export type SanityMyGiftsPage = {
   actionGenericError?: string;
   actionNetworkError?: string;
   actionClosedError?: string;
+  editRecipientSendAtPreviewTemplate?: string;
+  resendRetryAfterHourTemplate?: string;
+  resendRetryAfterDayTemplate?: string;
+  resendRetryFallbackLabel?: string;
 };
 
 export type SanityGiftClaimPage = {

@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
+import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
@@ -60,36 +61,20 @@ export function GiftCardActions({ gift, status, copy }: Props) {
 }
 
 /**
- * Live readout of the chosen send-at instant in the purchaser's browser TZ.
- * Lives next to the `datetime-local` input so the purchaser can sanity-check
- * "8pm Thursday" actually means what they think it does after the
- * UTC-round-trip on submit.
+ * Maps a `useMutationAction` error code to a Sanity-editable copy string.
+ * Each action passes its own override table for the codes specific to its
+ * route (e.g. `rate_limited` on resend-link, `http_409` on edit-recipient).
+ * Default codes (`network`, generic) fall through to the shared keys.
  */
-function EditSendAtTimezonePreview({ value }: { value: string }) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  const formatted = new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
-  return (
-    <span aria-live="polite" className="font-body text-[0.7rem] italic text-j-text-muted">
-      Arrives {formatted} in your timezone.
-    </span>
-  );
-}
-
-function editRecipientErrorLabel(
+function actionErrorLabel(
   code: string | null,
   copy: MyGiftsPageContent,
+  overrides: Partial<Record<string, keyof MyGiftsPageContent>> = {},
 ): string | null {
   if (!code) return null;
+  const overrideKey = overrides[code];
+  if (overrideKey) return copy[overrideKey];
   if (code === "network") return copy.actionNetworkError;
-  if (code === "http_409") return copy.actionClosedError;
   return copy.actionGenericError;
 }
 
@@ -144,7 +129,9 @@ function EditRecipientControl({
 
   const sendAtInputId = `gift-${gift._id}-send-at`;
   const headingId = `gift-${gift._id}-edit-heading`;
-  const topError = unchangedError ?? editRecipientErrorLabel(action.topError, copy);
+  const topError =
+    unchangedError ??
+    actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
   return (
     <form
       onSubmit={onSubmit}
@@ -195,7 +182,10 @@ function EditRecipientControl({
             {action.fieldErrors.giftSendAt}
           </span>
         ) : null}
-        <EditSendAtTimezonePreview value={giftSendAt} />
+        <TimezonePreview
+          value={giftSendAt}
+          template={copy.editRecipientSendAtPreviewTemplate}
+        />
       </label>
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
@@ -222,14 +212,6 @@ function EditRecipientControl({
 
 const ARM_RESET_MS = 5000;
 
-function flipToSelfSendErrorLabel(
-  code: string | null,
-  copy: MyGiftsPageContent,
-): string | null {
-  if (!code) return null;
-  if (code === "network") return copy.actionNetworkError;
-  return copy.actionGenericError;
-}
 
 function FlipToSelfSendControl({
   gift,
@@ -268,24 +250,14 @@ function FlipToSelfSendControl({
           {copy.flipToSelfSendCtaLabel}
         </Button>
       )}
-      <InlineError message={flipToSelfSendErrorLabel(action.topError, copy)} />
+      <InlineError message={actionErrorLabel(action.topError, copy)} />
     </div>
   );
 }
 
-function resendErrorLabel(
-  code: string | null,
-  copy: MyGiftsPageContent,
-): string | null {
-  if (!code) return null;
-  if (code === "rate_limited") return copy.resendThrottledMessage;
-  if (code === "network") return copy.actionNetworkError;
-  return copy.actionGenericError;
-}
-
-function formatNextAvailable(iso: string): string {
+function formatNextAvailable(iso: string, fallback: string): string {
   const next = new Date(iso);
-  if (Number.isNaN(next.getTime())) return "shortly";
+  if (Number.isNaN(next.getTime())) return fallback;
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     hour: "numeric",
@@ -293,16 +265,20 @@ function formatNextAvailable(iso: string): string {
   }).format(next);
 }
 
-function rateLimitMessageFor(verdict: ResendVerdictSummary | undefined): string | null {
+function rateLimitMessageFor(
+  verdict: ResendVerdictSummary | undefined,
+  copy: MyGiftsPageContent,
+): string | null {
   if (!verdict || verdict.allowed) return null;
-  const when = verdict.nextAvailableAt ? formatNextAvailable(verdict.nextAvailableAt) : "shortly";
-  if (verdict.reason === "hour_cap") {
-    return `You can resend again at ${when}.`;
-  }
-  if (verdict.reason === "day_cap") {
-    return `You’ve hit today’s limit. Try again at ${when}.`;
-  }
-  return `Try again at ${when}.`;
+  const fallback = copy.resendRetryFallbackLabel;
+  const when = verdict.nextAvailableAt
+    ? formatNextAvailable(verdict.nextAvailableAt, fallback)
+    : fallback;
+  const template =
+    verdict.reason === "hour_cap"
+      ? copy.resendRetryAfterHourTemplate
+      : copy.resendRetryAfterDayTemplate;
+  return template.replace(/\{when\}/g, when);
 }
 
 function ResendLinkControl({
@@ -316,7 +292,7 @@ function ResendLinkControl({
   const action = useMutationAction(`/api/gifts/${gift._id}/resend-link`);
   const verdict = gift.resendVerdict;
   const blocked = Boolean(verdict && !verdict.allowed);
-  const blockedMessage = rateLimitMessageFor(verdict);
+  const blockedMessage = rateLimitMessageFor(verdict, copy);
 
   async function onClick() {
     const result = await action.run();
@@ -336,7 +312,11 @@ function ResendLinkControl({
       {blockedMessage ? (
         <p className="font-body text-xs text-j-text-muted italic">{blockedMessage}</p>
       ) : null}
-      <InlineError message={resendErrorLabel(action.topError, copy)} />
+      <InlineError
+        message={actionErrorLabel(action.topError, copy, {
+          rate_limited: "resendThrottledMessage",
+        })}
+      />
     </div>
   );
 }
