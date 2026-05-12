@@ -295,6 +295,44 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
     "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
 };
 
+export interface GiftClaimPageContent {
+  seoTitle: string;
+  seoDescription: string;
+  noTokenHeading: string;
+  noTokenBody: string;
+  alreadyClaimedHeading: string;
+  alreadyClaimedBody: string;
+}
+
+export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
+  seoTitle: "Claim your gift — Josephine",
+  seoDescription: "Open the reading someone sent you.",
+  noTokenHeading: "Open from your email",
+  noTokenBody:
+    "Your gift link came in an email — open it from there to claim your reading.",
+  alreadyClaimedHeading: "This gift has already been opened",
+  alreadyClaimedBody:
+    "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
+};
+
+export interface GiftIntakePageContent {
+  seoTitle: string;
+  seoDescription: string;
+  eyebrow: string;
+  heading: string;
+  headingWelcome: string;
+  lede: string;
+}
+
+export const GIFT_INTAKE_PAGE_DEFAULTS: GiftIntakePageContent = {
+  seoTitle: "Open your gift — Josephine",
+  seoDescription: "Share your details so Josephine can prepare your reading.",
+  eyebrow: "✦ Opening your gift",
+  heading: "A few things, before we begin.",
+  headingWelcome: "Welcome — a few things before we begin.",
+  lede: "Someone sent you a {readingName}. Share your details and Josephine will prepare your reading.",
+};
+
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
   confirmBody: string;

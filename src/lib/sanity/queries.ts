@@ -178,6 +178,28 @@ export const myGiftsPageQuery = groq`
   }
 `;
 
+export const giftClaimPageQuery = groq`
+  *[_type == "giftClaimPage"][0] {
+    seoTitle,
+    seoDescription,
+    noTokenHeading,
+    noTokenBody,
+    alreadyClaimedHeading,
+    alreadyClaimedBody
+  }
+`;
+
+export const giftIntakePageQuery = groq`
+  *[_type == "giftIntakePage"][0] {
+    seoTitle,
+    seoDescription,
+    eyebrow,
+    heading,
+    headingWelcome,
+    lede
+  }
+`;
+
 export const magicLinkVerifyPageQuery = groq`
   *[_type == "magicLinkVerifyPage"][0] {
     confirmHeading,

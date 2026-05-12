@@ -127,13 +127,21 @@ export default async function GiftPage({ params }: GiftPageProps) {
         aboutLinkText={aboutLabel}
       />
 
-      <main className="relative z-10 py-16">
-        <GiftForm
-          readingSlug={reading.slug}
-          readingName={reading.name}
-          readingPriceDisplay={reading.priceDisplay}
-          copy={mergeCopy(giftFormCopy)}
-        />
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
+        <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
+          />
+          <div className="relative px-6 py-10 md:px-12 md:py-14">
+            <GiftForm
+              readingSlug={reading.slug}
+              readingName={reading.name}
+              readingPriceDisplay={reading.priceDisplay}
+              copy={mergeCopy(giftFormCopy)}
+            />
+          </div>
+        </article>
       </main>
 
       <Footer />

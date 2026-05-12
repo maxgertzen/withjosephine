@@ -13,6 +13,8 @@ import {
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   faqItemsQuery,
+  giftClaimPageQuery,
+  giftIntakePageQuery,
   landingPageQuery,
   legalPageBySlugQuery,
   listenPageQuery,
@@ -40,6 +42,8 @@ import type {
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
   SanityFaqItem,
+  SanityGiftClaimPage,
+  SanityGiftIntakePage,
   SanityLandingPage,
   SanityLegalPage,
   SanityListenPage,
@@ -167,6 +171,16 @@ export const fetchMyReadingsPage = cache(async (): Promise<SanityMyReadingsPage 
 
 export const fetchMyGiftsPage = cache(async (): Promise<SanityMyGiftsPage | null> => {
   const { data } = await sanityFetch<SanityMyGiftsPage | null>({ query: myGiftsPageQuery });
+  return data;
+});
+
+export const fetchGiftClaimPage = cache(async (): Promise<SanityGiftClaimPage | null> => {
+  const { data } = await sanityFetch<SanityGiftClaimPage | null>({ query: giftClaimPageQuery });
+  return data;
+});
+
+export const fetchGiftIntakePage = cache(async (): Promise<SanityGiftIntakePage | null> => {
+  const { data } = await sanityFetch<SanityGiftIntakePage | null>({ query: giftIntakePageQuery });
   return data;
 });
 

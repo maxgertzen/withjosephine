@@ -19,6 +19,8 @@ export const SINGLETON_TYPES = new Set([
   "emailOrderConfirmation",
   "emailGiftPurchaseConfirmation",
   "emailGiftClaim",
+  "giftClaimPage",
+  "giftIntakePage",
   "listenPage",
 ]);
 
@@ -125,6 +127,8 @@ export const deskStructure = (S: StructureBuilder) =>
                 "Email — Gift Purchase Confirmation",
               ),
               singletonListItem(S, "emailGiftClaim", "Email — Gift Claim (to recipient)"),
+              singletonListItem(S, "giftClaimPage", "Gift Claim Page (recipient lands here)"),
+              singletonListItem(S, "giftIntakePage", "Gift Intake Page (recipient fills details)"),
               singletonListItem(S, "emailDay2Started", "Email — Day 2 (I've Started)"),
               singletonListItem(S, "emailDay7Delivery", "Email — Day-7 Delivery"),
               singletonListItem(S, "emailMagicLink", "Email — Magic Link"),

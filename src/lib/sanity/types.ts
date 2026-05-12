@@ -128,6 +128,24 @@ export type SanityMyGiftsPage = {
   privacyNote: string;
 };
 
+export type SanityGiftClaimPage = {
+  seoTitle: string;
+  seoDescription: string;
+  noTokenHeading: string;
+  noTokenBody: string;
+  alreadyClaimedHeading: string;
+  alreadyClaimedBody: string;
+};
+
+export type SanityGiftIntakePage = {
+  seoTitle: string;
+  seoDescription: string;
+  eyebrow: string;
+  heading: string;
+  headingWelcome: string;
+  lede: string;
+};
+
 export type SanityMagicLinkVerifyPage = {
   confirmHeading: string;
   confirmBody: string;
