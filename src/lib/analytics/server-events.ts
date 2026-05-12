@@ -9,7 +9,8 @@ export type EmailSubType =
   | "contact_form"
   | "magic_link"
   | "privacy_export"
-  | "gift_purchase_confirmation";
+  | "gift_purchase_confirmation"
+  | "gift_claim";
 
 export type ServerEventMap = {
   payment_success: {

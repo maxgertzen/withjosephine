@@ -26,6 +26,11 @@ export default defineConfig({
       // guard, so route the import to a no-op stub for tests. Production
       // bundling honors the real module via Next's build pipeline.
       "server-only": path.resolve(__dirname, "src/test/server-only.stub.ts"),
+      // Cloudflare's `cloudflare:workers` virtual module isn't resolvable
+      // outside the workerd runtime — route it to a test-only shim so the
+      // GiftClaimScheduler DO compiles in vitest. Mocks via vi.mock(...)
+      // override the shim per test as needed.
+      "cloudflare:workers": path.resolve(__dirname, "src/test/cloudflare-workers.stub.ts"),
     },
   },
 });

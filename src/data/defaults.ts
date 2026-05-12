@@ -369,6 +369,56 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirm
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
+export interface EmailGiftClaimContent {
+  subjectFirstSend: string;
+  subjectReminder: string;
+  previewFirstSend: string;
+  previewReminder: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineFirstSend: string;
+  heroLineReminder: string;
+  greeting: string;
+  bodyFirstSend: string;
+  bodyReminder: string;
+  giftMessageLabel: string;
+  claimButtonLabel: string;
+  claimUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  reminderContactLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
+  subjectFirstSend: "A reading, waiting for you",
+  subjectReminder: "A reading is still waiting for you",
+  previewFirstSend: "{purchaserFirstName} has sent you a reading.",
+  previewReminder: "A small reminder about the reading {purchaserFirstName} sent you.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLineFirstSend: "A reading, for you",
+  heroLineReminder: "Still here, when you’re ready",
+  greeting: "Hi {recipientName},",
+  bodyFirstSend:
+    "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+  bodyReminder:
+    "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+  giftMessageLabel: "A note from {purchaserFirstName}",
+  claimButtonLabel: "OPEN YOUR GIFT",
+  claimUrlHelper:
+    "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivered within 7 days of your intake",
+  reminderContactLine:
+    "If you can’t find the earlier email, write to hello@withjosephine.com and I’ll send you a fresh link.",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
 export interface EmailDay2StartedContent {
   subject: string;
   preview: string;

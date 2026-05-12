@@ -161,6 +161,29 @@ export type SanityEmailGiftPurchaseConfirmation = {
   footerDisclaimer: string;
 };
 
+export type SanityEmailGiftClaim = {
+  subjectFirstSend: string;
+  subjectReminder: string;
+  previewFirstSend: string;
+  previewReminder: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineFirstSend: string;
+  heroLineReminder: string;
+  greeting: string;
+  bodyFirstSend: string;
+  bodyReminder: string;
+  giftMessageLabel: string;
+  claimButtonLabel: string;
+  claimUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  reminderContactLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
 export type SanityEmailDay2Started = {
   subject: string;
   preview: string;

@@ -25,7 +25,8 @@ export type EmailFiredType =
   | "day7-overdue-alert"
   | "day14"
   | "abandonment"
-  | "gift_purchase_confirmation";
+  | "gift_purchase_confirmation"
+  | "gift_claim";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;

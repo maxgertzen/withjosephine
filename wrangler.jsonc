@@ -37,6 +37,13 @@
 	//                                (which gates /api/sanity-sync) — separate rotation, separate
 	//                                blast-radius if compromised. One value per environment, set
 	//                                identically in the Sanity dashboard webhook config + the worker secret.
+	//   - DO_DISPATCH_SECRET         Shared secret used by the GiftClaimScheduler Durable Object
+	//                                to authenticate its POST to /api/internal/gift-claim-dispatch
+	//                                (and used by scripts/regenerate-gift-claim.ts to hit
+	//                                /api/internal/gift-claim-regenerate). Distinct rotation from
+	//                                CRON_SECRET. Set on the worker secret AND identically on the
+	//                                staging worker. The Stripe-webhook → DO `.fetch(/schedule)` call
+	//                                runs inside the same isolate so it does NOT need the secret.
 	//
 	// Public vars used by the backup cron (set as Variables, plain text):
 	//   - SANITY_BACKUP_ENABLED      Deploy-flag gate for /api/cron/backup-sanity-dataset. Set to "1"
@@ -115,6 +122,19 @@
 			"migrations_dir": "./migrations"
 		}
 	],
+	// Durable Objects: GiftClaimScheduler fires the recipient claim email at
+	// the purchaser's chosen `gift_send_at` for `scheduled`-mode gifts. One DO
+	// per submissionId, alarms reschedule for +7d reminders up to 3 fires /
+	// 30 days. Class is exported from `src/lib/durable-objects/GiftClaimScheduler.ts`
+	// and re-exported from custom-worker.ts so wrangler bundling picks it up.
+	"durable_objects": {
+		"bindings": [
+			{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
+		]
+	},
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
+	],
 	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
 	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
 	// rules in the CF dashboard (see POST_LAUNCH_BACKLOG.md "WAF rate-limit
@@ -191,6 +211,14 @@
 					"database_id": "4e1ea315-0628-40e6-a19b-527ad1ee4c4c",
 					"migrations_dir": "./migrations"
 				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
 			],
 			"ratelimits": [
 				{
