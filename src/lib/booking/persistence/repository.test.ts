@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  acquireGiftResendLock,
   appendEmailFired,
   countActivePendingGiftsForRecipient,
   createSubmission,
@@ -18,6 +19,7 @@ import {
   markSubmissionExpired,
   markSubmissionPaid,
   redeemGiftSubmission,
+  releaseGiftResendLock,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
@@ -462,6 +464,70 @@ describe("repository against in-memory SQLite", () => {
       });
       const n = await countActivePendingGiftsForRecipient("victim@example.com");
       expect(n).toBe(1);
+    });
+  });
+
+  // Phase 5 Session 4b — B6.20 atomic resend-link lock.
+  describe("acquireGiftResendLock", () => {
+    async function makeSelfSendGift(id: string): Promise<void> {
+      await createSubmission({
+        ...BASE_INPUT,
+        id,
+        responses: [],
+        consentLabel: null,
+        photoR2Key: null,
+        isGift: true,
+        purchaserUserId: "user_x",
+        giftDeliveryMethod: "self_send",
+      });
+      await markSubmissionPaid(id, {
+        stripeEventId: `evt_${id}`,
+        stripeSessionId: `cs_${id}`,
+        paidAt: "2026-04-21T10:00:00Z",
+        amountPaidCents: 9900,
+        amountPaidCurrency: "usd",
+        country: "US",
+        recipientUserId: "user_x",
+      });
+    }
+
+    it("first caller acquires the lock, second concurrent caller gets false", async () => {
+      await makeSelfSendGift("g_lock_1");
+      const now = 1_700_000_000_000;
+      const a = await acquireGiftResendLock("g_lock_1", {
+        nowMs: now,
+        lockUntilMs: now + 60_000,
+      });
+      expect(a).toBe(true);
+      const b = await acquireGiftResendLock("g_lock_1", {
+        nowMs: now + 1_000,
+        lockUntilMs: now + 61_000,
+      });
+      expect(b).toBe(false);
+    });
+
+    it("lock auto-expires — caller past TTL acquires fresh lock", async () => {
+      await makeSelfSendGift("g_lock_2");
+      const now = 1_700_000_000_000;
+      await acquireGiftResendLock("g_lock_2", { nowMs: now, lockUntilMs: now + 60_000 });
+      const later = now + 90_000; // past the TTL
+      const next = await acquireGiftResendLock("g_lock_2", {
+        nowMs: later,
+        lockUntilMs: later + 60_000,
+      });
+      expect(next).toBe(true);
+    });
+
+    it("release frees the lock for the next caller", async () => {
+      await makeSelfSendGift("g_lock_3");
+      const now = 1_700_000_000_000;
+      await acquireGiftResendLock("g_lock_3", { nowMs: now, lockUntilMs: now + 60_000 });
+      await releaseGiftResendLock("g_lock_3");
+      const next = await acquireGiftResendLock("g_lock_3", {
+        nowMs: now + 100,
+        lockUntilMs: now + 60_100,
+      });
+      expect(next).toBe(true);
     });
   });
 });

@@ -243,6 +243,21 @@ export async function listGiftsByPurchaserUserId(
   return repo.listGiftsByPurchaserUserId(userId);
 }
 
+/**
+ * Phase 5 Session 4b — B6.20. Atomic resend-link lock acquire. See
+ * repo.acquireGiftResendLock for full semantics.
+ */
+export async function acquireGiftResendLock(
+  id: string,
+  args: { lockUntilMs: number; nowMs: number },
+): Promise<boolean> {
+  return repo.acquireGiftResendLock(id, args);
+}
+
+export async function releaseGiftResendLock(id: string): Promise<void> {
+  return repo.releaseGiftResendLock(id);
+}
+
 export type EditGiftRecipientPatch = repo.EditGiftRecipientPatch;
 
 /**

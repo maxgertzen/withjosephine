@@ -593,6 +593,40 @@ export async function flipGiftToSelfSend(
   return result.rowsWritten > 0;
 }
 
+/**
+ * Phase 5 Session 4b — B6.20. Atomic lock acquire for the resend-link
+ * route. Returns true when this caller successfully acquired the lock
+ * (first writer wins), false when another caller holds an unexpired lock.
+ * The lock TTL is short (60s) — long enough to cover Resend's worst-case
+ * latency, short enough that a crashed in-flight resend doesn't perma-
+ * block the customer. Callers are expected to release the lock on
+ * completion (success or failure) via `releaseGiftResendLock`.
+ */
+export async function acquireGiftResendLock(
+  id: string,
+  args: { lockUntilMs: number; nowMs: number },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_resend_lock_until = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'self_send'
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL
+        AND (gift_resend_lock_until IS NULL OR gift_resend_lock_until < ?)`,
+    [args.lockUntilMs, id, args.nowMs],
+  );
+  return result.rowsWritten > 0;
+}
+
+export async function releaseGiftResendLock(id: string): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET gift_resend_lock_until = NULL WHERE id = ?`,
+    [id],
+  );
+}
+
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
   const rows = await dbQuery<{ photo_r2_key: string }>(
     `SELECT photo_r2_key FROM submissions WHERE photo_r2_key IS NOT NULL`,
