@@ -22,3 +22,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile
+
+    - name: Install studio dependencies
+      shell: bash
+      run: pnpm --dir studio install --frozen-lockfile
