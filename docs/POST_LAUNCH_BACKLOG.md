@@ -238,14 +238,18 @@ Stripe live-mode blocker sweep + every new Pentester finding + every Session-3 c
 - ✅ Applied to **staging** D1 2026-05-12 (alongside catch-up of 0005–0008 which were also pending on staging).
 - ⏸ **NOT applied to production** — production main is at PR #89, which doesn't use any of these columns. Production migration is gated on the eventual `feat/listen-redesign-and-gifting` → `main` merge.
 
-**Carry-over** (T4–T8 sections below) cluster naturally as a "Session 5 — polish + refactor" PR.
+**Carry-over** (T4–T8 sections below) ships in Session 5 directly on `feat/listen-redesign-and-gifting` BEFORE main-merge per Max's directive. Pre-launch, NOT post-launch polish.
 
-### Phase 5 — Session 4b — production-signal-required follow-ups (NEW, legitimate defer-with-trigger)
+### Phase 5 — Session 5 — PRE-LAUNCH must-ship items (Max directive 2026-05-12)
 
-Items surfaced during Session 4b self-review that genuinely depend on production signal — NOT context-cap deferrals.
+Max's standing rule (memory `feedback_no_more_splitting_and_deferring.md`): **every Session-4b carry-over + audit GAP ships BEFORE the Stripe live-mode flip.** No "post-launch polish" framing, no "Session 5 is non-blocking." Cohort below is the gate for apex unpark — pair with hold-gate item #5 in `CLAUDE.md`.
 
-- **GAP-10 — Partial-intake recovery for gift recipients.** Recipient who fills 7-of-10 intake fields and closes the browser loses everything. Booking form has localStorage save/resume; gift intake doesn't. **Trigger:** first "lost my answers" customer-support ticket. **Fix path:** localStorage save/resume keyed by claim-token-hash.
-- **GAP-11 — Copywriter pass on Studio field descriptions.** The Session 4 council's Copywriter persona surfaced 8+ Becky-friendly description rewrites in `studio/schemas/*.ts` that weren't shipped. **Trigger:** Becky onboarding kickoff (she actually opens Studio and gets confused by a description). **Fix path:** one focused pass on description fields across the customer-emails schemas.
+**GAPs (audit-surfaced, pre-launch):**
+- **GAP-10 — Partial-intake recovery for gift recipients.** Recipient who fills 7-of-10 intake fields and closes the browser loses everything. Booking form has localStorage save/resume; gift intake doesn't. Customers shouldn't lose data on first contact. **Fix path:** localStorage save/resume keyed by claim-token-hash; clear on successful redeem.
+- **GAP-11 — Copywriter pass on Studio field descriptions.** Becky onboards before launch. Session 4 council's Copywriter surfaced 8+ Becky-friendly description rewrites in `studio/schemas/*.ts` that weren't shipped. **Fix path:** one focused pass on description fields across the customer-emails schemas.
+- **GAP-3 — Move 3 in-button loading labels (Saving/Switching/Sending) to `myGiftsPage` Sanity slots** — folds into T7 below.
+- **GAP-8 — Inline comment in `GiftCardActions.test.tsx` 422 test** explaining `fireEvent.submit(form)` vs click choice.
+- **GAP-9 — Audit `IntakeForm.test.tsx` + `GiftForm.test.tsx`** — confirm `fireEvent.click` on submit actually fires onSubmit. Convert to `fireEvent.submit(form)` where it doesn't.
 
 ### Phase 5 — Session 3 — deferred follow-ups (status after Session 4 review)
 
@@ -305,7 +309,11 @@ Multi-agent council review (PM + UX + UI Designer + Copywriter + QA + Pentester)
 - ✅ **LB-4 — GDPR Art. 17 cascade purchaser walk** — commit `7ada206`. `cascadeDeleteUser` enumerates `listGiftsByPurchaserUserId` in parallel with the recipient walk; pseudonymises purchaser fields when recipient already claimed (preserves contract-base Art. 6(1)(b) data); full-deletes when recipient hasn't claimed yet. 4 new cascade tests.
 - ✅ **LB-6 — GiftForm + GiftCardActions a11y wiring** — commit `c4e41fc`. All 8 GiftForm fields wired with `id` + `aria-describedby` + `aria-invalid`; focus-on-error via `useRef`; `✦` wrapped in `<span aria-hidden="true">`; drawer heading + form `aria-labelledby`; send-at input label association. WCAG 3.3.1 + 4.1.2 compliant.
 
-### Phase 5 — Session 4b — carry-over (visual polish + Sanity copy extraction)
+### Phase 5 — Session 5 — pre-launch must-ship cohort (continued from above)
+
+All items below are pre-launch per Max's directive. The "Session 4b — carry-over" sections that follow enumerate the same items in tranche form (T4–T8); they need to ship in `feat/listen-redesign-and-gifting` before main-merge.
+
+### Phase 5 — Session 4b — carry-over (visual polish + Sanity copy extraction) — PRE-LAUNCH
 
 These are NOT launch-blockers (the surface is functional + on-brand-enough) but represent council-agreed polish. Each gets a concrete trigger.
 
@@ -325,18 +333,18 @@ These are NOT launch-blockers (the surface is functional + on-brand-enough) but 
 - ✅ **NEW-LOW-3 — Stripe metadata integrity canary** — commit `29b7e71`. Webhook gift branch warn-logs on `session.metadata.is_gift !== String(submission.isGift)`.
 - ✅ **NEW-INFO-1 — DO logging discipline documented** — commit `8c0f690`. JSDoc audit confirms only `submissionId` logged across `GiftClaimScheduler`, `giftClaimDispatch`, and the internal dispatch route. No raw emails / Resend IDs / token material.
 
-### Phase 5 — Session 4b — carry-over (/simplify-deferred fixes)
+### Phase 5 — Session 4b — carry-over (/simplify-deferred fixes) — PRE-LAUNCH
 
-All defer-with-trigger from the Session 4 /simplify review. Status after Session 4b closes (PR #109): NONE of these shipped in 4b. They cluster as the "DX refactor + Sanity copy extraction" tail for a future polish PR.
+All from the Session 4 /simplify review. Pre-launch per Max's directive (2026-05-12). Ship in Session 5 alongside the other carry-over tranches on `feat/listen-redesign-and-gifting` before main-merge.
 
 - **Sanity-editable copy slots for `/my-gifts` action surfaces.** `GiftCardActions.tsx` hardcodes ~14 customer-facing strings (drawer field labels, button states "Saving…" / "Switching…" / "Sending…", and 5 error/throttle messages). **Trigger:** Becky requests to edit any of these strings, OR a focused copy-pass before Stripe live-mode flip. **Fix path:** add ~14 fields to `myGiftsPage` doctype + extend `MY_GIFTS_PAGE_DEFAULTS` + new migration script.
 - **`useMutationAction` hook + `<InlineError>` primitive.** The 3 action controls in `GiftCardActions.tsx` share an identical `submitting + topError + try/catch/finally + router.refresh()` scaffold (~40 lines duplicated). **Trigger:** any 4th mutation surface lands on `/my-gifts` or `/my-readings`. **Fix path:** extract `useMutationAction<T>({endpoint, body?, onResultStatus})` returning `{submitting, topError, run}`.
 - **`jsonPost<T>(url, body)` helper.** Identical POST + 422-branch + network-catch pattern in `GiftForm.tsx:110-141` + 3× in `GiftCardActions.tsx`. **Trigger:** any 4th client-fetched mutation lands.
 - **Server actions + `revalidatePath('/my-gifts')` instead of `router.refresh()`.** Feasibility-gated on CF Workers + OpenNext compatibility (verify before committing). Each mutation action triggers a full RSC re-fetch today. **Trigger:** `/my-gifts` page TTFB exceeds 500ms P95 after any action OR Worker CPU duration alerts OR `useMutationAction` hook lands (above). **Fix path:** convert 3 mutation routes to Server Actions; have them return the updated `SubmissionRecord` for optimistic local updates.
 
-### Phase 5 — Session 4b — carry-over (refactor deferrals)
+### Phase 5 — Session 4b — carry-over (refactor deferrals) — PRE-LAUNCH
 
-All defer-with-trigger, except where noted as SHIPPED-in-4b below.
+Pre-launch per Max's directive (2026-05-12). Ship in Session 5 on `feat/listen-redesign-and-gifting` before main-merge. Items marked ✅ shipped in 4b.
 
 - `sendAndRecord` helper extraction — pattern is 5×, each call site has different post-send invariants. **Trigger:** any pattern divergence (e.g., a new email type appends to a different log shape).
 - `EmailShell` consistency for GiftClaim + GiftPurchaseConfirmation + OrderConfirmation — snapshot-test fallout. **Trigger:** next email-template touch that involves visual refactor.
@@ -344,9 +352,9 @@ All defer-with-trigger, except where noted as SHIPPED-in-4b below.
 - GiftForm migrate to `Form/*` components — large refactor; Form/* API hasn't stabilised. **Trigger:** `Form/*` API documentation lands + at least one other complex form migrated successfully.
 - ✅ **`{tag}` substitution sanitisation** — **SHIPPED in Session 4b** (PR #109, commit `29b7e71`, B7.26). `stripTemplateTags` helper strips `{...}` from purchaser-controlled inputs (`purchaserFirstName`, `giftMessage`, `recipientName`) at form-submit time in both gift route + edit-recipient route.
 
-#### Session 4b T4–T8 carry-over (originally scoped, deferred at PR boundary)
+#### Session 4b T4–T8 carry-over — PRE-LAUNCH, must ship in Session 5
 
-These are real follow-up work that didn't fit PR #109 — the agent shipped T1-T3 (Stripe blockers + every Pentester finding + every Session-3-corroborated finding) and stopped before the polish/refactor tail. Each item below has a clear path; they cluster as a "Session 5 — polish + refactor" PR.
+PR #109 closed T1–T3 (Stripe blockers + every Pentester finding + every Session-3-corroborated finding). T4–T8 ship in Session 5 directly on `feat/listen-redesign-and-gifting` BEFORE main-merge per Max's directive. Each item below has a clear path.
 
 - **T4 — DO `env.SELF` service binding.** `GiftClaimScheduler.alarm()` POSTs over the public edge instead of in-isolate. ~20 min change once wrangler config + env type update are wired. **Trigger:** 100+ scheduled gifts/month OR observable alarm-latency tail.
 - **T5 — `jsonPost<T>` + `useMutationAction` + Server Actions migration.** See "/simplify-deferred fixes" section above.
