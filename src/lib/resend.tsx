@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { Resend } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
-import type { EmailSubType } from "./analytics/server-events";
+import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { GIFT_DELIVERY } from "./booking/constants";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day2Started } from "./emails/Day2Started";
@@ -72,18 +72,18 @@ async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
   html: string;
-  emailKind: string;
   subType: EmailSubType;
   submissionId: string | null;
   replyTo?: string;
 }): Promise<EmailSendResult> {
+  const label = EMAIL_LABELS[args.subType];
   if (isFlagEnabled("RESEND_DRY_RUN")) {
-    console.warn(`[resend] RESEND_DRY_RUN — skipping ${args.emailKind} (to=${redactRecipient(args.to)})`);
+    console.warn(`[resend] RESEND_DRY_RUN — skipping ${label} (to=${redactRecipient(args.to)})`);
     return { kind: "dry_run" };
   }
   const client = getResendClient();
   if (!client) {
-    console.warn(`[resend] RESEND_API_KEY not set — skipping ${args.emailKind}`);
+    console.warn(`[resend] RESEND_API_KEY not set — skipping ${label}`);
     return { kind: "skipped", reason: "no_api_key" };
   }
   let resendId: string | null;
@@ -98,7 +98,7 @@ async function sendOrSkip(args: {
     resendId = response.data?.id ?? null;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[resend] send failed for ${args.emailKind}: ${message}`);
+    console.error(`[resend] send failed for ${label}: ${message}`);
     return { kind: "failed", error: message };
   }
 
@@ -116,14 +116,20 @@ async function sendOrSkip(args: {
   return { kind: "sent", resendId };
 }
 
+function requireNotificationEmail(subType: EmailSubType): string | EmailSendResult {
+  const notificationEmail = process.env.NOTIFICATION_EMAIL;
+  if (!notificationEmail) {
+    console.warn(`[resend] NOTIFICATION_EMAIL not set — skipping ${EMAIL_LABELS[subType]}`);
+    return { kind: "skipped", reason: "no_notification_email" };
+  }
+  return notificationEmail;
+}
+
 export async function sendNotificationToJosephine(
   submission: SubmissionContext,
 ): Promise<EmailSendResult> {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  if (!notificationEmail) {
-    console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Josephine notification");
-    return { kind: "skipped", reason: "no_notification_email" };
-  }
+  const notificationEmail = requireNotificationEmail("josephine_notification");
+  if (typeof notificationEmail !== "string") return notificationEmail;
 
   const html = await render(
     <JosephineNotification
@@ -142,7 +148,6 @@ export async function sendNotificationToJosephine(
     to: notificationEmail,
     subject: `New ${submission.readingName} booking — ${submission.email}`,
     html,
-    emailKind: "Josephine notification",
     subType: "josephine_notification",
     submissionId: submission.id,
   });
@@ -171,7 +176,6 @@ export async function sendOrderConfirmation(
     to: submission.email,
     subject: copy.subject,
     html,
-    emailKind: "order confirmation",
     subType: "order_confirmation",
     submissionId: submission.id,
   });
@@ -233,7 +237,6 @@ export async function sendGiftPurchaseConfirmation(
     to: input.purchaserEmail,
     subject: interpolatedSubject,
     html,
-    emailKind: `gift purchase confirmation (${input.variant})`,
     subType: "gift_purchase_confirmation",
     submissionId: input.submissionId,
   });
@@ -281,7 +284,6 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     to: input.recipientEmail,
     subject: interpolatedSubject,
     html,
-    emailKind: `gift claim (${input.variant})`,
     subType: "gift_claim",
     submissionId: input.submissionId,
   });
@@ -297,7 +299,6 @@ export async function sendDay2Started(submission: SubmissionContext): Promise<Em
     to: submission.email,
     subject: copy.subject,
     html,
-    emailKind: "Day +2 started",
     subType: "day_2",
     submissionId: submission.id,
   });
@@ -327,7 +328,6 @@ export async function sendDay7Delivery(
     to: submission.email,
     subject,
     html,
-    emailKind: "Day +7 delivery",
     subType: "day_7_delivery",
     submissionId: submission.id,
   });
@@ -355,7 +355,6 @@ export async function sendMagicLink(args: {
     to: args.to,
     subject: copy.subject,
     html,
-    emailKind: "magic link",
     subType: "magic_link",
     submissionId: null,
   });
@@ -384,7 +383,6 @@ export async function sendPrivacyExportEmail(args: {
     to: args.to,
     subject: "Your Josephine data export",
     html,
-    emailKind: "privacy export",
     subType: "privacy_export",
     submissionId: null,
   });
@@ -397,11 +395,8 @@ export type ContactPayload = {
 };
 
 export async function sendContactMessage(contact: ContactPayload): Promise<EmailSendResult> {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  if (!notificationEmail) {
-    console.warn("[resend] NOTIFICATION_EMAIL not set — skipping contact message");
-    return { kind: "skipped", reason: "no_notification_email" };
-  }
+  const notificationEmail = requireNotificationEmail("contact_form");
+  if (typeof notificationEmail !== "string") return notificationEmail;
 
   const html = await render(
     <ContactMessage name={contact.name} email={contact.email} message={contact.message} />,
@@ -412,18 +407,14 @@ export async function sendContactMessage(contact: ContactPayload): Promise<Email
     replyTo: contact.email,
     subject: `New message from ${contact.name}`,
     html,
-    emailKind: "contact message",
     subType: "contact_form",
     submissionId: null,
   });
 }
 
 export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  if (!notificationEmail) {
-    console.warn("[resend] NOTIFICATION_EMAIL not set — skipping Day +7 overdue alert");
-    return { kind: "skipped", reason: "no_notification_email" };
-  }
+  const notificationEmail = requireNotificationEmail("day_7_overdue_alert");
+  if (typeof notificationEmail !== "string") return notificationEmail;
 
   const html = await render(
     <Day7OverdueAlert
@@ -437,7 +428,6 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     to: notificationEmail,
     subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
     html,
-    emailKind: "Day +7 overdue alert",
     subType: "day_7_overdue_alert",
     submissionId: submission.id,
   });

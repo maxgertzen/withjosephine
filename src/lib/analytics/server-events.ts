@@ -13,6 +13,20 @@ export type EmailSubType =
   | "gift_claim"
   | "gift_resend";
 
+export const EMAIL_LABELS: Record<EmailSubType, string> = {
+  order_confirmation: "order confirmation",
+  josephine_notification: "Josephine notification",
+  day_2: "Day +2 started",
+  day_7_delivery: "Day +7 delivery",
+  day_7_overdue_alert: "Day +7 overdue alert",
+  contact_form: "contact message",
+  magic_link: "magic link",
+  privacy_export: "privacy export",
+  gift_purchase_confirmation: "gift purchase confirmation",
+  gift_claim: "gift claim",
+  gift_resend: "gift resend",
+};
+
 export type ServerEventMap = {
   payment_success: {
     submission_id: string;
