@@ -18,6 +18,11 @@ vi.mock("@/lib/booking/submissions", () => ({
   redeemGiftSubmission: redeemGiftSubmissionMock,
 }));
 
+const countActivePendingGiftsForRecipientMock = vi.fn();
+vi.mock("@/lib/booking/persistence/repository", () => ({
+  countActivePendingGiftsForRecipient: countActivePendingGiftsForRecipientMock,
+}));
+
 const getOrCreateUserMock = vi.fn();
 vi.mock("@/lib/auth/users", () => ({
   getOrCreateUser: getOrCreateUserMock,
@@ -157,6 +162,7 @@ beforeEach(() => {
   cookieGetMock.mockReset().mockReturnValue({ value: "cookie-value" });
   cookieSetMock.mockReset();
   verifyCookieMock.mockReset().mockResolvedValue("sub_gift_1");
+  countActivePendingGiftsForRecipientMock.mockReset().mockResolvedValue(0);
 });
 
 afterEach(() => {
@@ -266,5 +272,31 @@ describe("/api/booking/gift-redeem", () => {
       values: { email: "Bob@Example.COM", first_name: "Bob" },
     });
     expect(res.status).toBe(200);
+  });
+
+  // Session 4b LB-3: anti-abuse cap re-check at claim time
+  it("rejects with 422 when claim-time cap is reached (self_send bypass case)", async () => {
+    countActivePendingGiftsForRecipientMock.mockResolvedValueOnce(3);
+    const res = await callRoute(VALID_BODY);
+    const body = await res.json();
+    expect(res.status).toBe(422);
+    expect(body.error).toBe("Too many pending gifts");
+    expect(body.fieldErrors?.email).toBeTruthy();
+    expect(countActivePendingGiftsForRecipientMock).toHaveBeenCalledWith(
+      "bob@example.com",
+      { excludeSubmissionId: "sub_gift_1" },
+    );
+    expect(redeemGiftSubmissionMock).not.toHaveBeenCalled();
+  });
+
+  it("allows redemption when claim-time cap not reached", async () => {
+    countActivePendingGiftsForRecipientMock.mockResolvedValueOnce(2);
+    const res = await callRoute(VALID_BODY);
+    expect(res.status).toBe(200);
+    expect(countActivePendingGiftsForRecipientMock).toHaveBeenCalledWith(
+      "bob@example.com",
+      { excludeSubmissionId: "sub_gift_1" },
+    );
+    expect(redeemGiftSubmissionMock).toHaveBeenCalled();
   });
 });

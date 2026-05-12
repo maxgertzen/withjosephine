@@ -156,6 +156,18 @@ describe("/api/booking/gift", () => {
     expect(body.fieldErrors.recipientEmail).toBeTruthy();
   });
 
+  // Session 4b GAP-6: purchaserEmail length cap (Pentester LOW-3 parity)
+  it("rejects purchaserEmail exceeding RFC 5321 254-char cap", async () => {
+    const longLocal = "p".repeat(245);
+    const res = await callRoute({
+      ...SELF_SEND_BODY,
+      purchaserEmail: `${longLocal}@example.com`, // 257 chars
+    });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.purchaserEmail).toBeTruthy();
+  });
+
   it("rejects scheduled mode missing recipient + send-at", async () => {
     const res = await callRoute({
       ...SELF_SEND_BODY,

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import {
+  HONEYPOT_FIELD,
+  MAX_ACTIVE_GIFTS_PER_RECIPIENT,
+  MAX_EMAIL_CHARS,
+} from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
@@ -11,12 +15,10 @@ import type { SanityReading } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_EMAIL_CHARS = 254; // RFC 5321 forward-path length cap
 const MAX_GIFT_MESSAGE_CHARS = 280;
 const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
-const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
 type DeliveryMethod = "self_send" | "scheduled";
 
@@ -60,6 +62,11 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
   const purchaserEmail = body.purchaserEmail.trim().toLowerCase();
   if (!EMAIL_RE.test(purchaserEmail)) {
     errors.push({ field: "purchaserEmail", message: "Enter a valid email address." });
+  } else if (purchaserEmail.length > MAX_EMAIL_CHARS) {
+    errors.push({
+      field: "purchaserEmail",
+      message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+    });
   }
 
   const purchaserFirstName = body.purchaserFirstName.trim();

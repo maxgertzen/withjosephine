@@ -2,13 +2,17 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getOrCreateUser } from "@/lib/auth/users";
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import {
+  HONEYPOT_FIELD,
+  MAX_ACTIVE_GIFTS_PER_RECIPIENT,
+} from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import {
   clearGiftClaimCookie,
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
@@ -178,6 +182,26 @@ export async function POST(request: Request): Promise<Response> {
         fieldErrors: {
           email:
             "Please use the same email that received the gift link so we can match your reading.",
+        },
+      },
+      { status: 422 },
+    );
+  }
+
+  // Session 4b LB-3: re-check the anti-abuse cap at claim time. self_send mode
+  // may purchase with NULL recipient_email, bypassing the purchase-time cap. A
+  // purchaser forwarding many self_send URLs to the same recipient is caught
+  // here. Exclude this submission so the gift doesn't count against itself.
+  const activeCount = await countActivePendingGiftsForRecipient(submittedEmail, {
+    excludeSubmissionId: submissionId,
+  });
+  if (activeCount >= MAX_ACTIVE_GIFTS_PER_RECIPIENT) {
+    return NextResponse.json(
+      {
+        error: "Too many pending gifts",
+        fieldErrors: {
+          email:
+            "This recipient already has gifts waiting. Ask them to claim one before sending another.",
         },
       },
       { status: 422 },

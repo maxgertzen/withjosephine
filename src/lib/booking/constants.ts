@@ -16,6 +16,10 @@ export const PHOTO_PUBLIC_URL_BASE = R2_PUBLIC_ORIGIN;
 
 export const BOOKING_API_GIFT_ROUTE = "/api/booking/gift";
 
+export const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
+
+export const MAX_EMAIL_CHARS = 254;
+
 export const BOOKING_ROUTES = {
   entry: (slug: string) => `/book/${slug}`,
   letter: (slug: string) => `/book/${slug}/letter`,

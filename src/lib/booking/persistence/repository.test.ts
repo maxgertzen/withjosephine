@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   appendEmailFired,
+  countActivePendingGiftsForRecipient,
   createSubmission,
   type CreateSubmissionInput,
   deleteSubmission,
@@ -415,6 +416,52 @@ describe("repository against in-memory SQLite", () => {
       expect(record?.responses[0]?.value).toBe("Bob");
       expect(record?.recipientUserId).toBe("user_bob");
       expect(record?.giftClaimedAt).toBe("2026-05-12T01:00:00Z");
+    });
+  });
+
+  // Session 4b LB-3: anti-abuse cap re-check at claim time
+  describe("countActivePendingGiftsForRecipient", () => {
+    async function makePendingGiftFor(id: string, recipientEmail: string) {
+      await createSubmission({
+        ...BASE_INPUT,
+        id,
+        isGift: true,
+        recipientEmail,
+        giftDeliveryMethod: "self_send",
+        responses: [],
+      });
+    }
+
+    it("counts in-flight gifts addressed to the recipient", async () => {
+      await makePendingGiftFor("g1", "victim@example.com");
+      await makePendingGiftFor("g2", "victim@example.com");
+      await makePendingGiftFor("g3", "other@example.com");
+      const n = await countActivePendingGiftsForRecipient("victim@example.com");
+      expect(n).toBe(2);
+    });
+
+    it("excludes the current submission when excludeSubmissionId is passed", async () => {
+      await makePendingGiftFor("g1", "victim@example.com");
+      await makePendingGiftFor("g2", "victim@example.com");
+      const nIncluding = await countActivePendingGiftsForRecipient("victim@example.com");
+      const nExcluding = await countActivePendingGiftsForRecipient("victim@example.com", {
+        excludeSubmissionId: "g1",
+      });
+      expect(nIncluding).toBe(2);
+      expect(nExcluding).toBe(1);
+    });
+
+    it("excludes claimed and cancelled gifts from the count", async () => {
+      await makePendingGiftFor("g_pending", "victim@example.com");
+      await makePendingGiftFor("g_claimed", "victim@example.com");
+      await markGiftClaimSent("g_claimed", "hash", "2026-05-01T00:00:00Z");
+      await redeemGiftSubmission("g_claimed", {
+        responses: [],
+        recipientUserId: "u",
+        claimedAtIso: "2026-05-02T00:00:00Z",
+      });
+      const n = await countActivePendingGiftsForRecipient("victim@example.com");
+      expect(n).toBe(1);
     });
   });
 });

@@ -138,21 +138,26 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
 }
 
 /**
- * Anti-abuse cap (Phase 5 ISC-12a). Counts gifts addressed to this
- * recipient_email that are still in flight (not yet claimed, not cancelled).
- * The booking-gift route rejects when the count is ≥ 3.
+ * Anti-abuse cap (Phase 5 ISC-12a + Session 4b LB-3). Counts gifts addressed to
+ * this recipient_email that are still in flight (not yet claimed, not cancelled).
+ * The booking-gift route rejects at purchase when the count is ≥ 3; gift-redeem
+ * route re-checks at claim time to cover the self_send-mode bypass where
+ * recipient_email is NULL at purchase. The current submission is excluded from
+ * the count when `excludeSubmissionId` is provided so a gift doesn't gate itself.
  */
 export async function countActivePendingGiftsForRecipient(
   recipientEmail: string,
+  options?: { excludeSubmissionId?: string },
 ): Promise<number> {
-  const rows = await dbQuery<{ count: number }>(
-    `SELECT COUNT(*) AS count FROM submissions
+  const excludeId = options?.excludeSubmissionId;
+  const baseSql = `SELECT COUNT(*) AS count FROM submissions
      WHERE is_gift = 1
        AND recipient_email = ?
        AND gift_claimed_at IS NULL
-       AND gift_cancelled_at IS NULL`,
-    [recipientEmail],
-  );
+       AND gift_cancelled_at IS NULL`;
+  const rows = excludeId
+    ? await dbQuery<{ count: number }>(`${baseSql} AND id != ?`, [recipientEmail, excludeId])
+    : await dbQuery<{ count: number }>(baseSql, [recipientEmail]);
   return rows[0]?.count ?? 0;
 }
 

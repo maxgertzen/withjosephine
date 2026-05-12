@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { editGiftRecipient } from "@/lib/booking/submissions";
 import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
@@ -7,7 +8,6 @@ import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClien
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_EMAIL_CHARS = 254; // RFC 5321 forward-path length cap
 const MAX_RECIPIENT_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
 const MIN_SEND_AT_OFFSET_MS = 5 * 60 * 1000;
