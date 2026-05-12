@@ -4,7 +4,13 @@ import { issueGiftClaimToken } from "./giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
 import type { GiftDeliveryMethod } from "./persistence/repository";
 import { sendAndRecord } from "./sendAndRecord";
-import { appendEmailFired, findSubmissionById, markGiftClaimSent } from "./submissions";
+import {
+  acquireGiftResendLock,
+  appendEmailFired,
+  findSubmissionById,
+  markGiftClaimSent,
+  releaseGiftResendLock,
+} from "./submissions";
 
 export type RegenerateGiftClaimOutcome =
   | { ok: true; deliveryMethod: GiftDeliveryMethod; targetEmailRedacted: string }
@@ -23,6 +29,7 @@ export type RegenerateGiftClaimOutcome =
     };
 
 const COOLDOWN_MS = 5 * 60 * 1000;
+const REGEN_LOCK_TTL_MS = 60_000;
 
 export async function regenerateGiftClaim(submissionId: string): Promise<RegenerateGiftClaimOutcome> {
   const submission = await findSubmissionById(submissionId);
@@ -50,45 +57,62 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
     return { ok: false, reason: "missing_target_email", deliveryMethod: submission.giftDeliveryMethod };
   }
 
-  const { tokenHash, claimUrl } = await issueGiftClaimToken();
-  const nowIso = new Date().toISOString();
-
-  const sendResult = await sendAndRecord({
-    submissionId: submission._id,
-    type: "gift_claim",
-    nowIso,
-    send: () =>
-      sendGiftClaimEmail({
-        submissionId: submission._id,
-        recipientEmail: targetEmail,
-        recipientName: recipientNameFor(submission),
-        purchaserFirstName: purchaserFirstNameFor(submission),
-        readingName: submission.reading?.name ?? "reading",
-        giftMessage: submission.giftMessage ?? null,
-        variant: "first_send",
-        claimUrl,
-      }),
+  // Atomic lock closes the cooldown-check TOCTOU: concurrent regenerations
+  // (Studio double-click, Studio-action + internal DO route racing) both
+  // pass the cooldown check otherwise, and the second send overwrites the
+  // first's token hash mid-flight.
+  const nowMs = Date.now();
+  const locked = await acquireGiftResendLock(submission._id, {
+    nowMs,
+    lockUntilMs: nowMs + REGEN_LOCK_TTL_MS,
   });
+  if (!locked) {
+    return { ok: false, reason: "cooldown" };
+  }
 
-  if (sendResult.resendId === null) {
+  try {
+    const { tokenHash, claimUrl } = await issueGiftClaimToken();
+    const nowIso = new Date().toISOString();
+
+    const sendResult = await sendAndRecord({
+      submissionId: submission._id,
+      type: "gift_claim",
+      nowIso,
+      send: () =>
+        sendGiftClaimEmail({
+          submissionId: submission._id,
+          recipientEmail: targetEmail,
+          recipientName: recipientNameFor(submission),
+          purchaserFirstName: purchaserFirstNameFor(submission),
+          readingName: submission.reading?.name ?? "reading",
+          giftMessage: submission.giftMessage ?? null,
+          variant: "first_send",
+          claimUrl,
+        }),
+    });
+
+    if (sendResult.resendId === null) {
+      return {
+        ok: false,
+        reason: "send_failed",
+        deliveryMethod: submission.giftDeliveryMethod,
+        targetEmailRedacted: redactEmail(targetEmail),
+      };
+    }
+
+    await markGiftClaimSent(submission._id, tokenHash, nowIso);
+    await appendEmailFired(submission._id, {
+      type: "gift_claim_regenerate",
+      sentAt: nowIso,
+      resendId: sendResult.resendId,
+    });
+
     return {
-      ok: false,
-      reason: "send_failed",
+      ok: true,
       deliveryMethod: submission.giftDeliveryMethod,
       targetEmailRedacted: redactEmail(targetEmail),
     };
+  } finally {
+    await releaseGiftResendLock(submission._id);
   }
-
-  await markGiftClaimSent(submission._id, tokenHash, nowIso);
-  await appendEmailFired(submission._id, {
-    type: "gift_claim_regenerate",
-    sentAt: nowIso,
-    resendId: sendResult.resendId,
-  });
-
-  return {
-    ok: true,
-    deliveryMethod: submission.giftDeliveryMethod,
-    targetEmailRedacted: redactEmail(targetEmail),
-  };
 }

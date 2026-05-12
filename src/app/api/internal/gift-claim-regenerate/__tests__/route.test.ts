@@ -13,6 +13,8 @@ vi.mock("@/lib/booking/submissions", async () => {
     findSubmissionById: vi.fn(),
     markGiftClaimSent: vi.fn(),
     appendEmailFired: vi.fn(),
+    acquireGiftResendLock: vi.fn().mockResolvedValue(true),
+    releaseGiftResendLock: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -23,6 +25,7 @@ vi.mock("@/lib/resend", () => ({
 
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import {
+  acquireGiftResendLock,
   appendEmailFired,
   findSubmissionById,
   markGiftClaimSent,
@@ -225,6 +228,20 @@ describe("/api/internal/gift-claim-regenerate", () => {
       const types = mockAppend.mock.calls.map((c) => c[1].type);
       expect(types).toContain("gift_claim");
       expect(types).toContain("gift_claim_regenerate");
+    });
+  });
+
+  describe("TOCTOU lock", () => {
+    it("returns 429 when the atomic lock cannot be acquired (concurrent regenerations)", async () => {
+      mockFind.mockResolvedValueOnce(SCHEDULED_GIFT);
+      vi.mocked(acquireGiftResendLock).mockResolvedValueOnce(false);
+      const res = await callRoute({
+        headers: { "x-do-secret": "test-secret" },
+        body: { submissionId: "sub_gift" },
+      });
+      expect(res.status).toBe(429);
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(mockMark).not.toHaveBeenCalled();
     });
   });
 });

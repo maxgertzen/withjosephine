@@ -45,6 +45,7 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/api/stripe/webhook",
   "/api/cron/",
   "/api/internal/",
+  "/api/admin/",
   "/listen/",
 ];
 

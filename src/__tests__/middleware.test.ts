@@ -212,6 +212,19 @@ describe("middleware apex lockdown (under-construction on)", () => {
     }
   });
 
+  it("does NOT rewrite /api/admin/ on apex (Studio doc-action POSTs must reach apex during soft-launch)", () => {
+    const paths = [
+      "/api/admin/delete-user",
+      "/api/admin/regenerate-gift-claim",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
+  });
+
   it("does NOT rewrite on preview subdomain (preview is the working surface)", () => {
     const res = middleware(
       makeRequest({
