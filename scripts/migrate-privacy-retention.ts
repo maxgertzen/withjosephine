@@ -8,7 +8,7 @@
 //
 // Run BOTH against production and staging datasets. Override the dataset
 // via NEXT_PUBLIC_SANITY_DATASET=staging for the second pass.
-import { createClient } from "@sanity/client";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 // Mirror of `src/lib/compliance/retention.ts` constants. Inlined here because
 // `retention.ts` imports `server-only` (Next runtime guard), which throws
@@ -19,13 +19,7 @@ import { createClient } from "@sanity/client";
 const READING_CONTENT_RETENTION_YEARS = 3;
 const TAX_RETENTION_YEARS = 6;
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2025-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+const client = sanityWriteClient();
 
 type Span = {
   _type: "span";

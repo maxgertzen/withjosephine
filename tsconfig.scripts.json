@@ -3,7 +3,9 @@
   "compilerOptions": {
     "types": ["node"],
     "module": "ESNext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["scripts/**/*.ts", "scripts/**/*.mts"],
   "exclude": ["node_modules"]

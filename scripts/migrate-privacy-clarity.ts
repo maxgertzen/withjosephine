@@ -1,15 +1,9 @@
 // Splice Microsoft Clarity sub-processor disclosure into the live privacy
 // policy. Idempotent: skips if CLARITY_BLOCK_KEY is already present.
 // Run: set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-clarity.ts
-import { createClient } from "@sanity/client";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2025-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+const client = sanityWriteClient();
 
 type Span = {
   _type: "span";

@@ -12,7 +12,9 @@
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createClient, type SanityClient } from "@sanity/client";
+import { type SanityClient } from "@sanity/client";
+
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -341,19 +343,12 @@ async function main(): Promise<void> {
   console.log(` migrate-booking-form-v2 — runMode: ${runMode}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  const projectId = requireEnv("NEXT_PUBLIC_SANITY_PROJECT_ID");
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-
+  requireEnv("NEXT_PUBLIC_SANITY_PROJECT_ID");
   if (isApply) {
     requireEnv("SANITY_WRITE_TOKEN");
   }
 
-  const readClient = createClient({
-    projectId,
-    dataset,
-    apiVersion: "2025-01-01",
-    useCdn: false,
-  });
+  const readClient = sanityWriteClient({ readOnly: true });
 
   console.log("\n[1/4] Fetching existing bookingForm singleton...");
   const existingForm = await readClient.fetch<ExistingBookingForm | null>(
@@ -414,13 +409,7 @@ async function main(): Promise<void> {
   } else if (mutations.length === 0) {
     console.log("  no mutations to apply");
   } else {
-    const writeClient = createClient({
-      projectId,
-      dataset,
-      apiVersion: "2025-01-01",
-      useCdn: false,
-      token: process.env.SANITY_WRITE_TOKEN,
-    });
+    const writeClient = sanityWriteClient();
     appliedCount = await applyMutations(writeClient, mutations);
   }
 

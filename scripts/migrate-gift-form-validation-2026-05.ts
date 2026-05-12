@@ -12,17 +12,11 @@
 //     NEXT_PUBLIC_SANITY_DATASET=staging pnpm tsx scripts/migrate-gift-form-validation-2026-05.ts
 //   set -a && source .env.local && set +a && \
 //     pnpm tsx scripts/migrate-gift-form-validation-2026-05.ts
-import { createClient } from "@sanity/client";
-
 import { BOOKING_GIFT_FORM_DEFAULTS } from "../src/data/defaults";
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2025-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
+
+const client = sanityWriteClient();
 
 const NEW_FIELDS = [
   "firstNameRequiredError",
