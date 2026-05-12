@@ -215,7 +215,7 @@ Architecture pivoted at session start: Max picked Durable Object alarms over the
 - **REUSE — `sendAndRecord` helper.** Pattern "send via Resend, append `emails_fired_json` only when `resendId !== null`" recurs in 5+ places (`giftClaimDispatch` × 2 branches, regenerate route, day-7-deliver cron, applyPaidEvent). Webhook gift branch has the inverse pattern (unconditional append — preserves attempt log including dry-run; may or may not be intentional). Worth extracting once the right semantic per call site is locked.
 - **REUSE — `EmailShell` for `GiftClaimEmail` + `GiftPurchaseConfirmation` + `OrderConfirmation`.** All three reimplement the Html/Head/Preview/Tailwind/Body/Container frame inline. Half the email suite already uses `EmailShell`. The gift family is just inconsistent. Risk: snapshot-test fallout. Defer until a Session 4 + UX review can audit visual diff at the same time.
 
-### Phase 5 — Session 3 — SHIPPED 2026-05-12 on `feat/phase-5-session-3-my-gifts`
+### Phase 5 — Session 3 — SHIPPED 2026-05-12 (PR #107, squash `4b790e6`)
 
 Purchaser self-service surface (`/my-gifts`) + 3 mutation routes (`edit-recipient`, `cancel-auto-send`, `resend-link`) + DO `/cancel` endpoint. Magic-link `listenSession` reused for purchaser scope (authorized via `purchaser_user_id`). See `www/MEMORY/WORK/20260512-130515_phase5-session-3-my-gifts/PRD.md` for the 61 atomic ISC + /simplify + Pentester verification blocks. 1248 / 1248 tests green; no new secrets, no D1 migration.
 
@@ -227,6 +227,10 @@ Purchaser self-service surface (`/my-gifts`) + 3 mutation routes (`edit-recipien
 - **LOW-3 — `recipientEmail` length cap missing.** 1-line fix (`if (trimmed.length > 254) errors.push(...)`). Defer as polish.
 - **LOW-4 — `listGiftsByPurchaserUserId` returns `SELECT *` to a Server Component.** Currently safe (no `"use client"` boundary downstream). **Trigger to fix:** any future PR adding `"use client"` anywhere downstream of `MyGiftsView`. Fix path: project the query to the minimal column set `giftStatusFor` + view need, OR map to a `GiftCardData` view-model before passing down.
 - **INFO-1 — 401 vs 404 timing differential in `authorizeGiftPurchaser`** (unauthorized short-circuits before DB read). Only distinguishable to attackers who already have a session cookie. Accept.
+
+**UX nits surfaced after staging deploy (2026-05-12, Max):**
+- **Empty-state / last-card vs Footer spacing on `/my-gifts`** — the Footer line visually touches the "send a gift" box (empty-state card AND likely the last gift card too). Need a bottom margin/padding gap. Probably a `mb-12` or `pb-20` on `<MyGiftsView>` content wrapper, OR `mt-20` on Footer when nested inside `main`. Fix during Session 4 design pass.
+- **Action buttons should show in-button loading state per design** — the three action forms in `GiftCard` (`edit-recipient`, `flip-to-self-send`, `resend-link`) currently submit as plain HTML forms. While the request is in flight, the button should show a loading state INSIDE the button (per brand-design pattern; see existing `<Button>` loading prop usage in `IntakeForm` / `MagicLinkEmailForm`). Requires promoting `ActionForm` to a `"use client"` component using `useFormStatus()` (RSC-friendly) or local fetch state. Fix during Session 4 UI pass.
 
 **Reuse / Quality deferrals** (would still be welcome but low leverage):
 - Shared `<AuthGatedPage>` page-chrome component for `/my-gifts` + `/my-readings` — Session 4 council review can pick up.
