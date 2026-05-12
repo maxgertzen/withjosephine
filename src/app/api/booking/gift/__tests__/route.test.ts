@@ -133,6 +133,29 @@ describe("/api/booking/gift", () => {
     expect(body.fieldErrors.recipientEmail).toBeTruthy();
   });
 
+  it("rejects recipientEmail exceeding RFC 5321 254-char cap (scheduled)", async () => {
+    const longLocal = "x".repeat(245);
+    const res = await callRoute(
+      scheduledBody({
+        recipientEmail: `${longLocal}@example.com`, // 245 + 1 + 11 = 257 chars
+      }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.recipientEmail).toBeTruthy();
+  });
+
+  it("rejects recipientEmail exceeding 254-char cap (self_send too)", async () => {
+    const longLocal = "x".repeat(245);
+    const res = await callRoute({
+      ...SELF_SEND_BODY,
+      recipientEmail: `${longLocal}@example.com`,
+    });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.recipientEmail).toBeTruthy();
+  });
+
   it("rejects scheduled mode missing recipient + send-at", async () => {
     const res = await callRoute({
       ...SELF_SEND_BODY,

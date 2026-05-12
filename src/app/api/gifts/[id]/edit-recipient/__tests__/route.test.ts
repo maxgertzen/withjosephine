@@ -143,6 +143,29 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
     expect(res.status).toBe(422);
   });
 
+  it("returns 422 when recipientEmail exceeds RFC 5321 254-char cap", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    const longEmail = `${"x".repeat(245)}@example.com`; // 257 chars
+    const res = await callRoute({ body: { recipientEmail: longEmail } });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { fieldErrors: { field: string }[] };
+    expect(body.fieldErrors[0]?.field).toBe("recipientEmail");
+  });
+
+  it("treats plus-aliased purchaser email as the purchaser (rejects)", async () => {
+    // alice+gift@example.com normalizes to alice@example.com; gifting to a
+    // plus-alias of your own inbox is still gifting to yourself.
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    const res = await callRoute({
+      body: { recipientEmail: "purchaser+gift@example.com" },
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { fieldErrors: { field: string }[] };
+    expect(body.fieldErrors[0]?.field).toBe("recipientEmail");
+  });
+
   it("returns 200 and re-schedules DO alarm when gift_send_at changes", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);

@@ -195,6 +195,23 @@ describe("middleware apex lockdown (under-construction on)", () => {
     expect(res.rewriteTo).toBeNull();
   });
 
+  it("does NOT rewrite /api/internal/ on apex (DO alarm dispatch + admin recovery scripts must reach apex)", () => {
+    // Without this, GiftClaimScheduler.alarm()'s public-HTTPS POST to
+    // /api/internal/gift-claim-dispatch would be rewritten to / during
+    // soft-launch, silently dropping every scheduled-mode claim email.
+    // gift-claim-regenerate (admin recovery script) has the same constraint.
+    const paths = [
+      "/api/internal/gift-claim-dispatch",
+      "/api/internal/gift-claim-regenerate",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
+  });
+
   it("does NOT rewrite on preview subdomain (preview is the working surface)", () => {
     const res = middleware(
       makeRequest({
