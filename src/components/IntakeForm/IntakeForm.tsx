@@ -133,6 +133,16 @@ export function IntakeForm({
   redeemSubmissionId,
   redeemSuccessUrl,
 }: IntakeFormProps) {
+  // Phase 5 Session 5 — GAP-10. In `redeem` mode (gift recipient flow) we
+  // scope the localStorage draft by submission id rather than reading slug
+  // so multiple recipients claiming the same reading from the same browser
+  // don't share a draft, and so the recipient's draft doesn't bleed into a
+  // future direct-purchase of the same reading from the same device. We
+  // intentionally use the submission id (NOT the raw claim token, which is
+  // already discarded after first use); the submission id is already a
+  // non-secret server-issued UUID surfaced in the gift-claim cookie.
+  const draftScope =
+    mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
     () =>
@@ -220,7 +230,7 @@ export function IntakeForm({
         setSwappedFromReadingName(readingName);
       }
     }
-    const restored = restoreDraft(readingId);
+    const restored = restoreDraft(draftScope);
     const seeded = {
       ...defaultValues,
       ...(restored?.values ?? {}),
@@ -237,7 +247,7 @@ export function IntakeForm({
     setLastReadingId(readingId);
     restoredForReadingRef.current = readingId;
     setIsRestored(true);
-  }, [readingId, readingName, defaultValues]);
+  }, [readingId, draftScope, readingName, defaultValues]);
 
   useEffect(() => {
     if (!lastSavedAt) return;
@@ -255,7 +265,7 @@ export function IntakeForm({
   const justDiscardedRef = useRef(false);
 
   function flushSave(nextValues: FieldValues, nextPage: number) {
-    const envelope = saveDraft(readingId, {
+    const envelope = saveDraft(draftScope, {
       currentPage: nextPage,
       values: nextValues as DraftValues,
     });
@@ -322,7 +332,7 @@ export function IntakeForm({
       page_number: currentPage + 1,
     });
     justDiscardedRef.current = true;
-    clearDraft(readingId);
+    clearDraft(draftScope);
     setValues(defaultValues);
     setCurrentPage(0);
     setLastSavedAt(null);
@@ -600,7 +610,7 @@ export function IntakeForm({
         track("intake_submit_success", { reading_id: readingId });
         identifySubmission(redeemData.submissionId);
         try {
-          clearDraft(readingId);
+          clearDraft(draftScope);
         } catch {
           // localStorage failures must not block the redirect.
         }

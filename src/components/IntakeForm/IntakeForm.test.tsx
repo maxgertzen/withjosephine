@@ -576,3 +576,59 @@ describe("IntakeForm — localStorage save/resume", () => {
     });
   });
 });
+
+describe("IntakeForm — redeem mode draft scoping (GAP-10)", () => {
+  function renderRedeemForm(submissionId: string) {
+    render(
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="Soul Blueprint"
+        sections={SINGLE_PAGE_SECTIONS}
+        nonRefundableNotice="Once Josephine begins, no refunds."
+        mode="redeem"
+        redeemSubmissionId={submissionId}
+        redeemSuccessUrl="/thank-you/sub_gift?gift=1"
+      />,
+    );
+  }
+
+  it("auto-saves a recipient's partial answers under a submission-scoped key", async () => {
+    const user = userEvent.setup();
+    renderRedeemForm("sub_gift_abc");
+    await user.type(screen.getByLabelText(/Full name/), "Recipient Reyna");
+
+    await waitFor(() => {
+      expect(
+        window.localStorage.getItem("josephine.intake.draft.gift-redeem.sub_gift_abc"),
+      ).not.toBeNull();
+    });
+
+    // Different submission scope must NOT pick up the same draft — recipients
+    // claiming a different reading from the same browser get their own slate.
+    expect(
+      window.localStorage.getItem("josephine.intake.draft.gift-redeem.sub_gift_xyz"),
+    ).toBeNull();
+    // And the public-side reading-id scope MUST stay clean — otherwise a
+    // recipient's draft would bleed into a later direct-purchase of the
+    // same reading from the same device.
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
+  });
+
+  it("restores a partial draft on remount keyed by submission id", async () => {
+    window.localStorage.setItem(
+      "josephine.intake.draft.gift-redeem.sub_gift_restore",
+      JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        currentPage: 0,
+        values: { fullName: "Restored Name" },
+      }),
+    );
+    renderRedeemForm("sub_gift_restore");
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe(
+        "Restored Name",
+      );
+    });
+  });
+});

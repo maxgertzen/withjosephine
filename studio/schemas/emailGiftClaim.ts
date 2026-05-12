@@ -32,7 +32,8 @@ export const emailGiftClaim = defineType({
       title: "Inbox preview (first send)",
       type: "string",
       group: "envelope",
-      description: 'Use "{purchaserFirstName}".',
+      description:
+        "The grey snippet shown next to the subject line in most inboxes. Anything in curly braces is auto-filled — {purchaserFirstName} drops in the name of the person who sent the gift. Edit the words around the braces, not the braces themselves.",
       initialValue: "{purchaserFirstName} has sent you a reading.",
     }),
     defineField({
@@ -40,7 +41,8 @@ export const emailGiftClaim = defineType({
       title: "Inbox preview (reminder)",
       type: "string",
       group: "envelope",
-      description: 'Use "{purchaserFirstName}".',
+      description:
+        "Same inbox snippet, used when we follow up on an unclaimed gift seven days later. {purchaserFirstName} is the original sender — kept here on purpose so the recipient remembers whose gift this was.",
       initialValue: "A small reminder about the reading {purchaserFirstName} sent you.",
     }),
     defineField({
@@ -76,7 +78,8 @@ export const emailGiftClaim = defineType({
       title: "Greeting",
       type: "string",
       group: "shared",
-      description: 'Use "{recipientName}".',
+      description:
+        "First line of the email body. {recipientName} drops in the recipient's first name — falls back to 'there' if the sender didn't include one.",
       initialValue: "Hi {recipientName},",
     }),
     defineField({
@@ -85,7 +88,8 @@ export const emailGiftClaim = defineType({
       type: "text",
       rows: 5,
       group: "firstSend",
-      description: 'Use "{purchaserFirstName}", "{readingName}".',
+      description:
+        "Main message in the first claim email — sets context for the recipient and tells them what happens after they click the link. {purchaserFirstName} is the sender, {readingName} is the reading they chose. The 'seven days' line aligns with the delivery promise on the website; if you change one, change the other.",
       initialValue:
         "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
     }),
@@ -95,7 +99,8 @@ export const emailGiftClaim = defineType({
       type: "text",
       rows: 5,
       group: "reminder",
-      description: 'Use "{purchaserFirstName}", "{readingName}".',
+      description:
+        "Main message in the +7 day reminder — softer tone, asks the recipient to find the original email rather than minting a fresh link. {purchaserFirstName} is the original sender, {readingName} the reading.",
       initialValue:
         "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
     }),
@@ -104,7 +109,8 @@ export const emailGiftClaim = defineType({
       title: "Gift-message label",
       type: "string",
       group: "shared",
-      description: 'Header shown above the purchaser’s gift message. Use "{purchaserFirstName}".',
+      description:
+        "Header shown above the purchaser's personal note (only renders if they wrote one — otherwise the whole block disappears). {purchaserFirstName} sets the attribution. Keep this short; the note itself sits below it.",
       initialValue: "A note from {purchaserFirstName}",
     }),
     defineField({

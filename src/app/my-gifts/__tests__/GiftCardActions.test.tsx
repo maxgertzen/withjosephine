@@ -108,6 +108,13 @@ describe("GiftCardActions — JSON-fetch contract", () => {
     fireEvent.change(getByDisplayValue("sky@example.com"), { target: { value: "bad" } });
     const form = container.querySelector("form");
     if (!form) throw new Error("expected drawer form to be open");
+    // GAP-8 / GAP-9: dispatching `submit` directly on the <form> element is
+    // the reliable way to trigger React's `onSubmit` handler under JSDOM —
+    // `fireEvent.click` on a submit button does not always bubble through
+    // the testing-library wrapper (varies by @testing-library/react +
+    // jsdom version). Use this form-level dispatch when the assertion
+    // depends on the onSubmit firing rather than the button-click event
+    // itself.
     fireEvent.submit(form);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
