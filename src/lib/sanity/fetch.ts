@@ -8,6 +8,7 @@ import {
   bookingPageQuery,
   emailDay2StartedQuery,
   emailDay7DeliveryQuery,
+  emailGiftClaimQuery,
   emailGiftPurchaseConfirmationQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
@@ -33,6 +34,7 @@ import type {
   SanityBookingPage,
   SanityEmailDay2Started,
   SanityEmailDay7Delivery,
+  SanityEmailGiftClaim,
   SanityEmailGiftPurchaseConfirmation,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
@@ -190,6 +192,13 @@ export const fetchEmailOrderConfirmation = cache(
     return data;
   },
 );
+
+export const fetchEmailGiftClaim = cache(async (): Promise<SanityEmailGiftClaim | null> => {
+  const { data } = await sanityFetch<SanityEmailGiftClaim | null>({
+    query: emailGiftClaimQuery,
+  });
+  return data;
+});
 
 export const fetchEmailGiftPurchaseConfirmation = cache(
   async (): Promise<SanityEmailGiftPurchaseConfirmation | null> => {

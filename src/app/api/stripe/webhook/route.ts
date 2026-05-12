@@ -130,23 +130,60 @@ async function dispatchGiftPurchaseConfirmation(
     return;
   }
 
-  const result = await sendGiftPurchaseConfirmation({
-    submissionId: submission._id,
-    purchaserEmail: submission.email,
-    purchaserFirstName,
-    readingName,
-    readingPriceDisplay,
-    amountPaidDisplay,
-    recipientName,
-    giftMessage: submission.giftMessage,
-    variant: "scheduled",
-    sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso),
-  });
+  const [result] = await Promise.all([
+    sendGiftPurchaseConfirmation({
+      submissionId: submission._id,
+      purchaserEmail: submission.email,
+      purchaserFirstName,
+      readingName,
+      readingPriceDisplay,
+      amountPaidDisplay,
+      recipientName,
+      giftMessage: submission.giftMessage,
+      variant: "scheduled",
+      sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso),
+    }),
+    scheduleGiftClaimAlarm(submission._id, submission.giftSendAt ?? nowIso),
+  ]);
   await appendEmailFired(submission._id, {
     type: "gift_purchase_confirmation",
     sentAt: nowIso,
     resendId: result.resendId,
   });
+}
+
+async function scheduleGiftClaimAlarm(submissionId: string, giftSendAtIso: string): Promise<void> {
+  const fireAtMs = Date.parse(giftSendAtIso);
+  if (Number.isNaN(fireAtMs)) {
+    console.warn(`[stripe-webhook] invalid gift_send_at for ${submissionId} — skipping DO schedule`);
+    return;
+  }
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    const binding = env.GIFT_CLAIM_SCHEDULER;
+    if (!binding) {
+      console.warn(
+        `[stripe-webhook] GIFT_CLAIM_SCHEDULER binding missing — gift ${submissionId} alarm not scheduled`,
+      );
+      return;
+    }
+    const stub = binding.get(binding.idFromName(submissionId));
+    const res = await stub.fetch(
+      new Request("https://do/schedule", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fireAtMs, submissionId }),
+      }),
+    );
+    if (!res.ok) {
+      console.warn(
+        `[stripe-webhook] DO /schedule returned ${res.status} for ${submissionId}`,
+      );
+    }
+  } catch (error) {
+    console.error(`[stripe-webhook] failed to schedule DO alarm for ${submissionId}`, error);
+  }
 }
 
 async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise<void> {

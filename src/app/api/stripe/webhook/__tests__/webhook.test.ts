@@ -19,6 +19,20 @@ vi.mock("@/lib/booking/giftClaim", () => ({
   issueGiftClaimToken: vi.fn(),
 }));
 
+const mockDoFetch = vi.fn();
+const mockDoIdFromName = vi.fn();
+const mockDoGet = vi.fn();
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: vi.fn(async () => ({
+    env: {
+      GIFT_CLAIM_SCHEDULER: {
+        idFromName: mockDoIdFromName,
+        get: mockDoGet,
+      },
+    },
+  })),
+}));
+
 vi.mock("@/lib/booking/notifyPaid", () => ({
   applyPaidEvent: vi.fn(),
 }));
@@ -86,6 +100,11 @@ beforeEach(() => {
   mockMarkGiftClaimSent.mockReset().mockResolvedValue(undefined);
   mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
   mockSendGiftConfirmation.mockReset().mockResolvedValue({ resendId: "msg_g1" });
+  mockDoFetch.mockReset().mockResolvedValue(new Response("{}", { status: 200 }));
+  mockDoGet.mockReset().mockReturnValue({ fetch: mockDoFetch });
+  mockDoIdFromName.mockReset().mockImplementation((name: string) => ({
+    toString: () => `id-${name}`,
+  }));
 });
 
 async function callRoute(
@@ -453,6 +472,32 @@ describe("/api/stripe/webhook", () => {
           send_at: null,
         }),
       );
+    });
+
+    it("scheduled: schedules the GiftClaimScheduler DO alarm at gift_send_at after sending purchaser confirmation", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g_do", "sub_gift_sched") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SCHEDULED);
+
+      await callRoute("{}");
+
+      expect(mockDoIdFromName).toHaveBeenCalledWith("sub_gift_sched");
+      expect(mockDoGet).toHaveBeenCalled();
+      expect(mockDoFetch).toHaveBeenCalledOnce();
+      const req = mockDoFetch.mock.calls[0]![0] as Request;
+      expect(req.method).toBe("POST");
+      expect(new URL(req.url).pathname).toBe("/schedule");
+      const body = JSON.parse(await req.text()) as { fireAtMs: number; submissionId: string };
+      expect(body.submissionId).toBe("sub_gift_sched");
+      expect(body.fireAtMs).toBe(Date.parse("2026-06-01T15:00:00.000Z"));
+    });
+
+    it("self_send: does NOT schedule a DO alarm (no time-deferred send)", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g_do_self", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+
+      await callRoute("{}");
+
+      expect(mockDoFetch).not.toHaveBeenCalled();
     });
 
     it("scheduled: does NOT issue claim token, sends scheduled email with send_at date, tracks gift_purchased", async () => {

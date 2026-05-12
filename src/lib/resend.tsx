@@ -7,6 +7,7 @@ import { ContactMessage } from "./emails/ContactMessage";
 import { Day2Started } from "./emails/Day2Started";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
+import { GiftClaimEmail, type GiftClaimEmailVars } from "./emails/GiftClaimEmail";
 import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./emails/GiftPurchaseConfirmation";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
@@ -217,6 +218,54 @@ export async function sendGiftPurchaseConfirmation(
     html,
     emailKind: `gift purchase confirmation (${input.variant})`,
     subType: "gift_purchase_confirmation",
+    submissionId: input.submissionId,
+  });
+}
+
+export type GiftClaimEmailInput = {
+  submissionId: string;
+  recipientEmail: string;
+  recipientName: string;
+  purchaserFirstName: string;
+  readingName: string;
+  giftMessage: string | null;
+} & (
+  | { variant: "first_send"; claimUrl: string }
+  | { variant: "reminder"; claimUrl?: never }
+);
+
+export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_CLAIM_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftClaim } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailGiftClaim().catch(() => null);
+  const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+
+  const shared = {
+    recipientName: input.recipientName,
+    purchaserFirstName: input.purchaserFirstName,
+    readingName: input.readingName,
+    giftMessage: input.giftMessage,
+  };
+  const vars: GiftClaimEmailVars =
+    input.variant === "first_send"
+      ? { variant: "first_send", claimUrl: input.claimUrl, ...shared }
+      : { variant: "reminder", ...shared };
+
+  const subject =
+    input.variant === "first_send" ? copy.subjectFirstSend : copy.subjectReminder;
+  const interpolatedSubject = subject.replaceAll(
+    "{purchaserFirstName}",
+    input.purchaserFirstName,
+  );
+
+  const html = await render(<GiftClaimEmail vars={vars} copy={copy} />);
+
+  return sendOrSkip({
+    to: input.recipientEmail,
+    subject: interpolatedSubject,
+    html,
+    emailKind: `gift claim (${input.variant})`,
+    subType: "gift_claim",
     submissionId: input.submissionId,
   });
 }

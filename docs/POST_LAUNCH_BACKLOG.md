@@ -195,16 +195,25 @@ After the 3-agent `/simplify` sweep on the Session 1b + redemption-flow diff. Hi
 - **Lift IntakeForm `mode === "redeem"` branch to caller via `onSubmit` callback prop** — currently the form carries both create and redeem submit paths internally with parallel-but-different success handling. Cleaner shape: `IntakeForm` takes `onSubmit: (payload) => Promise<{redirectUrl: string}>`; the entry page passes the Stripe-going version, `gift/intake/page.tsx` passes the redeem version. Decouples a 600-line form from two concerns it shouldn't own. Trigger: next time IntakeForm gets another mode/branch.
 - **Share `GiftDeliveryMethod` type across files** — `"self_send" | "scheduled"` is declared inline in `gift/route.ts` and `GiftForm.tsx`, plus exported from `repository.ts`. Add a `GIFT_DELIVERY_METHODS = { SELF_SEND: "self_send", SCHEDULED: "scheduled" } as const` alongside the existing exported type and reuse the constants in radio `value=` strings + comparisons. Same rule for the `mode: "create" | "redeem"` literal on IntakeForm.
 
-### Phase 5 — Session 2 (gift-send-claim cron + recipient claim flow extension)
+### Phase 5 — Session 2 — SHIPPED 2026-05-12 (Durable Object alarm, NOT cron)
 
-**Not yet built.** Session 1b shipped the `self_send` path end-to-end (purchaser gets shareable link at Stripe webhook time, forwards manually; recipient clicks → claim page → intake → redeem). The `scheduled` mode purchase is shipped but the cron that fires the claim email at the purchaser's chosen `gift_send_at` is NOT yet built. Without it, scheduled gifts sit in D1 indefinitely.
+Architecture pivoted at session start: Max picked Durable Object alarms over the locked hourly polling cron. Trade-off: precision at the exact `gift_send_at` timestamp vs ~30-60 min of extra build (DO migration + class + alarm wiring + tests). Shipped surfaces:
 
-- **ISC-16: New cron `/api/cron/gift-send-claim-emails`** runs hourly. Query: `submissions WHERE is_gift = 1 AND gift_delivery_method = 'scheduled' AND gift_send_at <= now AND gift_claim_email_fired_at IS NULL AND gift_cancelled_at IS NULL`.
-- **ISC-17: For each match** — generate a fresh claim token via `issueGiftClaimToken()`, store its hash via `markGiftClaimSent`, fire a claim email to `recipient_email` via Resend. New email template `GiftClaimEmail.tsx` + Sanity doctype `emailGiftClaim`.
-- **ISC-18: Mark `gift_claim_email_fired_at = now`** after successful Resend send (the `markGiftClaimSent` helper already writes this).
-- **ISC-19: Resend cron logic** — if `gift_claim_email_fired_at + 7d < now AND gift_claimed_at IS NULL`, re-send (max 2 retries). After 30 days unclaimed, mark `unclaimed_abandoned` and surface to Becky in Studio.
-- Tests for each branch.
-- Trigger conditions: not launch-blocking on `self_send` alone, but launch-blocking if Max+Josephine plan to advertise scheduled-mode publicly. Surface this decision before main-merge of `feat/listen-redesign-and-gifting`.
+- `src/lib/durable-objects/GiftClaimScheduler.ts` — per-gift DO, keyed `idFromName(submissionId)`. `fetch("/schedule")` persists submissionId + sets alarm at fireAtMs; `alarm()` POSTs the internal dispatch route, increments retryCount, reschedules (+7d) or clears storage.
+- `src/lib/booking/giftClaimDispatch.ts` — pure async dispatcher with all branch logic (`first_send`, `reminder`, `stop: claimed | cancelled | abandoned | max_retries | missing | not_scheduled`).
+- `src/app/api/internal/gift-claim-dispatch/route.ts` — admin route the DO posts to (shared `x-do-secret` gate via `_lib/headerSecretAuth.ts`).
+- `src/app/api/internal/gift-claim-regenerate/route.ts` + `scripts/regenerate-gift-claim.ts` — admin recovery primitive when a customer writes in saying they lost their link. Issues a fresh token (invalidating prior URL), emails the right party per delivery method. Send-first-then-persist to preserve the prior token on Resend failures.
+- `src/lib/emails/GiftClaimEmail.tsx` + `studio/schemas/emailGiftClaim.ts` — two-variant template: `first_send` (with CTA + URL) and `reminder` (no URL, "check your inbox or write to us") — preserves the "no token regen on retry" constraint without storing raw tokens.
+- Stripe webhook `scheduled`-mode branch parallelises `dispatchGiftPurchaseConfirmation` + `scheduleGiftClaimAlarm` via `Promise.all`.
+- New secret: `DO_DISPATCH_SECRET` (worker secret on prod + staging; documented in wrangler.jsonc).
+
+**Deferred to Session 4 or later (filed here):**
+
+- **MED — Out-of-isolate HTTP hop on alarm fire.** DO's `alarm()` does `fetch("https://origin/api/internal/gift-claim-dispatch")` — a public-edge round-trip per fire. Mitigation: add a `services` binding to the worker (so `env.SELF.fetch(...)` works in-isolate) and replace the public fetch. ~20 min change. Trigger: 100+ scheduled gifts/month sustained OR observable alarm-latency tail.
+- **LOW — Regenerate route has no per-submission rate-limit.** Secret-gated, so operator-only. A "clumsy operator" running the CLI in a loop can issue infinite fresh tokens. Track `gift_claim_regenerate_count` or refuse if last regenerate < 5 minutes ago. Trigger: any operator incident, or Session 3 surfaces a self-service "resend my link" path that needs the same throttle.
+- **INFO — Purchaser-controlled `{tag}` substitution.** If a purchaser types `{recipientName}` literally as their first name, it gets substituted into copy. No XSS (React text-escape), purely visual confusion. Strip `{…}` from the input field on form submit OR sanitise in `template()`. Trigger: any user report.
+- **REUSE — `sendAndRecord` helper.** Pattern "send via Resend, append `emails_fired_json` only when `resendId !== null`" recurs in 5+ places (`giftClaimDispatch` × 2 branches, regenerate route, day-7-deliver cron, applyPaidEvent). Webhook gift branch has the inverse pattern (unconditional append — preserves attempt log including dry-run; may or may not be intentional). Worth extracting once the right semantic per call site is locked.
+- **REUSE — `EmailShell` for `GiftClaimEmail` + `GiftPurchaseConfirmation` + `OrderConfirmation`.** All three reimplement the Html/Head/Preview/Tailwind/Body/Container frame inline. Half the email suite already uses `EmailShell`. The gift family is just inconsistent. Risk: snapshot-test fallout. Defer until a Session 4 + UX review can audit visual diff at the same time.
 
 ### Phase 5 — Session 3 (purchaser self-service `/my-gifts` surface)
 
@@ -270,7 +279,9 @@ Locked 2026-05-12 by Max. After Phase 5 Sessions 1b + 2 + 3 are all on `feat/pha
    - Cron design for `scheduled` mode (Session 2) — race conditions, retry semantics, abandonment handling
    - `/my-gifts` (Session 3) — Phase 1 magic-link reuse vs purpose-built session, authz scoping
 
-4. **Thorough security review** (Pentester skill + Council):
+4. **DO-alarm precision + cost audit** — Phase 5 Session 2 ships the gift-send-claim path on a per-gift `GiftClaimScheduler` Durable Object, alarm firing at the exact purchaser-chosen `gift_send_at` (CF DO alarms typically fire within seconds). Session 4 reviews after first month of production traffic: actual drift (purchaser-expected vs Resend `sentAt` actual), DO invocation cost vs polling-cron baseline, alarm-replay incidents (at-least-once semantics), DO storage cleanup hygiene. Decision: keep DO alarms, fall back to polling cron, or add `env.SELF` service binding to remove the public-edge HTTP hop the DO currently uses for `/api/internal/gift-claim-dispatch`. Council weighs precision + cost + operational complexity against actual usage data.
+
+5. **Thorough security review** (Pentester skill + Council):
    - End-to-end token / cookie / claim flow with all session combinations (cookie + token vs cookie-only vs token-only vs neither)
    - Edit-recipient (Session 3) authorization — purchaser_user_id scoping
    - Rate limits on resend-link (Session 3) — abuse / enumeration / cost-amplification
@@ -279,7 +290,7 @@ Locked 2026-05-12 by Max. After Phase 5 Sessions 1b + 2 + 3 are all on `feat/pha
    - GDPR cascade-delete behavior for partially-claimed gifts
    - Stripe metadata leak vectors revisited with the final shape
 
-5. **Council decisioning** — wherever the 4 (or 5 incl. QA) agents diverge, run a structured Council vantage debate. Resolved decisions land in a new `MEMORY/WORK/<timestamp>_phase5-session4-review/DECISIONS.md` doc with explicit Max-in-loop AskUserQuestion for anything that needs his call.
+6. **Council decisioning** — wherever the 4 (or 5 incl. QA) agents diverge, run a structured Council vantage debate. Resolved decisions land in a new `MEMORY/WORK/<timestamp>_phase5-session4-review/DECISIONS.md` doc with explicit Max-in-loop AskUserQuestion for anything that needs his call.
 
 **Output of the review session:**
 - `MEMORY/WORK/<timestamp>_phase5-session4-review/PRD.md` with atomic ISC enumerating EVERY fix surfaced by the council

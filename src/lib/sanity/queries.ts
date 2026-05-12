@@ -227,6 +227,31 @@ export const emailDay2StartedQuery = groq`
   }
 `;
 
+export const emailGiftClaimQuery = groq`
+  *[_type == "emailGiftClaim"][0] {
+    subjectFirstSend,
+    subjectReminder,
+    previewFirstSend,
+    previewReminder,
+    brandName,
+    brandSubtitle,
+    heroLineFirstSend,
+    heroLineReminder,
+    greeting,
+    bodyFirstSend,
+    bodyReminder,
+    giftMessageLabel,
+    claimButtonLabel,
+    claimUrlHelper,
+    cardLabel,
+    cardDeliveryLine,
+    reminderContactLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
 export const emailDay7DeliveryQuery = groq`
   *[_type == "emailDay7Delivery"][0] {
     subjectTemplate,

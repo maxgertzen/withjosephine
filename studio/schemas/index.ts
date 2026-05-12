@@ -15,6 +15,7 @@ import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailDay2Started } from "./emailDay2Started";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
+import { emailGiftClaim } from "./emailGiftClaim";
 import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
 import { listenPage } from "./listenPage";
 import { formField } from "./formField";
@@ -42,6 +43,7 @@ export const schemaTypes = [
   emailDay2Started,
   emailOrderConfirmation,
   emailGiftPurchaseConfirmation,
+  emailGiftClaim,
   listenPage,
   formField,
   formSection,
