@@ -240,6 +240,13 @@ Stripe live-mode blocker sweep + every new Pentester finding + every Session-3 c
 
 **Carry-over** (T4–T8 sections below) ships in Session 5 directly on `feat/listen-redesign-and-gifting` BEFORE main-merge per Max's directive. Pre-launch, NOT post-launch polish.
 
+### Phase 5 — Session 6 — Pentester LOW deferrals (post-launch with explicit triggers)
+
+Pentester re-audit on the Session 5+6 combined diff (2026-05-12, HEAD `5f0c96a`) returned **CONDITIONAL GO**. M-1 (admin apex allowlist) + M-2 (regenerate TOCTOU lock) shipped in-PR (commit `5f0c96a`). Two LOW findings deferred:
+
+- **L-1 — No success audit for admin regenerate.** `cascadeDeleteUser` writes its own `performedBy: "studio-admin"` audit; `regenerateGiftClaim` writes only the `gift_claim_regenerate` email_fired entry (no operator-identity capture). **Trigger to revisit:** first post-launch incident where the team needs to reconstruct "who pressed regenerate at <time>". Fix: add `writeAudit({ eventType: "admin_action", success: true, ... })` after the `ok` branch in `regenerateGiftClaim`; include `submissionId` for searchability.
+- **L-2 — Analytics double-count on regenerate.** Successful regenerate appends BOTH `gift_claim` (via `sendAndRecord`) AND `gift_claim_regenerate` (explicit append) to `emails_fired_json`. Any cohort walk counting `gift_claim` events sees regenerations as first-sends. **Trigger to revisit:** first analytics dashboard / cohort study that walks `gift_claim` event counts. Fix: either pass a discriminator into `sendAndRecord` so the regenerate path appends ONLY `gift_claim_regenerate`, OR teach the cooldown walk to consider both types.
+
 ### Phase 5 — Session 5 — SHIPPED 2026-05-12 (`feat/listen-redesign-and-gifting`, commits `f7a08ec` through `123097d`)
 
 Pre-launch completion sweep. T4–T8 carry-over from Session 4b + audit GAPs 8/9/10/11 closed; T6.28-30 (thank-you self_send claimUrl) the lone deferred-with-trigger entry (architecture-cost rationale, production-signal trigger). Stripe live-mode flip cleared of all the pre-launch quality gates this session covered.
