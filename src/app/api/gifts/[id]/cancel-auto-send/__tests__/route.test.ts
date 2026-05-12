@@ -17,6 +17,7 @@ vi.mock("@/lib/auth/listenSession", async () => {
 
 const findSubmissionMock = vi.fn();
 const flipMock = vi.fn();
+const markGiftClaimSentMock = vi.fn();
 const appendEmailFiredMock = vi.fn();
 vi.mock("@/lib/booking/submissions", async () => {
   const actual = await vi.importActual<typeof import("@/lib/booking/submissions")>(
@@ -26,6 +27,7 @@ vi.mock("@/lib/booking/submissions", async () => {
     ...actual,
     findSubmissionById: findSubmissionMock,
     flipGiftToSelfSend: flipMock,
+    markGiftClaimSent: markGiftClaimSentMock,
     appendEmailFired: appendEmailFiredMock,
   };
 });
@@ -69,6 +71,7 @@ beforeEach(() => {
   getActiveSessionMock.mockReset();
   findSubmissionMock.mockReset();
   flipMock.mockReset().mockResolvedValue(true);
+  markGiftClaimSentMock.mockReset().mockResolvedValue(undefined);
   appendEmailFiredMock.mockReset().mockResolvedValue(undefined);
   issueTokenMock.mockReset().mockResolvedValue({
     token: "a".repeat(64),
@@ -125,17 +128,35 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
     expect((await callRoute()).status).toBe(409);
   });
 
-  it("returns 502 when Resend send fails (state stays clean)", async () => {
+  it("returns 502 when Resend send fails (row remains in self_send with provisional token)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     sendMock.mockResolvedValueOnce({ resendId: null });
     const res = await callRoute();
     expect(res.status).toBe(502);
-    expect(flipMock).not.toHaveBeenCalled();
+    // Phase 5 Session 4b — atomic flip happens BEFORE send, so the row IS
+    // flipped (with a provisional token hash). Resend retry hits resend-link.
+    expect(flipMock).toHaveBeenCalledOnce();
+    // Real token never persists on send failure.
+    expect(markGiftClaimSentMock).not.toHaveBeenCalled();
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
   });
 
-  it("clears DO alarm, flips state, and returns claim URL on success", async () => {
+  // Phase 5 Session 4b — B6.21 atomic-flip-first.
+  it("returns 409 when concurrent caller already flipped (flip returns false)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    flipMock.mockResolvedValueOnce(false); // someone else got there first
+    const res = await callRoute();
+    expect(res.status).toBe(409);
+    // No external side-effects when atomic flip loses the race.
+    expect(stubFetchMock).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(markGiftClaimSentMock).not.toHaveBeenCalled();
+    expect(appendEmailFiredMock).not.toHaveBeenCalled();
+  });
+
+  it("flips atomically THEN cancels DO alarm THEN sends THEN updates real token hash", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute();
@@ -143,6 +164,27 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
     const body = (await res.json()) as { claimUrl: string };
     expect(body.claimUrl).toContain("/gift/claim?token=");
 
+    // Verify the ordering by call invocation order.
+    const flipCallOrder = flipMock.mock.invocationCallOrder[0]!;
+    const cancelCallOrder = stubFetchMock.mock.invocationCallOrder[0]!;
+    const sendCallOrder = sendMock.mock.invocationCallOrder[0]!;
+    const markCallOrder = markGiftClaimSentMock.mock.invocationCallOrder[0]!;
+    expect(flipCallOrder).toBeLessThan(cancelCallOrder);
+    expect(cancelCallOrder).toBeLessThan(sendCallOrder);
+    expect(sendCallOrder).toBeLessThan(markCallOrder);
+
+    // Flip uses a provisional token hash (NOT the real one yet).
+    const flipArgs = flipMock.mock.calls[0]![1] as { tokenHash: string };
+    expect(flipArgs.tokenHash).toMatch(/^prov:sub_gift:/);
+
+    // Real token hash is persisted via markGiftClaimSent after send.
+    expect(markGiftClaimSentMock).toHaveBeenCalledWith(
+      "sub_gift",
+      "h".repeat(64),
+      expect.any(String),
+    );
+
+    // Cancel still fires on the DO.
     expect(stubFetchMock).toHaveBeenCalledOnce();
     const stubReq = stubFetchMock.mock.calls[0][0] as Request;
     expect(new URL(stubReq.url).pathname).toBe("/cancel");
@@ -150,10 +192,6 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({ variant: "self_send" }),
     );
-    expect(flipMock).toHaveBeenCalledWith("sub_gift", {
-      tokenHash: "h".repeat(64),
-      firedAtIso: expect.any(String),
-    });
     expect(appendEmailFiredMock).toHaveBeenCalledWith(
       "sub_gift",
       expect.objectContaining({ type: "gift_purchase_confirmation" }),
