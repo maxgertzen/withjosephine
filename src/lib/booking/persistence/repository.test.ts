@@ -486,7 +486,6 @@ describe("repository against in-memory SQLite", () => {
         paidAt: "2026-04-21T10:00:00Z",
         amountPaidCents: 9900,
         amountPaidCurrency: "usd",
-        country: "US",
         recipientUserId: "user_x",
       });
     }

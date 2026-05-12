@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission } from "@/lib/booking/submissions";
@@ -152,6 +152,20 @@ export async function POST(request: Request) {
   const email = typeof validatedValues.email === "string" ? validatedValues.email : "";
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  }
+  // Phase 5 Session 4b — GAP-7. RFC 5321 254-char email cap parity with
+  // /api/booking/gift; defends against pathologically long emails being
+  // persisted to D1 and ferried to Stripe Payment Link URLs.
+  if (email.length > MAX_EMAIL_CHARS) {
+    return NextResponse.json(
+      {
+        error: "Validation failed",
+        fieldErrors: {
+          email: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+        },
+      },
+      { status: 400 },
+    );
   }
 
   const photoR2Key =
