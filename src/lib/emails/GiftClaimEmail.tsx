@@ -1,19 +1,8 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Tailwind,
-} from "@react-email/components";
+import { Button, Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailGiftClaimContent } from "@/data/defaults";
 
-import { emailTailwindConfig } from "./theme.config";
+import { EmailShell } from "./EmailShell";
 
 type GiftClaimSharedVars = {
   recipientName: string;
@@ -46,15 +35,11 @@ export function GiftClaimEmail({ vars, copy }: GiftClaimEmailProps) {
   const preview = vars.variant === "first_send" ? copy.previewFirstSend : copy.previewReminder;
 
   return (
-    <Html lang="en">
-      <Head />
-      <Preview>{template(preview, vars)}</Preview>
-      <Tailwind config={emailTailwindConfig}>
-        <Body className="bg-warm m-0 p-0">
-          <Container
-            className="bg-cream border border-divider rounded"
-            style={{ maxWidth: 600, margin: "0 auto" }}
-          >
+    <EmailShell preview={template(preview, vars)} bareContainer>
+      <Container
+        className="bg-cream border border-divider rounded"
+        style={{ maxWidth: 600, margin: "0 auto" }}
+      >
             <Section className="text-center" style={{ padding: "44px 48px 8px 48px" }}>
               <p
                 className="font-serif text-ink"
@@ -203,9 +188,7 @@ export function GiftClaimEmail({ vars, copy }: GiftClaimEmailProps) {
               </p>
               <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
             </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+      </Container>
+    </EmailShell>
   );
 }

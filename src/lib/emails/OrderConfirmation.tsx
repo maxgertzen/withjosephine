@@ -1,18 +1,8 @@
-import {
-  Body,
-  Container,
-  Head,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Tailwind,
-} from "@react-email/components";
+import { Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailOrderConfirmationContent } from "@/data/defaults";
 
-import { emailTailwindConfig } from "./theme.config";
+import { EmailShell } from "./EmailShell";
 
 export type OrderConfirmationVars = {
   firstName: string;
@@ -40,15 +30,11 @@ export function OrderConfirmation({ vars, copy }: OrderConfirmationProps) {
   const price = priceCell(vars);
 
   return (
-    <Html lang="en">
-      <Head />
-      <Preview>{copy.preview}</Preview>
-      <Tailwind config={emailTailwindConfig}>
-        <Body className="bg-warm m-0 p-0">
-          <Container
-            className="bg-cream border border-divider rounded"
-            style={{ maxWidth: 600, margin: "0 auto" }}
-          >
+    <EmailShell preview={copy.preview} bareContainer>
+      <Container
+        className="bg-cream border border-divider rounded"
+        style={{ maxWidth: 600, margin: "0 auto" }}
+      >
 
             <Section className="text-center" style={{ padding: "44px 48px 8px 48px" }}>
               <p
@@ -151,9 +137,7 @@ export function OrderConfirmation({ vars, copy }: OrderConfirmationProps) {
               </p>
               <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
             </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+      </Container>
+    </EmailShell>
   );
 }

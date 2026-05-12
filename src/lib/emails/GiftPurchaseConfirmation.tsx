@@ -1,20 +1,9 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Tailwind,
-} from "@react-email/components";
+import { Button, Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailGiftPurchaseConfirmationContent } from "@/data/defaults";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 
-import { emailTailwindConfig } from "./theme.config";
+import { EmailShell } from "./EmailShell";
 
 export type GiftPurchaseConfirmationVars = {
   purchaserFirstName: string;
@@ -62,18 +51,14 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
   const detailLine =
     vars.variant === GIFT_DELIVERY.selfSend ? copy.detailLineSelfSend : copy.detailLineScheduled;
 
+  const preview =
+    vars.variant === GIFT_DELIVERY.selfSend ? copy.previewSelfSend : copy.previewScheduled;
   return (
-    <Html lang="en">
-      <Head />
-      <Preview>
-        {vars.variant === GIFT_DELIVERY.selfSend ? copy.previewSelfSend : copy.previewScheduled}
-      </Preview>
-      <Tailwind config={emailTailwindConfig}>
-        <Body className="bg-warm m-0 p-0">
-          <Container
-            className="bg-cream border border-divider rounded"
-            style={{ maxWidth: 600, margin: "0 auto" }}
-          >
+    <EmailShell preview={preview} bareContainer>
+      <Container
+        className="bg-cream border border-divider rounded"
+        style={{ maxWidth: 600, margin: "0 auto" }}
+      >
             <Section className="text-center" style={{ padding: "44px 48px 8px 48px" }}>
               <p
                 className="font-serif text-ink"
@@ -218,9 +203,7 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
               </p>
               <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
             </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+      </Container>
+    </EmailShell>
   );
 }

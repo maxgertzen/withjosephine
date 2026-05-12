@@ -1,9 +1,9 @@
+import { sendGiftClaimEmail } from "../resend";
 import { GIFT_DELIVERY } from "./constants";
 import { issueGiftClaimToken } from "./giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
 import { sendAndRecord } from "./sendAndRecord";
 import { appendEmailFired, findSubmissionById, markGiftClaimSent } from "./submissions";
-import { sendGiftClaimEmail } from "../resend";
 
 export type RegenerateGiftClaimOutcome =
   | { ok: true; deliveryMethod: "self_send" | "scheduled"; targetEmailRedacted: string }
