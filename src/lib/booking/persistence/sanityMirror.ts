@@ -11,7 +11,7 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
-import type { CreateSubmissionInput } from "./repository";
+import type { CreateSubmissionInput, GiftDeliveryMethod } from "./repository";
 
 type MirrorCreateConsent = {
   consentAcknowledgedAt: string;
@@ -131,7 +131,7 @@ export async function mirrorSubmissionPatch(
     // Phase 5 Session 3 — purchaser-side edits and self-send flips.
     recipientEmail: string;
     giftSendAt: string | null;
-    giftDeliveryMethod: "self_send" | "scheduled";
+    giftDeliveryMethod: GiftDeliveryMethod;
     giftClaimTokenHash: string;
     giftClaimEmailFiredAt: string;
     // Phase 5 Session 4b — LB-4 cascade purchaser pseudonymisation.

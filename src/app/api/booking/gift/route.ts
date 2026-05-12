@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  GIFT_DELIVERY,
   HONEYPOT_FIELD,
   MAX_ACTIVE_GIFTS_PER_RECIPIENT,
   MAX_EMAIL_CHARS,
@@ -8,7 +9,10 @@ import {
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { stripTemplateTags } from "@/lib/booking/giftPersonas";
-import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
+import {
+  countActivePendingGiftsForRecipient,
+  type GiftDeliveryMethod,
+} from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
 import { getClientIp } from "@/lib/request";
 import { fetchReading } from "@/lib/sanity/fetch";
@@ -21,13 +25,11 @@ const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
 
-type DeliveryMethod = "self_send" | "scheduled";
-
 type GiftBookingBody = {
   readingSlug: string;
   purchaserEmail: string;
   purchaserFirstName: string;
-  deliveryMethod: DeliveryMethod;
+  deliveryMethod: GiftDeliveryMethod;
   recipientName?: string;
   recipientEmail?: string;
   giftMessage?: string;
@@ -47,7 +49,7 @@ function isGiftBody(body: unknown): body is GiftBookingBody {
     typeof c.readingSlug === "string" &&
     typeof c.purchaserEmail === "string" &&
     typeof c.purchaserFirstName === "string" &&
-    (c.deliveryMethod === "self_send" || c.deliveryMethod === "scheduled") &&
+    (c.deliveryMethod === GIFT_DELIVERY.selfSend || c.deliveryMethod === GIFT_DELIVERY.scheduled) &&
     typeof c.art6Consent === "boolean" &&
     typeof c.coolingOffConsent === "boolean" &&
     typeof c.termsConsent === "boolean" &&
@@ -93,7 +95,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
   const recipientEmail = body.recipientEmail?.trim().toLowerCase();
   const recipientName = body.recipientName?.trim();
 
-  if (body.deliveryMethod === "scheduled") {
+  if (body.deliveryMethod === GIFT_DELIVERY.scheduled) {
     if (!recipientName) {
       errors.push({ field: "recipientName", message: "Recipient name is required." });
     } else if (recipientName.length > MAX_GIFT_NAME_CHARS) {
@@ -176,7 +178,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
 function buildPaymentUrl(
   reading: SanityReading,
   submissionId: string,
-  deliveryMethod: DeliveryMethod,
+  deliveryMethod: GiftDeliveryMethod,
 ): string | null {
   if (!reading.stripePaymentLink) return null;
   let url: URL;
@@ -319,7 +321,7 @@ export async function POST(request: Request): Promise<Response> {
       purchaserUserId: null,
       recipientEmail,
       giftDeliveryMethod: parsedBody.deliveryMethod,
-      giftSendAt: parsedBody.deliveryMethod === "scheduled" ? parsedBody.giftSendAt! : null,
+      giftSendAt: parsedBody.deliveryMethod === GIFT_DELIVERY.scheduled ? parsedBody.giftSendAt! : null,
       giftMessage,
     });
   } catch (error) {

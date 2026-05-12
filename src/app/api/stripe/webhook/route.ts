@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { serverTrack } from "@/lib/analytics/server";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
@@ -121,7 +122,7 @@ async function dispatchGiftPurchaseConfirmation(
     send_at: submission.giftSendAt ?? null,
   });
 
-  if (submission.giftDeliveryMethod === "self_send") {
+  if (submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend) {
     const { tokenHash, claimUrl } = await issueGiftClaimToken();
     await markGiftClaimSent(submission._id, tokenHash, nowIso);
 
@@ -134,7 +135,7 @@ async function dispatchGiftPurchaseConfirmation(
       amountPaidDisplay,
       recipientName,
       giftMessage: submission.giftMessage,
-      variant: "self_send",
+      variant: GIFT_DELIVERY.selfSend,
       claimUrl,
     });
     await appendEmailFired(submission._id, {
@@ -155,7 +156,7 @@ async function dispatchGiftPurchaseConfirmation(
       amountPaidDisplay,
       recipientName,
       giftMessage: submission.giftMessage,
-      variant: "scheduled",
+      variant: GIFT_DELIVERY.scheduled,
       sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso),
     }),
     scheduleGiftClaimAlarm(submission._id, submission.giftSendAt ?? nowIso),

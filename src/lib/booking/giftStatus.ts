@@ -1,3 +1,4 @@
+import { GIFT_DELIVERY } from "./constants";
 import type { EmailFiredEntry, SubmissionRecord } from "./submissions";
 
 /**
@@ -27,7 +28,7 @@ export function giftStatusFor(record: SubmissionRecord): GiftStatus {
   if (record.giftClaimedAt) {
     return { kind: "recipient_preparing", claimedAt: record.giftClaimedAt };
   }
-  if (record.giftDeliveryMethod === "self_send") {
+  if (record.giftDeliveryMethod === GIFT_DELIVERY.selfSend) {
     return { kind: "self_send_ready", firedAt: record.giftClaimEmailFiredAt };
   }
   if (record.giftClaimEmailFiredAt) {

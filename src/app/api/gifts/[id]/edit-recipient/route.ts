@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { MAX_EMAIL_CHARS } from "@/lib/booking/constants";
+import { GIFT_DELIVERY, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { stripTemplateTags } from "@/lib/booking/giftPersonas";
 import { editGiftRecipient } from "@/lib/booking/submissions";
@@ -155,7 +155,7 @@ export async function POST(
   if (
     cleaned.giftSendAt !== undefined &&
     cleaned.giftSendAt !== null &&
-    submission.giftDeliveryMethod === "scheduled"
+    submission.giftDeliveryMethod === GIFT_DELIVERY.scheduled
   ) {
     await scheduleGiftAlarm({
       submissionId: id,

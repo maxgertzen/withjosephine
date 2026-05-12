@@ -12,6 +12,7 @@ import {
 } from "@react-email/components";
 
 import type { EmailGiftPurchaseConfirmationContent } from "@/data/defaults";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 
 import { emailTailwindConfig } from "./theme.config";
 
@@ -47,7 +48,7 @@ function template(text: string, vars: GiftPurchaseConfirmationVars): string {
     .replaceAll("{recipientName}", vars.recipientName ?? "your recipient")
     .replaceAll(
       "{sendAtDisplay}",
-      vars.variant === "scheduled" ? vars.sendAtDisplay : "",
+      vars.variant === GIFT_DELIVERY.scheduled ? vars.sendAtDisplay : "",
     );
 }
 
@@ -57,15 +58,15 @@ function priceCell(vars: GiftPurchaseConfirmationVars): string {
 
 export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmationProps) {
   const price = priceCell(vars);
-  const heroLine = vars.variant === "self_send" ? copy.heroLineSelfSend : copy.heroLineScheduled;
+  const heroLine = vars.variant === GIFT_DELIVERY.selfSend ? copy.heroLineSelfSend : copy.heroLineScheduled;
   const detailLine =
-    vars.variant === "self_send" ? copy.detailLineSelfSend : copy.detailLineScheduled;
+    vars.variant === GIFT_DELIVERY.selfSend ? copy.detailLineSelfSend : copy.detailLineScheduled;
 
   return (
     <Html lang="en">
       <Head />
       <Preview>
-        {vars.variant === "self_send" ? copy.previewSelfSend : copy.previewScheduled}
+        {vars.variant === GIFT_DELIVERY.selfSend ? copy.previewSelfSend : copy.previewScheduled}
       </Preview>
       <Tailwind config={emailTailwindConfig}>
         <Body className="bg-warm m-0 p-0">
@@ -130,7 +131,7 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
               <p style={{ margin: "0 0 18px 0" }}>{template(detailLine, vars)}</p>
             </Section>
 
-            {vars.variant === "self_send" ? (
+            {vars.variant === GIFT_DELIVERY.selfSend ? (
               <div style={{ padding: "0 48px 8px 48px", textAlign: "center" }}>
                 <Button
                   href={vars.claimUrl}

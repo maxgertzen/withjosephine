@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyGiftsPageContent } from "@/data/defaults";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
 import {
   giftResendRateLimit,
@@ -26,7 +27,7 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
 function computeResendVerdict(gift: SubmissionRecord): ResendVerdictSummary | undefined {
-  if (gift.giftDeliveryMethod !== "self_send") return undefined;
+  if (gift.giftDeliveryMethod !== GIFT_DELIVERY.selfSend) return undefined;
   const nowMs = Date.now();
   const verdict = giftResendRateLimit(gift.emailsFired, nowMs);
   if (verdict.allowed) return { allowed: true };

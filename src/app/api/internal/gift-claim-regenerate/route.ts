@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { sendAndRecord } from "@/lib/booking/sendAndRecord";
@@ -70,7 +71,7 @@ export async function POST(request: Request): Promise<Response> {
   // the recipient is. Either way, regenerating means resending the new link
   // to the same party that should have received it.
   const targetEmail =
-    submission.giftDeliveryMethod === "self_send" ? submission.email : submission.recipientEmail;
+    submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend ? submission.email : submission.recipientEmail;
   if (!targetEmail) {
     return NextResponse.json({ error: "No target email on submission" }, { status: 409 });
   }

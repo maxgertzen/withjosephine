@@ -9,6 +9,7 @@
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { sendGiftClaimEmail } from "@/lib/resend";
 
+import { GIFT_DELIVERY } from "./constants";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
 import { sendAndRecord } from "./sendAndRecord";
 import { findSubmissionById, markGiftClaimSent } from "./submissions";
@@ -51,7 +52,7 @@ export async function dispatchGiftClaim(
   if (!submission) {
     return { outcome: "stop", reason: "missing", nextAlarmMs: null };
   }
-  if (!submission.isGift || submission.giftDeliveryMethod !== "scheduled") {
+  if (!submission.isGift || submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
     return { outcome: "stop", reason: "not_scheduled", nextAlarmMs: null };
   }
   if (submission.giftClaimedAt) {

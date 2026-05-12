@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
@@ -22,7 +23,7 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== "scheduled") {
+  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
     return NextResponse.json({ error: "Already self-send" }, { status: 409 });
   }
   if (submission.giftClaimEmailFiredAt) {
@@ -75,7 +76,7 @@ export async function POST(
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     recipientName: recipientNameFor(submission),
     giftMessage: submission.giftMessage,
-    variant: "self_send",
+    variant: GIFT_DELIVERY.selfSend,
     claimUrl,
   });
   if (send.resendId === null) {

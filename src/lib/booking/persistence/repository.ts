@@ -1,3 +1,4 @@
+import { GIFT_DELIVERY } from "../constants";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
@@ -37,10 +38,10 @@ type Row = {
   gift_cancelled_at: string | null;
 };
 
-export type GiftDeliveryMethod = "self_send" | "scheduled";
+export type GiftDeliveryMethod = (typeof GIFT_DELIVERY)[keyof typeof GIFT_DELIVERY];
 
 function parseGiftDeliveryMethod(value: string | null): GiftDeliveryMethod | null {
-  return value === "self_send" || value === "scheduled" ? value : null;
+  return value === GIFT_DELIVERY.selfSend || value === GIFT_DELIVERY.scheduled ? value : null;
 }
 
 function rowToRecord(row: Row): SubmissionRecord {

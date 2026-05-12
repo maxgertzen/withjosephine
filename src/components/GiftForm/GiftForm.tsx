@@ -7,9 +7,13 @@ import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { BookingGiftFormContent } from "@/data/defaults";
 import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
-import { BOOKING_API_GIFT_ROUTE, HONEYPOT_FIELD } from "@/lib/booking/constants";
+import {
+  BOOKING_API_GIFT_ROUTE,
+  GIFT_DELIVERY,
+  HONEYPOT_FIELD,
+} from "@/lib/booking/constants";
+import type { GiftDeliveryMethod } from "@/lib/booking/persistence/repository";
 
-type DeliveryMethod = "self_send" | "scheduled";
 type FieldErrors = Partial<Record<string, string>>;
 
 const GIFT_MESSAGE_MAX = 280;
@@ -23,7 +27,7 @@ type Props = {
 };
 
 export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }: Props) {
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("self_send");
+  const [deliveryMethod, setDeliveryMethod] = useState<GiftDeliveryMethod>(GIFT_DELIVERY.selfSend);
   const [purchaserFirstName, setPurchaserFirstName] = useState("");
   const [purchaserEmail, setPurchaserEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -85,7 +89,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     if (!purchaserEmail.trim()) {
       errs.purchaserEmail = copy.emailInvalidError;
     }
-    if (deliveryMethod === "scheduled") {
+    if (deliveryMethod === GIFT_DELIVERY.scheduled) {
       if (!recipientName.trim()) errs.recipientName = copy.recipientNameRequiredError;
       if (!recipientEmail.trim()) errs.recipientEmail = copy.recipientEmailRequiredError;
       if (!giftSendAt) errs.giftSendAt = copy.sendAtRequiredError;
@@ -124,7 +128,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     setSubmitting(true);
     try {
       const giftSendAtIso =
-        deliveryMethod === "scheduled" && giftSendAt
+        deliveryMethod === GIFT_DELIVERY.scheduled && giftSendAt
           ? new Date(giftSendAt).toISOString()
           : undefined;
       const body: Record<string, unknown> = {
@@ -203,11 +207,11 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         : "text-j-text-muted";
 
   const submitLabel =
-    deliveryMethod === "self_send"
+    deliveryMethod === GIFT_DELIVERY.selfSend
       ? copy.submitButtonSelfSend
       : copy.submitButtonScheduled;
 
-  const isScheduled = deliveryMethod === "scheduled";
+  const isScheduled = deliveryMethod === GIFT_DELIVERY.scheduled;
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-xl mx-auto flex flex-col gap-8 px-6">
@@ -251,9 +255,9 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
             <input
               type="radio"
               name="deliveryMethod"
-              value="self_send"
-              checked={deliveryMethod === "self_send"}
-              onChange={() => setDeliveryMethod("self_send")}
+              value={GIFT_DELIVERY.selfSend}
+              checked={deliveryMethod === GIFT_DELIVERY.selfSend}
+              onChange={() => setDeliveryMethod(GIFT_DELIVERY.selfSend)}
               className="mt-1 accent-j-deep"
             />
             <span className="flex-1">
@@ -269,9 +273,9 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
             <input
               type="radio"
               name="deliveryMethod"
-              value="scheduled"
-              checked={deliveryMethod === "scheduled"}
-              onChange={() => setDeliveryMethod("scheduled")}
+              value={GIFT_DELIVERY.scheduled}
+              checked={deliveryMethod === GIFT_DELIVERY.scheduled}
+              onChange={() => setDeliveryMethod(GIFT_DELIVERY.scheduled)}
               className="mt-1 accent-j-deep"
             />
             <span className="flex-1">

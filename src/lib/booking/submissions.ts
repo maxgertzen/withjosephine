@@ -1,9 +1,13 @@
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { PHOTO_PUBLIC_URL_BASE } from "./constants";
+import { GIFT_DELIVERY, PHOTO_PUBLIC_URL_BASE } from "./constants";
 import { formatAmountPaid } from "./formatAmount";
-import type { CreateSubmissionInput, FinancialRecordInput } from "./persistence/repository";
+import type {
+  CreateSubmissionInput,
+  FinancialRecordInput,
+  GiftDeliveryMethod,
+} from "./persistence/repository";
 import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import {
@@ -67,7 +71,7 @@ export type SubmissionRecord = {
   isGift: boolean;
   purchaserUserId: string | null;
   recipientEmail: string | null;
-  giftDeliveryMethod: "self_send" | "scheduled" | null;
+  giftDeliveryMethod: GiftDeliveryMethod | null;
   giftSendAt: string | null;
   giftMessage: string | null;
   giftClaimTokenHash: string | null;
@@ -291,7 +295,7 @@ export async function flipGiftToSelfSend(
   if (updated) {
     runMirror(
       mirrorSubmissionPatch(submissionId, {
-        giftDeliveryMethod: "self_send",
+        giftDeliveryMethod: GIFT_DELIVERY.selfSend,
         giftSendAt: null,
         giftClaimTokenHash: args.tokenHash,
         giftClaimEmailFiredAt: args.firedAtIso,

@@ -3,6 +3,7 @@ import { Resend } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import type { EmailSubType } from "./analytics/server-events";
+import { GIFT_DELIVERY } from "./booking/constants";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day2Started } from "./emails/Day2Started";
 import { Day7Delivery } from "./emails/Day7Delivery";
@@ -183,9 +184,9 @@ export async function sendGiftPurchaseConfirmation(
   const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
 
   const vars: GiftPurchaseConfirmationVars =
-    input.variant === "self_send"
+    input.variant === GIFT_DELIVERY.selfSend
       ? {
-          variant: "self_send",
+          variant: GIFT_DELIVERY.selfSend,
           claimUrl: input.claimUrl,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -195,7 +196,7 @@ export async function sendGiftPurchaseConfirmation(
           giftMessage: input.giftMessage,
         }
       : {
-          variant: "scheduled",
+          variant: GIFT_DELIVERY.scheduled,
           sendAtDisplay: input.sendAtDisplay,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -205,10 +206,10 @@ export async function sendGiftPurchaseConfirmation(
           giftMessage: input.giftMessage,
         };
 
-  const subject = input.variant === "self_send" ? copy.subjectSelfSend : copy.subjectScheduled;
+  const subject = input.variant === GIFT_DELIVERY.selfSend ? copy.subjectSelfSend : copy.subjectScheduled;
   const interpolatedSubject = subject
     .replaceAll("{recipientName}", input.recipientName ?? "your recipient")
-    .replaceAll("{sendAtDisplay}", input.variant === "scheduled" ? input.sendAtDisplay : "");
+    .replaceAll("{sendAtDisplay}", input.variant === GIFT_DELIVERY.scheduled ? input.sendAtDisplay : "");
 
   const html = await render(<GiftPurchaseConfirmation vars={vars} copy={copy} />);
 
