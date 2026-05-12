@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
+import { stripTemplateTags } from "@/lib/booking/giftPersonas";
 import { editGiftRecipient } from "@/lib/booking/submissions";
 import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 
@@ -67,7 +68,10 @@ function validate(
   }
 
   if (body.recipientName !== undefined) {
-    const trimmed = body.recipientName.trim();
+    // Phase 5 Session 4b — B7.26. Strip template-tag patterns at the
+    // edit boundary too — keeps `gift_send_at` reschedules from
+    // introducing the very payload the purchase-time validator blocks.
+    const trimmed = stripTemplateTags(body.recipientName.trim());
     if (trimmed.length === 0) {
       errors.push({ field: "recipientName", message: "Recipient name can’t be blank." });
     } else if (trimmed.length > MAX_RECIPIENT_NAME_CHARS) {

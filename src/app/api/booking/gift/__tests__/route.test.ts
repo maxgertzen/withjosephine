@@ -246,6 +246,9 @@ describe("/api/booking/gift", () => {
     const body = await res.json();
     expect(body.paymentUrl).toContain("buy.stripe.com");
     expect(body.paymentUrl).toContain("client_reference_id=");
+    // Phase 5 Session 4b — B5.15. Purchaser email must NEVER appear in the
+    // payment URL — see buildPaymentUrl comment for rationale.
+    expect(body.paymentUrl).not.toContain("prefilled_email");
     expect(createSubmissionMock).toHaveBeenCalledTimes(1);
     const persisted = createSubmissionMock.mock.calls[0]![0];
     expect(persisted.isGift).toBe(true);

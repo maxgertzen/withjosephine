@@ -31,13 +31,29 @@ export async function issueGiftClaimToken(): Promise<IssuedGiftClaimToken> {
  * an unclaimed gift submission. Returns the submission when valid, or null
  * when no match (invalid token, already claimed, or cancelled). The DB
  * lookup is by hash equality so the raw token never sits in storage.
+ *
+ * Phase 5 Session 4b — B5.16 constant-time path: shape-mismatch and
+ * shape-match-but-not-in-DB both perform a hash + a DB lookup. The lookup
+ * uses a fixed placeholder hash when the shape is wrong, so the wall-clock
+ * timing of "garbage token" matches "valid-shape but unknown token". Closes
+ * the timing-oracle that let an attacker distinguish "your token doesn't
+ * look like a SHA-256" from "your token looks fine but isn't ours" via
+ * response time.
  */
+const PLACEHOLDER_TOKEN_HASH = "0".repeat(64);
+
 export async function verifyGiftClaimToken(
-  rawToken: string,
+  rawToken: unknown,
 ): Promise<SubmissionRecord | null> {
-  if (!rawToken || typeof rawToken !== "string") return null;
-  // Strict shape check before hashing — rejects garbage early.
-  if (!/^[0-9a-f]{64}$/.test(rawToken)) return null;
-  const tokenHash = await sha256Hex(rawToken);
-  return findUnclaimedGiftByTokenHash(tokenHash);
+  const stringInput =
+    typeof rawToken === "string" && rawToken.length > 0 ? rawToken : "";
+  const shapeValid = /^[0-9a-f]{64}$/.test(stringInput);
+  // Always hash SOMETHING — placeholder on shape mismatch. Hash is cheap
+  // and constant-time-ish; the lookup is the real timing surface.
+  const computedHash = await sha256Hex(shapeValid ? stringInput : "invalid-shape");
+  // Always issue the DB lookup. Placeholder hash for shape-invalid input
+  // guarantees a no-match without surfacing the shape-failure earlier.
+  const lookupHash = shapeValid ? computedHash : PLACEHOLDER_TOKEN_HASH;
+  const match = await findUnclaimedGiftByTokenHash(lookupHash);
+  return shapeValid ? match : null;
 }

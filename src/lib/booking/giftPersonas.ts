@@ -1,5 +1,23 @@
 import type { SubmissionRecord } from "./submissions";
 
+/**
+ * Phase 5 Session 4b — B7.26. Strip `{tag}` patterns from purchaser-
+ * controlled inputs at the API boundary. Defends against a hostile
+ * purchaser sneaking `{recipientName}` (or other template variable names)
+ * into a stored field that later feeds an email template — substitution
+ * happens after storage, so an unstripped tag would silently hijack the
+ * downstream interpolation. Stripping at submit-time keeps every consumer
+ * of the field safe without per-template defensive logic.
+ *
+ * We strip the entire `{...}` span (including the braces). Non-greedy so
+ * `prefix {foo} middle {bar} suffix` becomes `prefix  middle  suffix`.
+ */
+const TEMPLATE_TAG_RE = /\{[^}]*\}/g;
+
+export function stripTemplateTags(input: string): string {
+  return input.replace(TEMPLATE_TAG_RE, "").trim();
+}
+
 export function purchaserFirstNameFor(submission: SubmissionRecord): string {
   const fromResponses = submission.responses
     .find((r) => r.fieldKey === "purchaser_first_name")

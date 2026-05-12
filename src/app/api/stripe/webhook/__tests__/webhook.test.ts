@@ -609,5 +609,60 @@ describe("/api/stripe/webhook", () => {
       const trackTypes = mockServerTrack.mock.calls.map((c) => c[0]);
       expect(trackTypes).not.toContain("gift_purchased");
     });
+
+    // Phase 5 Session 4b — B5.14b. Webhook retry with same stripe_event_id
+    // already persisted by a prior `applied` run: applyPaidEvent reports
+    // alreadyApplied and the gift dispatch path is short-circuited. This
+    // is what stops Resend from double-firing on Stripe's at-least-once.
+    it("gift submission: retried event with already-persisted stripeEventId fires no second email", async () => {
+      // First delivery — applied.
+      mockConstruct.mockReturnValueOnce(event("evt_g_retry", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+      mockApply.mockResolvedValueOnce("applied");
+      mockSendGiftConfirmation.mockResolvedValueOnce({ resendId: "re_1" });
+      await callRoute("{}");
+      expect(mockSendGiftConfirmation).toHaveBeenCalledTimes(1);
+
+      // Second delivery — same event id, submission row already has it.
+      mockConstruct.mockReturnValueOnce(event("evt_g_retry", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce({ ...GIFT_SELF_SEND, stripeEventId: "evt_g_retry" });
+      mockApply.mockResolvedValueOnce("alreadyApplied");
+      await callRoute("{}");
+
+      // Still 1 — no double-fire.
+      expect(mockSendGiftConfirmation).toHaveBeenCalledTimes(1);
+    });
+
+    // B5.18 metadata canary. Mismatched stripe metadata vs submission row
+    // surfaces a console.warn — informational, doesn't throw.
+    it("warns when stripe session metadata.is_gift contradicts the submission row", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      // Build an event with metadata is_gift = "false" while the submission is a gift.
+      const mismatched = {
+        id: "evt_mismatch",
+        type: "checkout.session.completed",
+        created: 1700000000,
+        data: {
+          object: {
+            client_reference_id: "sub_gift_self",
+            id: "cs_x",
+            amount_total: 7900,
+            currency: "usd",
+            metadata: { is_gift: "false" },
+          },
+        },
+      };
+      mockConstruct.mockReturnValueOnce(mismatched as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+      mockApply.mockResolvedValueOnce("applied");
+      mockSendGiftConfirmation.mockResolvedValueOnce({ resendId: "re_x" });
+
+      await callRoute("{}");
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("gift metadata mismatch"),
+      );
+      warnSpy.mockRestore();
+    });
   });
 });
