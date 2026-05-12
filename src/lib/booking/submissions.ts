@@ -27,7 +27,8 @@ export type EmailFiredType =
   | "abandonment"
   | "gift_purchase_confirmation"
   | "gift_claim"
-  | "gift_resend";
+  | "gift_resend"
+  | "gift_claim_regenerate";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
