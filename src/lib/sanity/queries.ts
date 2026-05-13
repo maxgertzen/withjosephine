@@ -121,7 +121,247 @@ export const thankYouPageQuery = groq`
     contactBody,
     closingMessage,
     returnButtonText,
+    "overrides": overrides[]{
+      "readingSlug": reading->slug.current,
+      heading,
+      subheading,
+      confirmationBody,
+      timelineBody,
+      contactBody,
+      closingMessage
+    },
     seo
+  }
+`;
+
+export const myReadingsPageQuery = groq`
+  *[_type == "myReadingsPage"][0] {
+    listHeading,
+    listSubheading,
+    openButtonLabel,
+    emptyHeading,
+    emptyCtaLabel,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel
+  }
+`;
+
+export const myGiftsPageQuery = groq`
+  *[_type == "myGiftsPage"][0] {
+    listHeading,
+    listSubheading,
+    emptyHeading,
+    emptyBody,
+    emptyCtaLabel,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel,
+    statusScheduledLabel,
+    statusSelfSendReadyLabel,
+    statusSentLabel,
+    statusPreparingLabel,
+    statusDeliveredLabel,
+    statusCancelledLabel,
+    editRecipientCtaLabel,
+    flipToSelfSendCtaLabel,
+    resendLinkCtaLabel,
+    privacyNote,
+    editRecipientFormTitle,
+    editRecipientFormRecipientNameLabel,
+    editRecipientFormRecipientEmailLabel,
+    editRecipientFormSendAtLabel,
+    editRecipientSaveButtonLabel,
+    editRecipientSavingLabel,
+    editRecipientCancelButtonLabel,
+    flipConfirmCtaLabel,
+    flipSwitchingLabel,
+    resendSendingLabel,
+    resendThrottledMessage,
+    actionGenericError,
+    actionNetworkError,
+    actionClosedError,
+    editRecipientSendAtPreviewTemplate,
+    resendRetryAfterHourTemplate,
+    resendRetryAfterDayTemplate,
+    resendRetryFallbackLabel
+  }
+`;
+
+export const giftClaimPageQuery = groq`
+  *[_type == "giftClaimPage"][0] {
+    seoTitle,
+    seoDescription,
+    noTokenHeading,
+    noTokenBody,
+    alreadyClaimedHeading,
+    alreadyClaimedBody
+  }
+`;
+
+export const giftIntakePageQuery = groq`
+  *[_type == "giftIntakePage"][0] {
+    seoTitle,
+    seoDescription,
+    eyebrow,
+    heading,
+    headingWelcome,
+    lede
+  }
+`;
+
+export const magicLinkVerifyPageQuery = groq`
+  *[_type == "magicLinkVerifyPage"][0] {
+    confirmHeading,
+    confirmBody,
+    confirmEmailLabel,
+    confirmButtonLabel,
+    confirmFootnote,
+    restedHeading,
+    restedBody,
+    restedCtaLabel
+  }
+`;
+
+export const emailMagicLinkQuery = groq`
+  *[_type == "emailMagicLink"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailOrderConfirmationQuery = groq`
+  *[_type == "emailOrderConfirmation"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    greeting,
+    thanksLine,
+    timelineLine,
+    contactLine,
+    cardLabel,
+    cardDeliveryLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailGiftPurchaseConfirmationQuery = groq`
+  *[_type == "emailGiftPurchaseConfirmation"][0] {
+    subjectSelfSend,
+    subjectScheduled,
+    previewSelfSend,
+    previewScheduled,
+    brandName,
+    brandSubtitle,
+    heroLineSelfSend,
+    heroLineScheduled,
+    greeting,
+    detailLineSelfSend,
+    detailLineScheduled,
+    shareButtonLabel,
+    shareUrlHelper,
+    cardLabel,
+    cardDeliveryLine,
+    refundLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailDay2StartedQuery = groq`
+  *[_type == "emailDay2Started"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailGiftClaimQuery = groq`
+  *[_type == "emailGiftClaim"][0] {
+    subjectFirstSend,
+    subjectReminder,
+    previewFirstSend,
+    previewReminder,
+    brandName,
+    brandSubtitle,
+    heroLineFirstSend,
+    heroLineReminder,
+    greeting,
+    bodyFirstSend,
+    bodyReminder,
+    giftMessageLabel,
+    claimButtonLabel,
+    claimUrlHelper,
+    cardLabel,
+    cardDeliveryLine,
+    reminderContactLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailDay7DeliveryQuery = groq`
+  *[_type == "emailDay7Delivery"][0] {
+    subjectTemplate,
+    preview,
+    greeting,
+    lineReady,
+    comfortLine,
+    openButtonLabel,
+    signedInDisclosure,
+    comfortFollowUp,
+    signOff
+  }
+`;
+
+export const listenPageQuery = groq`
+  *[_type == "listenPage"][0] {
+    welcomeRibbon,
+    deliveredHeading,
+    deliveredSubheading,
+    voiceNoteLabel,
+    pdfLabel,
+    pdfButtonLabel,
+    closerLine1,
+    closerLine2,
+    signInHeading,
+    signInBody,
+    signInButtonLabel,
+    signInFootnote,
+    checkEmailHeading,
+    checkEmailBody,
+    checkEmailResendLabel,
+    restedHeading,
+    restedBody,
+    restedCtaLabel,
+    throttledHeading,
+    throttledBody,
+    throttledMailtoLabel,
+    throttledMailtoSubject,
+    assetTroubleHeading,
+    assetTroubleBody,
+    assetTroubleTryAgainLabel,
+    assetTroubleMailtoLabel,
+    assetTroubleMailtoSubject
   }
 `;
 
@@ -166,7 +406,10 @@ export const bookingFormQuery = groq`
       dropCapCaption,
       changeReadingLinkText,
       aboutJosephineLinkText,
-      letterTitle
+      letterTitle,
+      giftToggleForMeLabel,
+      giftToggleAsGiftLabel,
+      giftToggleHelper
     },
     pagination {
       overrides[] {
@@ -214,6 +457,55 @@ export const bookingFormQuery = groq`
         "appliesToServices": appliesToServices[]->slug.current
       }
     } | order(order asc)
+  }
+`;
+
+export const bookingGiftFormQuery = groq`
+  *[_type == "bookingGiftForm"][0] {
+    heading,
+    subheading,
+    deliveryMethodLabel,
+    deliveryMethodSelfSendLabel,
+    deliveryMethodSelfSendHelper,
+    deliveryMethodScheduledLabel,
+    deliveryMethodScheduledHelper,
+    purchaserFirstNameLabel,
+    purchaserFirstNameHelper,
+    purchaserEmailLabel,
+    purchaserEmailHelper,
+    recipientNameLabelSelfSend,
+    recipientNamePlaceholderSelfSend,
+    recipientNameLabelScheduled,
+    recipientNameHelperScheduled,
+    recipientEmailLabel,
+    recipientEmailHelper,
+    giftMessageLabel,
+    giftMessagePlaceholder,
+    sendAtSectionLabel,
+    sendAtPresetNow,
+    sendAtPresetWeek,
+    sendAtPresetMonth,
+    sendAtCustomLabel,
+    consentIntro,
+    nonRefundableNotice,
+    art6ConsentLabel,
+    coolingOffConsentLabel,
+    termsConsentLabel,
+    submitButtonSelfSend,
+    submitButtonScheduled,
+    loadingStateCopy,
+    antiAbuseCapHeading,
+    antiAbuseCapBody,
+    firstNameRequiredError,
+    emailInvalidError,
+    recipientNameRequiredError,
+    recipientEmailRequiredError,
+    sendAtRequiredError,
+    consentRequiredError,
+    verificationError,
+    genericError,
+    networkError,
+    sendAtTimezoneHint
   }
 `;
 

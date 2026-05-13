@@ -12,15 +12,9 @@
 //     This protects copy Becky has already tuned in Studio from being clobbered.
 //
 // Run: set -a && source .env.local && set +a && pnpm tsx scripts/migrate-consent-banner-clarity.ts
-import { createClient } from "@sanity/client";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2025-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+const client = sanityWriteClient();
 
 // Must match the value seeded by `seed-consent-banner.ts`; if it diverges,
 // detection of "Becky hasn't edited yet" silently fails. Keep in sync.

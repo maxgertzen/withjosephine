@@ -88,6 +88,223 @@ export type SanityBookingPage = {
   seo?: SanitySeo;
 };
 
+export type SanityMyReadingsPage = {
+  listHeading: string;
+  listSubheading: string;
+  openButtonLabel: string;
+  emptyHeading: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+};
+
+export type SanityMyGiftsPage = {
+  listHeading: string;
+  listSubheading: string;
+  emptyHeading: string;
+  emptyBody: string;
+  emptyCtaLabel: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  statusScheduledLabel: string;
+  statusSelfSendReadyLabel: string;
+  statusSentLabel: string;
+  statusPreparingLabel: string;
+  statusDeliveredLabel: string;
+  statusCancelledLabel: string;
+  editRecipientCtaLabel: string;
+  flipToSelfSendCtaLabel: string;
+  resendLinkCtaLabel: string;
+  privacyNote: string;
+  editRecipientFormTitle?: string;
+  editRecipientFormRecipientNameLabel?: string;
+  editRecipientFormRecipientEmailLabel?: string;
+  editRecipientFormSendAtLabel?: string;
+  editRecipientSaveButtonLabel?: string;
+  editRecipientSavingLabel?: string;
+  editRecipientCancelButtonLabel?: string;
+  flipConfirmCtaLabel?: string;
+  flipSwitchingLabel?: string;
+  resendSendingLabel?: string;
+  resendThrottledMessage?: string;
+  actionGenericError?: string;
+  actionNetworkError?: string;
+  actionClosedError?: string;
+  editRecipientSendAtPreviewTemplate?: string;
+  resendRetryAfterHourTemplate?: string;
+  resendRetryAfterDayTemplate?: string;
+  resendRetryFallbackLabel?: string;
+};
+
+export type SanityGiftClaimPage = {
+  seoTitle: string;
+  seoDescription: string;
+  noTokenHeading: string;
+  noTokenBody: string;
+  alreadyClaimedHeading: string;
+  alreadyClaimedBody: string;
+};
+
+export type SanityGiftIntakePage = {
+  seoTitle: string;
+  seoDescription: string;
+  eyebrow: string;
+  heading: string;
+  headingWelcome: string;
+  lede: string;
+};
+
+export type SanityMagicLinkVerifyPage = {
+  confirmHeading: string;
+  confirmBody: string;
+  confirmEmailLabel: string;
+  confirmButtonLabel: string;
+  confirmFootnote: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+};
+
+export type SanityEmailMagicLink = {
+  subject: string;
+  preview: string;
+  greeting: string;
+  body: string[];
+  signOff: string | null;
+};
+
+export type SanityEmailOrderConfirmation = {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  greeting: string;
+  thanksLine: string;
+  timelineLine: string;
+  contactLine: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailGiftPurchaseConfirmation = {
+  subjectSelfSend: string;
+  subjectScheduled: string;
+  previewSelfSend: string;
+  previewScheduled: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineSelfSend: string;
+  heroLineScheduled: string;
+  greeting: string;
+  detailLineSelfSend: string;
+  detailLineScheduled: string;
+  shareButtonLabel: string;
+  shareUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailGiftClaim = {
+  subjectFirstSend: string;
+  subjectReminder: string;
+  previewFirstSend: string;
+  previewReminder: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLineFirstSend: string;
+  heroLineReminder: string;
+  greeting: string;
+  bodyFirstSend: string;
+  bodyReminder: string;
+  giftMessageLabel: string;
+  claimButtonLabel: string;
+  claimUrlHelper: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  reminderContactLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailDay2Started = {
+  subject: string;
+  preview: string;
+  greeting: string;
+  body: string[];
+  signOff: string | null;
+};
+
+export type SanityEmailDay7Delivery = {
+  subjectTemplate: string;
+  preview: string;
+  greeting: string;
+  lineReady: string;
+  comfortLine: string;
+  openButtonLabel: string;
+  signedInDisclosure: string;
+  comfortFollowUp: string;
+  signOff: string | null;
+};
+
+export type SanityListenPage = {
+  welcomeRibbon: string;
+  deliveredHeading: string;
+  deliveredSubheading: string;
+  voiceNoteLabel: string;
+  pdfLabel: string;
+  pdfButtonLabel: string;
+  closerLine1: string;
+  closerLine2: string;
+  signInHeading: string;
+  signInBody: string;
+  signInButtonLabel: string;
+  signInFootnote: string;
+  checkEmailHeading: string;
+  checkEmailBody: string;
+  checkEmailResendLabel: string;
+  restedHeading: string;
+  restedBody: string;
+  restedCtaLabel: string;
+  throttledHeading: string;
+  throttledBody: string;
+  throttledMailtoLabel: string;
+  throttledMailtoSubject: string;
+  assetTroubleHeading: string;
+  assetTroubleBody: string;
+  assetTroubleTryAgainLabel: string;
+  assetTroubleMailtoLabel: string;
+  assetTroubleMailtoSubject: string;
+};
+
+export type SanityThankYouOverride = {
+  readingSlug: string;
+  heading?: string;
+  subheading?: string;
+  confirmationBody?: string;
+  timelineBody?: string;
+  contactBody?: string;
+  closingMessage?: string;
+};
+
 export type SanityThankYouPage = {
   heading: string;
   subheading: string;
@@ -98,6 +315,7 @@ export type SanityThankYouPage = {
   contactBody?: string;
   closingMessage: string;
   returnButtonText: string;
+  overrides?: SanityThankYouOverride[];
   seo?: SanitySeo;
 };
 
@@ -283,6 +501,56 @@ export type SanityEntryPageContent = {
   changeReadingLinkText?: string;
   aboutJosephineLinkText?: string;
   letterTitle?: string;
+  giftToggleForMeLabel?: string;
+  giftToggleAsGiftLabel?: string;
+  giftToggleHelper?: string;
+};
+
+export type SanityBookingGiftForm = {
+  heading?: string;
+  subheading?: string;
+  deliveryMethodLabel?: string;
+  deliveryMethodSelfSendLabel?: string;
+  deliveryMethodSelfSendHelper?: string;
+  deliveryMethodScheduledLabel?: string;
+  deliveryMethodScheduledHelper?: string;
+  purchaserFirstNameLabel?: string;
+  purchaserFirstNameHelper?: string;
+  purchaserEmailLabel?: string;
+  purchaserEmailHelper?: string;
+  recipientNameLabelSelfSend?: string;
+  recipientNamePlaceholderSelfSend?: string;
+  recipientNameLabelScheduled?: string;
+  recipientNameHelperScheduled?: string;
+  recipientEmailLabel?: string;
+  recipientEmailHelper?: string;
+  giftMessageLabel?: string;
+  giftMessagePlaceholder?: string;
+  sendAtSectionLabel?: string;
+  sendAtPresetNow?: string;
+  sendAtPresetWeek?: string;
+  sendAtPresetMonth?: string;
+  sendAtCustomLabel?: string;
+  consentIntro?: string;
+  nonRefundableNotice?: string;
+  art6ConsentLabel?: string;
+  coolingOffConsentLabel?: string;
+  termsConsentLabel?: string;
+  submitButtonSelfSend?: string;
+  submitButtonScheduled?: string;
+  loadingStateCopy?: string;
+  antiAbuseCapHeading?: string;
+  antiAbuseCapBody?: string;
+  firstNameRequiredError?: string;
+  emailInvalidError?: string;
+  recipientNameRequiredError?: string;
+  recipientEmailRequiredError?: string;
+  sendAtRequiredError?: string;
+  consentRequiredError?: string;
+  verificationError?: string;
+  genericError?: string;
+  networkError?: string;
+  sendAtTimezoneHint?: string;
 };
 
 export type SanityBookingForm = {

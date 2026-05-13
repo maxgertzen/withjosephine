@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission } from "@/lib/booking/submissions";
@@ -15,6 +15,8 @@ type BookingRequestBody = {
   values: Record<string, unknown>;
   turnstileToken: string;
   consentLabelSnapshot?: string;
+  art6Consent: boolean;
+  art9Consent: boolean;
   [HONEYPOT_FIELD]?: string;
 };
 
@@ -25,7 +27,9 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
     typeof candidate.readingSlug === "string" &&
     typeof candidate.turnstileToken === "string" &&
     typeof candidate.values === "object" &&
-    candidate.values !== null
+    candidate.values !== null &&
+    typeof candidate.art6Consent === "boolean" &&
+    typeof candidate.art9Consent === "boolean"
   );
 }
 
@@ -100,6 +104,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
+  // Both Art. 6 + Art. 9 consents required server-side; UI is defense in depth.
+  if (!parsedBody.art6Consent || !parsedBody.art9Consent) {
+    return NextResponse.json(
+      { error: "Both required consents (Art. 6 and Art. 9) must be acknowledged." },
+      { status: 400 },
+    );
+  }
+
   const ip = getClientIp(request);
 
   const turnstileOk = await verifyTurnstileToken(parsedBody.turnstileToken, ip ?? undefined);
@@ -139,6 +151,19 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
+  // RFC 5321 254-char cap — also defends against pathologically long emails
+  // being ferried to Stripe Payment Link URLs.
+  if (email.length > MAX_EMAIL_CHARS) {
+    return NextResponse.json(
+      {
+        error: "Validation failed",
+        fieldErrors: {
+          email: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+        },
+      },
+      { status: 400 },
+    );
+  }
 
   const photoR2Key =
     typeof validatedValues.photo === "string" && validatedValues.photo.length > 0
@@ -163,6 +188,8 @@ export async function POST(request: Request) {
       createdAt: acknowledgedAt,
       consentAcknowledgedAt: acknowledgedAt,
       ipAddress: ip ?? null,
+      art6AcknowledgedAt: acknowledgedAt,
+      art9AcknowledgedAt: acknowledgedAt,
     });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);

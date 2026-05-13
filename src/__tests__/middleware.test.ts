@@ -188,11 +188,41 @@ describe("middleware apex lockdown (under-construction on)", () => {
     }
   });
 
-  it("does NOT rewrite /listen/[token] on apex (delivery emails hardcode apex URLs)", () => {
+  it("does NOT rewrite /listen/[id] on apex (delivery emails hardcode apex URLs)", () => {
     const res = middleware(
-      makeRequest({ hasDraft: false, pathname: "/listen/c3ViXzE.deadbeef" }),
+      makeRequest({ hasDraft: false, pathname: "/listen/sub_abc123" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite /api/internal/ on apex (DO alarm dispatch + admin recovery scripts must reach apex)", () => {
+    // Without this, GiftClaimScheduler.alarm()'s public-HTTPS POST to
+    // /api/internal/gift-claim-dispatch would be rewritten to / during
+    // soft-launch, silently dropping every scheduled-mode claim email.
+    // gift-claim-regenerate (admin recovery script) has the same constraint.
+    const paths = [
+      "/api/internal/gift-claim-dispatch",
+      "/api/internal/gift-claim-regenerate",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
+  });
+
+  it("does NOT rewrite /api/admin/ on apex (Studio doc-action POSTs must reach apex during soft-launch)", () => {
+    const paths = [
+      "/api/admin/delete-user",
+      "/api/admin/regenerate-gift-claim",
+    ];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
   });
 
   it("does NOT rewrite on preview subdomain (preview is the working surface)", () => {

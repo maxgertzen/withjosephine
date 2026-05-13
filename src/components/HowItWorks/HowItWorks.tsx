@@ -9,7 +9,7 @@ interface HowItWorksProps {
 }
 
 export function HowItWorks({ content, className }: HowItWorksProps) {
-  const { sectionTag, heading, steps } = content ?? HOW_IT_WORKS_DEFAULTS;
+  const { sectionTag, heading, steps } = { ...HOW_IT_WORKS_DEFAULTS, ...content };
 
   return (
     <section id="how-it-works" className={mergeClasses("py-20 px-6 md:px-12", className)}>

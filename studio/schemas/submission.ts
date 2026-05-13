@@ -1,15 +1,15 @@
-import { defineField, defineType, type Rule } from "sanity";
+import { defineField, defineType, type CustomValidator } from "sanity";
 
+import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
 const requireWhenDeliveredAtSet =
-  (errorMessage: string) =>
-  (rule: Rule) =>
-    rule.custom((value, context) => {
-      const parent = context.parent as { deliveredAt?: string } | undefined;
-      if (parent?.deliveredAt && !value) return errorMessage;
-      return true;
-    });
+  (errorMessage: string): CustomValidator<unknown> =>
+  (value, context) => {
+    const parent = context.parent as { deliveredAt?: string } | undefined;
+    if (parent?.deliveredAt && !value) return errorMessage;
+    return true;
+  };
 
 export const submission = defineType({
   name: "submission",
@@ -104,18 +104,61 @@ export const submission = defineType({
       name: "consentSnapshot",
       title: "Consent Snapshot",
       type: "object",
-      description: "Frozen record of the consent terms the user agreed to at submission.",
+      description:
+        "Frozen record of the consent terms the user agreed to at submission. Phase 4: art6Consent + art9Consent are the GDPR audit fields; labelText/acknowledgedAt are retained read-only for legacy rows.",
       fields: [
         defineField({
+          name: "art6Consent",
+          title: "Art. 6 Consent (ordinary processing)",
+          type: "object",
+          description: "Explicit acknowledgment of name/email/birth-data/photo/intake processing.",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
+          name: "art9Consent",
+          title: "Art. 9 Consent (special-category, explicit)",
+          type: "object",
+          description:
+            "Explicit consent for special-category processing — birth chart + intake answers may reveal spiritual/philosophical beliefs (ICO Art. 9 guidance).",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
           name: "labelText",
-          title: "Consent Label Text",
+          title: "Legacy Consent Label Text",
           type: "text",
-          description: "Exact wording the user saw and accepted.",
+          description: "Pre-Phase-4 single-checkbox label. Read-only for new submissions.",
+          readOnly: true,
         }),
         defineField({
           name: "acknowledgedAt",
-          title: "Acknowledged At",
+          title: "Legacy Acknowledged At",
           type: "datetime",
+          description: "Pre-Phase-4 timestamp. Read-only for new submissions.",
+          readOnly: true,
         }),
         defineField({
           name: "ipAddress",
@@ -130,6 +173,43 @@ export const submission = defineType({
       title: "Photo R2 Key",
       type: "string",
       description: "R2 object key — not the URL.",
+      components: { input: PhotoR2Preview },
+    }),
+    defineField({
+      name: "isGift",
+      title: "Is gift?",
+      type: "boolean",
+      description: "True when this submission was purchased as a gift (Phase 5).",
+      readOnly: true,
+    }),
+    defineField({
+      name: "recipientEmail",
+      title: "Recipient email",
+      type: "string",
+      description: "Bob's email for gift submissions; NULL for self-purchase.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "giftDeliveryMethod",
+      title: "Gift delivery method",
+      type: "string",
+      description: "'self_send' (purchaser forwards link) or 'scheduled' (cron sends).",
+      readOnly: true,
+    }),
+    defineField({
+      name: "giftSendAt",
+      title: "Gift send-at",
+      type: "datetime",
+      description: "Scheduled delivery time for gift; NULL for self-send or self-purchase.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "giftMessage",
+      title: "Gift message",
+      type: "text",
+      rows: 3,
+      description: "Optional message Alice wrote to Bob (≤280 chars).",
+      readOnly: true,
     }),
     defineField({
       name: "stripeEventId",
@@ -175,9 +255,8 @@ export const submission = defineType({
       description:
         "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
       options: { accept: "audio/*" },
-      validation: requireWhenDeliveredAtSet(
-        "Upload the voice note before setting Delivered At.",
-      ),
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
     }),
     defineField({
       name: "readingPdf",
@@ -186,9 +265,8 @@ export const submission = defineType({
       description:
         "Drag the supporting PDF here. Required before you can mark this reading delivered.",
       options: { accept: "application/pdf" },
-      validation: requireWhenDeliveredAtSet(
-        "Upload the reading PDF before setting Delivered At.",
-      ),
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
     }),
     defineField({
       name: "deliveredAt",
@@ -209,6 +287,14 @@ export const submission = defineType({
         }),
     }),
     defineField({
+      name: "listenedAt",
+      title: "Listened At",
+      type: "datetime",
+      description:
+        "First time the customer hit play on the audio. Written by the audio proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      readOnly: true,
+    }),
+    defineField({
       name: "emailsFired",
       title: "Emails Fired",
       type: "array",
@@ -223,12 +309,13 @@ export const submission = defineType({
               title: "Type",
               type: "string",
               description:
-                "Email kind. Mirrors the SPEC §15 Mixpanel email_sent type: one of order_confirmation, day2, day7, day14, abandonment.",
+                "Email kind. Mirrors the EmailFiredType union in src/lib/booking/submissions.ts.",
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
                   { title: "Day +2 (I've started)", value: "day2" },
                   { title: "Day +7 (delivery)", value: "day7" },
+                  { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
                 ],
@@ -263,7 +350,15 @@ export const submission = defineType({
     },
   ],
   preview: {
-    select: { email: "email", status: "status", createdAt: "createdAt", paidAt: "paidAt" },
+    select: {
+      email: "email",
+      status: "status",
+      createdAt: "createdAt",
+      paidAt: "paidAt",
+      deliveredAt: "deliveredAt",
+      listenedAt: "listenedAt",
+      responses: "responses",
+    },
     prepare: prepareSubmissionPreview,
   },
 });

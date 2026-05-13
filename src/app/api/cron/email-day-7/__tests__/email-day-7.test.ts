@@ -52,13 +52,24 @@ const OVERDUE_SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchUndelivered.mockReset().mockResolvedValue(new Set());
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_alert" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_alert" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
 

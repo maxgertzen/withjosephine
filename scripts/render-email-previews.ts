@@ -12,6 +12,11 @@ import React from "react";
 
 import { render } from "@react-email/render";
 
+import {
+  EMAIL_DAY2_STARTED_DEFAULTS,
+  EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+} from "../src/data/defaults";
 import { ContactMessage } from "../src/lib/emails/ContactMessage";
 import { Day2Started } from "../src/lib/emails/Day2Started";
 import { Day7Delivery } from "../src/lib/emails/Day7Delivery";
@@ -34,22 +39,31 @@ const previews = [
   {
     name: "01-order-confirmation",
     element: React.createElement(OrderConfirmation, {
-      firstName: "Ada",
-      readingName: "Soul Blueprint",
-      readingPriceDisplay: "$129",
-      amountPaidDisplay: "$129.00",
+      vars: {
+        firstName: "Ada",
+        readingName: "Soul Blueprint",
+        readingPriceDisplay: "$129",
+        amountPaidDisplay: "$129.00",
+      },
+      copy: EMAIL_ORDER_CONFIRMATION_DEFAULTS,
     }),
   },
   {
     name: "02-day-2-started",
-    element: React.createElement(Day2Started, { firstName: "Ada" }),
+    element: React.createElement(Day2Started, {
+      vars: { firstName: "Ada" },
+      copy: EMAIL_DAY2_STARTED_DEFAULTS,
+    }),
   },
   {
     name: "03-day-7-delivery",
     element: React.createElement(Day7Delivery, {
-      firstName: "Ada",
-      readingName: "Soul Blueprint",
-      listenUrl: "https://withjosephine.com/listen/preview-token",
+      vars: {
+        firstName: "Ada",
+        readingName: "Soul Blueprint",
+        listenUrl: "https://withjosephine.com/listen/sub_preview",
+      },
+      copy: EMAIL_DAY7_DELIVERY_DEFAULTS,
     }),
   },
   {

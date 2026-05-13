@@ -91,6 +91,8 @@ const VALID_BODY = {
   },
   turnstileToken: "valid-token",
   consentLabelSnapshot: "I agree.",
+  art6Consent: true,
+  art9Consent: true,
 };
 
 describe("/api/booking", () => {
@@ -145,9 +147,34 @@ describe("/api/booking", () => {
     expect(input.ipAddress).toBe("1.2.3.4");
     expect(input.readingSlug).toBe("soul-blueprint");
     expect(input.status).toBe("pending");
+    expect(input.art6AcknowledgedAt).toBe(input.consentAcknowledgedAt);
+    expect(input.art9AcknowledgedAt).toBe(input.consentAcknowledgedAt);
 
     expect(body.paymentUrl).toContain(`client_reference_id=${body.submissionId}`);
     expect(body.paymentUrl).toContain("prefilled_email=ada%40example.com");
+  });
+
+  it.each([
+    { art6Consent: false, art9Consent: true },
+    { art6Consent: true, art9Consent: false },
+    { art6Consent: false, art9Consent: false },
+  ])(
+    "returns 400 when art6Consent=$art6Consent and art9Consent=$art9Consent",
+    async ({ art6Consent, art9Consent }) => {
+      mockVerify.mockResolvedValueOnce(true);
+      const res = await callRoute({ ...VALID_BODY, art6Consent, art9Consent });
+      expect(res.status).toBe(400);
+      expect(createSubmissionMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns 400 when art6Consent or art9Consent is missing from the body shape", async () => {
+    const { art6Consent: _a6, art9Consent: _a9, ...withoutConsents } = VALID_BODY;
+    void _a6;
+    void _a9;
+    const res = await callRoute(withoutConsents);
+    expect(res.status).toBe(400);
+    expect(createSubmissionMock).not.toHaveBeenCalled();
   });
 
   it("returns 503 when reading has no Stripe Payment Link", async () => {
@@ -198,6 +225,8 @@ describe("/api/booking", () => {
       },
       turnstileToken: "valid-token",
       consentLabelSnapshot: "I agree.",
+      art6Consent: true,
+      art9Consent: true,
     });
 
     const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{
@@ -237,6 +266,8 @@ describe("/api/booking", () => {
       values: { email: "ada@example.com", tob_unknown: false, agreement: true },
       turnstileToken: "valid-token",
       consentLabelSnapshot: "I agree.",
+      art6Consent: true,
+      art9Consent: true,
     });
 
     const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{

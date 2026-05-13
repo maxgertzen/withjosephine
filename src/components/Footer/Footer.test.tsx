@@ -26,9 +26,22 @@ describe("Footer", () => {
     expect(screen.getByAltText("Custom Brand")).toBeInTheDocument();
   });
 
-  it("hides logo when logoUrl is not provided", () => {
+  it("falls back to default logo when content omits logoUrl", () => {
     const content = {
       brandName: "No Logo Brand",
+      copyrightText: "No Logo Brand.",
+    };
+
+    render(<Footer content={content} />);
+
+    expect(screen.getByAltText("No Logo Brand")).toBeInTheDocument();
+    expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
+  });
+
+  it("hides logo when content explicitly sets logoUrl to null", () => {
+    const content = {
+      brandName: "No Logo Brand",
+      logoUrl: null,
       copyrightText: "No Logo Brand.",
     };
 

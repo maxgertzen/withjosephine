@@ -43,6 +43,9 @@ studio/dist/
 MEMORY/
 Plans/
 
+# Local DECISIONS log — durable rationale for future Claude Code sessions
+docs/DECISIONS.local.md
+
 # Sentry Config File
 .env.sentry-build-plugin
 

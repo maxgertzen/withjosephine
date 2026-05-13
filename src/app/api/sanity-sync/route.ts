@@ -49,6 +49,10 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
 
 const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
 const REPLAY_WINDOW_MS = 5 * 60 * 1000;
+// Pre-HMAC body-size pre-check. Sanity webhook payloads are well under 100 KB
+// even for fat docs; 1 MB leaves headroom without giving unauthenticated
+// callers a cheap memory-pressure lever.
+const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
 type SanityOperation = "create" | "update" | "delete";
 
@@ -86,7 +90,15 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Missing signature" }, { status: 401 });
   }
 
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number.parseInt(contentLength, 10) > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   const rawBody = await request.text();
+  if (rawBody.length > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
   if (!(await verifySignedRequest(rawBody, signatureHeader, secret))) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }

@@ -9,9 +9,22 @@ import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
 import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
+import { myReadingsPage } from "./myReadingsPage";
+import { myGiftsPage } from "./myGiftsPage";
+import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
+import { emailMagicLink } from "./emailMagicLink";
+import { emailDay7Delivery } from "./emailDay7Delivery";
+import { emailDay2Started } from "./emailDay2Started";
+import { emailOrderConfirmation } from "./emailOrderConfirmation";
+import { emailGiftClaim } from "./emailGiftClaim";
+import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
+import { giftClaimPage } from "./giftClaimPage";
+import { giftIntakePage } from "./giftIntakePage";
+import { listenPage } from "./listenPage";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
+import { bookingGiftForm } from "./bookingGiftForm";
 import { submission } from "./submission";
 
 export const schemaTypes = [
@@ -26,8 +39,21 @@ export const schemaTypes = [
   theme,
   underConstructionPage,
   notFoundPage,
+  myReadingsPage,
+  myGiftsPage,
+  magicLinkVerifyPage,
+  emailMagicLink,
+  emailDay7Delivery,
+  emailDay2Started,
+  emailOrderConfirmation,
+  emailGiftPurchaseConfirmation,
+  emailGiftClaim,
+  giftClaimPage,
+  giftIntakePage,
+  listenPage,
   formField,
   formSection,
   bookingForm,
+  bookingGiftForm,
   submission,
 ];

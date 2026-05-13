@@ -1,7 +1,8 @@
 /**
  * Shared HMAC-SHA256 + base64url + hex helpers used by every signed-payload
- * surface in the app: `/listen/<token>` (`listenToken.ts`), the Sanity sync
- * webhook (`/api/sanity-sync`), and any future receiver. Centralising here
+ * surface in the app: the cron-auth headers (`booking/cron-auth.ts`), the
+ * Sanity sync webhook (`/api/sanity-sync`), the magic-link session module
+ * (`auth/listenSession.ts`), and any future receiver. Centralising here
  * keeps the encoding / cache / `crypto.subtle.verify` discipline in one place
  * — receivers never roll their own timing-safe compare or base64url math.
  */
@@ -86,6 +87,18 @@ export function hexToBytes(hex: string, expectedByteLength?: number): Uint8Array
     bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return bytes;
+}
+
+/**
+ * SHA-256 hex digest. Shared util — used for daily-rotating IP/UA hashes in
+ * listen-session auth and for stable email-hash audit identifiers in the
+ * Phase 4 deletion cascade. Unsalted; callers add their own salt when they
+ * need rotation (`dailySalt(secret, now)` in listenSession.ts).
+ */
+export async function sha256Hex(value: string): Promise<string> {
+  const data = TEXT_ENCODER.encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return bytesToHex(digest);
 }
 
 /**

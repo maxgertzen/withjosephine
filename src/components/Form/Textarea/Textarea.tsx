@@ -35,6 +35,9 @@ export function Textarea({
   disabled,
   maxLength,
 }: TextareaProps) {
+  const helpId = helpText ? `${id}-help` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <FieldShell
       id={id}
@@ -57,6 +60,7 @@ export function Textarea({
         required={required}
         maxLength={maxLength}
         aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
         className={`${inputClasses} min-h-32`}
       />
     </FieldShell>

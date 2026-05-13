@@ -31,6 +31,7 @@ import {
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
+import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
 import { errorClasses } from "@/lib/formStyles";
 import {
   clear as clearDraft,
@@ -71,6 +72,9 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  mode?: "create" | "redeem";
+  redeemSubmissionId?: string;
+  redeemSuccessUrl?: string;
 };
 
 function initialValueFor(field: SanityFormField): FieldValue {
@@ -104,6 +108,14 @@ function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
   return result;
 }
 
+/**
+ * Phase 5 Session 4b — B8.29 decision: the `mode` prop discriminates two
+ * submit pipelines (`create` -> /api/booking, `redeem` -> /api/booking/gift-redeem).
+ * The spec's trigger to refactor to `onSubmit` callback prop was "if a
+ * third mode value is added." Today only 2 modes exist; ship-as-is.
+ * If a 3rd mode is ever needed, add an `onSubmit` callback instead of a
+ * third branch.
+ */
 export function IntakeForm({
   readingId,
   readingName,
@@ -115,7 +127,13 @@ export function IntakeForm({
   pageIndicatorTagline,
   pagination,
   loadingStateCopy,
+  mode = "create",
+  redeemSubmissionId,
+  redeemSuccessUrl,
 }: IntakeFormProps) {
+  // See DECISIONS.local.md — IntakeForm draft autosave key includes redeem-mode submissionId.
+  const draftScope =
+    mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
   const allFields = useMemo(() => flattenFields(sections), [sections]);
   const consentField = useMemo(
     () =>
@@ -175,6 +193,12 @@ export function IntakeForm({
   const turnstileRef = useRef<TurnstileInstance | null>(null);
   const turnstileResolverRef = useRef<((token: string | null) => void) | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Phase 4 — Art. 6 + Art. 9 consents are session-fresh (not persisted in
+  // draft) so each submission attempt records an explicit, in-the-moment ack.
+  const [art6Consent, setArt6Consent] = useState(false);
+  const [art9Consent, setArt9Consent] = useState(false);
+  const [art6Error, setArt6Error] = useState<string | undefined>(undefined);
+  const [art9Error, setArt9Error] = useState<string | undefined>(undefined);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -194,7 +218,7 @@ export function IntakeForm({
         setSwappedFromReadingName(readingName);
       }
     }
-    const restored = restoreDraft(readingId);
+    const restored = restoreDraft(draftScope);
     const seeded = {
       ...defaultValues,
       ...(restored?.values ?? {}),
@@ -211,7 +235,7 @@ export function IntakeForm({
     setLastReadingId(readingId);
     restoredForReadingRef.current = readingId;
     setIsRestored(true);
-  }, [readingId, readingName, defaultValues]);
+  }, [readingId, draftScope, readingName, defaultValues]);
 
   useEffect(() => {
     if (!lastSavedAt) return;
@@ -229,7 +253,7 @@ export function IntakeForm({
   const justDiscardedRef = useRef(false);
 
   function flushSave(nextValues: FieldValues, nextPage: number) {
-    const envelope = saveDraft(readingId, {
+    const envelope = saveDraft(draftScope, {
       currentPage: nextPage,
       values: nextValues as DraftValues,
     });
@@ -259,6 +283,9 @@ export function IntakeForm({
   // focusin so we don't have to thread onFocus through every form component.
   const focusedFieldsRef = useRef<Set<string>>(new Set());
   const currentPageRef = useRef(currentPage);
+  // Mirror currentPage to a ref so the document-level focusin listener (set
+  // up in the next useEffect) sees the latest page without re-binding.
+   
   currentPageRef.current = currentPage;
   useEffect(() => {
     const form = formRef.current;
@@ -293,7 +320,7 @@ export function IntakeForm({
       page_number: currentPage + 1,
     });
     justDiscardedRef.current = true;
-    clearDraft(readingId);
+    clearDraft(draftScope);
     setValues(defaultValues);
     setCurrentPage(0);
     setLastSavedAt(null);
@@ -473,9 +500,13 @@ export function IntakeForm({
 
     const preflight = submissionSchema.safeParse(values);
     const preflightFollowup = buildNameFollowupSchema(allFields, values).safeParse(values);
+    const art6Ok = art6Consent;
+    const art9Ok = art9Consent;
+    setArt6Error(art6Ok ? undefined : "Please acknowledge to continue.");
+    setArt9Error(art9Ok ? undefined : "Please acknowledge to continue.");
     track("intake_submit_click", {
       reading_id: readingId,
-      validation_pass: preflight.success && preflightFollowup.success,
+      validation_pass: preflight.success && preflightFollowup.success && art6Ok && art9Ok,
     });
 
     let submissionTurnstileToken: string | null = turnstileToken;
@@ -491,14 +522,18 @@ export function IntakeForm({
     const result = submissionSchema.safeParse(values);
     const followupSchema = buildNameFollowupSchema(allFields, values);
     const followupResult = followupSchema.safeParse(values);
-    if (!result.success || !followupResult.success) {
+    if (!result.success || !followupResult.success || !art6Ok || !art9Ok) {
       const issues = [
         ...(result.success ? [] : result.error.issues),
         ...(followupResult.success ? [] : followupResult.error.issues),
       ];
       const fieldErrors = collectFieldErrors(issues);
       setErrors(fieldErrors);
-      setSubmitError("Please fix the highlighted fields and try again.");
+      setSubmitError(
+        !art6Ok || !art9Ok
+          ? "Both required acknowledgments below must be checked to continue."
+          : "Please fix the highlighted fields and try again.",
+      );
       focusFirstError(fieldErrors);
       track("intake_submit_error", { reading_id: readingId, error_code: "validation_failed" });
       return;
@@ -514,16 +549,25 @@ export function IntakeForm({
         if (typeof v === "string" && v !== "") companionKeys[companion] = v;
       }
 
-      const response = await fetch(BOOKING_API_ROUTE, {
+      const endpoint =
+        mode === "redeem" ? "/api/booking/gift-redeem" : BOOKING_API_ROUTE;
+      const requestBody: Record<string, unknown> = {
+        readingSlug: readingId,
+        values: { ...result.data, ...followupResult.data, ...companionKeys },
+        turnstileToken: submissionTurnstileToken ?? "",
+        [HONEYPOT_FIELD]: honeypot,
+        consentLabelSnapshot: consentField?.label ?? "",
+        art6Consent,
+        art9Consent,
+      };
+      if (mode === "redeem" && redeemSubmissionId) {
+        requestBody.submissionId = redeemSubmissionId;
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          readingSlug: readingId,
-          values: { ...result.data, ...followupResult.data, ...companionKeys },
-          turnstileToken: submissionTurnstileToken ?? "",
-          [HONEYPOT_FIELD]: honeypot,
-          consentLabelSnapshot: consentField?.label ?? "",
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -537,6 +581,28 @@ export function IntakeForm({
           reading_id: readingId,
           error_code: `http_${response.status}`,
         });
+        return;
+      }
+
+      if (mode === "redeem") {
+        const redeemData = (await response.json()) as { submissionId?: string; redirectUrl?: string };
+        if (!redeemData.submissionId) {
+          setSubmitError("Unexpected response. Please try again.");
+          setIsSubmitting(false);
+          track("intake_submit_error", { reading_id: readingId, error_code: "missing_redeem_id" });
+          return;
+        }
+        track("intake_submit_success", { reading_id: readingId });
+        identifySubmission(redeemData.submissionId);
+        try {
+          clearDraft(draftScope);
+        } catch {
+          // localStorage failures must not block the redirect.
+        }
+        window.location.href =
+          redeemData.redirectUrl ??
+          redeemSuccessUrl ??
+          `/thank-you/${redeemData.submissionId}?gift=1`;
         return;
       }
 
@@ -556,7 +622,7 @@ export function IntakeForm({
       // browser finishes navigating to Stripe; otherwise the overlay would
       // flicker off for one render before the page unloads.
       try {
-        clearDraft(readingId);
+        clearDraft(draftScope);
       } catch {
         // localStorage failures must not block the redirect.
       }
@@ -618,6 +684,14 @@ export function IntakeForm({
         </div>
       ) : null}
 
+      {/*
+        renderField's per-field tree closes over requestFreshTurnstileToken,
+        which reads turnstileRef.current. The ref access is intentional —
+        the callback is invoked at submit time, not during render — but
+        the new react-hooks/refs rule flags the closure capture itself.
+        Refactor queued in POST_LAUNCH_BACKLOG.
+      */}
+      { }
       {currentSections.map((section) => (
         <section
           key={section._id}
@@ -692,6 +766,34 @@ export function IntakeForm({
           <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
             {nonRefundableNotice}
           </p>
+          <Checkbox
+            id="field-art6-consent"
+            name="art6Consent"
+            checked={art6Consent}
+            onChange={(checked) => {
+              setArt6Consent(checked);
+              if (checked) setArt6Error(undefined);
+            }}
+            error={art6Error}
+            disabled={isSubmitting}
+            required
+          >
+            {ART6_CONSENT_LABEL}
+          </Checkbox>
+          <Checkbox
+            id="field-art9-consent"
+            name="art9Consent"
+            checked={art9Consent}
+            onChange={(checked) => {
+              setArt9Consent(checked);
+              if (checked) setArt9Error(undefined);
+            }}
+            error={art9Error}
+            disabled={isSubmitting}
+            required
+          >
+            {ART9_CONSENT_LABEL}
+          </Checkbox>
           <Checkbox
             id={`field-${consentField.key}`}
             name={consentField.key}

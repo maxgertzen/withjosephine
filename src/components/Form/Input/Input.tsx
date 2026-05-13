@@ -43,6 +43,9 @@ export function Input({
   spellCheck,
   enterKeyHint,
 }: InputProps) {
+  const helpId = helpText ? `${id}-help` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <FieldShell
       id={id}
@@ -68,6 +71,7 @@ export function Input({
         spellCheck={spellCheck}
         enterKeyHint={enterKeyHint}
         aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
         className={inputClasses}
       />
     </FieldShell>

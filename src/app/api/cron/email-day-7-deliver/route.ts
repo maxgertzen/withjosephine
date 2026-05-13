@@ -5,17 +5,16 @@ import {
   type DeliverableSubmission,
   fetchDeliverableSubmissions,
 } from "@/lib/booking/persistence/sanityDelivery";
+import { sendAndRecord } from "@/lib/booking/sendAndRecord";
 import {
-  appendEmailFired,
   buildSubmissionContext,
   listPaidSubmissionsForEmail,
   markSubmissionDelivered,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
-import { signListenToken } from "@/lib/listenToken";
 import { sendDay7Delivery } from "@/lib/resend";
 
-const SITE_ORIGIN = "https://withjosephine.com";
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://withjosephine.com";
 
 /**
  * Sources D1 candidates → filters via Sanity readiness GROQ → mirrors state
@@ -41,18 +40,14 @@ async function deliverOne(
     pdfUrl: resolved.pdfUrl,
   };
 
-  const token = await signListenToken(refreshed._id);
-  const listenUrl = `${SITE_ORIGIN}/listen/${token}`;
+  const listenUrl = `${SITE_ORIGIN}/listen/${refreshed._id}`;
   const context = buildSubmissionContext(refreshed);
-  const result = await sendDay7Delivery(context, listenUrl);
-  if (!result.resendId) return "skipped";
-
-  await appendEmailFired(refreshed._id, {
+  const sendResult = await sendAndRecord({
+    submissionId: refreshed._id,
     type: "day7",
-    sentAt: new Date().toISOString(),
-    resendId: result.resendId,
+    send: () => sendDay7Delivery(context, listenUrl),
   });
-  return "sent";
+  return sendResult.appended ? "sent" : "skipped";
 }
 
 async function runCron(): Promise<{

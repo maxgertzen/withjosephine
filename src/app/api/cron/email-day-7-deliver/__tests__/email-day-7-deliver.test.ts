@@ -24,10 +24,6 @@ vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
   fetchDeliverableSubmissions: vi.fn(),
 }));
 
-vi.mock("@/lib/listenToken", () => ({
-  signListenToken: vi.fn().mockResolvedValue("c3ViXzE.deadbeef"),
-}));
-
 vi.mock("@/lib/resend", () => ({
   sendDay7Delivery: vi.fn(),
 }));
@@ -40,14 +36,12 @@ import {
   markSubmissionDelivered,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
-import { signListenToken } from "@/lib/listenToken";
 import { sendDay7Delivery } from "@/lib/resend";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockList = vi.mocked(listPaidSubmissionsForEmail);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
 const mockMarkDelivered = vi.mocked(markSubmissionDelivered);
-const mockSign = vi.mocked(signListenToken);
 const mockSend = vi.mocked(sendDay7Delivery);
 const mockAppend = vi.mocked(appendEmailFired);
 
@@ -61,6 +55,17 @@ const PAID_SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 const DELIVERABLE = {
@@ -75,8 +80,7 @@ beforeEach(() => {
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
   mockMarkDelivered.mockReset().mockResolvedValue(undefined);
-  mockSign.mockReset().mockResolvedValue("c3ViXzE.deadbeef");
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_d7" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
 
@@ -119,9 +123,8 @@ describe("/api/cron/email-day-7-deliver", () => {
       voiceNoteUrl: DELIVERABLE.voiceNoteUrl,
       pdfUrl: DELIVERABLE.pdfUrl,
     });
-    expect(mockSign).toHaveBeenCalledWith("sub_1");
     const sendArgs = mockSend.mock.calls[0];
-    expect(sendArgs?.[1]).toBe("https://withjosephine.com/listen/c3ViXzE.deadbeef");
+    expect(sendArgs?.[1]).toBe("https://withjosephine.com/listen/sub_1");
     expect(mockAppend).toHaveBeenCalledWith(
       "sub_1",
       expect.objectContaining({ type: "day7", resendId: "msg_d7" }),
@@ -144,7 +147,7 @@ describe("/api/cron/email-day-7-deliver", () => {
     mockAuth.mockReturnValueOnce(true);
     mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
     mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });

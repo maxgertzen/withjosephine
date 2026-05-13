@@ -1,6 +1,5 @@
-// SPEC §15 event taxonomy. Property keys are snake_case in the
-// implementation; SPEC documents them in camelCase. abandoned_recovered
-// is intentionally absent (dropped from Phase 1).
+// Property keys are snake_case in the implementation (SPEC §15 documents them
+// in camelCase). abandoned_recovered is intentionally absent.
 
 export type ReadingId = string;
 
@@ -72,6 +71,24 @@ export type ClientEventMap = {
   stripe_redirect: {
     reading_id: ReadingId;
     submission_id: string;
+  };
+  gift_toggle_selected: {
+    reading_id: ReadingId;
+    mode: "for_me" | "as_gift";
+  };
+  gift_submit_click: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+    validation_pass: boolean;
+  };
+  gift_submit_success: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+  };
+  gift_submit_error: {
+    reading_id: ReadingId;
+    delivery_method: "self_send" | "scheduled";
+    error_code: string;
   };
 };
 

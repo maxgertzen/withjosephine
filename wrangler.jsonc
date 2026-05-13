@@ -27,8 +27,28 @@
 	//   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
-	//   - LISTEN_TOKEN_SECRET        HMAC secret for /listen/[token] tokenized delivery URLs (32-byte hex)
+	//   - LISTEN_TOKEN_SECRET        HMAC secret used as IP-audit salt for listen-session auth (32-byte hex)
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
+	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
+	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked
+	//                                export token does NOT grant write access. Scoped to project datasets.
+	//   - SANITY_BACKUP_WEBHOOK_SECRET   HMAC shared secret for the per-upload webhook at
+	//                                /api/sanity-backup-webhook. Distinct from SANITY_WEBHOOK_SECRET
+	//                                (which gates /api/sanity-sync) — separate rotation, separate
+	//                                blast-radius if compromised. One value per environment, set
+	//                                identically in the Sanity dashboard webhook config + the worker secret.
+	//   - DO_DISPATCH_SECRET         Shared secret used by the GiftClaimScheduler Durable Object
+	//                                to authenticate its POST to /api/internal/gift-claim-dispatch
+	//                                (and used by scripts/regenerate-gift-claim.ts to hit
+	//                                /api/internal/gift-claim-regenerate). Distinct rotation from
+	//                                CRON_SECRET. Set on the worker secret AND identically on the
+	//                                staging worker. The Stripe-webhook → DO `.fetch(/schedule)` call
+	//                                runs inside the same isolate so it does NOT need the secret.
+	//
+	// Public vars used by the backup cron (set as Variables, plain text):
+	//   - SANITY_BACKUP_ENABLED      Deploy-flag gate for /api/cron/backup-sanity-dataset. Set to "1"
+	//                                once BACKUPS_BUCKET is provisioned + lifecycle/Bucket-Locks applied
+	//                                + SANITY_EXPORT_TOKEN secret put. Cron exits early when off.
 	//
 	// Public vars (Variables → Variables on the Worker):
 	//   - BOOKING_DB_DRIVER          "d1" in production. Defaults to "sqlite" (local better-sqlite3) elsewhere.
@@ -53,6 +73,10 @@
 			"binding": "BOOKING_PHOTOS",
 			"bucket_name": "withjosephine-booking-photos",
 		},
+		{
+			"binding": "BACKUPS_BUCKET",
+			"bucket_name": "josephine-backups",
+		},
 	],
 	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
 	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
@@ -65,12 +89,14 @@
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
+	//   - "0 3 * * 1"   : backup-sanity-dataset (weekly NDJSON snapshot + assets → BACKUPS_BUCKET)
 	"triggers": {
 		"crons": [
 			"0 */6 * * *",
 			"0 3 * * *",
 			"0 10 * * *",
-			"0 12 * * 1"
+			"0 12 * * 1",
+			"0 3 * * 1"
 		],
 	},
 	"observability": {
@@ -94,6 +120,48 @@
 			"database_name": "withjosephine-bookings",
 			"database_id": "176fe9a9-efcc-41e0-a409-20db90d09ea7",
 			"migrations_dir": "./migrations"
+		}
+	],
+	// Durable Objects: GiftClaimScheduler fires the recipient claim email at
+	// the purchaser's chosen `gift_send_at` for `scheduled`-mode gifts. One DO
+	// per submissionId, alarms reschedule for +7d reminders up to 3 fires /
+	// 30 days. Class is exported from `src/lib/durable-objects/GiftClaimScheduler.ts`
+	// and re-exported from custom-worker.ts so wrangler bundling picks it up.
+	"durable_objects": {
+		"bindings": [
+			{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
+		]
+	},
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
+	],
+	// Self-binding (`env.SELF`) lets the GiftClaimScheduler Durable Object
+	// dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
+	// taking a public-edge HTTPS round-trip. Same worker name; wrangler ≥3
+	// supports self-bindings declaratively. Without this, alarm dispatch
+	// pays edge latency + is subject to public WAF rules + Access policies.
+	"services": [
+		{ "binding": "SELF", "service": "withjosephine" }
+	],
+	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
+	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
+	// rules in the CF dashboard (see POST_LAUNCH_BACKLOG.md "WAF rate-limit
+	// rules"). The bindings below are the burst-protection layer.
+	"ratelimits": [
+		{
+			"name": "LISTEN_AUTH_SEND_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 5, "period": 60 }
+		},
+		{
+			"name": "LISTEN_AUTH_VERIFY_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 10, "period": 60 }
+		},
+		{
+			"name": "LISTEN_ASSET_LIMITER",
+			"namespace_id": "1003",
+			"simple": { "limit": 60, "period": 60 }
 		}
 	],
 	// Top-level (production) plain vars. Mirror in dashboard for visibility.
@@ -138,6 +206,10 @@
 				{
 					"binding": "BOOKING_PHOTOS",
 					"bucket_name": "withjosephine-booking-photos-staging"
+				},
+				{
+					"binding": "BACKUPS_BUCKET",
+					"bucket_name": "josephine-backups-staging"
 				}
 			],
 			"d1_databases": [
@@ -148,17 +220,47 @@
 					"migrations_dir": "./migrations"
 				}
 			],
+			"durable_objects": {
+				"bindings": [
+					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
+			],
+			"services": [
+				{ "binding": "SELF", "service": "withjosephine-staging" }
+			],
+			"ratelimits": [
+				{
+					"name": "LISTEN_AUTH_SEND_LIMITER",
+					"namespace_id": "2001",
+					"simple": { "limit": 5, "period": 60 }
+				},
+				{
+					"name": "LISTEN_AUTH_VERIFY_LIMITER",
+					"namespace_id": "2002",
+					"simple": { "limit": 10, "period": 60 }
+				},
+				{
+					"name": "LISTEN_ASSET_LIMITER",
+					"namespace_id": "2003",
+					"simple": { "limit": 60, "period": 60 }
+				}
+			],
 			"triggers": {
 				"crons": [
 					"0 */6 * * *",
 					"0 3 * * *",
-					"0 10 * * *"
+					"0 10 * * *",
+					"0 3 * * 1"
 				]
 			},
 			"vars": {
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
-				"RESEND_DRY_RUN": "1"
+				"RESEND_DRY_RUN": "1",
+				"SANITY_BACKUP_ENABLED": "1"
 			}
 		}
 	}

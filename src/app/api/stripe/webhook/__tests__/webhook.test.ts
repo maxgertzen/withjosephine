@@ -7,6 +7,32 @@ vi.mock("@/lib/stripe", () => ({
 vi.mock("@/lib/booking/submissions", () => ({
   findSubmissionById: vi.fn(),
   markSubmissionExpired: vi.fn(),
+  markGiftClaimSent: vi.fn(),
+  appendEmailFired: vi.fn(),
+}));
+
+vi.mock("@/lib/resend", () => ({
+  sendGiftPurchaseConfirmation: vi.fn(),
+  getResendId: (result: { kind: string; resendId?: string }) =>
+    result.kind === "sent" ? (result.resendId ?? null) : null,
+}));
+
+vi.mock("@/lib/booking/giftClaim", () => ({
+  issueGiftClaimToken: vi.fn(),
+}));
+
+const mockDoFetch = vi.fn();
+const mockDoIdFromName = vi.fn();
+const mockDoGet = vi.fn();
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: vi.fn(async () => ({
+    env: {
+      GIFT_CLAIM_SCHEDULER: {
+        idFromName: mockDoIdFromName,
+        get: mockDoGet,
+      },
+    },
+  })),
 }));
 
 vi.mock("@/lib/booking/notifyPaid", () => ({
@@ -18,9 +44,16 @@ vi.mock("@/lib/analytics/server", () => ({
 }));
 
 import { serverTrack } from "@/lib/analytics/server";
+import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
-import { findSubmissionById, markSubmissionExpired } from "@/lib/booking/submissions";
+import {
+  appendEmailFired,
+  findSubmissionById,
+  markGiftClaimSent,
+  markSubmissionExpired,
+} from "@/lib/booking/submissions";
+import { sendGiftPurchaseConfirmation } from "@/lib/resend";
 import { constructWebhookEvent } from "@/lib/stripe";
 
 const mockConstruct = vi.mocked(constructWebhookEvent);
@@ -28,6 +61,10 @@ const mockFind = vi.mocked(findSubmissionById);
 const mockApply = vi.mocked(applyPaidEvent);
 const mockMarkExpired = vi.mocked(markSubmissionExpired);
 const mockServerTrack = vi.mocked(serverTrack);
+const mockIssueToken = vi.mocked(issueGiftClaimToken);
+const mockMarkGiftClaimSent = vi.mocked(markGiftClaimSent);
+const mockAppendEmailFired = vi.mocked(appendEmailFired);
+const mockSendGiftConfirmation = vi.mocked(sendGiftPurchaseConfirmation);
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -38,6 +75,17 @@ const SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 beforeEach(() => {
@@ -46,6 +94,19 @@ beforeEach(() => {
   mockApply.mockReset().mockResolvedValue("applied");
   mockMarkExpired.mockReset().mockResolvedValue(undefined);
   mockServerTrack.mockReset().mockResolvedValue(undefined);
+  mockIssueToken.mockReset().mockResolvedValue({
+    token: "raw-token",
+    tokenHash: "hash-abc",
+    claimUrl: "https://withjosephine.com/gift/claim?token=raw-token",
+  });
+  mockMarkGiftClaimSent.mockReset().mockResolvedValue(undefined);
+  mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
+  mockSendGiftConfirmation.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_g1" });
+  mockDoFetch.mockReset().mockResolvedValue(new Response("{}", { status: 200 }));
+  mockDoGet.mockReset().mockReturnValue({ fetch: mockDoFetch });
+  mockDoIdFromName.mockReset().mockImplementation((name: string) => ({
+    toString: () => `id-${name}`,
+  }));
 });
 
 async function callRoute(
@@ -105,7 +166,33 @@ describe("/api/stripe/webhook", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
+  });
+
+  it("forwards customer_details.address.country to applyPaidEvent for financial_records", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_3",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: {
+        object: {
+          id: "cs_3",
+          client_reference_id: "sub_1",
+          amount_total: 9900,
+          currency: "usd",
+          customer_details: { address: { country: "GB" } },
+        },
+      },
+    } as never);
+    mockFind.mockResolvedValueOnce(SUBMISSION);
+
+    await callRoute("{}");
+
+    expect(mockApply).toHaveBeenCalledWith(
+      SUBMISSION,
+      expect.objectContaining({ country: "GB" }),
+    );
   });
 
   it("forwards amount_total + currency from the session to applyPaidEvent", async () => {
@@ -132,6 +219,7 @@ describe("/api/stripe/webhook", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: 9900,
       amountPaidCurrency: "usd",
+      country: null,
     });
   });
 
@@ -295,6 +383,288 @@ describe("/api/stripe/webhook", () => {
       await callRoute("{}");
 
       expect(mockServerTrack).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("gift submissions (Phase 5)", () => {
+    const GIFT_SCHEDULED: SubmissionRecord = {
+      ...SUBMISSION,
+      _id: "sub_gift_sched",
+      email: "alice@example.com",
+      isGift: true,
+      recipientEmail: "bob@example.com",
+      giftDeliveryMethod: "scheduled",
+      giftSendAt: "2026-06-01T15:00:00.000Z",
+      giftMessage: "happy birthday",
+      responses: [
+        {
+          fieldKey: "recipient_name",
+          fieldLabelSnapshot: "Recipient name",
+          fieldType: "shortText",
+          value: "Bob",
+        },
+      ],
+    };
+
+    const GIFT_SELF_SEND: SubmissionRecord = {
+      ...SUBMISSION,
+      _id: "sub_gift_self",
+      email: "alice@example.com",
+      isGift: true,
+      giftDeliveryMethod: "self_send",
+      giftMessage: null,
+      responses: [
+        {
+          fieldKey: "purchaser_first_name",
+          fieldLabelSnapshot: "Your first name",
+          fieldType: "shortText",
+          value: "Alicia",
+        },
+      ],
+    };
+
+    function event(id: string, submissionId: string): unknown {
+      return {
+        id,
+        type: "checkout.session.completed",
+        created: 1717000000,
+        data: {
+          object: {
+            id: `cs_${id}`,
+            client_reference_id: submissionId,
+            amount_total: 17900,
+            currency: "usd",
+          },
+        },
+      };
+    }
+
+    it("self_send: issues claim token, marks fired, sends self_send email, tracks gift_purchased", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g1", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+
+      await callRoute("{}");
+
+      expect(mockIssueToken).toHaveBeenCalledOnce();
+      expect(mockMarkGiftClaimSent).toHaveBeenCalledWith(
+        "sub_gift_self",
+        "hash-abc",
+        expect.any(String),
+      );
+      expect(mockSendGiftConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "self_send",
+          claimUrl: "https://withjosephine.com/gift/claim?token=raw-token",
+          purchaserEmail: "alice@example.com",
+          submissionId: "sub_gift_self",
+        }),
+      );
+      expect(mockAppendEmailFired).toHaveBeenCalledWith(
+        "sub_gift_self",
+        expect.objectContaining({
+          type: "gift_purchase_confirmation",
+          resendId: "msg_g1",
+        }),
+      );
+      expect(mockServerTrack).toHaveBeenCalledWith(
+        "gift_purchased",
+        expect.objectContaining({
+          submission_id: "sub_gift_self",
+          delivery_method: "self_send",
+          send_at: null,
+        }),
+      );
+    });
+
+    it("scheduled: schedules the GiftClaimScheduler DO alarm at gift_send_at after sending purchaser confirmation", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g_do", "sub_gift_sched") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SCHEDULED);
+
+      await callRoute("{}");
+
+      expect(mockDoIdFromName).toHaveBeenCalledWith("sub_gift_sched");
+      expect(mockDoGet).toHaveBeenCalled();
+      expect(mockDoFetch).toHaveBeenCalledOnce();
+      const req = mockDoFetch.mock.calls[0]![0] as Request;
+      expect(req.method).toBe("POST");
+      expect(new URL(req.url).pathname).toBe("/schedule");
+      const body = JSON.parse(await req.text()) as { fireAtMs: number; submissionId: string };
+      expect(body.submissionId).toBe("sub_gift_sched");
+      expect(body.fireAtMs).toBe(Date.parse("2026-06-01T15:00:00.000Z"));
+    });
+
+    it("self_send: does NOT schedule a DO alarm (no time-deferred send)", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g_do_self", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+
+      await callRoute("{}");
+
+      expect(mockDoFetch).not.toHaveBeenCalled();
+    });
+
+    it("scheduled: does NOT issue claim token, sends scheduled email with send_at date, tracks gift_purchased", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g2", "sub_gift_sched") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SCHEDULED);
+
+      await callRoute("{}");
+
+      expect(mockIssueToken).not.toHaveBeenCalled();
+      expect(mockMarkGiftClaimSent).not.toHaveBeenCalled();
+      expect(mockSendGiftConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "scheduled",
+          submissionId: "sub_gift_sched",
+          recipientName: "Bob",
+        }),
+      );
+      const sentArgs = mockSendGiftConfirmation.mock.calls[0]![0];
+      if (sentArgs.variant !== "scheduled") throw new Error("expected scheduled variant");
+      expect(sentArgs.sendAtDisplay).toContain("2026");
+      expect(mockServerTrack).toHaveBeenCalledWith(
+        "gift_purchased",
+        expect.objectContaining({
+          submission_id: "sub_gift_sched",
+          delivery_method: "scheduled",
+          send_at: "2026-06-01T15:00:00.000Z",
+        }),
+      );
+    });
+
+    it("non-gift submission: does NOT trigger gift email or gift_purchased event", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g3", "sub_1") as never);
+      mockFind.mockResolvedValueOnce(SUBMISSION);
+
+      await callRoute("{}");
+
+      expect(mockIssueToken).not.toHaveBeenCalled();
+      expect(mockSendGiftConfirmation).not.toHaveBeenCalled();
+      const trackTypes = mockServerTrack.mock.calls.map((c) => c[0]);
+      expect(trackTypes).not.toContain("gift_purchased");
+      expect(trackTypes).toContain("payment_success");
+    });
+
+    it("prefers purchaserFirstName from responses[purchaser_first_name] over email-derivation", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_gfn1", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+
+      await callRoute("{}");
+
+      expect(mockSendGiftConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purchaserFirstName: "Alicia",
+        }),
+      );
+    });
+
+    it("falls back to email-local-part derivation when responses lacks purchaser_first_name", async () => {
+      const giftNoNameResponse: SubmissionRecord = {
+        ...GIFT_SELF_SEND,
+        email: "alice.smith@example.com",
+        responses: [],
+      };
+      mockConstruct.mockReturnValueOnce(event("evt_gfn2", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(giftNoNameResponse);
+
+      await callRoute("{}");
+
+      expect(mockSendGiftConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purchaserFirstName: "Alice",
+        }),
+      );
+    });
+
+    it("trims whitespace and falls back to derivation when responses entry is blank", async () => {
+      const giftBlankNameResponse: SubmissionRecord = {
+        ...GIFT_SELF_SEND,
+        email: "ben@example.com",
+        responses: [
+          {
+            fieldKey: "purchaser_first_name",
+            fieldLabelSnapshot: "Your first name",
+            fieldType: "shortText",
+            value: "   ",
+          },
+        ],
+      };
+      mockConstruct.mockReturnValueOnce(event("evt_gfn3", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(giftBlankNameResponse);
+
+      await callRoute("{}");
+
+      expect(mockSendGiftConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purchaserFirstName: "Ben",
+        }),
+      );
+    });
+
+    it("gift submission on idempotent replay (alreadyApplied): no email, no gift_purchased", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g4", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce({ ...GIFT_SELF_SEND, stripeEventId: "evt_g4" });
+      mockApply.mockResolvedValueOnce("alreadyApplied");
+
+      await callRoute("{}");
+
+      expect(mockSendGiftConfirmation).not.toHaveBeenCalled();
+      expect(mockMarkGiftClaimSent).not.toHaveBeenCalled();
+      const trackTypes = mockServerTrack.mock.calls.map((c) => c[0]);
+      expect(trackTypes).not.toContain("gift_purchased");
+    });
+
+    // Phase 5 Session 4b — B5.14b. Webhook retry with same stripe_event_id
+    // already persisted by a prior `applied` run: applyPaidEvent reports
+    // alreadyApplied and the gift dispatch path is short-circuited. This
+    // is what stops Resend from double-firing on Stripe's at-least-once.
+    it("gift submission: retried event with already-persisted stripeEventId fires no second email", async () => {
+      // First delivery — applied.
+      mockConstruct.mockReturnValueOnce(event("evt_g_retry", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+      mockApply.mockResolvedValueOnce("applied");
+      mockSendGiftConfirmation.mockResolvedValueOnce({ kind: "sent", resendId: "re_1" });
+      await callRoute("{}");
+      expect(mockSendGiftConfirmation).toHaveBeenCalledTimes(1);
+
+      // Second delivery — same event id, submission row already has it.
+      mockConstruct.mockReturnValueOnce(event("evt_g_retry", "sub_gift_self") as never);
+      mockFind.mockResolvedValueOnce({ ...GIFT_SELF_SEND, stripeEventId: "evt_g_retry" });
+      mockApply.mockResolvedValueOnce("alreadyApplied");
+      await callRoute("{}");
+
+      // Still 1 — no double-fire.
+      expect(mockSendGiftConfirmation).toHaveBeenCalledTimes(1);
+    });
+
+    // B5.18 metadata canary. Mismatched stripe metadata vs submission row
+    // surfaces a console.warn — informational, doesn't throw.
+    it("warns when stripe session metadata.is_gift contradicts the submission row", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      // Build an event with metadata is_gift = "false" while the submission is a gift.
+      const mismatched = {
+        id: "evt_mismatch",
+        type: "checkout.session.completed",
+        created: 1700000000,
+        data: {
+          object: {
+            client_reference_id: "sub_gift_self",
+            id: "cs_x",
+            amount_total: 7900,
+            currency: "usd",
+            metadata: { is_gift: "false" },
+          },
+        },
+      };
+      mockConstruct.mockReturnValueOnce(mismatched as never);
+      mockFind.mockResolvedValueOnce(GIFT_SELF_SEND);
+      mockApply.mockResolvedValueOnce("applied");
+      mockSendGiftConfirmation.mockResolvedValueOnce({ kind: "sent", resendId: "re_x" });
+
+      await callRoute("{}");
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("gift metadata mismatch"),
+      );
+      warnSpy.mockRestore();
     });
   });
 });

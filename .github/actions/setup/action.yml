@@ -22,3 +22,9 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile
+
+    - name: Install studio dependencies
+      shell: bash
+      # studio/pnpm-lock.yaml is gitignored (separate pnpm project), so
+      # --frozen-lockfile would fail in CI. Resolve from package.json.
+      run: pnpm --dir studio install --no-frozen-lockfile

@@ -264,3 +264,66 @@ describe("ThankYouPage paid amount", () => {
     expect(html).not.toContain("line-through");
   });
 });
+
+describe("ThankYouPage per-reading overrides", () => {
+  beforeEach(() => {
+    mockFetchReading.mockResolvedValue(reading());
+    mockRetrieveSession.mockResolvedValue({ amount_total: null, currency: null } as never);
+  });
+
+  it("applies the matching override on top of the default page copy", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        heading: "Default heading",
+        closingMessage: "Default closing",
+        overrides: [
+          {
+            readingSlug: "soul-blueprint",
+            heading: "Soul Blueprint heading",
+            closingMessage: "Soul Blueprint closing",
+          },
+        ],
+      }),
+    );
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Soul Blueprint heading");
+    expect(html).toContain("Soul Blueprint closing");
+    expect(html).not.toContain("Default heading");
+    expect(html).not.toContain("Default closing");
+  });
+
+  it("falls back to the default for fields the override leaves empty", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        heading: "Default heading",
+        closingMessage: "Default closing",
+        overrides: [
+          {
+            readingSlug: "soul-blueprint",
+            heading: "Soul Blueprint heading",
+          },
+        ],
+      }),
+    );
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Soul Blueprint heading");
+    expect(html).toContain("Default closing");
+  });
+
+  it("ignores overrides that target a different reading", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        heading: "Default heading",
+        overrides: [
+          { readingSlug: "birth-chart", heading: "Birth Chart heading" },
+        ],
+      }),
+    );
+    const result = await callPage({ sessionId: "cs_test_abc123" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Default heading");
+    expect(html).not.toContain("Birth Chart heading");
+  });
+});
