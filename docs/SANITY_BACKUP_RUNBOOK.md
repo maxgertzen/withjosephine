@@ -293,6 +293,8 @@ curl -i \
 
 Expected: HTTP 200, JSON body with `success: true`, non-zero `ndjsonBytes`, an `assetCount` field. `partial: true` is allowed if `assetCount > 0` and some asset refs in Sanity are dangling (orphan photoR2Keys etc.); the cron flags them via `assetFailures` rather than crashing, and the failures are Sentry-captured.
 
+**One run per period — by-design.** After the first successful run in a given week, `backups/weekly/<YYYY-Www>/dataset.ndjson` is covered by the 90-day Bucket Lock and cannot be overwritten. A second curl in the same week returns `HTTP 500 — completeMultipartUpload: The object is locked by the bucket policy.` That's the lock working as intended (predicted in the Phase 3 Pentester LOW-3 deferral). Manual verification is therefore single-shot per period. The scheduled cron only fires Mon 03:00 UTC, so production scheduled runs never collide.
+
 Confirm the NDJSON actually landed (note: `wrangler r2 object list` is NOT a real subcommand — wrangler v4 only exposes `r2 object get/put/delete`; use `bucket info` for object-count signal and `object get --remote` for specific keys):
 
 ```sh
