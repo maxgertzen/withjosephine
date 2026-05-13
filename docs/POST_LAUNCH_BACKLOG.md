@@ -58,6 +58,20 @@ Each item: where it came from + why it was deferred + a one-line action.
   - If allowing AI-search, verify `/sitemap.xml` returns 200 to those UAs (it currently 403s per the firewall log).
 - **No deadline.** Optional. Worth ~30 min of conversation with Josephine before deciding — her brand voice is a real asset and she may have a strong opinion either way.
 
+### R2 API token scoping for backup buckets (follow-up to Phase 3 provisioning, 2026-05-13)
+
+- **Source:** Provisioning walkthrough 2026-05-13. The original Phase 3 backlog entry (below in Infrastructure) assumed R2 Bucket Locks gave S3-Object-Lock-Compliance semantics ("a compromised API token can't shorten retention"). They do not.
+- **What the docs actually say** (read directly 2026-05-13):
+  - [R2 bucket-locks](https://developers.cloudflare.com/r2/buckets/bucket-locks/) — lock rules CAN be removed via Dashboard / Wrangler / API. No "Compliance vs Governance" mode toggle; one immutability tier, removable by an admin token.
+  - [R2 S3 API compatibility](https://developers.cloudflare.com/r2/api/s3/api/) — `PutObjectLockConfiguration` and `GetObjectLockConfiguration` are listed under *Unimplemented bucket-level operations*. `x-amz-object-lock-mode` / `x-amz-object-lock-retain-until-date` are unimplemented on `PutObject` and `CreateMultipartUpload`. R2 does not implement S3 Object Lock.
+- **Implication:** The threat model "a compromised API token can't shorten retention" is not satisfied by bucket locks alone in R2. The mitigation has to come from token scope.
+- **Action items:**
+  1. Create a dedicated R2 API token whose *only* permission is `Workers R2 Storage Write` on `josephine-backups` + `josephine-backups-staging` (no `Edit` / no admin / no lock-remove on any bucket).
+  2. Bind that token to the backup worker paths separately from the prod photo-upload token.
+  3. Audit existing CF account-level R2 tokens — anything with global `Edit` should be rotated or scoped down. CF Dashboard → R2 → Manage R2 API Tokens.
+  4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
+- **Trigger:** Pair this with the WAF rate-limit Max-action (S-3 above) — both are CF-dashboard token/rule hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model.
+
 ---
 
 ## Infrastructure
@@ -76,10 +90,11 @@ Each item: where it came from + why it was deferred + a one-line action.
   2. Attach lifecycle rules per bucket:
      - prefix `backups/weekly/` → expire after 90 days
      - prefix `backups/monthly/` → expire after 1095 days (3 years, matches reading-content retention)
-  3. Apply R2 **Bucket Locks** per prefix (write-once immutable retention). Locks must MATCH the lifecycle expirations so a compromised API token can't shorten retention:
-     - prefix `backups/weekly/` → retention 90 days, mode = Compliance
-     - prefix `backups/monthly/` → retention 1095 days, mode = Compliance
-  4. Create a distinct KMS key for the backups buckets (defence against primary R2 key compromise leaking cold copies). CF Dashboard → R2 → bucket → Settings → Encryption.
+  3. Apply R2 **Bucket Locks** per prefix. Locks must MATCH the lifecycle expirations to remove the easy "extend retention via lifecycle" path:
+     - prefix `backups/weekly/` → retention 90 days
+     - prefix `backups/monthly/` → retention 1095 days
+     - **Honesty note (verified 2026-05-13):** R2 Bucket Locks are NOT the S3-Object-Lock-Compliance equivalent the earlier draft of this entry assumed. Per the [R2 bucket-locks docs](https://developers.cloudflare.com/r2/buckets/bucket-locks/) lock rules can be removed via Dashboard / Wrangler / API; R2 does not implement S3 Object Lock at all (verified via [R2 S3 API compatibility table](https://developers.cloudflare.com/r2/api/s3/api/) — `PutObjectLockConfiguration` is listed as Unimplemented). The real defense against retention-shortening attacks is **API-token scope minimization** — tracked as a separate Security backlog entry ("R2 API token scoping for backups buckets").
+  4. **Encryption — no action.** R2 buckets are encrypted at rest with AES-256-GCM under CF-managed keys automatically; per the [R2 data security docs](https://developers.cloudflare.com/r2/reference/data-security/), "encryption and decryption are automatic, do not require user configuration to enable." There is no per-bucket Encryption panel and no BYOK/CMK option — the earlier draft of this entry was wrong about a distinct-KMS step.
   5. Generate a Sanity **Viewer** API token at manage.sanity.io → Project → API → Add API token. Read-only scope, restricted to the production dataset. Repeat for staging.
   6. `pnpm wrangler secret put SANITY_EXPORT_TOKEN` against the production worker (and `--env staging` against staging) with the matching Viewer tokens.
   7. CF Dashboard → Workers → withjosephine (+ withjosephine-staging) → Settings → Variables → add public var `SANITY_BACKUP_ENABLED = 1`.
@@ -685,10 +700,12 @@ generated file stays current.
 ### Pre-prod data cleanup (test smoke residue)
 - **Source:** Smoke session 2026-05-01.
 - **What:** Test bookings ran end-to-end against prod (CF Workers + real D1 + real Sanity + real R2). The submissions / mirrored Sanity docs / uploaded photos remain. We don't have a dedicated dev environment yet; everything lands in the prod stores.
-- **Action before opening real traffic:**
+- **⚠️ Bucket-Lock-driven ordering (added 2026-05-13).** This cleanup is now a **hard precondition** before flipping `SANITY_BACKUP_ENABLED=1` on the production worker. Reason: the Phase 3 weekly cron writes the production Sanity NDJSON snapshot into `backups/weekly/<YYYY-Www>/dataset.ndjson` in the `josephine-backups` R2 bucket, which is under a **90-day immutable Bucket Lock**. If test bookings are still present when the first weekly cron fires, the snapshot includes them and the lock prevents deletion for 90 days minimum. See [`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md) → "9b. Production-readiness gate — pre-launch data cleanup".
+- **Action before opening real traffic AND before flipping `SANITY_BACKUP_ENABLED=1` on prod:**
   1. `pnpm wrangler d1 execute withjosephine-bookings --remote --command "DELETE FROM submissions WHERE email LIKE '%@gmail.com' OR email LIKE '%@example.com'"` — adjust filter to actual test emails.
   2. Studio → Submissions → delete each test row that mirrored.
-  3. R2: delete the orphaned objects under `submissions/<id>/` for the deleted IDs (or wait for the orphan-reaper cron once it's running).
+  3. R2 (`withjosephine-booking-photos`): delete the orphaned objects under `submissions/<id>/` for the deleted IDs (or wait for the orphan-reaper cron once it's running).
+  4. Verify by sampling: `*[_type == "submission"] | order(_createdAt desc)[0..5]` in production Sanity + `SELECT id, email, created_at FROM bookings ORDER BY created_at DESC LIMIT 10` against production D1. Both should show zero test entries.
 - **Long-term fix:** stand up a real dev environment (separate D1 DB + Sanity dataset + R2 bucket + Stripe test mode wiring on dedicated subdomain like `dev.withjosephine.com`) so the next round of smoke testing doesn't pollute prod.
 
 ### Reading prices — data reconcile + Stripe Payment Link sync (Max+Josephine)

@@ -154,6 +154,50 @@ wrangler secret put MIXPANEL_SERVICE_ACCOUNT_SECRET --env staging
 
 **Pass.** Row exists with correct values; replay doesn't duplicate.
 
+### B-6. Sanity backup cron + webhook smoke (staging, `SANITY_BACKUP_ENABLED=1`)
+
+**What it covers.** The full Phase 3 + 3.5 backup path — weekly cron writes NDJSON + assets to R2, live webhook mirrors voice/PDF on publish. Added 2026-05-13 after staging provisioning surfaced multiple "config drift caught at provisioning time" gaps that would have been smoke-time finds.
+
+**Pre-requisites.**
+- All steps 1–9 of [`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md) completed against staging.
+- `CF_ACCESS_CLIENT_ID` + `CF_ACCESS_CLIENT_SECRET` in `.env.staging` (provisioned per runbook 9a Pre-flight A).
+- CF Access Bypass policy for `/api/sanity-backup-webhook` on staging (runbook 9a Pre-flight B).
+- `SANITY_BACKUP_ENABLED=1` on the staging worker.
+
+**Steps:**
+
+1. **Cron path:**
+   ```sh
+   cd www && set -a && source .env.staging && set +a
+   curl -i \
+     -H "Authorization: Bearer $CRON_SECRET" \
+     -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+     -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+     https://staging.withjosephine.com/api/cron/backup-sanity-dataset
+   ```
+   Expect HTTP 200, JSON with `success: true`, `ndjsonBytes > 0`, `assetCount` matching the count of `voiceNote`/`readingPdf`/`photoR2Key` refs in staging Sanity. `partial: true` is OK if `assetFailures > 0` (orphan refs); zero failures preferred.
+
+2. **NDJSON in R2:**
+   ```sh
+   # <YYYY-Www> from the cron response's periodLabel
+   pnpm exec wrangler r2 object get \
+     "josephine-backups-staging/backups/weekly/<YYYY-Www>/dataset.ndjson" \
+     --remote --file /tmp/dataset-staging.ndjson
+   wc -c /tmp/dataset-staging.ndjson   # bytes must match ndjsonBytes from step 1
+   ```
+
+3. **Webhook path:** open Sanity Studio against `staging` dataset, attach a small voice note + PDF to any submission, **publish** (drafts don't fire the webhook per step-8 config). Wait ~5s.
+
+4. **Find the new refs + verify R2 mirror:** see SANITY_BACKUP_RUNBOOK.md → "Webhook path" GROQ snippet for the latest-submission lookup, then `wrangler r2 object get --remote` against both `backups/live/<voiceRef>` and `backups/live/<pdfRef>`. `file /tmp/live-*.bin` must identify them as WAVE/mp3 audio and PDF document.
+
+5. **Sanity delivery log:** manage.sanity.io → API → Webhooks → staging webhook → recent deliveries should show 200 for the just-fired event.
+
+6. **Sentry:** No new captures from `/api/cron/backup-sanity-dataset` (cron tags) or `/api/sanity-backup-webhook` (route tags) within 15 min, UNLESS step 1's `assetFailures > 0` — then expect matching capture count.
+
+**Pass.** Steps 1, 2, 3+4 all return their expected artefacts; Sanity delivery shows 200; Sentry consistent with `assetFailures`.
+
+**Why this matters.** During staging provisioning we caught (and fixed): two missing `NEXT_PUBLIC_SANITY_*` worker variables, a misnamed `SENTRY_DNS` secret blocking all server-side error capture across both envs, plus the discovery that CF Access fronts everything and needs two separate plumbing primitives (Service Auth for curls + Bypass for webhooks). Without B-6 those would have surfaced first on production.
+
 ---
 
 ## Stage C — Run AFTER main-merge (production)

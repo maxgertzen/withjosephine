@@ -105,6 +105,59 @@ Verify: `gh variable list --env <name>` returns the expected set.
 - [ ] Sanity dashboard → API → Webhooks → create webhook to `https://<name>.withjosephine.com/api/sanity-sync`.
 - [ ] HMAC secret matches the worker's `SANITY_WEBHOOK_SECRET`.
 - [ ] Filter to relevant doc types if cross-dataset sync is desired.
+- [ ] **CF Access Bypass policy required** for this path — see "CF Access patterns" section below. Without it, every webhook delivery 302s to Access login.
+
+### 9. CF Access patterns for ops curls and 3rd-party webhooks (surfaced 2026-05-13 during Phase 3 provisioning)
+
+Staging origins are fronted by CF Access. Any request without an Access-issued credential gets a 302 to `cloudflareaccess.com/cdn-cgi/access/login/...`. This breaks two distinct patterns the team relies on:
+
+- **Operator curls** — e.g. manual cron triggers, health checks, debug probes. Operators have hands; can pass headers.
+- **3rd-party webhooks** — Sanity, Stripe (if ever staging-bound), Brevo. Webhook senders generally don't expose per-vendor auth-header fields.
+
+Use a different Access primitive for each.
+
+#### 9a. Service tokens for operator curls
+
+Use when: a human or CI script with shell access needs to hit a staging URL.
+
+- **Provision once per worker / per use case:** CF Dashboard → **Zero Trust** → **Access** → **Service Auth** → **Service Tokens** → **Create**. Name it after the use case (`staging-ops-cron-trigger`, `staging-ci-healthcheck`, etc.). Duration: 1 year.
+- **Save Client ID + Client Secret immediately** — Secret is shown once.
+- **Add to the staging Access Application's policies:** Applications → the staging app → Policies → Add → **Action: Service Auth** (NOT Allow) → Include rule: Selector: Service Token → pick the new token. ~30s to propagate.
+- **Use in curl:**
+  ```sh
+  curl -i \
+    -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+    -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+    -H "Authorization: Bearer $CRON_SECRET" \
+    https://staging.withjosephine.com/api/cron/<route>
+  ```
+- **Persist credentials** in `.env.staging` (gitignored) for repeat ops use:
+  ```
+  CF_ACCESS_CLIENT_ID=<id>
+  CF_ACCESS_CLIENT_SECRET=<secret>
+  ```
+
+**Gotcha — Action type.** The dialog defaults to "Allow", which only authenticates humans via IdP login. Service tokens need **Service Auth** specifically. If your curl still 302s after adding the policy, this is the most likely cause. The JWT meta in the redirect URL will say `service_token_status: false` — that's Access telling you the policy didn't authenticate the token.
+
+#### 9b. Bypass policies for 3rd-party webhooks
+
+Use when: an external service POSTs to staging and has no Access-header config.
+
+The webhook's own auth (HMAC signature, replay-window timestamp check) IS the actual auth. Access is redundant for these paths; carving them out is correct.
+
+- **Add a new Application per webhook path** (don't try to layer Bypass onto the broad `staging.*` app — Access policy evaluation is per-Application, and the broad one will still 302):
+  - CF Dashboard → Zero Trust → Access → Applications → **Add an application → Self-hosted**.
+  - **Application Domain:** Subdomain `staging`, Domain `withjosephine.com`, Path `api/<exact-webhook-path>` (no leading slash).
+- **Policies:** Action: **Bypass** (not Allow, not Service Auth). Include: Everyone.
+- **Save.** ~30s. CF Access evaluates Applications by path-specificity — the more specific Application wins, so only the exact webhook path bypasses; everything else stays gated.
+
+**Existing webhook paths that need this on staging:**
+
+- `/api/sanity-sync` (Sanity content sync; existing).
+- `/api/sanity-backup-webhook` (Phase 3.5 backup mirror; needed for `SANITY_BACKUP_ENABLED=1` testing on staging).
+- Any future `/api/stripe/webhook`, `/api/brevo/webhook`, etc.
+
+**Production is NOT behind Access today.** This section is purely staging-tier plumbing. If apex ever gets fronted by Access (Phase 2 customer-portal posture decision), re-apply both 9a and 9b for the production hostname.
 
 ---
 
