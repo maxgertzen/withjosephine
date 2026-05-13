@@ -209,7 +209,7 @@ Repeat A-1 but on the production URL. Already done if A-1 ran (production was th
 ### C-2. Production cascade smoke-test — use a throwaway test customer ONLY
 
 **Pre-requisites.**
-- Production secrets set (per `POST_LAUNCH_BACKLOG.md` → "Phase 4 — production secrets + R2 lifecycle runbook"):
+- Production secrets set (per `BACKLOG.md` → "Phase 4 — production secrets + R2 lifecycle runbook"):
   ```bash
   wrangler secret put ADMIN_API_KEY
   wrangler secret put MIXPANEL_SERVICE_ACCOUNT_USERNAME

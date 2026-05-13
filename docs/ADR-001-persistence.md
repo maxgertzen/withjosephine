@@ -27,7 +27,7 @@ This honours Max's "one source of truth" requirement (every write hits D1; Sanit
 | `src/lib/booking/persistence/sanityMirror.ts` | One-way mirror writes to Sanity. Fire-and-forget; failures logged. |
 | `src/lib/booking/submissions.ts` | High-level API. Reads from repository; writes call repository THEN fire-and-forget mirror. |
 
-## Open follow-ups (POST_LAUNCH_BACKLOG.md)
+## Open follow-ups (BACKLOG.md)
 
 - **Sanity → D1 reconcile cron.** Periodic diff that catches mirror failures.
 - **Studio admin UX for `deliveredAt`.** Today there's no path for Josephine to mark a submission delivered without touching the SQL directly. CLI script `scripts/mark-delivered.mts` ships as a stopgap; a small admin page in the Next.js app is the proper Phase 1.5 fix.
@@ -196,5 +196,5 @@ A new sibling commit set:
 - `src/lib/booking/persistence/d1.ts` + tests
 - `src/lib/booking/submissions.ts` — dual-write integration
 - `scripts/backfill-submissions-to-d1.mts` — one-shot
-- `docs/POST_LAUNCH_BACKLOG.md` — entry to flip read primary to D1 after observation period
+- `docs/BACKLOG.md` — entry to flip read primary to D1 after observation period
 - `SECRETS_CHECKLIST.md` — D1 setup steps

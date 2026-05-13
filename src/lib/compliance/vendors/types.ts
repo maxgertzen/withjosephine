@@ -6,7 +6,7 @@
  * `trackingId` is non-null only for vendors that respond asynchronously and
  * give us a polling handle (Stripe Redaction Job id, Brevo SMTP-log process
  * id, Mixpanel data-deletions task id). The reconciliation cron (out of
- * Phase 4 scope; filed in POST_LAUNCH_BACKLOG) will use these to confirm
+ * Phase 4 scope; filed in BACKLOG) will use these to confirm
  * completion against vendor status endpoints.
  */
 export type VendorResult =

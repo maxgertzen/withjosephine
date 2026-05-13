@@ -145,7 +145,7 @@
 	],
 	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
 	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
-	// rules in the CF dashboard (see POST_LAUNCH_BACKLOG.md "WAF rate-limit
+	// rules in the CF dashboard (see BACKLOG.md "WAF rate-limit
 	// rules"). The bindings below are the burst-protection layer.
 	"ratelimits": [
 		{

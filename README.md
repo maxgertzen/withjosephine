@@ -150,7 +150,7 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md)                                          | Per-PR shipped history with summaries.                                                        |
 | [`docs/ADR-001-persistence.md`](docs/ADR-001-persistence.md)                      | Decision: D1 as source of truth for bookings; Sanity mirrors for editor workflow.             |
-| [`docs/POST_LAUNCH_BACKLOG.md`](docs/POST_LAUNCH_BACKLOG.md)                      | Deferred items — security follow-ups, infra cleanups, code polish.                            |
+| [`docs/BACKLOG.md`](docs/BACKLOG.md)                      | Deferred items — security follow-ups, infra cleanups, code polish.                            |
 | [`docs/LAUNCH_SMOKE_TEST_PLAN.md`](docs/LAUNCH_SMOKE_TEST_PLAN.md)                | End-to-end smoke tests for staging and production launches.                                   |
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md)                                        | D1 migrations, Sanity dataset re-seeding, Mixpanel funnels — recurring operational tasks.     |
 | [`docs/runbooks/STAGING_RUNBOOK.md`](docs/runbooks/STAGING_RUNBOOK.md)            | Staging environment provisioning + Cloudflare Access patterns + verification.                 |
@@ -168,4 +168,4 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Project Context
 
-`CLAUDE.md` files exist at the repo root and in `www/` for agent/team context — they are not required reading to contribute. The two files that ARE load-bearing for any non-trivial change are `docs/POST_LAUNCH_BACKLOG.md` (deferred work, must be read before planning) and `docs/CHANGELOG.md` (what shipped when).
+`CLAUDE.md` files exist at the repo root and in `www/` for agent/team context — they are not required reading to contribute. The two files that ARE load-bearing for any non-trivial change are `docs/BACKLOG.md` (deferred work, must be read before planning) and `docs/CHANGELOG.md` (what shipped when).
