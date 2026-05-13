@@ -163,16 +163,42 @@ Both should print both keys (names only; values are not displayed — they're wr
 
 ## 7. Worker public env var: `SANITY_BACKUP_ENABLED`
 
-CF Dashboard → Workers & Pages → select worker → Settings → Variables and Secrets → Add variable (NOT secret, public is fine — it's just a feature flag).
+**Important — set declaratively in `wrangler.jsonc`, NOT via the CF dashboard.** Surfaced 2026-05-13: `wrangler deploy` replaces all worker Variables with what's listed in `wrangler.jsonc env.<name>.vars` (or top-level `vars` for prod). Dashboard-set vars that aren't in the file get stripped on the next push, silently flipping the flag back to off.
 
-| Worker | Variable | Value |
-| --- | --- | --- |
-| `withjosephine-staging` | `SANITY_BACKUP_ENABLED` | `1` |
-| `withjosephine` | `SANITY_BACKUP_ENABLED` | `1` |
+### Staging — declarative (already shipped on `feat/listen-redesign-and-gifting` + downstream)
 
-**Do not set this on the production worker until staging step 9 verification passes.** Staging-first is the gate.
+Already in `wrangler.jsonc` → `env.staging.vars`:
 
-After saving, redeploy the worker (CF re-deploys automatically; if not, push a no-op to `feat/listen-redesign-and-gifting` for staging, or to `main` after merge for prod).
+```jsonc
+"vars": {
+  "BOOKING_DB_DRIVER": "d1",
+  "ENVIRONMENT": "staging",
+  "RESEND_DRY_RUN": "1",
+  "SANITY_BACKUP_ENABLED": "1"
+}
+```
+
+New non-prod environments should mirror this. Add the line; commit; push; CI deploys; cron picks up the flag on next fire.
+
+### Production — staged, gated by §9b cleanup
+
+For the production-first-flip moment (Max-action, blocked by §9b pre-prod data cleanup):
+
+1. Add `SANITY_BACKUP_ENABLED: "1"` to `wrangler.jsonc` top-level `vars`:
+   ```jsonc
+   "vars": {
+     "BOOKING_DB_DRIVER": "d1",
+     "ENVIRONMENT": "production",
+     "SANITY_BACKUP_ENABLED": "1"
+   }
+   ```
+2. Commit + merge to `main`. The deploy-production job picks it up. First weekly cron after the merge writes a (clean, per §9b) NDJSON snapshot.
+
+Don't add this pre-cleanup. The 90-day Bucket Lock on `backups/weekly/` makes the first NDJSON stick whether you wanted it to or not.
+
+### Why not dashboard
+
+`wrangler deploy` overwrites the Variables panel on every push. Dashboard is fine for short-lived debug ("does this flag matter for this curl?"), but for persistence it loses to wrangler.jsonc on the next deploy.
 
 ---
 
@@ -367,24 +393,26 @@ Only after 9a passes AND 9b precondition is satisfied:
 
 ## 10. Rollback path
 
-If anything goes wrong post-flip and you need to disable backups fast without redeploying:
+If anything goes wrong post-flip and you need to disable backups fast:
+
+**Fastest kill (no deploy, no commit) — disable the Sanity webhook:** manage.sanity.io → API → Webhooks → click the webhook for the affected env → toggle off. Stops the live mirror immediately. Cron still fires on its weekly schedule but the live RPO bleeding stops.
+
+**Disable the cron (requires deploy):** because the flag is declared in `wrangler.jsonc`, flipping it via dashboard is a one-deploy-and-back-on round-trip. Real rollback:
 
 ```sh
-# Staging
-pnpm exec wrangler secret list --env staging         # confirm what's set
-
-# Disable the public flag (the var stays in CF dashboard; we just flip its value)
-# CF Dashboard → Workers & Pages → withjosephine-staging → Settings → Variables → edit SANITY_BACKUP_ENABLED → set to 0 → Save
-# (Public vars cannot be removed via wrangler; the dashboard is the only path.)
+# Flip SANITY_BACKUP_ENABLED to "0" in wrangler.jsonc env.staging.vars (or top-level for prod)
+git checkout -b chore/disable-backup-flag
+# edit wrangler.jsonc → "SANITY_BACKUP_ENABLED": "0"
+git commit -am 'chore(backup): disable SANITY_BACKUP_ENABLED for <reason>'
+git push
+# CI deploys; cron route now returns { skipped: true, reason: "flag_off" }; webhook returns 204
 ```
 
 Setting `SANITY_BACKUP_ENABLED=0`:
 - Stops the weekly cron from running its backup logic (the route returns early with `{ skipped: true }`).
 - The webhook route returns `204 No Content` without doing anything.
 
-Disabling the webhook in Sanity is a parallel kill-switch (manage.sanity.io → webhook → toggle off). Use both belt-and-suspenders for an incident.
-
-To re-enable: flip the flag back to `1`. No deploy needed.
+To re-enable: flip the value back to `"1"` in `wrangler.jsonc` and redeploy.
 
 ---
 

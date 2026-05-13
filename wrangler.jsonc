@@ -259,7 +259,8 @@
 			"vars": {
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
-				"RESEND_DRY_RUN": "1"
+				"RESEND_DRY_RUN": "1",
+				"SANITY_BACKUP_ENABLED": "1"
 			}
 		}
 	}
