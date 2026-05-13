@@ -69,7 +69,7 @@ Each item: where it came from + why it was deferred + a one-line action.
   1. Create a dedicated R2 API token whose *only* permission is `Workers R2 Storage Write` on `josephine-backups` + `josephine-backups-staging` (no `Edit` / no admin / no lock-remove on any bucket).
   2. Bind that token to the backup worker paths separately from the prod photo-upload token.
   3. Audit existing CF account-level R2 tokens — anything with global `Edit` should be rotated or scoped down. CF Dashboard → R2 → Manage R2 API Tokens.
-  4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
+  4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
 - **Trigger:** Pair this with the WAF rate-limit Max-action (S-3 above) — both are CF-dashboard token/rule hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model.
 
 ---
@@ -78,7 +78,7 @@ Each item: where it came from + why it was deferred + a one-line action.
 
 ### Staging-tier provisioning runbook — DOCUMENTED 2026-05-07 in `feat/csp-nonce-and-audits`
 - **Source:** `staging.withjosephine.com/book/soul-blueprint/intake` returned 404 for ~24h after the staging tier shipped (PR-S series). Root cause: Sanity `staging` dataset was created Private (default), and `sanityClient` is `useCdn:true` with no token, so customer-facing queries went unauthenticated → null → `notFound()`. Pages with static fallbacks (entry, letter) rendered fine and masked the issue. Fix was a one-toggle dashboard change (flip dataset visibility → Public).
-- **Captured at:** [`docs/STAGING_RUNBOOK.md`](./STAGING_RUNBOOK.md). Provisioning checklist + the dataset-visibility gotcha + verification protocol (smoke the deepest page in a flow, not just the entry).
+- **Captured at:** [`docs/runbooks/STAGING_RUNBOOK.md`](./runbooks/STAGING_RUNBOOK.md). Provisioning checklist + the dataset-visibility gotcha + verification protocol (smoke the deepest page in a flow, not just the entry).
 - **PAI memory:** `feedback_sanity_client_token.md` + `feedback_static_fallbacks_can_mask_outages.md`.
 - **Action:** Reference the runbook when standing up the next non-prod env (dev?). No standalone code work.
 
@@ -700,7 +700,7 @@ generated file stays current.
 ### Pre-prod data cleanup (test smoke residue)
 - **Source:** Smoke session 2026-05-01.
 - **What:** Test bookings ran end-to-end against prod (CF Workers + real D1 + real Sanity + real R2). The submissions / mirrored Sanity docs / uploaded photos remain. We don't have a dedicated dev environment yet; everything lands in the prod stores.
-- **⚠️ Bucket-Lock-driven ordering (added 2026-05-13).** This cleanup is now a **hard precondition** before flipping `SANITY_BACKUP_ENABLED=1` on the production worker. Reason: the Phase 3 weekly cron writes the production Sanity NDJSON snapshot into `backups/weekly/<YYYY-Www>/dataset.ndjson` in the `josephine-backups` R2 bucket, which is under a **90-day immutable Bucket Lock**. If test bookings are still present when the first weekly cron fires, the snapshot includes them and the lock prevents deletion for 90 days minimum. See [`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md) → "9b. Production-readiness gate — pre-launch data cleanup".
+- **⚠️ Bucket-Lock-driven ordering (added 2026-05-13).** This cleanup is now a **hard precondition** before flipping `SANITY_BACKUP_ENABLED=1` on the production worker. Reason: the Phase 3 weekly cron writes the production Sanity NDJSON snapshot into `backups/weekly/<YYYY-Www>/dataset.ndjson` in the `josephine-backups` R2 bucket, which is under a **90-day immutable Bucket Lock**. If test bookings are still present when the first weekly cron fires, the snapshot includes them and the lock prevents deletion for 90 days minimum. See [`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md) → "9b. Production-readiness gate — pre-launch data cleanup".
 - **Action before opening real traffic AND before flipping `SANITY_BACKUP_ENABLED=1` on prod:**
   1. `pnpm wrangler d1 execute withjosephine-bookings --remote --command "DELETE FROM submissions WHERE email LIKE '%@gmail.com' OR email LIKE '%@example.com'"` — adjust filter to actual test emails.
   2. Studio → Submissions → delete each test row that mirrored.

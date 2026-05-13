@@ -4,7 +4,7 @@ End-to-end provisioning steps to take the Sanity-dataset backup system from "cod
 
 Companion docs:
 
-- [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) — Phase 3 + Phase 3.5 backlog entries (source of the spec).
+- [`POST_LAUNCH_BACKLOG.md`](../POST_LAUNCH_BACKLOG.md) — Phase 3 + Phase 3.5 backlog entries (source of the spec).
 - [`STAGING_RUNBOOK.md`](./STAGING_RUNBOOK.md) — format reference for "do staging first, verify, then prod".
 
 ---
@@ -87,7 +87,7 @@ Both enabled.
 
 **Honest note on the lock model (verified 2026-05-13).** The CF Bucket Lock dialog does NOT expose a Compliance-vs-Governance mode toggle. Per the [R2 bucket-locks docs](https://developers.cloudflare.com/r2/buckets/bucket-locks/), lock rules can be removed via Dashboard / Wrangler / API by anyone with an R2 admin token. R2 also does not implement S3 Object Lock — `PutObjectLockConfiguration` is listed as Unimplemented in the [R2 S3 API compatibility table](https://developers.cloudflare.com/r2/api/s3/api/). This means an attacker with a sufficiently privileged R2 API token can remove the lock and then delete objects.
 
-The defense against that threat is **API-token scope minimization**, tracked separately in [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) → "R2 API token scoping for backup buckets". Not launch-blocking; the locks still prevent the accidental-deletion path which is the dominant practical threat.
+The defense against that threat is **API-token scope minimization**, tracked separately in [`POST_LAUNCH_BACKLOG.md`](../POST_LAUNCH_BACKLOG.md) → "R2 API token scoping for backup buckets". Not launch-blocking; the locks still prevent the accidental-deletion path which is the dominant practical threat.
 
 ---
 
@@ -364,7 +364,7 @@ This step does NOT exist on staging. It is a hard precondition before flipping `
 
 **Sequence — DO NOT FLIP `SANITY_BACKUP_ENABLED=1` UNTIL ALL OF THESE ARE DONE:**
 
-1. Run "Pre-prod data cleanup" per [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) → UX → "Pre-prod data cleanup":
+1. Run "Pre-prod data cleanup" per [`POST_LAUNCH_BACKLOG.md`](../POST_LAUNCH_BACKLOG.md) → UX → "Pre-prod data cleanup":
    - Production Sanity: delete all test-bookings, residue from smoke runs, and any documents created during pre-launch QA.
    - Production D1: SQL-delete any test rows under `bookings` and orphan rows in dependent tables.
    - Production photos R2 bucket (`withjosephine-booking-photos`): purge anything that's not real customer data.
@@ -442,7 +442,7 @@ Section 2 of this runbook configures lifecycle rules only on `backups/weekly/` (
 
 These are not blockers for first-flip, but they are on the queue:
 
-- **R2 API token scoping for backup buckets** — see [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) → Security → "R2 API token scoping for backup buckets". Real defense against retention-shortening attacks.
+- **R2 API token scoping for backup buckets** — see [`POST_LAUNCH_BACKLOG.md`](../POST_LAUNCH_BACKLOG.md) → Security → "R2 API token scoping for backup buckets". Real defense against retention-shortening attacks.
 - **Annual restore drill** — separate session, scoped in the Phase 4 compliance runbook. The backup is only as good as your ability to restore from it.
 - **Phase 3 backup cron pentester deferrals** — MED-2 / LOW-3 / LOW-4 in `POST_LAUNCH_BACKLOG.md` under "Phase 3 backup cron — security follow-ups". Triggers documented per item.
 - **Phase 3.5 webhook backup pentester deferrals** — LOW-1 / LOW-2 in `POST_LAUNCH_BACKLOG.md` under "Phase 3.5 webhook backup — security follow-ups".
