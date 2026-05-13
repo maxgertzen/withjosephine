@@ -199,5 +199,5 @@ Fix was a one-toggle dashboard change: flip the `staging` dataset visibility fro
 ## Related docs
 
 - [`SANITY_DATASETS.md`](./SANITY_DATASETS.md) — data flow + re-seeding playbook (separate concern from provisioning)
-- [`PHASE10_CLOUDFLARE_SETUP.md`](./PHASE10_CLOUDFLARE_SETUP.md) — initial CF Workers setup
+- [`CLOUDFLARE_SETUP.md`](./CLOUDFLARE_SETUP.md) — Cloudflare provisioning reference (bindings, secrets, Custom Domains)
 - [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) — deferred work

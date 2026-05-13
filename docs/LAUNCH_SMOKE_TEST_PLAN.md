@@ -1,6 +1,6 @@
 # Launch Smoke Test Plan
 
-Per-stage smoke tests that need to run BEFORE `feat/listen-redesign-and-gifting` merges to `main`. The vitest suite (1094 tests) + Pentester pass + `/simplify` pass cover the code-quality and unit-integration layer. These smoke tests cover the gap they don't reach: actual behavior in a browser / against real vendor APIs.
+Per-stage smoke tests that need to run BEFORE `release/v1.0.0` merges to `main`. The vitest suite (1094 tests) + Pentester pass + `/simplify` pass cover the code-quality and unit-integration layer. These smoke tests cover the gap they don't reach: actual behavior in a browser / against real vendor APIs.
 
 Run them in the order below. Each section is independent — failing one doesn't block running the others. Track results in a checklist as you go.
 
