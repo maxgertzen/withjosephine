@@ -99,8 +99,10 @@ async function runBackup(args: {
     throw new Error("BACKUPS_BUCKET binding missing — backup cron cannot run");
   }
 
-  const sanityProjectId = requireEnv("NEXT_PUBLIC_SANITY_PROJECT_ID");
-  const sanityDataset = requireEnv("NEXT_PUBLIC_SANITY_DATASET");
+  const sanityProjectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  if (!sanityProjectId) throw new Error("Missing required env var: NEXT_PUBLIC_SANITY_PROJECT_ID");
+  const sanityDataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
+  if (!sanityDataset) throw new Error("Missing required env var: NEXT_PUBLIC_SANITY_DATASET");
   const token = requireEnv("SANITY_EXPORT_TOKEN");
 
   const period = resolveBackupPeriod(new Date(args.startedAt));

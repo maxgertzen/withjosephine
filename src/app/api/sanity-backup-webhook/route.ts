@@ -15,7 +15,7 @@ import {
 } from "@/lib/backup/ndjsonAssets";
 import { fetchSanityAssetStream } from "@/lib/backup/sanityAsset";
 import type { R2Bucket } from "@/lib/backup/types";
-import { isFlagEnabled, optionalEnv, requireEnv } from "@/lib/env";
+import { isFlagEnabled, optionalEnv } from "@/lib/env";
 
 const REPLAY_WINDOW_MS = 5 * 60 * 1000;
 const ASSET_FETCH_TIMEOUT_MS = 30_000;
@@ -87,8 +87,10 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const projectId = requireEnv("NEXT_PUBLIC_SANITY_PROJECT_ID");
-  const dataset = requireEnv("NEXT_PUBLIC_SANITY_DATASET");
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  if (!projectId) throw new Error("Missing required env var: NEXT_PUBLIC_SANITY_PROJECT_ID");
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
+  if (!dataset) throw new Error("Missing required env var: NEXT_PUBLIC_SANITY_DATASET");
 
   const refs = collectAssetRefsFromDoc(payload).filter(
     (ref): ref is SanityFileRef => ref.kind === "sanityFile",

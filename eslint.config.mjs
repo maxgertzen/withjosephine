@@ -27,6 +27,15 @@ const eslintConfig = [
     rules: {
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.name=/^(requireEnv|optionalEnv)$/] > Literal.arguments:first-child[value=/^NEXT_PUBLIC_/]",
+          message:
+            "Don't read NEXT_PUBLIC_* via requireEnv()/optionalEnv() — use literal process.env.NEXT_PUBLIC_X access so Next's DefinePlugin can inline the build-time value into the bundle. See src/lib/env.ts header comment.",
+        },
+      ],
     },
   },
   prettierConfig,

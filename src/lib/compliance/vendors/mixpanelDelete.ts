@@ -47,7 +47,7 @@ export async function createMixpanelDataDeletion(
     return { ok: false, error: "mixpanel: no distinct_ids to delete" };
   }
 
-  const projectToken = optionalEnv("NEXT_PUBLIC_MIXPANEL_TOKEN");
+  const projectToken = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
   const username = optionalEnv("MIXPANEL_SERVICE_ACCOUNT_USERNAME");
   const secret = optionalEnv("MIXPANEL_SERVICE_ACCOUNT_SECRET");
   if (!projectToken || !username || !secret) return vendorNotConfigured("mixpanel");
