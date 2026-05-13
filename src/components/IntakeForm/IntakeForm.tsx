@@ -689,7 +689,7 @@ export function IntakeForm({
         which reads turnstileRef.current. The ref access is intentional —
         the callback is invoked at submit time, not during render — but
         the new react-hooks/refs rule flags the closure capture itself.
-        Refactor queued in POST_LAUNCH_BACKLOG.
+        Refactor queued in BACKLOG.
       */}
       { }
       {currentSections.map((section) => (

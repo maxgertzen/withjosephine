@@ -12,7 +12,7 @@ import { jsonPost, type JsonPostResult } from "@/lib/http/jsonPost";
  *
  * Shipped instead of React Server Actions — OpenNext 1.19.4 on Cloudflare
  * Workers has fragile server-action support; see
- * `www/docs/POST_LAUNCH_BACKLOG.md` → Phase 5 Session 5 → "T6.28-30 / B4.13"
+ * `www/docs/BACKLOG.md` → Phase 5 Session 5 → "T6.28-30 / B4.13"
  * for the trigger to revisit.
  */
 export function useMutationAction<T = unknown>(endpoint: string) {

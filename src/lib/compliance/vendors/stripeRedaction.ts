@@ -14,7 +14,7 @@ import "server-only";
  *  2. POST /v1/privacy/redaction_jobs/{id}/run — required to execute the
  *     redaction once status is `ready`. Phase 4 cascade only creates the
  *     job here and returns the id; a reconciliation cron (out of scope,
- *     filed in POST_LAUNCH_BACKLOG) polls status and calls `/run` when
+ *     filed in BACKLOG) polls status and calls `/run` when
  *     ready.
  *
  * `validation_behavior=fix` is the admin-path default — `error` (Stripe

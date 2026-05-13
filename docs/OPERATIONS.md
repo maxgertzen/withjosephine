@@ -135,13 +135,13 @@ The seed script does NOT solve content migrations. If a schema change adds a req
 
 Staging diverges from production where staging-only QA content makes sense:
 
-- **`reading` doc `stripePaymentLink`** — currently same as production (re-used existing test-mode Payment Links). When apex unparks and production swaps to live-mode Payment Links (see [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) § "Apex unpark — Stripe live-mode flip target"), staging stays on test-mode URLs. Re-seeding from production AFTER that flip would clobber staging's test-mode URLs with live-mode ones — at that point, either drop the `reading` type from the seed, or post-process to revert payment links per env.
+- **`reading` doc `stripePaymentLink`** — currently same as production (re-used existing test-mode Payment Links). When apex unparks and production swaps to live-mode Payment Links (see [`BACKLOG.md`](./BACKLOG.md) § "Apex unpark — Stripe live-mode flip target"), staging stays on test-mode URLs. Re-seeding from production AFTER that flip would clobber staging's test-mode URLs with live-mode ones — at that point, either drop the `reading` type from the seed, or post-process to revert payment links per env.
 
 ---
 
 ## Mixpanel Funnels
 
-How to set up and read funnels for the booking flow. This is the quantitative side of analytics; for qualitative ("why did THIS visitor bounce") see Microsoft Clarity (Phase-2 add, see [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md)).
+How to set up and read funnels for the booking flow. This is the quantitative side of analytics; for qualitative ("why did THIS visitor bounce") see Microsoft Clarity (Phase-2 add, see [`BACKLOG.md`](./BACKLOG.md)).
 
 ### What a funnel is
 

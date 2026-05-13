@@ -65,7 +65,7 @@ export async function getOrCreateUser(args: {
  * MUST NOT leak "is this email a Josephine customer" via response
  * differential. POST /api/auth/magic-link MUST always return 204 + the
  * "Check your email" UX state regardless of result. See
- * `www/docs/POST_LAUNCH_BACKLOG.md` → A-2.
+ * `www/docs/BACKLOG.md` → A-2.
  */
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
   const normalized = normalizeEmail(email);

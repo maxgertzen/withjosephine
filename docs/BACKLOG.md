@@ -1,0 +1,620 @@
+# Backlog
+
+Deferred items with explicit triggers. The companion to `CHANGELOG.md` — CHANGELOG owns the history of what shipped; this file owns the queue of what's still pending.
+
+Each item: where it came from + why it was deferred + the trigger that promotes it to active work.
+
+When an item ships, **delete the entry** (don't mark it complete in place). The git log + CHANGELOG are the trail.
+
+---
+
+## Security
+
+
+### S-3. WAF rate-limit rules
+- **Source:** Security review.
+- **What:** No per-IP throttling on `/api/booking`, `/api/contact`, or
+  `/api/booking/upload-url`. Worst case is resource cost (Resend quota,
+  R2 storage), not data theft.
+- **Action:** Cloudflare dashboard → Security → WAF → Rate limiting rules.
+  10 req/min/IP per route is generous for legitimate use. No code change.
+- **Folds into:** Punch 6 (R2 CORS) — both are CF dashboard tasks.
+
+### F-10. Verify Resend domain before first prod send
+- **Source:** Security review.
+- **What:** `src/lib/resend.ts` `FROM_ADDRESS` is `Josephine <hello@withjosephine.com>`.
+  If the domain isn't verified in Resend (DKIM/SPF/DMARC published in CF DNS),
+  every send returns 500.
+- **Action:** Resend dashboard → Domains → confirm `withjosephine.com` verified.
+  Send a test from the dashboard before opening the form to traffic.
+
+### AI-bot accessibility policy — decide what we want indexed
+- **Source:** Firewall events review 2026-05-06 (24h Security Events sample showed Claude-SearchBot blocked once on `/sitemap.xml`).
+- **What:** A "Manage AI bots" managed rule is currently active and is blocking AI-search crawlers (Anthropic, presumably also OpenAI / Perplexity / Google AI Overviews indexers). Default-deny posture inherited from the WAF default; never explicitly chosen.
+- **Decision needed (Max + Josephine):** Do we *want* the site indexed by AI-search? Trade-off:
+  - **Allow**: organic discovery via "best akashic record reader" / "soul blueprint reading" prompts in ChatGPT/Claude/Perplexity. New top-of-funnel channel that didn't exist 2 years ago. Low cost — these bots are well-behaved and crawl rarely.
+  - **Block (status quo)**: zero risk of AI tools quoting Josephine's voice/copy, training on practice descriptions, or surfacing prices/contact in summaries. Cleaner brand control. Loses the discovery channel.
+  - **Hybrid**: allow `Claude-SearchBot` + `OAI-SearchBot` + `PerplexityBot` (search/citation, link-back) but keep blocking `GPTBot` / `Google-Extended` / `ClaudeBot` / `CCBot` (training crawlers, no link-back).
+- **Action when decided:**
+  - CF Dashboard → Security → WAF → Managed Rules → "AI bot management": flip from block-all to allow-list, OR
+  - Add a custom rule with explicit UA allowlist for the chosen crawlers.
+  - Update `robots.txt` to match (currently doesn't differentiate).
+  - If allowing AI-search, verify `/sitemap.xml` returns 200 to those UAs (it currently 403s per the firewall log).
+- **No deadline.** Optional. Worth ~30 min of conversation with Josephine before deciding — her brand voice is a real asset and she may have a strong opinion either way.
+
+### R2 API token scoping for backup buckets (follow-up to Phase 3 provisioning, 2026-05-13)
+
+- **Source:** Provisioning walkthrough 2026-05-13. The original Phase 3 backlog entry (below in Infrastructure) assumed R2 Bucket Locks gave S3-Object-Lock-Compliance semantics ("a compromised API token can't shorten retention"). They do not.
+- **What the docs actually say** (read directly 2026-05-13):
+  - [R2 bucket-locks](https://developers.cloudflare.com/r2/buckets/bucket-locks/) — lock rules CAN be removed via Dashboard / Wrangler / API. No "Compliance vs Governance" mode toggle; one immutability tier, removable by an admin token.
+  - [R2 S3 API compatibility](https://developers.cloudflare.com/r2/api/s3/api/) — `PutObjectLockConfiguration` and `GetObjectLockConfiguration` are listed under *Unimplemented bucket-level operations*. `x-amz-object-lock-mode` / `x-amz-object-lock-retain-until-date` are unimplemented on `PutObject` and `CreateMultipartUpload`. R2 does not implement S3 Object Lock.
+- **Implication:** The threat model "a compromised API token can't shorten retention" is not satisfied by bucket locks alone in R2. The mitigation has to come from token scope.
+- **Action items:**
+  1. Create a dedicated R2 API token whose *only* permission is `Workers R2 Storage Write` on `josephine-backups` + `josephine-backups-staging` (no `Edit` / no admin / no lock-remove on any bucket).
+  2. Bind that token to the backup worker paths separately from the prod photo-upload token.
+  3. Audit existing CF account-level R2 tokens — anything with global `Edit` should be rotated or scoped down. CF Dashboard → R2 → Manage R2 API Tokens.
+  4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
+- **Trigger:** Pair this with the WAF rate-limit Max-action (S-3 above) — both are CF-dashboard token/rule hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model.
+
+---
+
+## Infrastructure
+
+
+### R2 backups bucket + Sanity Export token provisioning (Phase 3 prerequisite — Max-action)
+
+- **Source:** Phase 3 backup cron PR (Sanity dataset NDJSON snapshot → R2). Cron + binding shipped behind a `SANITY_BACKUP_ENABLED` deploy flag so the code is ready in advance; provisioning is what flips it on.
+- **What's required before flipping `SANITY_BACKUP_ENABLED=1`:**
+  1. Create R2 bucket `josephine-backups` (production) and `josephine-backups-staging` (staging) via CF dashboard → R2 → Create bucket. Same account that hosts `withjosephine-booking-photos`.
+  2. Attach lifecycle rules per bucket:
+     - prefix `backups/weekly/` → expire after 90 days
+     - prefix `backups/monthly/` → expire after 1095 days (3 years, matches reading-content retention)
+  3. Apply R2 **Bucket Locks** per prefix. Locks must MATCH the lifecycle expirations to remove the easy "extend retention via lifecycle" path:
+     - prefix `backups/weekly/` → retention 90 days
+     - prefix `backups/monthly/` → retention 1095 days
+     - **Honesty note (verified 2026-05-13):** R2 Bucket Locks are NOT the S3-Object-Lock-Compliance equivalent the earlier draft of this entry assumed. Per the [R2 bucket-locks docs](https://developers.cloudflare.com/r2/buckets/bucket-locks/) lock rules can be removed via Dashboard / Wrangler / API; R2 does not implement S3 Object Lock at all (verified via [R2 S3 API compatibility table](https://developers.cloudflare.com/r2/api/s3/api/) — `PutObjectLockConfiguration` is listed as Unimplemented). The real defense against retention-shortening attacks is **API-token scope minimization** — tracked as a separate Security backlog entry ("R2 API token scoping for backups buckets").
+  4. **Encryption — no action.** R2 buckets are encrypted at rest with AES-256-GCM under CF-managed keys automatically; per the [R2 data security docs](https://developers.cloudflare.com/r2/reference/data-security/), "encryption and decryption are automatic, do not require user configuration to enable." There is no per-bucket Encryption panel and no BYOK/CMK option — the earlier draft of this entry was wrong about a distinct-KMS step.
+  5. Generate a Sanity **Viewer** API token at manage.sanity.io → Project → API → Add API token. Read-only scope, restricted to the production dataset. Repeat for staging.
+  6. `pnpm wrangler secret put SANITY_EXPORT_TOKEN` against the production worker (and `--env staging` against staging) with the matching Viewer tokens.
+  7. CF Dashboard → Workers → withjosephine (+ withjosephine-staging) → Settings → Variables → add public var `SANITY_BACKUP_ENABLED = 1`.
+- **Verification:** manually trigger the cron after provisioning — `curl -H "Authorization: Bearer $CRON_SECRET" https://withjosephine.com/api/cron/backup-sanity-dataset`. Should return 200 JSON with `success: true`, non-zero `ndjsonBytes`, and `assetCount`. Then check R2 dashboard for `backups/weekly/<YYYY-Www>/dataset.ndjson` + assets subtree.
+- **Why deferred:** R2 bucket creation, lifecycle, Bucket Locks, KMS, and Sanity token issuance are all CF/Sanity dashboard operations Max owns. Code ships gated; nothing depends on the cron firing until the flag is on.
+- **Restore drill:** Annual, documented in Phase 4 PRD's compliance runbook (separate session). Not in scope here.
+
+### Phase 3.5 webhook backup — security follow-ups (Pentester deferrals)
+
+Pentester gate on the Phase 3.5 PR (verdict GO, MEDIUM-1 fixed in-PR). Two items deferred to backlog:
+
+- **LOW-1: `@sanity/webhook` `isValidSignature` uses plain `!==` not constant-time.** Both `/api/sanity-sync` (existing) and `/api/sanity-backup-webhook` (new) inherit this from the upstream library. Real-world exploitability on Workers is very low (cold-start jitter + regional routing + per-request CPU variability dominate any byte-level timing signal), and the cost of forking the library is high. Mirrors the Phase 1 listen-route HIGH-1 timing-oracle precedent. **Trigger to fix:** when upstream `@sanity/webhook` ships a release using `crypto.subtle.timingSafeEqual` or equivalent — bump the dep and re-verify.
+- **LOW-2: No per-route rate-limiting on `/api/sanity-backup-webhook`** (or `/api/sanity-sync`). Attacker without HMAC secret can't reach the expensive path (body-size pre-check from MEDIUM-1 also blocks them at the door). Attacker WITH the secret is a confused-deputy — rate-limiting is the wrong control. **Trigger to add:** Workers analytics shows >60 rpm unauthenticated → wire a `WEBHOOK_LIMITER` rate-limit binding scoped to client IP, evaluated before HMAC verification.
+
+### Phase 3 backup cron — security follow-ups (Pentester deferrals)
+
+Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items deferred to backlog:
+
+- **MED-2: Bound NDJSON line length + per-`uploadPart` timeout.** `extractAssetRefs` accumulates `pending` until a `\n` is found — a single multi-MB JSON line (e.g. future Portable Text body on a submission) would buffer entirely in Worker memory. Mitigation: reject lines > ~5 MiB. Separately, `streamToR2Multipart`'s `uploadPart` has no timeout — a hung upload would burn the 15-min scheduled wall clock. Wrap with a timeout race. Trigger: file once submission docs gain Portable Text bodies, OR after the first cron run that takes >5 min wall-clock.
+- **LOW-3: Document last-writer-wins semantics + Bucket-Lock-mode interaction.** Two concurrent backup invocations (manual curl + scheduled trigger) on the same period produce two `createMultipartUpload` flows, both `complete()`ing the same key — last writer overwrites. Once Bucket Locks ship (Max-action), the mode choice (Compliance vs Governance) determines whether the second `complete()` is rejected. Recommendation: Governance mode so "fresh-snapshot-wins" semantics are preserved for retries. Document in the Max-action provisioning entry above.
+- **LOW-4: Extend `scrubSensitiveRequestData` in `custom-worker.ts` to scrub `event.extra.ref.key`** on the backup-cron Sentry-capture path. The asset ref includes a sanitized customer-supplied filename which is a marginal PII surface in admin-only Sentry. Same posture as the existing listen-page URL scrub. Two-line change.
+
+### Phase 3 backup cron — `extractAssetRefs` line-splitter O(N²) on long records
+- **Source:** /simplify Efficiency reviewer on Phase 3 PR (EFF-6).
+- **What:** `src/lib/backup/ndjsonAssets.ts` builds the in-flight string buffer via `pending += decoder.decode(...)` and repeatedly `pending.slice(newlineIdx + 1)` after each line. For a Sanity export where one doc emits a ≥100 KB line (e.g. large Portable Text or embedded images in a future doc-type), the per-line tail-realloc cost is quadratic. At soft-launch (~10 KB total NDJSON) it's irrelevant.
+- **Action:** Switch the line walk to an offset-based scan, OR pipe through `TextDecoderStream` + a `TransformStream` that splits on `\n` natively. ~10 lines.
+- **Trigger:** filing now so the line is in view; defer execution until either (a) cron `durationMs` for the dataset-NDJSON walk crosses ~1s, or (b) any submission doc lands a multi-KB Portable Text body in Sanity. Neither is true today.
+
+### Phase 3 backup cron — tee Sanity export stream to skip the R2 re-read
+- **Source:** /simplify Efficiency reviewer on Phase 3 PR (EFF-1).
+- **What:** Today the cron streams Sanity export → R2 multipart, then does a separate `bucket.get(ndjsonKey)` to walk asset refs. Reviewer suggested `body.tee()` to split the source stream into two consumers in parallel. Deferred because tee'd ReadableStreams in the Streams spec queue unbounded for the slower consumer — if R2 upload throughput lags Sanity download (likely at projected scale), the JS-side queue can exceed Workers' 128 MiB request-memory ceiling. The current re-read is memory-bounded; the R2 GET round-trip costs ~$0.0004 per backup (Class B op, negligible).
+- **Action:** If R2 GET cost or cron wall-clock duration ever becomes the bottleneck, revisit with bounded backpressure (e.g. a `TransformStream` with a small `highWaterMark` on the slow branch) instead of naive `tee()`.
+
+### Dead `NEXT_PUBLIC_WEB3FORMS_KEY` GH secret (Max-action only)
+- **What:** Set as a GH SECRET pre-launch when contact-form was on web3forms; web3forms was replaced by Resend, source code has zero references today (verified via grep). Pure dead config.
+- **Action (Max):** `gh secret delete NEXT_PUBLIC_WEB3FORMS_KEY` at the repo level. No code change.
+
+### `/api/booking/upload-url` architectural alternative
+- **Source:** Code review (S-4 long-term fix).
+- **What:** Current design: Turnstile-gated upload-url + R2 ContentLength
+  signing + orphan-reaper cron. The "right" fix the reviewer suggested
+  long-term is to gate uploads on an already-validated submission ID
+  (i.e. `/api/booking/init` → `pendingId`, then upload-url requires it).
+  Today's three layers cover the abuse surface adequately.
+- **Action:** Revisit if upload abuse becomes a real signal.
+
+### Launch smoke test plan — single source of truth
+
+Stage-by-stage smoke tests (A = run NOW; B = before main-merge with staging secrets set; C = after main-merge on production; D = operational, separate from launch) live in **[`docs/LAUNCH_SMOKE_TEST_PLAN.md`](./LAUNCH_SMOKE_TEST_PLAN.md)**. The file is the authoritative checklist for "what still needs to be verified" before the production go-live and is referenced from the soft-launch hold gate in the project root `CLAUDE.md`.
+
+
+
+### Phase 5 — Session 6 — Pentester LOW deferrals (post-launch with explicit triggers)
+
+Pentester re-audit on the Session 5+6 combined diff (2026-05-12, HEAD `5f0c96a`) returned **CONDITIONAL GO**. M-1 (admin apex allowlist) + M-2 (regenerate TOCTOU lock) shipped in-PR (commit `5f0c96a`). Two LOW findings deferred:
+
+- **L-1 — No success audit for admin regenerate.** `cascadeDeleteUser` writes its own `performedBy: "studio-admin"` audit; `regenerateGiftClaim` writes only the `gift_claim_regenerate` email_fired entry (no operator-identity capture). **Trigger to revisit:** first post-launch incident where the team needs to reconstruct "who pressed regenerate at <time>". Fix: add `writeAudit({ eventType: "admin_action", success: true, ... })` after the `ok` branch in `regenerateGiftClaim`; include `submissionId` for searchability.
+- **L-2 — Analytics double-count on regenerate.** Successful regenerate appends BOTH `gift_claim` (via `sendAndRecord`) AND `gift_claim_regenerate` (explicit append) to `emails_fired_json`. Any cohort walk counting `gift_claim` events sees regenerations as first-sends. **Trigger to revisit:** first analytics dashboard / cohort study that walks `gift_claim` event counts. Fix: either pass a discriminator into `sendAndRecord` so the regenerate path appends ONLY `gift_claim_regenerate`, OR teach the cooldown walk to consider both types.
+
+
+
+
+
+### Phase 4 — production secrets + R2 lifecycle (POST-MERGE OF `feat/listen-redesign-and-gifting` → `main`)
+
+Phase 4 ships flag-off-by-absence: every vendor helper returns `vendorNotConfigured` until its env vars are populated, and the cascade reports the missing-config as a `partialFailures` entry but still completes the in-house data scrub (D1 + R2 + Sanity). These are the production-only actions to actually turn the vendor calls on — run after `feat/listen-redesign-and-gifting` merges to `main`. Staging secrets are out of scope for this runbook (set them on the staging worker as part of the bake; see `STAGING_RUNBOOK.md` for that flow).
+
+Run from `www/` with the production Cloudflare Workers binding (no `--env` flag — `wrangler` defaults to production).
+
+```bash
+# 1. Admin API key — gates the Sanity Studio "Delete customer data" doc action
+#    via X-Admin-Token header. Without it, the admin endpoint returns 404
+#    to all callers and Becky can't cascade-delete.
+#    Generate locally: openssl rand -base64 32
+#    Save to password manager BEFORE pasting into wrangler.
+wrangler secret put ADMIN_API_KEY
+
+# 2. Mixpanel service-account credentials — HTTP Basic auth pair from
+#    Mixpanel Project Settings → Service Accounts → "Add Service Account"
+#    (role: Admin, US region, expires: Never). The "Add" dialog shows
+#    username + secret ONCE — copy both immediately. Without these, the
+#    cascade's Mixpanel data-deletions call returns "mixpanel: not configured"
+#    partial-failure and Mixpanel event/profile data is NOT deleted.
+wrangler secret put MIXPANEL_SERVICE_ACCOUNT_USERNAME
+wrangler secret put MIXPANEL_SERVICE_ACCOUNT_SECRET
+
+# 3. Brevo API key — DO NOT SET until Brevo Phase 1 vetting ticket has
+#    cleared (see "Brevo Phase 1 — pre-vetting via support ticket" below).
+#    Without it, cascade reports "brevo-contact: not configured" +
+#    "brevo-smtp-log: not configured" partial-failures. Acceptable until
+#    Brevo Phase 1 ships — Brevo isn't carrying any customer data yet.
+# wrangler secret put BREVO_API_KEY
+```
+
+**R2 lifecycle on `exports/` prefix (production bucket).** GDPR Art. 20 export ZIPs accumulate without an expiry policy. CF Dashboard → R2 → `withjosephine-booking-photos` → Settings → Object lifecycle rules → Add rule:
+
+- Rule name: `exports-7d-expiry`
+- Prefix: `exports/`
+- Action: `Delete uploaded objects after 7 Days`
+- Enabled: ✓
+
+(The pre-signed download URLs already expire after 7 days; this rule garbage-collects the underlying R2 objects so they don't keep counting against storage.)
+
+**Verify after each secret lands:**
+
+```bash
+# Confirm the worker sees them (does NOT print the value, only the names):
+wrangler secret list | grep -E "ADMIN_API_KEY|MIXPANEL_SERVICE"
+```
+
+**End-to-end smoke-test (after ADMIN_API_KEY + Mixpanel pair both set):**
+
+1. Open Sanity Studio at `withjosephine.sanity.studio/production`.
+2. Pick a real submission doc (or a test one — cascade is irreversible per Stripe Redaction, so use a test row first).
+3. Click "Delete customer data" → type `DELETE` → paste the admin token → click "Run cascade delete".
+4. Toast should say "Customer data cascade complete" (success) or list partial-failures (Brevo `not configured` is expected pre-vetting).
+5. Query `deletion_log` in production D1 — expect TWO rows for that user_id: `action='started'` with `started_at` populated, then `action='completed'` with `completed_at` populated + `mixpanel_task_id` non-null + `stripe_redaction_job_id` non-null.
+6. Confirm in Mixpanel: the data deletion request appears in Project Settings → Data Deletion Requests (state may be `pending` / `processing` for up to 30 days — that's the vendor SLA).
+7. Confirm in Stripe Dashboard: the Redaction Job appears under Settings → Privacy → Redaction Jobs with status `validating` → `ready` → (manual `/run` trigger TBD via reconciliation cron in a future phase).
+8. Re-trigger the doc action on the same submission → expect Studio toast "no recipient user" (idempotency holds; the row has already been deleted).
+
+If any step fails, the cascade is non-destructive on first failure (each step wraps in try/catch + records the failure into `deletion_log.partial_failures_json` rather than rolling back). Investigate the partial-failure string and re-run after fixing.
+
+### Phase 4b — deferred follow-ups (filed during PR — defer triggers below)
+
+Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful of items that didn't make the in-PR cut. Each has an explicit trigger condition for when to revisit.
+
+- **24h vs 7d export URL expiry (Pentester MED-1).** `/api/privacy/export` emails a 7-day pre-signed R2 GET URL. Email-channel exposure window is long; alternative is to gate downloads behind a Next route that re-checks the `__Host-listen_session` cookie and 302s to a freshly-signed short-lived URL. **Trigger:** any complaint that an export link was exfiltrated, OR more than 10 exports/month sustained (broader attack surface). Cheap fix when triggered: drop `EXPORT_URL_EXPIRY_SECONDS` to 24h.
+- **Sanity asset orphan reconcile cron (Pentester MED-2).** Cascade's `deleteSanityAssetsForSubmission` captures partial failures into `deletion_log.partial_failures_json` but doesn't retry. Voice notes / PDFs can orphan if Sanity 503s mid-cascade. **Trigger:** any `deletion_log` row with `sanity-asset-delete` or `sanity-doc-delete` in `partial_failures_json` that hasn't been hand-cleaned within 7 days. Cron writes a daily Mixpanel/Sentry alert; build the auto-retry only after Becky's surfaced this twice.
+- **Concurrent cascade invocation guard (Pentester MED-3).** Cascade doesn't check `wasUserDeleted(userId)` before starting — concurrent double-click writes two `started` rows + two Stripe Redaction Jobs (irreversible). **Trigger:** any `deletion_log` query that returns >1 `started` row per `user_id` within the same minute. Fix at trigger time: insert with `INSERT … ON CONFLICT DO NOTHING` on `(user_id, action='started', started_at > now-60s)`.
+- **Structured `partialFailures` shape + VendorId union (Quality MED).** Current `partialFailures: string[]` is stringly-typed; parsing by prefix breaks if vendor error formats change. **Trigger:** when the reconcile cron in MED-2 above lands, design its filter against a structured `{vendor, phase, detail}` shape rather than regex on free-text — touch all three vendor helpers + the cascade caller in one focused pass.
+- **`formatHttpError(vendor, response)` helper extract (Quality MED).** Pattern repeated 5× across vendor helpers (`text().catch(...).slice(0, 200)`). Fine as-is for three helpers; revisit when a fourth vendor lands (Phase 5 gifting may add Stripe Connect or similar).
+- **`PrivacyExport` React Email template + Sanity doc-type (Reuse LOW-MED).** Every other transactional sender uses a React Email template wired through Sanity copy (`sendOrderConfirmation`, `sendDay7Delivery`, `sendMagicLink`, etc.); `sendPrivacyExportEmail` is the only inline-HTML outlier. For brand consistency (EmailShell wrapper, SignOff, SerifHeading) + Becky-editability of the copy, create `src/lib/emails/PrivacyExport.tsx` + `emailPrivacyExport` Sanity doc-type, mirror `sendMagicLink`'s lazy-import + defaults-merge shape. **Trigger:** soft-launch traffic includes ≥3 Art. 20 export requests/month, OR Becky asks to edit the wording.
+- **Sanity N+1 in cascade per-submission loop (Efficiency LOW).** Each submission: `client.fetch` asset refs + `client.delete` doc + `client.delete` per asset = N+3 round-trips per submission, serial across submissions. Fine at 1–3 submissions/user. **Trigger:** any cascade against >10 submissions for a single user (gifting power-users in Phase 5). Cleanup pass: pre-fetch all asset refs via `*[_id in $ids]{voiceNote, readingPdf}` + batch deletes via `client.transaction()`.
+- **`zipSync` → `AsyncZipDeflate` flip (Efficiency MED).** Current `zipSync` is single-threaded and blocks the isolate. Comment in `export/route.ts` pre-commits to the flip threshold. **Trigger:** any export bundle ≥25 MB observed (log-and-watch), OR Worker CPU duration on `/api/privacy/export` >10s P95.
+- **Mixpanel project token in URL query (Pentester MED-4).** `?token=...` ends up in vendor edge logs. Token is `NEXT_PUBLIC_MIXPANEL_TOKEN` (already client-exposed), low-impact. **Trigger:** Mixpanel documents body-token support for `data-deletions/v3.0` — then move it.
+- **HMAC email_hash in `deletion_log` (Pentester LOW-4).** Currently unsalted SHA-256 — rainbow-table feasible if a `deletion_log` dump leaks. **Trigger:** any incident-class event involving D1 read access from outside the worker. Cheap fix: HMAC with a server secret.
+- **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. Folds into the existing `S-3. WAF rate-limit rules` backlog item above — add the admin route to the WAF allowlist when that lands.
+
+### Brevo Phase 1 — parallel-safe (NOT launch-blocking — 2026-05-11 re-tier)
+
+**De-blocked 2026-05-11.** Earlier framing called Brevo Phase 1 "LAUNCH-BLOCKING" but the dependency wasn't real on inspection:
+
+- Transactional email continues through Resend (the existing path — Order Confirmation, Day-2, Day-7 delivery emails all work without Brevo).
+- No newsletter signup form exists on the site yet. The website can launch with no newsletter and add one 1–2 weeks later.
+- The Phase 4 cascade integration is provider-agnostic by design — without `BREVO_API_KEY`, the cascade gracefully returns `brevo-contact: not configured` + `brevo-smtp-log: not configured` partial-failures and the rest of the cascade (R2 / Sanity / D1 / Stripe / Mixpanel) completes normally.
+- Switching providers is ~30 min of code work — write `<provider>Delete.ts` mirroring `brevoDelete.ts` shape + swap two import lines in `cascadeDeleteUser.ts`. **Fallback ranked picks per the 2026-05-11 vendor research:** (1) Beehiiv — strongest explicit astrology acceptance, publishes astrology-newsletter promo content; (2) Mailchimp — scrutinise-not-ban for astrology; (3) Resend Broadcasts — no content prohibitions but Schrems-III exposure for EU customers.
+
+**Brevo's 2026-05-11 reply (Frosina, ticket #5354963):**
+> *"We have reviewed the information provided… `news.withjosephine.com` has been successfully authenticated… However, since the website `withjosephine.com` is currently still under construction and not yet live, we are unfortunately unable to complete the full account review at this stage. Our compliance team needs to be able to verify the website and its content as part of the standard validation process. Additionally, as Max rightly flagged, your business falls under Section E of our Acceptable Use Policy (clairvoyance, fortune telling and astrology), which requires a dedicated review by our compliance team. We would ask you to reach back out to us once your website is live."*
+
+Net: domain auth ✓, account-level review deferred to post-launch (Brevo-side requirement, not a code dependency), Section E review will happen post-launch as a dedicated compliance pass. Externally confirms the demotion above.
+
+**Post-launch action (after apex unpark):** reply on ticket #5354963 with (a) the live URL `withjosephine.com`, (b) the opt-in form URL (when the newsletter form ships), (c) a sample newsletter (Becky drafts).
+
+**What stays from the original plan:**
+- Vetting ticket with Frosina at Brevo (#5354963) — keep open. Reply post-launch.
+- Cascade code under `src/lib/compliance/vendors/brevoDelete.ts` — keep as-is. Env-var-gated, no harm to leave in.
+- 0.2% complaint / 2% bounce / 1% unsubscribe thresholds — useful operational knowledge if/when Brevo Phase 1 ships.
+
+**Trigger conditions for vendor swap:**
+- Brevo's post-launch review drags >2 weeks after the live-site reply OR rejects → switch to Beehiiv.
+- Brevo's `SANITY_BACKUP_ENABLED`-style flag in code already exists implicitly via env-var absence — no further code work needed to "turn Brevo off" — just don't set `BREVO_API_KEY`.
+
+Below is the original Phase 1 launch checklist for reference (still useful when Brevo eventually ships, just no longer launch-gating):
+
+### Brevo Phase 1 — pre-vetting via support ticket (operational, parallel-safe)
+
+- **Source:** Direct read of Brevo's Acceptable Use Policy PDF (`Anti-spam policy | Brevo`, 2026-05-11). Section E names "Clairvoyance, fortune telling and astrology" as a regulated/sensitive industry where *"you must pass through a vetting process via our support team before starting to send"*. Akashic Records + birth-chart readings + Soul Blueprint fall under this category. **Not optional — the policy phrasing is contractual ("must"), not advisory.**
+- **What:** Email `support@brevo.com` BEFORE the first newsletter send (and BEFORE Phase 3 transactional migration). Describe the business: astrology + Akashic Record readings + birth charts, EU residency required (France/Germany/Belgium DC), audience separation in place (newsletter list ≠ paid-customer list), no email attachments (binaries delivered via magic-link-gated R2/Sanity proxy, not over Brevo), double-opt-in on the newsletter form. Request confirmation that the account is cleared for this content category.
+- **Why this matters operationally:** A skip-and-send posture risks opaque account suspension on first complaint signal. The vetting ticket is a one-time ~10-minute action that closes the operational risk for the lifetime of the account.
+- **Phase 1 newsletter form opt-in spec (locked by Brevo Section C, verbatim):** *"the Contact has to check a checkbox to subscribe to your newsletter AND the registration checkbox CAN'T be pre-checked, and explicit: the Contact knows which kind of messages they will receive and for what purpose."* Means: checkbox default-unchecked, descriptive label (e.g. "Monthly notes from Josephine on…" not "Subscribe"), proof-of-opt-in retainable per contact (Brevo's contact-create payload supports `attributes.OPT_IN_AT` — store the ack timestamp + label snapshot just like Art. 6/9 consent records).
+- **Brevo abuse/complaint thresholds** (verified from `help.brevo.com/.../360017299259`, indexed snippets): complaint rate >0.2%, hard-bounce >2%, unsubscribe >1% → automatic account suspension. Tighter than typical (Mailchimp 0.5% complaint, Resend 0.08% complaint / 4% bounce). Audience separation + double-opt-in is the structural mitigation already in the locked plan.
+- **Action sequence (one Max-action, three sub-steps):**
+  1. Sign up at brevo.com (free tier).
+  2. BEFORE building the audience or sending: email `support@brevo.com` with the vetting-ticket content described above. Wait for clearance reply.
+  3. After clearance: provision DKIM/SPF/DMARC for `news.withjosephine.com` subdomain in CF DNS (does NOT touch the existing transactional sender), provision Becky's editor account, build the newsletter audience list as a separate Brevo list from any future paid-customer list.
+- **PAI memory captured:** `feedback_verify_vendor_claims_against_docs.md` already exists from PR #82; this case re-validates the rule. Add a one-liner referencing the Brevo astrology / Section E lookup as a confirmed pattern: read the actual policy PDF (not just indexed snippets) when picking ANY vendor for ANY content category beyond plain SaaS.
+
+### Microsoft Clarity (session replay) — wiring SHIPPED, provisioning pending
+- **Wiring shipped:** `<ClarityScript>` client component mounted from `<AnalyticsBootstrap>` (inherits consent gate + non-prod opt-in), external `<Script src="https://www.clarity.ms/tag/...">` form (CSP-compliant, no nonce concern), `shouldEnableClientObservability(host)` shared gate, CSP `script-src` + `connect-src` extended to `https://*.clarity.ms`, `NEXT_PUBLIC_CLARITY_PROJECT_ID` wired through `.env.local.example` + `.github/workflows/ci.yml`. Privacy policy patch script staged at `scripts/migrate-privacy-clarity.ts` (idempotent, mirrors the Mixpanel patch from PR #57).
+- **Outstanding Max-actions (sequence):**
+  1. Sign up at clarity.microsoft.com → create project → get the 10-char tracking ID.
+  2. Add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH repo Variables (Settings → Variables → Actions → New repository variable). Value = the tracking ID. No env-scoped override needed; same project for prod + staging (staging won't render Clarity unless `NEXT_PUBLIC_TRACK_NON_PROD=1` is also flipped).
+  3. Trigger a production deploy (re-run latest workflow) so the new build inlines the env var.
+  4. Visit the site, click around, confirm `https://www.clarity.ms/tag/<id>` script loads in DevTools Network without CSP errors.
+  5. Run `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-privacy-clarity.ts` against the production Sanity dataset (and again with staging dataset) to add the sub-processor disclosure to the privacy policy. Idempotent — safe to re-run.
+  6. Verify masking in Clarity dashboard: load a few real intake-form sessions, confirm DOB / first_name / last_name / photo fields render as redacted blocks, not actual content. ALL of these masks before opening real traffic.
+
+
+
+
+
+
+### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
+
+**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Three of five original items closed across PR #77 (Bundle 2 — `consentEffectRanRef` ref-guard + `<SavedIndicator>` extraction) and PR #79 (Bundle 4 — confirmed-and-rejected `process.env.*` hoist; see "Why kept inline" below). Remaining:
+
+- **Why `process.env.*` reads in IntakeForm render path were KEPT inline (durable rationale, do not re-propose).** Tried hoisting to both module scope (Bundle 2) and `useMemo([], [])` (Bundle 4); both reverted. Root reason: Next's webpack DefinePlugin already inlines `NEXT_PUBLIC_*` as string literals at build time. The "inline reads" in source compile to bare constants in the output bundle. Module-scope hoist has the same runtime cost AND breaks `vi.stubEnv` test stubs. `useMemo` has the same runtime cost AS the inline reads PLUS hook overhead (cache lookup, deps-array compare). The inline reads ARE the optimal pattern at this build pipeline. Saved as memory `feedback_next_publicenv_inlining.md`.
+
+- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add per-purpose consent granularity).
+
+- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Hoist if/when re-init support is added (currently not on the roadmap). Eager module-scope read is unsafe (SSR breaks); lazy module-scope cache is identical work to the function-scope cache.
+
+- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
+
+
+
+## Code quality (nice-to-fix)
+
+Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, build-time Turnstile bypass assertion, TrustLine cleanup, `clientReferenceId` orphan removal (+ D1 column drop via migration `0003`), `abandonmentRecoveryFiredAt` orphan removal, `void chipTick` refactor, `letter/page.tsx` IIFE simplification, `intake_save_auto` throttle, `@next/bundle-analyzer` wiring, `experimental_taintObjectReference` markers. Inferred-return-type sweep across components/routes — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types` (Explore-agent enumeration found Bundle 4 + earlier sweeps had already covered all but one helper in StarField.tsx; remaining src/lib/** functions retain explicit annotations from PR #79).
+
+- **`legal_full_name` in `SWAP_PRESERVED_KEYS`.** Kept as a fallback for
+  pre-migration localStorage drafts. Drafts have a 30-day TTL — drop after
+  2026-05-29 with confidence.
+- **3× `fetchBookingForm` per `/book` flow.** Each of `/book/[id]`,
+  `/letter`, `/intake` calls it independently. `cache()`-wrapped per request,
+  so 3 separate Worker invocations = 3 fetches. Acceptable today; if Sanity
+  CDN ever throttles, batch the fetch upstream.
+
+### react-hooks/refs sweep (deferred 2026-05-09 from `feat/listen-redesign-and-gifting`)
+
+`pnpm update --recursive --depth=Infinity` on the feature branch (run to
+patch transitive OSV vulns) bundled an `eslint-plugin-react-hooks` upgrade
+that promotes a few previously-warning patterns to errors. Three locations
+got targeted `eslint-disable` lines with reason comments to unblock CI;
+they need a proper refactor before the branch merges to main.
+
+- `src/components/Form/DatePicker/DatePicker.tsx` — `setMonth(selected)`
+  inside an effect (`react-hooks/set-state-in-effect`). Refactor to
+  derived state via `useState` initializer or `useMemo`-driven month.
+- `src/components/IntakeForm/IntakeForm.tsx:194` —
+  `setSwappedFromReadingName(readingName)` inside the restore-on-mount
+  effect. Same rule. Refactor: hoist the swap detection to a
+  `useSyncExternalStore` or a derived value computed at render.
+- `src/components/IntakeForm/IntakeForm.tsx:268` —
+  `currentPageRef.current = currentPage` outside an effect (`react-hooks/refs`).
+  Refactor: replace the ref-mirror pattern with `useEvent`-style stable
+  callback or move the focus-listener registration inside the effect that
+  already knows about `currentPage`.
+- `src/components/IntakeForm/IntakeForm.tsx:632` (`currentSections.map`) —
+  `renderField` closure captures `requestFreshTurnstileToken` which reads
+  `turnstileRef.current` (`react-hooks/refs`). Refactor: pass a stable
+  ref-resolver via context or move Turnstile orchestration up the tree.
+
+### Sanity TypeGen adoption (deferred 2026-05-09)
+
+`next-sanity` 12.4.5 (bundled with the same dep refresh) tightened
+`sanityFetch`'s data type to `ClientReturn<QueryString, unknown>` —
+without registered query→type mappings it falls through to `unknown`.
+Workaround: typed wrapper at `src/lib/sanity/live.ts` that takes an
+explicit `<T>` and asserts the result. Each `fetch.ts` wrapper supplies
+`<T>` per call. Long-term fix is **Sanity TypeGen**: scan `groq` queries
++ schema, emit `query-types.d.ts`, and the typed wrapper becomes
+unnecessary. Setup is `pnpm exec sanity typegen generate` against
+`studio/schema.json`. ~1 session of work plus CI integration so the
+generated file stays current.
+
+---
+
+## UX
+
+### Pre-prod data cleanup (test smoke residue)
+- **Source:** Smoke session 2026-05-01.
+- **What:** Test bookings ran end-to-end against prod (CF Workers + real D1 + real Sanity + real R2). The submissions / mirrored Sanity docs / uploaded photos remain. We don't have a dedicated dev environment yet; everything lands in the prod stores.
+- **⚠️ Bucket-Lock-driven ordering (added 2026-05-13).** This cleanup is now a **hard precondition** before flipping `SANITY_BACKUP_ENABLED=1` on the production worker. Reason: the Phase 3 weekly cron writes the production Sanity NDJSON snapshot into `backups/weekly/<YYYY-Www>/dataset.ndjson` in the `josephine-backups` R2 bucket, which is under a **90-day immutable Bucket Lock**. If test bookings are still present when the first weekly cron fires, the snapshot includes them and the lock prevents deletion for 90 days minimum. See [`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md) → "9b. Production-readiness gate — pre-launch data cleanup".
+- **Action before opening real traffic AND before flipping `SANITY_BACKUP_ENABLED=1` on prod:**
+  1. `pnpm wrangler d1 execute withjosephine-bookings --remote --command "DELETE FROM submissions WHERE email LIKE '%@gmail.com' OR email LIKE '%@example.com'"` — adjust filter to actual test emails.
+  2. Studio → Submissions → delete each test row that mirrored.
+  3. R2 (`withjosephine-booking-photos`): delete the orphaned objects under `submissions/<id>/` for the deleted IDs (or wait for the orphan-reaper cron once it's running).
+  4. Verify by sampling: `*[_type == "submission"] | order(_createdAt desc)[0..5]` in production Sanity + `SELECT id, email, created_at FROM bookings ORDER BY created_at DESC LIMIT 10` against production D1. Both should show zero test entries.
+- **Long-term fix:** stand up a real dev environment (separate D1 DB + Sanity dataset + R2 bucket + Stripe test mode wiring on dedicated subdomain like `dev.withjosephine.com`) so the next round of smoke testing doesn't pollute prod.
+
+### Reading prices — data reconcile + Stripe Payment Link sync (Max+Josephine)
+- **Source:** Smoke session 2026-05-01; full audit 2026-05-06.
+- **Code surfaces fixed in `fix/reading-price-drift-class`:**
+  - Sanity schema validation rule on `priceDisplay` warns when it disagrees with `price` (cents). Studio surfaces a yellow warning on any reading doc whose two fields don't agree.
+  - Prebuild `pnpm sync-readings-from-sanity` writes `src/data/readings.generated.ts` so the runtime fallback (Sanity outage path) tracks whatever Sanity last published. Static-fallback drift class closed.
+- **Still open (data, not code):**
+  - All three reading docs (production + staging) currently fail the validation as of 2026-05-06: `soul-blueprint` price=17900¢/display=$129; `birth-chart` price=9900¢/display=$89; `akashic-record` price=7900¢/display=$89.
+  - Max + Josephine: pick the canonical price for each reading, update `price` (cents) AND `priceDisplay` together in production Sanity, then update the matching Stripe Payment Link via the dashboard (Stripe prices are immutable — this is "create new Price + new Payment Link, swap URL on the reading doc, archive the old"). Staging mirror picks it up automatically through `/api/sanity-sync`.
+  - Once reconciled, consider flipping the schema rule from `warning` to `error` so future drift hard-fails Studio save.
+
+### Manual end-to-end Stripe round-trip
+- **Source:** Punch 2 — partially covered by smoke agent (stopped before
+  Stripe redirect).
+- **What:** Click through Soul Blueprint / Birth Chart / Akashic Record
+  intake all the way through Stripe sandbox checkout, confirm the redirect
+  to `/thank-you/[readingId]?sessionId=cs_test_...`, confirm webhook fires
+  and marks submission paid in Sanity.
+- **Action:** Manual smoke against a Stripe test card before opening real
+  traffic. Required after R2 CORS is configured (Punch 6) since the photo
+  upload will be exercised.
+
+---
+
+## Persistence (ADR-001 follow-ups)
+
+D1 is the source of truth; Sanity is a one-way mirror. The mirror is
+fire-and-forget — drift can happen on Sanity outages.
+
+### D1 → Sanity reconcile cron
+- **Source:** ADR-001.
+- **What:** Periodic diff between D1 (truth) and Sanity (mirror) that
+  pushes any rows Sanity is missing or stale on. Belt-and-braces against
+  fire-and-forget mirror failures.
+- **Action:** Add `/api/cron/reconcile-mirror` route. Walk D1, fetch the
+  matching Sanity doc by `_id`, replay the create/patch if missing or
+  divergent on key fields (`status`, `paidAt`, `deliveredAt`, last
+  `emailsFired` entry).
+
+### Sub-PR #4 — Becky operational layer (split into 4a / 4b / 4c, decided 2026-05-07)
+
+**Background.** ADR-001 acceptance + 2026-05-06 + 2026-05-07 surfacing during the operational-completeness branch. Today's flow is broken for Becky: `voiceNoteUrl` / `pdfUrl` are URL strings in Sanity Studio (plain text inputs), there's no queue/visibility surface, and the only delivery path is `pnpm tsx scripts/mark-delivered.mts` from an engineer terminal.
+
+**Decided 2026-05-07 (research + 4-voice council debate).** Path B+ (D1 columns kept; cron mirrors Sanity → D1 at fire time, listen page unchanged). Decision artefacts: `www/MEMORY/WORK/20260507-045653_subpr4-studio-file-upload-day7-delivery/PRD.md`. Research from Perplexity / Claude / Gemini and council of 4 (SaaS ops architect / solo creator / CS specialist / minimum-mechanism architect) all converged on:
+- Sanity is Becky's surface; D1 stays source-of-truth via the existing mirror (no new D1 columns).
+- Airtight gate = artifact existence as the readiness flag, atomic GROQ predicate at cron fire time. Sanity schema validation is defense in depth; the cron-time GROQ is what's load-bearing.
+- Queue surface = pinned Sanity Structure pane, NOT a dashboard tool. Belongs in 4b.
+- Digest = threshold-triggered (≥1 item due in <48h or overdue), NOT fixed-cadence. Belongs in 4c.
+- Sequence = ship 4a alone, bake 1 week, then 4b + 4c bundled.
+- Shared `isDeliverable(submission)` predicate built once in 4a, reused by 4b/4c (queue filter, digest filter, ICS deadline computation).
+
+#### Sub-PR #4a — file upload + airtight delivery gate ✅ MERGED 2026-05-07 (PR #74)
+- **Scope shipped.** Schema flip (`voiceNote: file`, `readingPdf: file`, validation `required when deliveredAt set` + cross-field gate on `deliveredAt`). New `isDeliverable()` predicate (with unit tests) + `fetchDeliverableSubmissions()` / `fetchUndeliveredSubmissionIds()` GROQ helpers. Day-7-deliver cron sources candidates from Sanity, dereferences `voiceNote.asset->url` + `readingPdf.asset->url`, writes URLs + `deliveredAt` to D1, then sends. Day-7 alert cron queries Sanity for `!defined(deliveredAt)` (not D1 — avoids the race between Becky setting `deliveredAt` and the deliver cron running). `mirrorSubmissionPatch` patch shape drops the 3 delivery fields. `scripts/mark-delivered.mts` deleted. D1 schema unchanged; listen page unchanged; `repository.ts` `Row` / `rowToRecord` unchanged.
+- **Status.** Merged into `feat/operational-completeness` as commit `2d183f4`. Now in 1-week bake against Becky's first real reading. Once verified, integration branch → main as a single PR.
+- **Bake checklist (manual smoke).**
+  1. Becky uploads voice + PDF in Studio → schema validation accepts both files.
+  2. Becky sets `deliveredAt` without files → schema validation BLOCKS save (defense in depth).
+  3. Becky sets `deliveredAt` with both files → schema validation accepts.
+  4. Cron-time GROQ predicate fires → D1 `delivered_at` + `voice_note_url` + `pdf_url` populated within one cron tick.
+  5. Customer Day-7 email arrives with valid `/listen/<token>` URL.
+  6. Listen page renders both audio + PDF download.
+  7. If Becky stalls past 7d, alert cron fires once to Josephine (no duplicate alerts on subsequent ticks).
+
+#### Sub-PRs #4b + #4c — RE-SCOPE BLOCKER (locked 2026-05-07)
+
+**Both deferred pending a broader email-stack rediscussion.** Originally next-up after the #4a bake; the call now is to NOT build #4b or #4c in-codebase before deciding whether the email layer should move to a CRM (Mailchimp / similar — see CLAUDE.md "Post-launch future enhancements → Email automation → outsource to a CRM"). If the CRM migration lands first, parts of #4c (digest cron + per-booking notification) likely move into the CRM's automation layer; building them in-codebase now risks throwaway work.
+
+**Scope of the rediscussion (must happen before any #4b/#4c implementation):**
+- Which CRM (Mailchimp working assumption, but unconfirmed with Becky).
+- What email types migrate: booking transactionals (`order_confirmation`, `day_2`, `day_7_delivery`, `day_7_overdue_alert`)? Marketing? Digest reminders to Becky?
+- What stays in-code: admin notifications (Josephine alert), ICS attachment on per-booking email (calendar-attachment generation isn't a CRM primitive), `/api/sanity-sync` mirror cron.
+- The Studio queue pane (#4b) is independent of email — could ship standalone if the CRM discussion stalls. Council-locked split rationale (research artefacts in `www/MEMORY/WORK/20260507-045653_subpr4-studio-file-upload-day7-delivery/PRD.md`) still stands.
+
+Original scope kept below for reference.
+
+#### Sub-PR #4b — Studio queue view (FOLLOW-UP, parked pending rediscussion)
+- **Scope.** Custom Sanity Structure pane "Awaiting delivery" — pinned in Studio sidebar, GROQ-filtered to `_type == "submission" && status == "paid" && !defined(deliveredAt)`, sorted by `paidAt asc` (oldest first). Submission preview subtitle shows days-since-paid as plain text (e.g. "Day 4 of 7"). No traffic-light badges yet — defer until Becky asks.
+- **Reuses from 4a.** The `isDeliverable()` predicate inverse for the filter; the GROQ shape from `fetchDeliverableSubmissions()`.
+- **Effort.** ~1 day.
+
+#### Sub-PR #4c — Becky-proactive pings (FOLLOW-UP, parked pending rediscussion)
+- **Scope.** (1) New Resend cron `email-becky-digest` at 09:00 ET that fires only when ≥1 submission is overdue (>7d since paid + no `deliveredAt`) OR due within 48h. New Sanity siteSettings field `practitionerOpsEmail` for the recipient (Becky's address). Threshold-triggered = no fixed cadence — silence on quiet days is the signal. (2) ICS attachment on the per-booking notification email (sent at payment time): `.ics` file with `METHOD:PUBLISH` (NOT REQUEST — avoids attendee-response UI), `VTIMEZONE` block + `TZID`-qualified `DTSTART`/`DTEND`, deadline = `paidAt + 6d` (24h buffer before the 7d SLA). Auto-populates Becky's calendar without OAuth.
+- **Declined options (durable record):** 48h-before-deadline single-shot reminders (overlap with digest); Telegram/Pushover phone push (channel proliferation, all sources warn against it at this scale).
+- **Reuses from 4a.** `isDeliverable()` for the digest filter.
+- **Effort.** ~1 day.
+
+**Why split (locked rationale):** schema migrations on live Sanity always surface edge cases (existing string-field docs, asset reference shape mismatches). Shipping the gate alone lets it bake under real Becky usage before layering visibility + ping surfaces on top of it. Council 3/4 endorsed the split; the dissenter (M4, minimum-mechanism architect) conceded once migration risk was named.
+
+
+### Sentry follow-ups (post-`@sentry/cloudflare` ship)
+- **Shipped:** server-side error capture via `Sentry.withSentry` wrap in `custom-worker.ts` (PR #70). Client-side React error capture via `@sentry/browser` from `error.tsx` / `global-error.tsx`, gated on the same consent banner as Mixpanel; client-side sourcemap upload to Sentry via a `pnpm sentry:sourcemaps` CI step (the @sentry/browser PR). DSN is the kill switch — unset `SENTRY_DSN` (server) / `NEXT_PUBLIC_SENTRY_DSN` (client) = silent no-op.
+- **Open follow-ups:**
+  1. **Worker-bundle sourcemap upload to Sentry** — blocked upstream on sentry-javascript#19213. `sentry-cli sourcemaps inject/upload` succeeds against `.open-next/worker.js[.map]` but runtime stack frames don't reference the uploaded Debug IDs because something in OpenNext's worker init strips them. Until upstream lands a fix, server-side stack traces from `Sentry.withSentry` reach Sentry minified. Acceptable tradeoff — `error.digest` provides per-error correlation; client-side captures are symbolicated.
+  2. **Validate against the open AsyncLocalStorage bug** — sentry-javascript#18842 affects the `@sentry/nextjs` `onRequestError` hook, which we deliberately avoided. Worth re-checking in 6 months; if upstream resolves it, `@sentry/nextjs` would unlock automatic request-context correlation that `@sentry/cloudflare` standalone doesn't provide.
+
+### D1 live-write smoke test (immediately post-deploy)
+- **Source:** ADR-001 acceptance.
+- **What:** First post-deploy verification that `/api/booking` actually
+  writes to prod D1 (not just our unit tests against in-memory SQLite).
+  Submit one real booking via the form (test data, junk email), confirm
+  the row appears in `wrangler d1 execute --command "SELECT * FROM submissions" --remote`,
+  then clean it up. Also confirm Sanity mirror landed via Studio.
+- **Action:** Run within an hour of the first post-merge deploy. If
+  drift, check Worker logs (`wrangler tail`) for D1-HTTP errors.
+
+### Demote Sanity submission schema to read-only proxy
+- **Source:** ADR-001 future state.
+- **What:** Currently Studio shows submissions via the standard editable
+  document type. Edits get clobbered by mirror sync. Replace with a
+  custom Studio document type that fetches via API rather than holding
+  its own copy.
+- **Action:** Defer until ops actually use Studio for submissions.
+
+## Phase 1 magic-link auth — review deferrals (LAUNCH-BLOCKING)
+
+5-vantage code review on 2026-05-10 (Engineer + Pentester + /simplify Reuse/Quality/Efficiency) surfaced ship-blockers (#1–#5) and should-fix items (#6–#11) that landed in the same PR as the auth foundation. The items below were deferred — they MUST land before apex unpark / Stripe live-mode flip. Tracked here so they don't drift.
+
+**Hard gate: every item in this section is launch-blocking.** Apex stays parked until they're shipped or explicitly closed-as-won't-do.
+
+### A. Deferred from review (correctness/security follow-ups)
+
+#### A-1. Unicode NFC normalization in `normalizeEmail`
+- **Source:** Code review Pentester [LOW-7] 2026-05-10.
+- **What:** `src/lib/auth/users.ts` `normalizeEmail` does `.trim().toLowerCase()` only — no `.normalize('NFC')`. A user whose email client autocompletes a decomposed form (`café@x.com`) while Stripe stored the precomposed form (`café@x.com`) will be locked out at email-match.
+- **Action:** Add `.normalize('NFC')` in `normalizeEmail`; apply at both write (getOrCreateUser) and read (redeemMagicLink) sites. Bundle with the auth-polish PR.
+
+#### A-3. Constant-time token-hash comparison
+- **Source:** Code review Engineer [NIT] 2026-05-10.
+- **What:** SQLite `WHERE token_hash = ?` short-circuits string equality; over a high-volume endpoint with timing observability this leaks bits. Practical risk is low because the attacker would need to generate the SHA-256 hash *prefix* (not the raw token), but defense-in-depth is cheap.
+- **Action:** Phase 4 hardening. Apply `crypto.timingSafeEqual` after the lookup in `redeemMagicLink` + `getActiveSession`. Or accept the residual risk and document.
+
+#### A-5. Session cookie rotation on use
+- **Source:** Code review Engineer [surprise] 2026-05-10.
+- **What:** 7d session cookie with a static value + Level 1 email-match only + no IP binding = stolen cookie is good for the full TTL with zero detection signal. Standard pattern, but combined with the rest of the threat model it's the residual risk.
+- **Action:** Phase 4 threat-model doc + (optional) sliding-expiry-with-rotation. Decide: document residual risk vs implement rotation.
+
+#### A-6. Cleanup cron for stale unconsumed magic links
+- **Source:** Code review Engineer [surprise] 2026-05-10.
+- **What:** No upper bound on how many unconsumed magic links can exist for a user. An attacker (or buggy client) could trigger thousands of issuances. Each row is small but the table grows unbounded.
+- **Action:** Phase 4 cleanup-cron addition. `DELETE FROM listen_magic_link WHERE expires_at < (now - 7 days)`. Add to `/api/cron/cleanup`.
+
+#### A-7. `idx_listen_audit_user` write-amp profiling
+- **Source:** Code review Efficiency [INDEX] 2026-05-10.
+- **What:** Every audit row writes 4 indexes (PK + idx_user + idx_submission + idx_timestamp). Audit fires on every magic-link issue, every redeem branch, every session start, every session-denial (after fix #7 lands). If audit is queried by `submission_id` 99% of the time, `idx_listen_audit_user` is overhead.
+- **Action:** Profile after 30d of production traffic. Drop the index if not queried. Lightweight optimization.
+
+### B. Polish (`/simplify` follow-up batch — single PR after main PR lands)
+
+These are noise-level items the 5-vantage review surfaced. Bundle into one `/simplify` PR after the main session-1 auth foundation merges.
+
+#### B-1. Lift `sha256Hex` into `src/lib/hmac.ts`
+- **Source:** Code review Reuse [REUSE-OPP] 2026-05-10.
+- **What:** `src/lib/auth/listenSession.ts` defines a private `sha256Hex` that wraps `crypto.subtle.digest` + manual hex conversion. `src/lib/hmac.ts` already exports `bytesToHex` — exactly the same byte-to-hex loop.
+- **Action:** Export `sha256Hex` from `src/lib/hmac.ts` (reuses `TEXT_ENCODER` + `bytesToHex`). Import in `listenSession.ts`. `src/lib/auth/users.ts` doesn't currently use it but will after fix #2 lands — same import.
+
+#### B-2. Use `normalizeEmail` instead of inline `trim().toLowerCase()`
+- **Source:** Code review Reuse [REUSE-OPP] 2026-05-10.
+- **What:** `src/lib/auth/listenSession.ts:192` currently does `args.claimedEmail.trim().toLowerCase()` inline; `users.ts:19` already exports `normalizeEmail`.
+- **Action:** Import + use `normalizeEmail`. One-source-of-truth so the future NFC fix (A-1) auto-propagates.
+
+#### B-3. `seedSubmissionForUser` test helper → `repo.createSubmission`
+- **Source:** Code review Reuse + Quality + Engineer (3-lens convergence) 2026-05-10.
+- **What:** `src/lib/auth/listenSession.test.ts` writes raw SQL to seed test rows, bypassing `createSubmission`. Drift risk: any future column added to `submissions` won't be exercised by these tests.
+- **Action:** Lift to `src/test/seeds/submissions.ts` with a richer signature (`{ id, userId, status?, email?, readingSlug? }`). Reuse from Phase 2/5 tests.
+
+#### B-4. `denyAndAudit` helper to collapse 4× duplicated audit writes
+- **Source:** Code review Quality [NIT] 2026-05-10.
+- **What:** `redeemMagicLink` repeats the same `await writeAudit({...}); return { ok: false, reason }` block at 4–5 error branches. Real divergence already showed up: `link_invalid` branch was missing `userAgentHash` that `link_email_mismatch` included.
+- **Action:** Extract `denyAndAudit(reason, eventType, { userId, ipHash, userAgentHash, submissionId, now })`. Enforce consistency by construction.
+
+#### B-5. Drop "iter 2" iteration markers from comments
+- **Source:** Code review Quality [NOISE] 2026-05-10.
+- **What:** `migrations/0004_listen_auth.sql:1` says "user-keyed (iter 2)"; `listenSession.ts` header has "Identity model (iter 2)" preamble. Iteration numbers belong in git, not the source.
+- **Action:** Strip iteration markers; keep substantive content.
+
+#### B-7. Drop tautological `constants` describe block
+- **Source:** Code review Engineer [NIT] 2026-05-10.
+- **What:** `src/lib/auth/listenSession.test.ts` has a `describe("constants")` block asserting literal numbers (`MAGIC_LINK_TTL_MS === 24*60*60*1000`). This is testing TypeScript, not behavior.
+- **Action:** Delete the block.
+
+#### B-8. Make `dailySalt` rotation test boundary-explicit
+- **Source:** Code review Engineer [BUG-test] 2026-05-10.
+- **What:** Current "different day, different hash" test uses `Date.UTC(2026, 4, 9, 12, 0, 0)` + 24h, which works but is fragile across timezone/locale assumptions.
+- **Action:** Construct `day1 = day_n * 86_400_000` and `day2 = (day_n+1) * 86_400_000` explicitly so the test asserts the floor-arithmetic boundary directly.
+
+#### B-10. Add explicit "forwarded-link Level 1 success path" test
+- **Source:** Code review Engineer [BUG-test] 2026-05-10.
+- **What:** No test explicitly frames the case "issued for alice; redeem with claimedEmail='alice@example.com' succeeds and grants alice's session". The current happy-path test covers this mechanically but not as the documented Level 1 hardening property.
+- **Action:** Add a clearly-named test asserting the property + invariant comment.
+
+---
+
+## Phase 1 session 3 — /simplify deferrals + Pentester deferrals (LAUNCH-BLOCKING)
+
+Surfaced by the 3-reviewer /simplify pass + Pentester gate on `feat/listen-session3-redesign` 2026-05-11. The session-3 fixes that landed in-PR are recorded in the PRD verification block; the items below were filed as a follow-up so the main PR stayed scoped.
+
+**Hard gate: every item in this section is launch-blocking** (consistent with the session 1+2 deferral policy).
+
+#### S3-A1. `findSubmissionById` timing-oracle on `/listen/[id]`
+- **Source:** Pentester HIGH-1, 2026-05-11.
+- **What:** Logged-in attacker probing `/listen/[id]` with a random submissionId triggers a D1 SELECT regardless. Index hit vs miss is timing-distinguishable, so a session-bearing attacker can enumerate "submission exists" without ownership.
+- **Why accepted-for-now:** Submission IDs are opaque CUID2 (~2^140 search space). The leak is binary "exists in D1" with no recipient/content info. Any logged-in user can already enumerate their own readings via `/my-readings`; this is a strictly weaker primitive.
+- **Action:** Defer to Phase 4 hardening alongside the `crypto.timingSafeEqual` work (A-3). Cheap fix when it lands: speculatively call `findSubmissionRecipientUserId` even on no-session paths and discard, so all 3 signIn-producing branches do the same I/O.
+
+#### S3-B1. Extract `applyTemplateVars(text, { firstName, readingName })` helper
+- **Source:** /simplify Reuse R-3, 2026-05-11.
+- **What:** Three sites template `{firstName}` / `{readingName}`: `Day7Delivery.tsx#template`, `resend.tsx#sendDay7Delivery` (subject), `ListenView.tsx#fillTemplate` (heading). Each is 2–3 lines of `replaceAll`. Drift class: someone adds `{readingPriceDisplay}` to one site, others silently miss it.
+- **Action:** Lift to `src/lib/emails/template.ts` (or `src/lib/templating.ts`) exporting `applyTemplateVars(text, vars: Partial<{ firstName: string; readingName: string }>)`. Reuse from all 3 sites.
+
+#### S3-B2. Typed `ListenOutcome` union shared across listen-page state + redirect routes
+- **Source:** /simplify Quality Q-4, 2026-05-11.
+- **What:** Three files (`src/app/listen/[id]/page.tsx`, `src/app/api/auth/magic-link/route.ts`, `src/app/api/auth/magic-link/verify/route.ts`) all reference the string literals `"sent"`, `"rested"`, `"throttled"` in URL search params / search-param checks. Drift risk: rename one without renaming the others.
+- **Action:** Extract `type ListenOutcome = "sent" | "rested" | "throttled"` to a shared module (e.g. `src/lib/auth/listenOutcomes.ts`) + use across the 3 files.
+
+#### S3-B3. State-forgery UX defense for `?error=rested` / `?sent=1` (Pentester LOW-1)
+- **Source:** Pentester LOW-1, 2026-05-11.
+- **What:** Attacker who knows a victim's submissionId can craft `https://withjosephine.com/listen/sub_x?error=rested` and trick the victim into clicking "Send me a fresh link". The form posts to `/api/auth/magic-link` which only sends email to the user-typed address — no destructive primitive. Confusion-only.
+- **Action:** Accept. Document residual risk in privacy/security notes when launching. No code change.
+
+#### S3-B4. Sanity-editor mailto subject header injection (Pentester LOW-2)
+- **Source:** Pentester LOW-2, 2026-05-11.
+- **What:** `copy.throttledMailtoSubject` / `copy.assetTroubleMailtoSubject` flow through `encodeURIComponent` then into a `mailto:` URL. Some mail clients still decode `%0D%0A` into header lines (`Cc:`, `Bcc:`). Threat actor must already be a Sanity editor — within their authorized role.
+- **Action:** Accept OR add a Studio-side validation rule rejecting CR/LF in those fields. One-liner if it ships.
+
+#### S3-B5. Audit row on magic-link throttle (Pentester LOW-3)
+- **Source:** Pentester LOW-3, 2026-05-11.
+- **What:** `/api/auth/magic-link` throttle fires before user lookup, so `user_id` is unknown. Currently silent. `writeAudit` accepts `userId: null`; filling this in would distinguish "throttled bursts from one IP" from "no traffic" in the audit table.
+- **Action:** Add a `link_send_throttled` event_type + write on the rate-limit branch with `user_id: null`. Cheap addition for forensics.
+
+#### S3-B7. `fetchCopyWithDefaults(loadDefaults, loadFetcher)` helper for Resend send paths
+- **Source:** /simplify Reuse review on Phase 2 batch 2, 2026-05-11.
+- **What:** Four send functions in `src/lib/resend.tsx` (`sendMagicLink`, `sendDay7Delivery`, `sendOrderConfirmation`, `sendDay2Started`) repeat the identical 4-line shape: lazy `await import(defaults)` + lazy `await import(fetch)` + `fetchX().catch(() => null)` + `{ ...DEFAULTS, ...(sanity ?? {}) }`. A `fetchCopyWithDefaults<T>(loadDefaults, loadFetcher)` helper would collapse 16 lines → 4 and centralize the swallow-error policy.
+- **Why deferred:** The lazy-import is the load-bearing part (avoids pulling the Sanity client into the Resend worker bundle when emails are skipped). Abstracting the dynamic-import callbacks makes the bundler analysis harder to read. Land alongside S3-B1's `interpolate()` so the email-send path gets one canonical 2-line pattern in one PR.
+
+#### S3-B8. Thank-you override fallback chain — drop the dead hardcoded literals
+- **Source:** /simplify Quality review on Phase 2 batch 2, 2026-05-11.
+- **What:** `src/app/thank-you/[readingId]/page.tsx:105-126` has 6 fields using `override?.x ?? thankYouPageContent?.x ?? "hardcoded literal"`. The seed script (`scripts/seed-customer-emails-and-pages.mts` + existing `seed-content-wiring-sweep.mts`) makes the middle term guaranteed-present in any seeded dataset, so the hardcoded literal tail is dead in practice — only live as belt-and-braces if the singleton is ever deleted.
+- **Why deferred:** Belt-and-braces value is small but real. Fixing means trusting the seed script to be the sole source of truth, which is a stronger guarantee than the current code accepts. Land when the editorial workflow has 1+ week of stable runtime.
+
+#### S3-B6. Welcome-back ribbon — masked-email reveal in State 4
+- **Source:** UX Engineer spec — "Check your email" + masked email + send-another link.
+- **What:** The current `CheckEmailCard` doesn't actually render a masked email (no email is known at that point — the user just submitted the form to the listen page route which doesn't echo the submitted email back). The spec is aspirational; needs either (a) a query-param-encoded masked-email pass-through, or (b) "Check the email you just entered" copy that doesn't require the address.
+- **Action:** UX Engineer pass to decide between (a) and (b). Pure copy decision if (b); ~10 lines if (a).
+
+---
+
+
+---
+
+---
+
+### Apex unpark — Stripe live-mode flip target (captured 2026-05-06 during PR-S1)
+
+Locked here because the dev/staging/prod separation plan deliberately scoped Stripe live-mode out (PR-S1 kept all 3 envs on test mode for now since prod apex is parked). When apex unparks for real customer traffic, this is the exact set of changes needed:
+
+1. **Stripe (Live mode)** — register a live webhook endpoint at `https://withjosephine.com/api/stripe/webhook`, subscribe to the same event set as the existing test-mode webhook. Capture the live signing secret.
+2. **Stripe (Live mode)** — create 3 new Payment Links (one per reading: Soul Blueprint $129, Birth Chart $99, Akashic Record $79) with `success_url = https://withjosephine.com/thank-you/{slug}?sessionId={CHECKOUT_SESSION_ID}`. Capture the URLs.
+2a. **Stripe (Test mode existing PLs)** — during PR-S1 (2026-05-06) the existing 3 test-mode PL success_urls were pointed at `https://staging.withjosephine.com/thank-you/...` so staging QA works while apex is parked. After live-mode PLs replace them in production Sanity (step 3 below), the test-mode set can stay pointing at staging permanently — staging is the only consumer of the test-mode set going forward.
+3. **Sanity production dataset** — update each `reading` doc's `stripePaymentLink` field to the new live-mode URL. Path: `*[_type == "reading" && slug.current == "<slug>"]`. Use Studio Presentation tool or `sanity documents create/replace` CLI mutation. Per the saved fetch-before-edit rule, fetch the live doc first, edit from that base.
+4. **Worker production secrets** — `wrangler secret put STRIPE_SECRET_KEY` (paste `sk_live_*`), `wrangler secret put STRIPE_WEBHOOK_SECRET` (paste live signing secret from step 1).
+5. **GH Environment production variables** — flip `NEXT_PUBLIC_UNDER_CONSTRUCTION` from `1` → `0`. Redeploy.
+6. **Becky-coordination** — only proceed after Becky's reading delivery is complete. Her current booking flow uses the test-mode PLs; flipping mid-flight strands her transaction in test mode while the dataset says live.
+
+Independence from staging-separation: this is fully orthogonal. None of the staging PRs depend on this; this doesn't block any staging PR. Lives in the apex-unpark plan when that's drafted.
+
+---
+
+## How to use this doc
+
+When an item lands, delete it from this file. When a new "we'll defer
+this" decision happens during a session, add it here so it doesn't drift
+out of memory in a commit message.
