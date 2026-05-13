@@ -619,11 +619,11 @@ Hero / HowItWorks / Footer / Navigation migrated from `content ?? DEFAULTS` whol
 
 ### Audit: orphaned schema fields — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
 
-PROJECTED-BUT-UNUSED follow-up complete. 9 fields deleted, 1 wired up (`bookingPage.paymentButtonText` → PageNav), 6 new optional fields added (PageNav nav copy, PageIndicator tagline, ContactForm success state). 4 audit "ambiguous" entries verified as CONSUMED (`bookingForm.entryPageContent.*`, `bookingForm.pagination.overrides`, `bookingForm.loadingStateCopy`, `bookingForm.nonRefundableNotice` — schema description fixed). Full per-field landscape in `www/docs/audits/orphan-schema-fields.md`. Manual seed via `scripts/seed-quality-sweep-fields.mts` against production + staging (Max-action).
+PROJECTED-BUT-UNUSED follow-up complete. 9 fields deleted, 1 wired up (`bookingPage.paymentButtonText` → PageNav), 6 new optional fields added (PageNav nav copy, PageIndicator tagline, ContactForm success state). 4 audit "ambiguous" entries verified as CONSUMED (`bookingForm.entryPageContent.*`, `bookingForm.pagination.overrides`, `bookingForm.loadingStateCopy`, `bookingForm.nonRefundableNotice` — schema description fixed). Manual seed via `scripts/seed-quality-sweep-fields.mts` against production + staging (Max-action).
 
 ### Audit: hardcoded customer-facing copy — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types`
 
-H3/H4/H5 shipped (SubmitOverlay loading copy via Sanity seed; ContactForm success state via `landingPage.contactSection` extension; IntakeForm PageNav labels via `bookingPage.paymentButtonText` + new `bookingForm.nextButtonText` + `saveAndContinueLaterText`). M1/M2/M3/M5 dropped with durable rationale. M4 PageIndicator resolved via new `bookingForm.pageIndicatorTagline` optional knob. Email-template copy remains out-of-scope (CRM migration path). Full landscape in `www/docs/audits/hardcoded-copy.md`.
+H3/H4/H5 shipped (SubmitOverlay loading copy via Sanity seed; ContactForm success state via `landingPage.contactSection` extension; IntakeForm PageNav labels via `bookingPage.paymentButtonText` + new `bookingForm.nextButtonText` + `saveAndContinueLaterText`). M1/M2/M3/M5 dropped with durable rationale. M4 PageIndicator resolved via new `bookingForm.pageIndicatorTagline` optional knob. Email-template copy remains out-of-scope (CRM migration path).
 
 ### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
 
