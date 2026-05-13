@@ -1,6 +1,8 @@
-# Phase 10 — Deploy Foundation Runbook
+# Cloudflare Setup Runbook
 
-> **Status:** active, supersedes prior dashboard-auto-deploy draft.
+Operational reference for provisioning the Cloudflare side of the stack: Workers, D1, R2, Custom Domains, Turnstile, environment separation. Used when standing up a new environment or recovering an account.
+
+> **Status:** active reference.
 > **Architecture decisions** (Council + Max, 2026-04-15):
 >
 > 1. **Cloudflare Workers** via `@opennextjs/cloudflare` (NOT Pages)

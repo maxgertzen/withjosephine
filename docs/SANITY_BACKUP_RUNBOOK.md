@@ -5,7 +5,6 @@ End-to-end provisioning steps to take the Sanity-dataset backup system from "cod
 Companion docs:
 
 - [`POST_LAUNCH_BACKLOG.md`](./POST_LAUNCH_BACKLOG.md) — Phase 3 + Phase 3.5 backlog entries (source of the spec).
-- [`MASTER_PLAN_LISTEN_DASHBOARD_BACKUP_COMPLIANCE.md`](./MASTER_PLAN_LISTEN_DASHBOARD_BACKUP_COMPLIANCE.md) — architecture context.
 - [`STAGING_RUNBOOK.md`](./STAGING_RUNBOOK.md) — format reference for "do staging first, verify, then prod".
 
 ---
