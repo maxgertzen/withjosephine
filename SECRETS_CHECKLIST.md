@@ -2,7 +2,7 @@
 
 Operational checklist for everything configured outside the codebase: Cloudflare Worker secrets and Variables, Stripe / Turnstile / Resend setup, R2 bucket provisioning, and the local `.env.local` template. Initial provisioning runs top-to-bottom; ongoing use is as a per-secret lookup.
 
-This file documents the **stack of secrets that exist today**. For newer additions (gift Durable Object dispatch, Sanity backup webhook HMAC, magic-link auth, admin API key, Mixpanel service account, Sentry server DSN), see the bindings listed in `wrangler.jsonc` plus the per-feature setup notes in `docs/STAGING_RUNBOOK.md` and `docs/SANITY_BACKUP_RUNBOOK.md`. The table below covers the core booking + payments stack.
+This file documents the **stack of secrets that exist today**. For newer additions (gift Durable Object dispatch, Sanity backup webhook HMAC, magic-link auth, admin API key, Mixpanel service account, Sentry server DSN), see the bindings listed in `wrangler.jsonc` plus the per-feature setup notes in `docs/runbooks/STAGING_RUNBOOK.md` and `docs/runbooks/SANITY_BACKUP_RUNBOOK.md`. The table below covers the core booking + payments stack.
 
 ---
 

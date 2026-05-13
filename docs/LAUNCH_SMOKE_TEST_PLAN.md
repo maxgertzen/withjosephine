@@ -159,7 +159,7 @@ wrangler secret put MIXPANEL_SERVICE_ACCOUNT_SECRET --env staging
 **What it covers.** The full Phase 3 + 3.5 backup path — weekly cron writes NDJSON + assets to R2, live webhook mirrors voice/PDF on publish. Added 2026-05-13 after staging provisioning surfaced multiple "config drift caught at provisioning time" gaps that would have been smoke-time finds.
 
 **Pre-requisites.**
-- All steps 1–9 of [`SANITY_BACKUP_RUNBOOK.md`](./SANITY_BACKUP_RUNBOOK.md) completed against staging.
+- All steps 1–9 of [`runbooks/SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md) completed against staging.
 - `CF_ACCESS_CLIENT_ID` + `CF_ACCESS_CLIENT_SECRET` in `.env.staging` (provisioned per runbook 9a Pre-flight A).
 - CF Access Bypass policy for `/api/sanity-backup-webhook` on staging (runbook 9a Pre-flight B).
 - `SANITY_BACKUP_ENABLED=1` on the staging worker.

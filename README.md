@@ -146,18 +146,17 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Documentation Map
 
-| Document                                                    | Purpose                                                                                       |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`docs/CHANGELOG.md`](docs/CHANGELOG.md)                     | Per-PR shipped history with summaries.                                                        |
-| [`docs/ADR-001-persistence.md`](docs/ADR-001-persistence.md) | Decision: D1 as source of truth for bookings; Sanity mirrors for editor workflow.             |
-| [`docs/STAGING_RUNBOOK.md`](docs/STAGING_RUNBOOK.md)         | Staging environment: bindings, secrets, smoke flow, troubleshooting.                          |
-| [`docs/SANITY_BACKUP_RUNBOOK.md`](docs/SANITY_BACKUP_RUNBOOK.md) | Weekly dataset backup cron — NDJSON streaming to R2 with Bucket Locks.                    |
-| [`docs/LAUNCH_SMOKE_TEST_PLAN.md`](docs/LAUNCH_SMOKE_TEST_PLAN.md) | End-to-end smoke tests for staging and production launches.                              |
-| [`docs/POST_LAUNCH_BACKLOG.md`](docs/POST_LAUNCH_BACKLOG.md) | Deferred items — security follow-ups, infra cleanups, code polish.                            |
-| [`docs/D1_MIGRATIONS.md`](docs/D1_MIGRATIONS.md)             | D1 migration conventions and applied state.                                                  |
-| [`docs/MIXPANEL_FUNNELS.md`](docs/MIXPANEL_FUNNELS.md)       | Funnel definitions and instrumented event names.                                              |
-| [`docs/CLOUDFLARE_SETUP.md`](docs/CLOUDFLARE_SETUP.md) | Cloudflare provisioning reference — bindings, secrets, Custom Domains, environment separation. |
-| [`SECRETS_CHECKLIST.md`](SECRETS_CHECKLIST.md)               | Inventory of every secret and where it's set (CF, Sanity, Stripe, GitHub Actions).            |
+| Document                                                                          | Purpose                                                                                       |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md)                                          | Per-PR shipped history with summaries.                                                        |
+| [`docs/ADR-001-persistence.md`](docs/ADR-001-persistence.md)                      | Decision: D1 as source of truth for bookings; Sanity mirrors for editor workflow.             |
+| [`docs/POST_LAUNCH_BACKLOG.md`](docs/POST_LAUNCH_BACKLOG.md)                      | Deferred items — security follow-ups, infra cleanups, code polish.                            |
+| [`docs/LAUNCH_SMOKE_TEST_PLAN.md`](docs/LAUNCH_SMOKE_TEST_PLAN.md)                | End-to-end smoke tests for staging and production launches.                                   |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md)                                        | D1 migrations, Sanity dataset re-seeding, Mixpanel funnels — recurring operational tasks.     |
+| [`docs/runbooks/STAGING_RUNBOOK.md`](docs/runbooks/STAGING_RUNBOOK.md)            | Staging environment provisioning + Cloudflare Access patterns + verification.                 |
+| [`docs/runbooks/CLOUDFLARE_SETUP.md`](docs/runbooks/CLOUDFLARE_SETUP.md)          | Cloudflare provisioning reference — bindings, secrets, Custom Domains, env separation.        |
+| [`docs/runbooks/SANITY_BACKUP_RUNBOOK.md`](docs/runbooks/SANITY_BACKUP_RUNBOOK.md) | Weekly dataset backup cron — NDJSON streaming to R2 with Bucket Locks + live mirror.         |
+| [`SECRETS_CHECKLIST.md`](SECRETS_CHECKLIST.md)                                    | Inventory of every secret and where it's set (CF, Sanity, Stripe, GitHub Actions).            |
 
 ## Conventions
 

@@ -8,8 +8,8 @@
 -- Safe to re-run: `INSERT OR IGNORE` de-dupes if rows already exist.
 -- Safe in CI / local: `CREATE TABLE IF NOT EXISTS` is no-op when present.
 --
--- See www/docs/D1_MIGRATIONS.md for the full rationale and the
--- run-this-once command.
+-- See www/docs/OPERATIONS.md ("D1 Migrations" section) for the full
+-- rationale and the run-this-once command.
 
 CREATE TABLE IF NOT EXISTS d1_migrations (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
