@@ -82,7 +82,9 @@ function buildSpecs(): FixtureSpec[] {
 
 async function main() {
   const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET ?? "production";
+  // PRD D-16 says fixtures come from staging. Override with FIXTURE_SOURCE_DATASET
+  // if you need to regen against a different dataset (e.g. a dedicated e2e-source).
+  const dataset = process.env.FIXTURE_SOURCE_DATASET ?? "staging";
   const token = process.env.SANITY_READ_TOKEN;
 
   if (!projectId) {
