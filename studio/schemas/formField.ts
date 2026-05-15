@@ -65,12 +65,21 @@ export const formField = defineType({
           { title: "Select (single)", value: "select" },
           { title: "Multi-Select (exact count)", value: "multiSelectExact" },
           { title: "File Upload", value: "fileUpload" },
-          { title: "Consent Checkbox", value: "consent" },
           { title: "Place Autocomplete", value: "placeAutocomplete" },
         ],
         layout: "dropdown",
       },
-      validation: (rule) => rule.required(),
+      // Legacy bookingForm documents may still carry `type: "consent"` until
+      // the strip-consent migration removes them. The render path filters
+      // them out; the dynamic schema skips them; this validator surfaces the
+      // deprecation in Studio so editors know it's a stranded value.
+      validation: (rule) =>
+        rule.required().custom((value: string | undefined) => {
+          if (value === "consent") {
+            return "The 'Consent Checkbox' type is deprecated. The art6/art9/cooling-off acknowledgments are now hardcoded — remove this field or change its type.";
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "placeholder",

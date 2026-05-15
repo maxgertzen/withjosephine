@@ -19,7 +19,7 @@ export const ART6_CONSENT_LABEL =
 export const ART9_CONSENT_LABEL =
   "I explicitly consent to Josephine using my birth chart and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal astrology and Akashic Record reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.";
 
-// PRIVACY-COUNSEL-PENDING — Max pinged Counsel 2026-05-15; verbatim text lands in a follow-up commit.
+// PRIVACY-COUNSEL-PENDING — verbatim text pending counsel sign-off.
 export const COOLING_OFF_CONSENT_LABEL =
   "I understand readings are non-refundable and waive my 14-day cooling-off right under EU Consumer Rights Directive 2011/83 Art. 16(m).";
 
@@ -50,4 +50,31 @@ export function emptyConsentSnapshot(): LegalConsentSnapshot {
     art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
     coolingOff: { acknowledged: false, labelText: COOLING_OFF_CONSENT_LABEL },
   };
+}
+
+export type ConsentBodyFlags = {
+  art6Consent: boolean;
+  art9Consent?: boolean;
+  coolingOffConsent: boolean;
+};
+
+export function consentSnapshotFromBody(flags: ConsentBodyFlags): LegalConsentSnapshot {
+  return {
+    art6: { acknowledged: flags.art6Consent, labelText: ART6_CONSENT_LABEL },
+    art9: {
+      acknowledged: flags.art9Consent ?? false,
+      labelText: ART9_CONSENT_LABEL,
+    },
+    coolingOff: {
+      acknowledged: flags.coolingOffConsent,
+      labelText: COOLING_OFF_CONSENT_LABEL,
+    },
+  };
+}
+
+export function serializeAcknowledgedLabels(snapshot: LegalConsentSnapshot): string {
+  return [snapshot.art6, snapshot.art9, snapshot.coolingOff]
+    .filter((ack) => ack.acknowledged)
+    .map((ack) => ack.labelText)
+    .join("\n---\n");
 }

@@ -198,16 +198,13 @@ export function IntakeForm({
     emptyConsentSnapshot,
   );
   const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsErrors>({});
-  const clearConsentError = useCallback(
-    (key: keyof LegalAcknowledgmentsErrors) =>
-      setConsentErrors((prev) => {
-        if (prev[key] === undefined) return prev;
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }),
-    [],
-  );
+  const clearConsentError = (key: keyof LegalAcknowledgmentsErrors) =>
+    setConsentErrors((prev) => {
+      if (prev[key] === undefined) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);

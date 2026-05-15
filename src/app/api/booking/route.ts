@@ -6,11 +6,9 @@ import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
-  ART6_CONSENT_LABEL,
-  ART9_CONSENT_LABEL,
-  COOLING_OFF_CONSENT_LABEL,
+  consentSnapshotFromBody,
   isFullyConsented,
-  type LegalConsentSnapshot,
+  serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
@@ -41,23 +39,6 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
   );
 }
 
-function buildConsentSnapshot(body: BookingRequestBody): LegalConsentSnapshot {
-  return {
-    art6: { acknowledged: body.art6Consent, labelText: ART6_CONSENT_LABEL },
-    art9: { acknowledged: body.art9Consent, labelText: ART9_CONSENT_LABEL },
-    coolingOff: {
-      acknowledged: body.coolingOffConsent,
-      labelText: COOLING_OFF_CONSENT_LABEL,
-    },
-  };
-}
-
-function serializeConsentLabels(snapshot: LegalConsentSnapshot): string {
-  return [snapshot.art6.labelText, snapshot.art9.labelText, snapshot.coolingOff.labelText].join(
-    "\n---\n",
-  );
-}
-
 function lookupLabel(field: SanityFormField, value: string): string {
   return field.options?.find((option) => option.value === value)?.label ?? value;
 }
@@ -85,8 +66,6 @@ function buildResponses(
   value: string;
 }> {
   return fields
-    // Consent-type fields are owned by LegalAcknowledgments (see submissionSchema)
-    // and must not leak into the per-response audit trail.
     .filter((field) => field.type !== "consent")
     .map((field) => ({
       fieldKey: field.key,
@@ -133,7 +112,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  const consentSnapshot = buildConsentSnapshot(parsedBody);
+  const consentSnapshot = consentSnapshotFromBody(parsedBody);
   if (!isFullyConsented(consentSnapshot, true)) {
     return NextResponse.json(
       {
@@ -215,7 +194,7 @@ export async function POST(request: Request) {
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,
       responses,
-      consentLabel: serializeConsentLabels(consentSnapshot),
+      consentLabel: serializeAcknowledgedLabels(consentSnapshot),
       photoR2Key: photoR2Key ?? null,
       createdAt: acknowledgedAt,
       consentAcknowledgedAt: acknowledgedAt,

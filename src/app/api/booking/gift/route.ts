@@ -15,11 +15,9 @@ import {
 } from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
 import {
-  ART6_CONSENT_LABEL,
-  ART9_CONSENT_LABEL,
-  COOLING_OFF_CONSENT_LABEL,
+  consentSnapshotFromBody,
   isFullyConsented,
-  type LegalConsentSnapshot,
+  serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchReading } from "@/lib/sanity/fetch";
@@ -48,20 +46,9 @@ type GiftBookingBody = {
   [HONEYPOT_FIELD]?: string;
 };
 
-function buildPurchaserConsentSnapshot(body: GiftBookingBody): LegalConsentSnapshot {
-  return {
-    art6: { acknowledged: body.art6Consent, labelText: ART6_CONSENT_LABEL },
-    // Purchaser does NOT ack Art. 9 — the recipient acks it at redeem.
-    art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
-    coolingOff: {
-      acknowledged: body.coolingOffConsent,
-      labelText: COOLING_OFF_CONSENT_LABEL,
-    },
-  };
-}
-
-function serializePurchaserConsentLabels(snapshot: LegalConsentSnapshot): string {
-  return [snapshot.art6.labelText, snapshot.coolingOff.labelText].join("\n---\n");
+// Purchaser doesn't ack Art. 9 — the recipient acks it at redeem.
+function purchaserConsentSnapshot(body: GiftBookingBody) {
+  return consentSnapshotFromBody({ ...body, art9Consent: false });
 }
 
 function isGiftBody(body: unknown): body is GiftBookingBody {
@@ -104,7 +91,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!isFullyConsented(buildPurchaserConsentSnapshot(body), false)) {
+  if (!isFullyConsented(purchaserConsentSnapshot(body), false)) {
     if (!body.art6Consent) {
       errors.push({ field: "art6Consent", message: "Required to proceed." });
     }
@@ -322,9 +309,7 @@ export async function POST(request: Request): Promise<Response> {
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,
       responses,
-      consentLabel: serializePurchaserConsentLabels(
-        buildPurchaserConsentSnapshot(parsedBody),
-      ),
+      consentLabel: serializeAcknowledgedLabels(purchaserConsentSnapshot(parsedBody)),
       photoR2Key: null,
       createdAt: nowIso,
       consentAcknowledgedAt: nowIso,

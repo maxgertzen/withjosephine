@@ -17,11 +17,8 @@ import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
-  ART6_CONSENT_LABEL,
-  ART9_CONSENT_LABEL,
-  COOLING_OFF_CONSENT_LABEL,
+  consentSnapshotFromBody,
   isFullyConsented,
-  type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
@@ -51,17 +48,6 @@ function isRedeemBody(body: unknown): body is GiftRedeemBody {
     typeof c.art9Consent === "boolean" &&
     typeof c.coolingOffConsent === "boolean"
   );
-}
-
-function buildConsentSnapshot(body: GiftRedeemBody): LegalConsentSnapshot {
-  return {
-    art6: { acknowledged: body.art6Consent, labelText: ART6_CONSENT_LABEL },
-    art9: { acknowledged: body.art9Consent, labelText: ART9_CONSENT_LABEL },
-    coolingOff: {
-      acknowledged: body.coolingOffConsent,
-      labelText: COOLING_OFF_CONSENT_LABEL,
-    },
-  };
 }
 
 function lookupLabel(field: SanityFormField, value: string): string {
@@ -118,7 +104,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  if (!isFullyConsented(buildConsentSnapshot(parsedBody), true)) {
+  if (!isFullyConsented(consentSnapshotFromBody(parsedBody), true)) {
     return NextResponse.json(
       {
         error:
