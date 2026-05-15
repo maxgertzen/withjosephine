@@ -114,8 +114,6 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
     return c.json(body);
   });
 
-  // next-sanity/live opens an EventSource for revalidation. Return a heartbeat
-  // so the EventSource stays open without firing revalidations.
   const sseHeartbeat = (c: import("hono").Context) =>
     c.body(":heartbeat\n", 200, {
       "content-type": "text/event-stream",
@@ -124,8 +122,6 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   app.get("/vX/data/live/events/:dataset", sseHeartbeat);
   app.get("/:apiVersion{v[^/]+}/data/live/events/:dataset", sseHeartbeat);
 
-  // cdn.sanity.io asset URLs get rewritten to apiHost when SANITY_API_HOST is
-  // set — 404 cleanly so <Image> falls back instead of hanging on a request.
   app.get("/images/:rest{.+}", (c) => c.notFound());
   app.get("/files/:rest{.+}", (c) => c.notFound());
 

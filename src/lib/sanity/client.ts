@@ -7,9 +7,6 @@ const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 const apiVersion = "2025-01-01";
 
-// E2E-only host override. When set, Sanity client points at a local fixture
-// sidecar instead of api.sanity.io. Production never sets this. Disabling
-// useCdn together because the sidecar serves a single host pattern.
 const apiHost = process.env.SANITY_API_HOST;
 const hostOverride = apiHost ? { apiHost, useCdn: false } : {};
 

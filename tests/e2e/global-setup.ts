@@ -20,9 +20,6 @@ export default async function globalSetup(): Promise<void> {
 
   const sidecar = await startFixtureSidecar();
   globalThis.__e2eSidecar = sidecar;
-  // SANITY_API_HOST is the actual protection — every Sanity request gets routed
-  // to the sidecar regardless of token value. Even if SANITY_WRITE_TOKEN is set
-  // in the local environment, writes hit the sidecar (which 404s on POST).
   process.env.SANITY_API_HOST = sidecar.url;
 
   mswServer.listen({ onUnhandledRequest: "warn" });
