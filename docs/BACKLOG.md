@@ -336,6 +336,16 @@ generated file stays current.
 
 ## UX
 
+### Booking-form consent-UI layout review (Sanity Studio editor view)
+- **Source:** Max, 2026-05-15 (Phase 0 closeout). Inspecting `bookingForm` in Studio surfaced that the consent area is confusing in the editor: today only one `type: consent` field exists (`time_of_birth_unknown` — actually a "I don't know my time of birth" checkbox, NOT a GDPR consent), and the editor-side affordance for the legal-acks block is unclear.
+- **What's confusing:** the schema's `type: "consent"` enum value reads like "this is GDPR consent stuff" to a Studio editor, but the field is actually used for the time-of-birth-unknown UX checkbox. After Phase 1 ships (D-3: remove `"consent"` from `formField.ts:68` enum), this confusion partially resolves — but the editor view of the final-page legal-acks block is still load-bearing for Becky's mental model of what she can vs can't edit.
+- **Action (before `release/v1.0.0` → `main` merge):**
+  1. Open `bookingForm` in Sanity Studio and trace what each field surfaces to Becky.
+  2. Decide: should the hardcoded art6/art9/cooling-off block be visible in Studio at all (label-edit only, per D-1)? A read-only annotation block? Hidden entirely?
+  3. If we keep label-edit-only: a sectioned + clearly-labeled Studio editor group ("Legal acknowledgments (label text only — required + render is hardcoded)") would make the intent unambiguous.
+- **Folds into:** Phase 1 if the answer is "ship the label-edit-only block as part of P1.3"; otherwise, separate small studio-schema PR before main-merge.
+- **Decision needed from:** Max + Becky together — what feels right in the editor view.
+
 ### Pre-prod data cleanup (test smoke residue)
 - **Source:** Smoke session 2026-05-01.
 - **What:** Test bookings ran end-to-end against prod (CF Workers + real D1 + real Sanity + real R2). The submissions / mirrored Sanity docs / uploaded photos remain. We don't have a dedicated dev environment yet; everything lands in the prod stores.

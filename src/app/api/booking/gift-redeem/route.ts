@@ -16,6 +16,10 @@ import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/r
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
+import {
+  consentSnapshotFromBody,
+  isFullyConsented,
+} from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
@@ -25,9 +29,9 @@ type GiftRedeemBody = {
   readingSlug: string;
   values: Record<string, unknown>;
   turnstileToken: string;
-  consentLabelSnapshot?: string;
   art6Consent: boolean;
   art9Consent: boolean;
+  coolingOffConsent: boolean;
   submissionId?: string;
   [HONEYPOT_FIELD]?: string;
 };
@@ -41,7 +45,8 @@ function isRedeemBody(body: unknown): body is GiftRedeemBody {
     typeof c.values === "object" &&
     c.values !== null &&
     typeof c.art6Consent === "boolean" &&
-    typeof c.art9Consent === "boolean"
+    typeof c.art9Consent === "boolean" &&
+    typeof c.coolingOffConsent === "boolean"
   );
 }
 
@@ -71,12 +76,14 @@ function buildResponses(
   fieldType: SanityFormFieldType;
   value: string;
 }> {
-  return fields.map((field) => ({
-    fieldKey: field.key,
-    fieldLabelSnapshot: field.label,
-    fieldType: field.type,
-    value: stringifyValue(values[field.key], field),
-  }));
+  return fields
+    .filter((field) => field.type !== "consent")
+    .map((field) => ({
+      fieldKey: field.key,
+      fieldLabelSnapshot: field.label,
+      fieldType: field.type,
+      value: stringifyValue(values[field.key], field),
+    }));
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -97,9 +104,12 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  if (!parsedBody.art6Consent || !parsedBody.art9Consent) {
+  if (!isFullyConsented(consentSnapshotFromBody(parsedBody), true)) {
     return NextResponse.json(
-      { error: "Both required consents (Art. 6 and Art. 9) must be acknowledged." },
+      {
+        error:
+          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to redeem.",
+      },
       { status: 400 },
     );
   }

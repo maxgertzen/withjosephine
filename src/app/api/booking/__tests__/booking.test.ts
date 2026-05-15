@@ -90,9 +90,9 @@ const VALID_BODY = {
     agreement: true,
   },
   turnstileToken: "valid-token",
-  consentLabelSnapshot: "I agree.",
   art6Consent: true,
   art9Consent: true,
+  coolingOffConsent: true,
 };
 
 describe("/api/booking", () => {
@@ -155,23 +155,35 @@ describe("/api/booking", () => {
   });
 
   it.each([
-    { art6Consent: false, art9Consent: true },
-    { art6Consent: true, art9Consent: false },
-    { art6Consent: false, art9Consent: false },
+    { art6Consent: false, art9Consent: true, coolingOffConsent: true },
+    { art6Consent: true, art9Consent: false, coolingOffConsent: true },
+    { art6Consent: true, art9Consent: true, coolingOffConsent: false },
+    { art6Consent: false, art9Consent: false, coolingOffConsent: false },
   ])(
-    "returns 400 when art6Consent=$art6Consent and art9Consent=$art9Consent",
-    async ({ art6Consent, art9Consent }) => {
+    "returns 400 when any of art6/art9/cooling-off is false ($art6Consent/$art9Consent/$coolingOffConsent)",
+    async ({ art6Consent, art9Consent, coolingOffConsent }) => {
       mockVerify.mockResolvedValueOnce(true);
-      const res = await callRoute({ ...VALID_BODY, art6Consent, art9Consent });
+      const res = await callRoute({
+        ...VALID_BODY,
+        art6Consent,
+        art9Consent,
+        coolingOffConsent,
+      });
       expect(res.status).toBe(400);
       expect(createSubmissionMock).not.toHaveBeenCalled();
     },
   );
 
-  it("returns 400 when art6Consent or art9Consent is missing from the body shape", async () => {
-    const { art6Consent: _a6, art9Consent: _a9, ...withoutConsents } = VALID_BODY;
+  it("returns 400 when any consent flag is missing from the body shape", async () => {
+    const {
+      art6Consent: _a6,
+      art9Consent: _a9,
+      coolingOffConsent: _co,
+      ...withoutConsents
+    } = VALID_BODY;
     void _a6;
     void _a9;
+    void _co;
     const res = await callRoute(withoutConsents);
     expect(res.status).toBe(400);
     expect(createSubmissionMock).not.toHaveBeenCalled();
@@ -224,9 +236,9 @@ describe("/api/booking", () => {
         agreement: true,
       },
       turnstileToken: "valid-token",
-      consentLabelSnapshot: "I agree.",
       art6Consent: true,
       art9Consent: true,
+      coolingOffConsent: true,
     });
 
     const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{
@@ -237,7 +249,11 @@ describe("/api/booking", () => {
     expect(focus?.value).toBe("Soul purpose this lifetime, Embodying my higher self");
   });
 
-  it("renders booleans as Yes/No in stored responses", async () => {
+  it("skips consent-type fields from the stored response audit trail", async () => {
+    // Legacy bookingForm documents may still carry consent-type fields until
+    // the P1.12 migration strips them. They MUST NOT appear in the per-field
+    // audit trail (legal acknowledgments are captured separately via the
+    // LegalConsentSnapshot path).
     mockVerify.mockResolvedValueOnce(true);
     mockReading.mockResolvedValueOnce(READING);
     mockForm.mockResolvedValueOnce({
@@ -265,16 +281,17 @@ describe("/api/booking", () => {
       readingSlug: "soul-blueprint",
       values: { email: "ada@example.com", tob_unknown: false, agreement: true },
       turnstileToken: "valid-token",
-      consentLabelSnapshot: "I agree.",
       art6Consent: true,
       art9Consent: true,
+      coolingOffConsent: true,
     });
 
     const responses = createSubmissionMock.mock.calls[0][0].responses as Array<{
       fieldKey: string;
       value: string;
     }>;
-    const tob = responses.find((r) => r.fieldKey === "tob_unknown");
-    expect(tob?.value).toBe("No");
+    expect(responses.find((r) => r.fieldKey === "tob_unknown")).toBeUndefined();
+    expect(responses.find((r) => r.fieldKey === "agreement")).toBeUndefined();
+    expect(responses.find((r) => r.fieldKey === "email")).toBeDefined();
   });
 });

@@ -186,7 +186,7 @@ const VALID_BODY = {
   turnstileToken: "tk",
   art6Consent: true,
   art9Consent: true,
-  consentLabelSnapshot: "Cooling-off",
+  coolingOffConsent: true,
 };
 
 describe("/api/booking/gift-redeem", () => {

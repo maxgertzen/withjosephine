@@ -10,6 +10,7 @@ export const thankYouPage = defineType({
       title: "Heading",
       type: "string",
       initialValue: "Thank you for booking",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "subheading",
@@ -34,6 +35,7 @@ export const thankYouPage = defineType({
         "First paragraph below the order card. Describes what the customer will receive in their inbox.",
       initialValue:
         "A confirmation email is on its way to your inbox in the next minute or two — it includes a copy of the answers you shared so you have them on hand. If you can't find it, please check your promotions folder.",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "timelineBody",
@@ -44,6 +46,7 @@ export const thankYouPage = defineType({
         "Second paragraph. Sets expectations for delivery time. Use {deliveryDays} as a placeholder for the highlighted '7 days' phrase.",
       initialValue:
         "I'll begin your reading within the next two days, and I'll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "deliveryDaysPhrase",
@@ -62,6 +65,7 @@ export const thankYouPage = defineType({
         "Third paragraph inviting the customer to reply if anything's off. Use {email} as a placeholder for the contact email link from Site Settings.",
       initialValue:
         "If anything comes up — a question, a detail you forgot to mention, or anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "closingMessage",
@@ -69,6 +73,7 @@ export const thankYouPage = defineType({
       type: "text",
       rows: 2,
       initialValue: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "returnButtonText",
