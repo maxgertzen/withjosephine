@@ -3,7 +3,6 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Checkbox } from "@/components/Form/Checkbox";
 import { DatePicker } from "@/components/Form/DatePicker";
 import { FileUpload } from "@/components/Form/FileUpload";
 import { Input } from "@/components/Form/Input";
@@ -31,7 +30,11 @@ import {
   TIME_UNKNOWN_SENTINEL,
 } from "@/lib/booking/submissionSchema";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
-import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
+import {
+  emptyConsentSnapshot,
+  isFullyConsented,
+  type LegalConsentSnapshot,
+} from "@/lib/compliance/intakeConsent";
 import { errorClasses } from "@/lib/formStyles";
 import {
   clear as clearDraft,
@@ -48,6 +51,10 @@ import type {
 } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
+import {
+  LegalAcknowledgments,
+  type LegalAcknowledgmentsErrors,
+} from "./LegalAcknowledgments";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
 import { ReviewSummary } from "./ReviewSummary";
@@ -135,14 +142,6 @@ export function IntakeForm({
   const draftScope =
     mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
   const allFields = useMemo(() => flattenFields(sections), [sections]);
-  const consentField = useMemo(
-    () =>
-      allFields.find(
-        (field) =>
-          field.type === "consent" && !field.key.endsWith(COMPANION_SUFFIX_UNKNOWN),
-      ),
-    [allFields],
-  );
   const timeUnknownPairs = useMemo(() => {
     const pairs = new Map<string, string>();
     const fieldKeys = new Set(allFields.map((f) => f.key));
@@ -193,12 +192,22 @@ export function IntakeForm({
   const turnstileRef = useRef<TurnstileInstance | null>(null);
   const turnstileResolverRef = useRef<((token: string | null) => void) | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Phase 4 — Art. 6 + Art. 9 consents are session-fresh (not persisted in
-  // draft) so each submission attempt records an explicit, in-the-moment ack.
-  const [art6Consent, setArt6Consent] = useState(false);
-  const [art9Consent, setArt9Consent] = useState(false);
-  const [art6Error, setArt6Error] = useState<string | undefined>(undefined);
-  const [art9Error, setArt9Error] = useState<string | undefined>(undefined);
+  // Legal acknowledgments are session-fresh (not persisted in draft) so each
+  // submission attempt records an explicit, in-the-moment ack.
+  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(
+    emptyConsentSnapshot,
+  );
+  const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsErrors>({});
+  const clearConsentError = useCallback(
+    (key: keyof LegalAcknowledgmentsErrors) =>
+      setConsentErrors((prev) => {
+        if (prev[key] === undefined) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }),
+    [],
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -500,13 +509,16 @@ export function IntakeForm({
 
     const preflight = submissionSchema.safeParse(values);
     const preflightFollowup = buildNameFollowupSchema(allFields, values).safeParse(values);
-    const art6Ok = art6Consent;
-    const art9Ok = art9Consent;
-    setArt6Error(art6Ok ? undefined : "Please acknowledge to continue.");
-    setArt9Error(art9Ok ? undefined : "Please acknowledge to continue.");
+    const consentOk = isFullyConsented(consentSnapshot, true);
+    const nextConsentErrors: LegalAcknowledgmentsErrors = {};
+    if (!consentSnapshot.art6.acknowledged) nextConsentErrors.art6 = "Please acknowledge to continue.";
+    if (!consentSnapshot.art9.acknowledged) nextConsentErrors.art9 = "Please acknowledge to continue.";
+    if (!consentSnapshot.coolingOff.acknowledged)
+      nextConsentErrors.coolingOff = "Please acknowledge to continue.";
+    setConsentErrors(nextConsentErrors);
     track("intake_submit_click", {
       reading_id: readingId,
-      validation_pass: preflight.success && preflightFollowup.success && art6Ok && art9Ok,
+      validation_pass: preflight.success && preflightFollowup.success && consentOk,
     });
 
     let submissionTurnstileToken: string | null = turnstileToken;
@@ -522,7 +534,7 @@ export function IntakeForm({
     const result = submissionSchema.safeParse(values);
     const followupSchema = buildNameFollowupSchema(allFields, values);
     const followupResult = followupSchema.safeParse(values);
-    if (!result.success || !followupResult.success || !art6Ok || !art9Ok) {
+    if (!result.success || !followupResult.success || !consentOk) {
       const issues = [
         ...(result.success ? [] : result.error.issues),
         ...(followupResult.success ? [] : followupResult.error.issues),
@@ -530,8 +542,8 @@ export function IntakeForm({
       const fieldErrors = collectFieldErrors(issues);
       setErrors(fieldErrors);
       setSubmitError(
-        !art6Ok || !art9Ok
-          ? "Both required acknowledgments below must be checked to continue."
+        !consentOk
+          ? "All required acknowledgments below must be checked to continue."
           : "Please fix the highlighted fields and try again.",
       );
       focusFirstError(fieldErrors);
@@ -556,9 +568,10 @@ export function IntakeForm({
         values: { ...result.data, ...followupResult.data, ...companionKeys },
         turnstileToken: submissionTurnstileToken ?? "",
         [HONEYPOT_FIELD]: honeypot,
-        consentLabelSnapshot: consentField?.label ?? "",
-        art6Consent,
-        art9Consent,
+        art6Consent: consentSnapshot.art6.acknowledged,
+        art9Consent: consentSnapshot.art9.acknowledged,
+        coolingOffConsent: consentSnapshot.coolingOff.acknowledged,
+        consentSnapshot,
       };
       if (mode === "redeem" && redeemSubmissionId) {
         requestBody.submissionId = redeemSubmissionId;
@@ -761,51 +774,15 @@ export function IntakeForm({
         />
       ) : null}
 
-      {isFinalPage && consentField ? (
-        <section className="flex flex-col gap-4 bg-j-warm/40 border border-j-border-subtle rounded-2xl p-6">
-          <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
-            {nonRefundableNotice}
-          </p>
-          <Checkbox
-            id="field-art6-consent"
-            name="art6Consent"
-            checked={art6Consent}
-            onChange={(checked) => {
-              setArt6Consent(checked);
-              if (checked) setArt6Error(undefined);
-            }}
-            error={art6Error}
-            disabled={isSubmitting}
-            required
-          >
-            {ART6_CONSENT_LABEL}
-          </Checkbox>
-          <Checkbox
-            id="field-art9-consent"
-            name="art9Consent"
-            checked={art9Consent}
-            onChange={(checked) => {
-              setArt9Consent(checked);
-              if (checked) setArt9Error(undefined);
-            }}
-            error={art9Error}
-            disabled={isSubmitting}
-            required
-          >
-            {ART9_CONSENT_LABEL}
-          </Checkbox>
-          <Checkbox
-            id={`field-${consentField.key}`}
-            name={consentField.key}
-            checked={values[consentField.key] === true}
-            onChange={(checked) => setValue(consentField.key, checked)}
-            error={errors[consentField.key]}
-            disabled={isSubmitting}
-            required={consentField.required}
-          >
-            {consentField.label}
-          </Checkbox>
-        </section>
+      {isFinalPage ? (
+        <LegalAcknowledgments
+          snapshot={consentSnapshot}
+          setSnapshot={setConsentSnapshot}
+          errors={consentErrors}
+          clearError={clearConsentError}
+          nonRefundableNotice={nonRefundableNotice}
+          isSubmitting={isSubmitting}
+        />
       ) : null}
 
       {turnstileRequired && turnstileSiteKey ? (

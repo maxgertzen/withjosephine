@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { READINGS_FOR_SMOKE as READINGS } from "../fixtures/readings";
+import {
+  clickThroughIntakePages,
+  seedIntakeDraft,
+} from "../helpers/intakeDraft";
 
 test.describe("Intake page renders (smoke)", () => {
   for (const reading of READINGS) {
@@ -17,11 +21,6 @@ test.describe("Intake page renders (smoke)", () => {
 });
 
 test.describe("Booking happy-path with submit assertion", () => {
-  test.fixme(
-    true,
-    "Unblocked by P1.4 — LegalAcknowledgments unconditional render. Today the consent section only renders when a Sanity consent-type field (non-`_unknown` suffix) exists; art6/art9 hardcoded checkboxes are gated on the same condition. After P1.4, the section renders unconditional and submit succeeds.",
-  );
-
   for (const reading of READINGS) {
     test(`fills + submits ${reading.slug} → buy.stripe.com with client_reference_id`, async ({
       page,
@@ -36,23 +35,16 @@ test.describe("Booking happy-path with submit assertion", () => {
         });
       });
 
+      await seedIntakeDraft(page, reading.slug);
       await page.goto(`/book/${reading.slug}/intake`);
 
-      await page.getByLabel(/email/i).fill("e2e-test@withjosephine.com");
-      await page.getByLabel(/first name/i).fill("E2E");
-      await page.getByLabel(/last name/i).fill("Tester");
+      await clickThroughIntakePages(page, 6);
 
-      const finalSubmit = page.getByRole("button", { name: /book|submit|continue to payment/i });
-      while ((await finalSubmit.count()) === 0) {
-        const next = page.getByRole("button", { name: /next|continue/i }).last();
-        await next.click();
-      }
+      await page.locator("#field-art6-consent").check();
+      await page.locator("#field-art9-consent").check();
+      await page.locator("#field-cooling-off-consent").check();
 
-      await page.getByRole("checkbox", { name: /Art\.?\s*6|lawful basis/i }).check();
-      await page.getByRole("checkbox", { name: /Art\.?\s*9|sensitive/i }).check();
-      await page.getByRole("checkbox", { name: /14[- ]?day|cooling[- ]?off|non[- ]refund/i }).check();
-
-      await finalSubmit.click();
+      await page.getByTestId("intake-submit").click();
       await page.waitForURL(/buy\.stripe\.com/);
 
       expect(stripeRedirectUrl).not.toBeNull();
@@ -62,31 +54,19 @@ test.describe("Booking happy-path with submit assertion", () => {
 });
 
 test.describe("Final-page acknowledgments without Sanity consentField (Issue #2)", () => {
-  test.fixme(
-    true,
-    "Unblocked by P1.4 — LegalAcknowledgments renders art6/art9/cooling-off unconditionally; submit gates on all three. Today no consent-type field in Sanity = no consent UI at all = silent-fail submit.",
-  );
-
   test("art6/art9/cooling-off render unconditional + block submit when unchecked", async ({
     page,
   }) => {
+    await seedIntakeDraft(page, "birth-chart");
     await page.goto("/book/birth-chart/intake");
 
-    await page.getByLabel(/email/i).fill("e2e-test@withjosephine.com");
-    await page.getByLabel(/first name/i).fill("E2E");
-    await page.getByLabel(/last name/i).fill("Tester");
+    await clickThroughIntakePages(page, 6);
 
-    const next = page.getByRole("button", { name: /next|continue/i }).last();
-    while ((await page.getByRole("button", { name: /book|submit|continue to payment/i }).count()) === 0) {
-      await next.click();
-    }
+    await expect(page.locator("#field-art6-consent")).toBeVisible();
+    await expect(page.locator("#field-art9-consent")).toBeVisible();
+    await expect(page.locator("#field-cooling-off-consent")).toBeVisible();
 
-    await expect(page.getByRole("checkbox", { name: /Art\.?\s*6|lawful basis/i })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: /Art\.?\s*9|sensitive/i })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: /14[- ]?day|cooling[- ]?off|non[- ]refund/i })).toBeVisible();
-
-    const submit = page.getByRole("button", { name: /book|submit|continue to payment/i });
-    await submit.click();
-    await expect(page.getByRole("alert")).toContainText(/acknowledg/i);
+    await page.getByTestId("intake-submit").click();
+    await expect(page.getByRole("alert").first()).toContainText(/acknowledg/i);
   });
 });

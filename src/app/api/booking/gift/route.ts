@@ -14,6 +14,13 @@ import {
   type GiftDeliveryMethod,
 } from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
+import {
+  ART6_CONSENT_LABEL,
+  ART9_CONSENT_LABEL,
+  COOLING_OFF_CONSENT_LABEL,
+  isFullyConsented,
+  type LegalConsentSnapshot,
+} from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchReading } from "@/lib/sanity/fetch";
 import type { SanityReading } from "@/lib/sanity/types";
@@ -37,10 +44,25 @@ type GiftBookingBody = {
   art6Consent: boolean;
   coolingOffConsent: boolean;
   termsConsent: boolean;
-  consentLabelSnapshot?: string;
   turnstileToken: string;
   [HONEYPOT_FIELD]?: string;
 };
+
+function buildPurchaserConsentSnapshot(body: GiftBookingBody): LegalConsentSnapshot {
+  return {
+    art6: { acknowledged: body.art6Consent, labelText: ART6_CONSENT_LABEL },
+    // Purchaser does NOT ack Art. 9 — the recipient acks it at redeem.
+    art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
+    coolingOff: {
+      acknowledged: body.coolingOffConsent,
+      labelText: COOLING_OFF_CONSENT_LABEL,
+    },
+  };
+}
+
+function serializePurchaserConsentLabels(snapshot: LegalConsentSnapshot): string {
+  return [snapshot.art6.labelText, snapshot.coolingOff.labelText].join("\n---\n");
+}
 
 function isGiftBody(body: unknown): body is GiftBookingBody {
   if (typeof body !== "object" || body === null) return false;
@@ -82,11 +104,13 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!body.art6Consent) {
-    errors.push({ field: "art6Consent", message: "Required to proceed." });
-  }
-  if (!body.coolingOffConsent) {
-    errors.push({ field: "coolingOffConsent", message: "Required to proceed." });
+  if (!isFullyConsented(buildPurchaserConsentSnapshot(body), false)) {
+    if (!body.art6Consent) {
+      errors.push({ field: "art6Consent", message: "Required to proceed." });
+    }
+    if (!body.coolingOffConsent) {
+      errors.push({ field: "coolingOffConsent", message: "Required to proceed." });
+    }
   }
   if (!body.termsConsent) {
     errors.push({ field: "termsConsent", message: "Required to proceed." });
@@ -298,7 +322,9 @@ export async function POST(request: Request): Promise<Response> {
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,
       responses,
-      consentLabel: parsedBody.consentLabelSnapshot ?? null,
+      consentLabel: serializePurchaserConsentLabels(
+        buildPurchaserConsentSnapshot(parsedBody),
+      ),
       photoR2Key: null,
       createdAt: nowIso,
       consentAcknowledgedAt: nowIso,

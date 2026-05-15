@@ -121,6 +121,10 @@ export type DynamicSchema = z.ZodObject<Record<string, ZodTypeAny>>;
 export function buildSubmissionSchema(fields: SanityFormField[]): DynamicSchema {
   const shape: Record<string, ZodTypeAny> = {};
   for (const field of fields) {
+    // Consent-type fields are deprecated (PRD D-3, removed from Studio enum
+    // in P1.9). LegalAcknowledgments owns the hardcoded ack surface; the
+    // dynamic schema must not require what the renderer no longer shows.
+    if (field.type === "consent") continue;
     shape[field.key] = buildFieldSchema(field);
   }
   return z.object(shape);
