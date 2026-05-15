@@ -23,6 +23,12 @@ export const ART9_CONSENT_LABEL =
 export const COOLING_OFF_CONSENT_LABEL =
   "I understand readings are non-refundable and waive my 14-day cooling-off right under EU Consumer Rights Directive 2011/83 Art. 16(m).";
 
+// PRIVACY-COUNSEL-PENDING — purchaser-scoped Art. 6 for gift purchase flow.
+// Distinct from ART6_CONSENT_LABEL because the purchaser is not providing their
+// own birth/intake data — the recipient does that at redeem time.
+export const GIFT_ART6_CONSENT_LABEL =
+  "I agree to Josephine processing my contact details and the recipient's contact details to fulfill this gift purchase, under the Privacy Policy and Terms.";
+
 export interface LegalConsentAck {
   acknowledged: boolean;
   labelText: string;
@@ -44,9 +50,15 @@ export function isFullyConsented(
   return true;
 }
 
-export function emptyConsentSnapshot(): LegalConsentSnapshot {
+export type ConsentLabelOverrides = {
+  art6Label?: string;
+};
+
+export function emptyConsentSnapshot(
+  overrides: ConsentLabelOverrides = {},
+): LegalConsentSnapshot {
   return {
-    art6: { acknowledged: false, labelText: ART6_CONSENT_LABEL },
+    art6: { acknowledged: false, labelText: overrides.art6Label ?? ART6_CONSENT_LABEL },
     art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
     coolingOff: { acknowledged: false, labelText: COOLING_OFF_CONSENT_LABEL },
   };
@@ -58,9 +70,15 @@ export type ConsentBodyFlags = {
   coolingOffConsent: boolean;
 };
 
-export function consentSnapshotFromBody(flags: ConsentBodyFlags): LegalConsentSnapshot {
+export function consentSnapshotFromBody(
+  flags: ConsentBodyFlags,
+  overrides: ConsentLabelOverrides = {},
+): LegalConsentSnapshot {
   return {
-    art6: { acknowledged: flags.art6Consent, labelText: ART6_CONSENT_LABEL },
+    art6: {
+      acknowledged: flags.art6Consent,
+      labelText: overrides.art6Label ?? ART6_CONSENT_LABEL,
+    },
     art9: {
       acknowledged: flags.art9Consent ?? false,
       labelText: ART9_CONSENT_LABEL,
@@ -77,4 +95,22 @@ export function serializeAcknowledgedLabels(snapshot: LegalConsentSnapshot): str
     .filter((ack) => ack.acknowledged)
     .map((ack) => ack.labelText)
     .join("\n---\n");
+}
+
+export type GiftPurchaserConsentFlags = {
+  art6Consent: boolean;
+  coolingOffConsent: boolean;
+};
+
+export function emptyGiftPurchaserConsentSnapshot(): LegalConsentSnapshot {
+  return emptyConsentSnapshot({ art6Label: GIFT_ART6_CONSENT_LABEL });
+}
+
+export function giftPurchaserConsentSnapshot(
+  flags: GiftPurchaserConsentFlags,
+): LegalConsentSnapshot {
+  return consentSnapshotFromBody(
+    { ...flags, art9Consent: false },
+    { art6Label: GIFT_ART6_CONSENT_LABEL },
+  );
 }

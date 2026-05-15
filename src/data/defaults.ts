@@ -158,9 +158,6 @@ export interface BookingGiftFormContent {
   sendAtCustomLabel: string;
   consentIntro: string;
   nonRefundableNotice: string;
-  art6ConsentLabel: string;
-  coolingOffConsentLabel: string;
-  termsConsentLabel: string;
   submitButtonSelfSend: string;
   submitButtonScheduled: string;
   loadingStateCopy: string;
@@ -209,9 +206,6 @@ export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
   consentIntro: "Before this travels onward \u2014",
   nonRefundableNotice:
     "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
-  art6ConsentLabel: "I understand this is for reflection, not advice.",
-  coolingOffConsentLabel: "I understand gifts are non-refundable.",
-  termsConsentLabel: "I agree to the terms and privacy notice.",
   submitButtonSelfSend: "Send this gift",
   submitButtonScheduled: "Prepare this gift",
   loadingStateCopy: "One moment \u2014 taking you to checkout.",

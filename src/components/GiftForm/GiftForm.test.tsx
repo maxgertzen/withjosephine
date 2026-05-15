@@ -122,9 +122,8 @@ describe("GiftForm", () => {
     render(<GiftForm {...READING_PROPS} />);
     await user.type(screen.getByLabelText(/your first name/i), "Alice");
     await user.type(screen.getByLabelText(/your email/i), "alice@example.com");
-    await user.click(screen.getByLabelText(/reflection, not advice/i));
-    await user.click(screen.getByLabelText(/non-refundable/i));
-    await user.click(screen.getByLabelText(/terms and privacy/i));
+    await user.click(screen.getByLabelText(/processing my contact details/i));
+    await user.click(screen.getByLabelText(/cooling-off/i));
     await user.click(screen.getByRole("button", { name: /send this gift/i }));
 
     await screen.findByText(new RegExp(READING_PROPS.copy.loadingStateCopy, "i"));
@@ -160,9 +159,8 @@ describe("GiftForm", () => {
       screen.getByLabelText(new RegExp(READING_PROPS.copy.sendAtCustomLabel, "i")),
       "2030-01-01T09:00",
     );
-    await user.click(screen.getByLabelText(/reflection, not advice/i));
-    await user.click(screen.getByLabelText(/non-refundable/i));
-    await user.click(screen.getByLabelText(/terms and privacy/i));
+    await user.click(screen.getByLabelText(/processing my contact details/i));
+    await user.click(screen.getByLabelText(/cooling-off/i));
     await user.click(screen.getByRole("button", { name: /prepare this gift/i }));
 
     expect(
@@ -170,19 +168,18 @@ describe("GiftForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("blocks submission until all three consents are checked", async () => {
+  it("blocks submission when consents are unchecked (art6 + cooling-off both required)", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.spyOn(globalThis, "fetch");
     render(<GiftForm {...READING_PROPS} />);
     await user.type(screen.getByLabelText(/your first name/i), "Alice");
     await user.type(screen.getByLabelText(/your email/i), "alice@example.com");
-    // Only check art6 + cooling-off; leave terms unchecked
-    await user.click(screen.getByLabelText(/reflection, not advice/i));
-    await user.click(screen.getByLabelText(/non-refundable/i));
+    // Check art6 only; leave cooling-off unchecked
+    await user.click(screen.getByLabelText(/processing my contact details/i));
     await user.click(screen.getByRole("button", { name: /send this gift/i }));
     expect(fetchMock).not.toHaveBeenCalled();
     expect(
-      await screen.findByText(/required to proceed/i),
+      (await screen.findAllByText(/please acknowledge to continue/i))[0],
     ).toBeInTheDocument();
   });
 

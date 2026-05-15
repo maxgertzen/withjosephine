@@ -38,32 +38,38 @@ test.describe("Gift purchase → recipient claim addressing (Issue #4)", () => {
 });
 
 test.describe("Gift purchase final-page renders art6 + cooling-off unconditional (D-1a)", () => {
-  test.fixme(
-    true,
-    "Unblocked by P1.5.2 — GiftForm consent section refactored: hardcoded art6 + cooling-off in `<LegalAcknowledgmentsGift />`, no CMS-conditional render. art9 captured at recipient redeem, not purchase. Today: CMS-driven consent on /gift can be silently misconfigured.",
-  );
-
   test("art6 + cooling-off render on /gift/[slug], submit blocked when unchecked, succeeds when checked", async ({
     page,
   }) => {
-    await page.goto("/gift/birth-chart");
-    await page.getByLabel(/purchaser.*first name|your first name/i).fill("Alice");
-    await page.getByLabel(/purchaser.*email|your email/i).fill("alice@e2e.test");
-    await page.getByLabel(/recipient.*name/i).fill("Bob");
-    await page.getByLabel(/recipient.*email/i).fill("bob@e2e.test");
+    // Intercept Stripe Payment Link redirect — fixture readings carry placeholder
+    // stripePaymentLink URLs that buy.stripe.com 404s on. Test the redirect
+    // initiation, not Stripe's hosted checkout itself.
+    await page.route(/buy\.stripe\.com/, (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "<html>stripe</html>" }),
+    );
 
-    await expect(page.getByRole("checkbox", { name: /Art\.?\s*6|lawful basis/i })).toBeVisible();
+    await page.goto("/book/birth-chart/gift");
+    await page.getByLabel(/your first name/i).fill("Alice");
+    await page.getByLabel(/your email/i).fill("alice@e2e.test");
+
+    const art6Checkbox = page.getByRole("checkbox", {
+      name: /processing my contact details/i,
+    });
+    const coolingOffCheckbox = page.getByRole("checkbox", {
+      name: /14[- ]?day|cooling[- ]?off|non[- ]refund/i,
+    });
+    await expect(art6Checkbox).toBeVisible();
+    await expect(coolingOffCheckbox).toBeVisible();
     await expect(
-      page.getByRole("checkbox", { name: /14[- ]?day|cooling[- ]?off|non[- ]refund/i }),
-    ).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: /Art\.?\s*9|sensitive/i })).toHaveCount(0);
+      page.getByRole("checkbox", { name: /art\.?\s*9|sensitive|special[- ]category/i }),
+    ).toHaveCount(0);
 
-    const submit = page.getByRole("button", { name: /gift|send|purchase/i });
+    const submit = page.getByRole("button", { name: /send this gift/i });
     await submit.click();
-    await expect(page.getByRole("alert")).toContainText(/acknowledg/i);
+    await expect(page.getByRole("alert").first()).toContainText(/acknowledg/i);
 
-    await page.getByRole("checkbox", { name: /Art\.?\s*6|lawful basis/i }).check();
-    await page.getByRole("checkbox", { name: /14[- ]?day|cooling[- ]?off|non[- ]refund/i }).check();
+    await art6Checkbox.check();
+    await coolingOffCheckbox.check();
     await submit.click();
     await page.waitForURL(/buy\.stripe\.com|stripe\.com/);
   });

@@ -3,7 +3,6 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import { type FormEvent, useState } from "react";
 
-import { Checkbox } from "@/components/Form/Checkbox";
 import { Input } from "@/components/Form/Input";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
@@ -16,6 +15,15 @@ import {
   HONEYPOT_FIELD,
 } from "@/lib/booking/constants";
 import type { GiftDeliveryMethod } from "@/lib/booking/persistence/repository";
+import {
+  emptyGiftPurchaserConsentSnapshot,
+  type LegalConsentSnapshot,
+} from "@/lib/compliance/intakeConsent";
+
+import {
+  LegalAcknowledgmentsGift,
+  type LegalAcknowledgmentsGiftErrors,
+} from "./LegalAcknowledgmentsGift";
 
 type FieldErrors = Partial<Record<string, string>>;
 
@@ -37,9 +45,10 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   const [recipientEmail, setRecipientEmail] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
   const [giftSendAt, setGiftSendAt] = useState("");
-  const [art6Consent, setArt6Consent] = useState(false);
-  const [coolingOffConsent, setCoolingOffConsent] = useState(false);
-  const [termsConsent, setTermsConsent] = useState(false);
+  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(
+    emptyGiftPurchaserConsentSnapshot,
+  );
+  const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsGiftErrors>({});
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
@@ -57,14 +66,28 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     ["recipientName", "gift-recipient-name"],
     ["recipientEmail", "gift-recipient-email"],
     ["giftSendAt", "gift-send-at"],
-    ["art6Consent", "gift-art6-consent"],
-    ["coolingOffConsent", "gift-cooling-off-consent"],
-    ["termsConsent", "gift-terms-consent"],
   ];
 
-  function focusFirstError(errs: FieldErrors): void {
+  const consentFocusOrder: Array<[keyof LegalAcknowledgmentsGiftErrors, string]> = [
+    ["art6", "gift-art6-consent"],
+    ["coolingOff", "gift-cooling-off-consent"],
+  ];
+
+  function focusFirstError(
+    errs: FieldErrors,
+    consentErrs: LegalAcknowledgmentsGiftErrors,
+  ): void {
     for (const [key, elementId] of focusOrder) {
       if (errs[key as string]) {
+        const el = document.getElementById(elementId);
+        if (el instanceof HTMLElement) {
+          el.focus();
+          return;
+        }
+      }
+    }
+    for (const [key, elementId] of consentFocusOrder) {
+      if (consentErrs[key]) {
         const el = document.getElementById(elementId);
         if (el instanceof HTMLElement) {
           el.focus();
@@ -87,9 +110,14 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       if (!recipientEmail.trim()) errs.recipientEmail = copy.recipientEmailRequiredError;
       if (!giftSendAt) errs.giftSendAt = copy.sendAtRequiredError;
     }
-    if (!art6Consent) errs.art6Consent = copy.consentRequiredError;
-    if (!coolingOffConsent) errs.coolingOffConsent = copy.consentRequiredError;
-    if (!termsConsent) errs.termsConsent = copy.consentRequiredError;
+    return errs;
+  }
+
+  function validateConsents(): LegalAcknowledgmentsGiftErrors {
+    const errs: LegalAcknowledgmentsGiftErrors = {};
+    if (!consentSnapshot.art6.acknowledged) errs.art6 = "Please acknowledge to continue.";
+    if (!consentSnapshot.coolingOff.acknowledged)
+      errs.coolingOff = "Please acknowledge to continue.";
     return errs;
   }
 
@@ -99,16 +127,20 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     setTopLevelError(null);
 
     const errs = validate();
+    const consentErrs = validateConsents();
     setFieldErrors(errs);
+    setConsentErrors(consentErrs);
 
+    const validationPass =
+      Object.keys(errs).length === 0 && Object.keys(consentErrs).length === 0;
     track("gift_submit_click", {
       reading_id: readingSlug,
       delivery_method: deliveryMethod,
-      validation_pass: Object.keys(errs).length === 0,
+      validation_pass: validationPass,
     });
 
-    if (Object.keys(errs).length > 0) {
-      focusFirstError(errs);
+    if (!validationPass) {
+      focusFirstError(errs, consentErrs);
       return;
     }
 
@@ -129,9 +161,8 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         purchaserEmail: purchaserEmail.trim().toLowerCase(),
         purchaserFirstName: purchaserFirstName.trim(),
         deliveryMethod,
-        art6Consent,
-        coolingOffConsent,
-        termsConsent,
+        art6Consent: consentSnapshot.art6.acknowledged,
+        coolingOffConsent: consentSnapshot.coolingOff.acknowledged,
         turnstileToken: token,
         [HONEYPOT_FIELD]: "",
       };
@@ -207,7 +238,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   const isScheduled = deliveryMethod === GIFT_DELIVERY.scheduled;
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-xl mx-auto flex flex-col gap-8 px-6">
+    <form onSubmit={onSubmit} noValidate className="w-full max-w-xl mx-auto flex flex-col gap-8 px-6">
       <header className="text-center">
         <span aria-hidden="true" className="block text-j-accent text-xl mb-2">
           ✦
@@ -387,41 +418,22 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
       <div className="border-t border-j-border-gold/20" aria-hidden="true" />
 
-      <div className="flex flex-col gap-3">
-        <p className="font-display italic text-base text-j-text-muted">
-          {copy.consentIntro}
-        </p>
-        <p className="font-body text-sm text-j-text leading-relaxed whitespace-pre-line">
-          {copy.nonRefundableNotice}
-        </p>
-        <Checkbox
-          id="gift-art6-consent"
-          name="art6Consent"
-          checked={art6Consent}
-          onChange={setArt6Consent}
-          error={fieldErrors.art6Consent}
-        >
-          {copy.art6ConsentLabel}
-        </Checkbox>
-        <Checkbox
-          id="gift-cooling-off-consent"
-          name="coolingOffConsent"
-          checked={coolingOffConsent}
-          onChange={setCoolingOffConsent}
-          error={fieldErrors.coolingOffConsent}
-        >
-          {copy.coolingOffConsentLabel}
-        </Checkbox>
-        <Checkbox
-          id="gift-terms-consent"
-          name="termsConsent"
-          checked={termsConsent}
-          onChange={setTermsConsent}
-          error={fieldErrors.termsConsent}
-        >
-          {copy.termsConsentLabel}
-        </Checkbox>
-      </div>
+      <LegalAcknowledgmentsGift
+        snapshot={consentSnapshot}
+        setSnapshot={setConsentSnapshot}
+        errors={consentErrors}
+        clearError={(key) =>
+          setConsentErrors((prev) => {
+            if (!prev[key]) return prev;
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          })
+        }
+        consentIntro={copy.consentIntro}
+        nonRefundableNotice={copy.nonRefundableNotice}
+        isSubmitting={submitting}
+      />
 
       {antiAbuseHit ? (
         <div

@@ -15,7 +15,7 @@ import {
 } from "@/lib/booking/persistence/repository";
 import { createSubmission } from "@/lib/booking/submissions";
 import {
-  consentSnapshotFromBody,
+  giftPurchaserConsentSnapshot,
   isFullyConsented,
   serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
@@ -41,15 +41,9 @@ type GiftBookingBody = {
   giftSendAt?: string;
   art6Consent: boolean;
   coolingOffConsent: boolean;
-  termsConsent: boolean;
   turnstileToken: string;
   [HONEYPOT_FIELD]?: string;
 };
-
-// Purchaser doesn't ack Art. 9 — the recipient acks it at redeem.
-function purchaserConsentSnapshot(body: GiftBookingBody) {
-  return consentSnapshotFromBody({ ...body, art9Consent: false });
-}
 
 function isGiftBody(body: unknown): body is GiftBookingBody {
   if (typeof body !== "object" || body === null) return false;
@@ -61,7 +55,6 @@ function isGiftBody(body: unknown): body is GiftBookingBody {
     (c.deliveryMethod === GIFT_DELIVERY.selfSend || c.deliveryMethod === GIFT_DELIVERY.scheduled) &&
     typeof c.art6Consent === "boolean" &&
     typeof c.coolingOffConsent === "boolean" &&
-    typeof c.termsConsent === "boolean" &&
     typeof c.turnstileToken === "string"
   );
 }
@@ -91,16 +84,13 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!isFullyConsented(purchaserConsentSnapshot(body), false)) {
+  if (!isFullyConsented(giftPurchaserConsentSnapshot(body), false)) {
     if (!body.art6Consent) {
       errors.push({ field: "art6Consent", message: "Required to proceed." });
     }
     if (!body.coolingOffConsent) {
       errors.push({ field: "coolingOffConsent", message: "Required to proceed." });
     }
-  }
-  if (!body.termsConsent) {
-    errors.push({ field: "termsConsent", message: "Required to proceed." });
   }
 
   const recipientEmail = body.recipientEmail?.trim().toLowerCase();
@@ -309,7 +299,7 @@ export async function POST(request: Request): Promise<Response> {
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,
       responses,
-      consentLabel: serializeAcknowledgedLabels(purchaserConsentSnapshot(parsedBody)),
+      consentLabel: serializeAcknowledgedLabels(giftPurchaserConsentSnapshot(parsedBody)),
       photoR2Key: null,
       createdAt: nowIso,
       consentAcknowledgedAt: nowIso,

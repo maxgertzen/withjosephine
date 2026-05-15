@@ -533,9 +533,6 @@ export type SanityBookingGiftForm = {
   sendAtCustomLabel?: string;
   consentIntro?: string;
   nonRefundableNotice?: string;
-  art6ConsentLabel?: string;
-  coolingOffConsentLabel?: string;
-  termsConsentLabel?: string;
   submitButtonSelfSend?: string;
   submitButtonScheduled?: string;
   loadingStateCopy?: string;
