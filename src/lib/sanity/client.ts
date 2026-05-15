@@ -7,6 +7,12 @@ const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 const apiVersion = "2025-01-01";
 
+// E2E-only host override. When set, Sanity client points at a local fixture
+// sidecar instead of api.sanity.io. Production never sets this. Disabling
+// useCdn together because the sidecar serves a single host pattern.
+const apiHost = process.env.SANITY_API_HOST;
+const hostOverride = apiHost ? { apiHost, useCdn: false } : {};
+
 /**
  * `stega.studioUrl` tells the `<VisualEditing />` overlay where to send
  * editors when they click an editable region. Falls back to the local Studio
@@ -27,6 +33,7 @@ export const sanityClient = createClient({
   apiVersion,
   useCdn: true,
   stega: { studioUrl },
+  ...hostOverride,
 });
 
 /**
@@ -45,6 +52,7 @@ export function getSanityWriteClient(): SanityClient {
     apiVersion,
     useCdn: false,
     token: requireEnv("SANITY_WRITE_TOKEN"),
+    ...hostOverride,
   });
   taintServerObject(
     "Sanity write client carries SANITY_WRITE_TOKEN; do not pass to client components.",

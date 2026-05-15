@@ -1,0 +1,50 @@
+[
+  {
+    "_id": "fixture-reading-soul-blueprint",
+    "name": "Soul Blueprint",
+    "slug": "soul-blueprint",
+    "tag": "signature",
+    "subtitle": "Your signature soul reading",
+    "price": 17900,
+    "priceDisplay": "$179",
+    "valueProposition": "A complete soul-pattern reading.",
+    "briefDescription": "Voice note + PDF, delivered in 7 days.",
+    "bookingSummary": "Voice note + PDF, 7 days",
+    "requiresBirthChart": true,
+    "requiresAkashic": true,
+    "requiresQuestions": true,
+    "stripePaymentLink": "https://buy.stripe.com/test_soul_blueprint"
+  },
+  {
+    "_id": "fixture-reading-birth-chart",
+    "name": "Birth Chart Reading",
+    "slug": "birth-chart",
+    "tag": "popular",
+    "subtitle": "Your natal chart explained",
+    "price": 9900,
+    "priceDisplay": "$99",
+    "valueProposition": "Astrology grounding for the year ahead.",
+    "briefDescription": "Voice note + PDF, delivered in 7 days.",
+    "bookingSummary": "Voice note + PDF, 7 days",
+    "requiresBirthChart": true,
+    "requiresAkashic": false,
+    "requiresQuestions": false,
+    "stripePaymentLink": "https://buy.stripe.com/test_birth_chart"
+  },
+  {
+    "_id": "fixture-reading-akashic",
+    "name": "Akashic Record Reading",
+    "slug": "akashic",
+    "tag": "deep",
+    "subtitle": "Past-life context",
+    "price": 7900,
+    "priceDisplay": "$79",
+    "valueProposition": "Akashic field reading.",
+    "briefDescription": "Voice note + PDF, delivered in 7 days.",
+    "bookingSummary": "Voice note + PDF, 7 days",
+    "requiresBirthChart": false,
+    "requiresAkashic": true,
+    "requiresQuestions": true,
+    "stripePaymentLink": "https://buy.stripe.com/test_akashic"
+  }
+]
