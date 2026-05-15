@@ -220,31 +220,6 @@ export const bookingGiftForm = defineType({
         "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
       validation: (rule) => rule.required(),
     }),
-    defineField({
-      name: "art6ConsentLabel",
-      title: "Art. 6 consent label",
-      type: "text",
-      rows: 2,
-      group: "consent",
-      initialValue: "I understand this is for reflection, not advice.",
-    }),
-    defineField({
-      name: "coolingOffConsentLabel",
-      title: "Cooling-off consent label",
-      type: "text",
-      rows: 2,
-      group: "consent",
-      initialValue: "I understand gifts are non-refundable.",
-    }),
-    defineField({
-      name: "termsConsentLabel",
-      title: "Terms + privacy consent label",
-      type: "text",
-      rows: 2,
-      group: "consent",
-      initialValue: "I agree to the terms and privacy notice.",
-    }),
-
     // Submit + errors
     defineField({
       name: "submitButtonSelfSend",
