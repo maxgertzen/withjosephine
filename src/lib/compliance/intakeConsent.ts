@@ -18,3 +18,36 @@ export const ART6_CONSENT_LABEL =
 
 export const ART9_CONSENT_LABEL =
   "I explicitly consent to Josephine using my birth chart and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal astrology and Akashic Record reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.";
+
+// PRIVACY-COUNSEL-PENDING — Max pinged Counsel 2026-05-15; verbatim text lands in a follow-up commit.
+export const COOLING_OFF_CONSENT_LABEL =
+  "I understand readings are non-refundable and waive my 14-day cooling-off right under EU Consumer Rights Directive 2011/83 Art. 16(m).";
+
+export interface LegalConsentAck {
+  acknowledged: boolean;
+  labelText: string;
+}
+
+export interface LegalConsentSnapshot {
+  art6: LegalConsentAck;
+  art9: LegalConsentAck;
+  coolingOff: LegalConsentAck;
+}
+
+export function isFullyConsented(
+  snapshot: LegalConsentSnapshot,
+  requireArt9: boolean,
+): boolean {
+  if (!snapshot.art6.acknowledged) return false;
+  if (requireArt9 && !snapshot.art9.acknowledged) return false;
+  if (!snapshot.coolingOff.acknowledged) return false;
+  return true;
+}
+
+export function emptyConsentSnapshot(): LegalConsentSnapshot {
+  return {
+    art6: { acknowledged: false, labelText: ART6_CONSENT_LABEL },
+    art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
+    coolingOff: { acknowledged: false, labelText: COOLING_OFF_CONSENT_LABEL },
+  };
+}
