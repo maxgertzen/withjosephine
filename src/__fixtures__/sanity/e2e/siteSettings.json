@@ -1,0 +1,45 @@
+{
+  "brandName": "[E2E-Author]",
+  "consentBanner": {
+    "acceptLabel": "Accept",
+    "body": "We use Mixpanel and Microsoft Clarity to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
+    "declineLabel": "Decline",
+    "privacyLinkText": "Read the privacy policy",
+    "title": "A note on analytics"
+  },
+  "contactEmail": "e2e-test@withjosephine.com",
+  "copyrightText": "[E2E-Author]. All rights reserved.",
+  "faviconUrl": null,
+  "logoUrl": null,
+  "navCtaText": "Book a Reading",
+  "navLinks": [
+    {
+      "_key": "nav-readings",
+      "label": "Readings",
+      "sectionId": "readings"
+    },
+    {
+      "_key": "nav-about",
+      "label": "About",
+      "sectionId": "about"
+    },
+    {
+      "_key": "nav-how",
+      "label": "How It Works",
+      "sectionId": "how-it-works"
+    },
+    {
+      "_key": "nav-contact",
+      "label": "Contact",
+      "sectionId": "contact"
+    }
+  ],
+  "socialLinks": [
+    {
+      "_key": "social-tiktok",
+      "label": "Follow on TikTok",
+      "platform": "tiktok",
+      "url": "https://www.tiktok.com/@withjosephine"
+    }
+  ]
+}

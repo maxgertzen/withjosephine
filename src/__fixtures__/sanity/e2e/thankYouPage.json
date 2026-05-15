@@ -1,0 +1,23 @@
+{
+  "closingMessage": "I can't wait to connect with you through your reading.\nWith love, [E2E-Author] ✦",
+  "confirmationBody": "A confirmation email is on its way to your inbox in the next minute or two — it includes a copy of the answers you shared so you have them on hand. If you can’t find it, please check your promotions folder.",
+  "contactBody": "If anything comes up — a question, a detail you forgot to mention, or anything that doesn’t look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
+  "deliveryDaysPhrase": "seven days",
+  "heading": "Thank you for booking",
+  "overrides": null,
+  "readingLabel": "Your Reading",
+  "returnButtonText": "Return to Home",
+  "seo": {
+    "metaDescription": "Your reading is on its way. You'll receive a personal voice note and PDF within 7 days. In the meantime, there's nothing you need to do.",
+    "metaTitle": "Thank You — [E2E-Author]",
+    "ogImage": {
+      "_type": "image",
+      "asset": {
+        "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+        "_type": "reference"
+      }
+    }
+  },
+  "subheading": "I'm really looking forward to reading for you.",
+  "timelineBody": "I’ll begin your reading within the next two days, and I’ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout."
+}

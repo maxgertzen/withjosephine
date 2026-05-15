@@ -62,3 +62,9 @@ scripts/migration-log-v2.json
 *.db-wal
 *.db-shm
 email-previews/
+
+# Playwright E2E
+.env.e2e
+test-results/
+playwright-report/
+playwright/.cache/

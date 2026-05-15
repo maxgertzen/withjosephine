@@ -1,0 +1,40 @@
+{
+  "_id": "reading-soul-blueprint",
+  "bookingSummary": "My most comprehensive reading. Your birth chart, Akashic Records and card pulls woven together to create the deepest, most complete picture of your soul I can give you.",
+  "briefDescription": "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
+  "expandedDetails": [
+    "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
+    "You'll complete a personalised question menu when booking your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
+    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+  ],
+  "includes": [
+    "Akashic Record reading with card pulls",
+    "In-depth birth chart analysis",
+    "Your purpose, past lives & ancestral patterns",
+    "Personalised questions chosen by you",
+    "Detailed voice note recording",
+    "Supporting PDF"
+  ],
+  "name": "The Soul Blueprint",
+  "price": 12900,
+  "priceDisplay": "$129",
+  "requiresAkashic": true,
+  "requiresBirthChart": true,
+  "requiresQuestions": true,
+  "seo": {
+    "metaDescription": "The complete picture. Your birth chart, Akashic Records, and card pulls woven into one deeply personal reading. Voice note and PDF, delivered in 7 days.",
+    "metaTitle": "Soul Blueprint Reading | [E2E-Author] — $179",
+    "ogImage": {
+      "_type": "image",
+      "asset": {
+        "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+        "_type": "reference"
+      }
+    }
+  },
+  "slug": "soul-blueprint",
+  "stripePaymentLink": "https://buy.stripe.com/test_bJebIT4er9Tf8W09aI8Vi01",
+  "subtitle": "Soul Blueprint Reading",
+  "tag": "Signature",
+  "valueProposition": "The most complete picture of your soul I can give you"
+}
