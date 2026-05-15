@@ -9,7 +9,11 @@
 
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
-import { ART6_CONSENT_LABEL, ART9_CONSENT_LABEL } from "../../compliance/intakeConsent";
+import {
+  ART6_CONSENT_LABEL,
+  ART9_CONSENT_LABEL,
+  COOLING_OFF_CONSENT_LABEL,
+} from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
 import type { CreateSubmissionInput, GiftDeliveryMethod } from "./repository";
 
@@ -18,6 +22,7 @@ type MirrorCreateConsent = {
   ipAddress: string | null;
   art6AcknowledgedAt: string | null;
   art9AcknowledgedAt: string | null;
+  coolingOffAcknowledgedAt: string | null;
 };
 
 // `null` ackAt skips the field entirely (Sanity drops null/undefined keys on
@@ -93,6 +98,10 @@ export async function mirrorSubmissionCreate(
           ipAddress: consent.ipAddress ?? undefined,
           art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
           art9Consent: ackBlock(ART9_CONSENT_LABEL, consent.art9AcknowledgedAt),
+          coolingOffConsent: ackBlock(
+            COOLING_OFF_CONSENT_LABEL,
+            consent.coolingOffAcknowledgedAt,
+          ),
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,

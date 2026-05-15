@@ -334,6 +334,7 @@ export async function POST(request: Request): Promise<Response> {
       // it at claim-time intake, not at purchase time by the purchaser.
       art6AcknowledgedAt: nowIso,
       art9AcknowledgedAt: null,
+      coolingOffAcknowledgedAt: nowIso,
       isGift: true,
       purchaserUserId: null,
       recipientEmail,

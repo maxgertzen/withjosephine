@@ -98,6 +98,7 @@ export type CreateSubmissionInput = {
   consentLabel: string | null;
   photoR2Key: string | null;
   createdAt: string;
+  coolingOffAcknowledgedAt?: string | null;
   // Optional so existing self-purchase call sites stay unchanged; only the
   // gift booking route sets these.
   isGift?: boolean;
@@ -113,9 +114,10 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
     `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
+       cooling_off_acknowledged_at,
        is_gift, purchaser_user_id, recipient_email, gift_delivery_method,
        gift_send_at, gift_message
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -127,6 +129,7 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       input.consentLabel,
       input.photoR2Key,
       input.createdAt,
+      input.coolingOffAcknowledgedAt ?? null,
       input.isGift ? 1 : 0,
       input.purchaserUserId ?? null,
       input.recipientEmail ?? null,

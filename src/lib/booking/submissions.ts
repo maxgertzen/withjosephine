@@ -90,9 +90,10 @@ export type SubmissionRecord = {
 export type CreateSubmissionParams = CreateSubmissionInput & {
   consentAcknowledgedAt: string;
   ipAddress: string | null;
-  // Nullable for legacy callers and tests; the booking POST path populates both.
+  // Nullable for legacy callers and tests; the booking POST path populates all three.
   art6AcknowledgedAt?: string | null;
   art9AcknowledgedAt?: string | null;
+  coolingOffAcknowledgedAt?: string | null;
 };
 
 export async function createSubmission(params: CreateSubmissionParams): Promise<void> {
@@ -101,15 +102,20 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
     ipAddress,
     art6AcknowledgedAt,
     art9AcknowledgedAt,
+    coolingOffAcknowledgedAt,
     ...input
   } = params;
-  await repo.createSubmission(input);
+  await repo.createSubmission({
+    ...input,
+    coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
+  });
   runMirror(
     mirrorSubmissionCreate(input, {
       consentAcknowledgedAt,
       ipAddress,
       art6AcknowledgedAt: art6AcknowledgedAt ?? null,
       art9AcknowledgedAt: art9AcknowledgedAt ?? null,
+      coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
     }),
   );
 }

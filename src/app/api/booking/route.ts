@@ -222,6 +222,7 @@ export async function POST(request: Request) {
       ipAddress: ip ?? null,
       art6AcknowledgedAt: acknowledgedAt,
       art9AcknowledgedAt: acknowledgedAt,
+      coolingOffAcknowledgedAt: acknowledgedAt,
     });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);
