@@ -18,8 +18,6 @@ test.describe("Birth Chart Continue reachability + per-field errors (Issue #3)",
     await expect(summary).toBeVisible();
     await expect(summary).toContainText(/first name|email|date of birth|place of birth/i);
 
-    // ARIA-attribute selector (not CSS) — `aria-invalid` is the semantic
-    // contract for "this field has a validation error." Refactor-resilient.
     const firstError = page.locator("[aria-invalid='true']").first();
     await expect(firstError).toBeInViewport();
   });

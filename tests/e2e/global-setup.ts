@@ -1,6 +1,4 @@
-import type { FullConfig } from "@playwright/test";
-
-import { startFixtureSidecar, type FixtureSidecar } from "./fixtures-server";
+import { type FixtureSidecar, startFixtureSidecar } from "./fixtures-server";
 import { mswServer } from "./mocks/external";
 
 declare global {
@@ -17,7 +15,7 @@ function assertEnvGuards(): void {
   }
 }
 
-export default async function globalSetup(_config: FullConfig): Promise<void> {
+export default async function globalSetup(): Promise<void> {
   assertEnvGuards();
 
   const sidecar = await startFixtureSidecar();
@@ -30,6 +28,6 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   mswServer.listen({ onUnhandledRequest: "warn" });
   globalThis.__e2eMsw = mswServer;
 
-  // eslint-disable-next-line no-console
+   
   console.log(`[e2e] sidecar on ${sidecar.url} | MSW handlers active`);
 }

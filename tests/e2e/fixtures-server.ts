@@ -1,8 +1,9 @@
-import { serve } from "@hono/node-server";
-import { Hono } from "hono";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.resolve(here, "../../src/__fixtures__/sanity/e2e");
@@ -15,17 +16,23 @@ export type FixtureSidecar = {
 
 type GroqResponse = { ms: number; query: string; result: unknown };
 
+const SINGLETON_DOC_TYPES = [
+  "bookingForm",
+  "bookingGiftForm",
+  "bookingPage",
+  "giftClaimPage",
+  "giftIntakePage",
+  "myGiftsPage",
+  "siteSettings",
+  "thankYouPage",
+  "theme",
+] as const;
+
+type SingletonDocType = (typeof SINGLETON_DOC_TYPES)[number];
+
 type FixtureBundle = {
-  bookingForm: unknown;
-  bookingGiftForm: unknown;
-  bookingPage: unknown;
-  giftClaimPage: unknown;
-  giftIntakePage: unknown;
-  myGiftsPage: unknown;
+  singletons: Record<SingletonDocType, unknown>;
   readings: unknown[];
-  siteSettings: unknown;
-  thankYouPage: unknown;
-  theme: unknown;
   readingsBySlug: Map<string, unknown>;
 };
 
@@ -42,59 +49,48 @@ async function loadJson<T>(filename: string): Promise<T | null> {
 async function loadBundle(): Promise<FixtureBundle> {
   const entries = await readdir(fixtureDir);
   const readingFiles = entries.filter((f) => f.startsWith("reading-") && f.endsWith(".json"));
+
+  const [singletonValues, readings, readingDocs] = await Promise.all([
+    Promise.all(SINGLETON_DOC_TYPES.map((type) => loadJson<unknown>(`${type}.json`))),
+    loadJson<unknown[]>("readings.json").then((v) => v ?? []),
+    Promise.all(
+      readingFiles.map(async (file) => {
+        const slug = file.replace(/^reading-/, "").replace(/\.json$/, "");
+        const doc = await loadJson<unknown>(file);
+        return [slug, doc] as const;
+      }),
+    ),
+  ]);
+
+  const singletons = Object.fromEntries(
+    SINGLETON_DOC_TYPES.map((type, idx) => [type, singletonValues[idx]]),
+  ) as Record<SingletonDocType, unknown>;
+
   const readingsBySlug = new Map<string, unknown>();
-  for (const file of readingFiles) {
-    const slug = file.replace(/^reading-/, "").replace(/\.json$/, "");
-    const doc = await loadJson<unknown>(file);
+  for (const [slug, doc] of readingDocs) {
     if (doc) readingsBySlug.set(slug, doc);
   }
-  return {
-    bookingForm: await loadJson("bookingForm.json"),
-    bookingGiftForm: await loadJson("bookingGiftForm.json"),
-    bookingPage: await loadJson("bookingPage.json"),
-    giftClaimPage: await loadJson("giftClaimPage.json"),
-    giftIntakePage: await loadJson("giftIntakePage.json"),
-    myGiftsPage: await loadJson("myGiftsPage.json"),
-    readings: (await loadJson<unknown[]>("readings.json")) ?? [],
-    siteSettings: await loadJson("siteSettings.json"),
-    thankYouPage: await loadJson("thankYouPage.json"),
-    theme: await loadJson("theme.json"),
-    readingsBySlug,
-  };
+
+  return { singletons, readings, readingsBySlug };
 }
 
 function resolveResult(query: string, slug: string | null, bundle: FixtureBundle): unknown {
   const docTypeMatch = query.match(/_type\s*==\s*"([a-zA-Z]+)"/);
   const docType = docTypeMatch?.[1] ?? null;
-  const isCollection = /\*\[_type\s*==\s*"[^"]+"\]\s*(\|)/.test(query) || query.includes("] |");
+  const isCollection = query.includes("] |");
   const singleton = !isCollection && /\[0\]/.test(query);
 
-  switch (docType) {
-    case "reading":
-      if (slug && bundle.readingsBySlug.has(slug)) return bundle.readingsBySlug.get(slug);
-      if (singleton && slug) return null;
-      return bundle.readings;
-    case "bookingForm":
-      return bundle.bookingForm;
-    case "bookingGiftForm":
-      return bundle.bookingGiftForm;
-    case "bookingPage":
-      return bundle.bookingPage;
-    case "giftClaimPage":
-      return bundle.giftClaimPage;
-    case "giftIntakePage":
-      return bundle.giftIntakePage;
-    case "myGiftsPage":
-      return bundle.myGiftsPage;
-    case "siteSettings":
-      return bundle.siteSettings;
-    case "thankYouPage":
-      return bundle.thankYouPage;
-    case "theme":
-      return bundle.theme;
-    default:
-      return singleton ? null : [];
+  if (docType === "reading") {
+    if (slug && bundle.readingsBySlug.has(slug)) return bundle.readingsBySlug.get(slug);
+    if (singleton && slug) return null;
+    return bundle.readings;
   }
+
+  if (docType && (SINGLETON_DOC_TYPES as readonly string[]).includes(docType)) {
+    return bundle.singletons[docType as SingletonDocType];
+  }
+
+  return singleton ? null : [];
 }
 
 export async function startFixtureSidecar(): Promise<FixtureSidecar> {
@@ -118,23 +114,18 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
     return c.json(body);
   });
 
-  // next-sanity/live opens an EventSource for revalidation. Return an empty
-  // stream that closes immediately — no revalidations during E2E tests.
-  app.get("/vX/data/live/events/:dataset", (c) =>
+  // next-sanity/live opens an EventSource for revalidation. Return a heartbeat
+  // so the EventSource stays open without firing revalidations.
+  const sseHeartbeat = (c: import("hono").Context) =>
     c.body(":heartbeat\n", 200, {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
-    }),
-  );
-  app.get("/:apiVersion{v[^/]+}/data/live/events/:dataset", (c) =>
-    c.body(":heartbeat\n", 200, {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache",
-    }),
-  );
+    });
+  app.get("/vX/data/live/events/:dataset", sseHeartbeat);
+  app.get("/:apiVersion{v[^/]+}/data/live/events/:dataset", sseHeartbeat);
 
-  // Asset CDN URLs (cdn.sanity.io) get rewritten to apiHost — return 404 so
-  // <Image> components fall back to placeholder behavior instead of hanging.
+  // cdn.sanity.io asset URLs get rewritten to apiHost when SANITY_API_HOST is
+  // set — 404 cleanly so <Image> falls back instead of hanging on a request.
   app.get("/images/:rest{.+}", (c) => c.notFound());
   app.get("/files/:rest{.+}", (c) => c.notFound());
 
@@ -143,8 +134,8 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       ok: true,
       readings: bundle.readings.length,
       readingsBySlug: Array.from(bundle.readingsBySlug.keys()),
-      bookingFormPresent: bundle.bookingForm != null,
-      bookingPagePresent: bundle.bookingPage != null,
+      bookingFormPresent: bundle.singletons.bookingForm != null,
+      bookingPagePresent: bundle.singletons.bookingPage != null,
     }),
   );
 

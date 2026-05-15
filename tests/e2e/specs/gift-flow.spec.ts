@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const READINGS = [
-  { slug: "soul-blueprint", expectedName: /Soul Blueprint/i },
-  { slug: "birth-chart", expectedName: /Birth Chart/i },
-  { slug: "akashic-record", expectedName: /Akashic/i },
-];
+import { READINGS_FOR_SMOKE as READINGS } from "../fixtures/readings";
 
 test.describe("Gift reading selector routes to correct intake (Issue #6)", () => {
   test.fixme(
