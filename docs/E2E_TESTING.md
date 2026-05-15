@@ -92,9 +92,14 @@ Required in test environment (set explicitly in CI yaml, copy to `.env.e2e` loca
 
 | Var | Value | Why |
 |-----|-------|-----|
+| `NEXT_PUBLIC_R2_PUBLIC_HOST` | `images.withjosephine.com` | `src/lib/constants.ts:38` throws at module-init if missing; locally provided by `.env.local`, must be set explicitly in CI |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | `e8jsb14m` | Sanity client init |
+| `NEXT_PUBLIC_SANITY_DATASET` | `production` | Sanity client init |
 | `STRIPE_SECRET_KEY` | `sk_test_...` | globalSetup aborts if not `sk_test_` prefix |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `1x00000000000000000000AA` | CF's always-pass testing key |
 | `NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS` | `1` | IntakeForm bypass flag |
+| `NEXT_PUBLIC_UNDER_CONSTRUCTION` | `false` | Apex / holding-page flag |
+| `NEXT_PUBLIC_TRACK_NON_PROD` | `false` | Analytics gate |
 | `BOOKING_TURNSTILE_BYPASS` | `1` | Server-side bypass flag |
 | `TURNSTILE_SECRET_KEY` | `1x0000000000000000000000000000000AA` | CF's always-pass secret |
 | `LISTEN_TOKEN_SECRET` | `e2e_listen_token_secret_dummy` | Listen-page HMAC |
