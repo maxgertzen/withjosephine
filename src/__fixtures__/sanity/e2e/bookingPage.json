@@ -1,0 +1,18 @@
+{
+  "bookReadingCtaText": "Book this Reading →",
+  "deliveryNote": "You'll receive your voice note and PDF within 7 days of payment.",
+  "formatNote": "A spoken voice note plus a written PDF you can keep.",
+  "paymentButtonText": "Continue to payment →",
+  "seo": {
+    "metaDescription": "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days. No call required — everything arrives when you're ready.",
+    "metaTitle": "Book a Reading — [E2E-Author]",
+    "ogImage": {
+      "_type": "image",
+      "asset": {
+        "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+        "_type": "reference"
+      }
+    }
+  },
+  "whatsIncludedHeading": "What’s included"
+}

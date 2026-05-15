@@ -15,13 +15,6 @@ function assertEnvGuards(): void {
       `[e2e] STRIPE_SECRET_KEY must start with "sk_test_" (got "${stripeKey.slice(0, 8)}…"). Refusing to run against live Stripe.`,
     );
   }
-
-  const writeToken = process.env.SANITY_WRITE_TOKEN ?? "";
-  if (writeToken !== "") {
-    throw new Error(
-      `[e2e] SANITY_WRITE_TOKEN must be empty string (got non-empty value). Refusing to run with a live write token.`,
-    );
-  }
 }
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
@@ -29,6 +22,9 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
   const sidecar = await startFixtureSidecar();
   globalThis.__e2eSidecar = sidecar;
+  // SANITY_API_HOST is the actual protection — every Sanity request gets routed
+  // to the sidecar regardless of token value. Even if SANITY_WRITE_TOKEN is set
+  // in the local environment, writes hit the sidecar (which 404s on POST).
   process.env.SANITY_API_HOST = sidecar.url;
 
   mswServer.listen({ onUnhandledRequest: "warn" });

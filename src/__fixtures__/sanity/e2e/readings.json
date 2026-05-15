@@ -1,50 +1,120 @@
 [
   {
-    "_id": "fixture-reading-soul-blueprint",
-    "name": "Soul Blueprint",
-    "slug": "soul-blueprint",
-    "tag": "signature",
-    "subtitle": "Your signature soul reading",
-    "price": 17900,
-    "priceDisplay": "$179",
-    "valueProposition": "A complete soul-pattern reading.",
-    "briefDescription": "Voice note + PDF, delivered in 7 days.",
-    "bookingSummary": "Voice note + PDF, 7 days",
-    "requiresBirthChart": true,
+    "_id": "reading-soul-blueprint",
+    "bookingSummary": "My most comprehensive reading. Your birth chart, Akashic Records and card pulls woven together to create the deepest, most complete picture of your soul I can give you.",
+    "briefDescription": "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
+    "expandedDetails": [
+      "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
+      "You'll complete a personalised question menu when booking your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
+      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+    ],
+    "includes": [
+      "Akashic Record reading with card pulls",
+      "In-depth birth chart analysis",
+      "Your purpose, past lives & ancestral patterns",
+      "Personalised questions chosen by you",
+      "Detailed voice note recording",
+      "Supporting PDF"
+    ],
+    "name": "The Soul Blueprint",
+    "price": 12900,
+    "priceDisplay": "$129",
     "requiresAkashic": true,
+    "requiresBirthChart": true,
     "requiresQuestions": true,
-    "stripePaymentLink": "https://buy.stripe.com/test_soul_blueprint"
+    "seo": {
+      "metaDescription": "The complete picture. Your birth chart, Akashic Records, and card pulls woven into one deeply personal reading. Voice note and PDF, delivered in 7 days.",
+      "metaTitle": "Soul Blueprint Reading | [E2E-Author] — $179",
+      "ogImage": {
+        "_type": "image",
+        "asset": {
+          "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+          "_type": "reference"
+        }
+      }
+    },
+    "slug": "soul-blueprint",
+    "stripePaymentLink": "https://buy.stripe.com/test_bJebIT4er9Tf8W09aI8Vi01",
+    "subtitle": "Soul Blueprint Reading",
+    "tag": "Signature",
+    "valueProposition": "The most complete picture of your soul I can give you"
   },
   {
-    "_id": "fixture-reading-birth-chart",
-    "name": "Birth Chart Reading",
-    "slug": "birth-chart",
-    "tag": "popular",
-    "subtitle": "Your natal chart explained",
+    "_id": "reading-birth-chart",
+    "bookingSummary": "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
+    "briefDescription": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
+    "expandedDetails": [
+      "We'll take a look at your natal chart and the specific energies, timing and patterns that shape your experience.",
+      "This is one of the most powerful tools for self understanding I know. When you see yourself clearly through your chart, things start to fall into place. Choices make sense. Experiences make sense. You make sense.",
+      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+    ],
+    "includes": [
+      "Full natal chart analysis",
+      "Your gifts, wounds and soul patterns",
+      "Current transits and what they mean for you",
+      "Detailed voice note recording",
+      "Supporting PDF"
+    ],
+    "name": "The Birth Chart Reading",
     "price": 9900,
     "priceDisplay": "$99",
-    "valueProposition": "Astrology grounding for the year ahead.",
-    "briefDescription": "Voice note + PDF, delivered in 7 days.",
-    "bookingSummary": "Voice note + PDF, 7 days",
-    "requiresBirthChart": true,
     "requiresAkashic": false,
+    "requiresBirthChart": true,
     "requiresQuestions": false,
-    "stripePaymentLink": "https://buy.stripe.com/test_birth_chart"
+    "seo": {
+      "metaDescription": "What the stars already said about you. Core themes, natural gifts, and current patterns — written and spoken just for you. Delivered in 7 days.",
+      "metaTitle": "Birth Chart Reading | [E2E-Author] — $99",
+      "ogImage": {
+        "_type": "image",
+        "asset": {
+          "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+          "_type": "reference"
+        }
+      }
+    },
+    "slug": "birth-chart",
+    "stripePaymentLink": "https://buy.stripe.com/test_14A5kveT5fdzgosdqY8Vi02",
+    "subtitle": "Birth Chart Reading",
+    "tag": "Astrology",
+    "valueProposition": "Understand yourself in a way that makes sense of your life"
   },
   {
-    "_id": "fixture-reading-akashic",
-    "name": "Akashic Record Reading",
-    "slug": "akashic",
-    "tag": "deep",
-    "subtitle": "Past-life context",
+    "_id": "reading-akashic-record",
+    "bookingSummary": "You choose three questions, I open your records and pull a card for each. The most direct way to access what your soul already knows.",
+    "briefDescription": "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
+    "expandedDetails": [
+      "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",
+      "You'll comeplete a question menu when booking so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
+      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+    ],
+    "includes": [
+      "Three questions explored in depth",
+      "Akashic Record reading with card pulls",
+      "Personalised questions chosen by you",
+      "Detailed voice note recording",
+      "Supporting PDF"
+    ],
+    "name": "The Akashic Record Reading",
     "price": 7900,
     "priceDisplay": "$79",
-    "valueProposition": "Akashic field reading.",
-    "briefDescription": "Voice note + PDF, delivered in 7 days.",
-    "bookingSummary": "Voice note + PDF, 7 days",
-    "requiresBirthChart": false,
     "requiresAkashic": true,
+    "requiresBirthChart": false,
     "requiresQuestions": true,
-    "stripePaymentLink": "https://buy.stripe.com/test_akashic"
+    "seo": {
+      "metaDescription": "An Akashic Record reading that feels specific to you. [E2E-Author] delivers a voice note and PDF within 7 days. For when you're ready to remember what you carry.",
+      "metaTitle": "Akashic Record Reading | [E2E-Author] — $79",
+      "ogImage": {
+        "_type": "image",
+        "asset": {
+          "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+          "_type": "reference"
+        }
+      }
+    },
+    "slug": "akashic-record",
+    "stripePaymentLink": "https://buy.stripe.com/test_00w00b5iv2qN4FK0Ec8Vi00",
+    "subtitle": "Akashic Record Reading",
+    "tag": "Soul Records",
+    "valueProposition": "Direct answers from your soul's infinite records"
   }
 ]
