@@ -105,6 +105,12 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
 
+      - name: Apply D1 migrations to local miniflare DB
+        run: |
+          # CI starts with a fresh .wrangler/state — the booking POST hits the
+          # workerd-bound D1 and fails INSERT if the columns aren't there.
+          pnpm exec wrangler d1 migrations apply withjosephine-bookings --local
+
       - name: Run Playwright
         run: pnpm exec playwright test --project=chromium
 
