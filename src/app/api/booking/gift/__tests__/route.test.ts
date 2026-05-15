@@ -70,7 +70,6 @@ const SELF_SEND_BODY = {
   deliveryMethod: "self_send" as const,
   art6Consent: true,
   coolingOffConsent: true,
-  termsConsent: true,
   turnstileToken: "valid-token",
 };
 
@@ -85,7 +84,6 @@ function scheduledBody(overrides: Record<string, unknown> = {}) {
     giftSendAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     art6Consent: true,
     coolingOffConsent: true,
-    termsConsent: true,
     turnstileToken: "valid-token",
     ...overrides,
   };
@@ -113,6 +111,14 @@ describe("/api/booking/gift", () => {
     const body = await res.json();
     expect(res.status).toBe(400);
     expect(body.fieldErrors.coolingOffConsent).toBeTruthy();
+  });
+
+  it("does not require legacy termsConsent field — body without it is accepted (consent-wise)", async () => {
+    // termsConsent was dropped in Phase 1.5; the legacy field must not be required.
+    const res = await callRoute(SELF_SEND_BODY);
+    const body = await res.json();
+    expect(res.status).not.toBe(400);
+    expect(body.fieldErrors?.termsConsent).toBeUndefined();
   });
 
   it("rejects when purchaser email is malformed", async () => {
