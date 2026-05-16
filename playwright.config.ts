@@ -3,16 +3,17 @@ import { defineConfig, devices } from "@playwright/test";
 const isCI = Boolean(process.env.CI);
 const isStripeRoundtrip = process.env.E2E_STRIPE_ROUNDTRIP === "1";
 const isGiftRoundtrip = process.env.E2E_GIFT_ROUNDTRIP === "1";
+const isListenRoundtrip = process.env.E2E_LISTEN_ROUNDTRIP === "1";
 // True when any spec needs the staging target rather than the local dev
 // server. New round-trip specs join this union without changing the rest
 // of the config shape.
-const isE2ERemote = isStripeRoundtrip || isGiftRoundtrip;
+const isE2ERemote = isStripeRoundtrip || isGiftRoundtrip || isListenRoundtrip;
 const stagingUrl =
   process.env.STAGING_URL ?? "https://staging.withjosephine.com";
 
 // Specs that target staging directly — keep the default chromium project
 // from picking them up when no flag is set.
-const REMOTE_SPECS = /(stripe-roundtrip|gift-roundtrip)\.spec\.ts/;
+const REMOTE_SPECS = /(stripe-roundtrip|gift-roundtrip|listen-roundtrip)\.spec\.ts/;
 
 export default defineConfig({
   testDir: "./tests/e2e/specs",
@@ -54,13 +55,21 @@ export default defineConfig({
             use: { ...devices["Desktop Chrome"] },
           },
         ]
-      : [
-          {
-            name: "chromium",
-            testIgnore: REMOTE_SPECS,
-            use: { ...devices["Desktop Chrome"] },
-          },
-        ],
+      : isListenRoundtrip
+        ? [
+            {
+              name: "listen-roundtrip",
+              testMatch: /listen-roundtrip\.spec\.ts/,
+              use: { ...devices["Desktop Chrome"] },
+            },
+          ]
+        : [
+            {
+              name: "chromium",
+              testIgnore: REMOTE_SPECS,
+              use: { ...devices["Desktop Chrome"] },
+            },
+          ],
 
   webServer: isE2ERemote
     ? undefined
