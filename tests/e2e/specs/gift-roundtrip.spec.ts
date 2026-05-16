@@ -282,11 +282,16 @@ test.describe("Gift round-trip — staging", () => {
 
     // Spot-check that the claim landing page resolves the token (no recipient
     // intake exercised — recipientEmail is missing on self_send submissions
-    // and gift-redeem would 422).
+    // and gift-redeem would 422). Assert specifically that we landed on
+    // `/gift/intake?welcome=1` — the success target. A bare `getByRole`
+    // heading match used to pass even when the error page rendered, because
+    // error.tsx's "an unexpected error occurred" is itself a level-1 heading.
     const claimUrl = new URL(regenerated.claimUrl);
     await page.context().clearCookies();
     await page.goto(claimUrl.pathname + claimUrl.search);
-    await page.waitForURL(/\/gift\/(claim|intake)/, { timeout: 30_000 });
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.waitForURL(/\/gift\/intake\?welcome=1/, { timeout: 30_000 });
+    await expect(
+      page.getByRole("heading", { level: 1 }),
+    ).not.toContainText(/unexpected error|something went wrong/i);
   });
 });
