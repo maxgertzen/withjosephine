@@ -45,6 +45,11 @@ export type ClientEventMap = {
     from_page: number;
     to_page: number;
   };
+  intake_page_review_edit_click: {
+    reading_id: ReadingId;
+    from_page: number;
+    to_page: number;
+  };
   intake_save_click: {
     reading_id: ReadingId;
     page_number: number;

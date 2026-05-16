@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { __resetSwapNameCacheForTest } from "@/lib/intake/useDraftRestore";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm } from "./IntakeForm";
@@ -104,6 +105,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "test-site-key");
   window.localStorage.clear();
+  __resetSwapNameCacheForTest();
 });
 
 afterEach(() => {
