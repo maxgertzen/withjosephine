@@ -16,6 +16,7 @@ vi.mock("@/lib/booking/submissions", () => ({
     photoUrl: null,
     createdAt: "2026-04-28T12:00:00Z",
   }),
+  findSubmissionById: vi.fn(),
   listPaidSubmissionsForEmail: vi.fn(),
   markSubmissionDelivered: vi.fn(),
 }));
@@ -32,6 +33,7 @@ import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
   appendEmailFired,
+  findSubmissionById,
   listPaidSubmissionsForEmail,
   markSubmissionDelivered,
   type SubmissionRecord,
@@ -44,6 +46,7 @@ const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
 const mockMarkDelivered = vi.mocked(markSubmissionDelivered);
 const mockSend = vi.mocked(sendDay7Delivery);
 const mockAppend = vi.mocked(appendEmailFired);
+const mockFindById = vi.mocked(findSubmissionById);
 
 const PAID_SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -82,11 +85,12 @@ beforeEach(() => {
   mockMarkDelivered.mockReset().mockResolvedValue(undefined);
   mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
   mockAppend.mockReset().mockResolvedValue(undefined);
+  mockFindById.mockReset().mockResolvedValue(null);
 });
 
-async function callRoute(): Promise<Response> {
+async function callRoute(url = "http://localhost/api/cron/email-day-7-deliver"): Promise<Response> {
   const { POST } = await import("../route");
-  return POST(new Request("http://localhost/api/cron/email-day-7-deliver", { method: "POST" }));
+  return POST(new Request(url, { method: "POST" }));
 }
 
 describe("/api/cron/email-day-7-deliver", () => {
@@ -153,5 +157,82 @@ describe("/api/cron/email-day-7-deliver", () => {
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });
     expect(mockMarkDelivered).toHaveBeenCalled();
     expect(mockAppend).not.toHaveBeenCalled();
+  });
+
+  describe("?force=<submissionId> single-submission mode", () => {
+    const FORCE_URL =
+      "http://localhost/api/cron/email-day-7-deliver?force=sub_force";
+
+    it("returns 401 when unauthorized (force-mode uses the same auth gate)", async () => {
+      mockAuth.mockReturnValueOnce(false);
+      const res = await callRoute(FORCE_URL);
+      expect(res.status).toBe(401);
+      expect(mockFindById).not.toHaveBeenCalled();
+    });
+
+    it("bypasses listPaidSubmissionsForEmail and reads the named submission directly", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockFindById.mockResolvedValueOnce({ ...PAID_SUBMISSION, _id: "sub_force" });
+      mockFetchDeliverable.mockResolvedValueOnce([{ ...DELIVERABLE, _id: "sub_force" }]);
+      const res = await callRoute(FORCE_URL);
+      const body = await res.json();
+      expect(body).toEqual({
+        processed: 1,
+        sent: 1,
+        skipped: 0,
+        awaitingAssets: 0,
+        submissionId: "sub_force",
+      });
+      expect(mockList).not.toHaveBeenCalled();
+      expect(mockFindById).toHaveBeenCalledWith("sub_force");
+      expect(mockFetchDeliverable).toHaveBeenCalledWith(["sub_force"]);
+      expect(mockMarkDelivered).toHaveBeenCalledWith(
+        "sub_force",
+        expect.objectContaining({ deliveredAt: DELIVERABLE.deliveredAt }),
+      );
+    });
+
+    it("returns awaitingAssets=1 when the submission lacks Sanity assets", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockFindById.mockResolvedValueOnce({ ...PAID_SUBMISSION, _id: "sub_force" });
+      mockFetchDeliverable.mockResolvedValueOnce([]);
+      const res = await callRoute(FORCE_URL);
+      const body = await res.json();
+      expect(body).toEqual({
+        processed: 1,
+        sent: 0,
+        skipped: 1,
+        awaitingAssets: 1,
+        submissionId: "sub_force",
+      });
+      expect(mockMarkDelivered).not.toHaveBeenCalled();
+    });
+
+    it("returns processed=0 when the submission does not exist in D1", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockFindById.mockResolvedValueOnce(null);
+      const res = await callRoute(FORCE_URL);
+      const body = await res.json();
+      expect(body).toEqual({
+        processed: 0,
+        sent: 0,
+        skipped: 1,
+        awaitingAssets: 0,
+        submissionId: "sub_force",
+      });
+      expect(mockFetchDeliverable).not.toHaveBeenCalled();
+    });
+  });
+
+  it("default sweep path is unchanged when no ?force query param is present", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+    const res = await callRoute();
+    const body = await res.json();
+    // Default path returns the original sweep summary shape (no submissionId
+    // field) — force-mode is the ONLY branch that adds that field.
+    expect(body).toEqual({ processed: 1, sent: 1, skipped: 0, awaitingAssets: 0 });
+    expect(mockFindById).not.toHaveBeenCalled();
   });
 });
