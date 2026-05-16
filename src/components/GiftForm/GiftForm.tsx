@@ -243,8 +243,11 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         <span aria-hidden="true" className="block text-j-accent text-xl mb-2">
           ✦
         </span>
-        <h1 className="font-display italic font-medium text-[clamp(2rem,5vw,2.75rem)] leading-tight text-j-text-heading">
+        <p className="font-body uppercase tracking-[0.22em] text-xs text-j-accent mb-3">
           {copy.heading}
+        </p>
+        <h1 className="font-display italic font-medium text-[clamp(2rem,5vw,2.75rem)] leading-tight text-j-text-heading">
+          {readingName}
         </h1>
         {copy.subheading ? (
           <p className="font-display italic text-base text-j-text-muted mt-3">
@@ -252,7 +255,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
           </p>
         ) : null}
         <p className="font-body text-sm text-j-text-muted mt-4">
-          {readingName} · {readingPriceDisplay}
+          {readingPriceDisplay}
         </p>
       </header>
 
