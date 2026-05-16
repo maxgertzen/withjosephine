@@ -137,11 +137,19 @@ describe("/api/internal/gift-claim-regenerate", () => {
       body: { submissionId: "sub_gift" },
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { outcome: string; to: string; deliveryMethod: string };
+    const body = (await res.json()) as {
+      outcome: string;
+      to: string;
+      deliveryMethod: string;
+      claimUrl: string;
+    };
     expect(body.outcome).toBe("regenerated");
     expect(body.deliveryMethod).toBe("scheduled");
     expect(body.to.includes("@example.com")).toBe(true);
     expect(body.to.startsWith("r***")).toBe(true);
+    expect(body.claimUrl).toMatch(
+      /^https:\/\/withjosephine\.com\/gift\/claim\?token=[0-9a-f]{64}$/,
+    );
     expect(mockMark).toHaveBeenCalledWith("sub_gift", expect.any(String), expect.any(String));
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({

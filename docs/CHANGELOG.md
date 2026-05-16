@@ -216,6 +216,19 @@ Closes the three /simplify-deferred refactors flagged in PR #86 reviewers (defau
 
 Tests: 1323/1323 (+2 vs baseline 1321 — W2.1 added 1 explicit-null Footer test, contact route gained 1 for the new failed-kind path). Pentester re-audit on W2.2 → GO. Net diff +700 / -300 LOC including the 362-line Becky doc. CI all 5 jobs green on `99f6b46`; staging deploy verified.
 
+### Phase 5 Bundle A.1 — gift round-trip Playwright spec — SHIPPED
+
+Replaces manual Becky QA of the gift purchase + recipient claim flow with an automated Playwright spec env-gated by `E2E_GIFT_ROUNDTRIP=1`. Targets `staging.withjosephine.com` via CF Access service-token headers, drives the full flow end-to-end including Stripe sandbox checkout with the 4242 card.
+
+- **Production seam:** `POST /api/internal/gift-claim-regenerate` now returns `claimUrl` on the 200 success branch. The endpoint is auth-gated by the `DO_DISPATCH_SECRET` worker secret (header `x-do-secret`); the spec calls it to retrieve a fresh claim URL because the staging worker has `RESEND_DRY_RUN=1` and never delivers the original purchase email. `RegenerateGiftClaimOutcome` ok-variant gained the new field; failure variants remain type-tightened.
+- **Spec architecture:** purchaser leg fills `/book/birth-chart/gift` (scheduled delivery only — self-send is out of scope), drives Stripe to `/thank-you/<id>?gift=1&purchaserFirstName=...`, polls until the purchaser heading renders, calls regenerate, then clears cookies and drives the recipient leg through `/gift/claim?token=...` → `/gift/intake` → submit-with-3-consents → `?redeemed=1` thank-you.
+- **Per-run isolation:** purchaser and recipient emails use `crypto.randomUUID().slice(0, 8)` local-parts (`gift-roundtrip-purchaser+<runId>@…`) so multiple spec runs against the persistent staging dataset don't collide on anti-abuse caps.
+- **New helpers:** `tests/e2e/helpers/stagingApi.ts` (`regenerateGiftClaim`, `pollUntilPaid`) and `tests/e2e/helpers/giftDraft.ts` (`seedGiftIntakeDraft` mirrors `intakeDraft.ts` for redeem-mode storage key shape `gift-redeem.<submissionId>`).
+- **Config wiring:** `playwright.config.ts` introduces `isE2ERemote = isStripeRoundtrip || isGiftRoundtrip` so future round-trip specs join the union without re-architecting the file. `global-setup.ts` skips the fixture sidecar + MSW under either flag.
+- **Backlog update:** `Pre-prod data cleanup` SQL filter broadened to also match `gift-roundtrip-*` / `stripe-roundtrip-*` so post-run residue gets swept at launch time.
+
+Unit tests +1 (claimUrl shape assertion on the regenerate route success branch); existing 11 route tests still green. Anti-criteria respected — no `Co-Authored-By: Claude`, no `eslint-disable`, no test-only code in production runtime paths.
+
 ---
 
 ## Pre-launch punch list — DONE

@@ -30,6 +30,7 @@ export async function POST(request: Request): Promise<Response> {
       to: result.targetEmailRedacted,
       deliveryMethod: result.deliveryMethod,
       resendDispatched: true,
+      claimUrl: result.claimUrl,
     });
   }
 

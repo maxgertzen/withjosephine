@@ -18,8 +18,13 @@ function assertEnvGuards(): void {
 export default async function globalSetup(): Promise<void> {
   assertEnvGuards();
 
-  if (process.env.E2E_STRIPE_ROUNDTRIP === "1") {
-    console.log("[e2e] stripe-roundtrip mode: skipping fixture sidecar + MSW (real staging target)");
+  if (
+    process.env.E2E_STRIPE_ROUNDTRIP === "1" ||
+    process.env.E2E_GIFT_ROUNDTRIP === "1"
+  ) {
+    console.log(
+      "[e2e] remote-roundtrip mode: skipping fixture sidecar + MSW (real staging target)",
+    );
     return;
   }
 
