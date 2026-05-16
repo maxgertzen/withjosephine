@@ -96,7 +96,12 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
         }),
     });
 
-    if (sendResult.kind !== "sent") {
+    // `dry_run` is a successful test-mode outcome — the token + URL were
+    // generated correctly; the email-send was skipped by design (the
+    // RESEND_DRY_RUN env flag is set on staging). The submission state still
+    // needs to update so subsequent /gift/claim navigations work. `skipped`
+    // and `failed` remain real failures (misconfig / network error).
+    if (sendResult.kind !== "sent" && sendResult.kind !== "dry_run") {
       return {
         ok: false,
         reason: "send_failed",
@@ -109,7 +114,7 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
     await appendEmailFired(submission._id, {
       type: "gift_claim_regenerate",
       sentAt: nowIso,
-      resendId: sendResult.resendId,
+      resendId: sendResult.kind === "sent" ? sendResult.resendId : null,
     });
 
     return {
