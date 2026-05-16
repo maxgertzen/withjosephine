@@ -1,7 +1,6 @@
-// Seeds the IntakeForm localStorage draft for the recipient claim leg of the
-// gift round-trip spec. Mirrors `intakeDraft.ts` but keys by `gift-redeem.<submissionId>`
-// because IntakeForm in `redeem` mode rewrites its storage key (see
-// IntakeForm.tsx line ~61).
+// Seeds the IntakeForm localStorage draft for the recipient claim leg. Keys
+// by `gift-redeem.<submissionId>` because IntakeForm in redeem mode rewrites
+// its storage key (see IntakeForm.tsx).
 import type { Page } from "@playwright/test";
 
 const DRAFT_KEY_PREFIX = "josephine.intake.draft.";

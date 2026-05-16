@@ -1,21 +1,17 @@
-/**
- * Sanity-write helpers for the listen-roundtrip Playwright spec. The spec
- * needs to flip a fresh paid submission to "delivered" state (voiceNote +
- * readingPdf + deliveredAt) so the day-7-deliver cron force-mode can mirror
- * Sanity → D1 and the listen page can render the delivered surface.
- *
- * Auth: `SANITY_WRITE_TOKEN` (already provisioned per `.env.staging`).
- * Sanity dedupes assets by SHA-1, so committing the dummy fixtures means N
- * spec runs share a single underlying asset doc.
- */
+// Sanity-write helpers for the listen-roundtrip spec: flips a paid submission
+// to "delivered" (voiceNote + readingPdf + deliveredAt) and force-fires the
+// day-7-deliver cron's Sanity→D1 mirror for one row.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createClient, type SanityClient } from "@sanity/client";
-
-import { accessHeaders, requireStagingEnv, STAGING_URL } from "./stagingApi";
+import {
+  accessHeaders,
+  getStagingSanityClient,
+  requireStagingEnv,
+  STAGING_URL,
+} from "./stagingApi";
 
 const FIXTURES_DIR = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -23,26 +19,6 @@ const FIXTURES_DIR = resolve(
   "fixtures",
 );
 
-let cachedWriteClient: SanityClient | null = null;
-
-function getWriteClient(): SanityClient {
-  if (cachedWriteClient) return cachedWriteClient;
-  cachedWriteClient = createClient({
-    projectId: requireStagingEnv("NEXT_PUBLIC_SANITY_PROJECT_ID"),
-    dataset: requireStagingEnv("NEXT_PUBLIC_SANITY_DATASET"),
-    apiVersion: "2025-01-01",
-    token: requireStagingEnv("SANITY_WRITE_TOKEN"),
-    useCdn: false,
-  });
-  return cachedWriteClient;
-}
-
-/**
- * Uploads the committed dummy fixtures (audio + PDF) to Sanity as `file`
- * assets, then patches the named submission with both asset refs and a
- * `deliveredAt` timestamp. Idempotent: Sanity dedupes by hash, the patch
- * is a plain `set`.
- */
 export async function uploadDummyVoiceAndPdf(
   submissionId: string,
 ): Promise<{
@@ -50,7 +26,7 @@ export async function uploadDummyVoiceAndPdf(
   pdfAssetId: string;
   deliveredAt: string;
 }> {
-  const client = getWriteClient();
+  const client = getStagingSanityClient("write");
   const audioBuf = readFileSync(resolve(FIXTURES_DIR, "dummy-audio.wav"));
   const pdfBuf = readFileSync(resolve(FIXTURES_DIR, "dummy-reading.pdf"));
 
@@ -83,11 +59,6 @@ export async function uploadDummyVoiceAndPdf(
   };
 }
 
-/**
- * Wraps the `GET /api/cron/email-day-7-deliver?force=<id>` engineering seam.
- * Authenticates with `CRON_SECRET` Bearer. Returns the parsed JSON summary
- * so the spec can assert that the named submission was actually mirrored.
- */
 export async function forceD1Mirror(submissionId: string): Promise<{
   processed: number;
   sent: number;
