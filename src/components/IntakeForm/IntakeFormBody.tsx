@@ -28,6 +28,7 @@ import {
 } from "./LegalAcknowledgments";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
+import { PageValidationSummary } from "./PageValidationSummary";
 import { RenderedSection } from "./RenderedSection";
 import type { RenderContext } from "./renderField";
 import { ReviewSummary } from "./ReviewSummary";
@@ -56,7 +57,9 @@ export type IntakeFormBodyProps = {
   isFirstPage: boolean;
   currentPage: number;
   totalPages: number;
-  currentPageValid: boolean;
+  errorCount: number;
+  firstFieldLabel: string | null;
+  onJumpToFirstError: () => void;
   valuesUntouched: boolean;
   values: FieldValues;
   pages: IntakePage[];
@@ -115,7 +118,9 @@ export function IntakeFormBody({
   isFirstPage,
   currentPage,
   totalPages,
-  currentPageValid,
+  errorCount,
+  firstFieldLabel,
+  onJumpToFirstError,
   valuesUntouched,
   values,
   pages,
@@ -224,15 +229,11 @@ export function IntakeFormBody({
         </p>
       ) : null}
 
-      {!currentPageValid ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="font-body text-xs italic text-j-text-muted text-center mt-4"
-        >
-          Please complete the required fields above.
-        </p>
-      ) : null}
+      <PageValidationSummary
+        errorCount={errorCount}
+        firstFieldLabel={firstFieldLabel}
+        onJumpToFirstError={onJumpToFirstError}
+      />
 
       <PageNav
         isFirstPage={isFirstPage}
@@ -245,8 +246,6 @@ export function IntakeFormBody({
           submitIntentRef.current = true;
         }}
         isSubmitting={isSubmitting}
-        nextDisabled={!currentPageValid}
-        submitDisabled={isFinalPage && !currentPageValid}
         saveLaterDisabled={valuesUntouched}
         submitLabel={submitLabel}
         nextLabel={nextLabel}
