@@ -7,12 +7,13 @@ import {
   emptyConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-import { validateCurrentPage } from "@/lib/intake/intakeValidation";
+import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
 import { useDraftRestore } from "@/lib/intake/useDraftRestore";
 import { useFieldFocusTelemetry } from "@/lib/intake/useFieldFocusTelemetry";
 import { useIntakeFormHandlers } from "@/lib/intake/useIntakeFormHandlers";
 import { pageFieldKeys, useIntakeSchema } from "@/lib/intake/useIntakeSchema";
+import { usePageErrors } from "@/lib/intake/usePageErrors";
 import { useTurnstileChallenge } from "@/lib/intake/useTurnstileChallenge";
 import type {
   SanityFormSection,
@@ -169,10 +170,13 @@ export function IntakeForm({
     });
   }, [isRestored, readingId, currentPage, totalPages]);
 
-  const currentPageValid = useMemo(
-    () => validateCurrentPage(allFields, currentKeys, values).success,
-    [allFields, currentKeys, values],
-  );
+  const { pageErrors, firstErrorKey, firstFieldLabel, errorCount } =
+    usePageErrors({ allFields, currentKeys, values });
+
+  const jumpToFirstError = useCallback(() => {
+    if (!firstErrorKey) return;
+    focusFirstError(formRef.current, firstErrorKey, { scroll: true });
+  }, [firstErrorKey]);
 
   const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit } =
     useIntakeFormHandlers({
@@ -204,11 +208,16 @@ export function IntakeForm({
       flushSave,
     });
 
+  const mergedErrors = useMemo(
+    () => ({ ...errors, ...pageErrors }),
+    [errors, pageErrors],
+  );
+
   const renderContext = useMemo<RenderContext>(
     () => ({
       values,
       setValue,
-      errors,
+      errors: mergedErrors,
       disabled: isSubmitting,
       timeUnknownPairs,
       timeUnknownLabels,
@@ -217,7 +226,7 @@ export function IntakeForm({
     [
       values,
       setValue,
-      errors,
+      mergedErrors,
       isSubmitting,
       timeUnknownPairs,
       timeUnknownLabels,
@@ -252,7 +261,9 @@ export function IntakeForm({
         isFirstPage={isFirstPage}
         currentPage={currentPage}
         totalPages={totalPages}
-        currentPageValid={currentPageValid}
+        errorCount={errorCount}
+        firstFieldLabel={firstFieldLabel}
+        onJumpToFirstError={jumpToFirstError}
         valuesUntouched={valuesUntouched}
         values={values}
         pages={pages}

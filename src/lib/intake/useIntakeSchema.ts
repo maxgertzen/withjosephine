@@ -45,6 +45,21 @@ export function pageFieldKeys(page: IntakePage): string[] {
   return flattenFields(page).map((field) => field.key);
 }
 
+export function deriveTimeUnknownPairs(fields: SanityFormField[]): Map<string, string> {
+  const pairs = new Map<string, string>();
+  const fieldKeys = new Set(fields.map((f) => f.key));
+  for (const field of fields) {
+    if (field.type !== "time") continue;
+    const candidate = `${field.key}${COMPANION_SUFFIX_UNKNOWN}`;
+    if (fieldKeys.has(candidate)) pairs.set(field.key, candidate);
+  }
+  return pairs;
+}
+
+export function derivePairedUnknownKeys(fields: SanityFormField[]): Set<string> {
+  return new Set(deriveTimeUnknownPairs(fields).values());
+}
+
 export function useIntakeSchema({
   sections,
   readingId,
@@ -52,16 +67,10 @@ export function useIntakeSchema({
 }: UseIntakeSchemaArgs): UseIntakeSchemaResult {
   const allFields = useMemo(() => flattenFields(sections), [sections]);
 
-  const timeUnknownPairs = useMemo(() => {
-    const pairs = new Map<string, string>();
-    const fieldKeys = new Set(allFields.map((f) => f.key));
-    for (const field of allFields) {
-      if (field.type !== "time") continue;
-      const candidate = `${field.key}${COMPANION_SUFFIX_UNKNOWN}`;
-      if (fieldKeys.has(candidate)) pairs.set(field.key, candidate);
-    }
-    return pairs;
-  }, [allFields]);
+  const timeUnknownPairs = useMemo(
+    () => deriveTimeUnknownPairs(allFields),
+    [allFields],
+  );
 
   const pairedUnknownKeys = useMemo(
     () => new Set(timeUnknownPairs.values()),

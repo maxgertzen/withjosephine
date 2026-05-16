@@ -149,9 +149,10 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
-  it("disables submit while required fields are empty", () => {
+  it("surfaces a validation summary while required fields are empty", () => {
     renderForm();
-    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeEnabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
   it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
@@ -311,39 +312,41 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     );
   }
 
-  it("disables Next when both required fields are empty", () => {
+  it("surfaces validation summary when both required fields are empty", () => {
     renderProdShape();
-    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
-  it("keeps Next disabled when only the email is filled", async () => {
+  it("keeps validation summary visible when only the email is filled", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
-  it("keeps Next disabled when only the name is filled", async () => {
+  it("keeps validation summary visible when only the name is filled", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
-  it("keeps Next disabled when the email format is invalid", async () => {
+  it("keeps validation summary visible when the email format is invalid", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "not-an-email");
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
-  it("enables Next once both required fields are valid", async () => {
+  it("clears the validation summary once both required fields are valid", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
     expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("advances to page 2 when Next is clicked with valid page-1 input", async () => {
@@ -365,9 +368,10 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.queryByRole("button", { name: /Continue to payment/i })).toBeNull();
   });
 
-  it("disables Next while current-page validation is failing", () => {
+  it("surfaces the validation summary while current-page validation is failing", () => {
     renderForm(TWO_PAGE_SECTIONS);
-    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
+    expect(screen.getByText(/still need/)).toBeInTheDocument();
   });
 
   it("advances to page 2 when current-page validation passes", async () => {

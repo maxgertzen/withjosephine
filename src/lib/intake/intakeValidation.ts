@@ -22,16 +22,22 @@ export type IntakeSubmitErrorCode =
   | (typeof INTAKE_SUBMIT_ERROR)[keyof typeof INTAKE_SUBMIT_ERROR]
   | `http_${number}`;
 
+type FocusFirstErrorOptions = { scroll?: boolean };
+
 export function focusFirstError(
   formEl: HTMLFormElement | null,
-  fieldErrors: Record<string, string>,
+  fieldErrors: Record<string, string> | string,
+  options: FocusFirstErrorOptions = {},
 ): void {
-  const firstKey = Object.keys(fieldErrors)[0];
+  const firstKey =
+    typeof fieldErrors === "string" ? fieldErrors : Object.keys(fieldErrors)[0];
   if (!firstKey || !formEl) return;
   const el = formEl.querySelector<HTMLElement>(
     `#${fieldDomId(CSS.escape(firstKey))}`,
   );
-  el?.focus();
+  if (!el) return;
+  if (options.scroll) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.focus();
 }
 
 export function collectFieldErrors(
