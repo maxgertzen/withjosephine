@@ -111,7 +111,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               pageIndicatorTagline={bookingForm.pageIndicatorTagline}
               mode="redeem"
               redeemSubmissionId={submission._id}
-              redeemSuccessUrl={`/thank-you/${submission._id}?gift=1`}
+              redeemSuccessUrl={`/thank-you/${submission._id}?gift=1&redeemed=1`}
             />
           </div>
         </article>

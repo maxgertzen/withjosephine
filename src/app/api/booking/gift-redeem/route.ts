@@ -240,6 +240,6 @@ export async function POST(request: Request): Promise<Response> {
 
   return NextResponse.json({
     submissionId,
-    redirectUrl: `/thank-you/${submissionId}?gift=1`,
+    redirectUrl: `/thank-you/${submissionId}?gift=1&redeemed=1`,
   });
 }

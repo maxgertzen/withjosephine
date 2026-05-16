@@ -82,6 +82,54 @@ export const thankYouPage = defineType({
       initialValue: "Return to Home",
     }),
     defineField({
+      name: "giftPurchaserHeading",
+      title: "Gift purchaser heading",
+      type: "string",
+      description:
+        "Shown to a purchaser landing here after paying for a gift. Use {purchaserFirstName} as a placeholder for the purchaser's first name.",
+      initialValue: "Thank you, {purchaserFirstName}. Your gift is on its way.",
+    }),
+    defineField({
+      name: "giftPurchaserSubheading",
+      title: "Gift purchaser subheading",
+      type: "text",
+      rows: 2,
+      initialValue: "I'll take it from here. The recipient will receive a note from me with their claim link.",
+    }),
+    defineField({
+      name: "giftPurchaserBody",
+      title: "Gift purchaser body",
+      type: "text",
+      rows: 3,
+      description:
+        "Replaces the standard confirmation paragraph for gift purchasers. {recipientName} resolves to the recipient's name when known (self-send gifts may not have one).",
+      initialValue:
+        "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link — they'll share their intake details with me from there.",
+    }),
+    defineField({
+      name: "giftRecipientHeading",
+      title: "Gift recipient heading",
+      type: "string",
+      description:
+        "Shown to a recipient who's just finished filling in their intake on a redeemed gift. Use {recipientName} as a placeholder if you want to address them by name.",
+      initialValue: "Thank you. Your reading is in my hands now.",
+    }),
+    defineField({
+      name: "giftRecipientSubheading",
+      title: "Gift recipient subheading",
+      type: "text",
+      rows: 2,
+      initialValue: "I've received everything I need to begin.",
+    }),
+    defineField({
+      name: "giftRecipientBody",
+      title: "Gift recipient body",
+      type: "text",
+      rows: 3,
+      initialValue:
+        "I'll begin your reading within the next two days, and I'll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.",
+    }),
+    defineField({
       name: "overrides",
       title: "Per-reading overrides",
       type: "array",

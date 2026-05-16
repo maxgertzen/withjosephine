@@ -250,7 +250,7 @@ describe("/api/booking/gift-redeem", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.submissionId).toBe("sub_gift_1");
-    expect(body.redirectUrl).toBe("/thank-you/sub_gift_1?gift=1");
+    expect(body.redirectUrl).toBe("/thank-you/sub_gift_1?gift=1&redeemed=1");
 
     expect(getOrCreateUserMock).toHaveBeenCalledWith({ email: "bob@example.com" });
     expect(redeemGiftSubmissionMock).toHaveBeenCalledWith(

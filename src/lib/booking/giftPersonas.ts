@@ -18,10 +18,16 @@ export function stripTemplateTags(input: string): string {
   return input.replace(TEMPLATE_TAG_RE, "").trim();
 }
 
+export function purchaserFirstNameOrNull(submission: SubmissionRecord): string | null {
+  return (
+    submission.responses
+      .find((r) => r.fieldKey === "purchaser_first_name")
+      ?.value?.trim() || null
+  );
+}
+
 export function purchaserFirstNameFor(submission: SubmissionRecord): string {
-  const fromResponses = submission.responses
-    .find((r) => r.fieldKey === "purchaser_first_name")
-    ?.value?.trim();
+  const fromResponses = purchaserFirstNameOrNull(submission);
   if (fromResponses) return fromResponses;
   const local = submission.email.split("@")[0] ?? submission.email;
   const lead = local.split(/[._+-]/)[0] ?? local;

@@ -19,5 +19,11 @@
     }
   },
   "subheading": "I'm really looking forward to reading for you.",
-  "timelineBody": "I’ll begin your reading within the next two days, and I’ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout."
+  "timelineBody": "I’ll begin your reading within the next two days, and I’ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.",
+  "giftPurchaserHeading": "Thank you, {purchaserFirstName}. Your gift is on its way.",
+  "giftPurchaserSubheading": "I'll take it from here. The recipient will receive a note from me with their claim link.",
+  "giftPurchaserBody": "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link, and they'll share their intake details with me from there.",
+  "giftRecipientHeading": "Thank you. Your reading is in my hands now.",
+  "giftRecipientSubheading": "I've received everything I need to begin.",
+  "giftRecipientBody": "I’ll begin your reading within the next two days. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift."
 }

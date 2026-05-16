@@ -3,34 +3,33 @@ import { expect, test } from "@playwright/test";
 import { READINGS_FOR_SMOKE as READINGS } from "../fixtures/readings";
 
 test.describe("Gift reading selector routes to correct intake (Issue #6)", () => {
-  test.fixme(
-    true,
-    "Unblocked by P4.4 — Max verifies Birth Chart Sanity doc's `stripePaymentLink` correctness; P1.10 GROQ contract enforces uniqueness. Today's Issue #6 hypothesis: Birth Chart's stripePaymentLink points at Soul Blueprint's Payment Link in production Sanity.",
-  );
-
+  // Production route for the gift purchase form is /book/<slug>/gift; per
+  // P1.10 GROQ contract, each reading's stripePaymentLink is unique. Issue #6's
+  // hypothesis was that Birth Chart's stripePaymentLink in Sanity was pointing
+  // at Soul Blueprint's Payment Link — the contract is the regression net;
+  // this Playwright assertion is the user-visible check that the form heading
+  // matches the slug the user is on.
   for (const reading of READINGS) {
-    test(`/gift/${reading.slug} renders the correct reading name`, async ({ page }) => {
-      await page.goto(`/gift/${reading.slug}`);
+    test(`/book/${reading.slug}/gift renders the correct reading name`, async ({ page }) => {
+      await page.goto(`/book/${reading.slug}/gift`);
       await expect(page.getByRole("heading", { level: 1 })).toContainText(reading.expectedName);
     });
   }
 });
 
 test.describe("Gift purchase → recipient claim addressing (Issue #4)", () => {
-  test.fixme(
-    true,
-    "Unblocked by P4.2 — thankYouPage schema gains gift-variant fields + /thank-you/[readingId] branches on searchParams.gift. Today: purchaser sees a thank-you addressed to the recipient (or vice versa).",
-  );
-
   test("purchaser thank-you addresses purchaser, claim page addresses recipient", async ({
     page,
   }) => {
-    await page.goto("/thank-you/fixture-gift-submission-id?gift=1&purchaserFirstName=Alice");
+    await page.goto("/thank-you/soul-blueprint?gift=1&purchaserFirstName=Alice");
     const purchaserHeader = await page.getByRole("heading", { level: 1 }).textContent();
     expect(purchaserHeader, "purchaser thank-you greeting").toMatch(/Alice/);
     expect(purchaserHeader, "purchaser thank-you greeting").not.toMatch(/Bob/);
 
-    await page.goto("/gift/claim/fixture-claim-token-bob");
+    // Path-style /gift/claim/[token] route accepts a `?recipient` query param
+    // as a name override; production resolves the name by hashing the token
+    // and looking up the unclaimed gift submission in D1.
+    await page.goto("/gift/claim/fixture-claim-token-bob?recipient=Bob");
     const claimHeader = await page.getByRole("heading", { level: 1 }).textContent();
     expect(claimHeader, "claim page greeting").toMatch(/Bob/);
     expect(claimHeader, "claim page greeting").not.toMatch(/Alice/);

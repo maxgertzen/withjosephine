@@ -315,6 +315,12 @@ export type SanityThankYouPage = {
   contactBody?: string;
   closingMessage: string;
   returnButtonText: string;
+  giftPurchaserHeading?: string;
+  giftPurchaserSubheading?: string;
+  giftPurchaserBody?: string;
+  giftRecipientHeading?: string;
+  giftRecipientSubheading?: string;
+  giftRecipientBody?: string;
   overrides?: SanityThankYouOverride[];
   seo?: SanitySeo;
 };

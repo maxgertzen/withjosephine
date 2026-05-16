@@ -301,7 +301,7 @@ export function useIntakeFormHandlers({
           window.location.href =
             redeemData.redirectUrl ??
             redeemSuccessUrl ??
-            `/thank-you/${redeemData.submissionId}?gift=1`;
+            `/thank-you/${redeemData.submissionId}?gift=1&redeemed=1`;
           return;
         }
 

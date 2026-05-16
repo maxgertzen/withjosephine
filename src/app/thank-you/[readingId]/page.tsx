@@ -11,16 +11,27 @@ import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
+import { purchaserFirstNameOrNull } from "@/lib/booking/giftPersonas";
+import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { findSubmissionById } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
 import { retrieveCheckoutSession } from "@/lib/stripe";
 
 export { generateReadingStaticParams as generateStaticParams };
 
+type ThankYouSearchParams = {
+  sessionId?: string | string[];
+  gift?: string | string[];
+  purchaserFirstName?: string | string[];
+  redeemed?: string | string[];
+};
+
 type ThankYouPageProps = {
   params: Promise<{ readingId: string }>;
-  searchParams: Promise<{ sessionId?: string | string[] }>;
+  searchParams: Promise<ThankYouSearchParams>;
 };
 
 const STRIPE_SESSION_PATTERN = /^cs_(test|live)_[A-Za-z0-9]+$/;
@@ -72,47 +83,167 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
-  const [{ readingId }, { sessionId }] = await Promise.all([params, searchParams]);
+type ThankYouMode = "purchase" | "giftPurchaser" | "giftRecipient";
 
-  if (!isValidStripeSession(sessionId)) {
-    redirect("/");
+type ResolvedContext = {
+  mode: ThankYouMode;
+  reading: { name: string; price: string; cents: number | null };
+  paidAmount: PaidAmount;
+  submission: SubmissionRecord | null;
+  purchaserFirstName: string | null;
+};
+
+async function resolveContext(
+  segment: string,
+  search: ThankYouSearchParams,
+): Promise<ResolvedContext | null> {
+  const sessionId = typeof search.sessionId === "string" ? search.sessionId : undefined;
+  const giftFlag = firstParamValue(search.gift) === "1";
+  const redeemedFlag = firstParamValue(search.redeemed) === "1";
+  const purchaserNameOverride = firstParamValue(search.purchaserFirstName)?.trim() || null;
+  const sessionValid = isValidStripeSession(sessionId);
+
+  // Hot-path fast lane: a paid purchaser without the gift flag never reads
+  // submission data — skip the D1 round-trip.
+  if (sessionValid && !giftFlag) {
+    const [paidAmount, reading] = await Promise.all([
+      fetchPaidAmount(sessionId),
+      resolveReading(segment, null),
+    ]);
+    if (!reading) return null;
+    return { mode: "purchase", reading, paidAmount, submission: null, purchaserFirstName: null };
   }
 
-  const [sanityReading, thankYouPageContent, siteSettings, paidAmount] = await Promise.all([
-    fetchReading(readingId),
-    fetchThankYouPage(),
-    fetchSiteSettings(),
-    fetchPaidAmount(sessionId),
-  ]);
+  if (sessionValid) {
+    const [paidAmount, submissionLookup] = await Promise.all([
+      fetchPaidAmount(sessionId),
+      findSubmissionById(segment),
+    ]);
+    const reading = await resolveReading(segment, submissionLookup);
+    if (!reading) return null;
+    const isSessionGift = giftFlag || (submissionLookup?.isGift ?? false);
+    if (!isSessionGift) {
+      return { mode: "purchase", reading, paidAmount, submission: submissionLookup, purchaserFirstName: null };
+    }
+    const purchaserFirstName =
+      purchaserNameOverride ??
+      (submissionLookup ? purchaserFirstNameOrNull(submissionLookup) : null);
+    return {
+      mode: "giftPurchaser",
+      reading,
+      paidAmount,
+      submission: submissionLookup,
+      purchaserFirstName,
+    };
+  }
 
-  const reading = sanityReading
-    ? { name: sanityReading.name, price: sanityReading.priceDisplay, cents: sanityReading.price }
-    : (() => {
-        const fallback = getReadingById(readingId);
-        return fallback
-          ? { name: fallback.name, price: fallback.price, cents: null }
-          : null;
-      })();
+  if (giftFlag) {
+    const submissionLookup = await findSubmissionById(segment);
+    const reading = await resolveReading(segment, submissionLookup);
+    if (!reading) return null;
+    if (redeemedFlag) {
+      return {
+        mode: "giftRecipient",
+        reading,
+        paidAmount: { cents: null, display: null },
+        submission: submissionLookup,
+        purchaserFirstName: null,
+      };
+    }
+    const purchaserFirstName =
+      purchaserNameOverride ??
+      (submissionLookup ? purchaserFirstNameOrNull(submissionLookup) : null);
+    const mode: ThankYouMode = purchaserFirstName ? "giftPurchaser" : "giftRecipient";
+    return {
+      mode,
+      reading,
+      paidAmount: { cents: null, display: null },
+      submission: submissionLookup,
+      purchaserFirstName: mode === "giftPurchaser" ? purchaserFirstName : null,
+    };
+  }
 
-  if (!reading) {
+  return null;
+}
+
+async function resolveReading(
+  segment: string,
+  submission: SubmissionRecord | null,
+): Promise<ResolvedContext["reading"] | null> {
+  const submissionReading = submission?.reading ?? null;
+  const slugForLookup = submissionReading?.slug ?? segment;
+  const sanityReading = await fetchReading(slugForLookup);
+  if (sanityReading) {
+    return {
+      name: sanityReading.name,
+      price: sanityReading.priceDisplay,
+      cents: sanityReading.price,
+    };
+  }
+  if (submissionReading) {
+    return {
+      name: submissionReading.name,
+      price: submissionReading.priceDisplay,
+      cents: null,
+    };
+  }
+  const fallback = getReadingById(slugForLookup);
+  return fallback
+    ? { name: fallback.name, price: fallback.price, cents: null }
+    : null;
+}
+
+export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
+  const [{ readingId }, search] = await Promise.all([params, searchParams]);
+
+  const context = await resolveContext(readingId, search);
+  if (!context) {
+    const sessionIdParam = typeof search.sessionId === "string" ? search.sessionId : undefined;
+    if (!isValidStripeSession(sessionIdParam)) {
+      redirect("/");
+    }
     notFound();
   }
+
+  const [thankYouPageContent, siteSettings] = await Promise.all([
+    fetchThankYouPage(),
+    fetchSiteSettings(),
+  ]);
+
+  const { mode, reading, paidAmount, purchaserFirstName } = context;
+  const slugForOverride = context.submission?.reading?.slug ?? readingId;
 
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
-  const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === readingId);
+  const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === slugForOverride);
+
+  const isPurchaser = mode === "giftPurchaser";
+  const isRecipient = mode === "giftRecipient";
 
   const heading =
-    override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.";
+    isPurchaser
+      ? (thankYouPageContent?.giftPurchaserHeading ?? "Thank you, {purchaserFirstName}. Your gift is on its way.")
+      : isRecipient
+        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you. Your reading is in my hands now.")
+        : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
   const subheading =
-    override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.";
+    isPurchaser
+      ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
+      : isRecipient
+        ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
+        : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
   const readingLabel = thankYouPageContent?.readingLabel ?? "Your Reading";
   const confirmationBody =
-    override?.confirmationBody ??
-    thankYouPageContent?.confirmationBody ??
-    "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.";
+    isPurchaser
+      ? (thankYouPageContent?.giftPurchaserBody ??
+        "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
+      : isRecipient
+        ? (thankYouPageContent?.giftRecipientBody ??
+          "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+        : (override?.confirmationBody ??
+          thankYouPageContent?.confirmationBody ??
+          "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.");
   const timelineBody =
     override?.timelineBody ??
     thankYouPageContent?.timelineBody ??
@@ -128,6 +259,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     "With love, Josephine \u2726";
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
   const contactEmail = siteSettings?.contactEmail || CONTACT_EMAIL;
+  const purchaserSlotValue = purchaserFirstName ?? "";
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -143,7 +275,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {heading}
+          {renderWithSlots(heading, { purchaserFirstName: purchaserSlotValue })}
         </h1>
         <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
           {subheading}
@@ -171,7 +303,9 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p className="whitespace-pre-line">{confirmationBody}</p>
+          <p className="whitespace-pre-line">
+            {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
+          </p>
           <p className="whitespace-pre-line">
             {renderWithSlots(timelineBody, {
               deliveryDays: (

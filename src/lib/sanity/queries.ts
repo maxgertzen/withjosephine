@@ -121,6 +121,12 @@ export const thankYouPageQuery = groq`
     contactBody,
     closingMessage,
     returnButtonText,
+    giftPurchaserHeading,
+    giftPurchaserSubheading,
+    giftPurchaserBody,
+    giftRecipientHeading,
+    giftRecipientSubheading,
+    giftRecipientBody,
     "overrides": overrides[]{
       "readingSlug": reading->slug.current,
       heading,

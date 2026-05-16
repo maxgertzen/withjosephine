@@ -124,9 +124,9 @@ export interface BookingInfoNotes {
 }
 
 export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
-  deliveryNote: "You\u2019ll receive your voice note and PDF within 7 days of payment.",
+  deliveryNote: "Arrives within 7 days of payment.",
   deliverableNote:
-    "Detailed voice note recording + a supporting PDF created entirely for you.",
+    "A voice note plus a written PDF, made just for you.",
   whatsIncludedHeading: "What\u2019s included",
   bookReadingCtaText: "Book this Reading \u2192",
 };
