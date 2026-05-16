@@ -61,6 +61,39 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 ## Infrastructure
 
 
+### E2E coverage: localhost-mockable mode + CI on PRs to main + unhappy paths (filed 2026-05-17)
+- **Source:** Phase 5 retrospective. The current three staging-targeted round-trip specs (`stripe-roundtrip`, `gift-roundtrip`, `listen-roundtrip`) require `.env.staging` + a live staging worker + CF Access service-token + a Stripe sandbox + a Sanity read token. They can't run in CI on PRs to `main` and they can't run offline.
+- **Scope of the gap:**
+  1. **Localhost-mockable mode for the same three specs.** Each round-trip spec should have a sibling mode (env-gated, like `E2E_GIFT_LOCAL=1`) that targets `http://localhost:3000` with `pnpm dev` running locally. External services stubbed:
+     - **Stripe Payment Links / Checkout** → MSW handler that returns a synthetic redirect URL the spec can intercept; webhook fired via direct POST from the spec.
+     - **Sanity** → existing fixture-sidecar in `tests/e2e/fixtures-server.ts` already mocks GROQ reads; extend it to also mock writes the listen spec needs (asset upload + submission patch).
+     - **Resend** → `RESEND_DRY_RUN=1` locally already short-circuits; MSW handler captures send payloads so the spec can assert email content (verifies the unhappy path of "would-have-sent-X" without actually sending).
+     - **Cloudflare Turnstile** → use the always-pass test keys (already configured in `playwright.config.ts` webServer env block).
+     - **D1** → uses local miniflare D1 via `pnpm exec wrangler d1` (already in the CI e2e workflow).
+  2. **Unhappy-path coverage.** Each spec should also exercise its failure modes:
+     - Gift: token already claimed, token expired, recipient already redeemed, anti-abuse cap hit (`MAX_ACTIVE_GIFTS_PER_RECIPIENT`)
+     - Listen: invalid magic-link token, expired magic-link, session cookie missing, audio asset 404
+     - Booking: card declined (Stripe test card `4000000000000002`), Stripe webhook timeout, Sanity write failure
+  3. **CI integration on PRs to `main`.** Add a `e2e-local` job to `.github/workflows/ci.yml` that runs the local-mocked specs as a required check. Wire it via the same `pnpm exec playwright test` + miniflare D1 migrations the existing fixture-sidecar e2e job uses. Total runtime budget: <5 min for the full suite (8-10 specs × ~30s each headless).
+- **Why this matters:** every spec we ran against staging surfaced a real production bug (gift-claim Server Component cookie-set, scheduled-gift lock SQL filter, regenerate dry_run handling). A localhost-mockable mode that catches the SAME class of bugs in CI before code reaches `release/v1.0.0` would have caught all three of those at PR-review time.
+- **Estimated effort:** 6-10 engineering hours. Biggest piece: MSW handlers for Stripe webhook + Sanity write paths. The fixture sidecar already exists for reads.
+- **Trigger:** ship after Phase 5 close-out + before Phase 6. Block any new customer-facing feature behind passing local-mocked e2e in CI.
+
+### Listen round-trip spec — re-enable after staging hygiene (filed 2026-05-17)
+- **Source:** Phase 5 Bundle A.2 spec build. The booking-form pre-condition step inside `tests/e2e/specs/listen-roundtrip.spec.ts` (`createPaidSubmission` helper) intermittently navigates to `/my-readings` instead of Stripe Checkout after the submit click. The spec is currently `test.fixme`'d.
+- **Symptom:** After ~3 sequential booking-form submits from the same Playwright origin in the same window, the form's `intake-submit` POST stops landing on `https://buy.stripe.com/test_…` and instead lands on `https://staging.withjosephine.com/my-readings`. `wrangler tail` shows no `/api/booking` POST at all from those runs — the click is being intercepted client-side, OR the page is being redirected before the POST fires.
+- **Root cause (working hypotheses, unconfirmed):**
+  1. Cloudflare Turnstile bot challenge triggered after repeated submits — the invisible widget escalates to a managed challenge that Playwright can't auto-pass, the submit handler's `requestFreshToken()` rejects, and some downstream path navigates to `/my-readings` (the default authenticated-user landing).
+  2. Stripe / Cloudflare rate-limiting the test-card path — `4242 4242 4242 4242` from the same source IP triggers a fraud-prevention redirect.
+  3. Accumulated `*-roundtrip*` D1 + Sanity + `auth_sessions` rows from prior runs creating server-side "existing user" detection that re-routes.
+- **Why it doesn't affect gift spec:** Gift round-trip uses a different submit endpoint (`/api/booking/gift`) which bypasses whatever surface is failing here. Gift passes both `scheduled` + `self_send` variants reliably.
+- **Recommended fixes (try in order):**
+  1. **Cloudflare zone allowlist for Playwright origin IP** — add the developer machine's residential IP (or a dedicated GH Actions runner) to a CF Access bypass / WAF allowlist so Turnstile + Cloudflare bot detection treat it as trusted. Permanent, hardens against future regressions.
+  2. **Pre-prod data cleanup before each spec session** — wipe `email LIKE '%-roundtrip%'` rows from D1 + Sanity + auth_sessions before re-running. See "Pre-prod data cleanup" entry below; broaden the existing SQL filter to also nuke `auth_sessions` for these emails.
+  3. **Run from a fresh CF-Access-tunneled environment** — spin up a clean GH Actions runner job that does a single spec run end-to-end, isolated from local-dev session state.
+- **Max-action:** the allowlist step (1) is the cheapest unblock. Cloudflare → Zero Trust → Access → Policies → add an `Include → IP ranges` rule covering the developer IP, applied to the staging Access Application. Re-test the spec, untag `test.fixme`, ship.
+- **What's already merged + working:** `POST /api/internal/issue-magic-link` route + `GET /api/cron/email-day-7-deliver?force=<id>` mode + `sanityE2EAssets.uploadDummyVoiceAndPdf` + dummy WAV/PDF fixtures + the spec scaffold itself. None of that needs to ship again — only the test execution needs to be unblocked.
+
 ### Staging Turnstile = Cloudflare test keys (locked 2026-05-16 — hidden invariant; document so it doesn't drift to real keys)
 - **Source:** Phase 5 Bundle A.0 spec build. Real Turnstile blocked Playwright's Chromium (anti-bot). Switched staging to Cloudflare's published always-pass test keys so both Becky's manual smoke AND the headed `stripe-roundtrip.spec.ts` automated round-trip can complete without bot challenges.
 - **What's set:**

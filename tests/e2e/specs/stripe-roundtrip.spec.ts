@@ -1,22 +1,15 @@
-// Watchable end-to-end Stripe sandbox round-trip against staging.
-// Env-gated by E2E_STRIPE_ROUNDTRIP=1; ignored by the default chromium project.
-//
-// Why this spec exists: vitest covers each booking component, the fixture-
-// sidecar Playwright suite covers integrated UI behavior against a mocked
-// Sanity. Neither hits real Stripe + real staging Sanity + real Resend.
-// This spec is the engineering-tool equivalent of LAUNCH_SMOKE_TEST_PLAN.md
-// Stage B-1, runnable on demand so the full purchaser flow is observable
-// in a Chromium window from entry → checkout → thank-you.
-//
-// Run: `E2E_STRIPE_ROUNDTRIP=1 pnpm exec playwright test --headed`
-// Requires .env.staging sourced (CF_ACCESS_CLIENT_ID + CF_ACCESS_CLIENT_SECRET).
-import { expect, type Page,test } from "@playwright/test";
+// End-to-end Stripe sandbox round-trip against staging — the watchable
+// counterpart to LAUNCH_SMOKE_TEST_PLAN.md Stage B-1. Run with:
+//   E2E_STRIPE_ROUNDTRIP=1 pnpm exec playwright test --headed
+// Requires .env.staging sourced.
+import { expect, test } from "@playwright/test";
 
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { fillStripeCheckout } from "../helpers/stripeCheckout";
 
 const accessClientId = process.env.CF_ACCESS_CLIENT_ID;
 const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
@@ -39,24 +32,6 @@ test.use({
     "CF-Access-Client-Secret": accessClientSecret ?? "",
   },
 });
-
-async function fillStripeCheckout(page: Page): Promise<void> {
-  // Stripe Payment Links use a hosted page. Field shapes are stable enough
-  // that name-based locators work; we set generous timeouts because Stripe
-  // mounts fields progressively.
-  await page.waitForURL(/checkout\.stripe\.com|buy\.stripe\.com/, {
-    timeout: 30_000,
-  });
-  await page.locator('input[name="email"]').first().fill(stripeTestEmail);
-  await page.locator('input[name="cardNumber"]').fill("4242 4242 4242 4242");
-  await page.locator('input[name="cardExpiry"]').fill("12 / 34");
-  await page.locator('input[name="cardCvc"]').fill("123");
-  const zip = page.locator('input[name="billingPostalCode"]');
-  if (await zip.count()) await zip.fill("12345");
-  const cardName = page.locator('input[name="billingName"]');
-  if (await cardName.count()) await cardName.fill("Ada Lovelace");
-  await page.getByTestId("hosted-payment-submit-button").click();
-}
 
 test.describe("Stripe sandbox round-trip — staging", () => {
   test("birth-chart: entry → letter → intake → Stripe → thank-you", async ({
@@ -89,7 +64,7 @@ test.describe("Stripe sandbox round-trip — staging", () => {
 
     await page.getByTestId("intake-submit").click();
 
-    await fillStripeCheckout(page);
+    await fillStripeCheckout(page, stripeTestEmail);
 
     await page.waitForURL(/\/thank-you\//, { timeout: 60_000 });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
