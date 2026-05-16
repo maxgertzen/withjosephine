@@ -124,6 +124,25 @@ async function drivePurchaserLeg(
   await page.locator("#gift-art6-consent").check();
   await page.locator("#gift-cooling-off-consent").check();
 
+  // Gift form is single-page, so the invisible Turnstile widget can still
+  // be mid-execution when the test clicks submit. The form's submit handler
+  // blocks with "Please complete the verification step" if the token isn't
+  // populated yet. Wait for the widget's hidden response input to land.
+  // Staging uses Cloudflare's always-pass test key (1x000…AA), so this
+  // resolves in <1s in practice but we give it room.
+  await page.waitForFunction(
+    () => {
+      const inputs = document.querySelectorAll(
+        'input[name="cf-turnstile-response"]',
+      );
+      for (const input of inputs) {
+        if ((input as HTMLInputElement).value.length > 0) return true;
+      }
+      return false;
+    },
+    { timeout: 15_000 },
+  );
+
   await page
     .getByRole("button", { name: /(send|schedule|gift)/i })
     .first()
