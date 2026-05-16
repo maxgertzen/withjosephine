@@ -13,7 +13,12 @@ import {
 } from "./submissions";
 
 export type RegenerateGiftClaimOutcome =
-  | { ok: true; deliveryMethod: GiftDeliveryMethod; targetEmailRedacted: string }
+  | {
+      ok: true;
+      deliveryMethod: GiftDeliveryMethod;
+      targetEmailRedacted: string;
+      claimUrl: string;
+    }
   | {
       ok: false;
       reason:
@@ -111,6 +116,7 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
       ok: true,
       deliveryMethod: submission.giftDeliveryMethod,
       targetEmailRedacted: redactEmail(targetEmail),
+      claimUrl,
     };
   } finally {
     await releaseGiftResendLock(submission._id);
