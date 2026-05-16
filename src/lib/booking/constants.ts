@@ -10,6 +10,7 @@ export const ACCEPTED_PHOTO_MIME_SET: ReadonlySet<string> = new Set(ACCEPTED_PHO
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 export const BOOKING_API_ROUTE = "/api/booking";
+export const BOOKING_API_GIFT_REDEEM_ROUTE = "/api/booking/gift-redeem";
 export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
 
 export const PHOTO_PUBLIC_URL_BASE = R2_PUBLIC_ORIGIN;

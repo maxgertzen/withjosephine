@@ -294,30 +294,14 @@ Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, buil
   so 3 separate Worker invocations = 3 fetches. Acceptable today; if Sanity
   CDN ever throttles, batch the fetch upstream.
 
-### react-hooks/refs sweep (deferred 2026-05-09 from `feat/listen-redesign-and-gifting`)
+### react-hooks/refs sweep — DatePicker carry-in only
 
-`pnpm update --recursive --depth=Infinity` on the feature branch (run to
-patch transitive OSV vulns) bundled an `eslint-plugin-react-hooks` upgrade
-that promotes a few previously-warning patterns to errors. Three locations
-got targeted `eslint-disable` lines with reason comments to unblock CI;
-they need a proper refactor before the branch merges to main.
+The three IntakeForm.tsx items in this section shipped as part of the Phase 2
+god-component refactor (PR `feat/phase-2-intake-refactor`). Remaining:
 
 - `src/components/Form/DatePicker/DatePicker.tsx` — `setMonth(selected)`
   inside an effect (`react-hooks/set-state-in-effect`). Refactor to
   derived state via `useState` initializer or `useMemo`-driven month.
-- `src/components/IntakeForm/IntakeForm.tsx:194` —
-  `setSwappedFromReadingName(readingName)` inside the restore-on-mount
-  effect. Same rule. Refactor: hoist the swap detection to a
-  `useSyncExternalStore` or a derived value computed at render.
-- `src/components/IntakeForm/IntakeForm.tsx:268` —
-  `currentPageRef.current = currentPage` outside an effect (`react-hooks/refs`).
-  Refactor: replace the ref-mirror pattern with `useEvent`-style stable
-  callback or move the focus-listener registration inside the effect that
-  already knows about `currentPage`.
-- `src/components/IntakeForm/IntakeForm.tsx:632` (`currentSections.map`) —
-  `renderField` closure captures `requestFreshTurnstileToken` which reads
-  `turnstileRef.current` (`react-hooks/refs`). Refactor: pass a stable
-  ref-resolver via context or move Turnstile orchestration up the tree.
 
 ### Sanity TypeGen adoption (deferred 2026-05-09)
 

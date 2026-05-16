@@ -50,6 +50,21 @@ export function isFullyConsented(
   return true;
 }
 
+export const CONSENT_ACK_MESSAGE = "Please acknowledge to continue.";
+
+export function collectConsentErrors(
+  snapshot: LegalConsentSnapshot,
+  options: { requireArt9: boolean },
+): { art6?: string; art9?: string; coolingOff?: string } {
+  const errors: { art6?: string; art9?: string; coolingOff?: string } = {};
+  if (!snapshot.art6.acknowledged) errors.art6 = CONSENT_ACK_MESSAGE;
+  if (options.requireArt9 && !snapshot.art9.acknowledged)
+    errors.art9 = CONSENT_ACK_MESSAGE;
+  if (!snapshot.coolingOff.acknowledged)
+    errors.coolingOff = CONSENT_ACK_MESSAGE;
+  return errors;
+}
+
 export type ConsentLabelOverrides = {
   art6Label?: string;
 };
