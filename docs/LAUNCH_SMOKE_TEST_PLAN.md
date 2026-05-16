@@ -44,6 +44,20 @@ wrangler secret put MIXPANEL_SERVICE_ACCOUNT_SECRET --env staging
 
 **What it covers.** The actual customer-facing booking flow — entry page → intake form → consent checkboxes → payment redirect → thank-you page → Stripe webhook → emails. Vitest covers each component; this verifies they integrate against real Sanity + real Stripe sandbox + real Resend.
 
+**Automated alternative — Playwright headed mode.** `tests/e2e/specs/stripe-roundtrip.spec.ts` automates steps 1–8 below in a visible Chromium window. Use when you want to watch the round-trip without driving it manually.
+
+```bash
+cd www
+set -a && source .env.staging && set +a   # CF_ACCESS_CLIENT_ID + CF_ACCESS_CLIENT_SECRET
+E2E_STRIPE_ROUNDTRIP=1 pnpm exec playwright test --headed
+# Or with Playwright UI inspector for step-by-step playback:
+E2E_STRIPE_ROUNDTRIP=1 pnpm exec playwright test --ui
+```
+
+The spec carries CF Access service-token headers on every request (origin-wide, verified 2026-05-16); seeds a complete intake draft via localStorage; clicks page-by-page through the multi-page form so it's observable; ticks the 3 hardcoded consent checkboxes; submits to Stripe Payment Links; fills the sandbox card (`4242 4242 4242 4242`); follows the 303 back to `/thank-you/{id}`; asserts reading-specific copy renders. Total wall time ~60s on a warm staging worker.
+
+Manual steps below remain the canonical script when you want to drive the flow yourself with eyes on details (copy reads, dialog timing, etc.) or when the automated spec breaks on a Sanity-content change.
+
 **Pre-requisites.**
 - Staging worker is current with parent branch HEAD (auto-deploys on push).
 - Stripe is in test mode for staging.

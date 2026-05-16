@@ -61,6 +61,20 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 ## Infrastructure
 
 
+### Staging Turnstile = Cloudflare test keys (locked 2026-05-16 — hidden invariant; document so it doesn't drift to real keys)
+- **Source:** Phase 5 Bundle A.0 spec build. Real Turnstile blocked Playwright's Chromium (anti-bot). Switched staging to Cloudflare's published always-pass test keys so both Becky's manual smoke AND the headed `stripe-roundtrip.spec.ts` automated round-trip can complete without bot challenges.
+- **What's set:**
+  - **Site key (build-time, public):** `1x00000000000000000000AA` — set as a GitHub environment-scoped variable on the `staging` environment named `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Overrides the repo-level variable (real key) for the `deploy-staging` job only. Production deploy keeps reading the real repo-level key.
+  - **Secret key (runtime, Worker secret):** `1x0000000000000000000000000000000AA` — set via `pnpm exec wrangler secret put TURNSTILE_SECRET_KEY --env staging`.
+- **Security note:** Test keys ALWAYS pass, so Turnstile no longer protects staging from bots. This is acceptable because staging is already gated by Cloudflare Zero Trust (CF Access) — only authenticated identities can reach `staging.withjosephine.com` at all. Effective security is unchanged; Turnstile was redundant defense on staging.
+- **Hidden-invariant risk:** Anyone who later "rotates Turnstile keys" on staging and accidentally uses the real key will break automated tests AND make Becky's smoke flow trigger a captcha she didn't expect. The override lives in GH dashboard, not the repo — so it's not visible in code review. Read this entry before touching staging Turnstile config.
+- **References:** https://developers.cloudflare.com/turnstile/troubleshooting/testing/ (Cloudflare test-key documentation, always-pass site/secret pair).
+
+### CI workflow needs `workflow_dispatch` trigger (1-line follow-up)
+- **Source:** Phase 5 Bundle A.0, 2026-05-16. `gh workflow run ci.yml --ref release/v1.0.0` fails because `.github/workflows/ci.yml`'s `on:` block only declares `push` + `pull_request` triggers.
+- **Fix:** add `workflow_dispatch:` to the `on:` block. Then manual redeploys can be triggered via `gh workflow run ci.yml --ref <branch>` without needing an empty commit. Useful any time we want to redeploy without code changes (Turnstile key rotation, secret rotation forcing a rebuild, etc.).
+- **Trigger:** ship next time someone touches `ci.yml` for an unrelated reason. Not urgent.
+
 ### R2 backups bucket + Sanity Export token provisioning (Phase 3 prerequisite — Max-action)
 
 - **Source:** Phase 3 backup cron PR (Sanity dataset NDJSON snapshot → R2). Cron + binding shipped behind a `SANITY_BACKUP_ENABLED` deploy flag so the code is ready in advance; provisioning is what flips it on.

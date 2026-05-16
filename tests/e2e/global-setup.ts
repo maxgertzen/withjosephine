@@ -18,6 +18,11 @@ function assertEnvGuards(): void {
 export default async function globalSetup(): Promise<void> {
   assertEnvGuards();
 
+  if (process.env.E2E_STRIPE_ROUNDTRIP === "1") {
+    console.log("[e2e] stripe-roundtrip mode: skipping fixture sidecar + MSW (real staging target)");
+    return;
+  }
+
   const sidecar = await startFixtureSidecar();
   globalThis.__e2eSidecar = sidecar;
   process.env.SANITY_API_HOST = sidecar.url;
@@ -25,6 +30,6 @@ export default async function globalSetup(): Promise<void> {
   mswServer.listen({ onUnhandledRequest: "warn" });
   globalThis.__e2eMsw = mswServer;
 
-   
+
   console.log(`[e2e] sidecar on ${sidecar.url} | MSW handlers active`);
 }

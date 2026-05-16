@@ -15,6 +15,8 @@ const eslintConfig = [
       "storybook-static/**",
       "studio/**",
       "scripts/**",
+      "playwright-report/**",
+      "test-results/**",
     ],
   },
   ...nextConfig,
