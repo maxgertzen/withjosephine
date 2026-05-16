@@ -607,12 +607,15 @@ export async function acquireGiftResendLock(
   id: string,
   args: { lockUntilMs: number; nowMs: number },
 ): Promise<boolean> {
+  // Both delivery methods (`self_send` + `scheduled`) reach this lock via
+  // `regenerateGiftClaim`. The earlier `gift_delivery_method = 'self_send'`
+  // filter pre-dated the internal regenerate route and silently 429'd every
+  // scheduled-gift regenerate call.
   const result = await dbExec(
     `UPDATE submissions
         SET gift_resend_lock_until = ?
       WHERE id = ?
         AND is_gift = 1
-        AND gift_delivery_method = 'self_send'
         AND gift_claimed_at IS NULL
         AND gift_cancelled_at IS NULL
         AND (gift_resend_lock_until IS NULL OR gift_resend_lock_until < ?)`,
