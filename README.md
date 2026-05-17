@@ -151,11 +151,12 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md)                                          | Per-PR shipped history with summaries.                                                        |
 | [`docs/ADR-001-persistence.md`](docs/ADR-001-persistence.md)                      | Decision: D1 as source of truth for bookings; Sanity mirrors for editor workflow.             |
 | [`docs/BACKLOG.md`](docs/BACKLOG.md)                      | Deferred items — security follow-ups, infra cleanups, code polish.                            |
-| [`docs/LAUNCH_SMOKE_TEST_PLAN.md`](docs/LAUNCH_SMOKE_TEST_PLAN.md)                | End-to-end smoke tests for staging and production launches.                                   |
+| [`docs/MANUAL_SMOKE_TEST.md`](docs/MANUAL_SMOKE_TEST.md)                          | 9-journey customer-flow walkthrough run on staging before any production push.                |
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md)                                        | D1 migrations, Sanity dataset re-seeding, Mixpanel funnels — recurring operational tasks.     |
 | [`docs/runbooks/STAGING_RUNBOOK.md`](docs/runbooks/STAGING_RUNBOOK.md)            | Staging environment provisioning + Cloudflare Access patterns + verification.                 |
 | [`docs/runbooks/CLOUDFLARE_SETUP.md`](docs/runbooks/CLOUDFLARE_SETUP.md)          | Cloudflare provisioning reference — bindings, secrets, Custom Domains, env separation.        |
 | [`docs/runbooks/SANITY_BACKUP_RUNBOOK.md`](docs/runbooks/SANITY_BACKUP_RUNBOOK.md) | Weekly dataset backup cron — NDJSON streaming to R2 with Bucket Locks + live mirror.         |
+| [`docs/runbooks/CASCADE_DELETE_SMOKE.md`](docs/runbooks/CASCADE_DELETE_SMOKE.md)  | GDPR Art. 17 cascade-delete smoke — irreversible, maintainer-only.                            |
 | [`SECRETS_CHECKLIST.md`](SECRETS_CHECKLIST.md)                                    | Inventory of every secret and where it's set (CF, Sanity, Stripe, GitHub Actions).            |
 
 ## Conventions
