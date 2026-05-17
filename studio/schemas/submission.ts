@@ -186,7 +186,7 @@ export const submission = defineType({
       name: "recipientEmail",
       title: "Recipient email",
       type: "string",
-      description: "Bob's email for gift submissions; NULL for self-purchase.",
+      description: "Recipient's email for gift submissions; NULL for self-purchase.",
       readOnly: true,
     }),
     defineField({
@@ -208,7 +208,7 @@ export const submission = defineType({
       title: "Gift message",
       type: "text",
       rows: 3,
-      description: "Optional message Alice wrote to Bob (≤280 chars).",
+      description: "Optional message purchaser wrote to recipient (≤280 chars).",
       readOnly: true,
     }),
     defineField({

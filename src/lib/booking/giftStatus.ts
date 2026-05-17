@@ -40,15 +40,8 @@ export function giftStatusFor(record: SubmissionRecord): GiftStatus {
   };
 }
 
-/**
- * Resend-link rate-limit predicate. Counts entries of type `gift_resend`
- * in `emailsFired` within the trailing windows and surfaces the verdict
- * the route uses to decide between 200 and 429.
- *
- * Reasoning lives in the PRD: piggybacking on `emails_fired_json`
- * keeps the schema flat (no new column), and the JSON-walk cost is
- * trivial — emails_fired arrays are short by design.
- */
+// Piggybacks on `emails_fired_json` (no new column); arrays are short
+// by design so the JSON-walk cost is trivial.
 export type ResendRateLimitVerdict =
   | { allowed: true }
   | { allowed: false; reason: "hour_cap" | "day_cap" };

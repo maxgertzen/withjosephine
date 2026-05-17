@@ -86,10 +86,8 @@ export function DatePicker({
   const [month, setMonth] = useState<Date | undefined>(selected ?? maxDate);
 
   useEffect(() => {
-    // setState-in-effect is intentional here — keep calendar month synced to the
-    // typed value when navigating across months. Refactor to derived state queued
-    // in BACKLOG (react-hooks/refs sweep).
-     
+    // setState-in-effect is intentional — keep calendar month synced to the
+    // typed value when navigating across months.
     if (selected) setMonth(selected);
     // selected is recomputed each render; key off the stable string value.
     // eslint-disable-next-line react-hooks/exhaustive-deps

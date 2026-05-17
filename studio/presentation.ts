@@ -1,8 +1,6 @@
 import { defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
 /**
- * Maps Sanity document types to the live preview routes on the website.
- *
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
  * website is responsible for reading `draftMode()` and switching to the
  * `previewDrafts` perspective when that mode is active.

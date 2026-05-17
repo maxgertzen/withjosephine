@@ -17,12 +17,7 @@ import { sendDay7Delivery } from "@/lib/resend";
 
 const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://withjosephine.com";
 
-/**
- * Sources D1 candidates → filters via Sanity readiness GROQ → mirrors state
- * to D1 → sends email. Asset existence is the readiness flag (no separate
- * boolean), avoiding the TOCTOU class.
- */
-
+// Asset existence is the readiness flag (no separate boolean) to avoid TOCTOU.
 async function deliverOne(
   d1Submission: SubmissionRecord,
   resolved: DeliverableSubmission,
@@ -91,13 +86,8 @@ async function runCron(): Promise<{
   };
 }
 
-/**
- * Force-mode: process exactly one submission by id, bypassing the
- * paidAt>=7d candidate filter. Used by the listen round-trip Playwright spec
- * which needs to mirror Sanity → D1 immediately on a fresh paid submission
- * without waiting for the daily candidate window. Auth is the same
- * `CRON_SECRET` Bearer; no new auth primitive.
- */
+// Process exactly one submission by id, bypassing the paidAt>=7d candidate
+// filter. Auth is the same `CRON_SECRET` Bearer; no new auth primitive.
 async function runForce(submissionId: string): Promise<{
   processed: number;
   sent: number;

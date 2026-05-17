@@ -190,7 +190,6 @@ function buildPaymentUrl(
   }
   if (url.protocol !== "https:" || !url.hostname.endsWith(".stripe.com")) return null;
   url.searchParams.set("client_reference_id", submissionId);
-  // See DECISIONS.local.md — Stripe prefilled_email omitted from Payment Link.
   url.searchParams.set("metadata[is_gift]", "true");
   url.searchParams.set("metadata[gift_delivery_method]", deliveryMethod);
   return url.toString();
@@ -237,7 +236,6 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
-  // See DECISIONS.local.md — stripTemplateTags at the booking boundary.
   const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName

@@ -208,8 +208,8 @@ export async function redeemMagicLink(args: {
   // BUT must increment a per-link counter — at MISMATCH_LIMIT, poison the
   // link by setting consumed_at, defeating the 24h-unlimited-guess oracle.
   // Audit row attributes the failure with user_id=NULL so brute-forcing on
-  // Alice's link doesn't fill the audit table with rows misattributed to
-  // Alice as the actor.
+  // a victim's link doesn't fill the audit table with rows misattributed to
+  // the victim as the actor.
   const user = await findUserById(row.user_id);
   const claimed = normalizeEmail(args.claimedEmail);
   if (!user || claimed !== user.email) {

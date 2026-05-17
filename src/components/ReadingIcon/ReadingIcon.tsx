@@ -5,10 +5,6 @@ interface ReadingIconProps {
   className?: string;
 }
 
-/**
- * Decorative SVG illustration for each reading type.
- * Line-art style using brand gold accent, "Quiet Archivist" aesthetic.
- */
 export function ReadingIcon({ slug, className }: ReadingIconProps) {
   const classes = mergeClasses("text-j-accent", className);
 
@@ -24,7 +20,6 @@ export function ReadingIcon({ slug, className }: ReadingIconProps) {
   }
 }
 
-/** Layered geometric star mandala — signature, most intricate */
 function SoulBlueprintIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -56,7 +51,6 @@ function SoulBlueprintIcon({ className }: { className?: string }) {
   );
 }
 
-/** Circular chart with orbital rings and crescent moon */
 function BirthChartIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -85,7 +79,6 @@ function BirthChartIcon({ className }: { className?: string }) {
   );
 }
 
-/** Open book with radiating light and star accents */
 function AkashicRecordIcon({ className }: { className?: string }) {
   return (
     <svg

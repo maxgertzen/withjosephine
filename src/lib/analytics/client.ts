@@ -104,12 +104,6 @@ export function trackUntyped(event: string, properties: Record<string, unknown>)
 
 const lastTrackedAt = new Map<string, number>();
 
-/**
- * Rate-limited `track`. Drops calls that fire within `intervalMs` of the
- * previous emission for the SAME event name. Use for high-frequency emitters
- * (autosave ticks, scroll progress) where the funnel signal is "user is
- * still engaged" rather than "fire-on-every-change."
- */
 export function trackThrottled<E extends ClientEventName>(
   event: E,
   properties: ClientEventMap[E],

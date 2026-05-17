@@ -4,9 +4,7 @@ import type { AuthGatedPageContent } from "@/data/defaults";
 type Props = {
   state: "signIn" | "checkEmail";
   copy: AuthGatedPageContent;
-  /** Optional `next` redirect target passed to the magic-link form as a hidden field. */
   magicLinkNext?: string;
-  /** Anchor target on the check-email "send another" link. */
   resendHref: string;
 };
 

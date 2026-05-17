@@ -15,7 +15,6 @@ export const bookingGiftForm = defineType({
     { name: "submit", title: "Submit + errors" },
   ],
   fields: [
-    // Page frame
     defineField({
       name: "heading",
       title: "Heading",
@@ -34,7 +33,6 @@ export const bookingGiftForm = defineType({
       description: "Optional warm line beneath the heading.",
     }),
 
-    // Delivery method
     defineField({
       name: "deliveryMethodLabel",
       title: "Delivery method — section label",
@@ -74,7 +72,6 @@ export const bookingGiftForm = defineType({
       initialValue: "We'll email them on the date you choose.",
     }),
 
-    // Fields — labels, placeholders, helpers
     defineField({
       name: "purchaserFirstNameLabel",
       title: "Your first name — label",
@@ -164,7 +161,6 @@ export const bookingGiftForm = defineType({
       initialValue: "A word for them, if you like…",
     }),
 
-    // Send-at picker
     defineField({
       name: "sendAtSectionLabel",
       title: "Send-at — section label",
@@ -201,7 +197,6 @@ export const bookingGiftForm = defineType({
       initialValue: "Choose the date and time",
     }),
 
-    // Consent + refund
     defineField({
       name: "consentIntro",
       title: "Consent section intro",
@@ -220,7 +215,6 @@ export const bookingGiftForm = defineType({
         "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
       validation: (rule) => rule.required(),
     }),
-    // Submit + errors
     defineField({
       name: "submitButtonSelfSend",
       title: "Submit button — self-send",
@@ -259,8 +253,6 @@ export const bookingGiftForm = defineType({
         "We're holding a gift for this person already. Please give them a moment to open it before sending another.",
     }),
 
-    // Validation strings — inline field-level errors shown when the purchaser
-    // tries to submit with an empty/invalid field.
     defineField({
       name: "firstNameRequiredError",
       title: "Validation — first name required",

@@ -1,10 +1,6 @@
-/**
- * Floating "Exit preview" pill rendered by the root layout when draft mode is
- * active. Plain anchor (not the `Button` component) so the navigation is a
- * hard reload — the route clears the draft cookie via `redirect("/")` and we
- * want a full document swap, not a soft RSC nav. Styling uses the same
- * interactive/on-dark tokens as `Button` so the brand theme flows through.
- */
+// Plain anchor (not the Button component) so the navigation is a hard reload —
+// the route clears the draft cookie via redirect("/") and we want a full
+// document swap, not a soft RSC nav.
 export function DisableDraftMode() {
   return (
     <a

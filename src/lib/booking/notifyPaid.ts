@@ -27,8 +27,6 @@ export async function applyPaidEvent(
 ): Promise<ApplyPaidResult> {
   if (submission.stripeEventId === details.stripeEventId) return "alreadyApplied";
 
-  // Build the email context once — needed for both user-name extraction
-  // (firstName) and the actual email fan-out below.
   const context = buildSubmissionContext({
     ...submission,
     status: "paid",

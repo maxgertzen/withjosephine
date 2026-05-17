@@ -83,7 +83,6 @@ function renderFieldValue(field: SanityFormField, values: FieldValues): ReactNod
       );
     }
     default: {
-      // shortText / longText / email / placeAutocomplete
       if (typeof raw !== "string" || raw === "") return EMPTY_VALUE;
       return raw;
     }
