@@ -1,7 +1,3 @@
-// End-to-end Stripe sandbox round-trip against staging — the watchable
-// counterpart to LAUNCH_SMOKE_TEST_PLAN.md Stage B-1. Run with:
-//   E2E_STRIPE_ROUNDTRIP=1 pnpm exec playwright test --headed
-// Requires .env.staging sourced.
 import { expect, test } from "@playwright/test";
 
 import {
@@ -15,11 +11,6 @@ const accessClientId = process.env.CF_ACCESS_CLIENT_ID;
 const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "stripe-roundtrip@withjosephine.com";
-
-test.skip(
-  process.env.E2E_STRIPE_ROUNDTRIP !== "1",
-  "Stripe round-trip spec is opt-in. Set E2E_STRIPE_ROUNDTRIP=1.",
-);
 
 test.skip(
   !accessClientId || !accessClientSecret,

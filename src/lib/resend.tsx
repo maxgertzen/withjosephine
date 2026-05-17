@@ -78,6 +78,14 @@ async function sendOrSkip(args: {
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
   if (isFlagEnabled("RESEND_DRY_RUN")) {
+    const captureUrl = process.env.E2E_CAPTURE_URL;
+    if (captureUrl) {
+      void fetch(`${captureUrl}/_e2e/captured-emails`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label, to: args.to, subject: args.subject }),
+      }).catch(() => undefined);
+    }
     console.warn(`[resend] RESEND_DRY_RUN — skipping ${label} (to=${redactRecipient(args.to)})`);
     return { kind: "dry_run" };
   }

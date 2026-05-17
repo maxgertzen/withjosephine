@@ -61,23 +61,14 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 ## Infrastructure
 
 
-### E2E coverage: localhost-mockable mode + CI on PRs to main + unhappy paths (filed 2026-05-17)
-- **Source:** Phase 5 retrospective. The current three staging-targeted round-trip specs (`stripe-roundtrip`, `gift-roundtrip`, `listen-roundtrip`) require `.env.staging` + a live staging worker + CF Access service-token + a Stripe sandbox + a Sanity read token. They can't run in CI on PRs to `main` and they can't run offline.
-- **Scope of the gap:**
-  1. **Localhost-mockable mode for the same three specs.** Each round-trip spec should have a sibling mode (env-gated, like `E2E_GIFT_LOCAL=1`) that targets `http://localhost:3000` with `pnpm dev` running locally. External services stubbed:
-     - **Stripe Payment Links / Checkout** → MSW handler that returns a synthetic redirect URL the spec can intercept; webhook fired via direct POST from the spec.
-     - **Sanity** → existing fixture-sidecar in `tests/e2e/fixtures-server.ts` already mocks GROQ reads; extend it to also mock writes the listen spec needs (asset upload + submission patch).
-     - **Resend** → `RESEND_DRY_RUN=1` locally already short-circuits; MSW handler captures send payloads so the spec can assert email content (verifies the unhappy path of "would-have-sent-X" without actually sending).
-     - **Cloudflare Turnstile** → use the always-pass test keys (already configured in `playwright.config.ts` webServer env block).
-     - **D1** → uses local miniflare D1 via `pnpm exec wrangler d1` (already in the CI e2e workflow).
-  2. **Unhappy-path coverage.** Each spec should also exercise its failure modes:
-     - Gift: token already claimed, token expired, recipient already redeemed, anti-abuse cap hit (`MAX_ACTIVE_GIFTS_PER_RECIPIENT`)
-     - Listen: invalid magic-link token, expired magic-link, session cookie missing, audio asset 404
-     - Booking: card declined (Stripe test card `4000000000000002`), Stripe webhook timeout, Sanity write failure
-  3. **CI integration on PRs to `main`.** Add a `e2e-local` job to `.github/workflows/ci.yml` that runs the local-mocked specs as a required check. Wire it via the same `pnpm exec playwright test` + miniflare D1 migrations the existing fixture-sidecar e2e job uses. Total runtime budget: <5 min for the full suite (8-10 specs × ~30s each headless).
-- **Why this matters:** every spec we ran against staging surfaced a real production bug (gift-claim Server Component cookie-set, scheduled-gift lock SQL filter, regenerate dry_run handling). A localhost-mockable mode that catches the SAME class of bugs in CI before code reaches `release/v1.0.0` would have caught all three of those at PR-review time.
-- **Estimated effort:** 6-10 engineering hours. Biggest piece: MSW handlers for Stripe webhook + Sanity write paths. The fixture sidecar already exists for reads.
-- **Trigger:** ship after Phase 5 close-out + before Phase 6. Block any new customer-facing feature behind passing local-mocked e2e in CI.
+### E2E coverage: localhost-mockable mode — follow-up gaps (filed 2026-05-17)
+- **Status:** Core landed on `feat/e2e-local-mock-mode` (PR pending). Three sibling specs (`stripe-local`, `gift-local`, `listen-local`) wired into the existing `.github/workflows/e2e.yml` job via env-flag gating. Mock infrastructure: fixture sidecar accepts Sanity mutate + asset upload + capture introspection; Resend dry-run path POSTs payloads to the sidecar; test-only `/api/e2e-reset` route with defense-in-depth gating; `Stripe.webhooks.generateTestHeaderString`-based signed webhook helper; `page.route("buy.stripe.com/**")` browser interception.
+- **Deferred to follow-up PRs (file before Phase 6 ships):**
+  1. **Full gift recipient-redeem happy path.** Current `gift-local` covers the purchaser leg + Stripe webhook + Sanity mutation capture, plus 2 unhappy paths (gift-redeem 401 without cookie, gift purchase 400 missing consent). Full recipient leg needs `gift_claim_token` state in D1 produced by the async Durable Object dispatch — requires extending `/api/e2e-reset` with a seed endpoint OR exposing the gift-token internals via the existing `/api/internal/gift-claim-regenerate` route in a test-friendly mode.
+  2. **Gift unhappy paths requiring D1 seed**: `token already claimed` (409), `token expired`, `recipient already redeemed`, `anti-abuse cap hit` (`MAX_ACTIVE_GIFTS_PER_RECIPIENT`). All need pre-seeded gift submissions in D1.
+  3. **Listen full delivered-surface happy path.** Current `listen-local` covers the auth + gating seams (cold-visit sign-in card, magic-link request, garbage-token verify, internal issue-magic-link 404 paths). Full happy path (paid → delivered → audio play → listenedAt mirror) needs Sanity asset upload + force-mirror equivalent for the local sidecar — see ISC-27..ISC-33 in the original PRD.
+  4. **Booking unhappy paths**: card declined, Stripe webhook timeout, Sanity write failure (requires forced sidecar failure mode).
+- **Why deferred:** these all need either D1 seed infrastructure beyond the truncate-only reset endpoint, OR sidecar failure-injection modes. Better to ship the working surface first and add these as targeted PRs.
 
 ### Listen round-trip spec — re-enable after staging hygiene (filed 2026-05-17)
 - **Source:** Phase 5 Bundle A.2 spec build. The booking-form pre-condition step inside `tests/e2e/specs/listen-roundtrip.spec.ts` (`createPaidSubmission` helper) intermittently navigates to `/my-readings` instead of Stripe Checkout after the submit click. The spec is currently `test.fixme`'d.

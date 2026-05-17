@@ -8,7 +8,7 @@ const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 const apiVersion = "2025-01-01";
 
 const apiHost = process.env.SANITY_API_HOST;
-const hostOverride = apiHost ? { apiHost, useCdn: false } : {};
+const hostOverride = apiHost ? { apiHost, useCdn: false, useProjectHostname: false } : {};
 
 /**
  * `stega.studioUrl` tells the `<VisualEditing />` overlay where to send

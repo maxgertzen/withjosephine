@@ -1,16 +1,3 @@
-// End-to-end gift round-trip against staging.
-//
-// Variant coverage:
-//   - "scheduled": full purchaser → claim → recipient redeem chain.
-//   - "self_send": purchaser leg + claim URL only — `/api/booking/gift-redeem`
-//     requires `submission.recipientEmail`, which self_send omits.
-//
-// Submission id retrieval (load-bearing): the post-Stripe redirect lands on
-// `/thank-you/<readingSlug>` — the `[readingId]` route param is the slug,
-// not the submission id. The real id lives on `stripeSessionId` once the
-// webhook mirror runs; we recover it by Sanity GROQ on `stripeSessionId`.
-//
-// Run: `set -a && source .env.staging && set +a && E2E_GIFT_ROUNDTRIP=1 pnpm exec playwright test`
 import { expect, type Page, test } from "@playwright/test";
 
 import { seedGiftIntakeDraft } from "../helpers/giftDraft";
@@ -29,11 +16,6 @@ const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
 const dispatchSecret = process.env.DO_DISPATCH_SECRET;
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "gift-roundtrip-stripe@withjosephine.com";
-
-test.skip(
-  process.env.E2E_GIFT_ROUNDTRIP !== "1",
-  "Gift round-trip spec is opt-in. Set E2E_GIFT_ROUNDTRIP=1.",
-);
 
 test.skip(
   !accessClientId || !accessClientSecret,
