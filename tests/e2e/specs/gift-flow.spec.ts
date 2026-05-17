@@ -65,11 +65,12 @@ test.describe("Gift purchase final-page renders art6 + cooling-off unconditional
     ).toHaveCount(0);
 
     const submit = page.getByRole("button", { name: /send this gift/i });
-    await submit.click();
-    await expect(page.getByRole("alert").first()).toContainText(/acknowledg/i);
+    // Bug #6: submit is disabled until required fields + consents are all satisfied.
+    await expect(submit).toBeDisabled();
 
     await art6Checkbox.check();
     await coolingOffCheckbox.check();
+    await expect(submit).toBeEnabled();
     await submit.click();
     await page.waitForURL(/buy\.stripe\.com|stripe\.com/);
   });

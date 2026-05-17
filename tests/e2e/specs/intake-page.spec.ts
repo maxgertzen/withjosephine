@@ -66,7 +66,8 @@ test.describe("Final-page acknowledgments without Sanity consentField (Issue #2)
     await expect(page.locator("#field-art9-consent")).toBeVisible();
     await expect(page.locator("#field-cooling-off-consent")).toBeVisible();
 
-    await page.getByTestId("intake-submit").click();
-    await expect(page.getByRole("alert").first()).toContainText(/acknowledg/i);
+    // Bug #3 + #4: Continue is disabled when consents are incomplete (no
+    // longer relies on click-then-alert).
+    await expect(page.getByTestId("intake-submit")).toBeDisabled();
   });
 });

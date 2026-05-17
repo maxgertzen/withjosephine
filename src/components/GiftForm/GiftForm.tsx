@@ -19,6 +19,7 @@ import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { errorClasses, errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
 
 type FieldErrors = Partial<Record<string, string>>;
@@ -412,10 +413,10 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
                   fieldErrors.giftSendAt ? "gift-send-at-error" : undefined
                 }
                 aria-invalid={Boolean(fieldErrors.giftSendAt)}
-                className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
+                className={`rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
               />
               {fieldErrors.giftSendAt ? (
-                <span id="gift-send-at-error" className="font-body text-xs text-j-rose">
+                <span id="gift-send-at-error" className={errorClassesSmall}>
                   {fieldErrors.giftSendAt}
                 </span>
               ) : null}
@@ -459,7 +460,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       ) : null}
 
       {topLevelError ? (
-        <p role="alert" className="font-body text-sm text-j-rose">
+        <p role="alert" className={errorClasses}>
           {topLevelError}
         </p>
       ) : null}

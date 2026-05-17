@@ -10,10 +10,13 @@ test.describe("Birth Chart intake — validation surface (bugs #2 #3)", () => {
     ).toHaveCount(0);
   });
 
-  test("Bug #3: Next button is disabled when the page is invalid", async ({ page }) => {
+  test("Bug #3: advance button is disabled when the page is invalid", async ({ page }) => {
     await page.goto("/book/birth-chart/intake");
-    const nextButton = page.getByTestId("intake-next");
-    await expect(nextButton).toBeVisible();
-    await expect(nextButton).toBeDisabled();
+    // Either Next (non-final page) or Continue to payment (final/single page) — whichever renders.
+    const advance = page
+      .locator("[data-testid='intake-next'], [data-testid='intake-submit']")
+      .first();
+    await expect(advance).toBeVisible();
+    await expect(advance).toBeDisabled();
   });
 });

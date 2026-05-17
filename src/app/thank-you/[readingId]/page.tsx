@@ -9,16 +9,18 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { purchaserFirstNameOrNull } from "@/lib/booking/giftPersonas";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
+import {
+  fetchThankYouSessionSnapshot,
+  type ThankYouPaidAmount,
+} from "@/lib/booking/thankYouSession";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
-import { retrieveCheckoutSession } from "@/lib/stripe";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -41,33 +43,7 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
   return STRIPE_SESSION_PATTERN.test(sessionId);
 }
 
-type PaidAmount = { display: string | null; cents: number | null };
-
-type SessionSnapshot = {
-  paidAmount: PaidAmount;
-  isGift: boolean;
-  submissionIdFromSession: string | null;
-};
-
-async function fetchSessionSnapshot(sessionId: string): Promise<SessionSnapshot> {
-  try {
-    const session = await retrieveCheckoutSession(sessionId);
-    const cents = session.amount_total ?? null;
-    return {
-      paidAmount: {
-        cents,
-        display: formatAmountPaid(cents, session.currency ?? undefined),
-      },
-      isGift: session.metadata?.is_gift === "true",
-      submissionIdFromSession: session.client_reference_id ?? null,
-    };
-  } catch (error) {
-    // Surface the rest of the page even if the Stripe API is briefly down —
-    // the customer's payment already succeeded if they're here.
-    console.warn(`[thank-you] Failed to retrieve session ${sessionId}`, error);
-    return { paidAmount: { cents: null, display: null }, isGift: false, submissionIdFromSession: null };
-  }
-}
+type PaidAmount = ThankYouPaidAmount;
 
 export async function generateMetadata(): Promise<Metadata> {
   const thankYouPageContent = await fetchThankYouPage();
@@ -101,7 +77,7 @@ async function resolveContext(
   const sessionValid = isValidStripeSession(sessionId);
 
   if (sessionValid) {
-    const snapshot = await fetchSessionSnapshot(sessionId);
+    const snapshot = await fetchThankYouSessionSnapshot(sessionId);
     const isSessionGift = giftFlag || snapshot.isGift;
     const submissionLookup = isSessionGift
       ? await findSubmissionById(snapshot.submissionIdFromSession ?? segment)

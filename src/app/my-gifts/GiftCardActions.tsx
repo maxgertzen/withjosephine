@@ -10,6 +10,7 @@ import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 
 /**
@@ -173,10 +174,10 @@ function EditRecipientControl({
             action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
           }
           aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
-          className="rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent"
+          className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
         />
         {action.fieldErrors.giftSendAt ? (
-          <span id={`${sendAtInputId}-error`} className="font-body text-xs text-j-rose">
+          <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
             {action.fieldErrors.giftSendAt}
           </span>
         ) : null}
