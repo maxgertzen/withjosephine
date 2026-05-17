@@ -210,12 +210,6 @@ Pentester gate on the Phase 3 PR (verdict GO, MEDIUM-1 fixed in-PR). Three items
   Today's three layers cover the abuse surface adequately.
 - **Action:** Revisit if upload abuse becomes a real signal.
 
-### Launch smoke test plan — single source of truth
-
-Stage-by-stage smoke tests (A = run NOW; B = before main-merge with staging secrets set; C = after main-merge on production; D = operational, separate from launch) live in **[`docs/LAUNCH_SMOKE_TEST_PLAN.md`](./LAUNCH_SMOKE_TEST_PLAN.md)**. The file is the authoritative checklist for "what still needs to be verified" before the production go-live and is referenced from the soft-launch hold gate in the project root `CLAUDE.md`.
-
-
-
 ### Phase 5 — Session 6 — Pentester LOW deferrals (post-launch with explicit triggers)
 
 Pentester re-audit on the Session 5+6 combined diff (2026-05-12, HEAD `5f0c96a`) returned **CONDITIONAL GO**. M-1 (admin apex allowlist) + M-2 (regenerate TOCTOU lock) shipped in-PR (commit `5f0c96a`). Two LOW findings deferred:

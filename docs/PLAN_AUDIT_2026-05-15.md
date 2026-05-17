@@ -46,8 +46,9 @@ Booking submit → `/api/booking` validates via Zod + Turnstile → D1 row + San
 | www/docs/BACKLOG.md | 2026-05-13 | BACKLOG | healthy |
 | www/docs/CHANGELOG.md | 2026-05-13 | CHANGELOG | healthy |
 | www/docs/DECISIONS.local.md | 2026-05-12 | REVIEW | healthy |
-| www/docs/LAUNCH_SMOKE_TEST_PLAN.md | 2026-05-13 | RUNBOOK | healthy |
+| www/docs/MANUAL_SMOKE_TEST.md | 2026-05-17 | RUNBOOK | healthy |
 | www/docs/OPERATIONS.md | 2026-05-13 | RUNBOOK | healthy |
+| www/docs/runbooks/CASCADE_DELETE_SMOKE.md | 2026-05-17 | RUNBOOK | healthy |
 | www/docs/runbooks/CLOUDFLARE_SETUP.md | 2026-05-13 | RUNBOOK | healthy |
 | www/docs/runbooks/SANITY_BACKUP_RUNBOOK.md | 2026-05-13 | RUNBOOK | healthy |
 | www/docs/runbooks/STAGING_RUNBOOK.md | 2026-05-13 | RUNBOOK | healthy |
