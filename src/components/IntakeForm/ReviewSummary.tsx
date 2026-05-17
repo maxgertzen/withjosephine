@@ -119,7 +119,7 @@ function buildCards(pages: IntakePage[], upToPageIndex: number): ReviewCard[] {
     if (!page) continue;
     for (const section of page) {
       const renderable = section.fields.filter((field) => {
-        if (field.type === "consent" || field.type === "checkbox") return false;
+        if (field.type === "checkbox") return false;
         if (isCompanionKey(field.key, baseKeys)) return false;
         return true;
       });

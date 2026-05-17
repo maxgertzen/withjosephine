@@ -33,7 +33,7 @@ export type UseIntakeSchemaResult = {
 
 export function initialValueFor(field: SanityFormField): FieldValue {
   if (field.type === "multiSelectExact") return [];
-  if (field.type === "consent" || field.type === "checkbox") return false;
+  if (field.type === "checkbox") return false;
   return "";
 }
 

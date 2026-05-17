@@ -52,7 +52,7 @@ function RenderedSectionImpl({
         <div className="flex flex-col gap-6">
           {section.fields
             .filter((field) => {
-              if (field.type === "consent" || field.type === "checkbox") return false;
+              if (field.type === "checkbox") return false;
               if (pairedUnknownKeys.has(field.key)) return false;
               return true;
             })
