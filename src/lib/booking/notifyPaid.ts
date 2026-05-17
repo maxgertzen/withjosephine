@@ -53,7 +53,7 @@ export async function applyPaidEvent(
   }
 
   // Tax-retention record (6yr HMRC) — separable from reading content (3yr)
-  // so Phase 4 cascade can scrub PII without breaching record-keeping.
+  // so the cascade can scrub PII without breaching record-keeping.
   // Stripe always returns amount + currency on a paid checkout session;
   // the null-guard keeps the contract type-safe and skips the financial
   // row on the reconcile-cron path that synthesizes a stripeEventId.

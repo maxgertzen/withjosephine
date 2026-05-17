@@ -105,7 +105,7 @@ export const submission = defineType({
       title: "Consent Snapshot",
       type: "object",
       description:
-        "Frozen record of the consent terms the user agreed to at submission. Phase 4: art6Consent + art9Consent are the GDPR audit fields; labelText/acknowledgedAt are retained read-only for legacy rows.",
+        "Frozen record of the consent terms the user agreed to at submission. art6Consent + art9Consent are the GDPR audit fields; labelText/acknowledgedAt are retained read-only for legacy rows.",
       fields: [
         defineField({
           name: "art6Consent",
@@ -179,7 +179,7 @@ export const submission = defineType({
       name: "isGift",
       title: "Is gift?",
       type: "boolean",
-      description: "True when this submission was purchased as a gift (Phase 5).",
+      description: "True when this submission was purchased as a gift.",
       readOnly: true,
     }),
     defineField({

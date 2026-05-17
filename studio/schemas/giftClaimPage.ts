@@ -56,6 +56,30 @@ export const giftClaimPage = defineType({
       initialValue:
         "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
     }),
+    defineField({
+      name: "welcomeHeading",
+      title: "Valid-token state — heading",
+      type: "string",
+      description:
+        "Shown when the gift link is valid and the recipient is about to claim. Use the slot {recipientName} to insert the recipient's first name.",
+      initialValue: "Welcome, {recipientName}.",
+    }),
+    defineField({
+      name: "welcomeBody",
+      title: "Valid-token state — body",
+      type: "text",
+      rows: 3,
+      description: "First-impression copy under the heading. Slot {recipientName} is also available.",
+      initialValue:
+        "Your reading is waiting. Tap the button below to share a few details so it can begin.",
+    }),
+    defineField({
+      name: "welcomeCtaLabel",
+      title: "Valid-token state — button label",
+      type: "string",
+      description: "Text on the continue button.",
+      initialValue: "Continue",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "Gift Claim Page" }),

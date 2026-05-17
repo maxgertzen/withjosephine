@@ -6,6 +6,10 @@ import { type FormEvent, useState } from "react";
 import { Input } from "@/components/Form/Input";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
+import {
+  LegalAcknowledgments,
+  type LegalAcknowledgmentsErrors,
+} from "@/components/IntakeForm/LegalAcknowledgments";
 import type { BookingGiftFormContent } from "@/data/defaults";
 import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
@@ -19,11 +23,6 @@ import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-
-import {
-  LegalAcknowledgmentsGift,
-  type LegalAcknowledgmentsGiftErrors,
-} from "./LegalAcknowledgmentsGift";
 
 type FieldErrors = Partial<Record<string, string>>;
 
@@ -48,7 +47,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(
     emptyGiftPurchaserConsentSnapshot,
   );
-  const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsGiftErrors>({});
+  const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsErrors>({});
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
@@ -68,14 +67,14 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     ["giftSendAt", "gift-send-at"],
   ];
 
-  const consentFocusOrder: Array<[keyof LegalAcknowledgmentsGiftErrors, string]> = [
+  const consentFocusOrder: Array<[keyof LegalAcknowledgmentsErrors, string]> = [
     ["art6", "gift-art6-consent"],
     ["coolingOff", "gift-cooling-off-consent"],
   ];
 
   function focusFirstError(
     errs: FieldErrors,
-    consentErrs: LegalAcknowledgmentsGiftErrors,
+    consentErrs: LegalAcknowledgmentsErrors,
   ): void {
     for (const [key, elementId] of focusOrder) {
       if (errs[key as string]) {
@@ -113,8 +112,8 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     return errs;
   }
 
-  function validateConsents(): LegalAcknowledgmentsGiftErrors {
-    const errs: LegalAcknowledgmentsGiftErrors = {};
+  function validateConsents(): LegalAcknowledgmentsErrors {
+    const errs: LegalAcknowledgmentsErrors = {};
     if (!consentSnapshot.art6.acknowledged) errs.art6 = "Please acknowledge to continue.";
     if (!consentSnapshot.coolingOff.acknowledged)
       errs.coolingOff = "Please acknowledge to continue.";
@@ -421,7 +420,10 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
       <div className="border-t border-j-border-gold/20" aria-hidden="true" />
 
-      <LegalAcknowledgmentsGift
+      <LegalAcknowledgments
+        idPrefix="gift"
+        showArt9={false}
+        consentIntro={copy.consentIntro}
         snapshot={consentSnapshot}
         setSnapshot={setConsentSnapshot}
         errors={consentErrors}
@@ -433,7 +435,6 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
             return next;
           })
         }
-        consentIntro={copy.consentIntro}
         nonRefundableNotice={copy.nonRefundableNotice}
         isSubmitting={submitting}
       />

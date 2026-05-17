@@ -9,7 +9,7 @@ import "server-only";
  *     (self-purchases AND claimed gifts where the recipient is the
  *     erasing party). R2 photo + Sanity doc + Sanity assets + D1 row are
  *     all removed. Vendor surfaces (Stripe / Brevo / Mixpanel) follow.
- *  2. **Purchaser walk (Phase 5 Session 4b LB-4)** —
+ *  2. **Purchaser walk** —
  *     `listGiftsByPurchaserUserId(userId)`. Each gift the user purchased
  *     for someone else gets one of two treatments:
  *       a. Recipient already claimed (`recipient_user_id IS NOT NULL`
@@ -28,14 +28,14 @@ import "server-only";
  *     handled by the recipient walk above; we skip it in the purchaser
  *     walk to avoid double-deletion.
  *
- * Iter-3 design (locked 2026-05-11 in Phase 4 PRD `## Decisions`):
+ * Design:
  *  - Predicate is `recipient_user_id = userId` for the recipient walk;
- *    Phase 5 Session 4b added the parallel `purchaser_user_id = userId`
- *    walk above so Art. 17 closes the purchaser-PII channel.
+ *    the parallel `purchaser_user_id = userId` walk above closes the
+ *    purchaser-PII channel for Art. 17.
  *  - Vendor surfaces (Stripe Redaction Jobs, Brevo, Mixpanel data-deletions)
  *    are async with tracking IDs. We submit + store the IDs in
- *    `deletion_log`; a reconciliation cron (out of Phase 4 scope) polls
- *    vendor status and confirms completion.
+ *    `deletion_log`; a reconciliation cron polls vendor status and
+ *    confirms completion.
  *  - Each step is wrapped in try/catch — partial failures accumulate into
  *    `partialFailures: string[]` and the cascade continues. The customer's
  *    "active systems" are scrubbed even if a single vendor call fails;

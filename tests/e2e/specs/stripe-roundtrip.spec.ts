@@ -5,24 +5,18 @@ import {
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { accessHeadersOrEmpty } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 
-const accessClientId = process.env.CF_ACCESS_CLIENT_ID;
-const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "stripe-roundtrip@withjosephine.com";
 
 test.skip(
-  !accessClientId || !accessClientSecret,
+  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
   "CF Access service-token env vars missing. Source www/.env.staging first.",
 );
 
-test.use({
-  extraHTTPHeaders: {
-    "CF-Access-Client-Id": accessClientId ?? "",
-    "CF-Access-Client-Secret": accessClientSecret ?? "",
-  },
-});
+test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
 test.describe("Stripe sandbox round-trip — staging", () => {
   test("birth-chart: entry → letter → intake → Stripe → thank-you", async ({

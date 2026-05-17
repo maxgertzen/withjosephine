@@ -1,7 +1,6 @@
 import { Mail } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { Fragment, type ReactNode } from "react";
 
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
@@ -16,6 +15,7 @@ import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import { renderWithSlots } from "@/lib/copy/templateSlots";
 import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
 import { retrieveCheckoutSession } from "@/lib/stripe";
@@ -43,18 +43,6 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
 
 type PaidAmount = { display: string | null; cents: number | null };
 
-const SLOT_SPLIT = /(\{[a-zA-Z]+\})/g;
-const SLOT_MATCH = /^\{([a-zA-Z]+)\}$/;
-
-function renderWithSlots(template: string, slots: Record<string, ReactNode>): ReactNode {
-  return template.split(SLOT_SPLIT).map((part, index) => {
-    const match = SLOT_MATCH.exec(part);
-    if (match && slots[match[1]] !== undefined) {
-      return <Fragment key={index}>{slots[match[1]]}</Fragment>;
-    }
-    return <Fragment key={index}>{part}</Fragment>;
-  });
-}
 
 async function fetchPaidAmount(sessionId: string): Promise<PaidAmount> {
   try {

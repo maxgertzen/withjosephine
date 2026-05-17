@@ -46,9 +46,9 @@ function computeResendVerdict(gift: SubmissionRecord): ResendVerdictSummary | un
 }
 
 /**
- * Phase 5 Session 4b — B6.22. Build the narrow client-side view-model from
- * the full server-side record. Drops purchaser email + financial fields +
- * stripe ids so they never enter the React tree of the client component.
+ * Build the narrow client-side view-model from the full server-side
+ * record. Drops purchaser email + financial fields + stripe ids so they
+ * never enter the React tree of the client component.
  * Pre-computed `resendVerdict` exposes only the verdict the UI needs to
  * disable the CTA + render a "next available at" hint, without leaking
  * raw `emailsFired` entries (which carry Resend message IDs).

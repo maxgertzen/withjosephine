@@ -18,7 +18,7 @@ const HELPER_POSITIONS = [
 
 const PLACE_AUTOCOMPLETE_PROVIDERS = [
   { title: "GeoNames static (default)", value: "geonames-static" },
-  { title: "Geoapify (Phase 2)", value: "geoapify" },
+  { title: "Geoapify", value: "geoapify" },
   { title: "None (plain text)", value: "none" },
 ];
 

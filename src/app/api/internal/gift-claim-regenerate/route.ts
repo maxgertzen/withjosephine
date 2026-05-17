@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 
-import { regenerateGiftClaim } from "@/lib/booking/regenerateGiftClaim";
+import {
+  type GiftClaimRegenerateRefusalReason,
+  regenerateGiftClaim,
+} from "@/lib/booking/regenerateGiftClaim";
 
 import { isDispatchSecretAuthorized } from "../_lib/headerSecretAuth";
+
+const REFUSED = () => new NextResponse(null, { status: 404 });
+
+type RefusalResponse = { error: string; status: number };
+
+const REFUSAL_RESPONSES: Record<GiftClaimRegenerateRefusalReason, RefusalResponse> = {
+  not_found: { error: "Submission not found", status: 404 },
+  not_a_gift: { error: "Submission is not a gift", status: 409 },
+  claimed: { error: "Gift already claimed", status: 409 },
+  cancelled: { error: "Gift cancelled", status: 409 },
+  cooldown: { error: "Cooldown active — wait 5 minutes between regenerations", status: 429 },
+  missing_target_email: { error: "No target email on submission", status: 409 },
+};
 
 function parseBody(value: unknown): { submissionId: string } | null {
   if (!value || typeof value !== "object") return null;
@@ -12,9 +28,7 @@ function parseBody(value: unknown): { submissionId: string } | null {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!isDispatchSecretAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!isDispatchSecretAuthorized(request)) return REFUSED();
 
   const raw = await request.json().catch(() => null);
   const body = parseBody(raw);
@@ -34,27 +48,11 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  if (result.reason === "not_found") {
-    return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+  if (result.reason !== "send_failed") {
+    const refusal = REFUSAL_RESPONSES[result.reason];
+    return NextResponse.json({ error: refusal.error }, { status: refusal.status });
   }
-  if (result.reason === "not_a_gift") {
-    return NextResponse.json({ error: "Submission is not a gift" }, { status: 409 });
-  }
-  if (result.reason === "claimed") {
-    return NextResponse.json({ error: "Gift already claimed" }, { status: 409 });
-  }
-  if (result.reason === "cancelled") {
-    return NextResponse.json({ error: "Gift cancelled" }, { status: 409 });
-  }
-  if (result.reason === "cooldown") {
-    return NextResponse.json(
-      { error: "Cooldown active — wait 5 minutes between regenerations" },
-      { status: 429 },
-    );
-  }
-  if (result.reason === "missing_target_email") {
-    return NextResponse.json({ error: "No target email on submission" }, { status: 409 });
-  }
+
   return NextResponse.json(
     {
       outcome: "send_failed",

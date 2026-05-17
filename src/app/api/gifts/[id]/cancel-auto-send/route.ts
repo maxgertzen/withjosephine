@@ -33,7 +33,7 @@ export async function POST(
     return NextResponse.json({ error: "Closed" }, { status: 409 });
   }
 
-  // Phase 5 Session 4b — B6.21 atomic-flip-first redesign.
+  // Atomic-flip-first redesign.
   // ORDER (load-bearing — closes the cancel-vs-alarm race):
   //   1. ATOMIC FLIP of `gift_delivery_method` to self_send + provisional
   //      token hash, gated by the same NULL fired-at/claimed-at/cancelled-at

@@ -2,34 +2,35 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import { LegalAcknowledgments } from "@/components/IntakeForm/LegalAcknowledgments";
 import {
   COOLING_OFF_CONSENT_LABEL,
   emptyGiftPurchaserConsentSnapshot,
   GIFT_ART6_CONSENT_LABEL,
 } from "@/lib/compliance/intakeConsent";
 
-import { LegalAcknowledgmentsGift } from "./LegalAcknowledgmentsGift";
-
 const noticeText = "Gifts are non-refundable once payment is complete.";
 
 function renderHarness(
-  overrides: Partial<Parameters<typeof LegalAcknowledgmentsGift>[0]> = {},
+  overrides: Partial<Parameters<typeof LegalAcknowledgments>[0]> = {},
 ) {
   const setSnapshot = vi.fn();
   const clearError = vi.fn();
-  const props: Parameters<typeof LegalAcknowledgmentsGift>[0] = {
+  const props: Parameters<typeof LegalAcknowledgments>[0] = {
     snapshot: emptyGiftPurchaserConsentSnapshot(),
     setSnapshot,
     errors: {},
     clearError,
     nonRefundableNotice: noticeText,
     isSubmitting: false,
+    idPrefix: "gift",
+    showArt9: false,
     ...overrides,
   };
-  return { ...render(<LegalAcknowledgmentsGift {...props} />), setSnapshot, clearError };
+  return { ...render(<LegalAcknowledgments {...props} />), setSnapshot, clearError };
 }
 
-describe("LegalAcknowledgmentsGift", () => {
+describe("LegalAcknowledgments — gift mode (showArt9=false, idPrefix=gift)", () => {
   it("renders the non-refundable notice + art6 + cooling-off only", () => {
     renderHarness();
     expect(screen.getByText(noticeText)).toBeInTheDocument();

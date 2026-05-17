@@ -31,6 +31,19 @@ export function accessHeaders(): Record<string, string> {
   };
 }
 
+// Variant used by `test.use({ extraHTTPHeaders })` — runs at spec module load
+// before `test.skip` would otherwise fire. Returns empty when env unset so the
+// skip path completes cleanly instead of throwing.
+export function accessHeadersOrEmpty(): Record<string, string> {
+  const id = process.env.CF_ACCESS_CLIENT_ID;
+  const secret = process.env.CF_ACCESS_CLIENT_SECRET;
+  if (!id || !secret) return {};
+  return {
+    "CF-Access-Client-Id": id,
+    "CF-Access-Client-Secret": secret,
+  };
+}
+
 export type RegenerateGiftClaimResponse = {
   outcome: "regenerated";
   to: string;

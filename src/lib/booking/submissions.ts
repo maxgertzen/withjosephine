@@ -253,8 +253,8 @@ export async function listGiftsByPurchaserUserId(
 }
 
 /**
- * Phase 5 Session 4b — B6.20. Atomic resend-link lock acquire. See
- * repo.acquireGiftResendLock for full semantics.
+ * Atomic resend-link lock acquire. See repo.acquireGiftResendLock for
+ * full semantics.
  */
 export async function acquireGiftResendLock(
   id: string,
@@ -349,9 +349,9 @@ export async function markGiftClaimSent(
 }
 
 /**
- * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
- * Pseudonymises a purchaser-owned gift submission whose recipient has
- * already claimed. See `repo.pseudonymisePurchaserGift` for full semantics.
+ * GDPR Art. 17 cascade purchaser walk. Pseudonymises a purchaser-owned
+ * gift submission whose recipient has already claimed. See
+ * `repo.pseudonymisePurchaserGift` for full semantics.
  */
 export async function pseudonymisePurchaserGift(
   submission: Pick<SubmissionRecord, "_id" | "responses">,

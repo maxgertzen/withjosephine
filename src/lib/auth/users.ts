@@ -3,15 +3,15 @@ import "server-only";
 /**
  * User identity for the listen-page magic-link auth.
  *
- * Email = identity. Repeat customers + gift recipients (Phase 5) share one
- * user record across all their submissions. Created server-side on first
- * paid event (Stripe webhook → applyPaidEvent → here). Never created via a
+ * Email = identity. Repeat customers + gift recipients share one user
+ * record across all their submissions. Created server-side on first paid
+ * event (Stripe webhook → applyPaidEvent → here). Never created via a
  * customer-facing signup.
  *
- * Spec: www/MEMORY/WORK/20260509-202915_phase1-magic-link-listen/PRD.md
- *   ISC-4 — getOrCreateUser is idempotent on email
- *   ISC-5 — called from Stripe webhook after submission paid-write
- *   ISC-6 — same email returns same userId, isNew=false
+ * Invariants:
+ *   - getOrCreateUser is idempotent on email
+ *   - called from Stripe webhook after submission paid-write
+ *   - same email returns same userId, isNew=false
  */
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 

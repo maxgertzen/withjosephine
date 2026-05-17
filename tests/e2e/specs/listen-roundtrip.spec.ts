@@ -12,6 +12,7 @@ import {
   uploadDummyVoiceAndPdf,
 } from "../helpers/sanityE2EAssets";
 import {
+  accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
   issueMagicLink,
   pollSanityListenedAt,
@@ -19,26 +20,17 @@ import {
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 
-const accessClientId = process.env.CF_ACCESS_CLIENT_ID;
-const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
-const adminApiKey = process.env.ADMIN_API_KEY;
-
 test.skip(
-  !accessClientId || !accessClientSecret,
+  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
   "CF Access service-token env vars missing. Source www/.env.staging first.",
 );
 
 test.skip(
-  !adminApiKey,
+  !process.env.ADMIN_API_KEY,
   "ADMIN_API_KEY missing from .env.staging — the issue-magic-link engineering seam can't be exercised without it.",
 );
 
-test.use({
-  extraHTTPHeaders: {
-    "CF-Access-Client-Id": accessClientId ?? "",
-    "CF-Access-Client-Secret": accessClientSecret ?? "",
-  },
-});
+test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
 async function createPaidSubmission(page: Page, email: string): Promise<string> {
   await seedIntakeDraft(page, "birth-chart", { values: { email } });

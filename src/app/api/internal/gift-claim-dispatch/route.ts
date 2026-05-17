@@ -1,9 +1,9 @@
 /**
  * Internal route the DO `GiftClaimScheduler` posts to on alarm fire.
  *
- * **Logging discipline (Phase 5 Session 4b — B5.19):** if you add a
- * `console.*` to this file, log only `submissionId`. No raw emails, no
- * Resend message IDs, no token material, no recipient/purchaser names.
+ * **Logging discipline:** if you add a `console.*` to this file, log only
+ * `submissionId`. No raw emails, no Resend message IDs, no token material,
+ * no recipient/purchaser names.
  */
 import { NextResponse } from "next/server";
 

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
@@ -7,8 +9,8 @@ import { StarField } from "@/components/StarField";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
 type VellumShellProps = {
-  heading: string;
-  body: string;
+  heading: ReactNode;
+  body: ReactNode;
   ctaHref?: string;
   ctaLabel?: string;
 };

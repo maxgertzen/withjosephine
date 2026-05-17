@@ -12,10 +12,9 @@ import "server-only";
  *  1. POST /v1/privacy/redaction_jobs — status goes `validating → ready`
  *     (validation can take up to 30 days for high-volume objects).
  *  2. POST /v1/privacy/redaction_jobs/{id}/run — required to execute the
- *     redaction once status is `ready`. Phase 4 cascade only creates the
- *     job here and returns the id; a reconciliation cron (out of scope,
- *     filed in BACKLOG) polls status and calls `/run` when
- *     ready.
+ *     redaction once status is `ready`. The cascade only creates the
+ *     job here and returns the id; a reconciliation cron polls status
+ *     and calls `/run` when ready.
  *
  * `validation_behavior=fix` is the admin-path default — `error` (Stripe
  * default) fails the job on common cases like open disputes, pending
@@ -32,8 +31,7 @@ import "server-only";
  * than being deleted — exactly what GDPR Art. 17(3)(b) financial-records
  * retention requires. Customer-facing copy MUST say "Stripe redacts your
  * personally identifying fields; the transaction record itself is retained
- * as legally required" — NEVER "Stripe deleted your record" (per PRD
- * ISC-A2).
+ * as legally required" — NEVER "Stripe deleted your record".
  */
 import { requireEnv } from "../../env";
 import type { VendorResult } from "./types";

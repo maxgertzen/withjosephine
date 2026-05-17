@@ -8,7 +8,7 @@ import type { EmailFiredEntry, SubmissionRecord } from "./submissions";
  * the single source of truth.
  *
  * Intentionally does NOT include any "listened" state: listening is
- * private to the recipient (Phase 5 ISC-A5 / ISC-A3).
+ * private to the recipient.
  */
 export type GiftStatus =
   | { kind: "scheduled"; sendAt: string }

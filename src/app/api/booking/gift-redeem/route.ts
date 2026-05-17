@@ -198,7 +198,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  // Session 4b LB-3: re-check the anti-abuse cap at claim time. self_send mode
+  // Re-check the anti-abuse cap at claim time. self_send mode
   // may purchase with NULL recipient_email, bypassing the purchase-time cap. A
   // purchaser forwarding many self_send URLs to the same recipient is caught
   // here. Exclude this submission so the gift doesn't count against itself.

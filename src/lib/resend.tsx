@@ -369,7 +369,7 @@ export async function sendMagicLink(args: {
 }
 
 /**
- * Phase 4 — GDPR Art. 20 data-portability delivery. Plain-text HTML, no
+ * GDPR Art. 20 data-portability delivery. Plain-text HTML, no
  * marketing copy, just the pre-signed R2 URL with its expiry window. Lives
  * here rather than in a React Email template because the body is one
  * structural sentence + a link — a full React component would be ceremony.

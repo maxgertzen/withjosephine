@@ -11,8 +11,7 @@ import { jsonPost, type JsonPostResult } from "@/lib/http/jsonPost";
  * `"rate_limited"`, `"http_500"`) so consumers can map to Sanity copy.
  *
  * Shipped instead of React Server Actions — OpenNext 1.19.4 on Cloudflare
- * Workers has fragile server-action support; see
- * `www/docs/BACKLOG.md` → Phase 5 Session 5 → "T6.28-30 / B4.13"
+ * Workers has fragile server-action support; see `www/docs/BACKLOG.md`
  * for the trigger to revisit.
  */
 export function useMutationAction<T = unknown>(endpoint: string) {

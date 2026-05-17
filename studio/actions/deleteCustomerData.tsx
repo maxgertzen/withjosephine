@@ -5,10 +5,10 @@ import type { DocumentActionComponent, DocumentActionProps } from "sanity";
 
 /**
  * GDPR Art. 17 cascade delete trigger. Registered for the `submission` doc
- * type. Two-step typed-DELETE confirmation per Phase 4 PRD ISC-22 + ISC-A6
- * (no `window.confirm` / native dialog). UI strings reflect the locked
- * customer-facing wording — Stripe REDACTS personally identifying fields;
- * the transaction record itself is retained per HMRC 6-year obligation.
+ * type. Two-step typed-DELETE confirmation (no `window.confirm` / native
+ * dialog). UI strings reflect the locked customer-facing wording — Stripe
+ * REDACTS personally identifying fields; the transaction record itself is
+ * retained per HMRC 6-year obligation.
  *
  * The action POSTs `{ submissionId }` to the Next.js admin route. The
  * Studio bundle does NOT carry the `ADMIN_API_KEY` — the user pastes it

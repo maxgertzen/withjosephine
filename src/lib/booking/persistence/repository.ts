@@ -348,7 +348,7 @@ export async function deleteSubmission(id: string): Promise<void> {
 }
 
 /**
- * Phase 5 Session 4b — LB-4 GDPR Art. 17 cascade purchaser walk.
+ * GDPR Art. 17 cascade purchaser walk.
  *
  * Purchaser-owned gift submissions where the recipient is a distinct user
  * who has already claimed: pseudonymise — the recipient holds contract-base
@@ -482,7 +482,7 @@ export async function listSubmissionsByRecipientUserId(
 }
 
 /**
- * Phase 5 Session 3 — `/my-gifts` page query. Returns every gift submission
+ * `/my-gifts` page query. Returns every gift submission
  * the purchaser has ever bought, regardless of status: pre-fire, fired,
  * claimed, delivered, cancelled. Ordering is newest-first so the most
  * recent purchase appears at the top.
@@ -512,7 +512,7 @@ export type EditGiftRecipientPatch = {
  * `false` when the row was either not found, already fired, claimed,
  * or cancelled — callers translate that into a 409.
  *
- * recipient_name lives in `responses_json` (Phase 5 1b lock); the
+ * recipient_name lives in `responses_json`; the
  * surrounding submissions wrapper handles that update via the Sanity
  * mirror, not this raw repo helper. Repo-level edits keep to the
  * top-level columns.
@@ -570,7 +570,7 @@ function upsertResponseField(
 }
 
 /**
- * Phase 5 Session 3 — purchaser flips scheduled→self_send.
+ * Purchaser flips scheduled→self_send.
  * Writes are pre-fire so the WHERE-guard mirrors `editGiftRecipient`.
  */
 export async function flipGiftToSelfSend(
@@ -595,8 +595,8 @@ export async function flipGiftToSelfSend(
 }
 
 /**
- * Phase 5 Session 4b — B6.20. Atomic lock acquire for the resend-link
- * route. Returns true when this caller successfully acquired the lock
+ * Atomic lock acquire for the resend-link route.
+ * Returns true when this caller successfully acquired the lock
  * (first writer wins), false when another caller holds an unexpired lock.
  * The lock TTL is short (60s) — long enough to cover Resend's worst-case
  * latency, short enough that a crashed in-flight resend doesn't perma-
