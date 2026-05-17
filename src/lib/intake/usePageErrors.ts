@@ -3,9 +3,11 @@
 import { useMemo } from "react";
 
 import type { FieldValues } from "@/components/IntakeForm/types";
+import { buildPageSchema } from "@/lib/booking/buildPageSchema";
+import { buildNameFollowupSchema } from "@/lib/booking/nameFollowupSchema";
 import type { SanityFormField } from "@/lib/sanity/types";
 
-import { validateCurrentPage } from "./intakeValidation";
+import { collectFieldErrors } from "./intakeValidation";
 
 export type UsePageErrorsArgs = {
   allFields: SanityFormField[];
@@ -25,8 +27,26 @@ export function usePageErrors({
   currentKeys,
   values,
 }: UsePageErrorsArgs): UsePageErrorsResult {
+  // Stable across keystrokes — the page's structural schema only changes
+  // when the active page changes or the CMS form definition changes.
+  const pageSchema = useMemo(
+    () => buildPageSchema(allFields, currentKeys),
+    [allFields, currentKeys],
+  );
+  const currentFields = useMemo(
+    () => allFields.filter((field) => currentKeys.includes(field.key)),
+    [allFields, currentKeys],
+  );
+
   return useMemo(() => {
-    const { fieldErrors } = validateCurrentPage(allFields, currentKeys, values);
+    const followupSchema = buildNameFollowupSchema(currentFields, values);
+    const pageResult = pageSchema.safeParse(values);
+    const followupResult = followupSchema.safeParse(values);
+    const issues = [
+      ...(pageResult.success ? [] : pageResult.error.issues),
+      ...(followupResult.success ? [] : followupResult.error.issues),
+    ];
+    const fieldErrors = collectFieldErrors(issues);
     const firstErrorKey =
       currentKeys.find((key) => fieldErrors[key] !== undefined) ?? null;
     const firstFieldLabel = firstErrorKey
@@ -38,5 +58,5 @@ export function usePageErrors({
       firstFieldLabel,
       errorCount: Object.keys(fieldErrors).length,
     };
-  }, [allFields, currentKeys, values]);
+  }, [pageSchema, currentFields, allFields, currentKeys, values]);
 }

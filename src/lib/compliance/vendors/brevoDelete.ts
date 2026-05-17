@@ -1,7 +1,7 @@
 import "server-only";
 
 /**
- * Brevo (formerly Sendinblue) — Phase 4 GDPR cascade target.
+ * Brevo (formerly Sendinblue) — GDPR cascade target.
  *
  * Verified 2026-05-11 against:
  * https://developers.brevo.com/reference/delete-contact

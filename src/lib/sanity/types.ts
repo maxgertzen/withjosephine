@@ -153,6 +153,9 @@ export type SanityGiftClaimPage = {
   noTokenBody: string;
   alreadyClaimedHeading: string;
   alreadyClaimedBody: string;
+  welcomeHeading: string;
+  welcomeBody: string;
+  welcomeCtaLabel: string;
 };
 
 export type SanityGiftIntakePage = {

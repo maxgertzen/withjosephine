@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
   flattenOps,
@@ -6,21 +6,11 @@ import {
   getCapturedMutations,
   resetCapturedState,
 } from "../helpers/captureStore";
+import { datetimeLocalPlus } from "../helpers/datetimeLocal";
 import { fireCheckoutCompleted } from "../helpers/stripeWebhook";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
 const READING_SLUG = "birth-chart";
-
-async function datetimeLocalPlus(page: Page, minutes: number): Promise<string> {
-  return page.evaluate((m) => {
-    const t = new Date(Date.now() + m * 60_000);
-    const pad = (n: number): string => String(n).padStart(2, "0");
-    return (
-      `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}` +
-      `T${pad(t.getHours())}:${pad(t.getMinutes())}`
-    );
-  }, minutes);
-}
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);

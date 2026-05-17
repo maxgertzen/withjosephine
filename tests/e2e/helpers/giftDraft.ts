@@ -3,10 +3,12 @@
 // its storage key (see IntakeForm.tsx).
 import type { Page } from "@playwright/test";
 
-const DRAFT_KEY_PREFIX = "josephine.intake.draft.";
-const DRAFT_VERSION = 1;
-
-type DraftValues = Record<string, string | string[] | boolean>;
+import {
+  DRAFT_KEY_PREFIX,
+  DRAFT_VERSION,
+  type DraftEnvelope,
+  type DraftValues,
+} from "@/lib/intake/localStorageDraft";
 
 const RECIPIENT_INTAKE_DEFAULTS: DraftValues = {
   // Letter-only name fields enforce /^[A-Za-z…'\-\s.]+$/ at the schema level.
@@ -39,7 +41,7 @@ export async function seedGiftIntakeDraft(
     recipientEmail: "",
   },
 ): Promise<void> {
-  const envelope = {
+  const envelope: DraftEnvelope = {
     version: DRAFT_VERSION,
     savedAt: new Date().toISOString(),
     currentPage: 0,

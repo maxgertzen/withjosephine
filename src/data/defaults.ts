@@ -349,6 +349,9 @@ export interface GiftClaimPageContent {
   noTokenBody: string;
   alreadyClaimedHeading: string;
   alreadyClaimedBody: string;
+  welcomeHeading: string;
+  welcomeBody: string;
+  welcomeCtaLabel: string;
 }
 
 export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
@@ -360,6 +363,10 @@ export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
   alreadyClaimedHeading: "This gift has already been opened",
   alreadyClaimedBody:
     "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
+  welcomeHeading: "Welcome, {recipientName}.",
+  welcomeBody:
+    "Your reading is waiting. Tap the button below to share a few details so it can begin.",
+  welcomeCtaLabel: "Continue",
 };
 
 export interface GiftIntakePageContent {

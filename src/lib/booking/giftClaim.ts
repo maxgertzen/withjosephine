@@ -32,8 +32,8 @@ export async function issueGiftClaimToken(): Promise<IssuedGiftClaimToken> {
  * when no match (invalid token, already claimed, or cancelled). The DB
  * lookup is by hash equality so the raw token never sits in storage.
  *
- * Phase 5 Session 4b — B5.16 constant-time path: shape-mismatch and
- * shape-match-but-not-in-DB both perform a hash + a DB lookup. The lookup
+ * Constant-time path: shape-mismatch and shape-match-but-not-in-DB both
+ * perform a hash + a DB lookup. The lookup
  * uses a fixed placeholder hash when the shape is wrong, so the wall-clock
  * timing of "garbage token" matches "valid-shape but unknown token". Closes
  * the timing-oracle that let an attacker distinguish "your token doesn't

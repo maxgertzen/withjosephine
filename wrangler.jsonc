@@ -173,7 +173,8 @@
 	// that hostname is owned by `env.staging.routes` below.
 	"vars": {
 		"BOOKING_DB_DRIVER": "d1",
-		"ENVIRONMENT": "production"
+		"ENVIRONMENT": "production",
+		"NEXT_PUBLIC_SANITY_DATASET": "production"
 	},
 	// ─── Staging environment ────────────────────────────────────────────────
 	// Wrangler env blocks do NOT inherit from top-level — every binding has to
@@ -259,6 +260,7 @@
 			"vars": {
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
+				"NEXT_PUBLIC_SANITY_DATASET": "staging",
 				"RESEND_DRY_RUN": "1",
 				"SANITY_BACKUP_ENABLED": "1"
 			}

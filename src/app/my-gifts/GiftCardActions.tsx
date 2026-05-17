@@ -13,10 +13,10 @@ import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 
 /**
- * Phase 5 Session 4b — B6.22. Narrow view-model for the client-side action
- * controls. Only the fields the buttons actually need; intentionally NOT
- * `SubmissionRecord` so we never accidentally serialize purchaser email,
- * financial fields, or any other server-side PII to the browser bundle.
+ * Narrow view-model for the client-side action controls. Only the fields
+ * the buttons actually need; intentionally NOT `SubmissionRecord` so we
+ * never accidentally serialize purchaser email, financial fields, or any
+ * other server-side PII to the browser bundle.
  */
 export type GiftCardData = {
   _id: string;

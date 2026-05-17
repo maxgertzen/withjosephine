@@ -95,9 +95,10 @@ async function callRoute(init: { headers?: Record<string, string>; body?: unknow
 }
 
 describe("/api/internal/gift-claim-regenerate", () => {
-  it("returns 401 when secret header missing", async () => {
+  it("returns silent 404 when secret header missing (no enumeration)", async () => {
     const res = await callRoute({ body: { submissionId: "sub_gift" } });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe("");
   });
 
   it("returns 400 when body malformed", async () => {

@@ -92,7 +92,7 @@ export function hexToBytes(hex: string, expectedByteLength?: number): Uint8Array
 /**
  * SHA-256 hex digest. Shared util — used for daily-rotating IP/UA hashes in
  * listen-session auth and for stable email-hash audit identifiers in the
- * Phase 4 deletion cascade. Unsalted; callers add their own salt when they
+ * deletion cascade. Unsalted; callers add their own salt when they
  * need rotation (`dailySalt(secret, now)` in listenSession.ts).
  */
 export async function sha256Hex(value: string): Promise<string> {

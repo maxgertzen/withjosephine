@@ -18,7 +18,7 @@ test.describe("Gift reading selector routes to correct intake (Issue #6)", () =>
 });
 
 test.describe("Gift purchase → recipient claim addressing (Issue #4)", () => {
-  test("purchaser thank-you addresses purchaser, claim page addresses recipient", async ({
+  test("purchaser thank-you addresses purchaser; /gift/claim refuses recipient override", async ({
     page,
   }) => {
     await page.goto("/thank-you/soul-blueprint?gift=1&purchaserFirstName=Alice");
@@ -26,13 +26,14 @@ test.describe("Gift purchase → recipient claim addressing (Issue #4)", () => {
     expect(purchaserHeader, "purchaser thank-you greeting").toMatch(/Alice/);
     expect(purchaserHeader, "purchaser thank-you greeting").not.toMatch(/Bob/);
 
-    // Path-style /gift/claim/[token] route accepts a `?recipient` query param
-    // as a name override; production resolves the name by hashing the token
-    // and looking up the unclaimed gift submission in D1.
+    // /gift/claim/[token] no longer trusts a `?recipient=` URL override — the
+    // greeting is rendered only after `verifyGiftClaimToken` resolves the
+    // submission. An invalid token falls back to the already-claimed copy,
+    // even when a `?recipient=` param tries to spoof the greeting.
     await page.goto("/gift/claim/fixture-claim-token-bob?recipient=Bob");
     const claimHeader = await page.getByRole("heading", { level: 1 }).textContent();
-    expect(claimHeader, "claim page greeting").toMatch(/Bob/);
-    expect(claimHeader, "claim page greeting").not.toMatch(/Alice/);
+    expect(claimHeader, "no recipient name spoofed via URL").not.toMatch(/Bob/);
+    expect(claimHeader, "fall-back already-claimed copy renders").toMatch(/already been opened/i);
   });
 });
 

@@ -1,8 +1,8 @@
 import type { SubmissionRecord } from "./submissions";
 
 /**
- * Phase 5 Session 4b — B7.26. Strip `{tag}` patterns from purchaser-
- * controlled inputs at the API boundary. Defends against a hostile
+ * Strip `{tag}` patterns from purchaser-controlled inputs at the API
+ * boundary. Defends against a hostile
  * purchaser sneaking `{recipientName}` (or other template variable names)
  * into a stored field that later feeds an email template — substitution
  * happens after storage, so an unstripped tag would silently hijack the

@@ -12,6 +12,14 @@ import {
   releaseGiftResendLock,
 } from "./submissions";
 
+export type GiftClaimRegenerateRefusalReason =
+  | "not_found"
+  | "not_a_gift"
+  | "claimed"
+  | "cancelled"
+  | "cooldown"
+  | "missing_target_email";
+
 export type RegenerateGiftClaimOutcome =
   | {
       ok: true;
@@ -21,14 +29,7 @@ export type RegenerateGiftClaimOutcome =
     }
   | {
       ok: false;
-      reason:
-        | "not_found"
-        | "not_a_gift"
-        | "claimed"
-        | "cancelled"
-        | "cooldown"
-        | "missing_target_email"
-        | "send_failed";
+      reason: GiftClaimRegenerateRefusalReason | "send_failed";
       deliveryMethod?: GiftDeliveryMethod;
       targetEmailRedacted?: string;
     };

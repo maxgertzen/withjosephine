@@ -153,9 +153,6 @@ describe("middleware apex lockdown (under-construction on)", () => {
       "/api/booking",
       "/api/booking/upload-url",
       "/api/draft/enable",
-      "/privacy",
-      "/terms",
-      "/refund-policy",
     ];
     for (const pathname of paths) {
       const res = middleware(
@@ -193,6 +190,16 @@ describe("middleware apex lockdown (under-construction on)", () => {
       makeRequest({ hasDraft: false, pathname: "/listen/sub_abc123" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite legal pages on apex (statutory compliance reachability)", () => {
+    const paths = ["/privacy", "/terms", "/refund-policy"];
+    for (const pathname of paths) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, pathname }),
+      ) as unknown as RewriteResponse;
+      expect(res.rewriteTo, `expected ${pathname} not to be rewritten`).toBeNull();
+    }
   });
 
   it("does NOT rewrite /api/internal/ on apex (DO alarm dispatch + admin recovery scripts must reach apex)", () => {

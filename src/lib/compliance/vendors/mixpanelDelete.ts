@@ -1,7 +1,7 @@
 import "server-only";
 
 /**
- * Mixpanel Data Deletion API (v3) — Phase 4 GDPR cascade target.
+ * Mixpanel Data Deletion API (v3) — GDPR cascade target.
  *
  * Verified 2026-05-11 against:
  * https://developer.mixpanel.com/reference/create-deletion

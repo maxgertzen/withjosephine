@@ -79,7 +79,7 @@ export function validateCurrentPage(
   return {
     success,
     fieldErrors: collectFieldErrors(issues),
-    parsedValues: { ...(pageResult.success ? pageResult.data : {}), ...(followupResult.success ? followupResult.data : {}) } as FieldValues,
+    parsedValues: mergeParsed(pageResult, followupResult),
   };
 }
 
@@ -99,6 +99,18 @@ export function validateFullSubmission(
   return {
     success,
     fieldErrors: collectFieldErrors(issues),
-    parsedValues: { ...(result.success ? result.data : {}), ...(followupResult.success ? followupResult.data : {}) } as FieldValues,
+    parsedValues: mergeParsed(result, followupResult),
   };
+}
+
+type SafeParseResult = { success: true; data: unknown } | { success: false };
+
+function mergeParsed(...results: SafeParseResult[]): FieldValues {
+  const merged: Record<string, unknown> = {};
+  for (const result of results) {
+    if (result.success && result.data && typeof result.data === "object") {
+      Object.assign(merged, result.data);
+    }
+  }
+  return merged as FieldValues;
 }

@@ -62,7 +62,9 @@ type GateResult =
 
 // Single D1 round-trip via findSubmissionListenContext — caller never
 // re-queries the submission. Every denial path emits an audit row so
-// cross-user probes leave a forensic trail.
+// cross-user probes leave a forensic trail. Session lookup + submission
+// context lookup are independent reads — fan out in parallel to cut audio
+// hot-path latency on every Range request.
 export async function gateListenAssetRequest(
   request: Request,
   submissionId: string,
@@ -73,7 +75,10 @@ export async function gateListenAssetRequest(
   const cookieStore = await cookies();
   const cookieValue = cookieStore.get(COOKIE_NAME)?.value ?? "";
   const audit = await getRequestAuditContext(request);
-  const session = cookieValue ? await getActiveSession({ cookieValue }) : null;
+  const [session, ctx] = await Promise.all([
+    cookieValue ? getActiveSession({ cookieValue }) : Promise.resolve(null),
+    findSubmissionListenContext(submissionId),
+  ]);
 
   if (!session) {
     await writeAudit({
@@ -87,7 +92,6 @@ export async function gateListenAssetRequest(
     return { ok: false, response: new Response("Forbidden", { status: 403 }) };
   }
 
-  const ctx = await findSubmissionListenContext(submissionId);
   if (!ctx?.recipientUserId) {
     await writeAudit({
       userId: session.userId,

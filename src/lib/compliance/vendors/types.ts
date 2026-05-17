@@ -1,13 +1,12 @@
 /**
- * Shared types for Phase 4 vendor deletion helpers. Each helper returns the
+ * Shared types for vendor deletion helpers. Each helper returns the
  * same `VendorResult` shape so the cascade can build a uniform partialFailures
  * list across Stripe / Brevo / Mixpanel without per-vendor branching.
  *
  * `trackingId` is non-null only for vendors that respond asynchronously and
  * give us a polling handle (Stripe Redaction Job id, Brevo SMTP-log process
- * id, Mixpanel data-deletions task id). The reconciliation cron (out of
- * Phase 4 scope; filed in BACKLOG) will use these to confirm
- * completion against vendor status endpoints.
+ * id, Mixpanel data-deletions task id). The reconciliation cron will use
+ * these to confirm completion against vendor status endpoints.
  */
 export type VendorResult =
   | { ok: true; trackingId: string | null }

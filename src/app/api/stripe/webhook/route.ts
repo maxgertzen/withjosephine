@@ -84,7 +84,7 @@ async function dispatchGiftPurchaseConfirmation(
 ): Promise<void> {
   if (!submission || !submission.giftDeliveryMethod) return;
 
-  // Phase 5 Session 4b — B5.18 metadata canary. Surfaces drift between
+  // Metadata canary. Surfaces drift between
   // Stripe session metadata (set on the Payment Link by /api/booking/gift)
   // and the persisted submission's `isGift` truth. If Stripe metadata
   // contradicts the row, log + continue — the row is the source of truth,

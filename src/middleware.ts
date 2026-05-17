@@ -41,12 +41,21 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //                           emails; auth-gated by magic-link cookie. The
 //                           email bodies hardcode apex URLs (see
 //                           email-day-7-deliver/route.ts SITE_ORIGIN).
+//   - /privacy /terms /refund-policy : Statutory compliance pages must
+//                           remain reachable on the apex even when the
+//                           holding page is rendered. GDPR + UK consumer
+//                           rights expect these accessible from the public
+//                           apex URL without ceremony; the holding page is
+//                           a soft-launch posture, not a legal waiver.
 const APEX_ALLOWLIST_PREFIXES = [
   "/api/stripe/webhook",
   "/api/cron/",
   "/api/internal/",
   "/api/admin/",
   "/listen/",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
 ];
 
 function isApexAllowlisted(pathname: string): boolean {

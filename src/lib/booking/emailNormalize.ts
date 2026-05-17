@@ -8,7 +8,7 @@
  * vs purchaser). Plus-aliases route legitimately at the SMTP level so we
  * must not strip them from persisted values.
  *
- * **Phase 5 Session 4b — GAP-4: ZWSP accept-as-different decision.** NFKC
+ * **ZWSP accept-as-different decision.** NFKC
  * normalises invisible code points (U+200B zero-width space, U+200C/D
  * zero-width joiners, U+FEFF BOM) into separate-character sequences
  * rather than removing them. Two emails that differ ONLY by an embedded

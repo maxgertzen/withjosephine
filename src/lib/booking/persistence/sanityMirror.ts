@@ -50,17 +50,30 @@ function getClient(): SanityWritable | null {
  * Look up the reading document by slug. The submission references it
  * via Sanity's reference type. If the lookup fails, fall back to a
  * plain string slug (Studio dashboards still resolve via reading_slug).
+ *
+ * Reading docs are effectively immutable in practice (3 readings, slugs
+ * have never changed). Memoize lookups per slug in module scope to skip
+ * the Sanity round-trip on every booking submit. A schema-rename would
+ * require a worker restart, which matches how Sanity Studio publishes
+ * propagate to the worker today.
  */
+const readingRefCache = new Map<string, { _type: "reference"; _ref: string }>();
+
 async function findReadingRef(
   client: SanityWritable,
   slug: string,
 ): Promise<{ _type: "reference"; _ref: string } | null> {
+  const cached = readingRefCache.get(slug);
+  if (cached) return cached;
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
       { slug },
     );
-    return result ? { _type: "reference", _ref: result._id } : null;
+    if (!result) return null;
+    const ref = { _type: "reference" as const, _ref: result._id };
+    readingRefCache.set(slug, ref);
+    return ref;
   } catch (error) {
     console.warn(`[sanityMirror] reading ref lookup failed for ${slug}`, error);
     return null;
@@ -90,8 +103,8 @@ export async function mirrorSubmissionCreate(
         email: input.email,
         responses: responsesWithKeys,
         consentSnapshot: {
-          // Phase 4 — Art. 6 + Art. 9 labels are sourced from
-          // intakeConsent.ts so the UI and the audit record cannot diverge.
+          // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
+          // the UI and the audit record cannot diverge.
           // Legacy labelText/acknowledgedAt remain populated for read-back.
           labelText: input.consentLabel ?? "",
           acknowledgedAt: consent.consentAcknowledgedAt,

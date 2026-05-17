@@ -209,7 +209,10 @@ export const giftClaimPageQuery = groq`
     noTokenHeading,
     noTokenBody,
     alreadyClaimedHeading,
-    alreadyClaimedBody
+    alreadyClaimedBody,
+    welcomeHeading,
+    welcomeBody,
+    welcomeCtaLabel
   }
 `;
 

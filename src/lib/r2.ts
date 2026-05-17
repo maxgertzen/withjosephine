@@ -140,7 +140,7 @@ export async function deleteObject(key: string): Promise<void> {
 }
 
 /**
- * Server-side PUT of an in-memory body. Used by the Phase 4 Art. 20 export
+ * Server-side PUT of an in-memory body. Used by the Art. 20 export
  * endpoint to upload a ZIP under `exports/`. Throws on non-2xx so the caller
  * can surface the failure to the user.
  */
@@ -167,7 +167,7 @@ export async function putObject(
 }
 
 /**
- * Pre-signed GET URL for download. Phase 4 Art. 20 export uses this to
+ * Pre-signed GET URL for download. Art. 20 export uses this to
  * deliver the bundle ZIP without exposing the R2 bucket publicly. Default
  * 7-day expiry matches the locked PRD spec.
  */

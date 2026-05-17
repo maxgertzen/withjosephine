@@ -1,51 +1,33 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { datetimeLocalPlus } from "../helpers/datetimeLocal";
 import { seedGiftIntakeDraft } from "../helpers/giftDraft";
 import {
   clickThroughIntakePages,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
 import {
+  accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
   regenerateGiftClaim,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 
-const accessClientId = process.env.CF_ACCESS_CLIENT_ID;
-const accessClientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
-const dispatchSecret = process.env.DO_DISPATCH_SECRET;
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "gift-roundtrip-stripe@withjosephine.com";
 
 test.skip(
-  !accessClientId || !accessClientSecret,
+  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
   "CF Access service-token env vars missing. Source www/.env.staging first.",
 );
 
 test.skip(
-  !dispatchSecret,
+  !process.env.DO_DISPATCH_SECRET,
   "DO_DISPATCH_SECRET missing — set the same value used by the staging worker secret.",
 );
 
-test.use({
-  extraHTTPHeaders: {
-    "CF-Access-Client-Id": accessClientId ?? "",
-    "CF-Access-Client-Secret": accessClientSecret ?? "",
-  },
-});
+test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
-async function datetimeLocalPlus(page: Page, minutes: number): Promise<string> {
-  // `datetime-local` is timezone-naive. Compute in-browser so the value lands
-  // in the future regardless of CI vs local timezone.
-  return page.evaluate((m) => {
-    const t = new Date(Date.now() + m * 60_000);
-    const pad = (n: number): string => String(n).padStart(2, "0");
-    return (
-      `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}` +
-      `T${pad(t.getHours())}:${pad(t.getMinutes())}`
-    );
-  }, minutes);
-}
 
 type GiftVariant = "scheduled" | "self_send";
 
@@ -165,7 +147,7 @@ test.describe("Gift round-trip — staging", () => {
     const regenerated = await regenerateGiftClaim(
       request,
       submissionId,
-      dispatchSecret!,
+      process.env.DO_DISPATCH_SECRET!,
     );
     expect(regenerated.outcome).toBe("regenerated");
     expect(regenerated.deliveryMethod).toBe("scheduled");
@@ -233,7 +215,7 @@ test.describe("Gift round-trip — staging", () => {
     const regenerated = await regenerateGiftClaim(
       request,
       submissionId,
-      dispatchSecret!,
+      process.env.DO_DISPATCH_SECRET!,
     );
     expect(regenerated.outcome).toBe("regenerated");
     expect(regenerated.deliveryMethod).toBe("self_send");

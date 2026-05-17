@@ -44,7 +44,7 @@ export async function POST(
     );
   }
 
-  // Phase 5 Session 4b — B6.20 atomic lock. The in-memory rate-limit check
+  // Atomic lock. The in-memory rate-limit check
   // above is per-request and CANNOT detect a second concurrent POST that
   // is also walking the same emails_fired_json snapshot. Acquire a short-
   // TTL lock in D1; if we don't get it, another in-flight resend is
