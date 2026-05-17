@@ -348,21 +348,15 @@ Wiring is in production (Consent v2, CSP, masking) per CHANGELOG. Remaining Max-
 
 ### PR-F1 simplify-pass deferrals (remaining after Bundles 2 + 4)
 
-**Source:** Code-quality + efficiency review on `feat/mixpanel-pr-f1` 2026-05-02. Three of five original items closed across PR #77 (Bundle 2 — `consentEffectRanRef` ref-guard + `<SavedIndicator>` extraction) and PR #79 (Bundle 4 — confirmed-and-rejected `process.env.*` hoist; see "Why kept inline" below). Remaining:
+- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Cleaner long-term fix is `useSyncExternalStore` for the consent state read. **Trigger:** when the consent flow gains complexity (e.g. per-purpose consent granularity).
 
-- **Why `process.env.*` reads in IntakeForm render path were KEPT inline (durable rationale, do not re-propose).** Tried hoisting to both module scope (Bundle 2) and `useMemo([], [])` (Bundle 4); both reverted. Root reason: Next's webpack DefinePlugin already inlines `NEXT_PUBLIC_*` as string literals at build time. The "inline reads" in source compile to bare constants in the output bundle. Module-scope hoist has the same runtime cost AND breaks `vi.stubEnv` test stubs. `useMemo` has the same runtime cost AS the inline reads PLUS hook overhead (cache lookup, deps-array compare). The inline reads ARE the optimal pattern at this build pipeline. Saved as memory `feedback_next_publicenv_inlining.md`.
+- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Eager module-scope read is unsafe (SSR breaks); lazy module-scope cache is identical work to the function-scope cache. **Trigger:** if/when re-init support is added.
 
-- **`setState`-in-effect lint suppression in AnalyticsBootstrap.** Cleaner long-term fix is `useSyncExternalStore` for the consent state read. Refactor when the consent flow gains complexity (e.g. when we add per-purpose consent granularity).
-
-- **`window.location.host` re-read in `initAnalytics()`.** Called once due to the `bootstrapped` guard. Hoist if/when re-init support is added (currently not on the roadmap). Eager module-scope read is unsafe (SSR breaks); lazy module-scope cache is identical work to the function-scope cache.
-
-- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. Acceptable today (script runs maybe 1–2 times in its lifetime); swap to a lightweight projection query if it becomes a template.
+- **`migrate-privacy-mixpanel.ts` re-fetches on no-op idempotency check.** The script fetches the entire doc before short-circuiting. **Trigger:** if it becomes a template for other migration scripts (today runs maybe 1–2 times in its lifetime).
 
 
 
 ## Code quality (nice-to-fix)
-
-Remaining items after PRs #76–#78 (Bundles 1–3) closed: F-11 cron-auth, build-time Turnstile bypass assertion, TrustLine cleanup, `clientReferenceId` orphan removal (+ D1 column drop via migration `0003`), `abandonmentRecoveryFiredAt` orphan removal, `void chipTick` refactor, `letter/page.tsx` IIFE simplification, `intake_save_auto` throttle, `@next/bundle-analyzer` wiring, `experimental_taintObjectReference` markers. Inferred-return-type sweep across components/routes — RESOLVED 2026-05-07 in `feat/quality-sweep-projections-copy-types` (Explore-agent enumeration found Bundle 4 + earlier sweeps had already covered all but one helper in StarField.tsx; remaining src/lib/** functions retain explicit annotations from PR #79).
 
 - **`legal_full_name` in `SWAP_PRESERVED_KEYS`.** Kept as a fallback for
   pre-migration localStorage drafts. Drafts have a 30-day TTL — drop after
@@ -519,11 +513,6 @@ These are noise-level items the 5-vantage review surfaced. Bundle into one `/sim
 - **Source:** Code review Quality [NIT] 2026-05-10.
 - **What:** `redeemMagicLink` repeats the same `await writeAudit({...}); return { ok: false, reason }` block at 4–5 error branches. Real divergence already showed up: `link_invalid` branch was missing `userAgentHash` that `link_email_mismatch` included.
 - **Action:** Extract `denyAndAudit(reason, eventType, { userId, ipHash, userAgentHash, submissionId, now })`. Enforce consistency by construction.
-
-#### B-5. Drop "iter 2" iteration markers from comments
-- **Source:** Code review Quality [NOISE] 2026-05-10.
-- **What:** `migrations/0004_listen_auth.sql:1` says "user-keyed (iter 2)"; `listenSession.ts` header has "Identity model (iter 2)" preamble. Iteration numbers belong in git, not the source.
-- **Action:** Strip iteration markers; keep substantive content.
 
 #### B-7. Drop tautological `constants` describe block
 - **Source:** Code review Engineer [NIT] 2026-05-10.
