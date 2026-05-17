@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { FIXTURE_SIDECAR_PORT } from "./tests/e2e/fixtures-server";
 import {
   activeRemoteRoundtrip,
   isAnyLocalRoundtripActive,
@@ -13,6 +14,7 @@ const isE2ELocalRoundtrip = isAnyLocalRoundtripActive();
 const activeRemote = activeRemoteRoundtrip();
 const stagingUrl =
   process.env.STAGING_URL ?? "https://staging.withjosephine.com";
+const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
 
 const remoteProject = activeRemote && {
   name: activeRemote.name,
@@ -26,8 +28,12 @@ const localProject = {
   use: { ...devices["Desktop Chrome"] },
 };
 
-const e2eResetToken =
-  process.env.E2E_RESET_TOKEN ?? `e2e-reset-${Math.random().toString(36).slice(2, 14)}`;
+// Stable across config evaluations. Playwright re-evaluates playwright.config.ts
+// in worker processes, so a Math.random-generated value drifts between the
+// runner and the dev server. The token only needs to be unguessable to
+// external probes — the route already enforces E2E=1 + ENVIRONMENT !==
+// "production" gates which are the real "don't run on production" guards.
+const e2eResetToken = process.env.E2E_RESET_TOKEN ?? "e2e-reset-stable-token";
 
 export default defineConfig({
   testDir: "./tests/e2e/specs",
@@ -64,25 +70,37 @@ export default defineConfig({
 
   webServer: isE2ERemote
     ? undefined
-    : {
-        command: "pnpm dev",
-        url: "http://localhost:3000",
-        reuseExistingServer: !isCI,
-        timeout: 120_000,
-        stdout: "pipe",
-        stderr: "pipe",
-        env: {
-          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
-          NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS: "1",
-          BOOKING_TURNSTILE_BYPASS: "1",
-          E2E: "1",
-          E2E_RESET_TOKEN: e2eResetToken,
-          RESEND_DRY_RUN: "1",
-          SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
-          STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
-          STRIPE_WEBHOOK_SECRET: "whsec_e2e_dummy",
-          LISTEN_TOKEN_SECRET: "e2e_listen_token_secret_dummy",
-          ADMIN_API_KEY: "e2e_admin_api_key_dummy",
+    : [
+        {
+          command: "pnpm exec tsx tests/e2e/fixture-server-cli.ts",
+          url: `${sidecarUrl}/_e2e/health`,
+          reuseExistingServer: !isCI,
+          timeout: 30_000,
+          stdout: "pipe",
+          stderr: "pipe",
         },
-      },
+        {
+          command: "pnpm dev",
+          url: "http://localhost:3000",
+          reuseExistingServer: !isCI,
+          timeout: 120_000,
+          stdout: "pipe",
+          stderr: "pipe",
+          env: {
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
+            NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS: "1",
+            BOOKING_TURNSTILE_BYPASS: "1",
+            E2E: "1",
+            E2E_RESET_TOKEN: e2eResetToken,
+            E2E_CAPTURE_URL: sidecarUrl,
+            SANITY_API_HOST: sidecarUrl,
+            RESEND_DRY_RUN: "1",
+            SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
+            STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
+            STRIPE_WEBHOOK_SECRET: "whsec_e2e_dummy",
+            LISTEN_TOKEN_SECRET: "e2e_listen_token_secret_dummy",
+            ADMIN_API_KEY: "e2e_admin_api_key_dummy",
+          },
+        },
+      ],
 });

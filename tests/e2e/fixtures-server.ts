@@ -159,9 +159,18 @@ function operationLabel(kind: CapturedMutationOp["kind"]): string {
   }
 }
 
+export const FIXTURE_SIDECAR_PORT = 47391;
+
 export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   const bundle = await loadBundle();
   const app = new Hono();
+
+  if (process.env.E2E_SIDECAR_DEBUG === "1") {
+    app.use(async (c, next) => {
+      console.log(`[sidecar] ${c.req.method} ${c.req.url}`);
+      await next();
+    });
+  }
 
   app.get("/:apiVersion{v[^/]+}/data/query/:dataset", (c) => {
     const query = c.req.query("query") ?? "";
@@ -274,7 +283,7 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   );
 
   return await new Promise<FixtureSidecar>((resolve, reject) => {
-    const server = serve({ fetch: app.fetch, port: 0 }, (info) => {
+    const server = serve({ fetch: app.fetch, port: FIXTURE_SIDECAR_PORT }, (info) => {
       const port = info.port;
       const url = `http://127.0.0.1:${port}`;
       resolve({

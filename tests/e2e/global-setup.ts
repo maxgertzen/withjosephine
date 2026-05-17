@@ -1,9 +1,8 @@
-import { type FixtureSidecar, startFixtureSidecar } from "./fixtures-server";
+import { FIXTURE_SIDECAR_PORT } from "./fixtures-server";
 import { isAnyRoundtripActive } from "./helpers/roundtripFlags";
 import { mswServer } from "./mocks/external";
 
 declare global {
-  var __e2eSidecar: FixtureSidecar | undefined;
   var __e2eMsw: typeof mswServer | undefined;
 }
 
@@ -26,15 +25,21 @@ export default async function globalSetup(): Promise<void> {
     return;
   }
 
-  const sidecar = await startFixtureSidecar();
-  globalThis.__e2eSidecar = sidecar;
-  process.env.SANITY_API_HOST = sidecar.url;
-  process.env.E2E_CAPTURE_URL = sidecar.url;
+  // The fixture sidecar runs as a Playwright `webServer` entry on a fixed port
+  // (see playwright.config.ts) so it comes up alongside `pnpm dev`. Playwright
+  // launches webServers BEFORE globalSetup, so by the time we get here the
+  // sidecar is already listening — we just expose its URL to the runner
+  // process so specs that POST to its capture endpoints can find it.
+  const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
+  if (!process.env.E2E_CAPTURE_URL) {
+    process.env.E2E_CAPTURE_URL = sidecarUrl;
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_e2e_dummy";
+  }
 
   mswServer.listen({ onUnhandledRequest: "warn" });
   globalThis.__e2eMsw = mswServer;
 
-  console.log(
-    `[e2e] sidecar on ${sidecar.url} | MSW handlers active | E2E_CAPTURE_URL set`,
-  );
+  console.log(`[e2e] sidecar expected at ${sidecarUrl} | MSW handlers active`);
 }
