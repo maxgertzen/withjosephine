@@ -29,10 +29,12 @@ export default async function globalSetup(): Promise<void> {
   const sidecar = await startFixtureSidecar();
   globalThis.__e2eSidecar = sidecar;
   process.env.SANITY_API_HOST = sidecar.url;
+  process.env.E2E_CAPTURE_URL = sidecar.url;
 
   mswServer.listen({ onUnhandledRequest: "warn" });
   globalThis.__e2eMsw = mswServer;
 
-
-  console.log(`[e2e] sidecar on ${sidecar.url} | MSW handlers active`);
+  console.log(
+    `[e2e] sidecar on ${sidecar.url} | MSW handlers active | E2E_CAPTURE_URL set`,
+  );
 }

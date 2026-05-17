@@ -1,20 +1,22 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import {
-  activeRoundtrip,
+  activeRemoteRoundtrip,
+  isAnyLocalRoundtripActive,
   isAnyRoundtripActive,
   REMOTE_SPECS_PATTERN,
 } from "./tests/e2e/helpers/roundtripFlags";
 
 const isCI = Boolean(process.env.CI);
 const isE2ERemote = isAnyRoundtripActive();
-const active = activeRoundtrip();
+const isE2ELocalRoundtrip = isAnyLocalRoundtripActive();
+const activeRemote = activeRemoteRoundtrip();
 const stagingUrl =
   process.env.STAGING_URL ?? "https://staging.withjosephine.com";
 
-const remoteProject = active && {
-  name: active.name,
-  testMatch: active.specMatch,
+const remoteProject = activeRemote && {
+  name: activeRemote.name,
+  testMatch: activeRemote.specMatch,
   use: { ...devices["Desktop Chrome"] },
 };
 
@@ -24,18 +26,25 @@ const localProject = {
   use: { ...devices["Desktop Chrome"] },
 };
 
+const e2eResetToken =
+  process.env.E2E_RESET_TOKEN ?? `e2e-reset-${Math.random().toString(36).slice(2, 14)}`;
+
 export default defineConfig({
   testDir: "./tests/e2e/specs",
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isE2ERemote ? 1 : 2,
+  workers: isE2ERemote ? 1 : isE2ELocalRoundtrip ? 1 : 2,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }], ["list"]]
     : [["list"], ["html", { open: "never" }]],
-  timeout: isE2ERemote ? 5 * 60 * 1000 : 60_000,
+  timeout: isE2ERemote ? 5 * 60 * 1000 : isE2ELocalRoundtrip ? 3 * 60 * 1000 : 60_000,
   expect: { timeout: 10_000 },
-  globalTimeout: isE2ERemote ? 10 * 60 * 1000 : 6 * 60 * 1000,
+  globalTimeout: isE2ERemote
+    ? 10 * 60 * 1000
+    : isE2ELocalRoundtrip
+      ? 10 * 60 * 1000
+      : 6 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
   globalTeardown: "./tests/e2e/global-teardown.ts",
 
@@ -46,6 +55,9 @@ export default defineConfig({
     video: "retain-on-failure",
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    extraHTTPHeaders: isE2ERemote
+      ? undefined
+      : { "x-e2e-reset-token": e2eResetToken },
   },
 
   projects: remoteProject ? [remoteProject] : [localProject],
@@ -64,6 +76,13 @@ export default defineConfig({
           NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS: "1",
           BOOKING_TURNSTILE_BYPASS: "1",
           E2E: "1",
+          E2E_RESET_TOKEN: e2eResetToken,
+          RESEND_DRY_RUN: "1",
+          SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
+          STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
+          STRIPE_WEBHOOK_SECRET: "whsec_e2e_dummy",
+          LISTEN_TOKEN_SECRET: "e2e_listen_token_secret_dummy",
+          ADMIN_API_KEY: "e2e_admin_api_key_dummy",
         },
       },
 });

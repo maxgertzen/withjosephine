@@ -36,6 +36,29 @@ type FixtureBundle = {
   readingsBySlug: Map<string, unknown>;
 };
 
+export type CapturedMutationOp =
+  | { kind: "create"; id?: string; doc: Record<string, unknown> }
+  | { kind: "createOrReplace"; id: string; doc: Record<string, unknown> }
+  | { kind: "createIfNotExists"; id: string; doc: Record<string, unknown> }
+  | { kind: "patch"; id: string; patch: Record<string, unknown> }
+  | { kind: "delete"; id: string };
+
+export type CapturedMutation = {
+  txnId: string;
+  ops: CapturedMutationOp[];
+  at: string;
+};
+
+export type CapturedEmail = {
+  label: string;
+  to: string | string[];
+  subject: string;
+  at: string;
+};
+
+const mutationLog: CapturedMutation[] = [];
+const emailLog: CapturedEmail[] = [];
+
 async function loadJson<T>(filename: string): Promise<T | null> {
   try {
     const raw = await readFile(path.join(fixtureDir, filename), "utf8");
@@ -93,6 +116,49 @@ function resolveResult(query: string, slug: string | null, bundle: FixtureBundle
   return singleton ? null : [];
 }
 
+function parseMutation(raw: unknown): CapturedMutationOp | null {
+  if (!raw || typeof raw !== "object") return null;
+  const m = raw as Record<string, unknown>;
+  if (m.create && typeof m.create === "object") {
+    const doc = m.create as Record<string, unknown>;
+    return { kind: "create", id: typeof doc._id === "string" ? doc._id : undefined, doc };
+  }
+  if (m.createOrReplace && typeof m.createOrReplace === "object") {
+    const doc = m.createOrReplace as Record<string, unknown>;
+    const id = typeof doc._id === "string" ? doc._id : "";
+    return { kind: "createOrReplace", id, doc };
+  }
+  if (m.createIfNotExists && typeof m.createIfNotExists === "object") {
+    const doc = m.createIfNotExists as Record<string, unknown>;
+    const id = typeof doc._id === "string" ? doc._id : "";
+    return { kind: "createIfNotExists", id, doc };
+  }
+  if (m.patch && typeof m.patch === "object") {
+    const patch = m.patch as Record<string, unknown>;
+    const id = typeof patch.id === "string" ? patch.id : typeof patch.query === "string" ? "" : "";
+    return { kind: "patch", id, patch };
+  }
+  if (m.delete && typeof m.delete === "object") {
+    const del = m.delete as Record<string, unknown>;
+    const id = typeof del.id === "string" ? del.id : "";
+    return { kind: "delete", id };
+  }
+  return null;
+}
+
+function operationLabel(kind: CapturedMutationOp["kind"]): string {
+  switch (kind) {
+    case "create":
+    case "createOrReplace":
+    case "createIfNotExists":
+      return "create";
+    case "patch":
+      return "update";
+    case "delete":
+      return "delete";
+  }
+}
+
 export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   const bundle = await loadBundle();
   const app = new Hono();
@@ -114,6 +180,76 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
     return c.json(body);
   });
 
+  app.post("/:apiVersion{v[^/]+}/data/mutate/:dataset", async (c) => {
+    let body: { mutations?: unknown[] } = {};
+    try {
+      body = (await c.req.json()) as { mutations?: unknown[] };
+    } catch {
+      body = {};
+    }
+    const rawOps = Array.isArray(body.mutations) ? body.mutations : [];
+    const ops = rawOps
+      .map(parseMutation)
+      .filter((op): op is CapturedMutationOp => op !== null);
+    const txnId = `txn-${crypto.randomUUID().slice(0, 8)}`;
+    mutationLog.push({ txnId, ops, at: new Date().toISOString() });
+    return c.json({
+      transactionId: txnId,
+      results: ops.map((op) => ({
+        id: "id" in op && op.id ? op.id : `gen-${crypto.randomUUID().slice(0, 8)}`,
+        operation: operationLabel(op.kind),
+      })),
+      documents: [],
+    });
+  });
+
+  app.post("/:apiVersion{v[^/]+}/assets/:type{images|files}/:dataset", async (c) => {
+    const type = c.req.param("type");
+    const assetId = `${type === "images" ? "image" : "file"}-${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    const ref = `${type === "images" ? "image" : "file"}-${assetId}`;
+    const url = `http://localhost:0/_e2e/assets/${assetId}`;
+    return c.json({
+      document: {
+        _id: assetId,
+        _type: type === "images" ? "sanity.imageAsset" : "sanity.fileAsset",
+        url,
+        path: `${type}/${assetId}`,
+        assetId,
+      },
+      _id: assetId,
+      _type: type === "images" ? "sanity.imageAsset" : "sanity.fileAsset",
+      url,
+      assetId,
+      // mutation-shape echo for callers that destructure .documents
+      documents: [{ _id: assetId, _ref: ref, url }],
+    });
+  });
+
+  app.get("/_e2e/captured-mutations", (c) => c.json({ mutations: mutationLog }));
+  app.get("/_e2e/captured-emails", (c) => c.json({ emails: emailLog }));
+
+  app.post("/_e2e/captured-emails", async (c) => {
+    let body: Partial<CapturedEmail> = {};
+    try {
+      body = (await c.req.json()) as Partial<CapturedEmail>;
+    } catch {
+      body = {};
+    }
+    emailLog.push({
+      label: typeof body.label === "string" ? body.label : "unknown",
+      to: body.to ?? "unknown",
+      subject: typeof body.subject === "string" ? body.subject : "",
+      at: new Date().toISOString(),
+    });
+    return c.json({ ok: true });
+  });
+
+  app.post("/_e2e/reset", (c) => {
+    mutationLog.length = 0;
+    emailLog.length = 0;
+    return c.json({ ok: true });
+  });
+
   const sseHeartbeat = (c: import("hono").Context) =>
     c.body(":heartbeat\n", 200, {
       "content-type": "text/event-stream",
@@ -132,6 +268,8 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       readingsBySlug: Array.from(bundle.readingsBySlug.keys()),
       bookingFormPresent: bundle.singletons.bookingForm != null,
       bookingPagePresent: bundle.singletons.bookingPage != null,
+      mutationsCaptured: mutationLog.length,
+      emailsCaptured: emailLog.length,
     }),
   );
 
