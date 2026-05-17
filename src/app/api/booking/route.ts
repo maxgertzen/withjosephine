@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
-import { createSubmission } from "@/lib/booking/submissions";
+import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
   consentSnapshotFromBody,
@@ -189,7 +189,7 @@ export async function POST(request: Request) {
     await createSubmission({
       id: submissionId,
       email,
-      status: "pending",
+      status: SUBMISSION_STATUS.pending,
       readingSlug: parsedBody.readingSlug,
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,

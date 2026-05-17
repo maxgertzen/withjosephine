@@ -1,0 +1,19 @@
+export const AUDIT_EVENT_TYPE = {
+  link_issued: "link_issued",
+  link_redeemed: "link_redeemed",
+  link_expired: "link_expired",
+  link_already_consumed: "link_already_consumed",
+  link_invalid: "link_invalid",
+  link_email_mismatch: "link_email_mismatch",
+  link_mismatch_poisoned: "link_mismatch_poisoned",
+  listen_session_started: "listen_session_started",
+  listen_session_invalid: "listen_session_invalid",
+  listen_session_revoked: "listen_session_revoked",
+  listen_cross_user_denied: "listen_cross_user_denied",
+  export_request: "export_request",
+  export_throttled: "export_throttled",
+  deletion_request: "deletion_request",
+  admin_auth_failed: "admin_auth_failed",
+} as const;
+
+export type AuditEventType = (typeof AUDIT_EVENT_TYPE)[keyof typeof AUDIT_EVENT_TYPE];

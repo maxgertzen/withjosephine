@@ -6,6 +6,7 @@ vi.mock("@/lib/auth/listenSession", () => ({
 }));
 vi.mock("@/lib/booking/submissions", () => ({
   findSubmissionById: vi.fn(),
+  SUBMISSION_STATUS: { pending: "pending", paid: "paid", expired: "expired" },
 }));
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchListenPage: vi.fn(),

@@ -1,10 +1,12 @@
+import { DRAFT_DISABLE_ROUTE } from "@/lib/booking/constants";
+
 // Plain anchor (not the Button component) so the navigation is a hard reload —
 // the route clears the draft cookie via redirect("/") and we want a full
 // document swap, not a soft RSC nav.
 export function DisableDraftMode() {
   return (
     <a
-      href="/api/draft/disable"
+      href={DRAFT_DISABLE_ROUTE}
       className="fixed bottom-4 right-4 z-50 rounded-[50px] bg-j-bg-interactive px-4 py-2 text-[0.75rem] font-medium uppercase tracking-[0.12em] text-j-text-on-dark shadow-lg transition-colors hover:bg-j-midnight"
     >
       Exit preview

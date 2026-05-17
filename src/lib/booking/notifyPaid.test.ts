@@ -8,6 +8,11 @@ vi.mock("../resend", () => ({
 vi.mock("./submissions", () => ({
   markSubmissionPaid: vi.fn(),
   appendEmailFired: vi.fn(),
+  SUBMISSION_STATUS: {
+    pending: "pending",
+    paid: "paid",
+    expired: "expired",
+  },
   buildSubmissionContext: vi.fn().mockReturnValue({
     id: "sub_1",
     email: "client@example.com",

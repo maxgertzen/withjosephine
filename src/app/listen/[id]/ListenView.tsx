@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { ListenPageContent } from "@/data/defaults";
+import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/booking/constants";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
 
@@ -138,7 +139,7 @@ function SignInCard({ copy, submissionId }: { copy: ListenPageContent; submissio
         {copy.signInBody}
       </p>
       <MagicLinkEmailForm
-        action="/api/auth/magic-link"
+        action={AUTH_MAGIC_LINK_ROUTE}
         submitLabel={copy.signInButtonLabel}
         emailLabel="Email"
         hiddenFields={{ next: `/listen/${submissionId}` }}
@@ -178,7 +179,7 @@ function RestedCard({ copy, submissionId }: { copy: ListenPageContent; submissio
       <h1 className="font-display italic text-3xl text-j-text-heading">{copy.restedHeading}</h1>
       <p className="font-body text-base text-j-text mt-4 leading-[1.6]">{copy.restedBody}</p>
       <MagicLinkEmailForm
-        action="/api/auth/magic-link"
+        action={AUTH_MAGIC_LINK_ROUTE}
         submitLabel={copy.restedCtaLabel}
         emailLabel="Email"
         hiddenFields={{ next: `/listen/${submissionId}` }}

@@ -1,9 +1,10 @@
 import { optionalEnv } from "../env";
 import { timingSafeStringEqual } from "../hmac";
-
-const CF_CRON_HEADER = "cf-cron";
-const AUTH_HEADER = "authorization";
-const BEARER_PREFIX = "Bearer ";
+import {
+  AUTHORIZATION_HEADER,
+  BEARER_PREFIX,
+  CF_CRON_HEADER,
+} from "../http/headers";
 
 export function isCronRequestAuthorized(request: Request) {
   if (request.headers.get(CF_CRON_HEADER)) return true;
@@ -11,7 +12,7 @@ export function isCronRequestAuthorized(request: Request) {
   const expected = optionalEnv("CRON_SECRET");
   if (!expected) return false;
 
-  const provided = request.headers.get(AUTH_HEADER);
+  const provided = request.headers.get(AUTHORIZATION_HEADER);
   if (!provided?.startsWith(BEARER_PREFIX)) return false;
 
   return timingSafeStringEqual(provided.slice(BEARER_PREFIX.length), expected);

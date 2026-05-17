@@ -1,5 +1,6 @@
 import { MagicLinkEmailForm } from "@/components/Auth/MagicLinkEmailForm";
 import type { AuthGatedPageContent } from "@/data/defaults";
+import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/booking/constants";
 
 type Props = {
   state: "signIn" | "checkEmail";
@@ -32,7 +33,7 @@ function SignInCard({
         {copy.signInBody}
       </p>
       <MagicLinkEmailForm
-        action="/api/auth/magic-link"
+        action={AUTH_MAGIC_LINK_ROUTE}
         submitLabel={copy.signInButtonLabel}
         emailLabel="Email"
         hiddenFields={hiddenFields}

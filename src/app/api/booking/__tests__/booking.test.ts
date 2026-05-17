@@ -15,6 +15,7 @@ const createSubmissionMock = vi.fn();
 
 vi.mock("@/lib/booking/submissions", () => ({
   createSubmission: createSubmissionMock,
+  SUBMISSION_STATUS: { pending: "pending", paid: "paid", expired: "expired" },
 }));
 
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";

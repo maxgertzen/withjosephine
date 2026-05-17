@@ -1,5 +1,6 @@
 import "server-only";
 
+import { CF_CONNECTING_IP_HEADER } from "@/lib/http/headers";
 import { getClientIp } from "@/lib/request";
 
 import { hashIp, hashUserAgent } from "./listenSession";
@@ -13,7 +14,7 @@ export type RequestAuditContext = {
 // on any non-CF path and would let an attacker spoof the rate-limit key.
 function getTrustedClientIp(request: Request): string | null {
   if (process.env.ENVIRONMENT === "production") {
-    return request.headers.get("cf-connecting-ip");
+    return request.headers.get(CF_CONNECTING_IP_HEADER);
   }
   return getClientIp(request);
 }

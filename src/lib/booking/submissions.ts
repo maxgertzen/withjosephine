@@ -20,7 +20,12 @@ import {
 } from "./persistence/sanityMirror";
 import { dbBatch } from "./persistence/sqlClient";
 
-export type SubmissionStatus = "pending" | "paid" | "expired";
+export const SUBMISSION_STATUS = {
+  pending: "pending",
+  paid: "paid",
+  expired: "expired",
+} as const;
+export type SubmissionStatus = (typeof SUBMISSION_STATUS)[keyof typeof SUBMISSION_STATUS];
 
 export type EmailFiredType =
   | "order_confirmation"
@@ -198,7 +203,7 @@ export async function markSubmissionPaid(
   }
   runMirror(
     mirrorSubmissionPatch(submissionId, {
-      status: "paid",
+      status: SUBMISSION_STATUS.paid,
       paidAt: paid.paidAt,
       stripeEventId: paid.stripeEventId,
       stripeSessionId: paid.stripeSessionId,
@@ -215,7 +220,7 @@ export async function markSubmissionExpired(
   await repo.markSubmissionExpired(submissionId, expired);
   runMirror(
     mirrorSubmissionPatch(submissionId, {
-      status: "expired",
+      status: SUBMISSION_STATUS.expired,
       expiredAt: expired.expiredAt,
       ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
     }),

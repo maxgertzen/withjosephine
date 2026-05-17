@@ -7,6 +7,7 @@ import {
   buildSubmissionContext,
   type FinancialMirror,
   markSubmissionPaid,
+  SUBMISSION_STATUS,
   type SubmissionRecord,
 } from "./submissions";
 
@@ -29,7 +30,7 @@ export async function applyPaidEvent(
 
   const context = buildSubmissionContext({
     ...submission,
-    status: "paid",
+    status: SUBMISSION_STATUS.paid,
     paidAt: details.paidAt,
     stripeEventId: details.stripeEventId,
     stripeSessionId: details.stripeSessionId,

@@ -13,7 +13,7 @@ import {
   countActivePendingGiftsForRecipient,
   type GiftDeliveryMethod,
 } from "@/lib/booking/persistence/repository";
-import { createSubmission } from "@/lib/booking/submissions";
+import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import {
   giftPurchaserConsentSnapshot,
   isFullyConsented,
@@ -292,7 +292,7 @@ export async function POST(request: Request): Promise<Response> {
     await createSubmission({
       id: submissionId,
       email: purchaserEmail,
-      status: "pending",
+      status: SUBMISSION_STATUS.pending,
       readingSlug: parsedBody.readingSlug,
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,

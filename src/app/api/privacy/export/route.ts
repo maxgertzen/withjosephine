@@ -4,6 +4,7 @@ import { strToU8, type Zippable,zipSync } from "fflate";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import {
   COOKIE_NAME,
   getActiveSession,
@@ -180,7 +181,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!session) {
     await writeAudit({
       userId: null,
-      eventType: "listen_session_invalid",
+      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -203,7 +204,7 @@ export async function POST(request: Request): Promise<Response> {
   if (recent !== null) {
     await writeAudit({
       userId: session.userId,
-      eventType: "export_throttled",
+      eventType: AUDIT_EVENT_TYPE.export_throttled,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -322,7 +323,7 @@ export async function POST(request: Request): Promise<Response> {
 
   await writeAudit({
     userId: session.userId,
-    eventType: "export_request",
+    eventType: AUDIT_EVENT_TYPE.export_request,
     ipHash: audit.ipHash,
     userAgentHash: audit.userAgentHash,
     success: true,

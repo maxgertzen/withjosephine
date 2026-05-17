@@ -17,6 +17,11 @@ export const PHOTO_PUBLIC_URL_BASE = R2_PUBLIC_ORIGIN;
 
 export const BOOKING_API_GIFT_ROUTE = "/api/booking/gift";
 
+export const AUTH_MAGIC_LINK_ROUTE = "/api/auth/magic-link";
+export const AUTH_MAGIC_LINK_VERIFY_ROUTE = "/api/auth/magic-link/verify";
+export const CONTACT_API_ROUTE = "/api/contact";
+export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
+
 export const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
 export const MAX_EMAIL_CHARS = 254;

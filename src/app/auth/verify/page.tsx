@@ -10,6 +10,7 @@ import {
   type MagicLinkVerifyPageContent,
 } from "@/data/defaults";
 import { safeNext } from "@/lib/auth/safeNext";
+import { AUTH_MAGIC_LINK_VERIFY_ROUTE } from "@/lib/booking/constants";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchMagicLinkVerifyPage } from "@/lib/sanity/fetch";
 
@@ -63,7 +64,7 @@ function ConfirmEmailCard({
         {copy.confirmBody}
       </p>
       <MagicLinkEmailForm
-        action="/api/auth/magic-link/verify"
+        action={AUTH_MAGIC_LINK_VERIFY_ROUTE}
         submitLabel={copy.confirmButtonLabel}
         emailLabel={copy.confirmEmailLabel}
         hiddenFields={{ token, next }}

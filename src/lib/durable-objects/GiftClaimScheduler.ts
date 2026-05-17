@@ -1,5 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
+import { DO_SECRET_HEADER } from "@/lib/http/headers";
+
 // Logs from this file may contain only `submissionId` — `wrangler tail` is
 // shared. No raw emails, Resend message IDs, tokens, or recipient names.
 
@@ -111,7 +113,7 @@ export class GiftClaimScheduler extends DurableObject<GiftClaimSchedulerEnv> {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-do-secret": secret,
+        [DO_SECRET_HEADER]: secret,
       },
       body: JSON.stringify({ submissionId, retryCount }),
     });
