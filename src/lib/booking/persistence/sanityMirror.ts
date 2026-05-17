@@ -9,8 +9,31 @@
 
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
+import {
+  ART6_CONSENT_LABEL,
+  ART9_CONSENT_LABEL,
+  COOLING_OFF_CONSENT_LABEL,
+} from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
-import type { CreateSubmissionInput } from "./repository";
+import type { CreateSubmissionInput, GiftDeliveryMethod } from "./repository";
+
+type MirrorCreateConsent = {
+  consentAcknowledgedAt: string;
+  ipAddress: string | null;
+  art6AcknowledgedAt: string | null;
+  art9AcknowledgedAt: string | null;
+  coolingOffAcknowledgedAt: string | null;
+};
+
+// `null` ackAt skips the field entirely (Sanity drops null/undefined keys on
+// create); a present ackAt produces a `{ labelText, acknowledgedAt }` object
+// whose label is locked to the constants the form actually rendered.
+function ackBlock(
+  label: string,
+  ackAt: string | null,
+): { labelText: string; acknowledgedAt: string } | undefined {
+  return ackAt ? { labelText: label, acknowledgedAt: ackAt } : undefined;
+}
 
 type SanityWritable = ReturnType<typeof getSanityWriteClient>;
 
@@ -27,17 +50,30 @@ function getClient(): SanityWritable | null {
  * Look up the reading document by slug. The submission references it
  * via Sanity's reference type. If the lookup fails, fall back to a
  * plain string slug (Studio dashboards still resolve via reading_slug).
+ *
+ * Reading docs are effectively immutable in practice (3 readings, slugs
+ * have never changed). Memoize lookups per slug in module scope to skip
+ * the Sanity round-trip on every booking submit. A schema-rename would
+ * require a worker restart, which matches how Sanity Studio publishes
+ * propagate to the worker today.
  */
+const readingRefCache = new Map<string, { _type: "reference"; _ref: string }>();
+
 async function findReadingRef(
   client: SanityWritable,
   slug: string,
 ): Promise<{ _type: "reference"; _ref: string } | null> {
+  const cached = readingRefCache.get(slug);
+  if (cached) return cached;
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
       { slug },
     );
-    return result ? { _type: "reference", _ref: result._id } : null;
+    if (!result) return null;
+    const ref = { _type: "reference" as const, _ref: result._id };
+    readingRefCache.set(slug, ref);
+    return ref;
   } catch (error) {
     console.warn(`[sanityMirror] reading ref lookup failed for ${slug}`, error);
     return null;
@@ -46,8 +82,7 @@ async function findReadingRef(
 
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
-  consentAcknowledgedAt: string,
-  ip: string | null,
+  consent: MirrorCreateConsent,
 ): Promise<void> {
   const client = getClient();
   if (!client) return;
@@ -68,12 +103,30 @@ export async function mirrorSubmissionCreate(
         email: input.email,
         responses: responsesWithKeys,
         consentSnapshot: {
+          // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
+          // the UI and the audit record cannot diverge.
+          // Legacy labelText/acknowledgedAt remain populated for read-back.
           labelText: input.consentLabel ?? "",
-          acknowledgedAt: consentAcknowledgedAt,
-          ipAddress: ip ?? undefined,
+          acknowledgedAt: consent.consentAcknowledgedAt,
+          ipAddress: consent.ipAddress ?? undefined,
+          art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
+          art9Consent: ackBlock(ART9_CONSENT_LABEL, consent.art9AcknowledgedAt),
+          coolingOffConsent: ackBlock(
+            COOLING_OFF_CONSENT_LABEL,
+            consent.coolingOffAcknowledgedAt,
+          ),
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,
+        ...(input.isGift
+          ? {
+              isGift: true,
+              recipientEmail: input.recipientEmail ?? undefined,
+              giftDeliveryMethod: input.giftDeliveryMethod ?? undefined,
+              giftSendAt: input.giftSendAt ?? undefined,
+              giftMessage: input.giftMessage ?? undefined,
+            }
+          : {}),
       },
       { visibility: "async" },
     );
@@ -92,13 +145,45 @@ export async function mirrorSubmissionPatch(
     stripeSessionId: string;
     amountPaidCents: number | null;
     amountPaidCurrency: string | null;
+    responses: SubmissionRecord["responses"];
+    giftClaimedAt: string;
+    recipientUserId: string;
+    art9AcknowledgedAt: string;
+    recipientEmail: string;
+    giftSendAt: string | null;
+    giftDeliveryMethod: GiftDeliveryMethod;
+    giftClaimTokenHash: string;
+    giftClaimEmailFiredAt: string;
+    purchaserUserId: string | null;
+    email: string;
   }>,
 ): Promise<void> {
   const client = getClient();
   if (!client) return;
 
+  // Sanity requires `_key` on each array item. Inject keys for responses
+  // (the only array-type field in this patch) so writes don't reject.
+  const sanitized: Record<string, unknown> = { ...patch };
+  if (patch.responses) {
+    sanitized.responses = patch.responses.map((response, index) => ({
+      _key: `${response.fieldKey}-${index}`,
+      _type: "submissionResponse" as const,
+      ...response,
+    }));
+  }
+  if (patch.art9AcknowledgedAt) {
+    // Mirror the recipient's Art. 9 ack into the existing consentSnapshot
+    // shape. The purchaser's Art. 6 was already written at purchase time;
+    // we only set art9 here at claim time.
+    sanitized["consentSnapshot.art9Consent"] = {
+      labelText: ART9_CONSENT_LABEL,
+      acknowledgedAt: patch.art9AcknowledgedAt,
+    };
+    delete sanitized.art9AcknowledgedAt;
+  }
+
   try {
-    await client.patch(id).set(patch).commit({ visibility: "async" });
+    await client.patch(id).set(sanitized).commit({ visibility: "async" });
   } catch (error) {
     console.error(`[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`, error);
   }
@@ -114,6 +199,13 @@ export async function mirrorSubmissionDelete(id: string): Promise<void> {
   }
 }
 
+// Sanity array items must each carry a unique `_key`. Deriving from
+// `type|sentAt` keeps the key stable across re-mirrors (reconcile cron
+// won't double-insert the same entry under a new key).
+function sanityKeyForEmailFired(entry: EmailFiredEntry): string {
+  return `${entry.type}-${entry.sentAt}`.replace(/[^A-Za-z0-9_-]/g, "-");
+}
+
 export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
@@ -124,10 +216,25 @@ export async function mirrorAppendEmailFired(
     await client
       .patch(id)
       .setIfMissing({ emailsFired: [] })
-      .insert("after", "emailsFired[-1]", [entry])
+      .insert("after", "emailsFired[-1]", [{ ...entry, _key: sanityKeyForEmailFired(entry) }])
       .commit({ visibility: "async" });
   } catch (error) {
     console.error(`[sanityMirror] emailsFired append failed for ${id}`, error);
+  }
+}
+
+// First-write-wins via setIfMissing — concurrent listens both commit
+// but only the earliest write lands.
+export async function mirrorMarkSubmissionListened(
+  id: string,
+  listenedAt: string,
+): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+  try {
+    await client.patch(id).setIfMissing({ listenedAt }).commit({ visibility: "async" });
+  } catch (error) {
+    console.error(`[sanityMirror] listenedAt write failed for ${id}`, error);
   }
 }
 

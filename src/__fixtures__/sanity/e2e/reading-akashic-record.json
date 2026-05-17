@@ -1,0 +1,39 @@
+{
+  "_id": "reading-akashic-record",
+  "bookingSummary": "You choose three questions, I open your records and pull a card for each. The most direct way to access what your soul already knows.",
+  "briefDescription": "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
+  "expandedDetails": [
+    "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",
+    "You'll comeplete a question menu when booking so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
+    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+  ],
+  "includes": [
+    "Three questions explored in depth",
+    "Akashic Record reading with card pulls",
+    "Personalised questions chosen by you",
+    "Detailed voice note recording",
+    "Supporting PDF"
+  ],
+  "name": "The Akashic Record Reading",
+  "price": 7900,
+  "priceDisplay": "$79",
+  "requiresAkashic": true,
+  "requiresBirthChart": false,
+  "requiresQuestions": true,
+  "seo": {
+    "metaDescription": "An Akashic Record reading that feels specific to you. [E2E-Author] delivers a voice note and PDF within 7 days. For when you're ready to remember what you carry.",
+    "metaTitle": "Akashic Record Reading | [E2E-Author] — $79",
+    "ogImage": {
+      "_type": "image",
+      "asset": {
+        "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+        "_type": "reference"
+      }
+    }
+  },
+  "slug": "akashic-record",
+  "stripePaymentLink": "https://buy.stripe.com/test_00w00b5iv2qN4FK0Ec8Vi00",
+  "subtitle": "Akashic Record Reading",
+  "tag": "Soul Records",
+  "valueProposition": "Direct answers from your soul's infinite records"
+}

@@ -1,5 +1,6 @@
 import fs from "node:fs";
-import { createClient } from "@sanity/client";
+
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const env = fs.readFileSync(".env.local", "utf-8");
 for (const line of env.split("\n")) {
@@ -7,17 +8,7 @@ for (const line of env.split("\n")) {
   if (m) process.env[m[1]] = m[2].replace(/^"|"$/g, "");
 }
 
-if (!process.env.SANITY_WRITE_TOKEN) {
-  throw new Error("SANITY_WRITE_TOKEN missing in .env.local");
-}
-
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
-  dataset: "production",
-  apiVersion: "2024-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+const client = sanityWriteClient({ dataset: "production" });
 
 await client
   .patch("formSection-anythingElse")

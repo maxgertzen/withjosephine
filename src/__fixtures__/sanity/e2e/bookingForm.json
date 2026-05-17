@@ -1,0 +1,492 @@
+{
+  "entryPageContent": {
+    "aboutJosephineLinkText": "About [E2E-Author]",
+    "changeReadingLinkText": "Looking for a different reading? Go back →",
+    "dropCapCaption": "The intake form takes about five minutes. You'll review before paying.",
+    "dropCapCta": "Tell me about you →",
+    "giftToggleAsGiftLabel": null,
+    "giftToggleForMeLabel": null,
+    "giftToggleHelper": null,
+    "letterBridge": "Take your time with this. There's no wrong answer.",
+    "letterClosing": "I can't wait to connect with you through your reading.\nWith love, [E2E-Author] ✦",
+    "letterOpener": "Before I read for you, I want to know a little about you. A few details, a few questions you'd like held.",
+    "letterTitle": null
+  },
+  "loadingStateCopy": "One moment — taking you to checkout.",
+  "nextButtonText": "Next →",
+  "nonRefundableNotice": "Once I receive your intake form, your reading begins and is no longer refundable.",
+  "pageIndicatorTagline": null,
+  "pagination": {
+    "overrides": [
+      {
+        "pageCount": 2,
+        "readingSlug": "akashic-record"
+      },
+      {
+        "pageCount": 1,
+        "readingSlug": "birth-chart"
+      }
+    ]
+  },
+  "saveAndContinueLaterText": "Save and continue later",
+  "sections": [
+    {
+      "_id": "formSection-page1-system",
+      "appliesToServices": null,
+      "clarificationNote": null,
+      "fields": [
+        {
+          "_id": "formField-email",
+          "appliesToServices": null,
+          "clarificationNote": null,
+          "helpText": "I'll send your reading to this address.",
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "email",
+          "label": "Your email",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 20,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "email",
+          "validation": null
+        },
+        {
+          "_id": "formField-firstName",
+          "appliesToServices": null,
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "first_name",
+          "label": "First name",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 41,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "shortText",
+          "validation": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
+            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+          }
+        },
+        {
+          "_id": "formField-middleName",
+          "appliesToServices": null,
+          "clarificationNote": null,
+          "helpText": "Optional",
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "middle_name",
+          "label": "Middle name",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 42,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": false,
+          "system": true,
+          "type": "shortText",
+          "validation": {
+            "maxLength": 80,
+            "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]*$",
+            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+          }
+        },
+        {
+          "_id": "formField-lastName",
+          "appliesToServices": null,
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "last_name",
+          "label": "Last name",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 43,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "shortText",
+          "validation": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
+            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+          }
+        }
+      ],
+      "marginaliaLabel": "Your name",
+      "order": 10,
+      "pageBoundary": false,
+      "sectionDescription": null,
+      "sectionTitle": "Two quick details to start.",
+      "transitionLine": "First — so I can find you in the records."
+    },
+    {
+      "_id": "formSection-photo",
+      "appliesToServices": [
+        "soul-blueprint",
+        "akashic-record"
+      ],
+      "clarificationNote": "✦ Akashic Records are an energetic library of your soul's history — these details help me locate you there.",
+      "fields": [
+        {
+          "_id": "formField-photo",
+          "appliesToServices": [
+            "soul-blueprint",
+            "akashic-record"
+          ],
+          "clarificationNote": null,
+          "helpText": "A natural photo is fine — phone selfie, no makeup needed. What matters is that I can see your eyes. The image stays private and is used only to attune to your energy.",
+          "helperPosition": "before",
+          "iconKey": "camera",
+          "key": "photo",
+          "label": "A photo of yourself with your eyes open",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 50,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "fileUpload",
+          "validation": null
+        }
+      ],
+      "marginaliaLabel": "Photo",
+      "order": 20,
+      "pageBoundary": true,
+      "sectionDescription": null,
+      "sectionTitle": "Your photo",
+      "transitionLine": null
+    },
+    {
+      "_id": "formSection-birth",
+      "appliesToServices": [
+        "soul-blueprint",
+        "birth-chart"
+      ],
+      "clarificationNote": "✦ If you can find your exact birth time, the reading goes deeper — houses and rising sign need it. Without it, I'll work with what I have and tell you what's missing.",
+      "fields": [
+        {
+          "_id": "formField-dateOfBirth",
+          "appliesToServices": [
+            "soul-blueprint",
+            "birth-chart"
+          ],
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": "calendar",
+          "key": "date_of_birth",
+          "label": "Date of birth",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 60,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "date",
+          "validation": null
+        },
+        {
+          "_id": "formField-timeOfBirth",
+          "appliesToServices": [
+            "soul-blueprint",
+            "birth-chart"
+          ],
+          "clarificationNote": null,
+          "helpText": "As accurate as possible.",
+          "helperPosition": null,
+          "iconKey": "clock",
+          "key": "time_of_birth",
+          "label": "Time of birth",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 70,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "time",
+          "validation": null
+        },
+        {
+          "_id": "formField-timeOfBirthUnknown",
+          "appliesToServices": [
+            "soul-blueprint",
+            "birth-chart"
+          ],
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "time_of_birth_unknown",
+          "label": "I don't know my birth time",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 75,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": false,
+          "system": true,
+          "type": "consent",
+          "validation": null
+        },
+        {
+          "_id": "formField-placeOfBirth",
+          "appliesToServices": [
+            "soul-blueprint",
+            "birth-chart"
+          ],
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": "map-pin",
+          "key": "place_of_birth",
+          "label": "Place of birth",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 80,
+          "placeAutocompleteSource": {
+            "provider": "geonames-static"
+          },
+          "placeholder": "Town and country",
+          "required": true,
+          "system": true,
+          "type": "placeAutocomplete",
+          "validation": {
+            "maxLength": 200,
+            "minLength": 2
+          }
+        }
+      ],
+      "marginaliaLabel": "Birth",
+      "order": 30,
+      "pageBoundary": false,
+      "sectionDescription": null,
+      "sectionTitle": "I need the following to read your chart:",
+      "transitionLine": null
+    },
+    {
+      "_id": "formSection-questions",
+      "appliesToServices": [
+        "soul-blueprint",
+        "akashic-record"
+      ],
+      "clarificationNote": "✦ Some relationship questions ask for a specific person's name. If you choose one, a small field will appear beneath where you can write it.",
+      "fields": [
+        {
+          "_id": "formField-focusQuestions",
+          "appliesToServices": [
+            "soul-blueprint",
+            "akashic-record"
+          ],
+          "clarificationNote": null,
+          "helpText": null,
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "focus_questions",
+          "label": "Please choose 3 questions you would like explored in your reading.",
+          "multiSelectCount": 3,
+          "options": [
+            {
+              "category": "Soul Purpose & Life Direction",
+              "categoryOrder": 1,
+              "label": "What is my soul purpose in this lifetime?",
+              "nameFollowup": null,
+              "value": "soul_purpose_lifetime"
+            },
+            {
+              "category": "Soul Purpose & Life Direction",
+              "categoryOrder": 1,
+              "label": "What is holding me back from fully stepping into my purpose?",
+              "nameFollowup": null,
+              "value": "purpose_holding_back"
+            },
+            {
+              "category": "Soul Purpose & Life Direction",
+              "categoryOrder": 1,
+              "label": "What actions will bring me closer to my highest timeline?",
+              "nameFollowup": null,
+              "value": "highest_timeline"
+            },
+            {
+              "category": "Soul Purpose & Life Direction",
+              "categoryOrder": 1,
+              "label": "How can I embody my higher self more fully?",
+              "nameFollowup": null,
+              "value": "embody_higher_self"
+            },
+            {
+              "category": "Karmic Patterns & Ancestral Healing",
+              "categoryOrder": 2,
+              "label": "What past life experiences are affecting me in this lifetime?",
+              "nameFollowup": null,
+              "value": "past_life_affecting"
+            },
+            {
+              "category": "Karmic Patterns & Ancestral Healing",
+              "categoryOrder": 2,
+              "label": "What karmic patterns am I here to break or transform?",
+              "nameFollowup": null,
+              "value": "karmic_patterns"
+            },
+            {
+              "category": "Karmic Patterns & Ancestral Healing",
+              "categoryOrder": 2,
+              "label": "What ancestral wounding have I come to heal?",
+              "nameFollowup": null,
+              "value": "ancestral_wounding"
+            },
+            {
+              "category": "Karmic Patterns & Ancestral Healing",
+              "categoryOrder": 2,
+              "label": "What is my contribution to my ancestral line?",
+              "nameFollowup": null,
+              "value": "ancestral_contribution"
+            },
+            {
+              "category": "Abundance, Worth & Receiving",
+              "categoryOrder": 3,
+              "label": "Where am I unconsciously blocking abundance?",
+              "nameFollowup": null,
+              "value": "blocking_abundance"
+            },
+            {
+              "category": "Abundance, Worth & Receiving",
+              "categoryOrder": 3,
+              "label": "What limiting beliefs have I inherited around money or worth?",
+              "nameFollowup": null,
+              "value": "limiting_beliefs_money"
+            },
+            {
+              "category": "Abundance, Worth & Receiving",
+              "categoryOrder": 3,
+              "label": "What shift in belief will open me to receiving more fully?",
+              "nameFollowup": null,
+              "value": "receiving_shift"
+            },
+            {
+              "category": "Relationships & Love",
+              "categoryOrder": 4,
+              "label": "What is the nature of my soul contract with [their name]?",
+              "nameFollowup": {
+                "enabled": true,
+                "label": "Their name —",
+                "placeholder": "Their first name"
+              },
+              "value": "soul_contract_name"
+            },
+            {
+              "category": "Relationships & Love",
+              "categoryOrder": 4,
+              "label": "Have I shared a past life with [their name] and if so what are we here to learn?",
+              "nameFollowup": {
+                "enabled": true,
+                "label": "Their name —",
+                "placeholder": "Their first name"
+              },
+              "value": "past_life_name"
+            },
+            {
+              "category": "Relationships & Love",
+              "categoryOrder": 4,
+              "label": "What is holding me back from opening fully to love?",
+              "nameFollowup": null,
+              "value": "opening_to_love"
+            },
+            {
+              "category": "Relationships & Love",
+              "categoryOrder": 4,
+              "label": "How am I unconsciously sabotaging my relationships?",
+              "nameFollowup": null,
+              "value": "sabotaging_relationships"
+            },
+            {
+              "category": "Spiritual Gifts & Intuition",
+              "categoryOrder": 5,
+              "label": "What spiritual gifts did I come into this lifetime with?",
+              "nameFollowup": null,
+              "value": "spiritual_gifts"
+            },
+            {
+              "category": "Spiritual Gifts & Intuition",
+              "categoryOrder": 5,
+              "label": "What is blocking me from fully trusting my intuition?",
+              "nameFollowup": null,
+              "value": "trusting_intuition"
+            },
+            {
+              "category": "Spiritual Gifts & Intuition",
+              "categoryOrder": 5,
+              "label": "What is my connection to my guides or higher self?",
+              "nameFollowup": null,
+              "value": "connection_guides"
+            }
+          ],
+          "order": 90,
+          "placeAutocompleteSource": null,
+          "placeholder": null,
+          "required": true,
+          "system": true,
+          "type": "multiSelectExact",
+          "validation": null
+        }
+      ],
+      "marginaliaLabel": "Questions",
+      "order": 40,
+      "pageBoundary": true,
+      "sectionDescription": null,
+      "sectionTitle": "Please choose 3 questions you would like explored in your reading.",
+      "transitionLine": "These are the questions I'll sit with."
+    },
+    {
+      "_id": "formSection-anythingElse",
+      "appliesToServices": null,
+      "clarificationNote": null,
+      "fields": [
+        {
+          "_id": "formField-anythingElse",
+          "appliesToServices": null,
+          "clarificationNote": null,
+          "helpText": "A sentence is plenty. Skip it if nothing comes.",
+          "helperPosition": null,
+          "iconKey": null,
+          "key": "anything_else",
+          "label": "Your note",
+          "multiSelectCount": null,
+          "options": null,
+          "order": 100,
+          "placeAutocompleteSource": null,
+          "placeholder": "Drop a sentence or two — or leave it blank.",
+          "required": false,
+          "system": true,
+          "type": "longText",
+          "validation": {
+            "maxLength": 2000,
+            "minLength": 0
+          }
+        }
+      ],
+      "marginaliaLabel": "Anything else",
+      "order": 50,
+      "pageBoundary": true,
+      "sectionDescription": "Optional — only if it feels right.",
+      "sectionTitle": "Anything else for me?",
+      "transitionLine": null
+    }
+  ]
+}

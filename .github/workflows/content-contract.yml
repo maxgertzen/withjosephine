@@ -1,0 +1,38 @@
+name: content-contract
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release/v1.0.0
+    paths:
+      - "src/lib/booking/**"
+      - "src/lib/compliance/**"
+      - "src/lib/sanity/**"
+      - "studio/schemas/**"
+      - "scripts/verify-content-contract.ts"
+      - ".github/workflows/content-contract.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: content-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: GROQ content contract (staging dataset)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: staging
+      SANITY_READ_TOKEN: ${{ secrets.SANITY_READ_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      - name: Verify content-contract invariants
+        run: pnpm tsx scripts/verify-content-contract.ts staging

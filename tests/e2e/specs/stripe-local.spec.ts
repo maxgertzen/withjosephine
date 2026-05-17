@@ -1,0 +1,143 @@
+import { expect, test } from "@playwright/test";
+
+import {
+  flattenOps,
+  getCapturedEmails,
+  getCapturedMutations,
+  resetCapturedState,
+} from "../helpers/captureStore";
+import {
+  clickThroughIntakePages,
+  seedIntakeDraft,
+  waitForDraftRestore,
+} from "../helpers/intakeDraft";
+import { buildCheckoutCompletedPayload, fireCheckoutCompleted } from "../helpers/stripeWebhook";
+
+const READING_SLUG = "birth-chart";
+
+test.beforeEach(async ({ request }) => {
+  await resetCapturedState(request);
+  await request.post("/api/e2e-reset").catch(() => undefined);
+});
+
+test.describe("Stripe round-trip — mock mode", () => {
+  test("happy path: booking submit → mock Stripe redirect → signed webhook → Sanity mirror + email captured", async ({
+    page,
+    request,
+  }) => {
+    test.setTimeout(2 * 60 * 1000);
+
+    let interceptedSessionId: string | null = null;
+
+    await page.route("https://buy.stripe.com/**", async (route) => {
+      const url = new URL(route.request().url());
+      const referenceId = url.searchParams.get("client_reference_id") ?? "";
+      const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
+      interceptedSessionId = sessionId;
+      await route.fulfill({
+        status: 303,
+        headers: {
+          location: `/thank-you/${READING_SLUG}?sessionId=${sessionId}&submission=${referenceId}`,
+        },
+      });
+    });
+
+    await seedIntakeDraft(page, READING_SLUG);
+
+    await page.goto(`/book/${READING_SLUG}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /birth chart/i }),
+    ).toBeVisible();
+    await page.locator(`a[href="/book/${READING_SLUG}/letter"]`).click();
+    await page.waitForURL(/\/letter/);
+    await page.locator(`a[href="/book/${READING_SLUG}/intake"]`).click();
+    await page.waitForURL(/\/intake/);
+
+    await waitForDraftRestore(page);
+    await clickThroughIntakePages(page, 6);
+
+    await page.locator("#field-art6-consent").check();
+    await page.locator("#field-art9-consent").check();
+    await page.locator("#field-cooling-off-consent").check();
+
+    await page.getByTestId("intake-submit").click();
+
+    await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
+
+    expect(interceptedSessionId).not.toBeNull();
+    const submissionId = new URL(page.url()).searchParams.get("submission");
+    expect(submissionId).toBeTruthy();
+
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
+      stripeSessionId: interceptedSessionId!,
+      customerEmail: "e2e-test@withjosephine.com",
+      amountTotal: 9900,
+    });
+    expect(webhookResponse.status()).toBe(200);
+
+    await expect
+      .poll(async () => flattenOps(await getCapturedMutations(request)).length, {
+        timeout: 5_000,
+      })
+      .toBeGreaterThan(0);
+
+    await expect
+      .poll(async () => (await getCapturedEmails(request)).length, { timeout: 5_000 })
+      .toBeGreaterThan(0);
+  });
+
+  test("unhappy: bad webhook signature returns 400 + no Sanity write captured", async ({
+    request,
+  }) => {
+    const submissionId = crypto.randomUUID();
+    const body = JSON.stringify({
+      id: "evt_test_bad_sig",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_test_bad", client_reference_id: submissionId } },
+    });
+    const response = await request.post("/api/stripe/webhook", {
+      headers: {
+        "stripe-signature": "t=0,v1=deadbeef",
+        "content-type": "application/json",
+      },
+      data: body,
+    });
+    expect(response.status()).toBe(400);
+
+    const mutations = await getCapturedMutations(request);
+    expect(
+      flattenOps(mutations).some((op) => "id" in op && op.id === submissionId),
+    ).toBe(false);
+  });
+
+  test("unhappy: signed webhook for unknown submission returns 200 (Stripe-contract pin)", async ({
+    request,
+  }) => {
+    const orphanId = crypto.randomUUID();
+    const { body, signature } = buildCheckoutCompletedPayload(orphanId, {
+      customerEmail: "orphan@withjosephine.com",
+    });
+    const response = await request.post("/api/stripe/webhook", {
+      headers: { "stripe-signature": signature, "content-type": "application/json" },
+      data: body,
+    });
+    expect(response.status()).toBe(200);
+  });
+
+  test("unhappy: booking POST without consent returns 400", async ({ request }) => {
+    const response = await request.post("/api/booking", {
+      data: {
+        readingSlug: READING_SLUG,
+        values: { email: "noconsent@withjosephine.com" },
+        turnstileToken: "bypass",
+        art6Consent: false,
+        art9Consent: false,
+        coolingOffConsent: false,
+      },
+      headers: { "content-type": "application/json" },
+    });
+    expect(response.status()).toBe(400);
+    const json = (await response.json()) as { error?: string };
+    expect(json.error).toMatch(/Art\.?\s*6|acknowledg/i);
+  });
+});

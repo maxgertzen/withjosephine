@@ -29,6 +29,7 @@ async function reconcile(): Promise<{ checked: number; reconciled: number }> {
       paidAt: new Date(session.created * 1000).toISOString(),
       amountPaidCents: session.amount_total ?? null,
       amountPaidCurrency: session.currency ?? null,
+      country: session.customer_details?.address?.country ?? null,
     });
 
     if (result === "applied") reconciled += 1;

@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
+import {
+  consentSnapshotFromBody,
+  isFullyConsented,
+  serializeAcknowledgedLabels,
+} from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType, SanityReading } from "@/lib/sanity/types";
@@ -14,7 +19,9 @@ type BookingRequestBody = {
   readingSlug: string;
   values: Record<string, unknown>;
   turnstileToken: string;
-  consentLabelSnapshot?: string;
+  art6Consent: boolean;
+  art9Consent: boolean;
+  coolingOffConsent: boolean;
   [HONEYPOT_FIELD]?: string;
 };
 
@@ -25,7 +32,10 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
     typeof candidate.readingSlug === "string" &&
     typeof candidate.turnstileToken === "string" &&
     typeof candidate.values === "object" &&
-    candidate.values !== null
+    candidate.values !== null &&
+    typeof candidate.art6Consent === "boolean" &&
+    typeof candidate.art9Consent === "boolean" &&
+    typeof candidate.coolingOffConsent === "boolean"
   );
 }
 
@@ -55,12 +65,14 @@ function buildResponses(
   fieldType: SanityFormFieldType;
   value: string;
 }> {
-  return fields.map((field) => ({
-    fieldKey: field.key,
-    fieldLabelSnapshot: field.label,
-    fieldType: field.type,
-    value: stringifyValue(values[field.key], field),
-  }));
+  return fields
+    .filter((field) => field.type !== "consent")
+    .map((field) => ({
+      fieldKey: field.key,
+      fieldLabelSnapshot: field.label,
+      fieldType: field.type,
+      value: stringifyValue(values[field.key], field),
+    }));
 }
 
 function buildPaymentUrl(
@@ -98,6 +110,17 @@ export async function POST(request: Request) {
   // Honeypot first — cheap local check rejects bots before we hit Cloudflare.
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+
+  const consentSnapshot = consentSnapshotFromBody(parsedBody);
+  if (!isFullyConsented(consentSnapshot, true)) {
+    return NextResponse.json(
+      {
+        error:
+          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
+      },
+      { status: 400 },
+    );
   }
 
   const ip = getClientIp(request);
@@ -139,6 +162,19 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
+  // RFC 5321 254-char cap — also defends against pathologically long emails
+  // being ferried to Stripe Payment Link URLs.
+  if (email.length > MAX_EMAIL_CHARS) {
+    return NextResponse.json(
+      {
+        error: "Validation failed",
+        fieldErrors: {
+          email: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
+        },
+      },
+      { status: 400 },
+    );
+  }
 
   const photoR2Key =
     typeof validatedValues.photo === "string" && validatedValues.photo.length > 0
@@ -158,11 +194,14 @@ export async function POST(request: Request) {
       readingName: reading.name,
       readingPriceDisplay: reading.priceDisplay,
       responses,
-      consentLabel: parsedBody.consentLabelSnapshot ?? null,
+      consentLabel: serializeAcknowledgedLabels(consentSnapshot),
       photoR2Key: photoR2Key ?? null,
       createdAt: acknowledgedAt,
       consentAcknowledgedAt: acknowledgedAt,
       ipAddress: ip ?? null,
+      art6AcknowledgedAt: acknowledgedAt,
+      art9AcknowledgedAt: acknowledgedAt,
+      coolingOffAcknowledgedAt: acknowledgedAt,
     });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);

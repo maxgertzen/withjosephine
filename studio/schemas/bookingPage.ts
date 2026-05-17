@@ -16,14 +16,15 @@ export const bookingPage = defineType({
       name: "formatNote",
       title: "Format Note",
       type: "string",
-      description: "Short description of what the customer receives (shown next to the mic icon).",
-      initialValue: "Detailed voice note recording + a supporting PDF created entirely for you.",
+      description: "Short description of what the customer receives (shown next to the mic icon). WHAT it is — keep distinct from Delivery Note (WHEN it arrives).",
+      initialValue: "A voice note plus a written PDF, made just for you.",
     }),
     defineField({
       name: "deliveryNote",
       title: "Delivery Note",
       type: "string",
-      initialValue: "You'll receive your voice note and PDF within 7 days of payment.",
+      description: "WHEN the reading arrives. Keep distinct from Format Note (WHAT it is) — avoid repeating the words used above.",
+      initialValue: "Arrives within 7 days of payment.",
     }),
     defineField({
       name: "whatsIncludedHeading",

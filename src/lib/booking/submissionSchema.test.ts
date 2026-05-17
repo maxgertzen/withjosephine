@@ -108,16 +108,21 @@ describe("buildSubmissionSchema", () => {
     expect(schema.safeParse({ focus: ["love", "career", "purpose"] }).success).toBe(false);
   });
 
-  it("requires consent literal true when required", () => {
-    const schema = buildSubmissionSchema([field({ key: "agree", type: "consent", required: true })]);
-    expect(schema.safeParse({ agree: false }).success).toBe(false);
-    expect(schema.safeParse({ agree: true }).success).toBe(true);
-  });
+  it("skips consent-type fields entirely (deprecated — owned by LegalAcknowledgments)", () => {
+    // Legacy bookingForm documents may still ship consent-type fields until
+    // the P1.12 migration strips them. The schema must not gate validation on
+    // any of them, regardless of `required`.
+    const requiredSchema = buildSubmissionSchema([
+      field({ key: "agree", type: "consent", required: true }),
+    ]);
+    expect(requiredSchema.safeParse({}).success).toBe(true);
+    expect(requiredSchema.safeParse({ agree: false }).success).toBe(true);
 
-  it("accepts either consent value when not required", () => {
-    const schema = buildSubmissionSchema([field({ key: "tob_unknown", type: "consent", required: false })]);
-    expect(schema.safeParse({ tob_unknown: false }).success).toBe(true);
-    expect(schema.safeParse({ tob_unknown: true }).success).toBe(true);
+    const optionalSchema = buildSubmissionSchema([
+      field({ key: "tob_unknown", type: "consent", required: false }),
+    ]);
+    expect(optionalSchema.safeParse({}).success).toBe(true);
+    expect(optionalSchema.safeParse({ tob_unknown: false }).success).toBe(true);
   });
 
   it("requires non-empty file upload key when required", () => {

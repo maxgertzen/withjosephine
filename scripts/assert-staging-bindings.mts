@@ -97,9 +97,16 @@ if (vars.BOOKING_DB_DRIVER !== "d1") {
 if (vars.RESEND_DRY_RUN !== "1") {
   fail(`env.staging vars.RESEND_DRY_RUN expected "1", got "${vars.RESEND_DRY_RUN ?? "(missing)"}"`);
 }
+if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
+  fail(
+    `env.staging vars.NEXT_PUBLIC_SANITY_DATASET expected "staging", got "${vars.NEXT_PUBLIC_SANITY_DATASET ?? "(missing)"}"`,
+  );
+}
 
 console.log("assert-staging-bindings: OK");
 console.log(`  worker name: ${staging.name}`);
 console.log(`  d1 database: ${d1.database_name} (${d1.database_id})`);
 console.log(`  r2 bucket:   ${r2.bucket_name}`);
-console.log(`  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, RESEND_DRY_RUN=${vars.RESEND_DRY_RUN}`);
+console.log(
+  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, RESEND_DRY_RUN=${vars.RESEND_DRY_RUN}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}`,
+);

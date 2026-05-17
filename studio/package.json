@@ -10,14 +10,16 @@
   },
   "dependencies": {
     "@sanity/color-input": "^6.0.4",
-    "@sanity/vision": "^5.21.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "sanity": "^5.21.0",
-    "styled-components": "^6.1.18"
+    "@sanity/icons": "^3.7.4",
+    "@sanity/ui": "^3.2.0",
+    "@sanity/vision": "^5.24.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "sanity": "^5.24.0",
+    "styled-components": "^6.4.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }

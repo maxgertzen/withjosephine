@@ -11,9 +11,9 @@ export function buildPageSchema(
   const allowed = new Set(pageFieldKeys);
   const shape: Record<string, ZodTypeAny> = {};
   for (const field of fields) {
-    if (allowed.has(field.key)) {
-      shape[field.key] = buildFieldSchema(field);
-    }
+    if (!allowed.has(field.key)) continue;
+    if (field.type === "consent") continue;
+    shape[field.key] = buildFieldSchema(field);
   }
   return z.object(shape);
 }

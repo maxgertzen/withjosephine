@@ -1,0 +1,39 @@
+{
+  "_id": "reading-birth-chart",
+  "bookingSummary": "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
+  "briefDescription": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
+  "expandedDetails": [
+    "We'll take a look at your natal chart and the specific energies, timing and patterns that shape your experience.",
+    "This is one of the most powerful tools for self understanding I know. When you see yourself clearly through your chart, things start to fall into place. Choices make sense. Experiences make sense. You make sense.",
+    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
+  ],
+  "includes": [
+    "Full natal chart analysis",
+    "Your gifts, wounds and soul patterns",
+    "Current transits and what they mean for you",
+    "Detailed voice note recording",
+    "Supporting PDF"
+  ],
+  "name": "The Birth Chart Reading",
+  "price": 9900,
+  "priceDisplay": "$99",
+  "requiresAkashic": false,
+  "requiresBirthChart": true,
+  "requiresQuestions": false,
+  "seo": {
+    "metaDescription": "What the stars already said about you. Core themes, natural gifts, and current patterns — written and spoken just for you. Delivered in 7 days.",
+    "metaTitle": "Birth Chart Reading | [E2E-Author] — $99",
+    "ogImage": {
+      "_type": "image",
+      "asset": {
+        "_ref": "image-cce786b1c5a8bef6f63e4516221f9fc2f7f2b9eb-800x800-png",
+        "_type": "reference"
+      }
+    }
+  },
+  "slug": "birth-chart",
+  "stripePaymentLink": "https://buy.stripe.com/test_14A5kveT5fdzgosdqY8Vi02",
+  "subtitle": "Birth Chart Reading",
+  "tag": "Astrology",
+  "valueProposition": "Understand yourself in a way that makes sense of your life"
+}

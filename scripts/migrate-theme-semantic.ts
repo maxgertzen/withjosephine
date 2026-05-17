@@ -7,7 +7,7 @@
  *
  * Safe to run multiple times — uses createOrReplace on the same _id.
  */
-import { createClient } from "@sanity/client";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const PALETTE_TO_SEMANTIC: Record<string, string> = {
   cream: "bgPrimary",
@@ -33,19 +33,7 @@ function toColorObject(hex: string) {
 }
 
 async function migrate() {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  if (!projectId) {
-    console.error("Set NEXT_PUBLIC_SANITY_PROJECT_ID");
-    process.exit(1);
-  }
-
-  const client = createClient({
-    projectId,
-    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-    apiVersion: "2024-01-01",
-    useCdn: false,
-    token: process.env.SANITY_API_TOKEN,
-  });
+  const client = sanityWriteClient();
 
   console.log("Fetching existing theme document...");
 

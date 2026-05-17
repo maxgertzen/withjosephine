@@ -46,12 +46,23 @@ const SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_d2" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d2" });
   mockAppend.mockReset().mockResolvedValue(undefined);
 });
 
@@ -103,7 +114,7 @@ describe("/api/cron/email-day-2", () => {
   it("does not append emailsFired when send returns null resendId", async () => {
     mockAuth.mockReturnValueOnce(true);
     mockList.mockResolvedValueOnce([SUBMISSION]);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1 });
@@ -115,6 +126,7 @@ describe("/api/cron/email-day-2", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockList.mockResolvedValueOnce([SUBMISSION, { ...SUBMISSION, _id: "sub_2" }]);
     mockSend.mockRejectedValueOnce(new Error("Resend down")).mockResolvedValueOnce({
+      kind: "sent",
       resendId: "msg_d2_b",
     });
     const res = await callRoute();

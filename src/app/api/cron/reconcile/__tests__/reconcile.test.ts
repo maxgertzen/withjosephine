@@ -36,6 +36,17 @@ const SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
+  recipientUserId: null,
+  isGift: false,
+  purchaserUserId: null,
+  recipientEmail: null,
+  giftDeliveryMethod: null,
+  giftSendAt: null,
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: null,
+  giftCancelledAt: null,
 };
 
 beforeEach(() => {
@@ -88,6 +99,7 @@ describe("/api/cron/reconcile", () => {
       paidAt: "2024-04-28T08:00:00.000Z",
       amountPaidCents: null,
       amountPaidCurrency: null,
+      country: null,
     });
   });
 

@@ -23,7 +23,7 @@ function MoonCrescent({ className }: { className?: string }) {
 }
 
 export function Hero({ content, className }: HeroProps) {
-  const { tagline, introGreeting, introBody, ctaText } = content ?? HERO_DEFAULTS;
+  const { tagline, introGreeting, introBody, ctaText } = { ...HERO_DEFAULTS, ...content };
   const [bodyFirst, bodySecond] = introBody.split("\n\n");
 
   const handleScrollToReadings = () => {

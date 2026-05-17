@@ -1,0 +1,125 @@
+import { defineField, defineType } from "sanity";
+
+export const emailOrderConfirmation = defineType({
+  name: "emailOrderConfirmation",
+  title: "Email — Order Confirmation",
+  type: "document",
+  groups: [
+    { name: "envelope", title: "Inbox preview" },
+    { name: "header", title: "Brand header" },
+    { name: "body", title: "Body copy" },
+    { name: "card", title: "Reading card" },
+    { name: "footer", title: "Sign-off & footer" },
+  ],
+  fields: [
+    defineField({
+      name: "subject",
+      title: "Subject",
+      type: "string",
+      group: "envelope",
+      initialValue: "Your reading is booked — here's what happens next",
+    }),
+    defineField({
+      name: "preview",
+      title: "Inbox preview text",
+      type: "string",
+      group: "envelope",
+      initialValue: "Your reading is booked — here's what happens next",
+    }),
+    defineField({
+      name: "brandName",
+      title: "Brand wordmark",
+      type: "string",
+      group: "header",
+      initialValue: "Josephine",
+    }),
+    defineField({
+      name: "brandSubtitle",
+      title: "Brand sub-line",
+      type: "string",
+      group: "header",
+      initialValue: "Soul Readings",
+    }),
+    defineField({
+      name: "heroLine",
+      title: "Hero line (after divider)",
+      type: "string",
+      group: "header",
+      initialValue: "Your reading is booked",
+    }),
+    defineField({
+      name: "greeting",
+      title: "Greeting",
+      type: "string",
+      group: "body",
+      description: 'Use "{firstName}" to insert the customer\'s first name.',
+      initialValue: "Hi {firstName},",
+    }),
+    defineField({
+      name: "thanksLine",
+      title: "Thanks paragraph",
+      type: "text",
+      rows: 2,
+      group: "body",
+      description: 'Use "{readingName}" to insert the reading name.',
+      initialValue:
+        "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don't need to do anything else.",
+    }),
+    defineField({
+      name: "timelineLine",
+      title: "Timeline paragraph",
+      type: "text",
+      rows: 3,
+      group: "body",
+      initialValue:
+        "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    }),
+    defineField({
+      name: "contactLine",
+      title: "Contact paragraph",
+      type: "text",
+      rows: 2,
+      group: "body",
+      initialValue:
+        "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+    }),
+    defineField({
+      name: "cardLabel",
+      title: "Reading card — label",
+      type: "string",
+      group: "card",
+      initialValue: "Your reading",
+    }),
+    defineField({
+      name: "cardDeliveryLine",
+      title: "Reading card — delivery line",
+      type: "string",
+      group: "card",
+      initialValue: "Delivery within 7 days",
+    }),
+    defineField({
+      name: "signOffLine1",
+      title: "Sign-off line 1",
+      type: "string",
+      group: "footer",
+      initialValue: "With love,",
+    }),
+    defineField({
+      name: "signOffLine2",
+      title: "Sign-off line 2",
+      type: "string",
+      group: "footer",
+      initialValue: "Josephine ✦",
+    }),
+    defineField({
+      name: "footerDisclaimer",
+      title: "Footer disclaimer",
+      type: "string",
+      group: "footer",
+      initialValue: "Readings are offered for entertainment and personal reflection.",
+    }),
+  ],
+  preview: {
+    prepare: () => ({ title: "Email — Order Confirmation" }),
+  },
+});

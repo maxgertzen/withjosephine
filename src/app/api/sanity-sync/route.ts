@@ -37,6 +37,11 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  *   - HTTP method: POST
  *   - Drafts: enabled (Advanced settings → "Trigger webhook when drafts are modified")
  *   - Filter: _type != "sanity.imageAsset" && _type != "sanity.fileAsset"
+ *             && _type != "submission" && _type != "magicLinkRequest"
+ *             && _type != "giftPurchase"
+ *     (PII-bearing types must never cross datasets — the worker also
+ *     refuses them server-side if the filter is reverted, but the webhook
+ *     filter saves the round trip.)
  *   - Projection (required — must set this exactly):
  *       {
  *         _id,
@@ -48,7 +53,21 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  */
 
 const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
+
+// Doc types that carry user PII (submission intake, magic-link audit, gift
+// purchase) and must NEVER cross datasets. Each dataset's submissions
+// originate independently from real or test traffic against that env's
+// worker. Cross-mirroring causes test runs against staging to leak into
+// production Sanity (root cause of the 2026-05-15/16 51-doc drift). The
+// Sanity webhook GROQ filter is the first line of defense; this set is the
+// belt-and-braces refusal if the webhook filter is ever reverted or a new
+// PII type is added without updating the filter.
+const PII_TYPES = new Set(["submission", "magicLinkRequest", "giftPurchase"]);
 const REPLAY_WINDOW_MS = 5 * 60 * 1000;
+// Pre-HMAC body-size pre-check. Sanity webhook payloads are well under 100 KB
+// even for fat docs; 1 MB leaves headroom without giving unauthenticated
+// callers a cheap memory-pressure lever.
+const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
 type SanityOperation = "create" | "update" | "delete";
 
@@ -86,7 +105,15 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Missing signature" }, { status: 401 });
   }
 
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number.parseInt(contentLength, 10) > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   const rawBody = await request.text();
+  if (rawBody.length > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
   if (!(await verifySignedRequest(rawBody, signatureHeader, secret))) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -113,6 +140,10 @@ export async function POST(request: Request): Promise<Response> {
 
   if (payload._type && ASSET_TYPES.has(payload._type)) {
     return NextResponse.json({ skipped: "asset type" }, { status: 200 });
+  }
+
+  if (payload._type && PII_TYPES.has(payload._type)) {
+    return NextResponse.json({ skipped: "pii type" }, { status: 200 });
   }
 
   const writeClient = getSanityWriteClient();

@@ -25,15 +25,9 @@
 //     NEXT_PUBLIC_SANITY_DATASET=staging pnpm tsx scripts/migrate-privacy-subprocessors-2026-05.ts
 //   set -a && source .env.local && set +a && \
 //     pnpm tsx scripts/migrate-privacy-subprocessors-2026-05.ts
-import { createClient } from "@sanity/client";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
-  apiVersion: "2025-01-01",
-  useCdn: false,
-  token: process.env.SANITY_WRITE_TOKEN,
-});
+const client = sanityWriteClient();
 
 type Span = {
   _type: "span";

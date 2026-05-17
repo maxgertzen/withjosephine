@@ -6,6 +6,7 @@ vi.mock("../r2", () => ({
 
 vi.mock("./persistence/sanityMirror", () => ({
   mirrorAppendEmailFired: vi.fn(),
+  mirrorMarkSubmissionListened: vi.fn(),
   mirrorSubmissionCreate: vi.fn(),
   mirrorSubmissionDelete: vi.fn(),
   mirrorSubmissionPatch: vi.fn(),
@@ -21,6 +22,7 @@ import {
   deleteSubmissionAndPhoto,
   findSubmissionById,
   markSubmissionPaid,
+  scheduleListenedAtMirror,
   scrubSubmissionPhoto,
   type SubmissionRecord,
 } from "./submissions";
@@ -31,6 +33,7 @@ const mockMirrorPatch = vi.mocked(mirror.mirrorSubmissionPatch);
 const mockMirrorAppend = vi.mocked(mirror.mirrorAppendEmailFired);
 const mockMirrorDelete = vi.mocked(mirror.mirrorSubmissionDelete);
 const mockMirrorUnsetPhoto = vi.mocked(mirror.mirrorUnsetPhotoKey);
+const mockMirrorMarkListened = vi.mocked(mirror.mirrorMarkSubmissionListened);
 
 const SUBMISSION_INPUT = {
   id: "sub_1",
@@ -61,6 +64,7 @@ beforeEach(() => {
   mockMirrorAppend.mockReset().mockResolvedValue(undefined);
   mockMirrorDelete.mockReset().mockResolvedValue(undefined);
   mockMirrorUnsetPhoto.mockReset().mockResolvedValue(undefined);
+  mockMirrorMarkListened.mockReset().mockResolvedValue(undefined);
 });
 
 async function flushFireAndForget() {
@@ -77,11 +81,13 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     const record = await findSubmissionById("sub_1");
     expect(record?._id).toBe("sub_1");
     expect(mockMirrorCreate).toHaveBeenCalledOnce();
-    const [input, ackAt, ip] = mockMirrorCreate.mock.calls[0]!;
+    const [input, consent] = mockMirrorCreate.mock.calls[0]!;
     expect(input.id).toBe("sub_1");
     expect(input.email).toBe("ada@example.com");
-    expect(ackAt).toBe("2026-04-20T10:00:00Z");
-    expect(ip).toBe("1.2.3.4");
+    expect(consent.consentAcknowledgedAt).toBe("2026-04-20T10:00:00Z");
+    expect(consent.ipAddress).toBe("1.2.3.4");
+    expect(consent.art6AcknowledgedAt).toBeNull();
+    expect(consent.art9AcknowledgedAt).toBeNull();
   });
 
   it("markSubmissionPaid updates D1 and triggers mirror patch", async () => {
@@ -166,6 +172,12 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     expect(result).toBe(false);
     expect(mockDeleteObject).not.toHaveBeenCalled();
   });
+
+  it("scheduleListenedAtMirror delegates to the Sanity setIfMissing mirror", async () => {
+    scheduleListenedAtMirror("sub_42", "2026-05-10T12:00:00Z");
+    await flushFireAndForget();
+    expect(mockMirrorMarkListened).toHaveBeenCalledWith("sub_42", "2026-05-10T12:00:00Z");
+  });
 });
 
 describe("buildSubmissionContext", () => {
@@ -186,6 +198,17 @@ describe("buildSubmissionContext", () => {
     reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
     amountPaidCents: null,
     amountPaidCurrency: null,
+    recipientUserId: null,
+    isGift: false,
+    purchaserUserId: null,
+    recipientEmail: null,
+    giftDeliveryMethod: null,
+    giftSendAt: null,
+    giftMessage: null,
+    giftClaimTokenHash: null,
+    giftClaimEmailFiredAt: null,
+    giftClaimedAt: null,
+    giftCancelledAt: null,
   };
 
   it("builds Resend context with photo URL and firstName extracted", () => {

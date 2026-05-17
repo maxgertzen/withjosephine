@@ -89,9 +89,32 @@
 .j-fade-in {
   animation: fadeIn 1.2s ease-out forwards;
 }
+@keyframes welcomeRibbon {
+  0% {
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.welcome-ribbon {
+  animation: welcomeRibbon 6s ease-in-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .j-fade-in,
-  .j-fade-in-up {
+  .j-fade-in-up,
+  .welcome-ribbon {
     animation: none;
+  }
+  .welcome-ribbon {
+    opacity: 0;
+    visibility: hidden;
   }
 }

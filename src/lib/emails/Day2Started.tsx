@@ -1,26 +1,35 @@
 import { Text } from "@react-email/components";
 
+import type { EmailDay2StartedContent } from "@/data/defaults";
+
 import { EmailShell } from "./EmailShell";
 import { SignOff } from "./SignOff";
 
+export type Day2StartedVars = { firstName: string };
+
 export type Day2StartedProps = {
-  firstName: string;
+  vars: Day2StartedVars;
+  copy: EmailDay2StartedContent;
 };
 
-export function Day2Started({ firstName }: Day2StartedProps) {
+function template(text: string, vars: Day2StartedVars): string {
+  return text.replaceAll("{firstName}", vars.firstName);
+}
+
+export function Day2Started({ vars, copy }: Day2StartedProps) {
   return (
-    <EmailShell preview="A quick note — I've started your reading">
-      <Text className="text-base leading-[1.75]">Hi {firstName},</Text>
-      <Text className="text-base leading-[1.75]">
-        Just a quick note to let you know I&apos;ve sat down with your chart and your records this week. I always want my clients to know when the work begins, so it doesn&apos;t feel like silence on your end.
-      </Text>
-      <Text className="text-base leading-[1.75]">
-        I&apos;m not going to preview anything — your reading should arrive whole, the way it&apos;s meant to. But I wanted you to know it&apos;s in good hands, and that I&apos;m taking the time it asks for.
-      </Text>
-      <Text className="text-base leading-[1.75]">
-        You&apos;ll hear from me again when it&apos;s ready, within the next five days.
-      </Text>
-      <SignOff />
+    <EmailShell preview={copy.preview}>
+      <Text className="text-base leading-[1.75]">{template(copy.greeting, vars)}</Text>
+      {copy.body.map((paragraph, index) => (
+        <Text key={index} className="text-base leading-[1.75]">
+          {paragraph}
+        </Text>
+      ))}
+      {copy.signOff ? (
+        <Text className="text-base leading-[1.75] mt-6">{copy.signOff}</Text>
+      ) : (
+        <SignOff />
+      )}
     </EmailShell>
   );
 }

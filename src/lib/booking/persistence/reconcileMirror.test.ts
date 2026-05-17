@@ -14,6 +14,17 @@ function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
     reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$129" },
     amountPaidCents: null,
     amountPaidCurrency: null,
+    recipientUserId: null,
+    isGift: false,
+    purchaserUserId: null,
+    recipientEmail: null,
+    giftDeliveryMethod: null,
+    giftSendAt: null,
+    giftMessage: null,
+    giftClaimTokenHash: null,
+    giftClaimEmailFiredAt: null,
+    giftClaimedAt: null,
+    giftCancelledAt: null,
     ...overrides,
   };
 }

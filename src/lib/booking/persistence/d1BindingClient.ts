@@ -28,6 +28,7 @@ type D1PreparedStatement = {
 
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
+  batch(statements: readonly D1PreparedStatement[]): Promise<readonly D1RunResult[]>;
 };
 
 declare global {
@@ -59,6 +60,13 @@ export function createD1BindingClient(): SqlClient {
       const db = await getDb();
       const result = await db.prepare(sql).bind(...params).run();
       return { rowsWritten: result.meta?.rows_written ?? result.meta?.changes ?? 0 };
+    },
+    async batch(statements) {
+      const db = await getDb();
+      const prepared = statements.map((s) =>
+        db.prepare(s.sql).bind(...((s.params ?? []) as readonly SqlValue[])),
+      );
+      await db.batch(prepared);
     },
   };
   taintServerObject(

@@ -23,7 +23,7 @@ const VALID_BODY = {
 
 beforeEach(() => {
   mockVerify.mockReset();
-  mockSend.mockReset().mockResolvedValue({ resendId: "msg_contact" });
+  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_contact" });
 });
 
 afterEach(() => {
@@ -68,24 +68,28 @@ describe("/api/contact", () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("returns 500 when Resend returns null id (env or send misconfig)", async () => {
-    vi.stubEnv("RESEND_DRY_RUN", "");
+  it("returns 500 when send is skipped (env misconfig)", async () => {
     mockVerify.mockResolvedValueOnce(true);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "skipped", reason: "no_notification_email" });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(500);
-    vi.unstubAllEnvs();
   });
 
-  it("returns 200 when Resend returns null id under RESEND_DRY_RUN (staging path)", async () => {
-    vi.stubEnv("RESEND_DRY_RUN", "1");
+  it("returns 200 when send is dry_run (staging path)", async () => {
     mockVerify.mockResolvedValueOnce(true);
-    mockSend.mockResolvedValueOnce({ resendId: null });
+    mockSend.mockResolvedValueOnce({ kind: "dry_run" });
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
-    vi.unstubAllEnvs();
+  });
+
+  it("returns 502 when send returns kind=failed", async () => {
+    mockVerify.mockResolvedValueOnce(true);
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 502" });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await callRoute(VALID_BODY);
+    expect(res.status).toBe(502);
   });
 
   it("forwards trimmed payload to sendContactMessage", async () => {

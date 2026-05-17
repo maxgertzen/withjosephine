@@ -35,7 +35,7 @@ interface FooterProps {
 }
 
 export function Footer({ content, socialLinks, className }: FooterProps) {
-  const { brandName, logoUrl, copyrightText } = content ?? FOOTER_DEFAULTS;
+  const { brandName, logoUrl, copyrightText } = { ...FOOTER_DEFAULTS, ...content };
 
   return (
     <footer
