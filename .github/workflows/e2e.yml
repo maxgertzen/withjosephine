@@ -39,7 +39,7 @@ jobs:
     env:
       STRIPE_SECRET_KEY: sk_test_e2e_dummy
       STRIPE_WEBHOOK_SECRET: whsec_e2e_dummy
-      SANITY_WRITE_TOKEN: ""
+      SANITY_WRITE_TOKEN: e2e_write_token_dummy
       SANITY_READ_TOKEN: ""
       NEXT_PUBLIC_SANITY_PROJECT_ID: e8jsb14m
       NEXT_PUBLIC_SANITY_DATASET: staging
@@ -53,6 +53,10 @@ jobs:
       LISTEN_TOKEN_SECRET: e2e_listen_token_secret_dummy
       ADMIN_API_KEY: e2e_admin_api_key_dummy
       E2E: "1"
+      E2E_RESET_TOKEN: e2e-reset-stable-token
+      E2E_STRIPE_LOCAL: "1"
+      E2E_GIFT_LOCAL: "1"
+      E2E_LISTEN_LOCAL: "1"
       CI: "1"
 
     steps:

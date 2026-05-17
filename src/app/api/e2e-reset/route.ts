@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return new NextResponse("Not Found", { status: 404 });
   }
   const { env } = await getCloudflareContext({ async: true });
-  const db = (env as unknown as { withjosephine_bookings?: D1Database }).withjosephine_bookings;
+  const db = env.withjosephine_bookings;
   if (!db) {
     return NextResponse.json({ error: "D1 binding missing" }, { status: 500 });
   }
@@ -42,11 +42,3 @@ export async function POST(request: Request) {
   await db.batch(statements);
   return NextResponse.json({ ok: true, truncated: TABLES_TO_TRUNCATE });
 }
-
-type D1Database = {
-  prepare(query: string): D1PreparedStatement;
-  batch(statements: readonly D1PreparedStatement[]): Promise<unknown>;
-};
-type D1PreparedStatement = {
-  run(): Promise<unknown>;
-};

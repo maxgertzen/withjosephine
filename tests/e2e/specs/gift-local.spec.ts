@@ -10,7 +10,7 @@
 // the staging round-trip caught.
 //
 // Run: E2E_GIFT_LOCAL=1 pnpm exec playwright test gift-local
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page,test } from "@playwright/test";
 
 import {
   flattenOps,

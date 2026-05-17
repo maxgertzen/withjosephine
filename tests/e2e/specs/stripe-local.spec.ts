@@ -32,8 +32,6 @@ const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  // D1 reset is best-effort — gate failures return 404 and we tolerate that
-  // (e.g. when running this spec against staging via a CI typo).
   await request.post("/api/e2e-reset").catch(() => undefined);
 });
 
@@ -85,8 +83,6 @@ test.describe("Stripe round-trip — localhost mocked", () => {
     const submissionId = new URL(page.url()).searchParams.get("submission");
     expect(submissionId).toBeTruthy();
 
-    // Fire the signed webhook event the same way Stripe would, but synchronously
-    // from the spec. The handler verifies via STRIPE_WEBHOOK_SECRET.
     const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
       stripeSessionId: interceptedSessionId!,
       customerEmail: "e2e-test@withjosephine.com",
@@ -94,15 +90,12 @@ test.describe("Stripe round-trip — localhost mocked", () => {
     });
     expect(webhookResponse.status()).toBe(200);
 
-    // The webhook handler runs `applyPaidEvent` which mirrors to Sanity. The
-    // sidecar captures the mutation. Wait briefly for the async mirror.
     await page.waitForTimeout(500);
 
     const mutations = await getCapturedMutations(request);
     const allOps = flattenOps(mutations);
     expect(allOps.length).toBeGreaterThan(0);
 
-    // The Resend dry-run hook captures the order-confirmation send.
     const emails = await getCapturedEmails(request);
     expect(emails.length).toBeGreaterThan(0);
   });
