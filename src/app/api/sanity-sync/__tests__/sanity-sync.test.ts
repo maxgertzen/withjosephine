@@ -185,6 +185,21 @@ describe("/api/sanity-sync", () => {
     expect(createOrReplace).not.toHaveBeenCalled();
   });
 
+  it.each(["submission", "magicLinkRequest", "giftPurchase"])(
+    "refuses to mirror PII doc type %s — each dataset owns its own submissions",
+    async (piiType) => {
+      const res = await callWithValidSig({
+        _id: "pii-1",
+        _type: piiType,
+        _operation: "create",
+        email: "leak@example.test",
+      });
+      expect(res.status).toBe(200);
+      expect((await res.json()).skipped).toBe("pii type");
+      expect(createOrReplace).not.toHaveBeenCalled();
+    },
+  );
+
   it("rejects payload missing _type for create/update (only delete allows missing _type)", async () => {
     const res = await callWithValidSig({
       _id: "reading-1",
