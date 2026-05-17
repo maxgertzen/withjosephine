@@ -8,6 +8,7 @@ import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
 import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
+import { CONTACT_API_ROUTE } from "@/lib/http/routes";
 import { mergeClasses } from "@/lib/utils";
 
 interface ContactFormProps {
@@ -16,8 +17,6 @@ interface ContactFormProps {
 }
 
 type FormStatus = "idle" | "loading" | "success" | "error";
-
-const CONTACT_API_ROUTE = "/api/contact";
 
 export function ContactForm({ content, className }: ContactFormProps) {
   const merged = { ...CONTACT_DEFAULTS, ...content };

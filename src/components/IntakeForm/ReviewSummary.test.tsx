@@ -60,7 +60,7 @@ describe("ReviewSummary", () => {
     const pages: IntakePage[] = [
       [section("s1", "Your name", [field({ key: "first_name", type: "shortText", label: "First name" })])],
       [section("s2", "Your birth", [field({ key: "dob", type: "date", label: "Date of birth" })])],
-      [section("s3", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s3", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -85,7 +85,7 @@ describe("ReviewSummary", () => {
           "Page 1",
         ),
       ],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -98,18 +98,18 @@ describe("ReviewSummary", () => {
     expect(screen.getByText("Page 1")).toBeInTheDocument();
   });
 
-  it("skips consent fields, _unknown time companions, and _geonameid place companions", () => {
+  it("skips checkbox fields, _unknown time companions, and _geonameid place companions", () => {
     const pages: IntakePage[] = [
       [
         section("s1", "Birth", [
           field({ key: "birth_time", type: "time", label: "Birth time" }),
-          field({ key: "birth_time_unknown", type: "consent", label: "I don't know my birth time" }),
+          field({ key: "birth_time_unknown", type: "checkbox", label: "I don't know my birth time" }),
           field({ key: "birth_place", type: "placeAutocomplete", label: "Birth place" }),
           field({ key: "birth_place_geonameid", type: "shortText", label: "Geoname ID" }),
-          field({ key: "newsletter", type: "consent", label: "Subscribe" }),
+          field({ key: "newsletter", type: "checkbox", label: "Subscribe" }),
         ]),
       ],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -136,7 +136,7 @@ describe("ReviewSummary", () => {
   it("renders empty values as a muted placeholder", () => {
     const pages: IntakePage[] = [
       [section("s1", "Your story", [field({ key: "anything_else", type: "longText", label: "Anything else" })])],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -164,7 +164,7 @@ describe("ReviewSummary", () => {
           }),
         ]),
       ],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -194,7 +194,7 @@ describe("ReviewSummary", () => {
           }),
         ]),
       ],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -211,7 +211,7 @@ describe("ReviewSummary", () => {
   it("renders date values in a human-friendly format without timezone shift", () => {
     const pages: IntakePage[] = [
       [section("s1", "Birth", [field({ key: "dob", type: "date", label: "Date of birth" })])],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -230,10 +230,10 @@ describe("ReviewSummary", () => {
       [
         section("s1", "Birth", [
           field({ key: "birth_time", type: "time", label: "Birth time" }),
-          field({ key: "birth_time_unknown", type: "consent", label: "Unknown" }),
+          field({ key: "birth_time_unknown", type: "checkbox", label: "Unknown" }),
         ]),
       ],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -250,7 +250,7 @@ describe("ReviewSummary", () => {
     const r2Key = "submissions/abc/photo.jpg";
     const pages: IntakePage[] = [
       [section("s1", "Photo", [field({ key: "photo", type: "fileUpload", label: "Photo" })])],
-      [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s2", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     render(
       <ReviewSummary
@@ -268,7 +268,7 @@ describe("ReviewSummary", () => {
     const pages: IntakePage[] = [
       [section("s1", "Your name", [field({ key: "first_name", type: "shortText", label: "First name" })])],
       [section("s2", "Your birth", [field({ key: "dob", type: "date", label: "Date of birth" })])],
-      [section("s3", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],
+      [section("s3", "Final", [field({ key: "consent", type: "checkbox", label: "I agree" })])],
     ];
     const onEdit = vi.fn();
     render(

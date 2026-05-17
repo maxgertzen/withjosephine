@@ -102,15 +102,6 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
       return required ? schema : schema.optional();
     }
 
-    case "consent": {
-      const bypass =
-        process.env.NODE_ENV !== "production" &&
-        process.env.NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS === "1";
-      if (bypass) return z.boolean().optional();
-      if (!required) return z.boolean().optional();
-      return z.literal(true, "Please acknowledge to continue.");
-    }
-
     default:
       return z.string().optional();
   }
@@ -121,7 +112,7 @@ export type DynamicSchema = z.ZodObject<Record<string, ZodTypeAny>>;
 export function buildSubmissionSchema(fields: SanityFormField[]): DynamicSchema {
   const shape: Record<string, ZodTypeAny> = {};
   for (const field of fields) {
-    if (field.type === "consent") continue;
+    if (field.type === "checkbox") continue;
     shape[field.key] = buildFieldSchema(field);
   }
   return z.object(shape);

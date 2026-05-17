@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - release/v1.0.0
     paths:
       - "src/lib/booking/**"
       - "src/lib/compliance/**"

@@ -7,6 +7,7 @@ import {
   buildSubmissionContext,
   type FinancialMirror,
   markSubmissionPaid,
+  SUBMISSION_STATUS,
   type SubmissionRecord,
 } from "./submissions";
 
@@ -27,11 +28,9 @@ export async function applyPaidEvent(
 ): Promise<ApplyPaidResult> {
   if (submission.stripeEventId === details.stripeEventId) return "alreadyApplied";
 
-  // Build the email context once — needed for both user-name extraction
-  // (firstName) and the actual email fan-out below.
   const context = buildSubmissionContext({
     ...submission,
-    status: "paid",
+    status: SUBMISSION_STATUS.paid,
     paidAt: details.paidAt,
     stripeEventId: details.stripeEventId,
     stripeSessionId: details.stripeSessionId,

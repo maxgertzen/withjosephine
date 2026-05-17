@@ -50,20 +50,12 @@ export async function extractAssetRefs(
   return { refs: Array.from(dedup.values()), recordCount };
 }
 
-/**
- * Single-doc variant. Used by the per-upload webhook where Sanity hands us
- * one document at a time instead of an NDJSON stream.
- */
 export function collectAssetRefsFromDoc(doc: unknown): AssetRef[] {
   const dedup = new Map<string, AssetRef>();
   collectFromRecord(doc, dedup);
   return Array.from(dedup.values());
 }
 
-/**
- * Returns true if the line was a valid record (counted in recordCount), false
- * if blank or malformed JSON.
- */
 function collectFromLine(line: string, dedup: Map<string, AssetRef>): boolean {
   if (!line.trim()) return false;
   let doc: unknown;

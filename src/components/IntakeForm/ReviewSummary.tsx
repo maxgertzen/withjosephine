@@ -83,7 +83,6 @@ function renderFieldValue(field: SanityFormField, values: FieldValues): ReactNod
       );
     }
     default: {
-      // shortText / longText / email / placeAutocomplete
       if (typeof raw !== "string" || raw === "") return EMPTY_VALUE;
       return raw;
     }
@@ -119,7 +118,7 @@ function buildCards(pages: IntakePage[], upToPageIndex: number): ReviewCard[] {
     if (!page) continue;
     for (const section of page) {
       const renderable = section.fields.filter((field) => {
-        if (field.type === "consent") return false;
+        if (field.type === "checkbox") return false;
         if (isCompanionKey(field.key, baseKeys)) return false;
         return true;
       });

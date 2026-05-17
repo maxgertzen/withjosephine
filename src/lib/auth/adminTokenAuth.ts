@@ -1,11 +1,11 @@
 import "server-only";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { writeAudit } from "@/lib/auth/listenSession";
 import { getRequestAuditContext, type RequestAuditContext } from "@/lib/auth/requestAudit";
 import { requireEnv } from "@/lib/env";
 import { timingSafeStringEqual } from "@/lib/hmac";
-
-const ADMIN_TOKEN_HEADER = "x-admin-token";
+import { ADMIN_TOKEN_HEADER } from "@/lib/http/headers";
 
 export type AdminAuthOutcome =
   | { authorized: true; audit: RequestAuditContext }
@@ -34,7 +34,7 @@ export async function authorizeAdminToken(request: Request): Promise<AdminAuthOu
   if (!providedToken || !timingSafeStringEqual(providedToken, expectedToken)) {
     await writeAudit({
       userId: null,
-      eventType: "admin_auth_failed",
+      eventType: AUDIT_EVENT_TYPE.admin_auth_failed,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,

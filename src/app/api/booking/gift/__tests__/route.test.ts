@@ -13,6 +13,7 @@ vi.mock("@/lib/sanity/fetch", () => ({
 const createSubmissionMock = vi.fn();
 vi.mock("@/lib/booking/submissions", () => ({
   createSubmission: createSubmissionMock,
+  SUBMISSION_STATUS: { pending: "pending", paid: "paid", expired: "expired" },
 }));
 
 const countActiveMock = vi.fn();

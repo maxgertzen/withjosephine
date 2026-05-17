@@ -34,11 +34,9 @@ export type GiftCardData = {
 export type ResendVerdictSummary = {
   allowed: boolean;
   reason?: "hour_cap" | "day_cap";
-  /** ISO timestamp when the next resend is allowed. */
   nextAvailableAt?: string;
 };
 
-/** Client-side action controls for a single GiftCard on /my-gifts. */
 type Props = {
   gift: GiftCardData;
   status: GiftStatus;

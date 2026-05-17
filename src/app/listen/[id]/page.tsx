@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
-import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submissions";
+import { findSubmissionById, SUBMISSION_STATUS, type SubmissionRecord } from "@/lib/booking/submissions";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 
 import { ListenView, type ListenViewProps, type ListenViewState } from "./ListenView";
@@ -72,7 +72,7 @@ function resolveAuthenticatedState(args: {
 
   const hasAssets = Boolean(args.submission.voiceNoteUrl || args.submission.pdfUrl);
   const isDeliverable =
-    args.submission.status === "paid" && args.submission.deliveredAt && hasAssets;
+    args.submission.status === SUBMISSION_STATUS.paid && args.submission.deliveredAt && hasAssets;
   if (!isDeliverable) return { kind: "assetTrouble", submissionId: args.id };
 
   return {

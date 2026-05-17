@@ -1,5 +1,6 @@
 import "server-only";
 
+import { AUDIT_EVENT_TYPE, type AuditEventType } from "@/lib/audit/eventTypes";
 import {
   dbBatch,
   dbExec,
@@ -53,22 +54,7 @@ export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const COOKIE_NAME = "__Host-listen_session";
 export const MISMATCH_LIMIT = 5;
 
-export type AuditEventType =
-  | "link_issued"
-  | "link_redeemed"
-  | "link_expired"
-  | "link_already_consumed"
-  | "link_invalid"
-  | "link_email_mismatch"
-  | "link_mismatch_poisoned"
-  | "listen_session_started"
-  | "listen_session_invalid"
-  | "listen_session_revoked"
-  | "listen_cross_user_denied"
-  | "export_request"
-  | "export_throttled"
-  | "deletion_request"
-  | "admin_auth_failed";
+export { AUDIT_EVENT_TYPE, type AuditEventType } from "@/lib/audit/eventTypes";
 
 export type RedeemResult =
   | { ok: true; userId: string; sessionId: string; cookieValue: string }
@@ -143,7 +129,7 @@ export async function issueMagicLink(args: {
 
   await writeAudit({
     userId: args.userId,
-    eventType: "link_issued",
+    eventType: AUDIT_EVENT_TYPE.link_issued,
     ipHash: args.ipHash,
     success: true,
     now,
@@ -175,14 +161,14 @@ export async function redeemMagicLink(args: {
   const row = rows[0];
 
   if (!row) {
-    await writeAudit({ userId: null, eventType: "link_invalid", success: false, now, ...auditContext });
+    await writeAudit({ userId: null, eventType: AUDIT_EVENT_TYPE.link_invalid, success: false, now, ...auditContext });
     return { ok: false, reason: "invalid" };
   }
 
   if (row.consumed_at !== null) {
     await writeAudit({
       userId: row.user_id,
-      eventType: "link_already_consumed",
+      eventType: AUDIT_EVENT_TYPE.link_already_consumed,
       success: false,
       now,
       ...auditContext,
@@ -196,7 +182,7 @@ export async function redeemMagicLink(args: {
   if (row.expires_at < now) {
     await writeAudit({
       userId: row.user_id,
-      eventType: "link_expired",
+      eventType: AUDIT_EVENT_TYPE.link_expired,
       success: false,
       now,
       ...auditContext,
@@ -208,8 +194,8 @@ export async function redeemMagicLink(args: {
   // BUT must increment a per-link counter — at MISMATCH_LIMIT, poison the
   // link by setting consumed_at, defeating the 24h-unlimited-guess oracle.
   // Audit row attributes the failure with user_id=NULL so brute-forcing on
-  // Alice's link doesn't fill the audit table with rows misattributed to
-  // Alice as the actor.
+  // a victim's link doesn't fill the audit table with rows misattributed to
+  // the victim as the actor.
   const user = await findUserById(row.user_id);
   const claimed = normalizeEmail(args.claimedEmail);
   if (!user || claimed !== user.email) {
@@ -223,7 +209,7 @@ export async function redeemMagicLink(args: {
     );
     await writeAudit({
       userId: null,
-      eventType: "link_email_mismatch",
+      eventType: AUDIT_EVENT_TYPE.link_email_mismatch,
       success: false,
       now,
       ...auditContext,
@@ -231,7 +217,7 @@ export async function redeemMagicLink(args: {
     if (willPoison) {
       await writeAudit({
         userId: row.user_id,
-        eventType: "link_mismatch_poisoned",
+        eventType: AUDIT_EVENT_TYPE.link_mismatch_poisoned,
         success: false,
         now,
         ...auditContext,
@@ -250,7 +236,7 @@ export async function redeemMagicLink(args: {
   if (consumeResult.rowsWritten === 0) {
     await writeAudit({
       userId: row.user_id,
-      eventType: "link_already_consumed",
+      eventType: AUDIT_EVENT_TYPE.link_already_consumed,
       success: false,
       now,
       ...auditContext,
@@ -363,7 +349,7 @@ export async function requireListenSession(args: {
     await writeAudit({
       userId: null,
       submissionId: args.submissionId,
-      eventType: "listen_session_invalid",
+      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
       ipHash: args.ipHash,
       userAgentHash: args.userAgentHash,
       success: false,
@@ -376,7 +362,7 @@ export async function requireListenSession(args: {
     await writeAudit({
       userId: session.userId,
       submissionId: args.submissionId,
-      eventType: "listen_session_invalid",
+      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
       ipHash: args.ipHash,
       userAgentHash: args.userAgentHash,
       success: false,
@@ -388,7 +374,7 @@ export async function requireListenSession(args: {
     await writeAudit({
       userId: session.userId,
       submissionId: args.submissionId,
-      eventType: "listen_cross_user_denied",
+      eventType: AUDIT_EVENT_TYPE.listen_cross_user_denied,
       ipHash: args.ipHash,
       userAgentHash: args.userAgentHash,
       success: false,
@@ -410,7 +396,7 @@ export async function revokeSession(args: {
   await dbExec(`UPDATE listen_session SET revoked_at = ? WHERE id = ?`, [now, args.sessionId]);
   await writeAudit({
     userId: args.userId ?? null,
-    eventType: "listen_session_revoked",
+    eventType: AUDIT_EVENT_TYPE.listen_session_revoked,
     ipHash: args.ipHash,
     userAgentHash: args.userAgentHash,
     success: true,

@@ -1,12 +1,11 @@
 import { MagicLinkEmailForm } from "@/components/Auth/MagicLinkEmailForm";
 import type { AuthGatedPageContent } from "@/data/defaults";
+import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/http/routes";
 
 type Props = {
   state: "signIn" | "checkEmail";
   copy: AuthGatedPageContent;
-  /** Optional `next` redirect target passed to the magic-link form as a hidden field. */
   magicLinkNext?: string;
-  /** Anchor target on the check-email "send another" link. */
   resendHref: string;
 };
 
@@ -34,7 +33,7 @@ function SignInCard({
         {copy.signInBody}
       </p>
       <MagicLinkEmailForm
-        action="/api/auth/magic-link"
+        action={AUTH_MAGIC_LINK_ROUTE}
         submitLabel={copy.signInButtonLabel}
         emailLabel="Email"
         hiddenFields={hiddenFields}

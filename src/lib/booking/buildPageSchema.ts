@@ -12,7 +12,7 @@ export function buildPageSchema(
   const shape: Record<string, ZodTypeAny> = {};
   for (const field of fields) {
     if (!allowed.has(field.key)) continue;
-    if (field.type === "consent") continue;
+    if (field.type === "checkbox") continue;
     shape[field.key] = buildFieldSchema(field);
   }
   return z.object(shape);

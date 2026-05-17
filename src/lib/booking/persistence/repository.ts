@@ -481,12 +481,6 @@ export async function listSubmissionsByRecipientUserId(
   return rows.map(rowToRecord);
 }
 
-/**
- * `/my-gifts` page query. Returns every gift submission
- * the purchaser has ever bought, regardless of status: pre-fire, fired,
- * claimed, delivered, cancelled. Ordering is newest-first so the most
- * recent purchase appears at the top.
- */
 export async function listGiftsByPurchaserUserId(
   userId: string,
 ): Promise<SubmissionRecord[]> {

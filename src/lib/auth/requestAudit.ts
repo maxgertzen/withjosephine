@@ -1,5 +1,6 @@
 import "server-only";
 
+import { CF_CONNECTING_IP_HEADER, USER_AGENT_HEADER } from "@/lib/http/headers";
 import { getClientIp } from "@/lib/request";
 
 import { hashIp, hashUserAgent } from "./listenSession";
@@ -13,7 +14,7 @@ export type RequestAuditContext = {
 // on any non-CF path and would let an attacker spoof the rate-limit key.
 function getTrustedClientIp(request: Request): string | null {
   if (process.env.ENVIRONMENT === "production") {
-    return request.headers.get("cf-connecting-ip");
+    return request.headers.get(CF_CONNECTING_IP_HEADER);
   }
   return getClientIp(request);
 }
@@ -21,7 +22,7 @@ function getTrustedClientIp(request: Request): string | null {
 export async function getRequestAuditContext(request: Request): Promise<RequestAuditContext> {
   const secret = process.env.LISTEN_TOKEN_SECRET;
   const ip = getTrustedClientIp(request);
-  const ua = request.headers.get("user-agent");
+  const ua = request.headers.get(USER_AGENT_HEADER);
   return {
     ipHash: ip && secret ? await hashIp(ip, secret) : null,
     userAgentHash: ua ? await hashUserAgent(ua) : null,

@@ -77,7 +77,7 @@ function buildResponses(
   value: string;
 }> {
   return fields
-    .filter((field) => field.type !== "consent")
+    .filter((field) => field.type !== "checkbox")
     .map((field) => ({
       fieldKey: field.key,
       fieldLabelSnapshot: field.label,

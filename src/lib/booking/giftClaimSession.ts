@@ -18,12 +18,8 @@ function getSecret(): string {
   return secret;
 }
 
-/**
- * Sign a short-lived claim-session cookie value scoped to a single
- * gift submission. Format: `<submissionId>.<expMs>.<sig>`. The
- * signature is HMAC-SHA-256 over `<submissionId>.<expMs>` using
- * the shared `LISTEN_TOKEN_SECRET`.
- */
+// Cookie value format: `<submissionId>.<expMs>.<sig>` with sig =
+// HMAC-SHA-256 over `<submissionId>.<expMs>` using LISTEN_TOKEN_SECRET.
 export async function signGiftClaimCookie(
   submissionId: string,
   now: number = Date.now(),
@@ -35,15 +31,9 @@ export async function signGiftClaimCookie(
 }
 
 /**
- * Verify a claim-session cookie. Returns the submissionId when valid and
- * unexpired, or null otherwise. Constant-time string compare on the
- * signature segment. Caller is responsible for re-checking the submission
- * state in D1 before trusting the redemption.
- */
-/**
  * Set the gift claim cookie on the response. Centralises the `__Host-` cookie
  * attribute set so the claim-page and redeem-route can't drift apart on
- * security flags. Pass an empty value with maxAge: 0 via `clearGiftClaimCookie`.
+ * security flags.
  */
 export async function setGiftClaimCookie(submissionId: string): Promise<void> {
   const cookieValue = await signGiftClaimCookie(submissionId);

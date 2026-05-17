@@ -15,6 +15,7 @@ const createSubmissionMock = vi.fn();
 
 vi.mock("@/lib/booking/submissions", () => ({
   createSubmission: createSubmissionMock,
+  SUBMISSION_STATUS: { pending: "pending", paid: "paid", expired: "expired" },
 }));
 
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
@@ -56,7 +57,7 @@ const FORM: SanityBookingForm = {
           _id: "f-consent",
           key: "agreement",
           label: "I agree.",
-          type: "consent",
+          type: "checkbox",
           required: true,
         },
       ],
@@ -222,7 +223,7 @@ describe("/api/booking", () => {
                 { value: "ancestral_wounding", label: "Ancestral wounding" },
               ],
             },
-            { _id: "f-agree", key: "agreement", label: "I agree.", type: "consent", required: true },
+            { _id: "f-agree", key: "agreement", label: "I agree.", type: "checkbox", required: true },
           ],
         },
       ],
@@ -249,11 +250,7 @@ describe("/api/booking", () => {
     expect(focus?.value).toBe("Soul purpose this lifetime, Embodying my higher self");
   });
 
-  it("skips consent-type fields from the stored response audit trail", async () => {
-    // Legacy bookingForm documents may still carry consent-type fields until
-    // the P1.12 migration strips them. They MUST NOT appear in the per-field
-    // audit trail (legal acknowledgments are captured separately via the
-    // LegalConsentSnapshot path).
+  it("skips checkbox-type fields from the stored response audit trail", async () => {
     mockVerify.mockResolvedValueOnce(true);
     mockReading.mockResolvedValueOnce(READING);
     mockForm.mockResolvedValueOnce({
@@ -268,10 +265,10 @@ describe("/api/booking", () => {
               _id: "f-tob-unknown",
               key: "tob_unknown",
               label: "I don't know my birth time",
-              type: "consent",
+              type: "checkbox",
               required: false,
             },
-            { _id: "f-agree", key: "agreement", label: "I agree.", type: "consent", required: true },
+            { _id: "f-agree", key: "agreement", label: "I agree.", type: "checkbox", required: true },
           ],
         },
       ],

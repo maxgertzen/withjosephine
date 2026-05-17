@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { COOKIE_NAME, getActiveSession, writeAudit } from "@/lib/auth/listenSession";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
@@ -84,7 +85,7 @@ export async function gateListenAssetRequest(
     await writeAudit({
       userId: null,
       submissionId,
-      eventType: "listen_session_invalid",
+      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -96,7 +97,7 @@ export async function gateListenAssetRequest(
     await writeAudit({
       userId: session.userId,
       submissionId,
-      eventType: "listen_session_invalid",
+      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -108,7 +109,7 @@ export async function gateListenAssetRequest(
     await writeAudit({
       userId: session.userId,
       submissionId,
-      eventType: "listen_cross_user_denied",
+      eventType: AUDIT_EVENT_TYPE.listen_cross_user_denied,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,

@@ -13,16 +13,13 @@ import {
 import type { BookingGiftFormContent } from "@/data/defaults";
 import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
-import {
-  BOOKING_API_GIFT_ROUTE,
-  GIFT_DELIVERY,
-  HONEYPOT_FIELD,
-} from "@/lib/booking/constants";
+import { GIFT_DELIVERY, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import type { GiftDeliveryMethod } from "@/lib/booking/persistence/repository";
 import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
 
 type FieldErrors = Partial<Record<string, string>>;
 

@@ -7,7 +7,7 @@ import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { BOOKING_ROUTES } from "@/lib/booking/constants";
+import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
 import { buildOpenGraph } from "@/lib/seoMetadata";
 
@@ -71,7 +71,7 @@ export default async function LetterPage({ params }: LetterPageProps) {
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
       <BookingFlowHeader
-        backHref={BOOKING_ROUTES.entry(reading.slug)}
+        backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
         aboutLinkText={aboutJosephineLinkText}
       />
 
@@ -112,7 +112,7 @@ export default async function LetterPage({ params }: LetterPageProps) {
             </p>
 
             <TrackedLink
-              href={BOOKING_ROUTES.intake(reading.slug)}
+              href={BOOKING_PAGE_ROUTES.intake(reading.slug)}
               event="cta_click_intake"
               properties={{ reading_id: reading.slug, position: "drop-cap" }}
               aria-label={`${dropCapCta} — go to intake form`}

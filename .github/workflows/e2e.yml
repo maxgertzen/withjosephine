@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - release/v1.0.0
     paths:
       - "src/components/IntakeForm/**"
       - "src/components/GiftForm/**"
@@ -57,17 +56,6 @@ jobs:
       CI: "1"
 
     steps:
-      - name: Check D-4 grandfathering
-        id: grandfather
-        run: |
-          # PRs sourced from release/v1.0.0 → main are grandfathered out of the
-          # required-check gate per PRD D-4 (predate Phase 0 merge). The workflow
-          # still runs (signal value); branch-protection rules in repo admin
-          # decide whether failures block merge.
-          if [ "${{ github.event.pull_request.head.ref }}" = "release/v1.0.0" ]; then
-            echo "::notice::This PR is grandfathered out of the e2e required-check gate per PRD D-4 (release/v1.0.0 → main carries pre-Phase-0 commits)."
-          fi
-
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
@@ -78,7 +66,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 

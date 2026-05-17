@@ -8,10 +8,10 @@ import {
   ACCEPTED_PHOTO_MIME_SET,
   MAX_PHOTO_BYTES,
   PHOTO_PUBLIC_URL_BASE,
-  UPLOAD_URL_API_ROUTE,
 } from "@/lib/booking/constants";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import { errorClasses, labelClasses } from "@/lib/formStyles";
+import { UPLOAD_URL_API_ROUTE } from "@/lib/http/routes";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 const ACCEPT_ATTR = ACCEPTED_PHOTO_MIME.join(",");
@@ -107,9 +107,6 @@ export function FileUpload({
     return () => URL.revokeObjectURL(objectUrl);
   }, [objectUrl]);
 
-  // Preview source priority:
-  //   1. fresh file from this session (object URL)
-  //   2. existing R2 key (e.g. resumed from a saved draft) → public CDN URL
   const previewSrc = objectUrl ?? (value ? `${PHOTO_PUBLIC_URL_BASE}/${value}` : null);
 
   async function handleFile(file: File) {

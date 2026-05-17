@@ -23,7 +23,7 @@ const SECTIONS_SINGLE_PAGE: SanityFormSection[] = [
         _id: "f-time-unknown",
         key: "time_of_birth_unknown",
         label: "I don't know",
-        type: "consent",
+        type: "checkbox",
         required: false,
       },
       {

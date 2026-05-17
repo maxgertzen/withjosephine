@@ -20,7 +20,12 @@ import {
 } from "./persistence/sanityMirror";
 import { dbBatch } from "./persistence/sqlClient";
 
-export type SubmissionStatus = "pending" | "paid" | "expired";
+export const SUBMISSION_STATUS = {
+  pending: "pending",
+  paid: "paid",
+  expired: "expired",
+} as const;
+export type SubmissionStatus = (typeof SUBMISSION_STATUS)[keyof typeof SUBMISSION_STATUS];
 
 export type EmailFiredType =
   | "order_confirmation"
@@ -198,7 +203,7 @@ export async function markSubmissionPaid(
   }
   runMirror(
     mirrorSubmissionPatch(submissionId, {
-      status: "paid",
+      status: SUBMISSION_STATUS.paid,
       paidAt: paid.paidAt,
       stripeEventId: paid.stripeEventId,
       stripeSessionId: paid.stripeSessionId,
@@ -215,7 +220,7 @@ export async function markSubmissionExpired(
   await repo.markSubmissionExpired(submissionId, expired);
   runMirror(
     mirrorSubmissionPatch(submissionId, {
-      status: "expired",
+      status: SUBMISSION_STATUS.expired,
       expiredAt: expired.expiredAt,
       ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
     }),
@@ -252,10 +257,6 @@ export async function listGiftsByPurchaserUserId(
   return repo.listGiftsByPurchaserUserId(userId);
 }
 
-/**
- * Atomic resend-link lock acquire. See repo.acquireGiftResendLock for
- * full semantics.
- */
 export async function acquireGiftResendLock(
   id: string,
   args: { lockUntilMs: number; nowMs: number },
@@ -348,11 +349,8 @@ export async function markGiftClaimSent(
   await repo.markGiftClaimSent(submissionId, tokenHash, firedAtIso);
 }
 
-/**
- * GDPR Art. 17 cascade purchaser walk. Pseudonymises a purchaser-owned
- * gift submission whose recipient has already claimed. See
- * `repo.pseudonymisePurchaserGift` for full semantics.
- */
+// GDPR Art. 17 cascade purchaser walk — pseudonymises a purchaser-owned
+// gift submission whose recipient has already claimed.
 export async function pseudonymisePurchaserGift(
   submission: Pick<SubmissionRecord, "_id" | "responses">,
 ): Promise<void> {

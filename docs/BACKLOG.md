@@ -47,30 +47,16 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 
 - **EFF-12 (useAutosave.ts:66-69 per-keystroke JSON.stringify):** `valuesUntouched` flag rebuilds JSON.stringify on every keystroke. Cost is ~50µs × ~60 keystrokes/session = ~3ms total. Cross-hook ref refactor to track touched-state in `setValue` would solve it but adds coordination risk that exceeds the win at today's scale. **Trigger:** if Lighthouse "main-thread blocking" flags input-lag on intake forms, or any Sentry performance trace shows useAutosave deps in a slow render path.
 
-### Phase 6 — Full-repo comments review (carry-over from Phase 5)
+### DEV-1. `GiftClaimScheduler` Durable Object class missing from `next dev` bundle
 
-PR #129 stripped 30 citation tags (`Phase N Session M — Bxx` / `PR #` / `Sub-PR` / `ISC-foo`) from 29 files via mechanical sweep. **What was NOT done:** a holistic "is every surviving comment a genuine WHY?" audit across the rest of `src/**` + `studio/**`. Narrating comments that just describe WHAT the next line does are still scattered through the codebase — they violate memory `feedback_comments_over_logged.md` ("Don't explain WHAT the code does, since well-named identifiers already do that"). Scope of the deferred sweep: every `.ts` / `.tsx` file outside `tests/` + `migrations/` + `*.md` + `*.generated.*`; per-comment judgment call (keep WHY, strip WHAT, strip task-context citations). Estimated 50–200 edits.
-
-- **Trigger to run:** Phase 6 cleanup PR alongside the consent-type cleanup (Q-M1 above). Spawn 3 parallel agents (each scoped to a third of `src/` + `studio/`) with the same Quality-reviewer brief used in PR #129's comment-rot pass, then consolidate. Run after main-merge so the diff is small and reviewable.
-
-### Phase 6 — Full-repo magic-strings sweep (P2.12e carry-over from Phase 2)
-
-PR #119 (Phase 2) introduced `INTAKE_SUBMIT_ERROR`, `BOOKING_API_GIFT_REDEEM_ROUTE`, `FIELD_ID_PREFIX` / `fieldDomId()` constants but explicitly **deferred the full repo sweep as P2.12e**. PR #129 introduced more named constants where the audit hit (`GiftClaimRegenerateRefusalReason`, `PII_TYPES`, `APEX_ALLOWLIST_PREFIXES` legal pages). **What's NOT done:** a full-repo sweep for remaining magic strings.
-
-- **Likely candidates** (not exhaustive):
-  - **Event names** — every Mixpanel/Resend event-type string in `src/lib/analytics.ts` consumers + every `emailsFired` entry `type` (`gift_claim`, `gift_claim_regenerate`, `day_2_started`, `day_7_delivery`, …) should be exported as a const map.
-  - **Header keys** — `x-admin-token`, `x-do-secret`, `cf-cron`, `cf-connecting-ip`, `CF-Access-Client-Id`, `CF-Access-Client-Secret`, `clarity-mask`, all sprinkled as inline literals.
-  - **Route paths** — `/api/booking`, `/api/booking/gift`, `/api/booking/gift-redeem`, `/api/internal/gift-claim-dispatch`, etc. — most should live in a single `src/lib/booking/routes.ts` (some already exist like `BOOKING_API_GIFT_ROUTE`).
-  - **Cookie names** — magic-link session cookie, gift-claim cookie, draft-mode cookie, consent banner cookies.
-  - **Audit event types** — `admin_auth_failed`, `listen_session_invalid`, `listen_cross_user_denied`, `link_issued`, `gift_claim_regenerate`, etc. across `writeAudit` call sites.
-  - **Sanity doc types** — already exported as `_type` strings in schemas but consumer routes still write `_type: "submission"` as a literal in several places. Could be a typed enum.
-  - **Status enums** — submission status values (`paid`, `pending`, `expired`), gift status values, magic-link verification reasons.
-
-- **Trigger to run:** Phase 6 cleanup PR. Per-domain (analytics / auth / booking / sanity) extraction over ~3–5 commits inside one PR. Each commit: extract constants → consume from one domain → typecheck → lint → test. Estimated 30–100 edits per domain.
-
-### Phase 5 — Quality MED deferred to Phase 6 (consent-type cleanup)
-
-Quality reviewer flagged `"consent"` still in `SanityFormFieldType` union (`src/lib/sanity/types.ts`) keeping 5 dead defensive filter branches alive across `submissionSchema`, `buildPageSchema`, `useIntakeSchema`, `ReviewSummary`, `RenderedSection`. Memory `feedback_consumer_side_deprecation_complete.md` applies. **Dependency:** production migration `migrate-strip-consent-fields-2026-05.ts` must run against production Sanity first (Phase 5 Bundle F, post-main-merge) so no live document carries a `consent`-type field that the TS narrowing would silently invisible. **Trigger:** after Bundle F migration completes on production Sanity, ship the type-union narrowing + 5-site dead-branch deletion as a follow-up PR.
+- **Symptom:** Every `pnpm dev` boot (incl. Playwright CI runs) emits `workerd/server/server.c++:1966: warning: A DurableObjectNamespace in the config referenced the class "GiftClaimScheduler", but no such Durable Object class is exported from the worker.` Workerd notes this may become a startup-time error in a future version.
+- **Cause:** `wrangler.jsonc:132` declares the DO binding pointing at class `GiftClaimScheduler`. The class is re-exported from `custom-worker.ts:83`, which `cf:build` bundles via OpenNext for production. But `pnpm dev` runs Next's Node dev server, NOT `custom-worker.ts`. The CF dev integration (`initOpenNextCloudflareForDev()` in `next.config.ts`) reads `wrangler.jsonc` and spins up workerd-emulated bindings, so it sees the DO declaration without finding the class implementation → warning. Today `giftClaimSchedulerClient.ts:20` returns `null` when the binding is missing and every caller handles it gracefully (gift-scheduling no-ops in dev), so the warning has no functional consequence — but it's accumulating tech debt and may break when workerd hardens the check.
+- **Fix paths:**
+  - **(a) Stub registration in dev:** ship a tiny `wrangler.dev-stubs.ts` that exports a no-op `GiftClaimScheduler` class extending `DurableObject`, and reference it via a wrangler `--script` or env-conditional `main` so the dev runtime can resolve the symbol.
+  - **(b) Migrate to `cf:dev` / `wrangler dev`:** swap Playwright + local dev from `pnpm dev` (Next dev server) to `pnpm cf:dev` (OpenNext-built worker via wrangler). Bundles `custom-worker.ts` correctly. Bigger change; affects dev DX (slower reload).
+  - **(c) Lift the DO class to a file the Next runtime already loads:** re-export from a module that `next dev` picks up before any binding consumer call.
+- **Recommendation:** Path (a) — smallest blast radius, fixes the warning, doesn't touch the dev DX. Estimated 15–30 min.
+- **Trigger:** Before the next major Cloudflare/OpenNext upgrade, OR when workerd surfaces a startup-time error on this config.
 
 ---
 

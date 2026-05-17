@@ -51,11 +51,9 @@ async function reconcileMirror(): Promise<Summary> {
       continue;
     }
     if (action.kind === "create") {
-      // The original create write was lost; we can't faithfully reconstruct
-      // the consent snapshot (acknowledgedAt + IP) from D1 alone — those live
-      // only on the Sanity doc. Log and surface in the summary so it shows
-      // up in cron telemetry; recovery requires a separate Studio admin
-      // action (item #3 in the operational-completeness plan).
+      // Consent snapshot (acknowledgedAt + IP) lives only on the Sanity doc,
+      // so we can't faithfully reconstruct it from D1 — surface in cron
+      // telemetry for admin recovery rather than auto-recreate.
       console.warn(`[reconcile-mirror] missing Sanity doc for ${row._id} — recreate path is admin-only`);
       missing += 1;
       continue;

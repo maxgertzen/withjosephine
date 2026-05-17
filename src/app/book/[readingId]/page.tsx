@@ -8,7 +8,7 @@ import { Footer } from "@/components/Footer";
 import { ReadingIcon } from "@/components/ReadingIcon";
 import { BOOKING_INFO_DEFAULTS, ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { BOOKING_ROUTES } from "@/lib/booking/constants";
+import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityReading } from "@/lib/sanity/types";
 import { buildOpenGraph } from "@/lib/seoMetadata";
@@ -202,7 +202,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
 
           <div className="md:row-start-2 md:col-start-2 md:self-start flex flex-col gap-3 items-center">
             <TrackedLink
-              href={BOOKING_ROUTES.letter(reading.slug)}
+              href={BOOKING_PAGE_ROUTES.letter(reading.slug)}
               event="cta_click_intake"
               properties={{ reading_id: reading.slug, position: "verso-cta" }}
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
@@ -210,7 +210,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
               {bookReadingCtaText}
             </TrackedLink>
             <TrackedLink
-              href={BOOKING_ROUTES.gift(reading.slug)}
+              href={BOOKING_PAGE_ROUTES.gift(reading.slug)}
               event="gift_toggle_selected"
               properties={{ reading_id: reading.slug, mode: "as_gift" }}
               className="inline-flex items-center justify-center min-h-12 min-w-[14rem] w-full md:w-auto px-8 py-3 bg-transparent text-j-deep border border-j-deep/40 rounded-[50px] font-display italic font-medium text-sm hover:border-j-deep hover:bg-j-warm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
