@@ -1,13 +1,3 @@
-// Localhost-mockable sibling to `stripe-roundtrip.spec.ts`.
-//
-// Targets `pnpm dev` + the fixture sidecar; runs in CI on PRs to `main`. The
-// Stripe Payment Link redirect is intercepted browser-side via `page.route`,
-// and the spec fires a signed `checkout.session.completed` webhook directly
-// at `/api/stripe/webhook` using `Stripe.webhooks.generateTestHeaderString`.
-// Sanity writes are captured by the sidecar's mutation log; the Resend
-// dry-run hook captures email sends to the sidecar's email log.
-//
-// Run: E2E_STRIPE_LOCAL=1 pnpm exec playwright test stripe-local
 import { expect, test } from "@playwright/test";
 
 import {
@@ -23,11 +13,6 @@ import {
 } from "../helpers/intakeDraft";
 import { buildCheckoutCompletedPayload, fireCheckoutCompleted } from "../helpers/stripeWebhook";
 
-test.skip(
-  process.env.E2E_STRIPE_LOCAL !== "1",
-  "Stripe-local spec is opt-in. Set E2E_STRIPE_LOCAL=1.",
-);
-
 const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
@@ -35,7 +20,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("/api/e2e-reset").catch(() => undefined);
 });
 
-test.describe("Stripe round-trip — localhost mocked", () => {
+test.describe("Stripe round-trip — mock mode", () => {
   test("happy path: booking submit → mock Stripe redirect → signed webhook → Sanity mirror + email captured", async ({
     page,
     request,
@@ -90,14 +75,15 @@ test.describe("Stripe round-trip — localhost mocked", () => {
     });
     expect(webhookResponse.status()).toBe(200);
 
-    await page.waitForTimeout(500);
+    await expect
+      .poll(async () => flattenOps(await getCapturedMutations(request)).length, {
+        timeout: 5_000,
+      })
+      .toBeGreaterThan(0);
 
-    const mutations = await getCapturedMutations(request);
-    const allOps = flattenOps(mutations);
-    expect(allOps.length).toBeGreaterThan(0);
-
-    const emails = await getCapturedEmails(request);
-    expect(emails.length).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await getCapturedEmails(request)).length, { timeout: 5_000 })
+      .toBeGreaterThan(0);
   });
 
   test("unhappy: bad webhook signature returns 400 + no Sanity write captured", async ({
@@ -119,20 +105,14 @@ test.describe("Stripe round-trip — localhost mocked", () => {
     expect(response.status()).toBe(400);
 
     const mutations = await getCapturedMutations(request);
-    const allOps = flattenOps(mutations);
     expect(
-      allOps.some((op) => "id" in op && op.id === submissionId),
-      "no Sanity write should reference the unsigned submission id",
+      flattenOps(mutations).some((op) => "id" in op && op.id === submissionId),
     ).toBe(false);
   });
 
-  test("unhappy: signed webhook for unknown submission returns 200 (silent reconcile-deferred)", async ({
+  test("unhappy: signed webhook for unknown submission returns 200 (Stripe-contract pin)", async ({
     request,
   }) => {
-    // The handler logs a warning ("submission … not found … manual reconcile
-    // will retry") and returns 200 — the Stripe contract requires 2xx so
-    // Stripe doesn't keep retrying. This test pins that contract so we'd
-    // notice if it ever flipped to 4xx and started piling up Stripe retries.
     const orphanId = crypto.randomUUID();
     const { body, signature } = buildCheckoutCompletedPayload(orphanId, {
       customerEmail: "orphan@withjosephine.com",

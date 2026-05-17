@@ -8,13 +8,7 @@ const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 const apiVersion = "2025-01-01";
 
 const apiHost = process.env.SANITY_API_HOST;
-// `useProjectHostname: false` is load-bearing under the override: the SDK
-// defaults to building URLs as `${projectId}.${host}` which only resolves
-// against the real *.api.sanity.io subdomain tree; pointing at a local
-// fixture sidecar requires the flat URL form `${host}/v.../data/...`.
-const hostOverride = apiHost
-  ? { apiHost, useCdn: false, useProjectHostname: false }
-  : {};
+const hostOverride = apiHost ? { apiHost, useCdn: false, useProjectHostname: false } : {};
 
 /**
  * `stega.studioUrl` tells the `<VisualEditing />` overlay where to send

@@ -54,9 +54,6 @@ jobs:
       ADMIN_API_KEY: e2e_admin_api_key_dummy
       E2E: "1"
       E2E_RESET_TOKEN: e2e-reset-stable-token
-      E2E_STRIPE_LOCAL: "1"
-      E2E_GIFT_LOCAL: "1"
-      E2E_LISTEN_LOCAL: "1"
       CI: "1"
 
     steps:

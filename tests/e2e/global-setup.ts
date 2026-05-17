@@ -1,5 +1,5 @@
 import { FIXTURE_SIDECAR_PORT } from "./fixtures-server";
-import { isAnyRoundtripActive } from "./helpers/roundtripFlags";
+import { isSandboxMode } from "./helpers/e2eMode";
 import { mswServer } from "./mocks/external";
 
 declare global {
@@ -18,28 +18,17 @@ function assertEnvGuards(): void {
 export default async function globalSetup(): Promise<void> {
   assertEnvGuards();
 
-  if (isAnyRoundtripActive()) {
-    console.log(
-      "[e2e] remote-roundtrip mode: skipping fixture sidecar + MSW (real staging target)",
-    );
+  if (isSandboxMode()) {
+    console.log("[e2e] sandbox mode: targeting staging — skipping fixture sidecar + MSW");
     return;
   }
 
-  // The fixture sidecar runs as a Playwright `webServer` entry on a fixed port
-  // (see playwright.config.ts) so it comes up alongside `pnpm dev`. Playwright
-  // launches webServers BEFORE globalSetup, so by the time we get here the
-  // sidecar is already listening — we just expose its URL to the runner
-  // process so specs that POST to its capture endpoints can find it.
   const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
-  if (!process.env.E2E_CAPTURE_URL) {
-    process.env.E2E_CAPTURE_URL = sidecarUrl;
-  }
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_e2e_dummy";
-  }
+  if (!process.env.E2E_CAPTURE_URL) process.env.E2E_CAPTURE_URL = sidecarUrl;
+  if (!process.env.STRIPE_WEBHOOK_SECRET) process.env.STRIPE_WEBHOOK_SECRET = "whsec_e2e_dummy";
 
   mswServer.listen({ onUnhandledRequest: "warn" });
   globalThis.__e2eMsw = mswServer;
 
-  console.log(`[e2e] sidecar expected at ${sidecarUrl} | MSW handlers active`);
+  console.log(`[e2e] sidecar expected at ${sidecarUrl} | MSW active`);
 }

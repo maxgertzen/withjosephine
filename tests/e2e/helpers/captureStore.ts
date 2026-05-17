@@ -8,9 +8,8 @@ function sidecarUrl(): string {
   const url = process.env.E2E_CAPTURE_URL;
   if (!url) {
     throw new Error(
-      "E2E_CAPTURE_URL is not set. The fixture sidecar must be running and " +
-        "its URL must be exported into the Next dev server's environment " +
-        "(see tests/e2e/global-setup.ts).",
+      "E2E_CAPTURE_URL is not set. The fixture sidecar must be running and its URL " +
+        "must be exported into the Next dev server's environment.",
     );
   }
   return url;
@@ -27,22 +26,14 @@ export async function getCapturedMutations(
   request: APIRequestContext,
 ): Promise<CapturedMutation[]> {
   const res = await request.get(`${sidecarUrl()}/_e2e/captured-mutations`);
-  if (!res.ok()) {
-    throw new Error(`Failed to fetch captured mutations: ${res.status()}`);
-  }
-  const body = (await res.json()) as { mutations: CapturedMutation[] };
-  return body.mutations;
+  if (!res.ok()) throw new Error(`Failed to fetch captured mutations: ${res.status()}`);
+  return ((await res.json()) as { mutations: CapturedMutation[] }).mutations;
 }
 
-export async function getCapturedEmails(
-  request: APIRequestContext,
-): Promise<CapturedEmail[]> {
+export async function getCapturedEmails(request: APIRequestContext): Promise<CapturedEmail[]> {
   const res = await request.get(`${sidecarUrl()}/_e2e/captured-emails`);
-  if (!res.ok()) {
-    throw new Error(`Failed to fetch captured emails: ${res.status()}`);
-  }
-  const body = (await res.json()) as { emails: CapturedEmail[] };
-  return body.emails;
+  if (!res.ok()) throw new Error(`Failed to fetch captured emails: ${res.status()}`);
+  return ((await res.json()) as { emails: CapturedEmail[] }).emails;
 }
 
 export function flattenOps(mutations: CapturedMutation[]): CapturedMutationOp[] {

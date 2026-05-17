@@ -1,16 +1,4 @@
-// Localhost-mockable sibling to `gift-roundtrip.spec.ts`. Drives the
-// purchaser leg through `pnpm dev` + sidecar capture; asserts Sanity
-// mutations + Resend captured emails fire as expected.
-//
-// Recipient-redeem full E2E is deliberately out of scope for v1 — it
-// depends on `gift_claim_token` state in D1 that's produced by the
-// async Durable Object dispatch path. The unhappy paths here exercise
-// the redeem route's gating instead (401 without cookie, 400 with
-// missing consent on purchase) — proven regression nets for the bugs
-// the staging round-trip caught.
-//
-// Run: E2E_GIFT_LOCAL=1 pnpm exec playwright test gift-local
-import { expect, type Page,test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import {
   flattenOps,
@@ -19,11 +7,7 @@ import {
   resetCapturedState,
 } from "../helpers/captureStore";
 import { fireCheckoutCompleted } from "../helpers/stripeWebhook";
-
-test.skip(
-  process.env.E2E_GIFT_LOCAL !== "1",
-  "Gift-local spec is opt-in. Set E2E_GIFT_LOCAL=1.",
-);
+import { waitForTurnstileToken } from "../helpers/turnstile";
 
 const READING_SLUG = "birth-chart";
 
@@ -43,7 +27,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("/api/e2e-reset").catch(() => undefined);
 });
 
-test.describe("Gift round-trip — localhost mocked", () => {
+test.describe("Gift round-trip — mock mode", () => {
   test("happy: scheduled gift purchaser leg → mock Stripe → signed webhook → captured Sanity + email", async ({
     page,
     request,
@@ -70,9 +54,7 @@ test.describe("Gift round-trip — localhost mocked", () => {
       page.getByRole("heading", { level: 1, name: /birth chart/i }),
     ).toBeVisible();
 
-    await page
-      .locator(`input[name="deliveryMethod"][value="scheduled"]`)
-      .check();
+    await page.locator(`input[name="deliveryMethod"][value="scheduled"]`).check();
     await page.locator("#gift-purchaser-first-name").fill("LocalPurchaser");
     await page.locator("#gift-purchaser-email").fill("gift-local-purchaser@withjosephine.com");
     await page.locator("#gift-recipient-name").fill("LocalRecipient");
@@ -83,21 +65,9 @@ test.describe("Gift round-trip — localhost mocked", () => {
     await page.locator("#gift-art6-consent").check();
     await page.locator("#gift-cooling-off-consent").check();
 
-    await page.waitForFunction(
-      () => {
-        const inputs = document.querySelectorAll('input[name="cf-turnstile-response"]');
-        for (const input of inputs) {
-          if ((input as HTMLInputElement).value.length > 0) return true;
-        }
-        return false;
-      },
-      { timeout: 15_000 },
-    );
+    await waitForTurnstileToken(page);
 
-    await page
-      .getByRole("button", { name: /(send|schedule|gift)/i })
-      .first()
-      .click();
+    await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
 
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
     expect(interceptedSessionId).not.toBeNull();
@@ -105,10 +75,7 @@ test.describe("Gift round-trip — localhost mocked", () => {
     expect(submissionId).toBeTruthy();
 
     const mutationsAfterCreate = await getCapturedMutations(request);
-    expect(
-      flattenOps(mutationsAfterCreate).length,
-      "submission create should have captured at least one Sanity mutation",
-    ).toBeGreaterThan(0);
+    expect(flattenOps(mutationsAfterCreate).length).toBeGreaterThan(0);
 
     const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
       stripeSessionId: interceptedSessionId!,
@@ -117,20 +84,18 @@ test.describe("Gift round-trip — localhost mocked", () => {
     });
     expect(webhookResponse.status()).toBe(200);
 
-    await page.waitForTimeout(750);
+    await expect
+      .poll(async () => flattenOps(await getCapturedMutations(request)).length, {
+        timeout: 5_000,
+      })
+      .toBeGreaterThan(flattenOps(mutationsAfterCreate).length);
 
-    const mutationsAfterPaid = await getCapturedMutations(request);
-    expect(flattenOps(mutationsAfterPaid).length).toBeGreaterThan(
-      flattenOps(mutationsAfterCreate).length,
-    );
-
-    const emails = await getCapturedEmails(request);
-    expect(emails.length).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await getCapturedEmails(request)).length, { timeout: 5_000 })
+      .toBeGreaterThan(0);
   });
 
-  test("happy: self_send gift purchaser leg succeeds without recipient email", async ({
-    page,
-  }) => {
+  test("happy: self_send gift purchaser leg succeeds without recipient email", async ({ page }) => {
     test.setTimeout(2 * 60 * 1000);
 
     await page.route("https://buy.stripe.com/**", async (route) => {
@@ -142,9 +107,7 @@ test.describe("Gift round-trip — localhost mocked", () => {
     });
 
     await page.goto(`/book/${READING_SLUG}/gift`);
-    await page
-      .locator(`input[name="deliveryMethod"][value="self_send"]`)
-      .check();
+    await page.locator(`input[name="deliveryMethod"][value="self_send"]`).check();
     await page.locator("#gift-purchaser-first-name").fill("SelfSendLocal");
     await page.locator("#gift-purchaser-email").fill("gift-local-self@withjosephine.com");
     await page.locator("#gift-recipient-name").fill("RecipientLocal");
@@ -152,21 +115,9 @@ test.describe("Gift round-trip — localhost mocked", () => {
     await page.locator("#gift-art6-consent").check();
     await page.locator("#gift-cooling-off-consent").check();
 
-    await page.waitForFunction(
-      () => {
-        const inputs = document.querySelectorAll('input[name="cf-turnstile-response"]');
-        for (const input of inputs) {
-          if ((input as HTMLInputElement).value.length > 0) return true;
-        }
-        return false;
-      },
-      { timeout: 15_000 },
-    );
+    await waitForTurnstileToken(page);
 
-    await page
-      .getByRole("button", { name: /(send|schedule|gift)/i })
-      .first()
-      .click();
+    await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
 
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
   });

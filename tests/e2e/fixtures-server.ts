@@ -229,7 +229,6 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       _type: type === "images" ? "sanity.imageAsset" : "sanity.fileAsset",
       url,
       assetId,
-      // mutation-shape echo for callers that destructure .documents
       documents: [{ _id: assetId, _ref: ref, url }],
     });
   });

@@ -1,38 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import { FIXTURE_SIDECAR_PORT } from "./tests/e2e/fixtures-server";
-import {
-  activeRemoteRoundtrip,
-  isAnyLocalRoundtripActive,
-  isAnyRoundtripActive,
-  REMOTE_SPECS_PATTERN,
-} from "./tests/e2e/helpers/roundtripFlags";
+import { isSandboxMode, SANDBOX_SPECS_PATTERN } from "./tests/e2e/helpers/e2eMode";
 
 const isCI = Boolean(process.env.CI);
-const isE2ERemote = isAnyRoundtripActive();
-const isE2ELocalRoundtrip = isAnyLocalRoundtripActive();
-const activeRemote = activeRemoteRoundtrip();
-const stagingUrl =
-  process.env.STAGING_URL ?? "https://staging.withjosephine.com";
+const isSandbox = isSandboxMode();
+const stagingUrl = process.env.STAGING_URL ?? "https://staging.withjosephine.com";
 const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
 
-const remoteProject = activeRemote && {
-  name: activeRemote.name,
-  testMatch: activeRemote.specMatch,
-  use: { ...devices["Desktop Chrome"] },
-};
-
-const localProject = {
-  name: "chromium" as const,
-  testIgnore: REMOTE_SPECS_PATTERN,
-  use: { ...devices["Desktop Chrome"] },
-};
-
-// Stable across config evaluations. Playwright re-evaluates playwright.config.ts
-// in worker processes, so a Math.random-generated value drifts between the
-// runner and the dev server. The token only needs to be unguessable to
-// external probes — the route already enforces E2E=1 + ENVIRONMENT !==
-// "production" gates which are the real "don't run on production" guards.
 const e2eResetToken = process.env.E2E_RESET_TOKEN ?? "e2e-reset-stable-token";
 
 export default defineConfig({
@@ -40,35 +15,37 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isE2ERemote ? 1 : isE2ELocalRoundtrip ? 1 : 2,
+  workers: isSandbox ? 1 : 2,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }], ["list"]]
     : [["list"], ["html", { open: "never" }]],
-  timeout: isE2ERemote ? 5 * 60 * 1000 : isE2ELocalRoundtrip ? 3 * 60 * 1000 : 60_000,
+  timeout: isSandbox ? 5 * 60 * 1000 : 60_000,
   expect: { timeout: 10_000 },
-  globalTimeout: isE2ERemote
-    ? 10 * 60 * 1000
-    : isE2ELocalRoundtrip
-      ? 10 * 60 * 1000
-      : 6 * 60 * 1000,
+  globalTimeout: isSandbox ? 10 * 60 * 1000 : 6 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
   globalTeardown: "./tests/e2e/global-teardown.ts",
 
   use: {
-    baseURL: isE2ERemote ? stagingUrl : "http://localhost:3000",
+    baseURL: isSandbox ? stagingUrl : "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
-    extraHTTPHeaders: isE2ERemote
-      ? undefined
-      : { "x-e2e-reset-token": e2eResetToken },
+    extraHTTPHeaders: isSandbox ? undefined : { "x-e2e-reset-token": e2eResetToken },
   },
 
-  projects: remoteProject ? [remoteProject] : [localProject],
+  projects: [
+    {
+      name: isSandbox ? "sandbox" : "mock",
+      ...(isSandbox
+        ? { testMatch: SANDBOX_SPECS_PATTERN }
+        : { testIgnore: SANDBOX_SPECS_PATTERN }),
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
 
-  webServer: isE2ERemote
+  webServer: isSandbox
     ? undefined
     : [
         {
