@@ -94,8 +94,10 @@ if (vars.ENVIRONMENT !== "staging") {
 if (vars.BOOKING_DB_DRIVER !== "d1") {
   fail(`env.staging vars.BOOKING_DB_DRIVER expected "d1", got "${vars.BOOKING_DB_DRIVER ?? "(missing)"}"`);
 }
-if (vars.RESEND_DRY_RUN !== "1") {
-  fail(`env.staging vars.RESEND_DRY_RUN expected "1", got "${vars.RESEND_DRY_RUN ?? "(missing)"}"`);
+if (vars.RESEND_DRY_RUN !== undefined) {
+  fail(
+    `env.staging vars.RESEND_DRY_RUN must NOT be set on the deployed staging worker (got "${vars.RESEND_DRY_RUN}"). It is an E2E-spec-only flag (tests/e2e/README.md). Set it inline in spec env or playwright.config.ts, never in wrangler.jsonc.`,
+  );
 }
 if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
   fail(
@@ -108,5 +110,5 @@ console.log(`  worker name: ${staging.name}`);
 console.log(`  d1 database: ${d1.database_name} (${d1.database_id})`);
 console.log(`  r2 bucket:   ${r2.bucket_name}`);
 console.log(
-  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, RESEND_DRY_RUN=${vars.RESEND_DRY_RUN}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}`,
+  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}`,
 );
