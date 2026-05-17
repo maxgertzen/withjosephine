@@ -107,6 +107,20 @@ describe("POST /api/internal/issue-magic-link", () => {
       });
       expect(res.status).toBe(404);
     });
+
+    it("returns 404 on production worker regardless of ADMIN_API_KEY (H-1 hard gate)", async () => {
+      vi.stubEnv("ENVIRONMENT", "production");
+      const res = await callRoute({
+        headers: { "x-admin-token": "test-admin-token" },
+        body: { email: "ada@example.com" },
+      });
+      expect(res.status).toBe(404);
+      expect(await res.text()).toBe("");
+      // No audit row either — production never sees this endpoint exist.
+      expect(auditMock).not.toHaveBeenCalled();
+      expect(findUserMock).not.toHaveBeenCalled();
+      expect(issueMock).not.toHaveBeenCalled();
+    });
   });
 
   describe("body validation", () => {
