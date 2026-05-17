@@ -242,7 +242,7 @@
           "placeholder": null,
           "required": false,
           "system": true,
-          "type": "consent",
+          "type": "checkbox",
           "validation": null
         },
         {

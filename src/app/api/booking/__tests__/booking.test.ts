@@ -268,7 +268,7 @@ describe("/api/booking", () => {
               _id: "f-tob-unknown",
               key: "tob_unknown",
               label: "I don't know my birth time",
-              type: "consent",
+              type: "checkbox",
               required: false,
             },
             { _id: "f-agree", key: "agreement", label: "I agree.", type: "consent", required: true },

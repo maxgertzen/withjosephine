@@ -434,6 +434,7 @@ export type SanityFormFieldType =
   | "multiSelectExact"
   | "fileUpload"
   | "consent"
+  | "checkbox"
   | "placeAutocomplete";
 
 export type SanityFormFieldNameFollowup = {

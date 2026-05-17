@@ -103,7 +103,7 @@ describe("ReviewSummary", () => {
       [
         section("s1", "Birth", [
           field({ key: "birth_time", type: "time", label: "Birth time" }),
-          field({ key: "birth_time_unknown", type: "consent", label: "I don't know my birth time" }),
+          field({ key: "birth_time_unknown", type: "checkbox", label: "I don't know my birth time" }),
           field({ key: "birth_place", type: "placeAutocomplete", label: "Birth place" }),
           field({ key: "birth_place_geonameid", type: "shortText", label: "Geoname ID" }),
           field({ key: "newsletter", type: "consent", label: "Subscribe" }),
@@ -230,7 +230,7 @@ describe("ReviewSummary", () => {
       [
         section("s1", "Birth", [
           field({ key: "birth_time", type: "time", label: "Birth time" }),
-          field({ key: "birth_time_unknown", type: "consent", label: "Unknown" }),
+          field({ key: "birth_time_unknown", type: "checkbox", label: "Unknown" }),
         ]),
       ],
       [section("s2", "Final", [field({ key: "consent", type: "consent", label: "I agree" })])],

@@ -121,7 +121,7 @@ export type DynamicSchema = z.ZodObject<Record<string, ZodTypeAny>>;
 export function buildSubmissionSchema(fields: SanityFormField[]): DynamicSchema {
   const shape: Record<string, ZodTypeAny> = {};
   for (const field of fields) {
-    if (field.type === "consent") continue;
+    if (field.type === "consent" || field.type === "checkbox") continue;
     shape[field.key] = buildFieldSchema(field);
   }
   return z.object(shape);

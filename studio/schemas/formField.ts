@@ -66,6 +66,7 @@ export const formField = defineType({
           { title: "Multi-Select (exact count)", value: "multiSelectExact" },
           { title: "File Upload", value: "fileUpload" },
           { title: "Place Autocomplete", value: "placeAutocomplete" },
+          { title: "Checkbox (UI toggle)", value: "checkbox" },
         ],
         layout: "dropdown",
       },
