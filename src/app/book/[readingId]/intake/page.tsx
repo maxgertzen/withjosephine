@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { IntakeForm } from "@/components/IntakeForm";
-import { BOOKING_ROUTES } from "@/lib/booking/constants";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
+import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
 
 type IntakePageProps = {
@@ -77,7 +77,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <BookingFlowHeader backHref={BOOKING_ROUTES.letter(reading.slug)} />
+      <BookingFlowHeader backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)} />
 
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
         <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">

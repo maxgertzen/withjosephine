@@ -5,9 +5,9 @@ import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { ListenPageContent } from "@/data/defaults";
-import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/booking/constants";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/http/routes";
 
 function brandMailtoHref(subject: string, submissionId: string): string {
   const encodedSubject = encodeURIComponent(subject);

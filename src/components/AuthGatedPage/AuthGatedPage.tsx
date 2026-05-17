@@ -1,6 +1,6 @@
 import { MagicLinkEmailForm } from "@/components/Auth/MagicLinkEmailForm";
 import type { AuthGatedPageContent } from "@/data/defaults";
-import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/booking/constants";
+import { AUTH_MAGIC_LINK_ROUTE } from "@/lib/http/routes";
 
 type Props = {
   state: "signIn" | "checkEmail";

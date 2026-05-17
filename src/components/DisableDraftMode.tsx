@@ -1,4 +1,4 @@
-import { DRAFT_DISABLE_ROUTE } from "@/lib/booking/constants";
+import { DRAFT_DISABLE_ROUTE } from "@/lib/http/routes";
 
 // Plain anchor (not the Button component) so the navigation is a hard reload —
 // the route clears the draft cookie via redirect("/") and we want a full

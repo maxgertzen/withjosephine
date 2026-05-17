@@ -11,18 +11,14 @@ import {
 import type { LegalAcknowledgmentsErrors } from "@/components/IntakeForm/LegalAcknowledgments";
 import type { FieldValues } from "@/components/IntakeForm/types";
 import { identifySubmission, track } from "@/lib/analytics";
-import {
-  BOOKING_API_GIFT_REDEEM_ROUTE,
-  BOOKING_API_ROUTE,
-  COMPANION_SUFFIX_GEONAMEID,
-  HONEYPOT_FIELD,
-} from "@/lib/booking/constants";
+import { COMPANION_SUFFIX_GEONAMEID, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import type { DynamicSchema } from "@/lib/booking/submissionSchema";
 import {
   collectConsentErrors,
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { BOOKING_API_GIFT_REDEEM_ROUTE, BOOKING_API_ROUTE } from "@/lib/http/routes";
 import type { SanityFormField } from "@/lib/sanity/types";
 
 import {

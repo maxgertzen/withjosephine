@@ -7,8 +7,8 @@ import { Button } from "@/components/Button";
 import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
-import { CONTACT_API_ROUTE } from "@/lib/booking/constants";
 import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
+import { CONTACT_API_ROUTE } from "@/lib/http/routes";
 import { mergeClasses } from "@/lib/utils";
 
 interface ContactFormProps {

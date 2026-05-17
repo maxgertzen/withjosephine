@@ -10,7 +10,7 @@ import {
   ENTRY_PAGE_DEFAULTS,
 } from "@/data/defaults";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { BOOKING_ROUTES } from "@/lib/booking/constants";
+import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import {
   fetchBookingForm,
   fetchBookingGiftForm,
@@ -133,7 +133,7 @@ export default async function GiftPage({ params }: GiftPageProps) {
   return (
     <div className="relative min-h-screen bg-j-ivory overflow-hidden">
       <BookingFlowHeader
-        backHref={BOOKING_ROUTES.entry(reading.slug)}
+        backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
         aboutLinkText={aboutLabel}
       />
 

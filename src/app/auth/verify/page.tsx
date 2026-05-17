@@ -10,8 +10,8 @@ import {
   type MagicLinkVerifyPageContent,
 } from "@/data/defaults";
 import { safeNext } from "@/lib/auth/safeNext";
-import { AUTH_MAGIC_LINK_VERIFY_ROUTE } from "@/lib/booking/constants";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
+import { AUTH_MAGIC_LINK_VERIFY_ROUTE } from "@/lib/http/routes";
 import { fetchMagicLinkVerifyPage } from "@/lib/sanity/fetch";
 
 export const metadata: Metadata = {

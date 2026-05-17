@@ -9,18 +9,7 @@ export const ACCEPTED_PHOTO_MIME = ["image/jpeg", "image/png", "image/webp"] as 
 export const ACCEPTED_PHOTO_MIME_SET: ReadonlySet<string> = new Set(ACCEPTED_PHOTO_MIME);
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
-export const BOOKING_API_ROUTE = "/api/booking";
-export const BOOKING_API_GIFT_REDEEM_ROUTE = "/api/booking/gift-redeem";
-export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
-
 export const PHOTO_PUBLIC_URL_BASE = R2_PUBLIC_ORIGIN;
-
-export const BOOKING_API_GIFT_ROUTE = "/api/booking/gift";
-
-export const AUTH_MAGIC_LINK_ROUTE = "/api/auth/magic-link";
-export const AUTH_MAGIC_LINK_VERIFY_ROUTE = "/api/auth/magic-link/verify";
-export const CONTACT_API_ROUTE = "/api/contact";
-export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 
 export const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
@@ -29,11 +18,4 @@ export const MAX_EMAIL_CHARS = 254;
 export const GIFT_DELIVERY = {
   selfSend: "self_send",
   scheduled: "scheduled",
-} as const;
-
-export const BOOKING_ROUTES = {
-  entry: (slug: string) => `/book/${slug}`,
-  letter: (slug: string) => `/book/${slug}/letter`,
-  intake: (slug: string) => `/book/${slug}/intake`,
-  gift: (slug: string) => `/book/${slug}/gift`,
 } as const;
