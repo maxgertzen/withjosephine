@@ -147,6 +147,26 @@ export const submission = defineType({
           ],
         }),
         defineField({
+          name: "coolingOffConsent",
+          title: "Cooling-Off Waiver (EU CRD Art. 16(m))",
+          type: "object",
+          description:
+            "Verbatim wording the user saw + acknowledgment timestamp. Required to start the reading per EU consumer-rights cooling-off waiver.",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
           name: "labelText",
           title: "Legacy Consent Label Text",
           type: "text",
@@ -318,6 +338,10 @@ export const submission = defineType({
                   { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
+                  { title: "Gift purchase confirmation", value: "gift_purchase_confirmation" },
+                  { title: "Gift claim (to recipient)", value: "gift_claim" },
+                  { title: "Gift claim resend", value: "gift_resend" },
+                  { title: "Gift claim regenerate", value: "gift_claim_regenerate" },
                 ],
                 layout: "dropdown",
               },

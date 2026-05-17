@@ -5,6 +5,7 @@ import { visionTool } from "@sanity/vision";
 import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { regenerateGiftClaimAction } from "./actions/regenerateGiftClaim";
+import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
 import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
@@ -42,7 +43,12 @@ export default defineConfig([
           );
         }
         if (schemaType === "submission") {
-          return [...prev, deleteCustomerDataAction, regenerateGiftClaimAction];
+          return [
+            ...prev,
+            deleteCustomerDataAction,
+            regenerateGiftClaimAction,
+            resendCustomerEmailAction,
+          ];
         }
         return prev;
       },
@@ -66,7 +72,12 @@ export default defineConfig([
           );
         }
         if (schemaType === "submission") {
-          return [...prev, deleteCustomerDataAction, regenerateGiftClaimAction];
+          return [
+            ...prev,
+            deleteCustomerDataAction,
+            regenerateGiftClaimAction,
+            resendCustomerEmailAction,
+          ];
         }
         return prev;
       },

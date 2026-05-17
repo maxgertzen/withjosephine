@@ -8,6 +8,23 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 
 ---
 
+## Shipped 2026-05-18 — release/v1.1.0 (deploy + run-after)
+
+### #5 + #7 — Transactional emails silently skipped on staging — root cause + fix
+
+**Root cause:** `wrangler.jsonc` line 264 had `"RESEND_DRY_RUN": "1"` in the `env.staging.vars` block. Every `wrangler deploy --env staging` reset the Worker's env to include that flag (per `feedback_wrangler_vars_declarative.md`). The flag is documented in `tests/e2e/README.md:14` as an E2E-spec-only toggle, never meant for the deployed staging Worker. `sendOrSkip` honored the flag and returned `{kind: "dry_run"}` for every transactional email, logging `[resend] RESEND_DRY_RUN — skipping ...` to the staging worker. Webhook signatures verified fine; emails were prepared but never sent.
+
+**Fix in this release:** Removed the line from `wrangler.jsonc`. Next staging deploy clears the variable.
+
+**Verified on 2026-05-18 via `wrangler tail --env staging`:** Resend DNS on apex (SPF, MX, DKIM, DMARC) all verified. Staging worker has `RESEND_API_KEY` + `STRIPE_WEBHOOK_SECRET` + `STRIPE_SECRET_KEY` + `NOTIFICATION_EMAIL` set. The webhook was firing successfully and Stripe signatures were verifying — the dry-run flag was the only failure point.
+
+**Resend recovery for any customer whose pre-fix purchase missed the email:**
+Becky now has a Studio document action `Resend customer email…` (on submission docs with status=paid). Picks order_confirmation / day +2 / day +7. Admin-token gated; rate-limited to 3 resends per email-type per submission per 24h. Audit trail in `emailsFired`. Powered by `/api/admin/resend-customer-email` (see `src/lib/booking/resendCustomerEmail.ts`).
+
+For gift-purchase emails (where the claim URL has lifecycle), use the existing `Regenerate gift claim link` action — it re-issues the URL + re-sends.
+
+---
+
 ## Security
 
 ### Phase 5 audit — LOW findings (Pentester, filed 2026-05-17)

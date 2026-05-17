@@ -261,7 +261,6 @@
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
 				"NEXT_PUBLIC_SANITY_DATASET": "staging",
-				"RESEND_DRY_RUN": "1",
 				"SANITY_BACKUP_ENABLED": "1"
 			}
 		}

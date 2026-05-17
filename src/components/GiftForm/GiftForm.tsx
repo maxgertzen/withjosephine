@@ -233,6 +233,16 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
   const isScheduled = deliveryMethod === GIFT_DELIVERY.scheduled;
 
+  const isFormValid =
+    Boolean(purchaserFirstName.trim()) &&
+    Boolean(purchaserEmail.trim()) &&
+    (!isScheduled ||
+      (Boolean(recipientName.trim()) &&
+        Boolean(recipientEmail.trim()) &&
+        Boolean(giftSendAt))) &&
+    consentSnapshot.art6.acknowledged &&
+    consentSnapshot.coolingOff.acknowledged;
+
   return (
     <form onSubmit={onSubmit} noValidate className="w-full max-w-xl mx-auto flex flex-col gap-8 px-6">
       <header className="text-center">
@@ -456,8 +466,8 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
       <button
         type="submit"
-        disabled={submitting}
-        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        disabled={submitting || !isFormValid}
+        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         {submitting ? (
           copy.loadingStateCopy

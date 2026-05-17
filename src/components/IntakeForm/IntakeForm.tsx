@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import {
   emptyConsentSnapshot,
+  isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
@@ -117,6 +118,8 @@ export function IntakeForm({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorsVisible, setErrorsVisible] = useState(false);
+  const revealErrors = useCallback(() => setErrorsVisible(true), []);
 
   const {
     chipTick,
@@ -209,8 +212,25 @@ export function IntakeForm({
     });
 
   const mergedErrors = useMemo(
-    () => ({ ...errors, ...pageErrors }),
-    [errors, pageErrors],
+    () => (errorsVisible ? { ...errors, ...pageErrors } : {}),
+    [errors, pageErrors, errorsVisible],
+  );
+
+  const visibleErrorCount = errorsVisible ? errorCount : 0;
+  const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
+  const consentsFullySatisfied = useMemo(
+    () => isFullyConsented(consentSnapshot, true),
+    [consentSnapshot],
+  );
+  const submitGateInvalid =
+    errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
+
+  const handleConsentSnapshotChange = useCallback(
+    (next: LegalConsentSnapshot) => {
+      setConsentSnapshot(next);
+      if (isFullyConsented(next, true)) setSubmitError(null);
+    },
+    [],
   );
 
   const renderContext = useMemo<RenderContext>(
@@ -261,9 +281,11 @@ export function IntakeForm({
         isFirstPage={isFirstPage}
         currentPage={currentPage}
         totalPages={totalPages}
-        errorCount={errorCount}
-        firstFieldLabel={firstFieldLabel}
+        errorCount={visibleErrorCount}
+        firstFieldLabel={visibleFirstFieldLabel}
         onJumpToFirstError={jumpToFirstError}
+        submitDisabled={submitGateInvalid}
+        onAdvanceAttempt={revealErrors}
         valuesUntouched={valuesUntouched}
         values={values}
         pages={pages}
@@ -273,7 +295,7 @@ export function IntakeForm({
         lastSavedAt={lastSavedAt}
         savedIndicator={savedIndicator}
         consentSnapshot={consentSnapshot}
-        setConsentSnapshot={setConsentSnapshot}
+        setConsentSnapshot={handleConsentSnapshotChange}
         consentErrors={consentErrors}
         clearConsentError={clearConsentError}
         turnstileRequired={turnstileRequired}

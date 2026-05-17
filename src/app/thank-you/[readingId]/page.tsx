@@ -43,20 +43,29 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
 
 type PaidAmount = { display: string | null; cents: number | null };
 
+type SessionSnapshot = {
+  paidAmount: PaidAmount;
+  isGift: boolean;
+  submissionIdFromSession: string | null;
+};
 
-async function fetchPaidAmount(sessionId: string): Promise<PaidAmount> {
+async function fetchSessionSnapshot(sessionId: string): Promise<SessionSnapshot> {
   try {
     const session = await retrieveCheckoutSession(sessionId);
     const cents = session.amount_total ?? null;
     return {
-      cents,
-      display: formatAmountPaid(cents, session.currency ?? undefined),
+      paidAmount: {
+        cents,
+        display: formatAmountPaid(cents, session.currency ?? undefined),
+      },
+      isGift: session.metadata?.is_gift === "true",
+      submissionIdFromSession: session.client_reference_id ?? null,
     };
   } catch (error) {
     // Surface the rest of the page even if the Stripe API is briefly down —
     // the customer's payment already succeeded if they're here.
     console.warn(`[thank-you] Failed to retrieve session ${sessionId}`, error);
-    return { cents: null, display: null };
+    return { paidAmount: { cents: null, display: null }, isGift: false, submissionIdFromSession: null };
   }
 }
 
@@ -91,27 +100,22 @@ async function resolveContext(
   const purchaserNameOverride = firstParamValue(search.purchaserFirstName)?.trim() || null;
   const sessionValid = isValidStripeSession(sessionId);
 
-  // Hot-path fast lane: a paid purchaser without the gift flag never reads
-  // submission data — skip the D1 round-trip.
-  if (sessionValid && !giftFlag) {
-    const [paidAmount, reading] = await Promise.all([
-      fetchPaidAmount(sessionId),
-      resolveReading(segment, null),
-    ]);
-    if (!reading) return null;
-    return { mode: "purchase", reading, paidAmount, submission: null, purchaserFirstName: null };
-  }
-
   if (sessionValid) {
-    const [paidAmount, submissionLookup] = await Promise.all([
-      fetchPaidAmount(sessionId),
-      findSubmissionById(segment),
-    ]);
+    const snapshot = await fetchSessionSnapshot(sessionId);
+    const isSessionGift = giftFlag || snapshot.isGift;
+    const submissionLookup = isSessionGift
+      ? await findSubmissionById(snapshot.submissionIdFromSession ?? segment)
+      : null;
     const reading = await resolveReading(segment, submissionLookup);
     if (!reading) return null;
-    const isSessionGift = giftFlag || (submissionLookup?.isGift ?? false);
     if (!isSessionGift) {
-      return { mode: "purchase", reading, paidAmount, submission: submissionLookup, purchaserFirstName: null };
+      return {
+        mode: "purchase",
+        reading,
+        paidAmount: snapshot.paidAmount,
+        submission: null,
+        purchaserFirstName: null,
+      };
     }
     const purchaserFirstName =
       purchaserNameOverride ??
@@ -119,7 +123,7 @@ async function resolveContext(
     return {
       mode: "giftPurchaser",
       reading,
-      paidAmount,
+      paidAmount: snapshot.paidAmount,
       submission: submissionLookup,
       purchaserFirstName,
     };
