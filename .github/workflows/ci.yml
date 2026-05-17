@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "release/v1.0.0"]
+    branches: [main]
   pull_request:
-    branches: [main, "release/v1.0.0"]
+    branches: [main]
 
 # Workflow-level env reads ONLY repo-level vars (no environment context here).
 # Per-env vars live on each deploy job's env: block, where the job's
@@ -63,13 +63,12 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm storybook:build
 
-  # Deploy the staging Worker (built via @opennextjs/cloudflare).
-  # Runs on pushes to main OR the active release branch (release/v1.0.0).
-  # PRs do not deploy. All quality gates above (lint, typecheck, test,
-  # security-audit, storybook) must pass first. Per-env vars resolve from
-  # the GH `staging` environment because of `environment: staging` below.
+  # Deploy the staging Worker (built via @opennextjs/cloudflare). Runs on
+  # pushes to main. PRs do not deploy. All quality gates above must pass
+  # first. Per-env vars resolve from the GH `staging` environment because
+  # of `environment: staging` below.
   deploy-staging:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.0.0')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test, security-audit, storybook]
     environment: staging

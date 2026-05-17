@@ -108,11 +108,9 @@ Required in test environment (set explicitly in CI yaml, copy to `.env.e2e` loca
 
 `SANITY_API_HOST` is set automatically by globalSetup at runtime — don't override.
 
-## CI gate + D-4 grandfathering
+## CI gate
 
 Workflow: `.github/workflows/e2e.yml`. Triggers on PR opens / updates whenever paths-of-interest change (intake/gift components, booking routes, Sanity schema, fixtures, the workflow file itself).
-
-Per PRD D-4, the `release/v1.0.0` → `main` merge is **grandfathered** out of this gate — it carries pre-Phase-0 commits. The workflow still runs for signal value; whether failures block the merge is controlled by the branch-protection rule in repo admin. After Phase 0 merges, enable the required-check rule for PRs that target `main` AND were opened on or after the Phase 0 merge commit.
 
 ## Cross-process limitations (D-19)
 
