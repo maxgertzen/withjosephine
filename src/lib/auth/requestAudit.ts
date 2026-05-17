@@ -1,6 +1,6 @@
 import "server-only";
 
-import { CF_CONNECTING_IP_HEADER } from "@/lib/http/headers";
+import { CF_CONNECTING_IP_HEADER, USER_AGENT_HEADER } from "@/lib/http/headers";
 import { getClientIp } from "@/lib/request";
 
 import { hashIp, hashUserAgent } from "./listenSession";
@@ -22,7 +22,7 @@ function getTrustedClientIp(request: Request): string | null {
 export async function getRequestAuditContext(request: Request): Promise<RequestAuditContext> {
   const secret = process.env.LISTEN_TOKEN_SECRET;
   const ip = getTrustedClientIp(request);
-  const ua = request.headers.get("user-agent");
+  const ua = request.headers.get(USER_AGENT_HEADER);
   return {
     ipHash: ip && secret ? await hashIp(ip, secret) : null,
     userAgentHash: ua ? await hashUserAgent(ua) : null,

@@ -10,24 +10,10 @@
 // Run: pnpm tsx scripts/migrate-restore-time-unknown-checkbox-2026-05.ts <dataset>
 // Default: production.
 
-import fs from "node:fs";
-
+import { loadDotenv } from "./_lib/loadDotenv.mts";
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
-for (const filename of [".env.local", ".env"]) {
-  try {
-    const raw = fs.readFileSync(filename, "utf-8");
-    for (const line of raw.split("\n")) {
-      const m = line.match(/^([A-Z0-9_]+)=(.+)$/);
-      if (m && !process.env[m[1]]) {
-        process.env[m[1]] = m[2].replace(/^"|"$/g, "");
-      }
-    }
-    break;
-  } catch {
-    // Rely on process.env.
-  }
-}
+loadDotenv();
 
 const dataset = process.argv[2] ?? "production";
 const client = sanityWriteClient({ dataset });
