@@ -47,6 +47,17 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 
 - **EFF-12 (useAutosave.ts:66-69 per-keystroke JSON.stringify):** `valuesUntouched` flag rebuilds JSON.stringify on every keystroke. Cost is ~50µs × ~60 keystrokes/session = ~3ms total. Cross-hook ref refactor to track touched-state in `setValue` would solve it but adds coordination risk that exceeds the win at today's scale. **Trigger:** if Lighthouse "main-thread blocking" flags input-lag on intake forms, or any Sentry performance trace shows useAutosave deps in a slow render path.
 
+### DEV-1. `GiftClaimScheduler` Durable Object class missing from `next dev` bundle
+
+- **Symptom:** Every `pnpm dev` boot (incl. Playwright CI runs) emits `workerd/server/server.c++:1966: warning: A DurableObjectNamespace in the config referenced the class "GiftClaimScheduler", but no such Durable Object class is exported from the worker.` Workerd notes this may become a startup-time error in a future version.
+- **Cause:** `wrangler.jsonc:132` declares the DO binding pointing at class `GiftClaimScheduler`. The class is re-exported from `custom-worker.ts:83`, which `cf:build` bundles via OpenNext for production. But `pnpm dev` runs Next's Node dev server, NOT `custom-worker.ts`. The CF dev integration (`initOpenNextCloudflareForDev()` in `next.config.ts`) reads `wrangler.jsonc` and spins up workerd-emulated bindings, so it sees the DO declaration without finding the class implementation → warning. Today `giftClaimSchedulerClient.ts:20` returns `null` when the binding is missing and every caller handles it gracefully (gift-scheduling no-ops in dev), so the warning has no functional consequence — but it's accumulating tech debt and may break when workerd hardens the check.
+- **Fix paths:**
+  - **(a) Stub registration in dev:** ship a tiny `wrangler.dev-stubs.ts` that exports a no-op `GiftClaimScheduler` class extending `DurableObject`, and reference it via a wrangler `--script` or env-conditional `main` so the dev runtime can resolve the symbol.
+  - **(b) Migrate to `cf:dev` / `wrangler dev`:** swap Playwright + local dev from `pnpm dev` (Next dev server) to `pnpm cf:dev` (OpenNext-built worker via wrangler). Bundles `custom-worker.ts` correctly. Bigger change; affects dev DX (slower reload).
+  - **(c) Lift the DO class to a file the Next runtime already loads:** re-export from a module that `next dev` picks up before any binding consumer call.
+- **Recommendation:** Path (a) — smallest blast radius, fixes the warning, doesn't touch the dev DX. Estimated 15–30 min.
+- **Trigger:** Before the next major Cloudflare/OpenNext upgrade, OR when workerd surfaces a startup-time error on this config.
+
 ---
 
 ## Security
