@@ -113,7 +113,7 @@ jobs:
           pnpm exec wrangler d1 migrations apply withjosephine-bookings --local
 
       - name: Run Playwright
-        run: pnpm exec playwright test --project=chromium
+        run: pnpm exec playwright test
 
       - name: Upload Playwright report on failure
         if: failure()
