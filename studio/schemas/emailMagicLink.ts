@@ -1,5 +1,9 @@
 import { defineField, defineType } from "sanity";
 
+import { slotValidation } from "../lib/validateSlots";
+
+const validateMagicLinkSlots = slotValidation("emailMagicLink");
+
 export const emailMagicLink = defineType({
   name: "emailMagicLink",
   title: "Email — Magic Link",
@@ -22,6 +26,7 @@ export const emailMagicLink = defineType({
       name: "greeting",
       title: "Greeting",
       type: "string",
+      validation: validateMagicLinkSlots,
       initialValue: "Hi,",
     }),
     defineField({
@@ -30,6 +35,7 @@ export const emailMagicLink = defineType({
       type: "array",
       of: [{ type: "text", rows: 3 }],
       description: "Each entry is a paragraph in the body. Order = render order.",
+      validation: validateMagicLinkSlots,
       initialValue: [
         "Here's a fresh link to open your reading. It'll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
         "This link expires in twenty-four hours. If you didn't ask for it, it's safe to ignore — nothing happens until someone clicks.",

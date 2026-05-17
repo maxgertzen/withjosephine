@@ -1,5 +1,9 @@
 import { defineField, defineType } from "sanity";
 
+import { slotValidation } from "../lib/validateSlots";
+
+const validateDay2Slots = slotValidation("emailDay2Started");
+
 export const emailDay2Started = defineType({
   name: "emailDay2Started",
   title: "Email — Day 2 (I've Started)",
@@ -22,6 +26,7 @@ export const emailDay2Started = defineType({
       title: "Greeting",
       type: "string",
       description: 'Use "{firstName}" to insert the customer\'s first name.',
+      validation: validateDay2Slots,
       initialValue: "Hi {firstName},",
     }),
     defineField({
@@ -30,6 +35,7 @@ export const emailDay2Started = defineType({
       type: "array",
       of: [{ type: "text", rows: 3 }],
       description: "Each entry renders as one paragraph. Order = render order.",
+      validation: validateDay2Slots,
       initialValue: [
         "Just a quick note to let you know I've sat down with your chart and your records this week. I always want my clients to know when the work begins, so it doesn't feel like silence on your end.",
         "I'm not going to preview anything — your reading should arrive whole, the way it's meant to. But I wanted you to know it's in good hands, and that I'm taking the time it asks for.",

@@ -679,6 +679,30 @@ export interface EmailDay7DeliveryContent {
   signOff: string | null;
 }
 
+export interface EmailPrivacyExportContent {
+  subject: string;
+  preview: string;
+  greeting: string;
+  introLine: string;
+  contentsLine: string;
+  ctaLabel: string;
+  expiryLine: string;
+  signOff: string | null;
+}
+
+export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
+  subject: "Your Josephine data export",
+  preview: "Your Josephine data export is ready",
+  greeting: "Hi,",
+  introLine: "Your Josephine data export is ready.",
+  contentsLine:
+    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+  ctaLabel: "Download your export (ZIP)",
+  expiryLine:
+    "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  signOff: null,
+};
+
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",

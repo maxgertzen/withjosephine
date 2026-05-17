@@ -120,6 +120,9 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
   const { pathname } = request.nextUrl;
+  // Studio iframes /api/email-preview/[type] via direct URL — no draft cookie
+  // is set, so we explicitly relax CSP frame-ancestors here too.
+  const isEmailPreview = pathname.startsWith("/api/email-preview/");
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
   // allowlisted (Stripe webhook, crons, /listen/[id]) gets rewritten to `/`
@@ -156,9 +159,9 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
-  // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
-  // frame-ancestor for the Presentation tool's iframe to load at all.
-  const isStrict = isPublicApex && !isDraft;
+  // (preview/workers.dev hosts, draft cookie, email-preview route) needs
+  // Studio as a valid frame-ancestor for the iframe to load.
+  const isStrict = isPublicApex && !isDraft && !isEmailPreview;
   response.headers.set("Content-Security-Policy", buildCsp({ isDraft: !isStrict, nonce }));
 
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
