@@ -9,6 +9,7 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { purchaserFirstNameOrNull } from "@/lib/booking/giftPersonas";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
@@ -192,6 +193,8 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
 
   const isPurchaser = mode === "giftPurchaser";
   const isRecipient = mode === "giftRecipient";
+  const isSelfSendPurchaser =
+    isPurchaser && context.submission?.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
 
   const heading =
     isPurchaser
@@ -200,22 +203,30 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you. Your reading is in my hands now.")
         : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
   const subheading =
-    isPurchaser
-      ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
-      : isRecipient
-        ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
-        : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
-  const readingLabel = thankYouPageContent?.readingLabel ?? "Your Reading";
+    isSelfSendPurchaser
+      ? (thankYouPageContent?.giftPurchaserSelfSendSubheading ??
+        "Your gift link is ready in the email I just sent \u2014 share it with them whenever feels right.")
+      : isPurchaser
+        ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
+        : isRecipient
+          ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
+          : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
+  const readingLabel = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserReadingLabel ?? "Your gift")
+    : (thankYouPageContent?.readingLabel ?? "Your Reading");
   const confirmationBody =
-    isPurchaser
-      ? (thankYouPageContent?.giftPurchaserBody ??
-        "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
-      : isRecipient
-        ? (thankYouPageContent?.giftRecipientBody ??
-          "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
-        : (override?.confirmationBody ??
-          thankYouPageContent?.confirmationBody ??
-          "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
+    isSelfSendPurchaser
+      ? (thankYouPageContent?.giftPurchaserSelfSendBody ??
+        "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready \u2014 they'll claim from there.")
+      : isPurchaser
+        ? (thankYouPageContent?.giftPurchaserBody ??
+          "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
+        : isRecipient
+          ? (thankYouPageContent?.giftRecipientBody ??
+            "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+          : (override?.confirmationBody ??
+            thankYouPageContent?.confirmationBody ??
+            "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
   const timelineBody = isPurchaser
     ? (thankYouPageContent?.giftPurchaserTimelineBody ??
       "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.")

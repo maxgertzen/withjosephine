@@ -91,20 +91,50 @@ export const thankYouPage = defineType({
     }),
     defineField({
       name: "giftPurchaserSubheading",
-      title: "Gift purchaser subheading",
+      title: "Gift purchaser subheading (scheduled delivery)",
       type: "text",
       rows: 2,
+      description:
+        "Shown when the purchaser scheduled the gift for Josephine to deliver. Self-send mode uses the dedicated self-send subheading field below.",
       initialValue: "I'll take it from here. The recipient will receive a note from me with their claim link.",
     }),
     defineField({
       name: "giftPurchaserBody",
-      title: "Gift purchaser body",
+      title: "Gift purchaser body (scheduled delivery)",
       type: "text",
       rows: 3,
       description:
-        "Replaces the standard confirmation paragraph for gift purchasers. {recipientName} resolves to the recipient's name when known (self-send gifts may not have one).",
+        "Replaces the standard confirmation paragraph for scheduled-delivery gift purchasers. {recipientName} resolves to the recipient's name when known. Self-send mode uses the dedicated self-send body field below.",
       initialValue:
         "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link — they'll share their intake details with me from there.",
+    }),
+    defineField({
+      name: "giftPurchaserSelfSendSubheading",
+      title: "Gift purchaser subheading (self-send delivery)",
+      type: "text",
+      rows: 2,
+      description:
+        "Shown to a purchaser who picked self-send delivery — they hand off the claim link themselves; Josephine doesn't send anything to the recipient.",
+      initialValue:
+        "Your gift link is ready in the email I just sent — share it with them whenever feels right.",
+    }),
+    defineField({
+      name: "giftPurchaserSelfSendBody",
+      title: "Gift purchaser body (self-send delivery)",
+      type: "text",
+      rows: 3,
+      description:
+        "Replaces the standard confirmation paragraph for self-send gift purchasers. Frames the next step as forwarding the link, not waiting on a scheduled send.",
+      initialValue:
+        "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready — they'll claim from there.",
+    }),
+    defineField({
+      name: "giftPurchaserReadingLabel",
+      title: "Gift purchaser reading-card label",
+      type: "string",
+      description:
+        'Small label above the reading name on the gift-purchaser order card. Defaults to "Your gift" so the framing matches the purchase context.',
+      initialValue: "Your gift",
     }),
     defineField({
       name: "giftPurchaserTimelineBody",

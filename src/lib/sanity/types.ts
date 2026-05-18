@@ -323,6 +323,9 @@ export type SanityThankYouPage = {
   giftPurchaserHeading?: string;
   giftPurchaserSubheading?: string;
   giftPurchaserBody?: string;
+  giftPurchaserSelfSendSubheading?: string;
+  giftPurchaserSelfSendBody?: string;
+  giftPurchaserReadingLabel?: string;
   giftPurchaserTimelineBody?: string;
   giftPurchaserContactBody?: string;
   giftRecipientHeading?: string;
