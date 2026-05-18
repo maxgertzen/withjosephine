@@ -281,24 +281,27 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          {showsDiscountedPrice ? (
-            <span className="font-display text-2xl italic flex items-baseline gap-2">
-              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-              <span className="text-j-accent">{paidAmount.display}</span>
-            </span>
-          ) : (
-            <span className="font-display text-2xl italic text-j-accent">
-              {paidAmount.display ?? reading.price}
-            </span>
-          )}
+          {!isRecipient &&
+            (showsDiscountedPrice ? (
+              <span className="font-display text-2xl italic flex items-baseline gap-2">
+                <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+                <span className="text-j-accent">{paidAmount.display}</span>
+              </span>
+            ) : (
+              <span className="font-display text-2xl italic text-j-accent">
+                {paidAmount.display ?? reading.price}
+              </span>
+            ))}
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p className="whitespace-pre-line">
-            {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
-          </p>
+          {!isRecipient && (
+            <p className="whitespace-pre-line">
+              {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
+            </p>
+          )}
           <p className="whitespace-pre-line">
             {renderWithSlots(timelineBody, {
               deliveryDays: (
