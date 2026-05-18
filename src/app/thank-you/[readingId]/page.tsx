@@ -78,10 +78,14 @@ async function resolveContext(
 
   if (sessionValid) {
     const snapshot = await fetchThankYouSessionSnapshot(sessionId);
-    const isSessionGift = giftFlag || snapshot.isGift;
-    const submissionLookup = isSessionGift
-      ? await findSubmissionById(snapshot.submissionIdFromSession ?? segment)
-      : null;
+    // Stripe Payment Links don't reliably persist URL-supplied `metadata` onto
+    // the resulting Checkout Session, so derive gift-mode from the submission
+    // record (D1 source-of-truth) rather than `session.metadata.is_gift`.
+    const submissionLookup = await findSubmissionById(
+      snapshot.submissionIdFromSession ?? segment,
+    );
+    const isSessionGift =
+      giftFlag || snapshot.isGift || submissionLookup?.isGift === true;
     const reading = await resolveReading(segment, submissionLookup);
     if (!reading) return null;
     if (!isSessionGift) {
@@ -211,7 +215,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
           "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
         : (override?.confirmationBody ??
           thankYouPageContent?.confirmationBody ??
-          "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.");
+          "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
   const timelineBody =
     override?.timelineBody ??
     thankYouPageContent?.timelineBody ??

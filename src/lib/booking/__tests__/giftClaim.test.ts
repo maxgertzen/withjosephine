@@ -50,6 +50,14 @@ describe("issueGiftClaimToken", () => {
       .toBe(true);
   });
 
+  it("claim URL falls back to staging hostname via ENVIRONMENT runtime var (B-9)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "");
+    vi.stubEnv("ENVIRONMENT", "staging");
+    const issued = await issueGiftClaimToken();
+    expect(issued.claimUrl.startsWith("https://staging.withjosephine.com/gift/claim?token="))
+      .toBe(true);
+  });
+
   it("never embeds the raw token in the hash output", async () => {
     const issued = await issueGiftClaimToken();
     expect(issued.tokenHash.includes(issued.token)).toBe(false);

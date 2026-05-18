@@ -35,9 +35,11 @@ export function LegalAcknowledgments({
       {consentIntro ? (
         <p className="font-display italic text-base text-j-text-muted">{consentIntro}</p>
       ) : null}
-      <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
-        {nonRefundableNotice}
-      </p>
+      {nonRefundableNotice ? (
+        <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
+          {nonRefundableNotice}
+        </p>
+      ) : null}
       <Checkbox
         id={`${idPrefix}-art6-consent`}
         name="art6Consent"

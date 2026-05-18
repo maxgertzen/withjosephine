@@ -118,8 +118,15 @@ export function IntakeForm({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorsVisible, setErrorsVisible] = useState(false);
-  const revealErrors = useCallback(() => setErrorsVisible(true), []);
+  // Track the page index where errors were last revealed; when the user
+  // navigates away (Next, Previous, or Review-edit jump), the visibility
+  // automatically resets without firing a state-mutating effect.
+  const [revealedOnPage, setRevealedOnPage] = useState<number | null>(null);
+  const errorsVisible = revealedOnPage === currentPage;
+  const revealErrors = useCallback(
+    () => setRevealedOnPage(currentPage),
+    [currentPage],
+  );
 
   const {
     chipTick,

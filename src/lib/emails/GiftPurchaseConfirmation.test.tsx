@@ -70,6 +70,38 @@ describe("GiftPurchaseConfirmation — self_send variant", () => {
     );
     expect(html).not.toContain("<script>x</script>");
   });
+
+  it("replaces {recipientName} in shareUrlHelper with the actual name (B-7)", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={{ ...SELF_SEND_VARS, recipientName: "Laura" }}
+          copy={{
+            ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
+            shareUrlHelper: "This link is for {recipientName}. Share it the way you'd give them a handwritten card.",
+          }}
+        />,
+      ),
+    );
+    expect(text).toContain("This link is for Laura");
+    expect(text).not.toContain("{recipientName}");
+  });
+
+  it("falls back to a generic word when recipientName is null (B-7)", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={{ ...SELF_SEND_VARS, recipientName: null }}
+          copy={{
+            ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
+            shareUrlHelper: "This link is for {recipientName}. Share it however you like.",
+          }}
+        />,
+      ),
+    );
+    expect(text).not.toContain("{recipientName}");
+    expect(text).toContain("your recipient");
+  });
 });
 
 describe("GiftPurchaseConfirmation — scheduled variant", () => {

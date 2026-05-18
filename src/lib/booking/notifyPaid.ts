@@ -72,30 +72,39 @@ export async function applyPaidEvent(
 
   await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
 
-  await Promise.all([
+  const dispatches: Array<Promise<unknown>> = [
     sendNotificationToJosephine(context).catch((error) => {
       console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
     }),
-    sendOrderConfirmation(context)
-      .then(async (result) => {
-        if (result.kind !== "sent") return;
-        try {
-          await appendEmailFired(submission._id, {
-            type: "order_confirmation",
-            sentAt: new Date().toISOString(),
-            resendId: result.resendId,
-          });
-        } catch (error) {
-          console.error(
-            `[notifyPaid] emailsFired write failed for ${submission._id}`,
-            error,
-          );
-        }
-      })
-      .catch((error) => {
-        console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
-      }),
-  ]);
+  ];
+
+  // Gift purchasers receive `gift_purchase_confirmation` from the webhook
+  // handler; skipping here avoids duplicate sends.
+  if (!submission.isGift) {
+    dispatches.push(
+      sendOrderConfirmation(context)
+        .then(async (result) => {
+          if (result.kind !== "sent") return;
+          try {
+            await appendEmailFired(submission._id, {
+              type: "order_confirmation",
+              sentAt: new Date().toISOString(),
+              resendId: result.resendId,
+            });
+          } catch (error) {
+            console.error(
+              `[notifyPaid] emailsFired write failed for ${submission._id}`,
+              error,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
+        }),
+    );
+  }
+
+  await Promise.all(dispatches);
 
   return "applied";
 }

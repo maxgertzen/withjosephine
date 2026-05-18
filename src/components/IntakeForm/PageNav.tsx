@@ -78,8 +78,9 @@ export function PageNav({
             type="submit"
             size="lg"
             data-testid="intake-submit"
-            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium"
-            disabled={submitDisabled || isSubmitting}
+            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+            disabled={isSubmitting}
+            aria-disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
           >
             {isSubmitting ? "Submitting…" : submitLabel}
@@ -90,8 +91,8 @@ export function PageNav({
             size="default"
             data-testid="intake-next"
             onClick={onNext}
-            disabled={nextDisabled}
-            className="min-h-11 whitespace-nowrap"
+            aria-disabled={nextDisabled}
+            className="min-h-11 whitespace-nowrap aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
           >
             {nextLabel}
           </Button>

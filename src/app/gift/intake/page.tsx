@@ -14,7 +14,6 @@ import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
   fetchBookingForm,
-  fetchBookingPage,
   fetchGiftIntakePage,
   fetchReading,
 } from "@/lib/sanity/fetch";
@@ -47,7 +46,6 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
 
   // Sanity copy doesn't depend on the submission lookup; start it in parallel.
   const bookingFormPromise = fetchBookingForm();
-  const bookingPagePromise = fetchBookingPage();
   const intakePagePromise = fetchGiftIntakePage();
 
   const submission = await findSubmissionById(submissionId);
@@ -58,10 +56,9 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     redirect("/");
   }
 
-  const [reading, bookingForm, bookingPage, intakePageCopy] = await Promise.all([
+  const [reading, bookingForm, intakePageCopy] = await Promise.all([
     fetchReading(submission.reading?.slug ?? ""),
     bookingFormPromise,
-    bookingPagePromise,
     intakePagePromise,
   ]);
 
@@ -102,10 +99,10 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               readingId={reading.slug}
               readingName={reading.name}
               sections={filteredSections}
-              nonRefundableNotice={bookingForm.nonRefundableNotice}
+              nonRefundableNotice=""
               pagination={bookingForm.pagination}
               loadingStateCopy={bookingForm.loadingStateCopy}
-              submitLabel={bookingPage?.paymentButtonText ?? "Prepare my reading"}
+              submitLabel="Send my answers"
               nextLabel={bookingForm.nextButtonText}
               saveLaterLabel={bookingForm.saveAndContinueLaterText}
               pageIndicatorTagline={bookingForm.pageIndicatorTagline}
