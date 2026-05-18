@@ -11,7 +11,7 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import {
   ART6_CONSENT_LABEL,
-  ART9_CONSENT_LABEL,
+  art9ConsentLabel,
   COOLING_OFF_CONSENT_LABEL,
 } from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
@@ -110,7 +110,10 @@ export async function mirrorSubmissionCreate(
           acknowledgedAt: consent.consentAcknowledgedAt,
           ipAddress: consent.ipAddress ?? undefined,
           art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
-          art9Consent: ackBlock(ART9_CONSENT_LABEL, consent.art9AcknowledgedAt),
+          art9Consent: ackBlock(
+            art9ConsentLabel(input.readingSlug),
+            consent.art9AcknowledgedAt,
+          ),
           coolingOffConsent: ackBlock(
             COOLING_OFF_CONSENT_LABEL,
             consent.coolingOffAcknowledgedAt,
@@ -156,6 +159,7 @@ export async function mirrorSubmissionPatch(
     giftClaimEmailFiredAt: string;
     purchaserUserId: string | null;
     email: string;
+    readingSlug: string;
   }>,
 ): Promise<void> {
   const client = getClient();
@@ -163,23 +167,20 @@ export async function mirrorSubmissionPatch(
 
   // Sanity requires `_key` on each array item. Inject keys for responses
   // (the only array-type field in this patch) so writes don't reject.
-  const sanitized: Record<string, unknown> = { ...patch };
-  if (patch.responses) {
-    sanitized.responses = patch.responses.map((response, index) => ({
+  const { readingSlug, art9AcknowledgedAt, ...rest } = patch;
+  const sanitized: Record<string, unknown> = { ...rest };
+  if (rest.responses) {
+    sanitized.responses = rest.responses.map((response, index) => ({
       _key: `${response.fieldKey}-${index}`,
       _type: "submissionResponse" as const,
       ...response,
     }));
   }
-  if (patch.art9AcknowledgedAt) {
-    // Mirror the recipient's Art. 9 ack into the existing consentSnapshot
-    // shape. The purchaser's Art. 6 was already written at purchase time;
-    // we only set art9 here at claim time.
+  if (art9AcknowledgedAt) {
     sanitized["consentSnapshot.art9Consent"] = {
-      labelText: ART9_CONSENT_LABEL,
-      acknowledgedAt: patch.art9AcknowledgedAt,
+      labelText: art9ConsentLabel(readingSlug ?? "soul-blueprint"),
+      acknowledgedAt: art9AcknowledgedAt,
     };
-    delete sanitized.art9AcknowledgedAt;
   }
 
   try {

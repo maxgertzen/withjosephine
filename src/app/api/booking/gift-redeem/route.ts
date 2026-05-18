@@ -106,12 +106,15 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (
-    !isFullyConsented(consentSnapshotFromBody(parsedBody), {
-      requireArt9: true,
-      // Recipient did not pay — purchaser already waived cooling-off at
-      // purchase time. The recipient consent surface omits the checkbox.
-      requireCoolingOff: false,
-    })
+    !isFullyConsented(
+      consentSnapshotFromBody(parsedBody, { readingSlug: parsedBody.readingSlug }),
+      {
+        requireArt9: true,
+        // Recipient did not pay — purchaser already waived cooling-off at
+        // purchase time. The recipient consent surface omits the checkbox.
+        requireCoolingOff: false,
+      },
+    )
   ) {
     return NextResponse.json(
       {
@@ -240,6 +243,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     await redeemGiftSubmission({
       submissionId,
+      readingSlug: parsedBody.readingSlug,
       responses,
       recipientUserId,
       claimedAtIso,

@@ -44,13 +44,11 @@ Three test-infrastructure improvements surfaced while running the Playwright sui
 
 ### v1.1.x polish bundle — flagged 2026-05-18 mid-round-2 smoke
 
-Five user-flagged items not in round-2 scope. Trigger to promote: after the round-2 PR merges and Max signs off on staging. Bundle as v1.1.1 (low-risk polish) or v1.1.2 if the dark-mode work runs longer.
+Items still pending after v1.1.1 shipped the first three. Trigger to promote: bundle as v1.1.2 (if soon) or its own PR (if dark-mode runs longer).
 
-- **Nav breakpoint regression.** Top-nav links overlap the logo at a certain mid viewport before the mobile-menu kicks in. Move the breakpoint earlier (currently `md:hidden` on the toggle in `src/components/Navigation/Navigation.tsx` — likely needs `lg:hidden` plus matching `lg:flex` on the link group).
-- **Akasha hero image too big on mobile.** Josephine's portrait nearly fills the viewport height on small screens. Add a max-height clamp or responsive `sizes` so it occupies a reasonable share of the fold.
-- **Thank-you gift purchaser card label is wrong.** The Sanity `readingLabel` field renders "Your Reading" on the gift-purchaser surface — the reading isn't theirs. Add a gift-purchaser-mode variant on `thankYouPage` (e.g. `giftPurchaserReadingLabel`) defaulting to "The gift" / "Your gift" — spawn a Copywriter persona via /agents for the wording. Wire it into `src/app/thank-you/[readingId]/page.tsx` alongside the C-10 branches.
 - **Full content-pass with a copywriter.** Sweep every customer-facing surface (booking flow, gift flow, thank-you, listen, my-gifts, my-readings, emails) and run a Copywriter persona over the copy. Tighten where verbose, warm where transactional, brand-align where flat. Discuss scope first — could be its own dedicated PR or bundled with the C-1 button redesign.
 - **Dark / light mode.** Theme switch with brand-coherent dark palette (Midnight + Deep + Gold accents) and persistent preference. Likely a bigger lift — design system tokens already use CSS vars so the technical foundation is there, but every surface needs a dark-mode pass and Max may want a design conversation first.
+- **Loader tail-strip design decision.** v1.1.1 bumped SubmitOverlay to `size="lg"` (`I-4`) as the immediate quick win. The rotating star's box-shadow / blur "tail" still reads as a comet at larger sizes — design loop with Max to decide whether to strip it entirely, parametrize by size, or keep as-is.
 
 ### C-1 — Intake "Continue / Send my answers" button UX redesign
 
@@ -200,11 +198,6 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 - **Security note:** Test keys ALWAYS pass, so Turnstile no longer protects staging from bots. This is acceptable because staging is already gated by Cloudflare Zero Trust (CF Access) — only authenticated identities can reach `staging.withjosephine.com` at all. Effective security is unchanged; Turnstile was redundant defense on staging.
 - **Hidden-invariant risk:** Anyone who later "rotates Turnstile keys" on staging and accidentally uses the real key will break automated tests AND make Becky's smoke flow trigger a captcha she didn't expect. The override lives in GH dashboard, not the repo — so it's not visible in code review. Read this entry before touching staging Turnstile config.
 - **References:** https://developers.cloudflare.com/turnstile/troubleshooting/testing/ (Cloudflare test-key documentation, always-pass site/secret pair).
-
-### CI workflow needs `workflow_dispatch` trigger (1-line follow-up)
-- **Source:** Phase 5 Bundle A.0, 2026-05-16. `gh workflow run ci.yml --ref release/v1.0.0` fails because `.github/workflows/ci.yml`'s `on:` block only declares `push` + `pull_request` triggers.
-- **Fix:** add `workflow_dispatch:` to the `on:` block. Then manual redeploys can be triggered via `gh workflow run ci.yml --ref <branch>` without needing an empty commit. Useful any time we want to redeploy without code changes (Turnstile key rotation, secret rotation forcing a rebuild, etc.).
-- **Trigger:** ship next time someone touches `ci.yml` for an unrelated reason. Not urgent.
 
 ### R2 backups bucket + Sanity Export token provisioning (Phase 3 prerequisite — Max-action)
 

@@ -136,6 +136,7 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
  */
 export async function redeemGiftSubmission(params: {
   submissionId: string;
+  readingSlug: string;
   responses: SubmissionRecord["responses"];
   recipientUserId: string;
   claimedAtIso: string;
@@ -154,6 +155,7 @@ export async function redeemGiftSubmission(params: {
       recipientUserId: params.recipientUserId,
       responses: params.responses,
       art9AcknowledgedAt: params.art9AcknowledgedAt,
+      readingSlug: params.readingSlug,
       ...(params.recipientEmailFromIntake !== undefined
         ? { recipientEmail: params.recipientEmailFromIntake }
         : {}),

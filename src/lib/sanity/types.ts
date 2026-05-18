@@ -155,6 +155,8 @@ export type SanityGiftClaimPage = {
   alreadyClaimedBody: string;
   sessionExpiredHeading: string;
   sessionExpiredBody: string;
+  alreadySubmittedHeading: string;
+  alreadySubmittedBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;
@@ -323,6 +325,9 @@ export type SanityThankYouPage = {
   giftPurchaserHeading?: string;
   giftPurchaserSubheading?: string;
   giftPurchaserBody?: string;
+  giftPurchaserSelfSendSubheading?: string;
+  giftPurchaserSelfSendBody?: string;
+  giftPurchaserReadingLabel?: string;
   giftPurchaserTimelineBody?: string;
   giftPurchaserContactBody?: string;
   giftRecipientHeading?: string;

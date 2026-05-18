@@ -102,8 +102,8 @@ export function IntakeForm({
     requestFreshToken: requestFreshTurnstileToken,
   } = useTurnstileChallenge();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(
-    emptyConsentSnapshot,
+  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(() =>
+    emptyConsentSnapshot({ readingSlug: readingId }),
   );
   const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsErrors>({});
   const clearConsentError = useCallback(

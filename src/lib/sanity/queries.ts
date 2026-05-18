@@ -124,6 +124,9 @@ export const thankYouPageQuery = groq`
     giftPurchaserHeading,
     giftPurchaserSubheading,
     giftPurchaserBody,
+    giftPurchaserSelfSendSubheading,
+    giftPurchaserSelfSendBody,
+    giftPurchaserReadingLabel,
     giftPurchaserTimelineBody,
     giftPurchaserContactBody,
     giftRecipientHeading,
@@ -215,6 +218,8 @@ export const giftClaimPageQuery = groq`
     alreadyClaimedBody,
     sessionExpiredHeading,
     sessionExpiredBody,
+    alreadySubmittedHeading,
+    alreadySubmittedBody,
     welcomeHeading,
     welcomeBody,
     welcomeCtaLabel

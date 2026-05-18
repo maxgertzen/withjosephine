@@ -104,7 +104,8 @@ export default async function LandingPage() {
             width={300}
             height={450}
             loading="lazy"
-            className="w-full md:w-[300px] h-auto object-contain"
+            sizes="(min-width: 768px) 300px, 55vw"
+            className="w-[clamp(200px,55vw,300px)] mx-auto md:mx-0 md:w-[300px] h-auto object-contain"
           />
           <div className="flex flex-col gap-5">
             {about.paragraphs.map((paragraph, index) => (

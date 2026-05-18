@@ -1,11 +1,11 @@
 /**
  * Verbatim consent label text the user sees + acknowledges at intake. Locked
- * 2026-05-09 by Privacy Counsel; see
- * www/MEMORY/WORK/20260509-202915_phase4-compliance-hardening/PRD.md
- * `## Decisions`.
- *
- * Two consents are captured separately to satisfy GDPR's Art. 9 specificity
- * requirement — a bundled "I agree" cannot cover special-category processing.
+ * 2026-05-09 by Privacy Counsel for the uniform variant; per-reading Art. 9
+ * variants locked 2026-05-18 following the evidence-cited Council recorded in
+ * www/MEMORY/WORK/20260518-112650_v1.1.1-implementation/PRD.md `## Decisions`
+ * — both Privacy Counsel and Adversarial-Litigator personas converged on
+ * per-reading specificity (GDPR Art. 9(2)(a) "specified purposes" +
+ * WP259 §3.2 + EDPB 05/2020 §3.2 granularity).
  *
  * Same string is rendered on the form AND written to Sanity's
  * `consentSnapshot.art6Consent.labelText` / `art9Consent.labelText` so the
@@ -13,19 +13,35 @@
  * after a legal review and document the rationale in the PR.
  */
 
+export type ReadingSlug = "soul-blueprint" | "birth-chart" | "akashic-record";
+
 export const ART6_CONSENT_LABEL =
   "I agree to Josephine processing my booking details (name, email, birth data, photo, intake answers) to prepare my reading, under the Privacy Policy and Terms.";
 
-export const ART9_CONSENT_LABEL =
-  "I explicitly consent to Josephine using my birth chart and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal astrology and Akashic Record reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.";
+export const ART9_CONSENT_LABEL_BY_READING: Record<ReadingSlug, string> = {
+  "soul-blueprint":
+    "I explicitly consent to Josephine using my birth chart, three questions and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal astrology and Akashic Record reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.",
+  "birth-chart":
+    "I explicitly consent to Josephine using my birth chart and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal astrology reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.",
+  "akashic-record":
+    "I explicitly consent to Josephine using my three questions and intake answers — which may reveal my spiritual or philosophical beliefs — to create a personal Akashic Record reading. I understand I can withdraw this consent at any time by emailing hello@withjosephine.com.",
+};
 
-// PRIVACY-COUNSEL-PENDING — verbatim text pending counsel sign-off.
+function isReadingSlug(value: string): value is ReadingSlug {
+  return value in ART9_CONSENT_LABEL_BY_READING;
+}
+
+export function art9ConsentLabel(slug: string): string {
+  return isReadingSlug(slug)
+    ? ART9_CONSENT_LABEL_BY_READING[slug]
+    : ART9_CONSENT_LABEL_BY_READING["soul-blueprint"];
+}
+
+export const ART9_CONSENT_LABEL = ART9_CONSENT_LABEL_BY_READING["soul-blueprint"];
+
 export const COOLING_OFF_CONSENT_LABEL =
   "I understand readings are non-refundable and waive my 14-day cooling-off right under EU Consumer Rights Directive 2011/83 Art. 16(m).";
 
-// PRIVACY-COUNSEL-PENDING — purchaser-scoped Art. 6 for gift purchase flow.
-// Distinct from ART6_CONSENT_LABEL because the purchaser is not providing their
-// own birth/intake data — the recipient does that at redeem time.
 export const GIFT_ART6_CONSENT_LABEL =
   "I agree to Josephine processing my contact details and the recipient's contact details to fulfill this gift purchase, under the Privacy Policy and Terms.";
 
@@ -42,9 +58,6 @@ export interface LegalConsentSnapshot {
 
 export type ConsentRequirements = {
   requireArt9: boolean;
-  // Cooling-off applies to anyone making a payment. Gift recipients didn't pay
-  // (the purchaser did, and waived their right at purchase) so the recipient
-  // surface omits the waiver checkbox entirely.
   requireCoolingOff?: boolean;
 };
 
@@ -77,6 +90,7 @@ export function collectConsentErrors(
 
 export type ConsentLabelOverrides = {
   art6Label?: string;
+  readingSlug?: string;
 };
 
 export function emptyConsentSnapshot(
@@ -84,7 +98,7 @@ export function emptyConsentSnapshot(
 ): LegalConsentSnapshot {
   return {
     art6: { acknowledged: false, labelText: overrides.art6Label ?? ART6_CONSENT_LABEL },
-    art9: { acknowledged: false, labelText: ART9_CONSENT_LABEL },
+    art9: { acknowledged: false, labelText: art9ConsentLabel(overrides.readingSlug ?? "soul-blueprint") },
     coolingOff: { acknowledged: false, labelText: COOLING_OFF_CONSENT_LABEL },
   };
 }
@@ -106,7 +120,7 @@ export function consentSnapshotFromBody(
     },
     art9: {
       acknowledged: flags.art9Consent ?? false,
-      labelText: ART9_CONSENT_LABEL,
+      labelText: art9ConsentLabel(overrides.readingSlug ?? "soul-blueprint"),
     },
     coolingOff: {
       acknowledged: flags.coolingOffConsent,

@@ -113,5 +113,19 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
     await expect(page).toHaveURL(/\/thank-you\/.*gift=1.*redeemed=1/, {
       timeout: 10_000,
     });
+
+    await expect(page.getByText(/\{deliveryDays\}/)).toHaveCount(0);
+    await expect(page.getByText(/seven days/i).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/\$\d/)).toHaveCount(0);
+
+    await setGiftClaimCookieForTest(
+      page.context().request,
+      interceptedSubmissionId!,
+    );
+    await page.goto("/gift/intake");
+    await expect(page).toHaveURL(/\/gift\/already-submitted/, { timeout: 10_000 });
+    await expect(page.getByText(/we have your answers/i)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 });

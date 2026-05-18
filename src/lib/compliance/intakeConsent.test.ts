@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { READINGS } from "@/data/readings";
+
 import {
   ART6_CONSENT_LABEL,
   ART9_CONSENT_LABEL,
+  ART9_CONSENT_LABEL_BY_READING,
+  art9ConsentLabel,
+  consentSnapshotFromBody,
   COOLING_OFF_CONSENT_LABEL,
   emptyConsentSnapshot,
   isFullyConsented,
@@ -97,6 +102,67 @@ describe("isFullyConsented — gift purchaser { requireArt9: false }", () => {
     },
   ])("$case → $expected", ({ overrides, expected }) => {
     expect(isFullyConsented(snapshot(overrides), { requireArt9: false })).toBe(expected);
+  });
+});
+
+describe("ReadingSlug drift guard", () => {
+  it("ART9_CONSENT_LABEL_BY_READING covers every slug in READINGS", () => {
+    const readingIds = READINGS.map((r) => r.id).sort();
+    const labelKeys = Object.keys(ART9_CONSENT_LABEL_BY_READING).sort();
+    expect(labelKeys).toEqual(readingIds);
+  });
+});
+
+describe("art9ConsentLabel — per-reading specificity (I-2 Council 2026-05-18)", () => {
+  it("soul-blueprint names birth chart + three questions + intake answers + both modalities", () => {
+    const label = art9ConsentLabel("soul-blueprint");
+    expect(label).toBe(ART9_CONSENT_LABEL_BY_READING["soul-blueprint"]);
+    expect(label).toContain("birth chart");
+    expect(label).toContain("three questions");
+    expect(label).toContain("personal astrology and Akashic Record reading");
+    expect(label).toContain("spiritual or philosophical beliefs");
+    expect(label).toContain("hello@withjosephine.com");
+  });
+
+  it("birth-chart names birth chart but NOT Akashic", () => {
+    const label = art9ConsentLabel("birth-chart");
+    expect(label).toBe(ART9_CONSENT_LABEL_BY_READING["birth-chart"]);
+    expect(label).toContain("birth chart");
+    expect(label).not.toContain("Akashic");
+    expect(label).toContain("personal astrology reading");
+    expect(label).toContain("spiritual or philosophical beliefs");
+  });
+
+  it("akashic-record names Akashic and three questions but NOT birth chart", () => {
+    const label = art9ConsentLabel("akashic-record");
+    expect(label).toBe(ART9_CONSENT_LABEL_BY_READING["akashic-record"]);
+    expect(label).not.toContain("birth chart");
+    expect(label).toContain("three questions");
+    expect(label).toContain("personal Akashic Record reading");
+    expect(label).toContain("spiritual or philosophical beliefs");
+  });
+
+  it("falls back to soul-blueprint for unknown slugs", () => {
+    expect(art9ConsentLabel("totally-not-a-reading")).toBe(
+      ART9_CONSENT_LABEL_BY_READING["soul-blueprint"],
+    );
+  });
+
+  it("legacy ART9_CONSENT_LABEL constant equals the soul-blueprint variant", () => {
+    expect(ART9_CONSENT_LABEL).toBe(ART9_CONSENT_LABEL_BY_READING["soul-blueprint"]);
+  });
+
+  it("consentSnapshotFromBody threads readingSlug into the art9 labelText", () => {
+    const snap = consentSnapshotFromBody(
+      { art6Consent: true, art9Consent: true, coolingOffConsent: true },
+      { readingSlug: "akashic-record" },
+    );
+    expect(snap.art9.labelText).toBe(ART9_CONSENT_LABEL_BY_READING["akashic-record"]);
+  });
+
+  it("emptyConsentSnapshot threads readingSlug into the art9 labelText", () => {
+    const snap = emptyConsentSnapshot({ readingSlug: "birth-chart" });
+    expect(snap.art9.labelText).toBe(ART9_CONSENT_LABEL_BY_READING["birth-chart"]);
   });
 });
 
