@@ -27,6 +27,23 @@ For gift-purchase emails (where the claim URL has lifecycle), use the existing `
 
 ## Main-merge blockers (filed 2026-05-18)
 
+### brace-expansion 5.0.5 ReDoS CVE (GHSA-jxxr-4gwj-5jf2) — coordinated minimatch upgrade
+
+OSV-scan filters this CVE in `osv-scanner.toml` because the direct fix breaks the toolchain.
+
+**The problem:** brace-expansion@5.0.5 has a MEDIUM ReDoS (GHSA-jxxr-4gwj-5jf2, published 2026-05-18). Fixed in 5.0.6. Pinning via `pnpm.overrides` to `^5.0.6` breaks ESLint with `TypeError: expand is not a function` — the failure originates in `minimatch@3.1.5` calling brace-expansion's default export as a function (broken by the 5.0 export-shape change).
+
+**Why it's filtered, not fixed:** brace-expansion is used transitively by build/test tooling (glob/minimatch chains pulled in by ESLint, Storybook, and similar). No application code calls brace-expansion on untrusted input at runtime, so the ReDoS risk in production is zero. Filter is acceptable as an interim posture.
+
+**Promotion path:**
+1. Identify which dependency tree pulls in `minimatch@3.1.5`. Likely candidate: `@eslint/config-array` or a vendored old eslint plugin.
+2. Pin minimatch via `pnpm.overrides` to a version compatible with brace-expansion 5.0.6 (minimatch 9.x+).
+3. Re-add `"brace-expansion@<5.0.6": "^5.0.6"` to `pnpm.overrides`.
+4. Verify `pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm build` all clean.
+5. Remove the GHSA-jxxr-4gwj-5jf2 entry from `osv-scanner.toml`.
+
+**Trigger:** any of: (a) brace-expansion CVE escalates from MEDIUM to HIGH, (b) discovery that brace-expansion IS reachable from user input at runtime (would change the risk profile), (c) routine quarterly toolchain refresh hits this entry.
+
 ### Production D1 migration drift — apply 0004 → 0011 at main-merge time
 
 Staging D1 (`withjosephine-bookings-staging`) is at migration **0011** (all gift-related schema applied). Production D1 (`withjosephine-bookings`) is at migration **0003**. The 8 missing migrations (0004 → 0011) introduce every gift-aware column the Phase 5 Gifting code reads/writes — `is_gift`, `purchaser_user_id`, `recipient_email`, `gift_delivery_method`, `gift_send_at`, `gift_message`, `gift_claim_token_hash`, `gift_claim_email_fired_at`, `gift_claimed_at`, `gift_cancelled_at`, `gift_resend_lock_until`.
