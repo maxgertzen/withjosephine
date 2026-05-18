@@ -49,4 +49,24 @@ test.describe("Intake multi-page first paint — no validation carry-over (B-1)"
 
     await expect(page.locator("[aria-invalid='true']")).toHaveCount(0);
   });
+
+  test("attempting to advance from an invalid page reveals red borders", async ({
+    page,
+  }) => {
+    await seedIntakeDraft(page, "soul-blueprint", {
+      values: PAGE_1_ONLY_VALID,
+    });
+    await page.goto("/book/soul-blueprint/intake");
+    await waitForDraftRestore(page);
+
+    await page.getByTestId("intake-next").click();
+
+    await expect(page.locator("[aria-invalid='true']")).toHaveCount(0);
+
+    const nextOnPageTwo = page.getByTestId("intake-next");
+    await expect(nextOnPageTwo).toHaveAttribute("aria-disabled", "true");
+    await nextOnPageTwo.click({ force: true });
+
+    await expect(page.locator("[aria-invalid='true']").first()).toBeVisible();
+  });
 });
