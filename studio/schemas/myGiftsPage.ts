@@ -271,6 +271,32 @@ export const myGiftsPage = defineType({
       type: "string",
       initialValue: "shortly",
     }),
+    defineField({
+      name: "flipToScheduledCtaLabel",
+      title: "Flip self-send → scheduled — button label",
+      type: "string",
+      description:
+        "Shown on self-send gifts that haven't been claimed yet. Lets the purchaser convert the gift to scheduled delivery (Josephine emails the recipient on the chosen date).",
+      initialValue: "Let Josephine send it for me",
+    }),
+    defineField({
+      name: "flipToScheduledFormTitle",
+      title: "Flip self-send → scheduled — form title",
+      type: "string",
+      initialValue: "Have Josephine deliver the link",
+    }),
+    defineField({
+      name: "flipToScheduledSaveButtonLabel",
+      title: "Flip self-send → scheduled — save button label",
+      type: "string",
+      initialValue: "Schedule it",
+    }),
+    defineField({
+      name: "flipToScheduledSavingLabel",
+      title: "Flip self-send → scheduled — saving label",
+      type: "string",
+      initialValue: "Scheduling…",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "My Gifts Page" }),

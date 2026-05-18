@@ -123,11 +123,17 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftClaimEmailFiredAt) {
-    return NextResponse.json({ error: "Already sent" }, { status: 409 });
-  }
   if (submission.giftClaimedAt || submission.giftCancelledAt) {
     return NextResponse.json({ error: "Closed" }, { status: 409 });
+  }
+  // For scheduled gifts, once the claim email has fired the recipient may have
+  // already opened it; edits would be confusing. self_send gifts can be edited
+  // anytime before claim — the purchaser controls when they share the link.
+  if (
+    submission.giftDeliveryMethod === GIFT_DELIVERY.scheduled &&
+    submission.giftClaimEmailFiredAt
+  ) {
+    return NextResponse.json({ error: "Already sent" }, { status: 409 });
   }
 
   const raw = await request.json().catch(() => null);

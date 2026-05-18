@@ -550,9 +550,9 @@ export async function editGiftRecipient(
         SET ${sets.join(", ")}
       WHERE id = ?
         AND is_gift = 1
-        AND gift_claim_email_fired_at IS NULL
         AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL`,
+        AND gift_cancelled_at IS NULL
+        AND (gift_delivery_method = 'self_send' OR gift_claim_email_fired_at IS NULL)`,
     params,
   );
   return { updated: result.rowsWritten > 0, responses };
@@ -590,6 +590,37 @@ export async function flipGiftToSelfSend(
         AND gift_claimed_at IS NULL
         AND gift_cancelled_at IS NULL`,
     [args.tokenHash, args.firedAtIso, id],
+  );
+  return result.rowsWritten > 0;
+}
+
+/**
+ * Purchaser flips self_send → scheduled.
+ *
+ * Self_send gifts had `gift_claim_email_fired_at` populated at purchase time
+ * (the link went to the purchaser). On flip, clear that marker so the
+ * GiftClaimScheduler alarm path treats it as a fresh scheduled send. The new
+ * recipient_email is required because scheduled mode delivers to the
+ * recipient directly. The previous claim token is also rotated to invalidate
+ * any URL the purchaser already shared before flipping.
+ */
+export async function flipGiftToScheduled(
+  id: string,
+  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_delivery_method = 'scheduled',
+            gift_send_at = ?,
+            recipient_email = ?,
+            gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = NULL
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'self_send'
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    [args.giftSendAt, args.recipientEmail, args.tokenHash, id],
   );
   return result.rowsWritten > 0;
 }
