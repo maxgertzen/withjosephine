@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
+import { siteOriginFromEnv } from "@/lib/env";
 import { DO_SECRET_HEADER } from "@/lib/http/headers";
 
 // Logs from this file may contain only `submissionId` — `wrangler tail` is
@@ -8,6 +9,7 @@ import { DO_SECRET_HEADER } from "@/lib/http/headers";
 export type GiftClaimSchedulerEnv = {
   DO_DISPATCH_SECRET?: string;
   NEXT_PUBLIC_SITE_ORIGIN?: string;
+  ENVIRONMENT?: string;
   // Service binding to the same worker. Lets alarm() dispatch in-isolate
   // instead of taking the public-edge HTTPS round-trip. Optional so unit
   // tests can stub it.
@@ -19,10 +21,6 @@ type DispatchResponse = {
   reason?: string;
   nextAlarmMs: number | null;
 };
-
-function defaultOrigin(env: GiftClaimSchedulerEnv): string {
-  return env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://withjosephine.com";
-}
 
 type GiftClaimSchedulerStub = { fetch(request: Request): Promise<Response> };
 type GiftClaimSchedulerId = { toString(): string };
@@ -36,6 +34,7 @@ declare global {
     GIFT_CLAIM_SCHEDULER?: GiftClaimSchedulerNamespace;
     DO_DISPATCH_SECRET?: string;
     NEXT_PUBLIC_SITE_ORIGIN?: string;
+    ENVIRONMENT?: string;
     SELF?: Fetcher;
   }
 }
@@ -107,7 +106,7 @@ export class GiftClaimScheduler extends DurableObject<GiftClaimSchedulerEnv> {
     // `globalThis.fetch` and don't provide a `SELF` Fetcher).
     const dispatchUrl = this.env.SELF
       ? "https://internal/api/internal/gift-claim-dispatch"
-      : `${defaultOrigin(this.env)}/api/internal/gift-claim-dispatch`;
+      : `${siteOriginFromEnv(this.env)}/api/internal/gift-claim-dispatch`;
     const dispatcher = this.env.SELF ?? globalThis;
     const res = await dispatcher.fetch(dispatchUrl, {
       method: "POST",

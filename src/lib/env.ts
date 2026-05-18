@@ -46,3 +46,30 @@ export function isFlagEnabled(name: FeatureFlag) {
   const value = process.env[name];
   return value === "1" || value === "true";
 }
+
+const STAGING_ORIGIN = "https://staging.withjosephine.com";
+const PRODUCTION_ORIGIN = "https://withjosephine.com";
+
+// NEXT_PUBLIC_SITE_ORIGIN is inlined at build time and may be undefined when
+// CI builds a single bundle for multiple environments. ENVIRONMENT is a
+// Worker-runtime variable (set per-env in wrangler.jsonc) so the staging
+// worker resolves to the staging hostname even when the inlined build-time
+// origin is missing.
+export function siteOrigin(): string {
+  const fromBuild = process.env.NEXT_PUBLIC_SITE_ORIGIN;
+  if (fromBuild) return fromBuild;
+  if (process.env.ENVIRONMENT === "staging") return STAGING_ORIGIN;
+  return PRODUCTION_ORIGIN;
+}
+
+// Durable Objects receive env as a runtime binding, not via process.env.
+export type WorkerOriginEnv = {
+  NEXT_PUBLIC_SITE_ORIGIN?: string;
+  ENVIRONMENT?: string;
+};
+
+export function siteOriginFromEnv(env: WorkerOriginEnv): string {
+  if (env.NEXT_PUBLIC_SITE_ORIGIN) return env.NEXT_PUBLIC_SITE_ORIGIN;
+  if (env.ENVIRONMENT === "staging") return STAGING_ORIGIN;
+  return PRODUCTION_ORIGIN;
+}
