@@ -25,7 +25,7 @@ describe("NavigationButton", () => {
     const { container } = render(
       <NavigationButton href="/book/soul-blueprint">Book this Reading</NavigationButton>,
     );
-    expect(container.querySelector("svg.animate-spin")).toBeNull();
+    expect(container.querySelector('[role="status"]')).toBeNull();
   });
 });
 
@@ -51,7 +51,7 @@ describe("NavigationButton with pending state", () => {
     const labelEl = screen.getByText(/Book this Reading/);
     expect(labelEl).toBeInTheDocument();
     expect(labelEl.closest('[aria-hidden="true"]')).toHaveClass("invisible");
-    expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
+    expect(container.querySelector('[role="status"]')).toBeInTheDocument();
 
     vi.doUnmock("next/link");
   });
