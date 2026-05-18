@@ -127,6 +127,7 @@ export type SanityMyGiftsPage = {
   resendLinkCtaLabel: string;
   privacyNote: string;
   editRecipientFormTitle?: string;
+  editRecipientSelfSendIndicator?: string;
   editRecipientFormRecipientNameLabel?: string;
   editRecipientFormRecipientEmailLabel?: string;
   editRecipientFormSendAtLabel?: string;

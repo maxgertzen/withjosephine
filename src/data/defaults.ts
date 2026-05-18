@@ -276,6 +276,7 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   resendLinkCtaLabel: string;
   privacyNote: string;
   editRecipientFormTitle: string;
+  editRecipientSelfSendIndicator: string;
   editRecipientFormRecipientNameLabel: string;
   editRecipientFormRecipientEmailLabel: string;
   editRecipientFormSendAtLabel: string;
@@ -326,6 +327,7 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   privacyNote:
     "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
   editRecipientFormTitle: "Edit recipient",
+  editRecipientSelfSendIndicator: "Self-send delivery — you share the link yourself",
   editRecipientFormRecipientNameLabel: "Recipient name",
   editRecipientFormRecipientEmailLabel: "Recipient email",
   editRecipientFormSendAtLabel: "Send at",

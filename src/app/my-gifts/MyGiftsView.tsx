@@ -126,15 +126,21 @@ function GiftsList({ gifts, copy }: { gifts: SubmissionRecord[]; copy: MyGiftsPa
 
 function GiftCard({ gift, copy }: { gift: SubmissionRecord; copy: MyGiftsPageContent }) {
   const status = giftStatusFor(gift);
-  const recipientLabel = recipientLabelFor(gift);
+  const recipientName = recipientLabelFor(gift);
+  const recipientEmail = gift.recipientEmail;
+  const showsEmailUnderName =
+    recipientEmail && recipientEmail.toLowerCase() !== recipientName.toLowerCase();
   return (
     <li className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h2 className="font-display italic text-xl text-j-text-heading">
             {gift.reading?.name ?? "A reading"}
-            <span className="font-display italic text-j-text-muted"> · for {recipientLabel}</span>
+            <span className="font-display italic text-j-text-muted"> · for {recipientName}</span>
           </h2>
+          {showsEmailUnderName ? (
+            <p className="font-body text-xs text-j-text-muted mt-0.5">{recipientEmail}</p>
+          ) : null}
           <p className="font-body text-sm text-j-text-muted mt-1">
             {statusLine(status, copy)}
           </p>
@@ -180,5 +186,5 @@ function EmptyState({ copy }: { copy: MyGiftsPageContent }) {
 
 
 function formatDate(iso: string): string {
-  return format(parseISO(iso), "MMMM d, yyyy");
+  return format(parseISO(iso), "MMMM d, yyyy 'at' h:mm a");
 }

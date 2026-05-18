@@ -188,6 +188,7 @@ export const myGiftsPageQuery = groq`
     resendLinkCtaLabel,
     privacyNote,
     editRecipientFormTitle,
+    editRecipientSelfSendIndicator,
     editRecipientFormRecipientNameLabel,
     editRecipientFormRecipientEmailLabel,
     editRecipientFormSendAtLabel,

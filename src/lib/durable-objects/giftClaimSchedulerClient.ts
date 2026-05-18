@@ -1,33 +1,39 @@
 /**
  * Thin wrapper around the `GIFT_CLAIM_SCHEDULER` Durable Object binding.
- * Workers expose the binding on `globalThis` in our runtime config; routes
- * import these helpers instead of repeating the cast + Request-building.
+ *
+ * Bindings live on `env` from `getCloudflareContext`, NOT on `globalThis`,
+ * in the OpenNext route-handler runtime. A prior implementation read from
+ * `globalThis.GIFT_CLAIM_SCHEDULER` which is `undefined` in production —
+ * `scheduleGiftAlarm` always returned false silently, and the staging gift
+ * `81ea25b7` flipped to scheduled but never had an alarm queued. The stripe
+ * webhook used the correct pattern, which is why purchase-time scheduled
+ * gifts worked while user-initiated flips did not.
  *
  * Both operations are idempotent on the DO side:
  *   - `scheduleGiftAlarm` overwrites any prior alarm (resets retryCount).
  *   - `cancelGiftAlarm` deletes the alarm + storage; safe to re-call.
  */
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 type GiftClaimSchedulerStub = { fetch(request: Request): Promise<Response> };
 
-function getNamespace(): CloudflareEnv["GIFT_CLAIM_SCHEDULER"] | null {
-  const ns = (globalThis as { GIFT_CLAIM_SCHEDULER?: unknown }).GIFT_CLAIM_SCHEDULER as
-    | CloudflareEnv["GIFT_CLAIM_SCHEDULER"]
-    | undefined;
-  return ns ?? null;
-}
-
-function getStub(submissionId: string): GiftClaimSchedulerStub | null {
-  const ns = getNamespace();
-  if (!ns) return null;
-  return ns.get(ns.idFromName(submissionId));
+async function getStub(submissionId: string): Promise<GiftClaimSchedulerStub | null> {
+  let namespace: CloudflareEnv["GIFT_CLAIM_SCHEDULER"] | undefined;
+  try {
+    const { env } = await getCloudflareContext({ async: true });
+    namespace = env.GIFT_CLAIM_SCHEDULER;
+  } catch {
+    return null;
+  }
+  if (!namespace) return null;
+  return namespace.get(namespace.idFromName(submissionId));
 }
 
 export async function scheduleGiftAlarm(args: {
   submissionId: string;
   fireAtMs: number;
 }): Promise<boolean> {
-  const stub = getStub(args.submissionId);
+  const stub = await getStub(args.submissionId);
   if (!stub) {
     console.warn("[giftClaimScheduler] GIFT_CLAIM_SCHEDULER binding missing — schedule skipped");
     return false;
@@ -42,7 +48,7 @@ export async function scheduleGiftAlarm(args: {
 }
 
 export async function cancelGiftAlarm(submissionId: string): Promise<boolean> {
-  const stub = getStub(submissionId);
+  const stub = await getStub(submissionId);
   if (!stub) {
     console.warn("[giftClaimScheduler] GIFT_CLAIM_SCHEDULER binding missing — cancel skipped");
     return false;
