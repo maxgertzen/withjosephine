@@ -17,16 +17,19 @@ async function main(): Promise<void> {
     console.warn("[skip] no thankYouPage singleton in this dataset.");
     return;
   }
-  if (doc.giftRecipientHeading !== OLD_HEADING) {
+  const current = doc.giftRecipientHeading;
+  const eligible = current === undefined || current === null || current === OLD_HEADING;
+  if (!eligible) {
     console.log(
-      `[skip] giftRecipientHeading does not match the pre-2026-05-18 default; leaving as-is. ` +
-        `Current value: ${JSON.stringify(doc.giftRecipientHeading)}`,
+      `[skip] giftRecipientHeading is hand-edited; leaving as-is. ` +
+        `Current value: ${JSON.stringify(current)}`,
     );
     return;
   }
   await client.patch(doc._id).set({ giftRecipientHeading: NEW_HEADING }).commit();
   console.log(
-    `Updated giftRecipientHeading on ${doc._id} to include {recipientName} placeholder.`,
+    `Updated giftRecipientHeading on ${doc._id} to include {recipientName} placeholder. ` +
+      `Previous value: ${JSON.stringify(current)}`,
   );
 }
 
