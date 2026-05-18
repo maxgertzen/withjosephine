@@ -41,7 +41,11 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   const submissionId = await verifyGiftClaimCookie(cookieValue);
 
   if (!submissionId) {
-    redirect("/gift/claim");
+    // Cookie expired mid-intake or recipient navigated directly. The original
+    // email link is still valid until the gift is claimed — surface that
+    // explicitly via ?expired=1 so /gift/claim renders the warmer "rested
+    // link" copy instead of the generic no-token message.
+    redirect("/gift/claim?expired=1");
   }
 
   // Sanity copy doesn't depend on the submission lookup; start it in parallel.
@@ -66,7 +70,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
 
-  const copy = intakePageCopy ?? GIFT_INTAKE_PAGE_DEFAULTS;
+  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...(intakePageCopy ?? {}) };
   const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
 
   const filteredSections = filterSectionsForReading(
@@ -101,7 +105,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               sections={filteredSections}
               nonRefundableNotice=""
               pagination={bookingForm.pagination}
-              loadingStateCopy={bookingForm.loadingStateCopy}
+              loadingStateCopy="Sending your answers…"
               submitLabel="Send my answers"
               nextLabel={bookingForm.nextButtonText}
               saveLaterLabel={bookingForm.saveAndContinueLaterText}

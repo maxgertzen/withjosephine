@@ -57,6 +57,24 @@ export const giftClaimPage = defineType({
         "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
     }),
     defineField({
+      name: "sessionExpiredHeading",
+      title: "Session-expired state — heading",
+      type: "string",
+      description:
+        "Shown when the recipient's claim session cookie has expired mid-intake and they bounce back to /gift/claim. The original email link is still valid — this surface gently tells them to use it again.",
+      initialValue: "Your link rested for a moment",
+    }),
+    defineField({
+      name: "sessionExpiredBody",
+      title: "Session-expired state — body",
+      type: "text",
+      rows: 3,
+      description:
+        "Reassure the recipient that their original email link still works. Sessions expire after 30 minutes of inactivity — the token in the email is good until the gift is claimed.",
+      initialValue:
+        "Your claim session timed out. Open the gift link from your original email again — it's still good, and your reading is waiting.",
+    }),
+    defineField({
       name: "welcomeHeading",
       title: "Valid-token state — heading",
       type: "string",
