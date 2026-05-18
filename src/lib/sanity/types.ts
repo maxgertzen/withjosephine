@@ -155,6 +155,8 @@ export type SanityGiftClaimPage = {
   alreadyClaimedBody: string;
   sessionExpiredHeading: string;
   sessionExpiredBody: string;
+  alreadySubmittedHeading: string;
+  alreadySubmittedBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;

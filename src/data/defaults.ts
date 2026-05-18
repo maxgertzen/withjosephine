@@ -351,6 +351,8 @@ export interface GiftClaimPageContent {
   alreadyClaimedBody: string;
   sessionExpiredHeading: string;
   sessionExpiredBody: string;
+  alreadySubmittedHeading: string;
+  alreadySubmittedBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;
@@ -368,6 +370,9 @@ export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
   sessionExpiredHeading: "Your link rested for a moment",
   sessionExpiredBody:
     "Your claim session timed out. Open the gift link from your original email again — it's still good, and your reading is waiting.",
+  alreadySubmittedHeading: "We have your answers — thank you.",
+  alreadySubmittedBody:
+    "Your reading is in my hands now. If something in what you sent needs a correction, just write to me at hello@withjosephine.com and I'll take care of it.",
   welcomeHeading: "Welcome, {recipientName}.",
   welcomeBody:
     "Your reading is waiting. Tap the button below to share a few details so it can begin.",

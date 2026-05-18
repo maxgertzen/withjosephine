@@ -57,7 +57,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
   if (submission.giftClaimedAt) {
-    redirect("/");
+    redirect("/gift/already-submitted");
   }
 
   const [reading, bookingForm, intakePageCopy] = await Promise.all([
