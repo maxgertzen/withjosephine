@@ -219,13 +219,18 @@ export async function redeemGiftSubmission(
     responses: SubmissionRecord["responses"];
     recipientUserId: string;
     claimedAtIso: string;
+    recipientEmail?: string;
   },
 ): Promise<void> {
+  // COALESCE preserves an existing recipient_email (scheduled-gift case
+  // already had it set at purchase) and only fills it in when NULL (self_send
+  // gifts, where the recipient supplies their email at claim time).
   await dbExec(
     `UPDATE submissions
         SET responses_json = ?,
             recipient_user_id = ?,
-            gift_claimed_at = ?
+            gift_claimed_at = ?,
+            recipient_email = COALESCE(recipient_email, ?)
       WHERE id = ?
         AND is_gift = 1
         AND gift_claimed_at IS NULL`,
@@ -233,6 +238,7 @@ export async function redeemGiftSubmission(
       JSON.stringify(input.responses),
       input.recipientUserId,
       input.claimedAtIso,
+      input.recipientEmail ?? null,
       submissionId,
     ],
   );

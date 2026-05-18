@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getOrCreateUser } from "@/lib/auth/users";
 import {
+  GIFT_DELIVERY,
   HONEYPOT_FIELD,
   MAX_ACTIVE_GIFTS_PER_RECIPIENT,
 } from "@/lib/booking/constants";
@@ -104,11 +105,17 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  if (!isFullyConsented(consentSnapshotFromBody(parsedBody), true)) {
+  if (
+    !isFullyConsented(consentSnapshotFromBody(parsedBody), {
+      requireArt9: true,
+      // Recipient did not pay — purchaser already waived cooling-off at
+      // purchase time. The recipient consent surface omits the checkbox.
+      requireCoolingOff: false,
+    })
+  ) {
     return NextResponse.json(
       {
-        error:
-          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to redeem.",
+        error: "Art. 6 and Art. 9 acknowledgments are required to redeem.",
       },
       { status: 400 },
     );
@@ -149,7 +156,8 @@ export async function POST(request: Request): Promise<Response> {
   if (submission.giftCancelledAt) {
     return NextResponse.json({ error: "Gift was cancelled" }, { status: 410 });
   }
-  if (!submission.recipientEmail) {
+  const isSelfSend = submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
+  if (!submission.recipientEmail && !isSelfSend) {
     return NextResponse.json({ error: "Recipient email missing" }, { status: 422 });
   }
   if (!reading) {
@@ -183,9 +191,15 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
-  // Defense-in-depth: a stolen claim cookie still can't be used by a
-  // different person — the submitted email must match recipient_email.
-  if (submittedEmail !== submission.recipientEmail.toLowerCase()) {
+  // Scheduled gifts: `recipient_email` is set at purchase, so a stolen claim
+  // cookie still can't be used by a different person — submitted email must
+  // match. Self_send gifts have no recipient_email at purchase (the
+  // purchaser hands off the link manually), so the recipient supplies it
+  // here; the claim cookie already gated this request on submissionId.
+  if (
+    submission.recipientEmail &&
+    submittedEmail !== submission.recipientEmail.toLowerCase()
+  ) {
     return NextResponse.json(
       {
         error: "Email mismatch",
@@ -230,6 +244,11 @@ export async function POST(request: Request): Promise<Response> {
       recipientUserId,
       claimedAtIso,
       art9AcknowledgedAt: claimedAtIso,
+      // self_send purchases have NULL recipient_email; persist the recipient's
+      // email at claim time so downstream surfaces (Sanity, listen-page magic
+      // links) have an audience identifier. Repo writes setIfMissing so a
+      // retry on an already-populated row can't clobber the original value.
+      recipientEmailFromIntake: isSelfSend ? submittedEmail : undefined,
     });
   } catch (error) {
     console.error("[gift-redeem] Failed to redeem gift submission", error);

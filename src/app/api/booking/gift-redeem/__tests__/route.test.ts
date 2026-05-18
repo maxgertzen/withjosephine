@@ -299,4 +299,80 @@ describe("/api/booking/gift-redeem", () => {
     );
     expect(redeemGiftSubmissionMock).toHaveBeenCalled();
   });
+
+  // C-4b — self_send purchases have NULL recipient_email at purchase time;
+  // recipient supplies their email at claim, so the redeem must NOT 422 on
+  // missing recipient_email and the email-mismatch check is skipped (claim
+  // cookie already gated this request).
+  describe("self_send with NULL recipient_email at purchase (C-4b)", () => {
+    const SELF_SEND_SUBMISSION = {
+      ...SUBMISSION,
+      giftDeliveryMethod: "self_send" as const,
+      recipientEmail: null,
+    };
+
+    it("redeems successfully when recipient supplies their email at claim", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SELF_SEND_SUBMISSION);
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).toBe(200);
+      expect(redeemGiftSubmissionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          submissionId: "sub_gift_1",
+          recipientUserId: "user_bob",
+          recipientEmailFromIntake: "bob@example.com",
+        }),
+      );
+    });
+
+    it("does not 422 on missing recipient_email for self_send", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SELF_SEND_SUBMISSION);
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).not.toBe(422);
+    });
+  });
+
+  // C-4b regression guard — scheduled gifts (recipient_email set at purchase)
+  // must still 422 on email mismatch AND on missing recipient_email.
+  describe("scheduled gift regression guards (C-4b)", () => {
+    const SCHEDULED_NULL_EMAIL = {
+      ...SUBMISSION,
+      giftDeliveryMethod: "scheduled" as const,
+      recipientEmail: null,
+    };
+
+    it("still 422s on missing recipient_email when giftDeliveryMethod=scheduled", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SCHEDULED_NULL_EMAIL);
+      const res = await callRoute(VALID_BODY);
+      const body = await res.json();
+      expect(res.status).toBe(422);
+      expect(body.error).toBe("Recipient email missing");
+    });
+
+    it("still enforces email-mismatch check on scheduled gifts", async () => {
+      findSubmissionMock.mockResolvedValueOnce({
+        ...SUBMISSION,
+        giftDeliveryMethod: "scheduled" as const,
+        recipientEmail: "scheduled-recipient@example.com",
+      });
+      const res = await callRoute({
+        ...VALID_BODY,
+        values: { email: "wrong@example.com", first_name: "Bob" },
+      });
+      const body = await res.json();
+      expect(res.status).toBe(422);
+      expect(body.fieldErrors?.email).toBeTruthy();
+    });
+
+    it("does NOT pass recipientEmailFromIntake on scheduled gifts (no clobber risk)", async () => {
+      findSubmissionMock.mockResolvedValueOnce({
+        ...SUBMISSION,
+        giftDeliveryMethod: "scheduled" as const,
+        recipientEmail: "bob@example.com",
+      });
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).toBe(200);
+      const callArgs = redeemGiftSubmissionMock.mock.calls[0]?.[0];
+      expect(callArgs.recipientEmailFromIntake).toBeUndefined();
+    });
+  });
 });
