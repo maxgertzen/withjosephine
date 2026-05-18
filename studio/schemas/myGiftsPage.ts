@@ -156,6 +156,14 @@ export const myGiftsPage = defineType({
       initialValue: "Edit recipient",
     }),
     defineField({
+      name: "editRecipientSelfSendIndicator",
+      title: "Edit recipient drawer — self-send indicator badge",
+      type: "string",
+      description:
+        "Shown only when the gift is in self-send mode (purchaser hands off the link themselves). Reminds the purchaser they're editing a self-send gift even while we collect a recipient email.",
+      initialValue: "Self-send delivery — you share the link yourself",
+    }),
+    defineField({
       name: "editRecipientFormRecipientNameLabel",
       title: "Edit recipient drawer — name field label",
       type: "string",

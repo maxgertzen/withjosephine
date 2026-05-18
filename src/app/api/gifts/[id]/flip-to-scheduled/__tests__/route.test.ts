@@ -161,6 +161,16 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
   });
 
+  it("returns 502 when DO alarm scheduling fails (binding missing or unreachable)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    stubFetchMock.mockResolvedValueOnce(new Response("Server error", { status: 500 }));
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    expect(res.status).toBe(502);
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(appendEmailFiredMock).not.toHaveBeenCalled();
+  });
+
   it("happy path: flips, schedules DO alarm, sends scheduled-variant purchaser email, appends audit", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
@@ -178,7 +188,9 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
     expect(sendMock).toHaveBeenCalledOnce();
     const sendArgs = sendMock.mock.calls[0]?.[0];
     expect(sendArgs.variant).toBe("scheduled");
-    expect(sendArgs.sendAtDisplay).toBe(FUTURE_ISO);
+    // sendAtDisplay is formatted via formatSendAt — assert it's NOT the raw ISO.
+    expect(sendArgs.sendAtDisplay).not.toBe(FUTURE_ISO);
+    expect(sendArgs.sendAtDisplay).toMatch(/at \d/);
     expect(appendEmailFiredMock).toHaveBeenCalledOnce();
   });
 });

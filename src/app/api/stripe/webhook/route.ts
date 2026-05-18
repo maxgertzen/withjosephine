@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { serverTrack } from "@/lib/analytics/server";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
+import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import {
@@ -60,16 +61,6 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
       await dispatchGiftPurchaseConfirmation(submission, session);
     }
   }
-}
-
-function formatSendAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("en-US", {
-    dateStyle: "long",
-    timeStyle: "short",
-    timeZone: "UTC",
-  });
 }
 
 function extractFirstName(email: string): string {

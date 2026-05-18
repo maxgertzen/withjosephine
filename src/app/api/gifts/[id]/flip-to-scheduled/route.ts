@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
+import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { provisionalTokenHash } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import {
@@ -66,10 +67,26 @@ export async function POST(
     return NextResponse.json({ error: "Closed" }, { status: 409 });
   }
 
-  await scheduleGiftAlarm({
+  const scheduled = await scheduleGiftAlarm({
     submissionId: id,
     fireAtMs: Date.parse(cleaned.giftSendAt),
   });
+  if (!scheduled) {
+    // D1 row is now in `scheduled` state with no DO alarm registered. The
+    // purchaser confirmation email is about to mention a send time that will
+    // never fire. Surface as 502 so the form can re-try (the flip is already
+    // applied; a second flip with the same args is idempotent at the SQL
+    // gate via `gift_delivery_method = 'self_send'` — but a retry with the
+    // current state will return 409 "Already scheduled". The recovery path
+    // is operational: cancel + re-purchase, or repair the binding.
+    console.error(
+      `[flip-to-scheduled] scheduleGiftAlarm returned false for ${id} — DO binding missing or DO unreachable`,
+    );
+    return NextResponse.json(
+      { error: "Could not schedule the gift. Try again in a moment, or contact us if it persists." },
+      { status: 502 },
+    );
+  }
 
   const nowIso = new Date().toISOString();
   const send = await sendGiftPurchaseConfirmation({
@@ -82,7 +99,7 @@ export async function POST(
     recipientName: recipientNameFor(submission),
     giftMessage: submission.giftMessage,
     variant: GIFT_DELIVERY.scheduled,
-    sendAtDisplay: cleaned.giftSendAt,
+    sendAtDisplay: formatSendAt(cleaned.giftSendAt),
   });
   if (send.kind === "sent") {
     await appendEmailFired(id, {

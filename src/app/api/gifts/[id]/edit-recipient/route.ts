@@ -80,10 +80,19 @@ export async function POST(
     cleaned.giftSendAt !== null &&
     submission.giftDeliveryMethod === GIFT_DELIVERY.scheduled
   ) {
-    await scheduleGiftAlarm({
+    const scheduled = await scheduleGiftAlarm({
       submissionId: id,
       fireAtMs: Date.parse(cleaned.giftSendAt),
     });
+    if (!scheduled) {
+      console.error(
+        `[edit-recipient] scheduleGiftAlarm returned false for ${id} — DO binding missing or DO unreachable; D1 send-at updated but alarm not reset`,
+      );
+      return NextResponse.json(
+        { error: "Could not re-schedule the alarm. Please try again." },
+        { status: 502 },
+      );
+    }
   }
 
   return NextResponse.json({ updated: true });

@@ -151,6 +151,15 @@ function EditRecipientControl({
       >
         {copy.editRecipientFormTitle}
       </h3>
+      {mode === "self_send" && (
+        <p
+          className="font-body text-xs text-j-text-muted tracking-[0.06em] inline-flex items-center gap-1.5"
+          aria-label="Self-send delivery"
+        >
+          <span aria-hidden="true" className="text-j-accent">✓</span>
+          <span>{copy.editRecipientSelfSendIndicator}</span>
+        </p>
+      )}
       <Input
         id={`gift-${gift._id}-recipient-name`}
         name="recipientName"
