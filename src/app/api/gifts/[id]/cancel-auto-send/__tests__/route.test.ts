@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 
@@ -47,6 +47,11 @@ const stubFetchMock = vi.fn();
 const namespaceGetMock = vi.fn(() => ({ fetch: stubFetchMock }));
 const idFromNameMock = vi.fn(() => ({ toString: () => "do-id" }));
 
+const getCloudflareContextMock = vi.fn();
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: getCloudflareContextMock,
+}));
+
 const PURCHASER_ID = "user_purchaser";
 
 const SCHEDULED_GIFT: SubmissionRecord = {
@@ -85,14 +90,11 @@ beforeEach(() => {
   });
   sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_flip" });
   stubFetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ cancelled: true })));
-  (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER = {
-    idFromName: idFromNameMock,
-    get: namespaceGetMock,
-  };
-});
-
-afterEach(() => {
-  delete (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER;
+  getCloudflareContextMock.mockReset().mockResolvedValue({
+    env: {
+      GIFT_CLAIM_SCHEDULER: { idFromName: idFromNameMock, get: namespaceGetMock },
+    },
+  });
 });
 
 async function callRoute(): Promise<Response> {

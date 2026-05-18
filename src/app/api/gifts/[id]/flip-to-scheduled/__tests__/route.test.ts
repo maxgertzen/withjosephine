@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 
@@ -37,6 +37,11 @@ const stubFetchMock = vi.fn();
 const namespaceGetMock = vi.fn(() => ({ fetch: stubFetchMock }));
 const idFromNameMock = vi.fn(() => ({ toString: () => "do-id" }));
 
+const getCloudflareContextMock = vi.fn();
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: getCloudflareContextMock,
+}));
+
 const PURCHASER_ID = "user_purchaser";
 const FUTURE_ISO = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -70,14 +75,11 @@ beforeEach(() => {
   appendEmailFiredMock.mockReset().mockResolvedValue(undefined);
   sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_flip_scheduled" });
   stubFetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ scheduled: true })));
-  (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER = {
-    idFromName: idFromNameMock,
-    get: namespaceGetMock,
-  };
-});
-
-afterEach(() => {
-  delete (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER;
+  getCloudflareContextMock.mockReset().mockResolvedValue({
+    env: {
+      GIFT_CLAIM_SCHEDULER: { idFromName: idFromNameMock, get: namespaceGetMock },
+    },
+  });
 });
 
 async function callRoute(body: unknown): Promise<Response> {
@@ -169,6 +171,16 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
     expect(res.status).toBe(502);
     expect(sendMock).not.toHaveBeenCalled();
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 502 when GIFT_CLAIM_SCHEDULER binding is absent on env (production bug reproducer)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    getCloudflareContextMock.mockReset().mockResolvedValueOnce({ env: {} });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    expect(res.status).toBe(502);
+    expect(stubFetchMock).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it("happy path: flips, schedules DO alarm, sends scheduled-variant purchaser email, appends audit", async () => {
