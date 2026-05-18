@@ -1,5 +1,7 @@
 import { cache } from "react";
 
+import { GIFT_CLAIM_PAGE_DEFAULTS } from "@/data/defaults";
+
 import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import {
@@ -177,6 +179,11 @@ export const fetchMyGiftsPage = cache(async (): Promise<SanityMyGiftsPage | null
 export const fetchGiftClaimPage = cache(async (): Promise<SanityGiftClaimPage | null> => {
   const { data } = await sanityFetch<SanityGiftClaimPage | null>({ query: giftClaimPageQuery });
   return data;
+});
+
+export const loadGiftClaimCopy = cache(async () => {
+  const sanityCopy = await fetchGiftClaimPage();
+  return { ...GIFT_CLAIM_PAGE_DEFAULTS, ...(sanityCopy ?? {}) };
 });
 
 export const fetchGiftIntakePage = cache(async (): Promise<SanityGiftIntakePage | null> => {

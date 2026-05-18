@@ -195,6 +195,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   const isRecipient = mode === "giftRecipient";
   const isSelfSendPurchaser =
     isPurchaser && context.submission?.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
+  const showsPurchaserOnlySections = !isRecipient;
 
   const heading =
     isPurchaser
@@ -281,7 +282,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          {!isRecipient &&
+          {showsPurchaserOnlySections &&
             (showsDiscountedPrice ? (
               <span className="font-display text-2xl italic flex items-baseline gap-2">
                 <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
@@ -297,7 +298,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          {!isRecipient && (
+          {showsPurchaserOnlySections && (
             <p className="whitespace-pre-line">
               {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
             </p>

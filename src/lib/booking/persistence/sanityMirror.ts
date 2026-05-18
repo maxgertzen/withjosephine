@@ -167,23 +167,20 @@ export async function mirrorSubmissionPatch(
 
   // Sanity requires `_key` on each array item. Inject keys for responses
   // (the only array-type field in this patch) so writes don't reject.
-  const sanitized: Record<string, unknown> = { ...patch };
-  if (patch.responses) {
-    sanitized.responses = patch.responses.map((response, index) => ({
+  const { readingSlug, art9AcknowledgedAt, ...rest } = patch;
+  const sanitized: Record<string, unknown> = { ...rest };
+  if (rest.responses) {
+    sanitized.responses = rest.responses.map((response, index) => ({
       _key: `${response.fieldKey}-${index}`,
       _type: "submissionResponse" as const,
       ...response,
     }));
   }
-  if (patch.art9AcknowledgedAt) {
+  if (art9AcknowledgedAt) {
     sanitized["consentSnapshot.art9Consent"] = {
-      labelText: art9ConsentLabel(patch.readingSlug ?? "soul-blueprint"),
-      acknowledgedAt: patch.art9AcknowledgedAt,
+      labelText: art9ConsentLabel(readingSlug ?? "soul-blueprint"),
+      acknowledgedAt: art9AcknowledgedAt,
     };
-    delete sanitized.art9AcknowledgedAt;
-  }
-  if ("readingSlug" in sanitized) {
-    delete sanitized.readingSlug;
   }
 
   try {

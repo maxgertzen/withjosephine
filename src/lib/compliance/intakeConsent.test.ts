@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { READINGS } from "@/data/readings";
+
 import {
   ART6_CONSENT_LABEL,
   ART9_CONSENT_LABEL,
@@ -100,6 +102,14 @@ describe("isFullyConsented — gift purchaser { requireArt9: false }", () => {
     },
   ])("$case → $expected", ({ overrides, expected }) => {
     expect(isFullyConsented(snapshot(overrides), { requireArt9: false })).toBe(expected);
+  });
+});
+
+describe("ReadingSlug drift guard", () => {
+  it("ART9_CONSENT_LABEL_BY_READING covers every slug in READINGS", () => {
+    const readingIds = READINGS.map((r) => r.id).sort();
+    const labelKeys = Object.keys(ART9_CONSENT_LABEL_BY_READING).sort();
+    expect(labelKeys).toEqual(readingIds);
   });
 });
 

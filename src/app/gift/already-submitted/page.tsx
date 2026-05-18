@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 
 import { VellumShell } from "@/components/VellumShell";
-import { GIFT_CLAIM_PAGE_DEFAULTS } from "@/data/defaults";
-import { fetchGiftClaimPage } from "@/lib/sanity/fetch";
+import { loadGiftClaimCopy } from "@/lib/sanity/fetch";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const copy = (await fetchGiftClaimPage()) ?? GIFT_CLAIM_PAGE_DEFAULTS;
+  const copy = await loadGiftClaimCopy();
   return {
     title: copy.seoTitle,
     description: copy.seoDescription,
@@ -16,8 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function GiftAlreadySubmittedPage() {
-  const sanityCopy = await fetchGiftClaimPage();
-  const copy = { ...GIFT_CLAIM_PAGE_DEFAULTS, ...(sanityCopy ?? {}) };
+  const copy = await loadGiftClaimCopy();
   return (
     <VellumShell
       heading={copy.alreadySubmittedHeading}
