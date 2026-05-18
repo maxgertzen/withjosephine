@@ -33,7 +33,12 @@ vi.mock("@/lib/booking/submissions", async () => {
 });
 
 const issueTokenMock = vi.fn();
-vi.mock("@/lib/booking/giftClaim", () => ({ issueGiftClaimToken: issueTokenMock }));
+vi.mock("@/lib/booking/giftClaim", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/booking/giftClaim")>(
+    "@/lib/booking/giftClaim",
+  );
+  return { ...actual, issueGiftClaimToken: issueTokenMock };
+});
 
 const sendMock = vi.fn();
 vi.mock("@/lib/resend", () => ({ sendGiftPurchaseConfirmation: sendMock }));
@@ -175,7 +180,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
 
     // Flip uses a provisional token hash (NOT the real one yet).
     const flipArgs = flipMock.mock.calls[0]![1] as { tokenHash: string };
-    expect(flipArgs.tokenHash).toMatch(/^prov:sub_gift:/);
+    expect(flipArgs.tokenHash).toMatch(/^prov:cancel-auto-send:sub_gift:/);
 
     // Real token hash is persisted via markGiftClaimSent after send.
     expect(markGiftClaimSentMock).toHaveBeenCalledWith(

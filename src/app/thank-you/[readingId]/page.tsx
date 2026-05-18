@@ -10,7 +10,7 @@ import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
-import { purchaserFirstNameOrNull } from "@/lib/booking/giftPersonas";
+import { purchaserFirstNameOrNull, recipientNameFor } from "@/lib/booking/giftPersonas";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
@@ -65,6 +65,7 @@ type ResolvedContext = {
   paidAmount: PaidAmount;
   submission: SubmissionRecord | null;
   purchaserFirstName: string | null;
+  recipientName: string | null;
 };
 
 async function resolveContext(
@@ -96,6 +97,7 @@ async function resolveContext(
         paidAmount: snapshot.paidAmount,
         submission: null,
         purchaserFirstName: null,
+        recipientName: null,
       };
     }
     const purchaserFirstName =
@@ -107,6 +109,7 @@ async function resolveContext(
       paidAmount: snapshot.paidAmount,
       submission: submissionLookup,
       purchaserFirstName,
+      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
     };
   }
 
@@ -121,6 +124,7 @@ async function resolveContext(
         paidAmount: { cents: null, display: null },
         submission: submissionLookup,
         purchaserFirstName: null,
+        recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
       };
     }
     const purchaserFirstName =
@@ -133,6 +137,7 @@ async function resolveContext(
       paidAmount: { cents: null, display: null },
       submission: submissionLookup,
       purchaserFirstName: mode === "giftPurchaser" ? purchaserFirstName : null,
+      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
     };
   }
 
@@ -183,7 +188,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     fetchSiteSettings(),
   ]);
 
-  const { mode, reading, paidAmount, purchaserFirstName } = context;
+  const { mode, reading, paidAmount, purchaserFirstName, recipientName } = context;
   const slugForOverride = context.submission?.reading?.slug ?? readingId;
 
   const showsDiscountedPrice =
@@ -254,6 +259,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
   const contactEmail = siteSettings?.contactEmail || CONTACT_EMAIL;
   const purchaserSlotValue = purchaserFirstName ?? "";
+  const recipientSlotValue = recipientName ?? "";
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -269,10 +275,16 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {renderWithSlots(heading, { purchaserFirstName: purchaserSlotValue })}
+          {renderWithSlots(heading, {
+            purchaserFirstName: purchaserSlotValue,
+            recipientName: recipientSlotValue,
+          })}
         </h1>
         <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {subheading}
+          {renderWithSlots(subheading, {
+            purchaserFirstName: purchaserSlotValue,
+            recipientName: recipientSlotValue,
+          })}
         </p>
 
         <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
@@ -300,7 +312,10 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
           {showsPurchaserOnlySections && (
             <p className="whitespace-pre-line">
-              {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
+              {renderWithSlots(confirmationBody, {
+                purchaserFirstName: purchaserSlotValue,
+                recipientName: recipientSlotValue,
+              })}
             </p>
           )}
           <p className="whitespace-pre-line">
@@ -308,6 +323,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
               deliveryDays: (
                 <span className="font-display italic text-j-accent">{deliveryDaysPhrase}</span>
               ),
+              recipientName: recipientSlotValue,
             })}
           </p>
           <p className="whitespace-pre-line">

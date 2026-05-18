@@ -144,6 +144,10 @@ export type SanityMyGiftsPage = {
   resendRetryAfterHourTemplate?: string;
   resendRetryAfterDayTemplate?: string;
   resendRetryFallbackLabel?: string;
+  flipToScheduledCtaLabel?: string;
+  flipToScheduledFormTitle?: string;
+  flipToScheduledSaveButtonLabel?: string;
+  flipToScheduledSavingLabel?: string;
 };
 
 export type SanityGiftClaimPage = {
@@ -206,6 +210,8 @@ export type SanityEmailOrderConfirmation = {
   signOffLine2: string;
   footerDisclaimer: string;
 };
+
+export type SanityEmailRecipientIntakeReceived = SanityEmailOrderConfirmation;
 
 export type SanityEmailGiftPurchaseConfirmation = {
   subjectSelfSend: string;

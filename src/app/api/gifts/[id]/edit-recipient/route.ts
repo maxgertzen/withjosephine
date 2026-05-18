@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { GIFT_DELIVERY, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
-import { ownEmailKey } from "@/lib/booking/emailNormalize";
-import { stripTemplateTags } from "@/lib/booking/giftPersonas";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { editGiftRecipient } from "@/lib/booking/submissions";
 import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_RECIPIENT_NAME_CHARS = 80;
-const SEND_AT_MAX_DAYS = 365;
-const MIN_SEND_AT_OFFSET_MS = 5 * 60 * 1000;
-
-type FieldError = { field: string; message: string };
+import { validateGiftRecipientFields } from "../_lib/validateGiftRecipientFields";
 
 type EditBody = {
   recipientEmail?: string;
@@ -40,80 +32,6 @@ function parseBody(value: unknown): EditBody | null {
   return out;
 }
 
-function validate(
-  body: EditBody,
-  purchaserEmail: string,
-  now: Date,
-): { errors: FieldError[]; cleaned: EditBody } {
-  const errors: FieldError[] = [];
-  const cleaned: EditBody = {};
-
-  if (body.recipientEmail !== undefined) {
-    const trimmed = body.recipientEmail.trim().toLowerCase();
-    if (!EMAIL_RE.test(trimmed)) {
-      errors.push({ field: "recipientEmail", message: "Enter a valid recipient email address." });
-    } else if (trimmed.length > MAX_EMAIL_CHARS) {
-      errors.push({
-        field: "recipientEmail",
-        message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
-      });
-    } else if (ownEmailKey(trimmed) === ownEmailKey(purchaserEmail)) {
-      errors.push({
-        field: "recipientEmail",
-        message: "The recipient email can’t be your own.",
-      });
-    } else {
-      cleaned.recipientEmail = trimmed;
-    }
-  }
-
-  if (body.recipientName !== undefined) {
-    // Strip template-tag patterns at the edit boundary — same defense as
-    // the purchase-time validator.
-    const trimmed = stripTemplateTags(body.recipientName.trim());
-    if (trimmed.length === 0) {
-      errors.push({ field: "recipientName", message: "Recipient name can’t be blank." });
-    } else if (trimmed.length > MAX_RECIPIENT_NAME_CHARS) {
-      errors.push({
-        field: "recipientName",
-        message: `Keep it under ${MAX_RECIPIENT_NAME_CHARS} characters.`,
-      });
-    } else {
-      cleaned.recipientName = trimmed;
-    }
-  }
-
-  if (body.giftSendAt !== undefined) {
-    if (body.giftSendAt === null) {
-      cleaned.giftSendAt = null;
-    } else {
-      const sendAt = new Date(body.giftSendAt);
-      if (Number.isNaN(sendAt.getTime())) {
-        errors.push({ field: "giftSendAt", message: "Invalid date." });
-      } else {
-        const minAt = now.getTime() + MIN_SEND_AT_OFFSET_MS;
-        const maxAt = new Date(now);
-        maxAt.setUTCDate(maxAt.getUTCDate() + SEND_AT_MAX_DAYS);
-        if (sendAt.getTime() < minAt) {
-          errors.push({
-            field: "giftSendAt",
-            message: "Send-at must be at least five minutes from now.",
-          });
-        } else if (sendAt.getTime() > maxAt.getTime()) {
-          errors.push({
-            field: "giftSendAt",
-            message: `Send-at must be within ${SEND_AT_MAX_DAYS} days.`,
-          });
-        } else {
-          cleaned.giftSendAt = sendAt.toISOString();
-        }
-      }
-    }
-  }
-
-  return { errors, cleaned };
-}
-
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -123,17 +41,23 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftClaimEmailFiredAt) {
-    return NextResponse.json({ error: "Already sent" }, { status: 409 });
-  }
   if (submission.giftClaimedAt || submission.giftCancelledAt) {
     return NextResponse.json({ error: "Closed" }, { status: 409 });
+  }
+  // For scheduled gifts, once the claim email has fired the recipient may have
+  // already opened it; edits would be confusing. self_send gifts can be edited
+  // anytime before claim — the purchaser controls when they share the link.
+  if (
+    submission.giftDeliveryMethod === GIFT_DELIVERY.scheduled &&
+    submission.giftClaimEmailFiredAt
+  ) {
+    return NextResponse.json({ error: "Already sent" }, { status: 409 });
   }
 
   const raw = await request.json().catch(() => null);
   const body = parseBody(raw);
   if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
-  const { errors, cleaned } = validate(body, submission.email, new Date());
+  const { errors, cleaned } = validateGiftRecipientFields(body, submission.email, new Date());
   if (errors.length > 0) {
     return NextResponse.json({ error: "Invalid", fieldErrors: errors }, { status: 422 });
   }

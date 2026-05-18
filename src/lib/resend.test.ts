@@ -28,6 +28,7 @@ vi.mock("./sanity/fetch", () => ({
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
   fetchEmailDay2Started: vi.fn().mockResolvedValue(null),
+  fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -417,6 +418,66 @@ describe("sendDay7OverdueAlert", () => {
     const result = await sendDay7OverdueAlert(buildSubmission());
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendRecipientIntakeReceived (I-10)", () => {
+  it("sends to the recipient email with the recipient-specific subject + body", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
+    const { sendRecipientIntakeReceived } = await import("./resend");
+
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBe("msg_rir");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("recipient@example.com");
+    expect(args.subject).toBe("Your reading is in my hands now");
+    const body = visibleText(args.html);
+    expect(body).toContain("Hi Roland,");
+    expect(body).toContain("Marco gifted you a Soul Blueprint");
+    expect(body).toContain("within seven days");
+    expect(body).not.toContain("{recipientName}");
+    expect(body).not.toContain("{purchaserFirstName}");
+    expect(body).not.toContain("{readingName}");
+  });
+
+  it("substitutes {recipientName} and {readingName} in the subject if used in Sanity copy", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
+    const { fetchEmailRecipientIntakeReceived } = await import("./sanity/fetch");
+    vi.mocked(fetchEmailRecipientIntakeReceived).mockResolvedValueOnce({
+      subject: "{recipientName}, your {readingName} is in my hands",
+      preview: "x",
+      brandName: "Josephine",
+      brandSubtitle: "Soul Readings",
+      heroLine: "x",
+      greeting: "Hi {recipientName},",
+      thanksLine: "x",
+      timelineLine: "x",
+      contactLine: "x",
+      cardLabel: "x",
+      cardDeliveryLine: "x",
+      signOffLine1: "x",
+      signOffLine2: "x",
+      footerDisclaimer: "x",
+    });
+    const { sendRecipientIntakeReceived } = await import("./resend");
+
+    await sendRecipientIntakeReceived({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "Soul Blueprint",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Roland, your Soul Blueprint is in my hands");
   });
 });
 

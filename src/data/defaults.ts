@@ -293,6 +293,10 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   resendRetryAfterHourTemplate: string;
   resendRetryAfterDayTemplate: string;
   resendRetryFallbackLabel: string;
+  flipToScheduledCtaLabel: string;
+  flipToScheduledFormTitle: string;
+  flipToScheduledSaveButtonLabel: string;
+  flipToScheduledSavingLabel: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -340,6 +344,10 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   resendRetryAfterHourTemplate: "You can resend again at {when}.",
   resendRetryAfterDayTemplate: "You’ve hit today’s limit. Try again at {when}.",
   resendRetryFallbackLabel: "shortly",
+  flipToScheduledCtaLabel: "Let Josephine send it for me",
+  flipToScheduledFormTitle: "Have Josephine deliver the link",
+  flipToScheduledSaveButtonLabel: "Schedule it",
+  flipToScheduledSavingLabel: "Scheduling…",
 };
 
 export interface GiftClaimPageContent {
@@ -469,6 +477,43 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
     "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
   contactLine:
     "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+  cardLabel: "Your reading",
+  cardDeliveryLine: "Delivery within 7 days",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
+export interface EmailRecipientIntakeReceivedContent {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  greeting: string;
+  thanksLine: string;
+  timelineLine: string;
+  contactLine: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeReceivedContent = {
+  subject: "Your reading is in my hands now",
+  preview: "Your answers landed safely — here's what happens next.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLine: "Your reading is in my hands",
+  greeting: "Hi {recipientName},",
+  thanksLine:
+    "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+  timelineLine:
+    "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+  contactLine:
+    "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
   signOffLine1: "With love,",

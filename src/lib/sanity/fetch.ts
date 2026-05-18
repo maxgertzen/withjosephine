@@ -14,6 +14,7 @@ import {
   emailGiftPurchaseConfirmationQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
+  emailRecipientIntakeReceivedQuery,
   faqItemsQuery,
   giftClaimPageQuery,
   giftIntakePageQuery,
@@ -43,6 +44,7 @@ import type {
   SanityEmailGiftPurchaseConfirmation,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
+  SanityEmailRecipientIntakeReceived,
   SanityFaqItem,
   SanityGiftClaimPage,
   SanityGiftIntakePage,
@@ -216,6 +218,15 @@ export const fetchEmailOrderConfirmation = cache(
   async (): Promise<SanityEmailOrderConfirmation | null> => {
     const { data } = await sanityFetch<SanityEmailOrderConfirmation | null>({
       query: emailOrderConfirmationQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailRecipientIntakeReceived = cache(
+  async (): Promise<SanityEmailRecipientIntakeReceived | null> => {
+    const { data } = await sanityFetch<SanityEmailRecipientIntakeReceived | null>({
+      query: emailRecipientIntakeReceivedQuery,
     });
     return data;
   },

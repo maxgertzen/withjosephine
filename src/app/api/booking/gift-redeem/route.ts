@@ -13,15 +13,25 @@ import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import {
+  purchaserFirstNameFor,
+  recipientFirstNameFromIntakeResponses,
+} from "@/lib/booking/giftPersonas";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
+import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
-import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
+import {
+  appendEmailFired,
+  findSubmissionById,
+  redeemGiftSubmission,
+} from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
   consentSnapshotFromBody,
   isFullyConsented,
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
+import { sendRecipientIntakeReceived } from "@/lib/resend";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -258,6 +268,25 @@ export async function POST(request: Request): Promise<Response> {
     console.error("[gift-redeem] Failed to redeem gift submission", error);
     return NextResponse.json({ error: "Failed to save your details" }, { status: 500 });
   }
+
+  runMirror(
+    (async () => {
+      const result = await sendRecipientIntakeReceived({
+        submissionId,
+        recipientEmail: submittedEmail,
+        recipientName: recipientFirstNameFromIntakeResponses(responses, submittedEmail),
+        purchaserFirstName: purchaserFirstNameFor(submission),
+        readingName: submission.reading?.name ?? reading.name,
+      });
+      if (result.kind === "sent") {
+        await appendEmailFired(submissionId, {
+          type: "recipient_intake_received",
+          sentAt: new Date().toISOString(),
+          resendId: result.resendId,
+        });
+      }
+    })(),
+  );
 
   await clearGiftClaimCookie();
 

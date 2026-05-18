@@ -48,13 +48,19 @@ export function GiftCardActions({ gift, status, copy }: Props) {
   if (status.kind === "scheduled") {
     return (
       <div className="flex flex-col gap-3 items-stretch sm:items-end">
-        <EditRecipientControl gift={gift} copy={copy} />
+        <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
         <FlipToSelfSendControl gift={gift} copy={copy} />
       </div>
     );
   }
   if (status.kind === "self_send_ready") {
-    return <ResendLinkControl gift={gift} copy={copy} />;
+    return (
+      <div className="flex flex-col gap-3 items-stretch sm:items-end">
+        <ResendLinkControl gift={gift} copy={copy} />
+        <EditRecipientControl gift={gift} copy={copy} mode="self_send" />
+        <FlipToScheduledControl gift={gift} copy={copy} />
+      </div>
+    );
   }
   return null;
 }
@@ -80,9 +86,11 @@ function actionErrorLabel(
 function EditRecipientControl({
   gift,
   copy,
+  mode,
 }: {
   gift: GiftCardData;
   copy: MyGiftsPageContent;
+  mode: "scheduled" | "self_send";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -104,7 +112,7 @@ function EditRecipientControl({
     const body: Record<string, unknown> = {};
     if (recipientName.trim() !== initialName) body.recipientName = recipientName.trim();
     if (recipientEmail.trim() !== initialEmail) body.recipientEmail = recipientEmail.trim();
-    if (giftSendAt !== initialSendAt) {
+    if (mode === "scheduled" && giftSendAt !== initialSendAt) {
       body.giftSendAt = giftSendAt ? new Date(giftSendAt).toISOString() : null;
     }
     if (Object.keys(body).length === 0) {
@@ -163,29 +171,31 @@ function EditRecipientControl({
         error={action.fieldErrors.recipientEmail}
         autoComplete="off"
       />
-      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
-        <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
-        <input
-          id={sendAtInputId}
-          type="datetime-local"
-          value={giftSendAt}
-          onChange={(e) => setGiftSendAt(e.target.value)}
-          aria-describedby={
-            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
-          }
-          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
-          className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
-        />
-        {action.fieldErrors.giftSendAt ? (
-          <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
-            {action.fieldErrors.giftSendAt}
-          </span>
-        ) : null}
-        <TimezonePreview
-          value={giftSendAt}
-          template={copy.editRecipientSendAtPreviewTemplate}
-        />
-      </label>
+      {mode === "scheduled" && (
+        <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
+          <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
+          <input
+            id={sendAtInputId}
+            type="datetime-local"
+            value={giftSendAt}
+            onChange={(e) => setGiftSendAt(e.target.value)}
+            aria-describedby={
+              action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+            }
+            aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
+            className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+          />
+          {action.fieldErrors.giftSendAt ? (
+            <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
+              {action.fieldErrors.giftSendAt}
+            </span>
+          ) : null}
+          <TimezonePreview
+            value={giftSendAt}
+            template={copy.editRecipientSendAtPreviewTemplate}
+          />
+        </label>
+      )}
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
         <Button
@@ -251,6 +261,116 @@ function FlipToSelfSendControl({
       )}
       <InlineError message={actionErrorLabel(action.topError, copy)} />
     </div>
+  );
+}
+
+function FlipToScheduledControl({
+  gift,
+  copy,
+}: {
+  gift: GiftCardData;
+  copy: MyGiftsPageContent;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(gift.recipientEmail ?? "");
+  const [giftSendAt, setGiftSendAt] = useState("");
+  const action = useMutationAction(`/api/gifts/${gift._id}/flip-to-scheduled`);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const sendAtIso = giftSendAt ? new Date(giftSendAt).toISOString() : "";
+    const result = await action.run({
+      recipientEmail: recipientEmail.trim(),
+      giftSendAt: sendAtIso,
+    });
+    if (result.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button variant="outlined" size="sm" onClick={() => setOpen(true)}>
+        {copy.flipToScheduledCtaLabel}
+      </Button>
+    );
+  }
+
+  const sendAtInputId = `gift-${gift._id}-flip-send-at`;
+  const headingId = `gift-${gift._id}-flip-heading`;
+  const topError = actionErrorLabel(action.topError, copy, {
+    http_409: "actionClosedError",
+  });
+  return (
+    <form
+      onSubmit={onSubmit}
+      aria-labelledby={headingId}
+      className="w-full sm:w-80 flex flex-col gap-3 bg-j-cream/60 border border-j-blush rounded-lg p-4"
+    >
+      <h3
+        id={headingId}
+        className="font-display italic text-base text-j-text-heading"
+      >
+        {copy.flipToScheduledFormTitle}
+      </h3>
+      <Input
+        id={`gift-${gift._id}-flip-recipient-email`}
+        name="recipientEmail"
+        type="email"
+        label={copy.editRecipientFormRecipientEmailLabel}
+        value={recipientEmail}
+        onChange={setRecipientEmail}
+        error={action.fieldErrors.recipientEmail}
+        autoComplete="off"
+      />
+      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
+        <span className="font-body text-xs text-j-text-muted">
+          {copy.editRecipientFormSendAtLabel}
+        </span>
+        <input
+          id={sendAtInputId}
+          type="datetime-local"
+          value={giftSendAt}
+          onChange={(e) => setGiftSendAt(e.target.value)}
+          aria-describedby={
+            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+          }
+          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
+          className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+        />
+        {action.fieldErrors.giftSendAt ? (
+          <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
+            {action.fieldErrors.giftSendAt}
+          </span>
+        ) : null}
+        <TimezonePreview
+          value={giftSendAt}
+          template={copy.editRecipientSendAtPreviewTemplate}
+        />
+      </label>
+      <InlineError message={topError} />
+      <div className="flex gap-2 justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setOpen(false);
+            action.reset();
+          }}
+          disabled={action.submitting}
+        >
+          {copy.editRecipientCancelButtonLabel}
+        </Button>
+        <Button type="submit" variant="primary" size="sm" disabled={action.submitting}>
+          {action.submitting
+            ? copy.flipToScheduledSavingLabel
+            : copy.flipToScheduledSaveButtonLabel}
+        </Button>
+      </div>
+    </form>
   );
 }
 

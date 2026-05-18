@@ -11,7 +11,8 @@ export type EmailSubType =
   | "privacy_export"
   | "gift_purchase_confirmation"
   | "gift_claim"
-  | "gift_resend";
+  | "gift_resend"
+  | "recipient_intake_received";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
@@ -25,6 +26,7 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   gift_purchase_confirmation: "gift purchase confirmation",
   gift_claim: "gift claim",
   gift_resend: "gift resend",
+  recipient_intake_received: "recipient intake received",
 };
 
 export type ServerEventMap = {

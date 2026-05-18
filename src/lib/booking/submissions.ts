@@ -37,7 +37,8 @@ export type EmailFiredType =
   | "gift_purchase_confirmation"
   | "gift_claim"
   | "gift_resend"
-  | "gift_claim_regenerate";
+  | "gift_claim_regenerate"
+  | "recipient_intake_received";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
@@ -312,6 +313,28 @@ export async function flipGiftToSelfSend(
         giftSendAt: null,
         giftClaimTokenHash: args.tokenHash,
         giftClaimEmailFiredAt: args.firedAtIso,
+      }),
+    );
+  }
+  return updated;
+}
+
+export async function flipGiftToScheduled(
+  submissionId: string,
+  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
+): Promise<boolean> {
+  const updated = await repo.flipGiftToScheduled(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftDeliveryMethod: GIFT_DELIVERY.scheduled,
+        giftSendAt: args.giftSendAt,
+        recipientEmail: args.recipientEmail,
+        giftClaimTokenHash: args.tokenHash,
+        // The self_send purchase set this at purchase time; clearing in D1
+        // lets the DO alarm path treat the row as a fresh scheduled send.
+        // Mirror it so Studio editors don't see a stale firedAt.
+        giftClaimEmailFiredAt: null,
       }),
     );
   }
