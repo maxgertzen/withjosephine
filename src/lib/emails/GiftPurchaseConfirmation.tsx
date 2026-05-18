@@ -12,6 +12,7 @@ export type GiftPurchaseConfirmationVars = {
   amountPaidDisplay: string | null;
   recipientName: string | null;
   giftMessage: string | null;
+  myGiftsUrl: string;
 } & (
   | {
       variant: "self_send";
@@ -35,6 +36,7 @@ function template(text: string, vars: GiftPurchaseConfirmationVars): string {
     .replaceAll("{purchaserFirstName}", vars.purchaserFirstName)
     .replaceAll("{readingName}", vars.readingName)
     .replaceAll("{recipientName}", vars.recipientName ?? "your recipient")
+    .replaceAll("{myGiftsUrl}", vars.myGiftsUrl)
     .replaceAll(
       "{sendAtDisplay}",
       vars.variant === GIFT_DELIVERY.scheduled ? vars.sendAtDisplay : "",

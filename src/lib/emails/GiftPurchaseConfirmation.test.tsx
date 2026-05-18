@@ -13,6 +13,7 @@ const SELF_SEND_VARS = {
   amountPaidDisplay: "$179.00" as string | null,
   recipientName: "Bob",
   giftMessage: "happy birthday",
+  myGiftsUrl: "https://withjosephine.com/my-gifts",
   variant: "self_send" as const,
   claimUrl: "https://withjosephine.com/gift/claim?token=abc123",
 };
@@ -24,6 +25,7 @@ const SCHEDULED_VARS = {
   amountPaidDisplay: "$179.00" as string | null,
   recipientName: "Bob",
   giftMessage: null,
+  myGiftsUrl: "https://withjosephine.com/my-gifts",
   variant: "scheduled" as const,
   sendAtDisplay: "Tuesday, May 19 at 9:00 AM",
 };
@@ -170,5 +172,35 @@ describe("GiftPurchaseConfirmation — refund-policy honesty", () => {
     expect(text.toLowerCase()).not.toContain("arrange a full refund");
     expect(text).toMatch(/non-refundable once payment is complete/i);
     expect(text.toLowerCase()).toContain("withjosephine.com/my-gifts");
+  });
+});
+
+describe("GiftPurchaseConfirmation — environment-aware {myGiftsUrl} (C-7)", () => {
+  it("renders the supplied myGiftsUrl verbatim in the refundLine (staging origin)", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={{
+            ...SELF_SEND_VARS,
+            myGiftsUrl: "https://staging.withjosephine.com/my-gifts",
+          }}
+          copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS}
+        />,
+      ),
+    );
+    expect(text).toContain("staging.withjosephine.com/my-gifts");
+    expect(text).not.toContain("{myGiftsUrl}");
+  });
+
+  it("template helper does not leave {myGiftsUrl} placeholder un-substituted", async () => {
+    const text = visibleText(
+      await render(
+        <GiftPurchaseConfirmation
+          vars={SELF_SEND_VARS}
+          copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS}
+        />,
+      ),
+    );
+    expect(text).not.toContain("{myGiftsUrl}");
   });
 });
