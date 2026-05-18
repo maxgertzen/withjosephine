@@ -206,7 +206,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     isPurchaser
       ? (thankYouPageContent?.giftPurchaserHeading ?? "Thank you, {purchaserFirstName}. Your gift is on its way.")
       : isRecipient
-        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you. Your reading is in my hands now.")
+        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you, {recipientName}. Your reading is in my hands now.")
         : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
   const subheading =
     isSelfSendPurchaser
