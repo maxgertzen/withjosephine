@@ -13,6 +13,7 @@ import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./e
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
+import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
 import { isFlagEnabled, siteOrigin } from "./env";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -158,6 +159,43 @@ export async function sendNotificationToJosephine(
     html,
     subType: "josephine_notification",
     submissionId: submission.id,
+  });
+}
+
+export type RecipientIntakeReceivedInput = {
+  submissionId: string;
+  recipientEmail: string;
+  recipientName: string;
+  purchaserFirstName: string;
+  readingName: string;
+};
+
+export async function sendRecipientIntakeReceived(
+  input: RecipientIntakeReceivedInput,
+): Promise<EmailSendResult> {
+  const { EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailRecipientIntakeReceived } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailRecipientIntakeReceived().catch(() => null);
+  const copy = { ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS, ...(sanity ?? {}) };
+  const html = await render(
+    <RecipientIntakeReceived
+      vars={{
+        recipientName: input.recipientName,
+        purchaserFirstName: input.purchaserFirstName,
+        readingName: input.readingName,
+      }}
+      copy={copy}
+    />,
+  );
+  const subject = copy.subject
+    .replaceAll("{recipientName}", input.recipientName)
+    .replaceAll("{readingName}", input.readingName);
+  return sendOrSkip({
+    to: input.recipientEmail,
+    subject,
+    html,
+    subType: "recipient_intake_received",
+    submissionId: input.submissionId,
   });
 }
 

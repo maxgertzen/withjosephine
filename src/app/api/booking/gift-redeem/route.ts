@@ -13,15 +13,22 @@ import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import { purchaserFirstNameFor } from "@/lib/booking/giftPersonas";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
+import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
-import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
+import {
+  appendEmailFired,
+  findSubmissionById,
+  redeemGiftSubmission,
+} from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
   consentSnapshotFromBody,
   isFullyConsented,
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
+import { sendRecipientIntakeReceived } from "@/lib/resend";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -259,10 +266,42 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Failed to save your details" }, { status: 500 });
   }
 
+  runMirror(
+    (async () => {
+      const result = await sendRecipientIntakeReceived({
+        submissionId,
+        recipientEmail: submittedEmail,
+        recipientName: deriveRecipientFirstName(responses, submittedEmail),
+        purchaserFirstName: purchaserFirstNameFor(submission),
+        readingName: submission.reading?.name ?? reading.name,
+      });
+      if (result.kind === "sent") {
+        await appendEmailFired(submissionId, {
+          type: "recipient_intake_received",
+          sentAt: new Date().toISOString(),
+          resendId: result.resendId,
+        });
+      }
+    })(),
+  );
+
   await clearGiftClaimCookie();
 
   return NextResponse.json({
     submissionId,
     redirectUrl: `/thank-you/${submissionId}?gift=1&redeemed=1`,
   });
+}
+
+function deriveRecipientFirstName(
+  responses: { fieldKey: string; value: string }[],
+  email: string,
+): string {
+  const fromFirstName = responses.find((r) => r.fieldKey === "first_name")?.value?.trim();
+  if (fromFirstName) return fromFirstName;
+  const fromLegal = responses.find((r) => r.fieldKey === "legal_full_name")?.value?.trim();
+  if (fromLegal) return fromLegal.split(/\s+/)[0] ?? fromLegal;
+  const local = email.split("@")[0] ?? email;
+  const lead = local.split(/[._+-]/)[0] ?? local;
+  return lead ? lead.charAt(0).toUpperCase() + lead.slice(1) : "there";
 }
