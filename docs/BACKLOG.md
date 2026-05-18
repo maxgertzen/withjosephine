@@ -25,6 +25,36 @@ For gift-purchase emails (where the claim URL has lifecycle), use the existing `
 
 ---
 
+## Deferred from v1.1.0 round-2 (filed 2026-05-18)
+
+### v1.1.x polish bundle — flagged 2026-05-18 mid-round-2 smoke
+
+Five user-flagged items not in round-2 scope. Trigger to promote: after the round-2 PR merges and Max signs off on staging. Bundle as v1.1.1 (low-risk polish) or v1.1.2 if the dark-mode work runs longer.
+
+- **Nav breakpoint regression.** Top-nav links overlap the logo at a certain mid viewport before the mobile-menu kicks in. Move the breakpoint earlier (currently `md:hidden` on the toggle in `src/components/Navigation/Navigation.tsx` — likely needs `lg:hidden` plus matching `lg:flex` on the link group).
+- **Akasha hero image too big on mobile.** Josephine's portrait nearly fills the viewport height on small screens. Add a max-height clamp or responsive `sizes` so it occupies a reasonable share of the fold.
+- **Thank-you gift purchaser card label is wrong.** The Sanity `readingLabel` field renders "Your Reading" on the gift-purchaser surface — the reading isn't theirs. Add a gift-purchaser-mode variant on `thankYouPage` (e.g. `giftPurchaserReadingLabel`) defaulting to "The gift" / "Your gift" — spawn a Copywriter persona via /agents for the wording. Wire it into `src/app/thank-you/[readingId]/page.tsx` alongside the C-10 branches.
+- **Full content-pass with a copywriter.** Sweep every customer-facing surface (booking flow, gift flow, thank-you, listen, my-gifts, my-readings, emails) and run a Copywriter persona over the copy. Tighten where verbose, warm where transactional, brand-align where flat. Discuss scope first — could be its own dedicated PR or bundled with the C-1 button redesign.
+- **Dark / light mode.** Theme switch with brand-coherent dark palette (Midnight + Deep + Gold accents) and persistent preference. Likely a bigger lift — design system tokens already use CSS vars so the technical foundation is there, but every surface needs a dark-mode pass and Max may want a design conversation first.
+
+### C-1 — Intake "Continue / Send my answers" button UX redesign
+
+Council (UX expert + Conversion expert) unanimously voted **Option C** for the disabled-state behavior. Spec lives in `www/MEMORY/WORK/20260518-v1.1.0-round-2-smoke-followup/PRD.md` § Decisions § "C-1 — UX + Conversion council recommendation."
+
+**Why deferred:** half-day of focused implementation work; bigger than every other v1.1.0 round-2 fix combined. Splitting preserves round-2 hot-fix scope so the C-4b self_send blocker reaches staging faster. C-1 is feature-quality work (council estimates 8-15% page-completion lift), not a regression.
+
+**Concrete spec for round-3 PR:**
+1. Switch Continue/Submit button from `aria-disabled` to real HTML `disabled` (click does nothing).
+2. Add muted-gold (`#C4A46B`) static asterisks on required-field labels from page load — no pulse, no animation (Quiet Archivist).
+3. Red borders + inline error text appear on **blur** of touched-invalid fields (NN/g inline validation).
+4. Helper line above button ("A few fields still need answers to continue") appears on first blur of any field on the page OR after ~5s dwell with required empty.
+5. Helper line is the rescue affordance — click/tap scrolls to first invalid field.
+6. Mixpanel telemetry: `intake_continue_blocked`, `intake_field_first_error`, `intake_helper_text_shown`, `intake_page_completed`.
+
+**Trigger to promote:** once v1.1.0 round-2 PR merges to `release/v1.1.0` and staging is green.
+
+---
+
 ## Security
 
 ### Phase 5 audit — LOW findings (Pentester, filed 2026-05-17)
