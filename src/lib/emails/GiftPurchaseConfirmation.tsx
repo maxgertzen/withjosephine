@@ -51,8 +51,10 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
   const detailLine =
     vars.variant === GIFT_DELIVERY.selfSend ? copy.detailLineSelfSend : copy.detailLineScheduled;
 
-  const preview =
-    vars.variant === GIFT_DELIVERY.selfSend ? copy.previewSelfSend : copy.previewScheduled;
+  const preview = template(
+    vars.variant === GIFT_DELIVERY.selfSend ? copy.previewSelfSend : copy.previewScheduled,
+    vars,
+  );
   return (
     <EmailShell preview={preview} bareContainer>
       <Container
@@ -133,17 +135,17 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
                   className="font-sans text-muted"
                   style={{ margin: "16px 0 0 0", fontSize: 13, lineHeight: 1.6 }}
                 >
-                  {copy.shareUrlHelper}
+                  {template(copy.shareUrlHelper, vars)}
                 </p>
                 <p
-                  className="font-sans text-muted"
+                  className="font-sans"
                   style={{
                     margin: "8px 0 0 0",
                     fontSize: 13,
                     wordBreak: "break-all",
                   }}
                 >
-                  <Link href={vars.claimUrl} className="text-ink no-underline">
+                  <Link href={vars.claimUrl} className="text-gold underline">
                     {vars.claimUrl}
                   </Link>
                 </p>
@@ -176,7 +178,7 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
               className="font-sans text-body"
               style={{ padding: "24px 48px 0 48px", lineHeight: 1.7, fontSize: 14 }}
             >
-              <p style={{ margin: 0 }}>{copy.refundLine}</p>
+              <p style={{ margin: 0 }}>{template(copy.refundLine, vars)}</p>
             </Section>
 
             <Section

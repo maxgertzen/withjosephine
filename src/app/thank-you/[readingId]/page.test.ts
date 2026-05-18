@@ -23,6 +23,11 @@ vi.mock("@/lib/stripe", () => ({
   retrieveCheckoutSession: vi.fn(),
 }));
 
+vi.mock("@/lib/booking/submissions", () => ({
+  findSubmissionById: vi.fn(),
+}));
+
+import { findSubmissionById } from "@/lib/booking/submissions";
 import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
 import type { SanityReading, SanityThankYouPage } from "@/lib/sanity/types";
 import { retrieveCheckoutSession } from "@/lib/stripe";
@@ -30,6 +35,7 @@ import { retrieveCheckoutSession } from "@/lib/stripe";
 const mockFetchThankYouPage = vi.mocked(fetchThankYouPage);
 const mockFetchReading = vi.mocked(fetchReading);
 const mockRetrieveSession = vi.mocked(retrieveCheckoutSession);
+const mockFindSubmission = vi.mocked(findSubmissionById);
 
 function reading(overrides: Partial<SanityReading> = {}): SanityReading {
   return {
@@ -71,7 +77,9 @@ beforeEach(() => {
   mockFetchThankYouPage.mockReset();
   mockFetchReading.mockReset();
   mockRetrieveSession.mockReset();
+  mockFindSubmission.mockReset();
   mockRetrieveSession.mockResolvedValue({ amount_total: null, currency: null } as never);
+  mockFindSubmission.mockResolvedValue(null);
   redirectMock.mockClear();
   notFoundMock.mockClear();
 });
@@ -262,6 +270,79 @@ describe("ThankYouPage paid amount", () => {
     const html = JSON.stringify(result);
     expect(html).toContain("$179");
     expect(html).not.toContain("line-through");
+  });
+});
+
+describe("ThankYouPage gift-mode resolution (B-2)", () => {
+  beforeEach(() => {
+    mockFetchReading.mockResolvedValue(reading());
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        heading: "Thank you for booking",
+        giftPurchaserHeading: "Thank you, {purchaserFirstName}. Your gift is on its way.",
+      }),
+    );
+  });
+
+  it("resolves to gift mode when session.metadata is null but submission.isGift is true", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 9900,
+      currency: "usd",
+      client_reference_id: "sub_real_gift",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue({
+      _id: "sub_real_gift",
+      status: "paid",
+      isGift: true,
+      responses: [
+        {
+          fieldKey: "purchaser_first_name",
+          fieldLabelSnapshot: "Purchaser",
+          fieldType: "shortText",
+          value: "Max",
+        },
+      ],
+      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_realgift1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Your gift is on its way");
+    expect(html).not.toContain("Thank you for booking");
+  });
+
+  it("still resolves to purchase mode when submission.isGift is false", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 17900,
+      currency: "usd",
+      client_reference_id: "sub_purchase",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue({
+      _id: "sub_purchase",
+      status: "paid",
+      isGift: false,
+      responses: [],
+      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_purchasenongift1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Thank you for booking");
+    expect(html).not.toContain("Your gift is on its way");
+  });
+
+  it("falls back to purchase mode when submission lookup returns null (graceful)", async () => {
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 9900,
+      currency: "usd",
+      client_reference_id: "sub_missing",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue(null);
+    const result = await callPage({ sessionId: "cs_test_nosub1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Thank you for booking");
+    expect(html).not.toContain("Your gift is on its way");
   });
 });
 

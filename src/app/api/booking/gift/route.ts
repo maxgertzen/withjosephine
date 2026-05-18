@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getOrCreateUser } from "@/lib/auth/users";
 import {
   GIFT_DELIVERY,
   HONEYPOT_FIELD,
@@ -230,13 +231,22 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
   }
 
-  const reading = await fetchReading(parsedBody.readingSlug);
+  const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
+  const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
+
+  const [reading, userResult] = await Promise.all([
+    fetchReading(parsedBody.readingSlug),
+    getOrCreateUser({ email: purchaserEmail, name: purchaserFirstName }).catch(
+      (error) => {
+        console.error("[booking-gift] purchaser user-create failed", error);
+        return null;
+      },
+    ),
+  ]);
   if (!reading) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
-
-  const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
-  const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
+  const purchaserUserId = userResult?.userId ?? null;
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName
     ? stripTemplateTags(parsedBody.recipientName.trim())
@@ -309,7 +319,7 @@ export async function POST(request: Request): Promise<Response> {
       art9AcknowledgedAt: null,
       coolingOffAcknowledgedAt: nowIso,
       isGift: true,
-      purchaserUserId: null,
+      purchaserUserId,
       recipientEmail,
       giftDeliveryMethod: parsedBody.deliveryMethod,
       giftSendAt: parsedBody.deliveryMethod === GIFT_DELIVERY.scheduled ? parsedBody.giftSendAt! : null,
