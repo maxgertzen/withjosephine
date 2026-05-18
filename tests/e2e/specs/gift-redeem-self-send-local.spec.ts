@@ -61,7 +61,7 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
       interceptedSubmissionId!,
     );
 
-    await seedIntakeDraft(page, READING_SLUG);
+    await seedIntakeDraft(page, `gift-redeem.${interceptedSubmissionId!}`);
 
     // Hold the redeem POST so the submit overlay is observable. Asserts
     // C-4a (overlay copy is the recipient-specific string, not the booking
@@ -96,14 +96,10 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
 
     await page.getByTestId("intake-submit").click();
 
-    // C-4a — overlay copy assertion while the POST is held open
-    await expect(page.getByRole("status")).toContainText(
-      /sending your answers/i,
-      { timeout: 5_000 },
-    );
-    await expect(page.getByRole("status")).not.toContainText(
-      /taking you to checkout/i,
-    );
+    await expect(page.getByText(/sending your answers/i)).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(page.getByText(/taking you to checkout/i)).toHaveCount(0);
 
     releaseRedeemResponse();
 
@@ -114,7 +110,8 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
     ).not.toBe(422);
     expect(redeemResponse.status()).toBeLessThan(400);
 
-    const body = (await redeemResponse.json()) as { redirectUrl?: string };
-    expect(body.redirectUrl).toMatch(/\/thank-you\/.*gift=1.*redeemed=1/);
+    await expect(page).toHaveURL(/\/thank-you\/.*gift=1.*redeemed=1/, {
+      timeout: 10_000,
+    });
   });
 });

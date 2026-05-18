@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { resetCapturedState } from "../helpers/captureStore";
+import { datetimeLocalPlus } from "../helpers/datetimeLocal";
 import { setGiftClaimCookieForTest } from "../helpers/giftClaimCookie";
 import {
   clickThroughIntakePages,
@@ -48,9 +49,8 @@ test.describe("Gift recipient consent shape (C-2)", () => {
       .locator("#gift-recipient-email")
       .fill("consent-recipient@withjosephine.com");
     await page.locator("#gift-message").fill("Consent shape regression guard.");
-    // Schedule far in the future so the recipient claim cookie path is
-    // exercisable before the gift fires.
-    await page.locator("#gift-send-at").fill("2030-01-01T12:00");
+    const sendAt = await datetimeLocalPlus(page, 60);
+    await page.locator("#gift-send-at").fill(sendAt);
     await page.locator("#gift-art6-consent").check();
     await page.locator("#gift-cooling-off-consent").check();
     await waitForTurnstileToken(page);
@@ -64,7 +64,7 @@ test.describe("Gift recipient consent shape (C-2)", () => {
       interceptedSubmissionId!,
     );
 
-    await seedIntakeDraft(page, READING_SLUG);
+    await seedIntakeDraft(page, `gift-redeem.${interceptedSubmissionId!}`);
     await page.goto("/gift/intake");
     await expect(page).toHaveURL(/\/gift\/intake/, { timeout: 15_000 });
 
