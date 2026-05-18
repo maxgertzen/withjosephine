@@ -161,8 +161,8 @@ export const thankYouPage = defineType({
       title: "Gift recipient heading",
       type: "string",
       description:
-        "Shown to a recipient who's just finished filling in their intake on a redeemed gift. Use {recipientName} as a placeholder if you want to address them by name.",
-      initialValue: "Thank you. Your reading is in my hands now.",
+        "Shown to a recipient who's just finished filling in their intake on a redeemed gift. Use {recipientName} as a placeholder to address them by name.",
+      initialValue: "Thank you, {recipientName}. Your reading is in my hands now.",
     }),
     defineField({
       name: "giftRecipientSubheading",
