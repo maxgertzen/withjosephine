@@ -25,6 +25,18 @@ For gift-purchase emails (where the claim URL has lifecycle), use the existing `
 
 ---
 
+## v1.1.1 hot-fix bundle — staging smoke 2026-05-18 evening
+
+**Handoff doc with reproduction + root-cause hypotheses + fix directions:** `www/MEMORY/WORK/20260518-handoff-v1.1.1-followup/HANDOFF.md`. Five issues surfaced after PR #134 + #135 merged. Bundle as v1.1.1 and ship before apex unpark. **Do not start until Max greenlights — I-2 needs Privacy Counsel sign-off on reading-specific consent labels.**
+
+- **I-1** — Gift purchaser thank-you copy doesn't branch on self_send vs scheduled. Self_send sees the wrong "recipient will get a note from me" copy. Absorbs the v1.1.x "Your Reading" → "Your gift" card-label item.
+- **I-2** — Art. 9 consent label hardcodes "birth chart and Akashic Record" regardless of selected reading. Needs Privacy Counsel sign-off before changing.
+- **I-3** — Recipient thank-you page shows price + (suspected) leaks `{deliveryDays}` placeholder.
+- **I-4** — Loader has visual tail; for now bump SubmitOverlay to size=lg, decide on tail strip later.
+- **I-5** — `/my-gifts` doesn't show claim/submission status + resend still allowed after claim. Plus: recipient revisiting `/gift/intake` after submission gets a curt `redirect("/")` instead of a friendly "we got your answers" page.
+
+Trigger to promote: Max sign-off on staging + (for I-2) Privacy Counsel review of reading-specific consent variants.
+
 ## Deferred from v1.1.0 round-2 (filed 2026-05-18)
 
 ### E2E test robustness — flagged 2026-05-18
