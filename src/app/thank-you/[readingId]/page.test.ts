@@ -165,7 +165,14 @@ async function loadDefault() {
   return mod.default;
 }
 
-async function callPage(searchParamValue: { sessionId?: string | string[] } = {}) {
+async function callPage(
+  searchParamValue: {
+    sessionId?: string | string[];
+    gift?: string | string[];
+    redeemed?: string | string[];
+    purchaserFirstName?: string | string[];
+  } = {},
+) {
   const Page = await loadDefault();
   return Page({
     params: Promise.resolve({ readingId: "soul-blueprint" }),
@@ -343,6 +350,120 @@ describe("ThankYouPage gift-mode resolution (B-2)", () => {
     const html = JSON.stringify(result);
     expect(html).toContain("Thank you for booking");
     expect(html).not.toContain("Your gift is on its way");
+  });
+});
+
+describe("ThankYouPage gift-aware timeline + contact bodies (C-10)", () => {
+  beforeEach(() => {
+    mockFetchReading.mockResolvedValue(reading());
+  });
+
+  it("renders the gift-purchaser timeline body (not the non-gift default) when mode is gift-purchaser", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        timelineBody: "I'll begin YOUR reading within the next two days.",
+        giftPurchaserTimelineBody:
+          "I'll begin THE RECIPIENT'S reading within two days of them claiming the gift.",
+      }),
+    );
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 9900,
+      currency: "usd",
+      client_reference_id: "sub_gift_purchaser_t",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue({
+      _id: "sub_gift_purchaser_t",
+      status: "paid",
+      isGift: true,
+      responses: [
+        {
+          fieldKey: "purchaser_first_name",
+          fieldLabelSnapshot: "Purchaser",
+          fieldType: "shortText",
+          value: "Yoram",
+        },
+      ],
+      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_giftpurch1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("THE RECIPIENT'S reading");
+    expect(html).not.toContain("YOUR reading within the next two days");
+  });
+
+  it("renders the gift-purchaser contact body when mode is gift-purchaser", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        contactBody: "Just reply or write to {email} — non-gift default.",
+        giftPurchaserContactBody:
+          "If anything comes up with the gift, write to {email}.",
+      }),
+    );
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 9900,
+      currency: "usd",
+      client_reference_id: "sub_gift_purchaser_c",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue({
+      _id: "sub_gift_purchaser_c",
+      status: "paid",
+      isGift: true,
+      responses: [
+        {
+          fieldKey: "purchaser_first_name",
+          fieldLabelSnapshot: "Purchaser",
+          fieldType: "shortText",
+          value: "Yoram",
+        },
+      ],
+      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_giftpurch2" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("anything comes up with the gift");
+    expect(html).not.toContain("non-gift default");
+  });
+
+  it("recipient mode still uses giftRecipientBody for the timeline paragraph", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        timelineBody: "BUYER default.",
+        giftRecipientBody:
+          "RECIPIENT body — I'll begin your reading within two days.",
+      }),
+    );
+    const result = await callPage({ gift: "1", redeemed: "1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("RECIPIENT body");
+    expect(html).not.toContain("BUYER default");
+  });
+
+  it("non-gift purchase still uses the standard timelineBody (regression guard)", async () => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({
+        timelineBody: "Standard non-gift timeline copy.",
+        giftPurchaserTimelineBody: "Should not appear.",
+      }),
+    );
+    mockRetrieveSession.mockResolvedValue({
+      amount_total: 17900,
+      currency: "usd",
+      client_reference_id: "sub_pure_purchase",
+      metadata: null,
+    } as never);
+    mockFindSubmission.mockResolvedValue({
+      _id: "sub_pure_purchase",
+      status: "paid",
+      isGift: false,
+      responses: [],
+      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
+    } as never);
+    const result = await callPage({ sessionId: "cs_test_purepurchase1" });
+    const html = JSON.stringify(result);
+    expect(html).toContain("Standard non-gift timeline copy");
+    expect(html).not.toContain("Should not appear");
   });
 });
 

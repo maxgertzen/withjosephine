@@ -107,6 +107,26 @@ export const thankYouPage = defineType({
         "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link — they'll share their intake details with me from there.",
     }),
     defineField({
+      name: "giftPurchaserTimelineBody",
+      title: "Gift purchaser timeline paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Second paragraph on the gift-purchaser thank-you page. Recipient-perspective copy — the purchaser isn't getting the reading themselves. Use {deliveryDays} for the accented delivery-time phrase.",
+      initialValue:
+        "I'll begin the recipient's reading within the next two days of them claiming the gift, and I'll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.",
+    }),
+    defineField({
+      name: "giftPurchaserContactBody",
+      title: "Gift purchaser contact paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Third paragraph for gift purchasers — invites them to reach out if anything's off with the gift itself. Use {email} for the contact email link.",
+      initialValue:
+        "If anything comes up with the gift — a wrong recipient email, a change of plan, anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
+    }),
+    defineField({
       name: "giftRecipientHeading",
       title: "Gift recipient heading",
       type: "string",
@@ -128,6 +148,16 @@ export const thankYouPage = defineType({
       rows: 3,
       initialValue:
         "I'll begin your reading within the next two days, and I'll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.",
+    }),
+    defineField({
+      name: "giftRecipientContactBody",
+      title: "Gift recipient contact paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Optional third paragraph for the recipient. Invites them to reach out if anything's off. Use {email} for the contact email link.",
+      initialValue:
+        "If anything comes up — a question, a detail you forgot to mention, or anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
     }),
     defineField({
       name: "overrides",

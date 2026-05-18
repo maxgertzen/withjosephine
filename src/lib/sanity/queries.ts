@@ -124,9 +124,12 @@ export const thankYouPageQuery = groq`
     giftPurchaserHeading,
     giftPurchaserSubheading,
     giftPurchaserBody,
+    giftPurchaserTimelineBody,
+    giftPurchaserContactBody,
     giftRecipientHeading,
     giftRecipientSubheading,
     giftRecipientBody,
+    giftRecipientContactBody,
     "overrides": overrides[]{
       "readingSlug": reading->slug.current,
       heading,
@@ -210,6 +213,8 @@ export const giftClaimPageQuery = groq`
     noTokenBody,
     alreadyClaimedHeading,
     alreadyClaimedBody,
+    sessionExpiredHeading,
+    sessionExpiredBody,
     welcomeHeading,
     welcomeBody,
     welcomeCtaLabel
