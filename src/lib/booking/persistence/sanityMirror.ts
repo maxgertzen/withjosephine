@@ -11,7 +11,7 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import {
   ART6_CONSENT_LABEL,
-  ART9_CONSENT_LABEL,
+  art9ConsentLabel,
   COOLING_OFF_CONSENT_LABEL,
 } from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
@@ -110,7 +110,10 @@ export async function mirrorSubmissionCreate(
           acknowledgedAt: consent.consentAcknowledgedAt,
           ipAddress: consent.ipAddress ?? undefined,
           art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
-          art9Consent: ackBlock(ART9_CONSENT_LABEL, consent.art9AcknowledgedAt),
+          art9Consent: ackBlock(
+            art9ConsentLabel(input.readingSlug),
+            consent.art9AcknowledgedAt,
+          ),
           coolingOffConsent: ackBlock(
             COOLING_OFF_CONSENT_LABEL,
             consent.coolingOffAcknowledgedAt,
@@ -156,6 +159,7 @@ export async function mirrorSubmissionPatch(
     giftClaimEmailFiredAt: string;
     purchaserUserId: string | null;
     email: string;
+    readingSlug: string;
   }>,
 ): Promise<void> {
   const client = getClient();
@@ -172,14 +176,14 @@ export async function mirrorSubmissionPatch(
     }));
   }
   if (patch.art9AcknowledgedAt) {
-    // Mirror the recipient's Art. 9 ack into the existing consentSnapshot
-    // shape. The purchaser's Art. 6 was already written at purchase time;
-    // we only set art9 here at claim time.
     sanitized["consentSnapshot.art9Consent"] = {
-      labelText: ART9_CONSENT_LABEL,
+      labelText: art9ConsentLabel(patch.readingSlug ?? "soul-blueprint"),
       acknowledgedAt: patch.art9AcknowledgedAt,
     };
     delete sanitized.art9AcknowledgedAt;
+  }
+  if ("readingSlug" in sanitized) {
+    delete sanitized.readingSlug;
   }
 
   try {
