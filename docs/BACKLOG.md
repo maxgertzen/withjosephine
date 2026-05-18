@@ -25,6 +25,44 @@ For gift-purchase emails (where the claim URL has lifecycle), use the existing `
 
 ---
 
+## Main-merge blockers (filed 2026-05-18)
+
+### Production D1 migration drift — apply 0004 → 0011 at main-merge time
+
+Staging D1 (`withjosephine-bookings-staging`) is at migration **0011** (all gift-related schema applied). Production D1 (`withjosephine-bookings`) is at migration **0003**. The 8 missing migrations (0004 → 0011) introduce every gift-aware column the Phase 5 Gifting code reads/writes — `is_gift`, `purchaser_user_id`, `recipient_email`, `gift_delivery_method`, `gift_send_at`, `gift_message`, `gift_claim_token_hash`, `gift_claim_email_fired_at`, `gift_claimed_at`, `gift_cancelled_at`, `gift_resend_lock_until`.
+
+**If we merge `release/v1.1.0` to `main` without applying these, the production worker will throw at the first gift-aware code path (purchase, flip, claim, redeem, /my-gifts, stripe webhook gift branch).** This is a hard blocker.
+
+**Action at main-merge time, in order:**
+1. Verify staging D1 is at 0011: `pnpm exec wrangler d1 migrations list withjosephine-bookings-staging --remote --env staging`.
+2. Apply each missing migration to production D1, in order, with `pnpm exec wrangler d1 migrations apply withjosephine-bookings --remote`. The CLI applies pending migrations in lexicographic order — 0004 → 0011 in one batch is the expected flow.
+3. Verify with `pnpm exec wrangler d1 migrations list withjosephine-bookings --remote`. Should show all 11 applied.
+4. Spot-check schema: `pnpm exec wrangler d1 execute withjosephine-bookings --remote --command "PRAGMA table_info(submissions);"` — confirm gift_* columns present.
+
+**Trigger:** this entry promotes to "execute" the moment Max greenlights `release/v1.1.0` → `main` merge. Do NOT auto-apply earlier — staging may need a migration revert if any blocker surfaces, and a partial-applied production confuses the picture.
+
+---
+
+## Scheduling-flow scrutiny — Phase 2 Council queue (filed 2026-05-18)
+
+Five UX design decisions that need a single consolidated Council debate before the next v1.1.x scheduling PR opens. Each persona must cite ≥1 of: test result, code path, vendor doc, prior incident (per `feedback_vendor_citation_at_observe.md`).
+
+Vantages to recruit: UX designer, ops/Becky-empath, security, scheduling-systems engineer.
+
+- **I-16 — Per-status pill design.** Six `GiftStatus` kinds (`scheduled` / `self_send_ready` / `sent_waiting_recipient` / `recipient_preparing` / `delivered` / `cancelled`) currently render as plain status lines on `/my-gifts`. Concrete decision needed: tint per status (`j-warm` for ready, `j-blush` for sent, `j-accent` for delivered, `j-text-muted` for cancelled — or a different mapping).
+
+- **I-17 — Date+time picker swap on flip-to-scheduled.** Today both flip and edit-recipient drawers use native `<input type="datetime-local">` (`GiftCardActions.tsx:186, 341`). The intake form's `DatePicker` component (`src/components/Form/DatePicker/DatePicker.tsx`) is brand-consistent but date-only. Decide: extend intake DatePicker with a time-input slot, OR pair the existing DatePicker with a separate brand-styled time picker, OR keep native and improve styling.
+
+- **NEW — Send-now affordance.** New first-class capability so purchaser can immediately fire the claim email for a scheduled gift (e.g., birthday came up earlier than they planned). Decision needed: new API route (`/api/gifts/[id]/send-now`) vs extending an existing one; audit-trail column (`gift_sent_immediately_at` vs reusing `gift_claim_email_fired_at` with a source field); confirm-armed pattern in `MyGiftsView`; cancel the queued DO alarm in the same operation.
+
+- **I-18 — Cancel scheduled gift control.** `gift_cancelled_at` D1 column already exists (added in `migrations/0007_gifting.sql`). Needs: new repo helper `cancelGift`, route `/api/gifts/[id]/cancel-scheduled`, atomic flip (`gift_delivery_method` stays scheduled but `cancelled_at` set), DO alarm cancel via `cancelGiftAlarm`, `CancelGiftControl` in `MyGiftsView` (confirm-armed like `FlipToSelfSendControl`), Sanity copy fields, tests.
+
+- **NEW Bug #20 — Recipient-intake email-field pre-fill from wrong source.** When recipient clicks the claim link and lands on the intake form, the email field pre-fills from their signed-in session (or the purchaser's session if still logged in), NOT from the gift's `recipient_email`. Causes a false "Email mismatch" 422 at submit (`gift-redeem/route.ts:212-226`). Compound design question: should the recipient be ALLOWED to change the locked-in email at claim time? Anti-abuse argument says no (the check is what stops a stolen claim cookie from being used by someone else); UX argument says recipient may want a different inbox than the one Becky's purchaser typed. Council resolves.
+
+**Output of Council:** locked decisions written into the next scheduling-flow PRD's `## Decisions` section, with vantage citations preserved. NO design implementation work starts until Council convenes.
+
+---
+
 ## Deferred from v1.1.0 round-2 (filed 2026-05-18)
 
 ### E2E test robustness — flagged 2026-05-18
