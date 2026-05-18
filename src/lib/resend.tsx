@@ -173,8 +173,8 @@ export type RecipientIntakeReceivedInput = {
 export async function sendRecipientIntakeReceived(
   input: RecipientIntakeReceivedInput,
 ): Promise<EmailSendResult> {
-  const { EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailRecipientIntakeReceived } = await import("@/lib/sanity/fetch");
+  const [{ EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS }, { fetchEmailRecipientIntakeReceived }] =
+    await Promise.all([import("@/data/defaults"), import("@/lib/sanity/fetch")]);
   const sanity = await fetchEmailRecipientIntakeReceived().catch(() => null);
   const copy = { ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(

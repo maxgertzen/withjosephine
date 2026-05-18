@@ -24,6 +24,17 @@ export async function issueGiftClaimToken(): Promise<IssuedGiftClaimToken> {
 }
 
 /**
+ * Non-redeemable sentinel hash for the flip routes. Written to
+ * `gift_claim_token_hash` when atomically flipping delivery_method so any URL
+ * the purchaser already shared invalidates immediately; the dispatcher /
+ * DO-alarm path overwrites it with a real hash when the next send fires. The
+ * `prov:` prefix doubles as a debug breadcrumb in audit dumps.
+ */
+export function provisionalTokenHash(reason: string, submissionId: string): string {
+  return `prov:${reason}:${submissionId}:${Date.now()}`;
+}
+
+/**
  * Validates a raw token from the claim URL by hashing it and looking up
  * an unclaimed gift submission. Returns the submission when valid, or null
  * when no match (invalid token, already claimed, or cancelled). The DB

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
-import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
+import { issueGiftClaimToken, provisionalTokenHash } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import {
   appendEmailFired,
@@ -52,10 +52,9 @@ export async function POST(
   // failure at step 4 leaves the row in self_send mode with a provisional
   // token — the purchaser retries via /api/gifts/:id/resend-link which
   // regenerates cleanly.
-  const provisionalTokenHash = `prov:${id}:${Date.now()}`;
   const nowIso = new Date().toISOString();
   const flipped = await flipGiftToSelfSend(id, {
-    tokenHash: provisionalTokenHash,
+    tokenHash: provisionalTokenHash("cancel-auto-send", id),
     firedAtIso: nowIso,
   });
   if (!flipped) {

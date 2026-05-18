@@ -331,6 +331,10 @@ export async function flipGiftToScheduled(
         giftSendAt: args.giftSendAt,
         recipientEmail: args.recipientEmail,
         giftClaimTokenHash: args.tokenHash,
+        // The self_send purchase set this at purchase time; clearing in D1
+        // lets the DO alarm path treat the row as a fresh scheduled send.
+        // Mirror it so Studio editors don't see a stale firedAt.
+        giftClaimEmailFiredAt: null,
       }),
     );
   }

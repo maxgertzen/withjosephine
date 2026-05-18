@@ -156,7 +156,7 @@ export async function mirrorSubmissionPatch(
     giftSendAt: string | null;
     giftDeliveryMethod: GiftDeliveryMethod;
     giftClaimTokenHash: string;
-    giftClaimEmailFiredAt: string;
+    giftClaimEmailFiredAt: string | null;
     purchaserUserId: string | null;
     email: string;
     readingSlug: string;

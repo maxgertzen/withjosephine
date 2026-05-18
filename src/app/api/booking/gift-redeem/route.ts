@@ -13,7 +13,10 @@ import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
-import { purchaserFirstNameFor } from "@/lib/booking/giftPersonas";
+import {
+  purchaserFirstNameFor,
+  recipientFirstNameFromIntakeResponses,
+} from "@/lib/booking/giftPersonas";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
@@ -271,7 +274,7 @@ export async function POST(request: Request): Promise<Response> {
       const result = await sendRecipientIntakeReceived({
         submissionId,
         recipientEmail: submittedEmail,
-        recipientName: deriveRecipientFirstName(responses, submittedEmail),
+        recipientName: recipientFirstNameFromIntakeResponses(responses, submittedEmail),
         purchaserFirstName: purchaserFirstNameFor(submission),
         readingName: submission.reading?.name ?? reading.name,
       });
@@ -291,17 +294,4 @@ export async function POST(request: Request): Promise<Response> {
     submissionId,
     redirectUrl: `/thank-you/${submissionId}?gift=1&redeemed=1`,
   });
-}
-
-function deriveRecipientFirstName(
-  responses: { fieldKey: string; value: string }[],
-  email: string,
-): string {
-  const fromFirstName = responses.find((r) => r.fieldKey === "first_name")?.value?.trim();
-  if (fromFirstName) return fromFirstName;
-  const fromLegal = responses.find((r) => r.fieldKey === "legal_full_name")?.value?.trim();
-  if (fromLegal) return fromLegal.split(/\s+/)[0] ?? fromLegal;
-  const local = email.split("@")[0] ?? email;
-  const lead = local.split(/[._+-]/)[0] ?? local;
-  return lead ? lead.charAt(0).toUpperCase() + lead.slice(1) : "there";
 }
