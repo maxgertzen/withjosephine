@@ -29,6 +29,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+  // Dev shells may export NEXT_PUBLIC_TRACK_NON_PROD=1; the non-prod
+  // opt-in gate tests below assume the gate is closed by default. Explicit
+  // stub to clear any inherited shell value.
+  vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "");
   vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", TOKEN);
   // Default to a production host so init runs in tests by default; the
   // non-prod-opt-in gate has dedicated tests below.

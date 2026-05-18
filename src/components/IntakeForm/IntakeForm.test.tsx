@@ -104,6 +104,11 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "test-site-key");
+  // Some dev shells export NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS=1 for
+  // local browsing; vitest inherits and useTurnstileChallenge then
+  // computes turnstileRequired=false, breaking the token-supplied
+  // submit assertion below.
+  vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
   __resetSwapNameCacheForTest();
 });

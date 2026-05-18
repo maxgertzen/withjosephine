@@ -22,6 +22,10 @@ vi.mock("next/script", () => ({
 
 beforeEach(() => {
   vi.unstubAllEnvs();
+  // Some dev shells export NEXT_PUBLIC_TRACK_NON_PROD=1 which vitest
+  // inherits — explicitly clear so the non-prod-gate tests below run
+  // against the documented default (gate closed unless test stubs "1").
+  vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "");
   Object.defineProperty(window, "location", {
     value: { host: "withjosephine.com" },
     configurable: true,

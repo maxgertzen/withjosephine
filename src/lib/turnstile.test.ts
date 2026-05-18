@@ -6,6 +6,9 @@ const VERIFY_ENDPOINT = "https://challenges.cloudflare.com/turnstile/v0/siteveri
 
 beforeEach(() => {
   vi.stubEnv("TURNSTILE_SECRET_KEY", "test-secret");
+  // `.env.local` sets BOOKING_TURNSTILE_BYPASS=1 for dev. Tests must run
+  // the real verification logic, so explicitly disable the bypass.
+  vi.stubEnv("BOOKING_TURNSTILE_BYPASS", "");
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
