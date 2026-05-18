@@ -14,14 +14,13 @@ export type SignedWebhookPayload = {
   signature: string;
 };
 
+const E2E_WEBHOOK_SECRET = "whsec_e2e_dummy";
+
 export function buildCheckoutCompletedPayload(
   submissionId: string,
   overrides: CheckoutCompletedOverrides = {},
 ): SignedWebhookPayload {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) {
-    throw new Error("STRIPE_WEBHOOK_SECRET must be set to sign test webhook payloads");
-  }
+  const secret = E2E_WEBHOOK_SECRET;
   const timestamp = Math.floor(Date.now() / 1000);
   const sessionId = overrides.stripeSessionId ?? `cs_test_${crypto.randomUUID().slice(0, 8)}`;
   const event = {

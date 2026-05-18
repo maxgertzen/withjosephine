@@ -27,6 +27,21 @@ For gift-purchase emails (where the claim URL has lifecycle), use the existing `
 
 ## Deferred from v1.1.0 round-2 (filed 2026-05-18)
 
+### E2E test robustness — flagged 2026-05-18
+
+Three test-infrastructure improvements surfaced while running the Playwright suite at the end of round-2. None are launch-blocking; each carries an explicit promotion trigger.
+
+- **`data-testid` over role/text selectors.** Multiple specs (mine included — `gift-redeem-consent-shape-local`, `gift-redeem-self-send-local`, `gift-claim-session-expired-local`) target elements via `page.getByRole("button", { name: /…/i })` and `page.getByText(/sending your answers/i)`. The recent self-send spec already hit `getByRole("status")` ambiguity colliding with the IntakeForm page indicator — proves the fragility. Add `data-testid` attributes to: SubmitOverlay paragraph, every primary CTA, every form input we assert on, consent checkboxes (the `#field-art6-consent` id pattern is OK but inconsistent). Migrate the existing specs to testid-first selectors. **Trigger:** any time we add a new e2e spec, do it testid-first; bundle a sweep when 3+ specs need cleanup.
+
+- **Copy-change resistance in assertions.** Specs assert literal copy strings ("sending your answers", "rested for a moment", "from your original email again"). The moment Becky edits Sanity copy, e2es break in CI even though product behavior is correct. Strategies to consider: (a) read the asserted string from the same Sanity fetch helper the page uses, so the spec compares Sanity-against-Sanity; (b) assert on testid + visibility only, not text content; (c) snapshot-test the rendered surface and let CI flag intentional copy changes for explicit re-approval. Pick one strategy and apply consistently. **Trigger:** first time a Becky copy edit breaks e2e in CI without product regression.
+
+- **Disable analytics in e2e + staging.** Sentry, Mixpanel, and Clarity should not fire from Playwright runs or staging worker traffic — they pollute production dashboards with synthetic events and skew funnels. Verify per-vendor:
+  - Mixpanel: `shouldEnableClientObservability(staging.withjosephine.com)` returns `false` when `NEXT_PUBLIC_TRACK_NON_PROD` is unset/0. **Action:** confirm staging GH env variable is `NEXT_PUBLIC_TRACK_NON_PROD=0` (currently `=1` per `.env.staging:63`) — that's why staging traffic IS in Mixpanel today, by design. Decide: keep staging tracking on (for QA visibility) and add an `e2e-bot` distinct_id filter at the dashboard layer, OR flip staging to 0 and lose that visibility.
+  - Clarity: gated by the same function. Same decision applies.
+  - Sentry: currently NOT gated by `shouldEnableClientObservability` per `src/lib/observability-gate.ts:11` (intentional — keep non-prod error signal). Confirm e2e runs don't emit Sentry events (they shouldn't because Playwright sets up the test browser, not a real user) but verify by tailing Sentry inbox during a full e2e run.
+
+  **Trigger:** before the apex-unpark Stripe live-mode flip — final pre-launch posture should have Mixpanel/Clarity clean of staging+e2e noise.
+
 ### v1.1.x polish bundle — flagged 2026-05-18 mid-round-2 smoke
 
 Five user-flagged items not in round-2 scope. Trigger to promote: after the round-2 PR merges and Max signs off on staging. Bundle as v1.1.1 (low-risk polish) or v1.1.2 if the dark-mode work runs longer.
