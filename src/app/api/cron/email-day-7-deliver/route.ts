@@ -13,9 +13,8 @@ import {
   markSubmissionDelivered,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
+import { siteOrigin } from "@/lib/env";
 import { sendDay7Delivery } from "@/lib/resend";
-
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://withjosephine.com";
 
 // Asset existence is the readiness flag (no separate boolean) to avoid TOCTOU.
 async function deliverOne(
@@ -36,7 +35,7 @@ async function deliverOne(
     pdfUrl: resolved.pdfUrl,
   };
 
-  const listenUrl = `${SITE_ORIGIN}/listen/${refreshed._id}`;
+  const listenUrl = `${siteOrigin()}/listen/${refreshed._id}`;
   const context = buildSubmissionContext(refreshed);
   const sendResult = await sendAndRecord({
     submissionId: refreshed._id,

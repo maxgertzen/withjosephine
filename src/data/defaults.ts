@@ -349,6 +349,8 @@ export interface GiftClaimPageContent {
   noTokenBody: string;
   alreadyClaimedHeading: string;
   alreadyClaimedBody: string;
+  sessionExpiredHeading: string;
+  sessionExpiredBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;
@@ -363,6 +365,9 @@ export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
   alreadyClaimedHeading: "This gift has already been opened",
   alreadyClaimedBody:
     "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
+  sessionExpiredHeading: "Your link rested for a moment",
+  sessionExpiredBody:
+    "Your claim session timed out. Open the gift link from your original email again — it's still good, and your reading is waiting.",
   welcomeHeading: "Welcome, {recipientName}.",
   welcomeBody:
     "Your reading is waiting. Tap the button below to share a few details so it can begin.",
@@ -508,7 +513,7 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirm
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine:
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at withjosephine.com/my-gifts.",
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",

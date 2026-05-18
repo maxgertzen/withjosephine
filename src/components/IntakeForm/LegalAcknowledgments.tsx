@@ -16,6 +16,7 @@ type LegalAcknowledgmentsProps = {
   isSubmitting: boolean;
   idPrefix?: "field" | "gift";
   showArt9?: boolean;
+  showCoolingOff?: boolean;
   consentIntro?: string;
 };
 
@@ -28,6 +29,7 @@ export function LegalAcknowledgments({
   isSubmitting,
   idPrefix = "field",
   showArt9 = true,
+  showCoolingOff = true,
   consentIntro,
 }: LegalAcknowledgmentsProps) {
   return (
@@ -76,23 +78,25 @@ export function LegalAcknowledgments({
           {snapshot.art9.labelText}
         </Checkbox>
       ) : null}
-      <Checkbox
-        id={`${idPrefix}-cooling-off-consent`}
-        name="coolingOffConsent"
-        checked={snapshot.coolingOff.acknowledged}
-        onChange={(checked) => {
-          setSnapshot({
-            ...snapshot,
-            coolingOff: { ...snapshot.coolingOff, acknowledged: checked },
-          });
-          if (checked) clearError("coolingOff");
-        }}
-        error={errors.coolingOff}
-        disabled={isSubmitting}
-        required
-      >
-        {snapshot.coolingOff.labelText}
-      </Checkbox>
+      {showCoolingOff ? (
+        <Checkbox
+          id={`${idPrefix}-cooling-off-consent`}
+          name="coolingOffConsent"
+          checked={snapshot.coolingOff.acknowledged}
+          onChange={(checked) => {
+            setSnapshot({
+              ...snapshot,
+              coolingOff: { ...snapshot.coolingOff, acknowledged: checked },
+            });
+            if (checked) clearError("coolingOff");
+          }}
+          error={errors.coolingOff}
+          disabled={isSubmitting}
+          required
+        >
+          {snapshot.coolingOff.labelText}
+        </Checkbox>
+      ) : null}
     </section>
   );
 }

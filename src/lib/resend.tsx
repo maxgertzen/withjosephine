@@ -13,7 +13,7 @@ import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./e
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
-import { isFlagEnabled } from "./env";
+import { isFlagEnabled, siteOrigin } from "./env";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
@@ -211,6 +211,7 @@ export async function sendGiftPurchaseConfirmation(
   const sanity = await fetchEmailGiftPurchaseConfirmation().catch(() => null);
   const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
 
+  const myGiftsUrl = `${siteOrigin()}/my-gifts`;
   const vars: GiftPurchaseConfirmationVars =
     input.variant === GIFT_DELIVERY.selfSend
       ? {
@@ -222,6 +223,7 @@ export async function sendGiftPurchaseConfirmation(
           amountPaidDisplay: input.amountPaidDisplay,
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
+          myGiftsUrl,
         }
       : {
           variant: GIFT_DELIVERY.scheduled,
@@ -232,6 +234,7 @@ export async function sendGiftPurchaseConfirmation(
           amountPaidDisplay: input.amountPaidDisplay,
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
+          myGiftsUrl,
         };
 
   const subject = input.variant === GIFT_DELIVERY.selfSend ? copy.subjectSelfSend : copy.subjectScheduled;

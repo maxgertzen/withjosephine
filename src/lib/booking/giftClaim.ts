@@ -1,5 +1,6 @@
 import { findUnclaimedGiftByTokenHash } from "@/lib/booking/persistence/repository";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { siteOrigin } from "@/lib/env";
 import { sha256Hex } from "@/lib/hmac";
 
 const TOKEN_BYTE_LENGTH = 32;
@@ -9,18 +10,6 @@ export type IssuedGiftClaimToken = {
   tokenHash: string;
   claimUrl: string;
 };
-
-function siteOrigin(): string {
-  // NEXT_PUBLIC_SITE_ORIGIN is inlined at build time and may be undefined
-  // when CI builds a single bundle for multiple environments. ENVIRONMENT
-  // is a Worker-runtime variable (set per-env in wrangler.jsonc) so the
-  // staging worker resolves to the staging hostname even when the inlined
-  // build-time origin is missing.
-  const fromBuild = process.env.NEXT_PUBLIC_SITE_ORIGIN;
-  if (fromBuild) return fromBuild;
-  if (process.env.ENVIRONMENT === "staging") return "https://staging.withjosephine.com";
-  return "https://withjosephine.com";
-}
 
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(TOKEN_BYTE_LENGTH));

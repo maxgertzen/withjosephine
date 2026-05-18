@@ -140,11 +140,13 @@ export async function redeemGiftSubmission(params: {
   recipientUserId: string;
   claimedAtIso: string;
   art9AcknowledgedAt: string;
+  recipientEmailFromIntake?: string;
 }): Promise<void> {
   await repo.redeemGiftSubmission(params.submissionId, {
     responses: params.responses,
     recipientUserId: params.recipientUserId,
     claimedAtIso: params.claimedAtIso,
+    recipientEmail: params.recipientEmailFromIntake,
   });
   runMirror(
     mirrorSubmissionPatch(params.submissionId, {
@@ -152,6 +154,9 @@ export async function redeemGiftSubmission(params: {
       recipientUserId: params.recipientUserId,
       responses: params.responses,
       art9AcknowledgedAt: params.art9AcknowledgedAt,
+      ...(params.recipientEmailFromIntake !== undefined
+        ? { recipientEmail: params.recipientEmailFromIntake }
+        : {}),
     }),
   );
 }

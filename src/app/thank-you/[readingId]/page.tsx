@@ -216,15 +216,25 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         : (override?.confirmationBody ??
           thankYouPageContent?.confirmationBody ??
           "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
-  const timelineBody =
-    override?.timelineBody ??
-    thankYouPageContent?.timelineBody ??
-    "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.";
+  const timelineBody = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserTimelineBody ??
+      "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.")
+    : isRecipient
+      ? (thankYouPageContent?.giftRecipientBody ??
+        "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+      : (override?.timelineBody ??
+        thankYouPageContent?.timelineBody ??
+        "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.");
   const deliveryDaysPhrase = thankYouPageContent?.deliveryDaysPhrase ?? "seven days";
-  const contactBody =
-    override?.contactBody ??
-    thankYouPageContent?.contactBody ??
-    "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.";
+  const contactBody = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserContactBody ??
+      "If anything comes up with the gift \u2014 a wrong recipient email, a change of plan, anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.")
+    : isRecipient
+      ? (thankYouPageContent?.giftRecipientContactBody ??
+        "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.")
+      : (override?.contactBody ??
+        thankYouPageContent?.contactBody ??
+        "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.");
   const closingMessage =
     override?.closingMessage ??
     thankYouPageContent?.closingMessage ??

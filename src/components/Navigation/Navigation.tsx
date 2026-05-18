@@ -100,7 +100,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
           <button
             type="button"
-            className="md:hidden text-j-deep"
+            className="md:hidden text-j-deep cursor-pointer"
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >

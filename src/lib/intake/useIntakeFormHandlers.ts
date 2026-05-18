@@ -209,10 +209,12 @@ export function useIntakeFormHandlers({
       }
 
       const validation = validateFullSubmission(submissionSchema, allFields, values);
-      const consentOk = isFullyConsented(consentSnapshot, true);
-      setConsentErrors(
-        collectConsentErrors(consentSnapshot, { requireArt9: true }),
-      );
+      const consentRequirements = {
+        requireArt9: true,
+        requireCoolingOff: mode !== "redeem",
+      };
+      const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
+      setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
       track("intake_submit_click", {
         reading_id: readingId,
         validation_pass: validation.success && consentOk,

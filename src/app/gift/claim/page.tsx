@@ -12,7 +12,7 @@ import { fetchGiftClaimPage } from "@/lib/sanity/fetch";
 export const dynamic = "force-dynamic";
 
 type GiftClaimPageProps = {
-  searchParams: Promise<{ token?: string; invalid?: string }>;
+  searchParams: Promise<{ token?: string; invalid?: string; expired?: string }>;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,19 +25,32 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function GiftClaimPage({ searchParams }: GiftClaimPageProps) {
-  const { token, invalid } = await searchParams;
+  const { token, invalid, expired } = await searchParams;
 
   if (token) {
     redirect(`/api/gift/claim?token=${encodeURIComponent(token)}`);
   }
 
-  const copy = (await fetchGiftClaimPage()) ?? GIFT_CLAIM_PAGE_DEFAULTS;
+  // Spread-merge with defaults so a Sanity doc that pre-dates a new field
+  // (e.g. sessionExpiredHeading added 2026-05-18) still renders correctly
+  // without a migration — the code defaults fill in any missing keys.
+  const sanityCopy = await fetchGiftClaimPage();
+  const copy = { ...GIFT_CLAIM_PAGE_DEFAULTS, ...(sanityCopy ?? {}) };
 
   if (invalid === "1") {
     return (
       <VellumShell
         heading={copy.alreadyClaimedHeading}
         body={copy.alreadyClaimedBody}
+      />
+    );
+  }
+
+  if (expired === "1") {
+    return (
+      <VellumShell
+        heading={copy.sessionExpiredHeading}
+        body={copy.sessionExpiredBody}
       />
     );
   }

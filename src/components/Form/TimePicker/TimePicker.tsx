@@ -176,7 +176,7 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors"
+              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors cursor-pointer"
             >
               Done
             </button>

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isFlagEnabled, optionalEnv, requireEnv } from "./env";
+import { isFlagEnabled, optionalEnv, requireEnv, siteOrigin, siteOriginFromEnv } from "./env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -74,5 +74,41 @@ describe("isFlagEnabled", () => {
   it("returns false for any other truthy-looking string", () => {
     vi.stubEnv("RESEND_DRY_RUN", "yes");
     expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(false);
+  });
+});
+
+describe("siteOrigin", () => {
+  it("returns NEXT_PUBLIC_SITE_ORIGIN when set", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "https://example.test");
+    vi.stubEnv("ENVIRONMENT", "staging");
+    expect(siteOrigin()).toBe("https://example.test");
+  });
+
+  it("falls back to the staging origin when ENVIRONMENT=staging and the public var is unset", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "");
+    vi.stubEnv("ENVIRONMENT", "staging");
+    expect(siteOrigin()).toBe("https://staging.withjosephine.com");
+  });
+
+  it("falls back to the production origin when neither override is set", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "");
+    vi.stubEnv("ENVIRONMENT", "");
+    expect(siteOrigin()).toBe("https://withjosephine.com");
+  });
+});
+
+describe("siteOriginFromEnv", () => {
+  it("returns NEXT_PUBLIC_SITE_ORIGIN when set on the worker binding", () => {
+    expect(
+      siteOriginFromEnv({ NEXT_PUBLIC_SITE_ORIGIN: "https://example.test", ENVIRONMENT: "staging" }),
+    ).toBe("https://example.test");
+  });
+
+  it("falls back to the staging origin when env.ENVIRONMENT=staging", () => {
+    expect(siteOriginFromEnv({ ENVIRONMENT: "staging" })).toBe("https://staging.withjosephine.com");
+  });
+
+  it("falls back to the production origin when neither binding is set", () => {
+    expect(siteOriginFromEnv({})).toBe("https://withjosephine.com");
   });
 });
