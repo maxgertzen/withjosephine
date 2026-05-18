@@ -40,13 +40,22 @@ export interface LegalConsentSnapshot {
   coolingOff: LegalConsentAck;
 }
 
+export type ConsentRequirements = {
+  requireArt9: boolean;
+  // Cooling-off applies to anyone making a payment. Gift recipients didn't pay
+  // (the purchaser did, and waived their right at purchase) so the recipient
+  // surface omits the waiver checkbox entirely.
+  requireCoolingOff?: boolean;
+};
+
 export function isFullyConsented(
   snapshot: LegalConsentSnapshot,
-  requireArt9: boolean,
+  requirements: ConsentRequirements,
 ): boolean {
+  const requireCoolingOff = requirements.requireCoolingOff ?? true;
   if (!snapshot.art6.acknowledged) return false;
-  if (requireArt9 && !snapshot.art9.acknowledged) return false;
-  if (!snapshot.coolingOff.acknowledged) return false;
+  if (requirements.requireArt9 && !snapshot.art9.acknowledged) return false;
+  if (requireCoolingOff && !snapshot.coolingOff.acknowledged) return false;
   return true;
 }
 
@@ -54,13 +63,14 @@ export const CONSENT_ACK_MESSAGE = "Please acknowledge to continue.";
 
 export function collectConsentErrors(
   snapshot: LegalConsentSnapshot,
-  options: { requireArt9: boolean },
+  options: ConsentRequirements,
 ): { art6?: string; art9?: string; coolingOff?: string } {
+  const requireCoolingOff = options.requireCoolingOff ?? true;
   const errors: { art6?: string; art9?: string; coolingOff?: string } = {};
   if (!snapshot.art6.acknowledged) errors.art6 = CONSENT_ACK_MESSAGE;
   if (options.requireArt9 && !snapshot.art9.acknowledged)
     errors.art9 = CONSENT_ACK_MESSAGE;
-  if (!snapshot.coolingOff.acknowledged)
+  if (requireCoolingOff && !snapshot.coolingOff.acknowledged)
     errors.coolingOff = CONSENT_ACK_MESSAGE;
   return errors;
 }

@@ -113,7 +113,7 @@ export async function POST(request: Request) {
   }
 
   const consentSnapshot = consentSnapshotFromBody(parsedBody);
-  if (!isFullyConsented(consentSnapshot, true)) {
+  if (!isFullyConsented(consentSnapshot, { requireArt9: true })) {
     return NextResponse.json(
       {
         error:

@@ -76,6 +76,7 @@ export type IntakeFormBodyProps = {
   setConsentSnapshot: (next: LegalConsentSnapshot) => void;
   consentErrors: LegalAcknowledgmentsErrors;
   clearConsentError: (key: keyof LegalAcknowledgmentsErrors) => void;
+  showCoolingOff: boolean;
 
   turnstileRequired: boolean;
   turnstileSiteKey: string | undefined;
@@ -137,6 +138,7 @@ export function IntakeFormBody({
   setConsentSnapshot,
   consentErrors,
   clearConsentError,
+  showCoolingOff,
   turnstileRequired,
   turnstileSiteKey,
   turnstileRef,
@@ -211,6 +213,7 @@ export function IntakeFormBody({
           clearError={clearConsentError}
           nonRefundableNotice={nonRefundableNotice}
           isSubmitting={isSubmitting}
+          showCoolingOff={showCoolingOff}
         />
       ) : null}
 

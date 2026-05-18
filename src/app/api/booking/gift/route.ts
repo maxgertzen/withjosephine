@@ -85,7 +85,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!isFullyConsented(giftPurchaserConsentSnapshot(body), false)) {
+  if (!isFullyConsented(giftPurchaserConsentSnapshot(body), { requireArt9: false })) {
     if (!body.art6Consent) {
       errors.push({ field: "art6Consent", message: "Required to proceed." });
     }

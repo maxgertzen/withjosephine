@@ -34,7 +34,7 @@ describe("emptyConsentSnapshot", () => {
   });
 });
 
-describe("isFullyConsented (requireArt9: true)", () => {
+describe("isFullyConsented — booking intake { requireArt9: true }", () => {
   it.each([
     { case: "none acknowledged", overrides: {}, expected: false },
     {
@@ -63,11 +63,11 @@ describe("isFullyConsented (requireArt9: true)", () => {
       expected: true,
     },
   ])("$case → $expected", ({ overrides, expected }) => {
-    expect(isFullyConsented(snapshot(overrides), true)).toBe(expected);
+    expect(isFullyConsented(snapshot(overrides), { requireArt9: true })).toBe(expected);
   });
 });
 
-describe("isFullyConsented (requireArt9: false)", () => {
+describe("isFullyConsented — gift purchaser { requireArt9: false }", () => {
   it.each([
     { case: "none acknowledged", overrides: {}, expected: false },
     {
@@ -96,6 +96,44 @@ describe("isFullyConsented (requireArt9: false)", () => {
       expected: false,
     },
   ])("$case → $expected", ({ overrides, expected }) => {
-    expect(isFullyConsented(snapshot(overrides), false)).toBe(expected);
+    expect(isFullyConsented(snapshot(overrides), { requireArt9: false })).toBe(expected);
+  });
+});
+
+describe("isFullyConsented — gift recipient { requireArt9: true, requireCoolingOff: false } (C-2)", () => {
+  it.each([
+    { case: "none acknowledged", overrides: {}, expected: false },
+    {
+      case: "art6 only",
+      overrides: { art6: true },
+      expected: false,
+    },
+    {
+      case: "art9 only",
+      overrides: { art9: true },
+      expected: false,
+    },
+    {
+      case: "art6 + art9 (no cooling-off needed)",
+      overrides: { art6: true, art9: true },
+      expected: true,
+    },
+    {
+      case: "art6 + art9 + cooling-off (cooling-off ignored but harmless)",
+      overrides: { art6: true, art9: true, coolingOff: true },
+      expected: true,
+    },
+    {
+      case: "art6 + cooling-off without art9",
+      overrides: { art6: true, coolingOff: true },
+      expected: false,
+    },
+  ])("$case → $expected", ({ overrides, expected }) => {
+    expect(
+      isFullyConsented(snapshot(overrides), {
+        requireArt9: true,
+        requireCoolingOff: false,
+      }),
+    ).toBe(expected);
   });
 });
