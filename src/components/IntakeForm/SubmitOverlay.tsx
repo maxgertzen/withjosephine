@@ -22,7 +22,7 @@ export function SubmitOverlay({ text }: SubmitOverlayProps) {
       className="fixed inset-0 z-50 flex flex-col items-center bg-j-ivory/95 backdrop-blur-[1px] j-fade-in pt-[22vh] px-6"
     >
       <div ref={messageRef} className="flex flex-col items-center max-w-prose text-center">
-        <Loader size="md" decorative className="mb-3" />
+        <Loader size="lg" decorative className="mb-3" />
         <p className="font-display italic text-lg text-j-text-heading">
           {text ?? DEFAULT_COPY}
         </p>
