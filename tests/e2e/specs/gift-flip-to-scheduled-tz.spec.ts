@@ -28,8 +28,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
       gift: true,
     });
 
-    // Book a self_send gift — no recipient_email or send_at at booking time;
-    // those come at flip time.
     await page.goto(`/book/${READING_SLUG}/gift`);
     await page.locator(`input[name="deliveryMethod"][value="self_send"]`).check();
     await page.locator("#gift-purchaser-first-name").fill("FlipTzPurchaser");
@@ -44,7 +42,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     const { sessionId, submissionId } = await intercept.captured;
 
-    // Mark submission paid + persisted via the Stripe webhook.
     const webhookResponse = await fireCheckoutCompleted(request, submissionId, {
       stripeSessionId: sessionId,
       customerEmail: purchaserEmail,
@@ -54,16 +51,13 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
-    // Self-send card should be visible with the "Let Josephine send it for me" flip CTA.
     const flipCta = page.getByRole("button", { name: /let josephine send it for me/i });
     await expect(flipCta).toBeVisible();
     await flipCta.click();
 
-    // Drawer opens with a recipient_email + datetime-local input.
     const sendAtInput = page.locator("input[type='datetime-local']");
     await expect(sendAtInput).toBeVisible();
 
-    // Fill recipient email + datetime-local 60 mins from now (in browser TZ).
     const recipientEmail = "flip-tz-recipient@withjosephine.com";
     const flipRecipientInput = page
       .locator("input[type='email']")
@@ -73,19 +67,13 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     const localInput = await datetimeLocalPlus(page, 60);
     await sendAtInput.fill(localInput);
 
-    // Read the browser's resolved IANA timezone for cross-checking.
     const browserTz = await page.evaluate(
       () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
-    expect(browserTz).toMatch(/^[A-Za-z]+\//); // IANA shape; Playwright Chromium reports a real region
+    expect(browserTz).toMatch(/^[A-Za-z]+\//);
 
-    // ISC-18g — the live TimezonePreview should echo the IANA zone alongside
-    // the formatted local time. The default template is "Arrives {date} ({tz}).".
     await expect(page.getByText(new RegExp(`\\(${browserTz.replace(/\//g, "\\/")}\\)`))).toBeVisible();
 
-    // ISC-18b/c — intercept the flip POST and assert the payload carries a
-    // UTC ISO derived from the local input + browser TZ (not a naive
-    // `new Date(input).toISOString()`).
     let capturedBody: { recipientEmail?: string; giftSendAt?: string } | null = null;
     await page.route(`**/api/gifts/${submissionId}/flip-to-scheduled`, async (route) => {
       const body = route.request().postDataJSON() as typeof capturedBody;
@@ -98,8 +86,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     });
 
     await page.getByRole("button", { name: /schedule it/i }).click();
-
-    // Wait for the intercepted request to land.
     await expect.poll(() => capturedBody !== null, { timeout: 5_000 }).toBe(true);
 
     const sent = capturedBody as unknown as { recipientEmail?: string; giftSendAt?: string };
@@ -107,8 +93,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     const flipUtcIso = sent.giftSendAt ?? "";
     expect(flipUtcIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
-    // The UTC ISO, formatted back in the browser TZ, must match the original
-    // datetime-local input (minute-level precision).
     const roundTripped = await page.evaluate(
       ({ utc, tz }) => {
         const d = new Date(utc);
@@ -146,7 +130,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
       gift: true,
     });
 
-    // Book a SCHEDULED gift so /my-gifts surfaces the edit-recipient CTA.
     await page.goto(`/book/${READING_SLUG}/gift`);
     await page.locator(`input[name="deliveryMethod"][value="scheduled"]`).check();
     await page.locator("#gift-purchaser-first-name").fill("EditTzPurchaser");
@@ -174,7 +157,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
-    // Open the edit-recipient drawer.
     const editCta = page.getByRole("button", { name: /edit recipient/i });
     await expect(editCta).toBeVisible();
     await editCta.click();
@@ -182,11 +164,9 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     const sendAtInput = page.locator("input[type='datetime-local']");
     await expect(sendAtInput).toBeVisible();
 
-    // Change the send-at to a new local time (2 days out).
     const newLocalInput = await datetimeLocalPlus(page, 60 * 48);
     await sendAtInput.fill(newLocalInput);
 
-    // The browser's TZ should be reflected in the live preview echo.
     const browserTz = await page.evaluate(
       () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
@@ -195,7 +175,6 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
       page.getByText(new RegExp(`\\(${browserTz.replace(/\//g, "\\/")}\\)`)),
     ).toBeVisible();
 
-    // Intercept the edit POST and assert the TZ-converted body.
     let capturedBody: { recipientEmail?: string; giftSendAt?: string | null } | null = null;
     await page.route(
       `**/api/gifts/${submissionId}/edit-recipient`,
@@ -213,12 +192,10 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     await expect.poll(() => capturedBody !== null, { timeout: 5_000 }).toBe(true);
 
     const sent = capturedBody as unknown as { recipientEmail?: string; giftSendAt?: string | null };
-    // Only the changed field is sent — recipient_email + recipient_name are unchanged.
     expect(sent.recipientEmail).toBeUndefined();
     const editUtcIso = typeof sent.giftSendAt === "string" ? sent.giftSendAt : "";
     expect(editUtcIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
-    // Round-trip the UTC back through the browser TZ — must equal the new input.
     const roundTripped = await page.evaluate(
       ({ utc, tz }) => {
         const d = new Date(utc);

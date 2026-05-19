@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { resetCapturedState } from "../helpers/captureStore";
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
 import { setGiftClaimCookieForTest } from "../helpers/giftClaimCookie";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
 const READING_SLUG = "birth-chart";
@@ -18,14 +19,9 @@ test.describe("Gift redeem CTA + disclaimer — mock mode (B-10)", () => {
   }) => {
     test.setTimeout(60_000);
 
-    let interceptedSubmissionId: string | null = null;
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      interceptedSubmissionId = url.searchParams.get("client_reference_id");
-      await route.fulfill({
-        status: 303,
-        headers: { location: `/thank-you/${READING_SLUG}?gift=1` },
-      });
+    const intercept = await interceptStripeCheckout(page, {
+      readingSlug: READING_SLUG,
+      gift: true,
     });
 
     await page.goto(`/book/${READING_SLUG}/gift`);
@@ -45,9 +41,10 @@ test.describe("Gift redeem CTA + disclaimer — mock mode (B-10)", () => {
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
 
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
-    expect(interceptedSubmissionId).not.toBeNull();
+    const { submissionId } = await intercept.captured;
+    expect(submissionId).toBeTruthy();
 
-    await setGiftClaimCookieForTest(page.context().request, interceptedSubmissionId!);
+    await setGiftClaimCookieForTest(page.context().request, submissionId);
 
     await page.goto("/gift/intake");
     await expect(page).toHaveURL(/\/gift\/intake/, { timeout: 15_000 });
