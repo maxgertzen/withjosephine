@@ -138,7 +138,11 @@ export default async function TermsPage() {
             Refunds &amp; cancellations
           </h2>
           <p className="font-body text-base text-j-text leading-[1.9] font-light">
-            Refund eligibility depends on where you are in the process. Full details are in the{" "}
+            Readings are <strong className="font-medium">non-refundable</strong>. At checkout you
+            tick a checkbox waiving your 14-day cooling-off right under EU Consumer Rights
+            Directive 2011/83 Art. 16(m), which lets Josephine begin work immediately. Duplicate or
+            erroneous charges (payment-system errors, not refund requests) are still refunded in
+            full. Full handling is in the{" "}
             <Link href={ROUTES.refundPolicy} className="text-j-accent hover:underline">
               Refund Policy
             </Link>

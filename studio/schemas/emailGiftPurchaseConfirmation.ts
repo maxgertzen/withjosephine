@@ -141,7 +141,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       group: "shared",
       description: 'Use "{recipientName}".',
       initialValue:
-        "If something changes before {recipientName} opens the link, write to me and we'll arrange a full refund. After they've started their intake, the work is on its way and the reading is theirs.",
+        "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
     }),
     defineField({
       name: "signOffLine1",
