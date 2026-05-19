@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+import { signInViaMagicLink } from "../helpers/auth";
 import { resetCapturedState } from "../helpers/captureStore";
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
 const READING_SLUG = "birth-chart";
@@ -20,12 +22,7 @@ test.describe("/my-gifts surfaces purchased gifts (B-11) — mock mode", () => {
     const purchaserEmail = "mygifts-purchaser@withjosephine.com";
     const recipientName = "MyGiftsRecipient";
 
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      await route.fulfill({
-        status: 303,
-        headers: { location: `/thank-you/${READING_SLUG}?gift=1` },
-      });
-    });
+    await interceptStripeCheckout(page, { readingSlug: READING_SLUG, gift: true });
 
     await page.goto(`/book/${READING_SLUG}/gift`);
     await page.locator(`input[name="deliveryMethod"][value="scheduled"]`).check();
@@ -44,25 +41,8 @@ test.describe("/my-gifts surfaces purchased gifts (B-11) — mock mode", () => {
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    const issueResponse = await page.context().request.post(
-      "/api/internal/issue-magic-link",
-      {
-        data: { email: purchaserEmail },
-        headers: {
-          "content-type": "application/json",
-          "x-admin-token":
-            process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy",
-        },
-      },
-    );
-    expect(issueResponse.status()).toBe(200);
-    const { token } = (await issueResponse.json()) as { token: string };
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
-    await page.goto(`/auth/verify?token=${token}&next=/my-gifts`);
-    await page.locator("input[name='email']").fill(purchaserEmail);
-    await page.locator("button[type='submit']").click();
-
-    await page.waitForURL(/\/my-gifts/, { timeout: 15_000 });
     await expect(page.getByText(recipientName)).toBeVisible();
   });
 });

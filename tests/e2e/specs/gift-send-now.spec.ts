@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+import { signInViaMagicLink } from "../helpers/auth";
 import { resetCapturedState } from "../helpers/captureStore";
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { fireCheckoutCompleted } from "../helpers/stripeWebhook";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
@@ -21,21 +23,9 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
 
     const purchaserEmail = "send-now-purchaser@withjosephine.com";
 
-    let interceptedSessionId: string | null = null;
-    let interceptedSubmissionId: string | null = null;
-
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      const submissionId = url.searchParams.get("client_reference_id") ?? "";
-      const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
-      interceptedSessionId = sessionId;
-      interceptedSubmissionId = submissionId;
-      await route.fulfill({
-        status: 303,
-        headers: {
-          location: `/thank-you/${READING_SLUG}?gift=1&sessionId=${sessionId}&submission=${submissionId}`,
-        },
-      });
+    const intercept = await interceptStripeCheckout(page, {
+      readingSlug: READING_SLUG,
+      gift: true,
     });
 
     await page.goto(`/book/${READING_SLUG}/gift`);
@@ -55,33 +45,19 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    expect(interceptedSubmissionId).not.toBeNull();
-    expect(interceptedSessionId).not.toBeNull();
+    const submissionId = intercept.getSubmissionId();
+    const sessionId = intercept.getSessionId();
+    expect(submissionId).not.toBeNull();
+    expect(sessionId).not.toBeNull();
 
-    const webhookResponse = await fireCheckoutCompleted(request, interceptedSubmissionId!, {
-      stripeSessionId: interceptedSessionId!,
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
+      stripeSessionId: sessionId!,
       customerEmail: purchaserEmail,
       amountTotal: 9900,
     });
     expect(webhookResponse.status()).toBe(200);
 
-    const issueResponse = await page.context().request.post(
-      "/api/internal/issue-magic-link",
-      {
-        data: { email: purchaserEmail },
-        headers: {
-          "content-type": "application/json",
-          "x-admin-token": process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy",
-        },
-      },
-    );
-    expect(issueResponse.status()).toBe(200);
-    const { token } = (await issueResponse.json()) as { token: string };
-
-    await page.goto(`/auth/verify?token=${token}&next=/my-gifts`);
-    await page.locator("input[name='email']").fill(purchaserEmail);
-    await page.locator("button[type='submit']").click();
-    await page.waitForURL(/\/my-gifts/, { timeout: 15_000 });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
     const sendNowCta = page.getByRole("button", { name: /^send now$/i });
     await expect(sendNowCta).toBeVisible();
@@ -90,7 +66,7 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     await expect(confirmCta).toBeVisible();
 
     let captured: { url: string; method: string } | null = null;
-    await page.route(`**/api/gifts/${interceptedSubmissionId}/send-now`, async (route) => {
+    await page.route(`**/api/gifts/${submissionId}/send-now`, async (route) => {
       captured = { url: route.request().url(), method: route.request().method() };
       await route.fulfill({
         status: 200,
@@ -104,7 +80,7 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
 
     expect(captured!.method).toBe("POST");
     expect(new URL(captured!.url).pathname).toBe(
-      `/api/gifts/${interceptedSubmissionId}/send-now`,
+      `/api/gifts/${submissionId}/send-now`,
     );
   });
 });

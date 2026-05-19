@@ -23,3 +23,40 @@ export async function fillStripeCheckout(
   if (await cardName.count()) await cardName.fill(SANDBOX_NAME);
   await page.getByTestId("hosted-payment-submit-button").click();
 }
+
+interface InterceptArgs {
+  readingSlug: string;
+  gift?: boolean;
+}
+
+export interface StripeCheckoutIntercept {
+  getSessionId(): string | null;
+  getSubmissionId(): string | null;
+}
+
+export async function interceptStripeCheckout(
+  page: Page,
+  { readingSlug, gift = false }: InterceptArgs,
+): Promise<StripeCheckoutIntercept> {
+  let sessionId: string | null = null;
+  let submissionId: string | null = null;
+
+  await page.route("https://buy.stripe.com/**", async (route) => {
+    const url = new URL(route.request().url());
+    submissionId = url.searchParams.get("client_reference_id") ?? "";
+    sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
+    const query = new URLSearchParams();
+    if (gift) query.set("gift", "1");
+    query.set("sessionId", sessionId);
+    query.set("submission", submissionId);
+    await route.fulfill({
+      status: 303,
+      headers: { location: `/thank-you/${readingSlug}?${query.toString()}` },
+    });
+  });
+
+  return {
+    getSessionId: () => sessionId,
+    getSubmissionId: () => submissionId,
+  };
+}
