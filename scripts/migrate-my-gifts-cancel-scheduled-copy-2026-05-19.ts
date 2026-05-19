@@ -14,9 +14,7 @@
 //     pnpm tsx scripts/migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts
 import { MY_GIFTS_PAGE_DEFAULTS } from "../src/data/defaults";
 
-import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
-
-const client = sanityWriteClient();
+import { seedSingletonFields } from "./_lib/seedSingleton.mts";
 
 const NEW_FIELDS = [
   "cancelScheduledCtaLabel",
@@ -26,22 +24,13 @@ const NEW_FIELDS = [
 ] as const;
 
 async function main(): Promise<void> {
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-  console.log(`[migrate-my-gifts-cancel-scheduled-copy] dataset=${dataset}`);
-  if (!process.env.SANITY_WRITE_TOKEN) {
-    throw new Error("SANITY_WRITE_TOKEN is required");
-  }
-  const doc = await client.fetch<{ _id: string } | null>(
-    `*[_type == "myGiftsPage"][0]{_id}`,
-  );
-  if (!doc) {
-    console.warn("[skip] no myGiftsPage singleton in this dataset.");
-    return;
-  }
-  const seed: Record<string, string> = {};
-  for (const key of NEW_FIELDS) seed[key] = MY_GIFTS_PAGE_DEFAULTS[key];
-  await client.patch(doc._id).setIfMissing(seed).commit();
-  console.log(`Seeded ${NEW_FIELDS.length} fields (setIfMissing) on ${doc._id}.`);
+  const fields: Record<string, string> = {};
+  for (const key of NEW_FIELDS) fields[key] = MY_GIFTS_PAGE_DEFAULTS[key];
+  await seedSingletonFields({
+    docType: "myGiftsPage",
+    fields,
+    logPrefix: "migrate-my-gifts-cancel-scheduled-copy",
+  });
 }
 
 main().catch((err) => {

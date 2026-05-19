@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { GIFT_DELIVERY } from "@/lib/booking/constants";
+import { GIFT_CANCELLED_REASON, GIFT_DELIVERY } from "@/lib/booking/constants";
 import { applyGiftCancelScheduled } from "@/lib/booking/submissions";
 import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 
@@ -32,7 +32,7 @@ export async function POST(
   const updated = await applyGiftCancelScheduled(id, {
     cancelledAtIso: new Date().toISOString(),
     by: submission.email,
-    reason: "purchaser-request",
+    reason: GIFT_CANCELLED_REASON.purchaserRequest,
   });
   if (!updated) {
     return NextResponse.json({ error: "Already sent or cancelled" }, { status: 409 });

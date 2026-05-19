@@ -1,4 +1,4 @@
-import { GIFT_DELIVERY } from "../constants";
+import { GIFT_DELIVERY, type GiftCancelledReason } from "../constants";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
@@ -671,7 +671,7 @@ export async function applyGiftCancelScheduled(
   args: {
     cancelledAtIso: string;
     by: string;
-    reason: string;
+    reason: GiftCancelledReason;
   },
 ): Promise<boolean> {
   const result = await dbExec(

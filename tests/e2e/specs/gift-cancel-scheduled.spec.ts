@@ -62,7 +62,10 @@ test.describe("Cancel-scheduled — purchaser terminates a scheduled gift (D-11)
     const confirmCta = page.getByRole("button", { name: /tap again to confirm/i });
     await expect(confirmCta).toBeVisible();
     // The armed copy must surface the non-refundable framing — load-bearing
-    // for EU CRD waiver clarity (P-4b).
+    // for EU CRD waiver clarity (P-4b). If a Sanity-editor edit makes this
+    // fail, the fix is in the editor (per the schema description on
+    // `cancelScheduledConfirmCtaLabel` in studio/schemas/myGiftsPage.ts),
+    // not in this assertion.
     await expect(confirmCta).toContainText(/non[-\s]?refundable/i);
 
     let captured: { url: string; method: string } | null = null;

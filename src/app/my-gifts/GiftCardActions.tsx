@@ -381,11 +381,10 @@ function CancelScheduledControl({
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
       {armed ? (
         <Button
-          variant="primary"
+          variant="destructive"
           size="sm"
           disabled={action.submitting}
           onClick={onConfirm}
-          className="bg-j-rose hover:bg-j-rose/90"
         >
           {action.submitting
             ? copy.cancelScheduledSendingLabel

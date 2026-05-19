@@ -1,7 +1,11 @@
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { GIFT_DELIVERY, PHOTO_PUBLIC_URL_BASE } from "./constants";
+import {
+  GIFT_DELIVERY,
+  type GiftCancelledReason,
+  PHOTO_PUBLIC_URL_BASE,
+} from "./constants";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
@@ -351,7 +355,7 @@ export async function applyGiftCancelScheduled(
   args: {
     cancelledAtIso: string;
     by: string;
-    reason: string;
+    reason: GiftCancelledReason;
   },
 ): Promise<boolean> {
   const updated = await repo.applyGiftCancelScheduled(submissionId, args);

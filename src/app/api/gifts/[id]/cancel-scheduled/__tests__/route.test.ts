@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { makeScheduledGift } from "@/lib/booking/__fixtures__/scheduledGift";
 
 const cookieGetMock = vi.fn();
 vi.mock("next/headers", () => ({
@@ -39,30 +39,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 const PURCHASER_ID = "user_purchaser";
 
-const SCHEDULED_GIFT: SubmissionRecord = {
-  _id: "sub_gift",
-  status: "paid",
-  email: "purchaser@example.com",
-  responses: [],
-  createdAt: "2026-05-01T00:00:00.000Z",
-  reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
-  amountPaidCents: 17900,
-  amountPaidCurrency: "usd",
-  recipientUserId: null,
-  isGift: true,
-  purchaserUserId: PURCHASER_ID,
-  recipientEmail: "recipient@example.com",
-  giftDeliveryMethod: "scheduled",
-  giftSendAt: "2026-06-01T15:00:00.000Z",
-  giftMessage: null,
-  giftClaimTokenHash: null,
-  giftClaimEmailFiredAt: null,
-  giftClaimedAt: null,
-  giftCancelledAt: null,
-  giftClaimSentNowAt: null,
-  giftClaimSentNowActor: null,
-  giftClaimPriorAlarmAt: null,
-};
+const SCHEDULED_GIFT = makeScheduledGift({ purchaserUserId: PURCHASER_ID });
 
 beforeEach(() => {
   cookieGetMock.mockReset().mockReturnValue({ value: "cookie-val" });
