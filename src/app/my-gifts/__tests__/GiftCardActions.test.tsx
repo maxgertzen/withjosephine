@@ -121,8 +121,10 @@ describe("GiftCardActions — JSON-fetch contract", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     // Don't refresh on validation failure — user needs to see + fix the error.
     expect(refreshMock).not.toHaveBeenCalled();
-    // Drawer remains open; Cancel button still visible.
-    expect(getByRole("button", { name: /cancel/i })).toBeTruthy();
+    // Drawer remains open; its Cancel button still visible.
+    expect(
+      getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCancelButtonLabel }),
+    ).toBeTruthy();
   });
 
   it("flip-to-self-send: requires 2-stage confirm (single click does NOT fetch)", () => {

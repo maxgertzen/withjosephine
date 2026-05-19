@@ -358,6 +358,38 @@ export const myGiftsPage = defineType({
         "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
       initialValue: "Your session expired. Please refresh and try again.",
     }),
+    defineField({
+      name: "cancelScheduledCtaLabel",
+      title: "Cancel scheduled — initial CTA",
+      type: "string",
+      description:
+        "Shown on scheduled gifts. Terminally cancels delivery (no email ever fires). Distinct from \"send the link myself\" which only switches mode.",
+      initialValue: "Cancel this gift",
+    }),
+    defineField({
+      name: "cancelScheduledConfirmCtaLabel",
+      title: "Cancel scheduled — armed confirm CTA",
+      type: "string",
+      description:
+        "Second click of the 2-stage confirm pattern. Must explicitly state non-refundable (binding business policy + EU CRD waiver clarity).",
+      initialValue:
+        "Tap again to confirm — your reading will not be sent. This purchase is non-refundable.",
+    }),
+    defineField({
+      name: "cancelScheduledSendingLabel",
+      title: "Cancel scheduled — submitting label",
+      type: "string",
+      description: "Shown on the confirm button while the cancel request is in flight.",
+      initialValue: "Cancelling…",
+    }),
+    defineField({
+      name: "cancelScheduledSessionExpiredError",
+      title: "Cancel scheduled — session-expired error",
+      type: "string",
+      description:
+        "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
+      initialValue: "Your session expired. Please refresh and try again.",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "My Gifts Page" }),

@@ -55,6 +55,7 @@ export function GiftCardActions({ gift, status, copy }: Props) {
         <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
         <SendNowControl gift={gift} copy={copy} />
         <FlipToSelfSendControl gift={gift} copy={copy} />
+        <CancelScheduledControl gift={gift} copy={copy} />
       </div>
     );
   }
@@ -338,6 +339,61 @@ function SendNowControl({
       ) : (
         <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
           {copy.sendNowCtaLabel}
+        </Button>
+      )}
+      <InlineError message={topError} />
+    </div>
+  );
+}
+
+function CancelScheduledControl({
+  gift,
+  copy,
+}: {
+  gift: GiftCardData;
+  copy: MyGiftsPageContent;
+}) {
+  const router = useRouter();
+  const [armed, setArmed] = useState(false);
+  const action = useMutationAction(`/api/gifts/${gift._id}/cancel-scheduled`);
+
+  useEffect(() => {
+    if (!armed || action.submitting) return;
+    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
+    return () => clearTimeout(t);
+  }, [armed, action.submitting]);
+
+  async function onConfirm() {
+    const result = await action.run();
+    if (result.ok) {
+      router.refresh();
+    } else {
+      setArmed(false);
+    }
+  }
+
+  const topError = actionErrorLabel(action.topError, copy, {
+    http_401: "cancelScheduledSessionExpiredError",
+    http_409: "actionClosedError",
+  });
+
+  return (
+    <div className="flex flex-col gap-1 items-stretch sm:items-end">
+      {armed ? (
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={action.submitting}
+          onClick={onConfirm}
+          className="bg-j-rose hover:bg-j-rose/90"
+        >
+          {action.submitting
+            ? copy.cancelScheduledSendingLabel
+            : copy.cancelScheduledConfirmCtaLabel}
+        </Button>
+      ) : (
+        <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
+          {copy.cancelScheduledCtaLabel}
         </Button>
       )}
       <InlineError message={topError} />
