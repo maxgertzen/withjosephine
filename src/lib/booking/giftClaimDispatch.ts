@@ -49,10 +49,6 @@ export async function dispatchGiftClaim(
     return { outcome: "stop", reason: "cancelled", nextAlarmMs: null };
   }
   if (submission.giftClaimSentNowAt) {
-    // Defense-in-depth: purchaser already fired the claim email via send-now.
-    // The route's WHERE-guarded UPDATE + UNIQUE index defeat double-UPDATE;
-    // this stops an alarm that entered the dispatch path mid-flight before
-    // the route's UPDATE landed.
     return { outcome: "stop", reason: "sent_now", nextAlarmMs: null };
   }
 

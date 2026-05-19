@@ -38,7 +38,6 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
       });
     });
 
-    // Book a SCHEDULED gift — send-now only makes sense on scheduled rows.
     await page.goto(`/book/${READING_SLUG}/gift`);
     await page.locator(`input[name="deliveryMethod"][value="scheduled"]`).check();
     await page.locator("#gift-purchaser-first-name").fill("SendNowPurchaser");
@@ -59,7 +58,6 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     expect(interceptedSubmissionId).not.toBeNull();
     expect(interceptedSessionId).not.toBeNull();
 
-    // Mark submission paid + persisted via the Stripe webhook.
     const webhookResponse = await fireCheckoutCompleted(request, interceptedSubmissionId!, {
       stripeSessionId: interceptedSessionId!,
       customerEmail: purchaserEmail,
@@ -67,7 +65,6 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     });
     expect(webhookResponse.status()).toBe(200);
 
-    // Authenticate to /my-gifts via magic link.
     const issueResponse = await page.context().request.post(
       "/api/internal/issue-magic-link",
       {
@@ -86,16 +83,12 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     await page.locator("button[type='submit']").click();
     await page.waitForURL(/\/my-gifts/, { timeout: 15_000 });
 
-    // The scheduled gift card surfaces the "Send now" CTA.
     const sendNowCta = page.getByRole("button", { name: /^send now$/i });
     await expect(sendNowCta).toBeVisible();
-
-    // Tap once to arm — replaces initial CTA with the confirm CTA.
     await sendNowCta.click();
     const confirmCta = page.getByRole("button", { name: /tap again to send today/i });
     await expect(confirmCta).toBeVisible();
 
-    // Intercept the POST and assert the route landed with the right shape.
     let captured: { url: string; method: string } | null = null;
     await page.route(`**/api/gifts/${interceptedSubmissionId}/send-now`, async (route) => {
       captured = { url: route.request().url(), method: route.request().method() };

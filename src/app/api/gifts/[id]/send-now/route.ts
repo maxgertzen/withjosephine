@@ -9,25 +9,6 @@ import { sendGiftClaimEmail } from "@/lib/resend";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
 
-/**
- * Send-now: purchaser on `/my-gifts` fires the recipient's claim email
- * immediately, bypassing the scheduled alarm.
- *
- * Race ordering (load-bearing, per Phase 3 Council § D-10):
- *   1. Auth via `authorizeGiftPurchaser` (session matches purchaser_user_id).
- *   2. Preflight 409s for non-scheduled / already-fired / cancelled / prior-
- *      send-now states. The prior-send-now check is the idempotency path —
- *      a second click after a successful send returns 409 cleanly.
- *   3. Issue a fresh claim token.
- *   4. Cancel the DO alarm (idempotent on the DO side — safe even if the
- *      alarm has already entered the dispatch path; the dispatcher's
- *      `giftClaimSentNowAt` defense-in-depth check short-circuits it).
- *   5. WHERE-guarded UPDATE writes the audit columns. rowcount 0 → 409
- *      (concurrent caller landed first).
- *   6. Send the claim email with `Idempotency-Key: gift:{id}:claim` so the
- *      Resend side collapses any duplicate that races in from the alarm.
- *   7. Append the email-fired entry on send success.
- */
 export async function POST(
   _request: Request,
   context: { params: Promise<{ id: string }> },
@@ -56,9 +37,6 @@ export async function POST(
   }
 
   const nowIso = new Date().toISOString();
-  // Token issuance and alarm cancel are independent — both must precede the
-  // UPDATE, but neither blocks the other. Running them in parallel saves a
-  // round-trip on the critical send-now path.
   const [{ tokenHash, claimUrl }] = await Promise.all([
     issueGiftClaimToken(),
     cancelGiftAlarm(id),
@@ -86,9 +64,6 @@ export async function POST(
     idempotencyKey: `gift:${id}:claim`,
   });
   if (send.kind !== "sent") {
-    // Audit columns remain populated — Becky can inspect `sent_now_at` and
-    // re-trigger via the resend-link path. Returning 502 surfaces the
-    // failure to the purchaser so they can retry.
     return NextResponse.json({ error: "Send failed" }, { status: 502 });
   }
 

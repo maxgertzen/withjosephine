@@ -631,14 +631,6 @@ export async function flipGiftToScheduled(
   return result.rowsWritten > 0;
 }
 
-/**
- * Send-now: purchaser fires the recipient claim email ahead of the scheduled
- * alarm. WHERE-guard ensures only one transition lands — alarm-fire race,
- * concurrent send-now, prior cancellation, and prior claim are all rejected
- * via rowcount=0 → caller returns 409. The UNIQUE partial index on
- * `gift_claim_sent_now_at` (migration 0012) is the belt-and-suspenders against
- * a second UPDATE racing past the WHERE-guard.
- */
 export async function applyGiftSendNow(
   id: string,
   args: {
