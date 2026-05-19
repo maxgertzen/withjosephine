@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 
 const SANDBOX_CARD = "4242 4242 4242 4242";
 const SANDBOX_EXPIRY = "12 / 34";
@@ -30,21 +30,29 @@ interface InterceptArgs {
 }
 
 export interface StripeCheckoutIntercept {
-  getSessionId(): string | null;
-  getSubmissionId(): string | null;
+  /** Resolves once buy.stripe.com is hit and the 303 is fulfilled. */
+  readonly captured: Promise<{ sessionId: string; submissionId: string }>;
+  /** Removes the route handler. Call in afterEach when the same Page outlives one test. */
+  unroute(): Promise<void>;
 }
+
+const STRIPE_BUY_GLOB = "https://buy.stripe.com/**";
 
 export async function interceptStripeCheckout(
   page: Page,
   { readingSlug, gift = false }: InterceptArgs,
 ): Promise<StripeCheckoutIntercept> {
-  let sessionId: string | null = null;
-  let submissionId: string | null = null;
+  let resolveCapture!: (value: { sessionId: string; submissionId: string }) => void;
+  const captured = new Promise<{ sessionId: string; submissionId: string }>(
+    (resolve) => {
+      resolveCapture = resolve;
+    },
+  );
 
-  await page.route("https://buy.stripe.com/**", async (route) => {
+  const handler = async (route: Route) => {
     const url = new URL(route.request().url());
-    submissionId = url.searchParams.get("client_reference_id") ?? "";
-    sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
+    const submissionId = url.searchParams.get("client_reference_id") ?? "";
+    const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
     const query = new URLSearchParams();
     if (gift) query.set("gift", "1");
     query.set("sessionId", sessionId);
@@ -53,10 +61,13 @@ export async function interceptStripeCheckout(
       status: 303,
       headers: { location: `/thank-you/${readingSlug}?${query.toString()}` },
     });
-  });
+    resolveCapture({ sessionId, submissionId });
+  };
+
+  await page.route(STRIPE_BUY_GLOB, handler);
 
   return {
-    getSessionId: () => sessionId,
-    getSubmissionId: () => submissionId,
+    captured,
+    unroute: () => page.unroute(STRIPE_BUY_GLOB, handler),
   };
 }

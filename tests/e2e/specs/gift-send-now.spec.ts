@@ -45,13 +45,10 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    const submissionId = intercept.getSubmissionId();
-    const sessionId = intercept.getSessionId();
-    expect(submissionId).not.toBeNull();
-    expect(sessionId).not.toBeNull();
+    const { sessionId, submissionId } = await intercept.captured;
 
-    const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
-      stripeSessionId: sessionId!,
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId, {
+      stripeSessionId: sessionId,
       customerEmail: purchaserEmail,
       amountTotal: 9900,
     });

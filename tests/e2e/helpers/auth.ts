@@ -29,9 +29,5 @@ export async function signInViaMagicLink(
   await page.goto(`/auth/verify?token=${token}&next=${next}`);
   await page.locator("input[name='email']").fill(email);
   await page.locator("button[type='submit']").click();
-  await page.waitForURL(new RegExp(escapeForRegex(next)), { timeout: 15_000 });
-}
-
-function escapeForRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await page.waitForURL(`**${next}**`, { timeout: 15_000 });
 }
