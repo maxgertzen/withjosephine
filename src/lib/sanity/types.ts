@@ -131,6 +131,9 @@ export type SanityMyGiftsPage = {
   editRecipientFormRecipientNameLabel?: string;
   editRecipientFormRecipientEmailLabel?: string;
   editRecipientFormSendAtLabel?: string;
+  editRecipientTimezoneLabel?: string;
+  editRecipientTimezonePlaceholder?: string;
+  editRecipientTimezoneFallbackHelp?: string;
   editRecipientSaveButtonLabel?: string;
   editRecipientSavingLabel?: string;
   editRecipientCancelButtonLabel?: string;

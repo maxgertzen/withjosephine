@@ -30,6 +30,7 @@ type ThankYouSearchParams = {
   gift?: string | string[];
   purchaserFirstName?: string | string[];
   redeemed?: string | string[];
+  submission?: string | string[];
 };
 
 type ThankYouPageProps = {
@@ -42,6 +43,16 @@ const STRIPE_SESSION_PATTERN = /^cs_(test|live)_[A-Za-z0-9]+$/;
 function isValidStripeSession(sessionId: string | string[] | undefined): sessionId is string {
   if (typeof sessionId !== "string") return false;
   return STRIPE_SESSION_PATTERN.test(sessionId);
+}
+
+// Mock-mode Stripe responses don't carry `client_reference_id`, so the page
+// can't recover the submission ID via the Stripe API path. Under E2E=1 only
+// (gated so prod can't be tricked into reading PII via URL tampering), accept
+// the submission ID from a sibling URL param.
+function e2eSubmissionFallback(search: ThankYouSearchParams): string | null {
+  if (process.env.E2E !== "1") return null;
+  const value = firstParamValue(search.submission)?.trim();
+  return value ? value : null;
 }
 
 type PaidAmount = ThankYouPaidAmount;
@@ -84,7 +95,7 @@ async function resolveContext(
     // the resulting Checkout Session, so derive gift-mode from the submission
     // record (D1 source-of-truth) rather than `session.metadata.is_gift`.
     const submissionLookup = await findSubmissionById(
-      snapshot.submissionIdFromSession ?? segment,
+      snapshot.submissionIdFromSession ?? e2eSubmissionFallback(search) ?? segment,
     );
     const isSessionGift =
       giftFlag || snapshot.isGift || submissionLookup?.isGift === true;

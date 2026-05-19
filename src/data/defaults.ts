@@ -280,6 +280,9 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   editRecipientFormRecipientNameLabel: string;
   editRecipientFormRecipientEmailLabel: string;
   editRecipientFormSendAtLabel: string;
+  editRecipientTimezoneLabel: string;
+  editRecipientTimezonePlaceholder: string;
+  editRecipientTimezoneFallbackHelp: string;
   editRecipientSaveButtonLabel: string;
   editRecipientSavingLabel: string;
   editRecipientCancelButtonLabel: string;
@@ -331,6 +334,10 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   editRecipientFormRecipientNameLabel: "Recipient name",
   editRecipientFormRecipientEmailLabel: "Recipient email",
   editRecipientFormSendAtLabel: "Send at",
+  editRecipientTimezoneLabel: "Time zone",
+  editRecipientTimezonePlaceholder: "Pick your time zone",
+  editRecipientTimezoneFallbackHelp:
+    "We couldn’t detect your time zone. Pick one below so the email arrives at the right moment.",
   editRecipientSaveButtonLabel: "Save changes",
   editRecipientSavingLabel: "Saving…",
   editRecipientCancelButtonLabel: "Cancel",
@@ -342,7 +349,7 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   actionGenericError: "Something went wrong. Please try again.",
   actionNetworkError: "Network problem. Please try again.",
   actionClosedError: "This gift can’t be edited anymore.",
-  editRecipientSendAtPreviewTemplate: "Arrives {date} in your timezone.",
+  editRecipientSendAtPreviewTemplate: "Arrives {date} ({tz}).",
   resendRetryAfterHourTemplate: "You can resend again at {when}.",
   resendRetryAfterDayTemplate: "You’ve hit today’s limit. Try again at {when}.",
   resendRetryFallbackLabel: "shortly",

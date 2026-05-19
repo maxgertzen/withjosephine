@@ -29,6 +29,12 @@
   --color-j-accent: var(--j-accent);
   --color-j-accent-light: var(--j-accent-light);
 
+  /* ── Status Semantic Colors ──
+     Per-status bg/fg are consumed by `[data-status]` selectors below, not
+     Tailwind utilities, so they stay as raw CSS vars in tokens.css.
+     Only the shared pill border is exposed as a utility class. */
+  --color-j-status-pill-border: var(--j-status-pill-border);
+
   /* ── Font Families ──
      The Tailwind tokens stay abstract (`font-display` / `font-body`).
      The actual font family comes from next/font, which writes
@@ -54,6 +60,48 @@
   --animate-j-glow: glowPulse 4s ease-in-out infinite;
   --animate-j-fade-in-up: fadeInUp 0.9s ease-out forwards;
   --animate-j-fade-in: fadeIn 1.2s ease-out forwards;
+}
+
+/* ── Gift Status Pill — theme-owned visual per status kind ──
+   The pill component only sets `data-status={status.kind}` on the wrapper +
+   `data-pill-icon` on the icon. Status visuals live here; a brand palette
+   tweak never needs a component diff. Token names are keyed verbatim to the
+   GIFT_STATUS_KIND values (src/lib/booking/constants.ts). */
+[data-status="scheduled"] {
+  background-color: var(--j-status-scheduled-bg);
+}
+[data-status="scheduled"] [data-pill-icon] {
+  color: var(--j-status-scheduled-fg);
+}
+[data-status="self_send_ready"] {
+  background-color: var(--j-status-self_send_ready-bg);
+}
+[data-status="self_send_ready"] [data-pill-icon] {
+  color: var(--j-status-self_send_ready-fg);
+}
+[data-status="sent_waiting_recipient"] {
+  background-color: var(--j-status-sent_waiting_recipient-bg);
+}
+[data-status="sent_waiting_recipient"] [data-pill-icon] {
+  color: var(--j-status-sent_waiting_recipient-fg);
+}
+[data-status="recipient_preparing"] {
+  background-color: var(--j-status-recipient_preparing-bg);
+}
+[data-status="recipient_preparing"] [data-pill-icon] {
+  color: var(--j-status-recipient_preparing-fg);
+}
+[data-status="delivered"] {
+  background-color: var(--j-status-delivered-bg);
+}
+[data-status="delivered"] [data-pill-icon] {
+  color: var(--j-status-delivered-fg);
+}
+[data-status="cancelled"] {
+  background-color: var(--j-status-cancelled-bg);
+}
+[data-status="cancelled"] [data-pill-icon] {
+  color: var(--j-status-cancelled-fg);
 }
 
 /* ── Base Styles ── */

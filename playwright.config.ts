@@ -15,7 +15,11 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isSandbox ? 1 : 2,
+  // Mock mode shares a single D1 database across workers — `/api/e2e-reset`
+  // in one test's `beforeEach` truncates state mid-flight for another
+  // worker. Until per-worker D1 isolation lands, serial workers are the
+  // load-bearing fix for stability.
+  workers: 1,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }], ["list"]]
     : [["list"], ["html", { open: "never" }]],
