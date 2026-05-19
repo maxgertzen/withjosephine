@@ -34,6 +34,10 @@ describe("ConfirmArmedButton", () => {
     reducedMotionStub = false;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("requires two taps before firing the POST", () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
@@ -176,10 +180,6 @@ describe("ConfirmArmedButton", () => {
   });
 
   describe("WCAG 2.2.1 reduced-motion arm window (R-2 anchor)", () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it("uses ARM_RESET_MS (5s) when reduced motion is off", () => {
       reducedMotionStub = false;
       vi.useFakeTimers();

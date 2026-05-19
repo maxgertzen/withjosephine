@@ -4,11 +4,17 @@ import { useSyncExternalStore } from "react";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
+// `matchMedia` is read per call rather than memoized at module scope so the
+// hook stays testable — vitest test files stub `window.matchMedia` per test,
+// which a module-scope capture would freeze out. The MediaQueryList
+// allocation is cheap; the hook fires on render at the 3 ConfirmArmedButton
+// instances on `/my-gifts` — single-digit allocs per page render.
+
 function subscribe(callback: () => void): () => void {
   if (typeof window === "undefined" || !window.matchMedia) return () => {};
-  const mql = window.matchMedia(QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
+  const m = window.matchMedia(QUERY);
+  m.addEventListener("change", callback);
+  return () => m.removeEventListener("change", callback);
 }
 
 function getSnapshot(): boolean {

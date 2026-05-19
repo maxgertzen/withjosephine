@@ -9,6 +9,8 @@ import type { MyGiftsPageContent } from "@/data/defaults";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 
+import { actionErrorLabel } from "./actionErrorLabel";
+
 export const ARM_RESET_MS = 5000;
 export const ARM_RESET_MS_REDUCED_MOTION = 15000;
 
@@ -17,10 +19,6 @@ export const ARM_RESET_MS_REDUCED_MOTION = 15000;
  * First tap arms; second tap (within ARM_RESET_MS) fires the POST. Disarms
  * on ANY non-success outcome so the user never sees an indefinitely-armed
  * state after a failed action.
- *
- * Replaces the triplicated arm-state + ARM_RESET effect + onConfirm pattern
- * previously inlined in FlipToSelfSendControl / SendNowControl /
- * CancelScheduledControl.
  *
  * WCAG 2.2.1 (Timing Adjustable, Level A): the 5s arm window is a
  * time-limited interaction. When the user has `prefers-reduced-motion:
@@ -32,7 +30,7 @@ export function ConfirmArmedButton({
   endpoint,
   copy,
   labels,
-  variant = "default",
+  variant = "primary",
   errorOverrides,
   onSuccess,
 }: {
@@ -43,7 +41,7 @@ export function ConfirmArmedButton({
     confirm: string;
     sending: string;
   };
-  variant?: "default" | "destructive";
+  variant?: "primary" | "destructive";
   errorOverrides?: Partial<Record<string, keyof MyGiftsPageContent>>;
   onSuccess?: () => void;
 }) {
@@ -69,14 +67,13 @@ export function ConfirmArmedButton({
     }
   }
 
-  const confirmVariant = variant === "destructive" ? "destructive" : "primary";
-  const topError = mapError(action.topError, copy, errorOverrides);
+  const topError = actionErrorLabel(action.topError, copy, errorOverrides);
 
   return (
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
       {armed ? (
         <Button
-          variant={confirmVariant}
+          variant={variant}
           size="sm"
           disabled={action.submitting}
           onClick={onConfirm}
@@ -91,16 +88,4 @@ export function ConfirmArmedButton({
       <InlineError message={topError} />
     </div>
   );
-}
-
-function mapError(
-  code: string | null,
-  copy: MyGiftsPageContent,
-  overrides: Partial<Record<string, keyof MyGiftsPageContent>> = {},
-): string | null {
-  if (!code) return null;
-  const overrideKey = overrides[code];
-  if (overrideKey) return copy[overrideKey];
-  if (code === "network") return copy.actionNetworkError;
-  return copy.actionGenericError;
 }
