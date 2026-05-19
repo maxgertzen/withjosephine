@@ -3,3 +3,14 @@ id = "GHSA-848j-6mx2-7j84"
 # elliptic 6.6.1 — transitive dev-only dep via @storybook/nextjs → node-polyfill-webpack-plugin.
 # No fixed version available upstream (6.6.1 is latest). Not shipped to production bundle.
 reason = "Dev-only transitive dep (Storybook build toolchain). No upstream fix available."
+
+[[IgnoredVulns]]
+id = "GHSA-jxxr-4gwj-5jf2"
+# brace-expansion 5.0.5 — ReDoS in shell-style brace expansion. Used transitively
+# via glob/minimatch/etc by build & test tooling. NOT exposed to user input at
+# runtime (no application code calls brace-expansion on untrusted strings).
+# Upgrade path: brace-expansion@5.0.6 fixes the CVE but breaks legacy
+# minimatch@3.1.5 (transitive via ESLint's config-array dependency chain),
+# which calls brace-expansion's default export as a function — broken by the
+# 5.0 export-shape change. Promoting requires coordinated minimatch upgrade.
+reason = "Dev-only transitive dep (build/test tooling). Coordinated minimatch upgrade needed before promoting the fix; tracked in BACKLOG."
