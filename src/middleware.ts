@@ -161,9 +161,16 @@ export function middleware(request: NextRequest) {
   const isStrict = isPublicApex && !isDraft;
   response.headers.set("Content-Security-Policy", buildCsp({ isDraft: !isStrict, nonce }));
 
+  const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
+
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  } else if (isMyGifts) {
+    // Purchaser-scoped page reflects gift state that mutates via flip / send-now
+    // / cancel-scheduled. Cloudflare and any intermediary must never serve a
+    // cached snapshot to a different purchaser session or after a state change.
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
   } else if (!isPublicApex) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }

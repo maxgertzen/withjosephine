@@ -42,6 +42,7 @@
     "seed:staging": "tsx scripts/seed-staging-dataset.ts"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.4.1",
     "@marsidev/react-turnstile": "^1.5.2",
     "@portabletext/react": "^6.2.0",
     "@react-email/components": "^1.0.12",

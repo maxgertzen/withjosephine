@@ -6,9 +6,13 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
+import { TimezoneFallbackPicker } from "@/components/Form/TimezoneFallbackPicker";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { MyGiftsPageContent } from "@/data/defaults";
+import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
+import { localInputToUtcIso } from "@/lib/booking/scheduling/timezone";
+import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
@@ -45,7 +49,7 @@ type Props = {
 };
 
 export function GiftCardActions({ gift, status, copy }: Props) {
-  if (status.kind === "scheduled") {
+  if (status.kind === GIFT_STATUS_KIND.scheduled) {
     return (
       <div className="flex flex-col gap-3 items-stretch sm:items-end">
         <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
@@ -53,7 +57,7 @@ export function GiftCardActions({ gift, status, copy }: Props) {
       </div>
     );
   }
-  if (status.kind === "self_send_ready") {
+  if (status.kind === GIFT_STATUS_KIND.selfSendReady) {
     return (
       <div className="flex flex-col gap-3 items-stretch sm:items-end">
         <ResendLinkControl gift={gift} copy={copy} />
@@ -102,21 +106,31 @@ function EditRecipientControl({
   const [recipientName, setRecipientName] = useState(initialName);
   const [recipientEmail, setRecipientEmail] = useState(initialEmail);
   const [giftSendAt, setGiftSendAt] = useState(initialSendAt);
-  const [unchangedError, setUnchangedError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const { pickedTz, setPickedTz, effectiveTz, requiresPicker } = useEffectiveTimeZone();
 
   const action = useMutationAction(`/api/gifts/${gift._id}/edit-recipient`);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setUnchangedError(null);
+    setFormError(null);
     const body: Record<string, unknown> = {};
     if (recipientName.trim() !== initialName) body.recipientName = recipientName.trim();
     if (recipientEmail.trim() !== initialEmail) body.recipientEmail = recipientEmail.trim();
     if (mode === "scheduled" && giftSendAt !== initialSendAt) {
-      body.giftSendAt = giftSendAt ? new Date(giftSendAt).toISOString() : null;
+      if (giftSendAt === "") {
+        body.giftSendAt = null;
+      } else {
+        const conversion = localInputToUtcIso(giftSendAt, effectiveTz);
+        if (!conversion.ok) {
+          setFormError(copy.editRecipientTimezoneFallbackHelp);
+          return;
+        }
+        body.giftSendAt = conversion.utcIso;
+      }
     }
     if (Object.keys(body).length === 0) {
-      setUnchangedError("Change something before saving.");
+      setFormError("Change something before saving.");
       return;
     }
     const result = await action.run(body);
@@ -135,10 +149,10 @@ function EditRecipientControl({
   }
 
   const sendAtInputId = `gift-${gift._id}-send-at`;
+  const tzPickerId = `gift-${gift._id}-send-at-tz`;
   const headingId = `gift-${gift._id}-edit-heading`;
   const topError =
-    unchangedError ??
-    actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
+    formError ?? actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
   return (
     <form
       onSubmit={onSubmit}
@@ -202,7 +216,17 @@ function EditRecipientControl({
           <TimezonePreview
             value={giftSendAt}
             template={copy.editRecipientSendAtPreviewTemplate}
+            timeZone={effectiveTz}
           />
+          {requiresPicker ? (
+            <TimezoneFallbackPicker
+              id={tzPickerId}
+              value={pickedTz}
+              onChange={setPickedTz}
+              label={copy.editRecipientTimezoneLabel}
+              placeholder={copy.editRecipientTimezonePlaceholder}
+            />
+          ) : null}
         </label>
       )}
       <InlineError message={topError} />
@@ -213,7 +237,7 @@ function EditRecipientControl({
           size="sm"
           onClick={() => {
             setOpen(false);
-            setUnchangedError(null);
+            setFormError(null);
             action.reset();
           }}
           disabled={action.submitting}
@@ -284,14 +308,21 @@ function FlipToScheduledControl({
   const [open, setOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState(gift.recipientEmail ?? "");
   const [giftSendAt, setGiftSendAt] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const { pickedTz, setPickedTz, effectiveTz, requiresPicker } = useEffectiveTimeZone();
   const action = useMutationAction(`/api/gifts/${gift._id}/flip-to-scheduled`);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const sendAtIso = giftSendAt ? new Date(giftSendAt).toISOString() : "";
+    setFormError(null);
+    const conversion = localInputToUtcIso(giftSendAt, effectiveTz);
+    if (!conversion.ok) {
+      setFormError(copy.editRecipientTimezoneFallbackHelp);
+      return;
+    }
     const result = await action.run({
       recipientEmail: recipientEmail.trim(),
-      giftSendAt: sendAtIso,
+      giftSendAt: conversion.utcIso,
     });
     if (result.ok) {
       setOpen(false);
@@ -308,10 +339,10 @@ function FlipToScheduledControl({
   }
 
   const sendAtInputId = `gift-${gift._id}-flip-send-at`;
+  const tzPickerId = `gift-${gift._id}-flip-send-at-tz`;
   const headingId = `gift-${gift._id}-flip-heading`;
-  const topError = actionErrorLabel(action.topError, copy, {
-    http_409: "actionClosedError",
-  });
+  const topError =
+    formError ?? actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
   return (
     <form
       onSubmit={onSubmit}
@@ -357,7 +388,17 @@ function FlipToScheduledControl({
         <TimezonePreview
           value={giftSendAt}
           template={copy.editRecipientSendAtPreviewTemplate}
+          timeZone={effectiveTz}
         />
+        {requiresPicker ? (
+          <TimezoneFallbackPicker
+            id={tzPickerId}
+            value={pickedTz}
+            onChange={setPickedTz}
+            label={copy.editRecipientTimezoneLabel}
+            placeholder={copy.editRecipientTimezonePlaceholder}
+          />
+        ) : null}
       </label>
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">

@@ -19,3 +19,14 @@ export const GIFT_DELIVERY = {
   selfSend: "self_send",
   scheduled: "scheduled",
 } as const;
+
+export const GIFT_STATUS_KIND = {
+  scheduled: "scheduled",
+  selfSendReady: "self_send_ready",
+  sentWaitingRecipient: "sent_waiting_recipient",
+  recipientPreparing: "recipient_preparing",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export type GiftStatusKind = (typeof GIFT_STATUS_KIND)[keyof typeof GIFT_STATUS_KIND];

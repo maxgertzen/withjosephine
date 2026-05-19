@@ -182,6 +182,29 @@ export const myGiftsPage = defineType({
       initialValue: "Send at",
     }),
     defineField({
+      name: "editRecipientTimezoneLabel",
+      title: "Edit recipient drawer — timezone picker label",
+      type: "string",
+      description:
+        "Label above the fallback timezone dropdown (shown only when the browser can't auto-detect the IANA zone, e.g. iOS Safari pre-17).",
+      initialValue: "Time zone",
+    }),
+    defineField({
+      name: "editRecipientTimezonePlaceholder",
+      title: "Edit recipient drawer — timezone picker placeholder",
+      type: "string",
+      initialValue: "Pick your time zone",
+    }),
+    defineField({
+      name: "editRecipientTimezoneFallbackHelp",
+      title: "Edit recipient drawer — timezone fallback help text",
+      type: "string",
+      description:
+        "Help message shown above the fallback dropdown when timezone auto-detection fails.",
+      initialValue:
+        "We couldn’t detect your time zone. Pick one below so the email arrives at the right moment.",
+    }),
+    defineField({
       name: "editRecipientSaveButtonLabel",
       title: "Edit recipient drawer — save button",
       type: "string",
@@ -254,8 +277,8 @@ export const myGiftsPage = defineType({
       title: "Edit drawer — timezone preview template",
       type: "string",
       description:
-        "Live preview shown under the edit-recipient drawer's send-at picker. Use {date} as a placeholder for the formatted weekday + month + day + time string.",
-      initialValue: "Arrives {date} in your timezone.",
+        "Live preview shown under the edit-recipient drawer's send-at picker. {date} = formatted weekday + month + day + time; {tz} = IANA timezone name.",
+      initialValue: "Arrives {date} ({tz}).",
     }),
     defineField({
       name: "resendRetryAfterHourTemplate",

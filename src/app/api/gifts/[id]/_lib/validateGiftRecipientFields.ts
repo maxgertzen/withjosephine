@@ -1,11 +1,13 @@
 import { MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { ownEmailKey } from "@/lib/booking/emailNormalize";
 import { stripTemplateTags } from "@/lib/booking/giftPersonas";
+import {
+  SEND_AT_BOUND_MESSAGE,
+  validateSendAtBounds,
+} from "@/lib/booking/scheduling/bounds";
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MAX_RECIPIENT_NAME_CHARS = 80;
-export const SEND_AT_MAX_DAYS = 365;
-export const MIN_SEND_AT_OFFSET_MS = 5 * 60 * 1000;
 
 export type FieldError = { field: string; message: string };
 
@@ -21,10 +23,15 @@ export type GiftRecipientFieldsCleaned = {
   giftSendAt?: string | null;
 };
 
+export type GiftRecipientFieldsContext = {
+  purchaserEmail: string;
+  now: Date;
+  purchasedAt: Date;
+};
+
 export function validateGiftRecipientFields(
   body: GiftRecipientFieldsInput,
-  purchaserEmail: string,
-  now: Date,
+  context: GiftRecipientFieldsContext,
 ): { errors: FieldError[]; cleaned: GiftRecipientFieldsCleaned } {
   const errors: FieldError[] = [];
   const cleaned: GiftRecipientFieldsCleaned = {};
@@ -38,7 +45,7 @@ export function validateGiftRecipientFields(
         field: "recipientEmail",
         message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
       });
-    } else if (ownEmailKey(trimmed) === ownEmailKey(purchaserEmail)) {
+    } else if (ownEmailKey(trimmed) === ownEmailKey(context.purchaserEmail)) {
       errors.push({
         field: "recipientEmail",
         message: "The recipient email can’t be your own.",
@@ -66,26 +73,14 @@ export function validateGiftRecipientFields(
     if (body.giftSendAt === null) {
       cleaned.giftSendAt = null;
     } else {
-      const sendAt = new Date(body.giftSendAt);
-      if (Number.isNaN(sendAt.getTime())) {
-        errors.push({ field: "giftSendAt", message: "Invalid date." });
+      const verdict = validateSendAtBounds(body.giftSendAt, {
+        now: context.now,
+        purchasedAt: context.purchasedAt,
+      });
+      if (!verdict.ok) {
+        errors.push({ field: "giftSendAt", message: SEND_AT_BOUND_MESSAGE[verdict.code] });
       } else {
-        const minAt = now.getTime() + MIN_SEND_AT_OFFSET_MS;
-        const maxAt = new Date(now);
-        maxAt.setUTCDate(maxAt.getUTCDate() + SEND_AT_MAX_DAYS);
-        if (sendAt.getTime() < minAt) {
-          errors.push({
-            field: "giftSendAt",
-            message: "Send-at must be at least five minutes from now.",
-          });
-        } else if (sendAt.getTime() > maxAt.getTime()) {
-          errors.push({
-            field: "giftSendAt",
-            message: `Send-at must be within ${SEND_AT_MAX_DAYS} days.`,
-          });
-        } else {
-          cleaned.giftSendAt = sendAt.toISOString();
-        }
+        cleaned.giftSendAt = verdict.sendAtIso;
       }
     }
   }

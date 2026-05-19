@@ -57,7 +57,12 @@ export async function POST(
   const raw = await request.json().catch(() => null);
   const body = parseBody(raw);
   if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
-  const { errors, cleaned } = validateGiftRecipientFields(body, submission.email, new Date());
+  const purchasedAt = new Date(submission.paidAt ?? submission.createdAt);
+  const { errors, cleaned } = validateGiftRecipientFields(body, {
+    purchaserEmail: submission.email,
+    now: new Date(),
+    purchasedAt,
+  });
   if (errors.length > 0) {
     return NextResponse.json({ error: "Invalid", fieldErrors: errors }, { status: 422 });
   }

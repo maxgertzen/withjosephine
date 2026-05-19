@@ -44,6 +44,28 @@
   --j-gold-rgb: var(--j-accent-rgb);
   --j-deep-rgb: var(--j-bg-interactive-rgb);
 
+  /* ── Status Semantic Tokens ──
+     Derived aliases keyed verbatim to GiftStatus["kind"] discriminant values
+     (single source: GIFT_STATUS_KIND in src/lib/booking/constants.ts). Brand
+     palette changes propagate via color-mix; status visuals belong here, not
+     in the component. */
+  --j-status-scheduled-bg: color-mix(in oklab, var(--j-accent) 15%, transparent);
+  --j-status-scheduled-fg: var(--j-accent);
+  --j-status-self_send_ready-bg: color-mix(in oklab, var(--j-rose) 20%, transparent);
+  --j-status-self_send_ready-fg: var(--j-rose);
+  --j-status-sent_waiting_recipient-bg: color-mix(in oklab, var(--j-blush) 30%, transparent);
+  --j-status-sent_waiting_recipient-fg: var(--j-rose);
+  --j-status-recipient_preparing-bg: color-mix(in oklab, var(--j-accent-light) 20%, transparent);
+  --j-status-recipient_preparing-fg: var(--j-accent);
+  --j-status-delivered-bg: color-mix(in oklab, var(--j-accent) 20%, transparent);
+  --j-status-delivered-fg: var(--j-accent);
+  --j-status-cancelled-bg: color-mix(in oklab, var(--j-text-muted) 10%, transparent);
+  --j-status-cancelled-fg: var(--j-text-muted);
+  /* Uniform pill edge — load-bearing for WCAG 1.4.11 non-text contrast (3:1
+     vs surrounding card surface). Anchored to text-muted so palette shifts
+     stay compliant. */
+  --j-status-pill-border: color-mix(in oklab, var(--j-text-muted) 40%, transparent);
+
   /* ── Borders & Shadows ── */
   --j-border-subtle: rgba(var(--j-accent-rgb), 0.2);
   --j-border-gold: rgba(var(--j-accent-rgb), 0.4);
