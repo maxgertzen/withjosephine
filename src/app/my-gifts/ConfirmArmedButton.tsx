@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
 import type { MyGiftsPageContent } from "@/data/defaults";
+import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 
 export const ARM_RESET_MS = 5000;
+export const ARM_RESET_MS_REDUCED_MOTION = 15000;
 
 /**
  * Two-stage confirm button for destructive or irreversible gift actions.
@@ -19,6 +21,12 @@ export const ARM_RESET_MS = 5000;
  * Replaces the triplicated arm-state + ARM_RESET effect + onConfirm pattern
  * previously inlined in FlipToSelfSendControl / SendNowControl /
  * CancelScheduledControl.
+ *
+ * WCAG 2.2.1 (Timing Adjustable, Level A): the 5s arm window is a
+ * time-limited interaction. When the user has `prefers-reduced-motion:
+ * reduce` set, the window extends to 15s (ARM_RESET_MS_REDUCED_MOTION)
+ * via the `useReducedMotion` hook. The OS-level toggle is the user's
+ * extension switch — no in-app affordance needed.
  */
 export function ConfirmArmedButton({
   endpoint,
@@ -42,12 +50,14 @@ export function ConfirmArmedButton({
   const router = useRouter();
   const [armed, setArmed] = useState(false);
   const action = useMutationAction(endpoint);
+  const reducedMotion = useReducedMotion();
+  const armResetMs = reducedMotion ? ARM_RESET_MS_REDUCED_MOTION : ARM_RESET_MS;
 
   useEffect(() => {
     if (!armed || action.submitting) return;
-    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
+    const t = setTimeout(() => setArmed(false), armResetMs);
     return () => clearTimeout(t);
-  }, [armed, action.submitting]);
+  }, [armed, action.submitting, armResetMs]);
 
   async function onConfirm() {
     const result = await action.run();

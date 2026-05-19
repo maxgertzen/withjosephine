@@ -1,9 +1,19 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MY_GIFTS_PAGE_DEFAULTS } from "@/data/defaults";
 
-import { ConfirmArmedButton } from "../ConfirmArmedButton";
+import {
+  ARM_RESET_MS,
+  ARM_RESET_MS_REDUCED_MOTION,
+  ConfirmArmedButton,
+} from "../ConfirmArmedButton";
+
+vi.mock("@/lib/a11y/useReducedMotion", () => ({
+  useReducedMotion: () => reducedMotionStub,
+}));
+
+let reducedMotionStub = false;
 
 const refreshMock = vi.fn();
 
@@ -21,6 +31,7 @@ describe("ConfirmArmedButton", () => {
   beforeEach(() => {
     refreshMock.mockReset();
     vi.unstubAllGlobals();
+    reducedMotionStub = false;
   });
 
   it("requires two taps before firing the POST", () => {
@@ -162,5 +173,55 @@ describe("ConfirmArmedButton", () => {
     const confirmButton = getByRole("button", { name: baseLabels.confirm });
     // Destructive variant uses the j-rose token; idle uses outlined.
     expect(confirmButton.className).toContain("bg-j-rose");
+  });
+
+  describe("WCAG 2.2.1 reduced-motion arm window (R-2 anchor)", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("uses ARM_RESET_MS (5s) when reduced motion is off", () => {
+      reducedMotionStub = false;
+      vi.useFakeTimers();
+      const { getByRole, queryByRole } = render(
+        <ConfirmArmedButton
+          endpoint="/api/gifts/g1/send-now"
+          copy={MY_GIFTS_PAGE_DEFAULTS}
+          labels={baseLabels}
+        />,
+      );
+      fireEvent.click(getByRole("button", { name: baseLabels.idle }));
+      expect(getByRole("button", { name: baseLabels.confirm })).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(ARM_RESET_MS + 50);
+      });
+      expect(queryByRole("button", { name: baseLabels.confirm })).toBeNull();
+      expect(getByRole("button", { name: baseLabels.idle })).toBeTruthy();
+    });
+
+    it("uses ARM_RESET_MS_REDUCED_MOTION (15s) when reduced motion is on", () => {
+      reducedMotionStub = true;
+      vi.useFakeTimers();
+      const { getByRole, queryByRole } = render(
+        <ConfirmArmedButton
+          endpoint="/api/gifts/g1/send-now"
+          copy={MY_GIFTS_PAGE_DEFAULTS}
+          labels={baseLabels}
+        />,
+      );
+      fireEvent.click(getByRole("button", { name: baseLabels.idle }));
+      // Past the default 5s window — still armed.
+      act(() => {
+        vi.advanceTimersByTime(ARM_RESET_MS + 100);
+      });
+      expect(getByRole("button", { name: baseLabels.confirm })).toBeTruthy();
+      // Past the 15s extended window — disarmed.
+      act(() => {
+        vi.advanceTimersByTime(
+          ARM_RESET_MS_REDUCED_MOTION - ARM_RESET_MS + 100,
+        );
+      });
+      expect(queryByRole("button", { name: baseLabels.confirm })).toBeNull();
+    });
   });
 });
