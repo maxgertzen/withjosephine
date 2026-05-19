@@ -13,14 +13,12 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 
 ## Current sprint — v1.1.x Phase 3 scheduling rebuild (release/v1.1.0)
 
-**Active branch:** `feat/v1.1.x-phase3-pr-bundle` (off `release/v1.1.0@21ff516`).
-**Open PRs:** none yet — single bundle PR pending push.
+**Active branch:** none — bundle PR #148 merged 2026-05-19.
+**Open PRs:** none.
 **Main:** `d607ada` (unchanged this sprint cycle).
-**Release branch:** `release/v1.1.0` at `21ff516` after PRs #142 / #143 / #144 / #145 / #146 / #147 merged 2026-05-19 + 2 follow-up docs commits.
+**Release branch:** `release/v1.1.0` at `4bff524` after PRs #142 / #143 / #144 / #145 / #146 / #147 / #148 merged 2026-05-19.
 
-**Strategy change 2026-05-19 (iteration 5):** Three planned sub-PRs (PR-Lift + PR-D + PR-E) **collapsed into one bundled PR** on `feat/v1.1.x-phase3-pr-bundle`. Rationale: per `feedback_no_more_splitting_and_deferring.md`, default to FINISH not slice. The cross-PR sequencing benefit (helpers land first so PR-D's spec consumes them) survives as intra-PR commit ordering. /simplify still runs three times — after each scope lands inside the bundle — per Max directive.
-
-**Phase 3 sub-PR stack:**
+**Phase 3 sub-PR stack — PR-Lift + D-11 shipped; scope 3 polish remains:**
 
 | Sub-PR | Scope | Status |
 |---|---|---|
@@ -28,39 +26,30 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 | PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
 | PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
 | PR-C-ii (#147) | D-10 send-now route + `SendNowControl` + idempotency-key + dispatcher defense + unit tests + e2e | ✅ shipped 2026-05-19 + staging (CI 26108537934 green) |
-| **PR-Bundle (in-flight)** | PR-Lift helpers + D-11 cancel-scheduled + P-6 reduced-motion + refund-mentions sweep + /simplify ×3 | **in-flight on `feat/v1.1.x-phase3-pr-bundle`** |
+| PR-Bundle (#148) | PR-Lift helpers (signInViaMagicLink + interceptStripeCheckout) + D-11 cancel-scheduled route+UI+e2e + /simplify ×2 + Playwright TZ pin | ✅ shipped 2026-05-19 to `release/v1.1.0` (squash `4bff524`); CI + e2e both green via workflow_dispatch |
+| **Scope 3 (next)** | P-6 reduced-motion + ConfirmArmedButton extraction + 7-spec interceptStripeCheckout sweep + flip-tz narration strip + giftMutationGate helper + refund-mentions audit + /simplify #3 + ISC tally close-out | **next session — branch off `release/v1.1.0@4bff524`** |
 
-### In-flight agenda — bundled PR on `feat/v1.1.x-phase3-pr-bundle` (off `release/v1.1.0@21ff516`)
+### Next-session agenda — Phase 3 Scope 3 (off `release/v1.1.0@4bff524`)
 
-Four scopes in commit order inside the single bundle PR. /simplify runs after each scope, not just at the end. Locked 2026-05-19 by Max (iteration 5 of the scheduling-scrutiny PRD).
+Branch off updated `release/v1.1.0` after `4bff524` (PR #148 squash). Resume from `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` iteration 5 — `progress: 78/124` at hand-off, all of scope 1 + scope 2 + 2 /simplify passes complete.
 
-**Scope 1 — PR-Lift: E2E helper extraction (commits FIRST in the diff).** Extract two helpers from the 4 specs currently duplicating the patterns; D-11's new spec is written against the helper from the start.
-- **`tests/e2e/helpers/auth.ts`** — new file. Export `signInViaMagicLink(page, { email, next }): Promise<void>`. Internals: `POST /api/internal/issue-magic-link` with `x-admin-token: process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy"` → extract `{ token }` → `page.goto(/auth/verify?token=…&next=…)` → fill `input[name='email']` → click `button[type='submit']` → `waitForURL(new RegExp(next))`.
-- **`tests/e2e/helpers/stripeCheckout.ts`** (extend existing) — add `interceptStripeCheckout(page, { readingSlug, gift?: boolean })` returning `{ getSessionId(): string \| null, getSubmissionId(): string \| null }`. Internals: the `page.route("https://buy.stripe.com/**", …)` block that 303s to `/thank-you/${readingSlug}?gift=1&sessionId=…&submission=…`, with closure-captured `interceptedSessionId` / `interceptedSubmissionId` exposed via getters.
-- **Migrate 4 existing callers:** `tests/e2e/specs/gift-send-now.spec.ts`, `tests/e2e/specs/my-gifts-local.spec.ts`, `tests/e2e/specs/gift-flip-to-scheduled-tz.spec.ts` (2 tests). Net diff should be negative.
-- **No production code changes.** Pure test-infra refactor. Vitest unaffected; Playwright suite must pass the same count.
-- **Gates:** tsc + lint + `pnpm test` (1576) + `pnpm exec playwright test --grep gift-` mock-mode pass.
+**Work surface (all carried from deferred-ISC ledger in the PRD):**
 
-**Scope 2 — D-11 cancel-scheduled (commits SECOND).** Resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`.
-- New `POST /api/gifts/[id]/cancel-scheduled` — auth via `authorizeGiftPurchaser` → preflight 409s (not-scheduled, already-fired, already-cancelled/claimed) → `cancelGiftAlarm(id)` FIRST (cheap, idempotent) → WHERE-guarded UPDATE setting `gift_cancelled_at` / `gift_cancelled_by=<purchaser_email>` / `gift_cancelled_reason='purchaser-request'` with guard `gift_cancelled_at IS NULL AND gift_claim_email_fired_at IS NULL`; rowcount 0 → 409 with copy "Too late — your gift has already been sent. Contact hello@withjosephine.com."
-- Repo helper `applyGiftCancelScheduled(id, args)` + wrapper in `submissions.ts` + Sanity mirror patch entries for `giftCancelledBy` / `giftCancelledReason` (extend the patch type in `sanityMirror.ts`).
-- New `CancelScheduledControl` in `GiftCardActions.tsx` scheduled branch — reuses 5s confirm-armed pattern; j-rose (`#BF9B8B`) armed-state tint via a new variant or inline class (Quiet Archivist forbids alarm-red). Copy locked under wholesale-no-refunds policy: "Cancel this gift" → armed "Tap again to confirm — your reading will not be sent. This purchase is non-refundable." 4 new Sanity-editable copy fields on `myGiftsPage` (cancelScheduledCtaLabel / cancelScheduledConfirmCtaLabel / cancelScheduledSendingLabel / cancelScheduledSessionExpiredError).
-- After cancel, card renders muted with `cancelled` pill (D-8 — already shipped via PR-A).
-- **Un-cancel:** terminal on customer surface; ops-side reversal is D1-console-only until a Sanity-webhook→Worker→D1 path exists (not built today).
-- **Audit columns already exist:** `gift_cancelled_at` from migration 0007, `gift_cancelled_by` + `gift_cancelled_reason` from migration 0012 (PR-C-i). **No D1 migration in PR-D.**
-- **Refund policy locked NO REFUNDS** wholesale per P-4 (Max directive 2026-05-19) — UI copy must never imply refund.
-- Unit tests + e2e `gift-cancel-scheduled.spec.ts` USING the PR-Lift helpers (`signInViaMagicLink` + `interceptStripeCheckout`).
-- Bookkeeping: CHANGELOG row + SESSION_BOOT mark D-11 shipped.
+- **P-6 `prefers-reduced-motion` (WCAG 2.2.1 Timing Adjustable).** When the user prefers reduced motion, extend `ARM_RESET_MS` from 5000 → 15000. Lands as a `useReducedMotion` hook reading `window.matchMedia("(prefers-reduced-motion: reduce)")` via `useSyncExternalStore`; consume in each control to pick `ARM_RESET_MS` vs `ARM_RESET_MS_REDUCED_MOTION`. After ConfirmArmedButton extraction lands first, this becomes a one-place change instead of three.
+- **`ConfirmArmedButton` extraction (deferred from /simplify #2).** `FlipToSelfSendControl` + `SendNowControl` + `CancelScheduledControl` in `src/app/my-gifts/GiftCardActions.tsx` triplicate the same arm-state + ARM_RESET_MS effect + onConfirm-with-router-refresh skeleton. Extract a `ConfirmArmedButton({ endpoint, labels, errorOverrides, variant? })` that collapses ~120 lines to ~40 and makes the destructive-variant decision an explicit prop. Do this FIRST in the branch so P-6's hook lands in one place.
+- **`giftMutationGate(submission, allow)` helper (deferred from /simplify #2).** All 4 gift-mutation routes (`send-now` / `cancel-scheduled` / `cancel-auto-send` / `flip-to-scheduled`) replicate the same preflight-409 ladder in slightly different orders. Extract to `_lib/` returning `null | NextResponse` and apply to all four. Atomic UPDATE remains the real guard; this is for nicer error copy + audit clarity.
+- **7-spec migration to `interceptStripeCheckout` (deferred from /simplify #1).** Targets: `tests/e2e/specs/gift-redeem-self-send-local.spec.ts`, `gift-redeem-consent-shape-local.spec.ts`, `gift-redeem-local.spec.ts`, `gift-local.spec.ts` (3 occurrences inside this file), `stripe-local.spec.ts`, `intake-page.spec.ts` (uses `gift: false` path — the only existing non-gift caller). Skip `gift-flow.spec.ts:47` (different shape, judgment call).
+- **Strip leftover narration comments in `gift-flip-to-scheduled-tz.spec.ts` (deferred from /simplify #1).** Per `feedback_comments_over_logged.md`. Concrete targets in the PRD verification block.
+- **Refund-mentions audit pass #2.** Sweep customer-facing copy for any "refund" language that drifted in during Phase 3. P-4b shipped most of this in PR-B; this is the cleanup tail. Particularly verify: error messages, email templates that didn't change in PR-B, any new copy added in #148.
+- **/simplify pass #3** — full Phase 3 diff (everything from PR-A through #148 + this scope 3 branch). Apply findings; defer scope-creep refactors with explicit rationale.
+- **ISC tally close-out** — tick remaining ISC in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` and set `phase: complete` once 124/124 ticked.
+- **Optional in same PR:** ISC-18h Playwright iOS/Android device-emulation matrix if it doesn't balloon the diff; otherwise split out.
 
-**Scope 3 — Phase 3 polish + final /simplify (commits THIRD).**
-- **P-6: `prefers-reduced-motion` extension of confirm-armed window.** WCAG 2.2.1 Timing Adjustable: when the user prefers reduced motion, extend `ARM_RESET_MS` from 5000 → 15000. Applies to `FlipToSelfSendControl`, `SendNowControl`, and the new `CancelScheduledControl`. Implementation: `useReducedMotion` hook reading `window.matchMedia("(prefers-reduced-motion: reduce)")` via `useSyncExternalStore`; consume in each control to pick `ARM_RESET_MS` vs `ARM_RESET_MS_REDUCED_MOTION`.
-- **Refund-mentions audit pass #2** — sweep customer-facing copy one more time for any "refund" language that drifted in during Phase 3; ensure all surfaces reflect wholesale-no-refunds (P-4b shipped most of this in PR-B; this is the cleanup tail).
-- **/simplify full Phase 3 diff** — run /simplify against the full `release/v1.1.0` ↔ pre-Phase-3 diff (everything from PR-A through PR-D + this PR). Apply findings; defer scope-creep refactors.
-- **ISC tally close-out** — tick remaining ISC in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` and set `phase: complete`.
-- **Optional in same PR:** ISC-18h Playwright iOS/Android device-emulation matrix if it doesn't balloon the PR; otherwise split out.
-- Bookkeeping: CHANGELOG row, SESSION_BOOT cleared of Phase 3 in-flight (whole sprint marked done).
+**Gates before push:** tsc + lint + `pnpm test` (1581+ vitest, modulo the known UTC-timeout flake in `src/app/page.test.ts` / `my-readings/page.test.tsx` / `gift-redeem/route.test.ts` — pass in isolation, flake under full-suite parallelism. Not a regression; pre-existing.) + `pnpm build` + targeted Playwright spec runs.
 
-**After the bundle PR merges into `release/v1.1.0`, Phase 3 scheduling rebuild is fully shipped.** Hold-gate item 4 (release/v1.1.0 merged to main) is then the gating step to production. /simplify runs ×3 inside the bundle PR (after PR-Lift, after D-11, after polish + sweep).
+**Workflow trigger note:** Both `ci.yml` and `e2e.yml` have `pull_request: branches: [main]` — neither auto-fires on PRs targeting `release/v1.1.0`. Use `gh workflow run ci.yml --ref <branch>` and `gh workflow run e2e.yml --ref <branch>` to trigger via `workflow_dispatch` before merging. Confirmed working on #148.
+
+**After scope 3 merges into `release/v1.1.0`, Phase 3 scheduling rebuild is fully shipped.** Hold-gate item 4 (release/v1.1.0 merged to main) is then the gating step to production.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
@@ -73,18 +62,7 @@ Apex unpark + Stripe live-mode flip is blocked on:
 5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
 6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
 7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
-
-## Hold-gate (apex unpark + Stripe live-mode)
-
-Apex unpark + Stripe live-mode flip is blocked on:
-
-1. F-10 Resend domain DKIM/SPF/DMARC verified
-2. Reading-price reconcile (Max + Josephine — pick canonical price per reading; sync Sanity `price` + `priceDisplay` + Stripe Payment Links)
-3. Sub-PR #4a 1-week bake completes (Becky's first real reading delivered)
-4. **release/v1.1.0 merged to main** — ships everything from intake-architecture-repair Phases 0–4, Phase 5 Gifting, master plan Phases 1–4
-5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
-6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
-7. **Production D1 migrations 0004 → 0011 applied** — staging is at 0011, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Filed 2026-05-18.
+8. **Sanity copy seed for D-11 cancel-scheduled** — run `scripts/migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts` against **staging first**, then **production** dataset. Adds 4 copy fields (`cancelScheduledCtaLabel` / `cancelScheduledConfirmCtaLabel` / `cancelScheduledSendingLabel` / `cancelScheduledSessionExpiredError`). Idempotent (setIfMissing). Filed 2026-05-19 post-#148 merge.
 
 ## Paused workstream — Phase 7 PR-A1 (email Sanity CMS)
 
