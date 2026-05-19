@@ -47,7 +47,9 @@ const SUBMISSION: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   mockAuth.mockReset();

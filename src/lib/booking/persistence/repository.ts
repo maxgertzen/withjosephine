@@ -36,6 +36,9 @@ type Row = {
   gift_claim_email_fired_at: string | null;
   gift_claimed_at: string | null;
   gift_cancelled_at: string | null;
+  gift_claim_sent_now_at: string | null;
+  gift_claim_sent_now_actor: string | null;
+  gift_claim_prior_alarm_at: string | null;
 };
 
 export type GiftDeliveryMethod = (typeof GIFT_DELIVERY)[keyof typeof GIFT_DELIVERY];
@@ -84,6 +87,9 @@ function rowToRecord(row: Row): SubmissionRecord {
     giftClaimEmailFiredAt: row.gift_claim_email_fired_at ?? null,
     giftClaimedAt: row.gift_claimed_at ?? null,
     giftCancelledAt: row.gift_cancelled_at ?? null,
+    giftClaimSentNowAt: row.gift_claim_sent_now_at ?? null,
+    giftClaimSentNowActor: row.gift_claim_sent_now_actor ?? null,
+    giftClaimPriorAlarmAt: row.gift_claim_prior_alarm_at ?? null,
   };
 }
 
@@ -621,6 +627,49 @@ export async function flipGiftToScheduled(
         AND gift_claimed_at IS NULL
         AND gift_cancelled_at IS NULL`,
     [args.giftSendAt, args.recipientEmail, args.tokenHash, id],
+  );
+  return result.rowsWritten > 0;
+}
+
+/**
+ * Send-now: purchaser fires the recipient claim email ahead of the scheduled
+ * alarm. WHERE-guard ensures only one transition lands — alarm-fire race,
+ * concurrent send-now, prior cancellation, and prior claim are all rejected
+ * via rowcount=0 → caller returns 409. The UNIQUE partial index on
+ * `gift_claim_sent_now_at` (migration 0012) is the belt-and-suspenders against
+ * a second UPDATE racing past the WHERE-guard.
+ */
+export async function applyGiftSendNow(
+  id: string,
+  args: {
+    tokenHash: string;
+    sentNowAtIso: string;
+    actor: string;
+    priorAlarmAt: string | null;
+  },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = ?,
+            gift_claim_sent_now_at = ?,
+            gift_claim_sent_now_actor = ?,
+            gift_claim_prior_alarm_at = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'scheduled'
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claim_sent_now_at IS NULL
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    [
+      args.tokenHash,
+      args.sentNowAtIso,
+      args.sentNowAtIso,
+      args.actor,
+      args.priorAlarmAt,
+      id,
+    ],
   );
   return result.rowsWritten > 0;
 }

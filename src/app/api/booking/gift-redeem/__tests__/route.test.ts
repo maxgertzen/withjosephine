@@ -150,7 +150,9 @@ const SUBMISSION = {
   giftClaimEmailFiredAt: "2026-05-01T01:00:00Z",
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   mockTurnstile.mockReset().mockResolvedValue(true);

@@ -301,6 +301,10 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   flipToScheduledFormTitle: string;
   flipToScheduledSaveButtonLabel: string;
   flipToScheduledSavingLabel: string;
+  sendNowCtaLabel: string;
+  sendNowConfirmCtaLabel: string;
+  sendNowSendingLabel: string;
+  sendNowSessionExpiredError: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -357,6 +361,11 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   flipToScheduledFormTitle: "Have Josephine deliver the link",
   flipToScheduledSaveButtonLabel: "Schedule it",
   flipToScheduledSavingLabel: "Scheduling…",
+  sendNowCtaLabel: "Send now",
+  sendNowConfirmCtaLabel: "Tap again to send today",
+  sendNowSendingLabel: "Sending…",
+  sendNowSessionExpiredError:
+    "Your session expired. Please refresh and try again.",
 };
 
 export interface GiftClaimPageContent {

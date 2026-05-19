@@ -16,8 +16,7 @@ vi.mock("@/lib/auth/listenSession", async () => {
 });
 
 const findSubmissionMock = vi.fn();
-const flipMock = vi.fn();
-const markGiftClaimSentMock = vi.fn();
+const applySendNowMock = vi.fn();
 const appendEmailFiredMock = vi.fn();
 vi.mock("@/lib/booking/submissions", async () => {
   const actual = await vi.importActual<typeof import("@/lib/booking/submissions")>(
@@ -26,8 +25,7 @@ vi.mock("@/lib/booking/submissions", async () => {
   return {
     ...actual,
     findSubmissionById: findSubmissionMock,
-    flipGiftToSelfSend: flipMock,
-    markGiftClaimSent: markGiftClaimSentMock,
+    applyGiftSendNow: applySendNowMock,
     appendEmailFired: appendEmailFiredMock,
   };
 });
@@ -41,7 +39,7 @@ vi.mock("@/lib/booking/giftClaim", async () => {
 });
 
 const sendMock = vi.fn();
-vi.mock("@/lib/resend", () => ({ sendGiftPurchaseConfirmation: sendMock }));
+vi.mock("@/lib/resend", () => ({ sendGiftClaimEmail: sendMock }));
 
 const stubFetchMock = vi.fn();
 const namespaceGetMock = vi.fn(() => ({ fetch: stubFetchMock }));
@@ -76,21 +74,21 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   giftCancelledAt: null,
   giftClaimSentNowAt: null,
   giftClaimSentNowActor: null,
-  giftClaimPriorAlarmAt: null,};
+  giftClaimPriorAlarmAt: null,
+};
 
 beforeEach(() => {
   cookieGetMock.mockReset().mockReturnValue({ value: "cookie-val" });
   getActiveSessionMock.mockReset();
   findSubmissionMock.mockReset();
-  flipMock.mockReset().mockResolvedValue(true);
-  markGiftClaimSentMock.mockReset().mockResolvedValue(undefined);
+  applySendNowMock.mockReset().mockResolvedValue(true);
   appendEmailFiredMock.mockReset().mockResolvedValue(undefined);
   issueTokenMock.mockReset().mockResolvedValue({
     token: "a".repeat(64),
     tokenHash: "h".repeat(64),
     claimUrl: "https://test.local/gift/claim?token=" + "a".repeat(64),
   });
-  sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_flip" });
+  sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_send_now" });
   stubFetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ cancelled: true })));
   getCloudflareContextMock.mockReset().mockResolvedValue({
     env: {
@@ -102,13 +100,18 @@ beforeEach(() => {
 async function callRoute(): Promise<Response> {
   const { POST } = await import("../route");
   return POST(
-    new Request("https://test.local/api/gifts/sub_gift/cancel-auto-send", { method: "POST" }),
+    new Request("https://test.local/api/gifts/sub_gift/send-now", { method: "POST" }),
     { params: Promise.resolve({ id: "sub_gift" }) },
   );
 }
 
-describe("POST /api/gifts/[id]/cancel-auto-send", () => {
-  it("returns 401 without session", async () => {
+describe("POST /api/gifts/[id]/send-now", () => {
+  it("returns 401 without session cookie", async () => {
+    cookieGetMock.mockReturnValueOnce(undefined);
+    expect((await callRoute()).status).toBe(401);
+  });
+
+  it("returns 401 with invalid/expired session", async () => {
     getActiveSessionMock.mockResolvedValueOnce(null);
     expect((await callRoute()).status).toBe(401);
   });
@@ -119,91 +122,112 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
     expect((await callRoute()).status).toBe(404);
   });
 
-  it("returns 409 if already self_send", async () => {
+  it("returns 409 when gift is not scheduled (self_send)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftDeliveryMethod: "self_send",
     });
     expect((await callRoute()).status).toBe(409);
+    expect(applySendNowMock).not.toHaveBeenCalled();
   });
 
-  it("returns 409 if claim email already fired", async () => {
+  it("returns 409 when claim email already fired", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftClaimEmailFiredAt: "2026-05-15T00:00:00.000Z",
     });
     expect((await callRoute()).status).toBe(409);
+    expect(applySendNowMock).not.toHaveBeenCalled();
   });
 
-  it("returns 502 when Resend send fails (row remains in self_send with provisional token)", async () => {
+  it("returns 409 when gift already cancelled", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce({
+      ...SCHEDULED_GIFT,
+      giftCancelledAt: "2026-05-15T00:00:00.000Z",
+    });
+    expect((await callRoute()).status).toBe(409);
+    expect(applySendNowMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when send-now already fired (double-click idempotency)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce({
+      ...SCHEDULED_GIFT,
+      giftClaimSentNowAt: "2026-05-19T00:00:00.000Z",
+    });
+    expect((await callRoute()).status).toBe(409);
+    expect(applySendNowMock).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when WHERE-guarded UPDATE loses a race", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    applySendNowMock.mockResolvedValueOnce(false); // concurrent caller landed first
+    const res = await callRoute();
+    expect(res.status).toBe(409);
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(appendEmailFiredMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 502 when Resend send fails (audit columns remain)", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
     expect(res.status).toBe(502);
-    // Phase 5 Session 4b — atomic flip happens BEFORE send, so the row IS
-    // flipped (with a provisional token hash). Resend retry hits resend-link.
-    expect(flipMock).toHaveBeenCalledOnce();
-    // Real token never persists on send failure.
-    expect(markGiftClaimSentMock).not.toHaveBeenCalled();
+    expect(applySendNowMock).toHaveBeenCalledOnce();
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
   });
 
-  // Phase 5 Session 4b — B6.21 atomic-flip-first.
-  it("returns 409 when concurrent caller already flipped (flip returns false)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
-    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
-    flipMock.mockResolvedValueOnce(false); // someone else got there first
-    const res = await callRoute();
-    expect(res.status).toBe(409);
-    // No external side-effects when atomic flip loses the race.
-    expect(stubFetchMock).not.toHaveBeenCalled();
-    expect(sendMock).not.toHaveBeenCalled();
-    expect(markGiftClaimSentMock).not.toHaveBeenCalled();
-    expect(appendEmailFiredMock).not.toHaveBeenCalled();
-  });
-
-  it("flips atomically THEN cancels DO alarm THEN sends THEN updates real token hash", async () => {
+  it("cancels alarm THEN UPDATE THEN send THEN appendEmailFired on happy path", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { claimUrl: string };
-    expect(body.claimUrl).toContain("/gift/claim?token=");
+    const body = (await res.json()) as { updated: boolean };
+    expect(body.updated).toBe(true);
 
-    // Verify the ordering by call invocation order.
-    const flipCallOrder = flipMock.mock.invocationCallOrder[0]!;
-    const cancelCallOrder = stubFetchMock.mock.invocationCallOrder[0]!;
-    const sendCallOrder = sendMock.mock.invocationCallOrder[0]!;
-    const markCallOrder = markGiftClaimSentMock.mock.invocationCallOrder[0]!;
-    expect(flipCallOrder).toBeLessThan(cancelCallOrder);
-    expect(cancelCallOrder).toBeLessThan(sendCallOrder);
-    expect(sendCallOrder).toBeLessThan(markCallOrder);
+    const cancelOrder = stubFetchMock.mock.invocationCallOrder[0]!;
+    const applyOrder = applySendNowMock.mock.invocationCallOrder[0]!;
+    const sendOrder = sendMock.mock.invocationCallOrder[0]!;
+    const appendOrder = appendEmailFiredMock.mock.invocationCallOrder[0]!;
+    expect(cancelOrder).toBeLessThan(applyOrder);
+    expect(applyOrder).toBeLessThan(sendOrder);
+    expect(sendOrder).toBeLessThan(appendOrder);
 
-    // Flip uses a provisional token hash (NOT the real one yet).
-    const flipArgs = flipMock.mock.calls[0]![1] as { tokenHash: string };
-    expect(flipArgs.tokenHash).toMatch(/^prov:cancel-auto-send:sub_gift:/);
+    const applyArgs = applySendNowMock.mock.calls[0]![1] as {
+      tokenHash: string;
+      sentNowAtIso: string;
+      actor: string;
+      priorAlarmAt: string | null;
+    };
+    expect(applyArgs.tokenHash).toBe("h".repeat(64));
+    expect(applyArgs.actor).toBe(SCHEDULED_GIFT.email);
+    expect(applyArgs.priorAlarmAt).toBe(SCHEDULED_GIFT.giftSendAt);
 
-    // Real token hash is persisted via markGiftClaimSent after send.
-    expect(markGiftClaimSentMock).toHaveBeenCalledWith(
-      "sub_gift",
-      "h".repeat(64),
-      expect.any(String),
-    );
-
-    // Cancel still fires on the DO.
-    expect(stubFetchMock).toHaveBeenCalledOnce();
     const stubReq = stubFetchMock.mock.calls[0][0] as Request;
     expect(new URL(stubReq.url).pathname).toBe("/cancel");
 
-    expect(sendMock).toHaveBeenCalledWith(
-      expect.objectContaining({ variant: "self_send" }),
-    );
     expect(appendEmailFiredMock).toHaveBeenCalledWith(
       "sub_gift",
-      expect.objectContaining({ type: "gift_purchase_confirmation" }),
+      expect.objectContaining({ type: "gift_claim", resendId: "msg_send_now" }),
+    );
+  });
+
+  it("passes Idempotency-Key gift:{id}:claim to the Resend send", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    await callRoute();
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: "gift:sub_gift:claim",
+        variant: "first_send",
+        recipientEmail: SCHEDULED_GIFT.recipientEmail,
+      }),
     );
   });
 });

@@ -60,6 +60,9 @@ const BASE_SUBMISSION: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,
 };
 
 const NOW_MS = Date.parse("2026-06-01T15:00:00.000Z");
@@ -142,6 +145,21 @@ describe("dispatchGiftClaim — stop branches", () => {
     });
     expect(result.outcome).toBe("stop");
     if (result.outcome === "stop") expect(result.reason).toBe("max_retries");
+  });
+
+  it("stops with reason=sent_now when send-now already fired the claim email", async () => {
+    mockFind.mockResolvedValueOnce({
+      ...BASE_SUBMISSION,
+      giftClaimSentNowAt: "2026-05-19T15:00:00.000Z",
+    });
+    const result = await dispatchGiftClaim({
+      submissionId: "sub_gift",
+      retryCount: 0,
+      nowMs: NOW_MS,
+    });
+    expect(result.outcome).toBe("stop");
+    if (result.outcome === "stop") expect(result.reason).toBe("sent_now");
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it("stops with reason=not_scheduled when delivery method is self_send", async () => {

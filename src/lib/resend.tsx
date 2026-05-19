@@ -76,6 +76,7 @@ async function sendOrSkip(args: {
   subType: EmailSubType;
   submissionId: string | null;
   replyTo?: string;
+  idempotencyKey?: string;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
   if (isFlagEnabled("RESEND_DRY_RUN")) {
@@ -97,13 +98,16 @@ async function sendOrSkip(args: {
   }
   let resendId: string | null;
   try {
-    const response = await client.emails.send({
-      from: FROM_ADDRESS,
-      to: args.to,
-      subject: args.subject,
-      html: args.html,
-      ...(args.replyTo ? { replyTo: args.replyTo } : {}),
-    });
+    const response = await client.emails.send(
+      {
+        from: FROM_ADDRESS,
+        to: args.to,
+        subject: args.subject,
+        html: args.html,
+        ...(args.replyTo ? { replyTo: args.replyTo } : {}),
+      },
+      args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
+    );
     resendId = response.data?.id ?? null;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -298,6 +302,7 @@ export type GiftClaimEmailInput = {
   purchaserFirstName: string;
   readingName: string;
   giftMessage: string | null;
+  idempotencyKey?: string;
 } & (
   | { variant: "first_send"; claimUrl: string }
   | { variant: "reminder"; claimUrl?: never }
@@ -335,6 +340,7 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     html,
     subType: "gift_claim",
     submissionId: input.submissionId,
+    idempotencyKey: input.idempotencyKey,
   });
 }
 

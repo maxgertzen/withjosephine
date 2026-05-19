@@ -69,7 +69,9 @@ const PAID_SUBMISSION: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 const DELIVERABLE = {
   _id: "sub_1",

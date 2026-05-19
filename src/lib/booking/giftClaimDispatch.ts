@@ -15,7 +15,14 @@ export type GiftClaimDispatchOutcome =
   | { outcome: "reminder"; nextAlarmMs: number }
   | {
       outcome: "stop";
-      reason: "missing" | "claimed" | "cancelled" | "abandoned" | "max_retries" | "not_scheduled";
+      reason:
+        | "missing"
+        | "claimed"
+        | "cancelled"
+        | "abandoned"
+        | "max_retries"
+        | "not_scheduled"
+        | "sent_now";
       nextAlarmMs: null;
     };
 
@@ -40,6 +47,13 @@ export async function dispatchGiftClaim(
   }
   if (submission.giftCancelledAt) {
     return { outcome: "stop", reason: "cancelled", nextAlarmMs: null };
+  }
+  if (submission.giftClaimSentNowAt) {
+    // Defense-in-depth: purchaser already fired the claim email via send-now.
+    // The route's WHERE-guarded UPDATE + UNIQUE index defeat double-UPDATE;
+    // this stops an alarm that entered the dispatch path mid-flight before
+    // the route's UPDATE landed.
+    return { outcome: "stop", reason: "sent_now", nextAlarmMs: null };
   }
 
   const recipientEmail = submission.recipientEmail;

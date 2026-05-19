@@ -84,6 +84,9 @@ export type SubmissionRecord = {
   giftClaimEmailFiredAt: string | null;
   giftClaimedAt: string | null;
   giftCancelledAt: string | null;
+  giftClaimSentNowAt: string | null;
+  giftClaimSentNowActor: string | null;
+  giftClaimPriorAlarmAt: string | null;
 };
 
 /**
@@ -313,6 +316,30 @@ export async function flipGiftToSelfSend(
         giftSendAt: null,
         giftClaimTokenHash: args.tokenHash,
         giftClaimEmailFiredAt: args.firedAtIso,
+      }),
+    );
+  }
+  return updated;
+}
+
+export async function applyGiftSendNow(
+  submissionId: string,
+  args: {
+    tokenHash: string;
+    sentNowAtIso: string;
+    actor: string;
+    priorAlarmAt: string | null;
+  },
+): Promise<boolean> {
+  const updated = await repo.applyGiftSendNow(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftClaimTokenHash: args.tokenHash,
+        giftClaimEmailFiredAt: args.sentNowAtIso,
+        giftClaimSentNowAt: args.sentNowAtIso,
+        giftClaimSentNowActor: args.actor,
+        giftClaimPriorAlarmAt: args.priorAlarmAt,
       }),
     );
   }

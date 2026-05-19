@@ -65,7 +65,9 @@ const SELF_SEND_GIFT: SubmissionRecord = {
   giftClaimEmailFiredAt: "2026-05-01T00:00:01.000Z",
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   cookieGetMock.mockReset().mockReturnValue({ value: "cookie-val" });

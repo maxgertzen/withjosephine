@@ -25,7 +25,9 @@ function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
     giftClaimEmailFiredAt: null,
     giftClaimedAt: null,
     giftCancelledAt: null,
-    ...overrides,
+    giftClaimSentNowAt: null,
+    giftClaimSentNowActor: null,
+    giftClaimPriorAlarmAt: null,    ...overrides,
   };
 }
 
