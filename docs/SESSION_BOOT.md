@@ -16,7 +16,7 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 **Active branch:** none (last sub-PR merged 2026-05-19).
 **Open PRs:** none.
 **Main:** `d607ada` (unchanged this sprint cycle).
-**Release branch:** `release/v1.1.0` at `1ca2aff` after PRs #142 / #143 / #144 / #145 merged 2026-05-19.
+**Release branch:** `release/v1.1.0` at `9dbdd86` after PRs #142 / #143 / #144 / #145 / #146 / #147 merged 2026-05-19.
 
 **Phase 3 sub-PR stack** (5-stacked-sub-PR strategy locked 2026-05-19 — see prior HANDOFF):
 
@@ -25,11 +25,11 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 | PR-A (#142 + #143 hotfix) | D-8 status pill + D-9 datepicker TZ hardening | ✅ shipped + staging |
 | PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
 | PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
-| **PR-C-ii** | D-10 send-now route + `SendNowControl` + unit tests + e2e | **next** |
-| PR-D | D-11 cancel-scheduled route + UI | not started |
+| PR-C-ii (#147) | D-10 send-now route + `SendNowControl` + idempotency-key + dispatcher defense + unit tests + e2e | ✅ shipped 2026-05-19 + staging (CI 26108537934 green) |
+| **PR-D** | D-11 cancel-scheduled route + UI | **next** |
 | PR-E | P-6 motion preference + final tests + `/simplify` | not started |
 
-**PR-C-ii scope** (resume from PRD § Criteria D-10 block, ISC-19a–l): new POST `/api/gifts/[id]/send-now` (auth, CSRF, SELECT prior `gift_claim_alarm_at` for audit, `cancelGiftAlarm` via `getCloudflareContext({ async: true })`, WHERE-guarded UPDATE that sets `gift_claim_sent_now_at` / `..._actor` / `gift_claim_prior_alarm_at`, Resend `Idempotency-Key: gift:{id}:claim`, DO alarm-handler defense-in-depth check at dispatch time); new `SendNowControl` component reusing 5s confirm-armed pattern; unit tests covering 409 already-sent / already-cancelled / idempotency double-click race; e2e `gift-send-now.spec.ts`. Branch off updated `release/v1.1.0`. **Schema is already in place via 0012** — no D1 migration in PR-C-ii.
+**PR-D scope** (resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`): new POST `/api/gifts/[id]/cancel-scheduled` — auth → preflight 409s → cancelGiftAlarm FIRST (cheap, idempotent) → WHERE-guarded UPDATE setting `gift_cancelled_at` / `gift_cancelled_by` / `gift_cancelled_reason='purchaser-request'` with guard `gift_cancelled_at IS NULL AND gift_claim_email_fired_at IS NULL`; rowcount 0 → 409 with copy "Too late — your gift has already been sent. Contact hello@withjosephine.com." New `CancelScheduledControl` reusing 5s confirm-armed pattern; j-rose (#BF9B8B) armed-state tint (Quiet Archivist forbids alarm-red). Copy locked under wholesale-no-refunds policy: "Cancel this gift" → armed "Tap again to confirm — your reading will not be sent. This purchase is non-refundable." After cancel, card renders muted with `cancelled` pill (D-8 — already shipped). **Un-cancel:** terminal on customer surface; ops-side reversal is D1-console-only until a Sanity-webhook→Worker→D1 path exists (not built). **Audit columns already exist:** `gift_cancelled_at` from migration 0007, `gift_cancelled_by` + `gift_cancelled_reason` from migration 0012 (PR-C-i). **Schema in place** — no D1 migration in PR-D. **Refund policy locked NO REFUNDS** wholesale per P-4 (Max directive 2026-05-19) — UI copy must never imply refund. Branch off updated `release/v1.1.0` at `9dbdd86`.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
