@@ -666,6 +666,31 @@ export async function applyGiftSendNow(
   return result.rowsWritten > 0;
 }
 
+export async function applyGiftCancelScheduled(
+  id: string,
+  args: {
+    cancelledAtIso: string;
+    by: string;
+    reason: string;
+  },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_cancelled_at = ?,
+            gift_cancelled_by = ?,
+            gift_cancelled_reason = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'scheduled'
+        AND gift_cancelled_at IS NULL
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claim_sent_now_at IS NULL
+        AND gift_claimed_at IS NULL`,
+    [args.cancelledAtIso, args.by, args.reason, id],
+  );
+  return result.rowsWritten > 0;
+}
+
 /**
  * Atomic lock acquire for the resend-link route.
  * Returns true when this caller successfully acquired the lock

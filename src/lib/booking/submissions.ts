@@ -346,6 +346,27 @@ export async function applyGiftSendNow(
   return updated;
 }
 
+export async function applyGiftCancelScheduled(
+  submissionId: string,
+  args: {
+    cancelledAtIso: string;
+    by: string;
+    reason: string;
+  },
+): Promise<boolean> {
+  const updated = await repo.applyGiftCancelScheduled(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftCancelledAt: args.cancelledAtIso,
+        giftCancelledBy: args.by,
+        giftCancelledReason: args.reason,
+      }),
+    );
+  }
+  return updated;
+}
+
 export async function flipGiftToScheduled(
   submissionId: string,
   args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
