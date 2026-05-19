@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
@@ -16,6 +16,8 @@ import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZ
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
+
+import { ConfirmArmedButton } from "./ConfirmArmedButton";
 
 /**
  * Narrow view-model for the client-side action controls. Only the fields
@@ -254,9 +256,6 @@ function EditRecipientControl({
   );
 }
 
-const ARM_RESET_MS = 5000;
-
-
 function FlipToSelfSendControl({
   gift,
   copy,
@@ -264,38 +263,16 @@ function FlipToSelfSendControl({
   gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
-  const router = useRouter();
-  const [armed, setArmed] = useState(false);
-  const action = useMutationAction(`/api/gifts/${gift._id}/cancel-auto-send`);
-
-  useEffect(() => {
-    if (!armed || action.submitting) return;
-    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
-    return () => clearTimeout(t);
-  }, [armed, action.submitting]);
-
-  async function onConfirm() {
-    const result = await action.run();
-    if (result.ok) {
-      router.refresh();
-    } else {
-      setArmed(false);
-    }
-  }
-
   return (
-    <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      {armed ? (
-        <Button variant="primary" size="sm" disabled={action.submitting} onClick={onConfirm}>
-          {action.submitting ? copy.flipSwitchingLabel : copy.flipConfirmCtaLabel}
-        </Button>
-      ) : (
-        <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
-          {copy.flipToSelfSendCtaLabel}
-        </Button>
-      )}
-      <InlineError message={actionErrorLabel(action.topError, copy)} />
-    </div>
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/cancel-auto-send`}
+      copy={copy}
+      labels={{
+        idle: copy.flipToSelfSendCtaLabel,
+        confirm: copy.flipConfirmCtaLabel,
+        sending: copy.flipSwitchingLabel,
+      }}
+    />
   );
 }
 
@@ -306,43 +283,20 @@ function SendNowControl({
   gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
-  const router = useRouter();
-  const [armed, setArmed] = useState(false);
-  const action = useMutationAction(`/api/gifts/${gift._id}/send-now`);
-
-  useEffect(() => {
-    if (!armed || action.submitting) return;
-    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
-    return () => clearTimeout(t);
-  }, [armed, action.submitting]);
-
-  async function onConfirm() {
-    const result = await action.run();
-    if (result.ok) {
-      router.refresh();
-    } else {
-      setArmed(false);
-    }
-  }
-
-  const topError = actionErrorLabel(action.topError, copy, {
-    http_401: "sendNowSessionExpiredError",
-    http_409: "actionClosedError",
-  });
-
   return (
-    <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      {armed ? (
-        <Button variant="primary" size="sm" disabled={action.submitting} onClick={onConfirm}>
-          {action.submitting ? copy.sendNowSendingLabel : copy.sendNowConfirmCtaLabel}
-        </Button>
-      ) : (
-        <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
-          {copy.sendNowCtaLabel}
-        </Button>
-      )}
-      <InlineError message={topError} />
-    </div>
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/send-now`}
+      copy={copy}
+      labels={{
+        idle: copy.sendNowCtaLabel,
+        confirm: copy.sendNowConfirmCtaLabel,
+        sending: copy.sendNowSendingLabel,
+      }}
+      errorOverrides={{
+        http_401: "sendNowSessionExpiredError",
+        http_409: "actionClosedError",
+      }}
+    />
   );
 }
 
@@ -353,50 +307,21 @@ function CancelScheduledControl({
   gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
-  const router = useRouter();
-  const [armed, setArmed] = useState(false);
-  const action = useMutationAction(`/api/gifts/${gift._id}/cancel-scheduled`);
-
-  useEffect(() => {
-    if (!armed || action.submitting) return;
-    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
-    return () => clearTimeout(t);
-  }, [armed, action.submitting]);
-
-  async function onConfirm() {
-    const result = await action.run();
-    if (result.ok) {
-      router.refresh();
-    } else {
-      setArmed(false);
-    }
-  }
-
-  const topError = actionErrorLabel(action.topError, copy, {
-    http_401: "cancelScheduledSessionExpiredError",
-    http_409: "actionClosedError",
-  });
-
   return (
-    <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      {armed ? (
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={action.submitting}
-          onClick={onConfirm}
-        >
-          {action.submitting
-            ? copy.cancelScheduledSendingLabel
-            : copy.cancelScheduledConfirmCtaLabel}
-        </Button>
-      ) : (
-        <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
-          {copy.cancelScheduledCtaLabel}
-        </Button>
-      )}
-      <InlineError message={topError} />
-    </div>
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/cancel-scheduled`}
+      copy={copy}
+      labels={{
+        idle: copy.cancelScheduledCtaLabel,
+        confirm: copy.cancelScheduledConfirmCtaLabel,
+        sending: copy.cancelScheduledSendingLabel,
+      }}
+      variant="destructive"
+      errorOverrides={{
+        http_401: "cancelScheduledSessionExpiredError",
+        http_409: "actionClosedError",
+      }}
+    />
   );
 }
 
