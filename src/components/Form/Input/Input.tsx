@@ -16,6 +16,7 @@ type InputProps = {
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   autoComplete?: string;
   inputMode?: "text" | "email" | "numeric" | "decimal" | "tel" | "url" | "search";
   autoCapitalize?: string;
@@ -37,6 +38,7 @@ export function Input({
   error,
   required,
   disabled,
+  readOnly,
   autoComplete,
   inputMode,
   autoCapitalize,
@@ -64,6 +66,7 @@ export function Input({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder ?? " "}
         disabled={disabled}
+        readOnly={readOnly}
         required={required}
         autoComplete={autoComplete ?? (type === "email" ? "email" : undefined)}
         inputMode={inputMode ?? (type === "email" ? "email" : undefined)}

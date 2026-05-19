@@ -99,17 +99,15 @@ const LEGAL_PAGES: LegalPageSeed[] = [
     title: "Refund Policy",
     slug: { _type: "slug", current: "refund-policy" },
     tag: "\u2726 Refunds",
-    lastUpdated: "2026-04-15",
-    body: [
-      placeholderBlock(
-        "refund-1",
-        "This policy is managed in Sanity Studio. Replace this block with the full refund policy text.",
-      ),
-    ],
+    lastUpdated: "2026-05-19",
+    // Body intentionally empty: src/app/refund-policy/page.tsx carries the
+    // load-bearing wholesale-non-refundable fallback. Becky can author over it
+    // in Studio whenever she's ready; until then the page renders from code.
+    body: [],
     seo: {
       metaTitle: "Refund Policy — Josephine",
       metaDescription:
-        "Clear refund terms for all Josephine readings. What's covered, what isn't, and how to reach out if something feels off.",
+        "Readings are non-refundable. How the cooling-off waiver works, and how duplicate-charge and delivery-issue cases are handled.",
     },
     order: 30,
   },

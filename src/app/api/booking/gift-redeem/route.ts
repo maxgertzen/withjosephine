@@ -7,6 +7,7 @@ import {
   HONEYPOT_FIELD,
   MAX_ACTIVE_GIFTS_PER_RECIPIENT,
 } from "@/lib/booking/constants";
+import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import {
   clearGiftClaimCookie,
@@ -198,7 +199,7 @@ export async function POST(request: Request): Promise<Response> {
   const validatedValues = validation.data as Record<string, unknown>;
   const submittedEmail =
     typeof validatedValues.email === "string"
-      ? validatedValues.email.trim().toLowerCase()
+      ? normalizeEmailForm(validatedValues.email)
       : "";
   if (!submittedEmail) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -209,10 +210,13 @@ export async function POST(request: Request): Promise<Response> {
   // match. Self_send gifts have no recipient_email at purchase (the
   // purchaser hands off the link manually), so the recipient supplies it
   // here; the claim cookie already gated this request on submissionId.
-  if (
-    submission.recipientEmail &&
-    submittedEmail !== submission.recipientEmail.toLowerCase()
-  ) {
+  // Normalising both sides via `normalizeEmailForm` keeps the strict mismatch
+  // gate honest across copy-pasted Unicode variants (the Rook hard-stop must
+  // not be defeated by combining-mark or pre/decomposed-form differences).
+  const storedRecipientEmail = submission.recipientEmail
+    ? normalizeEmailForm(submission.recipientEmail)
+    : null;
+  if (storedRecipientEmail && submittedEmail !== storedRecipientEmail) {
     return NextResponse.json(
       {
         error: "Email mismatch",

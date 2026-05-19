@@ -18,6 +18,8 @@ import {
   fetchReading,
 } from "@/lib/sanity/fetch";
 
+import { RecipientEmailEscapeHatch } from "./RecipientEmailEscapeHatch";
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -95,9 +97,10 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
             <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
               {welcome ? copy.headingWelcome : copy.heading}
             </h1>
-            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-6">
               {lede}
             </p>
+            <RecipientEmailEscapeHatch recipientEmail={submission.recipientEmail ?? null} />
 
             <IntakeForm
               readingId={reading.slug}
@@ -113,6 +116,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               mode="redeem"
               redeemSubmissionId={submission._id}
               redeemSuccessUrl={`/thank-you/${submission._id}?gift=1&redeemed=1`}
+              prefilledEmail={submission.recipientEmail ?? null}
             />
           </div>
         </article>

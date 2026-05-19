@@ -59,7 +59,7 @@ const FAQS = [
     _id: "faq-refunds",
     question: "Can I get a refund?",
     answer:
-      "Yes, as long as you haven\u2019t submitted the intake form yet — request within 14 days of payment and you\u2019ll receive a full refund. Once you\u2019ve sent me your details the reading has effectively started, and at that point it\u2019s no longer refundable. Full details on the Refund Policy page.",
+      "Readings are non-refundable. At checkout you tick a checkbox waiving your 14-day cooling-off right under EU CRD Art. 16(m), which lets me begin the reading right away rather than wait. Duplicate or erroneous Stripe charges are always refunded in full — those are payment-system errors, not refund requests. Full details on the Refund Policy page.",
     order: 60,
   },
   {
