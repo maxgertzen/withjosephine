@@ -13,6 +13,7 @@ import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient"
 import { sendGiftPurchaseConfirmation } from "@/lib/resend";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
+import { giftMutationGate } from "../_lib/giftMutationGate";
 
 export async function POST(
   _request: Request,
@@ -23,15 +24,11 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
-    return NextResponse.json({ error: "Already self-send" }, { status: 409 });
-  }
-  if (submission.giftClaimEmailFiredAt) {
-    return NextResponse.json({ error: "Already sent" }, { status: 409 });
-  }
-  if (submission.giftClaimedAt || submission.giftCancelledAt) {
-    return NextResponse.json({ error: "Closed" }, { status: 409 });
-  }
+  const gated = giftMutationGate(submission, {
+    requireMethod: "scheduled",
+    checkSentNow: false,
+  });
+  if (gated) return gated;
 
   // Atomic-flip-first redesign.
   // ORDER (load-bearing — closes the cancel-vs-alarm race):

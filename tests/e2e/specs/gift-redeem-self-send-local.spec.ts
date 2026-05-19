@@ -6,6 +6,7 @@ import {
   clickThroughIntakePages,
   seedIntakeDraft,
 } from "../helpers/intakeDraft";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
 // C-4b — self_send purchases leave recipient_email NULL at purchase time.
@@ -28,14 +29,9 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
   }) => {
     test.setTimeout(2 * 60 * 1000);
 
-    let interceptedSubmissionId: string | null = null;
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      interceptedSubmissionId = url.searchParams.get("client_reference_id");
-      await route.fulfill({
-        status: 303,
-        headers: { location: `/thank-you/${READING_SLUG}?gift=1` },
-      });
+    const intercept = await interceptStripeCheckout(page, {
+      readingSlug: READING_SLUG,
+      gift: true,
     });
 
     await page.goto(`/book/${READING_SLUG}/gift`);
@@ -54,14 +50,12 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
 
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
-    expect(interceptedSubmissionId).not.toBeNull();
+    const { submissionId } = await intercept.captured;
+    expect(submissionId).toBeTruthy();
 
-    await setGiftClaimCookieForTest(
-      page.context().request,
-      interceptedSubmissionId!,
-    );
+    await setGiftClaimCookieForTest(page.context().request, submissionId);
 
-    await seedIntakeDraft(page, `gift-redeem.${interceptedSubmissionId!}`);
+    await seedIntakeDraft(page, `gift-redeem.${submissionId}`);
 
     // Hold the redeem POST so the submit overlay is observable. Asserts
     // C-4a (overlay copy is the recipient-specific string, not the booking
@@ -118,10 +112,7 @@ test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {
     await expect(page.getByText(/seven days/i).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(/\$\d/)).toHaveCount(0);
 
-    await setGiftClaimCookieForTest(
-      page.context().request,
-      interceptedSubmissionId!,
-    );
+    await setGiftClaimCookieForTest(page.context().request, submissionId);
     await page.goto("/gift/intake");
     await expect(page).toHaveURL(/\/gift\/already-submitted/, { timeout: 10_000 });
     await expect(page.getByText(/we have your answers/i)).toBeVisible({

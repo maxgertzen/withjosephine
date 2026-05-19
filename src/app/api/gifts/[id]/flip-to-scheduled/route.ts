@@ -13,6 +13,7 @@ import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClien
 import { sendGiftPurchaseConfirmation } from "@/lib/resend";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
+import { giftMutationGate } from "../_lib/giftMutationGate";
 import { validateGiftRecipientFields } from "../_lib/validateGiftRecipientFields";
 
 type FlipBody = { recipientEmail: string; giftSendAt: string };
@@ -33,12 +34,15 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.selfSend) {
-    return NextResponse.json({ error: "Already scheduled" }, { status: 409 });
-  }
-  if (submission.giftClaimedAt || submission.giftCancelledAt) {
-    return NextResponse.json({ error: "Closed" }, { status: 409 });
-  }
+  // Inverse method check: flip-to-scheduled REQUIRES self_send, the others
+  // require scheduled. Also opt out of alarm/sentNow checks — in self_send
+  // mode neither column is meaningful for this transition.
+  const gated = giftMutationGate(submission, {
+    requireMethod: "selfSend",
+    checkAlarmFired: false,
+    checkSentNow: false,
+  });
+  if (gated) return gated;
 
   const raw = await request.json().catch(() => null);
   const body = parseBody(raw);
