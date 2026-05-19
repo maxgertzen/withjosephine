@@ -11,28 +11,37 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 
 ---
 
-## Current sprint — v1.1.x hot-fix line (release/v1.1.0)
+## Current sprint — v1.1.x Phase 3 scheduling rebuild (release/v1.1.0)
 
-**Active branch:** `fix/v1.1.1-followup-3a-quick-wins` (against `release/v1.1.0`).
-**Open PR:** [#140](https://github.com/maxgertzen/withjosephine/pulls/140) — extended with the alarm-scheduling root-cause fix (commit `217313d`).
+**Active branch:** none (last sub-PR merged 2026-05-19).
+**Open PRs:** none.
 **Main:** `d607ada` (unchanged this sprint cycle).
-**Release branch:** `release/v1.1.0` at `93ca63d` after PRs #137/#138/#139 merged.
+**Release branch:** `release/v1.1.0` at `1ca2aff` after PRs #142 / #143 / #144 / #145 merged 2026-05-19.
 
-**PR #140 contents (extended 2026-05-18):**
-- I-13 — /my-gifts shows recipient name + email
-- I-14 — Edit-recipient drawer self-send indicator
-- I-15 — Readable scheduled date+time in purchase confirmation email + /my-gifts label
-- Silent-failure repair — `scheduleGiftAlarm` failure now 502s (was silent OK)
-- **Real alarm fix** — `giftClaimSchedulerClient.ts` uses `getCloudflareContext({ async: true })` (was reading from `globalThis`, undefined in OpenNext route runtime). Three test files migrated to mock the correct binding source. Reproducer test added.
+**Phase 3 sub-PR stack** (5-stacked-sub-PR strategy locked 2026-05-19 — see prior HANDOFF):
 
-## Scheduling-flow next steps (in this session's PRD)
+| Sub-PR | Scope | Status |
+|---|---|---|
+| PR-A (#142 + #143 hotfix) | D-8 status pill + D-9 datepicker TZ hardening | ✅ shipped + staging |
+| PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
+| PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
+| **PR-C-ii** | D-10 send-now route + `SendNowControl` + unit tests + e2e | **next** |
+| PR-D | D-11 cancel-scheduled route + UI | not started |
+| PR-E | P-6 motion preference + final tests + `/simplify` | not started |
 
-PRD: `www/MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`
+**PR-C-ii scope** (resume from PRD § Criteria D-10 block, ISC-19a–l): new POST `/api/gifts/[id]/send-now` (auth, CSRF, SELECT prior `gift_claim_alarm_at` for audit, `cancelGiftAlarm` via `getCloudflareContext({ async: true })`, WHERE-guarded UPDATE that sets `gift_claim_sent_now_at` / `..._actor` / `gift_claim_prior_alarm_at`, Resend `Idempotency-Key: gift:{id}:claim`, DO alarm-handler defense-in-depth check at dispatch time); new `SendNowControl` component reusing 5s confirm-armed pattern; unit tests covering 409 already-sent / already-cancelled / idempotency double-click race; e2e `gift-send-now.spec.ts`. Branch off updated `release/v1.1.0`. **Schema is already in place via 0012** — no D1 migration in PR-C-ii.
 
-After PR #140 lands + deploys to staging:
-1. Max does a fresh flip-to-scheduled with sendAt = now+6min from a `+suffix` recipient. With the real fix deployed, the alarm should fire and dispatch hit at the right time.
-2. Phase 2 — UX design Council on: per-status pill (I-16), date+time picker swap (I-17), send-now affordance (new), cancel-scheduled (I-18), recipient-email-prefill-and-allow-change (new bug #20).
-3. Phase 3 — implementation in a fresh branch off updated `release/v1.1.0` (send-now route + audit column + UI + cancel-scheduled + status pill refactor + datepicker swap + tests + new e2e specs).
+## Hold-gate (apex unpark + Stripe live-mode)
+
+Apex unpark + Stripe live-mode flip is blocked on:
+
+1. F-10 Resend domain DKIM/SPF/DMARC verified
+2. Reading-price reconcile (Max + Josephine — pick canonical price per reading; sync Sanity `price` + `priceDisplay` + Stripe Payment Links)
+3. Sub-PR #4a 1-week bake completes (Becky's first real reading delivered)
+4. **release/v1.1.0 merged to main** — ships everything from intake-architecture-repair Phases 0–4, Phase 5 Gifting, master plan Phases 1–4, Phase 3 scheduling rebuild
+5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
+6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
+7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
@@ -62,6 +71,7 @@ Branch `feat/phase-7-email-sanity-cms` exists locally with WIP commit `f6568e9` 
 8. **AI-bot accessibility policy** — allow Claude-SearchBot / OAI-SearchBot / PerplexityBot? Decision in `www/docs/BACKLOG.md` → Security.
 9. **Outstanding Clarity Max-actions** — provision tracking ID, set masking to Strict, hide Smart Events, add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH Variables. Checklist in BACKLOG.
 10. **Rotate `DO_DISPATCH_SECRET` on staging** — exposed mid-diagnostic 2026-05-18. Command: `openssl rand -hex 32 | pnpm exec wrangler secret put DO_DISPATCH_SECRET --env staging`. After rotation, do not re-paste in chat.
+11. **Apply migration 0012 to production D1** — staging is at 0012 (applied + verified 2026-05-19); production still at 0003. Standalone apply is safe when 0004 → 0012 batch runs at main-merge time per the hold-gate workflow. Command: `pnpm migrate:apply:prod`. Verify with `pnpm migrate:list:prod`.
 
 ## Parallel-safe non-blockers (ship anytime)
 
@@ -79,8 +89,8 @@ Locked 2026-05-06. Once `www/docs/BACKLOG.md` is empty (shipped or closed-as-won
 
 ## PRD index — active or recent
 
-- `20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` — **THIS SESSION** (in progress)
-- `20260518-handoff-session-end/HANDOFF.md` — prior session handoff (this session resumes from it)
+- `20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` — Phase 3 scheduling rebuild. PR-A + PR-B + PR-C-i shipped 2026-05-19 (38/104 ISC complete; D-10/D-11/P-6 + remaining tests deferred to PR-C-ii / PR-D / PR-E)
+- `20260518-handoff-session-end/HANDOFF.md` — handoff from the previous session that kicked Phase 3 off
 - `20260518-112650_v1.1.1-implementation/PRD.md` — v1.1.1 implementation (complete except Max-action migrations)
 - `20260515-200000_intake-architecture-repair/PRD.md` — Phases 0–4 shipped; Phase 5 absorbed into v1.1.0/v1.1.1 cycle
 - `20260517-220000_phase-7-email-sanity-cms/PRD.md` — PAUSED mid-EXECUTE
