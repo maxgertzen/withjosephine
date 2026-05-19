@@ -37,6 +37,11 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     extraHTTPHeaders: isSandbox ? undefined : { "x-e2e-reset-token": e2eResetToken },
+    // Pin Chromium to a real IANA region so Intl.DateTimeFormat().resolvedOptions().timeZone
+    // returns a region/city shape (matches dev machines). CI runners default to UTC, which
+    // breaks IANA-shape assertions in gift-flip-to-scheduled-tz.spec.ts authored against
+    // a real-browser environment.
+    timezoneId: "America/Los_Angeles",
   },
 
   projects: [

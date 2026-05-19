@@ -24,6 +24,15 @@ export const GIFT_DELIVERY = {
   scheduled: "scheduled",
 } as const;
 
+export const GIFT_CANCELLED_REASON = {
+  purchaserRequest: "purchaser-request",
+  fraud: "fraud",
+  refund: "refund",
+} as const;
+
+export type GiftCancelledReason =
+  (typeof GIFT_CANCELLED_REASON)[keyof typeof GIFT_CANCELLED_REASON];
+
 export const GIFT_STATUS_KIND = {
   scheduled: "scheduled",
   selfSendReady: "self_send_ready",

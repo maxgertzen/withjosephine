@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+import { signInViaMagicLink } from "../helpers/auth";
 import { resetCapturedState } from "../helpers/captureStore";
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { fireCheckoutCompleted } from "../helpers/stripeWebhook";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
@@ -21,21 +23,9 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     const purchaserEmail = "flip-tz-purchaser@withjosephine.com";
 
-    let interceptedSessionId: string | null = null;
-    let interceptedSubmissionId: string | null = null;
-
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      const submissionId = url.searchParams.get("client_reference_id") ?? "";
-      const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
-      interceptedSessionId = sessionId;
-      interceptedSubmissionId = submissionId;
-      await route.fulfill({
-        status: 303,
-        headers: {
-          location: `/thank-you/${READING_SLUG}?gift=1&sessionId=${sessionId}&submission=${submissionId}`,
-        },
-      });
+    const intercept = await interceptStripeCheckout(page, {
+      readingSlug: READING_SLUG,
+      gift: true,
     });
 
     // Book a self_send gift — no recipient_email or send_at at booking time;
@@ -52,35 +42,17 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    expect(interceptedSubmissionId).not.toBeNull();
-    expect(interceptedSessionId).not.toBeNull();
+    const { sessionId, submissionId } = await intercept.captured;
 
     // Mark submission paid + persisted via the Stripe webhook.
-    const webhookResponse = await fireCheckoutCompleted(request, interceptedSubmissionId!, {
-      stripeSessionId: interceptedSessionId!,
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId, {
+      stripeSessionId: sessionId,
       customerEmail: purchaserEmail,
       amountTotal: 9900,
     });
     expect(webhookResponse.status()).toBe(200);
 
-    // Authenticate to /my-gifts via magic link.
-    const issueResponse = await page.context().request.post(
-      "/api/internal/issue-magic-link",
-      {
-        data: { email: purchaserEmail },
-        headers: {
-          "content-type": "application/json",
-          "x-admin-token": process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy",
-        },
-      },
-    );
-    expect(issueResponse.status()).toBe(200);
-    const { token } = (await issueResponse.json()) as { token: string };
-
-    await page.goto(`/auth/verify?token=${token}&next=/my-gifts`);
-    await page.locator("input[name='email']").fill(purchaserEmail);
-    await page.locator("button[type='submit']").click();
-    await page.waitForURL(/\/my-gifts/, { timeout: 15_000 });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
     // Self-send card should be visible with the "Let Josephine send it for me" flip CTA.
     const flipCta = page.getByRole("button", { name: /let josephine send it for me/i });
@@ -115,7 +87,7 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     // UTC ISO derived from the local input + browser TZ (not a naive
     // `new Date(input).toISOString()`).
     let capturedBody: { recipientEmail?: string; giftSendAt?: string } | null = null;
-    await page.route(`**/api/gifts/${interceptedSubmissionId}/flip-to-scheduled`, async (route) => {
+    await page.route(`**/api/gifts/${submissionId}/flip-to-scheduled`, async (route) => {
       const body = route.request().postDataJSON() as typeof capturedBody;
       capturedBody = body;
       await route.fulfill({
@@ -169,21 +141,9 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     const purchaserEmail = "edit-tz-purchaser@withjosephine.com";
 
-    let interceptedSessionId: string | null = null;
-    let interceptedSubmissionId: string | null = null;
-
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      const submissionId = url.searchParams.get("client_reference_id") ?? "";
-      const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
-      interceptedSessionId = sessionId;
-      interceptedSubmissionId = submissionId;
-      await route.fulfill({
-        status: 303,
-        headers: {
-          location: `/thank-you/${READING_SLUG}?gift=1&sessionId=${sessionId}&submission=${submissionId}`,
-        },
-      });
+    const intercept = await interceptStripeCheckout(page, {
+      readingSlug: READING_SLUG,
+      gift: true,
     });
 
     // Book a SCHEDULED gift so /my-gifts surfaces the edit-recipient CTA.
@@ -204,31 +164,15 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    expect(interceptedSubmissionId).not.toBeNull();
-    const webhookResponse = await fireCheckoutCompleted(request, interceptedSubmissionId!, {
-      stripeSessionId: interceptedSessionId!,
+    const { sessionId, submissionId } = await intercept.captured;
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId, {
+      stripeSessionId: sessionId,
       customerEmail: purchaserEmail,
       amountTotal: 9900,
     });
     expect(webhookResponse.status()).toBe(200);
 
-    const issueResponse = await page.context().request.post(
-      "/api/internal/issue-magic-link",
-      {
-        data: { email: purchaserEmail },
-        headers: {
-          "content-type": "application/json",
-          "x-admin-token": process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy",
-        },
-      },
-    );
-    expect(issueResponse.status()).toBe(200);
-    const { token } = (await issueResponse.json()) as { token: string };
-
-    await page.goto(`/auth/verify?token=${token}&next=/my-gifts`);
-    await page.locator("input[name='email']").fill(purchaserEmail);
-    await page.locator("button[type='submit']").click();
-    await page.waitForURL(/\/my-gifts/, { timeout: 15_000 });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
 
     // Open the edit-recipient drawer.
     const editCta = page.getByRole("button", { name: /edit recipient/i });
@@ -254,7 +198,7 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     // Intercept the edit POST and assert the TZ-converted body.
     let capturedBody: { recipientEmail?: string; giftSendAt?: string | null } | null = null;
     await page.route(
-      `**/api/gifts/${interceptedSubmissionId}/edit-recipient`,
+      `**/api/gifts/${submissionId}/edit-recipient`,
       async (route) => {
         capturedBody = route.request().postDataJSON() as typeof capturedBody;
         await route.fulfill({
