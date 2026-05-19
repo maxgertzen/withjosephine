@@ -13,12 +13,14 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 
 ## Current sprint — v1.1.x Phase 3 scheduling rebuild (release/v1.1.0)
 
-**Active branch:** none (last sub-PR merged 2026-05-19).
-**Open PRs:** none.
+**Active branch:** `feat/v1.1.x-phase3-pr-bundle` (off `release/v1.1.0@21ff516`).
+**Open PRs:** none yet — single bundle PR pending push.
 **Main:** `d607ada` (unchanged this sprint cycle).
-**Release branch:** `release/v1.1.0` at `9dbdd86` after PRs #142 / #143 / #144 / #145 / #146 / #147 merged 2026-05-19.
+**Release branch:** `release/v1.1.0` at `21ff516` after PRs #142 / #143 / #144 / #145 / #146 / #147 merged 2026-05-19 + 2 follow-up docs commits.
 
-**Phase 3 sub-PR stack** (5-stacked-sub-PR strategy locked 2026-05-19 — see prior HANDOFF):
+**Strategy change 2026-05-19 (iteration 5):** Three planned sub-PRs (PR-Lift + PR-D + PR-E) **collapsed into one bundled PR** on `feat/v1.1.x-phase3-pr-bundle`. Rationale: per `feedback_no_more_splitting_and_deferring.md`, default to FINISH not slice. The cross-PR sequencing benefit (helpers land first so PR-D's spec consumes them) survives as intra-PR commit ordering. /simplify still runs three times — after each scope lands inside the bundle — per Max directive.
+
+**Phase 3 sub-PR stack:**
 
 | Sub-PR | Scope | Status |
 |---|---|---|
@@ -26,22 +28,20 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 | PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
 | PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
 | PR-C-ii (#147) | D-10 send-now route + `SendNowControl` + idempotency-key + dispatcher defense + unit tests + e2e | ✅ shipped 2026-05-19 + staging (CI 26108537934 green) |
-| **PR-Lift** | E2E helper extraction (`signInViaMagicLink` + `interceptStripeCheckout`) | **next session — first** |
-| **PR-D** | D-11 cancel-scheduled route + UI | next session — second |
-| **PR-E** | P-6 motion preference + final tests + `/simplify` | next session — third |
+| **PR-Bundle (in-flight)** | PR-Lift helpers + D-11 cancel-scheduled + P-6 reduced-motion + refund-mentions sweep + /simplify ×3 | **in-flight on `feat/v1.1.x-phase3-pr-bundle`** |
 
-### Next-session agenda — three sequenced sub-PRs, all on `release/v1.1.0` (`9dbdd86`)
+### In-flight agenda — bundled PR on `feat/v1.1.x-phase3-pr-bundle` (off `release/v1.1.0@21ff516`)
 
-Three sub-PRs in strict order. Each branches off `release/v1.1.0` AFTER the previous one merges. Locked 2026-05-19 by Max.
+Four scopes in commit order inside the single bundle PR. /simplify runs after each scope, not just at the end. Locked 2026-05-19 by Max (iteration 5 of the scheduling-scrutiny PRD).
 
-**1. PR-Lift — E2E helper extraction (do FIRST, blocks PR-D).** Branch `feat/v1.1.x-e2e-auth-helpers` off `release/v1.1.0`. Extract two helpers from the 4 specs currently duplicating the patterns; PR-D will become the 5th caller, so doing this first means the new spec is written against the helper.
+**Scope 1 — PR-Lift: E2E helper extraction (commits FIRST in the diff).** Extract two helpers from the 4 specs currently duplicating the patterns; D-11's new spec is written against the helper from the start.
 - **`tests/e2e/helpers/auth.ts`** — new file. Export `signInViaMagicLink(page, { email, next }): Promise<void>`. Internals: `POST /api/internal/issue-magic-link` with `x-admin-token: process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy"` → extract `{ token }` → `page.goto(/auth/verify?token=…&next=…)` → fill `input[name='email']` → click `button[type='submit']` → `waitForURL(new RegExp(next))`.
 - **`tests/e2e/helpers/stripeCheckout.ts`** (extend existing) — add `interceptStripeCheckout(page, { readingSlug, gift?: boolean })` returning `{ getSessionId(): string \| null, getSubmissionId(): string \| null }`. Internals: the `page.route("https://buy.stripe.com/**", …)` block that 303s to `/thank-you/${readingSlug}?gift=1&sessionId=…&submission=…`, with closure-captured `interceptedSessionId` / `interceptedSubmissionId` exposed via getters.
 - **Migrate 4 existing callers:** `tests/e2e/specs/gift-send-now.spec.ts`, `tests/e2e/specs/my-gifts-local.spec.ts`, `tests/e2e/specs/gift-flip-to-scheduled-tz.spec.ts` (2 tests). Net diff should be negative.
 - **No production code changes.** Pure test-infra refactor. Vitest unaffected; Playwright suite must pass the same count.
 - **Gates:** tsc + lint + `pnpm test` (1576) + `pnpm exec playwright test --grep gift-` mock-mode pass.
 
-**2. PR-D — D-11 cancel-scheduled (do SECOND).** Branch `feat/v1.1.x-phase3-pr-d-cancel-scheduled` off `release/v1.1.0` AFTER PR-Lift merges. Resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`.
+**Scope 2 — D-11 cancel-scheduled (commits SECOND).** Resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`.
 - New `POST /api/gifts/[id]/cancel-scheduled` — auth via `authorizeGiftPurchaser` → preflight 409s (not-scheduled, already-fired, already-cancelled/claimed) → `cancelGiftAlarm(id)` FIRST (cheap, idempotent) → WHERE-guarded UPDATE setting `gift_cancelled_at` / `gift_cancelled_by=<purchaser_email>` / `gift_cancelled_reason='purchaser-request'` with guard `gift_cancelled_at IS NULL AND gift_claim_email_fired_at IS NULL`; rowcount 0 → 409 with copy "Too late — your gift has already been sent. Contact hello@withjosephine.com."
 - Repo helper `applyGiftCancelScheduled(id, args)` + wrapper in `submissions.ts` + Sanity mirror patch entries for `giftCancelledBy` / `giftCancelledReason` (extend the patch type in `sanityMirror.ts`).
 - New `CancelScheduledControl` in `GiftCardActions.tsx` scheduled branch — reuses 5s confirm-armed pattern; j-rose (`#BF9B8B`) armed-state tint via a new variant or inline class (Quiet Archivist forbids alarm-red). Copy locked under wholesale-no-refunds policy: "Cancel this gift" → armed "Tap again to confirm — your reading will not be sent. This purchase is non-refundable." 4 new Sanity-editable copy fields on `myGiftsPage` (cancelScheduledCtaLabel / cancelScheduledConfirmCtaLabel / cancelScheduledSendingLabel / cancelScheduledSessionExpiredError).
@@ -52,7 +52,7 @@ Three sub-PRs in strict order. Each branches off `release/v1.1.0` AFTER the prev
 - Unit tests + e2e `gift-cancel-scheduled.spec.ts` USING the PR-Lift helpers (`signInViaMagicLink` + `interceptStripeCheckout`).
 - Bookkeeping: CHANGELOG row + SESSION_BOOT mark D-11 shipped.
 
-**3. PR-E — Phase 3 polish + final /simplify (do THIRD).** Branch `feat/v1.1.x-phase3-pr-e-polish` off `release/v1.1.0` AFTER PR-D merges.
+**Scope 3 — Phase 3 polish + final /simplify (commits THIRD).**
 - **P-6: `prefers-reduced-motion` extension of confirm-armed window.** WCAG 2.2.1 Timing Adjustable: when the user prefers reduced motion, extend `ARM_RESET_MS` from 5000 → 15000. Applies to `FlipToSelfSendControl`, `SendNowControl`, and the new `CancelScheduledControl`. Implementation: `useReducedMotion` hook reading `window.matchMedia("(prefers-reduced-motion: reduce)")` via `useSyncExternalStore`; consume in each control to pick `ARM_RESET_MS` vs `ARM_RESET_MS_REDUCED_MOTION`.
 - **Refund-mentions audit pass #2** — sweep customer-facing copy one more time for any "refund" language that drifted in during Phase 3; ensure all surfaces reflect wholesale-no-refunds (P-4b shipped most of this in PR-B; this is the cleanup tail).
 - **/simplify full Phase 3 diff** — run /simplify against the full `release/v1.1.0` ↔ pre-Phase-3 diff (everything from PR-A through PR-D + this PR). Apply findings; defer scope-creep refactors.
@@ -60,7 +60,7 @@ Three sub-PRs in strict order. Each branches off `release/v1.1.0` AFTER the prev
 - **Optional in same PR:** ISC-18h Playwright iOS/Android device-emulation matrix if it doesn't balloon the PR; otherwise split out.
 - Bookkeeping: CHANGELOG row, SESSION_BOOT cleared of Phase 3 in-flight (whole sprint marked done).
 
-**After PR-E merges, Phase 3 scheduling rebuild is fully shipped on `release/v1.1.0`.** Hold-gate item 4 (release/v1.1.0 merged to main) is then the gating step to production.
+**After the bundle PR merges into `release/v1.1.0`, Phase 3 scheduling rebuild is fully shipped.** Hold-gate item 4 (release/v1.1.0 merged to main) is then the gating step to production. /simplify runs ×3 inside the bundle PR (after PR-Lift, after D-11, after polish + sweep).
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
