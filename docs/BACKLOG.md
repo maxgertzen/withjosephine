@@ -44,39 +44,43 @@ OSV-scan filters this CVE in `osv-scanner.toml` because the direct fix breaks th
 
 **Trigger:** any of: (a) brace-expansion CVE escalates from MEDIUM to HIGH, (b) discovery that brace-expansion IS reachable from user input at runtime (would change the risk profile), (c) routine quarterly toolchain refresh hits this entry.
 
-### Production D1 migration drift — apply 0004 → 0011 at main-merge time
+### Production D1 migration drift — apply 0004 → 0012 at main-merge time
 
-Staging D1 (`withjosephine-bookings-staging`) is at migration **0011** (all gift-related schema applied). Production D1 (`withjosephine-bookings`) is at migration **0003**. The 8 missing migrations (0004 → 0011) introduce every gift-aware column the Phase 5 Gifting code reads/writes — `is_gift`, `purchaser_user_id`, `recipient_email`, `gift_delivery_method`, `gift_send_at`, `gift_message`, `gift_claim_token_hash`, `gift_claim_email_fired_at`, `gift_claimed_at`, `gift_cancelled_at`, `gift_resend_lock_until`.
+Staging D1 (`withjosephine-bookings-staging`) is at migration **0012** as of 2026-05-19 (`pnpm migrate:apply:staging` run after PR #145 merged; schema verified). Production D1 (`withjosephine-bookings`) is at migration **0003**. The 9 missing migrations (0004 → 0012) introduce every gift-aware column the Phase 5 Gifting + Phase 3 scheduling code reads/writes — `is_gift`, `purchaser_user_id`, `recipient_email`, `gift_delivery_method`, `gift_send_at`, `gift_message`, `gift_claim_token_hash`, `gift_claim_email_fired_at`, `gift_claimed_at`, `gift_cancelled_at`, `gift_resend_lock_until`, plus the 5 new audit columns + UNIQUE partial idx from 0012 (`gift_claim_sent_now_at`, `gift_claim_sent_now_actor`, `gift_claim_prior_alarm_at`, `gift_cancelled_by`, `gift_cancelled_reason`, `idx_gift_sent_now_once`).
 
-**If we merge `release/v1.1.0` to `main` without applying these, the production worker will throw at the first gift-aware code path (purchase, flip, claim, redeem, /my-gifts, stripe webhook gift branch).** This is a hard blocker.
+**If we merge `release/v1.1.0` to `main` without applying these, the production worker will throw at the first gift-aware code path (purchase, flip, claim, redeem, /my-gifts, stripe webhook gift branch, send-now once PR-C-ii lands, cancel-scheduled once PR-D lands).** This is a hard blocker.
 
 **Action at main-merge time, in order:**
-1. Verify staging D1 is at 0011: `pnpm exec wrangler d1 migrations list withjosephine-bookings-staging --remote --env staging`.
-2. Apply each missing migration to production D1, in order, with `pnpm exec wrangler d1 migrations apply withjosephine-bookings --remote`. The CLI applies pending migrations in lexicographic order — 0004 → 0011 in one batch is the expected flow.
-3. Verify with `pnpm exec wrangler d1 migrations list withjosephine-bookings --remote`. Should show all 11 applied.
-4. Spot-check schema: `pnpm exec wrangler d1 execute withjosephine-bookings --remote --command "PRAGMA table_info(submissions);"` — confirm gift_* columns present.
+1. Verify staging D1 is at 0012: `pnpm migrate:list:staging`.
+2. Apply each missing migration to production D1, in order, with `pnpm migrate:apply:prod`. The CLI applies pending migrations in lexicographic order — 0004 → 0012 in one batch is the expected flow.
+3. Verify with `pnpm migrate:list:prod`. Should show all 12 applied.
+4. Spot-check schema: `pnpm exec wrangler d1 execute withjosephine_bookings --remote --command "PRAGMA table_info(submissions);"` — confirm gift_* + sent_now_* + cancelled_* columns present.
 
-**Trigger:** this entry promotes to "execute" the moment Max greenlights `release/v1.1.0` → `main` merge. Do NOT auto-apply earlier — staging may need a migration revert if any blocker surfaces, and a partial-applied production confuses the picture.
+**Trigger:** this entry promotes to "execute" the moment Max greenlights `release/v1.1.0` → `main` merge. Do NOT auto-apply earlier — staging may need a migration revert if any blocker surfaces, and a partial-applied production confuses the picture. **Standalone apply of 0012 to production** (without the 0004-0011 batch) is also safe whenever Max wants — 0012 is `ALTER TABLE … ADD COLUMN` + `CREATE INDEX IF NOT EXISTS`, all idempotent.
 
 ---
 
-## Scheduling-flow scrutiny — Phase 2 Council queue (filed 2026-05-18)
+## Scheduling-flow scrutiny — Phase 3 remaining sub-PRs (updated 2026-05-19)
 
-Five UX design decisions that need a single consolidated Council debate before the next v1.1.x scheduling PR opens. Each persona must cite ≥1 of: test result, code path, vendor doc, prior incident (per `feedback_vendor_citation_at_observe.md`).
+Council shipped 2026-05-18 (Phase 2 of the scheduling-scrutiny PRD). Five locked decisions D-8 → D-12 → P-4b live in `www/MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md § Decisions`. Phase 2.5 RedTeam pass added 8 hardening patches (P-1 → P-7 + X-1 → X-3). Re-decomposition lifted Phase 3 from 20 → 71 atomic ISC.
 
-Vantages to recruit: UX designer, ops/Becky-empath, security, scheduling-systems engineer.
+**Shipped 2026-05-19** (see CHANGELOG for full diff descriptions):
+- ✅ I-16 / D-8 — Per-status pill (PR #142 / PR-A). Theme-driven via `--j-status-{kind}-{bg|fg}` semantic CSS tokens keyed verbatim to the new `GIFT_STATUS_KIND` const. WCAG 1.4.11 compliance via `--j-status-pill-border`.
+- ✅ I-17 / D-9 — Datepicker TZ hardening (PR #142 / PR-A). Native `<input type="datetime-local">` kept; server-side `bounds.ts` (15-min floor + purchasedAt-anchored 365-day ceiling); client-side `timezone.ts` (`Intl` → `TZDateMini` UTC ISO via `@date-fns/tz`); iOS Safari pre-17 fallback dropdown via `TimezoneFallbackPicker`.
+- ✅ Bug #20 / D-12 — Recipient-email pre-fill (PR #144 / PR-B). `IntakeForm.prefilledEmail`; field rendered readOnly via `readOnlyFieldKeys` threaded through RenderContext; NULL self-send claims stay editable; `RecipientEmailEscapeHatch` callout above form with `/contact` link; server NFKC-normalizes both sides at the 422 mismatch gate.
+- ✅ P-4b — Wholesale-non-refundable refund-policy (PR #144 / PR-B). Page fallback + terms clause + FAQ + email refundLine + Sanity legalPage body all aligned to the locked 2026-05-19 framing; Sanity migrations applied to staging + production.
+- ✅ Phase 3 schema — Migration 0012 (PR #145 / PR-C-i). 5 audit columns + UNIQUE partial idx; staging D1 applied + verified; production pending the main-merge batch.
 
-- **I-16 — Per-status pill design.** Six `GiftStatus` kinds (`scheduled` / `self_send_ready` / `sent_waiting_recipient` / `recipient_preparing` / `delivered` / `cancelled`) currently render as plain status lines on `/my-gifts`. Concrete decision needed: tint per status (`j-warm` for ready, `j-blush` for sent, `j-accent` for delivered, `j-text-muted` for cancelled — or a different mapping).
+**Remaining Phase 3 work** (described here, sequenced as sub-PRs):
 
-- **I-17 — Date+time picker swap on flip-to-scheduled.** Today both flip and edit-recipient drawers use native `<input type="datetime-local">` (`GiftCardActions.tsx:186, 341`). The intake form's `DatePicker` component (`src/components/Form/DatePicker/DatePicker.tsx`) is brand-consistent but date-only. Decide: extend intake DatePicker with a time-input slot, OR pair the existing DatePicker with a separate brand-styled time picker, OR keep native and improve styling.
+- **PR-C-ii — D-10 send-now affordance.** First-class capability so purchaser can immediately fire the claim email for a scheduled gift (e.g., birthday came up earlier than they planned). Schema is in place via 0012. Per the PRD's locked D-10 decision: new POST `/api/gifts/[id]/send-now`; auth via existing `authorizeGiftPurchaser`; CSRF token enforced; SELECT `gift_claim_alarm_at` for audit capture; `cancelGiftAlarm` via `getCloudflareContext({ async: true })` (NOT globalThis — per PR #140 fix); WHERE-guarded UPDATE that sets `gift_claim_sent_now_at` + `..._actor` + `gift_claim_prior_alarm_at` (rowcount=0 → 409); Resend `Idempotency-Key: gift:{id}:claim` header (P-3 hardening); DO alarm-handler defense-in-depth check (refuse to dispatch if `gift_claim_sent_now_at IS NOT NULL`). New `SendNowControl` component reusing `FlipToSelfSendControl`'s 5s confirm-armed pattern, optimistic state transition, session-expired precheck. Unit tests: happy path, 409 already-sent, 409 already-cancelled, idempotency double-click race. New e2e `gift-send-now.spec.ts` (mock mode). **Trigger:** any session after PR #145 merge (no further blockers).
 
-- **NEW — Send-now affordance.** New first-class capability so purchaser can immediately fire the claim email for a scheduled gift (e.g., birthday came up earlier than they planned). Decision needed: new API route (`/api/gifts/[id]/send-now`) vs extending an existing one; audit-trail column (`gift_sent_immediately_at` vs reusing `gift_claim_email_fired_at` with a source field); confirm-armed pattern in `MyGiftsView`; cancel the queued DO alarm in the same operation.
+- **PR-D — D-11 cancel-scheduled.** Per the PRD's locked D-11 decision: new POST `/api/gifts/[id]/cancel-scheduled`; same auth pattern; ordering is `cancelGiftAlarm()` FIRST → D1 UPDATE WHERE-guard → rowcount=0 → 409; UPDATE sets `gift_cancelled_at`, `gift_cancelled_by`, `gift_cancelled_reason='purchaser-request'`; `CancelScheduledControl` component (5s confirm-armed, `j-rose` tint per Quiet Archivist — no alarm-red); copy explicitly says "non-refundable" per the wholesale-non-refundable policy locked in PR-B; `cancelled` pill (via D-8) renders on the card after success. `docs/OPERATIONS.md` updated with Becky's un-cancel procedure (D1 console only). Unit tests: happy path, 409 already-fired, 409 already-cancelled. **Trigger:** any session after PR-C-ii ships.
 
-- **I-18 — Cancel scheduled gift control.** `gift_cancelled_at` D1 column already exists (added in `migrations/0007_gifting.sql`). Needs: new repo helper `cancelGift`, route `/api/gifts/[id]/cancel-scheduled`, atomic flip (`gift_delivery_method` stays scheduled but `cancelled_at` set), DO alarm cancel via `cancelGiftAlarm`, `CancelGiftControl` in `MyGiftsView` (confirm-armed like `FlipToSelfSendControl`), Sanity copy fields, tests.
+- **PR-E — Polish + final tests.** P-6 motion preference (`prefers-reduced-motion` extends 5s confirm-armed window to 15s for WCAG 2.2.1 Timing Adjustable compliance); audit other refund mentions one more pass; `/simplify` full Phase 3 diff; close out remaining ISC tally. ISC-18h Playwright iOS/Android device-emulation matrix lives here too if it doesn't get its own PR.
 
-- **NEW Bug #20 — Recipient-intake email-field pre-fill from wrong source.** When recipient clicks the claim link and lands on the intake form, the email field pre-fills from their signed-in session (or the purchaser's session if still logged in), NOT from the gift's `recipient_email`. Causes a false "Email mismatch" 422 at submit (`gift-redeem/route.ts:212-226`). Compound design question: should the recipient be ALLOWED to change the locked-in email at claim time? Anti-abuse argument says no (the check is what stops a stolen claim cookie from being used by someone else); UX argument says recipient may want a different inbox than the one Becky's purchaser typed. Council resolves.
-
-**Output of Council:** locked decisions written into the next scheduling-flow PRD's `## Decisions` section, with vantage citations preserved. NO design implementation work starts until Council convenes.
+**Out of Phase 3 scope but adjacent:**
+- **UX design Council on per-status pill + datepicker brand-styled time picker** — already RAN as Phase 2 of the scheduling-scrutiny PRD; consensus was "keep native datetime-local in v1.1.x, defer full brand picker to v2". The DatePicker component (`src/components/Form/DatePicker/DatePicker.tsx`) extension to include time stays deferred to v2.
 
 ---
 
