@@ -233,11 +233,10 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
   4. **Booking unhappy paths**: card declined, Stripe webhook timeout, Sanity write failure (requires forced sidecar failure mode).
 - **Why deferred:** these all need either D1 seed infrastructure beyond the truncate-only reset endpoint, OR sidecar failure-injection modes. Better to ship the working surface first and add these as targeted PRs.
 
-### E2E helper extraction — `signInViaMagicLink` + Stripe checkout intercept (filed 2026-05-19)
-- **Source:** PR #147 (PR-C-ii) /simplify review surfaced the deeper rule from `feedback_comments_over_logged.md` — when a comment narrates a setup block (`// Authenticate to /my-gifts via magic link`), the cure is a named helper, not a comment delete.
-- **Duplicated pattern 1 — magic-link sign-in (4 callsites today, will hit 5 with PR-D):** `tests/e2e/specs/{gift-send-now,my-gifts-local,gift-flip-to-scheduled-tz}.spec.ts` each do `POST /api/internal/issue-magic-link → { token } → goto /auth/verify?token=…&next= → fill email → submit → waitForURL`. Extract `signInViaMagicLink(page, { email, next })` to `tests/e2e/helpers/auth.ts`; collapse the 4 (soon 5) duplicates.
-- **Duplicated pattern 2 — Stripe checkout intercept:** the `await page.route("https://buy.stripe.com/**", async (route) => { … fulfill 303 → /thank-you?gift=1&sessionId=… })` block is duplicated across `gift-send-now`, `gift-flip-to-scheduled-tz`, and likely others. Extract `interceptStripeCheckout(page, { readingSlug })` returning `{ getSessionId(), getSubmissionId() }`.
-- **Trigger:** before PR-D ships (it'll add a 5th magic-link callsite via `gift-cancel-scheduled.spec.ts`). Tiny PR (≤2 helpers + 5 spec migrations); won't block PR-D but will keep the duplication from growing.
+### E2E helper extraction — `signInViaMagicLink` + Stripe checkout intercept (filed 2026-05-19, **promoted to next-session sprint 2026-05-19**)
+- **Status:** Promoted out of backlog into the Phase 3 next-session ladder as **PR-Lift** (first of three). See `docs/SESSION_BOOT.md` § Next-session agenda for the full scope brief. Locked sequencing: PR-Lift → PR-D → PR-E, all on `release/v1.1.0`.
+- **Why first:** PR-D will add a 5th magic-link callsite (`gift-cancel-scheduled.spec.ts`). Extracting now means PR-D writes against the helper from day one — no follow-up cleanup needed.
+- **Trigger:** next session, before PR-D.
 
 ### Listen round-trip spec — re-enable after staging hygiene (filed 2026-05-17)
 - **Source:** Phase 5 Bundle A.2 spec build. The booking-form pre-condition step inside `tests/e2e/specs/listen-roundtrip.spec.ts` (`createPaidSubmission` helper) intermittently navigates to `/my-readings` instead of Stripe Checkout after the submit click. The spec is currently `test.fixme`'d.

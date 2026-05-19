@@ -26,10 +26,41 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 | PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
 | PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
 | PR-C-ii (#147) | D-10 send-now route + `SendNowControl` + idempotency-key + dispatcher defense + unit tests + e2e | ✅ shipped 2026-05-19 + staging (CI 26108537934 green) |
-| **PR-D** | D-11 cancel-scheduled route + UI | **next** |
-| PR-E | P-6 motion preference + final tests + `/simplify` | not started |
+| **PR-Lift** | E2E helper extraction (`signInViaMagicLink` + `interceptStripeCheckout`) | **next session — first** |
+| **PR-D** | D-11 cancel-scheduled route + UI | next session — second |
+| **PR-E** | P-6 motion preference + final tests + `/simplify` | next session — third |
 
-**PR-D scope** (resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`): new POST `/api/gifts/[id]/cancel-scheduled` — auth → preflight 409s → cancelGiftAlarm FIRST (cheap, idempotent) → WHERE-guarded UPDATE setting `gift_cancelled_at` / `gift_cancelled_by` / `gift_cancelled_reason='purchaser-request'` with guard `gift_cancelled_at IS NULL AND gift_claim_email_fired_at IS NULL`; rowcount 0 → 409 with copy "Too late — your gift has already been sent. Contact hello@withjosephine.com." New `CancelScheduledControl` reusing 5s confirm-armed pattern; j-rose (#BF9B8B) armed-state tint (Quiet Archivist forbids alarm-red). Copy locked under wholesale-no-refunds policy: "Cancel this gift" → armed "Tap again to confirm — your reading will not be sent. This purchase is non-refundable." After cancel, card renders muted with `cancelled` pill (D-8 — already shipped). **Un-cancel:** terminal on customer surface; ops-side reversal is D1-console-only until a Sanity-webhook→Worker→D1 path exists (not built). **Audit columns already exist:** `gift_cancelled_at` from migration 0007, `gift_cancelled_by` + `gift_cancelled_reason` from migration 0012 (PR-C-i). **Schema in place** — no D1 migration in PR-D. **Refund policy locked NO REFUNDS** wholesale per P-4 (Max directive 2026-05-19) — UI copy must never imply refund. Branch off updated `release/v1.1.0` at `9dbdd86`.
+### Next-session agenda — three sequenced sub-PRs, all on `release/v1.1.0` (`9dbdd86`)
+
+Three sub-PRs in strict order. Each branches off `release/v1.1.0` AFTER the previous one merges. Locked 2026-05-19 by Max.
+
+**1. PR-Lift — E2E helper extraction (do FIRST, blocks PR-D).** Branch `feat/v1.1.x-e2e-auth-helpers` off `release/v1.1.0`. Extract two helpers from the 4 specs currently duplicating the patterns; PR-D will become the 5th caller, so doing this first means the new spec is written against the helper.
+- **`tests/e2e/helpers/auth.ts`** — new file. Export `signInViaMagicLink(page, { email, next }): Promise<void>`. Internals: `POST /api/internal/issue-magic-link` with `x-admin-token: process.env.ADMIN_API_KEY ?? "e2e_admin_api_key_dummy"` → extract `{ token }` → `page.goto(/auth/verify?token=…&next=…)` → fill `input[name='email']` → click `button[type='submit']` → `waitForURL(new RegExp(next))`.
+- **`tests/e2e/helpers/stripeCheckout.ts`** (extend existing) — add `interceptStripeCheckout(page, { readingSlug, gift?: boolean })` returning `{ getSessionId(): string \| null, getSubmissionId(): string \| null }`. Internals: the `page.route("https://buy.stripe.com/**", …)` block that 303s to `/thank-you/${readingSlug}?gift=1&sessionId=…&submission=…`, with closure-captured `interceptedSessionId` / `interceptedSubmissionId` exposed via getters.
+- **Migrate 4 existing callers:** `tests/e2e/specs/gift-send-now.spec.ts`, `tests/e2e/specs/my-gifts-local.spec.ts`, `tests/e2e/specs/gift-flip-to-scheduled-tz.spec.ts` (2 tests). Net diff should be negative.
+- **No production code changes.** Pure test-infra refactor. Vitest unaffected; Playwright suite must pass the same count.
+- **Gates:** tsc + lint + `pnpm test` (1576) + `pnpm exec playwright test --grep gift-` mock-mode pass.
+
+**2. PR-D — D-11 cancel-scheduled (do SECOND).** Branch `feat/v1.1.x-phase3-pr-d-cancel-scheduled` off `release/v1.1.0` AFTER PR-Lift merges. Resume from PRD § D-11 + § P-4 in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md`.
+- New `POST /api/gifts/[id]/cancel-scheduled` — auth via `authorizeGiftPurchaser` → preflight 409s (not-scheduled, already-fired, already-cancelled/claimed) → `cancelGiftAlarm(id)` FIRST (cheap, idempotent) → WHERE-guarded UPDATE setting `gift_cancelled_at` / `gift_cancelled_by=<purchaser_email>` / `gift_cancelled_reason='purchaser-request'` with guard `gift_cancelled_at IS NULL AND gift_claim_email_fired_at IS NULL`; rowcount 0 → 409 with copy "Too late — your gift has already been sent. Contact hello@withjosephine.com."
+- Repo helper `applyGiftCancelScheduled(id, args)` + wrapper in `submissions.ts` + Sanity mirror patch entries for `giftCancelledBy` / `giftCancelledReason` (extend the patch type in `sanityMirror.ts`).
+- New `CancelScheduledControl` in `GiftCardActions.tsx` scheduled branch — reuses 5s confirm-armed pattern; j-rose (`#BF9B8B`) armed-state tint via a new variant or inline class (Quiet Archivist forbids alarm-red). Copy locked under wholesale-no-refunds policy: "Cancel this gift" → armed "Tap again to confirm — your reading will not be sent. This purchase is non-refundable." 4 new Sanity-editable copy fields on `myGiftsPage` (cancelScheduledCtaLabel / cancelScheduledConfirmCtaLabel / cancelScheduledSendingLabel / cancelScheduledSessionExpiredError).
+- After cancel, card renders muted with `cancelled` pill (D-8 — already shipped via PR-A).
+- **Un-cancel:** terminal on customer surface; ops-side reversal is D1-console-only until a Sanity-webhook→Worker→D1 path exists (not built today).
+- **Audit columns already exist:** `gift_cancelled_at` from migration 0007, `gift_cancelled_by` + `gift_cancelled_reason` from migration 0012 (PR-C-i). **No D1 migration in PR-D.**
+- **Refund policy locked NO REFUNDS** wholesale per P-4 (Max directive 2026-05-19) — UI copy must never imply refund.
+- Unit tests + e2e `gift-cancel-scheduled.spec.ts` USING the PR-Lift helpers (`signInViaMagicLink` + `interceptStripeCheckout`).
+- Bookkeeping: CHANGELOG row + SESSION_BOOT mark D-11 shipped.
+
+**3. PR-E — Phase 3 polish + final /simplify (do THIRD).** Branch `feat/v1.1.x-phase3-pr-e-polish` off `release/v1.1.0` AFTER PR-D merges.
+- **P-6: `prefers-reduced-motion` extension of confirm-armed window.** WCAG 2.2.1 Timing Adjustable: when the user prefers reduced motion, extend `ARM_RESET_MS` from 5000 → 15000. Applies to `FlipToSelfSendControl`, `SendNowControl`, and the new `CancelScheduledControl`. Implementation: `useReducedMotion` hook reading `window.matchMedia("(prefers-reduced-motion: reduce)")` via `useSyncExternalStore`; consume in each control to pick `ARM_RESET_MS` vs `ARM_RESET_MS_REDUCED_MOTION`.
+- **Refund-mentions audit pass #2** — sweep customer-facing copy one more time for any "refund" language that drifted in during Phase 3; ensure all surfaces reflect wholesale-no-refunds (P-4b shipped most of this in PR-B; this is the cleanup tail).
+- **/simplify full Phase 3 diff** — run /simplify against the full `release/v1.1.0` ↔ pre-Phase-3 diff (everything from PR-A through PR-D + this PR). Apply findings; defer scope-creep refactors.
+- **ISC tally close-out** — tick remaining ISC in `MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` and set `phase: complete`.
+- **Optional in same PR:** ISC-18h Playwright iOS/Android device-emulation matrix if it doesn't balloon the PR; otherwise split out.
+- Bookkeeping: CHANGELOG row, SESSION_BOOT cleared of Phase 3 in-flight (whole sprint marked done).
+
+**After PR-E merges, Phase 3 scheduling rebuild is fully shipped on `release/v1.1.0`.** Hold-gate item 4 (release/v1.1.0 merged to main) is then the gating step to production.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
