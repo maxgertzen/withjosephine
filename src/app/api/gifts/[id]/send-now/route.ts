@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { appendEmailFired, applyGiftSendNow } from "@/lib/booking/submissions";
@@ -8,6 +7,7 @@ import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient"
 import { sendGiftClaimEmail } from "@/lib/resend";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
+import { giftMutationGate } from "../_lib/giftMutationGate";
 
 export async function POST(
   _request: Request,
@@ -18,18 +18,8 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
-    return NextResponse.json({ error: "Not scheduled" }, { status: 409 });
-  }
-  if (submission.giftClaimEmailFiredAt) {
-    return NextResponse.json({ error: "Email already sent by alarm" }, { status: 409 });
-  }
-  if (submission.giftCancelledAt || submission.giftClaimedAt) {
-    return NextResponse.json({ error: "Closed" }, { status: 409 });
-  }
-  if (submission.giftClaimSentNowAt) {
-    return NextResponse.json({ error: "Already sent via send-now" }, { status: 409 });
-  }
+  const gated = giftMutationGate(submission, { requireMethod: "scheduled" });
+  if (gated) return gated;
 
   const recipientEmail = submission.recipientEmail;
   if (!recipientEmail) {

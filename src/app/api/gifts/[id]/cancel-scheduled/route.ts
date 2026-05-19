@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { GIFT_CANCELLED_REASON, GIFT_DELIVERY } from "@/lib/booking/constants";
+import { GIFT_CANCELLED_REASON } from "@/lib/booking/constants";
 import { applyGiftCancelScheduled } from "@/lib/booking/submissions";
 import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
+import { giftMutationGate } from "../_lib/giftMutationGate";
 
 export async function POST(
   _request: Request,
@@ -15,15 +16,8 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
-    return NextResponse.json({ error: "Not scheduled" }, { status: 409 });
-  }
-  if (submission.giftClaimEmailFiredAt || submission.giftClaimSentNowAt) {
-    return NextResponse.json({ error: "Already sent" }, { status: 409 });
-  }
-  if (submission.giftCancelledAt || submission.giftClaimedAt) {
-    return NextResponse.json({ error: "Closed" }, { status: 409 });
-  }
+  const gated = giftMutationGate(submission, { requireMethod: "scheduled" });
+  if (gated) return gated;
 
   // Cancel the alarm first — cheap, idempotent, and removes the race window
   // where the DO fires between our SELECT and the WHERE-guarded UPDATE.
