@@ -132,7 +132,8 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
 
     const sent = capturedBody as unknown as { recipientEmail?: string; giftSendAt?: string };
     expect(sent.recipientEmail).toBe(recipientEmail);
-    expect(sent.giftSendAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    const flipUtcIso = sent.giftSendAt ?? "";
+    expect(flipUtcIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     // The UTC ISO, formatted back in the browser TZ, must match the original
     // datetime-local input (minute-level precision).
@@ -155,7 +156,7 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
           }, {});
         return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
       },
-      { utc: sent.giftSendAt, tz: browserTz },
+      { utc: flipUtcIso, tz: browserTz },
     );
     expect(roundTripped).toBe(localInput);
   });
@@ -270,12 +271,13 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     const sent = capturedBody as unknown as { recipientEmail?: string; giftSendAt?: string | null };
     // Only the changed field is sent — recipient_email + recipient_name are unchanged.
     expect(sent.recipientEmail).toBeUndefined();
-    expect(sent.giftSendAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    const editUtcIso = typeof sent.giftSendAt === "string" ? sent.giftSendAt : "";
+    expect(editUtcIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     // Round-trip the UTC back through the browser TZ — must equal the new input.
     const roundTripped = await page.evaluate(
       ({ utc, tz }) => {
-        const d = new Date(utc as string);
+        const d = new Date(utc);
         const parts = new Intl.DateTimeFormat("en-CA", {
           timeZone: tz,
           year: "numeric",
@@ -292,7 +294,7 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
           }, {});
         return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
       },
-      { utc: sent.giftSendAt, tz: browserTz },
+      { utc: editUtcIso, tz: browserTz },
     );
     expect(roundTripped).toBe(newLocalInput);
   });
