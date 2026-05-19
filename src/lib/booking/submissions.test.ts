@@ -209,7 +209,9 @@ describe("buildSubmissionContext", () => {
     giftClaimEmailFiredAt: null,
     giftClaimedAt: null,
     giftCancelledAt: null,
-  };
+    giftClaimSentNowAt: null,
+    giftClaimSentNowActor: null,
+    giftClaimPriorAlarmAt: null,  };
 
   it("builds Resend context with photo URL and firstName extracted", () => {
     const ctx = buildSubmissionContext(SUBMISSION);

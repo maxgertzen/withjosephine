@@ -328,6 +328,36 @@ export const myGiftsPage = defineType({
       type: "string",
       initialValue: "Scheduling…",
     }),
+    defineField({
+      name: "sendNowCtaLabel",
+      title: "Send now — initial CTA",
+      type: "string",
+      description:
+        "Shown on scheduled gifts. Purchaser taps once to arm, taps again to fire the claim email immediately (bypasses the scheduled alarm).",
+      initialValue: "Send now",
+    }),
+    defineField({
+      name: "sendNowConfirmCtaLabel",
+      title: "Send now — armed confirm CTA",
+      type: "string",
+      description: "Second click of the 2-stage confirm pattern (replaces the initial CTA).",
+      initialValue: "Tap again to send today",
+    }),
+    defineField({
+      name: "sendNowSendingLabel",
+      title: "Send now — sending label",
+      type: "string",
+      description: "Shown on the confirm button while the request is in flight.",
+      initialValue: "Sending…",
+    }),
+    defineField({
+      name: "sendNowSessionExpiredError",
+      title: "Send now — session-expired error",
+      type: "string",
+      description:
+        "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
+      initialValue: "Your session expired. Please refresh and try again.",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "My Gifts Page" }),

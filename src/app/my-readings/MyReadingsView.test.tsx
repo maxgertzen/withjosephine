@@ -74,7 +74,9 @@ describe("MyReadingsView", () => {
           giftClaimEmailFiredAt: null,
           giftClaimedAt: null,
           giftCancelledAt: null,
-        },
+          giftClaimSentNowAt: null,
+          giftClaimSentNowActor: null,
+          giftClaimPriorAlarmAt: null,        },
         {
           _id: "sub_1",
           status: "paid",
@@ -96,7 +98,9 @@ describe("MyReadingsView", () => {
           giftClaimEmailFiredAt: null,
           giftClaimedAt: null,
           giftCancelledAt: null,
-        },
+          giftClaimSentNowAt: null,
+          giftClaimSentNowActor: null,
+          giftClaimPriorAlarmAt: null,        },
       ],
     });
     const cards = getAllByRole("link", { name: COPY.openButtonLabel });

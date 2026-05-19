@@ -62,7 +62,9 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   giftClaimEmailFiredAt: "2026-05-02T00:00:00.000Z",
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   mockFind.mockReset();

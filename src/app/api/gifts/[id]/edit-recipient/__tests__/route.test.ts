@@ -74,7 +74,9 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 async function callRoute(args: {
   hasCookie?: boolean;

@@ -58,7 +58,9 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
     giftClaimEmailFiredAt: null,
     giftClaimedAt: null,
     giftCancelledAt: null,
-    ...overrides,
+    giftClaimSentNowAt: null,
+    giftClaimSentNowActor: null,
+    giftClaimPriorAlarmAt: null,    ...overrides,
   };
 }
 
