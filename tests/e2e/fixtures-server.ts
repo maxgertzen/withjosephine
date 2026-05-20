@@ -53,6 +53,7 @@ export type CapturedEmail = {
   label: string;
   to: string | string[];
   subject: string;
+  html?: string;
   at: string;
 };
 
@@ -247,6 +248,7 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       label: typeof body.label === "string" ? body.label : "unknown",
       to: body.to ?? "unknown",
       subject: typeof body.subject === "string" ? body.subject : "",
+      html: typeof body.html === "string" ? body.html : undefined,
       at: new Date().toISOString(),
     });
     return c.json({ ok: true });
