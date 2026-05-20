@@ -43,9 +43,11 @@ export function purchaserFirstNameFor(submission: SubmissionRecord): string {
 }
 
 export function recipientNameFor(submission: SubmissionRecord): string {
-  return (
-    submission.responses.find((r) => r.fieldKey === "recipient_name")?.value?.trim() || "there"
-  );
+  const fromPurchaser = submission.responses
+    .find((r) => r.fieldKey === "recipient_name")
+    ?.value?.trim();
+  if (fromPurchaser) return fromPurchaser;
+  return recipientFirstNameFromIntakeResponses(submission.responses, submission.email);
 }
 
 /**
