@@ -77,7 +77,7 @@ function resolveAuthenticatedState(args: {
 
   return {
     kind: "delivered",
-    readingName: args.submission.reading?.name ?? "your reading",
+    readingName: (args.submission.reading?.name ?? "your reading").replace(/^The\s+/, ""),
     voiceNoteAudioPath: args.submission.voiceNoteUrl ? `/api/listen/${args.id}/audio` : null,
     pdfDownloadPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf` : null,
     showWelcomeRibbon: args.welcome === "1",

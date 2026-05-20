@@ -11,7 +11,7 @@ vi.mock("../components/PhotoR2Preview", () => ({
   PhotoR2Preview: () => null,
 }));
 
-const { submission } = await import("./submission");
+import { submission } from "./submission";
 
 type FieldDef = {
   name: string;
