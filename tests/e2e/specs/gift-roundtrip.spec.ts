@@ -6,6 +6,7 @@ import {
   clickThroughIntakePages,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import {
   accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
@@ -16,16 +17,6 @@ import { stubTurnstile } from "../helpers/turnstileStub";
 
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "gift-roundtrip-stripe@withjosephine.com";
-
-test.skip(
-  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
-  "CF Access service-token env vars missing. Source www/.env.staging first.",
-);
-
-test.skip(
-  !process.env.DO_DISPATCH_SECRET,
-  "DO_DISPATCH_SECRET missing — set the same value used by the staging worker secret.",
-);
 
 test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
@@ -108,6 +99,15 @@ async function drivePurchaserLeg(
 }
 
 test.describe("Gift round-trip — staging", () => {
+  test.beforeAll(async () => {
+    const { sanityDeleted } = await cleanupSandboxResidue({
+      emailPrefix: "gift-roundtrip-purchaser+",
+    });
+    console.log(
+      `[gift-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
+    );
+  });
+
   test.beforeEach(async ({ page }) => {
     await stubTurnstile(page);
   });

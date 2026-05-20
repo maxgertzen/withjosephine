@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { setGiftClaimCookie } from "@/lib/booking/giftClaimSession";
-
-function gatesOpen(request: Request): boolean {
-  if (process.env.E2E !== "1") return false;
-  if (process.env.ENVIRONMENT === "production") return false;
-  const expected = process.env.E2E_RESET_TOKEN;
-  if (!expected) return false;
-  return request.headers.get("x-e2e-reset-token") === expected;
-}
+import { isE2ERouteGateOpen } from "@/lib/e2e/routeGate";
 
 export async function POST(request: Request): Promise<Response> {
-  if (!gatesOpen(request)) {
+  if (!isE2ERouteGateOpen(request)) {
     return new NextResponse("Not Found", { status: 404 });
   }
   const body = (await request.json().catch(() => null)) as { submissionId?: unknown };

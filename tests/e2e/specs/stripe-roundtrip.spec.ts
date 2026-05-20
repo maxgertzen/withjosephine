@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { expect, test } from "@playwright/test";
 
 import {
@@ -5,21 +7,23 @@ import {
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import { accessHeadersOrEmpty } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
-const stripeTestEmail =
-  process.env.STRIPE_ROUNDTRIP_EMAIL ?? "stripe-roundtrip@withjosephine.com";
-
-test.skip(
-  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
-  "CF Access service-token env vars missing. Source www/.env.staging first.",
-);
-
 test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
 test.describe("Stripe sandbox round-trip — staging", () => {
+  test.beforeAll(async () => {
+    const { sanityDeleted } = await cleanupSandboxResidue({
+      emailPrefix: "stripe-roundtrip+",
+    });
+    console.log(
+      `[stripe-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
+    );
+  });
+
   test.beforeEach(async ({ page }) => {
     await stubTurnstile(page);
   });
@@ -29,7 +33,11 @@ test.describe("Stripe sandbox round-trip — staging", () => {
   }) => {
     test.setTimeout(4 * 60 * 1000);
 
-    await seedIntakeDraft(page, "birth-chart");
+    const runId = randomUUID().slice(0, 8);
+    const email = `stripe-roundtrip+${runId}@withjosephine.com`;
+    const stripeTestEmail = process.env.STRIPE_ROUNDTRIP_EMAIL ?? email;
+
+    await seedIntakeDraft(page, "birth-chart", { values: { email } });
 
     await page.goto("/book/birth-chart");
     await expect(
