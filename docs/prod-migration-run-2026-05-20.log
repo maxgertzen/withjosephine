@@ -1,0 +1,198 @@
+===== migrate-name-fields.mts (exit 0, MUTATED) =====
+Ensured formField-firstName
+Ensured formField-middleName
+Ensured formField-lastName
+Demoted formField-legalFullName.required → false
+Patched formSection-page1-system: fields swapped + marginaliaLabel updated
+
+Done.
+
+
+===== migrate-booking-form-v2.ts (exit 0, noop) =====
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ migrate-booking-form-v2 — runMode: dry-run
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1/4] Fetching existing bookingForm singleton...
+  found bookingForm (nonRefundableNotice: present)
+
+[2/4] Fetching all formSection docs...
+  found 6 formSection doc(s)
+
+[3/4] Computing planned mutations...
+  PLAN setIfMissing bookingForm :: swapToastCopy
+  PLAN setIfMissing bookingForm :: consentBlock
+
+  log written → /Users/maxgertzen/dev/projects/josephine-soul-readings/www/scripts/migration-log-v2.json
+
+[4/4] Apply phase...
+  (dry-run — skipping writes; pass --apply to execute)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 2 mutation(s) planned
+ 0 mutation(s) applied
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+===== migrate-theme-semantic.ts (exit 0, noop) =====
+Fetching existing theme document...
+Migrating theme to semantic fields...
+Field mapping:
+  cream → bgPrimary: (missing)
+  warm → bgSection: (missing)
+  midnight → bgDark: (missing)
+  deep → bgInteractive: (missing)
+  text → textPrimary: (missing)
+  gold → accent: (missing)
+  goldLight → accentLight: (missing)
+  muted → textMuted: (missing)
+  ivory → ivory: [object Object]
+  blush → blush: [object Object]
+  rose → rose: [object Object]
+Migration complete.
+
+
+===== migrate-anything-copy.mts (exit 0, MUTATED) =====
+Patched formSection-anythingElse: shorter title, removed transition line.
+Patched formField-anythingElse: label → 'Your note'.
+
+Done.
+
+
+===== migrate-privacy-clarity.ts (exit 0, noop) =====
+Clarity block already present — nothing to do.
+
+
+===== migrate-privacy-mixpanel.ts (exit 0, noop) =====
+Mixpanel block already present — nothing to do.
+
+
+===== migrate-privacy-retention.ts (exit 0, noop) =====
+Retention section already present — nothing to do.
+
+
+===== migrate-consent-banner-clarity.ts (exit 0, noop) =====
+Consent banner body already mentions Clarity — nothing to do.
+
+
+===== migrate-booking-page-copy-2026-05.ts (exit 0, noop) =====
+[migrate-booking-page-copy] dataset=production
+No legacy values matched on bookingPage; nothing to migrate (current: formatNote="A voice note plus a written PDF, made just for you.", deliveryNote="Arrives within 7 days of payment.").
+
+
+===== migrate-gift-copy-2026-05.ts (exit 0, noop) =====
+migrating gift copy on dataset=production
+  emailGiftPurchaseConfirmation.refundLine: drift
+  emailGiftPurchaseConfirmation.shareButtonLabel: skipped
+  emailGiftClaim.claimButtonLabel: missing
+  bookingGiftForm.antiAbuseCapBody: missing
+  myGiftsPage.statusSentLabel: skipped
+  myGiftsPage.statusPreparingLabel: skipped
+done.
+
+--- stderr ---
+[drift] emailGiftPurchaseConfirmation.refundLine on production is neither previous nor next. Skipping. Current = "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}."
+
+
+===== migrate-gift-pages-2026-05.ts (exit 0, noop) =====
+[migrate-gift-pages-2026-05] dataset=production
+  giftClaimPage        → skipped
+  giftIntakePage       → skipped
+Done. created=0 skipped=2
+
+
+===== migrate-gift-form-validation-2026-05.ts (exit 0, noop) =====
+[migrate-gift-form-validation-2026-05] dataset=production
+
+--- stderr ---
+[skip] no bookingGiftForm singleton in this dataset.
+
+
+===== migrate-gift-form-consents-deprecate-required-2026-05.ts (exit 0, noop) =====
+[migrate-gift-form-consents-deprecate-required-2026-05] dataset=production
+
+--- stderr ---
+[skip] no bookingGiftForm singleton in this dataset.
+
+
+===== migrate-my-gifts-actions-copy.ts (exit 0, noop) =====
+[migrate-my-gifts-actions-copy] dataset=production
+Seeded 14 fields (setIfMissing) on myGiftsPage.
+
+
+===== migrate-privacy-subprocessors-2026-05.ts (exit 0, noop) =====
+  • priv-b8 (Payment info) already up to date — skipped
+  • priv-b14 (Stripe) already up to date — skipped
+  • priv-b15 (Web3Forms) already absent — skipped
+  • priv-b18 (Sanity) already up to date — skipped
+  • priv-b19 (Cloudflare) already up to date — skipped
+  • priv-resend-2026-05 already present — skipped
+  • priv-sentry-2026-05 already present — skipped
+All sub-processor blocks already up to date — nothing to do.
+
+
+===== migrate-strip-consent-fields-2026-05.ts (exit 0, noop) =====
+
+strip-consent-fields — dataset=production
+
+No consent-type formField documents — nothing to do.
+
+
+===== migrate-restore-time-unknown-checkbox-2026-05.ts (exit 0, MUTATED) =====
+
+restore-time-unknown-checkbox — dataset=production
+
+Field formField-timeOfBirthUnknown already restored as checkbox — nothing to do for the doc.
+Reference to formField-timeOfBirthUnknown already present in formSection-birth — nothing to do for the section.
+
+restore-time-unknown-checkbox complete.
+
+
+===== migrate-thank-you-gift-variant-2026-05.ts (exit 0, noop) =====
+[migrate-thank-you-gift-variant] dataset=production
+Seeded 6 gift-variant fields (setIfMissing) on thankYouPage.
+
+
+===== migrate-gift-claim-already-submitted-2026-05-18.ts (exit 0, MUTATED) =====
+[migrate-gift-claim-already-submitted] dataset=production
+setIfMissing applied to giftClaimPage for: alreadySubmittedHeading, alreadySubmittedBody.
+
+
+===== migrate-gift-claim-session-expired-2026-05-18.ts (exit 0, MUTATED) =====
+[migrate-gift-claim-session-expired] dataset=production
+setIfMissing applied to giftClaimPage for: sessionExpiredHeading, sessionExpiredBody.
+
+
+===== migrate-thank-you-confirmation-body-2026-05-18.ts (exit 0, noop) =====
+[migrate-thank-you-confirmation-body] dataset=production
+No legacy confirmationBody matched on thankYouPage; current value: "A confirmation email is on its way to your inbox in the next minute or two. If you can’t find it, please check your promotions folder.".
+
+
+===== migrate-thank-you-gift-aware-bodies-2026-05-18.ts (exit 0, MUTATED) =====
+[migrate-thank-you-gift-aware-bodies] dataset=production
+setIfMissing applied to thankYouPage for: giftPurchaserTimelineBody, giftPurchaserContactBody, giftRecipientContactBody.
+
+
+===== migrate-thank-you-gift-recipient-name-2026-05-18.ts (exit 0, noop) =====
+[migrate-thank-you-gift-recipient-name] dataset=production
+[skip] giftRecipientHeading is hand-edited; leaving as-is. Current value: "Thank you, {recipientName}. Your reading is in my hands now."
+
+
+===== migrate-thank-you-gift-self-send-2026-05-18.ts (exit 0, MUTATED) =====
+[migrate-thank-you-gift-self-send] dataset=production
+setIfMissing applied to thankYouPage for: giftPurchaserSelfSendSubheading, giftPurchaserSelfSendBody, giftPurchaserReadingLabel.
+
+
+===== migrate-refund-line-my-gifts-url-2026-05-18.ts (exit 0, noop) =====
+[migrate-refund-line-my-gifts-url] dataset=production
+No legacy refundLine matched on emailGiftPurchaseConfirmation; current value: "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.".
+
+
+===== migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts (exit 0, MUTATED) =====
+[migrate-my-gifts-cancel-scheduled-copy] dataset=production
+setIfMissing applied to myGiftsPage for: cancelScheduledCtaLabel, cancelScheduledConfirmCtaLabel, cancelScheduledSendingLabel, cancelScheduledSessionExpiredError.
+
+
+===== migrate-refund-policy-no-refunds-2026-05-19.ts (exit 0, noop) =====
+[migrate-refund-policy-no-refunds] dataset=production
+[skip] legalPage-refund-policy already has empty body; page fallback renders.

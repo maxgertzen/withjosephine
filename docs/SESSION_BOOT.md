@@ -14,7 +14,7 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 ## Current sprint — v1.2.x launch-readiness e2e epic (release/v1.2.0)
 
 **Active branch:** `release/v1.2.0` — cut from `release/v1.1.0@882752d` on 2026-05-20. CI workflow updated (`ci.yml` push branches + deploy-staging trigger) to reference `release/v1.2.0`.
-**Most-recent merge:** PR #155 (`94e9d5d`) — Sub-PR C cleanup tail (drop MSW + tighten helpers + centralize constants). v1.2.x **epic 24/24 ISC complete.** Tagged `v1.2.0` at `94e9d5d` (push `git push origin v1.2.0` was the marker for the cycle end). 56/56 mock e2e green; new `tests/e2e/constants.ts` + `tests/e2e/helpers/e2eReset.ts` centralize port + token sentinels + reset-DB helper.
+**Most-recent merge:** PR #159 (`b579768`) — comprehensive rewrite of `docs/MANUAL_SMOKE_TEST.md`. Adds Becky-recipient-delivery flow (J3b/c + J4c/d), Send-Now + Cancel-Scheduled to J5, admin email checklist J11, mobile-viewport J10, thank-you-variant checks. 4 PRs merged this session (#156 robots.ts, #157 Sanity-migration runner, #158 customer-singleton seed extension, #159 smoke test). **Hold-gate items 1, 7, 9 closed; 6 doc-ready; 4 (Stripe sandbox) closed via prior-session evidence.** Production Sanity: 9 customer singletons seeded + all 27 historical migrations applied + Studio deployed.
 **Open PRs:** none on `release/v1.2.0`.
 **Main:** `d607ada` (unchanged — release/v1.2.0 → main merge is hold-gate item #4).
 **Tags:** `v1.1.0` at `882752d` (release/v1.1.0 HEAD), `v1.2.0` at `94e9d5d` (release/v1.2.0 HEAD).
@@ -37,20 +37,20 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 - **D-4**: Sub-PR sequencing A → B → C (each one session).
 - **D-5 (Max-flagged 2026-05-20)**: prod-smoke v1 is READ-ONLY — stop before Stripe redirect; assert paymentUrl shape only. Reason: prod Sanity carries LIVE buy.stripe.com URLs after apex-unpark; test card 4242 fails on live; live charge from CI = catastrophic. Full webhook + delivery loop stays on the nightly sandbox tier against staging.
 
-**Next-session resume:** v1.2.x epic is fully shipped. Next actions are operational, not code: clear the rest of the hold-gate items (F-10 Resend DKIM/SPF/DMARC verify, reading-price reconcile with Josephine, pre-prod data cleanup, prod D1 migration 0004→0012 apply, Sanity copy seed for D-11 cancel-scheduled). Once those clear, merge `release/v1.2.0` → `main` and apex-unpark. If a new feature/fix arrives before then, branch from `release/v1.2.0` head, open PR back into `release/v1.2.0` (PR-then-squash, do NOT commit directly to release per `feedback_sub_pr_via_feature_branch.md`), tag the new release point if it warrants a `v1.2.1`.
+**Next-session resume:** v1.2.x epic shipped + 4 hold-gate items closed this session (Resend DNS verified, robots.ts deployed, prod Sanity fully synced, smoke doc rewritten). Remaining before apex unpark: (a) reading-price reconcile with Josephine — needs her input; (b) **pre-prod data cleanup** — wipe staging test residue from D1 + R2 + Sanity per `docs/BACKLOG.md`; (c) **prod D1 migrations 0004→0012** — `pnpm migrate:apply:prod`; (d) **run the smoke walkthrough** using the freshly-rewritten `docs/MANUAL_SMOKE_TEST.md`; (e) merge `release/v1.2.0` → `main`. PR-then-squash convention from `feedback_sub_pr_via_feature_branch.md` is the durable workflow for any new sub-PR on the release branch.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
 Apex unpark + Stripe live-mode flip is blocked on:
 
-1. F-10 Resend domain DKIM/SPF/DMARC verified
+1. ✅ F-10 Resend domain DKIM/SPF/DMARC — verified 2026-05-20 via `dig` (SPF on `send.`, DKIM `resend._domainkey`, MX `send.→feedback-smtp.us-east-1.amazonses.com`, DMARC via Cloudflare DMARC Management). us-east-1 region noted as non-issue since CLAUDE.md plan has customer-facing emails migrating to Brevo (EU); Resend stays for admin templates only.
 2. Reading-price reconcile (Max + Josephine — pick canonical price per reading; sync Sanity `price` + `priceDisplay` + Stripe Payment Links)
 3. Sub-PR #4a bake — **substitute via sandbox specs now CI-scheduled** (PR #152 enabled the specs, PR #153 put them in CI). Nightly cron weekdays 12:00 UTC against `staging.withjosephine.com` + on every `release/*` PR touching round-trip-adjacent paths. 4 sandbox specs (listen + stripe + gift roundtrip) green in 2.9 min. Becky's first real reading remains the human-UX bake but is no longer the only signal.
-4. **release/v1.2.0 merged to main** — `release/v1.2.0` was cut from `release/v1.1.0@882752d` on 2026-05-20 and carries everything v1.1.x shipped plus PR #152 (sandbox specs re-enabled). Future v1.2.x sub-PR stack (epic) lands on this branch first. Ready for merge to main once items 1-3 + 5-7 + 8 are clear AND the launch-readiness epic items judged blocking are shipped (per epic PRD).
+4. **release/v1.2.0 merged to main** — `release/v1.2.0` was cut from `release/v1.1.0@882752d` on 2026-05-20 and carries everything v1.1.x shipped plus PRs #152–#159. Ready for merge to main once items 2 + 5 + 6 + 7 (D1 migration apply) clear.
 5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
-6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
-7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
-8. **Sanity copy seed for D-11 cancel-scheduled** — run `scripts/migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts` against **staging first**, then **production** dataset. Adds 4 copy fields (`cancelScheduledCtaLabel` / `cancelScheduledConfirmCtaLabel` / `cancelScheduledSendingLabel` / `cancelScheduledSessionExpiredError`). Idempotent (setIfMissing). Filed 2026-05-19 post-#148 merge.
+6. **Smoke walkthrough using `docs/MANUAL_SMOKE_TEST.md`** — comprehensive rewrite shipped 2026-05-20 in PR #159. Covers J1 self-purchase (incl. Becky delivery + listen), J2 gift self-send, J3 gift recipient (incl. Becky delivery + listen), J4 scheduled gift, J5 /my-gifts (incl. send-now + cancel-scheduled + Studio editability proof), J7 privacy export, J8 contact, J9 Sanity Live, J10 mobile, J11 admin email checklist.
+7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations.
+8. ✅ Sanity copy seed for D-11 cancel-scheduled — closed 2026-05-20 via PR #158 (seed script extension) + PR #157 (migration runner). 4 cancel-scheduled copy fields applied to production myGiftsPage singleton. Also surfaced + fixed: 9 customer singletons were missing entirely on production (now seeded). All 27 historical Sanity migrations now confirmed applied on production. Studio deployed.
 9. **Launch-readiness e2e epic — COMPLETE.** 24 of 24 ISC shipped (Sub-PR A #153 + Sub-PR B #154 + Sub-PR C #155). Tagged `v1.2.0` at `94e9d5d`. PRD `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md` phase: complete. Privacy export Art. 20 e2e deliberately deferred. No remaining e2e blockers for apex unpark.
 
 ## Paused workstream — Phase 7 PR-A1 (email Sanity CMS)
@@ -60,15 +60,16 @@ Branch `feat/phase-7-email-sanity-cms` exists locally with WIP commit `f6568e9` 
 ## Outstanding Max-actions (operational, no code)
 
 1. **Reading-price reconcile** — pick canonical price per reading; update Sanity (`price` cents + `priceDisplay`) and each Stripe Payment Link via dashboard. Stripe Prices are immutable: create-new-Price → new-Payment-Link → swap URL on the reading doc → archive old.
-2. **F-10 Verify Resend domain** — DKIM/SPF/DMARC published in CF DNS; test send via Resend dashboard before opening the form to traffic. Blocks Brevo Phase 3.
+2. ✅ **F-10 Verify Resend domain** — closed 2026-05-20. SPF + DKIM + MX + DMARC verified via `dig`.
 3. **Brevo Phase 1 newsletter — parallel-safe**, deferred post-launch per Brevo (vetting ticket #5354963 with Frosina). Site launches first; reply to ticket with live URL + sample newsletter; Brevo completes Section E (astrology) review; ship newsletter. If drags >2 weeks or rejects, swap to Beehiiv (~30 min code). Not launch-blocking.
-4. **Apex unpark + Stripe live-mode flip** — see `www/docs/BACKLOG.md` → "Apex unpark — Stripe live-mode flip target". Blocked on #1 + #2 + smoke walk-through + Phase 7 + the D1 migration apply.
+4. **Apex unpark + Stripe live-mode flip** — see `www/docs/BACKLOG.md` → "Apex unpark — Stripe live-mode flip target". Blocked on #1 + smoke walk-through + D1 migration apply + Phase 7 (paused).
 5. **Pre-prod data cleanup** — main-merge blocker. Per-table SQL + R2 CLI + Studio delete steps in `www/docs/BACKLOG.md`.
-6. **Manual Stripe round-trip** — sandbox checkout → `/thank-you/[id]` → webhook marks paid. Required before driving real traffic.
-7. **AI-bot accessibility policy** — DECISION LOCKED 2026-05-20: allow citation-bots (OAI-SearchBot / PerplexityBot / Claude-SearchBot / Claude-User), block training-bots (GPTBot / ClaudeBot / Google-Extended / CCBot). Code change pending in `chore/robots-and-housekeeping` (new `src/app/robots.ts`).
+6. ✅ **Manual Stripe round-trip** — closed 2026-05-20 via prior-session evidence (multiple round-trips on staging documented in inbox + audit-trail).
+7. ✅ **AI-bot accessibility policy** — shipped 2026-05-20 via PR #156, deployed via release/v1.2.0 sync.
 8. **Outstanding Clarity Max-actions** — provision tracking ID, set masking to Strict, hide Smart Events, add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH Variables. Checklist in BACKLOG.
 9. **Rotate `DO_DISPATCH_SECRET` on staging** — exposed mid-diagnostic 2026-05-18. Command: `openssl rand -hex 32 | pnpm exec wrangler secret put DO_DISPATCH_SECRET --env staging`. After rotation, do not re-paste in chat.
 10. **Apply migration 0012 to production D1** — staging is at 0012 (applied + verified 2026-05-19); production still at 0003. Standalone apply is safe when 0004 → 0012 batch runs at main-merge time per the hold-gate workflow. Command: `pnpm migrate:apply:prod`. Verify with `pnpm migrate:list:prod`.
+11. **Run the smoke walkthrough** — use the rewritten `docs/MANUAL_SMOKE_TEST.md` (PR #159). 11 journeys, ~60–90 min to run end-to-end. Send pass/fail per journey + screenshots for any ❌ + the time window so the maintainer can scope the cleanup script.
 
 ## Parallel-safe non-blockers (ship anytime)
 
