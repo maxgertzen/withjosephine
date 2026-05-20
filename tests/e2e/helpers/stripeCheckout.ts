@@ -24,7 +24,7 @@ export async function fillStripeCheckout(
   if (await cardName.count()) await cardName.fill(SANDBOX_NAME);
   const phone = page.locator('input[autocomplete="tel"], input[name="phoneNumber"]').first();
   if (await phone.count()) await phone.fill(SANDBOX_PHONE);
-  await page.getByTestId("hosted-payment-submit-button").click();
+  await page.getByTestId("hosted-payment-submit-button").click({ force: true });
 }
 
 interface InterceptArgs {
