@@ -14,7 +14,7 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 ## Current sprint — v1.2.x launch-readiness e2e epic (release/v1.2.0)
 
 **Active branch:** `release/v1.2.0` — cut from `release/v1.1.0@882752d` on 2026-05-20. CI workflow updated (`ci.yml` push branches + deploy-staging trigger) to reference `release/v1.2.0`.
-**Most-recent merge:** PR #153 (`54d6958`) — Sub-PR A orchestration infra (sandbox CI workflow + prod-smoke job + globalSetup hard-fail + allow-list route gates + cleanup-helper generalization + DRY composite action). Nightly sandbox CI now live (4/4 specs green against staging in 2.9 min). Bot Fight Mode disabled zone-wide; 6 GH staging-environment secrets staged.
+**Most-recent merge:** PR #154 (`b6225db`) — Sub-PR B P0 spec coverage (5 new mock-mode specs: cross-purchaser leak / cancel-auto-send / regenerate-claim-link / claim-replay / photo-upload). 56/56 mock e2e green. Test infra extended (resend dry-run capture + sidecar accept `html` in CapturedEmail) so claim URLs can be extracted from captured emails for the regenerate + replay assertions. **Workflow note logged for future Sub-PRs:** every slice ships on a feature branch first — Sub-PR B was almost pushed directly to release; corrected to PR-then-squash flow.
 **Open PRs:** none on `release/v1.2.0`.
 **Main:** `d607ada` (unchanged).
 
@@ -26,8 +26,8 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 |---|---|---|
 | #152 | Turnstile stub + staging cleanup helper + sandbox specs re-enabled + ci.yml release-branch rename | ✅ shipped 2026-05-20 to `release/v1.2.0` (squash `86549e9`); CI run 26147183329 ✅ 3m6s |
 | Sub-PR A #153 | Orchestration infra: sandbox-in-CI workflow + prod-smoke job (read-only per D-5) + globalSetup hard-fail + test-route gate allow-list + cleanup-helper generalization + composite action DRY | ✅ shipped 2026-05-20 to `release/v1.2.0` (squash `54d6958`); CI run 26155214119 ✅ 2m54s; 4/4 sandbox specs green against staging |
-| Sub-PR B | P0 spec coverage: cross-purchaser leak + gift cancel-auto-send/regenerate/replay + photo upload | 📋 queued next, ~5.5h |
-| Sub-PR C | Cleanup tail: drop MSW dead weight + draft-restore poll + multi-widget Turnstile match + wrangler whoami preflight + et al | 📋 queued, ~2h |
+| Sub-PR B #154 | P0 spec coverage: cross-purchaser leak + cancel-auto-send + regenerate-claim-link + claim-replay + photo-upload (5 specs, +537 LoC) + dry-run resend `html` capture | ✅ shipped 2026-05-20 to `release/v1.2.0` (squash `b6225db`); mock e2e 56/56 in 1.7m |
+| Sub-PR C | Cleanup tail: drop MSW dead weight + draft-restore poll + multi-widget Turnstile match + wrangler whoami preflight + et al | 📋 queued next, ~2h |
 
 **Locked decisions** (epic PRD `## Decisions`):
 - **D-1**: Sandbox-in-CI YES (weekday 12:00 UTC + `release/*` PR trigger), prod-smoke YES, test-route gates YES + one-line CI assertion.
@@ -36,7 +36,7 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 - **D-4**: Sub-PR sequencing A → B → C (each one session).
 - **D-5 (Max-flagged 2026-05-20)**: prod-smoke v1 is READ-ONLY — stop before Stripe redirect; assert paymentUrl shape only. Reason: prod Sanity carries LIVE buy.stripe.com URLs after apex-unpark; test card 4242 fails on live; live charge from CI = catastrophic. Full webhook + delivery loop stays on the nightly sandbox tier against staging.
 
-**Next-session resume:** start Sub-PR B (P0 spec coverage — 5 new specs: cross-purchaser leak, gift cancel-auto-send, gift regenerate, gift claim-replay, photo upload). PRD `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md` ISC-9..13. Full Phase 3 (v1.1.x) sub-PR ledger lives in `docs/CHANGELOG.md`.
+**Next-session resume:** Sub-PR C (P1 cleanup tail — ISC-14..24, ~2h). Drop `tests/e2e/mocks/external.ts` + MSW init; `waitForDraftRestore` recursive `setTimeout` → `expect.toHaveValue` poll; turnstileStub multi-widget strict-id match; wrangler whoami preflight in globalSetup; move `x-e2e-reset-token` out of the broadcast `extraHTTPHeaders`; escape `next` for regex match in `signInViaMagicLink`; centralize timeout constants; `assertEnvGuards` rejects malformed `whsec_`; CLAUDE.md durable rule for `*-roundtrip\.spec\.ts$` discriminator; drop `vX/...` SSE regex leftover; rename `expectedPageCount` → `maxClicks` for clarity. PRD `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md` ISC-14..24. **Reminder for the agent picking this up:** Sub-PR C ships on a feature branch (`feat/sub-pr-c-cleanup-tail`), opens PR against `release/v1.2.0`, squash-merges after CI green. Do NOT commit directly to release.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
@@ -50,7 +50,7 @@ Apex unpark + Stripe live-mode flip is blocked on:
 6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
 7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
 8. **Sanity copy seed for D-11 cancel-scheduled** — run `scripts/migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts` against **staging first**, then **production** dataset. Adds 4 copy fields (`cancelScheduledCtaLabel` / `cancelScheduledConfirmCtaLabel` / `cancelScheduledSendingLabel` / `cancelScheduledSessionExpiredError`). Idempotent (setIfMissing). Filed 2026-05-19 post-#148 merge.
-9. **Launch-readiness e2e epic** — 8 of 24 ISC shipped via PR #153 (Sub-PR A). PRD at `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md`. Remaining: **Sub-PR B** P0 spec coverage (cross-purchaser leak, gift cancel-auto-send / regenerate / claim-replay, photo upload) — 5.5h; **Sub-PR C** cleanup tail (drop MSW dead weight, draft-restore poll, multi-widget Turnstile match, wrangler whoami preflight, et al) — 2h. Privacy export Art. 20 e2e deferred per Max decision. Dedicated dev environment ruled out.
+9. **Launch-readiness e2e epic** — 13 of 24 ISC shipped (Sub-PR A #153 + Sub-PR B #154). PRD at `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md`. Remaining: **Sub-PR C** cleanup tail (ISC-14..24 — drop MSW dead weight, draft-restore poll, multi-widget Turnstile match, wrangler whoami preflight, et al) — ~2h. Privacy export Art. 20 e2e deferred per Max decision. Dedicated dev environment ruled out.
 
 ## Paused workstream — Phase 7 PR-A1 (email Sanity CMS)
 
