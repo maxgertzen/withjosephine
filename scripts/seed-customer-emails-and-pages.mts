@@ -4,10 +4,12 @@ import { createClient } from "@sanity/client";
 import {
   EMAIL_DAY2_STARTED_DEFAULTS,
   EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
+  MY_GIFTS_PAGE_DEFAULTS,
   MY_READINGS_PAGE_DEFAULTS,
 } from "../src/data/defaults";
 
@@ -56,6 +58,7 @@ function omitNullish<T extends object>(record: T): Partial<T> {
 const SEEDS = [
   { _id: "listenPage", _type: "listenPage", ...omitNullish(LISTEN_PAGE_DEFAULTS) },
   { _id: "myReadingsPage", _type: "myReadingsPage", ...omitNullish(MY_READINGS_PAGE_DEFAULTS) },
+  { _id: "myGiftsPage", _type: "myGiftsPage", ...omitNullish(MY_GIFTS_PAGE_DEFAULTS) },
   {
     _id: "magicLinkVerifyPage",
     _type: "magicLinkVerifyPage",
@@ -77,6 +80,11 @@ const SEEDS = [
     ...omitNullish(EMAIL_DAY7_DELIVERY_DEFAULTS),
   },
   { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
+  {
+    _id: "emailGiftPurchaseConfirmation",
+    _type: "emailGiftPurchaseConfirmation",
+    ...omitNullish(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS),
+  },
 ];
 
 for (const seed of SEEDS) {
