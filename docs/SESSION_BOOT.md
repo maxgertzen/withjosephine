@@ -11,26 +11,32 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 
 ---
 
-## Current sprint — v1.1.x Phase 3 scheduling rebuild (release/v1.1.0) — **FULLY SHIPPED**
+## Current sprint — v1.2.x launch-readiness e2e epic (release/v1.2.0)
 
-**Active branch:** none — scope-3 polish PR #150 + cron disable PR #149 merged 2026-05-20.
-**Open PRs:** none on `release/v1.1.0`. One docs follow-up (this bookkeeping PR) once merged closes Phase 3 fully.
-**Main:** `d607ada` (unchanged this sprint cycle).
-**Release branch:** `release/v1.1.0` at `4edad74` after PRs #142 / #143 / #144 / #145 / #146 / #147 / #148 / #149 / #150 merged 2026-05-19 → 2026-05-20.
+**Active branch:** `release/v1.2.0` — cut from `release/v1.1.0@882752d` on 2026-05-20. CI workflow updated (`ci.yml` push branches + deploy-staging trigger) to reference `release/v1.2.0`.
+**Most-recent merge:** PR #152 (`86549e9`) — re-enabled sandbox specs (listen+stripe+gift roundtrip) with Turnstile stub + staging cleanup helper. 4/4 sandbox specs pass against staging in 1.8 min.
+**Open PRs:** none on `release/v1.2.0`.
+**Main:** `d607ada` (unchanged).
 
-**Phase 3 sub-PR stack — ALL SHIPPED:**
+**v1.1.x is fully shipped on `release/v1.1.0` at `882752d`** (PRs #142 / #143 / #144 / #145 / #146 / #147 / #148 / #149 / #150 / #151 merged 2026-05-19 → 2026-05-20). Phase 3 scheduling rebuild complete. The v1.1.0 → main merge is hold-gate item #4; v1.2.0 lands on top.
+
+**v1.2.x epic queue (PRD: `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md`)** — 24 ISC across 3 sub-PRs:
 
 | Sub-PR | Scope | Status |
 |---|---|---|
-| PR-A (#142 + #143 hotfix) | D-8 status pill + D-9 datepicker TZ hardening | ✅ shipped + staging |
-| PR-B (#144) | D-12 recipient-email pre-fill + P-4b wholesale-non-refundable refund-policy rewrite | ✅ shipped + staging + Sanity migrations applied to staging AND production datasets |
-| PR-C-i (#145) | D1 migration 0012 (5 audit columns + UNIQUE partial idx, prepares schema for D-10 + D-11) | ✅ shipped + staging D1 applied + schema verified |
-| PR-C-ii (#147) | D-10 send-now route + `SendNowControl` + idempotency-key + dispatcher defense + unit tests + e2e | ✅ shipped 2026-05-19 + staging (CI 26108537934 green) |
-| PR-Bundle (#148) | PR-Lift helpers (signInViaMagicLink + interceptStripeCheckout) + D-11 cancel-scheduled route+UI+e2e + /simplify ×2 + Playwright TZ pin | ✅ shipped 2026-05-19 (squash `4bff524`); CI + e2e green via workflow_dispatch |
-| Scope 3 (#150) | ConfirmArmedButton extraction + P-6 reduced-motion + giftMutationGate + 7-spec interceptStripeCheckout sweep + flip-tz narration strip + un-cancel docs + /simplify #3 | ✅ shipped 2026-05-20 (squash `4edad74`); CI 26118274895 ✅ + E2E 26118276618 ✅ |
-| Side-track (#149) | email-day-2 cron dispatch disable (route handler + manual-trigger fallback kept) | ✅ shipped 2026-05-20 (squash `9f23d82`) |
+| (kicked off this session) #152 | Turnstile stub + staging cleanup helper + sandbox specs re-enabled + ci.yml release-branch rename | ✅ shipped 2026-05-20 to `release/v1.2.0` (squash `86549e9`); CI run 26147183329 ✅ 3m6s |
+| Sub-PR A | Orchestration infra: sandbox-in-CI workflow + prod-smoke job (read-only per D-5) + globalSetup hard-fail + test-route gate allow-list + cleanup-helper generalization | 📋 queued, ~7h |
+| Sub-PR B | P0 spec coverage: cross-purchaser leak + gift cancel-auto-send/regenerate/replay + photo upload | 📋 queued, ~5.5h |
+| Sub-PR C | Cleanup tail: drop MSW dead weight + draft-restore poll + multi-widget Turnstile match + wrangler whoami preflight + et al | 📋 queued, ~2h |
 
-**Phase 3 scheduling rebuild is fully shipped.** Hold-gate item 4 (release/v1.1.0 → main merge) is the gating step to production.
+**Locked decisions** (epic PRD `## Decisions`):
+- **D-1**: Sandbox-in-CI YES (weekday 12:00 UTC + `release/*` PR trigger), prod-smoke YES, test-route gates YES + one-line CI assertion.
+- **D-2 DO-NOT**: No dedicated dev environment. Staging is the right target.
+- **D-3 deferred**: Privacy export Art. 20 e2e — not P0 per Max. Trigger: regulator inquiry OR first user export.
+- **D-4**: Sub-PR sequencing A → B → C (each one session).
+- **D-5 (Max-flagged 2026-05-20)**: prod-smoke v1 is READ-ONLY — stop before Stripe redirect; assert paymentUrl shape only. Reason: prod Sanity carries LIVE buy.stripe.com URLs after apex-unpark; test card 4242 fails on live; live charge from CI = catastrophic. Full webhook + delivery loop stays on the nightly sandbox tier against staging.
+
+**Next-session resume:** start Sub-PR A. Read `MEMORY/WORK/20260520-054500_e2e-orchestration-review/ARCHITECT_AUDIT.md` for full YAML/TS sketches. Full Phase 3 (v1.1.x) sub-PR ledger lives in `docs/CHANGELOG.md`.
 
 ## Hold-gate (apex unpark + Stripe live-mode)
 
@@ -38,8 +44,8 @@ Apex unpark + Stripe live-mode flip is blocked on:
 
 1. F-10 Resend domain DKIM/SPF/DMARC verified
 2. Reading-price reconcile (Max + Josephine — pick canonical price per reading; sync Sanity `price` + `priceDisplay` + Stripe Payment Links)
-3. Sub-PR #4a bake — **substitute via manual sandbox spec** (`tests/e2e/specs/listen-roundtrip.spec.ts`, re-enabled in PR `feat/listen-roundtrip-reenable` 2026-05-20). Run before main-merge: `E2E_SANDBOX=1 source .env.staging && pnpm exec playwright test tests/e2e/specs/listen-roundtrip.spec.ts`. Requires wrangler authed against the staging CF account (preflight `beforeAll` wipes `listen-roundtrip+%` rows from D1 + Sanity). Spec exercises real Sanity asset upload + force-mirror + Resend dry-run + magic-link verify + /listen page + audio Range fetch + listenedAt mirror. Becky's first real reading remains the human-UX bake but is no longer the only signal.
-4. **release/v1.1.0 merged to main** — ships everything from intake-architecture-repair Phases 0–4, Phase 5 Gifting, master plan Phases 1–4, Phase 3 scheduling rebuild (all sub-PRs shipped 2026-05-19 → 2026-05-20; ready for merge once items 1-3 + 5-7 + 8 are clear)
+3. Sub-PR #4a bake — **substitute via sandbox specs** (shipped PR #152). Run before main-merge: `E2E_SANDBOX=1 source .env.staging && pnpm exec playwright test`. 4 sandbox specs (listen + stripe + gift roundtrip) pass against staging in 1.8 min. Will become CI-scheduled (weekday 12:00 UTC) once Sub-PR A of the v1.2.x epic ships. Becky's first real reading remains the human-UX bake but is no longer the only signal.
+4. **release/v1.2.0 merged to main** — `release/v1.2.0` was cut from `release/v1.1.0@882752d` on 2026-05-20 and carries everything v1.1.x shipped plus PR #152 (sandbox specs re-enabled). Future v1.2.x sub-PR stack (epic) lands on this branch first. Ready for merge to main once items 1-3 + 5-7 + 8 are clear AND the launch-readiness epic items judged blocking are shipped (per epic PRD).
 5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
 6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
 7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
