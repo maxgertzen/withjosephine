@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { getCapturedEmails, resetCapturedState } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { fireCheckoutCompleted } from "../helpers/stripeWebhook";
 import { waitForTurnstileToken } from "../helpers/turnstile";
@@ -10,7 +11,7 @@ const CLAIM_TOKEN_RE = /\/gift\/claim\?token=([A-Za-z0-9_-]+)/;
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Admin regenerate-gift-claim — token rotation + cooldown — mock mode", () => {

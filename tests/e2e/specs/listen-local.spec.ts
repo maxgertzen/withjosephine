@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 import { resetCapturedState } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 
 const FAKE_SUBMISSION_ID = "00000000-0000-0000-0000-000000000000";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Listen route — mock mode", () => {

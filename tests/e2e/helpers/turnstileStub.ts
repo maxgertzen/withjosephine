@@ -42,15 +42,18 @@ export async function stubTurnstile(
         }
         return id;
       },
-      execute(target: Element): void {
+      execute(target: string | Element): void {
+        if (typeof target === "string") {
+          const widget = widgets.get(target);
+          widget?.params.callback?.(dummyToken);
+          return;
+        }
         for (const { params, el } of widgets.values()) {
           if (target === el || target?.contains?.(el)) {
             params.callback?.(dummyToken);
             return;
           }
         }
-        const first = widgets.values().next().value;
-        first?.params.callback?.(dummyToken);
       },
       reset(): void {
         for (const { el } of widgets.values()) {

@@ -29,5 +29,8 @@ export async function signInViaMagicLink(
   await page.goto(`/auth/verify?token=${token}&next=${next}`);
   await page.locator("input[name='email']").fill(email);
   await page.locator("button[type='submit']").click();
-  await page.waitForURL(`**${next}**`, { timeout: 15_000 });
+  // Match `next` literally — `page.waitForURL(`**${next}**`)` would mis-interpret
+  // any glob meta-chars (?, *, [, (, etc.) inside next as wildcards.
+  const escaped = next.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await page.waitForURL(new RegExp(escaped), { timeout: 15_000 });
 }

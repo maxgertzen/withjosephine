@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
+import { FIXTURE_SIDECAR_PORT } from "./constants";
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.resolve(here, "../../src/__fixtures__/sanity/e2e");
 
@@ -160,7 +162,7 @@ function operationLabel(kind: CapturedMutationOp["kind"]): string {
   }
 }
 
-export const FIXTURE_SIDECAR_PORT = 47391;
+export { FIXTURE_SIDECAR_PORT };
 
 export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   const bundle = await loadBundle();
@@ -265,7 +267,6 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
     });
-  app.get("/vX/data/live/events/:dataset", sseHeartbeat);
   app.get("/:apiVersion{v[^/]+}/data/live/events/:dataset", sseHeartbeat);
 
   app.get("/images/:rest{.+}", (c) => c.notFound());

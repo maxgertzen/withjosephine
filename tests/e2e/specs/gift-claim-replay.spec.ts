@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { getCapturedEmails, resetCapturedState } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
@@ -14,7 +15,7 @@ const CLAIM_TOKEN_RE = /\/gift\/claim\?token=([A-Za-z0-9_-]+)/;
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Gift claim replay — same token cannot reopen the intake after submit — mock mode", () => {

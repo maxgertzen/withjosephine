@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { defineConfig, devices } from "@playwright/test";
 
-import { FIXTURE_SIDECAR_PORT } from "./tests/e2e/fixtures-server";
+import { E2E_RESET_TOKEN_FALLBACK, FIXTURE_SIDECAR_PORT } from "./tests/e2e/constants";
 import {
   isProdTarget,
   isSandboxMode,
@@ -18,7 +18,7 @@ const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
 const sandboxPattern = isProd ? PROD_SMOKE_PATTERN : SANDBOX_SPECS_PATTERN;
 const projectName = isSandbox ? (isProd ? "prod-smoke" : "sandbox") : "mock";
 
-const e2eResetToken = process.env.E2E_RESET_TOKEN ?? "e2e-reset-stable-token";
+const e2eResetToken = process.env.E2E_RESET_TOKEN ?? E2E_RESET_TOKEN_FALLBACK;
 
 const e2eWebhookSecret =
   process.env.STRIPE_WEBHOOK_SECRET ?? `whsec_${randomUUID().replace(/-/g, "")}`;
@@ -41,7 +41,6 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   globalTimeout: isSandbox ? 10 * 60 * 1000 : 6 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
-  globalTeardown: "./tests/e2e/global-teardown.ts",
 
   use: {
     baseURL: isSandbox ? stagingUrl : "http://localhost:3000",
@@ -50,7 +49,9 @@ export default defineConfig({
     video: "retain-on-failure",
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
-    extraHTTPHeaders: isSandbox ? undefined : { "x-e2e-reset-token": e2eResetToken },
+    // x-e2e-reset-token is attached only by the two helpers that need it
+    // (`tests/e2e/helpers/e2eReset.ts` + `tests/e2e/helpers/giftClaimCookie.ts`),
+    // not broadcast on every request.
     // Pin Chromium to a real IANA region so Intl.DateTimeFormat().resolvedOptions().timeZone
     // returns a region/city shape (matches dev machines). CI runners default to UTC, which
     // breaks IANA-shape assertions in gift-flip-to-scheduled-tz.spec.ts authored against

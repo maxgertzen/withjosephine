@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { signInViaMagicLink } from "../helpers/auth";
 import { resetCapturedState } from "../helpers/captureStore";
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { waitForTurnstileToken } from "../helpers/turnstile";
 
@@ -10,7 +11,7 @@ const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("/my-gifts surfaces purchased gifts (B-11) — mock mode", () => {

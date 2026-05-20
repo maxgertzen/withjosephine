@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import {
   DRAFT_KEY_PREFIX,
@@ -53,24 +53,17 @@ export async function waitForDraftRestore(page: Page): Promise<void> {
   // `currentPageValid` (which enables both Next and Submit) only flips true
   // after the IntakeForm's mount-time `restoreDraft` populates state. Wait
   // for the email input value to land before clicking anything.
-  await page.locator("#field-email").evaluate(
-    (el) =>
-      new Promise<void>((resolve) => {
-        const check = () => {
-          if ((el as HTMLInputElement).value !== "") return resolve();
-          setTimeout(check, 50);
-        };
-        check();
-      }),
-  );
+  await expect(page.locator("#field-email")).not.toHaveValue("", {
+    timeout: 5000,
+  });
 }
 
 export async function clickThroughIntakePages(
   page: Page,
-  expectedPageCount: number,
+  maxClicks: number,
 ): Promise<void> {
   await waitForDraftRestore(page);
-  for (let i = 0; i < expectedPageCount; i++) {
+  for (let i = 0; i < maxClicks; i++) {
     if ((await page.getByTestId("intake-submit").count()) > 0) return;
     await page.getByTestId("intake-next").click();
   }
