@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, release/v1.1.0]
+    branches: [main, release/v1.2.0]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -69,7 +69,7 @@ jobs:
   # first. Per-env vars resolve from the GH `staging` environment because
   # of `environment: staging` below.
   deploy-staging:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.1.0')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0')
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test, security-audit, storybook]
     environment: staging

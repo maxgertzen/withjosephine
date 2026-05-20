@@ -174,15 +174,6 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 - **Recommendation:** Path (a) — smallest blast radius, fixes the warning, doesn't touch the dev DX. Estimated 15–30 min.
 - **Trigger:** Before the next major Cloudflare/OpenNext upgrade, OR when workerd surfaces a startup-time error on this config.
 
-### S-3. WAF rate-limit rules
-- **Source:** Security review.
-- **What:** No per-IP throttling on `/api/booking`, `/api/contact`, or
-  `/api/booking/upload-url`. Worst case is resource cost (Resend quota,
-  R2 storage), not data theft.
-- **Action:** Cloudflare dashboard → Security → WAF → Rate limiting rules.
-  10 req/min/IP per route is generous for legitimate use. No code change.
-- **Folds into:** Punch 6 (R2 CORS) — both are CF dashboard tasks.
-
 ### F-10. Verify Resend domain before first prod send
 - **Source:** Security review.
 - **What:** `src/lib/resend.ts` `FROM_ADDRESS` is `Josephine <hello@withjosephine.com>`.
@@ -217,7 +208,7 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
   2. Bind that token to the backup worker paths separately from the prod photo-upload token.
   3. Audit existing CF account-level R2 tokens — anything with global `Edit` should be rotated or scoped down. CF Dashboard → R2 → Manage R2 API Tokens.
   4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
-- **Trigger:** Pair this with the WAF rate-limit Max-action (S-3 above) — both are CF-dashboard token/rule hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model.
+- **Trigger:** Standalone CF-dashboard token hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model. (S-3 WAF rate-limit Max-action that previously pair-anchored this entry shipped 2026-05-20 — see CHANGELOG.)
 
 ---
 
@@ -237,21 +228,6 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 - **Status:** Promoted out of backlog into the Phase 3 next-session ladder as **PR-Lift** (first of three). See `docs/SESSION_BOOT.md` § Next-session agenda for the full scope brief. Locked sequencing: PR-Lift → PR-D → PR-E, all on `release/v1.1.0`.
 - **Why first:** PR-D will add a 5th magic-link callsite (`gift-cancel-scheduled.spec.ts`). Extracting now means PR-D writes against the helper from day one — no follow-up cleanup needed.
 - **Trigger:** next session, before PR-D.
-
-### Listen round-trip spec — re-enable after staging hygiene (filed 2026-05-17)
-- **Source:** Phase 5 Bundle A.2 spec build. The booking-form pre-condition step inside `tests/e2e/specs/listen-roundtrip.spec.ts` (`createPaidSubmission` helper) intermittently navigates to `/my-readings` instead of Stripe Checkout after the submit click. The spec is currently `test.fixme`'d.
-- **Symptom:** After ~3 sequential booking-form submits from the same Playwright origin in the same window, the form's `intake-submit` POST stops landing on `https://buy.stripe.com/test_…` and instead lands on `https://staging.withjosephine.com/my-readings`. `wrangler tail` shows no `/api/booking` POST at all from those runs — the click is being intercepted client-side, OR the page is being redirected before the POST fires.
-- **Root cause (working hypotheses, unconfirmed):**
-  1. Cloudflare Turnstile bot challenge triggered after repeated submits — the invisible widget escalates to a managed challenge that Playwright can't auto-pass, the submit handler's `requestFreshToken()` rejects, and some downstream path navigates to `/my-readings` (the default authenticated-user landing).
-  2. Stripe / Cloudflare rate-limiting the test-card path — `4242 4242 4242 4242` from the same source IP triggers a fraud-prevention redirect.
-  3. Accumulated `*-roundtrip*` D1 + Sanity + `auth_sessions` rows from prior runs creating server-side "existing user" detection that re-routes.
-- **Why it doesn't affect gift spec:** Gift round-trip uses a different submit endpoint (`/api/booking/gift`) which bypasses whatever surface is failing here. Gift passes both `scheduled` + `self_send` variants reliably.
-- **Recommended fixes (try in order):**
-  1. **Cloudflare zone allowlist for Playwright origin IP** — add the developer machine's residential IP (or a dedicated GH Actions runner) to a CF Access bypass / WAF allowlist so Turnstile + Cloudflare bot detection treat it as trusted. Permanent, hardens against future regressions.
-  2. **Pre-prod data cleanup before each spec session** — wipe `email LIKE '%-roundtrip%'` rows from D1 + Sanity + auth_sessions before re-running. See "Pre-prod data cleanup" entry below; broaden the existing SQL filter to also nuke `auth_sessions` for these emails.
-  3. **Run from a fresh CF-Access-tunneled environment** — spin up a clean GH Actions runner job that does a single spec run end-to-end, isolated from local-dev session state.
-- **Max-action:** the allowlist step (1) is the cheapest unblock. Cloudflare → Zero Trust → Access → Policies → add an `Include → IP ranges` rule covering the developer IP, applied to the staging Access Application. Re-test the spec, untag `test.fixme`, ship.
-- **What's already merged + working:** `POST /api/internal/issue-magic-link` route + `GET /api/cron/email-day-7-deliver?force=<id>` mode + `sanityE2EAssets.uploadDummyVoiceAndPdf` + dummy WAV/PDF fixtures + the spec scaffold itself. None of that needs to ship again — only the test execution needs to be unblocked.
 
 ### Staging Turnstile = Cloudflare test keys (locked 2026-05-16 — hidden invariant; document so it doesn't drift to real keys)
 - **Source:** Phase 5 Bundle A.0 spec build. Real Turnstile blocked Playwright's Chromium (anti-bot). Switched staging to Cloudflare's published always-pass test keys so both Becky's manual smoke AND the headed `stripe-roundtrip.spec.ts` automated round-trip can complete without bot challenges.
@@ -406,7 +382,7 @@ Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful
 - **`zipSync` → `AsyncZipDeflate` flip (Efficiency MED).** Current `zipSync` is single-threaded and blocks the isolate. Comment in `export/route.ts` pre-commits to the flip threshold. **Trigger:** any export bundle ≥25 MB observed (log-and-watch), OR Worker CPU duration on `/api/privacy/export` >10s P95.
 - **Mixpanel project token in URL query (Pentester MED-4).** `?token=...` ends up in vendor edge logs. Token is `NEXT_PUBLIC_MIXPANEL_TOKEN` (already client-exposed), low-impact. **Trigger:** Mixpanel documents body-token support for `data-deletions/v3.0` — then move it.
 - **HMAC email_hash in `deletion_log` (Pentester LOW-4).** Currently unsalted SHA-256 — rainbow-table feasible if a `deletion_log` dump leaks. **Trigger:** any incident-class event involving D1 read access from outside the worker. Cheap fix: HMAC with a server secret.
-- **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. Folds into the existing `S-3. WAF rate-limit rules` backlog item above — add the admin route to the WAF allowlist when that lands.
+- **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. The existing zone WAF rule `rl-josephine-api-write-paths` (shipped 2026-05-20, see CHANGELOG) currently covers `/api/booking`, `/api/contact`, `/api/booking/upload-url` only — adding `/api/admin/delete-user` to the OR expression is cheap but bumps the rule's 4th branch. **Trigger:** any brute-force signal in admin audit log; OR when zone upgrades to Business plan (5 rules) and we split per-path.
 
 ### Brevo Phase 1 — parallel-safe (NOT launch-blocking — 2026-05-11 re-tier)
 

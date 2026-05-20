@@ -12,6 +12,7 @@ import {
   regenerateGiftClaim,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
+import { stubTurnstile } from "../helpers/turnstileStub";
 
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "gift-roundtrip-stripe@withjosephine.com";
@@ -107,6 +108,10 @@ async function drivePurchaserLeg(
 }
 
 test.describe("Gift round-trip — staging", () => {
+  test.beforeEach(async ({ page }) => {
+    await stubTurnstile(page);
+  });
+
   test("birth-chart scheduled: purchaser → Stripe → claim URL → recipient intake → redeem", async ({
     page,
     request,
@@ -168,7 +173,6 @@ test.describe("Gift round-trip — staging", () => {
 
     await page.locator("#field-art6-consent").check();
     await page.locator("#field-art9-consent").check();
-    await page.locator("#field-cooling-off-consent").check();
 
     await page.getByTestId("intake-submit").click();
     await page.waitForURL(/\/thank-you\/.*[?&]gift=1[^"]*redeemed=1/, {
