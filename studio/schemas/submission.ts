@@ -315,6 +315,22 @@ export const submission = defineType({
       readOnly: true,
     }),
     defineField({
+      name: "giftClaimedAt",
+      title: "Gift Claimed At",
+      type: "datetime",
+      description:
+        "Set when the gift recipient submits intake. Read-only mirror of D1. Surfaced for Studio actions like 'Regenerate claim link' that gate on whether the gift was claimed.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "recipientUserId",
+      title: "Recipient User ID",
+      type: "string",
+      description:
+        "Stable user id for the gift recipient. Load-bearing for listen-page session linkage. Read-only mirror of D1.",
+      readOnly: true,
+    }),
+    defineField({
       name: "emailsFired",
       title: "Emails Fired",
       type: "array",
@@ -342,6 +358,7 @@ export const submission = defineType({
                   { title: "Gift claim (to recipient)", value: "gift_claim" },
                   { title: "Gift claim resend", value: "gift_resend" },
                   { title: "Gift claim regenerate", value: "gift_claim_regenerate" },
+                  { title: "Recipient intake received", value: "recipient_intake_received" },
                 ],
                 layout: "dropdown",
               },
