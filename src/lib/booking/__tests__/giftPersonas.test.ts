@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { stripTemplateTags } from "../giftPersonas";
+import { recipientNameFor, stripTemplateTags } from "../giftPersonas";
+import type { SubmissionRecord } from "../submissions";
+
+const BASE_REDEEMED_GIFT: SubmissionRecord = {
+  _id: "sub_redeemed",
+  status: "paid",
+  email: "recipient@example.com",
+  responses: [],
+  createdAt: "2026-05-20T00:00:00.000Z",
+  reading: { slug: "birth-chart", name: "Birth Chart Reading", priceDisplay: "$99" },
+  amountPaidCents: 9900,
+  amountPaidCurrency: "usd",
+  recipientUserId: "user_recipient",
+  isGift: true,
+  purchaserUserId: "user_purchaser",
+  recipientEmail: "recipient@example.com",
+  giftDeliveryMethod: "scheduled",
+  giftSendAt: "2026-05-19T00:00:00.000Z",
+  giftMessage: null,
+  giftClaimTokenHash: null,
+  giftClaimEmailFiredAt: null,
+  giftClaimedAt: "2026-05-20T00:00:00.000Z",
+  giftCancelledAt: null,
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,
+};
 
 // Phase 5 Session 4b — B7.26. Closes the template-tag injection vector.
 describe("stripTemplateTags", () => {
@@ -27,5 +53,61 @@ describe("stripTemplateTags", () => {
   it("trims trailing/leading whitespace after stripping", () => {
     expect(stripTemplateTags("{tag}")).toBe("");
     expect(stripTemplateTags("  {tag} hi {tag2}  ")).toBe("hi");
+  });
+});
+
+// C4 — recipient-name template fix (2026-05-20 smoke walk).
+// gift-redeem overwrites responses_json wholesale with the recipient's own
+// intake (first_name / legal_full_name), wiping the original purchaser-typed
+// recipient_name. Thank-you + listen surfaces fell back to "there".
+describe("recipientNameFor — post-redeem fallback chain", () => {
+  it("returns the purchaser-typed recipient_name when still present (pre-redeem)", () => {
+    const submission: SubmissionRecord = {
+      ...BASE_REDEEMED_GIFT,
+      responses: [
+        { fieldKey: "recipient_name", fieldLabelSnapshot: "", fieldType: "text", value: "Mira" },
+      ],
+    };
+    expect(recipientNameFor(submission)).toBe("Mira");
+  });
+
+  it("falls back to the recipient's intake first_name when recipient_name was wiped by redeem", () => {
+    const submission: SubmissionRecord = {
+      ...BASE_REDEEMED_GIFT,
+      responses: [
+        { fieldKey: "first_name", fieldLabelSnapshot: "", fieldType: "text", value: "Alice" },
+        { fieldKey: "legal_full_name", fieldLabelSnapshot: "", fieldType: "text", value: "Alice Brown" },
+      ],
+    };
+    expect(recipientNameFor(submission)).toBe("Alice");
+  });
+
+  it("falls back to legal_full_name first token when first_name is missing", () => {
+    const submission: SubmissionRecord = {
+      ...BASE_REDEEMED_GIFT,
+      responses: [
+        { fieldKey: "legal_full_name", fieldLabelSnapshot: "", fieldType: "text", value: "Bianca Rossi" },
+      ],
+    };
+    expect(recipientNameFor(submission)).toBe("Bianca");
+  });
+
+  it("falls back to email local-part when no intake names are present", () => {
+    const submission: SubmissionRecord = {
+      ...BASE_REDEEMED_GIFT,
+      email: "carmen@example.com",
+      responses: [],
+    };
+    expect(recipientNameFor(submission)).toBe("Carmen");
+  });
+
+  it("never returns the legacy 'there' sentinel for a redeemed gift with any intake data", () => {
+    const submission: SubmissionRecord = {
+      ...BASE_REDEEMED_GIFT,
+      responses: [
+        { fieldKey: "first_name", fieldLabelSnapshot: "", fieldType: "text", value: "Dana" },
+      ],
+    };
+    expect(recipientNameFor(submission)).not.toBe("there");
   });
 });
