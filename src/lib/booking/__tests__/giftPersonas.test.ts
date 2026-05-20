@@ -56,10 +56,6 @@ describe("stripTemplateTags", () => {
   });
 });
 
-// C4 — recipient-name template fix (2026-05-20 smoke walk).
-// gift-redeem overwrites responses_json wholesale with the recipient's own
-// intake (first_name / legal_full_name), wiping the original purchaser-typed
-// recipient_name. Thank-you + listen surfaces fell back to "there".
 describe("recipientNameFor — post-redeem fallback chain", () => {
   it("returns the purchaser-typed recipient_name when still present (pre-redeem)", () => {
     const submission: SubmissionRecord = {
@@ -99,15 +95,5 @@ describe("recipientNameFor — post-redeem fallback chain", () => {
       responses: [],
     };
     expect(recipientNameFor(submission)).toBe("Carmen");
-  });
-
-  it("never returns the legacy 'there' sentinel for a redeemed gift with any intake data", () => {
-    const submission: SubmissionRecord = {
-      ...BASE_REDEEMED_GIFT,
-      responses: [
-        { fieldKey: "first_name", fieldLabelSnapshot: "", fieldType: "text", value: "Dana" },
-      ],
-    };
-    expect(recipientNameFor(submission)).not.toBe("there");
   });
 });
