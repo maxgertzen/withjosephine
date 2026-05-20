@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { resetCapturedState } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import { setGiftClaimCookieForTest } from "../helpers/giftClaimCookie";
 import {
   clickThroughIntakePages,
@@ -20,7 +21,7 @@ const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Gift redeem — self_send recipient submit (C-4b)", () => {

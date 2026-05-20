@@ -6,6 +6,7 @@ import {
   getCapturedMutations,
   resetCapturedState,
 } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
@@ -18,7 +19,7 @@ const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Stripe round-trip — mock mode", () => {
