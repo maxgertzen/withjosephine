@@ -7,6 +7,7 @@ import {
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { cleanupListenRoundtripState } from "../helpers/listenRoundtripCleanup";
 import {
   forceD1Mirror,
   uploadDummyVoiceAndPdf,
@@ -19,6 +20,7 @@ import {
   pollUntilPaid,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
+import { stubTurnstile } from "../helpers/turnstileStub";
 
 test.skip(
   !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
@@ -68,10 +70,24 @@ async function createPaidSubmission(page: Page, email: string): Promise<string> 
 }
 
 test.describe("Listen round-trip — staging", () => {
-  test.fixme(
-    true,
-    "Booking pre-condition redirects to /my-readings on staging — see docs/BACKLOG.md → 'Listen round-trip spec — re-enable after staging hygiene'.",
-  );
+  test.beforeAll(async () => {
+    if (
+      !process.env.CF_ACCESS_CLIENT_ID ||
+      !process.env.CF_ACCESS_CLIENT_SECRET ||
+      !process.env.ADMIN_API_KEY
+    ) {
+      return;
+    }
+    const { sanityDeleted } = await cleanupListenRoundtripState();
+    console.log(
+      `[listen-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
+    );
+  });
+
+  test.beforeEach(async ({ context, page }) => {
+    await context.clearCookies();
+    await stubTurnstile(page);
+  });
 
   test("birth-chart: paid submission → delivered → magic-link → listen → listenedAt", async ({
     page,
@@ -110,12 +126,14 @@ test.describe("Listen round-trip — staging", () => {
       timeout: 15_000,
     });
 
-    // 7. Retrieve the raw token via the engineering seam.
-    const { verifyUrl } = await issueMagicLink(email);
-    expect(verifyUrl).toMatch(/\/auth\/verify\?token=[a-f0-9]{64}/);
+    // Real magic-link emails include &next=/listen/<id>; the engineering
+    // seam doesn't, so append it to match production safeNext resolution.
+    const { verifyUrl: baseVerifyUrl } = await issueMagicLink(email);
+    expect(baseVerifyUrl).toMatch(/\/auth\/verify\?token=[a-f0-9]{64}/);
+    const verifyUrl = new URL(baseVerifyUrl);
+    verifyUrl.searchParams.set("next", `/listen/${submissionId}`);
 
-    // 8. Navigate to the verify URL → confirm-email card.
-    await page.goto(verifyUrl);
+    await page.goto(verifyUrl.toString());
     const confirmForm = page.locator(
       'form[action="/api/auth/magic-link/verify"]',
     );

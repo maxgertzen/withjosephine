@@ -7,6 +7,7 @@ import {
 } from "../helpers/intakeDraft";
 import { accessHeadersOrEmpty } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
+import { stubTurnstile } from "../helpers/turnstileStub";
 
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "stripe-roundtrip@withjosephine.com";
@@ -19,6 +20,10 @@ test.skip(
 test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
 test.describe("Stripe sandbox round-trip — staging", () => {
+  test.beforeEach(async ({ page }) => {
+    await stubTurnstile(page);
+  });
+
   test("birth-chart: entry → letter → intake → Stripe → thank-you", async ({
     page,
   }) => {

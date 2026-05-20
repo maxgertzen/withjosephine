@@ -38,12 +38,13 @@ Apex unpark + Stripe live-mode flip is blocked on:
 
 1. F-10 Resend domain DKIM/SPF/DMARC verified
 2. Reading-price reconcile (Max + Josephine — pick canonical price per reading; sync Sanity `price` + `priceDisplay` + Stripe Payment Links)
-3. Sub-PR #4a 1-week bake completes (Becky's first real reading delivered)
+3. Sub-PR #4a bake — **substitute via manual sandbox spec** (`tests/e2e/specs/listen-roundtrip.spec.ts`, re-enabled in PR `feat/listen-roundtrip-reenable` 2026-05-20). Run before main-merge: `E2E_SANDBOX=1 source .env.staging && pnpm exec playwright test tests/e2e/specs/listen-roundtrip.spec.ts`. Requires wrangler authed against the staging CF account (preflight `beforeAll` wipes `listen-roundtrip+%` rows from D1 + Sanity). Spec exercises real Sanity asset upload + force-mirror + Resend dry-run + magic-link verify + /listen page + audio Range fetch + listenedAt mirror. Becky's first real reading remains the human-UX bake but is no longer the only signal.
 4. **release/v1.1.0 merged to main** — ships everything from intake-architecture-repair Phases 0–4, Phase 5 Gifting, master plan Phases 1–4, Phase 3 scheduling rebuild (all sub-PRs shipped 2026-05-19 → 2026-05-20; ready for merge once items 1-3 + 5-7 + 8 are clear)
 5. Pre-prod data cleanup (test smoke residue, D1 + R2 + Sanity)
 6. Stage B + C smoke tests pass (booking E2E + magic-link + Art. 20 export + cascade + Stripe round-trip)
 7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations. Filed 2026-05-18, updated 2026-05-19.
 8. **Sanity copy seed for D-11 cancel-scheduled** — run `scripts/migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts` against **staging first**, then **production** dataset. Adds 4 copy fields (`cancelScheduledCtaLabel` / `cancelScheduledConfirmCtaLabel` / `cancelScheduledSendingLabel` / `cancelScheduledSessionExpiredError`). Idempotent (setIfMissing). Filed 2026-05-19 post-#148 merge.
+9. **Launch-readiness e2e epic** — multi-reviewer audit 2026-05-20 (QA + Automation + Architect) identified P0 gaps: sandbox specs not in CI (silent rot), no prod-smoke after `deploy-production`, soft-skip antipattern in sandbox specs, plus 5 missing P0 specs. PRD at `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md`; full architect findings at `MEMORY/WORK/20260520-054500_e2e-orchestration-review/ARCHITECT_AUDIT.md`. Three sub-PRs (~14h total): **Sub-PR A** orchestration infra (sandbox-in-CI workflow + prod-smoke job + globalSetup hard-fail + test-route gate allow-list + cleanup-helper generalization) — blocks apex unpark; **Sub-PR B** P0 spec coverage (cross-purchaser leak, gift cancel-auto-send / regenerate / claim-replay, photo upload); **Sub-PR C** cleanup tail (drop MSW dead weight, draft-restore poll, multi-widget Turnstile match, wrangler whoami preflight, et al). Privacy export Art. 20 e2e deferred per Max decision. Dedicated dev environment explicitly ruled out (Architect DO-NOT).
 
 ## Paused workstream — Phase 7 PR-A1 (email Sanity CMS)
 
@@ -55,13 +56,12 @@ Branch `feat/phase-7-email-sanity-cms` exists locally with WIP commit `f6568e9` 
 2. **F-10 Verify Resend domain** — DKIM/SPF/DMARC published in CF DNS; test send via Resend dashboard before opening the form to traffic. Blocks Brevo Phase 3.
 3. **Brevo Phase 1 newsletter — parallel-safe**, deferred post-launch per Brevo (vetting ticket #5354963 with Frosina). Site launches first; reply to ticket with live URL + sample newsletter; Brevo completes Section E (astrology) review; ship newsletter. If drags >2 weeks or rejects, swap to Beehiiv (~30 min code). Not launch-blocking.
 4. **Apex unpark + Stripe live-mode flip** — see `www/docs/BACKLOG.md` → "Apex unpark — Stripe live-mode flip target". Blocked on #1 + #2 + smoke walk-through + Phase 7 + the D1 migration apply.
-5. **WAF rate-limit rules** on `/api/booking`, `/api/contact`, `/api/booking/upload-url` — CF dashboard → Security → WAF. 10 req/min/IP.
-6. **Pre-prod data cleanup** — main-merge blocker. Per-table SQL + R2 CLI + Studio delete steps in `www/docs/BACKLOG.md`.
-7. **Manual Stripe round-trip** — sandbox checkout → `/thank-you/[id]` → webhook marks paid. Required before driving real traffic.
-8. **AI-bot accessibility policy** — allow Claude-SearchBot / OAI-SearchBot / PerplexityBot? Decision in `www/docs/BACKLOG.md` → Security.
-9. **Outstanding Clarity Max-actions** — provision tracking ID, set masking to Strict, hide Smart Events, add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH Variables. Checklist in BACKLOG.
-10. **Rotate `DO_DISPATCH_SECRET` on staging** — exposed mid-diagnostic 2026-05-18. Command: `openssl rand -hex 32 | pnpm exec wrangler secret put DO_DISPATCH_SECRET --env staging`. After rotation, do not re-paste in chat.
-11. **Apply migration 0012 to production D1** — staging is at 0012 (applied + verified 2026-05-19); production still at 0003. Standalone apply is safe when 0004 → 0012 batch runs at main-merge time per the hold-gate workflow. Command: `pnpm migrate:apply:prod`. Verify with `pnpm migrate:list:prod`.
+5. **Pre-prod data cleanup** — main-merge blocker. Per-table SQL + R2 CLI + Studio delete steps in `www/docs/BACKLOG.md`.
+6. **Manual Stripe round-trip** — sandbox checkout → `/thank-you/[id]` → webhook marks paid. Required before driving real traffic.
+7. **AI-bot accessibility policy** — DECISION LOCKED 2026-05-20: allow citation-bots (OAI-SearchBot / PerplexityBot / Claude-SearchBot / Claude-User), block training-bots (GPTBot / ClaudeBot / Google-Extended / CCBot). Code change pending in `chore/robots-and-housekeeping` (new `src/app/robots.ts`).
+8. **Outstanding Clarity Max-actions** — provision tracking ID, set masking to Strict, hide Smart Events, add `NEXT_PUBLIC_CLARITY_PROJECT_ID` to GH Variables. Checklist in BACKLOG.
+9. **Rotate `DO_DISPATCH_SECRET` on staging** — exposed mid-diagnostic 2026-05-18. Command: `openssl rand -hex 32 | pnpm exec wrangler secret put DO_DISPATCH_SECRET --env staging`. After rotation, do not re-paste in chat.
+10. **Apply migration 0012 to production D1** — staging is at 0012 (applied + verified 2026-05-19); production still at 0003. Standalone apply is safe when 0004 → 0012 batch runs at main-merge time per the hold-gate workflow. Command: `pnpm migrate:apply:prod`. Verify with `pnpm migrate:list:prod`.
 
 ## Parallel-safe non-blockers (ship anytime)
 
