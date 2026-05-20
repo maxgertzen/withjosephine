@@ -85,7 +85,12 @@ async function sendOrSkip(args: {
       void fetch(`${captureUrl}/_e2e/captured-emails`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label, to: args.to, subject: args.subject }),
+        body: JSON.stringify({
+          label,
+          to: args.to,
+          subject: args.subject,
+          html: args.html,
+        }),
       }).catch(() => undefined);
     }
     console.warn(`[resend] RESEND_DRY_RUN — skipping ${label} (to=${redactRecipient(args.to)})`);
