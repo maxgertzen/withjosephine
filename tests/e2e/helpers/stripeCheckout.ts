@@ -5,6 +5,7 @@ const SANDBOX_EXPIRY = "12 / 34";
 const SANDBOX_CVC = "123";
 const SANDBOX_ZIP = "12345";
 const SANDBOX_NAME = "Ada Lovelace";
+const SANDBOX_PHONE = "2015550123";
 
 export async function fillStripeCheckout(
   page: Page,
@@ -21,6 +22,8 @@ export async function fillStripeCheckout(
   if (await zip.count()) await zip.fill(SANDBOX_ZIP);
   const cardName = page.locator('input[name="billingName"]');
   if (await cardName.count()) await cardName.fill(SANDBOX_NAME);
+  const phone = page.locator('input[autocomplete="tel"], input[name="phoneNumber"]').first();
+  if (await phone.count()) await phone.fill(SANDBOX_PHONE);
   await page.getByTestId("hosted-payment-submit-button").click();
 }
 
