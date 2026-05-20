@@ -1,14 +1,28 @@
+import { randomUUID } from "node:crypto";
+
 import { defineConfig, devices } from "@playwright/test";
 
 import { FIXTURE_SIDECAR_PORT } from "./tests/e2e/fixtures-server";
-import { isSandboxMode, SANDBOX_SPECS_PATTERN } from "./tests/e2e/helpers/e2eMode";
+import {
+  isProdTarget,
+  isSandboxMode,
+  PROD_SMOKE_PATTERN,
+  SANDBOX_SPECS_PATTERN,
+} from "./tests/e2e/helpers/e2eMode";
 
 const isCI = Boolean(process.env.CI);
 const isSandbox = isSandboxMode();
+const isProd = isProdTarget();
 const stagingUrl = process.env.STAGING_URL ?? "https://staging.withjosephine.com";
 const sidecarUrl = `http://127.0.0.1:${FIXTURE_SIDECAR_PORT}`;
+const sandboxPattern = isProd ? PROD_SMOKE_PATTERN : SANDBOX_SPECS_PATTERN;
+const projectName = isSandbox ? (isProd ? "prod-smoke" : "sandbox") : "mock";
 
 const e2eResetToken = process.env.E2E_RESET_TOKEN ?? "e2e-reset-stable-token";
+
+const e2eWebhookSecret =
+  process.env.STRIPE_WEBHOOK_SECRET ?? `whsec_${randomUUID().replace(/-/g, "")}`;
+process.env.STRIPE_WEBHOOK_SECRET = e2eWebhookSecret;
 
 export default defineConfig({
   testDir: "./tests/e2e/specs",
@@ -46,10 +60,10 @@ export default defineConfig({
 
   projects: [
     {
-      name: isSandbox ? "sandbox" : "mock",
+      name: projectName,
       ...(isSandbox
-        ? { testMatch: SANDBOX_SPECS_PATTERN }
-        : { testIgnore: SANDBOX_SPECS_PATTERN }),
+        ? { testMatch: sandboxPattern }
+        : { testIgnore: [SANDBOX_SPECS_PATTERN, PROD_SMOKE_PATTERN] }),
       use: { ...devices["Desktop Chrome"] },
     },
   ],
@@ -83,7 +97,7 @@ export default defineConfig({
             RESEND_DRY_RUN: "1",
             SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
             STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
-            STRIPE_WEBHOOK_SECRET: "whsec_e2e_dummy",
+            STRIPE_WEBHOOK_SECRET: e2eWebhookSecret,
             LISTEN_TOKEN_SECRET: "e2e_listen_token_secret_dummy",
             ADMIN_API_KEY: "e2e_admin_api_key_dummy",
           },

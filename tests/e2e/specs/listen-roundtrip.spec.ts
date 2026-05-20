@@ -7,7 +7,7 @@ import {
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
-import { cleanupListenRoundtripState } from "../helpers/listenRoundtripCleanup";
+import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import {
   forceD1Mirror,
   uploadDummyVoiceAndPdf,
@@ -21,16 +21,6 @@ import {
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
-
-test.skip(
-  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
-  "CF Access service-token env vars missing. Source www/.env.staging first.",
-);
-
-test.skip(
-  !process.env.ADMIN_API_KEY,
-  "ADMIN_API_KEY missing from .env.staging — the issue-magic-link engineering seam can't be exercised without it.",
-);
 
 test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
 
@@ -71,14 +61,9 @@ async function createPaidSubmission(page: Page, email: string): Promise<string> 
 
 test.describe("Listen round-trip — staging", () => {
   test.beforeAll(async () => {
-    if (
-      !process.env.CF_ACCESS_CLIENT_ID ||
-      !process.env.CF_ACCESS_CLIENT_SECRET ||
-      !process.env.ADMIN_API_KEY
-    ) {
-      return;
-    }
-    const { sanityDeleted } = await cleanupListenRoundtripState();
+    const { sanityDeleted } = await cleanupSandboxResidue({
+      emailPrefix: "listen-roundtrip+",
+    });
     console.log(
       `[listen-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
     );
