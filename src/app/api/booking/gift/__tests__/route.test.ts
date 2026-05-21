@@ -220,6 +220,46 @@ describe("/api/booking/gift", () => {
     expect(createSubmissionMock).not.toHaveBeenCalled();
   });
 
+  // C1 (2026-05-20 smoke walk): silent 400s left no observability surface.
+  // Each rejecting branch must surface a tagged console.error so the next
+  // staging failure self-identifies which branch fired.
+  it("logs [booking-gift] turnstile_rejected on Turnstile failure (C1 instrumentation)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockVerify.mockResolvedValueOnce(false);
+    await callRoute(SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] turnstile_rejected"),
+      expect.any(Object),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] validation_failed with field names on Zod rejection (C1 instrumentation)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ ...SELF_SEND_BODY, purchaserEmail: "not-an-email" });
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] validation_failed"),
+      expect.objectContaining({ fields: expect.any(Array) }),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] invalid_json on body parse failure (C1 instrumentation)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const badRequest = new Request("https://withjosephine.com/api/booking/gift", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not-json{",
+    });
+    const { POST } = await import("../route");
+    const res = await POST(badRequest);
+    expect(res.status).toBe(400);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] invalid_json"),
+    );
+    errSpy.mockRestore();
+  });
+
   it("returns 404 when reading is missing", async () => {
     mockReading.mockResolvedValueOnce(null);
     const res = await callRoute(SELF_SEND_BODY);
