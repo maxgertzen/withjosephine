@@ -117,7 +117,7 @@ describe("/listen/[id] page logic", () => {
     expect(props.state.kind).toBe("signIn");
   });
 
-  it("U1: strips leading 'The ' from readingName so 'Your {readingName}' doesn't read 'Your The Birth Chart'", async () => {
+  it("strips leading 'The ' from readingName so 'Your {readingName}' doesn't read 'Your The Birth Chart'", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
     submissionMock.mockResolvedValue({

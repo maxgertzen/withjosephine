@@ -220,10 +220,7 @@ describe("/api/booking/gift", () => {
     expect(createSubmissionMock).not.toHaveBeenCalled();
   });
 
-  // C1 (2026-05-20 smoke walk): silent 400s left no observability surface.
-  // Each rejecting branch must surface a tagged console.error so the next
-  // staging failure self-identifies which branch fired.
-  it("logs [booking-gift] turnstile_rejected on Turnstile failure (C1 instrumentation)", async () => {
+  it("logs [booking-gift] turnstile_rejected on Turnstile failure", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockVerify.mockResolvedValueOnce(false);
     await callRoute(SELF_SEND_BODY);
@@ -234,7 +231,7 @@ describe("/api/booking/gift", () => {
     errSpy.mockRestore();
   });
 
-  it("logs [booking-gift] validation_failed with field names on Zod rejection (C1 instrumentation)", async () => {
+  it("logs [booking-gift] validation_failed with field names on Zod rejection", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     await callRoute({ ...SELF_SEND_BODY, purchaserEmail: "not-an-email" });
     expect(errSpy).toHaveBeenCalledWith(
@@ -244,7 +241,7 @@ describe("/api/booking/gift", () => {
     errSpy.mockRestore();
   });
 
-  it("logs [booking-gift] invalid_json on body parse failure (C1 instrumentation)", async () => {
+  it("logs [booking-gift] invalid_json on body parse failure", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const badRequest = new Request("https://withjosephine.com/api/booking/gift", {
       method: "POST",
@@ -260,7 +257,7 @@ describe("/api/booking/gift", () => {
     errSpy.mockRestore();
   });
 
-  it("logs [booking-gift] invalid_body_shape on isGiftBody rejection (C1 instrumentation)", async () => {
+  it("logs [booking-gift] invalid_body_shape on isGiftBody rejection", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     await callRoute({ unrelated: "shape" } as unknown as typeof SELF_SEND_BODY);
     expect(errSpy).toHaveBeenCalledWith(
@@ -269,7 +266,7 @@ describe("/api/booking/gift", () => {
     errSpy.mockRestore();
   });
 
-  it("logs [booking-gift] honeypot_tripped when honeypot field is non-empty (C1 instrumentation)", async () => {
+  it("logs [booking-gift] honeypot_tripped when honeypot field is non-empty", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     await callRoute({ ...SELF_SEND_BODY, website: "spam-bot" } as unknown as typeof SELF_SEND_BODY);
     expect(errSpy).toHaveBeenCalledWith(

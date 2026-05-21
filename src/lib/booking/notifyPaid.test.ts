@@ -196,7 +196,7 @@ describe("applyPaidEvent", () => {
     expect(userOrder).toBeLessThan(paidOrder);
   });
 
-  it("leaves recipient_user_id null and skips the user resolve for gift submissions (C2)", async () => {
+  it("leaves recipient_user_id null and skips the user resolve for gift submissions", async () => {
     const giftSubmission: SubmissionRecord = {
       ...SUBMISSION,
       isGift: true,
@@ -221,7 +221,7 @@ describe("applyPaidEvent", () => {
     expect(paidArg.recipientUserId).toBeNull();
   });
 
-  it("still resolves and writes recipient_user_id for non-gift submissions (regression guard for the fix)", async () => {
+  it("still resolves and writes recipient_user_id for non-gift submissions", async () => {
     await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_self",
       stripeSessionId: "cs_self",

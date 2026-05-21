@@ -187,13 +187,7 @@ test.describe("Gift round-trip — staging", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  // The "smoke-imitation" spec — closes the gift-recipient axis gap the
-  // 2026-05-20 staging walk caught. Catches C2 (scheduled-gift recipient
-  // listen-page auth loop) and provides regression coverage for α's
-  // notifyPaid.ts fix. Walks scheduled-gift purchase → recipient claim+intake
-  // → Becky delivery (dummy assets + force-mirror) → recipient listen with
-  // magic-link auth → assert delivered state renders in one auth round.
-  test("birth-chart scheduled: purchaser → recipient claim → recipient listens with one magic-link round (C2 regression net)", async ({
+  test("birth-chart scheduled: purchaser → recipient claim → recipient listens with one magic-link round", async ({
     page,
     context,
     request,
@@ -247,14 +241,9 @@ test.describe("Gift round-trip — staging", () => {
       timeout: 60_000,
     });
 
-    // C4 regression net — recipient name must render on the gift thank-you,
-    // not the "Thank you, there." sentinel that the 2026-05-20 smoke caught.
     const thankYouBody = (await page.content()).toLowerCase();
     expect(thankYouBody).not.toContain("thank you, there");
 
-    // Becky-side delivery: upload dummy assets + force Sanity → D1 mirror
-    // so the listen page resolves the delivered state without waiting for
-    // Day-7 cron.
     await uploadDummyVoiceAndPdf(submissionId);
     const mirror = await forceD1Mirror(submissionId);
     expect(mirror.submissionId).toBe(submissionId);
@@ -293,10 +282,6 @@ test.describe("Gift round-trip — staging", () => {
     await confirmForm.locator('input[name="email"]').fill(recipientEmail);
     await confirmForm.locator('button[type="submit"]').click();
 
-    // C2 regression net — verify must land on the delivered surface in ONE
-    // round. Pre-α, the listen page rejected the recipient's session because
-    // recipient_user_id had been clobbered with the purchaser's userId at
-    // paid time, and the page bounced back to sign-in.
     await page.waitForURL(new RegExp(`/listen/${submissionId}\\?welcome=1`), {
       timeout: 15_000,
     });

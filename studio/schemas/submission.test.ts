@@ -25,7 +25,7 @@ type FieldDef = {
 const fields = submission.fields as Array<FieldDef>;
 const findField = (name: string) => fields.find((f) => f.name === name);
 
-describe("submission schema — drift fixes from 2026-05-20 smoke walk (S1 + S2)", () => {
+describe("submission schema", () => {
   it("declares giftClaimedAt as a datetime field", () => {
     const field = findField("giftClaimedAt");
     expect(field).toBeDefined();

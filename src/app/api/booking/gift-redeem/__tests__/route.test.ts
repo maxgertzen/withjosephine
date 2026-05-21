@@ -219,11 +219,7 @@ describe("/api/booking/gift-redeem", () => {
     expect(res.status).toBe(400);
   });
 
-  // C5 (2026-05-20 smoke walk): handler returned 400 twice in 12s then 200
-  // on retry without code change. No log surface meant the root cause was
-  // un-debuggable. Instrument the rejecting branches with tagged
-  // console.error so the next failure self-identifies.
-  it("logs [gift-redeem] turnstile_rejected on Turnstile failure (C5 instrumentation)", async () => {
+  it("logs [gift-redeem] turnstile_rejected on Turnstile failure", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockTurnstile.mockResolvedValueOnce(false);
     await callRoute(VALID_BODY);
