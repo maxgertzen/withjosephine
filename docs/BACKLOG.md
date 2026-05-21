@@ -8,6 +8,98 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 
 ---
 
+## Deferred from 2026-05-21 smoke-walk fix arc
+
+Items the 2026-05-20 staging smoke walk surfaced that didn't ship in the β / δ / α / γ Sub-PR sequence. Five of the surfaced bugs landed; the rest are queued here with explicit triggers. Full source: `www/MEMORY/WORK/20260521-smoke-walk/HANDOFF.md`.
+
+### C3-b — `/my-gifts` empty listing (purchaser_user_id race at create time)
+
+**Why deferred:** the C3 agent's investigation showed the "missing auth wall" was a misread (pages use intentional three-state pattern). The "empty list" half of C3 has two scenarios. Sub-PR α (#162) closed one (recipient_user_id clobber); the other — `purchaser_user_id` being null on some gift rows — needs live staging D1 inspection to confirm. The gift-create route at `src/app/api/booking/gift/route.ts:239` calls `getOrCreateUser({email, name}).catch(() => null)` — a transient user-resolve failure silently produces `purchaser_user_id = NULL` and that row never surfaces in `/my-gifts`.
+
+**Trigger:** (a) real customer reports empty `/my-gifts` after a successful purchase, OR (b) routine D1 audit finds `purchaser_user_id IS NULL AND is_gift = 1 AND status = 'paid'` rows.
+
+**Investigation steps:** Query staging first: `SELECT id, email, purchaser_user_id, recipient_user_id FROM submissions WHERE is_gift = 1 AND status = 'paid' ORDER BY created_at DESC LIMIT 50`. If any null `purchaser_user_id`, tighten the `getOrCreateUser` retry/backfill in `api/booking/gift/route.ts:239`.
+
+### C4-b — J3 claim/intake heading + listen-page greeting need Sanity schema plumbing
+
+**Why deferred:** Sub-PR δ (#161) closed the two thank-you surfaces via the `recipientNameFor` fallback chain. The remaining two C4 surfaces need Sanity copy schema additions:
+- `studio/schemas/giftIntakePage.ts` `headingWelcome` field has no `{recipientName}` token; default is "Welcome — a few things before we begin." → needs token + slot pass.
+- `studio/schemas/listenPage.ts` has no recipient-greeting field; default `welcomeRibbon` is generic. Needs new schema field + prop threading through `ListenView`.
+
+**Trigger:** next session that touches Sanity copy schemas, OR Becky asks to personalise either surface.
+
+### C5 — `/api/booking/gift-redeem` intermittent 400 root cause
+
+**Why deferred:** Sub-PR γ (#163) added structured logging at every silent 400 branch. The next reproduction self-identifies which branch fired. Until then, a fix is speculation.
+
+**Trigger:** next 400 in wrangler tail emits a `[gift-redeem] *_rejected` log line, OR Max reports another mid-flow submit failure.
+
+### U2 — Multi-hop magic-link friction (J1c + J3c)
+
+Listen-page magic-link flow has too many steps: enter email → "send link" email → click link → enter email AGAIN → new link → click → enter email AGAIN → THEN listen. Both customer (J1c) and recipient (J3c) hit it. Open question: is this a security requirement (every form-fill independent), or accidental redundancy?
+
+**Trigger:** UX-focused session, or first customer complaint. Map the security model (cookie scope, token-vs-session lifetimes) before any change.
+
+### U3 — Listen-page downloads use opaque/hashed filenames
+
+Voice-note and PDF downloads arrive with Sanity asset hashes as filenames. Should preserve the original Sanity asset filename, OR set a readable default via `Content-Disposition` (e.g. `soul-blueprint-voice-note.mp3`). Likely fix surface: `/api/listen/[id]/audio` + `/api/listen/[id]/pdf` route handlers.
+
+**Trigger:** post-apex-unpark UX polish, or customer feedback.
+
+### U4 — Hover affordance audit
+
+Not all buttons have `cursor: pointer` on hover (flagged in J2). Needs broader UX sweep.
+
+**Trigger:** next design-system pass.
+
+### U5 — Gift-purchase form: purchaser email not prefilled
+
+Gift purchase doesn't prefill the purchaser email for repeat customers. Standard purchase flow does. Lift the email-prefill mechanism from the self-purchase entry page into the gift entry page.
+
+**Trigger:** next gift-flow UX session.
+
+### U6 — Recipient-email lock inconsistent across reading types
+
+J2 (Birth Chart self-send) didn't lock the email field; Akashic gift-claim DID. Pick one behavior and apply uniformly: lock = friction but prevents misroute; unlock = flexibility.
+
+**Trigger:** AskUser session + apply.
+
+### U7 — Studio preview of customer-facing pages
+
+Becky can't preview customer-facing pages (booking, thank-you, listen, /my-gifts) from inside Studio. Explore: extending Presentation Tool wiring, or a Sanity Studio plugin.
+
+**Trigger:** Becky requests it, or post-apex-unpark editorial-UX session.
+
+### U8 — Studio: visible "claimed at" + delivery countdown
+
+Becky has no at-a-glance "claimed" signal. Now that `giftClaimedAt` is in the schema (Sub-PR β #160), surface it in the Submissions list/preview. Also consider a countdown UI ("5 days left to deliver") and a distinct status "claimed, awaiting delivery" (currently conflated with `paid`).
+
+**Trigger:** Becky's first real gift-recipient delivery + ask, OR routine Studio UX pass.
+
+### S3 — Studio: `deliveredAt` UX (Becky kept forgetting)
+
+Becky forgot to set `deliveredAt` on both J3 and J4 — uploads landed but field stayed unset → `isDeliverable()` GROQ rejects → Day-7 cron sees `awaitingAssets`. Options (pick 1, possibly all):
+1. Auto-set `deliveredAt` on first asset upload.
+2. Prominent "Mark as delivered" CTA next to the assets.
+3. Rename for clarity ("Ready to send to customer").
+4. Validation prompt on Publish if assets present but `deliveredAt` empty.
+
+**Trigger:** Studio UX session, or Becky asks for it.
+
+### S4 — Studio Submissions list default-sort DESC
+
+Surfaces oldest at top; should default-sort `createdAt DESC` for Becky's day-of workflow. Likely fix in `studio/schemas/deskStructure.ts`.
+
+**Trigger:** next Studio-touching session (small ~5min change).
+
+### L2 — Doc note: wrangler `--format json` emits multi-line JSON, not JSONL
+
+Wrangler tail with `--format json` is multi-line pretty-printed (not JSONL). Bit the smoke walk's monitoring loop. Fixed mid-run by piping through `jq -c '.' --unbuffered | tee <log>`. If any operator script in `tests/e2e/helpers/` or `scripts/` depends on `--format json` being JSONL, document the actual shape.
+
+**Trigger:** future operator script consumes wrangler tail output.
+
+---
+
 ## Shipped 2026-05-18 — release/v1.1.0 (deploy + run-after)
 
 ### #5 + #7 — Transactional emails silently skipped on staging — root cause + fix
