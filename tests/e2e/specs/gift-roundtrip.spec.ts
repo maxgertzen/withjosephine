@@ -8,8 +8,14 @@ import {
 } from "../helpers/intakeDraft";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import {
+  forceD1Mirror,
+  uploadDummyVoiceAndPdf,
+} from "../helpers/sanityE2EAssets";
+import {
   accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
+  issueMagicLink,
+  pollUntilPaid,
   regenerateGiftClaim,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
@@ -179,6 +185,126 @@ test.describe("Gift round-trip — staging", () => {
       timeout: 60_000,
     });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  // The "smoke-imitation" spec — closes the gift-recipient axis gap the
+  // 2026-05-20 staging walk caught. Catches C2 (scheduled-gift recipient
+  // listen-page auth loop) and provides regression coverage for α's
+  // notifyPaid.ts fix. Walks scheduled-gift purchase → recipient claim+intake
+  // → Becky delivery (dummy assets + force-mirror) → recipient listen with
+  // magic-link auth → assert delivered state renders in one auth round.
+  test("birth-chart scheduled: purchaser → recipient claim → recipient listens with one magic-link round (C2 regression net)", async ({
+    page,
+    context,
+    request,
+  }) => {
+    test.setTimeout(6 * 60 * 1000);
+
+    const runId = crypto.randomUUID().slice(0, 8);
+    const purchaserFirstName = `Purch${runId}`;
+    const purchaserEmail = `gift-recipient-listen-purchaser+${runId}@withjosephine.com`;
+    const recipientFirstName = `Recip${runId}`;
+    const recipientEmail = `gift-recipient-listen-recipient+${runId}@withjosephine.com`;
+    const giftMessage = `Automated recipient-listen round-trip ${runId}.`;
+
+    const { stripeSessionId } = await drivePurchaserLeg(page, "scheduled", {
+      purchaserFirstName,
+      purchaserEmail,
+      recipientFirstName,
+      recipientEmail,
+      giftMessage,
+    });
+
+    const submissionId =
+      await findSubmissionIdByStripeSessionId(stripeSessionId);
+
+    const paid = await pollUntilPaid(submissionId, { timeoutMs: 45_000 });
+    expect(paid, "Stripe webhook should mark gift submission paid").toBe(true);
+
+    const regenerated = await regenerateGiftClaim(
+      request,
+      submissionId,
+      process.env.DO_DISPATCH_SECRET!,
+    );
+    expect(regenerated.outcome).toBe("regenerated");
+
+    const claimUrl = new URL(regenerated.claimUrl);
+    const claimPath = claimUrl.pathname + claimUrl.search;
+
+    await context.clearCookies();
+    await seedGiftIntakeDraft(page, submissionId, { recipientEmail });
+    await page.goto(claimPath);
+
+    await page.waitForURL(/\/gift\/intake/, { timeout: 30_000 });
+    await waitForDraftRestore(page);
+    await clickThroughIntakePages(page, 6);
+
+    await page.locator("#field-art6-consent").check();
+    await page.locator("#field-art9-consent").check();
+
+    await page.getByTestId("intake-submit").click();
+    await page.waitForURL(/\/thank-you\/.*[?&]gift=1[^"]*redeemed=1/, {
+      timeout: 60_000,
+    });
+
+    // C4 regression net — recipient name must render on the gift thank-you,
+    // not the "Thank you, there." sentinel that the 2026-05-20 smoke caught.
+    const thankYouBody = (await page.content()).toLowerCase();
+    expect(thankYouBody).not.toContain("thank you, there");
+
+    // Becky-side delivery: upload dummy assets + force Sanity → D1 mirror
+    // so the listen page resolves the delivered state without waiting for
+    // Day-7 cron.
+    await uploadDummyVoiceAndPdf(submissionId);
+    const mirror = await forceD1Mirror(submissionId);
+    expect(mirror.submissionId).toBe(submissionId);
+    expect(
+      mirror.awaitingAssets,
+      "force-mode should see Sanity assets on the gift submission",
+    ).toBe(0);
+
+    // Cold listen visit — clear cookies again so the magic-link flow is
+    // exercised fresh from the recipient's perspective.
+    await context.clearCookies();
+    await page.goto(`/listen/${submissionId}`);
+    const signInForm = page.locator('form[action="/api/auth/magic-link"]');
+    await expect(
+      signInForm,
+      "scheduled-gift recipient should see the sign-in card on a cold visit",
+    ).toBeVisible();
+
+    // Request a magic link — recipient's own email, NOT the purchaser's.
+    await signInForm.locator('input[name="email"]').fill(recipientEmail);
+    await signInForm.locator('button[type="submit"]').click();
+    await page.waitForURL(new RegExp(`/listen/${submissionId}\\?sent=1`), {
+      timeout: 15_000,
+    });
+
+    const { verifyUrl: baseVerifyUrl } = await issueMagicLink(recipientEmail);
+    expect(baseVerifyUrl).toMatch(/\/auth\/verify\?token=[a-f0-9]{64}/);
+    const verifyUrl = new URL(baseVerifyUrl);
+    verifyUrl.searchParams.set("next", `/listen/${submissionId}`);
+
+    await page.goto(verifyUrl.toString());
+    const confirmForm = page.locator(
+      'form[action="/api/auth/magic-link/verify"]',
+    );
+    await expect(confirmForm).toBeVisible();
+    await confirmForm.locator('input[name="email"]').fill(recipientEmail);
+    await confirmForm.locator('button[type="submit"]').click();
+
+    // C2 regression net — verify must land on the delivered surface in ONE
+    // round. Pre-α, the listen page rejected the recipient's session because
+    // recipient_user_id had been clobbered with the purchaser's userId at
+    // paid time, and the page bounced back to sign-in.
+    await page.waitForURL(new RegExp(`/listen/${submissionId}\\?welcome=1`), {
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("listen-welcome-ribbon")).toBeVisible();
+    await expect(page.locator("audio")).toBeVisible();
+    await expect(
+      page.locator(`a[href="/api/listen/${submissionId}/pdf"]`),
+    ).toBeVisible();
   });
 
   test("birth-chart self_send: purchaser → Stripe → claim URL ready to forward", async ({
