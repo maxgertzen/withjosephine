@@ -1,4 +1,5 @@
 import { render } from "@react-email/render";
+import { headers } from "next/headers";
 import { Resend } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
@@ -69,6 +70,24 @@ function redactRecipient(to: string | string[]) {
   return Array.isArray(to) ? to.map(redactEmail).join(",") : redactEmail(to);
 }
 
+// Per-request opt-out for e2e specs. The spec sends
+// `X-E2E-Resend-DryRun: <secret>` on the request that triggers the email;
+// when the secret matches RESEND_E2E_DRY_RUN_SECRET the worker skips the
+// Resend call for that request only. Staging humans (real bookings, real
+// magic-link requests) never set the header, so they keep getting real
+// emails. Headers() returns null outside a request context (e.g. cron),
+// so non-request callers fall through to the normal send path.
+async function shouldDryRunFromRequestHeader(): Promise<boolean> {
+  const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
+  if (!secret) return false;
+  try {
+    const h = await headers();
+    return h.get("x-e2e-resend-dry-run") === secret;
+  } catch {
+    return false;
+  }
+}
+
 async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
@@ -79,7 +98,7 @@ async function sendOrSkip(args: {
   idempotencyKey?: string;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
-  if (isFlagEnabled("RESEND_DRY_RUN")) {
+  if (isFlagEnabled("RESEND_DRY_RUN") || (await shouldDryRunFromRequestHeader())) {
     const captureUrl = process.env.E2E_CAPTURE_URL;
     if (captureUrl) {
       void fetch(`${captureUrl}/_e2e/captured-emails`, {

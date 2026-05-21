@@ -18,6 +18,11 @@ vi.mock("resend", () => ({
   Resend: resendCtorMock,
 }));
 
+const headersGetMock = vi.fn<(name: string) => string | null>(() => null);
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => ({ get: headersGetMock })),
+}));
+
 vi.mock("./analytics/server", () => ({
   serverTrack: serverTrackMock,
   generateAnonymousDistinctId: vi.fn(() => "anon-test"),
@@ -36,6 +41,7 @@ beforeEach(() => {
   sendMock.mockReset();
   resendCtorMock.mockClear();
   serverTrackMock.mockReset();
+  headersGetMock.mockReset().mockReturnValue(null);
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubEnv("RESEND_API_KEY", "re_test");
   vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
@@ -696,5 +702,64 @@ describe("sendMagicLink", () => {
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
+  it("skips sending when the header matches RESEND_E2E_DRY_RUN_SECRET", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "tok_e2e_abc" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT skip when the header is absent (humans still get real emails)", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    sendMock.mockResolvedValue({ data: { id: "msg_human" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_human");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT skip when the header value does NOT match the secret", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    sendMock.mockResolvedValue({ data: { id: "msg_mismatch" } });
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "wrong" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_mismatch");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT skip when the secret env var is unset (header is ignored)", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "");
+    sendMock.mockResolvedValue({ data: { id: "msg_no_secret" } });
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "anything" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_no_secret");
+    expect(sendMock).toHaveBeenCalledOnce();
   });
 });
