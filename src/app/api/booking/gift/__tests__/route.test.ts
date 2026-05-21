@@ -260,6 +260,24 @@ describe("/api/booking/gift", () => {
     errSpy.mockRestore();
   });
 
+  it("logs [booking-gift] invalid_body_shape on isGiftBody rejection (C1 instrumentation)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ unrelated: "shape" } as unknown as typeof SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] invalid_body_shape"),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] honeypot_tripped when honeypot field is non-empty (C1 instrumentation)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ ...SELF_SEND_BODY, website: "spam-bot" } as unknown as typeof SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] honeypot_tripped"),
+    );
+    errSpy.mockRestore();
+  });
+
   it("returns 404 when reading is missing", async () => {
     mockReading.mockResolvedValueOnce(null);
     const res = await callRoute(SELF_SEND_BODY);
