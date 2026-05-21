@@ -8,11 +8,11 @@ import {
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
-import { accessHeadersOrEmpty } from "../helpers/stagingApi";
+import { sandboxRequestHeaders } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
-test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
+test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 test.describe("Stripe sandbox round-trip — staging", () => {
   test.beforeAll(async () => {
