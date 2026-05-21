@@ -38,17 +38,25 @@ export async function applyPaidEvent(
     amountPaidCurrency: details.amountPaidCurrency,
   });
 
-  // Identity: same email = same user. Resolved BEFORE the paid UPDATE so
-  // recipient_user_id rides the same statement (markSubmissionPaid's
-  // single UPDATE writes paid_at + status + recipient_user_id together) —
-  // closes the observable `paid AND recipient_user_id IS NULL` window
-  // that day-7 cron / Sanity mirror could previously witness.
+  // For non-gift submissions, submission.email IS the recipient — resolve
+  // the user now so recipient_user_id rides the same UPDATE as paid_at +
+  // status (avoids the observable `paid AND recipient_user_id IS NULL`
+  // window that day-7 cron / Sanity mirror could otherwise witness).
+  //
+  // For gift submissions, submission.email is the PURCHASER. Writing the
+  // purchaser's userId to recipient_user_id would break the listen-page
+  // session-vs-submission linkage (purchaser ≠ recipient on scheduled
+  // gifts → infinite magic-link loop, smoke walk C2 2026-05-20).
+  // Leave recipient_user_id NULL here; redeemGiftSubmission populates it
+  // from the recipient's own intake at claim time.
   let recipientUserId: string | null = null;
-  try {
-    const { userId } = await getOrCreateUser({ email: submission.email, name: context.firstName });
-    recipientUserId = userId;
-  } catch (error) {
-    console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
+  if (!submission.isGift) {
+    try {
+      const { userId } = await getOrCreateUser({ email: submission.email, name: context.firstName });
+      recipientUserId = userId;
+    } catch (error) {
+      console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
+    }
   }
 
   // Tax-retention record (6yr HMRC) — separable from reading content (3yr)
