@@ -96,4 +96,14 @@ describe("recipientNameFor — post-redeem fallback chain", () => {
     };
     expect(recipientNameFor(submission)).toBe("Carmen");
   });
+
+  it("does not crash when submission.email is undefined and no intake names present (regression: δ broke thank-you page tests)", () => {
+    const submission = {
+      ...BASE_REDEEMED_GIFT,
+      email: undefined,
+      responses: [],
+    } as unknown as SubmissionRecord;
+    expect(() => recipientNameFor(submission)).not.toThrow();
+    expect(recipientNameFor(submission)).toBe("there");
+  });
 });
