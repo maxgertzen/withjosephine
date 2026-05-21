@@ -38,17 +38,12 @@ export async function applyPaidEvent(
     amountPaidCurrency: details.amountPaidCurrency,
   });
 
-  // For non-gift submissions, submission.email IS the recipient — resolve
-  // the user now so recipient_user_id rides the same UPDATE as paid_at +
-  // status (avoids the observable `paid AND recipient_user_id IS NULL`
-  // window that day-7 cron / Sanity mirror could otherwise witness).
-  //
-  // For gift submissions, submission.email is the PURCHASER. Writing the
-  // purchaser's userId to recipient_user_id would break the listen-page
-  // session-vs-submission linkage (purchaser ≠ recipient on scheduled
-  // gifts → infinite magic-link loop, smoke walk C2 2026-05-20).
-  // Leave recipient_user_id NULL here; redeemGiftSubmission populates it
-  // from the recipient's own intake at claim time.
+  // For gifts, submission.email is the PURCHASER — resolving it here and
+  // writing to recipient_user_id breaks listen-page session linkage on
+  // scheduled gifts (purchaser ≠ recipient → infinite magic-link loop).
+  // Leave NULL; redeemGiftSubmission populates from recipient intake.
+  // For non-gifts, fold the user-resolve into the same UPDATE as paid_at
+  // + status so day-7 cron / Sanity mirror never witness the half state.
   let recipientUserId: string | null = null;
   if (!submission.isGift) {
     try {

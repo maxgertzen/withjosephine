@@ -196,7 +196,7 @@ describe("applyPaidEvent", () => {
     expect(userOrder).toBeLessThan(paidOrder);
   });
 
-  it("does NOT clobber recipient_user_id with the purchaser's userId for gift submissions (C2)", async () => {
+  it("leaves recipient_user_id null and skips the user resolve for gift submissions (C2)", async () => {
     const giftSubmission: SubmissionRecord = {
       ...SUBMISSION,
       isGift: true,
@@ -215,29 +215,10 @@ describe("applyPaidEvent", () => {
       country: "US",
     });
 
+    expect(mockGetOrCreateUser).not.toHaveBeenCalled();
     expect(mockMarkPaid).toHaveBeenCalledOnce();
     const [, paidArg] = mockMarkPaid.mock.calls[0]!;
     expect(paidArg.recipientUserId).toBeNull();
-  });
-
-  it("does NOT resolve a user from purchaser email at paid time for gift submissions (C2)", async () => {
-    const giftSubmission: SubmissionRecord = {
-      ...SUBMISSION,
-      isGift: true,
-      purchaserUserId: "user_purchaser",
-      recipientEmail: "recipient@example.com",
-    };
-
-    await applyPaidEvent(giftSubmission, {
-      stripeEventId: "evt_gift_2",
-      stripeSessionId: "cs_gift_2",
-      paidAt: "2026-05-20T12:00:00Z",
-      amountPaidCents: null,
-      amountPaidCurrency: null,
-      country: null,
-    });
-
-    expect(mockGetOrCreateUser).not.toHaveBeenCalled();
   });
 
   it("still resolves and writes recipient_user_id for non-gift submissions (regression guard for the fix)", async () => {
