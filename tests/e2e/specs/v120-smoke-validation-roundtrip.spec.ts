@@ -15,16 +15,7 @@ import {
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
-import {
-  forceD1Mirror,
-  uploadDummyVoiceAndPdf,
-} from "../helpers/sanityE2EAssets";
-import {
-  accessHeadersOrEmpty,
-  findSubmissionIdByStripeSessionId,
-  issueMagicLink,
-  pollUntilPaid,
-} from "../helpers/stagingApi";
+import { accessHeadersOrEmpty } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
@@ -188,77 +179,15 @@ test.describe("v1.2.0 smoke-walk QA validation — staging", () => {
     await expect(heading).toContainText(new RegExp(purchaserFirstName, "i"));
     await expect(page.locator("body")).not.toContainText(/Thank you, there/i);
   });
-
-  test("STORY 2 — U1 listen-page strips leading 'The ' from readingName ('Birth Chart Reading', not 'The Birth Chart Reading')", async ({
-    page,
-    context,
-  }) => {
-    test.setTimeout(5 * 60 * 1000);
-
-    const runId = randomUUID().slice(0, 8);
-    const email = `v120-qa+u1-${runId}@withjosephine.com`;
-
-    // Buy a Birth Chart Reading (the reading whose Sanity name starts with
-    // "The " — exact trigger for U1). Use the same intake walk as Story 3.
-    await seedIntakeDraft(page, "birth-chart", { values: { email } });
-    await page.goto("/book/birth-chart");
-    await page.locator('a[href="/book/birth-chart/letter"]').click();
-    await page.waitForURL(/\/book\/birth-chart\/letter/, { timeout: 15_000 });
-    await page.locator('a[href="/book/birth-chart/intake"]').click();
-    await page.waitForURL(/\/book\/birth-chart\/intake/, { timeout: 15_000 });
-    await waitForDraftRestore(page);
-    await clickThroughIntakePages(page, 6);
-    await page.locator("#field-art6-consent").check();
-    await page.locator("#field-art9-consent").check();
-    await page.locator("#field-cooling-off-consent").check();
-    await page.getByTestId("intake-submit").click();
-    await fillStripeCheckout(page, email);
-    await page.waitForURL(/\/thank-you\//, { timeout: 90_000 });
-
-    const stripeSessionId = new URL(page.url()).searchParams.get("sessionId");
-    if (!stripeSessionId) throw new Error("Stripe redirect missing sessionId");
-    const submissionId = await findSubmissionIdByStripeSessionId(stripeSessionId);
-
-    const paid = await pollUntilPaid(submissionId, { timeoutMs: 45_000 });
-    expect(paid, "Stripe webhook should mark submission paid").toBe(true);
-
-    // Becky-side delivery — upload dummy assets + force Sanity → D1 mirror so
-    // the listen page resolves the delivered surface without waiting on cron.
-    await uploadDummyVoiceAndPdf(submissionId);
-    const mirror = await forceD1Mirror(submissionId);
-    expect(mirror.awaitingAssets, "force-mode should see Sanity assets").toBe(0);
-
-    // Cold visit + magic-link round to land on /listen/<id>?welcome=1.
-    await context.clearCookies();
-    await page.goto(`/listen/${submissionId}`);
-    const signInForm = page.locator('form[action="/api/auth/magic-link"]');
-    await expect(signInForm).toBeVisible();
-    await signInForm.locator('input[name="email"]').fill(email);
-    await signInForm.locator('button[type="submit"]').click();
-    await page.waitForURL(new RegExp(`/listen/${submissionId}\\?sent=1`), {
-      timeout: 15_000,
-    });
-    const { verifyUrl: baseVerifyUrl } = await issueMagicLink(email);
-    const verifyUrl = new URL(baseVerifyUrl);
-    verifyUrl.searchParams.set("next", `/listen/${submissionId}`);
-    await page.goto(verifyUrl.toString());
-    const confirmForm = page.locator(
-      'form[action="/api/auth/magic-link/verify"]',
-    );
-    await expect(confirmForm).toBeVisible();
-    await confirmForm.locator('input[name="email"]').fill(email);
-    await confirmForm.locator('button[type="submit"]').click();
-    await page.waitForURL(new RegExp(`/listen/${submissionId}\\?welcome=1`), {
-      timeout: 15_000,
-    });
-
-    // U1 assertion: heading must NOT contain "Your The ..." double article.
-    // The reading name in Sanity is "The Birth Chart Reading"; the strip-on-
-    // interpolate fix should make it render as "Your Birth Chart Reading ..."
-    const heading = page.getByRole("heading", { level: 1 });
-    await expect(heading).toBeVisible();
-    const headingText = await heading.textContent();
-    expect(headingText, "listen-page heading should exist").toBeTruthy();
-    expect(headingText ?? "").not.toMatch(/Your\s+The\s/i);
-  });
 });
+
+// NOTE on U1 (listen-page double-article fix): NOT covered here.
+// The fix is in `resolveAuthenticatedState` at src/app/listen/[id]/page.tsx:80
+// (`(submission.reading?.name ?? "your reading").replace(/^The\s+/, "")`),
+// locked at the unit level by `src/app/listen/[id]/page.test.tsx` "U1: strips
+// leading 'The ' from readingName" — deterministic, runs every CI. The
+// function is pure data: if the unit test passes, prod passes. An e2e
+// against the delivered surface would have to either upload dummy assets +
+// force-mirror Sanity → D1 (real staging side-effects, even if cleaned up)
+// or stub the worker's data fetch (RSC, not interceptable from page.route).
+// Both are duplicative of the unit test. Keep the unit test as the proof.
