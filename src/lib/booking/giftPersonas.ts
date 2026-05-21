@@ -25,6 +25,7 @@ export function stripTemplateTags(input: string): string {
  * any persona-derivation site.
  */
 export function firstNameFromEmailLocal(email: string, sentinel: string): string {
+  if (!email) return sentinel;
   const local = email.split("@")[0] ?? email;
   const lead = local.split(/[._+-]/)[0] ?? local;
   return lead ? lead.charAt(0).toUpperCase() + lead.slice(1) : sentinel;
@@ -47,7 +48,7 @@ export function recipientNameFor(submission: SubmissionRecord): string {
     .find((r) => r.fieldKey === "recipient_name")
     ?.value?.trim();
   if (fromPurchaser) return fromPurchaser;
-  return recipientFirstNameFromIntakeResponses(submission.responses, submission.email);
+  return recipientFirstNameFromIntakeResponses(submission.responses, submission.email ?? "");
 }
 
 /**
