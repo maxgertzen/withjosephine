@@ -196,6 +196,65 @@ describe("applyPaidEvent", () => {
     expect(userOrder).toBeLessThan(paidOrder);
   });
 
+  it("does NOT clobber recipient_user_id with the purchaser's userId for gift submissions (C2)", async () => {
+    const giftSubmission: SubmissionRecord = {
+      ...SUBMISSION,
+      isGift: true,
+      purchaserUserId: "user_purchaser",
+      recipientEmail: "recipient@example.com",
+      giftDeliveryMethod: "scheduled",
+      giftSendAt: "2026-05-21T12:00:00Z",
+    };
+
+    await applyPaidEvent(giftSubmission, {
+      stripeEventId: "evt_gift",
+      stripeSessionId: "cs_gift",
+      paidAt: "2026-05-20T12:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+      country: "US",
+    });
+
+    expect(mockMarkPaid).toHaveBeenCalledOnce();
+    const [, paidArg] = mockMarkPaid.mock.calls[0]!;
+    expect(paidArg.recipientUserId).toBeNull();
+  });
+
+  it("does NOT resolve a user from purchaser email at paid time for gift submissions (C2)", async () => {
+    const giftSubmission: SubmissionRecord = {
+      ...SUBMISSION,
+      isGift: true,
+      purchaserUserId: "user_purchaser",
+      recipientEmail: "recipient@example.com",
+    };
+
+    await applyPaidEvent(giftSubmission, {
+      stripeEventId: "evt_gift_2",
+      stripeSessionId: "cs_gift_2",
+      paidAt: "2026-05-20T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      country: null,
+    });
+
+    expect(mockGetOrCreateUser).not.toHaveBeenCalled();
+  });
+
+  it("still resolves and writes recipient_user_id for non-gift submissions (regression guard for the fix)", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_self",
+      stripeSessionId: "cs_self",
+      paidAt: "2026-05-20T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      country: null,
+    });
+
+    expect(mockGetOrCreateUser).toHaveBeenCalledOnce();
+    const [, paidArg] = mockMarkPaid.mock.calls[0]!;
+    expect(paidArg.recipientUserId).toBe("user_test_1");
+  });
+
   it("passes a financial_records mirror to markSubmissionPaid when amount + currency present (atomic dbBatch)", async () => {
     await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
