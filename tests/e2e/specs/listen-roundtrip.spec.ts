@@ -13,16 +13,16 @@ import {
   uploadDummyVoiceAndPdf,
 } from "../helpers/sanityE2EAssets";
 import {
-  accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
   issueMagicLink,
   pollSanityListenedAt,
   pollUntilPaid,
+  sandboxRequestHeaders,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
-test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
+test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 async function createPaidSubmission(page: Page, email: string): Promise<string> {
   await seedIntakeDraft(page, "birth-chart", { values: { email } });

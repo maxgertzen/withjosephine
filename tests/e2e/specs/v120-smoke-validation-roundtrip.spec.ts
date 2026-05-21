@@ -8,11 +8,11 @@ import {
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
-import { accessHeadersOrEmpty } from "../helpers/stagingApi";
+import { sandboxRequestHeaders } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
-test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
+test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "v120-qa+stripe@withjosephine.com";
@@ -33,7 +33,7 @@ test.describe("v1.2.0 QA validation — staging", () => {
 
   test("/my-gifts renders the magic-link sign-in form", async ({ browser }) => {
     const context = await browser.newContext({
-      extraHTTPHeaders: accessHeadersOrEmpty(),
+      extraHTTPHeaders: sandboxRequestHeaders(),
     });
     const page = await context.newPage();
     try {
@@ -49,7 +49,7 @@ test.describe("v1.2.0 QA validation — staging", () => {
 
   test("/my-readings renders the magic-link sign-in form", async ({ browser }) => {
     const context = await browser.newContext({
-      extraHTTPHeaders: accessHeadersOrEmpty(),
+      extraHTTPHeaders: sandboxRequestHeaders(),
     });
     const page = await context.newPage();
     try {

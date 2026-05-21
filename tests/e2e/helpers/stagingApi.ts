@@ -44,6 +44,25 @@ export function accessHeadersOrEmpty(): Record<string, string> {
   };
 }
 
+// Per-request opt-out for Resend. When RESEND_E2E_DRY_RUN_SECRET is set on
+// the runner, every sandbox request carries this header — the staging worker
+// matches it against its own secret and skips the Resend API call, returning
+// { kind: 'dry_run' } at the sendOrSkip seam. Staging humans don't set the
+// header so their bookings still trigger real emails.
+export function resendDryRunHeaderOrEmpty(): Record<string, string> {
+  const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
+  if (!secret) return {};
+  return { "X-E2E-Resend-DryRun": secret };
+}
+
+// Composed header bundle every sandbox spec sends on every request: CF Access
+// (so the request reaches staging) + Resend dry-run (so booking flows don't
+// burn quota). Either subset returns empty when the corresponding env is
+// unset, so the helper is safe to call in any environment.
+export function sandboxRequestHeaders(): Record<string, string> {
+  return { ...accessHeadersOrEmpty(), ...resendDryRunHeaderOrEmpty() };
+}
+
 export type RegenerateGiftClaimResponse = {
   outcome: "regenerated";
   to: string;

@@ -12,11 +12,11 @@ import {
   uploadDummyVoiceAndPdf,
 } from "../helpers/sanityE2EAssets";
 import {
-  accessHeadersOrEmpty,
   findSubmissionIdByStripeSessionId,
   issueMagicLink,
   pollUntilPaid,
   regenerateGiftClaim,
+  sandboxRequestHeaders,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
@@ -24,7 +24,7 @@ import { stubTurnstile } from "../helpers/turnstileStub";
 const stripeTestEmail =
   process.env.STRIPE_ROUNDTRIP_EMAIL ?? "gift-roundtrip-stripe@withjosephine.com";
 
-test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
+test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 
 type GiftVariant = "scheduled" | "self_send";
