@@ -159,6 +159,11 @@ export async function POST(request: Request): Promise<Response> {
   ]);
 
   if (!turnstileOk) {
+    console.error("[gift-redeem] turnstile_rejected", {
+      submissionId,
+      cfRay: request.headers.get("cf-ray"),
+      ip,
+    });
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
   }
   if (!submission || !submission.isGift) {

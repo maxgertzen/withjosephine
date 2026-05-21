@@ -203,14 +203,17 @@ export async function POST(request: Request): Promise<Response> {
   try {
     parsedBody = await request.json();
   } catch {
+    console.error("[booking-gift] invalid_json");
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   if (!isGiftBody(parsedBody)) {
+    console.error("[booking-gift] invalid_body_shape");
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
+    console.error("[booking-gift] honeypot_tripped");
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
@@ -221,6 +224,7 @@ export async function POST(request: Request): Promise<Response> {
     for (const error of fieldErrors) {
       if (!byField[error.field]) byField[error.field] = error.message;
     }
+    console.error("[booking-gift] validation_failed", { fields: Object.keys(byField) });
     return NextResponse.json({ error: "Validation failed", fieldErrors: byField }, { status: 400 });
   }
 
@@ -228,6 +232,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const turnstileOk = await verifyTurnstileToken(parsedBody.turnstileToken, ip ?? undefined);
   if (!turnstileOk) {
+    console.error("[booking-gift] turnstile_rejected", {
+      cfRay: request.headers.get("cf-ray"),
+      ip,
+    });
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
   }
 
