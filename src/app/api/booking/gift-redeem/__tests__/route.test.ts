@@ -258,6 +258,71 @@ describe("/api/booking/gift-redeem", () => {
     expect(body.fieldErrors?.email).toBeTruthy();
   });
 
+  it("logs [gift-redeem.gate] with redacted+hashed emails and mismatch outcome on the no-mismatch path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await callRoute(VALID_BODY);
+    const gateCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.gate]");
+    expect(gateCall).toBeDefined();
+    const payload = gateCall![1] as Record<string, unknown>;
+    expect(payload.submissionId).toBe("sub_gift_1");
+    expect(payload.mismatch).toBe(false);
+    expect(payload.hasStoredRecipient).toBe(true);
+    expect(payload.submittedEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.submittedEmailRedacted).not.toContain("bob");
+    expect(payload.storedRecipientEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.storedRecipientEmailRedacted).not.toContain("bob");
+    expect(payload.submittedEmailHash).toMatch(/^[0-9a-f]{12}$/);
+    expect(payload.storedRecipientEmailHash).toMatch(/^[0-9a-f]{12}$/);
+    logSpy.mockRestore();
+  });
+
+  it("logs [gift-redeem.gate] mismatch=true AND [gift-redeem] email_mismatch on the mismatch path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({
+      ...VALID_BODY,
+      values: { email: "wrong@example.com", first_name: "Bob" },
+    });
+    const gateCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.gate]");
+    expect(gateCall).toBeDefined();
+    expect((gateCall![1] as Record<string, unknown>).mismatch).toBe(true);
+    expect(errSpy).toHaveBeenCalledWith(
+      "[gift-redeem] email_mismatch",
+      expect.objectContaining({ submissionId: "sub_gift_1" }),
+    );
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it("logs [gift-redeem.claim] with recipient/purchaser user ids and equalsPurchaser flag", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await callRoute(VALID_BODY);
+    const claimCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.claim]");
+    expect(claimCall).toBeDefined();
+    const payload = claimCall![1] as Record<string, unknown>;
+    expect(payload.submissionId).toBe("sub_gift_1");
+    expect(payload.recipientUserId).toBe("user_bob");
+    expect(payload.purchaserUserId).toBe("alice-user");
+    expect(payload.equalsPurchaser).toBe(false);
+    expect(payload.recipientUserIsNew).toBe(true);
+    expect(payload.submittedEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.submittedEmailRedacted).not.toContain("bob");
+    logSpy.mockRestore();
+  });
+
+  it("never writes the full submitted email to any console log/error in the gate path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({
+      ...VALID_BODY,
+      values: { email: "leakcheck-distinct@example.com", first_name: "Bob" },
+    });
+    const everything = JSON.stringify([...logSpy.mock.calls, ...errSpy.mock.calls]);
+    expect(everything).not.toContain("leakcheck-distinct@example.com");
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
   it("happy path: creates Bob user, redeems submission, clears cookie, returns redirectUrl", async () => {
     const res = await callRoute(VALID_BODY);
     const body = await res.json();
