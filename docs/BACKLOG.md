@@ -10,6 +10,12 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 
 ## Deferred from 2026-05-24 Sub-PR A ship
 
+### Intake form: "I don't know my birth time" checkbox z-index covers the time + calendar picker
+
+The "don't know what time" checkbox on the intake birth-details page sits on top of the time picker / calendar picker inputs — picker is z-index under it, so clicking through to change time/date is blocked or visually obscured. Surfaced 2026-05-24 during a gift-claim repro on staging.
+
+**Trigger:** next intake-UX session OR Becky reports it. Likely fix surface: the wrapper around the conditional checkbox at the birth-details step (search for the `time_unknown` field key in `src/components/IntakeForm/`).
+
 ### Un-gate UA_AUDIT_HASH_DEPLOYED in sandbox CI
 
 `tests/e2e/specs/listen-roundtrip.spec.ts` has a `test.skip(process.env.UA_AUDIT_HASH_DEPLOYED !== "true", ...)` guard on the `link_issued audit row carries user_agent_hash` assertion. Gate was added because staging precedes per-PR worker deploys — without it, sandbox specs would have asserted the new column on the old worker and failed. Now that `release/v1.2.0` carries Sub-PR A (`364ea77`) and staging is on the new code, the gate can come off.

@@ -81,16 +81,25 @@ function redactRecipient(to: string | string[]) {
 // Per-request opt-out for e2e specs. The spec sends
 // `X-E2E-Resend-DryRun: <secret>` on the request that triggers the email;
 // when the secret matches RESEND_E2E_DRY_RUN_SECRET the worker skips the
-// Resend call for that request only. Staging humans (real bookings, real
-// magic-link requests) never set the header, so they keep getting real
-// emails. Headers() returns null outside a request context (e.g. cron),
-// so non-request callers fall through to the normal send path.
+// Resend call for that request only. headers() returns null outside a
+// request context (e.g. cron), so non-request callers fall through.
+//
+// Fail-closed on misconfig: header present + worker secret unset → skip the
+// send and log. Without this guard a runner-only secret silently burns the
+// daily Resend quota on every sandbox CI run.
 async function shouldDryRunFromRequestHeader(): Promise<boolean> {
-  const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
-  if (!secret) return false;
   try {
     const h = await headers();
-    return h.get("x-e2e-resend-dry-run") === secret;
+    const headerValue = h.get("x-e2e-resend-dry-run");
+    if (!headerValue) return false;
+    const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
+    if (!secret) {
+      console.error(
+        "[resend] DRY_RUN_SECRET_UNSET — request carries X-E2E-Resend-DryRun but worker has no RESEND_E2E_DRY_RUN_SECRET configured; skipping the Resend send (fail-closed). Fix: `pnpm exec wrangler secret put RESEND_E2E_DRY_RUN_SECRET --env staging` with the same value as the STAGING_RESEND_E2E_DRY_RUN_SECRET GitHub Actions secret.",
+      );
+      return true;
+    }
+    return headerValue === secret;
   } catch {
     return false;
   }

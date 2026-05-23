@@ -748,9 +748,9 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
-  it("does NOT skip when the secret env var is unset (header is ignored)", async () => {
+  it("fail-closed: skips sending AND logs an error when the header is present but RESEND_E2E_DRY_RUN_SECRET is unset", async () => {
     vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "");
-    sendMock.mockResolvedValue({ data: { id: "msg_no_secret" } });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     headersGetMock.mockImplementation((name: string) =>
       name.toLowerCase() === "x-e2e-resend-dry-run" ? "anything" : null,
     );
@@ -759,8 +759,28 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
 
     const result = await sendNotificationToJosephine(buildSubmission());
 
-    expect(getResendId(result)).toBe("msg_no_secret");
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[resend] DRY_RUN_SECRET_UNSET"),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("does NOT skip and does NOT log when the secret is unset AND the header is absent (cold non-request callers + cron)", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "");
+    sendMock.mockResolvedValue({ data: { id: "msg_no_secret_no_header" } });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_no_secret_no_header");
     expect(sendMock).toHaveBeenCalledOnce();
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
 
