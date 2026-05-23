@@ -10,6 +10,15 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 
 ## Deferred from 2026-05-24 Sub-PR A ship
 
+### Magic-link email subject + body are reading-centric across ALL destinations
+
+The Sanity-driven `emailMagicLink` template at `studio/schemas/emailMagicLink.ts:12,19,33-37` defaults subject + preview + body to "Open your reading" + voice-note/PDF language. The route at `src/app/api/auth/magic-link/route.ts:42-43` fires the SAME template regardless of the `next` destination — `/listen/[id]` / `/my-readings` / `/my-gifts` / `/my-readings/[id]` all get the reading-centric copy. UX flagged 2026-05-24: a purchaser hitting `/my-gifts` → "Send link" gets an "open your reading" email which is wrong context entirely.
+
+**Trigger:** UX session before apex unpark, OR Becky requests differentiated copy per surface. Fix options (pick one):
+- **A — neutral copy.** Edit Sanity defaults to "Your Josephine sign-in link" + body that doesn't assume a destination. Cheapest, loses warmth.
+- **B — context-aware.** Thread `next` (or a destination enum) into `sendMagicLink`, branch copy by context. New args on sendMagicLink + maybe new Sanity fields.
+- **C — per-destination templates.** Split into `emailMagicLinkListen` / `emailMagicLinkGiftAccess` / `emailMagicLinkReadings`. Most flexibility, most schema churn.
+
 ### Intake form: "I don't know my birth time" checkbox z-index covers the time + calendar picker
 
 The "don't know what time" checkbox on the intake birth-details page sits on top of the time picker / calendar picker inputs — picker is z-index under it, so clicking through to change time/date is blocked or visually obscured. Surfaced 2026-05-24 during a gift-claim repro on staging.
