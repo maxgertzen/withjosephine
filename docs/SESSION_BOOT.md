@@ -1,5 +1,39 @@
 # Session Boot — Active State
 
+## 🚨 TOP OF MIND — read before anything else (2026-05-23 close-out)
+
+The single most-active thread right now is **U2 + U6 root-cause + remediation PRD** at
+`MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md`.
+
+**Don't open this session by giving Max a hold-gate checklist.** Apex unpark has 16 hold-gate items but the load-bearing ones are not the operational ones (D1 migrations, data cleanup, Stripe webhook split). The load-bearing ones are **U2-U8 — 7 UX items promoted from BACKLOG-deferred to launch-blocking on 2026-05-23**. Max explicitly flagged them as "cannot launch without". The previous session opener (this one) buried them; do not repeat that mistake. If asked "where we at?", lead with U2-U8 and the data-integrity finding, then the operational items.
+
+**Confirmed live bugs on staging D1 (not hypothetical):**
+- Submission `bb5fe157-a376-435d-ade7-978c4da6af41` has `recipient_user_id` bound to the purchaser, not the recipient. Cascades into:
+  - listen-page rejects the actual recipient (SignInCard loop)
+  - Day-7 delivery email lands at the purchaser's address, not the recipient's (Max verified 2026-05-23)
+  - `/my-readings` listing, GDPR Art. 17 cascade all misroute via the corrupted column
+- Root cause: `gift-redeem/route.ts:260` has no integrity check; gift-claim intake on at least one reading variant doesn't lock the recipient_email field.
+
+**4 sub-PRs queued in the PRD** (sequencing fixed in PRD Phase ordering):
+1. ~~Sub-PR A (forensic, 1-line): UA-hash on `link_issued` audit~~ ✅ shipped 2026-05-24 to `release/v1.2.0` (PR #169, squash `364ea77`; plus qs CVE hotfix `17da7b9`)
+2. Sub-PR B (UX): CheckEmailCard "Send another" preserves typed email + cooldown
+3. Sub-PR C (MAIN FIX): readOnly recipient_email + server 422 gate + NFC normalize
+4. Sub-PR D (data repair): `scripts/repair-recipient-user-id.mts` for staging + prod
+
+**One honesty note in the PRD** (Cascade symptoms section): if Max signed in *as the purchaser* on a corrupted row, the gate at `page.tsx:69` should have matched. The data corruption explains the misrouted email cleanly; it doesn't fully explain the SignInCard loop on its own. The repair is necessary regardless. If ISC-G2 (recipient sees DeliveredSurface after repair) fails, narrow U2 re-opens.
+
+**Other launch-blocking items still open** (the original hold-gate list, items 1-9 + 11 + 12 + 13 + 15 + 16):
+- Reading-price reconcile (Max+Josephine, operational)
+- Pre-prod data cleanup (D1+R2+Sanity, hard precondition for backups cron)
+- Production D1 migrations 0004→0012 (at main-merge time)
+- Re-run smoke walkthrough (after Sub-PR C+D ship)
+- Stripe test-mode webhook split (BACKLOG mirror-drift, must ship before any prod traffic)
+- U3 (download filenames), U4 (hover sweep), U5 (gift email prefill), U7 (Studio preview), U8 (Studio claimed-at + countdown) — also launch-blocking per 2026-05-23 promotion
+
+**Tasks tracker after 2026-05-23 close-out:** task #7 carries the PRD; #8 (Sub-PR A), #9 (Sub-PR B), #10 (Sub-PR D) are the sibling sub-PRs; #1 (U3), #2 (U4), #3 (U5), #5 (U7), #6 (U8) are the other promoted UX items pending their own PRDs.
+
+---
+
 **This file is the entry-point for any new session touching this codebase.** It holds current-sprint state, in-flight PRs, hold-gate blockers, and outstanding Max-actions. Pair it with:
 
 - `CLAUDE.md` (project root) — durable rules + binding constraints (locked decisions, don't relitigate)
@@ -37,7 +71,7 @@ Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferre
 - **D-4**: Sub-PR sequencing A → B → C (each one session).
 - **D-5 (Max-flagged 2026-05-20)**: prod-smoke v1 is READ-ONLY — stop before Stripe redirect; assert paymentUrl shape only. Reason: prod Sanity carries LIVE buy.stripe.com URLs after apex-unpark; test card 4242 fails on live; live charge from CI = catastrophic. Full webhook + delivery loop stays on the nightly sandbox tier against staging.
 
-**Next-session resume:** smoke-walk fix arc shipped + hold-gate item #6 closed. Remaining before apex unpark: (a) reading-price reconcile with Josephine — needs her input; (b) **pre-prod data cleanup** — wipe staging test residue from D1 + R2 + Sanity per `docs/BACKLOG.md`; (c) **prod D1 migrations 0004→0012** — `pnpm migrate:apply:prod`; (d) **re-run smoke walkthrough** to confirm the 5 fixes hold on staging (especially J4d auth round + J3+J4 thank-you names); (e) merge `release/v1.2.0` → `main`. PR-then-squash convention from `feedback_sub_pr_via_feature_branch.md` is the durable workflow for any new sub-PR on the release branch.
+**Next-session resume:** smoke-walk fix arc shipped + hold-gate item #6 closed. **Hold-gate widened 2026-05-23: Max promoted U2-U8 (7 UX items) from BACKLOG to launch-blocking** — see items #10-16 above. Remaining before apex unpark: (a) reading-price reconcile with Josephine — needs her input; (b) **pre-prod data cleanup** — wipe staging test residue from D1 + R2 + Sanity per `docs/BACKLOG.md`; (c) **prod D1 migrations 0004→0012** — `pnpm migrate:apply:prod`; (d) **re-run smoke walkthrough** to confirm the 5 fixes hold on staging (especially J4d auth round + J3+J4 thank-you names); (e) merge `release/v1.2.0` → `main`; **(f) ship U2 (loop bug, P0) → U3/U5 quick-wins → U6 decision+apply → U4 sweep → U7+U8 Studio bundle.** PR-then-squash convention from `feedback_sub_pr_via_feature_branch.md` is the durable workflow for any new sub-PR on the release branch.
 
 **Process learning captured 2026-05-21** (`feedback_check_release_branch_ci_after_every_merge.md`): the PR-level Playwright sandbox check is NOT the full CI gate. `pnpm test` (vitest in CI) + `deploy-staging` only fire on the post-merge `release/v1.2.0` push. Sub-PRs δ + α both shipped with green PR-sandbox + green local vitest but failed CI on `test`, blocking deploy-staging for ~9 hours until Max called it out and hotfix #164 landed. Watch `gh run list --branch release/v1.2.0 --commit <sha>` after every squash-merge.
 
@@ -54,6 +88,13 @@ Apex unpark + Stripe live-mode flip is blocked on:
 7. **Production D1 migrations 0004 → 0012 applied** — staging is at 0012, production stuck at 0003. Will crash on first gift-aware code path otherwise. **Apply at main-merge time, in order.** Migration 0012 (Phase 3 PR-C-i) adds 5 columns + UNIQUE partial idx; widens the gap from 0003 → 0012 by 9 migrations.
 8. ✅ Sanity copy seed for D-11 cancel-scheduled — closed 2026-05-20 via PR #158 (seed script extension) + PR #157 (migration runner). 4 cancel-scheduled copy fields applied to production myGiftsPage singleton. Also surfaced + fixed: 9 customer singletons were missing entirely on production (now seeded). All 27 historical Sanity migrations now confirmed applied on production. Studio deployed.
 9. **Launch-readiness e2e epic — COMPLETE.** 24 of 24 ISC shipped (Sub-PR A #153 + Sub-PR B #154 + Sub-PR C #155). Tagged `v1.2.0` at `94e9d5d`. PRD `MEMORY/WORK/20260520-070000_launch-readiness-e2e-epic/PRD.md` phase: complete. Privacy export Art. 20 e2e deliberately deferred. No remaining e2e blockers for apex unpark.
+10. **U2 + U6 — listen-page auth loop + recipient-email lock policy** (root-caused + PRD'd 2026-05-23). Originally filed as two separate items; investigation showed they share a single root cause. The listen-page loop is data-integrity downstream of U6: `gift-redeem/route.ts:260` writes `recipient_user_id` from `getOrCreateUser({email: submittedEmail})` with no integrity check that `submittedEmail` matches `submission.recipient_email`. On the unlocked gift-claim variant (Birth Chart self-send), Gmail autofill of `maxgertzen+...` aliases populated the purchaser's email at intake, so `recipient_user_id` got bound to the purchaser. Cross-user gate at `src/app/listen/[id]/page.tsx:69` then rejects every real-recipient login. Evidence: D1 submission `bb5fe157` shows 5 link_issued + 4 link_redeemed + 4 active sessions, zero successful DeliveredSurface renders. Fix in PRD `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md` — 4 sub-PRs (lock+422 gate, forensic UA-hash, CheckEmailCard resend fix, data-repair script). Backlog refs L37-41 (U2) + L61-65 (U6).
+11. **U3 — listen-page download filenames** (promoted 2026-05-23). Voice-note + PDF arrive with Sanity asset hashes; need readable filenames via `Content-Disposition` or asset-name pass-through. Backlog ref L43-47.
+12. **U4 — hover affordance audit** (promoted 2026-05-23). Buttons missing `cursor: pointer`; design-system sweep across Button + anchor-styled-as-button + form-control wrappers. Backlog ref L49-53.
+13. **U5 — gift purchase: prefill purchaser email** (promoted 2026-05-23). Self-purchase entry prefills, gift entry doesn't. Parity fix. Backlog ref L55-59.
+14. **U6 — MERGED INTO #10.** Investigation 2026-05-23 showed U2 and U6 share a single root cause; bundled in `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md`. Per locked decision D-2 in that PRD: lock policy is `recipient_email` read-only on gift-claim intake, value-bound to `submission.recipient_email`, with the `RecipientEmailEscapeHatch → /contact` callout pattern from PR #144.
+15. **U7 — Studio preview of customer-facing pages** (promoted 2026-05-23). Becky can't preview booking / thank-you / listen / `/my-gifts` from inside Studio. Presentation-tool extension OR Studio plugin. Backlog ref L67-71.
+16. **U8 — Studio: claimed-at + delivery countdown + claimed-vs-paid status** (promoted 2026-05-23). `giftClaimedAt` is in schema but not in deskStructure list/preview. Possibly adds a new submission status enum. Backlog ref L73-77.
 
 ## Paused workstream — Phase 7 PR-A1 (email Sanity CMS)
 
@@ -89,6 +130,7 @@ Locked 2026-05-06. Once `www/docs/BACKLOG.md` is empty (shipped or closed-as-won
 
 ## PRD index — active or recent
 
+- `20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md` — **active** (phase: plan). U2 + U6 root-caused as one bug. 4 sub-PRs (lock+422 gate, UA-hash forensic, CheckEmailCard resend fix, data-repair). Blocks apex unpark.
 - `20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md` — Phase 3 scheduling rebuild. PR-A + PR-B + PR-C-i shipped 2026-05-19 (38/104 ISC complete; D-10/D-11/P-6 + remaining tests deferred to PR-C-ii / PR-D / PR-E)
 - `20260518-handoff-session-end/HANDOFF.md` — handoff from the previous session that kicked Phase 3 off
 - `20260518-112650_v1.1.1-implementation/PRD.md` — v1.1.1 implementation (complete except Max-action migrations)

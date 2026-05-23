@@ -8,6 +8,16 @@ When an item ships, **delete the entry** (don't mark it complete in place). The 
 
 ---
 
+## Deferred from 2026-05-24 Sub-PR A ship
+
+### Un-gate UA_AUDIT_HASH_DEPLOYED in sandbox CI
+
+`tests/e2e/specs/listen-roundtrip.spec.ts` has a `test.skip(process.env.UA_AUDIT_HASH_DEPLOYED !== "true", ...)` guard on the `link_issued audit row carries user_agent_hash` assertion. Gate was added because staging precedes per-PR worker deploys — without it, sandbox specs would have asserted the new column on the old worker and failed. Now that `release/v1.2.0` carries Sub-PR A (`364ea77`) and staging is on the new code, the gate can come off.
+
+**Trigger:** any follow-up sub-PR on `release/v1.2.0` that touches the e2e helpers OR a dedicated bookkeeping pass. Either (a) set `UA_AUDIT_HASH_DEPLOYED=true` in `.github/workflows/e2e-sandbox.yml` env, OR (b) remove the `test.skip` line + helper env-var reference entirely.
+
+---
+
 ## Deferred from 2026-05-21 smoke-walk fix arc
 
 Items the 2026-05-20 staging smoke walk surfaced that didn't ship in the β / δ / α / γ Sub-PR sequence. Five of the surfaced bugs landed; the rest are queued here with explicit triggers. Full source: `www/MEMORY/WORK/20260521-smoke-walk/HANDOFF.md`.
@@ -36,45 +46,45 @@ Items the 2026-05-20 staging smoke walk surfaced that didn't ship in the β / δ
 
 ### U2 — Multi-hop magic-link friction (J1c + J3c)
 
-Listen-page magic-link flow has too many steps: enter email → "send link" email → click link → enter email AGAIN → new link → click → enter email AGAIN → THEN listen. Both customer (J1c) and recipient (J3c) hit it. Open question: is this a security requirement (every form-fill independent), or accidental redundancy?
+Listen-page magic-link flow has too many steps: enter email → "send link" email → click link → enter email AGAIN → new link → click → enter email AGAIN → THEN listen. Both customer (J1c) and recipient (J3c) hit it. **Update 2026-05-23 (Max report):** symptom is worse than original framing — Max had to click "send link" 5-6 times in one round before the listen page rendered. Reframes the open question from "is multi-hop intentional?" to "what's broken in the redeem → cookie-set → /listen render chain that re-prompts the form?". Hypotheses: cookie path/domain mismatch, redirect-target form-render preceding cookie visibility, single-use token consumed by a prefetch / OG scraper, Level-1 email-match silently failing.
 
-**Trigger:** UX-focused session, or first customer complaint. Map the security model (cookie scope, token-vs-session lifetimes) before any change.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #10). **ROOT-CAUSED + PRD'd 2026-05-23:** investigation found U2 is data-integrity downstream of U6, not an auth-redirect loop. `recipient_user_id` on submission `bb5fe157` was bound to the purchaser at gift-claim time because the recipient_email field wasn't locked. PRD: `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md`. Ships as 4 sub-PRs (lock+422 gate, forensic UA-hash, CheckEmailCard resend fix, data-repair).
 
 ### U3 — Listen-page downloads use opaque/hashed filenames
 
 Voice-note and PDF downloads arrive with Sanity asset hashes as filenames. Should preserve the original Sanity asset filename, OR set a readable default via `Content-Disposition` (e.g. `soul-blueprint-voice-note.mp3`). Likely fix surface: `/api/listen/[id]/audio` + `/api/listen/[id]/pdf` route handlers.
 
-**Trigger:** post-apex-unpark UX polish, or customer feedback.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #11). Quick-win sub-PR candidate alongside U5.
 
 ### U4 — Hover affordance audit
 
 Not all buttons have `cursor: pointer` on hover (flagged in J2). Needs broader UX sweep.
 
-**Trigger:** next design-system pass.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #12). Mechanical sweep across Button + anchor-styled-as-button + form-control wrappers.
 
 ### U5 — Gift-purchase form: purchaser email not prefilled
 
 Gift purchase doesn't prefill the purchaser email for repeat customers. Standard purchase flow does. Lift the email-prefill mechanism from the self-purchase entry page into the gift entry page.
 
-**Trigger:** next gift-flow UX session.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #13). Quick-win sub-PR candidate alongside U3.
 
 ### U6 — Recipient-email lock inconsistent across reading types
 
 J2 (Birth Chart self-send) didn't lock the email field; Akashic gift-claim DID. Pick one behavior and apply uniformly: lock = friction but prevents misroute; unlock = flexibility.
 
-**Trigger:** AskUser session + apply.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking**, **MERGED INTO U2 PRD**. Investigation 2026-05-23 found U2 and U6 share a single root cause (recipient_user_id corruption at gift-claim time, downstream of the unlocked recipient_email field). Decision D-2 in `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md` locks the policy: gift-claim intake renders recipient_email as readOnly, value-bound to `submission.recipient_email`, with `RecipientEmailEscapeHatch → /contact` callout for legitimate change requests. Server-side 422 gate in gift-redeem on NFKC-normalized mismatch as defense-in-depth.
 
 ### U7 — Studio preview of customer-facing pages
 
 Becky can't preview customer-facing pages (booking, thank-you, listen, /my-gifts) from inside Studio. Explore: extending Presentation Tool wiring, or a Sanity Studio plugin.
 
-**Trigger:** Becky requests it, or post-apex-unpark editorial-UX session.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #15). Bundle with U8 as a Studio-side PR (both touch deskStructure / preview / Presentation wiring).
 
 ### U8 — Studio: visible "claimed at" + delivery countdown
 
 Becky has no at-a-glance "claimed" signal. Now that `giftClaimedAt` is in the schema (Sub-PR β #160), surface it in the Submissions list/preview. Also consider a countdown UI ("5 days left to deliver") and a distinct status "claimed, awaiting delivery" (currently conflated with `paid`).
 
-**Trigger:** Becky's first real gift-recipient delivery + ask, OR routine Studio UX pass.
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #16). Bundle with U7 as a Studio-side PR; decision needed on whether to add a new submission status enum value or compute claimed-vs-paid from `giftClaimedAt` presence.
 
 ### S3 — Studio: `deliveredAt` UX (Becky kept forgetting)
 
