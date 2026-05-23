@@ -61,9 +61,17 @@ function getResendClient(): Resend | null {
  * Redact the local-part of an email address for logs: "ada@example.com" →
  * "a***@example.com". Worker logs aren't a long-term store, but there's no
  * upside to writing full recipient addresses to wrangler tail.
+ *
+ * For local-parts of ≤2 chars (where keeping the first character would leak
+ * most of the original), drop the local entirely.
  */
 export function redactEmail(address: string) {
-  return address.replace(/(^.)([^@]+)(?=@)/, "$1***");
+  const atIdx = address.indexOf("@");
+  if (atIdx < 1) return address;
+  const local = address.slice(0, atIdx);
+  const domain = address.slice(atIdx);
+  if (local.length <= 2) return `***${domain}`;
+  return `${local[0]}***${domain}`;
 }
 
 function redactRecipient(to: string | string[]) {

@@ -31,8 +31,9 @@ import {
   consentSnapshotFromBody,
   isFullyConsented,
 } from "@/lib/compliance/intakeConsent";
+import { sha256Hex } from "@/lib/hmac";
 import { getClientIp } from "@/lib/request";
-import { sendRecipientIntakeReceived } from "@/lib/resend";
+import { redactEmail, sendRecipientIntakeReceived } from "@/lib/resend";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -210,6 +211,15 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
+  const submittedEmailRedacted = redactEmail(submittedEmail);
+  const submittedEmailHash = (await sha256Hex(submittedEmail)).slice(0, 12);
+  const logBase = {
+    submissionId,
+    deliveryMethod: submission.giftDeliveryMethod,
+    submittedEmailRedacted,
+    submittedEmailHash,
+  };
+
   // Scheduled gifts: `recipient_email` is set at purchase, so a stolen claim
   // cookie still can't be used by a different person — submitted email must
   // match. Self_send gifts have no recipient_email at purchase (the
@@ -221,7 +231,18 @@ export async function POST(request: Request): Promise<Response> {
   const storedRecipientEmail = submission.recipientEmail
     ? normalizeEmailForm(submission.recipientEmail)
     : null;
-  if (storedRecipientEmail && submittedEmail !== storedRecipientEmail) {
+  const mismatch = !!storedRecipientEmail && submittedEmail !== storedRecipientEmail;
+  console.log("[gift-redeem.gate]", {
+    ...logBase,
+    storedRecipientEmailRedacted: storedRecipientEmail ? redactEmail(storedRecipientEmail) : null,
+    storedRecipientEmailHash: storedRecipientEmail
+      ? (await sha256Hex(storedRecipientEmail)).slice(0, 12)
+      : null,
+    hasStoredRecipient: !!storedRecipientEmail,
+    mismatch,
+  });
+  if (mismatch) {
+    console.error("[gift-redeem] email_mismatch", { submissionId });
     return NextResponse.json(
       {
         error: "Email mismatch",
@@ -257,7 +278,16 @@ export async function POST(request: Request): Promise<Response> {
   const responses = buildResponses(fields, validatedValues);
   const claimedAtIso = new Date().toISOString();
 
-  const { userId: recipientUserId } = await getOrCreateUser({ email: submittedEmail });
+  const { userId: recipientUserId, isNew: recipientUserIsNew } = await getOrCreateUser({
+    email: submittedEmail,
+  });
+  console.log("[gift-redeem.claim]", {
+    ...logBase,
+    recipientUserId,
+    purchaserUserId: submission.purchaserUserId,
+    recipientUserIsNew,
+    equalsPurchaser: recipientUserId === submission.purchaserUserId,
+  });
 
   try {
     await redeemGiftSubmission({

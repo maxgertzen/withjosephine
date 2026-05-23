@@ -763,3 +763,27 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
     expect(sendMock).toHaveBeenCalledOnce();
   });
 });
+
+describe("redactEmail", () => {
+  it("keeps the first character of locals ≥3 chars", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("ada@example.com")).toBe("a***@example.com");
+    expect(redactEmail("maxgertzen+gift-scheduled@gmail.com")).toBe("m***@gmail.com");
+  });
+
+  it("drops the local entirely when local-part is ≤2 chars (short locals would otherwise leak the original)", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("a@example.com")).toBe("***@example.com");
+    expect(redactEmail("ab@example.com")).toBe("***@example.com");
+  });
+
+  it("returns the input unchanged when it has no @", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("not-an-email")).toBe("not-an-email");
+  });
+
+  it("returns the input unchanged when @ is the first character", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("@example.com")).toBe("@example.com");
+  });
+});
