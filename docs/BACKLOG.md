@@ -16,6 +16,12 @@ The "don't know what time" checkbox on the intake birth-details page sits on top
 
 **Trigger:** next intake-UX session OR Becky reports it. Likely fix surface: the wrapper around the conditional checkbox at the birth-details step (search for the `time_unknown` field key in `src/components/IntakeForm/`).
 
+### Extract SANDBOX_EMAIL_PREFIXES into a shared module to close drift risk
+
+`src/lib/resend.tsx:108` defines the sandbox-prefix list as the source of truth for the dry-run guard. Spec files (`tests/e2e/specs/{gift,listen,stripe,v120-smoke,gift-recipient-listen}-roundtrip.spec.ts`) each hardcode the matching prefix as a raw string. A spec rename OR a new spec that follows a slightly different prefix convention silently re-opens the Resend quota leak with zero test failure.
+
+**Trigger:** any time a new sandbox spec lands, OR a routine refactor pass on the e2e helpers. Fix: move `SANDBOX_EMAIL_PREFIXES` + `SANDBOX_DOMAIN` to a new module `src/lib/booking/sandboxEmails.ts` (worker-safe, no test deps). Import from both `src/lib/resend.tsx` and the spec files; build email addresses as `${SANDBOX_EMAIL_PREFIXES.giftRoundtripPurchaser}${randomUUID()}${SANDBOX_DOMAIN}`. Then a typo / rename at any callsite breaks at TypeScript compile.
+
 ### Un-gate UA_AUDIT_HASH_DEPLOYED in sandbox CI
 
 `tests/e2e/specs/listen-roundtrip.spec.ts` has a `test.skip(process.env.UA_AUDIT_HASH_DEPLOYED !== "true", ...)` guard on the `link_issued audit row carries user_agent_hash` assertion. Gate was added because staging precedes per-PR worker deploys — without it, sandbox specs would have asserted the new column on the old worker and failed. Now that `release/v1.2.0` carries Sub-PR A (`364ea77`) and staging is on the new code, the gate can come off.

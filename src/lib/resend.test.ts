@@ -829,8 +829,8 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
     const result = await sendRecipientIntakeReceived({
       submissionId: "sub_1",
       recipientEmail: "gift-roundtrip-recipient+abc123@withjosephine.com",
-      recipientName: "Bob",
-      purchaserFirstName: "Alice",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
       readingName: "The Birth Chart Reading",
     });
 
@@ -861,6 +861,25 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
 
     expect(getResendId(result)).toBe("msg_real");
     expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("tags the skip-log reason so cron/DO/webhook leaks are observable in wrangler tail", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    await sendRecipientIntakeReceived({
+      submissionId: "sub_1",
+      recipientEmail: "gift-roundtrip-recipient+abc@withjosephine.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "The Birth Chart Reading",
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("reason=sandbox_prefix"),
+    );
+    warnSpy.mockRestore();
   });
 });
 

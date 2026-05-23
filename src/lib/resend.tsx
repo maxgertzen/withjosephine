@@ -78,15 +78,10 @@ function redactRecipient(to: string | string[]) {
   return Array.isArray(to) ? to.map(redactEmail).join(",") : redactEmail(to);
 }
 
-// Per-request opt-out for e2e specs. The spec sends
-// `X-E2E-Resend-DryRun: <secret>` on the request that triggers the email;
-// when the secret matches RESEND_E2E_DRY_RUN_SECRET the worker skips the
-// Resend call for that request only. headers() returns null outside a
-// request context (e.g. cron), so non-request callers fall through.
-//
-// Fail-closed on misconfig: header present + worker secret unset → skip the
-// send and log. Without this guard a runner-only secret silently burns the
-// daily Resend quota on every sandbox CI run.
+type SkipReason = "sandbox_prefix" | "flag" | "header";
+
+// Fail-closed: header present + worker secret unset → skip the send.
+// Without this, a runner-only secret silently burns Resend quota per CI run.
 async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   try {
     const h = await headers();
@@ -105,13 +100,8 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   }
 }
 
-// Sandbox e2e fixtures use `<prefix>@withjosephine.com` aliases. The
-// X-E2E-Resend-DryRun header only fires in request context — DO alarms
-// (gift_claim email), cron sweeps (day-7 delivery), and the Stripe webhook
-// handler have none, so they leak real Resend sends on every sandbox run
-// despite the header. Match the recipient OR the originating submission
-// email against this prefix list to force dry-run regardless of context.
-// New sandbox specs that follow the convention auto-match.
+// DO alarms, cron sweeps, and the Stripe webhook have no request context,
+// so the X-E2E-Resend-DryRun header can't reach them — match by email instead.
 const SANDBOX_EMAIL_PREFIXES = [
   "gift-roundtrip-purchaser+",
   "gift-roundtrip-recipient+",
@@ -130,11 +120,6 @@ export function isSandboxEmail(address: string | null | undefined): boolean {
   return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
 }
 
-function anySandboxRecipient(to: string | string[]): boolean {
-  if (Array.isArray(to)) return to.some(isSandboxEmail);
-  return isSandboxEmail(to);
-}
-
 async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
@@ -143,20 +128,20 @@ async function sendOrSkip(args: {
   submissionId: string | null;
   replyTo?: string;
   idempotencyKey?: string;
-  // For admin notifications (to=hello@withjosephine.com), `to` is the same
-  // address whether the originating submission was a real customer or a
-  // sandbox fixture. Pass `originatorEmail` so the sandbox guard catches
-  // those too.
+  // Admin notifications: `to` is always hello@, so check the submission email too.
   originatorEmail?: string | null;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
-  const sandboxMatch =
-    anySandboxRecipient(args.to) || isSandboxEmail(args.originatorEmail);
-  if (
-    sandboxMatch ||
-    isFlagEnabled("RESEND_DRY_RUN") ||
-    (await shouldDryRunFromRequestHeader())
-  ) {
+  const recipientList = Array.isArray(args.to) ? args.to : [args.to];
+  const skipReason: SkipReason | null =
+    recipientList.some(isSandboxEmail) || isSandboxEmail(args.originatorEmail)
+      ? "sandbox_prefix"
+      : isFlagEnabled("RESEND_DRY_RUN")
+        ? "flag"
+        : (await shouldDryRunFromRequestHeader())
+          ? "header"
+          : null;
+  if (skipReason) {
     const captureUrl = process.env.E2E_CAPTURE_URL;
     if (captureUrl) {
       void fetch(`${captureUrl}/_e2e/captured-emails`, {
@@ -170,7 +155,9 @@ async function sendOrSkip(args: {
         }),
       }).catch(() => undefined);
     }
-    console.warn(`[resend] RESEND_DRY_RUN — skipping ${label} (to=${redactRecipient(args.to)})`);
+    console.warn(
+      `[resend] RESEND_DRY_RUN — skipping ${label} (reason=${skipReason}, to=${redactRecipient(args.to)})`,
+    );
     return { kind: "dry_run" };
   }
   const client = getResendClient();
