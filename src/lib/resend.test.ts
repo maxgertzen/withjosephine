@@ -784,6 +784,86 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
   });
 });
 
+describe("isSandboxEmail", () => {
+  it("matches known sandbox spec prefixes on @withjosephine.com", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("gift-roundtrip-purchaser+abc123@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-roundtrip-recipient+abc123@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-recipient-listen-purchaser+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-recipient-listen-recipient+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("listen-roundtrip+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("stripe-roundtrip+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("v120-qa+gift-abc@withjosephine.com")).toBe(true);
+  });
+
+  it("does NOT match sandbox prefixes on other domains (spoofing guard)", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("gift-roundtrip-purchaser+abc@evil.example")).toBe(false);
+    expect(isSandboxEmail("listen-roundtrip+abc@gmail.com")).toBe(false);
+  });
+
+  it("does NOT match non-sandbox addresses on @withjosephine.com", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("hello@withjosephine.com")).toBe(false);
+    expect(isSandboxEmail("becky@withjosephine.com")).toBe(false);
+  });
+
+  it("is case-insensitive on local-part and domain", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("GIFT-ROUNDTRIP-PURCHASER+ABC@WITHJOSEPHINE.COM")).toBe(true);
+  });
+
+  it("returns false for null/undefined/empty input", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail(null)).toBe(false);
+    expect(isSandboxEmail(undefined)).toBe(false);
+    expect(isSandboxEmail("")).toBe(false);
+  });
+});
+
+describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () => {
+  it("forces dry-run when the recipient `to` matches a sandbox prefix (gift_claim cron path)", async () => {
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_1",
+      recipientEmail: "gift-roundtrip-recipient+abc123@withjosephine.com",
+      recipientName: "Bob",
+      purchaserFirstName: "Alice",
+      readingName: "The Birth Chart Reading",
+    });
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("forces dry-run when the originatorEmail matches sandbox (admin notification path)", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+    const result = await sendNotificationToJosephine(
+      buildSubmission({ email: "gift-roundtrip-purchaser+xyz@withjosephine.com" }),
+    );
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT force dry-run when neither recipient nor originator is a sandbox alias", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_real" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_real");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+});
+
 describe("redactEmail", () => {
   it("keeps the first character of locals ≥3 chars", async () => {
     const { redactEmail } = await import("./resend");
