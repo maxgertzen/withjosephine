@@ -1,36 +1,35 @@
 # Session Boot — Active State
 
-## 🚨 TOP OF MIND — read before anything else (2026-05-23 close-out)
+## 🚨 TOP OF MIND — 2026-05-24 close-out
 
-The single most-active thread right now is **U2 + U6 root-cause + remediation PRD** at
-`MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md`.
+**U2/U6 investigation is largely closed. Sub-PR D (data repair) is the only piece left.** Full re-framing in `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md` § Investigation update (iteration 2).
 
-**Don't open this session by giving Max a hold-gate checklist.** Apex unpark has 16 hold-gate items but the load-bearing ones are not the operational ones (D1 migrations, data cleanup, Stripe webhook split). The load-bearing ones are **U2-U8 — 7 UX items promoted from BACKLOG-deferred to launch-blocking on 2026-05-23**. Max explicitly flagged them as "cannot launch without". The previous session opener (this one) buried them; do not repeat that mistake. If asked "where we at?", lead with U2-U8 and the data-integrity finding, then the operational items.
+**What's changed since 2026-05-23 open:**
+- Sub-PR A (forensic UA-hash audit) shipped — PR #169 `364ea77` + qs CVE hotfix `17da7b9`.
+- Sub-PR C (lock + 422 gate + NFKC) — turned out to be already shipped via PR #144 `636216b` on release/v1.1.0 (2026-05-19). Originally-scoped work was a no-op. Re-scoped to diagnostic logging in PR #170 `fe51819`.
+- Resend hardening cluster shipped today (separate Resend quota leak discovered mid-investigation): PR #171 `bf446ad` (fail-closed on header+missing-secret), PR #172 `3b27bee` (sandbox-prefix dry-run guard for cron/DO/webhook paths), PR #173 `adc6c01` (`/simplify` cleanup pass after Max flagged binding-rule violation).
+- Variant A/C/D field walks on staging confirmed: **auth flow healthy, no magic-link loop, lock works against autofill AND DevTools-strip attacks**. React controlled-input state holds prefilled value even when DOM is mutated. CF Workers Logs export confirmed `submittedEmailHash === storedRecipientEmailHash` even after DevTools removed `readonly`.
+- `bb5fe157` data corruption vector remains **unexplained** — the current lock + 422 gate + React behavior cover every attack vector we could construct. PR #170 instrumentation now logs every gate decision in production-shape so the next occurrence self-identifies.
 
-**Confirmed live bugs on staging D1 (not hypothetical):**
-- Submission `bb5fe157-a376-435d-ade7-978c4da6af41` has `recipient_user_id` bound to the purchaser, not the recipient. Cascades into:
-  - listen-page rejects the actual recipient (SignInCard loop)
-  - Day-7 delivery email lands at the purchaser's address, not the recipient's (Max verified 2026-05-23)
-  - `/my-readings` listing, GDPR Art. 17 cascade all misroute via the corrupted column
-- Root cause: `gift-redeem/route.ts:260` has no integrity check; gift-claim intake on at least one reading variant doesn't lock the recipient_email field.
+**Sub-PR D status:** decision deferred. Scope is `scripts/repair-recipient-user-id.mts` per PRD Phase F — dry-run CSV → `--apply` repairs `bb5fe157` (and any other historical corrupted rows) by re-pointing `recipient_user_id` from `5a72100c` (purchaser) → `1a87c68d` (recipient mgertzen2), mirrors to Sanity, writes audit row.
 
-**4 sub-PRs queued in the PRD** (sequencing fixed in PRD Phase ordering):
-1. ~~Sub-PR A (forensic, 1-line): UA-hash on `link_issued` audit~~ ✅ shipped 2026-05-24 to `release/v1.2.0` (PR #169, squash `364ea77`; plus qs CVE hotfix `17da7b9`)
-2. Sub-PR B (UX): CheckEmailCard "Send another" preserves typed email + cooldown
-3. Sub-PR C (MAIN FIX): readOnly recipient_email + server 422 gate + NFC normalize
-4. Sub-PR D (data repair): `scripts/repair-recipient-user-id.mts` for staging + prod
+**Sub-PR B (CheckEmailCard polish):** not surfacing in field testing. Deferred — see BACKLOG.
 
-**One honesty note in the PRD** (Cascade symptoms section): if Max signed in *as the purchaser* on a corrupted row, the gate at `page.tsx:69` should have matched. The data corruption explains the misrouted email cleanly; it doesn't fully explain the SignInCard loop on its own. The repair is necessary regardless. If ISC-G2 (recipient sees DeliveredSurface after repair) fails, narrow U2 re-opens.
+**Re-walk smoke after Sub-PR D apply** is the verification step that closes hold-gate items #10 (U2) and #14 (U6, merged into the same PRD).
 
-**Other launch-blocking items still open** (the original hold-gate list, items 1-9 + 11 + 12 + 13 + 15 + 16):
+**Other launch-blocking items still open** (original hold-gate list):
 - Reading-price reconcile (Max+Josephine, operational)
-- Pre-prod data cleanup (D1+R2+Sanity, hard precondition for backups cron)
+- Pre-prod data cleanup (D1+R2+Sanity)
 - Production D1 migrations 0004→0012 (at main-merge time)
-- Re-run smoke walkthrough (after Sub-PR C+D ship)
-- Stripe test-mode webhook split (BACKLOG mirror-drift, must ship before any prod traffic)
-- U3 (download filenames), U4 (hover sweep), U5 (gift email prefill), U7 (Studio preview), U8 (Studio claimed-at + countdown) — also launch-blocking per 2026-05-23 promotion
+- Re-run smoke walkthrough (after Sub-PR D ships)
+- Stripe test-mode webhook split (BACKLOG mirror-drift)
+- U3 (download filenames), U4 (hover sweep), U5 (gift email prefill), U7 (Studio preview), U8 (Studio claimed-at + countdown) — promoted 2026-05-23
 
-**Tasks tracker after 2026-05-23 close-out:** task #7 carries the PRD; #8 (Sub-PR A), #9 (Sub-PR B), #10 (Sub-PR D) are the sibling sub-PRs; #1 (U3), #2 (U4), #3 (U5), #5 (U7), #6 (U8) are the other promoted UX items pending their own PRDs.
+**New BACKLOG items surfaced 2026-05-24:**
+- Magic-link email subject + body are reading-centric across ALL destinations (sent from `/my-gifts` gets "Open your reading" copy)
+- "I don't know my birth time" intake checkbox z-index covers the time + calendar picker
+- Un-gate `UA_AUDIT_HASH_DEPLOYED` in sandbox CI now that release/v1.2.0 has the worker code
+- Extract `SANDBOX_EMAIL_PREFIXES` to a shared module to close spec-prefix drift risk
 
 ---
 
@@ -113,6 +112,8 @@ Branch `feat/phase-7-email-sanity-cms` exists locally with WIP commit `f6568e9` 
 9. **Rotate `DO_DISPATCH_SECRET` on staging** — exposed mid-diagnostic 2026-05-18. Command: `openssl rand -hex 32 | pnpm exec wrangler secret put DO_DISPATCH_SECRET --env staging`. After rotation, do not re-paste in chat.
 10. **Apply migration 0012 to production D1** — staging is at 0012 (applied + verified 2026-05-19); production still at 0003. Standalone apply is safe when 0004 → 0012 batch runs at main-merge time per the hold-gate workflow. Command: `pnpm migrate:apply:prod`. Verify with `pnpm migrate:list:prod`.
 11. **Run the smoke walkthrough** — use the rewritten `docs/MANUAL_SMOKE_TEST.md` (PR #159). 11 journeys, ~60–90 min to run end-to-end. Send pass/fail per journey + screenshots for any ❌ + the time window so the maintainer can scope the cleanup script.
+12. **Set `RESEND_E2E_DRY_RUN_SECRET` on the staging worker** (optional but recommended for hygiene — the sandbox-prefix guard from PR #172 already plugs the leak, so this is no longer load-bearing). Run: `openssl rand -hex 32 | pnpm exec wrangler secret put RESEND_E2E_DRY_RUN_SECRET --env staging`, then paste the same value into Settings → Secrets and variables → Actions → Environments → staging → `STAGING_RESEND_E2E_DRY_RUN_SECRET`. Both must be identical.
+13. **Cleanup staging test rows** — submission `67b20b5e-5d91-4dd9-9530-f902f7b3d827` was used for Variant A/D walks today (recipient mgertzen2@gmail.com, purchaser maxgertzen+variantA-purchaser). D1 was patched with bb5fe157's voice/pdf URLs for DeliveredSurface verification. Sweep with the prefix-based one-liner I shared earlier (PREFIX="maxgertzen+variant"). Same for any `+variantC-` rows.
 
 ## Parallel-safe non-blockers (ship anytime)
 
