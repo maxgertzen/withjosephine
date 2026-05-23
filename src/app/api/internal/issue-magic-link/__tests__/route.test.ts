@@ -196,6 +196,7 @@ describe("POST /api/internal/issue-magic-link", () => {
       expect(issueMock).toHaveBeenCalledWith({
         userId: "user_1",
         ipHash: "ip-h",
+        userAgentHash: "ua-h",
       });
     });
 

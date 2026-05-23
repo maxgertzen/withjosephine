@@ -1,9 +1,8 @@
-import { spawn } from "node:child_process";
-
-import { getStagingSanityClient, requireStagingEnv } from "./stagingApi";
-
-const WRANGLER_TIMEOUT_MS = 30_000;
-const STAGING_D1_DATABASE = "withjosephine-bookings-staging";
+import {
+  execWranglerD1,
+  getStagingSanityClient,
+  requireStagingEnv,
+} from "./stagingApi";
 
 export type SandboxResidueCleanupOptions = {
   emailPrefix: string;
@@ -31,47 +30,7 @@ function buildD1Statements(likePattern: string): string[] {
 
 async function wipeStagingD1(likePattern: string): Promise<void> {
   const command = buildD1Statements(likePattern).join(" ");
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(
-      "pnpm",
-      [
-        "exec",
-        "wrangler",
-        "d1",
-        "execute",
-        STAGING_D1_DATABASE,
-        "--remote",
-        "--command",
-        command,
-      ],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
-    let stderr = "";
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    const timer = setTimeout(() => {
-      child.kill("SIGTERM");
-      reject(
-        new Error(
-          `[sandboxResidueCleanup] wrangler d1 execute timed out after ${WRANGLER_TIMEOUT_MS}ms`,
-        ),
-      );
-    }, WRANGLER_TIMEOUT_MS);
-    child.on("error", (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-    child.on("exit", (code) => {
-      clearTimeout(timer);
-      if (code === 0) return resolve();
-      reject(
-        new Error(
-          `[sandboxResidueCleanup] wrangler d1 execute exited ${code}: ${stderr.slice(0, 500)}`,
-        ),
-      );
-    });
-  });
+  await execWranglerD1({ command, caller: "sandboxResidueCleanup" });
 }
 
 async function wipeStagingSanity(matchPattern: string): Promise<number> {

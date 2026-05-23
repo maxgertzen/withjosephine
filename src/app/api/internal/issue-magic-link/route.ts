@@ -50,6 +50,7 @@ export async function POST(request: Request): Promise<Response> {
   const { token, expiresAt } = await issueMagicLink({
     userId: user.id,
     ipHash: auth.audit.ipHash,
+    userAgentHash: auth.audit.userAgentHash,
   });
 
   const verifyUrl = new URL("/auth/verify", siteOrigin());

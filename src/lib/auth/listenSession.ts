@@ -113,6 +113,7 @@ export async function hashUserAgent(ua: string): Promise<string> {
 export async function issueMagicLink(args: {
   userId: string;
   ipHash?: string | null;
+  userAgentHash?: string | null;
   now?: number;
 }): Promise<{ token: string; expiresAt: number }> {
   const now = args.now ?? Date.now();
@@ -131,6 +132,7 @@ export async function issueMagicLink(args: {
     userId: args.userId,
     eventType: AUDIT_EVENT_TYPE.link_issued,
     ipHash: args.ipHash,
+    userAgentHash: args.userAgentHash,
     success: true,
     now,
   });
