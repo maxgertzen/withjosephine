@@ -36,11 +36,12 @@
 **This file is the entry-point for any new session touching this codebase.** It holds current-sprint state, in-flight PRs, hold-gate blockers, and outstanding Max-actions. Pair it with:
 
 - `CLAUDE.md` (project root) — durable rules + binding constraints (locked decisions, don't relitigate)
-- `www/docs/BACKLOG.md` — deferred items with explicit triggers (the queue)
+- **`dex list`** (from `www/`) — operational task queue (10 epics, ~50 tasks as of 2026-05-23). Use `dex list --ready` for unblocked work, `dex show <id>` for full context, `dex create "…" --description "…" [--parent <id>]` to file a new deferral. Storage: `www/.dex/tasks.jsonl` (git-tracked).
+- `www/docs/BACKLOG.md` — historical reference (pre-2026-05-23 deferral prose for long-tail items). New deferrals go to dex.
 - `www/docs/CHANGELOG.md` — what shipped when (the history)
 - `www/MEMORY/WORK/{slug}/PRD.md` — active session PRDs (frontmatter `phase: complete` once done)
 
-Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferred state to BACKLOG; keep only in-flight + load-bearing-current here.**
+Trim this file as state evolves. **Move shipped state to CHANGELOG; move deferred state to dex; keep only in-flight + load-bearing-current here.**
 
 ---
 

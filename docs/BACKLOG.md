@@ -1,10 +1,14 @@
-# Backlog
+# Backlog (archived — superseded by dex)
 
-Deferred items with explicit triggers. The companion to `CHANGELOG.md` — CHANGELOG owns the history of what shipped; this file owns the queue of what's still pending.
+> **2026-05-23 — Task queue migrated to dex.** Source-of-truth for active + queued work now lives in `www/.dex/tasks.jsonl`. Use `dex list` (pending) / `dex list --ready` / `dex show <id>` / `dex create "…" --description "…" [--parent <id>]`.
+>
+> This file is preserved as **historical reference** for the prose ("why deferred / trigger conditions / vendor context") that didn't fit cleanly into dex descriptions. When promoting an item from prose-only context to active work, copy the relevant trigger/vendor block from here into the dex task description, then strike the prose entry here.
+>
+> New deferrals go straight into dex (`dex create "…" --priority 3`) — do not append to this file.
 
-Each item: where it came from + why it was deferred + the trigger that promotes it to active work.
+---
 
-When an item ships, **delete the entry** (don't mark it complete in place). The git log + CHANGELOG are the trail.
+> Below is the pre-migration content kept for reference. The launch-blocking + actively-queued slice is now tracked in dex; long-tail deferrals (Phase 4b polish, S3-B*, A-*, EFF-*, etc.) remain prose-only here until they get promoted.
 
 ---
 
