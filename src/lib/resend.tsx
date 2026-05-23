@@ -105,6 +105,36 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   }
 }
 
+// Sandbox e2e fixtures use `<prefix>@withjosephine.com` aliases. The
+// X-E2E-Resend-DryRun header only fires in request context — DO alarms
+// (gift_claim email), cron sweeps (day-7 delivery), and the Stripe webhook
+// handler have none, so they leak real Resend sends on every sandbox run
+// despite the header. Match the recipient OR the originating submission
+// email against this prefix list to force dry-run regardless of context.
+// New sandbox specs that follow the convention auto-match.
+const SANDBOX_EMAIL_PREFIXES = [
+  "gift-roundtrip-purchaser+",
+  "gift-roundtrip-recipient+",
+  "gift-recipient-listen-purchaser+",
+  "gift-recipient-listen-recipient+",
+  "listen-roundtrip+",
+  "stripe-roundtrip+",
+  "v120-qa+",
+] as const;
+const SANDBOX_DOMAIN = "@withjosephine.com";
+
+export function isSandboxEmail(address: string | null | undefined): boolean {
+  if (!address) return false;
+  const lower = address.toLowerCase();
+  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
+  return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
+}
+
+function anySandboxRecipient(to: string | string[]): boolean {
+  if (Array.isArray(to)) return to.some(isSandboxEmail);
+  return isSandboxEmail(to);
+}
+
 async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
@@ -113,9 +143,20 @@ async function sendOrSkip(args: {
   submissionId: string | null;
   replyTo?: string;
   idempotencyKey?: string;
+  // For admin notifications (to=hello@withjosephine.com), `to` is the same
+  // address whether the originating submission was a real customer or a
+  // sandbox fixture. Pass `originatorEmail` so the sandbox guard catches
+  // those too.
+  originatorEmail?: string | null;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
-  if (isFlagEnabled("RESEND_DRY_RUN") || (await shouldDryRunFromRequestHeader())) {
+  const sandboxMatch =
+    anySandboxRecipient(args.to) || isSandboxEmail(args.originatorEmail);
+  if (
+    sandboxMatch ||
+    isFlagEnabled("RESEND_DRY_RUN") ||
+    (await shouldDryRunFromRequestHeader())
+  ) {
     const captureUrl = process.env.E2E_CAPTURE_URL;
     if (captureUrl) {
       void fetch(`${captureUrl}/_e2e/captured-emails`, {
@@ -204,6 +245,7 @@ export async function sendNotificationToJosephine(
     html,
     subType: "josephine_notification",
     submissionId: submission.id,
+    originatorEmail: submission.email,
   });
 }
 
@@ -505,6 +547,7 @@ export async function sendContactMessage(contact: ContactPayload): Promise<Email
     html,
     subType: "contact_form",
     submissionId: null,
+    originatorEmail: contact.email,
   });
 }
 
@@ -526,5 +569,6 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     html,
     subType: "day_7_overdue_alert",
     submissionId: submission.id,
+    originatorEmail: submission.email,
   });
 }
