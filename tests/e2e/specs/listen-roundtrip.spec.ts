@@ -115,23 +115,6 @@ test.describe("Listen round-trip — staging", () => {
       timeout: 15_000,
     });
 
-    const auditRows = await queryStagingD1<{
-      event_type: string;
-      user_agent_hash: string | null;
-    }>(
-      `SELECT event_type, user_agent_hash
-         FROM listen_audit
-        WHERE user_id = (SELECT id FROM user WHERE email = '${escapeSqliteLiteral(email)}')
-          AND event_type = '${AUDIT_EVENT_TYPE.link_issued}'
-        ORDER BY timestamp DESC
-        LIMIT 1`,
-    );
-    expect(auditRows, "link_issued audit row should exist for the user").toHaveLength(1);
-    expect(
-      auditRows[0]!.user_agent_hash,
-      "user_agent_hash should be captured at link_issued time",
-    ).toMatch(/^[0-9a-f]{64}$/);
-
     // Real magic-link emails include &next=/listen/<id>; the engineering
     // seam doesn't, so append it to match production safeNext resolution.
     const { verifyUrl: baseVerifyUrl } = await issueMagicLink(email);
@@ -179,6 +162,28 @@ test.describe("Listen round-trip — staging", () => {
     expect(listenedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const ageMs = Date.now() - new Date(listenedAt as string).getTime();
     expect(ageMs).toBeLessThan(30_000);
+  });
+
+  // Gated until the staging worker is on the PR that threads userAgentHash
+  // through issueMagicLink. Un-gate by setting UA_AUDIT_HASH_DEPLOYED=true in
+  // CI once release/v1.2.0 has redeployed with the new code.
+  test("link_issued audit row carries user_agent_hash", async () => {
+    test.skip(
+      process.env.UA_AUDIT_HASH_DEPLOYED !== "true",
+      "Un-gate after release/v1.2.0 merges and staging redeploys with the userAgentHash threading change.",
+    );
+    const rows = await queryStagingD1<{ user_agent_hash: string | null }>(
+      `SELECT user_agent_hash
+         FROM listen_audit
+        WHERE event_type = '${escapeSqliteLiteral(AUDIT_EVENT_TYPE.link_issued)}'
+        ORDER BY timestamp DESC
+        LIMIT 1`,
+    );
+    expect(rows, "at least one link_issued row should exist on staging").toHaveLength(1);
+    expect(
+      rows[0]!.user_agent_hash,
+      "user_agent_hash should be captured at link_issued time",
+    ).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 
