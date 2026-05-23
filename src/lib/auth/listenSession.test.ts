@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
 
 import {
@@ -98,6 +99,29 @@ describe("listenSession", () => {
       );
       expect(rows).toHaveLength(1);
       expect(rows[0]).toEqual({ event_type: "link_issued", success: 1 });
+    });
+
+    it("persists the caller-supplied userAgentHash on the link_issued audit row", async () => {
+      const userId = await seedUser();
+      const userAgentHash = await hashUserAgent("Mozilla/5.0 (audit forensic)");
+      await issueMagicLink({ userId, userAgentHash });
+      const rows = await dbQuery<{ user_agent_hash: string | null }>(
+        `SELECT user_agent_hash FROM listen_audit WHERE user_id = ? AND event_type = ?`,
+        [userId, AUDIT_EVENT_TYPE.link_issued],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.user_agent_hash).toBe(userAgentHash);
+    });
+
+    it("leaves user_agent_hash NULL on the link_issued row when caller omits it", async () => {
+      const userId = await seedUser();
+      await issueMagicLink({ userId });
+      const rows = await dbQuery<{ user_agent_hash: string | null }>(
+        `SELECT user_agent_hash FROM listen_audit WHERE user_id = ? AND event_type = ?`,
+        [userId, AUDIT_EVENT_TYPE.link_issued],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.user_agent_hash).toBeNull();
     });
   });
 

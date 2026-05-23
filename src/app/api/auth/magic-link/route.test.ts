@@ -67,7 +67,11 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     const { POST } = await import("./route");
     const response = await POST(jsonRequest({ email: "ada@example.com" }));
     expect(response.status).toBe(204);
-    expect(issueMock).toHaveBeenCalledWith({ userId: "user_1", ipHash: "ip-h" });
+    expect(issueMock).toHaveBeenCalledWith({
+      userId: "user_1",
+      ipHash: "ip-h",
+      userAgentHash: "ua-h",
+    });
     await flushFireAndForget();
     expect(sendMock).toHaveBeenCalledOnce();
     const sentUrl = sendMock.mock.calls[0]?.[0].magicLinkUrl ?? "";

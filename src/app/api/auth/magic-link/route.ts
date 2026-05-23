@@ -31,7 +31,11 @@ export async function POST(request: Request) {
     const user = await findUserByEmail(email);
     if (user) {
       const audit = await getRequestAuditContext(request);
-      const { token } = await issueMagicLink({ userId: user.id, ipHash: audit.ipHash });
+      const { token } = await issueMagicLink({
+        userId: user.id,
+        ipHash: audit.ipHash,
+        userAgentHash: audit.userAgentHash,
+      });
       const verifyUrl = new URL("/auth/verify", siteOrigin());
       verifyUrl.searchParams.set("token", token);
       // safeNext already collapses anything non-allowlisted to /my-readings;

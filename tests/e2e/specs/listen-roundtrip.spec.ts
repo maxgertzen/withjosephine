@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
+
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
@@ -13,10 +15,12 @@ import {
   uploadDummyVoiceAndPdf,
 } from "../helpers/sanityE2EAssets";
 import {
+  escapeSqliteLiteral,
   findSubmissionIdByStripeSessionId,
   issueMagicLink,
   pollSanityListenedAt,
   pollUntilPaid,
+  queryStagingD1,
   sandboxRequestHeaders,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
@@ -110,6 +114,23 @@ test.describe("Listen round-trip — staging", () => {
     await page.waitForURL(new RegExp(`/listen/${submissionId}\\?sent=1`), {
       timeout: 15_000,
     });
+
+    const auditRows = await queryStagingD1<{
+      event_type: string;
+      user_agent_hash: string | null;
+    }>(
+      `SELECT event_type, user_agent_hash
+         FROM listen_audit
+        WHERE user_id = (SELECT id FROM user WHERE email = '${escapeSqliteLiteral(email)}')
+          AND event_type = '${AUDIT_EVENT_TYPE.link_issued}'
+        ORDER BY timestamp DESC
+        LIMIT 1`,
+    );
+    expect(auditRows, "link_issued audit row should exist for the user").toHaveLength(1);
+    expect(
+      auditRows[0]!.user_agent_hash,
+      "user_agent_hash should be captured at link_issued time",
+    ).toMatch(/^[0-9a-f]{64}$/);
 
     // Real magic-link emails include &next=/listen/<id>; the engineering
     // seam doesn't, so append it to match production safeNext resolution.
