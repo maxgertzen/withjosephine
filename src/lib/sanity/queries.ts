@@ -153,6 +153,9 @@ export const myReadingsPageQuery = groq`
     openButtonLabel,
     emptyHeading,
     emptyCtaLabel,
+    expiredRowLabel,
+    expiredMailtoLabel,
+    expiredMailtoSubject,
     signInHeading,
     signInBody,
     signInButtonLabel,
@@ -397,6 +400,7 @@ export const emailDay7DeliveryQuery = groq`
     comfortLine,
     openButtonLabel,
     signedInDisclosure,
+    accessWindowLine,
     comfortFollowUp,
     signOff
   }
@@ -430,7 +434,11 @@ export const listenPageQuery = groq`
     assetTroubleBody,
     assetTroubleTryAgainLabel,
     assetTroubleMailtoLabel,
-    assetTroubleMailtoSubject
+    assetTroubleMailtoSubject,
+    expiredHeading,
+    expiredBody,
+    expiredMailtoLabel,
+    expiredMailtoSubject
   }
 `;
 

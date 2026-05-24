@@ -220,6 +220,10 @@ describe("/listen/[id] page logic", () => {
       assetTroubleTryAgainLabel: "Retry",
       assetTroubleMailtoLabel: "Write",
       assetTroubleMailtoSubject: "Subject",
+      expiredHeading: "Expired",
+      expiredBody: "Expired body",
+      expiredMailtoLabel: "Mailto label",
+      expiredMailtoSubject: "Mailto subject",
     });
     const props = await getPageProps();
     expect(props.copy.signInHeading).toBe("Override sign-in");

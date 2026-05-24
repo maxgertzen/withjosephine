@@ -65,6 +65,14 @@ export const emailDay7Delivery = defineType({
       description: "Bold/italic/link via toolbar.",
     }),
     defineField({
+      name: "accessWindowLine",
+      title: "90-day access window paragraph",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description:
+        "Sets the customer expectation that their self-serve link rests after 90 days. Bold/italic/link via toolbar.",
+    }),
+    defineField({
       name: "comfortFollowUp",
       title: "Follow-up invitation paragraph",
       type: "array",

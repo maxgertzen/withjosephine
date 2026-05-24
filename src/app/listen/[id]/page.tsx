@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
+import { isReadingExpired } from "@/lib/booking/readingRetention";
 import { findSubmissionById, SUBMISSION_STATUS, type SubmissionRecord } from "@/lib/booking/submissions";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 
@@ -74,6 +75,12 @@ function resolveAuthenticatedState(args: {
   const isDeliverable =
     args.submission.status === SUBMISSION_STATUS.paid && args.submission.deliveredAt && hasAssets;
   if (!isDeliverable) return { kind: "assetTrouble", submissionId: args.id };
+  const deliveredAtMs = args.submission.deliveredAt
+    ? Date.parse(args.submission.deliveredAt)
+    : null;
+  if (isReadingExpired(deliveredAtMs)) {
+    return { kind: "expired", submissionId: args.id };
+  }
 
   return {
     kind: "delivered",

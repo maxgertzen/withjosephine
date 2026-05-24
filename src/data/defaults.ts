@@ -249,6 +249,9 @@ export interface MyReadingsPageContent extends AuthGatedPageContent {
   openButtonLabel: string;
   emptyHeading: string;
   emptyCtaLabel: string;
+  expiredRowLabel: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -257,6 +260,9 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   openButtonLabel: "Open your reading",
   emptyHeading: "Your readings will appear here once they’re delivered.",
   emptyCtaLabel: "Explore Readings",
+  expiredRowLabel: "Rested past 90 days",
+  expiredMailtoLabel: "Email for a fresh link",
+  expiredMailtoSubject: "I need a fresh link to my reading",
   signInHeading: "Welcome back",
   signInBody:
     "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
@@ -687,6 +693,7 @@ export interface EmailDay7DeliveryContent {
   comfortLine: EmailRichText;
   openButtonLabel: string;
   signedInDisclosure: EmailRichText;
+  accessWindowLine: EmailRichText;
   comfortFollowUp: EmailRichText;
   signOff: string | null;
 }
@@ -725,6 +732,8 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   openButtonLabel: "Open your reading",
   signedInDisclosure:
     "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
+  accessWindowLine:
+    "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
   comfortFollowUp:
     "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
   signOff: null,
@@ -758,6 +767,10 @@ export interface ListenPageContent {
   assetTroubleTryAgainLabel: string;
   assetTroubleMailtoLabel: string;
   assetTroubleMailtoSubject: string;
+  expiredHeading: string;
+  expiredBody: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 }
 
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
@@ -794,6 +807,11 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   assetTroubleTryAgainLabel: "Try again",
   assetTroubleMailtoLabel: "Write to Josephine",
   assetTroubleMailtoSubject: "Trouble opening my reading",
+  expiredHeading: "This reading has rested",
+  expiredBody:
+    "Self-serve links to your reading rest after ninety days. Write to me and I’ll send a fresh one in a moment — no rush.",
+  expiredMailtoLabel: "Email Josephine for a fresh link",
+  expiredMailtoSubject: "I need a fresh link to my reading",
 };
 
 export const ABOUT_DEFAULTS: MappedAbout = {
