@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { defineCliConfig } from "sanity/cli";
 
 export default defineCliConfig({
@@ -10,4 +12,14 @@ export default defineCliConfig({
   deployment: {
     appId: "tbbi4qmthmwx66i25e75wy86",
   },
+  vite: (viteConfig) => ({
+    ...viteConfig,
+    resolve: {
+      ...viteConfig.resolve,
+      alias: {
+        ...(viteConfig.resolve?.alias ?? {}),
+        "@": path.resolve(__dirname, "../src"),
+      },
+    },
+  }),
 });

@@ -1,8 +1,11 @@
-import { createPreviewSecret } from "@sanity/preview-url-secret/create-secret";
 import { Card, Flex, Stack, Text } from "@sanity/ui";
+import { useEffect, useState } from "react";
 import type { SanityDocument } from "sanity";
-import { useClient, useCurrentUser } from "sanity";
-import { Iframe } from "sanity-plugin-iframe-pane";
+
+import {
+  isPreviewTemplateKey,
+  renderEmailPreview,
+} from "@/lib/emails/render-preview";
 
 type DocumentSlot = SanityDocument | null;
 
@@ -14,15 +17,34 @@ type EmailPreviewProps = {
   };
 };
 
-const PREVIEW_API_VERSION = "2024-01-01";
-const PREVIEW_SECRET_SOURCE = "phase7-email-preview";
-
 export function EmailPreview(props: EmailPreviewProps) {
   const displayed = props.document?.displayed ?? null;
-  const client = useClient({ apiVersion: PREVIEW_API_VERSION });
-  const currentUser = useCurrentUser();
-  const studioOrigin =
-    typeof window !== "undefined" ? window.location.origin : "https://withjosephine.sanity.studio";
+  const [html, setHtml] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!displayed || !isPreviewTemplateKey(displayed._type)) {
+      setHtml(null);
+      return;
+    }
+    let cancelled = false;
+    renderEmailPreview(displayed._type, displayed)
+      .then((rendered) => {
+        if (!cancelled) {
+          setHtml(rendered);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setHtml(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [displayed]);
 
   if (!displayed || !displayed._type) {
     return (
@@ -42,38 +64,39 @@ export function EmailPreview(props: EmailPreviewProps) {
     );
   }
 
+  if (!isPreviewTemplateKey(displayed._type)) {
+    return (
+      <Flex padding={4} align="center" justify="center" style={{ height: "100%" }}>
+        <Card padding={4} radius={2} tone="caution" border>
+          <Text size={1}>No preview available for type "{displayed._type}".</Text>
+        </Card>
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <Flex padding={4} align="center" justify="center" style={{ height: "100%" }}>
+        <Card padding={4} radius={2} tone="critical" border>
+          <Stack space={2}>
+            <Text size={2} weight="semibold">
+              Preview failed to render
+            </Text>
+            <Text size={1} muted>
+              {error}
+            </Text>
+          </Stack>
+        </Card>
+      </Flex>
+    );
+  }
+
   return (
-    <Iframe
-      document={{
-        displayed,
-        draft: props.document?.draft ?? null,
-        published: props.document?.published ?? null,
-      }}
-      options={{
-        url: async (doc) => {
-          if (!doc) return new Error("No document loaded");
-          const previewOrigin =
-            process.env.SANITY_STUDIO_PREVIEW_URL ?? "https://withjosephine.com";
-          const cacheKey = typeof doc._rev === "string" ? doc._rev : doc._updatedAt;
-          const { secret } = await createPreviewSecret(
-            client,
-            PREVIEW_SECRET_SOURCE,
-            studioOrigin,
-            currentUser?.id,
-          );
-          const params = new URLSearchParams({
-            rev: cacheKey,
-            "sanity-preview-secret": secret,
-          });
-          return `${previewOrigin}/api/email-preview/${encodeURIComponent(doc._type)}?${params.toString()}`;
-        },
-        attributes: {
-          sandbox: "allow-same-origin",
-        },
-        reload: { button: true },
-        showDisplayUrl: false,
-        defaultSize: "desktop",
-      }}
+    <iframe
+      srcDoc={html ?? ""}
+      title={`Email preview — ${displayed._type}`}
+      sandbox=""
+      style={{ width: "100%", height: "100%", border: "none", background: "#FAF8F4" }}
     />
   );
 }
