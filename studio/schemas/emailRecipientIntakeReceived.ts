@@ -1,5 +1,9 @@
 import { defineField, defineType } from "sanity";
 
+import { slotValidation } from "../lib/validateSlots";
+
+const validateRecipientIntakeSlots = slotValidation("emailRecipientIntakeReceived");
+
 export const emailRecipientIntakeReceived = defineType({
   name: "emailRecipientIntakeReceived",
   title: "Email — Recipient Intake Received",
@@ -20,6 +24,7 @@ export const emailRecipientIntakeReceived = defineType({
       type: "string",
       group: "envelope",
       description: 'Use "{recipientName}" / "{readingName}" placeholders.',
+      validation: validateRecipientIntakeSlots,
       initialValue: "Your reading is in my hands now",
     }),
     defineField({
@@ -56,6 +61,7 @@ export const emailRecipientIntakeReceived = defineType({
       type: "string",
       group: "body",
       description: 'Use "{recipientName}" to insert the recipient\'s name.',
+      validation: validateRecipientIntakeSlots,
       initialValue: "Hi {recipientName},",
     }),
     defineField({
@@ -65,6 +71,7 @@ export const emailRecipientIntakeReceived = defineType({
       rows: 2,
       group: "body",
       description: 'Use "{readingName}" / "{purchaserFirstName}" placeholders.',
+      validation: validateRecipientIntakeSlots,
       initialValue:
         "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
     }),

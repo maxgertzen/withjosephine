@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { NONCE_HEADER, PRODUCTION_HOSTS, R2_PUBLIC_ORIGIN } from "@/lib/constants";
+import {
+  NONCE_HEADER,
+  PRODUCTION_HOSTS,
+  R2_PUBLIC_ORIGIN,
+  STUDIO_ORIGIN_ALLOWLIST,
+} from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
 
@@ -79,15 +84,19 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
-  const { isDraft, nonce } = opts;
+function buildCsp(opts: { isDraft: boolean; isEmailPreview: boolean; nonce: string }): string {
+  const { isDraft, isEmailPreview, nonce } = opts;
   // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
   // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
   const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
-  const frameAncestors = isDraft ? `'self' https://*.sanity.studio https://*.sanity.io` : `'none'`;
+  const frameAncestors = isEmailPreview
+    ? `'self' ${STUDIO_ORIGIN_ALLOWLIST.join(" ")}`
+    : isDraft
+      ? `'self' https://*.sanity.studio https://*.sanity.io`
+      : `'none'`;
   const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
     : `https://challenges.cloudflare.com`;
@@ -162,7 +171,10 @@ export function middleware(request: NextRequest) {
   // (preview/workers.dev hosts, draft cookie, email-preview route) needs
   // Studio as a valid frame-ancestor for the iframe to load.
   const isStrict = isPublicApex && !isDraft && !isEmailPreview;
-  response.headers.set("Content-Security-Policy", buildCsp({ isDraft: !isStrict, nonce }));
+  response.headers.set(
+    "Content-Security-Policy",
+    buildCsp({ isDraft: !isStrict, isEmailPreview, nonce }),
+  );
 
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
 

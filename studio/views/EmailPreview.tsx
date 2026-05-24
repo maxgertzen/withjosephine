@@ -1,24 +1,30 @@
+import { createPreviewSecret } from "@sanity/preview-url-secret/create-secret";
 import { Card, Flex, Stack, Text } from "@sanity/ui";
+import type { SanityDocument } from "sanity";
+import { useClient, useCurrentUser } from "sanity";
+import { Iframe } from "sanity-plugin-iframe-pane";
+
+type DocumentSlot = SanityDocument | null;
 
 type EmailPreviewProps = {
   document?: {
-    displayed?: { _id?: string; _type?: string } | null;
+    displayed?: DocumentSlot;
+    draft?: DocumentSlot;
+    published?: DocumentSlot;
   };
 };
 
-function stripDraftPrefix(id: string | undefined): string {
-  if (!id) return "";
-  return id.startsWith("drafts.") ? id.slice("drafts.".length) : id;
-}
+const PREVIEW_API_VERSION = "2024-01-01";
+const PREVIEW_SECRET_SOURCE = "phase7-email-preview";
 
 export function EmailPreview(props: EmailPreviewProps) {
-  const previewOrigin = process.env.SANITY_STUDIO_PREVIEW_URL ?? "https://withjosephine.com";
-  const displayed = props.document?.displayed ?? {};
-  const docId = stripDraftPrefix(displayed._id);
-  const type = displayed._type;
-  const src = type ? `${previewOrigin}/api/email-preview/${encodeURIComponent(type)}` : null;
+  const displayed = props.document?.displayed ?? null;
+  const client = useClient({ apiVersion: PREVIEW_API_VERSION });
+  const currentUser = useCurrentUser();
+  const studioOrigin =
+    typeof window !== "undefined" ? window.location.origin : "https://withjosephine.sanity.studio";
 
-  if (!docId || !type || !src) {
+  if (!displayed || !displayed._type) {
     return (
       <Flex padding={4} align="center" justify="center" style={{ height: "100%" }}>
         <Card padding={4} radius={2} tone="transparent" border>
@@ -37,18 +43,36 @@ export function EmailPreview(props: EmailPreviewProps) {
   }
 
   return (
-    <Flex direction="column" style={{ height: "100%", width: "100%" }}>
-      <iframe
-        title={`Email preview — ${type}`}
-        src={src}
-        sandbox="allow-same-origin"
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          backgroundColor: "#FAF8F4",
-        }}
-      />
-    </Flex>
+    <Iframe
+      document={{
+        displayed,
+        draft: props.document?.draft ?? null,
+        published: props.document?.published ?? null,
+      }}
+      options={{
+        url: async (doc) => {
+          if (!doc) return new Error("No document loaded");
+          const previewOrigin =
+            process.env.SANITY_STUDIO_PREVIEW_URL ?? "https://withjosephine.com";
+          const cacheKey = typeof doc._rev === "string" ? doc._rev : doc._updatedAt;
+          const { secret } = await createPreviewSecret(
+            client,
+            PREVIEW_SECRET_SOURCE,
+            studioOrigin,
+            currentUser?.id,
+          );
+          const params = new URLSearchParams({
+            rev: cacheKey,
+            "sanity-preview-secret": secret,
+          });
+          return `${previewOrigin}/api/email-preview/${encodeURIComponent(doc._type)}?${params.toString()}`;
+        },
+        attributes: {
+          sandbox: "allow-same-origin",
+        },
+        showDisplayUrl: false,
+        defaultSize: "desktop",
+      }}
+    />
   );
 }

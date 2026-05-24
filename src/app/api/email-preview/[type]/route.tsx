@@ -1,4 +1,5 @@
 import { render } from "@react-email/render";
+import { validatePreviewUrl } from "@sanity/preview-url-secret";
 import { NextResponse } from "next/server";
 
 import { STUDIO_ORIGIN_ALLOWLIST } from "@/lib/constants";
@@ -13,6 +14,7 @@ import {
   PREVIEW_FIXTURE,
 } from "@/lib/emails/preview-fixtures";
 import { PrivacyExport } from "@/lib/emails/PrivacyExport";
+import { RecipientIntakeReceived } from "@/lib/emails/RecipientIntakeReceived";
 import type { EmailTemplateKey } from "@/lib/emails/slots";
 import { sanityClient } from "@/lib/sanity/client";
 import {
@@ -23,6 +25,7 @@ import {
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
+  emailRecipientIntakeReceivedQuery,
 } from "@/lib/sanity/queries";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +38,7 @@ const TEMPLATE_QUERIES: Record<EmailTemplateKey, string> = {
   emailGiftClaim: emailGiftClaimQuery,
   emailMagicLink: emailMagicLinkQuery,
   emailPrivacyExport: emailPrivacyExportQuery,
+  emailRecipientIntakeReceived: emailRecipientIntakeReceivedQuery,
 };
 
 const TEMPLATE_KEYS = Object.keys(TEMPLATE_QUERIES) as EmailTemplateKey[];
@@ -67,15 +71,30 @@ function isStudioRequest(request: Request): boolean {
   return false;
 }
 
-async function fetchDraftCopy(template: EmailTemplateKey): Promise<unknown | null> {
+class PreviewTokenMissingError extends Error {
+  constructor() {
+    super("SANITY_READ_TOKEN is not set on this worker");
+    this.name = "PreviewTokenMissingError";
+  }
+}
+
+function readClient() {
   const token = process.env.SANITY_READ_TOKEN;
-  if (!token) return null;
-  const draftClient = sanityClient.withConfig({
+  if (!token) throw new PreviewTokenMissingError();
+  return sanityClient.withConfig({
     token,
     useCdn: false,
     perspective: "previewDrafts",
   });
-  return draftClient.fetch(TEMPLATE_QUERIES[template]);
+}
+
+async function fetchDraftCopy(template: EmailTemplateKey): Promise<unknown | null> {
+  return readClient().fetch(TEMPLATE_QUERIES[template]);
+}
+
+async function verifyPreviewSecret(request: Request): Promise<boolean> {
+  const result = await validatePreviewUrl(readClient(), request.url);
+  return result.isValid;
 }
 
 async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): Promise<string> {
@@ -123,6 +142,7 @@ async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): 
             amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
             recipientName: PREVIEW_FIXTURE.recipientName,
             giftMessage: PREVIEW_FIXTURE.giftMessage,
+            myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmation}
         />,
@@ -164,6 +184,17 @@ async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): 
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}
         />,
       );
+    case "emailRecipientIntakeReceived":
+      return render(
+        <RecipientIntakeReceived
+          vars={{
+            recipientName: PREVIEW_FIXTURE.recipientName,
+            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
+            readingName: PREVIEW_FIXTURE.readingName,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailRecipientIntakeReceived}
+        />,
+      );
   }
 }
 
@@ -179,7 +210,35 @@ export async function GET(
     return new NextResponse("unknown email template", { status: 404 });
   }
   const template = type as EmailTemplateKey;
-  const sanityCopy = await fetchDraftCopy(template).catch(() => null);
+  let sanityCopy: unknown = null;
+  try {
+    const secretValid = await verifyPreviewSecret(request);
+    if (!secretValid) {
+      return new NextResponse("forbidden", {
+        status: 403,
+        headers: {
+          "x-preview-reason": "invalid-secret",
+          "cache-control": "private, no-store, max-age=0",
+        },
+      });
+    }
+    sanityCopy = await fetchDraftCopy(template);
+  } catch (error) {
+    if (error instanceof PreviewTokenMissingError) {
+      console.error(
+        "[email-preview] SANITY_READ_TOKEN missing on worker — preview cannot fetch draft copy. Set the secret with: pnpm exec wrangler secret put SANITY_READ_TOKEN --env <env>",
+      );
+      return new NextResponse("preview unavailable", {
+        status: 503,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "x-preview-reason": "token-missing",
+          "cache-control": "private, no-store, max-age=0",
+        },
+      });
+    }
+    sanityCopy = null;
+  }
   const html = await renderTemplate(template, sanityCopy);
   return new NextResponse(html, {
     status: 200,

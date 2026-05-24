@@ -96,6 +96,7 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailMagicLink",
         "emailOrderConfirmation",
         "emailPrivacyExport",
+        "emailRecipientIntakeReceived",
       ].sort(),
     );
   });
