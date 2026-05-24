@@ -60,6 +60,12 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/privacy",
   "/terms",
   "/refund-policy",
+  // /preview/* renders user-gated pages (listen, my-readings, my-gifts) with
+  // fixture state for Studio's iframe — bypass apex-lockdown so Becky can
+  // preview them even when the holding page is on. The routes themselves
+  // never read real D1/R2 data; metadata `robots: { index: false }` keeps
+  // them out of search engines.
+  "/preview/",
 ];
 
 function isApexAllowlisted(pathname: string): boolean {
