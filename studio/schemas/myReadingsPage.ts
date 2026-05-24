@@ -40,6 +40,26 @@ export const myReadingsPage = defineType({
       initialValue: "Explore Readings",
     }),
     defineField({
+      name: "expiredRowLabel",
+      title: "Expired row — short label",
+      type: "string",
+      description:
+        "Shown in place of the delivery date for readings older than 90 days.",
+      initialValue: "Rested past 90 days",
+    }),
+    defineField({
+      name: "expiredMailtoLabel",
+      title: "Expired row — mailto label",
+      type: "string",
+      initialValue: "Email for a fresh link",
+    }),
+    defineField({
+      name: "expiredMailtoSubject",
+      title: "Expired row — mailto subject",
+      type: "string",
+      initialValue: "I need a fresh link to my reading",
+    }),
+    defineField({
       name: "signInHeading",
       title: "Sign-in card — heading",
       type: "string",

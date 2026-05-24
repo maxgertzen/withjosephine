@@ -94,6 +94,9 @@ export type SanityMyReadingsPage = {
   openButtonLabel: string;
   emptyHeading: string;
   emptyCtaLabel: string;
+  expiredRowLabel: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
   signInHeading: string;
   signInBody: string;
   signInButtonLabel: string;
@@ -284,6 +287,7 @@ export type SanityEmailDay7Delivery = {
   comfortLine: string;
   openButtonLabel: string;
   signedInDisclosure: string;
+  accessWindowLine: string;
   comfortFollowUp: string;
   signOff: string | null;
 };
@@ -316,6 +320,10 @@ export type SanityListenPage = {
   assetTroubleTryAgainLabel: string;
   assetTroubleMailtoLabel: string;
   assetTroubleMailtoSubject: string;
+  expiredHeading: string;
+  expiredBody: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 };
 
 export type SanityThankYouOverride = {

@@ -12,6 +12,7 @@ export const listenPage = defineType({
     { name: "rested", title: "Rested-link card" },
     { name: "throttled", title: "Throttled card" },
     { name: "assetTrouble", title: "Asset-trouble card" },
+    { name: "expired", title: "Expired (past 90 days)" },
   ],
   fields: [
     defineField({
@@ -221,6 +222,38 @@ export const listenPage = defineType({
       type: "string",
       group: "assetTrouble",
       initialValue: "Trouble opening my reading",
+    }),
+    defineField({
+      name: "expiredHeading",
+      title: "Expired card — heading",
+      type: "string",
+      group: "expired",
+      initialValue: "This reading has rested",
+    }),
+    defineField({
+      name: "expiredBody",
+      title: "Expired card — body",
+      type: "text",
+      rows: 3,
+      group: "expired",
+      description:
+        "Shown when more than 90 days have passed since this reading was delivered.",
+      initialValue:
+        "Self-serve links to your reading rest after ninety days. Write to me and I'll send a fresh one in a moment — no rush.",
+    }),
+    defineField({
+      name: "expiredMailtoLabel",
+      title: "Expired card — mailto label",
+      type: "string",
+      group: "expired",
+      initialValue: "Email Josephine for a fresh link",
+    }),
+    defineField({
+      name: "expiredMailtoSubject",
+      title: "Expired card — mailto subject",
+      type: "string",
+      group: "expired",
+      initialValue: "I need a fresh link to my reading",
     }),
   ],
   preview: {

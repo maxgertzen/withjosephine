@@ -38,6 +38,9 @@ export function Day7Delivery({ vars, copy: rawCopy }: Day7DeliveryProps) {
         <PortableTextInline value={copy.signedInDisclosure} />
       </Text>
       <Text className="text-base leading-[1.75]">
+        <PortableTextInline value={copy.accessWindowLine} />
+      </Text>
+      <Text className="text-base leading-[1.75]">
         <PortableTextInline value={copy.comfortFollowUp} />
       </Text>
       {copy.signOff ? (
