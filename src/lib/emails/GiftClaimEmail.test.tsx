@@ -10,6 +10,7 @@ const FIRST_SEND_VARS = {
   recipientName: "Mira",
   purchaserFirstName: "Lior",
   readingName: "Soul Blueprint",
+  readingPriceDisplay: "$179",
   giftMessage: "happy birthday",
   variant: "first_send" as const,
   claimUrl: "https://withjosephine.com/gift/claim?token=abc123",
@@ -19,6 +20,7 @@ const REMINDER_VARS = {
   recipientName: "Mira",
   purchaserFirstName: "Lior",
   readingName: "Soul Blueprint",
+  readingPriceDisplay: "$179",
   giftMessage: null,
   variant: "reminder" as const,
 };

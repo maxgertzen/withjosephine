@@ -99,4 +99,11 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
       ].sort(),
     );
   });
+
+  it("makes readingPriceDisplay available in all customer + gift emails that have purchase context", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("readingPriceDisplay");
+  });
 });

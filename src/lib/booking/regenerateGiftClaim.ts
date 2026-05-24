@@ -91,6 +91,7 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
           recipientName: recipientNameFor(submission),
           purchaserFirstName: purchaserFirstNameFor(submission),
           readingName: submission.reading?.name ?? "reading",
+          readingPriceDisplay: submission.reading?.priceDisplay ?? "",
           giftMessage: submission.giftMessage ?? null,
           variant: "first_send",
           claimUrl,

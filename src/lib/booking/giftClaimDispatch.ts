@@ -72,6 +72,7 @@ export async function dispatchGiftClaim(
   const purchaserFirstName = purchaserFirstNameFor(submission);
   const recipientName = recipientNameFor(submission);
   const readingName = submission.reading?.name ?? "reading";
+  const readingPriceDisplay = submission.reading?.priceDisplay ?? "";
   const giftMessage = submission.giftMessage ?? null;
   const nowIso = new Date(input.nowMs).toISOString();
 
@@ -88,6 +89,7 @@ export async function dispatchGiftClaim(
           recipientName,
           purchaserFirstName,
           readingName,
+          readingPriceDisplay,
           giftMessage,
           variant: "first_send",
           claimUrl,
@@ -110,6 +112,7 @@ export async function dispatchGiftClaim(
         recipientName,
         purchaserFirstName,
         readingName,
+        readingPriceDisplay,
         giftMessage,
         variant: "reminder",
       }),

@@ -48,6 +48,7 @@ export async function POST(
     recipientName: recipientNameFor(submission),
     purchaserFirstName: purchaserFirstNameFor(submission),
     readingName: submission.reading?.name ?? "your reading",
+    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
     giftMessage: submission.giftMessage,
     variant: "first_send",
     claimUrl,

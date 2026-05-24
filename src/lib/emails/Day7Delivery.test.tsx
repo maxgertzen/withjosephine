@@ -9,6 +9,7 @@ import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
 const VARS = {
   firstName: "Ada",
   readingName: "Soul Blueprint",
+  readingPriceDisplay: "$179",
   listenUrl: "https://withjosephine.com/listen/sub_123",
 };
 

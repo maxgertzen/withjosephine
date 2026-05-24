@@ -9,6 +9,7 @@ type GiftClaimSharedVars = {
   recipientName: string;
   purchaserFirstName: string;
   readingName: string;
+  readingPriceDisplay: string;
   giftMessage: string | null;
 };
 

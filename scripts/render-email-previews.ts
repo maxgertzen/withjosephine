@@ -52,6 +52,7 @@ const previews = [
       vars: {
         firstName: "Ada",
         readingName: "Soul Blueprint",
+        readingPriceDisplay: "$179",
         listenUrl: "https://withjosephine.com/listen/sub_preview",
       },
       copy: EMAIL_DAY7_DELIVERY_DEFAULTS,

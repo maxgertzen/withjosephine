@@ -1,5 +1,6 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenHelp } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateGiftClaimSlots = slotValidation("emailGiftClaim");
@@ -8,6 +9,10 @@ export const emailGiftClaim = defineType({
   name: "emailGiftClaim",
   title: "Email — Gift Claim (to recipient)",
   type: "document",
+  description: tokenHelp(
+    "emailGiftClaim",
+    "Sent to the gift recipient with a private link to claim their reading. Has first-send + reminder variants.",
+  ),
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
