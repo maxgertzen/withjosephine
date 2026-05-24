@@ -18,6 +18,7 @@ import {
   MY_GIFTS_PAGE_DEFAULTS,
   MY_READINGS_PAGE_DEFAULTS,
 } from "../src/data/defaults";
+import { stringToPortableTextBlocks } from "../src/lib/emails/portableTextBuild";
 
 // Bootstraps the 7 customer-facing singletons under "Customer emails & pages"
 // into the Sanity dataset using their code-side defaults. Without this, Studio
@@ -59,6 +60,62 @@ function omitNullish<T extends object>(record: T): Partial<T> {
     if (value !== null && value !== undefined) out[key] = value;
   }
   return out as Partial<T>;
+}
+
+const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
+  emailOrderConfirmation: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
+  emailRecipientIntakeReceived: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
+  emailDay7Delivery: new Set([
+    "bodyIntro",
+    "bodyPostButton",
+    "comfortLine",
+    "signedInDisclosure",
+    "accessWindowLine",
+    "comfortFollowUp",
+  ]),
+  emailPrivacyExport: new Set([
+    "bodyIntro",
+    "bodyPostButton",
+    "introLine",
+    "contentsLine",
+    "expiryLine",
+  ]),
+  emailMagicLink: new Set(["body"]),
+  emailMagicLinkMyReadings: new Set(["body"]),
+  emailMagicLinkMyGifts: new Set(["body"]),
+  emailGiftClaim: new Set(["body", "claimUrlHelper", "bodyFirstSend", "bodyReminder", "reminderContactLine"]),
+  emailGiftClaimReminder: new Set(["body"]),
+  emailGiftPurchaseConfirmationSelfSend: new Set(["body", "shareUrlHelper", "refundLine"]),
+  emailGiftPurchaseConfirmationScheduled: new Set(["body", "refundLine"]),
+};
+
+function isPortableTextArray(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        entry && typeof entry === "object" && (entry as { _type?: string })._type === "block",
+    )
+  );
+}
+
+function normalizePtFields<T extends Record<string, unknown>>(seed: T): T {
+  const type = seed._type;
+  if (typeof type !== "string") return seed;
+  const ptFields = PT_FIELDS_BY_TYPE[type];
+  if (!ptFields) return seed;
+  const out: Record<string, unknown> = { ...seed };
+  for (const field of ptFields) {
+    const value = out[field];
+    if (value == null || isPortableTextArray(value)) continue;
+    if (typeof value === "string") {
+      out[field] = value.trim().length === 0 ? [] : stringToPortableTextBlocks(value);
+    } else if (Array.isArray(value)) {
+      const joined = value.filter((v) => typeof v === "string").join("\n\n");
+      out[field] = joined.trim().length === 0 ? [] : stringToPortableTextBlocks(joined);
+    }
+  }
+  return out as T;
 }
 
 const SEEDS = [
@@ -124,7 +181,8 @@ const SEEDS = [
 ];
 
 for (const seed of SEEDS) {
-  const result = await client.createIfNotExists(seed);
+  const normalized = normalizePtFields(seed as Record<string, unknown>);
+  const result = await client.createIfNotExists(normalized as never);
   const created = result._createdAt === result._updatedAt;
   console.log(
     `[${dataset}] ${seed._type}: ${created ? "created with defaults" : "already exists, no changes"}`,
