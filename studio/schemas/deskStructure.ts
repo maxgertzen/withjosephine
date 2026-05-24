@@ -1,6 +1,12 @@
+import type { ComponentType } from "react";
 import type { StructureBuilder } from "sanity/structure";
 
 import { EmailPreview } from "../views/EmailPreview";
+import {
+  ListenPagePreview,
+  MyGiftsPagePreview,
+  MyReadingsPagePreview,
+} from "../views/PagePreview";
 
 export const SINGLETON_TYPES = new Set([
   "landingPage",
@@ -44,6 +50,22 @@ const emailSingletonListItem = (S: StructureBuilder, typeName: string, title: st
         .schemaType(typeName)
         .documentId(typeName)
         .views([S.view.form(), S.view.component(EmailPreview).title("Preview")]),
+    );
+
+const pagePreviewSingletonListItem = (
+  S: StructureBuilder,
+  typeName: string,
+  title: string,
+  PreviewComponent: ComponentType,
+) =>
+  S.listItem()
+    .title(title)
+    .id(typeName)
+    .child(
+      S.document()
+        .schemaType(typeName)
+        .documentId(typeName)
+        .views([S.view.form(), S.view.component(PreviewComponent).title("Preview")]),
     );
 
 const awaitingPayment = (S: StructureBuilder) =>
@@ -141,9 +163,9 @@ const pagesGroup = (S: StructureBuilder) =>
           singletonListItem(S, "underConstructionPage", "Under Construction Page"),
           singletonListItem(S, "notFoundPage", "404 Page"),
           S.divider(),
-          singletonListItem(S, "listenPage", "Listen Page"),
-          singletonListItem(S, "myReadingsPage", "My Readings Page"),
-          singletonListItem(S, "myGiftsPage", "My Gifts Page"),
+          pagePreviewSingletonListItem(S, "listenPage", "Listen Page", ListenPagePreview),
+          pagePreviewSingletonListItem(S, "myReadingsPage", "My Readings Page", MyReadingsPagePreview),
+          pagePreviewSingletonListItem(S, "myGiftsPage", "My Gifts Page", MyGiftsPagePreview),
           singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
           singletonListItem(S, "giftClaimPage", "Gift Claim Page (recipient lands here)"),
           singletonListItem(S, "giftIntakePage", "Gift Intake Page (recipient fills details)"),
