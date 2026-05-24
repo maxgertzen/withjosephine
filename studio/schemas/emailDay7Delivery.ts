@@ -47,10 +47,9 @@ export const emailDay7Delivery = defineType({
     defineField({
       name: "comfortLine",
       title: "Comfort + setup line",
-      type: "text",
-      rows: 2,
-      initialValue:
-        "Open it whenever the timing feels right — it's saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description: "Bold/italic/link via toolbar.",
     }),
     defineField({
       name: "openButtonLabel",
@@ -61,18 +60,16 @@ export const emailDay7Delivery = defineType({
     defineField({
       name: "signedInDisclosure",
       title: "7-day sign-in disclosure paragraph",
-      type: "text",
-      rows: 3,
-      initialValue:
-        "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we'll send you back in.",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description: "Bold/italic/link via toolbar.",
     }),
     defineField({
       name: "comfortFollowUp",
       title: "Follow-up invitation paragraph",
-      type: "text",
-      rows: 2,
-      initialValue:
-        "If anything you hear sits hard, or a question opens up after, write to me. I'd rather know than not.",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description: "Bold/italic/link via toolbar.",
     }),
     defineField({
       name: "signOff",

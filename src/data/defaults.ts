@@ -1,3 +1,12 @@
+import type { PortableTextBlock } from "@portabletext/types";
+
+/**
+ * Rich-text body fields accept any of three shapes so legacy plain-string
+ * defaults keep working alongside Sanity-authored Portable Text after the
+ * v1.2.1 rich-text migration. The render path normalizes all three.
+ */
+export type EmailRichText = string | string[] | PortableTextBlock[];
+
 export interface HeroContent {
   tagline: string;
   introGreeting: string;
@@ -460,7 +469,7 @@ export interface EmailMagicLinkContent {
   subject: string;
   preview: string;
   greeting: string;
-  body: string[];
+  body: EmailRichText;
   signOff: string | null;
 }
 
@@ -482,9 +491,9 @@ export interface EmailOrderConfirmationContent {
   brandSubtitle: string;
   heroLine: string;
   greeting: string;
-  thanksLine: string;
-  timelineLine: string;
-  contactLine: string;
+  thanksLine: EmailRichText;
+  timelineLine: EmailRichText;
+  contactLine: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   signOffLine1: string;
@@ -519,9 +528,9 @@ export interface EmailRecipientIntakeReceivedContent {
   brandSubtitle: string;
   heroLine: string;
   greeting: string;
-  thanksLine: string;
-  timelineLine: string;
-  contactLine: string;
+  thanksLine: EmailRichText;
+  timelineLine: EmailRichText;
+  contactLine: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   signOffLine1: string;
@@ -559,13 +568,13 @@ export interface EmailGiftPurchaseConfirmationContent {
   heroLineSelfSend: string;
   heroLineScheduled: string;
   greeting: string;
-  detailLineSelfSend: string;
-  detailLineScheduled: string;
+  detailLineSelfSend: EmailRichText;
+  detailLineScheduled: EmailRichText;
   shareButtonLabel: string;
-  shareUrlHelper: string;
+  shareUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  refundLine: string;
+  refundLine: EmailRichText;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -607,14 +616,14 @@ export interface EmailGiftClaimContent {
   heroLineFirstSend: string;
   heroLineReminder: string;
   greeting: string;
-  bodyFirstSend: string;
-  bodyReminder: string;
+  bodyFirstSend: EmailRichText;
+  bodyReminder: EmailRichText;
   giftMessageLabel: string;
   claimButtonLabel: string;
-  claimUrlHelper: string;
+  claimUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  reminderContactLine: string;
+  reminderContactLine: EmailRichText;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -653,10 +662,10 @@ export interface EmailDay7DeliveryContent {
   preview: string;
   greeting: string;
   lineReady: string;
-  comfortLine: string;
+  comfortLine: EmailRichText;
   openButtonLabel: string;
-  signedInDisclosure: string;
-  comfortFollowUp: string;
+  signedInDisclosure: EmailRichText;
+  comfortFollowUp: EmailRichText;
   signOff: string | null;
 }
 
@@ -664,10 +673,10 @@ export interface EmailPrivacyExportContent {
   subject: string;
   preview: string;
   greeting: string;
-  introLine: string;
-  contentsLine: string;
+  introLine: EmailRichText;
+  contentsLine: EmailRichText;
   ctaLabel: string;
-  expiryLine: string;
+  expiryLine: EmailRichText;
   signOff: string | null;
 }
 

@@ -4,6 +4,7 @@ import type { EmailOrderConfirmationContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
+import { PortableTextInline } from "./PortableTextBody";
 
 export type OrderConfirmationVars = {
   firstName: string;
@@ -76,9 +77,15 @@ export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProp
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
               <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.thanksLine}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.timelineLine}</p>
-              <p style={{ margin: "0 0 32px 0" }}>{copy.contactLine}</p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={copy.thanksLine} />
+              </p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={copy.timelineLine} />
+              </p>
+              <p style={{ margin: "0 0 32px 0" }}>
+                <PortableTextInline value={copy.contactLine} />
+              </p>
             </Section>
 
 

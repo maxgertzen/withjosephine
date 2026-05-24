@@ -4,6 +4,7 @@ import type { EmailPrivacyExportContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
+import { PortableTextInline } from "./PortableTextBody";
 import { SignOff } from "./SignOff";
 
 export type PrivacyExportVars = {
@@ -22,8 +23,12 @@ export function PrivacyExport({ vars, copy: rawCopy }: PrivacyExportProps) {
   return (
     <EmailShell preview={copy.preview}>
       <Text className="text-base leading-[1.75]">{copy.greeting}</Text>
-      <Text className="text-base leading-[1.75]">{copy.introLine}</Text>
-      <Text className="text-base leading-[1.75]">{copy.contentsLine}</Text>
+      <Text className="text-base leading-[1.75]">
+        <PortableTextInline value={copy.introLine} />
+      </Text>
+      <Text className="text-base leading-[1.75]">
+        <PortableTextInline value={copy.contentsLine} />
+      </Text>
       <Section className="my-6">
         <Button
           href={vars.downloadUrl}
@@ -32,7 +37,9 @@ export function PrivacyExport({ vars, copy: rawCopy }: PrivacyExportProps) {
           {copy.ctaLabel}
         </Button>
       </Section>
-      <Text className="text-base leading-[1.75]">{copy.expiryLine}</Text>
+      <Text className="text-base leading-[1.75]">
+        <PortableTextInline value={copy.expiryLine} />
+      </Text>
       {copy.signOff ? (
         <Text className="text-base leading-[1.75]">{copy.signOff}</Text>
       ) : (

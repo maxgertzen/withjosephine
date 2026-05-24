@@ -69,31 +69,25 @@ export const emailRecipientIntakeReceived = defineType({
     defineField({
       name: "thanksLine",
       title: "Thanks paragraph",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
       description: 'Use "{readingName}" / "{purchaserFirstName}" placeholders.',
       validation: validateRecipientIntakeSlots,
-      initialValue:
-        "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
     }),
     defineField({
       name: "timelineLine",
       title: "Timeline paragraph",
-      type: "text",
-      rows: 3,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
     }),
     defineField({
       name: "contactLine",
       title: "Contact paragraph",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
     }),
     defineField({
       name: "cardLabel",
