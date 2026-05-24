@@ -10,6 +10,18 @@ import { PrivacyExport } from "./PrivacyExport";
 import { RecipientIntakeReceived } from "./RecipientIntakeReceived";
 import type { EmailTemplateKey } from "./slots";
 
+/**
+ * `@react-email/render` injects `<link rel="expect" href="#_R_" blocking="render">`
+ * into the rendered HTML's <head> as a React Suspense coordination hint. When
+ * the rendered HTML is shown via iframe `srcDoc` with `sandbox=""` (no scripts),
+ * the React runtime that would satisfy the blocking expectation never executes
+ * — the iframe stays blank forever. The hint has no meaning inside an email
+ * client either; strip it on the way out.
+ */
+function stripRenderBlockers(html: string): string {
+  return html.replace(/<link[^>]+blocking="render"[^>]*\/?>/g, "");
+}
+
 export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
   "emailDay7Delivery",
@@ -27,6 +39,14 @@ export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey 
 }
 
 export async function renderEmailPreview(
+  template: EmailTemplateKey,
+  sanityCopy: unknown,
+): Promise<string> {
+  const raw = await renderRaw(template, sanityCopy);
+  return stripRenderBlockers(raw);
+}
+
+async function renderRaw(
   template: EmailTemplateKey,
   sanityCopy: unknown,
 ): Promise<string> {

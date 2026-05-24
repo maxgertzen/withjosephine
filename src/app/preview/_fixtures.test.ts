@@ -4,11 +4,11 @@ import {
   LISTEN_PREVIEW_STATES,
   MY_GIFTS_PREVIEW_STATES,
   MY_READINGS_PREVIEW_STATES,
-  PREVIEW_GIFTS_MIX,
-  PREVIEW_READINGS_MIX,
   parseListenState,
   parseMyGiftsState,
   parseMyReadingsState,
+  PREVIEW_GIFTS_MIX,
+  PREVIEW_READINGS_MIX,
 } from "./_fixtures";
 
 describe("preview fixtures", () => {

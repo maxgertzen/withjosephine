@@ -47,5 +47,16 @@ describe("render-preview", () => {
       const html = await renderEmailPreview("emailOrderConfirmation", null);
       expect(html).toContain("Ada");
     });
+
+    it.each(PREVIEW_TEMPLATE_KEYS.map((key) => [key]))(
+      "strips render-blocking <link> from %s output (iframe srcDoc compatibility)",
+      async (key: EmailTemplateKey) => {
+        const html = await renderEmailPreview(key, null);
+        // `@react-email/render` injects <link rel="expect" blocking="render"> as
+        // a Suspense coordination hint. In a `sandbox=""` iframe (no scripts),
+        // the hint blocks paint forever. Verify it's stripped.
+        expect(html).not.toMatch(/<link[^>]+blocking="render"[^>]*\/?>/);
+      },
+    );
   });
 });
