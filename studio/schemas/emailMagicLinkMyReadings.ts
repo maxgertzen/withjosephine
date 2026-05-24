@@ -28,8 +28,10 @@ export const emailMagicLinkMyReadings = defineType({
     }),
     defineField({
       name: "greeting",
-      title: "Greeting",
+      title: "Greeting (legacy — folded into Body)",
       type: "string",
+      hidden: true,
+      readOnly: true,
       validation: validateMagicLinkSlots,
       initialValue: "Hi,",
     }),
