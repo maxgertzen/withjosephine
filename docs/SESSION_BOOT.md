@@ -4,11 +4,13 @@
 
 `release/v1.2.1` has 5 sub-PRs + 1 fix attempt landed (#181 #182 #183 #184 #185 #186). Email preview iframe still renders blank in deployed Sanity Studio after merge of #186 (strip render-blocking link) and deploy of #187 (race-condition seq guard, open / not merged). Both fixes were unverified against the deployed Studio when pushed — see `feedback_stop_the_fix_spiral` memory.
 
-**Dex blockers filed for next session — read first:**
-- `dex show yrh32y3c --full` — Email preview blank diagnosis. Full state, evidence collected, hypotheses to test in order, instructions for authenticated Playwright against deployed Studio (do NOT relay logs through Max).
-- `dex show 5z39re69 --full` — Gated-page preview replan (Studio-bundled, supersedes sub-PR 5's broken-on-CF-Access /preview/* routes).
-- `dex show i2lxscr3 --full` — Sanity validation harness (schema-vs-data drift check, would have caught tonight's compounding bugs).
-- `dex show 3lhvjaju --full` — Cumulative simplify pass on `main...release/v1.2.1` diff before opening the merge-to-main PR.
+**Dex blockers filed for next session — read first (all under epic d8pvexdm):**
+- `dex show vej2v0x5 --full` — **Email preview blank diagnosis.** Full diagnostic state, evidence collected, 5 hypotheses to test in order, instructions for authenticated Playwright against deployed Studio (do NOT relay logs through Max).
+- `dex show kf1nixad --full` — **Gated-page preview replan** (Studio-bundled, supersedes sub-PR 5's broken-on-CF-Access /preview/* routes).
+- `dex show cpwaqf4d --full` — Sanity validation harness (schema-vs-data drift check; would have caught tonight's compounding bugs).
+- `dex show f7yhvvc3 --full` — Cumulative simplify pass on `main...release/v1.2.1` diff before opening the merge-to-main PR.
+
+Order: vej2v0x5 → kf1nixad → cpwaqf4d (optional) → f7yhvvc3 → open merge-to-main PR.
 
 **Open PRs on release/v1.2.1:** #187 (race-condition guard, unproven). Decide next session whether to close or merge.
 
