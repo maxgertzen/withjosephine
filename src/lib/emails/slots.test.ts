@@ -91,7 +91,9 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
       [
         "emailDay7Delivery",
         "emailGiftClaim",
-        "emailGiftPurchaseConfirmation",
+        "emailGiftClaimReminder",
+        "emailGiftPurchaseConfirmationScheduled",
+        "emailGiftPurchaseConfirmationSelfSend",
         "emailMagicLink",
         "emailMagicLinkMyGifts",
         "emailMagicLinkMyReadings",
@@ -105,25 +107,31 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
   it("makes readingPriceDisplay available in all customer + gift emails that have purchase context", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("readingPriceDisplay");
     expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("readingPriceDisplay");
     expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaimReminder).toContain("readingPriceDisplay");
   });
 
   it("exposes URL tokens where the template's vars carry them", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("listenUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("claimUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("myGiftsUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("claimUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("myGiftsUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("myGiftsUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("claimUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("amountPaidDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("amountPaidDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("amountPaidDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("amountPaidDisplay");
   });
 
   it("exposes giftMessage in both gift emails", () => {
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("giftMessage");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("giftMessage");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("giftMessage");
     expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("giftMessage");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaimReminder).toContain("giftMessage");
   });
 });

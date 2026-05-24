@@ -10,7 +10,9 @@ import {
   bookingPageQuery,
   emailDay7DeliveryQuery,
   emailGiftClaimQuery,
-  emailGiftPurchaseConfirmationQuery,
+  emailGiftClaimReminderQuery,
+  emailGiftPurchaseConfirmationScheduledQuery,
+  emailGiftPurchaseConfirmationSelfSendQuery,
   emailMagicLinkMyGiftsQuery,
   emailMagicLinkMyReadingsQuery,
   emailMagicLinkQuery,
@@ -42,7 +44,9 @@ import type {
   SanityBookingPage,
   SanityEmailDay7Delivery,
   SanityEmailGiftClaim,
-  SanityEmailGiftPurchaseConfirmation,
+  SanityEmailGiftClaimReminder,
+  SanityEmailGiftPurchaseConfirmationScheduled,
+  SanityEmailGiftPurchaseConfirmationSelfSend,
   SanityEmailMagicLink,
   SanityEmailMagicLinkMyGifts,
   SanityEmailMagicLinkMyReadings,
@@ -270,10 +274,28 @@ export const fetchEmailGiftClaim = cache(async (): Promise<SanityEmailGiftClaim 
   return data;
 });
 
-export const fetchEmailGiftPurchaseConfirmation = cache(
-  async (): Promise<SanityEmailGiftPurchaseConfirmation | null> => {
-    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmation | null>({
-      query: emailGiftPurchaseConfirmationQuery,
+export const fetchEmailGiftClaimReminder = cache(
+  async (): Promise<SanityEmailGiftClaimReminder | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftClaimReminder | null>({
+      query: emailGiftClaimReminderQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailGiftPurchaseConfirmationSelfSend = cache(
+  async (): Promise<SanityEmailGiftPurchaseConfirmationSelfSend | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmationSelfSend | null>({
+      query: emailGiftPurchaseConfirmationSelfSendQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailGiftPurchaseConfirmationScheduled = cache(
+  async (): Promise<SanityEmailGiftPurchaseConfirmationScheduled | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmationScheduled | null>({
+      query: emailGiftPurchaseConfirmationScheduledQuery,
     });
     return data;
   },

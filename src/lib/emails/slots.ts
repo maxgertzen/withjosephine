@@ -1,8 +1,10 @@
 export type EmailTemplateKey =
   | "emailOrderConfirmation"
   | "emailDay7Delivery"
-  | "emailGiftPurchaseConfirmation"
+  | "emailGiftPurchaseConfirmationSelfSend"
+  | "emailGiftPurchaseConfirmationScheduled"
   | "emailGiftClaim"
+  | "emailGiftClaimReminder"
   | "emailMagicLink"
   | "emailMagicLinkMyReadings"
   | "emailMagicLinkMyGifts"
@@ -12,7 +14,7 @@ export type EmailTemplateKey =
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
   emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
-  emailGiftPurchaseConfirmation: [
+  emailGiftPurchaseConfirmationSelfSend: [
     "purchaserFirstName",
     "recipientName",
     "readingName",
@@ -21,6 +23,15 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
     "giftMessage",
     "myGiftsUrl",
     "claimUrl",
+  ],
+  emailGiftPurchaseConfirmationScheduled: [
+    "purchaserFirstName",
+    "recipientName",
+    "readingName",
+    "readingPriceDisplay",
+    "amountPaidDisplay",
+    "giftMessage",
+    "myGiftsUrl",
     "sendAtDisplay",
   ],
   emailGiftClaim: [
@@ -30,6 +41,13 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
     "readingPriceDisplay",
     "giftMessage",
     "claimUrl",
+  ],
+  emailGiftClaimReminder: [
+    "purchaserFirstName",
+    "recipientName",
+    "readingName",
+    "readingPriceDisplay",
+    "giftMessage",
   ],
   emailMagicLink: [],
   emailMagicLinkMyReadings: [],

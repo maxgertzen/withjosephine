@@ -474,7 +474,7 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
 export interface EmailMagicLinkContent {
   subject: string;
   preview: string;
-  greeting: string;
+  greeting?: string | null;
   body: EmailRichText;
   signOff: string | null;
 }
@@ -518,10 +518,11 @@ export interface EmailOrderConfirmationContent {
   brandName: string;
   brandSubtitle: string;
   heroLine: string;
-  greeting: string;
-  thanksLine: EmailRichText;
-  timelineLine: EmailRichText;
-  contactLine: EmailRichText;
+  body?: EmailRichText;
+  greeting?: string;
+  thanksLine?: EmailRichText;
+  timelineLine?: EmailRichText;
+  contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   signOffLine1: string;
@@ -535,6 +536,12 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   brandName: "Josephine",
   brandSubtitle: "Soul Readings",
   heroLine: "Your reading is booked",
+  body: [
+    "Hi {firstName},",
+    "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
+    "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+  ],
   greeting: "Hi {firstName},",
   thanksLine:
     "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
@@ -555,10 +562,11 @@ export interface EmailRecipientIntakeReceivedContent {
   brandName: string;
   brandSubtitle: string;
   heroLine: string;
-  greeting: string;
-  thanksLine: EmailRichText;
-  timelineLine: EmailRichText;
-  contactLine: EmailRichText;
+  body?: EmailRichText;
+  greeting?: string;
+  thanksLine?: EmailRichText;
+  timelineLine?: EmailRichText;
+  contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   signOffLine1: string;
@@ -572,6 +580,12 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
   brandName: "Josephine",
   brandSubtitle: "Soul Readings",
   heroLine: "Your reading is in my hands",
+  body: [
+    "Hi {recipientName},",
+    "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+    "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+  ],
   greeting: "Hi {recipientName},",
   thanksLine:
     "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
@@ -586,18 +600,15 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
-export interface EmailGiftPurchaseConfirmationContent {
-  subjectSelfSend: string;
-  subjectScheduled: string;
-  previewSelfSend: string;
-  previewScheduled: string;
+export interface EmailGiftPurchaseConfirmationSelfSendContent {
+  subject: string;
+  preview: string;
   brandName: string;
   brandSubtitle: string;
-  heroLineSelfSend: string;
-  heroLineScheduled: string;
-  greeting: string;
-  detailLineSelfSend: EmailRichText;
-  detailLineScheduled: EmailRichText;
+  heroLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  detailLineSelfSend?: EmailRichText;
   shareButtonLabel: string;
   shareUrlHelper: EmailRichText;
   cardLabel: string;
@@ -608,20 +619,19 @@ export interface EmailGiftPurchaseConfirmationContent {
   footerDisclaimer: string;
 }
 
-export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirmationContent = {
-  subjectSelfSend: "Your gift is ready to share",
-  subjectScheduled: "Your gift is scheduled",
-  previewSelfSend: "Your shareable link is inside.",
-  previewScheduled: "We’ll send it to {recipientName} on {sendAtDisplay}.",
+export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurchaseConfirmationSelfSendContent = {
+  subject: "Your gift is ready to share",
+  preview: "Your shareable link is inside.",
   brandName: "Josephine",
   brandSubtitle: "Soul Readings",
-  heroLineSelfSend: "A reading, ready for them",
-  heroLineScheduled: "A reading, on its way",
+  heroLine: "A reading, ready for them",
+  body: [
+    "Hi {purchaserFirstName},",
+    "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+  ],
   greeting: "Hi {purchaserFirstName},",
   detailLineSelfSend:
     "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
-  detailLineScheduled:
-    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
   shareButtonLabel: "Share the link",
   shareUrlHelper:
     "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
@@ -634,24 +644,59 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirm
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
+export interface EmailGiftPurchaseConfirmationScheduledContent {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  detailLineScheduled?: EmailRichText;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: EmailRichText;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurchaseConfirmationScheduledContent = {
+  subject: "Your gift is scheduled",
+  preview: "We’ll send it to {recipientName} on {sendAtDisplay}.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLine: "A reading, on its way",
+  body: [
+    "Hi {purchaserFirstName},",
+    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  ],
+  greeting: "Hi {purchaserFirstName},",
+  detailLineScheduled:
+    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivery within 7 days of claim",
+  refundLine:
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
 export interface EmailGiftClaimContent {
   subjectFirstSend: string;
-  subjectReminder: string;
   previewFirstSend: string;
-  previewReminder: string;
   brandName: string;
   brandSubtitle: string;
   heroLineFirstSend: string;
-  heroLineReminder: string;
-  greeting: string;
-  bodyFirstSend: EmailRichText;
-  bodyReminder: EmailRichText;
+  body?: EmailRichText;
+  greeting?: string;
+  bodyFirstSend?: EmailRichText;
   giftMessageLabel: string;
   claimButtonLabel: string;
   claimUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  reminderContactLine: EmailRichText;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -659,26 +704,56 @@ export interface EmailGiftClaimContent {
 
 export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   subjectFirstSend: "A reading, waiting for you",
-  subjectReminder: "A reading is still waiting for you",
   previewFirstSend: "{purchaserFirstName} has sent you a reading.",
-  previewReminder: "A small reminder about the reading {purchaserFirstName} sent you.",
   brandName: "Josephine",
   brandSubtitle: "Soul Readings",
   heroLineFirstSend: "A reading, for you",
-  heroLineReminder: "Still here, when you’re ready",
+  body: [
+    "Hi {recipientName},",
+    "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+  ],
   greeting: "Hi {recipientName},",
   bodyFirstSend:
     "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
-  bodyReminder:
-    "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
   giftMessageLabel: "A note from {purchaserFirstName}",
   claimButtonLabel: "Open your gift",
   claimUrlHelper:
     "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
   cardLabel: "The gift",
   cardDeliveryLine: "Delivered within 7 days of your intake",
-  reminderContactLine:
-    "If you can’t find the earlier email, write to hello@withjosephine.com and I’ll send you a fresh link.",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
+export interface EmailGiftClaimReminderContent {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  body?: EmailRichText;
+  giftMessageLabel: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent = {
+  subject: "A reading is still waiting for you",
+  preview: "A small reminder about the reading {purchaserFirstName} sent you.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLine: "Still here, when you’re ready",
+  body: [
+    "Hi {recipientName},",
+    "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+  ],
+  giftMessageLabel: "A note from {purchaserFirstName}",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivered within 7 days of your intake",
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
@@ -688,30 +763,42 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
   preview: string;
-  greeting: string;
-  lineReady: string;
-  comfortLine: EmailRichText;
+  bodyIntro?: EmailRichText;
+  bodyPostButton?: EmailRichText;
+  greeting?: string;
+  lineReady?: string;
+  comfortLine?: EmailRichText;
   openButtonLabel: string;
-  signedInDisclosure: EmailRichText;
-  accessWindowLine: EmailRichText;
-  comfortFollowUp: EmailRichText;
+  signedInDisclosure?: EmailRichText;
+  accessWindowLine?: EmailRichText;
+  comfortFollowUp?: EmailRichText;
   signOff: string | null;
 }
 
 export interface EmailPrivacyExportContent {
   subject: string;
   preview: string;
-  greeting: string;
-  introLine: EmailRichText;
-  contentsLine: EmailRichText;
+  bodyIntro?: EmailRichText;
+  bodyPostButton?: EmailRichText;
+  greeting?: string;
+  introLine?: EmailRichText;
+  contentsLine?: EmailRichText;
   ctaLabel: string;
-  expiryLine: EmailRichText;
+  expiryLine?: EmailRichText;
   signOff: string | null;
 }
 
 export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   subject: "Your Josephine data export",
   preview: "Your Josephine data export is ready",
+  bodyIntro: [
+    "Hi,",
+    "Your Josephine data export is ready.",
+    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+  ],
+  bodyPostButton: [
+    "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  ],
   greeting: "Hi,",
   introLine: "Your Josephine data export is ready.",
   contentsLine:
@@ -725,6 +812,16 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",
+  bodyIntro: [
+    "Hi {firstName},",
+    "Your {readingName} is here.",
+    "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+  ],
+  bodyPostButton: [
+    "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
+    "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
+    "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+  ],
   greeting: "Hi {firstName},",
   lineReady: "Your {readingName} is here.",
   comfortLine:
