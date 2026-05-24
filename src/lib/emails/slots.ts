@@ -4,6 +4,8 @@ export type EmailTemplateKey =
   | "emailGiftPurchaseConfirmation"
   | "emailGiftClaim"
   | "emailMagicLink"
+  | "emailMagicLinkMyReadings"
+  | "emailMagicLinkMyGifts"
   | "emailPrivacyExport"
   | "emailRecipientIntakeReceived";
 
@@ -30,6 +32,8 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
     "claimUrl",
   ],
   emailMagicLink: [],
+  emailMagicLinkMyReadings: [],
+  emailMagicLinkMyGifts: [],
   emailPrivacyExport: ["downloadUrl", "submissionCount", "expiryDays"],
   emailRecipientIntakeReceived: ["recipientName", "purchaserFirstName", "readingName"],
 } as const;

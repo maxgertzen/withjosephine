@@ -5,6 +5,8 @@ import {
   EMAIL_DAY7_DELIVERY_DEFAULTS,
   EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
+  EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
+  EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
   EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
@@ -76,6 +78,16 @@ const SEEDS = [
     ...omitNullish(EMAIL_DAY7_DELIVERY_DEFAULTS),
   },
   { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
+  {
+    _id: "emailMagicLinkMyReadings",
+    _type: "emailMagicLinkMyReadings",
+    ...omitNullish(EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS),
+  },
+  {
+    _id: "emailMagicLinkMyGifts",
+    _type: "emailMagicLinkMyGifts",
+    ...omitNullish(EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS),
+  },
   {
     _id: "emailGiftPurchaseConfirmation",
     _type: "emailGiftPurchaseConfirmation",

@@ -16,6 +16,8 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailGiftPurchaseConfirmation",
   "emailGiftClaim",
   "emailMagicLink",
+  "emailMagicLinkMyReadings",
+  "emailMagicLinkMyGifts",
   "emailPrivacyExport",
   "emailRecipientIntakeReceived",
 ] as const;
@@ -86,7 +88,9 @@ export async function renderEmailPreview(
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaim}
         />,
       );
-    case "emailMagicLink": {
+    case "emailMagicLink":
+    case "emailMagicLinkMyReadings":
+    case "emailMagicLinkMyGifts": {
       const copy = merged as typeof PREVIEW_DEFAULTS.emailMagicLink;
       return render(
         <MagicLink

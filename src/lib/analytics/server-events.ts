@@ -7,6 +7,8 @@ export type EmailSubType =
   | "day_7_overdue_alert"
   | "contact_form"
   | "magic_link"
+  | "magic_link_my_readings"
+  | "magic_link_my_gifts"
   | "privacy_export"
   | "gift_purchase_confirmation"
   | "gift_claim"
@@ -20,6 +22,8 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   day_7_overdue_alert: "Day +7 overdue alert",
   contact_form: "contact message",
   magic_link: "magic link",
+  magic_link_my_readings: "magic link (my readings)",
+  magic_link_my_gifts: "magic link (my gifts)",
   privacy_export: "privacy export",
   gift_purchase_confirmation: "gift purchase confirmation",
   gift_claim: "gift claim",
