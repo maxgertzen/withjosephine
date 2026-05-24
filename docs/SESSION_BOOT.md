@@ -1,5 +1,23 @@
 # Session Boot — Active State
 
+## 🛑 BLOCKER — 2026-05-24 v1.2.1 cannot merge to main: email preview blank in deployed Studio
+
+`release/v1.2.1` has 5 sub-PRs + 1 fix attempt landed (#181 #182 #183 #184 #185 #186). Email preview iframe still renders blank in deployed Sanity Studio after merge of #186 (strip render-blocking link) and deploy of #187 (race-condition seq guard, open / not merged). Both fixes were unverified against the deployed Studio when pushed — see `feedback_stop_the_fix_spiral` memory.
+
+**Dex blockers filed for next session — read first:**
+- `dex show yrh32y3c --full` — Email preview blank diagnosis. Full state, evidence collected, hypotheses to test in order, instructions for authenticated Playwright against deployed Studio (do NOT relay logs through Max).
+- `dex show 5z39re69 --full` — Gated-page preview replan (Studio-bundled, supersedes sub-PR 5's broken-on-CF-Access /preview/* routes).
+- `dex show i2lxscr3 --full` — Sanity validation harness (schema-vs-data drift check, would have caught tonight's compounding bugs).
+- `dex show 3lhvjaju --full` — Cumulative simplify pass on `main...release/v1.2.1` diff before opening the merge-to-main PR.
+
+**Open PRs on release/v1.2.1:** #187 (race-condition guard, unproven). Decide next session whether to close or merge.
+
+**Memories captured this session that govern next-session behavior:**
+- `feedback_real_browser_smoke_before_ship_claim` — REQUIRED for UI-touching PRs. vitest jsdom is not sufficient.
+- `feedback_stop_the_fix_spiral` — never push a second untested fix on top of an unverified first.
+- `feedback_simplify_scale_to_change_size` — run cumulative simplify on `main...release/v1.2.1` diff before the merge PR, not per sub-PR.
+- `feedback_pr_body_use_sentry_pr_writer` — sentry-skills:pr-writer + sentry-skills:commit for PRs/commits.
+
 ## 🚨 TOP OF MIND — 2026-05-24 release/v1.2.0 → main shipped
 
 **`release/v1.2.0` merged to `main` via PR #178 (merge commit `82755fd`).** Hold-gate item #4 closed. Production now carries the full v1.1.x + v1.2.x payload. Apex stays parked; Stripe stays test mode (deferred per Max).
