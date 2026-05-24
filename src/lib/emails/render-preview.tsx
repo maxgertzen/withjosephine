@@ -120,5 +120,9 @@ export async function renderEmailPreview(
           copy={merged as typeof PREVIEW_DEFAULTS.emailRecipientIntakeReceived}
         />,
       );
+    default: {
+      const _exhaustive: never = template;
+      throw new Error(`Unhandled template: ${String(_exhaustive)}`);
+    }
   }
 }
