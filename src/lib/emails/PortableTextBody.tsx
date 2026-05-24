@@ -100,22 +100,4 @@ export function portableTextToPlainText(
     .join("\n\n");
 }
 
-export function stringToPortableTextBlocks(value: string): PortableTextBlock[] {
-  return [
-    {
-      _type: "block",
-      _key: hashKey(value),
-      style: "normal",
-      markDefs: [],
-      children: [{ _type: "span", _key: `${hashKey(value)}-s0`, text: value, marks: [] }],
-    },
-  ];
-}
-
-function hashKey(input: string): string {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (Math.imul(31, h) + input.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h).toString(36).padStart(8, "0");
-}
+export { stringToPortableTextBlocks } from "./portableTextBuild";

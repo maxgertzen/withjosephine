@@ -34,22 +34,9 @@ const TARGETS: Record<string, string[]> = {
   emailPrivacyExport: ["introLine", "contentsLine", "expiryLine"],
 };
 
-function hashKey(input: string): string {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) h = (Math.imul(31, h) + input.charCodeAt(i)) | 0;
-  return Math.abs(h).toString(36).padStart(8, "0");
-}
+import { stringToPortableTextBlocks } from "../src/lib/emails/portableTextBuild";
 
-function stringToBlock(text: string) {
-  const key = hashKey(text);
-  return {
-    _type: "block",
-    _key: key,
-    style: "normal",
-    markDefs: [],
-    children: [{ _type: "span", _key: `${key}-s0`, text, marks: [] }],
-  };
-}
+const stringToBlock = (text: string) => stringToPortableTextBlocks(text)[0];
 
 function alreadyConverted(value: unknown): boolean {
   return (
