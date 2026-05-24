@@ -3,6 +3,8 @@ import { createClient } from "@sanity/client";
 
 import {
   EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_GIFT_CLAIM_DEFAULTS,
+  EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS,
   EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
   EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
@@ -88,6 +90,16 @@ const SEEDS = [
     _id: "emailMagicLinkMyGifts",
     _type: "emailMagicLinkMyGifts",
     ...omitNullish(EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS),
+  },
+  {
+    _id: "emailGiftClaim",
+    _type: "emailGiftClaim",
+    ...omitNullish(EMAIL_GIFT_CLAIM_DEFAULTS),
+  },
+  {
+    _id: "emailGiftClaimReminder",
+    _type: "emailGiftClaimReminder",
+    ...omitNullish(EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS),
   },
   {
     _id: "emailGiftPurchaseConfirmationSelfSend",
