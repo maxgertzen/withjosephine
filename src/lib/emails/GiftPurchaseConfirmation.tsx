@@ -1,7 +1,7 @@
 import { Button, Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailGiftPurchaseConfirmationContent } from "@/data/defaults";
-import { GIFT_DELIVERY } from "@/lib/booking/constants";
+import { GIFT_DELIVERY_VARIANT as GIFT_DELIVERY } from "@/lib/emails/giftDeliveryVariant";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";

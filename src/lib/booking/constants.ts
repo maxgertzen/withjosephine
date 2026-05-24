@@ -19,10 +19,7 @@ export const MAX_EMAIL_CHARS = 254;
 // Mirrors `key: "email"` in scripts/seed-booking-form.ts.
 export const EMAIL_FIELD_KEY = "email";
 
-export const GIFT_DELIVERY = {
-  selfSend: "self_send",
-  scheduled: "scheduled",
-} as const;
+export { GIFT_DELIVERY_VARIANT as GIFT_DELIVERY } from "@/lib/emails/giftDeliveryVariant";
 
 export const GIFT_CANCELLED_REASON = {
   purchaserRequest: "purchaser-request",
