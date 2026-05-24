@@ -7,6 +7,8 @@ import {
   EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+  EMAIL_PRIVACY_EXPORT_DEFAULTS,
+  EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
   MY_GIFTS_PAGE_DEFAULTS,
@@ -84,6 +86,16 @@ const SEEDS = [
     _id: "emailGiftPurchaseConfirmation",
     _type: "emailGiftPurchaseConfirmation",
     ...omitNullish(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS),
+  },
+  {
+    _id: "emailRecipientIntakeReceived",
+    _type: "emailRecipientIntakeReceived",
+    ...omitNullish(EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS),
+  },
+  {
+    _id: "emailPrivacyExport",
+    _type: "emailPrivacyExport",
+    ...omitNullish(EMAIL_PRIVACY_EXPORT_DEFAULTS),
   },
 ];
 

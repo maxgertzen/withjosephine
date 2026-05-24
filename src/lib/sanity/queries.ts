@@ -258,6 +258,19 @@ export const magicLinkVerifyPageQuery = groq`
   }
 `;
 
+export const emailPrivacyExportQuery = groq`
+  *[_type == "emailPrivacyExport"][0] {
+    subject,
+    preview,
+    greeting,
+    introLine,
+    contentsLine,
+    ctaLabel,
+    expiryLine,
+    signOff
+  }
+`;
+
 export const emailMagicLinkQuery = groq`
   *[_type == "emailMagicLink"][0] {
     subject,

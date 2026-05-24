@@ -1,5 +1,9 @@
 import { defineField, defineType } from "sanity";
 
+import { slotValidation } from "../lib/validateSlots";
+
+const validateGiftPurchaseSlots = slotValidation("emailGiftPurchaseConfirmation");
+
 export const emailGiftPurchaseConfirmation = defineType({
   name: "emailGiftPurchaseConfirmation",
   title: "Email — Gift Purchase Confirmation (to purchaser)",
@@ -41,6 +45,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       group: "envelope",
       description:
         "Inbox preview for the SCHEDULED variant (when the purchaser picked a future send date). {recipientName} is who the gift is for, {sendAtDisplay} is the date+time formatted in the purchaser's timezone (e.g. 'Friday, December 12 at 9:00 AM').",
+      validation: validateGiftPurchaseSlots,
       initialValue: "We'll send it to {recipientName} on {sendAtDisplay}.",
     }),
     defineField({
@@ -77,6 +82,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       type: "string",
       group: "shared",
       description: 'Use "{purchaserFirstName}".',
+      validation: validateGiftPurchaseSlots,
       initialValue: "Hi {purchaserFirstName},",
     }),
     defineField({
@@ -87,6 +93,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       group: "selfSend",
       description:
         "Body of the SELF-SEND confirmation — the purchaser chose to share the link themselves. The 'private link' phrase is load-bearing: the rendered email contains that actual URL beneath this paragraph. {readingName} is the reading; {recipientName} is who they're giving it to.",
+      validation: validateGiftPurchaseSlots,
       initialValue:
         "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They'll see who it's from when they open it.",
     }),
@@ -98,6 +105,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       group: "scheduled",
       description:
         "Body of the SCHEDULED confirmation — the purchaser picked a future send date and we'll fire the recipient's email automatically. No link in this email (it goes to the recipient on the chosen date). {readingName} the reading; {recipientName} who it's for; {sendAtDisplay} the date+time we'll send.",
+      validation: validateGiftPurchaseSlots,
       initialValue:
         "Thank you for gifting a {readingName}. I'll let {recipientName} know about it on {sendAtDisplay} — they'll receive a short note from me with a private link to claim it and share what I need to read for them.",
     }),
@@ -116,6 +124,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       group: "selfSend",
       description:
         "Sits directly below the share button in the SELF-SEND variant; reminds the purchaser this URL is for one specific person, not a coupon to forward broadly. {recipientName} grounds the message in the actual recipient.",
+      validation: validateGiftPurchaseSlots,
       initialValue:
         "This link is for {recipientName}. Share it the way you'd give them a handwritten card.",
     }),
@@ -140,6 +149,7 @@ export const emailGiftPurchaseConfirmation = defineType({
       rows: 3,
       group: "shared",
       description: 'Use "{recipientName}".',
+      validation: validateGiftPurchaseSlots,
       initialValue:
         "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
     }),

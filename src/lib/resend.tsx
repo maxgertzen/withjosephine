@@ -14,6 +14,7 @@ import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./e
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
+import { PrivacyExport } from "./emails/PrivacyExport";
 import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
 import { isFlagEnabled, siteOrigin } from "./env";
 
@@ -485,28 +486,29 @@ export async function sendMagicLink(args: {
   });
 }
 
-/**
- * GDPR Art. 20 data-portability delivery. Plain-text HTML, no
- * marketing copy, just the pre-signed R2 URL with its expiry window. Lives
- * here rather than in a React Email template because the body is one
- * structural sentence + a link — a full React component would be ceremony.
- */
 export async function sendPrivacyExportEmail(args: {
   to: string;
   downloadUrl: string;
   submissionCount: number;
   expiryDays: number;
 }): Promise<EmailSendResult> {
-  const html = [
-    `<p>Your Josephine data export is ready.</p>`,
-    `<p>It contains the data we hold for your ${args.submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).</p>`,
-    `<p><a href="${args.downloadUrl}">Download your export (ZIP)</a></p>`,
-    `<p>This link expires in ${args.expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.</p>`,
-    `<p>With love,<br/>Josephine</p>`,
-  ].join("\n");
+  const { EMAIL_PRIVACY_EXPORT_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailPrivacyExport } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailPrivacyExport().catch(() => null);
+  const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
+  const html = await render(
+    <PrivacyExport
+      vars={{
+        downloadUrl: args.downloadUrl,
+        submissionCount: args.submissionCount,
+        expiryDays: args.expiryDays,
+      }}
+      copy={copy}
+    />,
+  );
   return sendOrSkip({
     to: args.to,
-    subject: "Your Josephine data export",
+    subject: copy.subject,
     html,
     subType: "privacy_export",
     submissionId: null,

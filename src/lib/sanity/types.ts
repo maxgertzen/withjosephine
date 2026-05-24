@@ -262,6 +262,17 @@ export type SanityEmailGiftClaim = {
   footerDisclaimer: string;
 };
 
+export type SanityEmailPrivacyExport = {
+  subject: string;
+  preview: string;
+  greeting: string;
+  introLine: string;
+  contentsLine: string;
+  ctaLabel: string;
+  expiryLine: string;
+  signOff: string | null;
+};
+
 export type SanityEmailDay2Started = {
   subject: string;
   preview: string;

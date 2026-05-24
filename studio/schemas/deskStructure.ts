@@ -1,5 +1,7 @@
 import type { StructureBuilder } from "sanity/structure";
 
+import { EmailPreview } from "../views/EmailPreview";
+
 export const SINGLETON_TYPES = new Set([
   "landingPage",
   "bookingPage",
@@ -20,6 +22,7 @@ export const SINGLETON_TYPES = new Set([
   "emailGiftPurchaseConfirmation",
   "emailGiftClaim",
   "emailRecipientIntakeReceived",
+  "emailPrivacyExport",
   "giftClaimPage",
   "giftIntakePage",
   "listenPage",
@@ -30,6 +33,17 @@ const singletonListItem = (S: StructureBuilder, typeName: string, title: string)
     .title(title)
     .id(typeName)
     .child(S.document().schemaType(typeName).documentId(typeName));
+
+const emailSingletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
+  S.listItem()
+    .title(title)
+    .id(typeName)
+    .child(
+      S.document()
+        .schemaType(typeName)
+        .documentId(typeName)
+        .views([S.view.form(), S.view.component(EmailPreview).title("Preview")]),
+    );
 
 const awaitingPayment = (S: StructureBuilder) =>
   S.listItem()
@@ -121,23 +135,24 @@ export const deskStructure = (S: StructureBuilder) =>
               singletonListItem(S, "myReadingsPage", "My Readings Page"),
               singletonListItem(S, "myGiftsPage", "My Gifts Page"),
               singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
-              singletonListItem(S, "emailOrderConfirmation", "Email — Order Confirmation"),
-              singletonListItem(
+              emailSingletonListItem(S, "emailOrderConfirmation", "Email — Order Confirmation"),
+              emailSingletonListItem(
                 S,
                 "emailGiftPurchaseConfirmation",
                 "Email — Gift Purchase Confirmation",
               ),
-              singletonListItem(S, "emailGiftClaim", "Email — Gift Claim (to recipient)"),
-              singletonListItem(
+              emailSingletonListItem(S, "emailGiftClaim", "Email — Gift Claim (to recipient)"),
+              emailSingletonListItem(
                 S,
                 "emailRecipientIntakeReceived",
                 "Email — Recipient Intake Received",
               ),
               singletonListItem(S, "giftClaimPage", "Gift Claim Page (recipient lands here)"),
               singletonListItem(S, "giftIntakePage", "Gift Intake Page (recipient fills details)"),
-              singletonListItem(S, "emailDay2Started", "Email — Day 2 (I've Started)"),
-              singletonListItem(S, "emailDay7Delivery", "Email — Day-7 Delivery"),
-              singletonListItem(S, "emailMagicLink", "Email — Magic Link"),
+              emailSingletonListItem(S, "emailDay2Started", "Email — Day 2 (I've Started)"),
+              emailSingletonListItem(S, "emailDay7Delivery", "Email — Day-7 Delivery"),
+              emailSingletonListItem(S, "emailMagicLink", "Email — Magic Link"),
+              emailSingletonListItem(S, "emailPrivacyExport", "Email — Privacy Export (GDPR)"),
             ]),
         ),
       S.divider(),

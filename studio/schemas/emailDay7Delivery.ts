@@ -1,5 +1,9 @@
 import { defineField, defineType } from "sanity";
 
+import { slotValidation } from "../lib/validateSlots";
+
+const validateDay7Slots = slotValidation("emailDay7Delivery");
+
 export const emailDay7Delivery = defineType({
   name: "emailDay7Delivery",
   title: "Email — Day-7 Delivery",
@@ -10,6 +14,7 @@ export const emailDay7Delivery = defineType({
       title: "Subject",
       type: "string",
       description: 'Use "{readingName}" to insert the reading name (e.g. "Soul Blueprint").',
+      validation: validateDay7Slots,
       initialValue: "Your {readingName} is ready",
     }),
     defineField({
@@ -24,6 +29,7 @@ export const emailDay7Delivery = defineType({
       title: "Greeting line",
       type: "string",
       description: 'Use "{firstName}" to insert the recipient\'s first name.',
+      validation: validateDay7Slots,
       initialValue: "Hi {firstName},",
     }),
     defineField({
@@ -31,6 +37,7 @@ export const emailDay7Delivery = defineType({
       title: '"Ready" line',
       type: "string",
       description: 'Use "{readingName}" to insert the reading name.',
+      validation: validateDay7Slots,
       initialValue: "Your {readingName} is here.",
     }),
     defineField({

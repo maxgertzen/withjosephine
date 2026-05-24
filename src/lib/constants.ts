@@ -12,6 +12,15 @@ export const PRODUCTION_HOSTS: ReadonlyArray<string> = [
   "www.withjosephine.com",
 ];
 
+export const STUDIO_ORIGIN_ALLOWLIST: ReadonlyArray<string> = [
+  "https://withjosephine.sanity.studio",
+];
+
+export const STUDIO_LOCAL_DEV_ORIGINS: ReadonlyArray<string> = [
+  "http://localhost:3333",
+  "http://127.0.0.1:3333",
+];
+
 /**
  * Maps a `window.location.host` to a coarse environment label used by
  * Mixpanel and Sentry to tag events. Mirrors the server-side equivalent in

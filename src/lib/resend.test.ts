@@ -34,6 +34,7 @@ vi.mock("./sanity/fetch", () => ({
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
   fetchEmailDay2Started: vi.fn().mockResolvedValue(null),
   fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
+  fetchEmailPrivacyExport: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -335,6 +336,61 @@ describe("sendDay7Delivery", () => {
     expect(body).toContain("Open it whenever the timing feels right");
     expect(body).toContain("signs you into your reading for the next seven days");
     expect(body).toContain("Open your reading");
+  });
+});
+
+describe("sendPrivacyExportEmail", () => {
+  it("renders Sanity-fetched copy with submissionCount + expiryDays interpolated", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
+      subject: "Custom export subject",
+      preview: "Custom export preview",
+      greeting: "Greetings,",
+      introLine: "Your export is queued.",
+      contentsLine: "Contains data for {submissionCount} reading(s).",
+      ctaLabel: "Grab your ZIP",
+      expiryLine: "Link expires in {expiryDays} days.",
+      signOff: null,
+    });
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    const result = await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
+      submissionCount: 4,
+      expiryDays: 14,
+    });
+
+    expect(getResendId(result)).toBe("msg_priv");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("ada@example.com");
+    expect(args.subject).toBe("Custom export subject");
+    const body = visibleText(args.html);
+    expect(body).toContain("Contains data for 4 reading(s).");
+    expect(body).toContain("Link expires in 14 days.");
+    expect(body).toContain("Grab your ZIP");
+    expect(args.html).toContain('href="https://r2.withjosephine.com/exports/abc.zip"');
+  });
+
+  it("falls back to defaults when Sanity fetch returns null", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv_default" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue(null);
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
+      submissionCount: 1,
+      expiryDays: 7,
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Your Josephine data export");
+    const body = visibleText(args.html);
+    expect(body).toContain("for your 1 reading(s)");
+    expect(body).toContain("expires in 7 days");
   });
 });
 

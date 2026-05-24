@@ -19,6 +19,7 @@ import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
 import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
+import { emailPrivacyExport } from "./emailPrivacyExport";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -50,6 +51,7 @@ export const schemaTypes = [
   emailGiftPurchaseConfirmation,
   emailGiftClaim,
   emailRecipientIntakeReceived,
+  emailPrivacyExport,
   giftClaimPage,
   giftIntakePage,
   listenPage,
