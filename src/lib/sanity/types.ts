@@ -273,14 +273,6 @@ export type SanityEmailPrivacyExport = {
   signOff: string | null;
 };
 
-export type SanityEmailDay2Started = {
-  subject: string;
-  preview: string;
-  greeting: string;
-  body: string[];
-  signOff: string | null;
-};
-
 export type SanityEmailDay7Delivery = {
   subjectTemplate: string;
   preview: string;

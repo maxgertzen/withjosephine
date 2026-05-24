@@ -61,7 +61,6 @@ describe("GET /api/email-preview/[type]", () => {
     const { GET } = await import("./route");
     const types = [
       "emailOrderConfirmation",
-      "emailDay2Started",
       "emailDay7Delivery",
       "emailGiftPurchaseConfirmation",
       "emailGiftClaim",

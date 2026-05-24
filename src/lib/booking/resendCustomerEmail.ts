@@ -1,4 +1,4 @@
-import { redactEmail, sendDay2Started, sendDay7Delivery, sendOrderConfirmation } from "../resend";
+import { redactEmail, sendDay7Delivery, sendOrderConfirmation } from "../resend";
 import {
   appendEmailFired,
   buildSubmissionContext,
@@ -7,11 +7,10 @@ import {
   type SubmissionRecord,
 } from "./submissions";
 
-export type ResendableEmailType = "order_confirmation" | "day2" | "day7";
+export type ResendableEmailType = "order_confirmation" | "day7";
 
 export const RESENDABLE_EMAIL_TYPES: readonly ResendableEmailType[] = [
   "order_confirmation",
-  "day2",
   "day7",
 ];
 
@@ -91,8 +90,6 @@ async function dispatchResend(
   switch (emailType) {
     case "order_confirmation":
       return sendOrderConfirmation(context);
-    case "day2":
-      return sendDay2Started(context);
     case "day7": {
       const listenUrl = submission.voiceNoteUrl ?? submission.pdfUrl ?? "";
       if (!listenUrl) return { kind: "missing_listen_url" };

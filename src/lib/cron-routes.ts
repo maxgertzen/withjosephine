@@ -12,11 +12,6 @@ export const CRON_DISPATCH: Record<string, ReadonlyArray<string>> = {
   "0 */6 * * *": [
     "/api/cron/reconcile",
     "/api/cron/reconcile-mirror",
-    // email-day-2 dispatch temporarily disabled per Max 2026-05-20. The
-    // route handler at /api/cron/email-day-2 still exists; only the
-    // 6-hourly cron-trigger dispatch is suppressed. Re-enable by restoring
-    // this entry. Cadence "0 */6 * * *" must stay because reconcile,
-    // reconcile-mirror, and email-day-7-deliver still fire on it.
     "/api/cron/email-day-7-deliver",
   ],
   "0 3 * * *": ["/api/cron/cleanup"],

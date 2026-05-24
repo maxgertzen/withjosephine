@@ -104,14 +104,14 @@ describe("repository against in-memory SQLite", () => {
       resendId: "msg_1",
     });
     await appendEmailFired("sub_1", {
-      type: "day2",
+      type: "order_confirmation",
       sentAt: "2026-04-23T10:00:00Z",
       resendId: "msg_2",
     });
     const record = await findSubmissionById("sub_1");
     expect(record?.emailsFired).toHaveLength(2);
     expect(record?.emailsFired?.[0]?.type).toBe("order_confirmation");
-    expect(record?.emailsFired?.[1]?.type).toBe("day2");
+    expect(record?.emailsFired?.[1]?.type).toBe("order_confirmation");
   });
 
   it("lists submissions older than a cutoff filtered by status", async () => {
@@ -131,16 +131,16 @@ describe("repository against in-memory SQLite", () => {
       amountPaidCurrency: null,
     });
 
-    let due = await listPaidSubmissionsForEmail("day2", { paidBefore: "2026-04-30T00:00:00Z" });
+    let due = await listPaidSubmissionsForEmail("order_confirmation", { paidBefore: "2026-04-30T00:00:00Z" });
     expect(due.map((r) => r._id)).toEqual(["sub_1"]);
 
     await appendEmailFired("sub_1", {
-      type: "day2",
+      type: "order_confirmation",
       sentAt: "2026-04-22T10:00:00Z",
       resendId: "msg_d2",
     });
 
-    due = await listPaidSubmissionsForEmail("day2", { paidBefore: "2026-04-30T00:00:00Z" });
+    due = await listPaidSubmissionsForEmail("order_confirmation", { paidBefore: "2026-04-30T00:00:00Z" });
     expect(due).toEqual([]);
   });
 
@@ -366,7 +366,7 @@ describe("repository against in-memory SQLite", () => {
         amountPaidCurrency: "usd",
       });
 
-      const due = await listPaidSubmissionsForEmail("day2", {});
+      const due = await listPaidSubmissionsForEmail("order_confirmation", {});
       expect(due.map((r) => r._id)).not.toContain("gift_unclaimed");
     });
 
@@ -392,7 +392,7 @@ describe("repository against in-memory SQLite", () => {
         claimedAtIso: "2026-05-02T00:00:00Z",
       });
 
-      const due = await listPaidSubmissionsForEmail("day2", {});
+      const due = await listPaidSubmissionsForEmail("order_confirmation", {});
       expect(due.map((r) => r._id)).toContain("gift_claimed");
     });
 

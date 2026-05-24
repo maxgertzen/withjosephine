@@ -2,6 +2,7 @@ import { Button, Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailGiftClaimContent } from "@/data/defaults";
 
+import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
 
 type GiftClaimSharedVars = {
@@ -22,20 +23,14 @@ export type GiftClaimEmailProps = {
   copy: EmailGiftClaimContent;
 };
 
-function template(text: string, vars: GiftClaimEmailVars): string {
-  return text
-    .replaceAll("{recipientName}", vars.recipientName)
-    .replaceAll("{purchaserFirstName}", vars.purchaserFirstName)
-    .replaceAll("{readingName}", vars.readingName);
-}
-
-export function GiftClaimEmail({ vars, copy }: GiftClaimEmailProps) {
+export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
+  const copy = applyTokens(rawCopy, vars);
   const heroLine = vars.variant === "first_send" ? copy.heroLineFirstSend : copy.heroLineReminder;
   const body = vars.variant === "first_send" ? copy.bodyFirstSend : copy.bodyReminder;
   const preview = vars.variant === "first_send" ? copy.previewFirstSend : copy.previewReminder;
 
   return (
-    <EmailShell preview={template(preview, vars)} bareContainer>
+    <EmailShell preview={preview} bareContainer>
       <Container
         className="bg-cream border border-divider rounded"
         style={{ maxWidth: 600, margin: "0 auto" }}
@@ -92,8 +87,8 @@ export function GiftClaimEmail({ vars, copy }: GiftClaimEmailProps) {
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>{template(copy.greeting, vars)}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{template(body, vars)}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{body}</p>
             </Section>
 
             {vars.giftMessage ? (
@@ -103,7 +98,7 @@ export function GiftClaimEmail({ vars, copy }: GiftClaimEmailProps) {
                     className="font-sans text-muted uppercase"
                     style={{ margin: "0 0 6px 0", fontSize: 11, letterSpacing: "0.18em" }}
                   >
-                    {template(copy.giftMessageLabel, vars)}
+                    {copy.giftMessageLabel}
                   </p>
                   <p
                     className="font-serif italic text-ink"

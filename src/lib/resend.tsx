@@ -5,8 +5,8 @@ import { Resend } from "resend";
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { GIFT_DELIVERY } from "./booking/constants";
+import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
-import { Day2Started } from "./emails/Day2Started";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
 import { GiftClaimEmail, type GiftClaimEmailVars } from "./emails/GiftClaimEmail";
@@ -262,9 +262,10 @@ export async function sendRecipientIntakeReceived(
       copy={copy}
     />,
   );
-  const subject = copy.subject
-    .replaceAll("{recipientName}", input.recipientName)
-    .replaceAll("{readingName}", input.readingName);
+  const subject = applyTokens(copy.subject, {
+    recipientName: input.recipientName,
+    readingName: input.readingName,
+  });
   return sendOrSkip({
     to: input.recipientEmail,
     subject,
@@ -351,9 +352,10 @@ export async function sendGiftPurchaseConfirmation(
         };
 
   const subject = input.variant === GIFT_DELIVERY.selfSend ? copy.subjectSelfSend : copy.subjectScheduled;
-  const interpolatedSubject = subject
-    .replaceAll("{recipientName}", input.recipientName ?? "your recipient")
-    .replaceAll("{sendAtDisplay}", input.variant === GIFT_DELIVERY.scheduled ? input.sendAtDisplay : "");
+  const interpolatedSubject = applyTokens(subject, {
+    recipientName: input.recipientName ?? "your recipient",
+    sendAtDisplay: input.variant === GIFT_DELIVERY.scheduled ? input.sendAtDisplay : "",
+  });
 
   const html = await render(<GiftPurchaseConfirmation vars={vars} copy={copy} />);
 
@@ -398,10 +400,9 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
 
   const subject =
     input.variant === "first_send" ? copy.subjectFirstSend : copy.subjectReminder;
-  const interpolatedSubject = subject.replaceAll(
-    "{purchaserFirstName}",
-    input.purchaserFirstName,
-  );
+  const interpolatedSubject = applyTokens(subject, {
+    purchaserFirstName: input.purchaserFirstName,
+  });
 
   const html = await render(<GiftClaimEmail vars={vars} copy={copy} />);
 
@@ -415,21 +416,6 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
   });
 }
 
-export async function sendDay2Started(submission: SubmissionContext): Promise<EmailSendResult> {
-  const { EMAIL_DAY2_STARTED_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailDay2Started } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailDay2Started().catch(() => null);
-  const copy = { ...EMAIL_DAY2_STARTED_DEFAULTS, ...(sanity ?? {}) };
-  const html = await render(<Day2Started vars={{ firstName: submission.firstName }} copy={copy} />);
-  return sendOrSkip({
-    to: submission.email,
-    subject: copy.subject,
-    html,
-    subType: "day_2",
-    submissionId: submission.id,
-  });
-}
-
 export async function sendDay7Delivery(
   submission: SubmissionContext,
   listenUrl: string,
@@ -439,7 +425,7 @@ export async function sendDay7Delivery(
   const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
   const sanity = await fetchEmailDay7Delivery().catch(() => null);
   const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...(sanity ?? {}) };
-  const subject = copy.subjectTemplate.replaceAll("{readingName}", submission.readingName);
+  const subject = applyTokens(copy.subjectTemplate, { readingName: submission.readingName });
   const html = await render(
     <Day7Delivery
       vars={{

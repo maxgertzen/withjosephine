@@ -32,7 +32,6 @@ vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
-  fetchEmailDay2Started: vi.fn().mockResolvedValue(null),
   fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
   fetchEmailPrivacyExport: vi.fn().mockResolvedValue(null),
 }));
@@ -298,25 +297,6 @@ describe("sendOrderConfirmation", () => {
   });
 });
 
-describe("sendDay2Started", () => {
-  it("sends SPEC §13.C verbatim copy to client", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_d2" } });
-    const submission = buildSubmission();
-    const { sendDay2Started } = await import("./resend");
-
-    const result = await sendDay2Started(submission);
-
-    expect(getResendId(result)).toBe("msg_d2");
-    const args = sendMock.mock.calls[0]?.[0];
-    expect(args.to).toBe(submission.email);
-    expect(args.subject).toBe("A quick note — I’ve started your reading");
-    const body = visibleText(args.html);
-    expect(body).toContain("Hi Ada,");
-    expect(body).toContain("sat down with your chart");
-    expect(body).toContain("not going to preview anything");
-    expect(body).toContain("within the next five days");
-  });
-});
 
 describe("sendDay7Delivery", () => {
   it("includes the listening-page URL inside an anchor href", async () => {

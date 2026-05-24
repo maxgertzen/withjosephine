@@ -14,7 +14,6 @@ import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
-import { emailDay2Started } from "./emailDay2Started";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
 import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
@@ -46,7 +45,6 @@ export const schemaTypes = [
   magicLinkVerifyPage,
   emailMagicLink,
   emailDay7Delivery,
-  emailDay2Started,
   emailOrderConfirmation,
   emailGiftPurchaseConfirmation,
   emailGiftClaim,

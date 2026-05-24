@@ -2,7 +2,6 @@ import fs from "node:fs";
 import { createClient } from "@sanity/client";
 
 import {
-  EMAIL_DAY2_STARTED_DEFAULTS,
   EMAIL_DAY7_DELIVERY_DEFAULTS,
   EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
@@ -70,11 +69,6 @@ const SEEDS = [
     _id: "emailOrderConfirmation",
     _type: "emailOrderConfirmation",
     ...omitNullish(EMAIL_ORDER_CONFIRMATION_DEFAULTS),
-  },
-  {
-    _id: "emailDay2Started",
-    _type: "emailDay2Started",
-    ...omitNullish(EMAIL_DAY2_STARTED_DEFAULTS),
   },
   {
     _id: "emailDay7Delivery",

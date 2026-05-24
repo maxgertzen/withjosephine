@@ -33,7 +33,6 @@ export type SubmissionStatus = (typeof SUBMISSION_STATUS)[keyof typeof SUBMISSIO
 
 export type EmailFiredType =
   | "order_confirmation"
-  | "day2"
   | "day7"
   | "day7-overdue-alert"
   | "day14"
