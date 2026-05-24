@@ -1,8 +1,9 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useLinkStatus } from "next/link";
 import type { ReactNode } from "react";
+
+import { Loader } from "@/components/Loader";
 
 type LinkContentProps = {
   children: ReactNode;
@@ -17,12 +18,8 @@ export function LinkContent({ children, pendingLabel = "Loading" }: LinkContentP
       <span aria-hidden="true" className="invisible">
         {children}
       </span>
-      <span
-        aria-label={pendingLabel}
-        role="status"
-        className="absolute inset-0 inline-flex items-center justify-center"
-      >
-        <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+      <span className="absolute inset-0 inline-flex items-center justify-center">
+        <Loader size={16} label={pendingLabel} />
       </span>
     </span>
   );

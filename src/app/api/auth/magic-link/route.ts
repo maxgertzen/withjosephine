@@ -7,6 +7,7 @@ import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit"
 import { safeNext } from "@/lib/auth/safeNext";
 import { findUserByEmail } from "@/lib/auth/users";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
+import { siteOrigin } from "@/lib/env";
 import { sendMagicLink } from "@/lib/resend";
 
 // Uniform response across known/unknown email (no enumeration leak); Resend send
@@ -30,9 +31,12 @@ export async function POST(request: Request) {
     const user = await findUserByEmail(email);
     if (user) {
       const audit = await getRequestAuditContext(request);
-      const { token } = await issueMagicLink({ userId: user.id, ipHash: audit.ipHash });
-      const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? new URL(request.url).origin;
-      const verifyUrl = new URL("/auth/verify", origin);
+      const { token } = await issueMagicLink({
+        userId: user.id,
+        ipHash: audit.ipHash,
+        userAgentHash: audit.userAgentHash,
+      });
+      const verifyUrl = new URL("/auth/verify", siteOrigin());
       verifyUrl.searchParams.set("token", token);
       // safeNext already collapses anything non-allowlisted to /my-readings;
       // forward whenever the caller asked for a specific non-default target

@@ -1,5 +1,5 @@
-// role="alert" so screen readers announce the message when it appears after
-// a failed submit.
+import { errorClassesSmall } from "@/lib/formStyles";
+
 export function InlineError({
   message,
   className,
@@ -9,12 +9,7 @@ export function InlineError({
 }) {
   if (!message) return null;
   return (
-    <p
-      role="alert"
-      className={
-        className ?? "font-body text-xs text-j-rose"
-      }
-    >
+    <p role="alert" className={className ?? errorClassesSmall}>
       {message}
     </p>
   );

@@ -147,6 +147,26 @@ export const submission = defineType({
           ],
         }),
         defineField({
+          name: "coolingOffConsent",
+          title: "Cooling-Off Waiver (EU CRD Art. 16(m))",
+          type: "object",
+          description:
+            "Verbatim wording the user saw + acknowledgment timestamp. Required to start the reading per EU consumer-rights cooling-off waiver.",
+          fields: [
+            defineField({
+              name: "labelText",
+              title: "Label Text",
+              type: "text",
+              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
+            }),
+            defineField({
+              name: "acknowledgedAt",
+              title: "Acknowledged At",
+              type: "datetime",
+            }),
+          ],
+        }),
+        defineField({
           name: "labelText",
           title: "Legacy Consent Label Text",
           type: "text",
@@ -295,6 +315,22 @@ export const submission = defineType({
       readOnly: true,
     }),
     defineField({
+      name: "giftClaimedAt",
+      title: "Gift Claimed At",
+      type: "datetime",
+      description:
+        "Set when the gift recipient submits intake. Read-only mirror of D1. Surfaced for Studio actions like 'Regenerate claim link' that gate on whether the gift was claimed.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "recipientUserId",
+      title: "Recipient User ID",
+      type: "string",
+      description:
+        "Stable user id for the gift recipient. Load-bearing for listen-page session linkage. Read-only mirror of D1.",
+      readOnly: true,
+    }),
+    defineField({
       name: "emailsFired",
       title: "Emails Fired",
       type: "array",
@@ -313,11 +349,15 @@ export const submission = defineType({
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
-                  { title: "Day +2 (I've started)", value: "day2" },
                   { title: "Day +7 (delivery)", value: "day7" },
                   { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
+                  { title: "Gift purchase confirmation", value: "gift_purchase_confirmation" },
+                  { title: "Gift claim (to recipient)", value: "gift_claim" },
+                  { title: "Gift claim resend", value: "gift_resend" },
+                  { title: "Gift claim regenerate", value: "gift_claim_regenerate" },
+                  { title: "Recipient intake received", value: "recipient_intake_received" },
                 ],
                 layout: "dropdown",
               },

@@ -9,16 +9,19 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { formatAmountPaid } from "@/lib/booking/formatAmount";
-import { purchaserFirstNameOrNull } from "@/lib/booking/giftPersonas";
+import { GIFT_DELIVERY } from "@/lib/booking/constants";
+import { purchaserFirstNameOrNull, recipientNameFor } from "@/lib/booking/giftPersonas";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { findSubmissionById } from "@/lib/booking/submissions";
+import {
+  fetchThankYouSessionSnapshot,
+  type ThankYouPaidAmount,
+} from "@/lib/booking/thankYouSession";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
-import { retrieveCheckoutSession } from "@/lib/stripe";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -27,6 +30,7 @@ type ThankYouSearchParams = {
   gift?: string | string[];
   purchaserFirstName?: string | string[];
   redeemed?: string | string[];
+  submission?: string | string[];
 };
 
 type ThankYouPageProps = {
@@ -41,24 +45,17 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
   return STRIPE_SESSION_PATTERN.test(sessionId);
 }
 
-type PaidAmount = { display: string | null; cents: number | null };
-
-
-async function fetchPaidAmount(sessionId: string): Promise<PaidAmount> {
-  try {
-    const session = await retrieveCheckoutSession(sessionId);
-    const cents = session.amount_total ?? null;
-    return {
-      cents,
-      display: formatAmountPaid(cents, session.currency ?? undefined),
-    };
-  } catch (error) {
-    // Surface the rest of the page even if the Stripe API is briefly down —
-    // the customer's payment already succeeded if they're here.
-    console.warn(`[thank-you] Failed to retrieve session ${sessionId}`, error);
-    return { cents: null, display: null };
-  }
+// Mock-mode Stripe responses don't carry `client_reference_id`, so the page
+// can't recover the submission ID via the Stripe API path. Under E2E=1 only
+// (gated so prod can't be tricked into reading PII via URL tampering), accept
+// the submission ID from a sibling URL param.
+function e2eSubmissionFallback(search: ThankYouSearchParams): string | null {
+  if (process.env.E2E !== "1") return null;
+  const value = firstParamValue(search.submission)?.trim();
+  return value ? value : null;
 }
+
+type PaidAmount = ThankYouPaidAmount;
 
 export async function generateMetadata(): Promise<Metadata> {
   const thankYouPageContent = await fetchThankYouPage();
@@ -79,6 +76,7 @@ type ResolvedContext = {
   paidAmount: PaidAmount;
   submission: SubmissionRecord | null;
   purchaserFirstName: string | null;
+  recipientName: string | null;
 };
 
 async function resolveContext(
@@ -91,27 +89,27 @@ async function resolveContext(
   const purchaserNameOverride = firstParamValue(search.purchaserFirstName)?.trim() || null;
   const sessionValid = isValidStripeSession(sessionId);
 
-  // Hot-path fast lane: a paid purchaser without the gift flag never reads
-  // submission data — skip the D1 round-trip.
-  if (sessionValid && !giftFlag) {
-    const [paidAmount, reading] = await Promise.all([
-      fetchPaidAmount(sessionId),
-      resolveReading(segment, null),
-    ]);
-    if (!reading) return null;
-    return { mode: "purchase", reading, paidAmount, submission: null, purchaserFirstName: null };
-  }
-
   if (sessionValid) {
-    const [paidAmount, submissionLookup] = await Promise.all([
-      fetchPaidAmount(sessionId),
-      findSubmissionById(segment),
-    ]);
+    const snapshot = await fetchThankYouSessionSnapshot(sessionId);
+    // Stripe Payment Links don't reliably persist URL-supplied `metadata` onto
+    // the resulting Checkout Session, so derive gift-mode from the submission
+    // record (D1 source-of-truth) rather than `session.metadata.is_gift`.
+    const submissionLookup = await findSubmissionById(
+      snapshot.submissionIdFromSession ?? e2eSubmissionFallback(search) ?? segment,
+    );
+    const isSessionGift =
+      giftFlag || snapshot.isGift || submissionLookup?.isGift === true;
     const reading = await resolveReading(segment, submissionLookup);
     if (!reading) return null;
-    const isSessionGift = giftFlag || (submissionLookup?.isGift ?? false);
     if (!isSessionGift) {
-      return { mode: "purchase", reading, paidAmount, submission: submissionLookup, purchaserFirstName: null };
+      return {
+        mode: "purchase",
+        reading,
+        paidAmount: snapshot.paidAmount,
+        submission: null,
+        purchaserFirstName: null,
+        recipientName: null,
+      };
     }
     const purchaserFirstName =
       purchaserNameOverride ??
@@ -119,9 +117,10 @@ async function resolveContext(
     return {
       mode: "giftPurchaser",
       reading,
-      paidAmount,
+      paidAmount: snapshot.paidAmount,
       submission: submissionLookup,
       purchaserFirstName,
+      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
     };
   }
 
@@ -136,6 +135,7 @@ async function resolveContext(
         paidAmount: { cents: null, display: null },
         submission: submissionLookup,
         purchaserFirstName: null,
+        recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
       };
     }
     const purchaserFirstName =
@@ -148,6 +148,7 @@ async function resolveContext(
       paidAmount: { cents: null, display: null },
       submission: submissionLookup,
       purchaserFirstName: mode === "giftPurchaser" ? purchaserFirstName : null,
+      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
     };
   }
 
@@ -198,7 +199,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     fetchSiteSettings(),
   ]);
 
-  const { mode, reading, paidAmount, purchaserFirstName } = context;
+  const { mode, reading, paidAmount, purchaserFirstName, recipientName } = context;
   const slugForOverride = context.submission?.reading?.slug ?? readingId;
 
   const showsDiscountedPrice =
@@ -208,39 +209,60 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
 
   const isPurchaser = mode === "giftPurchaser";
   const isRecipient = mode === "giftRecipient";
+  const isSelfSendPurchaser =
+    isPurchaser && context.submission?.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
+  const showsPurchaserOnlySections = !isRecipient;
 
   const heading =
     isPurchaser
       ? (thankYouPageContent?.giftPurchaserHeading ?? "Thank you, {purchaserFirstName}. Your gift is on its way.")
       : isRecipient
-        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you. Your reading is in my hands now.")
+        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you, {recipientName}. Your reading is in my hands now.")
         : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
   const subheading =
-    isPurchaser
-      ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
-      : isRecipient
-        ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
-        : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
-  const readingLabel = thankYouPageContent?.readingLabel ?? "Your Reading";
+    isSelfSendPurchaser
+      ? (thankYouPageContent?.giftPurchaserSelfSendSubheading ??
+        "Your gift link is ready in the email I just sent \u2014 share it with them whenever feels right.")
+      : isPurchaser
+        ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
+        : isRecipient
+          ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
+          : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
+  const readingLabel = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserReadingLabel ?? "Your gift")
+    : (thankYouPageContent?.readingLabel ?? "Your Reading");
   const confirmationBody =
-    isPurchaser
-      ? (thankYouPageContent?.giftPurchaserBody ??
-        "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
-      : isRecipient
-        ? (thankYouPageContent?.giftRecipientBody ??
-          "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
-        : (override?.confirmationBody ??
-          thankYouPageContent?.confirmationBody ??
-          "A confirmation email is on its way to your inbox in the next minute or two \u2014 it includes a copy of the answers you shared so you have them on hand. If you can\u2019t find it, please check your promotions folder.");
-  const timelineBody =
-    override?.timelineBody ??
-    thankYouPageContent?.timelineBody ??
-    "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.";
+    isSelfSendPurchaser
+      ? (thankYouPageContent?.giftPurchaserSelfSendBody ??
+        "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready \u2014 they'll claim from there.")
+      : isPurchaser
+        ? (thankYouPageContent?.giftPurchaserBody ??
+          "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
+        : isRecipient
+          ? (thankYouPageContent?.giftRecipientBody ??
+            "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+          : (override?.confirmationBody ??
+            thankYouPageContent?.confirmationBody ??
+            "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
+  const timelineBody = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserTimelineBody ??
+      "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.")
+    : isRecipient
+      ? (thankYouPageContent?.giftRecipientBody ??
+        "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+      : (override?.timelineBody ??
+        thankYouPageContent?.timelineBody ??
+        "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.");
   const deliveryDaysPhrase = thankYouPageContent?.deliveryDaysPhrase ?? "seven days";
-  const contactBody =
-    override?.contactBody ??
-    thankYouPageContent?.contactBody ??
-    "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.";
+  const contactBody = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserContactBody ??
+      "If anything comes up with the gift \u2014 a wrong recipient email, a change of plan, anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.")
+    : isRecipient
+      ? (thankYouPageContent?.giftRecipientContactBody ??
+        "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.")
+      : (override?.contactBody ??
+        thankYouPageContent?.contactBody ??
+        "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.");
   const closingMessage =
     override?.closingMessage ??
     thankYouPageContent?.closingMessage ??
@@ -248,6 +270,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
   const contactEmail = siteSettings?.contactEmail || CONTACT_EMAIL;
   const purchaserSlotValue = purchaserFirstName ?? "";
+  const recipientSlotValue = recipientName ?? "";
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -263,10 +286,16 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {renderWithSlots(heading, { purchaserFirstName: purchaserSlotValue })}
+          {renderWithSlots(heading, {
+            purchaserFirstName: purchaserSlotValue,
+            recipientName: recipientSlotValue,
+          })}
         </h1>
         <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {subheading}
+          {renderWithSlots(subheading, {
+            purchaserFirstName: purchaserSlotValue,
+            recipientName: recipientSlotValue,
+          })}
         </p>
 
         <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
@@ -276,29 +305,36 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          {showsDiscountedPrice ? (
-            <span className="font-display text-2xl italic flex items-baseline gap-2">
-              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-              <span className="text-j-accent">{paidAmount.display}</span>
-            </span>
-          ) : (
-            <span className="font-display text-2xl italic text-j-accent">
-              {paidAmount.display ?? reading.price}
-            </span>
-          )}
+          {showsPurchaserOnlySections &&
+            (showsDiscountedPrice ? (
+              <span className="font-display text-2xl italic flex items-baseline gap-2">
+                <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+                <span className="text-j-accent">{paidAmount.display}</span>
+              </span>
+            ) : (
+              <span className="font-display text-2xl italic text-j-accent">
+                {paidAmount.display ?? reading.price}
+              </span>
+            ))}
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p className="whitespace-pre-line">
-            {renderWithSlots(confirmationBody, { purchaserFirstName: purchaserSlotValue })}
-          </p>
+          {showsPurchaserOnlySections && (
+            <p className="whitespace-pre-line">
+              {renderWithSlots(confirmationBody, {
+                purchaserFirstName: purchaserSlotValue,
+                recipientName: recipientSlotValue,
+              })}
+            </p>
+          )}
           <p className="whitespace-pre-line">
             {renderWithSlots(timelineBody, {
               deliveryDays: (
                 <span className="font-display italic text-j-accent">{deliveryDaysPhrase}</span>
               ),
+              recipientName: recipientSlotValue,
             })}
           </p>
           <p className="whitespace-pre-line">

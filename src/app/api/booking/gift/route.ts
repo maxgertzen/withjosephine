@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getOrCreateUser } from "@/lib/auth/users";
 import {
   GIFT_DELIVERY,
   HONEYPOT_FIELD,
@@ -84,7 +85,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!isFullyConsented(giftPurchaserConsentSnapshot(body), false)) {
+  if (!isFullyConsented(giftPurchaserConsentSnapshot(body), { requireArt9: false })) {
     if (!body.art6Consent) {
       errors.push({ field: "art6Consent", message: "Required to proceed." });
     }
@@ -202,14 +203,17 @@ export async function POST(request: Request): Promise<Response> {
   try {
     parsedBody = await request.json();
   } catch {
+    console.error("[booking-gift] invalid_json");
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   if (!isGiftBody(parsedBody)) {
+    console.error("[booking-gift] invalid_body_shape");
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
+    console.error("[booking-gift] honeypot_tripped");
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
@@ -220,6 +224,7 @@ export async function POST(request: Request): Promise<Response> {
     for (const error of fieldErrors) {
       if (!byField[error.field]) byField[error.field] = error.message;
     }
+    console.error("[booking-gift] validation_failed", { fields: Object.keys(byField) });
     return NextResponse.json({ error: "Validation failed", fieldErrors: byField }, { status: 400 });
   }
 
@@ -227,16 +232,29 @@ export async function POST(request: Request): Promise<Response> {
 
   const turnstileOk = await verifyTurnstileToken(parsedBody.turnstileToken, ip ?? undefined);
   if (!turnstileOk) {
+    console.error("[booking-gift] turnstile_rejected", {
+      cfRay: request.headers.get("cf-ray"),
+      ip,
+    });
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
-  }
-
-  const reading = await fetchReading(parsedBody.readingSlug);
-  if (!reading) {
-    return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
 
   const purchaserEmail = parsedBody.purchaserEmail.trim().toLowerCase();
   const purchaserFirstName = stripTemplateTags(parsedBody.purchaserFirstName.trim());
+
+  const [reading, userResult] = await Promise.all([
+    fetchReading(parsedBody.readingSlug),
+    getOrCreateUser({ email: purchaserEmail, name: purchaserFirstName }).catch(
+      (error) => {
+        console.error("[booking-gift] purchaser user-create failed", error);
+        return null;
+      },
+    ),
+  ]);
+  if (!reading) {
+    return NextResponse.json({ error: "Reading not found" }, { status: 404 });
+  }
+  const purchaserUserId = userResult?.userId ?? null;
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName
     ? stripTemplateTags(parsedBody.recipientName.trim())
@@ -309,7 +327,7 @@ export async function POST(request: Request): Promise<Response> {
       art9AcknowledgedAt: null,
       coolingOffAcknowledgedAt: nowIso,
       isGift: true,
-      purchaserUserId: null,
+      purchaserUserId,
       recipientEmail,
       giftDeliveryMethod: parsedBody.deliveryMethod,
       giftSendAt: parsedBody.deliveryMethod === GIFT_DELIVERY.scheduled ? parsedBody.giftSendAt! : null,

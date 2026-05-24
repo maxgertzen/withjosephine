@@ -14,10 +14,11 @@ import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
   fetchBookingForm,
-  fetchBookingPage,
   fetchGiftIntakePage,
   fetchReading,
 } from "@/lib/sanity/fetch";
+
+import { RecipientEmailEscapeHatch } from "./RecipientEmailEscapeHatch";
 
 export const dynamic = "force-dynamic";
 
@@ -42,12 +43,15 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   const submissionId = await verifyGiftClaimCookie(cookieValue);
 
   if (!submissionId) {
-    redirect("/gift/claim");
+    // Cookie expired mid-intake or recipient navigated directly. The original
+    // email link is still valid until the gift is claimed — surface that
+    // explicitly via ?expired=1 so /gift/claim renders the warmer "rested
+    // link" copy instead of the generic no-token message.
+    redirect("/gift/claim?expired=1");
   }
 
   // Sanity copy doesn't depend on the submission lookup; start it in parallel.
   const bookingFormPromise = fetchBookingForm();
-  const bookingPagePromise = fetchBookingPage();
   const intakePagePromise = fetchGiftIntakePage();
 
   const submission = await findSubmissionById(submissionId);
@@ -55,13 +59,12 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
   if (submission.giftClaimedAt) {
-    redirect("/");
+    redirect("/gift/already-submitted");
   }
 
-  const [reading, bookingForm, bookingPage, intakePageCopy] = await Promise.all([
+  const [reading, bookingForm, intakePageCopy] = await Promise.all([
     fetchReading(submission.reading?.slug ?? ""),
     bookingFormPromise,
-    bookingPagePromise,
     intakePagePromise,
   ]);
 
@@ -69,7 +72,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
 
-  const copy = intakePageCopy ?? GIFT_INTAKE_PAGE_DEFAULTS;
+  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...(intakePageCopy ?? {}) };
   const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
 
   const filteredSections = filterSectionsForReading(
@@ -94,24 +97,26 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
             <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
               {welcome ? copy.headingWelcome : copy.heading}
             </h1>
-            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-6">
               {lede}
             </p>
+            <RecipientEmailEscapeHatch recipientEmail={submission.recipientEmail ?? null} />
 
             <IntakeForm
               readingId={reading.slug}
               readingName={reading.name}
               sections={filteredSections}
-              nonRefundableNotice={bookingForm.nonRefundableNotice}
+              nonRefundableNotice=""
               pagination={bookingForm.pagination}
-              loadingStateCopy={bookingForm.loadingStateCopy}
-              submitLabel={bookingPage?.paymentButtonText ?? "Prepare my reading"}
+              loadingStateCopy="Sending your answers…"
+              submitLabel="Send my answers"
               nextLabel={bookingForm.nextButtonText}
               saveLaterLabel={bookingForm.saveAndContinueLaterText}
               pageIndicatorTagline={bookingForm.pageIndicatorTagline}
               mode="redeem"
               redeemSubmissionId={submission._id}
               redeemSuccessUrl={`/thank-you/${submission._id}?gift=1&redeemed=1`}
+              prefilledEmail={submission.recipientEmail ?? null}
             />
           </div>
         </article>

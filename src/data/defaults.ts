@@ -276,9 +276,13 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   resendLinkCtaLabel: string;
   privacyNote: string;
   editRecipientFormTitle: string;
+  editRecipientSelfSendIndicator: string;
   editRecipientFormRecipientNameLabel: string;
   editRecipientFormRecipientEmailLabel: string;
   editRecipientFormSendAtLabel: string;
+  editRecipientTimezoneLabel: string;
+  editRecipientTimezonePlaceholder: string;
+  editRecipientTimezoneFallbackHelp: string;
   editRecipientSaveButtonLabel: string;
   editRecipientSavingLabel: string;
   editRecipientCancelButtonLabel: string;
@@ -293,6 +297,18 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   resendRetryAfterHourTemplate: string;
   resendRetryAfterDayTemplate: string;
   resendRetryFallbackLabel: string;
+  flipToScheduledCtaLabel: string;
+  flipToScheduledFormTitle: string;
+  flipToScheduledSaveButtonLabel: string;
+  flipToScheduledSavingLabel: string;
+  sendNowCtaLabel: string;
+  sendNowConfirmCtaLabel: string;
+  sendNowSendingLabel: string;
+  sendNowSessionExpiredError: string;
+  cancelScheduledCtaLabel: string;
+  cancelScheduledConfirmCtaLabel: string;
+  cancelScheduledSendingLabel: string;
+  cancelScheduledSessionExpiredError: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -322,9 +338,14 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   privacyNote:
     "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
   editRecipientFormTitle: "Edit recipient",
+  editRecipientSelfSendIndicator: "Self-send delivery — you share the link yourself",
   editRecipientFormRecipientNameLabel: "Recipient name",
   editRecipientFormRecipientEmailLabel: "Recipient email",
   editRecipientFormSendAtLabel: "Send at",
+  editRecipientTimezoneLabel: "Time zone",
+  editRecipientTimezonePlaceholder: "Pick your time zone",
+  editRecipientTimezoneFallbackHelp:
+    "We couldn’t detect your time zone. Pick one below so the email arrives at the right moment.",
   editRecipientSaveButtonLabel: "Save changes",
   editRecipientSavingLabel: "Saving…",
   editRecipientCancelButtonLabel: "Cancel",
@@ -336,10 +357,25 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   actionGenericError: "Something went wrong. Please try again.",
   actionNetworkError: "Network problem. Please try again.",
   actionClosedError: "This gift can’t be edited anymore.",
-  editRecipientSendAtPreviewTemplate: "Arrives {date} in your timezone.",
+  editRecipientSendAtPreviewTemplate: "Arrives {date} ({tz}).",
   resendRetryAfterHourTemplate: "You can resend again at {when}.",
   resendRetryAfterDayTemplate: "You’ve hit today’s limit. Try again at {when}.",
   resendRetryFallbackLabel: "shortly",
+  flipToScheduledCtaLabel: "Let Josephine send it for me",
+  flipToScheduledFormTitle: "Have Josephine deliver the link",
+  flipToScheduledSaveButtonLabel: "Schedule it",
+  flipToScheduledSavingLabel: "Scheduling…",
+  sendNowCtaLabel: "Send now",
+  sendNowConfirmCtaLabel: "Tap again to send today",
+  sendNowSendingLabel: "Sending…",
+  sendNowSessionExpiredError:
+    "Your session expired. Please refresh and try again.",
+  cancelScheduledCtaLabel: "Cancel this gift",
+  cancelScheduledConfirmCtaLabel:
+    "Tap again to confirm — your reading will not be sent. This purchase is non-refundable.",
+  cancelScheduledSendingLabel: "Cancelling…",
+  cancelScheduledSessionExpiredError:
+    "Your session expired. Please refresh and try again.",
 };
 
 export interface GiftClaimPageContent {
@@ -349,6 +385,10 @@ export interface GiftClaimPageContent {
   noTokenBody: string;
   alreadyClaimedHeading: string;
   alreadyClaimedBody: string;
+  sessionExpiredHeading: string;
+  sessionExpiredBody: string;
+  alreadySubmittedHeading: string;
+  alreadySubmittedBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;
@@ -363,6 +403,12 @@ export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
   alreadyClaimedHeading: "This gift has already been opened",
   alreadyClaimedBody:
     "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
+  sessionExpiredHeading: "Your link rested for a moment",
+  sessionExpiredBody:
+    "Your claim session timed out. Open the gift link from your original email again — it's still good, and your reading is waiting.",
+  alreadySubmittedHeading: "We have your answers — thank you.",
+  alreadySubmittedBody:
+    "Your reading is in my hands now. If something in what you sent needs a correction, just write to me at hello@withjosephine.com and I'll take care of it.",
   welcomeHeading: "Welcome, {recipientName}.",
   welcomeBody:
     "Your reading is waiting. Tap the button below to share a few details so it can begin.",
@@ -466,6 +512,43 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
+export interface EmailRecipientIntakeReceivedContent {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  greeting: string;
+  thanksLine: string;
+  timelineLine: string;
+  contactLine: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeReceivedContent = {
+  subject: "Your reading is in my hands now",
+  preview: "Your answers landed safely — here's what happens next.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLine: "Your reading is in my hands",
+  greeting: "Hi {recipientName},",
+  thanksLine:
+    "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+  timelineLine:
+    "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+  contactLine:
+    "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+  cardLabel: "Your reading",
+  cardDeliveryLine: "Delivery within 7 days",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
 export interface EmailGiftPurchaseConfirmationContent {
   subjectSelfSend: string;
   subjectScheduled: string;
@@ -508,7 +591,7 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirm
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine:
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at withjosephine.com/my-gifts.",
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
@@ -564,25 +647,6 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
-export interface EmailDay2StartedContent {
-  subject: string;
-  preview: string;
-  greeting: string;
-  body: string[];
-  signOff: string | null;
-}
-
-export const EMAIL_DAY2_STARTED_DEFAULTS: EmailDay2StartedContent = {
-  subject: "A quick note — I’ve started your reading",
-  preview: "A quick note — I’ve started your reading",
-  greeting: "Hi {firstName},",
-  body: [
-    "Just a quick note to let you know I’ve sat down with your chart and your records this week. I always want my clients to know when the work begins, so it doesn’t feel like silence on your end.",
-    "I’m not going to preview anything — your reading should arrive whole, the way it’s meant to. But I wanted you to know it’s in good hands, and that I’m taking the time it asks for.",
-    "You’ll hear from me again when it’s ready, within the next five days.",
-  ],
-  signOff: null,
-};
 
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
@@ -595,6 +659,30 @@ export interface EmailDay7DeliveryContent {
   comfortFollowUp: string;
   signOff: string | null;
 }
+
+export interface EmailPrivacyExportContent {
+  subject: string;
+  preview: string;
+  greeting: string;
+  introLine: string;
+  contentsLine: string;
+  ctaLabel: string;
+  expiryLine: string;
+  signOff: string | null;
+}
+
+export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
+  subject: "Your Josephine data export",
+  preview: "Your Josephine data export is ready",
+  greeting: "Hi,",
+  introLine: "Your Josephine data export is ready.",
+  contentsLine:
+    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+  ctaLabel: "Download your export (ZIP)",
+  expiryLine:
+    "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  signOff: null,
+};
 
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",

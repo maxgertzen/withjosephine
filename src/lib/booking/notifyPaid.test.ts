@@ -64,7 +64,9 @@ const SUBMISSION: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   mockMarkPaid.mockReset().mockResolvedValue(undefined);
@@ -194,6 +196,46 @@ describe("applyPaidEvent", () => {
     expect(userOrder).toBeLessThan(paidOrder);
   });
 
+  it("leaves recipient_user_id null and skips the user resolve for gift submissions", async () => {
+    const giftSubmission: SubmissionRecord = {
+      ...SUBMISSION,
+      isGift: true,
+      purchaserUserId: "user_purchaser",
+      recipientEmail: "recipient@example.com",
+      giftDeliveryMethod: "scheduled",
+      giftSendAt: "2026-05-21T12:00:00Z",
+    };
+
+    await applyPaidEvent(giftSubmission, {
+      stripeEventId: "evt_gift",
+      stripeSessionId: "cs_gift",
+      paidAt: "2026-05-20T12:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+      country: "US",
+    });
+
+    expect(mockGetOrCreateUser).not.toHaveBeenCalled();
+    expect(mockMarkPaid).toHaveBeenCalledOnce();
+    const [, paidArg] = mockMarkPaid.mock.calls[0]!;
+    expect(paidArg.recipientUserId).toBeNull();
+  });
+
+  it("still resolves and writes recipient_user_id for non-gift submissions", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_self",
+      stripeSessionId: "cs_self",
+      paidAt: "2026-05-20T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      country: null,
+    });
+
+    expect(mockGetOrCreateUser).toHaveBeenCalledOnce();
+    const [, paidArg] = mockMarkPaid.mock.calls[0]!;
+    expect(paidArg.recipientUserId).toBe("user_test_1");
+  });
+
   it("passes a financial_records mirror to markSubmissionPaid when amount + currency present (atomic dbBatch)", async () => {
     await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
@@ -232,6 +274,40 @@ describe("applyPaidEvent", () => {
 
     const call = mockMarkPaid.mock.calls[0]!;
     expect(call[2]).toBeUndefined();
+  });
+
+  it("skips order_confirmation for gift purchasers (B-3 — gift_purchase_confirmation handles them)", async () => {
+    await applyPaidEvent(
+      { ...SUBMISSION, isGift: true },
+      {
+        stripeEventId: "evt_gift",
+        stripeSessionId: "cs_gift",
+        paidAt: "2026-04-28T12:00:00Z",
+        amountPaidCents: 9900,
+        amountPaidCurrency: "usd",
+        country: null,
+      },
+    );
+
+    expect(mockJosephine).toHaveBeenCalledOnce();
+    expect(mockOrderConfirmation).not.toHaveBeenCalled();
+    expect(mockAppendEmailFired).not.toHaveBeenCalled();
+  });
+
+  it("still sends order_confirmation for non-gift purchases (B-3 regression guard)", async () => {
+    await applyPaidEvent(
+      { ...SUBMISSION, isGift: false },
+      {
+        stripeEventId: "evt_purchase",
+        stripeSessionId: "cs_purchase",
+        paidAt: "2026-04-28T12:00:00Z",
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+        country: null,
+      },
+    );
+
+    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
   });
 
   it("still applies the paid state with recipientUserId=null when user-create throws", async () => {

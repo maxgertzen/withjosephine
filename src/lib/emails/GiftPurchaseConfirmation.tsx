@@ -3,6 +3,7 @@ import { Button, Container, Hr, Link, Section } from "@react-email/components";
 import type { EmailGiftPurchaseConfirmationContent } from "@/data/defaults";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 
+import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
 
 export type GiftPurchaseConfirmationVars = {
@@ -12,6 +13,7 @@ export type GiftPurchaseConfirmationVars = {
   amountPaidDisplay: string | null;
   recipientName: string | null;
   giftMessage: string | null;
+  myGiftsUrl: string;
 } & (
   | {
       variant: "self_send";
@@ -30,22 +32,19 @@ export type GiftPurchaseConfirmationProps = {
   copy: EmailGiftPurchaseConfirmationContent;
 };
 
-function template(text: string, vars: GiftPurchaseConfirmationVars): string {
-  return text
-    .replaceAll("{purchaserFirstName}", vars.purchaserFirstName)
-    .replaceAll("{readingName}", vars.readingName)
-    .replaceAll("{recipientName}", vars.recipientName ?? "your recipient")
-    .replaceAll(
-      "{sendAtDisplay}",
-      vars.variant === GIFT_DELIVERY.scheduled ? vars.sendAtDisplay : "",
-    );
-}
-
 function priceCell(vars: GiftPurchaseConfirmationVars): string {
   return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
 }
 
-export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmationProps) {
+export function GiftPurchaseConfirmation({ vars, copy: rawCopy }: GiftPurchaseConfirmationProps) {
+  // Normalize: empty recipientName falls back to a friendly placeholder;
+  // self_send variant has no sendAtDisplay → substitute empty string.
+  const tokens = {
+    ...vars,
+    recipientName: vars.recipientName ?? "your recipient",
+    sendAtDisplay: vars.variant === GIFT_DELIVERY.scheduled ? vars.sendAtDisplay : "",
+  };
+  const copy = applyTokens(rawCopy, tokens);
   const price = priceCell(vars);
   const heroLine = vars.variant === GIFT_DELIVERY.selfSend ? copy.heroLineSelfSend : copy.heroLineScheduled;
   const detailLine =
@@ -112,8 +111,8 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>{template(copy.greeting, vars)}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{template(detailLine, vars)}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{detailLine}</p>
             </Section>
 
             {vars.variant === GIFT_DELIVERY.selfSend ? (
@@ -136,14 +135,14 @@ export function GiftPurchaseConfirmation({ vars, copy }: GiftPurchaseConfirmatio
                   {copy.shareUrlHelper}
                 </p>
                 <p
-                  className="font-sans text-muted"
+                  className="font-sans"
                   style={{
                     margin: "8px 0 0 0",
                     fontSize: 13,
                     wordBreak: "break-all",
                   }}
                 >
-                  <Link href={vars.claimUrl} className="text-ink no-underline">
+                  <Link href={vars.claimUrl} className="text-gold underline">
                     {vars.claimUrl}
                   </Link>
                 </p>

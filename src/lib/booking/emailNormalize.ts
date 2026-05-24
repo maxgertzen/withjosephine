@@ -20,8 +20,22 @@
  * cites ZWSP-variant spam, add an explicit invisible-codepoint strip
  * before the trim+lowercase pipeline.
  */
+/**
+ * Strict normal form for an email address, preserving the address verbatim
+ * (no `+suffix` stripping). Used wherever we need to compare a freshly-typed
+ * email against a persisted value as literally the same address — e.g. the
+ * gift-redeem recipient-email match, or seeding the pre-filled intake field
+ * with the canonical form so draft-restore stays in sync.
+ *
+ * Differs from {@link ownEmailKey} which collapses gmail-style aliases for
+ * own-email equality; use that when "alice+foo@" should equal "alice@".
+ */
+export function normalizeEmailForm(email: string): string {
+  return email.normalize("NFKC").trim().toLowerCase();
+}
+
 export function ownEmailKey(email: string): string {
-  const normalized = email.normalize("NFKC").trim().toLowerCase();
+  const normalized = normalizeEmailForm(email);
   const atIdx = normalized.lastIndexOf("@");
   if (atIdx < 1) return normalized;
   const local = normalized.slice(0, atIdx);

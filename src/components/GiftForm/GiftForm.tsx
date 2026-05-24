@@ -19,6 +19,7 @@ import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { errorClasses, errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
 
 type FieldErrors = Partial<Record<string, string>>;
@@ -233,6 +234,16 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
 
   const isScheduled = deliveryMethod === GIFT_DELIVERY.scheduled;
 
+  const isFormValid =
+    Boolean(purchaserFirstName.trim()) &&
+    Boolean(purchaserEmail.trim()) &&
+    (!isScheduled ||
+      (Boolean(recipientName.trim()) &&
+        Boolean(recipientEmail.trim()) &&
+        Boolean(giftSendAt))) &&
+    consentSnapshot.art6.acknowledged &&
+    consentSnapshot.coolingOff.acknowledged;
+
   return (
     <form onSubmit={onSubmit} noValidate className="w-full max-w-xl mx-auto flex flex-col gap-8 px-6">
       <header className="text-center">
@@ -402,10 +413,10 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
                   fieldErrors.giftSendAt ? "gift-send-at-error" : undefined
                 }
                 aria-invalid={Boolean(fieldErrors.giftSendAt)}
-                className="rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent"
+                className={`rounded-sm border border-j-border-blush bg-j-ivory px-3 py-2 font-body text-base text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
               />
               {fieldErrors.giftSendAt ? (
-                <span id="gift-send-at-error" className="font-body text-xs text-j-rose">
+                <span id="gift-send-at-error" className={errorClassesSmall}>
                   {fieldErrors.giftSendAt}
                 </span>
               ) : null}
@@ -449,15 +460,15 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       ) : null}
 
       {topLevelError ? (
-        <p role="alert" className="font-body text-sm text-j-rose">
+        <p role="alert" className={errorClasses}>
           {topLevelError}
         </p>
       ) : null}
 
       <button
         type="submit"
-        disabled={submitting}
-        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        disabled={submitting || !isFormValid}
+        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         {submitting ? (
           copy.loadingStateCopy

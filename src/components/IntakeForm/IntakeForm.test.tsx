@@ -104,6 +104,11 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "test-site-key");
+  // Some dev shells export NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS=1 for
+  // local browsing; vitest inherits and useTurnstileChallenge then
+  // computes turnstileRequired=false, breaking the token-supplied
+  // submit assertion below.
+  vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
   __resetSwapNameCacheForTest();
 });
@@ -149,10 +154,17 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
-  it("surfaces a validation summary while required fields are empty", () => {
+  it("disables Continue while required fields are empty (bug #3)", () => {
     renderForm();
-    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeEnabled();
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
+  it("does not render a validation summary on first paint (bug #2)", () => {
+    renderForm();
+    expect(screen.queryByText(/still need/)).toBeNull();
   });
 
   it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
@@ -177,7 +189,7 @@ describe("IntakeForm — single-page flow", () => {
     expect(body.turnstileToken).toBe("turnstile-token-stub");
   });
 
-  it("blocks submission with per-checkbox errors when Art. 6 or Art. 9 unchecked", async () => {
+  it("blocks submission when consents are incomplete — Continue stays disabled (bug #3)", async () => {
     const user = userEvent.setup();
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
@@ -185,13 +197,9 @@ describe("IntakeForm — single-page flow", () => {
     await user.click(screen.getByLabelText(/non-refundable/));
     // Check only the Art. 6 consent — Art. 9 deliberately left unchecked.
     await user.click(screen.getByLabelText(/processing my booking details/));
-    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
-
-    // The Art. 9 checkbox should show an inline error; Art. 6 should not.
-    await waitFor(() => {
-      const art9 = screen.getByLabelText(/explicitly consent/) as HTMLInputElement;
-      expect(art9.getAttribute("aria-invalid") ?? "false").toBe("true");
-    });
+    const submit = screen.getByRole("button", { name: /Continue to payment/i });
+    expect(submit).toHaveAttribute("aria-disabled", "true");
+    await user.click(submit).catch(() => undefined);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -312,32 +320,44 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     );
   }
 
-  it("surfaces validation summary when both required fields are empty", () => {
+  it("disables Next when both required fields are empty (bug #3)", () => {
     renderProdShape();
-    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.queryByText(/still need/)).toBeNull();
   });
 
-  it("keeps validation summary visible when only the email is filled", async () => {
+  it("keeps Next disabled when only the email is filled (bug #3)", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
-  it("keeps validation summary visible when only the name is filled", async () => {
+  it("keeps Next disabled when only the name is filled (bug #3)", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
-  it("keeps validation summary visible when the email format is invalid", async () => {
+  it("keeps Next disabled when the email format is invalid (bug #3)", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "not-an-email");
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
   it("clears the validation summary once both required fields are valid", async () => {
@@ -368,10 +388,13 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.queryByRole("button", { name: /Continue to payment/i })).toBeNull();
   });
 
-  it("surfaces the validation summary while current-page validation is failing", () => {
+  it("disables Next while current-page validation is failing (bug #3)", () => {
     renderForm(TWO_PAGE_SECTIONS);
-    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
-    expect(screen.getByText(/still need/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.queryByText(/still need/)).toBeNull();
   });
 
   it("advances to page 2 when current-page validation passes", async () => {

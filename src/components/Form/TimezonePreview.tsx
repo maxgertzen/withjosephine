@@ -1,17 +1,27 @@
 import { formatGiftSendAtPreview } from "@/lib/booking/formatGiftSendAt";
 
+const TEMPLATE_TOKEN = {
+  date: /\{date\}/g,
+  tz: /\{tz\}/g,
+} as const;
+
 export function TimezonePreview({
   value,
   template,
+  timeZone,
   className,
 }: {
   value: string;
   template: string;
+  timeZone?: string | null;
   className?: string;
 }) {
   const formatted = formatGiftSendAtPreview(value);
   if (formatted === null) return null;
-  const message = template.replace(/\{date\}/g, formatted);
+  const zoneLabel = timeZone ?? "your local time";
+  const message = template
+    .replace(TEMPLATE_TOKEN.date, formatted)
+    .replace(TEMPLATE_TOKEN.tz, zoneLabel);
   return (
     <span
       aria-live="polite"

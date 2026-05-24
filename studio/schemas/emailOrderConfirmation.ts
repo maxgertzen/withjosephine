@@ -1,9 +1,16 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
+import { slotValidation } from "../lib/validateSlots";
+
+const validateOrderSlots = slotValidation("emailOrderConfirmation");
+
 export const emailOrderConfirmation = defineType({
   name: "emailOrderConfirmation",
   title: "Email — Order Confirmation",
   type: "document",
+  description:
+    "Sent to a customer after their Stripe payment succeeds for a self-purchase. Confirms order receipt and sets timing expectations for the reading.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -12,6 +19,7 @@ export const emailOrderConfirmation = defineType({
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
+    tokenReferenceField("emailOrderConfirmation"),
     defineField({
       name: "subject",
       title: "Subject",
@@ -53,6 +61,7 @@ export const emailOrderConfirmation = defineType({
       type: "string",
       group: "body",
       description: 'Use "{firstName}" to insert the customer\'s first name.',
+      validation: validateOrderSlots,
       initialValue: "Hi {firstName},",
     }),
     defineField({
@@ -62,6 +71,7 @@ export const emailOrderConfirmation = defineType({
       rows: 2,
       group: "body",
       description: 'Use "{readingName}" to insert the reading name.',
+      validation: validateOrderSlots,
       initialValue:
         "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don't need to do anything else.",
     }),

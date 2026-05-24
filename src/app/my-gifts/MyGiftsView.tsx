@@ -1,19 +1,14 @@
-import { format, parseISO } from "date-fns";
-
 import { AuthGatedPage } from "@/components/AuthGatedPage/AuthGatedPage";
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
+import { GiftStatusPill } from "@/components/GiftStatusPill";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
-import {
-  giftResendRateLimit,
-  type GiftStatus,
-  giftStatusFor,
-} from "@/lib/booking/giftStatus";
+import { giftResendRateLimit, giftStatusFor } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
@@ -126,40 +121,27 @@ function GiftsList({ gifts, copy }: { gifts: SubmissionRecord[]; copy: MyGiftsPa
 
 function GiftCard({ gift, copy }: { gift: SubmissionRecord; copy: MyGiftsPageContent }) {
   const status = giftStatusFor(gift);
-  const recipientLabel = recipientLabelFor(gift);
+  const recipientName = recipientLabelFor(gift);
+  const recipientEmail = gift.recipientEmail;
+  const showsEmailUnderName =
+    recipientEmail && recipientEmail.toLowerCase() !== recipientName.toLowerCase();
   return (
     <li className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h2 className="font-display italic text-xl text-j-text-heading">
             {gift.reading?.name ?? "A reading"}
-            <span className="font-display italic text-j-text-muted"> · for {recipientLabel}</span>
+            <span className="font-display italic text-j-text-muted"> · for {recipientName}</span>
           </h2>
-          <p className="font-body text-sm text-j-text-muted mt-1">
-            {statusLine(status, copy)}
-          </p>
+          {showsEmailUnderName ? (
+            <p className="font-body text-xs text-j-text-muted mt-0.5">{recipientEmail}</p>
+          ) : null}
+          <GiftStatusPill status={status} copy={copy} className="mt-2" />
         </div>
         <GiftCardActions gift={toGiftCardData(gift)} status={status} copy={copy} />
       </div>
     </li>
   );
-}
-
-function statusLine(status: GiftStatus, copy: MyGiftsPageContent): string {
-  switch (status.kind) {
-    case "scheduled":
-      return `${copy.statusScheduledLabel} ${formatDate(status.sendAt)}`;
-    case "self_send_ready":
-      return copy.statusSelfSendReadyLabel;
-    case "sent_waiting_recipient":
-      return copy.statusSentLabel;
-    case "recipient_preparing":
-      return copy.statusPreparingLabel;
-    case "delivered":
-      return `${copy.statusDeliveredLabel} ${formatDate(status.deliveredAt)}`;
-    case "cancelled":
-      return copy.statusCancelledLabel;
-  }
 }
 
 function EmptyState({ copy }: { copy: MyGiftsPageContent }) {
@@ -176,9 +158,4 @@ function EmptyState({ copy }: { copy: MyGiftsPageContent }) {
       </div>
     </div>
   );
-}
-
-
-function formatDate(iso: string): string {
-  return format(parseISO(iso), "MMMM d, yyyy");
 }

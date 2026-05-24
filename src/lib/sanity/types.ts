@@ -127,9 +127,13 @@ export type SanityMyGiftsPage = {
   resendLinkCtaLabel: string;
   privacyNote: string;
   editRecipientFormTitle?: string;
+  editRecipientSelfSendIndicator?: string;
   editRecipientFormRecipientNameLabel?: string;
   editRecipientFormRecipientEmailLabel?: string;
   editRecipientFormSendAtLabel?: string;
+  editRecipientTimezoneLabel?: string;
+  editRecipientTimezonePlaceholder?: string;
+  editRecipientTimezoneFallbackHelp?: string;
   editRecipientSaveButtonLabel?: string;
   editRecipientSavingLabel?: string;
   editRecipientCancelButtonLabel?: string;
@@ -144,6 +148,10 @@ export type SanityMyGiftsPage = {
   resendRetryAfterHourTemplate?: string;
   resendRetryAfterDayTemplate?: string;
   resendRetryFallbackLabel?: string;
+  flipToScheduledCtaLabel?: string;
+  flipToScheduledFormTitle?: string;
+  flipToScheduledSaveButtonLabel?: string;
+  flipToScheduledSavingLabel?: string;
 };
 
 export type SanityGiftClaimPage = {
@@ -153,6 +161,10 @@ export type SanityGiftClaimPage = {
   noTokenBody: string;
   alreadyClaimedHeading: string;
   alreadyClaimedBody: string;
+  sessionExpiredHeading: string;
+  sessionExpiredBody: string;
+  alreadySubmittedHeading: string;
+  alreadySubmittedBody: string;
   welcomeHeading: string;
   welcomeBody: string;
   welcomeCtaLabel: string;
@@ -203,6 +215,8 @@ export type SanityEmailOrderConfirmation = {
   footerDisclaimer: string;
 };
 
+export type SanityEmailRecipientIntakeReceived = SanityEmailOrderConfirmation;
+
 export type SanityEmailGiftPurchaseConfirmation = {
   subjectSelfSend: string;
   subjectScheduled: string;
@@ -248,11 +262,14 @@ export type SanityEmailGiftClaim = {
   footerDisclaimer: string;
 };
 
-export type SanityEmailDay2Started = {
+export type SanityEmailPrivacyExport = {
   subject: string;
   preview: string;
   greeting: string;
-  body: string[];
+  introLine: string;
+  contentsLine: string;
+  ctaLabel: string;
+  expiryLine: string;
   signOff: string | null;
 };
 
@@ -321,9 +338,15 @@ export type SanityThankYouPage = {
   giftPurchaserHeading?: string;
   giftPurchaserSubheading?: string;
   giftPurchaserBody?: string;
+  giftPurchaserSelfSendSubheading?: string;
+  giftPurchaserSelfSendBody?: string;
+  giftPurchaserReadingLabel?: string;
+  giftPurchaserTimelineBody?: string;
+  giftPurchaserContactBody?: string;
   giftRecipientHeading?: string;
   giftRecipientSubheading?: string;
   giftRecipientBody?: string;
+  giftRecipientContactBody?: string;
   overrides?: SanityThankYouOverride[];
   seo?: SanitySeo;
 };

@@ -220,6 +220,61 @@ describe("/api/booking/gift", () => {
     expect(createSubmissionMock).not.toHaveBeenCalled();
   });
 
+  it("logs [booking-gift] turnstile_rejected on Turnstile failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockVerify.mockResolvedValueOnce(false);
+    await callRoute(SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] turnstile_rejected"),
+      expect.any(Object),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] validation_failed with field names on Zod rejection", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ ...SELF_SEND_BODY, purchaserEmail: "not-an-email" });
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] validation_failed"),
+      expect.objectContaining({ fields: expect.any(Array) }),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] invalid_json on body parse failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const badRequest = new Request("https://withjosephine.com/api/booking/gift", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not-json{",
+    });
+    const { POST } = await import("../route");
+    const res = await POST(badRequest);
+    expect(res.status).toBe(400);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] invalid_json"),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] invalid_body_shape on isGiftBody rejection", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ unrelated: "shape" } as unknown as typeof SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] invalid_body_shape"),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs [booking-gift] honeypot_tripped when honeypot field is non-empty", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({ ...SELF_SEND_BODY, website: "spam-bot" } as unknown as typeof SELF_SEND_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[booking-gift] honeypot_tripped"),
+    );
+    errSpy.mockRestore();
+  });
+
   it("returns 404 when reading is missing", async () => {
     mockReading.mockResolvedValueOnce(null);
     const res = await callRoute(SELF_SEND_BODY);

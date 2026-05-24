@@ -1,4 +1,4 @@
-import { GIFT_DELIVERY } from "./constants";
+import { GIFT_DELIVERY, GIFT_STATUS_KIND } from "./constants";
 import type { EmailFiredEntry, SubmissionRecord } from "./submissions";
 
 /**
@@ -11,31 +11,34 @@ import type { EmailFiredEntry, SubmissionRecord } from "./submissions";
  * private to the recipient.
  */
 export type GiftStatus =
-  | { kind: "scheduled"; sendAt: string }
-  | { kind: "self_send_ready"; firedAt: string | null }
-  | { kind: "sent_waiting_recipient"; firedAt: string }
-  | { kind: "recipient_preparing"; claimedAt: string }
-  | { kind: "delivered"; deliveredAt: string }
-  | { kind: "cancelled"; cancelledAt: string };
+  | { kind: typeof GIFT_STATUS_KIND.scheduled; sendAt: string }
+  | { kind: typeof GIFT_STATUS_KIND.selfSendReady; firedAt: string | null }
+  | { kind: typeof GIFT_STATUS_KIND.sentWaitingRecipient; firedAt: string }
+  | { kind: typeof GIFT_STATUS_KIND.recipientPreparing; claimedAt: string }
+  | { kind: typeof GIFT_STATUS_KIND.delivered; deliveredAt: string }
+  | { kind: typeof GIFT_STATUS_KIND.cancelled; cancelledAt: string };
 
 export function giftStatusFor(record: SubmissionRecord): GiftStatus {
   if (record.giftCancelledAt) {
-    return { kind: "cancelled", cancelledAt: record.giftCancelledAt };
+    return { kind: GIFT_STATUS_KIND.cancelled, cancelledAt: record.giftCancelledAt };
   }
   if (record.deliveredAt) {
-    return { kind: "delivered", deliveredAt: record.deliveredAt };
+    return { kind: GIFT_STATUS_KIND.delivered, deliveredAt: record.deliveredAt };
   }
   if (record.giftClaimedAt) {
-    return { kind: "recipient_preparing", claimedAt: record.giftClaimedAt };
+    return { kind: GIFT_STATUS_KIND.recipientPreparing, claimedAt: record.giftClaimedAt };
   }
   if (record.giftDeliveryMethod === GIFT_DELIVERY.selfSend) {
-    return { kind: "self_send_ready", firedAt: record.giftClaimEmailFiredAt };
+    return { kind: GIFT_STATUS_KIND.selfSendReady, firedAt: record.giftClaimEmailFiredAt };
   }
   if (record.giftClaimEmailFiredAt) {
-    return { kind: "sent_waiting_recipient", firedAt: record.giftClaimEmailFiredAt };
+    return {
+      kind: GIFT_STATUS_KIND.sentWaitingRecipient,
+      firedAt: record.giftClaimEmailFiredAt,
+    };
   }
   return {
-    kind: "scheduled",
+    kind: GIFT_STATUS_KIND.scheduled,
     sendAt: record.giftSendAt ?? record.createdAt,
   };
 }

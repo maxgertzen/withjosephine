@@ -25,7 +25,9 @@ function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
     giftClaimEmailFiredAt: null,
     giftClaimedAt: null,
     giftCancelledAt: null,
-    ...overrides,
+    giftClaimSentNowAt: null,
+    giftClaimSentNowActor: null,
+    giftClaimPriorAlarmAt: null,    ...overrides,
   };
 }
 
@@ -74,7 +76,7 @@ describe("diffSubmission", () => {
 
   it("identifies missing email-fired entries", () => {
     const e1 = makeEmail("order_confirmation", "2026-05-01T00:00:00.000Z");
-    const e2 = makeEmail("day2", "2026-05-03T00:00:00.000Z");
+    const e2 = makeEmail("order_confirmation", "2026-05-03T00:00:00.000Z");
     const d1 = makeD1({ emailsFired: [e1, e2] });
     const sanity = makeMatchingSanity(d1);
     sanity.emailsFired = [e1];

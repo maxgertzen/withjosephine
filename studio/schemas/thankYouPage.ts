@@ -91,28 +91,78 @@ export const thankYouPage = defineType({
     }),
     defineField({
       name: "giftPurchaserSubheading",
-      title: "Gift purchaser subheading",
+      title: "Gift purchaser subheading (scheduled delivery)",
       type: "text",
       rows: 2,
+      description:
+        "Shown when the purchaser scheduled the gift for Josephine to deliver. Self-send mode uses the dedicated self-send subheading field below.",
       initialValue: "I'll take it from here. The recipient will receive a note from me with their claim link.",
     }),
     defineField({
       name: "giftPurchaserBody",
-      title: "Gift purchaser body",
+      title: "Gift purchaser body (scheduled delivery)",
       type: "text",
       rows: 3,
       description:
-        "Replaces the standard confirmation paragraph for gift purchasers. {recipientName} resolves to the recipient's name when known (self-send gifts may not have one).",
+        "Replaces the standard confirmation paragraph for scheduled-delivery gift purchasers. {recipientName} resolves to the recipient's name when known. Self-send mode uses the dedicated self-send body field below.",
       initialValue:
         "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link — they'll share their intake details with me from there.",
+    }),
+    defineField({
+      name: "giftPurchaserSelfSendSubheading",
+      title: "Gift purchaser subheading (self-send delivery)",
+      type: "text",
+      rows: 2,
+      description:
+        "Shown to a purchaser who picked self-send delivery — they hand off the claim link themselves; Josephine doesn't send anything to the recipient.",
+      initialValue:
+        "Your gift link is ready in the email I just sent — share it with them whenever feels right.",
+    }),
+    defineField({
+      name: "giftPurchaserSelfSendBody",
+      title: "Gift purchaser body (self-send delivery)",
+      type: "text",
+      rows: 3,
+      description:
+        "Replaces the standard confirmation paragraph for self-send gift purchasers. Frames the next step as forwarding the link, not waiting on a scheduled send.",
+      initialValue:
+        "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready — they'll claim from there.",
+    }),
+    defineField({
+      name: "giftPurchaserReadingLabel",
+      title: "Gift purchaser reading-card label",
+      type: "string",
+      description:
+        'Small label above the reading name on the gift-purchaser order card. Defaults to "Your gift" so the framing matches the purchase context.',
+      initialValue: "Your gift",
+    }),
+    defineField({
+      name: "giftPurchaserTimelineBody",
+      title: "Gift purchaser timeline paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Second paragraph on the gift-purchaser thank-you page. Recipient-perspective copy — the purchaser isn't getting the reading themselves. Use {deliveryDays} for the accented delivery-time phrase.",
+      initialValue:
+        "I'll begin the recipient's reading within the next two days of them claiming the gift, and I'll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.",
+    }),
+    defineField({
+      name: "giftPurchaserContactBody",
+      title: "Gift purchaser contact paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Third paragraph for gift purchasers — invites them to reach out if anything's off with the gift itself. Use {email} for the contact email link.",
+      initialValue:
+        "If anything comes up with the gift — a wrong recipient email, a change of plan, anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
     }),
     defineField({
       name: "giftRecipientHeading",
       title: "Gift recipient heading",
       type: "string",
       description:
-        "Shown to a recipient who's just finished filling in their intake on a redeemed gift. Use {recipientName} as a placeholder if you want to address them by name.",
-      initialValue: "Thank you. Your reading is in my hands now.",
+        "Shown to a recipient who's just finished filling in their intake on a redeemed gift. Use {recipientName} as a placeholder to address them by name.",
+      initialValue: "Thank you, {recipientName}. Your reading is in my hands now.",
     }),
     defineField({
       name: "giftRecipientSubheading",
@@ -128,6 +178,16 @@ export const thankYouPage = defineType({
       rows: 3,
       initialValue:
         "I'll begin your reading within the next two days, and I'll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.",
+    }),
+    defineField({
+      name: "giftRecipientContactBody",
+      title: "Gift recipient contact paragraph",
+      type: "text",
+      rows: 3,
+      description:
+        "Optional third paragraph for the recipient. Invites them to reach out if anything's off. Use {email} for the contact email link.",
+      initialValue:
+        "If anything comes up — a question, a detail you forgot to mention, or anything that doesn't look right in your confirmation — just reply to that email or write to me at {email}. It comes straight to me.",
     }),
     defineField({
       name: "overrides",

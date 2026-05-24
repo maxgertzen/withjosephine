@@ -76,6 +76,68 @@ Each D1 database has its own `d1_migrations` table. Production and staging stay 
 
 ---
 
+## Gift cancellation reversal (un-cancel)
+
+When a purchaser asks to reverse a cancelled scheduled gift (e.g. "I clicked cancel by mistake"). The cancel-scheduled UI is destructive by design; there is no in-product un-cancel affordance. Recovery is a D1 console operation, and it is **incomplete on its own** — see "DO alarm is not re-armed by SQL" below.
+
+**Before touching anything**, confirm with the purchaser:
+1. The submission ID (or recipient email + send-at date from their `/my-gifts` page).
+2. That they understand the no-refund policy applies — un-cancelling is an operational courtesy, not a contractual right.
+3. Whether the original `gift_send_at` is still in the future. If not, a fresh send time must be agreed (must be ≥ now + 15 minutes per the `flip-to-scheduled` validator).
+
+**SQL — clear the cancellation flags:**
+
+```sql
+-- 1. Confirm current state (read-only; never skip this).
+SELECT
+  id,
+  gift_delivery_method,
+  gift_send_at,
+  gift_cancelled_at,
+  gift_cancelled_by,
+  gift_cancelled_reason,
+  gift_claim_email_fired_at,
+  gift_claim_sent_now_at,
+  gift_claimed_at
+FROM submissions
+WHERE id = '<SUBMISSION_ID>';
+
+-- 2. Validate: row must have gift_cancelled_at SET and BOTH
+--    gift_claim_email_fired_at AND gift_claim_sent_now_at NULL.
+--    If either fired_at column is set, the email already went out — there is
+--    nothing to un-cancel; route the conversation to gift-claim-regenerate
+--    or a fresh purchase instead.
+
+-- 3. Clear the cancel flags. UPDATE gift_send_at to the agreed new time if
+--    the original is in the past.
+UPDATE submissions
+SET
+  gift_cancelled_at = NULL,
+  gift_cancelled_by = NULL,
+  gift_cancelled_reason = NULL
+WHERE id = '<SUBMISSION_ID>'
+  AND gift_cancelled_at IS NOT NULL
+  AND gift_claim_email_fired_at IS NULL
+  AND gift_claim_sent_now_at IS NULL;
+```
+
+**DO alarm is not re-armed by SQL.** The Durable Object scheduler holds the alarm state separately from D1. Clearing the cancel flags makes the row look scheduled, but no alarm is registered — the claim email will not fire at `gift_send_at` automatically.
+
+Two recovery options:
+
+1. **Have the purchaser re-trigger the flow from `/my-gifts`.** Currently this means: cancel-auto-send → flip-to-scheduled (the existing UI re-arms the alarm via `scheduleGiftAlarm` inside the route). The purchaser walks both buttons. Slightly clumsy, but uses production code paths only.
+2. **Send-now**: from `/my-gifts`, the purchaser uses the "send now" CTA to dispatch the claim email immediately. The alarm is irrelevant since the email fires synchronously. Use this when the original send-at is already in the past.
+
+If neither path works (e.g. the purchaser can't sign in), the operational fallback is a fresh purchase. Filing a `scheduleGiftAlarm`-re-arm internal endpoint is on the operational backlog — track in `www/docs/BACKLOG.md` if requests recur.
+
+**Tail the dispatcher** at fire time to confirm any alarm landed:
+
+```bash
+pnpm wrangler tail --env production --format=pretty | rg -i "gift[_-]?claim|dispatch"
+```
+
+---
+
 ## Sanity Datasets
 
 The Sanity project (`e8jsb14m`) hosts two datasets:

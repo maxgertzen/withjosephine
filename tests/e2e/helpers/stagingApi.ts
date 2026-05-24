@@ -5,6 +5,8 @@
 // attach automatically). `issueMagicLink` + the Sanity pollers use native
 // `fetch` / `@sanity/client` because the listen spec calls them outside
 // of a Playwright `test.use({ extraHTTPHeaders })` scope.
+import { spawn } from "node:child_process";
+
 import type { APIRequestContext } from "@playwright/test";
 import { createClient, type SanityClient } from "@sanity/client";
 
@@ -44,6 +46,25 @@ export function accessHeadersOrEmpty(): Record<string, string> {
   };
 }
 
+// Per-request opt-out for Resend. When RESEND_E2E_DRY_RUN_SECRET is set on
+// the runner, every sandbox request carries this header — the staging worker
+// matches it against its own secret and skips the Resend API call, returning
+// { kind: 'dry_run' } at the sendOrSkip seam. Staging humans don't set the
+// header so their bookings still trigger real emails.
+export function resendDryRunHeaderOrEmpty(): Record<string, string> {
+  const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
+  if (!secret) return {};
+  return { "X-E2E-Resend-DryRun": secret };
+}
+
+// Composed header bundle every sandbox spec sends on every request: CF Access
+// (so the request reaches staging) + Resend dry-run (so booking flows don't
+// burn quota). Either subset returns empty when the corresponding env is
+// unset, so the helper is safe to call in any environment.
+export function sandboxRequestHeaders(): Record<string, string> {
+  return { ...accessHeadersOrEmpty(), ...resendDryRunHeaderOrEmpty() };
+}
+
 export type RegenerateGiftClaimResponse = {
   outcome: "regenerated";
   to: string;
@@ -81,6 +102,88 @@ export async function regenerateGiftClaim(
   throw new Error(
     `regenerateGiftClaim failed: status=${lastStatus} body=${lastBody.slice(0, 200)}`,
   );
+}
+
+export const STAGING_D1_DATABASE = "withjosephine-bookings-staging";
+const WRANGLER_D1_TIMEOUT_MS = 30_000;
+
+// Double single-quotes per SQLite literal-escape rules. Use when wrangler's
+// `--command` requires inlining a string — wrangler does not support bound
+// params on the CLI.
+export function escapeSqliteLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+export async function execWranglerD1(args: {
+  command: string;
+  json?: boolean;
+  caller: string;
+}): Promise<string> {
+  const flags = ["d1", "execute", STAGING_D1_DATABASE, "--remote"];
+  if (args.json) flags.push("--json");
+  flags.push("--command", args.command);
+
+  return new Promise<string>((resolve, reject) => {
+    const child = spawn("pnpm", ["exec", "wrangler", ...flags], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(
+        new Error(
+          `[${args.caller}] wrangler d1 execute timed out after ${WRANGLER_D1_TIMEOUT_MS}ms`,
+        ),
+      );
+    }, WRANGLER_D1_TIMEOUT_MS);
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        reject(
+          new Error(
+            `[${args.caller}] wrangler d1 execute exited ${code}: ${stderr.slice(0, 500)}`,
+          ),
+        );
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+export async function queryStagingD1<T = Record<string, unknown>>(
+  sql: string,
+): Promise<T[]> {
+  const stdout = await execWranglerD1({
+    command: sql,
+    json: true,
+    caller: "stagingApi.queryStagingD1",
+  });
+  // wrangler prefixes the JSON array with banner text on stderr/stdout; anchor
+  // on the last balanced bracket pair to skip prefix noise.
+  const trimmed = stdout.trim();
+  const first = trimmed.indexOf("[");
+  const last = trimmed.lastIndexOf("]");
+  if (first < 0 || last < 0 || last < first) {
+    throw new Error(
+      `[stagingApi.queryStagingD1] no JSON array in stdout: ${trimmed.slice(0, 200)}`,
+    );
+  }
+  const parsed = JSON.parse(trimmed.slice(first, last + 1)) as Array<{
+    results?: T[];
+  }>;
+  return parsed[0]?.results ?? [];
 }
 
 export async function issueMagicLink(email: string): Promise<{

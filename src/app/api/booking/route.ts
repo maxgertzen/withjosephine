@@ -112,8 +112,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  const consentSnapshot = consentSnapshotFromBody(parsedBody);
-  if (!isFullyConsented(consentSnapshot, true)) {
+  const consentSnapshot = consentSnapshotFromBody(parsedBody, {
+    readingSlug: parsedBody.readingSlug,
+  });
+  if (!isFullyConsented(consentSnapshot, { requireArt9: true })) {
     return NextResponse.json(
       {
         error:

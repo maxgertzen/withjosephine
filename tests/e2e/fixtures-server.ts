@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
+import { FIXTURE_SIDECAR_PORT } from "./constants";
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.resolve(here, "../../src/__fixtures__/sanity/e2e");
 
@@ -53,6 +55,7 @@ export type CapturedEmail = {
   label: string;
   to: string | string[];
   subject: string;
+  html?: string;
   at: string;
 };
 
@@ -159,7 +162,7 @@ function operationLabel(kind: CapturedMutationOp["kind"]): string {
   }
 }
 
-export const FIXTURE_SIDECAR_PORT = 47391;
+export { FIXTURE_SIDECAR_PORT };
 
 export async function startFixtureSidecar(): Promise<FixtureSidecar> {
   const bundle = await loadBundle();
@@ -247,6 +250,7 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       label: typeof body.label === "string" ? body.label : "unknown",
       to: body.to ?? "unknown",
       subject: typeof body.subject === "string" ? body.subject : "",
+      html: typeof body.html === "string" ? body.html : undefined,
       at: new Date().toISOString(),
     });
     return c.json({ ok: true });
@@ -263,7 +267,6 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
     });
-  app.get("/vX/data/live/events/:dataset", sseHeartbeat);
   app.get("/:apiVersion{v[^/]+}/data/live/events/:dataset", sseHeartbeat);
 
   app.get("/images/:rest{.+}", (c) => c.notFound());

@@ -1,4 +1,4 @@
-import { GIFT_DELIVERY } from "../constants";
+import { GIFT_DELIVERY, type GiftCancelledReason } from "../constants";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
@@ -36,6 +36,9 @@ type Row = {
   gift_claim_email_fired_at: string | null;
   gift_claimed_at: string | null;
   gift_cancelled_at: string | null;
+  gift_claim_sent_now_at: string | null;
+  gift_claim_sent_now_actor: string | null;
+  gift_claim_prior_alarm_at: string | null;
 };
 
 export type GiftDeliveryMethod = (typeof GIFT_DELIVERY)[keyof typeof GIFT_DELIVERY];
@@ -84,6 +87,9 @@ function rowToRecord(row: Row): SubmissionRecord {
     giftClaimEmailFiredAt: row.gift_claim_email_fired_at ?? null,
     giftClaimedAt: row.gift_claimed_at ?? null,
     giftCancelledAt: row.gift_cancelled_at ?? null,
+    giftClaimSentNowAt: row.gift_claim_sent_now_at ?? null,
+    giftClaimSentNowActor: row.gift_claim_sent_now_actor ?? null,
+    giftClaimPriorAlarmAt: row.gift_claim_prior_alarm_at ?? null,
   };
 }
 
@@ -219,13 +225,18 @@ export async function redeemGiftSubmission(
     responses: SubmissionRecord["responses"];
     recipientUserId: string;
     claimedAtIso: string;
+    recipientEmail?: string;
   },
 ): Promise<void> {
+  // COALESCE preserves an existing recipient_email (scheduled-gift case
+  // already had it set at purchase) and only fills it in when NULL (self_send
+  // gifts, where the recipient supplies their email at claim time).
   await dbExec(
     `UPDATE submissions
         SET responses_json = ?,
             recipient_user_id = ?,
-            gift_claimed_at = ?
+            gift_claimed_at = ?,
+            recipient_email = COALESCE(recipient_email, ?)
       WHERE id = ?
         AND is_gift = 1
         AND gift_claimed_at IS NULL`,
@@ -233,6 +244,7 @@ export async function redeemGiftSubmission(
       JSON.stringify(input.responses),
       input.recipientUserId,
       input.claimedAtIso,
+      input.recipientEmail ?? null,
       submissionId,
     ],
   );
@@ -544,9 +556,9 @@ export async function editGiftRecipient(
         SET ${sets.join(", ")}
       WHERE id = ?
         AND is_gift = 1
-        AND gift_claim_email_fired_at IS NULL
         AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL`,
+        AND gift_cancelled_at IS NULL
+        AND (gift_delivery_method = 'self_send' OR gift_claim_email_fired_at IS NULL)`,
     params,
   );
   return { updated: result.rowsWritten > 0, responses };
@@ -584,6 +596,97 @@ export async function flipGiftToSelfSend(
         AND gift_claimed_at IS NULL
         AND gift_cancelled_at IS NULL`,
     [args.tokenHash, args.firedAtIso, id],
+  );
+  return result.rowsWritten > 0;
+}
+
+/**
+ * Purchaser flips self_send → scheduled.
+ *
+ * Self_send gifts had `gift_claim_email_fired_at` populated at purchase time
+ * (the link went to the purchaser). On flip, clear that marker so the
+ * GiftClaimScheduler alarm path treats it as a fresh scheduled send. The new
+ * recipient_email is required because scheduled mode delivers to the
+ * recipient directly. The previous claim token is also rotated to invalidate
+ * any URL the purchaser already shared before flipping.
+ */
+export async function flipGiftToScheduled(
+  id: string,
+  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_delivery_method = 'scheduled',
+            gift_send_at = ?,
+            recipient_email = ?,
+            gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = NULL
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'self_send'
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    [args.giftSendAt, args.recipientEmail, args.tokenHash, id],
+  );
+  return result.rowsWritten > 0;
+}
+
+export async function applyGiftSendNow(
+  id: string,
+  args: {
+    tokenHash: string;
+    sentNowAtIso: string;
+    actor: string;
+    priorAlarmAt: string | null;
+  },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_claim_token_hash = ?,
+            gift_claim_email_fired_at = ?,
+            gift_claim_sent_now_at = ?,
+            gift_claim_sent_now_actor = ?,
+            gift_claim_prior_alarm_at = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'scheduled'
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claim_sent_now_at IS NULL
+        AND gift_claimed_at IS NULL
+        AND gift_cancelled_at IS NULL`,
+    [
+      args.tokenHash,
+      args.sentNowAtIso,
+      args.sentNowAtIso,
+      args.actor,
+      args.priorAlarmAt,
+      id,
+    ],
+  );
+  return result.rowsWritten > 0;
+}
+
+export async function applyGiftCancelScheduled(
+  id: string,
+  args: {
+    cancelledAtIso: string;
+    by: string;
+    reason: GiftCancelledReason;
+  },
+): Promise<boolean> {
+  const result = await dbExec(
+    `UPDATE submissions
+        SET gift_cancelled_at = ?,
+            gift_cancelled_by = ?,
+            gift_cancelled_reason = ?
+      WHERE id = ?
+        AND is_gift = 1
+        AND gift_delivery_method = 'scheduled'
+        AND gift_cancelled_at IS NULL
+        AND gift_claim_email_fired_at IS NULL
+        AND gift_claim_sent_now_at IS NULL
+        AND gift_claimed_at IS NULL`,
+    [args.cancelledAtIso, args.by, args.reason, id],
   );
   return result.rowsWritten > 0;
 }

@@ -156,6 +156,14 @@ export const myGiftsPage = defineType({
       initialValue: "Edit recipient",
     }),
     defineField({
+      name: "editRecipientSelfSendIndicator",
+      title: "Edit recipient drawer — self-send indicator badge",
+      type: "string",
+      description:
+        "Shown only when the gift is in self-send mode (purchaser hands off the link themselves). Reminds the purchaser they're editing a self-send gift even while we collect a recipient email.",
+      initialValue: "Self-send delivery — you share the link yourself",
+    }),
+    defineField({
       name: "editRecipientFormRecipientNameLabel",
       title: "Edit recipient drawer — name field label",
       type: "string",
@@ -172,6 +180,29 @@ export const myGiftsPage = defineType({
       title: "Edit recipient drawer — send-at label",
       type: "string",
       initialValue: "Send at",
+    }),
+    defineField({
+      name: "editRecipientTimezoneLabel",
+      title: "Edit recipient drawer — timezone picker label",
+      type: "string",
+      description:
+        "Label above the fallback timezone dropdown (shown only when the browser can't auto-detect the IANA zone, e.g. iOS Safari pre-17).",
+      initialValue: "Time zone",
+    }),
+    defineField({
+      name: "editRecipientTimezonePlaceholder",
+      title: "Edit recipient drawer — timezone picker placeholder",
+      type: "string",
+      initialValue: "Pick your time zone",
+    }),
+    defineField({
+      name: "editRecipientTimezoneFallbackHelp",
+      title: "Edit recipient drawer — timezone fallback help text",
+      type: "string",
+      description:
+        "Help message shown above the fallback dropdown when timezone auto-detection fails.",
+      initialValue:
+        "We couldn’t detect your time zone. Pick one below so the email arrives at the right moment.",
     }),
     defineField({
       name: "editRecipientSaveButtonLabel",
@@ -246,8 +277,8 @@ export const myGiftsPage = defineType({
       title: "Edit drawer — timezone preview template",
       type: "string",
       description:
-        "Live preview shown under the edit-recipient drawer's send-at picker. Use {date} as a placeholder for the formatted weekday + month + day + time string.",
-      initialValue: "Arrives {date} in your timezone.",
+        "Live preview shown under the edit-recipient drawer's send-at picker. {date} = formatted weekday + month + day + time; {tz} = IANA timezone name.",
+      initialValue: "Arrives {date} ({tz}).",
     }),
     defineField({
       name: "resendRetryAfterHourTemplate",
@@ -270,6 +301,94 @@ export const myGiftsPage = defineType({
       title: "Resend link — retry fallback (when timestamp unparseable)",
       type: "string",
       initialValue: "shortly",
+    }),
+    defineField({
+      name: "flipToScheduledCtaLabel",
+      title: "Flip self-send → scheduled — button label",
+      type: "string",
+      description:
+        "Shown on self-send gifts that haven't been claimed yet. Lets the purchaser convert the gift to scheduled delivery (Josephine emails the recipient on the chosen date).",
+      initialValue: "Let Josephine send it for me",
+    }),
+    defineField({
+      name: "flipToScheduledFormTitle",
+      title: "Flip self-send → scheduled — form title",
+      type: "string",
+      initialValue: "Have Josephine deliver the link",
+    }),
+    defineField({
+      name: "flipToScheduledSaveButtonLabel",
+      title: "Flip self-send → scheduled — save button label",
+      type: "string",
+      initialValue: "Schedule it",
+    }),
+    defineField({
+      name: "flipToScheduledSavingLabel",
+      title: "Flip self-send → scheduled — saving label",
+      type: "string",
+      initialValue: "Scheduling…",
+    }),
+    defineField({
+      name: "sendNowCtaLabel",
+      title: "Send now — initial CTA",
+      type: "string",
+      description:
+        "Shown on scheduled gifts. Purchaser taps once to arm, taps again to fire the claim email immediately (bypasses the scheduled alarm).",
+      initialValue: "Send now",
+    }),
+    defineField({
+      name: "sendNowConfirmCtaLabel",
+      title: "Send now — armed confirm CTA",
+      type: "string",
+      description: "Second click of the 2-stage confirm pattern (replaces the initial CTA).",
+      initialValue: "Tap again to send today",
+    }),
+    defineField({
+      name: "sendNowSendingLabel",
+      title: "Send now — sending label",
+      type: "string",
+      description: "Shown on the confirm button while the request is in flight.",
+      initialValue: "Sending…",
+    }),
+    defineField({
+      name: "sendNowSessionExpiredError",
+      title: "Send now — session-expired error",
+      type: "string",
+      description:
+        "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
+      initialValue: "Your session expired. Please refresh and try again.",
+    }),
+    defineField({
+      name: "cancelScheduledCtaLabel",
+      title: "Cancel scheduled — initial CTA",
+      type: "string",
+      description:
+        "Shown on scheduled gifts. Terminally cancels delivery (no email ever fires). Distinct from \"send the link myself\" which only switches mode.",
+      initialValue: "Cancel this gift",
+    }),
+    defineField({
+      name: "cancelScheduledConfirmCtaLabel",
+      title: "Cancel scheduled — armed confirm CTA",
+      type: "string",
+      description:
+        "Second click of the 2-stage confirm pattern. Must explicitly state non-refundable (binding business policy + EU CRD waiver clarity).",
+      initialValue:
+        "Tap again to confirm — your reading will not be sent. This purchase is non-refundable.",
+    }),
+    defineField({
+      name: "cancelScheduledSendingLabel",
+      title: "Cancel scheduled — submitting label",
+      type: "string",
+      description: "Shown on the confirm button while the cancel request is in flight.",
+      initialValue: "Cancelling…",
+    }),
+    defineField({
+      name: "cancelScheduledSessionExpiredError",
+      title: "Cancel scheduled — session-expired error",
+      type: "string",
+      description:
+        "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
+      initialValue: "Your session expired. Please refresh and try again.",
     }),
   ],
   preview: {

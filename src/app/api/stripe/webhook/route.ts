@@ -4,8 +4,10 @@ import type Stripe from "stripe";
 import { serverTrack } from "@/lib/analytics/server";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
+import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   appendEmailFired,
   findSubmissionById,
@@ -62,16 +64,6 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
   }
 }
 
-function formatSendAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("en-US", {
-    dateStyle: "long",
-    timeStyle: "short",
-    timeZone: "UTC",
-  });
-}
-
 function extractFirstName(email: string): string {
   const local = email.split("@")[0] ?? email;
   const lead = local.split(/[._+-]/)[0] ?? local;
@@ -100,7 +92,7 @@ async function dispatchGiftPurchaseConfirmation(
   }
 
   const readingName = submission.reading?.name ?? "reading";
-  const readingPriceDisplay = submission.reading?.priceDisplay ?? "";
+  const readingPriceDisplay = priceDisplayFor(submission);
   const amountPaidDisplay = formatAmountPaid(
     session.amount_total ?? null,
     session.currency ?? null,

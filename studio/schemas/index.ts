@@ -14,10 +14,11 @@ import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailDay7Delivery } from "./emailDay7Delivery";
-import { emailDay2Started } from "./emailDay2Started";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
 import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
+import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
+import { emailPrivacyExport } from "./emailPrivacyExport";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -44,10 +45,11 @@ export const schemaTypes = [
   magicLinkVerifyPage,
   emailMagicLink,
   emailDay7Delivery,
-  emailDay2Started,
   emailOrderConfirmation,
   emailGiftPurchaseConfirmation,
   emailGiftClaim,
+  emailRecipientIntakeReceived,
+  emailPrivacyExport,
   giftClaimPage,
   giftIntakePage,
   listenPage,

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
-import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
+import { issueGiftClaimToken, provisionalTokenHash } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   appendEmailFired,
   flipGiftToSelfSend,
@@ -13,6 +14,7 @@ import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient"
 import { sendGiftPurchaseConfirmation } from "@/lib/resend";
 
 import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
+import { giftMutationGate } from "../_lib/giftMutationGate";
 
 export async function POST(
   _request: Request,
@@ -23,15 +25,11 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { submission } = auth;
 
-  if (submission.giftDeliveryMethod !== GIFT_DELIVERY.scheduled) {
-    return NextResponse.json({ error: "Already self-send" }, { status: 409 });
-  }
-  if (submission.giftClaimEmailFiredAt) {
-    return NextResponse.json({ error: "Already sent" }, { status: 409 });
-  }
-  if (submission.giftClaimedAt || submission.giftCancelledAt) {
-    return NextResponse.json({ error: "Closed" }, { status: 409 });
-  }
+  const gated = giftMutationGate(submission, {
+    requireMethod: "scheduled",
+    checkSentNow: false,
+  });
+  if (gated) return gated;
 
   // Atomic-flip-first redesign.
   // ORDER (load-bearing — closes the cancel-vs-alarm race):
@@ -52,10 +50,9 @@ export async function POST(
   // failure at step 4 leaves the row in self_send mode with a provisional
   // token — the purchaser retries via /api/gifts/:id/resend-link which
   // regenerates cleanly.
-  const provisionalTokenHash = `prov:${id}:${Date.now()}`;
   const nowIso = new Date().toISOString();
   const flipped = await flipGiftToSelfSend(id, {
-    tokenHash: provisionalTokenHash,
+    tokenHash: provisionalTokenHash("cancel-auto-send", id),
     firedAtIso: nowIso,
   });
   if (!flipped) {
@@ -72,7 +69,7 @@ export async function POST(
     purchaserEmail: submission.email,
     purchaserFirstName: purchaserFirstNameFor(submission),
     readingName: submission.reading?.name ?? "your reading",
-    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    readingPriceDisplay: priceDisplayFor(submission),
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     recipientName: recipientNameFor(submission),
     giftMessage: submission.giftMessage,

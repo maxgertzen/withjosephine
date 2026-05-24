@@ -150,7 +150,9 @@ const SUBMISSION = {
   giftClaimEmailFiredAt: "2026-05-01T01:00:00Z",
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   mockTurnstile.mockReset().mockResolvedValue(true);
@@ -217,6 +219,17 @@ describe("/api/booking/gift-redeem", () => {
     expect(res.status).toBe(400);
   });
 
+  it("logs [gift-redeem] turnstile_rejected on Turnstile failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockTurnstile.mockResolvedValueOnce(false);
+    await callRoute(VALID_BODY);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[gift-redeem] turnstile_rejected"),
+      expect.any(Object),
+    );
+    errSpy.mockRestore();
+  });
+
   it("returns 404 when submission missing or not a gift", async () => {
     findSubmissionMock.mockResolvedValueOnce(null);
     const res = await callRoute(VALID_BODY);
@@ -243,6 +256,71 @@ describe("/api/booking/gift-redeem", () => {
     const body = await res.json();
     expect(res.status).toBe(422);
     expect(body.fieldErrors?.email).toBeTruthy();
+  });
+
+  it("logs [gift-redeem.gate] with redacted+hashed emails and mismatch outcome on the no-mismatch path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await callRoute(VALID_BODY);
+    const gateCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.gate]");
+    expect(gateCall).toBeDefined();
+    const payload = gateCall![1] as Record<string, unknown>;
+    expect(payload.submissionId).toBe("sub_gift_1");
+    expect(payload.mismatch).toBe(false);
+    expect(payload.hasStoredRecipient).toBe(true);
+    expect(payload.submittedEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.submittedEmailRedacted).not.toContain("bob");
+    expect(payload.storedRecipientEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.storedRecipientEmailRedacted).not.toContain("bob");
+    expect(payload.submittedEmailHash).toMatch(/^[0-9a-f]{12}$/);
+    expect(payload.storedRecipientEmailHash).toMatch(/^[0-9a-f]{12}$/);
+    logSpy.mockRestore();
+  });
+
+  it("logs [gift-redeem.gate] mismatch=true AND [gift-redeem] email_mismatch on the mismatch path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({
+      ...VALID_BODY,
+      values: { email: "wrong@example.com", first_name: "Bob" },
+    });
+    const gateCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.gate]");
+    expect(gateCall).toBeDefined();
+    expect((gateCall![1] as Record<string, unknown>).mismatch).toBe(true);
+    expect(errSpy).toHaveBeenCalledWith(
+      "[gift-redeem] email_mismatch",
+      expect.objectContaining({ submissionId: "sub_gift_1" }),
+    );
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it("logs [gift-redeem.claim] with recipient/purchaser user ids and equalsPurchaser flag", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await callRoute(VALID_BODY);
+    const claimCall = logSpy.mock.calls.find((c) => c[0] === "[gift-redeem.claim]");
+    expect(claimCall).toBeDefined();
+    const payload = claimCall![1] as Record<string, unknown>;
+    expect(payload.submissionId).toBe("sub_gift_1");
+    expect(payload.recipientUserId).toBe("user_bob");
+    expect(payload.purchaserUserId).toBe("alice-user");
+    expect(payload.equalsPurchaser).toBe(false);
+    expect(payload.recipientUserIsNew).toBe(true);
+    expect(payload.submittedEmailRedacted).toMatch(/@example\.com$/);
+    expect(payload.submittedEmailRedacted).not.toContain("bob");
+    logSpy.mockRestore();
+  });
+
+  it("never writes the full submitted email to any console log/error in the gate path", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await callRoute({
+      ...VALID_BODY,
+      values: { email: "leakcheck-distinct@example.com", first_name: "Bob" },
+    });
+    const everything = JSON.stringify([...logSpy.mock.calls, ...errSpy.mock.calls]);
+    expect(everything).not.toContain("leakcheck-distinct@example.com");
+    logSpy.mockRestore();
+    errSpy.mockRestore();
   });
 
   it("happy path: creates Bob user, redeems submission, clears cookie, returns redirectUrl", async () => {
@@ -298,5 +376,81 @@ describe("/api/booking/gift-redeem", () => {
       { excludeSubmissionId: "sub_gift_1" },
     );
     expect(redeemGiftSubmissionMock).toHaveBeenCalled();
+  });
+
+  // C-4b — self_send purchases have NULL recipient_email at purchase time;
+  // recipient supplies their email at claim, so the redeem must NOT 422 on
+  // missing recipient_email and the email-mismatch check is skipped (claim
+  // cookie already gated this request).
+  describe("self_send with NULL recipient_email at purchase (C-4b)", () => {
+    const SELF_SEND_SUBMISSION = {
+      ...SUBMISSION,
+      giftDeliveryMethod: "self_send" as const,
+      recipientEmail: null,
+    };
+
+    it("redeems successfully when recipient supplies their email at claim", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SELF_SEND_SUBMISSION);
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).toBe(200);
+      expect(redeemGiftSubmissionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          submissionId: "sub_gift_1",
+          recipientUserId: "user_bob",
+          recipientEmailFromIntake: "bob@example.com",
+        }),
+      );
+    });
+
+    it("does not 422 on missing recipient_email for self_send", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SELF_SEND_SUBMISSION);
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).not.toBe(422);
+    });
+  });
+
+  // C-4b regression guard — scheduled gifts (recipient_email set at purchase)
+  // must still 422 on email mismatch AND on missing recipient_email.
+  describe("scheduled gift regression guards (C-4b)", () => {
+    const SCHEDULED_NULL_EMAIL = {
+      ...SUBMISSION,
+      giftDeliveryMethod: "scheduled" as const,
+      recipientEmail: null,
+    };
+
+    it("still 422s on missing recipient_email when giftDeliveryMethod=scheduled", async () => {
+      findSubmissionMock.mockResolvedValueOnce(SCHEDULED_NULL_EMAIL);
+      const res = await callRoute(VALID_BODY);
+      const body = await res.json();
+      expect(res.status).toBe(422);
+      expect(body.error).toBe("Recipient email missing");
+    });
+
+    it("still enforces email-mismatch check on scheduled gifts", async () => {
+      findSubmissionMock.mockResolvedValueOnce({
+        ...SUBMISSION,
+        giftDeliveryMethod: "scheduled" as const,
+        recipientEmail: "scheduled-recipient@example.com",
+      });
+      const res = await callRoute({
+        ...VALID_BODY,
+        values: { email: "wrong@example.com", first_name: "Bob" },
+      });
+      const body = await res.json();
+      expect(res.status).toBe(422);
+      expect(body.fieldErrors?.email).toBeTruthy();
+    });
+
+    it("does NOT pass recipientEmailFromIntake on scheduled gifts (no clobber risk)", async () => {
+      findSubmissionMock.mockResolvedValueOnce({
+        ...SUBMISSION,
+        giftDeliveryMethod: "scheduled" as const,
+        recipientEmail: "bob@example.com",
+      });
+      const res = await callRoute(VALID_BODY);
+      expect(res.status).toBe(200);
+      const callArgs = redeemGiftSubmissionMock.mock.calls[0]?.[0];
+      expect(callArgs.recipientEmailFromIntake).toBeUndefined();
+    });
   });
 });

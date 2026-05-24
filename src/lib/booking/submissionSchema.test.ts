@@ -1,8 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SanityFormField } from "@/lib/sanity/types";
 
 import { buildSubmissionSchema } from "./submissionSchema";
+
+beforeEach(() => {
+  // `.env.local` sets NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS=1 for dev which
+  // causes the fileUpload branch in buildSubmissionSchema to return an
+  // optional-string schema and bypass the required-check. Tests must run
+  // against the real production-equivalent schema.
+  vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function field(overrides: Partial<SanityFormField> & Pick<SanityFormField, "type" | "key">): SanityFormField {
   return {

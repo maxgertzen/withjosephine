@@ -124,9 +124,15 @@ export const thankYouPageQuery = groq`
     giftPurchaserHeading,
     giftPurchaserSubheading,
     giftPurchaserBody,
+    giftPurchaserSelfSendSubheading,
+    giftPurchaserSelfSendBody,
+    giftPurchaserReadingLabel,
+    giftPurchaserTimelineBody,
+    giftPurchaserContactBody,
     giftRecipientHeading,
     giftRecipientSubheading,
     giftRecipientBody,
+    giftRecipientContactBody,
     "overrides": overrides[]{
       "readingSlug": reading->slug.current,
       heading,
@@ -182,9 +188,13 @@ export const myGiftsPageQuery = groq`
     resendLinkCtaLabel,
     privacyNote,
     editRecipientFormTitle,
+    editRecipientSelfSendIndicator,
     editRecipientFormRecipientNameLabel,
     editRecipientFormRecipientEmailLabel,
     editRecipientFormSendAtLabel,
+    editRecipientTimezoneLabel,
+    editRecipientTimezonePlaceholder,
+    editRecipientTimezoneFallbackHelp,
     editRecipientSaveButtonLabel,
     editRecipientSavingLabel,
     editRecipientCancelButtonLabel,
@@ -198,7 +208,11 @@ export const myGiftsPageQuery = groq`
     editRecipientSendAtPreviewTemplate,
     resendRetryAfterHourTemplate,
     resendRetryAfterDayTemplate,
-    resendRetryFallbackLabel
+    resendRetryFallbackLabel,
+    flipToScheduledCtaLabel,
+    flipToScheduledFormTitle,
+    flipToScheduledSaveButtonLabel,
+    flipToScheduledSavingLabel
   }
 `;
 
@@ -210,6 +224,10 @@ export const giftClaimPageQuery = groq`
     noTokenBody,
     alreadyClaimedHeading,
     alreadyClaimedBody,
+    sessionExpiredHeading,
+    sessionExpiredBody,
+    alreadySubmittedHeading,
+    alreadySubmittedBody,
     welcomeHeading,
     welcomeBody,
     welcomeCtaLabel
@@ -240,6 +258,19 @@ export const magicLinkVerifyPageQuery = groq`
   }
 `;
 
+export const emailPrivacyExportQuery = groq`
+  *[_type == "emailPrivacyExport"][0] {
+    subject,
+    preview,
+    greeting,
+    introLine,
+    contentsLine,
+    ctaLabel,
+    expiryLine,
+    signOff
+  }
+`;
+
 export const emailMagicLinkQuery = groq`
   *[_type == "emailMagicLink"][0] {
     subject,
@@ -252,6 +283,25 @@ export const emailMagicLinkQuery = groq`
 
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    greeting,
+    thanksLine,
+    timelineLine,
+    contactLine,
+    cardLabel,
+    cardDeliveryLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailRecipientIntakeReceivedQuery = groq`
+  *[_type == "emailRecipientIntakeReceived"][0] {
     subject,
     preview,
     brandName,
@@ -290,16 +340,6 @@ export const emailGiftPurchaseConfirmationQuery = groq`
     signOffLine1,
     signOffLine2,
     footerDisclaimer
-  }
-`;
-
-export const emailDay2StartedQuery = groq`
-  *[_type == "emailDay2Started"][0] {
-    subject,
-    preview,
-    greeting,
-    body,
-    signOff
   }
 `;
 

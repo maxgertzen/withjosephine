@@ -60,6 +60,8 @@ export type IntakeFormBodyProps = {
   errorCount: number;
   firstFieldLabel: string | null;
   onJumpToFirstError: () => void;
+  submitDisabled: boolean;
+  onAdvanceAttempt: () => void;
   valuesUntouched: boolean;
   values: FieldValues;
   pages: IntakePage[];
@@ -71,9 +73,10 @@ export type IntakeFormBodyProps = {
   savedIndicator: ReactNode;
 
   consentSnapshot: LegalConsentSnapshot;
-  setConsentSnapshot: Dispatch<SetStateAction<LegalConsentSnapshot>>;
+  setConsentSnapshot: (next: LegalConsentSnapshot) => void;
   consentErrors: LegalAcknowledgmentsErrors;
   clearConsentError: (key: keyof LegalAcknowledgmentsErrors) => void;
+  showCoolingOff: boolean;
 
   turnstileRequired: boolean;
   turnstileSiteKey: string | undefined;
@@ -121,6 +124,8 @@ export function IntakeFormBody({
   errorCount,
   firstFieldLabel,
   onJumpToFirstError,
+  submitDisabled,
+  onAdvanceAttempt,
   valuesUntouched,
   values,
   pages,
@@ -133,6 +138,7 @@ export function IntakeFormBody({
   setConsentSnapshot,
   consentErrors,
   clearConsentError,
+  showCoolingOff,
   turnstileRequired,
   turnstileSiteKey,
   turnstileRef,
@@ -207,6 +213,7 @@ export function IntakeFormBody({
           clearError={clearConsentError}
           nonRefundableNotice={nonRefundableNotice}
           isSubmitting={isSubmitting}
+          showCoolingOff={showCoolingOff}
         />
       ) : null}
 
@@ -240,12 +247,18 @@ export function IntakeFormBody({
         isFinalPage={isFinalPage}
         backHref={`/book/${readingId}`}
         onBack={handleBack}
-        onNext={handleNext}
+        onNext={() => {
+          onAdvanceAttempt();
+          handleNext();
+        }}
         onSaveLater={handleSaveLater}
         onSubmitIntent={() => {
           submitIntentRef.current = true;
+          onAdvanceAttempt();
         }}
         isSubmitting={isSubmitting}
+        nextDisabled={submitDisabled}
+        submitDisabled={submitDisabled}
         saveLaterDisabled={valuesUntouched}
         submitLabel={submitLabel}
         nextLabel={nextLabel}

@@ -2,6 +2,7 @@ import { Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailOrderConfirmationContent } from "@/data/defaults";
 
+import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
 
 export type OrderConfirmationVars = {
@@ -16,17 +17,12 @@ export type OrderConfirmationProps = {
   copy: EmailOrderConfirmationContent;
 };
 
-function template(text: string, vars: OrderConfirmationVars): string {
-  return text
-    .replaceAll("{firstName}", vars.firstName)
-    .replaceAll("{readingName}", vars.readingName);
-}
-
 function priceCell(vars: OrderConfirmationVars): string {
   return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
 }
 
-export function OrderConfirmation({ vars, copy }: OrderConfirmationProps) {
+export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProps) {
+  const copy = applyTokens(rawCopy, vars);
   const price = priceCell(vars);
 
   return (
@@ -79,8 +75,8 @@ export function OrderConfirmation({ vars, copy }: OrderConfirmationProps) {
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>{template(copy.greeting, vars)}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{template(copy.thanksLine, vars)}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.thanksLine}</p>
               <p style={{ margin: "0 0 18px 0" }}>{copy.timelineLine}</p>
               <p style={{ margin: "0 0 32px 0" }}>{copy.contactLine}</p>
             </Section>

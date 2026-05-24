@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { track } from "@/lib/analytics";
+import { EMAIL_FIELD_KEY } from "@/lib/booking/constants";
+import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import {
   emptyConsentSnapshot,
+  isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
@@ -40,6 +43,10 @@ type IntakeFormProps = {
   mode?: "create" | "redeem";
   redeemSubmissionId?: string;
   redeemSuccessUrl?: string;
+  // D-12: when the gift was scheduled with a recipient_email, the recipient's
+  // intake form pre-fills + locks the email field. Null = self-send claim where
+  // the recipient supplies their own email here.
+  prefilledEmail?: string | null;
 };
 
 export function IntakeForm({
@@ -56,6 +63,7 @@ export function IntakeForm({
   mode = "create",
   redeemSubmissionId,
   redeemSuccessUrl,
+  prefilledEmail = null,
 }: IntakeFormProps) {
   const draftScope =
     mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
@@ -68,9 +76,25 @@ export function IntakeForm({
     timeUnknownPairs,
     timeUnknownLabels,
     pairedUnknownKeys,
-    defaultValues,
-    defaultValuesSnapshot,
+    defaultValues: rawDefaultValues,
+    defaultValuesSnapshot: rawDefaultValuesSnapshot,
   } = useIntakeSchema({ sections, readingId, pagination });
+
+  // D-12: when redeeming a scheduled gift with a known recipient_email, seed
+  // the email field's default value so draft-restore + read-only render both
+  // start from the canonical normalized form. Self-send claims (prefilledEmail
+  // === null) skip the seed and the field stays editable.
+  const seededEmail =
+    mode === "redeem" && prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
+  const defaultValues = useMemo(
+    () =>
+      seededEmail ? { ...rawDefaultValues, [EMAIL_FIELD_KEY]: seededEmail } : rawDefaultValues,
+    [rawDefaultValues, seededEmail],
+  );
+  const defaultValuesSnapshot = useMemo(
+    () => (seededEmail ? JSON.stringify(defaultValues) : rawDefaultValuesSnapshot),
+    [defaultValues, rawDefaultValuesSnapshot, seededEmail],
+  );
 
   const {
     values,
@@ -101,8 +125,8 @@ export function IntakeForm({
     requestFreshToken: requestFreshTurnstileToken,
   } = useTurnstileChallenge();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(
-    emptyConsentSnapshot,
+  const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(() =>
+    emptyConsentSnapshot({ readingSlug: readingId }),
   );
   const [consentErrors, setConsentErrors] = useState<LegalAcknowledgmentsErrors>({});
   const clearConsentError = useCallback(
@@ -117,6 +141,15 @@ export function IntakeForm({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Track the page index where errors were last revealed; when the user
+  // navigates away (Next, Previous, or Review-edit jump), the visibility
+  // automatically resets without firing a state-mutating effect.
+  const [revealedOnPage, setRevealedOnPage] = useState<number | null>(null);
+  const errorsVisible = revealedOnPage === currentPage;
+  const revealErrors = useCallback(
+    () => setRevealedOnPage(currentPage),
+    [currentPage],
+  );
 
   const {
     chipTick,
@@ -209,8 +242,31 @@ export function IntakeForm({
     });
 
   const mergedErrors = useMemo(
-    () => ({ ...errors, ...pageErrors }),
-    [errors, pageErrors],
+    () => (errorsVisible ? { ...errors, ...pageErrors } : {}),
+    [errors, pageErrors, errorsVisible],
+  );
+
+  const visibleErrorCount = errorsVisible ? errorCount : 0;
+  const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
+  const requireCoolingOff = mode !== "redeem";
+  const consentsFullySatisfied = useMemo(
+    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff }),
+    [consentSnapshot, requireCoolingOff],
+  );
+  const submitGateInvalid =
+    errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
+
+  const handleConsentSnapshotChange = useCallback(
+    (next: LegalConsentSnapshot) => {
+      setConsentSnapshot(next);
+      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff })) setSubmitError(null);
+    },
+    [requireCoolingOff],
+  );
+
+  const readOnlyFieldKeys = useMemo(
+    () => (seededEmail ? new Set([EMAIL_FIELD_KEY]) : undefined),
+    [seededEmail],
   );
 
   const renderContext = useMemo<RenderContext>(
@@ -222,12 +278,14 @@ export function IntakeForm({
       timeUnknownPairs,
       timeUnknownLabels,
       requestTurnstileToken: requestFreshTurnstileToken,
+      readOnlyFieldKeys,
     }),
     [
       values,
       setValue,
       mergedErrors,
       isSubmitting,
+      readOnlyFieldKeys,
       timeUnknownPairs,
       timeUnknownLabels,
       requestFreshTurnstileToken,
@@ -261,9 +319,11 @@ export function IntakeForm({
         isFirstPage={isFirstPage}
         currentPage={currentPage}
         totalPages={totalPages}
-        errorCount={errorCount}
-        firstFieldLabel={firstFieldLabel}
+        errorCount={visibleErrorCount}
+        firstFieldLabel={visibleFirstFieldLabel}
         onJumpToFirstError={jumpToFirstError}
+        submitDisabled={submitGateInvalid}
+        onAdvanceAttempt={revealErrors}
         valuesUntouched={valuesUntouched}
         values={values}
         pages={pages}
@@ -273,9 +333,10 @@ export function IntakeForm({
         lastSavedAt={lastSavedAt}
         savedIndicator={savedIndicator}
         consentSnapshot={consentSnapshot}
-        setConsentSnapshot={setConsentSnapshot}
+        setConsentSnapshot={handleConsentSnapshotChange}
         consentErrors={consentErrors}
         clearConsentError={clearConsentError}
+        showCoolingOff={requireCoolingOff}
         turnstileRequired={turnstileRequired}
         turnstileSiteKey={turnstileSiteKey}
         turnstileRef={turnstileRef}

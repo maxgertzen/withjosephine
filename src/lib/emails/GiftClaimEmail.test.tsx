@@ -10,6 +10,7 @@ const FIRST_SEND_VARS = {
   recipientName: "Mira",
   purchaserFirstName: "Lior",
   readingName: "Soul Blueprint",
+  readingPriceDisplay: "$179",
   giftMessage: "happy birthday",
   variant: "first_send" as const,
   claimUrl: "https://withjosephine.com/gift/claim?token=abc123",
@@ -19,6 +20,7 @@ const REMINDER_VARS = {
   recipientName: "Mira",
   purchaserFirstName: "Lior",
   readingName: "Soul Blueprint",
+  readingPriceDisplay: "$179",
   giftMessage: null,
   variant: "reminder" as const,
 };
@@ -79,5 +81,36 @@ describe("GiftClaimEmail — reminder variant", () => {
       <GiftClaimEmail vars={REMINDER_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
     );
     expect(html).not.toContain(EMAIL_GIFT_CLAIM_DEFAULTS.claimButtonLabel);
+  });
+});
+
+describe("GiftClaimEmail — environment-aware claim URL (C-6 audit)", () => {
+  it("renders the staging origin verbatim when supplied (no hardcoded prod URL)", async () => {
+    const html = await render(
+      <GiftClaimEmail
+        vars={{
+          ...FIRST_SEND_VARS,
+          claimUrl: "https://staging.withjosephine.com/gift/claim?token=stagingABC",
+        }}
+        copy={EMAIL_GIFT_CLAIM_DEFAULTS}
+      />,
+    );
+    expect(html).toContain("staging.withjosephine.com/gift/claim?token=stagingABC");
+  });
+
+  it("interpolates the {purchaserFirstName} slot in body copy (no literal placeholder leak)", async () => {
+    const text = visibleText(
+      await render(
+        <GiftClaimEmail
+          vars={{ ...FIRST_SEND_VARS, purchaserFirstName: "Yoram" }}
+          copy={{
+            ...EMAIL_GIFT_CLAIM_DEFAULTS,
+            bodyFirstSend: "A note from {purchaserFirstName} — your reading awaits.",
+          }}
+        />,
+      ),
+    );
+    expect(text).toContain("A note from Yoram");
+    expect(text).not.toContain("{purchaserFirstName}");
   });
 });

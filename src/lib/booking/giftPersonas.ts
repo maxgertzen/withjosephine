@@ -18,6 +18,19 @@ export function stripTemplateTags(input: string): string {
   return input.replace(TEMPLATE_TAG_RE, "").trim();
 }
 
+/**
+ * Capitalise the lead token of an email's local-part as a soft fallback when
+ * no explicit name is on record. Shared by purchaser + recipient personas so
+ * the "Marco" derived from `maxgertzen+marco@gmail.com` reads the same way in
+ * any persona-derivation site.
+ */
+export function firstNameFromEmailLocal(email: string, sentinel: string): string {
+  if (!email) return sentinel;
+  const local = email.split("@")[0] ?? email;
+  const lead = local.split(/[._+-]/)[0] ?? local;
+  return lead ? lead.charAt(0).toUpperCase() + lead.slice(1) : sentinel;
+}
+
 export function purchaserFirstNameOrNull(submission: SubmissionRecord): string | null {
   return (
     submission.responses
@@ -27,17 +40,32 @@ export function purchaserFirstNameOrNull(submission: SubmissionRecord): string |
 }
 
 export function purchaserFirstNameFor(submission: SubmissionRecord): string {
-  const fromResponses = purchaserFirstNameOrNull(submission);
-  if (fromResponses) return fromResponses;
-  const local = submission.email.split("@")[0] ?? submission.email;
-  const lead = local.split(/[._+-]/)[0] ?? local;
-  return lead ? lead.charAt(0).toUpperCase() + lead.slice(1) : "Someone";
+  return purchaserFirstNameOrNull(submission) ?? firstNameFromEmailLocal(submission.email, "Someone");
 }
 
 export function recipientNameFor(submission: SubmissionRecord): string {
-  return (
-    submission.responses.find((r) => r.fieldKey === "recipient_name")?.value?.trim() || "there"
-  );
+  const fromPurchaser = submission.responses
+    .find((r) => r.fieldKey === "recipient_name")
+    ?.value?.trim();
+  if (fromPurchaser) return fromPurchaser;
+  return recipientFirstNameFromIntakeResponses(submission.responses, submission.email ?? "");
+}
+
+/**
+ * Recipient-side first name derivation used at gift-redeem time when the row
+ * has just been overwritten with the recipient's own intake (first_name or
+ * legal_full_name). Falls through to the email local-part so the
+ * recipient-intake-received email always has something better than "there".
+ */
+export function recipientFirstNameFromIntakeResponses(
+  responses: { fieldKey: string; value: string }[],
+  email: string,
+): string {
+  const fromFirstName = responses.find((r) => r.fieldKey === "first_name")?.value?.trim();
+  if (fromFirstName) return fromFirstName;
+  const fromLegal = responses.find((r) => r.fieldKey === "legal_full_name")?.value?.trim();
+  if (fromLegal) return fromLegal.split(/\s+/)[0] ?? fromLegal;
+  return firstNameFromEmailLocal(email, "there");
 }
 
 /**

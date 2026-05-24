@@ -1,16 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
+import { TimezoneFallbackPicker } from "@/components/Form/TimezoneFallbackPicker";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import type { MyGiftsPageContent } from "@/data/defaults";
+import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
+import { localInputToUtcIso } from "@/lib/booking/scheduling/timezone";
+import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
+
+import { actionErrorLabel } from "./actionErrorLabel";
+import { ConfirmArmedButton } from "./ConfirmArmedButton";
 
 /**
  * Narrow view-model for the client-side action controls. Only the fields
@@ -44,44 +52,36 @@ type Props = {
 };
 
 export function GiftCardActions({ gift, status, copy }: Props) {
-  if (status.kind === "scheduled") {
+  if (status.kind === GIFT_STATUS_KIND.scheduled) {
     return (
       <div className="flex flex-col gap-3 items-stretch sm:items-end">
-        <EditRecipientControl gift={gift} copy={copy} />
+        <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
+        <SendNowControl gift={gift} copy={copy} />
         <FlipToSelfSendControl gift={gift} copy={copy} />
+        <CancelScheduledControl gift={gift} copy={copy} />
       </div>
     );
   }
-  if (status.kind === "self_send_ready") {
-    return <ResendLinkControl gift={gift} copy={copy} />;
+  if (status.kind === GIFT_STATUS_KIND.selfSendReady) {
+    return (
+      <div className="flex flex-col gap-3 items-stretch sm:items-end">
+        <ResendLinkControl gift={gift} copy={copy} />
+        <EditRecipientControl gift={gift} copy={copy} mode="self_send" />
+        <FlipToScheduledControl gift={gift} copy={copy} />
+      </div>
+    );
   }
   return null;
-}
-
-/**
- * Maps a `useMutationAction` error code to a Sanity-editable copy string.
- * Each action passes its own override table for the codes specific to its
- * route (e.g. `rate_limited` on resend-link, `http_409` on edit-recipient).
- * Default codes (`network`, generic) fall through to the shared keys.
- */
-function actionErrorLabel(
-  code: string | null,
-  copy: MyGiftsPageContent,
-  overrides: Partial<Record<string, keyof MyGiftsPageContent>> = {},
-): string | null {
-  if (!code) return null;
-  const overrideKey = overrides[code];
-  if (overrideKey) return copy[overrideKey];
-  if (code === "network") return copy.actionNetworkError;
-  return copy.actionGenericError;
 }
 
 function EditRecipientControl({
   gift,
   copy,
+  mode,
 }: {
   gift: GiftCardData;
   copy: MyGiftsPageContent;
+  mode: "scheduled" | "self_send";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -93,21 +93,31 @@ function EditRecipientControl({
   const [recipientName, setRecipientName] = useState(initialName);
   const [recipientEmail, setRecipientEmail] = useState(initialEmail);
   const [giftSendAt, setGiftSendAt] = useState(initialSendAt);
-  const [unchangedError, setUnchangedError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const { pickedTz, setPickedTz, effectiveTz, requiresPicker } = useEffectiveTimeZone();
 
   const action = useMutationAction(`/api/gifts/${gift._id}/edit-recipient`);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setUnchangedError(null);
+    setFormError(null);
     const body: Record<string, unknown> = {};
     if (recipientName.trim() !== initialName) body.recipientName = recipientName.trim();
     if (recipientEmail.trim() !== initialEmail) body.recipientEmail = recipientEmail.trim();
-    if (giftSendAt !== initialSendAt) {
-      body.giftSendAt = giftSendAt ? new Date(giftSendAt).toISOString() : null;
+    if (mode === "scheduled" && giftSendAt !== initialSendAt) {
+      if (giftSendAt === "") {
+        body.giftSendAt = null;
+      } else {
+        const conversion = localInputToUtcIso(giftSendAt, effectiveTz);
+        if (!conversion.ok) {
+          setFormError(copy.editRecipientTimezoneFallbackHelp);
+          return;
+        }
+        body.giftSendAt = conversion.utcIso;
+      }
     }
     if (Object.keys(body).length === 0) {
-      setUnchangedError("Change something before saving.");
+      setFormError("Change something before saving.");
       return;
     }
     const result = await action.run(body);
@@ -126,10 +136,10 @@ function EditRecipientControl({
   }
 
   const sendAtInputId = `gift-${gift._id}-send-at`;
+  const tzPickerId = `gift-${gift._id}-send-at-tz`;
   const headingId = `gift-${gift._id}-edit-heading`;
   const topError =
-    unchangedError ??
-    actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
+    formError ?? actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
   return (
     <form
       onSubmit={onSubmit}
@@ -142,6 +152,15 @@ function EditRecipientControl({
       >
         {copy.editRecipientFormTitle}
       </h3>
+      {mode === "self_send" && (
+        <p
+          className="font-body text-xs text-j-text-muted tracking-[0.06em] inline-flex items-center gap-1.5"
+          aria-label="Self-send delivery"
+        >
+          <span aria-hidden="true" className="text-j-accent">✓</span>
+          <span>{copy.editRecipientSelfSendIndicator}</span>
+        </p>
+      )}
       <Input
         id={`gift-${gift._id}-recipient-name`}
         name="recipientName"
@@ -162,29 +181,41 @@ function EditRecipientControl({
         error={action.fieldErrors.recipientEmail}
         autoComplete="off"
       />
-      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
-        <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
-        <input
-          id={sendAtInputId}
-          type="datetime-local"
-          value={giftSendAt}
-          onChange={(e) => setGiftSendAt(e.target.value)}
-          aria-describedby={
-            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
-          }
-          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
-          className="rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent"
-        />
-        {action.fieldErrors.giftSendAt ? (
-          <span id={`${sendAtInputId}-error`} className="font-body text-xs text-j-rose">
-            {action.fieldErrors.giftSendAt}
-          </span>
-        ) : null}
-        <TimezonePreview
-          value={giftSendAt}
-          template={copy.editRecipientSendAtPreviewTemplate}
-        />
-      </label>
+      {mode === "scheduled" && (
+        <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
+          <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
+          <input
+            id={sendAtInputId}
+            type="datetime-local"
+            value={giftSendAt}
+            onChange={(e) => setGiftSendAt(e.target.value)}
+            aria-describedby={
+              action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+            }
+            aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
+            className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+          />
+          {action.fieldErrors.giftSendAt ? (
+            <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
+              {action.fieldErrors.giftSendAt}
+            </span>
+          ) : null}
+          <TimezonePreview
+            value={giftSendAt}
+            template={copy.editRecipientSendAtPreviewTemplate}
+            timeZone={effectiveTz}
+          />
+          {requiresPicker ? (
+            <TimezoneFallbackPicker
+              id={tzPickerId}
+              value={pickedTz}
+              onChange={setPickedTz}
+              label={copy.editRecipientTimezoneLabel}
+              placeholder={copy.editRecipientTimezonePlaceholder}
+            />
+          ) : null}
+        </label>
+      )}
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
         <Button
@@ -193,7 +224,7 @@ function EditRecipientControl({
           size="sm"
           onClick={() => {
             setOpen(false);
-            setUnchangedError(null);
+            setFormError(null);
             action.reset();
           }}
           disabled={action.submitting}
@@ -208,9 +239,6 @@ function EditRecipientControl({
   );
 }
 
-const ARM_RESET_MS = 5000;
-
-
 function FlipToSelfSendControl({
   gift,
   copy,
@@ -218,38 +246,192 @@ function FlipToSelfSendControl({
   gift: GiftCardData;
   copy: MyGiftsPageContent;
 }) {
+  return (
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/cancel-auto-send`}
+      copy={copy}
+      labels={{
+        idle: copy.flipToSelfSendCtaLabel,
+        confirm: copy.flipConfirmCtaLabel,
+        sending: copy.flipSwitchingLabel,
+      }}
+    />
+  );
+}
+
+function SendNowControl({
+  gift,
+  copy,
+}: {
+  gift: GiftCardData;
+  copy: MyGiftsPageContent;
+}) {
+  return (
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/send-now`}
+      copy={copy}
+      labels={{
+        idle: copy.sendNowCtaLabel,
+        confirm: copy.sendNowConfirmCtaLabel,
+        sending: copy.sendNowSendingLabel,
+      }}
+      errorOverrides={{
+        http_401: "sendNowSessionExpiredError",
+        http_409: "actionClosedError",
+      }}
+    />
+  );
+}
+
+function CancelScheduledControl({
+  gift,
+  copy,
+}: {
+  gift: GiftCardData;
+  copy: MyGiftsPageContent;
+}) {
+  return (
+    <ConfirmArmedButton
+      endpoint={`/api/gifts/${gift._id}/cancel-scheduled`}
+      copy={copy}
+      labels={{
+        idle: copy.cancelScheduledCtaLabel,
+        confirm: copy.cancelScheduledConfirmCtaLabel,
+        sending: copy.cancelScheduledSendingLabel,
+      }}
+      variant="destructive"
+      errorOverrides={{
+        http_401: "cancelScheduledSessionExpiredError",
+        http_409: "actionClosedError",
+      }}
+    />
+  );
+}
+
+function FlipToScheduledControl({
+  gift,
+  copy,
+}: {
+  gift: GiftCardData;
+  copy: MyGiftsPageContent;
+}) {
   const router = useRouter();
-  const [armed, setArmed] = useState(false);
-  const action = useMutationAction(`/api/gifts/${gift._id}/cancel-auto-send`);
+  const [open, setOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(gift.recipientEmail ?? "");
+  const [giftSendAt, setGiftSendAt] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const { pickedTz, setPickedTz, effectiveTz, requiresPicker } = useEffectiveTimeZone();
+  const action = useMutationAction(`/api/gifts/${gift._id}/flip-to-scheduled`);
 
-  useEffect(() => {
-    if (!armed || action.submitting) return;
-    const t = setTimeout(() => setArmed(false), ARM_RESET_MS);
-    return () => clearTimeout(t);
-  }, [armed, action.submitting]);
-
-  async function onConfirm() {
-    const result = await action.run();
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+    const conversion = localInputToUtcIso(giftSendAt, effectiveTz);
+    if (!conversion.ok) {
+      setFormError(copy.editRecipientTimezoneFallbackHelp);
+      return;
+    }
+    const result = await action.run({
+      recipientEmail: recipientEmail.trim(),
+      giftSendAt: conversion.utcIso,
+    });
     if (result.ok) {
+      setOpen(false);
       router.refresh();
-    } else {
-      setArmed(false);
     }
   }
 
+  if (!open) {
+    return (
+      <Button variant="outlined" size="sm" onClick={() => setOpen(true)}>
+        {copy.flipToScheduledCtaLabel}
+      </Button>
+    );
+  }
+
+  const sendAtInputId = `gift-${gift._id}-flip-send-at`;
+  const tzPickerId = `gift-${gift._id}-flip-send-at-tz`;
+  const headingId = `gift-${gift._id}-flip-heading`;
+  const topError =
+    formError ?? actionErrorLabel(action.topError, copy, { http_409: "actionClosedError" });
   return (
-    <div className="flex flex-col gap-1 items-stretch sm:items-end">
-      {armed ? (
-        <Button variant="primary" size="sm" disabled={action.submitting} onClick={onConfirm}>
-          {action.submitting ? copy.flipSwitchingLabel : copy.flipConfirmCtaLabel}
+    <form
+      onSubmit={onSubmit}
+      aria-labelledby={headingId}
+      className="w-full sm:w-80 flex flex-col gap-3 bg-j-cream/60 border border-j-blush rounded-lg p-4"
+    >
+      <h3
+        id={headingId}
+        className="font-display italic text-base text-j-text-heading"
+      >
+        {copy.flipToScheduledFormTitle}
+      </h3>
+      <Input
+        id={`gift-${gift._id}-flip-recipient-email`}
+        name="recipientEmail"
+        type="email"
+        label={copy.editRecipientFormRecipientEmailLabel}
+        value={recipientEmail}
+        onChange={setRecipientEmail}
+        error={action.fieldErrors.recipientEmail}
+        autoComplete="off"
+      />
+      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
+        <span className="font-body text-xs text-j-text-muted">
+          {copy.editRecipientFormSendAtLabel}
+        </span>
+        <input
+          id={sendAtInputId}
+          type="datetime-local"
+          value={giftSendAt}
+          onChange={(e) => setGiftSendAt(e.target.value)}
+          aria-describedby={
+            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
+          }
+          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
+          className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+        />
+        {action.fieldErrors.giftSendAt ? (
+          <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
+            {action.fieldErrors.giftSendAt}
+          </span>
+        ) : null}
+        <TimezonePreview
+          value={giftSendAt}
+          template={copy.editRecipientSendAtPreviewTemplate}
+          timeZone={effectiveTz}
+        />
+        {requiresPicker ? (
+          <TimezoneFallbackPicker
+            id={tzPickerId}
+            value={pickedTz}
+            onChange={setPickedTz}
+            label={copy.editRecipientTimezoneLabel}
+            placeholder={copy.editRecipientTimezonePlaceholder}
+          />
+        ) : null}
+      </label>
+      <InlineError message={topError} />
+      <div className="flex gap-2 justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setOpen(false);
+            action.reset();
+          }}
+          disabled={action.submitting}
+        >
+          {copy.editRecipientCancelButtonLabel}
         </Button>
-      ) : (
-        <Button variant="outlined" size="sm" onClick={() => setArmed(true)}>
-          {copy.flipToSelfSendCtaLabel}
+        <Button type="submit" variant="primary" size="sm" disabled={action.submitting}>
+          {action.submitting
+            ? copy.flipToScheduledSavingLabel
+            : copy.flipToScheduledSaveButtonLabel}
         </Button>
-      )}
-      <InlineError message={actionErrorLabel(action.topError, copy)} />
-    </div>
+      </div>
+    </form>
   );
 }
 

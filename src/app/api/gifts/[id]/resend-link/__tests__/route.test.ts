@@ -62,7 +62,9 @@ const SELF_SEND_GIFT: SubmissionRecord = {
   giftClaimEmailFiredAt: "2026-05-01T00:00:00.000Z",
   giftClaimedAt: null,
   giftCancelledAt: null,
-  emailsFired: [],
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,  emailsFired: [],
 };
 
 function gift(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {

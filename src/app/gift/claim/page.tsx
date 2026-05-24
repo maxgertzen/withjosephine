@@ -6,17 +6,16 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { VellumShell } from "@/components/VellumShell";
-import { GIFT_CLAIM_PAGE_DEFAULTS } from "@/data/defaults";
-import { fetchGiftClaimPage } from "@/lib/sanity/fetch";
+import { loadGiftClaimCopy } from "@/lib/sanity/fetch";
 
 export const dynamic = "force-dynamic";
 
 type GiftClaimPageProps = {
-  searchParams: Promise<{ token?: string; invalid?: string }>;
+  searchParams: Promise<{ token?: string; invalid?: string; expired?: string }>;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const copy = (await fetchGiftClaimPage()) ?? GIFT_CLAIM_PAGE_DEFAULTS;
+  const copy = await loadGiftClaimCopy();
   return {
     title: copy.seoTitle,
     description: copy.seoDescription,
@@ -25,19 +24,28 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function GiftClaimPage({ searchParams }: GiftClaimPageProps) {
-  const { token, invalid } = await searchParams;
+  const { token, invalid, expired } = await searchParams;
 
   if (token) {
     redirect(`/api/gift/claim?token=${encodeURIComponent(token)}`);
   }
 
-  const copy = (await fetchGiftClaimPage()) ?? GIFT_CLAIM_PAGE_DEFAULTS;
+  const copy = await loadGiftClaimCopy();
 
   if (invalid === "1") {
     return (
       <VellumShell
         heading={copy.alreadyClaimedHeading}
         body={copy.alreadyClaimedBody}
+      />
+    );
+  }
+
+  if (expired === "1") {
+    return (
+      <VellumShell
+        heading={copy.sessionExpiredHeading}
+        body={copy.sessionExpiredBody}
       />
     );
   }

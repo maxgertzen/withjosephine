@@ -6,6 +6,7 @@ import { parseStringField } from "@/lib/api/parseBody";
 import { authorizeAdminToken } from "@/lib/auth/adminTokenAuth";
 import { issueMagicLink } from "@/lib/auth/listenSession";
 import { findUserByEmail } from "@/lib/auth/users";
+import { siteOrigin } from "@/lib/env";
 
 /**
  * Engineering-tool endpoint for the listen round-trip Playwright spec.
@@ -49,10 +50,10 @@ export async function POST(request: Request): Promise<Response> {
   const { token, expiresAt } = await issueMagicLink({
     userId: user.id,
     ipHash: auth.audit.ipHash,
+    userAgentHash: auth.audit.userAgentHash,
   });
 
-  const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? new URL(request.url).origin;
-  const verifyUrl = new URL("/auth/verify", origin);
+  const verifyUrl = new URL("/auth/verify", siteOrigin());
   verifyUrl.searchParams.set("token", token);
 
   return NextResponse.json({

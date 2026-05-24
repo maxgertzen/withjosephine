@@ -51,7 +51,9 @@ const OWNED_DELIVERED: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   cookiesGet.mockReset();
@@ -113,6 +115,22 @@ describe("/listen/[id] page logic", () => {
 
     const props = await getPageProps();
     expect(props.state.kind).toBe("signIn");
+  });
+
+  it("strips leading 'The ' from readingName so 'Your {readingName}' doesn't read 'Your The Birth Chart'", async () => {
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    submissionMock.mockResolvedValue({
+      ...OWNED_DELIVERED,
+      reading: { slug: "birth-chart", name: "The Birth Chart Reading", priceDisplay: "$99" },
+    });
+
+    const props = await getPageProps({ search: { welcome: "1" } });
+
+    expect(props.state.kind).toBe("delivered");
+    if (props.state.kind !== "delivered") throw new Error("type narrowing");
+    expect(props.state.readingName).toBe("Birth Chart Reading");
+    expect(props.state.readingName).not.toMatch(/^The /);
   });
 
   it("State 3 (privacy): renders sign-in card when submission doesn't exist", async () => {

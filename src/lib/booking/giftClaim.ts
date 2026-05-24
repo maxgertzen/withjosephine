@@ -1,5 +1,6 @@
 import { findUnclaimedGiftByTokenHash } from "@/lib/booking/persistence/repository";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { siteOrigin } from "@/lib/env";
 import { sha256Hex } from "@/lib/hmac";
 
 const TOKEN_BYTE_LENGTH = 32;
@@ -9,10 +10,6 @@ export type IssuedGiftClaimToken = {
   tokenHash: string;
   claimUrl: string;
 };
-
-function siteOrigin(): string {
-  return process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://withjosephine.com";
-}
 
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(TOKEN_BYTE_LENGTH));
@@ -24,6 +21,17 @@ export async function issueGiftClaimToken(): Promise<IssuedGiftClaimToken> {
   const tokenHash = await sha256Hex(token);
   const claimUrl = `${siteOrigin()}/gift/claim?token=${token}`;
   return { token, tokenHash, claimUrl };
+}
+
+/**
+ * Non-redeemable sentinel hash for the flip routes. Written to
+ * `gift_claim_token_hash` when atomically flipping delivery_method so any URL
+ * the purchaser already shared invalidates immediately; the dispatcher /
+ * DO-alarm path overwrites it with a real hash when the next send fires. The
+ * `prov:` prefix doubles as a debug breadcrumb in audit dumps.
+ */
+export function provisionalTokenHash(reason: string, submissionId: string): string {
+  return `prov:${reason}:${submissionId}:${Date.now()}`;
 }
 
 /**

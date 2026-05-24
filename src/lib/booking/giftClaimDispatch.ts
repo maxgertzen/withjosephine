@@ -3,6 +3,7 @@ import { sendGiftClaimEmail } from "@/lib/resend";
 
 import { GIFT_DELIVERY } from "./constants";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
+import { priceDisplayFor } from "./priceDisplayFor";
 import { sendAndRecord } from "./sendAndRecord";
 import { findSubmissionById, markGiftClaimSent } from "./submissions";
 
@@ -15,7 +16,14 @@ export type GiftClaimDispatchOutcome =
   | { outcome: "reminder"; nextAlarmMs: number }
   | {
       outcome: "stop";
-      reason: "missing" | "claimed" | "cancelled" | "abandoned" | "max_retries" | "not_scheduled";
+      reason:
+        | "missing"
+        | "claimed"
+        | "cancelled"
+        | "abandoned"
+        | "max_retries"
+        | "not_scheduled"
+        | "sent_now";
       nextAlarmMs: null;
     };
 
@@ -41,6 +49,9 @@ export async function dispatchGiftClaim(
   if (submission.giftCancelledAt) {
     return { outcome: "stop", reason: "cancelled", nextAlarmMs: null };
   }
+  if (submission.giftClaimSentNowAt) {
+    return { outcome: "stop", reason: "sent_now", nextAlarmMs: null };
+  }
 
   const recipientEmail = submission.recipientEmail;
   if (!recipientEmail) {
@@ -62,6 +73,7 @@ export async function dispatchGiftClaim(
   const purchaserFirstName = purchaserFirstNameFor(submission);
   const recipientName = recipientNameFor(submission);
   const readingName = submission.reading?.name ?? "reading";
+  const readingPriceDisplay = priceDisplayFor(submission);
   const giftMessage = submission.giftMessage ?? null;
   const nowIso = new Date(input.nowMs).toISOString();
 
@@ -78,6 +90,7 @@ export async function dispatchGiftClaim(
           recipientName,
           purchaserFirstName,
           readingName,
+          readingPriceDisplay,
           giftMessage,
           variant: "first_send",
           claimUrl,
@@ -100,6 +113,7 @@ export async function dispatchGiftClaim(
         recipientName,
         purchaserFirstName,
         readingName,
+        readingPriceDisplay,
         giftMessage,
         variant: "reminder",
       }),

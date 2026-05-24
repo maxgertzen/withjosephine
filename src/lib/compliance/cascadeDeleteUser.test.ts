@@ -117,7 +117,9 @@ const SUBMISSION_BASE = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 function happyPathMocks() {
   mockFindUser.mockResolvedValue(USER);

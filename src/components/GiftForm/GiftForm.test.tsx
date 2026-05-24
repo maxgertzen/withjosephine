@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -82,10 +82,17 @@ describe("GiftForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("requires purchaser first name on submit", async () => {
-    const user = userEvent.setup();
+  it("Send button is disabled while the purchaser first name is empty (bug #6)", () => {
     render(<GiftForm {...READING_PROPS} />);
-    await user.click(screen.getByRole("button", { name: /send this gift/i }));
+    const submit = screen.getByRole("button", { name: /send this gift/i });
+    expect(submit).toBeDisabled();
+  });
+
+  it("surfaces 'first name required' when form is submitted while invalid", async () => {
+    const { container } = render(<GiftForm {...READING_PROPS} />);
+    const form = container.querySelector("form");
+    if (!form) throw new Error("form not found");
+    fireEvent.submit(form);
     expect(
       await screen.findByText(/first name is required/i),
     ).toBeInTheDocument();
@@ -176,11 +183,10 @@ describe("GiftForm", () => {
     await user.type(screen.getByLabelText(/your email/i), "alice@example.com");
     // Check art6 only; leave cooling-off unchecked
     await user.click(screen.getByLabelText(/processing my contact details/i));
-    await user.click(screen.getByRole("button", { name: /send this gift/i }));
+    const submit = screen.getByRole("button", { name: /send this gift/i });
+    expect(submit).toBeDisabled();
+    await user.click(submit).catch(() => undefined);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(
-      (await screen.findAllByText(/please acknowledge to continue/i))[0],
-    ).toBeInTheDocument();
   });
 
   it("shows a soft character counter on the gift message only above the threshold", () => {
@@ -193,12 +199,13 @@ describe("GiftForm", () => {
 
   // Phase 5 Session 4b — LB-6 a11y. Closes WCAG 3.3.1 + 4.1.2 gap.
   describe("a11y (LB-6)", () => {
-    it("wires aria-describedby + aria-invalid on errored fields", async () => {
-      const user = userEvent.setup();
-      render(<GiftForm {...READING_PROPS} />);
-      await user.click(screen.getByRole("button", { name: /send this gift/i }));
+    it("wires aria-describedby + aria-invalid on errored fields after form submit", async () => {
+      const { container } = render(<GiftForm {...READING_PROPS} />);
+      const form = container.querySelector("form");
+      if (!form) throw new Error("form not found");
+      fireEvent.submit(form);
 
-      const firstName = screen.getByLabelText(
+      const firstName = await screen.findByLabelText(
         new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
       );
       expect(firstName).toHaveAttribute("aria-invalid", "true");
@@ -208,15 +215,16 @@ describe("GiftForm", () => {
       expect(errorEl?.textContent).toMatch(/first name is required/i);
     });
 
-    it("focuses the first errored field on submit", async () => {
-      const user = userEvent.setup();
-      render(<GiftForm {...READING_PROPS} />);
-      await user.click(screen.getByRole("button", { name: /send this gift/i }));
+    it("focuses the first errored field on form submit", async () => {
+      const { container } = render(<GiftForm {...READING_PROPS} />);
+      const form = container.querySelector("form");
+      if (!form) throw new Error("form not found");
+      fireEvent.submit(form);
 
-      const firstName = screen.getByLabelText(
+      const firstName = await screen.findByLabelText(
         new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
       );
-      expect(document.activeElement).toBe(firstName);
+      await waitFor(() => expect(document.activeElement).toBe(firstName));
     });
 
     it("submit-button ✦ is aria-hidden", () => {

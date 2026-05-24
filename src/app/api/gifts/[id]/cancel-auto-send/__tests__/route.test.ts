@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 
@@ -33,7 +33,12 @@ vi.mock("@/lib/booking/submissions", async () => {
 });
 
 const issueTokenMock = vi.fn();
-vi.mock("@/lib/booking/giftClaim", () => ({ issueGiftClaimToken: issueTokenMock }));
+vi.mock("@/lib/booking/giftClaim", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/booking/giftClaim")>(
+    "@/lib/booking/giftClaim",
+  );
+  return { ...actual, issueGiftClaimToken: issueTokenMock };
+});
 
 const sendMock = vi.fn();
 vi.mock("@/lib/resend", () => ({ sendGiftPurchaseConfirmation: sendMock }));
@@ -41,6 +46,11 @@ vi.mock("@/lib/resend", () => ({ sendGiftPurchaseConfirmation: sendMock }));
 const stubFetchMock = vi.fn();
 const namespaceGetMock = vi.fn(() => ({ fetch: stubFetchMock }));
 const idFromNameMock = vi.fn(() => ({ toString: () => "do-id" }));
+
+const getCloudflareContextMock = vi.fn();
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: getCloudflareContextMock,
+}));
 
 const PURCHASER_ID = "user_purchaser";
 
@@ -64,7 +74,9 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   giftClaimEmailFiredAt: null,
   giftClaimedAt: null,
   giftCancelledAt: null,
-};
+  giftClaimSentNowAt: null,
+  giftClaimSentNowActor: null,
+  giftClaimPriorAlarmAt: null,};
 
 beforeEach(() => {
   cookieGetMock.mockReset().mockReturnValue({ value: "cookie-val" });
@@ -80,14 +92,11 @@ beforeEach(() => {
   });
   sendMock.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_flip" });
   stubFetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ cancelled: true })));
-  (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER = {
-    idFromName: idFromNameMock,
-    get: namespaceGetMock,
-  };
-});
-
-afterEach(() => {
-  delete (globalThis as Record<string, unknown>).GIFT_CLAIM_SCHEDULER;
+  getCloudflareContextMock.mockReset().mockResolvedValue({
+    env: {
+      GIFT_CLAIM_SCHEDULER: { idFromName: idFromNameMock, get: namespaceGetMock },
+    },
+  });
 });
 
 async function callRoute(): Promise<Response> {
@@ -175,7 +184,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
 
     // Flip uses a provisional token hash (NOT the real one yet).
     const flipArgs = flipMock.mock.calls[0]![1] as { tokenHash: string };
-    expect(flipArgs.tokenHash).toMatch(/^prov:sub_gift:/);
+    expect(flipArgs.tokenHash).toMatch(/^prov:cancel-auto-send:sub_gift:/);
 
     // Real token hash is persisted via markGiftClaimSent after send.
     expect(markGiftClaimSentMock).toHaveBeenCalledWith(

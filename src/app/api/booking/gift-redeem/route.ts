@@ -3,24 +3,37 @@ import { NextResponse } from "next/server";
 
 import { getOrCreateUser } from "@/lib/auth/users";
 import {
+  GIFT_DELIVERY,
   HONEYPOT_FIELD,
   MAX_ACTIVE_GIFTS_PER_RECIPIENT,
 } from "@/lib/booking/constants";
+import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import {
   clearGiftClaimCookie,
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import {
+  purchaserFirstNameFor,
+  recipientFirstNameFromIntakeResponses,
+} from "@/lib/booking/giftPersonas";
 import { countActivePendingGiftsForRecipient } from "@/lib/booking/persistence/repository";
+import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
-import { findSubmissionById, redeemGiftSubmission } from "@/lib/booking/submissions";
+import {
+  appendEmailFired,
+  findSubmissionById,
+  redeemGiftSubmission,
+} from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
 import {
   consentSnapshotFromBody,
   isFullyConsented,
 } from "@/lib/compliance/intakeConsent";
+import { sha256Hex } from "@/lib/hmac";
 import { getClientIp } from "@/lib/request";
+import { redactEmail, sendRecipientIntakeReceived } from "@/lib/resend";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
@@ -104,11 +117,20 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  if (!isFullyConsented(consentSnapshotFromBody(parsedBody), true)) {
+  if (
+    !isFullyConsented(
+      consentSnapshotFromBody(parsedBody, { readingSlug: parsedBody.readingSlug }),
+      {
+        requireArt9: true,
+        // Recipient did not pay — purchaser already waived cooling-off at
+        // purchase time. The recipient consent surface omits the checkbox.
+        requireCoolingOff: false,
+      },
+    )
+  ) {
     return NextResponse.json(
       {
-        error:
-          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to redeem.",
+        error: "Art. 6 and Art. 9 acknowledgments are required to redeem.",
       },
       { status: 400 },
     );
@@ -138,6 +160,11 @@ export async function POST(request: Request): Promise<Response> {
   ]);
 
   if (!turnstileOk) {
+    console.error("[gift-redeem] turnstile_rejected", {
+      submissionId,
+      cfRay: request.headers.get("cf-ray"),
+      ip,
+    });
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
   }
   if (!submission || !submission.isGift) {
@@ -149,7 +176,8 @@ export async function POST(request: Request): Promise<Response> {
   if (submission.giftCancelledAt) {
     return NextResponse.json({ error: "Gift was cancelled" }, { status: 410 });
   }
-  if (!submission.recipientEmail) {
+  const isSelfSend = submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
+  if (!submission.recipientEmail && !isSelfSend) {
     return NextResponse.json({ error: "Recipient email missing" }, { status: 422 });
   }
   if (!reading) {
@@ -177,15 +205,44 @@ export async function POST(request: Request): Promise<Response> {
   const validatedValues = validation.data as Record<string, unknown>;
   const submittedEmail =
     typeof validatedValues.email === "string"
-      ? validatedValues.email.trim().toLowerCase()
+      ? normalizeEmailForm(validatedValues.email)
       : "";
   if (!submittedEmail) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
-  // Defense-in-depth: a stolen claim cookie still can't be used by a
-  // different person — the submitted email must match recipient_email.
-  if (submittedEmail !== submission.recipientEmail.toLowerCase()) {
+  const submittedEmailRedacted = redactEmail(submittedEmail);
+  const submittedEmailHash = (await sha256Hex(submittedEmail)).slice(0, 12);
+  const logBase = {
+    submissionId,
+    deliveryMethod: submission.giftDeliveryMethod,
+    submittedEmailRedacted,
+    submittedEmailHash,
+  };
+
+  // Scheduled gifts: `recipient_email` is set at purchase, so a stolen claim
+  // cookie still can't be used by a different person — submitted email must
+  // match. Self_send gifts have no recipient_email at purchase (the
+  // purchaser hands off the link manually), so the recipient supplies it
+  // here; the claim cookie already gated this request on submissionId.
+  // Normalising both sides via `normalizeEmailForm` keeps the strict mismatch
+  // gate honest across copy-pasted Unicode variants (the Rook hard-stop must
+  // not be defeated by combining-mark or pre/decomposed-form differences).
+  const storedRecipientEmail = submission.recipientEmail
+    ? normalizeEmailForm(submission.recipientEmail)
+    : null;
+  const mismatch = !!storedRecipientEmail && submittedEmail !== storedRecipientEmail;
+  console.log("[gift-redeem.gate]", {
+    ...logBase,
+    storedRecipientEmailRedacted: storedRecipientEmail ? redactEmail(storedRecipientEmail) : null,
+    storedRecipientEmailHash: storedRecipientEmail
+      ? (await sha256Hex(storedRecipientEmail)).slice(0, 12)
+      : null,
+    hasStoredRecipient: !!storedRecipientEmail,
+    mismatch,
+  });
+  if (mismatch) {
+    console.error("[gift-redeem] email_mismatch", { submissionId });
     return NextResponse.json(
       {
         error: "Email mismatch",
@@ -221,20 +278,54 @@ export async function POST(request: Request): Promise<Response> {
   const responses = buildResponses(fields, validatedValues);
   const claimedAtIso = new Date().toISOString();
 
-  const { userId: recipientUserId } = await getOrCreateUser({ email: submittedEmail });
+  const { userId: recipientUserId, isNew: recipientUserIsNew } = await getOrCreateUser({
+    email: submittedEmail,
+  });
+  console.log("[gift-redeem.claim]", {
+    ...logBase,
+    recipientUserId,
+    purchaserUserId: submission.purchaserUserId,
+    recipientUserIsNew,
+    equalsPurchaser: recipientUserId === submission.purchaserUserId,
+  });
 
   try {
     await redeemGiftSubmission({
       submissionId,
+      readingSlug: parsedBody.readingSlug,
       responses,
       recipientUserId,
       claimedAtIso,
       art9AcknowledgedAt: claimedAtIso,
+      // self_send purchases have NULL recipient_email; persist the recipient's
+      // email at claim time so downstream surfaces (Sanity, listen-page magic
+      // links) have an audience identifier. Repo writes setIfMissing so a
+      // retry on an already-populated row can't clobber the original value.
+      recipientEmailFromIntake: isSelfSend ? submittedEmail : undefined,
     });
   } catch (error) {
     console.error("[gift-redeem] Failed to redeem gift submission", error);
     return NextResponse.json({ error: "Failed to save your details" }, { status: 500 });
   }
+
+  runMirror(
+    (async () => {
+      const result = await sendRecipientIntakeReceived({
+        submissionId,
+        recipientEmail: submittedEmail,
+        recipientName: recipientFirstNameFromIntakeResponses(responses, submittedEmail),
+        purchaserFirstName: purchaserFirstNameFor(submission),
+        readingName: submission.reading?.name ?? reading.name,
+      });
+      if (result.kind === "sent") {
+        await appendEmailFired(submissionId, {
+          type: "recipient_intake_received",
+          sentAt: new Date().toISOString(),
+          resendId: result.resendId,
+        });
+      }
+    })(),
+  );
 
   await clearGiftClaimCookie();
 

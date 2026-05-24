@@ -7,7 +7,6 @@ export type EntryCtaPosition = "drop-cap" | "verso-cta" | "back-link";
 
 export type EmailType =
   | "order_confirmation"
-  | "day2"
   | "day7"
   | "day14"
   | "abandonment";

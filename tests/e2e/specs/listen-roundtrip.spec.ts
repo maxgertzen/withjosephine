@@ -2,35 +2,31 @@ import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
+
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import {
   forceD1Mirror,
   uploadDummyVoiceAndPdf,
 } from "../helpers/sanityE2EAssets";
 import {
-  accessHeadersOrEmpty,
+  escapeSqliteLiteral,
   findSubmissionIdByStripeSessionId,
   issueMagicLink,
   pollSanityListenedAt,
   pollUntilPaid,
+  queryStagingD1,
+  sandboxRequestHeaders,
 } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
+import { stubTurnstile } from "../helpers/turnstileStub";
 
-test.skip(
-  !process.env.CF_ACCESS_CLIENT_ID || !process.env.CF_ACCESS_CLIENT_SECRET,
-  "CF Access service-token env vars missing. Source www/.env.staging first.",
-);
-
-test.skip(
-  !process.env.ADMIN_API_KEY,
-  "ADMIN_API_KEY missing from .env.staging — the issue-magic-link engineering seam can't be exercised without it.",
-);
-
-test.use({ extraHTTPHeaders: accessHeadersOrEmpty() });
+test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 async function createPaidSubmission(page: Page, email: string): Promise<string> {
   await seedIntakeDraft(page, "birth-chart", { values: { email } });
@@ -68,10 +64,19 @@ async function createPaidSubmission(page: Page, email: string): Promise<string> 
 }
 
 test.describe("Listen round-trip — staging", () => {
-  test.fixme(
-    true,
-    "Booking pre-condition redirects to /my-readings on staging — see docs/BACKLOG.md → 'Listen round-trip spec — re-enable after staging hygiene'.",
-  );
+  test.beforeAll(async () => {
+    const { sanityDeleted } = await cleanupSandboxResidue({
+      emailPrefix: "listen-roundtrip+",
+    });
+    console.log(
+      `[listen-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
+    );
+  });
+
+  test.beforeEach(async ({ context, page }) => {
+    await context.clearCookies();
+    await stubTurnstile(page);
+  });
 
   test("birth-chart: paid submission → delivered → magic-link → listen → listenedAt", async ({
     page,
@@ -110,12 +115,14 @@ test.describe("Listen round-trip — staging", () => {
       timeout: 15_000,
     });
 
-    // 7. Retrieve the raw token via the engineering seam.
-    const { verifyUrl } = await issueMagicLink(email);
-    expect(verifyUrl).toMatch(/\/auth\/verify\?token=[a-f0-9]{64}/);
+    // Real magic-link emails include &next=/listen/<id>; the engineering
+    // seam doesn't, so append it to match production safeNext resolution.
+    const { verifyUrl: baseVerifyUrl } = await issueMagicLink(email);
+    expect(baseVerifyUrl).toMatch(/\/auth\/verify\?token=[a-f0-9]{64}/);
+    const verifyUrl = new URL(baseVerifyUrl);
+    verifyUrl.searchParams.set("next", `/listen/${submissionId}`);
 
-    // 8. Navigate to the verify URL → confirm-email card.
-    await page.goto(verifyUrl);
+    await page.goto(verifyUrl.toString());
     const confirmForm = page.locator(
       'form[action="/api/auth/magic-link/verify"]',
     );
@@ -155,6 +162,28 @@ test.describe("Listen round-trip — staging", () => {
     expect(listenedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const ageMs = Date.now() - new Date(listenedAt as string).getTime();
     expect(ageMs).toBeLessThan(30_000);
+  });
+
+  // Gated until the staging worker is on the PR that threads userAgentHash
+  // through issueMagicLink. Un-gate by setting UA_AUDIT_HASH_DEPLOYED=true in
+  // CI once release/v1.2.0 has redeployed with the new code.
+  test("link_issued audit row carries user_agent_hash", async () => {
+    test.skip(
+      process.env.UA_AUDIT_HASH_DEPLOYED !== "true",
+      "Un-gate after release/v1.2.0 merges and staging redeploys with the userAgentHash threading change.",
+    );
+    const rows = await queryStagingD1<{ user_agent_hash: string | null }>(
+      `SELECT user_agent_hash
+         FROM listen_audit
+        WHERE event_type = '${escapeSqliteLiteral(AUDIT_EVENT_TYPE.link_issued)}'
+        ORDER BY timestamp DESC
+        LIMIT 1`,
+    );
+    expect(rows, "at least one link_issued row should exist on staging").toHaveLength(1);
+    expect(
+      rows[0]!.user_agent_hash,
+      "user_agent_hash should be captured at link_issued time",
+    ).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 

@@ -173,7 +173,6 @@ describe("middleware apex lockdown (under-construction on)", () => {
     const paths = [
       "/api/cron/reconcile",
       "/api/cron/cleanup",
-      "/api/cron/email-day-2",
       "/api/cron/email-day-7",
       "/api/cron/email-day-7-deliver",
     ];

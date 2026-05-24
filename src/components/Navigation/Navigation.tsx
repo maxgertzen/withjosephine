@@ -66,7 +66,7 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="h-auto w-[140px] md:hidden"
+              className="h-auto w-[140px] lg:hidden"
             />
             <Image
               src="/images/logo-horizontal-text.webp"
@@ -74,12 +74,12 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="hidden h-auto w-[clamp(120px,8vw,160px)] md:block"
+              className="hidden h-auto w-[clamp(120px,8vw,160px)] lg:block"
             />
           </Link>
 
           <div
-            className="hidden md:flex items-center gap-8"
+            className="hidden lg:flex items-center gap-8"
             role="navigation"
             aria-label="Main navigation"
           >
@@ -100,7 +100,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
           <button
             type="button"
-            className="md:hidden text-j-deep"
+            className="lg:hidden text-j-deep cursor-pointer"
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
@@ -112,7 +112,7 @@ export function Navigation({ content, className }: NavigationProps) {
       <div
         aria-hidden={!menuOpen}
         className={mergeClasses(
-          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out md:hidden",
+          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out lg:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

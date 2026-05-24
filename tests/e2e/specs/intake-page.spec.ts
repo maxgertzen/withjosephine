@@ -5,6 +5,7 @@ import {
   clickThroughIntakePages,
   seedIntakeDraft,
 } from "../helpers/intakeDraft";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 
 test.describe("Intake page renders (smoke)", () => {
   for (const reading of READINGS) {
@@ -25,14 +26,8 @@ test.describe("Booking happy-path with submit assertion", () => {
     test(`fills + submits ${reading.slug} → buy.stripe.com with client_reference_id`, async ({
       page,
     }) => {
-      let stripeRedirectUrl: string | null = null;
-      await page.route("https://buy.stripe.com/**", async (route) => {
-        stripeRedirectUrl = route.request().url();
-        await route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: "<html><body>mock stripe</body></html>",
-        });
+      const intercept = await interceptStripeCheckout(page, {
+        readingSlug: reading.slug,
       });
 
       await seedIntakeDraft(page, reading.slug);
@@ -45,10 +40,15 @@ test.describe("Booking happy-path with submit assertion", () => {
       await page.locator("#field-cooling-off-consent").check();
 
       await page.getByTestId("intake-submit").click();
-      await page.waitForURL(/buy\.stripe\.com/);
 
-      expect(stripeRedirectUrl).not.toBeNull();
-      expect(stripeRedirectUrl!).toMatch(/client_reference_id=/);
+      // The helper's 303 redirects /thank-you/[slug]?... — wait for that
+      // landing page rather than buy.stripe.com itself. The captured
+      // submissionId IS the `client_reference_id` query param, so a
+      // non-empty value proves the booking flow sent the expected
+      // reference (R-6 equivalent assertion).
+      await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
+      const { submissionId } = await intercept.captured;
+      expect(submissionId).toBeTruthy();
     });
   }
 });
@@ -66,7 +66,8 @@ test.describe("Final-page acknowledgments without Sanity consentField (Issue #2)
     await expect(page.locator("#field-art9-consent")).toBeVisible();
     await expect(page.locator("#field-cooling-off-consent")).toBeVisible();
 
-    await page.getByTestId("intake-submit").click();
-    await expect(page.getByRole("alert").first()).toContainText(/acknowledg/i);
+    // Bug #3 + #4: Continue is disabled when consents are incomplete (no
+    // longer relies on click-then-alert).
+    await expect(page.getByTestId("intake-submit")).toBeDisabled();
   });
 });

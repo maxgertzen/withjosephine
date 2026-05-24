@@ -6,18 +6,20 @@ import {
   getCapturedMutations,
   resetCapturedState,
 } from "../helpers/captureStore";
+import { resetE2EDatabase } from "../helpers/e2eReset";
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 import { buildCheckoutCompletedPayload, fireCheckoutCompleted } from "../helpers/stripeWebhook";
 
 const READING_SLUG = "birth-chart";
 
 test.beforeEach(async ({ request }) => {
   await resetCapturedState(request);
-  await request.post("/api/e2e-reset").catch(() => undefined);
+  await resetE2EDatabase(request);
 });
 
 test.describe("Stripe round-trip — mock mode", () => {
@@ -27,20 +29,7 @@ test.describe("Stripe round-trip — mock mode", () => {
   }) => {
     test.setTimeout(2 * 60 * 1000);
 
-    let interceptedSessionId: string | null = null;
-
-    await page.route("https://buy.stripe.com/**", async (route) => {
-      const url = new URL(route.request().url());
-      const referenceId = url.searchParams.get("client_reference_id") ?? "";
-      const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
-      interceptedSessionId = sessionId;
-      await route.fulfill({
-        status: 303,
-        headers: {
-          location: `/thank-you/${READING_SLUG}?sessionId=${sessionId}&submission=${referenceId}`,
-        },
-      });
-    });
+    const intercept = await interceptStripeCheckout(page, { readingSlug: READING_SLUG });
 
     await seedIntakeDraft(page, READING_SLUG);
 
@@ -64,12 +53,12 @@ test.describe("Stripe round-trip — mock mode", () => {
 
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    expect(interceptedSessionId).not.toBeNull();
-    const submissionId = new URL(page.url()).searchParams.get("submission");
+    const { sessionId, submissionId } = await intercept.captured;
+    expect(sessionId).toBeTruthy();
     expect(submissionId).toBeTruthy();
 
-    const webhookResponse = await fireCheckoutCompleted(request, submissionId!, {
-      stripeSessionId: interceptedSessionId!,
+    const webhookResponse = await fireCheckoutCompleted(request, submissionId, {
+      stripeSessionId: sessionId,
       customerEmail: "e2e-test@withjosephine.com",
       amountTotal: 9900,
     });

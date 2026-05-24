@@ -18,6 +18,11 @@ vi.mock("resend", () => ({
   Resend: resendCtorMock,
 }));
 
+const headersGetMock = vi.fn<(name: string) => string | null>(() => null);
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => ({ get: headersGetMock })),
+}));
+
 vi.mock("./analytics/server", () => ({
   serverTrack: serverTrackMock,
   generateAnonymousDistinctId: vi.fn(() => "anon-test"),
@@ -27,7 +32,8 @@ vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
-  fetchEmailDay2Started: vi.fn().mockResolvedValue(null),
+  fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
+  fetchEmailPrivacyExport: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -35,6 +41,7 @@ beforeEach(() => {
   sendMock.mockReset();
   resendCtorMock.mockClear();
   serverTrackMock.mockReset();
+  headersGetMock.mockReset().mockReturnValue(null);
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubEnv("RESEND_API_KEY", "re_test");
   vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
@@ -290,25 +297,6 @@ describe("sendOrderConfirmation", () => {
   });
 });
 
-describe("sendDay2Started", () => {
-  it("sends SPEC §13.C verbatim copy to client", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_d2" } });
-    const submission = buildSubmission();
-    const { sendDay2Started } = await import("./resend");
-
-    const result = await sendDay2Started(submission);
-
-    expect(getResendId(result)).toBe("msg_d2");
-    const args = sendMock.mock.calls[0]?.[0];
-    expect(args.to).toBe(submission.email);
-    expect(args.subject).toBe("A quick note — I’ve started your reading");
-    const body = visibleText(args.html);
-    expect(body).toContain("Hi Ada,");
-    expect(body).toContain("sat down with your chart");
-    expect(body).toContain("not going to preview anything");
-    expect(body).toContain("within the next five days");
-  });
-});
 
 describe("sendDay7Delivery", () => {
   it("includes the listening-page URL inside an anchor href", async () => {
@@ -328,6 +316,61 @@ describe("sendDay7Delivery", () => {
     expect(body).toContain("Open it whenever the timing feels right");
     expect(body).toContain("signs you into your reading for the next seven days");
     expect(body).toContain("Open your reading");
+  });
+});
+
+describe("sendPrivacyExportEmail", () => {
+  it("renders Sanity-fetched copy with submissionCount + expiryDays interpolated", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
+      subject: "Custom export subject",
+      preview: "Custom export preview",
+      greeting: "Greetings,",
+      introLine: "Your export is queued.",
+      contentsLine: "Contains data for {submissionCount} reading(s).",
+      ctaLabel: "Grab your ZIP",
+      expiryLine: "Link expires in {expiryDays} days.",
+      signOff: null,
+    });
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    const result = await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
+      submissionCount: 4,
+      expiryDays: 14,
+    });
+
+    expect(getResendId(result)).toBe("msg_priv");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("ada@example.com");
+    expect(args.subject).toBe("Custom export subject");
+    const body = visibleText(args.html);
+    expect(body).toContain("Contains data for 4 reading(s).");
+    expect(body).toContain("Link expires in 14 days.");
+    expect(body).toContain("Grab your ZIP");
+    expect(args.html).toContain('href="https://r2.withjosephine.com/exports/abc.zip"');
+  });
+
+  it("falls back to defaults when Sanity fetch returns null", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv_default" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue(null);
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
+      submissionCount: 1,
+      expiryDays: 7,
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Your Josephine data export");
+    const body = visibleText(args.html);
+    expect(body).toContain("for your 1 reading(s)");
+    expect(body).toContain("expires in 7 days");
   });
 });
 
@@ -417,6 +460,66 @@ describe("sendDay7OverdueAlert", () => {
     const result = await sendDay7OverdueAlert(buildSubmission());
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendRecipientIntakeReceived (I-10)", () => {
+  it("sends to the recipient email with the recipient-specific subject + body", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
+    const { sendRecipientIntakeReceived } = await import("./resend");
+
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBe("msg_rir");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("recipient@example.com");
+    expect(args.subject).toBe("Your reading is in my hands now");
+    const body = visibleText(args.html);
+    expect(body).toContain("Hi Roland,");
+    expect(body).toContain("Marco gifted you a Soul Blueprint");
+    expect(body).toContain("within seven days");
+    expect(body).not.toContain("{recipientName}");
+    expect(body).not.toContain("{purchaserFirstName}");
+    expect(body).not.toContain("{readingName}");
+  });
+
+  it("substitutes {recipientName} and {readingName} in the subject if used in Sanity copy", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
+    const { fetchEmailRecipientIntakeReceived } = await import("./sanity/fetch");
+    vi.mocked(fetchEmailRecipientIntakeReceived).mockResolvedValueOnce({
+      subject: "{recipientName}, your {readingName} is in my hands",
+      preview: "x",
+      brandName: "Josephine",
+      brandSubtitle: "Soul Readings",
+      heroLine: "x",
+      greeting: "Hi {recipientName},",
+      thanksLine: "x",
+      timelineLine: "x",
+      contactLine: "x",
+      cardLabel: "x",
+      cardDeliveryLine: "x",
+      signOffLine1: "x",
+      signOffLine2: "x",
+      footerDisclaimer: "x",
+    });
+    const { sendRecipientIntakeReceived } = await import("./resend");
+
+    await sendRecipientIntakeReceived({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "Soul Blueprint",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Roland, your Soul Blueprint is in my hands");
   });
 });
 
@@ -635,5 +738,207 @@ describe("sendMagicLink", () => {
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
+  it("skips sending when the header matches RESEND_E2E_DRY_RUN_SECRET", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "tok_e2e_abc" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT skip when the header is absent (humans still get real emails)", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    sendMock.mockResolvedValue({ data: { id: "msg_human" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_human");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT skip when the header value does NOT match the secret", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "tok_e2e_abc");
+    sendMock.mockResolvedValue({ data: { id: "msg_mismatch" } });
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "wrong" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_mismatch");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("fail-closed: skips sending AND logs an error when the header is present but RESEND_E2E_DRY_RUN_SECRET is unset", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    headersGetMock.mockImplementation((name: string) =>
+      name.toLowerCase() === "x-e2e-resend-dry-run" ? "anything" : null,
+    );
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[resend] DRY_RUN_SECRET_UNSET"),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("does NOT skip and does NOT log when the secret is unset AND the header is absent (cold non-request callers + cron)", async () => {
+    vi.stubEnv("RESEND_E2E_DRY_RUN_SECRET", "");
+    sendMock.mockResolvedValue({ data: { id: "msg_no_secret_no_header" } });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_no_secret_no_header");
+    expect(sendMock).toHaveBeenCalledOnce();
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+});
+
+describe("isSandboxEmail", () => {
+  it("matches known sandbox spec prefixes on @withjosephine.com", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("gift-roundtrip-purchaser+abc123@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-roundtrip-recipient+abc123@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-recipient-listen-purchaser+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("gift-recipient-listen-recipient+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("listen-roundtrip+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("stripe-roundtrip+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("v120-qa+gift-abc@withjosephine.com")).toBe(true);
+  });
+
+  it("does NOT match sandbox prefixes on other domains (spoofing guard)", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("gift-roundtrip-purchaser+abc@evil.example")).toBe(false);
+    expect(isSandboxEmail("listen-roundtrip+abc@gmail.com")).toBe(false);
+  });
+
+  it("does NOT match non-sandbox addresses on @withjosephine.com", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("hello@withjosephine.com")).toBe(false);
+    expect(isSandboxEmail("becky@withjosephine.com")).toBe(false);
+  });
+
+  it("is case-insensitive on local-part and domain", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail("GIFT-ROUNDTRIP-PURCHASER+ABC@WITHJOSEPHINE.COM")).toBe(true);
+  });
+
+  it("returns false for null/undefined/empty input", async () => {
+    const { isSandboxEmail } = await import("./resend");
+    expect(isSandboxEmail(null)).toBe(false);
+    expect(isSandboxEmail(undefined)).toBe(false);
+    expect(isSandboxEmail("")).toBe(false);
+  });
+});
+
+describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () => {
+  it("forces dry-run when the recipient `to` matches a sandbox prefix (gift_claim cron path)", async () => {
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_1",
+      recipientEmail: "gift-roundtrip-recipient+abc123@withjosephine.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "The Birth Chart Reading",
+    });
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("forces dry-run when the originatorEmail matches sandbox (admin notification path)", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+    const result = await sendNotificationToJosephine(
+      buildSubmission({ email: "gift-roundtrip-purchaser+xyz@withjosephine.com" }),
+    );
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT force dry-run when neither recipient nor originator is a sandbox alias", async () => {
+    vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_real" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendNotificationToJosephine } = await import("./resend");
+    const result = await sendNotificationToJosephine(buildSubmission());
+
+    expect(getResendId(result)).toBe("msg_real");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("tags the skip-log reason so cron/DO/webhook leaks are observable in wrangler tail", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    await sendRecipientIntakeReceived({
+      submissionId: "sub_1",
+      recipientEmail: "gift-roundtrip-recipient+abc@withjosephine.com",
+      recipientName: "Roland",
+      purchaserFirstName: "Marco",
+      readingName: "The Birth Chart Reading",
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("reason=sandbox_prefix"),
+    );
+    warnSpy.mockRestore();
+  });
+});
+
+describe("redactEmail", () => {
+  it("keeps the first character of locals ≥3 chars", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("ada@example.com")).toBe("a***@example.com");
+    expect(redactEmail("maxgertzen+gift-scheduled@gmail.com")).toBe("m***@gmail.com");
+  });
+
+  it("drops the local entirely when local-part is ≤2 chars (short locals would otherwise leak the original)", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("a@example.com")).toBe("***@example.com");
+    expect(redactEmail("ab@example.com")).toBe("***@example.com");
+  });
+
+  it("returns the input unchanged when it has no @", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("not-an-email")).toBe("not-an-email");
+  });
+
+  it("returns the input unchanged when @ is the first character", async () => {
+    const { redactEmail } = await import("./resend");
+    expect(redactEmail("@example.com")).toBe("@example.com");
   });
 });

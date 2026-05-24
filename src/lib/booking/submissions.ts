@@ -1,7 +1,11 @@
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { GIFT_DELIVERY, PHOTO_PUBLIC_URL_BASE } from "./constants";
+import {
+  GIFT_DELIVERY,
+  type GiftCancelledReason,
+  PHOTO_PUBLIC_URL_BASE,
+} from "./constants";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
@@ -19,6 +23,7 @@ import {
   mirrorUnsetPhotoKey,
 } from "./persistence/sanityMirror";
 import { dbBatch } from "./persistence/sqlClient";
+import { priceDisplayFor } from "./priceDisplayFor";
 
 export const SUBMISSION_STATUS = {
   pending: "pending",
@@ -29,7 +34,6 @@ export type SubmissionStatus = (typeof SUBMISSION_STATUS)[keyof typeof SUBMISSIO
 
 export type EmailFiredType =
   | "order_confirmation"
-  | "day2"
   | "day7"
   | "day7-overdue-alert"
   | "day14"
@@ -37,7 +41,8 @@ export type EmailFiredType =
   | "gift_purchase_confirmation"
   | "gift_claim"
   | "gift_resend"
-  | "gift_claim_regenerate";
+  | "gift_claim_regenerate"
+  | "recipient_intake_received";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
@@ -83,6 +88,9 @@ export type SubmissionRecord = {
   giftClaimEmailFiredAt: string | null;
   giftClaimedAt: string | null;
   giftCancelledAt: string | null;
+  giftClaimSentNowAt: string | null;
+  giftClaimSentNowActor: string | null;
+  giftClaimPriorAlarmAt: string | null;
 };
 
 /**
@@ -136,15 +144,18 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
  */
 export async function redeemGiftSubmission(params: {
   submissionId: string;
+  readingSlug: string;
   responses: SubmissionRecord["responses"];
   recipientUserId: string;
   claimedAtIso: string;
   art9AcknowledgedAt: string;
+  recipientEmailFromIntake?: string;
 }): Promise<void> {
   await repo.redeemGiftSubmission(params.submissionId, {
     responses: params.responses,
     recipientUserId: params.recipientUserId,
     claimedAtIso: params.claimedAtIso,
+    recipientEmail: params.recipientEmailFromIntake,
   });
   runMirror(
     mirrorSubmissionPatch(params.submissionId, {
@@ -152,6 +163,10 @@ export async function redeemGiftSubmission(params: {
       recipientUserId: params.recipientUserId,
       responses: params.responses,
       art9AcknowledgedAt: params.art9AcknowledgedAt,
+      readingSlug: params.readingSlug,
+      ...(params.recipientEmailFromIntake !== undefined
+        ? { recipientEmail: params.recipientEmailFromIntake }
+        : {}),
     }),
   );
 }
@@ -311,6 +326,73 @@ export async function flipGiftToSelfSend(
   return updated;
 }
 
+export async function applyGiftSendNow(
+  submissionId: string,
+  args: {
+    tokenHash: string;
+    sentNowAtIso: string;
+    actor: string;
+    priorAlarmAt: string | null;
+  },
+): Promise<boolean> {
+  const updated = await repo.applyGiftSendNow(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftClaimTokenHash: args.tokenHash,
+        giftClaimEmailFiredAt: args.sentNowAtIso,
+        giftClaimSentNowAt: args.sentNowAtIso,
+        giftClaimSentNowActor: args.actor,
+        giftClaimPriorAlarmAt: args.priorAlarmAt,
+      }),
+    );
+  }
+  return updated;
+}
+
+export async function applyGiftCancelScheduled(
+  submissionId: string,
+  args: {
+    cancelledAtIso: string;
+    by: string;
+    reason: GiftCancelledReason;
+  },
+): Promise<boolean> {
+  const updated = await repo.applyGiftCancelScheduled(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftCancelledAt: args.cancelledAtIso,
+        giftCancelledBy: args.by,
+        giftCancelledReason: args.reason,
+      }),
+    );
+  }
+  return updated;
+}
+
+export async function flipGiftToScheduled(
+  submissionId: string,
+  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
+): Promise<boolean> {
+  const updated = await repo.flipGiftToScheduled(submissionId, args);
+  if (updated) {
+    runMirror(
+      mirrorSubmissionPatch(submissionId, {
+        giftDeliveryMethod: GIFT_DELIVERY.scheduled,
+        giftSendAt: args.giftSendAt,
+        recipientEmail: args.recipientEmail,
+        giftClaimTokenHash: args.tokenHash,
+        // The self_send purchase set this at purchase time; clearing in D1
+        // lets the DO alarm path treat the row as a fresh scheduled send.
+        // Mirror it so Studio editors don't see a stale firedAt.
+        giftClaimEmailFiredAt: null,
+      }),
+    );
+  }
+  return updated;
+}
+
 /**
  * First-listen signal. Fire-and-forget: caller schedules via runMirror so the
  * audio response never blocks on Sanity. Idempotent via Sanity's setIfMissing.
@@ -423,7 +505,7 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
     email: submission.email,
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
-    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    readingPriceDisplay: priceDisplayFor(submission),
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     responses,
     photoUrl: submission.photoR2Key ? `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}` : null,

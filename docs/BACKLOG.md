@@ -1,10 +1,255 @@
-# Backlog
+# Backlog (archived — superseded by dex)
 
-Deferred items with explicit triggers. The companion to `CHANGELOG.md` — CHANGELOG owns the history of what shipped; this file owns the queue of what's still pending.
+> **2026-05-23 — Task queue migrated to dex.** Source-of-truth for active + queued work now lives in `www/.dex/tasks.jsonl`. Use `dex list` (pending) / `dex list --ready` / `dex show <id>` / `dex create "…" --description "…" [--parent <id>]`.
+>
+> This file is preserved as **historical reference** for the prose ("why deferred / trigger conditions / vendor context") that didn't fit cleanly into dex descriptions. When promoting an item from prose-only context to active work, copy the relevant trigger/vendor block from here into the dex task description, then strike the prose entry here.
+>
+> New deferrals go straight into dex (`dex create "…" --priority 3`) — do not append to this file.
 
-Each item: where it came from + why it was deferred + the trigger that promotes it to active work.
+---
 
-When an item ships, **delete the entry** (don't mark it complete in place). The git log + CHANGELOG are the trail.
+> Below is the pre-migration content kept for reference. The launch-blocking + actively-queued slice is now tracked in dex; long-tail deferrals (Phase 4b polish, S3-B*, A-*, EFF-*, etc.) remain prose-only here until they get promoted.
+
+---
+
+## Deferred from 2026-05-24 Sub-PR A ship
+
+### Magic-link email subject + body are reading-centric across ALL destinations
+
+The Sanity-driven `emailMagicLink` template at `studio/schemas/emailMagicLink.ts:12,19,33-37` defaults subject + preview + body to "Open your reading" + voice-note/PDF language. The route at `src/app/api/auth/magic-link/route.ts:42-43` fires the SAME template regardless of the `next` destination — `/listen/[id]` / `/my-readings` / `/my-gifts` / `/my-readings/[id]` all get the reading-centric copy. UX flagged 2026-05-24: a purchaser hitting `/my-gifts` → "Send link" gets an "open your reading" email which is wrong context entirely.
+
+**Trigger:** UX session before apex unpark, OR Becky requests differentiated copy per surface. Fix options (pick one):
+- **A — neutral copy.** Edit Sanity defaults to "Your Josephine sign-in link" + body that doesn't assume a destination. Cheapest, loses warmth.
+- **B — context-aware.** Thread `next` (or a destination enum) into `sendMagicLink`, branch copy by context. New args on sendMagicLink + maybe new Sanity fields.
+- **C — per-destination templates.** Split into `emailMagicLinkListen` / `emailMagicLinkGiftAccess` / `emailMagicLinkReadings`. Most flexibility, most schema churn.
+
+### Intake form: "I don't know my birth time" checkbox z-index covers the time + calendar picker
+
+The "don't know what time" checkbox on the intake birth-details page sits on top of the time picker / calendar picker inputs — picker is z-index under it, so clicking through to change time/date is blocked or visually obscured. Surfaced 2026-05-24 during a gift-claim repro on staging.
+
+**Trigger:** next intake-UX session OR Becky reports it. Likely fix surface: the wrapper around the conditional checkbox at the birth-details step (search for the `time_unknown` field key in `src/components/IntakeForm/`).
+
+### Extract SANDBOX_EMAIL_PREFIXES into a shared module to close drift risk
+
+`src/lib/resend.tsx:108` defines the sandbox-prefix list as the source of truth for the dry-run guard. Spec files (`tests/e2e/specs/{gift,listen,stripe,v120-smoke,gift-recipient-listen}-roundtrip.spec.ts`) each hardcode the matching prefix as a raw string. A spec rename OR a new spec that follows a slightly different prefix convention silently re-opens the Resend quota leak with zero test failure.
+
+**Trigger:** any time a new sandbox spec lands, OR a routine refactor pass on the e2e helpers. Fix: move `SANDBOX_EMAIL_PREFIXES` + `SANDBOX_DOMAIN` to a new module `src/lib/booking/sandboxEmails.ts` (worker-safe, no test deps). Import from both `src/lib/resend.tsx` and the spec files; build email addresses as `${SANDBOX_EMAIL_PREFIXES.giftRoundtripPurchaser}${randomUUID()}${SANDBOX_DOMAIN}`. Then a typo / rename at any callsite breaks at TypeScript compile.
+
+### Un-gate UA_AUDIT_HASH_DEPLOYED in sandbox CI
+
+`tests/e2e/specs/listen-roundtrip.spec.ts` has a `test.skip(process.env.UA_AUDIT_HASH_DEPLOYED !== "true", ...)` guard on the `link_issued audit row carries user_agent_hash` assertion. Gate was added because staging precedes per-PR worker deploys — without it, sandbox specs would have asserted the new column on the old worker and failed. Now that `release/v1.2.0` carries Sub-PR A (`364ea77`) and staging is on the new code, the gate can come off.
+
+**Trigger:** any follow-up sub-PR on `release/v1.2.0` that touches the e2e helpers OR a dedicated bookkeeping pass. Either (a) set `UA_AUDIT_HASH_DEPLOYED=true` in `.github/workflows/e2e-sandbox.yml` env, OR (b) remove the `test.skip` line + helper env-var reference entirely.
+
+---
+
+## Deferred from 2026-05-21 smoke-walk fix arc
+
+Items the 2026-05-20 staging smoke walk surfaced that didn't ship in the β / δ / α / γ Sub-PR sequence. Five of the surfaced bugs landed; the rest are queued here with explicit triggers. Full source: `www/MEMORY/WORK/20260521-smoke-walk/HANDOFF.md`.
+
+### C3-b — `/my-gifts` empty listing (purchaser_user_id race at create time)
+
+**Why deferred:** the C3 agent's investigation showed the "missing auth wall" was a misread (pages use intentional three-state pattern). The "empty list" half of C3 has two scenarios. Sub-PR α (#162) closed one (recipient_user_id clobber); the other — `purchaser_user_id` being null on some gift rows — needs live staging D1 inspection to confirm. The gift-create route at `src/app/api/booking/gift/route.ts:239` calls `getOrCreateUser({email, name}).catch(() => null)` — a transient user-resolve failure silently produces `purchaser_user_id = NULL` and that row never surfaces in `/my-gifts`.
+
+**Trigger:** (a) real customer reports empty `/my-gifts` after a successful purchase, OR (b) routine D1 audit finds `purchaser_user_id IS NULL AND is_gift = 1 AND status = 'paid'` rows.
+
+**Investigation steps:** Query staging first: `SELECT id, email, purchaser_user_id, recipient_user_id FROM submissions WHERE is_gift = 1 AND status = 'paid' ORDER BY created_at DESC LIMIT 50`. If any null `purchaser_user_id`, tighten the `getOrCreateUser` retry/backfill in `api/booking/gift/route.ts:239`.
+
+### C4-b — J3 claim/intake heading + listen-page greeting need Sanity schema plumbing
+
+**Why deferred:** Sub-PR δ (#161) closed the two thank-you surfaces via the `recipientNameFor` fallback chain. The remaining two C4 surfaces need Sanity copy schema additions:
+- `studio/schemas/giftIntakePage.ts` `headingWelcome` field has no `{recipientName}` token; default is "Welcome — a few things before we begin." → needs token + slot pass.
+- `studio/schemas/listenPage.ts` has no recipient-greeting field; default `welcomeRibbon` is generic. Needs new schema field + prop threading through `ListenView`.
+
+**Trigger:** next session that touches Sanity copy schemas, OR Becky asks to personalise either surface.
+
+### C5 — `/api/booking/gift-redeem` intermittent 400 root cause
+
+**Why deferred:** Sub-PR γ (#163) added structured logging at every silent 400 branch. The next reproduction self-identifies which branch fired. Until then, a fix is speculation.
+
+**Trigger:** next 400 in wrangler tail emits a `[gift-redeem] *_rejected` log line, OR Max reports another mid-flow submit failure.
+
+### U2 — Multi-hop magic-link friction (J1c + J3c)
+
+Listen-page magic-link flow has too many steps: enter email → "send link" email → click link → enter email AGAIN → new link → click → enter email AGAIN → THEN listen. Both customer (J1c) and recipient (J3c) hit it. **Update 2026-05-23 (Max report):** symptom is worse than original framing — Max had to click "send link" 5-6 times in one round before the listen page rendered. Reframes the open question from "is multi-hop intentional?" to "what's broken in the redeem → cookie-set → /listen render chain that re-prompts the form?". Hypotheses: cookie path/domain mismatch, redirect-target form-render preceding cookie visibility, single-use token consumed by a prefetch / OG scraper, Level-1 email-match silently failing.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #10). **ROOT-CAUSED + PRD'd 2026-05-23:** investigation found U2 is data-integrity downstream of U6, not an auth-redirect loop. `recipient_user_id` on submission `bb5fe157` was bound to the purchaser at gift-claim time because the recipient_email field wasn't locked. PRD: `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md`. Ships as 4 sub-PRs (lock+422 gate, forensic UA-hash, CheckEmailCard resend fix, data-repair).
+
+### U3 — Listen-page downloads use opaque/hashed filenames
+
+Voice-note and PDF downloads arrive with Sanity asset hashes as filenames. Should preserve the original Sanity asset filename, OR set a readable default via `Content-Disposition` (e.g. `soul-blueprint-voice-note.mp3`). Likely fix surface: `/api/listen/[id]/audio` + `/api/listen/[id]/pdf` route handlers.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #11). Quick-win sub-PR candidate alongside U5.
+
+### U4 — Hover affordance audit
+
+Not all buttons have `cursor: pointer` on hover (flagged in J2). Needs broader UX sweep.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #12). Mechanical sweep across Button + anchor-styled-as-button + form-control wrappers.
+
+### U5 — Gift-purchase form: purchaser email not prefilled
+
+Gift purchase doesn't prefill the purchaser email for repeat customers. Standard purchase flow does. Lift the email-prefill mechanism from the self-purchase entry page into the gift entry page.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #13). Quick-win sub-PR candidate alongside U3.
+
+### U6 — Recipient-email lock inconsistent across reading types
+
+J2 (Birth Chart self-send) didn't lock the email field; Akashic gift-claim DID. Pick one behavior and apply uniformly: lock = friction but prevents misroute; unlock = flexibility.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking**, **MERGED INTO U2 PRD**. Investigation 2026-05-23 found U2 and U6 share a single root cause (recipient_user_id corruption at gift-claim time, downstream of the unlocked recipient_email field). Decision D-2 in `MEMORY/WORK/20260523-210824_u2-u6-recipient-email-lock-and-listen-loop/PRD.md` locks the policy: gift-claim intake renders recipient_email as readOnly, value-bound to `submission.recipient_email`, with `RecipientEmailEscapeHatch → /contact` callout for legitimate change requests. Server-side 422 gate in gift-redeem on NFKC-normalized mismatch as defense-in-depth.
+
+### U7 — Studio preview of customer-facing pages
+
+Becky can't preview customer-facing pages (booking, thank-you, listen, /my-gifts) from inside Studio. Explore: extending Presentation Tool wiring, or a Sanity Studio plugin.
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #15). Bundle with U8 as a Studio-side PR (both touch deskStructure / preview / Presentation wiring).
+
+### U8 — Studio: visible "claimed at" + delivery countdown
+
+Becky has no at-a-glance "claimed" signal. Now that `giftClaimedAt` is in the schema (Sub-PR β #160), surface it in the Submissions list/preview. Also consider a countdown UI ("5 days left to deliver") and a distinct status "claimed, awaiting delivery" (currently conflated with `paid`).
+
+**Trigger:** ⛔ PROMOTED 2026-05-23 — **launch-blocking** (apex-unpark hold-gate item #16). Bundle with U7 as a Studio-side PR; decision needed on whether to add a new submission status enum value or compute claimed-vs-paid from `giftClaimedAt` presence.
+
+### S3 — Studio: `deliveredAt` UX (Becky kept forgetting)
+
+Becky forgot to set `deliveredAt` on both J3 and J4 — uploads landed but field stayed unset → `isDeliverable()` GROQ rejects → Day-7 cron sees `awaitingAssets`. Options (pick 1, possibly all):
+1. Auto-set `deliveredAt` on first asset upload.
+2. Prominent "Mark as delivered" CTA next to the assets.
+3. Rename for clarity ("Ready to send to customer").
+4. Validation prompt on Publish if assets present but `deliveredAt` empty.
+
+**Trigger:** Studio UX session, or Becky asks for it.
+
+### S4 — Studio Submissions list default-sort DESC
+
+Surfaces oldest at top; should default-sort `createdAt DESC` for Becky's day-of workflow. Likely fix in `studio/schemas/deskStructure.ts`.
+
+**Trigger:** next Studio-touching session (small ~5min change).
+
+### L2 — Doc note: wrangler `--format json` emits multi-line JSON, not JSONL
+
+Wrangler tail with `--format json` is multi-line pretty-printed (not JSONL). Bit the smoke walk's monitoring loop. Fixed mid-run by piping through `jq -c '.' --unbuffered | tee <log>`. If any operator script in `tests/e2e/helpers/` or `scripts/` depends on `--format json` being JSONL, document the actual shape.
+
+**Trigger:** future operator script consumes wrangler tail output.
+
+---
+
+## Shipped 2026-05-18 — release/v1.1.0 (deploy + run-after)
+
+### #5 + #7 — Transactional emails silently skipped on staging — root cause + fix
+
+**Root cause:** `wrangler.jsonc` line 264 had `"RESEND_DRY_RUN": "1"` in the `env.staging.vars` block. Every `wrangler deploy --env staging` reset the Worker's env to include that flag (per `feedback_wrangler_vars_declarative.md`). The flag is documented in `tests/e2e/README.md:14` as an E2E-spec-only toggle, never meant for the deployed staging Worker. `sendOrSkip` honored the flag and returned `{kind: "dry_run"}` for every transactional email, logging `[resend] RESEND_DRY_RUN — skipping ...` to the staging worker. Webhook signatures verified fine; emails were prepared but never sent.
+
+**Fix in this release:** Removed the line from `wrangler.jsonc`. Next staging deploy clears the variable.
+
+**Verified on 2026-05-18 via `wrangler tail --env staging`:** Resend DNS on apex (SPF, MX, DKIM, DMARC) all verified. Staging worker has `RESEND_API_KEY` + `STRIPE_WEBHOOK_SECRET` + `STRIPE_SECRET_KEY` + `NOTIFICATION_EMAIL` set. The webhook was firing successfully and Stripe signatures were verifying — the dry-run flag was the only failure point.
+
+**Resend recovery for any customer whose pre-fix purchase missed the email:**
+Becky now has a Studio document action `Resend customer email…` (on submission docs with status=paid). Picks order_confirmation / day +2 / day +7. Admin-token gated; rate-limited to 3 resends per email-type per submission per 24h. Audit trail in `emailsFired`. Powered by `/api/admin/resend-customer-email` (see `src/lib/booking/resendCustomerEmail.ts`).
+
+For gift-purchase emails (where the claim URL has lifecycle), use the existing `Regenerate gift claim link` action — it re-issues the URL + re-sends.
+
+---
+
+## Main-merge blockers (filed 2026-05-18)
+
+### brace-expansion 5.0.5 ReDoS CVE (GHSA-jxxr-4gwj-5jf2) — coordinated minimatch upgrade
+
+OSV-scan filters this CVE in `osv-scanner.toml` because the direct fix breaks the toolchain.
+
+**The problem:** brace-expansion@5.0.5 has a MEDIUM ReDoS (GHSA-jxxr-4gwj-5jf2, published 2026-05-18). Fixed in 5.0.6. Pinning via `pnpm.overrides` to `^5.0.6` breaks ESLint with `TypeError: expand is not a function` — the failure originates in `minimatch@3.1.5` calling brace-expansion's default export as a function (broken by the 5.0 export-shape change).
+
+**Why it's filtered, not fixed:** brace-expansion is used transitively by build/test tooling (glob/minimatch chains pulled in by ESLint, Storybook, and similar). No application code calls brace-expansion on untrusted input at runtime, so the ReDoS risk in production is zero. Filter is acceptable as an interim posture.
+
+**Promotion path:**
+1. Identify which dependency tree pulls in `minimatch@3.1.5`. Likely candidate: `@eslint/config-array` or a vendored old eslint plugin.
+2. Pin minimatch via `pnpm.overrides` to a version compatible with brace-expansion 5.0.6 (minimatch 9.x+).
+3. Re-add `"brace-expansion@<5.0.6": "^5.0.6"` to `pnpm.overrides`.
+4. Verify `pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm build` all clean.
+5. Remove the GHSA-jxxr-4gwj-5jf2 entry from `osv-scanner.toml`.
+
+**Trigger:** any of: (a) brace-expansion CVE escalates from MEDIUM to HIGH, (b) discovery that brace-expansion IS reachable from user input at runtime (would change the risk profile), (c) routine quarterly toolchain refresh hits this entry.
+
+### Production D1 migration drift — apply 0004 → 0012 at main-merge time
+
+Staging D1 (`withjosephine-bookings-staging`) is at migration **0012** as of 2026-05-19 (`pnpm migrate:apply:staging` run after PR #145 merged; schema verified). Production D1 (`withjosephine-bookings`) is at migration **0003**. The 9 missing migrations (0004 → 0012) introduce every gift-aware column the Phase 5 Gifting + Phase 3 scheduling code reads/writes — `is_gift`, `purchaser_user_id`, `recipient_email`, `gift_delivery_method`, `gift_send_at`, `gift_message`, `gift_claim_token_hash`, `gift_claim_email_fired_at`, `gift_claimed_at`, `gift_cancelled_at`, `gift_resend_lock_until`, plus the 5 new audit columns + UNIQUE partial idx from 0012 (`gift_claim_sent_now_at`, `gift_claim_sent_now_actor`, `gift_claim_prior_alarm_at`, `gift_cancelled_by`, `gift_cancelled_reason`, `idx_gift_sent_now_once`).
+
+**If we merge `release/v1.1.0` to `main` without applying these, the production worker will throw at the first gift-aware code path (purchase, flip, claim, redeem, /my-gifts, stripe webhook gift branch, send-now once PR-C-ii lands, cancel-scheduled once PR-D lands).** This is a hard blocker.
+
+**Action at main-merge time, in order:**
+1. Verify staging D1 is at 0012: `pnpm migrate:list:staging`.
+2. Apply each missing migration to production D1, in order, with `pnpm migrate:apply:prod`. The CLI applies pending migrations in lexicographic order — 0004 → 0012 in one batch is the expected flow.
+3. Verify with `pnpm migrate:list:prod`. Should show all 12 applied.
+4. Spot-check schema: `pnpm exec wrangler d1 execute withjosephine_bookings --remote --command "PRAGMA table_info(submissions);"` — confirm gift_* + sent_now_* + cancelled_* columns present.
+
+**Trigger:** this entry promotes to "execute" the moment Max greenlights `release/v1.1.0` → `main` merge. Do NOT auto-apply earlier — staging may need a migration revert if any blocker surfaces, and a partial-applied production confuses the picture. **Standalone apply of 0012 to production** (without the 0004-0011 batch) is also safe whenever Max wants — 0012 is `ALTER TABLE … ADD COLUMN` + `CREATE INDEX IF NOT EXISTS`, all idempotent.
+
+---
+
+## Scheduling-flow scrutiny — Phase 3 remaining sub-PRs (updated 2026-05-19)
+
+Council shipped 2026-05-18 (Phase 2 of the scheduling-scrutiny PRD). Five locked decisions D-8 → D-12 → P-4b live in `www/MEMORY/WORK/20260518-153700_scheduling-scrutiny-and-claudemd-reorg/PRD.md § Decisions`. Phase 2.5 RedTeam pass added 8 hardening patches (P-1 → P-7 + X-1 → X-3). Re-decomposition lifted Phase 3 from 20 → 71 atomic ISC.
+
+**Shipped 2026-05-19** (see CHANGELOG for full diff descriptions):
+- ✅ I-16 / D-8 — Per-status pill (PR #142 / PR-A). Theme-driven via `--j-status-{kind}-{bg|fg}` semantic CSS tokens keyed verbatim to the new `GIFT_STATUS_KIND` const. WCAG 1.4.11 compliance via `--j-status-pill-border`.
+- ✅ I-17 / D-9 — Datepicker TZ hardening (PR #142 / PR-A). Native `<input type="datetime-local">` kept; server-side `bounds.ts` (15-min floor + purchasedAt-anchored 365-day ceiling); client-side `timezone.ts` (`Intl` → `TZDateMini` UTC ISO via `@date-fns/tz`); iOS Safari pre-17 fallback dropdown via `TimezoneFallbackPicker`.
+- ✅ Bug #20 / D-12 — Recipient-email pre-fill (PR #144 / PR-B). `IntakeForm.prefilledEmail`; field rendered readOnly via `readOnlyFieldKeys` threaded through RenderContext; NULL self-send claims stay editable; `RecipientEmailEscapeHatch` callout above form with `/contact` link; server NFKC-normalizes both sides at the 422 mismatch gate.
+- ✅ P-4b — Wholesale-non-refundable refund-policy (PR #144 / PR-B). Page fallback + terms clause + FAQ + email refundLine + Sanity legalPage body all aligned to the locked 2026-05-19 framing; Sanity migrations applied to staging + production.
+- ✅ Phase 3 schema — Migration 0012 (PR #145 / PR-C-i). 5 audit columns + UNIQUE partial idx; staging D1 applied + verified; production pending the main-merge batch.
+- ✅ D-10 / PR-C-ii — Send-now route + UI + Resend idempotency-key + dispatcher defense-in-depth (PR #147). New POST `/api/gifts/[id]/send-now`; race-safe ordering `Promise.all([issueToken, cancelAlarm])` → WHERE-guarded UPDATE → send with `idempotencyKey: "gift:{id}:claim"` → appendEmailFired; dispatcher `reason: "sent_now"` stop branch; `SendNowControl` with 5s arm + `http_401` → session-expired copy; 10 unit tests + `gift-send-now.spec.ts` e2e.
+
+**Remaining Phase 3 work** (described here, sequenced as sub-PRs):
+
+- **PR-D — D-11 cancel-scheduled.** Per the PRD's locked D-11 decision: new POST `/api/gifts/[id]/cancel-scheduled`; same auth pattern as send-now; ordering is `cancelGiftAlarm()` FIRST → D1 UPDATE WHERE-guard → rowcount=0 → 409; UPDATE sets `gift_cancelled_at`, `gift_cancelled_by`, `gift_cancelled_reason='purchaser-request'`; `CancelScheduledControl` component (5s confirm-armed, `j-rose` tint per Quiet Archivist — no alarm-red); copy explicitly says "non-refundable" per the wholesale-non-refundable policy locked in PR-B; `cancelled` pill (via D-8) renders on the card after success. `docs/OPERATIONS.md` updated with Becky's un-cancel procedure (D1 console only — Sanity-webhook→Worker→D1 path not built). Unit tests: happy path, 409 already-fired, 409 already-cancelled. Audit columns already exist (migration 0007 + 0012 — no D1 migration). **Trigger:** any session after PR-C-ii ships — now unblocked (2026-05-19).
+
+- **PR-E — Polish + final tests.** P-6 motion preference (`prefers-reduced-motion` extends 5s confirm-armed window to 15s for WCAG 2.2.1 Timing Adjustable compliance); audit other refund mentions one more pass; `/simplify` full Phase 3 diff; close out remaining ISC tally. ISC-18h Playwright iOS/Android device-emulation matrix lives here too if it doesn't get its own PR.
+
+**Out of Phase 3 scope but adjacent:**
+- **UX design Council on per-status pill + datepicker brand-styled time picker** — already RAN as Phase 2 of the scheduling-scrutiny PRD; consensus was "keep native datetime-local in v1.1.x, defer full brand picker to v2". The DatePicker component (`src/components/Form/DatePicker/DatePicker.tsx`) extension to include time stays deferred to v2.
+
+---
+
+## Deferred from v1.1.0 round-2 (filed 2026-05-18)
+
+### E2E test robustness — flagged 2026-05-18
+
+Three test-infrastructure improvements surfaced while running the Playwright suite at the end of round-2. None are launch-blocking; each carries an explicit promotion trigger.
+
+- **`data-testid` over role/text selectors.** Multiple specs (mine included — `gift-redeem-consent-shape-local`, `gift-redeem-self-send-local`, `gift-claim-session-expired-local`) target elements via `page.getByRole("button", { name: /…/i })` and `page.getByText(/sending your answers/i)`. The recent self-send spec already hit `getByRole("status")` ambiguity colliding with the IntakeForm page indicator — proves the fragility. Add `data-testid` attributes to: SubmitOverlay paragraph, every primary CTA, every form input we assert on, consent checkboxes (the `#field-art6-consent` id pattern is OK but inconsistent). Migrate the existing specs to testid-first selectors. **Trigger:** any time we add a new e2e spec, do it testid-first; bundle a sweep when 3+ specs need cleanup.
+
+- **Copy-change resistance in assertions.** Specs assert literal copy strings ("sending your answers", "rested for a moment", "from your original email again"). The moment Becky edits Sanity copy, e2es break in CI even though product behavior is correct. Strategies to consider: (a) read the asserted string from the same Sanity fetch helper the page uses, so the spec compares Sanity-against-Sanity; (b) assert on testid + visibility only, not text content; (c) snapshot-test the rendered surface and let CI flag intentional copy changes for explicit re-approval. Pick one strategy and apply consistently. **Trigger:** first time a Becky copy edit breaks e2e in CI without product regression.
+
+- **Disable analytics in e2e + staging.** Sentry, Mixpanel, and Clarity should not fire from Playwright runs or staging worker traffic — they pollute production dashboards with synthetic events and skew funnels. Verify per-vendor:
+  - Mixpanel: `shouldEnableClientObservability(staging.withjosephine.com)` returns `false` when `NEXT_PUBLIC_TRACK_NON_PROD` is unset/0. **Action:** confirm staging GH env variable is `NEXT_PUBLIC_TRACK_NON_PROD=0` (currently `=1` per `.env.staging:63`) — that's why staging traffic IS in Mixpanel today, by design. Decide: keep staging tracking on (for QA visibility) and add an `e2e-bot` distinct_id filter at the dashboard layer, OR flip staging to 0 and lose that visibility.
+  - Clarity: gated by the same function. Same decision applies.
+  - Sentry: currently NOT gated by `shouldEnableClientObservability` per `src/lib/observability-gate.ts:11` (intentional — keep non-prod error signal). Confirm e2e runs don't emit Sentry events (they shouldn't because Playwright sets up the test browser, not a real user) but verify by tailing Sentry inbox during a full e2e run.
+
+  **Trigger:** before the apex-unpark Stripe live-mode flip — final pre-launch posture should have Mixpanel/Clarity clean of staging+e2e noise.
+
+### v1.1.x polish bundle — flagged 2026-05-18 mid-round-2 smoke
+
+Items still pending after v1.1.1 shipped the first three. Trigger to promote: bundle as v1.1.2 (if soon) or its own PR (if dark-mode runs longer).
+
+- **Full content-pass with a copywriter.** Sweep every customer-facing surface (booking flow, gift flow, thank-you, listen, my-gifts, my-readings, emails) and run a Copywriter persona over the copy. Tighten where verbose, warm where transactional, brand-align where flat. Discuss scope first — could be its own dedicated PR or bundled with the C-1 button redesign.
+- **Dark / light mode.** Theme switch with brand-coherent dark palette (Midnight + Deep + Gold accents) and persistent preference. Likely a bigger lift — design system tokens already use CSS vars so the technical foundation is there, but every surface needs a dark-mode pass and Max may want a design conversation first.
+- **Loader tail-strip design decision.** v1.1.1 bumped SubmitOverlay to `size="lg"` (`I-4`) as the immediate quick win. The rotating star's box-shadow / blur "tail" still reads as a comet at larger sizes — design loop with Max to decide whether to strip it entirely, parametrize by size, or keep as-is.
+
+### C-1 — Intake "Continue / Send my answers" button UX redesign
+
+Council (UX expert + Conversion expert) unanimously voted **Option C** for the disabled-state behavior. Spec lives in `www/MEMORY/WORK/20260518-v1.1.0-round-2-smoke-followup/PRD.md` § Decisions § "C-1 — UX + Conversion council recommendation."
+
+**Why deferred:** half-day of focused implementation work; bigger than every other v1.1.0 round-2 fix combined. Splitting preserves round-2 hot-fix scope so the C-4b self_send blocker reaches staging faster. C-1 is feature-quality work (council estimates 8-15% page-completion lift), not a regression.
+
+**Concrete spec for round-3 PR:**
+1. Switch Continue/Submit button from `aria-disabled` to real HTML `disabled` (click does nothing).
+2. Add muted-gold (`#C4A46B`) static asterisks on required-field labels from page load — no pulse, no animation (Quiet Archivist).
+3. Red borders + inline error text appear on **blur** of touched-invalid fields (NN/g inline validation).
+4. Helper line above button ("A few fields still need answers to continue") appears on first blur of any field on the page OR after ~5s dwell with required empty.
+5. Helper line is the rescue affordance — click/tap scrolls to first invalid field.
+6. Mixpanel telemetry: `intake_continue_blocked`, `intake_field_first_error`, `intake_helper_text_shown`, `intake_page_completed`.
+
+**Trigger to promote:** once v1.1.0 round-2 PR merges to `release/v1.1.0` and staging is green.
 
 ---
 
@@ -56,15 +301,6 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 - **Recommendation:** Path (a) — smallest blast radius, fixes the warning, doesn't touch the dev DX. Estimated 15–30 min.
 - **Trigger:** Before the next major Cloudflare/OpenNext upgrade, OR when workerd surfaces a startup-time error on this config.
 
-### S-3. WAF rate-limit rules
-- **Source:** Security review.
-- **What:** No per-IP throttling on `/api/booking`, `/api/contact`, or
-  `/api/booking/upload-url`. Worst case is resource cost (Resend quota,
-  R2 storage), not data theft.
-- **Action:** Cloudflare dashboard → Security → WAF → Rate limiting rules.
-  10 req/min/IP per route is generous for legitimate use. No code change.
-- **Folds into:** Punch 6 (R2 CORS) — both are CF dashboard tasks.
-
 ### F-10. Verify Resend domain before first prod send
 - **Source:** Security review.
 - **What:** `src/lib/resend.ts` `FROM_ADDRESS` is `Josephine <hello@withjosephine.com>`.
@@ -99,7 +335,7 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
   2. Bind that token to the backup worker paths separately from the prod photo-upload token.
   3. Audit existing CF account-level R2 tokens — anything with global `Edit` should be rotated or scoped down. CF Dashboard → R2 → Manage R2 API Tokens.
   4. Document the token-permissions matrix alongside the Phase 3 runbook ([`SANITY_BACKUP_RUNBOOK.md`](./runbooks/SANITY_BACKUP_RUNBOOK.md)) once token scoping lands.
-- **Trigger:** Pair this with the WAF rate-limit Max-action (S-3 above) — both are CF-dashboard token/rule hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model.
+- **Trigger:** Standalone CF-dashboard token hygiene work. Not launch-blocking; the backups still work as configured, the gap is purely the retention-shortening threat model. (S-3 WAF rate-limit Max-action that previously pair-anchored this entry shipped 2026-05-20 — see CHANGELOG.)
 
 ---
 
@@ -115,20 +351,10 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
   4. **Booking unhappy paths**: card declined, Stripe webhook timeout, Sanity write failure (requires forced sidecar failure mode).
 - **Why deferred:** these all need either D1 seed infrastructure beyond the truncate-only reset endpoint, OR sidecar failure-injection modes. Better to ship the working surface first and add these as targeted PRs.
 
-### Listen round-trip spec — re-enable after staging hygiene (filed 2026-05-17)
-- **Source:** Phase 5 Bundle A.2 spec build. The booking-form pre-condition step inside `tests/e2e/specs/listen-roundtrip.spec.ts` (`createPaidSubmission` helper) intermittently navigates to `/my-readings` instead of Stripe Checkout after the submit click. The spec is currently `test.fixme`'d.
-- **Symptom:** After ~3 sequential booking-form submits from the same Playwright origin in the same window, the form's `intake-submit` POST stops landing on `https://buy.stripe.com/test_…` and instead lands on `https://staging.withjosephine.com/my-readings`. `wrangler tail` shows no `/api/booking` POST at all from those runs — the click is being intercepted client-side, OR the page is being redirected before the POST fires.
-- **Root cause (working hypotheses, unconfirmed):**
-  1. Cloudflare Turnstile bot challenge triggered after repeated submits — the invisible widget escalates to a managed challenge that Playwright can't auto-pass, the submit handler's `requestFreshToken()` rejects, and some downstream path navigates to `/my-readings` (the default authenticated-user landing).
-  2. Stripe / Cloudflare rate-limiting the test-card path — `4242 4242 4242 4242` from the same source IP triggers a fraud-prevention redirect.
-  3. Accumulated `*-roundtrip*` D1 + Sanity + `auth_sessions` rows from prior runs creating server-side "existing user" detection that re-routes.
-- **Why it doesn't affect gift spec:** Gift round-trip uses a different submit endpoint (`/api/booking/gift`) which bypasses whatever surface is failing here. Gift passes both `scheduled` + `self_send` variants reliably.
-- **Recommended fixes (try in order):**
-  1. **Cloudflare zone allowlist for Playwright origin IP** — add the developer machine's residential IP (or a dedicated GH Actions runner) to a CF Access bypass / WAF allowlist so Turnstile + Cloudflare bot detection treat it as trusted. Permanent, hardens against future regressions.
-  2. **Pre-prod data cleanup before each spec session** — wipe `email LIKE '%-roundtrip%'` rows from D1 + Sanity + auth_sessions before re-running. See "Pre-prod data cleanup" entry below; broaden the existing SQL filter to also nuke `auth_sessions` for these emails.
-  3. **Run from a fresh CF-Access-tunneled environment** — spin up a clean GH Actions runner job that does a single spec run end-to-end, isolated from local-dev session state.
-- **Max-action:** the allowlist step (1) is the cheapest unblock. Cloudflare → Zero Trust → Access → Policies → add an `Include → IP ranges` rule covering the developer IP, applied to the staging Access Application. Re-test the spec, untag `test.fixme`, ship.
-- **What's already merged + working:** `POST /api/internal/issue-magic-link` route + `GET /api/cron/email-day-7-deliver?force=<id>` mode + `sanityE2EAssets.uploadDummyVoiceAndPdf` + dummy WAV/PDF fixtures + the spec scaffold itself. None of that needs to ship again — only the test execution needs to be unblocked.
+### E2E helper extraction — `signInViaMagicLink` + Stripe checkout intercept (filed 2026-05-19, **promoted to next-session sprint 2026-05-19**)
+- **Status:** Promoted out of backlog into the Phase 3 next-session ladder as **PR-Lift** (first of three). See `docs/SESSION_BOOT.md` § Next-session agenda for the full scope brief. Locked sequencing: PR-Lift → PR-D → PR-E, all on `release/v1.1.0`.
+- **Why first:** PR-D will add a 5th magic-link callsite (`gift-cancel-scheduled.spec.ts`). Extracting now means PR-D writes against the helper from day one — no follow-up cleanup needed.
+- **Trigger:** next session, before PR-D.
 
 ### Staging Turnstile = Cloudflare test keys (locked 2026-05-16 — hidden invariant; document so it doesn't drift to real keys)
 - **Source:** Phase 5 Bundle A.0 spec build. Real Turnstile blocked Playwright's Chromium (anti-bot). Switched staging to Cloudflare's published always-pass test keys so both Becky's manual smoke AND the headed `stripe-roundtrip.spec.ts` automated round-trip can complete without bot challenges.
@@ -138,11 +364,6 @@ Five low-impact efficiency wins flagged by the cross-phase /simplify audit. Each
 - **Security note:** Test keys ALWAYS pass, so Turnstile no longer protects staging from bots. This is acceptable because staging is already gated by Cloudflare Zero Trust (CF Access) — only authenticated identities can reach `staging.withjosephine.com` at all. Effective security is unchanged; Turnstile was redundant defense on staging.
 - **Hidden-invariant risk:** Anyone who later "rotates Turnstile keys" on staging and accidentally uses the real key will break automated tests AND make Becky's smoke flow trigger a captcha she didn't expect. The override lives in GH dashboard, not the repo — so it's not visible in code review. Read this entry before touching staging Turnstile config.
 - **References:** https://developers.cloudflare.com/turnstile/troubleshooting/testing/ (Cloudflare test-key documentation, always-pass site/secret pair).
-
-### CI workflow needs `workflow_dispatch` trigger (1-line follow-up)
-- **Source:** Phase 5 Bundle A.0, 2026-05-16. `gh workflow run ci.yml --ref release/v1.0.0` fails because `.github/workflows/ci.yml`'s `on:` block only declares `push` + `pull_request` triggers.
-- **Fix:** add `workflow_dispatch:` to the `on:` block. Then manual redeploys can be triggered via `gh workflow run ci.yml --ref <branch>` without needing an empty commit. Useful any time we want to redeploy without code changes (Turnstile key rotation, secret rotation forcing a rebuild, etc.).
-- **Trigger:** ship next time someone touches `ci.yml` for an unrelated reason. Not urgent.
 
 ### R2 backups bucket + Sanity Export token provisioning (Phase 3 prerequisite — Max-action)
 
@@ -288,7 +509,7 @@ Pentester + /simplify reviews on the Phase 4b GDPR cascade PR surfaced a handful
 - **`zipSync` → `AsyncZipDeflate` flip (Efficiency MED).** Current `zipSync` is single-threaded and blocks the isolate. Comment in `export/route.ts` pre-commits to the flip threshold. **Trigger:** any export bundle ≥25 MB observed (log-and-watch), OR Worker CPU duration on `/api/privacy/export` >10s P95.
 - **Mixpanel project token in URL query (Pentester MED-4).** `?token=...` ends up in vendor edge logs. Token is `NEXT_PUBLIC_MIXPANEL_TOKEN` (already client-exposed), low-impact. **Trigger:** Mixpanel documents body-token support for `data-deletions/v3.0` — then move it.
 - **HMAC email_hash in `deletion_log` (Pentester LOW-4).** Currently unsalted SHA-256 — rainbow-table feasible if a `deletion_log` dump leaks. **Trigger:** any incident-class event involving D1 read access from outside the worker. Cheap fix: HMAC with a server secret.
-- **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. Folds into the existing `S-3. WAF rate-limit rules` backlog item above — add the admin route to the WAF allowlist when that lands.
+- **Per-IP rate-limit on `/api/admin/delete-user` (Pentester HIGH-2 follow-on).** In-PR fix added the failed-auth audit row; per-IP throttling against brute-force is the separate concern. The existing zone WAF rule `rl-josephine-api-write-paths` (shipped 2026-05-20, see CHANGELOG) currently covers `/api/booking`, `/api/contact`, `/api/booking/upload-url` only — adding `/api/admin/delete-user` to the OR expression is cheap but bumps the rule's 4th branch. **Trigger:** any brute-force signal in admin audit log; OR when zone upgrades to Business plan (5 rules) and we split per-path.
 
 ### Brevo Phase 1 — parallel-safe (NOT launch-blocking — 2026-05-11 re-tier)
 

@@ -15,7 +15,31 @@ export const MAX_ACTIVE_GIFTS_PER_RECIPIENT = 3;
 
 export const MAX_EMAIL_CHARS = 254;
 
+// Canonical Sanity booking-form field key for the recipient's email input.
+// Mirrors `key: "email"` in scripts/seed-booking-form.ts.
+export const EMAIL_FIELD_KEY = "email";
+
 export const GIFT_DELIVERY = {
   selfSend: "self_send",
   scheduled: "scheduled",
 } as const;
+
+export const GIFT_CANCELLED_REASON = {
+  purchaserRequest: "purchaser-request",
+  fraud: "fraud",
+  refund: "refund",
+} as const;
+
+export type GiftCancelledReason =
+  (typeof GIFT_CANCELLED_REASON)[keyof typeof GIFT_CANCELLED_REASON];
+
+export const GIFT_STATUS_KIND = {
+  scheduled: "scheduled",
+  selfSendReady: "self_send_ready",
+  sentWaitingRecipient: "sent_waiting_recipient",
+  recipientPreparing: "recipient_preparing",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export type GiftStatusKind = (typeof GIFT_STATUS_KIND)[keyof typeof GIFT_STATUS_KIND];

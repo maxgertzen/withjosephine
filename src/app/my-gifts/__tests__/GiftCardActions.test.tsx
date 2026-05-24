@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MY_GIFTS_PAGE_DEFAULTS } from "@/data/defaults";
+import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 
@@ -35,11 +36,11 @@ const baseGift: SubmissionRecord = {
 } as unknown as SubmissionRecord;
 
 const scheduledStatus: GiftStatus = {
-  kind: "scheduled",
+  kind: GIFT_STATUS_KIND.scheduled,
   sendAt: "2026-12-01T17:00:00.000Z",
 };
 
-const selfSendStatus: GiftStatus = { kind: "self_send_ready", firedAt: null };
+const selfSendStatus: GiftStatus = { kind: GIFT_STATUS_KIND.selfSendReady, firedAt: null };
 
 describe("GiftCardActions — JSON-fetch contract", () => {
   beforeEach(() => {
@@ -120,8 +121,10 @@ describe("GiftCardActions — JSON-fetch contract", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     // Don't refresh on validation failure — user needs to see + fix the error.
     expect(refreshMock).not.toHaveBeenCalled();
-    // Drawer remains open; Cancel button still visible.
-    expect(getByRole("button", { name: /cancel/i })).toBeTruthy();
+    // Drawer remains open; its Cancel button still visible.
+    expect(
+      getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCancelButtonLabel }),
+    ).toBeTruthy();
   });
 
   it("flip-to-self-send: requires 2-stage confirm (single click does NOT fetch)", () => {

@@ -16,6 +16,7 @@ type LegalAcknowledgmentsProps = {
   isSubmitting: boolean;
   idPrefix?: "field" | "gift";
   showArt9?: boolean;
+  showCoolingOff?: boolean;
   consentIntro?: string;
 };
 
@@ -28,6 +29,7 @@ export function LegalAcknowledgments({
   isSubmitting,
   idPrefix = "field",
   showArt9 = true,
+  showCoolingOff = true,
   consentIntro,
 }: LegalAcknowledgmentsProps) {
   return (
@@ -35,9 +37,11 @@ export function LegalAcknowledgments({
       {consentIntro ? (
         <p className="font-display italic text-base text-j-text-muted">{consentIntro}</p>
       ) : null}
-      <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
-        {nonRefundableNotice}
-      </p>
+      {nonRefundableNotice ? (
+        <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
+          {nonRefundableNotice}
+        </p>
+      ) : null}
       <Checkbox
         id={`${idPrefix}-art6-consent`}
         name="art6Consent"
@@ -74,23 +78,25 @@ export function LegalAcknowledgments({
           {snapshot.art9.labelText}
         </Checkbox>
       ) : null}
-      <Checkbox
-        id={`${idPrefix}-cooling-off-consent`}
-        name="coolingOffConsent"
-        checked={snapshot.coolingOff.acknowledged}
-        onChange={(checked) => {
-          setSnapshot({
-            ...snapshot,
-            coolingOff: { ...snapshot.coolingOff, acknowledged: checked },
-          });
-          if (checked) clearError("coolingOff");
-        }}
-        error={errors.coolingOff}
-        disabled={isSubmitting}
-        required
-      >
-        {snapshot.coolingOff.labelText}
-      </Checkbox>
+      {showCoolingOff ? (
+        <Checkbox
+          id={`${idPrefix}-cooling-off-consent`}
+          name="coolingOffConsent"
+          checked={snapshot.coolingOff.acknowledged}
+          onChange={(checked) => {
+            setSnapshot({
+              ...snapshot,
+              coolingOff: { ...snapshot.coolingOff, acknowledged: checked },
+            });
+            if (checked) clearError("coolingOff");
+          }}
+          error={errors.coolingOff}
+          disabled={isSubmitting}
+          required
+        >
+          {snapshot.coolingOff.labelText}
+        </Checkbox>
+      ) : null}
     </section>
   );
 }
