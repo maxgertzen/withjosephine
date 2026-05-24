@@ -1,6 +1,6 @@
 import { Card, Flex, Stack, Text } from "@sanity/ui";
 import type { CardTone } from "@sanity/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { SanityDocument } from "sanity";
 
@@ -33,29 +33,35 @@ export function EmailPreview(props: EmailPreviewProps) {
   const displayed = props.document?.displayed ?? null;
   const [html, setHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Track the latest `displayed` value via ref so a later parent re-render
+  // (Sanity Studio churns the reference even when content is identical)
+  // doesn't cancel a still-resolving render. The promise we care about is
+  // the most-recent one — older ones noop on resolve via the seq guard.
+  const latestSeq = useRef(0);
 
   useEffect(() => {
     if (!displayed || !isPreviewTemplateKey(displayed._type)) {
       setHtml(null);
       return;
     }
-    let cancelled = false;
+    const seq = ++latestSeq.current;
     renderEmailPreview(displayed._type, displayed)
       .then((rendered) => {
-        if (!cancelled) {
-          setHtml(rendered);
-          setError(null);
-        }
+        if (seq !== latestSeq.current) return;
+        setHtml(rendered);
+        setError(null);
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : String(err));
-          setHtml(null);
-        }
+        if (seq !== latestSeq.current) return;
+        setError(err instanceof Error ? err.message : String(err));
+        setHtml(null);
       });
-    return () => {
-      cancelled = true;
-    };
+    // Intentionally NO cleanup that flips a cancelled flag — Sanity Studio
+    // passes a new `displayed` object reference on every parent re-render
+    // (even when content hasn't changed), and a cleanup that cancels would
+    // race the render promise to completion and leave `html` permanently
+    // null. The `seq` guard above means only the latest fired render
+    // commits state; older in-flight ones are no-ops on resolve.
   }, [displayed]);
 
   if (!displayed || !displayed._type) {
