@@ -1,24 +1,27 @@
 import { defineField } from "sanity";
 
+import { tokenCatalogBanner } from "../components/TokenCatalogBanner";
 import { EMAIL_ALLOWED_SLOTS, type EmailTemplateKey } from "../../src/lib/emails/slots";
-
-function tokenList(template: EmailTemplateKey): string {
-  const tokens = EMAIL_ALLOWED_SLOTS[template];
-  if (tokens.length === 0) return "(this email has no tokens)";
-  return tokens.map((slot) => `{${slot}}`).join(", ");
-}
 
 export function tokenHelp(template: EmailTemplateKey, purpose: string): string {
   const tokens = EMAIL_ALLOWED_SLOTS[template];
   if (tokens.length === 0) return purpose;
-  return `${purpose}\n\nAvailable tokens (use anywhere in any text field): ${tokenList(template)}`;
+  const list = tokens.map((slot) => `{${slot}}`).join(", ");
+  return `${purpose}\n\nAvailable tokens (use anywhere in any text field): ${list}`;
 }
 
 /**
- * A read-only header field that renders the per-template token catalog as
- * help text at the top of the document edit pane. `defineType.description`
- * is not visible from inside the open document in Sanity Studio v5 — this
- * synthetic field is the workaround.
+ * Synthetic field that renders the per-template token catalog as a banner
+ * (no editable input) at the top of the email document edit pane.
+ *
+ * `defineType.description` is not visible inside the open document in Sanity
+ * Studio v5 — and a plain read-only string field still renders an empty input
+ * below the description. The `components.field` override here replaces the
+ * entire field shell with a styled callout so Becky sees the catalog cleanly.
+ *
+ * The underlying field has no value (the field type is `string` but no one
+ * sets it). Synced from EMAIL_ALLOWED_SLOTS so the catalog auto-updates when
+ * we widen an allowlist.
  */
 export function tokenReferenceField(template: EmailTemplateKey) {
   return defineField({
@@ -26,6 +29,8 @@ export function tokenReferenceField(template: EmailTemplateKey) {
     title: "Tokens you can use",
     type: "string",
     readOnly: true,
-    description: `Type any of these in any text field (subject, greeting, body, etc.) and it auto-substitutes when the email sends.\n\n${tokenList(template)}`,
+    components: {
+      field: tokenCatalogBanner(template),
+    },
   });
 }
