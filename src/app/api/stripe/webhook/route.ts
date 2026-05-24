@@ -7,6 +7,7 @@ import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   appendEmailFired,
   findSubmissionById,
@@ -91,7 +92,7 @@ async function dispatchGiftPurchaseConfirmation(
   }
 
   const readingName = submission.reading?.name ?? "reading";
-  const readingPriceDisplay = submission.reading?.priceDisplay ?? "";
+  const readingPriceDisplay = priceDisplayFor(submission);
   const amountPaidDisplay = formatAmountPaid(
     session.amount_total ?? null,
     session.currency ?? null,

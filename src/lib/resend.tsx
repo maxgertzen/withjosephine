@@ -374,6 +374,7 @@ export type GiftClaimEmailInput = {
   recipientName: string;
   purchaserFirstName: string;
   readingName: string;
+  readingPriceDisplay: string;
   giftMessage: string | null;
   idempotencyKey?: string;
 } & (
@@ -391,6 +392,7 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     recipientName: input.recipientName,
     purchaserFirstName: input.purchaserFirstName,
     readingName: input.readingName,
+    readingPriceDisplay: input.readingPriceDisplay,
     giftMessage: input.giftMessage,
   };
   const vars: GiftClaimEmailVars =
@@ -402,6 +404,8 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     input.variant === "first_send" ? copy.subjectFirstSend : copy.subjectReminder;
   const interpolatedSubject = applyTokens(subject, {
     purchaserFirstName: input.purchaserFirstName,
+    readingName: input.readingName,
+    readingPriceDisplay: input.readingPriceDisplay,
   });
 
   const html = await render(<GiftClaimEmail vars={vars} copy={copy} />);
@@ -425,12 +429,16 @@ export async function sendDay7Delivery(
   const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
   const sanity = await fetchEmailDay7Delivery().catch(() => null);
   const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...(sanity ?? {}) };
-  const subject = applyTokens(copy.subjectTemplate, { readingName: submission.readingName });
+  const subject = applyTokens(copy.subjectTemplate, {
+    readingName: submission.readingName,
+    readingPriceDisplay: submission.readingPriceDisplay,
+  });
   const html = await render(
     <Day7Delivery
       vars={{
         firstName: submission.firstName,
         readingName: submission.readingName,
+        readingPriceDisplay: submission.readingPriceDisplay,
         listenUrl,
       }}
       copy={copy}

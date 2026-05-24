@@ -1,5 +1,6 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateOrderSlots = slotValidation("emailOrderConfirmation");
@@ -8,6 +9,8 @@ export const emailOrderConfirmation = defineType({
   name: "emailOrderConfirmation",
   title: "Email — Order Confirmation",
   type: "document",
+  description:
+    "Sent to a customer after their Stripe payment succeeds for a self-purchase. Confirms order receipt and sets timing expectations for the reading.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -16,6 +19,7 @@ export const emailOrderConfirmation = defineType({
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
+    tokenReferenceField("emailOrderConfirmation"),
     defineField({
       name: "subject",
       title: "Subject",

@@ -8,17 +8,29 @@ export type EmailTemplateKey =
   | "emailRecipientIntakeReceived";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
-  emailOrderConfirmation: ["firstName", "readingName"],
-  emailDay7Delivery: ["firstName", "readingName"],
+  emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
+  emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
   emailGiftPurchaseConfirmation: [
     "purchaserFirstName",
     "recipientName",
     "readingName",
+    "readingPriceDisplay",
+    "amountPaidDisplay",
+    "giftMessage",
+    "myGiftsUrl",
+    "claimUrl",
     "sendAtDisplay",
   ],
-  emailGiftClaim: ["purchaserFirstName", "recipientName", "readingName"],
+  emailGiftClaim: [
+    "purchaserFirstName",
+    "recipientName",
+    "readingName",
+    "readingPriceDisplay",
+    "giftMessage",
+    "claimUrl",
+  ],
   emailMagicLink: [],
-  emailPrivacyExport: ["submissionCount", "expiryDays"],
+  emailPrivacyExport: ["downloadUrl", "submissionCount", "expiryDays"],
   emailRecipientIntakeReceived: ["recipientName", "purchaserFirstName", "readingName"],
 } as const;
 

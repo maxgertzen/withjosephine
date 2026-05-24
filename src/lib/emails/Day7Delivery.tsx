@@ -9,6 +9,7 @@ import { SignOff } from "./SignOff";
 export type Day7DeliveryVars = {
   firstName: string;
   readingName: string;
+  readingPriceDisplay: string;
   listenUrl: string;
 };
 

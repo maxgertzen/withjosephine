@@ -1,5 +1,6 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateMagicLinkSlots = slotValidation("emailMagicLink");
@@ -8,7 +9,10 @@ export const emailMagicLink = defineType({
   name: "emailMagicLink",
   title: "Email — Magic Link",
   type: "document",
+  description:
+    "Sent when a customer or gift recipient requests a sign-in link. The link is generic — this email goes to anyone trying to authenticate, including strangers who don't have a reading yet, so no customer-specific tokens are available here.",
   fields: [
+    tokenReferenceField("emailMagicLink"),
     defineField({
       name: "subject",
       title: "Subject",

@@ -84,6 +84,7 @@ async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): 
           vars={{
             firstName: PREVIEW_FIXTURE.firstName,
             readingName: PREVIEW_FIXTURE.readingName,
+            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
             listenUrl: PREVIEW_FIXTURE.listenUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
@@ -115,6 +116,7 @@ async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): 
             recipientName: PREVIEW_FIXTURE.recipientName,
             purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
             readingName: PREVIEW_FIXTURE.readingName,
+            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
             giftMessage: PREVIEW_FIXTURE.giftMessage,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaim}

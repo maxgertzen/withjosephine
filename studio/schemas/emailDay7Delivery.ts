@@ -1,5 +1,6 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateDay7Slots = slotValidation("emailDay7Delivery");
@@ -8,7 +9,10 @@ export const emailDay7Delivery = defineType({
   name: "emailDay7Delivery",
   title: "Email — Day-7 Delivery",
   type: "document",
+  description:
+    "Sent to the customer when their reading is ready — voice note + PDF link inside.",
   fields: [
+    tokenReferenceField("emailDay7Delivery"),
     defineField({
       name: "subjectTemplate",
       title: "Subject",
