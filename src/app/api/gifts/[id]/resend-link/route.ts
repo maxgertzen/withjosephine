@@ -5,6 +5,7 @@ import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { giftResendRateLimit } from "@/lib/booking/giftStatus";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   acquireGiftResendLock,
   appendEmailFired,
@@ -74,7 +75,7 @@ export async function POST(
       purchaserEmail: submission.email,
       purchaserFirstName: purchaserFirstNameFor(submission),
       readingName: submission.reading?.name ?? "your reading",
-      readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+      readingPriceDisplay: priceDisplayFor(submission),
       amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
       recipientName: recipientNameFor(submission),
       giftMessage: submission.giftMessage,

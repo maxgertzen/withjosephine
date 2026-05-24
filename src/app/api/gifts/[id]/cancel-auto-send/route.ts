@@ -4,6 +4,7 @@ import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { issueGiftClaimToken, provisionalTokenHash } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   appendEmailFired,
   flipGiftToSelfSend,
@@ -68,7 +69,7 @@ export async function POST(
     purchaserEmail: submission.email,
     purchaserFirstName: purchaserFirstNameFor(submission),
     readingName: submission.reading?.name ?? "your reading",
-    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    readingPriceDisplay: priceDisplayFor(submission),
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     recipientName: recipientNameFor(submission),
     giftMessage: submission.giftMessage,

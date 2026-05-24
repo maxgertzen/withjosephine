@@ -3,6 +3,7 @@ import { GIFT_DELIVERY } from "./constants";
 import { issueGiftClaimToken } from "./giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
 import type { GiftDeliveryMethod } from "./persistence/repository";
+import { priceDisplayFor } from "./priceDisplayFor";
 import { sendAndRecord } from "./sendAndRecord";
 import {
   acquireGiftResendLock,
@@ -91,7 +92,7 @@ export async function regenerateGiftClaim(submissionId: string): Promise<Regener
           recipientName: recipientNameFor(submission),
           purchaserFirstName: purchaserFirstNameFor(submission),
           readingName: submission.reading?.name ?? "reading",
-          readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+          readingPriceDisplay: priceDisplayFor(submission),
           giftMessage: submission.giftMessage ?? null,
           variant: "first_send",
           claimUrl,

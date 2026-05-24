@@ -23,6 +23,7 @@ import {
   mirrorUnsetPhotoKey,
 } from "./persistence/sanityMirror";
 import { dbBatch } from "./persistence/sqlClient";
+import { priceDisplayFor } from "./priceDisplayFor";
 
 export const SUBMISSION_STATUS = {
   pending: "pending",
@@ -504,7 +505,7 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
     email: submission.email,
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
-    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    readingPriceDisplay: priceDisplayFor(submission),
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     responses,
     photoUrl: submission.photoR2Key ? `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}` : null,

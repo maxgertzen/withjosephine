@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
+import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import { appendEmailFired, applyGiftSendNow } from "@/lib/booking/submissions";
 import { cancelGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
 import { sendGiftClaimEmail } from "@/lib/resend";
@@ -48,7 +49,7 @@ export async function POST(
     recipientName: recipientNameFor(submission),
     purchaserFirstName: purchaserFirstNameFor(submission),
     readingName: submission.reading?.name ?? "your reading",
-    readingPriceDisplay: submission.reading?.priceDisplay ?? "",
+    readingPriceDisplay: priceDisplayFor(submission),
     giftMessage: submission.giftMessage,
     variant: "first_send",
     claimUrl,

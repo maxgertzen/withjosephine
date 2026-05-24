@@ -3,6 +3,7 @@ import { sendGiftClaimEmail } from "@/lib/resend";
 
 import { GIFT_DELIVERY } from "./constants";
 import { purchaserFirstNameFor, recipientNameFor } from "./giftPersonas";
+import { priceDisplayFor } from "./priceDisplayFor";
 import { sendAndRecord } from "./sendAndRecord";
 import { findSubmissionById, markGiftClaimSent } from "./submissions";
 
@@ -72,7 +73,7 @@ export async function dispatchGiftClaim(
   const purchaserFirstName = purchaserFirstNameFor(submission);
   const recipientName = recipientNameFor(submission);
   const readingName = submission.reading?.name ?? "reading";
-  const readingPriceDisplay = submission.reading?.priceDisplay ?? "";
+  const readingPriceDisplay = priceDisplayFor(submission);
   const giftMessage = submission.giftMessage ?? null;
   const nowIso = new Date(input.nowMs).toISOString();
 
