@@ -8,7 +8,6 @@ import {
   bookingFormQuery,
   bookingGiftFormQuery,
   bookingPageQuery,
-  emailDay2StartedQuery,
   emailDay7DeliveryQuery,
   emailGiftClaimQuery,
   emailGiftPurchaseConfirmationQuery,
@@ -39,7 +38,6 @@ import type {
   SanityBookingForm,
   SanityBookingGiftForm,
   SanityBookingPage,
-  SanityEmailDay2Started,
   SanityEmailDay7Delivery,
   SanityEmailGiftClaim,
   SanityEmailGiftPurchaseConfirmation,
@@ -258,13 +256,6 @@ export const fetchEmailGiftPurchaseConfirmation = cache(
     return data;
   },
 );
-
-export const fetchEmailDay2Started = cache(async (): Promise<SanityEmailDay2Started | null> => {
-  const { data } = await sanityFetch<SanityEmailDay2Started | null>({
-    query: emailDay2StartedQuery,
-  });
-  return data;
-});
 
 export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {
   const { data } = await sanityFetch<SanityListenPage | null>({ query: listenPageQuery });

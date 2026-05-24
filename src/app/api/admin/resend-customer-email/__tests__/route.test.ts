@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/booking/resendCustomerEmail", () => ({
   resendCustomerEmail: vi.fn(),
-  RESENDABLE_EMAIL_TYPES: ["order_confirmation", "day2", "day7"] as const,
+  RESENDABLE_EMAIL_TYPES: ["order_confirmation", "day7"] as const,
 }));
 
 import { resendCustomerEmail } from "@/lib/booking/resendCustomerEmail";

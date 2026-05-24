@@ -2,6 +2,7 @@ import { Container, Hr, Link, Section } from "@react-email/components";
 
 import type { EmailRecipientIntakeReceivedContent } from "@/data/defaults";
 
+import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
 
 export type RecipientIntakeReceivedVars = {
@@ -15,14 +16,8 @@ export type RecipientIntakeReceivedProps = {
   copy: EmailRecipientIntakeReceivedContent;
 };
 
-function template(text: string, vars: RecipientIntakeReceivedVars): string {
-  return text
-    .replaceAll("{recipientName}", vars.recipientName)
-    .replaceAll("{purchaserFirstName}", vars.purchaserFirstName)
-    .replaceAll("{readingName}", vars.readingName);
-}
-
-export function RecipientIntakeReceived({ vars, copy }: RecipientIntakeReceivedProps) {
+export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntakeReceivedProps) {
+  const copy = applyTokens(rawCopy, vars);
   return (
     <EmailShell preview={copy.preview} bareContainer>
       <Container
@@ -70,8 +65,8 @@ export function RecipientIntakeReceived({ vars, copy }: RecipientIntakeReceivedP
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          <p style={{ margin: "0 0 18px 0" }}>{template(copy.greeting, vars)}</p>
-          <p style={{ margin: "0 0 18px 0" }}>{template(copy.thanksLine, vars)}</p>
+          <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+          <p style={{ margin: "0 0 18px 0" }}>{copy.thanksLine}</p>
           <p style={{ margin: "0 0 18px 0" }}>{copy.timelineLine}</p>
           <p style={{ margin: "0 0 32px 0" }}>{copy.contactLine}</p>
         </Section>

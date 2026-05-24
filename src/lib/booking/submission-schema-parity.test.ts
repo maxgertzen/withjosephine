@@ -7,7 +7,6 @@ import type { EmailFiredType } from "./submissions";
 
 const EXPECTED_EMAIL_FIRED_TYPES: EmailFiredType[] = [
   "order_confirmation",
-  "day2",
   "day7",
   "day7-overdue-alert",
   "day14",

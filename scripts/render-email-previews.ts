@@ -13,12 +13,10 @@ import React from "react";
 import { render } from "@react-email/render";
 
 import {
-  EMAIL_DAY2_STARTED_DEFAULTS,
   EMAIL_DAY7_DELIVERY_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
 } from "../src/data/defaults";
 import { ContactMessage } from "../src/lib/emails/ContactMessage";
-import { Day2Started } from "../src/lib/emails/Day2Started";
 import { Day7Delivery } from "../src/lib/emails/Day7Delivery";
 import { Day7OverdueAlert } from "../src/lib/emails/Day7OverdueAlert";
 import { JosephineNotification } from "../src/lib/emails/JosephineNotification";
@@ -46,13 +44,6 @@ const previews = [
         amountPaidDisplay: "$129.00",
       },
       copy: EMAIL_ORDER_CONFIRMATION_DEFAULTS,
-    }),
-  },
-  {
-    name: "02-day-2-started",
-    element: React.createElement(Day2Started, {
-      vars: { firstName: "Ada" },
-      copy: EMAIL_DAY2_STARTED_DEFAULTS,
     }),
   },
   {

@@ -2,7 +2,6 @@ import { render } from "@react-email/render";
 import { validatePreviewUrl } from "@sanity/preview-url-secret";
 import { NextResponse } from "next/server";
 
-import { Day2Started } from "@/lib/emails/Day2Started";
 import { Day7Delivery } from "@/lib/emails/Day7Delivery";
 import { GiftClaimEmail } from "@/lib/emails/GiftClaimEmail";
 import { GiftPurchaseConfirmation } from "@/lib/emails/GiftPurchaseConfirmation";
@@ -17,7 +16,6 @@ import { RecipientIntakeReceived } from "@/lib/emails/RecipientIntakeReceived";
 import type { EmailTemplateKey } from "@/lib/emails/slots";
 import { sanityClient } from "@/lib/sanity/client";
 import {
-  emailDay2StartedQuery,
   emailDay7DeliveryQuery,
   emailGiftClaimQuery,
   emailGiftPurchaseConfirmationQuery,
@@ -31,7 +29,6 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATE_QUERIES: Record<EmailTemplateKey, string> = {
   emailOrderConfirmation: emailOrderConfirmationQuery,
-  emailDay2Started: emailDay2StartedQuery,
   emailDay7Delivery: emailDay7DeliveryQuery,
   emailGiftPurchaseConfirmation: emailGiftPurchaseConfirmationQuery,
   emailGiftClaim: emailGiftClaimQuery,
@@ -79,13 +76,6 @@ async function renderTemplate(template: EmailTemplateKey, sanityCopy: unknown): 
             amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailOrderConfirmation}
-        />,
-      );
-    case "emailDay2Started":
-      return render(
-        <Day2Started
-          vars={{ firstName: PREVIEW_FIXTURE.firstName }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailDay2Started}
         />,
       );
     case "emailDay7Delivery":

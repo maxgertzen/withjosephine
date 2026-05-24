@@ -50,7 +50,7 @@ describe("slots — validateSlotsInValue (array-of-text fields)", () => {
   it("validates each entry in an array", () => {
     const result = validateSlotsInValue(
       ["Line one with {firstName}.", "Line two with {bogusToken}."],
-      "emailDay2Started",
+      "emailOrderConfirmation",
     );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.unknown).toEqual(["bogusToken"]);
@@ -58,7 +58,7 @@ describe("slots — validateSlotsInValue (array-of-text fields)", () => {
   it("returns ok when every entry uses allowed slots", () => {
     const result = validateSlotsInValue(
       ["Line {firstName}.", "Line {firstName} again."],
-      "emailDay2Started",
+      "emailOrderConfirmation",
     );
     expect(result).toEqual({ ok: true });
   });
@@ -89,7 +89,6 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
   it("covers every template referenced by code-side senders", () => {
     expect(Object.keys(EMAIL_ALLOWED_SLOTS).sort()).toEqual(
       [
-        "emailDay2Started",
         "emailDay7Delivery",
         "emailGiftClaim",
         "emailGiftPurchaseConfirmation",

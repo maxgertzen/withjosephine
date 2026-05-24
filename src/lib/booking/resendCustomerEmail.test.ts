@@ -13,7 +13,6 @@ vi.mock("./submissions", async () => {
 
 vi.mock("../resend", () => ({
   sendOrderConfirmation: vi.fn(),
-  sendDay2Started: vi.fn(),
   sendDay7Delivery: vi.fn(),
   redactEmail: vi.fn((s: string) => s.replace(/^./, "*")),
 }));
@@ -141,11 +140,11 @@ describe("resendCustomerEmail", () => {
 
   it("returns send_failed when send returns failed kind", async () => {
     const { findSubmissionById } = await import("./submissions");
-    const { sendDay2Started } = await import("../resend");
+    const { sendOrderConfirmation } = await import("../resend");
     vi.mocked(findSubmissionById).mockResolvedValue(buildPaidSubmission());
-    vi.mocked(sendDay2Started).mockResolvedValue({ kind: "failed", error: "Resend 500" });
+    vi.mocked(sendOrderConfirmation).mockResolvedValue({ kind: "failed", error: "Resend 500" });
     const { resendCustomerEmail } = await import("./resendCustomerEmail");
-    const result = await resendCustomerEmail("sub_1", "day2");
+    const result = await resendCustomerEmail("sub_1", "order_confirmation");
     expect(result).toEqual({ ok: false, reason: "send_failed" });
   });
 });

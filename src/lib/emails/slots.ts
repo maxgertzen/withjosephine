@@ -1,6 +1,5 @@
 export type EmailTemplateKey =
   | "emailOrderConfirmation"
-  | "emailDay2Started"
   | "emailDay7Delivery"
   | "emailGiftPurchaseConfirmation"
   | "emailGiftClaim"
@@ -10,7 +9,6 @@ export type EmailTemplateKey =
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName"],
-  emailDay2Started: ["firstName"],
   emailDay7Delivery: ["firstName", "readingName"],
   emailGiftPurchaseConfirmation: [
     "purchaserFirstName",

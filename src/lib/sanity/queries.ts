@@ -343,16 +343,6 @@ export const emailGiftPurchaseConfirmationQuery = groq`
   }
 `;
 
-export const emailDay2StartedQuery = groq`
-  *[_type == "emailDay2Started"][0] {
-    subject,
-    preview,
-    greeting,
-    body,
-    signOff
-  }
-`;
-
 export const emailGiftClaimQuery = groq`
   *[_type == "emailGiftClaim"][0] {
     subjectFirstSend,
