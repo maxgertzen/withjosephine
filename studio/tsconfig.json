@@ -10,7 +10,9 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["../src/*"]
+      "@/data/*": ["../src/data/*"],
+      "@/lib/emails/*": ["../src/lib/emails/*"],
+      "@/lib/theme/*": ["../src/lib/theme/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]
