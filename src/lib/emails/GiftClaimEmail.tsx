@@ -4,6 +4,7 @@ import type { EmailGiftClaimContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
+import { PortableTextInline } from "./PortableTextBody";
 
 type GiftClaimSharedVars = {
   recipientName: string;
@@ -89,7 +90,9 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
               <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{body}</p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={body} />
+              </p>
             </Section>
 
             {vars.giftMessage ? (
@@ -128,7 +131,7 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
                   className="font-sans text-muted"
                   style={{ margin: "16px 0 0 0", fontSize: 13, lineHeight: 1.6 }}
                 >
-                  {copy.claimUrlHelper}
+                  <PortableTextInline value={copy.claimUrlHelper} />
                 </p>
               </div>
             ) : (
@@ -136,7 +139,9 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
                 className="font-sans text-body"
                 style={{ padding: "0 48px 8px 48px", lineHeight: 1.7, fontSize: 14 }}
               >
-                <p style={{ margin: 0 }}>{copy.reminderContactLine}</p>
+                <p style={{ margin: 0 }}>
+                  <PortableTextInline value={copy.reminderContactLine} />
+                </p>
               </Section>
             )}
 

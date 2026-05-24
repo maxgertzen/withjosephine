@@ -54,6 +54,8 @@ export function collectUnknownSlots(value: unknown, allowed: readonly string[]):
       }
     } else if (Array.isArray(input)) {
       for (const entry of input) walk(entry);
+    } else if (input && typeof input === "object") {
+      for (const child of Object.values(input as Record<string, unknown>)) walk(child);
     }
   };
   walk(value);

@@ -5,6 +5,7 @@ import { GIFT_DELIVERY_VARIANT as GIFT_DELIVERY } from "@/lib/emails/giftDeliver
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
+import { PortableTextInline } from "./PortableTextBody";
 
 export type GiftPurchaseConfirmationVars = {
   purchaserFirstName: string;
@@ -112,7 +113,9 @@ export function GiftPurchaseConfirmation({ vars, copy: rawCopy }: GiftPurchaseCo
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
               <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{detailLine}</p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={detailLine} />
+              </p>
             </Section>
 
             {vars.variant === GIFT_DELIVERY.selfSend ? (
@@ -132,7 +135,7 @@ export function GiftPurchaseConfirmation({ vars, copy: rawCopy }: GiftPurchaseCo
                   className="font-sans text-muted"
                   style={{ margin: "16px 0 0 0", fontSize: 13, lineHeight: 1.6 }}
                 >
-                  {copy.shareUrlHelper}
+                  <PortableTextInline value={copy.shareUrlHelper} />
                 </p>
                 <p
                   className="font-sans"
@@ -175,7 +178,9 @@ export function GiftPurchaseConfirmation({ vars, copy: rawCopy }: GiftPurchaseCo
               className="font-sans text-body"
               style={{ padding: "24px 48px 0 48px", lineHeight: 1.7, fontSize: 14 }}
             >
-              <p style={{ margin: 0 }}>{copy.refundLine}</p>
+              <p style={{ margin: 0 }}>
+                <PortableTextInline value={copy.refundLine} />
+              </p>
             </Section>
 
             <Section

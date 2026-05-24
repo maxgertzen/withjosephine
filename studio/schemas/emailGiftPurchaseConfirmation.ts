@@ -92,26 +92,22 @@ export const emailGiftPurchaseConfirmation = defineType({
     defineField({
       name: "detailLineSelfSend",
       title: "Detail paragraph — self-send",
-      type: "text",
-      rows: 4,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "selfSend",
       description:
         "Body of the SELF-SEND confirmation — the purchaser chose to share the link themselves. The 'private link' phrase is load-bearing: the rendered email contains that actual URL beneath this paragraph. {readingName} is the reading; {recipientName} is who they're giving it to.",
       validation: validateGiftPurchaseSlots,
-      initialValue:
-        "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They'll see who it's from when they open it.",
     }),
     defineField({
       name: "detailLineScheduled",
       title: "Detail paragraph — scheduled",
-      type: "text",
-      rows: 4,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "scheduled",
       description:
         "Body of the SCHEDULED confirmation — the purchaser picked a future send date and we'll fire the recipient's email automatically. No link in this email (it goes to the recipient on the chosen date). {readingName} the reading; {recipientName} who it's for; {sendAtDisplay} the date+time we'll send.",
       validation: validateGiftPurchaseSlots,
-      initialValue:
-        "Thank you for gifting a {readingName}. I'll let {recipientName} know about it on {sendAtDisplay} — they'll receive a short note from me with a private link to claim it and share what I need to read for them.",
     }),
     defineField({
       name: "shareButtonLabel",
@@ -123,14 +119,12 @@ export const emailGiftPurchaseConfirmation = defineType({
     defineField({
       name: "shareUrlHelper",
       title: "Share helper text (self-send)",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "selfSend",
       description:
         "Sits directly below the share button in the SELF-SEND variant; reminds the purchaser this URL is for one specific person, not a coupon to forward broadly. {recipientName} grounds the message in the actual recipient.",
       validation: validateGiftPurchaseSlots,
-      initialValue:
-        "This link is for {recipientName}. Share it the way you'd give them a handwritten card.",
     }),
     defineField({
       name: "cardLabel",
@@ -149,13 +143,11 @@ export const emailGiftPurchaseConfirmation = defineType({
     defineField({
       name: "refundLine",
       title: "Refund disclosure paragraph",
-      type: "text",
-      rows: 3,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "shared",
       description: 'Use "{recipientName}".',
       validation: validateGiftPurchaseSlots,
-      initialValue:
-        "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
     }),
     defineField({
       name: "signOffLine1",

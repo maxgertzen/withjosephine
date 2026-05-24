@@ -32,20 +32,17 @@ export const emailPrivacyExport = defineType({
     defineField({
       name: "introLine",
       title: "Intro paragraph",
-      type: "text",
-      rows: 2,
-      initialValue: "Your Josephine data export is ready.",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
     }),
     defineField({
       name: "contentsLine",
       title: "Contents paragraph",
-      type: "text",
-      rows: 3,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
         'Use "{submissionCount}" to insert how many readings the export contains.',
       validation: slotValidation("emailPrivacyExport"),
-      initialValue:
-        "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
     }),
     defineField({
       name: "ctaLabel",
@@ -56,13 +53,11 @@ export const emailPrivacyExport = defineType({
     defineField({
       name: "expiryLine",
       title: "Expiry paragraph",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
         'Use "{expiryDays}" to insert the link lifetime in days.',
       validation: slotValidation("emailPrivacyExport"),
-      initialValue:
-        "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
     }),
     defineField({
       name: "signOff",

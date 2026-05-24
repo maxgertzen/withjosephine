@@ -67,31 +67,27 @@ export const emailOrderConfirmation = defineType({
     defineField({
       name: "thanksLine",
       title: "Thanks paragraph",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      description: 'Use "{readingName}" to insert the reading name.',
+      description: 'Use "{readingName}" to insert the reading name. Bold/italic/link via toolbar.',
       validation: validateOrderSlots,
-      initialValue:
-        "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don't need to do anything else.",
     }),
     defineField({
       name: "timelineLine",
       title: "Timeline paragraph",
-      type: "text",
-      rows: 3,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+      description: "Bold/italic/link via toolbar.",
     }),
     defineField({
       name: "contactLine",
       title: "Contact paragraph",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+      description: "Bold/italic/link via toolbar.",
     }),
     defineField({
       name: "cardLabel",

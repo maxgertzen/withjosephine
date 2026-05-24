@@ -96,26 +96,22 @@ export const emailGiftClaim = defineType({
     defineField({
       name: "bodyFirstSend",
       title: "Body — first send",
-      type: "text",
-      rows: 5,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "firstSend",
       description:
         "Main message in the first claim email — sets context for the recipient and tells them what happens after they click the link. {purchaserFirstName} is the sender, {readingName} is the reading they chose. The 'seven days' line aligns with the delivery promise on the website; if you change one, change the other.",
       validation: validateGiftClaimSlots,
-      initialValue:
-        "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
     }),
     defineField({
       name: "bodyReminder",
       title: "Body — reminder",
-      type: "text",
-      rows: 5,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "reminder",
       description:
         "Main message in the +7 day reminder — softer tone, asks the recipient to find the original email rather than minting a fresh link. {purchaserFirstName} is the original sender, {readingName} the reading.",
       validation: validateGiftClaimSlots,
-      initialValue:
-        "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
     }),
     defineField({
       name: "giftMessageLabel",
@@ -137,11 +133,9 @@ export const emailGiftClaim = defineType({
     defineField({
       name: "claimUrlHelper",
       title: "Claim button helper (first send)",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "firstSend",
-      initialValue:
-        "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
     }),
     defineField({
       name: "cardLabel",
@@ -160,11 +154,9 @@ export const emailGiftClaim = defineType({
     defineField({
       name: "reminderContactLine",
       title: "Reminder — contact line",
-      type: "text",
-      rows: 2,
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "reminder",
-      initialValue:
-        "If you can’t find the earlier email, write to hello@withjosephine.com and I’ll send you a fresh link.",
     }),
     defineField({
       name: "signOffLine1",

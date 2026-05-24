@@ -37,13 +37,10 @@ export const emailMagicLink = defineType({
       name: "body",
       title: "Body paragraphs",
       type: "array",
-      of: [{ type: "text", rows: 3 }],
-      description: "Each entry is a paragraph in the body. Order = render order.",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description:
+        "Body paragraphs. Bold/italic via the toolbar; links via the link button. Each block becomes one paragraph in the email.",
       validation: validateMagicLinkSlots,
-      initialValue: [
-        "Here's a fresh link to open your reading. It'll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
-        "This link expires in twenty-four hours. If you didn't ask for it, it's safe to ignore — nothing happens until someone clicks.",
-      ],
     }),
     defineField({
       name: "signOff",
