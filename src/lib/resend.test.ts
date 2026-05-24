@@ -325,14 +325,21 @@ describe("sendPrivacyExportEmail", () => {
   it("renders Sanity-fetched copy with submissionCount + expiryDays interpolated", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_priv" } });
     const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
     vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
       subject: "Custom export subject",
       preview: "Custom export preview",
+      bodyIntro: [
+        ...stringToPortableTextBlocks("Greetings,"),
+        ...stringToPortableTextBlocks("Your export is queued."),
+        ...stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
+      ],
+      bodyPostButton: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       greeting: "Greetings,",
-      introLine: "Your export is queued.",
-      contentsLine: "Contains data for {submissionCount} reading(s).",
+      introLine: stringToPortableTextBlocks("Your export is queued."),
+      contentsLine: stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
       ctaLabel: "Grab your ZIP",
-      expiryLine: "Link expires in {expiryDays} days.",
+      expiryLine: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       signOff: null,
     });
     const { sendPrivacyExportEmail } = await import("./resend");
@@ -494,6 +501,7 @@ describe("sendRecipientIntakeReceived (I-10)", () => {
   it("substitutes {recipientName} and {readingName} in the subject if used in Sanity copy", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
     const { fetchEmailRecipientIntakeReceived } = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
     vi.mocked(fetchEmailRecipientIntakeReceived).mockResolvedValueOnce({
       subject: "{recipientName}, your {readingName} is in my hands",
       preview: "x",
@@ -501,9 +509,9 @@ describe("sendRecipientIntakeReceived (I-10)", () => {
       brandSubtitle: "Soul Readings",
       heroLine: "x",
       greeting: "Hi {recipientName},",
-      thanksLine: "x",
-      timelineLine: "x",
-      contactLine: "x",
+      thanksLine: stringToPortableTextBlocks("x"),
+      timelineLine: stringToPortableTextBlocks("x"),
+      contactLine: stringToPortableTextBlocks("x"),
       cardLabel: "x",
       cardDeliveryLine: "x",
       signOffLine1: "x",

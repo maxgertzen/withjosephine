@@ -3,36 +3,39 @@ import { defineField, defineType } from "sanity";
 import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
-const validateOrderSlots = slotValidation("emailOrderConfirmation");
+const validateGiftClaimReminderSlots = slotValidation("emailGiftClaimReminder");
 
-export const emailOrderConfirmation = defineType({
-  name: "emailOrderConfirmation",
-  title: "Email — Order Confirmation",
+export const emailGiftClaimReminder = defineType({
+  name: "emailGiftClaimReminder",
+  title: "Email — Gift Claim — Reminder (to recipient)",
   type: "document",
   description:
-    "Sent to a customer after their Stripe payment succeeds for a self-purchase. Confirms order receipt and sets timing expectations for the reading.",
+    "Reminder follow-up sent to a gift recipient who hasn't claimed yet. Asks them to find the original email rather than minting a fresh link.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
-    { name: "body", title: "Body copy" },
+    { name: "body", title: "Body" },
     { name: "card", title: "Reading card" },
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
-    tokenReferenceField("emailOrderConfirmation"),
+    tokenReferenceField("emailGiftClaimReminder"),
     defineField({
       name: "subject",
       title: "Subject",
       type: "string",
       group: "envelope",
-      initialValue: "Your reading is booked — here's what happens next",
+      initialValue: "A reading is still waiting for you",
     }),
     defineField({
       name: "preview",
-      title: "Inbox preview text",
+      title: "Inbox preview",
       type: "string",
       group: "envelope",
-      initialValue: "Your reading is booked — here's what happens next",
+      description:
+        "The grey snippet shown next to the subject line. {purchaserFirstName} is the original sender — kept here on purpose so the recipient remembers whose gift this was.",
+      validation: validateGiftClaimReminderSlots,
+      initialValue: "A small reminder about the reading {purchaserFirstName} sent you.",
     }),
     defineField({
       name: "brandName",
@@ -50,10 +53,10 @@ export const emailOrderConfirmation = defineType({
     }),
     defineField({
       name: "heroLine",
-      title: "Hero line (after divider)",
+      title: "Hero line",
       type: "string",
       group: "header",
-      initialValue: "Your reading is booked",
+      initialValue: "Still here, when you’re ready",
     }),
     defineField({
       name: "body",
@@ -62,60 +65,32 @@ export const emailOrderConfirmation = defineType({
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
       description:
-        'The full body of the email. Bold/italic/link via the toolbar. Use "{firstName}" to insert the customer\'s first name and "{readingName}" to insert the reading name.',
-      validation: validateOrderSlots,
+        'The full body of the reminder email. Softer tone, asks the recipient to find the original email. Use "{recipientName}", "{purchaserFirstName}", "{readingName}".',
+      validation: validateGiftClaimReminderSlots,
     }),
     defineField({
-      name: "greeting",
-      title: "Greeting (legacy — folded into Body)",
+      name: "giftMessageLabel",
+      title: "Gift-message label",
       type: "string",
       group: "body",
-      hidden: true,
-      readOnly: true,
-      validation: validateOrderSlots,
-      initialValue: "Hi {firstName},",
-    }),
-    defineField({
-      name: "thanksLine",
-      title: "Thanks paragraph (legacy — folded into Body)",
-      type: "array",
-      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      group: "body",
-      hidden: true,
-      readOnly: true,
-      validation: validateOrderSlots,
-    }),
-    defineField({
-      name: "timelineLine",
-      title: "Timeline paragraph (legacy — folded into Body)",
-      type: "array",
-      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      group: "body",
-      hidden: true,
-      readOnly: true,
-    }),
-    defineField({
-      name: "contactLine",
-      title: "Contact paragraph (legacy — folded into Body)",
-      type: "array",
-      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      group: "body",
-      hidden: true,
-      readOnly: true,
+      description:
+        "Header shown above the purchaser's personal note (only renders if they wrote one). {purchaserFirstName} sets the attribution.",
+      validation: validateGiftClaimReminderSlots,
+      initialValue: "A note from {purchaserFirstName}",
     }),
     defineField({
       name: "cardLabel",
       title: "Reading card — label",
       type: "string",
       group: "card",
-      initialValue: "Your reading",
+      initialValue: "The gift",
     }),
     defineField({
       name: "cardDeliveryLine",
       title: "Reading card — delivery line",
       type: "string",
       group: "card",
-      initialValue: "Delivery within 7 days",
+      initialValue: "Delivered within 7 days of your intake",
     }),
     defineField({
       name: "signOffLine1",
@@ -140,6 +115,6 @@ export const emailOrderConfirmation = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Order Confirmation" }),
+    prepare: () => ({ title: "Email — Gift Claim — Reminder (to recipient)" }),
   },
 });

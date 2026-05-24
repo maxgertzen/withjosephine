@@ -2,7 +2,9 @@ import { render } from "@react-email/render";
 
 import { Day7Delivery } from "./Day7Delivery";
 import { GiftClaimEmail } from "./GiftClaimEmail";
-import { GiftPurchaseConfirmation } from "./GiftPurchaseConfirmation";
+import { GiftClaimReminderEmail } from "./GiftClaimReminderEmail";
+import { GiftPurchaseConfirmationScheduled } from "./GiftPurchaseConfirmationScheduled";
+import { GiftPurchaseConfirmationSelfSend } from "./GiftPurchaseConfirmationSelfSend";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
@@ -25,8 +27,10 @@ function stripRenderBlockers(html: string): string {
 export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
   "emailDay7Delivery",
-  "emailGiftPurchaseConfirmation",
+  "emailGiftPurchaseConfirmationSelfSend",
+  "emailGiftPurchaseConfirmationScheduled",
   "emailGiftClaim",
+  "emailGiftClaimReminder",
   "emailMagicLink",
   "emailMagicLinkMyReadings",
   "emailMagicLinkMyGifts",
@@ -76,11 +80,10 @@ async function renderRaw(
           copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
         />,
       );
-    case "emailGiftPurchaseConfirmation":
+    case "emailGiftPurchaseConfirmationSelfSend":
       return render(
-        <GiftPurchaseConfirmation
+        <GiftPurchaseConfirmationSelfSend
           vars={{
-            variant: "self_send",
             claimUrl: PREVIEW_FIXTURE.claimUrl,
             purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
             readingName: PREVIEW_FIXTURE.readingName,
@@ -90,14 +93,29 @@ async function renderRaw(
             giftMessage: PREVIEW_FIXTURE.giftMessage,
             myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
           }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmation}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmationSelfSend}
+        />,
+      );
+    case "emailGiftPurchaseConfirmationScheduled":
+      return render(
+        <GiftPurchaseConfirmationScheduled
+          vars={{
+            sendAtDisplay: PREVIEW_FIXTURE.sendAtDisplay,
+            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
+            readingName: PREVIEW_FIXTURE.readingName,
+            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
+            amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
+            recipientName: PREVIEW_FIXTURE.recipientName,
+            giftMessage: PREVIEW_FIXTURE.giftMessage,
+            myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmationScheduled}
         />,
       );
     case "emailGiftClaim":
       return render(
         <GiftClaimEmail
           vars={{
-            variant: "first_send",
             claimUrl: PREVIEW_FIXTURE.claimUrl,
             recipientName: PREVIEW_FIXTURE.recipientName,
             purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
@@ -106,6 +124,19 @@ async function renderRaw(
             giftMessage: PREVIEW_FIXTURE.giftMessage,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaim}
+        />,
+      );
+    case "emailGiftClaimReminder":
+      return render(
+        <GiftClaimReminderEmail
+          vars={{
+            recipientName: PREVIEW_FIXTURE.recipientName,
+            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
+            readingName: PREVIEW_FIXTURE.readingName,
+            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
+            giftMessage: PREVIEW_FIXTURE.giftMessage,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaimReminder}
         />,
       );
     case "emailMagicLink":

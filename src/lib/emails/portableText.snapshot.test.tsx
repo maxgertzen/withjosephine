@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   EMAIL_DAY7_DELIVERY_DEFAULTS,
   EMAIL_GIFT_CLAIM_DEFAULTS,
-  EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
+  EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
@@ -14,7 +14,7 @@ import {
 
 import { Day7Delivery } from "./Day7Delivery";
 import { GiftClaimEmail } from "./GiftClaimEmail";
-import { GiftPurchaseConfirmation } from "./GiftPurchaseConfirmation";
+import { GiftPurchaseConfirmationSelfSend } from "./GiftPurchaseConfirmationSelfSend";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_FIXTURE } from "./preview-fixtures";
@@ -45,22 +45,24 @@ function stripWhitespace(html: string): string {
     .trim();
 }
 
-describe("Portable Text body render parity", () => {
-  it("OrderConfirmation — string vs PT body produce identical HTML", async () => {
+describe("Portable Text body fallback parity (legacy-fields branch)", () => {
+  it("OrderConfirmation — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
       firstName: PREVIEW_FIXTURE.firstName,
       readingName: PREVIEW_FIXTURE.readingName,
       readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
       amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
     };
-    const stringRender = await render(
-      <OrderConfirmation vars={vars} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />,
-    );
+    const legacyCopy = {
+      ...EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+      body: undefined,
+    };
+    const stringRender = await render(<OrderConfirmation vars={vars} copy={legacyCopy} />);
     const ptRender = await render(
       <OrderConfirmation
         vars={vars}
         copy={{
-          ...EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+          ...legacyCopy,
           thanksLine: pt(EMAIL_ORDER_CONFIRMATION_DEFAULTS.thanksLine as string),
           timelineLine: pt(EMAIL_ORDER_CONFIRMATION_DEFAULTS.timelineLine as string),
           contactLine: pt(EMAIL_ORDER_CONFIRMATION_DEFAULTS.contactLine as string),
@@ -70,20 +72,24 @@ describe("Portable Text body render parity", () => {
     expect(stripWhitespace(ptRender)).toBe(stripWhitespace(stringRender));
   });
 
-  it("RecipientIntakeReceived — string vs PT body produce identical HTML", async () => {
+  it("RecipientIntakeReceived — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
       recipientName: PREVIEW_FIXTURE.recipientName,
       purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
       readingName: PREVIEW_FIXTURE.readingName,
     };
+    const legacyCopy = {
+      ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+      body: undefined,
+    };
     const stringRender = await render(
-      <RecipientIntakeReceived vars={vars} copy={EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS} />,
+      <RecipientIntakeReceived vars={vars} copy={legacyCopy} />,
     );
     const ptRender = await render(
       <RecipientIntakeReceived
         vars={vars}
         copy={{
-          ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+          ...legacyCopy,
           thanksLine: pt(EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS.thanksLine as string),
           timelineLine: pt(EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS.timelineLine as string),
           contactLine: pt(EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS.contactLine as string),
@@ -93,21 +99,24 @@ describe("Portable Text body render parity", () => {
     expect(stripWhitespace(ptRender)).toBe(stripWhitespace(stringRender));
   });
 
-  it("Day7Delivery — string vs PT body produce identical HTML", async () => {
+  it("Day7Delivery — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
       firstName: PREVIEW_FIXTURE.firstName,
       readingName: PREVIEW_FIXTURE.readingName,
       readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
       listenUrl: PREVIEW_FIXTURE.listenUrl,
     };
-    const stringRender = await render(
-      <Day7Delivery vars={vars} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />,
-    );
+    const legacyCopy = {
+      ...EMAIL_DAY7_DELIVERY_DEFAULTS,
+      bodyIntro: undefined,
+      bodyPostButton: undefined,
+    };
+    const stringRender = await render(<Day7Delivery vars={vars} copy={legacyCopy} />);
     const ptRender = await render(
       <Day7Delivery
         vars={vars}
         copy={{
-          ...EMAIL_DAY7_DELIVERY_DEFAULTS,
+          ...legacyCopy,
           comfortLine: pt(EMAIL_DAY7_DELIVERY_DEFAULTS.comfortLine as string),
           signedInDisclosure: pt(EMAIL_DAY7_DELIVERY_DEFAULTS.signedInDisclosure as string),
           comfortFollowUp: pt(EMAIL_DAY7_DELIVERY_DEFAULTS.comfortFollowUp as string),
@@ -140,9 +149,8 @@ describe("Portable Text body render parity", () => {
     expect(stripWhitespace(ptRender)).toBe(stripWhitespace(stringRender));
   });
 
-  it("GiftPurchaseConfirmation — string vs PT body produce identical HTML", async () => {
+  it("GiftPurchaseConfirmationSelfSend — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
-      variant: "self_send" as const,
       claimUrl: PREVIEW_FIXTURE.claimUrl,
       purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
       readingName: PREVIEW_FIXTURE.readingName,
@@ -152,27 +160,35 @@ describe("Portable Text body render parity", () => {
       giftMessage: PREVIEW_FIXTURE.giftMessage,
       myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
     };
+    const legacyCopy = {
+      ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
+      body: undefined,
+    };
     const stringRender = await render(
-      <GiftPurchaseConfirmation vars={vars} copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS} />,
+      <GiftPurchaseConfirmationSelfSend vars={vars} copy={legacyCopy} />,
     );
     const ptRender = await render(
-      <GiftPurchaseConfirmation
+      <GiftPurchaseConfirmationSelfSend
         vars={vars}
         copy={{
-          ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS,
-          detailLineSelfSend: pt(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS.detailLineSelfSend as string),
-          detailLineScheduled: pt(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS.detailLineScheduled as string),
-          shareUrlHelper: pt(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS.shareUrlHelper as string),
-          refundLine: pt(EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS.refundLine as string),
+          ...legacyCopy,
+          detailLineSelfSend: pt(
+            EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS.detailLineSelfSend as string,
+          ),
+          shareUrlHelper: pt(
+            EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS.shareUrlHelper as string,
+          ),
+          refundLine: pt(
+            EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS.refundLine as string,
+          ),
         }}
       />,
     );
     expect(stripWhitespace(ptRender)).toBe(stripWhitespace(stringRender));
   });
 
-  it("GiftClaimEmail — string vs PT body produce identical HTML", async () => {
+  it("GiftClaimEmail — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
-      variant: "first_send" as const,
       claimUrl: PREVIEW_FIXTURE.claimUrl,
       recipientName: PREVIEW_FIXTURE.recipientName,
       purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
@@ -180,38 +196,43 @@ describe("Portable Text body render parity", () => {
       readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
       giftMessage: PREVIEW_FIXTURE.giftMessage,
     };
+    const legacyCopy = {
+      ...EMAIL_GIFT_CLAIM_DEFAULTS,
+      body: undefined,
+    };
     const stringRender = await render(
-      <GiftClaimEmail vars={vars} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
+      <GiftClaimEmail vars={vars} copy={legacyCopy} />,
     );
     const ptRender = await render(
       <GiftClaimEmail
         vars={vars}
         copy={{
-          ...EMAIL_GIFT_CLAIM_DEFAULTS,
+          ...legacyCopy,
           bodyFirstSend: pt(EMAIL_GIFT_CLAIM_DEFAULTS.bodyFirstSend as string),
-          bodyReminder: pt(EMAIL_GIFT_CLAIM_DEFAULTS.bodyReminder as string),
           claimUrlHelper: pt(EMAIL_GIFT_CLAIM_DEFAULTS.claimUrlHelper as string),
-          reminderContactLine: pt(EMAIL_GIFT_CLAIM_DEFAULTS.reminderContactLine as string),
         }}
       />,
     );
     expect(stripWhitespace(ptRender)).toBe(stripWhitespace(stringRender));
   });
 
-  it("PrivacyExport — string vs PT body produce identical HTML", async () => {
+  it("PrivacyExport — legacy string vs PT array produce identical HTML", async () => {
     const vars = {
       downloadUrl: PREVIEW_FIXTURE.downloadUrl,
       submissionCount: PREVIEW_FIXTURE.submissionCount,
       expiryDays: PREVIEW_FIXTURE.expiryDays,
     };
-    const stringRender = await render(
-      <PrivacyExport vars={vars} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />,
-    );
+    const legacyCopy = {
+      ...EMAIL_PRIVACY_EXPORT_DEFAULTS,
+      bodyIntro: undefined,
+      bodyPostButton: undefined,
+    };
+    const stringRender = await render(<PrivacyExport vars={vars} copy={legacyCopy} />);
     const ptRender = await render(
       <PrivacyExport
         vars={vars}
         copy={{
-          ...EMAIL_PRIVACY_EXPORT_DEFAULTS,
+          ...legacyCopy,
           introLine: pt(EMAIL_PRIVACY_EXPORT_DEFAULTS.introLine as string),
           contentsLine: pt(EMAIL_PRIVACY_EXPORT_DEFAULTS.contentsLine as string),
           expiryLine: pt(EMAIL_PRIVACY_EXPORT_DEFAULTS.expiryLine as string),

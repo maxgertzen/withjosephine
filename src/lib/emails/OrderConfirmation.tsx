@@ -4,7 +4,7 @@ import type { EmailOrderConfirmationContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
-import { PortableTextInline } from "./PortableTextBody";
+import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type OrderConfirmationVars = {
   firstName: string;
@@ -25,6 +25,7 @@ function priceCell(vars: OrderConfirmationVars): string {
 export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProps) {
   const copy = applyTokens(rawCopy, vars);
   const price = priceCell(vars);
+  const useFoldedBody = hasBodyContent(copy.body);
 
   return (
     <EmailShell preview={copy.preview} bareContainer>
@@ -76,16 +77,22 @@ export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProp
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.thanksLine} />
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.timelineLine} />
-              </p>
-              <p style={{ margin: "0 0 32px 0" }}>
-                <PortableTextInline value={copy.contactLine} />
-              </p>
+              {useFoldedBody ? (
+                <PortableTextBody value={copy.body} />
+              ) : (
+                <>
+                  <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+                  <p style={{ margin: "0 0 18px 0" }}>
+                    <PortableTextInline value={copy.thanksLine} />
+                  </p>
+                  <p style={{ margin: "0 0 18px 0" }}>
+                    <PortableTextInline value={copy.timelineLine} />
+                  </p>
+                  <p style={{ margin: "0 0 32px 0" }}>
+                    <PortableTextInline value={copy.contactLine} />
+                  </p>
+                </>
+              )}
             </Section>
 
 

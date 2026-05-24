@@ -61,6 +61,15 @@ export type PortableTextBodyProps = {
   value: PortableTextBlock[] | string[] | string | null | undefined;
 };
 
+export function hasBodyContent(
+  value: PortableTextBlock[] | string[] | string | null | undefined,
+): boolean {
+  if (value == null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return false;
+}
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string");
 }

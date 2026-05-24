@@ -99,6 +99,8 @@ export function EmailPreview(props: EmailPreviewProps) {
 
   return (
     <iframe
+      // Force remount on html load — Chrome won't re-navigate sandboxed srcdoc.
+      key={html ? "loaded" : "empty"}
       srcDoc={html ?? ""}
       title={`Email preview — ${displayed._type}`}
       sandbox=""

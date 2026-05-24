@@ -3,38 +3,36 @@ import { defineField, defineType } from "sanity";
 import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
-const validateRecipientIntakeSlots = slotValidation("emailRecipientIntakeReceived");
+const validateSelfSendSlots = slotValidation("emailGiftPurchaseConfirmationSelfSend");
 
-export const emailRecipientIntakeReceived = defineType({
-  name: "emailRecipientIntakeReceived",
-  title: "Email — Recipient Intake Received",
+export const emailGiftPurchaseConfirmationSelfSend = defineType({
+  name: "emailGiftPurchaseConfirmationSelfSend",
+  title: "Email — Gift Purchase Confirmation — Self-Send (to purchaser)",
   type: "document",
   description:
-    "Sent to a gift recipient immediately after they submit their intake. Confirms the answers landed and sets timing expectations.",
+    "Sent to the purchaser after they buy a gift reading and choose to share the claim link themselves. Includes the private claim URL.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
-    { name: "body", title: "Body copy" },
+    { name: "body", title: "Body" },
     { name: "card", title: "Reading card" },
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
-    tokenReferenceField("emailRecipientIntakeReceived"),
+    tokenReferenceField("emailGiftPurchaseConfirmationSelfSend"),
     defineField({
       name: "subject",
       title: "Subject",
       type: "string",
       group: "envelope",
-      description: 'Use "{recipientName}" / "{readingName}" placeholders.',
-      validation: validateRecipientIntakeSlots,
-      initialValue: "Your reading is in my hands now",
+      initialValue: "Your gift is ready to share",
     }),
     defineField({
       name: "preview",
-      title: "Inbox preview text",
+      title: "Inbox preview",
       type: "string",
       group: "envelope",
-      initialValue: "Your answers landed safely — here's what happens next.",
+      initialValue: "Your shareable link is inside.",
     }),
     defineField({
       name: "brandName",
@@ -52,10 +50,10 @@ export const emailRecipientIntakeReceived = defineType({
     }),
     defineField({
       name: "heroLine",
-      title: "Hero line (after divider)",
+      title: "Hero line",
       type: "string",
       group: "header",
-      initialValue: "Your reading is in my hands",
+      initialValue: "A reading, ready for them",
     }),
     defineField({
       name: "body",
@@ -64,60 +62,48 @@ export const emailRecipientIntakeReceived = defineType({
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
       description:
-        'The full body of the email. Bold/italic/link via the toolbar. Use "{recipientName}", "{purchaserFirstName}", "{readingName}" placeholders.',
-      validation: validateRecipientIntakeSlots,
+        'The full body of the email above the share button. Use "{purchaserFirstName}", "{recipientName}", "{readingName}".',
+      validation: validateSelfSendSlots,
     }),
     defineField({
-      name: "greeting",
-      title: "Greeting (legacy — folded into Body)",
+      name: "shareButtonLabel",
+      title: "Share button label",
       type: "string",
       group: "body",
-      hidden: true,
-      readOnly: true,
-      validation: validateRecipientIntakeSlots,
-      initialValue: "Hi {recipientName},",
+      initialValue: "OPEN GIFT LINK",
     }),
     defineField({
-      name: "thanksLine",
-      title: "Thanks paragraph (legacy — folded into Body)",
+      name: "shareUrlHelper",
+      title: "Share helper text",
       type: "array",
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      hidden: true,
-      readOnly: true,
-      validation: validateRecipientIntakeSlots,
-    }),
-    defineField({
-      name: "timelineLine",
-      title: "Timeline paragraph (legacy — folded into Body)",
-      type: "array",
-      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      group: "body",
-      hidden: true,
-      readOnly: true,
-    }),
-    defineField({
-      name: "contactLine",
-      title: "Contact paragraph (legacy — folded into Body)",
-      type: "array",
-      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      group: "body",
-      hidden: true,
-      readOnly: true,
+      description:
+        "Small text shown directly below the share button. {recipientName} grounds the message in the actual recipient.",
+      validation: validateSelfSendSlots,
     }),
     defineField({
       name: "cardLabel",
       title: "Reading card — label",
       type: "string",
       group: "card",
-      initialValue: "Your reading",
+      initialValue: "The gift",
     }),
     defineField({
       name: "cardDeliveryLine",
       title: "Reading card — delivery line",
       type: "string",
       group: "card",
-      initialValue: "Delivery within 7 days",
+      initialValue: "Delivery within 7 days of claim",
+    }),
+    defineField({
+      name: "refundLine",
+      title: "Refund disclosure paragraph",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      group: "card",
+      description: 'Stays separate from the body. Use "{recipientName}", "{myGiftsUrl}".',
+      validation: validateSelfSendSlots,
     }),
     defineField({
       name: "signOffLine1",
@@ -142,6 +128,8 @@ export const emailRecipientIntakeReceived = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Recipient Intake Received" }),
+    prepare: () => ({
+      title: "Email — Gift Purchase Confirmation — Self-Send",
+    }),
   },
 });

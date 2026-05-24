@@ -9,7 +9,7 @@ import { SignOff } from "./SignOff";
 export type MagicLinkProps = {
   magicLinkUrl: string;
   preview: string;
-  greeting: string;
+  greeting?: string | null;
   body: EmailRichText;
   signOff?: string | null;
 };
@@ -17,7 +17,7 @@ export type MagicLinkProps = {
 export function MagicLink({ magicLinkUrl, preview, greeting, body, signOff }: MagicLinkProps) {
   return (
     <EmailShell preview={preview}>
-      <Text className="text-base leading-[1.75]">{greeting}</Text>
+      {greeting ? <Text className="text-base leading-[1.75]">{greeting}</Text> : null}
       <PortableTextBody value={body} />
       <Text className="text-base leading-[1.75]">
         <Link href={magicLinkUrl} className="text-ink underline">

@@ -18,7 +18,9 @@ import { emailMagicLinkMyReadings } from "./emailMagicLinkMyReadings";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
-import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
+import { emailGiftClaimReminder } from "./emailGiftClaimReminder";
+import { emailGiftPurchaseConfirmationScheduled } from "./emailGiftPurchaseConfirmationScheduled";
+import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfirmationSelfSend";
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { giftClaimPage } from "./giftClaimPage";
@@ -50,8 +52,10 @@ export const schemaTypes = [
   emailMagicLinkMyGifts,
   emailDay7Delivery,
   emailOrderConfirmation,
-  emailGiftPurchaseConfirmation,
+  emailGiftPurchaseConfirmationSelfSend,
+  emailGiftPurchaseConfirmationScheduled,
   emailGiftClaim,
+  emailGiftClaimReminder,
   emailRecipientIntakeReceived,
   emailPrivacyExport,
   giftClaimPage,

@@ -9,8 +9,10 @@ import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
-import { GiftClaimEmail, type GiftClaimEmailVars } from "./emails/GiftClaimEmail";
-import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./emails/GiftPurchaseConfirmation";
+import { GiftClaimEmail } from "./emails/GiftClaimEmail";
+import { GiftClaimReminderEmail } from "./emails/GiftClaimReminderEmail";
+import { GiftPurchaseConfirmationScheduled } from "./emails/GiftPurchaseConfirmationScheduled";
+import { GiftPurchaseConfirmationSelfSend } from "./emails/GiftPurchaseConfirmationSelfSend";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
@@ -320,16 +322,27 @@ export type GiftPurchaseConfirmationInput = {
 export async function sendGiftPurchaseConfirmation(
   input: GiftPurchaseConfirmationInput,
 ): Promise<EmailSendResult> {
-  const { EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailGiftPurchaseConfirmation } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailGiftPurchaseConfirmation().catch(() => null);
-  const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
-
+  const {
+    EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
+    EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
+  } = await import("@/data/defaults");
+  const {
+    fetchEmailGiftPurchaseConfirmationScheduled,
+    fetchEmailGiftPurchaseConfirmationSelfSend,
+  } = await import("@/lib/sanity/fetch");
   const myGiftsUrl = `${siteOrigin()}/my-gifts`;
-  const vars: GiftPurchaseConfirmationVars =
-    input.variant === GIFT_DELIVERY.selfSend
-      ? {
-          variant: GIFT_DELIVERY.selfSend,
+
+  let html: string;
+  let interpolatedSubject: string;
+  if (input.variant === GIFT_DELIVERY.selfSend) {
+    const sanity = await fetchEmailGiftPurchaseConfirmationSelfSend().catch(() => null);
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      recipientName: input.recipientName ?? "your recipient",
+    });
+    html = await render(
+      <GiftPurchaseConfirmationSelfSend
+        vars={{
           claimUrl: input.claimUrl,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -338,9 +351,20 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
-        }
-      : {
-          variant: GIFT_DELIVERY.scheduled,
+        }}
+        copy={copy}
+      />,
+    );
+  } else {
+    const sanity = await fetchEmailGiftPurchaseConfirmationScheduled().catch(() => null);
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      recipientName: input.recipientName ?? "your recipient",
+      sendAtDisplay: input.sendAtDisplay,
+    });
+    html = await render(
+      <GiftPurchaseConfirmationScheduled
+        vars={{
           sendAtDisplay: input.sendAtDisplay,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -349,15 +373,11 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
-        };
-
-  const subject = input.variant === GIFT_DELIVERY.selfSend ? copy.subjectSelfSend : copy.subjectScheduled;
-  const interpolatedSubject = applyTokens(subject, {
-    recipientName: input.recipientName ?? "your recipient",
-    sendAtDisplay: input.variant === GIFT_DELIVERY.scheduled ? input.sendAtDisplay : "",
-  });
-
-  const html = await render(<GiftPurchaseConfirmation vars={vars} copy={copy} />);
+        }}
+        copy={copy}
+      />,
+    );
+  }
 
   return sendOrSkip({
     to: input.purchaserEmail,
@@ -383,10 +403,10 @@ export type GiftClaimEmailInput = {
 );
 
 export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<EmailSendResult> {
-  const { EMAIL_GIFT_CLAIM_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailGiftClaim } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailGiftClaim().catch(() => null);
-  const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+  const { EMAIL_GIFT_CLAIM_DEFAULTS, EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS } = await import(
+    "@/data/defaults"
+  );
+  const { fetchEmailGiftClaim, fetchEmailGiftClaimReminder } = await import("@/lib/sanity/fetch");
 
   const shared = {
     recipientName: input.recipientName,
@@ -395,20 +415,30 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     readingPriceDisplay: input.readingPriceDisplay,
     giftMessage: input.giftMessage,
   };
-  const vars: GiftClaimEmailVars =
-    input.variant === "first_send"
-      ? { variant: "first_send", claimUrl: input.claimUrl, ...shared }
-      : { variant: "reminder", ...shared };
 
-  const subject =
-    input.variant === "first_send" ? copy.subjectFirstSend : copy.subjectReminder;
-  const interpolatedSubject = applyTokens(subject, {
-    purchaserFirstName: input.purchaserFirstName,
-    readingName: input.readingName,
-    readingPriceDisplay: input.readingPriceDisplay,
-  });
-
-  const html = await render(<GiftClaimEmail vars={vars} copy={copy} />);
+  let html: string;
+  let interpolatedSubject: string;
+  if (input.variant === "first_send") {
+    const sanity = await fetchEmailGiftClaim().catch(() => null);
+    const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subjectFirstSend, {
+      purchaserFirstName: input.purchaserFirstName,
+      readingName: input.readingName,
+      readingPriceDisplay: input.readingPriceDisplay,
+    });
+    html = await render(
+      <GiftClaimEmail vars={{ ...shared, claimUrl: input.claimUrl }} copy={copy} />,
+    );
+  } else {
+    const sanity = await fetchEmailGiftClaimReminder().catch(() => null);
+    const copy = { ...EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      purchaserFirstName: input.purchaserFirstName,
+      readingName: input.readingName,
+      readingPriceDisplay: input.readingPriceDisplay,
+    });
+    html = await render(<GiftClaimReminderEmail vars={shared} copy={copy} />);
+  }
 
   return sendOrSkip({
     to: input.recipientEmail,

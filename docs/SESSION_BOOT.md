@@ -1,20 +1,31 @@
 # Session Boot — Active State
 
-## 🛑 BLOCKER — 2026-05-24 v1.2.1 cannot merge to main: email preview blank in deployed Studio
+## ✅ RESOLVED 2026-05-25 — v1.2.1 email preview blank, root cause locked + fix shipped
 
-`release/v1.2.1` has 5 sub-PRs + 1 fix attempt landed (#181 #182 #183 #184 #185 #186). Email preview iframe still renders blank in deployed Sanity Studio after merge of #186 (strip render-blocking link) and deploy of #187 (race-condition seq guard, open / not merged). Both fixes were unverified against the deployed Studio when pushed — see `feedback_stop_the_fix_spiral` memory.
+Email-preview iframe blank in deployed Studio (`vej2v0x5`) is **fixed via commit `dbb5602` on `release/v1.2.1`**: `fix(studio): Force iframe remount in EmailPreview when html loads`. Verified working against deployed Studio (5921-char HTML renders correctly across multiple email singletons).
 
-**Dex blockers filed for next session — read first (all under epic d8pvexdm):**
-- `dex show vej2v0x5 --full` — **Email preview blank diagnosis.** Full diagnostic state, evidence collected, 5 hypotheses to test in order, instructions for authenticated Playwright against deployed Studio (do NOT relay logs through Max).
-- `dex show kf1nixad --full` — **Gated-page preview replan** (Studio-bundled, supersedes sub-PR 5's broken-on-CF-Access /preview/* routes).
-- `dex show cpwaqf4d --full` — Sanity validation harness (schema-vs-data drift check; would have caught tonight's compounding bugs).
-- `dex show f7yhvvc3 --full` — Cumulative simplify pass on `main...release/v1.2.1` diff before opening the merge-to-main PR.
+**Root cause:** Chromium won't navigate a sandboxed iframe to a new srcdoc value once it's loaded with an empty one. React correctly updated the attribute; Chrome left the iframe document blank. Fix: `key={html ? "loaded" : "empty"}` on the iframe forces a fresh remount when html arrives. New durable memory: `feedback_chromium_iframe_srcdoc_no_renavigate.md`.
 
-Order: vej2v0x5 → kf1nixad → cpwaqf4d (optional) → f7yhvvc3 → open merge-to-main PR.
+**Red herrings disproved along the way (all worth noting):**
+- PR #186's `stripRenderBlockers` is a no-op for `@react-email/render` v2.0.8 in Node — but keep it, the function IS invoked in browser builds where react-email DOES emit the blocking link. Harmless future-proofing either way.
+- PR #187's seq-guard pattern (closed unmerged) was a red-herring fix attempt. The cancellation-flag was never the bug.
+- Deploy/source desync masked the situation: deployed Studio was running PR #187's branch code for ~12h while Max thought he'd reverted. Sanity deploy doesn't follow git revert; it's bound to whatever's in `studio/dist` when `pnpm sanity deploy` runs.
 
-**Open PRs on release/v1.2.1:** #187 (race-condition guard, unproven). Decide next session whether to close or merge.
+**Outstanding for v1.2.1 → main merge (in execution order):**
+- 🟢 **`k6ao10b8` — Email body field consolidation across templates. PR #188 opened 2026-05-25.** Collapses 3–5 per-email PT body fields into one `body` PT field across 9 schemas + splits the variant-overloaded `emailGiftClaim` / `emailGiftPurchaseConfirmation` schemas into single-purpose documents. Staging deployed + migrated successfully (7 mutated + 2 cloned + 1 deferred-then-fixed). Sub-PRs queued under `k6ao10b8`: PR-Email-2 cleanup (`2un31amb`), visual uniformity (`6eeo28cm`), shared brand+footer singleton (`9t7143kz`), canonical vendor-type tightening (`3tg8bjp4`), email titles/descriptions (`6qayweun`). Prod deploy + migration deferred until end of Sanity arc.
+- 🟡 `kf1nixad` — Gated-page preview replan, Studio-bundled. Paused at PLAN-approved before BUILD (branch `refactor/studio-bundle-purity-prep` exists, no commits). PRD at `MEMORY/WORK/20260524-172503_gated-page-preview-replan/PRD.md`. Resumes after the Sanity arc closes.
+- ⚪ `cpwaqf4d` — Sanity validation harness (optional, would have caught the seed-vs-schema PT mismatch that bit staging today).
+- 🟡 `f7yhvvc3` — Cumulative `/simplify` on `release/v1.2.1...main` diff. Runs before the merge-to-main PR per `feedback_simplify_scale_to_change_size`.
+- 🟡 PR #186 decision: **keep** (recommendation) as harmless future-proofing for react-email version bumps.
+- 🟡 Open `release/v1.2.1` → `main` PR.
+
+Order: PR #188 merge → PR-Email-2 cleanup (`2un31amb`) → other `k6ao10b8` sub-PRs → kf1nixad → cpwaqf4d (optional) → f7yhvvc3 → merge-to-main PR.
+
+**Open PRs on release/v1.2.1:** #188 (email body consolidation + variant split).
 
 **Memories captured this session that govern next-session behavior:**
+- `feedback_canonical_vendor_types` — **NEW (2026-05-25)**. Use canonical vendor types (`@portabletext/types`, `@sanity/types`, `stripe`, `resend`, `@cloudflare/workers-types`) over hand-rolled fuzzy unions. EmailRichText `string | string[] | PortableTextBlock[]` shielded a real schema-mismatch bug from typecheck and shipped it to staging during PR #188. No `any`/`unknown`/permissive-union workarounds-to-pass-typecheck.
+- `feedback_chromium_iframe_srcdoc_no_renavigate` — Sandboxed iframes whose srcdoc toggles empty→populated need React `key` to force remount. Don't trust Node-side render-output tests to validate browser-path; don't escalate useEffect dedup patterns when state is set but UI doesn't reflect; deploy/source desync is real — re-deploy after local reverts.
 - `feedback_real_browser_smoke_before_ship_claim` — REQUIRED for UI-touching PRs. vitest jsdom is not sufficient.
 - `feedback_stop_the_fix_spiral` — never push a second untested fix on top of an unverified first.
 - `feedback_simplify_scale_to_change_size` — run cumulative simplify on `main...release/v1.2.1` diff before the merge PR, not per sub-PR.

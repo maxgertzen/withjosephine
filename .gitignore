@@ -68,3 +68,6 @@ email-previews/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Ephemeral diagnostic probe (not source-of-truth)
+probe-deployed-studio.mjs
