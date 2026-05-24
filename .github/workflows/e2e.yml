@@ -43,6 +43,10 @@ jobs:
       NEXT_PUBLIC_SANITY_PROJECT_ID: e8jsb14m
       NEXT_PUBLIC_SANITY_DATASET: staging
       NEXT_PUBLIC_R2_PUBLIC_HOST: images.withjosephine.com
+      R2_ACCOUNT_ID: e2e-dummy-account
+      R2_ACCESS_KEY_ID: e2e-dummy-access-key
+      R2_SECRET_ACCESS_KEY: e2e-dummy-secret
+      R2_BUCKET_NAME: e2e-dummy-bucket
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
       NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS: "1"
       NEXT_PUBLIC_UNDER_CONSTRUCTION: "false"
