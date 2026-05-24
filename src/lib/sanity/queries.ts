@@ -281,6 +281,26 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
+export const emailMagicLinkMyReadingsQuery = groq`
+  *[_type == "emailMagicLinkMyReadings"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailMagicLinkMyGiftsQuery = groq`
+  *[_type == "emailMagicLinkMyGifts"][0] {
+    subject,
+    preview,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,

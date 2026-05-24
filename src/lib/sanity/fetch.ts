@@ -11,6 +11,8 @@ import {
   emailDay7DeliveryQuery,
   emailGiftClaimQuery,
   emailGiftPurchaseConfirmationQuery,
+  emailMagicLinkMyGiftsQuery,
+  emailMagicLinkMyReadingsQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
@@ -42,6 +44,8 @@ import type {
   SanityEmailGiftClaim,
   SanityEmailGiftPurchaseConfirmation,
   SanityEmailMagicLink,
+  SanityEmailMagicLinkMyGifts,
+  SanityEmailMagicLinkMyReadings,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailRecipientIntakeReceived,
@@ -206,6 +210,24 @@ export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink 
   const { data } = await sanityFetch<SanityEmailMagicLink | null>({ query: emailMagicLinkQuery });
   return data;
 });
+
+export const fetchEmailMagicLinkMyReadings = cache(
+  async (): Promise<SanityEmailMagicLinkMyReadings | null> => {
+    const { data } = await sanityFetch<SanityEmailMagicLinkMyReadings | null>({
+      query: emailMagicLinkMyReadingsQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailMagicLinkMyGifts = cache(
+  async (): Promise<SanityEmailMagicLinkMyGifts | null> => {
+    const { data } = await sanityFetch<SanityEmailMagicLinkMyGifts | null>({
+      query: emailMagicLinkMyGiftsQuery,
+    });
+    return data;
+  },
+);
 
 export const fetchEmailPrivacyExport = cache(
   async (): Promise<SanityEmailPrivacyExport | null> => {

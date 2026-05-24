@@ -453,15 +453,38 @@ export async function sendDay7Delivery(
   });
 }
 
+export type MagicLinkContext = "listen" | "my-readings" | "my-gifts";
+
 export async function sendMagicLink(args: {
   to: string;
   magicLinkUrl: string;
+  context: MagicLinkContext;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const { EMAIL_MAGIC_LINK_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailMagicLink } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailMagicLink().catch(() => null);
-  const copy = { ...EMAIL_MAGIC_LINK_DEFAULTS, ...(sanity ?? {}) };
+  const {
+    EMAIL_MAGIC_LINK_DEFAULTS,
+    EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+    EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
+  } = await import("@/data/defaults");
+  const { fetchEmailMagicLink, fetchEmailMagicLinkMyReadings, fetchEmailMagicLinkMyGifts } =
+    await import("@/lib/sanity/fetch");
+
+  const sources = {
+    listen: { defaults: EMAIL_MAGIC_LINK_DEFAULTS, fetch: fetchEmailMagicLink, subType: "magic_link" as const },
+    "my-readings": {
+      defaults: EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+      fetch: fetchEmailMagicLinkMyReadings,
+      subType: "magic_link_my_readings" as const,
+    },
+    "my-gifts": {
+      defaults: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
+      fetch: fetchEmailMagicLinkMyGifts,
+      subType: "magic_link_my_gifts" as const,
+    },
+  };
+  const source = sources[args.context];
+  const sanity = await source.fetch().catch(() => null);
+  const copy = { ...source.defaults, ...(sanity ?? {}) };
   const html = await render(
     <MagicLink
       magicLinkUrl={args.magicLinkUrl}
@@ -475,7 +498,7 @@ export async function sendMagicLink(args: {
     to: args.to,
     subject: copy.subject,
     html,
-    subType: "magic_link",
+    subType: source.subType,
     submissionId: null,
   });
 }

@@ -198,6 +198,9 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
+export type SanityEmailMagicLinkMyReadings = SanityEmailMagicLink;
+export type SanityEmailMagicLinkMyGifts = SanityEmailMagicLink;
+
 export type SanityEmailOrderConfirmation = {
   subject: string;
   preview: string;

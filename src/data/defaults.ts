@@ -484,6 +484,28 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   signOff: null,
 };
 
+export const EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS: EmailMagicLinkContent = {
+  subject: "Open your readings",
+  preview: "A fresh link to your readings.",
+  greeting: "Hi,",
+  body: [
+    "Here’s a fresh link to your readings library. It’ll sign you in for the next seven days so you can come back to anything you’ve had with me without asking again.",
+    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+  ],
+  signOff: null,
+};
+
+export const EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS: EmailMagicLinkContent = {
+  subject: "Open your gifts dashboard",
+  preview: "A fresh link to your gifts.",
+  greeting: "Hi,",
+  body: [
+    "Here’s a fresh link to your gifts dashboard. From there you can manage the readings you’ve gifted — change a recipient detail, regenerate a claim link, or pick a new send date.",
+    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+  ],
+  signOff: null,
+};
+
 export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;

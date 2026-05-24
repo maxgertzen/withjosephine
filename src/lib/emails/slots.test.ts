@@ -93,6 +93,8 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailGiftClaim",
         "emailGiftPurchaseConfirmation",
         "emailMagicLink",
+        "emailMagicLinkMyGifts",
+        "emailMagicLinkMyReadings",
         "emailOrderConfirmation",
         "emailPrivacyExport",
         "emailRecipientIntakeReceived",
