@@ -4,21 +4,16 @@ import type { EmailGiftClaimContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
-import { PortableTextInline } from "./PortableTextBody";
+import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
-type GiftClaimSharedVars = {
+export type GiftClaimEmailVars = {
   recipientName: string;
   purchaserFirstName: string;
   readingName: string;
   readingPriceDisplay: string;
   giftMessage: string | null;
+  claimUrl: string;
 };
-
-export type GiftClaimEmailVars = GiftClaimSharedVars &
-  (
-    | { variant: "first_send"; claimUrl: string }
-    | { variant: "reminder"; claimUrl?: never }
-  );
 
 export type GiftClaimEmailProps = {
   vars: GiftClaimEmailVars;
@@ -27,12 +22,10 @@ export type GiftClaimEmailProps = {
 
 export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
   const copy = applyTokens(rawCopy, vars);
-  const heroLine = vars.variant === "first_send" ? copy.heroLineFirstSend : copy.heroLineReminder;
-  const body = vars.variant === "first_send" ? copy.bodyFirstSend : copy.bodyReminder;
-  const preview = vars.variant === "first_send" ? copy.previewFirstSend : copy.previewReminder;
+  const useFoldedBody = hasBodyContent(copy.body);
 
   return (
-    <EmailShell preview={preview} bareContainer>
+    <EmailShell preview={copy.previewFirstSend} bareContainer>
       <Container
         className="bg-cream border border-divider rounded"
         style={{ maxWidth: 600, margin: "0 auto" }}
@@ -75,7 +68,7 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
                         lineHeight: 1.2,
                       }}
                     >
-                      {heroLine}
+                      {copy.heroLineFirstSend}
                     </td>
                     <td width="18%">
                       <div className="border-t border-gold" />
@@ -89,10 +82,16 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
               className="font-sans text-body"
               style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
             >
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={body} />
-              </p>
+              {useFoldedBody ? (
+                <PortableTextBody value={copy.body} />
+              ) : (
+                <>
+                  <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+                  <p style={{ margin: "0 0 18px 0" }}>
+                    <PortableTextInline value={copy.bodyFirstSend} />
+                  </p>
+                </>
+              )}
             </Section>
 
             {vars.giftMessage ? (
@@ -114,36 +113,25 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
               </div>
             ) : null}
 
-            {vars.variant === "first_send" ? (
-              <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
-                <Button
-                  href={vars.claimUrl}
-                  className="bg-ink text-cream font-sans no-underline rounded"
-                  style={{
-                    padding: "14px 28px",
-                    fontSize: 15,
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {copy.claimButtonLabel}
-                </Button>
-                <p
-                  className="font-sans text-muted"
-                  style={{ margin: "16px 0 0 0", fontSize: 13, lineHeight: 1.6 }}
-                >
-                  <PortableTextInline value={copy.claimUrlHelper} />
-                </p>
-              </div>
-            ) : (
-              <Section
-                className="font-sans text-body"
-                style={{ padding: "0 48px 8px 48px", lineHeight: 1.7, fontSize: 14 }}
+            <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
+              <Button
+                href={vars.claimUrl}
+                className="bg-ink text-cream font-sans no-underline rounded"
+                style={{
+                  padding: "14px 28px",
+                  fontSize: 15,
+                  letterSpacing: "0.08em",
+                }}
               >
-                <p style={{ margin: 0 }}>
-                  <PortableTextInline value={copy.reminderContactLine} />
-                </p>
-              </Section>
-            )}
+                {copy.claimButtonLabel}
+              </Button>
+              <p
+                className="font-sans text-muted"
+                style={{ margin: "16px 0 0 0", fontSize: 13, lineHeight: 1.6 }}
+              >
+                <PortableTextInline value={copy.claimUrlHelper} />
+              </p>
+            </div>
 
             <div style={{ padding: "20px 48px 0 48px" }}>
               <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>

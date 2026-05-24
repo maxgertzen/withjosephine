@@ -1,25 +1,43 @@
 import { Container, Hr, Link, Section } from "@react-email/components";
 
-import type { EmailRecipientIntakeReceivedContent } from "@/data/defaults";
+import type { EmailGiftPurchaseConfirmationScheduledContent } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
 import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
-export type RecipientIntakeReceivedVars = {
-  recipientName: string;
+export type GiftPurchaseConfirmationScheduledVars = {
   purchaserFirstName: string;
   readingName: string;
+  readingPriceDisplay: string;
+  amountPaidDisplay: string | null;
+  recipientName: string | null;
+  giftMessage: string | null;
+  myGiftsUrl: string;
+  sendAtDisplay: string;
 };
 
-export type RecipientIntakeReceivedProps = {
-  vars: RecipientIntakeReceivedVars;
-  copy: EmailRecipientIntakeReceivedContent;
+export type GiftPurchaseConfirmationScheduledProps = {
+  vars: GiftPurchaseConfirmationScheduledVars;
+  copy: EmailGiftPurchaseConfirmationScheduledContent;
 };
 
-export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntakeReceivedProps) {
-  const copy = applyTokens(rawCopy, vars);
+function priceCell(vars: GiftPurchaseConfirmationScheduledVars): string {
+  return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
+}
+
+export function GiftPurchaseConfirmationScheduled({
+  vars,
+  copy: rawCopy,
+}: GiftPurchaseConfirmationScheduledProps) {
+  const tokens = {
+    ...vars,
+    recipientName: vars.recipientName ?? "your recipient",
+  };
+  const copy = applyTokens(rawCopy, tokens);
+  const price = priceCell(vars);
   const useFoldedBody = hasBodyContent(copy.body);
+
   return (
     <EmailShell preview={copy.preview} bareContainer>
       <Container
@@ -29,7 +47,13 @@ export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntake
         <Section className="text-center" style={{ padding: "44px 48px 8px 48px" }}>
           <p
             className="font-serif text-ink"
-            style={{ margin: 0, fontWeight: 500, fontSize: 38, lineHeight: 1, letterSpacing: "0.005em" }}
+            style={{
+              margin: 0,
+              fontWeight: 500,
+              fontSize: 38,
+              lineHeight: 1,
+              letterSpacing: "0.005em",
+            }}
           >
             {copy.brandName}
           </p>
@@ -51,7 +75,13 @@ export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntake
                 <td
                   align="center"
                   className="font-serif text-ink"
-                  style={{ padding: "0 16px", fontWeight: 500, fontSize: 28, lineHeight: 1.2, whiteSpace: "nowrap" }}
+                  style={{
+                    padding: "0 16px",
+                    fontWeight: 500,
+                    fontSize: 28,
+                    lineHeight: 1.2,
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {copy.heroLine}
                 </td>
@@ -73,19 +103,13 @@ export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntake
             <>
               <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
               <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.thanksLine} />
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.timelineLine} />
-              </p>
-              <p style={{ margin: "0 0 32px 0" }}>
-                <PortableTextInline value={copy.contactLine} />
+                <PortableTextInline value={copy.detailLineScheduled} />
               </p>
             </>
           )}
         </Section>
 
-        <div style={{ padding: "0 48px" }}>
+        <div style={{ padding: "16px 48px 0 48px" }}>
           <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
             <p
               className="font-sans text-muted uppercase"
@@ -101,9 +125,20 @@ export function RecipientIntakeReceived({ vars, copy: rawCopy }: RecipientIntake
             </p>
             <p className="font-sans text-body" style={{ margin: 0, fontSize: 14 }}>
               <span className="text-muted">{copy.cardDeliveryLine}</span>
+              &nbsp;&middot;&nbsp;
+              <span>{price}</span>
             </p>
           </Section>
         </div>
+
+        <Section
+          className="font-sans text-body"
+          style={{ padding: "24px 48px 0 48px", lineHeight: 1.7, fontSize: 14 }}
+        >
+          <p style={{ margin: 0 }}>
+            <PortableTextInline value={copy.refundLine} />
+          </p>
+        </Section>
 
         <Section
           className="font-serif italic text-ink"
