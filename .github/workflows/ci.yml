@@ -144,6 +144,11 @@ jobs:
       E2E_SANDBOX: "1"
       STAGING_URL: https://withjosephine.com
       NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+      # Apex is parked — middleware short-circuits every path to the holding
+      # page, so smoke assertions can't run yet. Flip vars.APEX_UNPARKED to
+      # "true" via Settings -> Environments -> production when DNS is unparked.
+      # Unset / any non-"true" value -> the spec calls test.skip() and exits clean.
+      APEX_UNPARKED: ${{ vars.APEX_UNPARKED }}
       CI: "1"
     steps:
       - uses: actions/checkout@v4

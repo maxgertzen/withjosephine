@@ -3,9 +3,17 @@ import { createClient } from "@sanity/client";
 
 const STRIPE_LIVE_BUY_URL = /^https:\/\/buy\.stripe\.com\/[A-Za-z0-9_-]+/;
 
+// Apex is parked while the launch hold-gate runs. Middleware short-circuits
+// every path (including /api/*) to the under-construction page, so these
+// assertions can't run yet. Flip APEX_UNPARKED=true on the workflow env
+// when apex DNS is unparked.
+const APEX_UNPARKED = process.env.APEX_UNPARKED === "true";
+
 test.describe.configure({ mode: "parallel" });
 
 test.describe("Prod read-only booking smoke", () => {
+  test.skip(!APEX_UNPARKED, "Apex parked — smoke specs gated behind APEX_UNPARKED=true");
+
   test("booking entry page renders Sanity content", async ({ request }) => {
     const res = await request.get("/book/birth-chart");
     expect(res.status(), "GET /book/birth-chart should return 200").toBe(200);
