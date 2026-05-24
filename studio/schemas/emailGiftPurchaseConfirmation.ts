@@ -1,6 +1,6 @@
 import { defineField, defineType } from "sanity";
 
-import { tokenHelp } from "../lib/tokenHelp";
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateGiftPurchaseSlots = slotValidation("emailGiftPurchaseConfirmation");
@@ -9,10 +9,8 @@ export const emailGiftPurchaseConfirmation = defineType({
   name: "emailGiftPurchaseConfirmation",
   title: "Email — Gift Purchase Confirmation (to purchaser)",
   type: "document",
-  description: tokenHelp(
-    "emailGiftPurchaseConfirmation",
+  description:
     "Sent to the purchaser after they buy a gift reading. Has self-send (they share the claim link themselves) and scheduled (we send to recipient on a chosen date) variants.",
-  ),
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -22,6 +20,7 @@ export const emailGiftPurchaseConfirmation = defineType({
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
+    tokenReferenceField("emailGiftPurchaseConfirmation"),
     defineField({
       name: "subjectSelfSend",
       title: "Subject (self-send)",

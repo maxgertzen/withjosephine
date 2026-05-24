@@ -1,17 +1,16 @@
 import { defineField, defineType } from "sanity";
 
-import { tokenHelp } from "../lib/tokenHelp";
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 export const emailPrivacyExport = defineType({
   name: "emailPrivacyExport",
   title: "Email — Privacy Export (GDPR Art. 20)",
   type: "document",
-  description: tokenHelp(
-    "emailPrivacyExport",
+  description:
     "Sent in response to a GDPR Article 20 data-portability request. Contains a 7-day-expiring pre-signed download URL for the user's reading data ZIP.",
-  ),
   fields: [
+    tokenReferenceField("emailPrivacyExport"),
     defineField({
       name: "subject",
       title: "Subject",

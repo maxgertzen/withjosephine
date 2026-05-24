@@ -1,6 +1,6 @@
 import { defineField, defineType } from "sanity";
 
-import { tokenHelp } from "../lib/tokenHelp";
+import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateRecipientIntakeSlots = slotValidation("emailRecipientIntakeReceived");
@@ -9,10 +9,8 @@ export const emailRecipientIntakeReceived = defineType({
   name: "emailRecipientIntakeReceived",
   title: "Email — Recipient Intake Received",
   type: "document",
-  description: tokenHelp(
-    "emailRecipientIntakeReceived",
+  description:
     "Sent to a gift recipient immediately after they submit their intake. Confirms the answers landed and sets timing expectations.",
-  ),
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -21,6 +19,7 @@ export const emailRecipientIntakeReceived = defineType({
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
+    tokenReferenceField("emailRecipientIntakeReceived"),
     defineField({
       name: "subject",
       title: "Subject",
