@@ -2,7 +2,6 @@ import { render } from "@react-email/render";
 import { validatePreviewUrl } from "@sanity/preview-url-secret";
 import { NextResponse } from "next/server";
 
-import { STUDIO_ORIGIN_ALLOWLIST } from "@/lib/constants";
 import { Day2Started } from "@/lib/emails/Day2Started";
 import { Day7Delivery } from "@/lib/emails/Day7Delivery";
 import { GiftClaimEmail } from "@/lib/emails/GiftClaimEmail";
@@ -43,34 +42,6 @@ const TEMPLATE_QUERIES: Record<EmailTemplateKey, string> = {
 
 const TEMPLATE_KEYS = Object.keys(TEMPLATE_QUERIES) as EmailTemplateKey[];
 
-function isAllowedOrigin(value: string | null): boolean {
-  if (!value) return false;
-  if (STUDIO_ORIGIN_ALLOWLIST.includes(value)) return true;
-  if (process.env.NODE_ENV !== "production") {
-    if (value.startsWith("http://localhost:") || value.startsWith("http://127.0.0.1:")) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function refererOrigin(value: string | null): string | null {
-  if (!value) return null;
-  try {
-    return new URL(value).origin;
-  } catch {
-    return null;
-  }
-}
-
-function isStudioRequest(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (isAllowedOrigin(origin)) return true;
-  const referer = refererOrigin(request.headers.get("referer"));
-  if (isAllowedOrigin(referer)) return true;
-  return false;
-}
-
 class PreviewTokenMissingError extends Error {
   constructor() {
     super("SANITY_READ_TOKEN is not set on this worker");
@@ -81,15 +52,13 @@ class PreviewTokenMissingError extends Error {
 function readClient() {
   const token = process.env.SANITY_READ_TOKEN;
   if (!token) throw new PreviewTokenMissingError();
-  return sanityClient.withConfig({
-    token,
-    useCdn: false,
-    perspective: "previewDrafts",
-  });
+  return sanityClient.withConfig({ token, useCdn: false });
 }
 
 async function fetchDraftCopy(template: EmailTemplateKey): Promise<unknown | null> {
-  return readClient().fetch(TEMPLATE_QUERIES[template]);
+  return readClient()
+    .withConfig({ perspective: "previewDrafts" })
+    .fetch(TEMPLATE_QUERIES[template]);
 }
 
 async function verifyPreviewSecret(request: Request): Promise<boolean> {
@@ -202,9 +171,6 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ type: string }> },
 ): Promise<Response> {
-  if (!isStudioRequest(request)) {
-    return new NextResponse("forbidden", { status: 403 });
-  }
   const { type } = await params;
   if (!TEMPLATE_KEYS.includes(type as EmailTemplateKey)) {
     return new NextResponse("unknown email template", { status: 404 });

@@ -4,6 +4,7 @@ import {
   NONCE_HEADER,
   PRODUCTION_HOSTS,
   R2_PUBLIC_ORIGIN,
+  STUDIO_LOCAL_DEV_ORIGINS,
   STUDIO_ORIGIN_ALLOWLIST,
 } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
@@ -92,8 +93,13 @@ function buildCsp(opts: { isDraft: boolean; isEmailPreview: boolean; nonce: stri
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
+  const emailPreviewAncestorOrigins =
+    process.env.NODE_ENV === "production"
+      ? STUDIO_ORIGIN_ALLOWLIST
+      : [...STUDIO_ORIGIN_ALLOWLIST, ...STUDIO_LOCAL_DEV_ORIGINS];
+  const emailPreviewFrameAncestors = `'self' ${emailPreviewAncestorOrigins.join(" ")}`;
   const frameAncestors = isEmailPreview
-    ? `'self' ${STUDIO_ORIGIN_ALLOWLIST.join(" ")}`
+    ? emailPreviewFrameAncestors
     : isDraft
       ? `'self' https://*.sanity.studio https://*.sanity.io`
       : `'none'`;

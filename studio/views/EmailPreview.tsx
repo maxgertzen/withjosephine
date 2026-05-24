@@ -70,6 +70,7 @@ export function EmailPreview(props: EmailPreviewProps) {
         attributes: {
           sandbox: "allow-same-origin",
         },
+        reload: { button: true },
         showDisplayUrl: false,
         defaultSize: "desktop",
       }}
