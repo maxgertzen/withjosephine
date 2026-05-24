@@ -106,4 +106,22 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("readingPriceDisplay");
     expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("readingPriceDisplay");
   });
+
+  it("exposes URL tokens where the template's vars carry them", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("listenUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("claimUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("myGiftsUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("claimUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
+  });
+
+  it("exposes amountPaidDisplay where the template's vars carry it", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("amountPaidDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("amountPaidDisplay");
+  });
+
+  it("exposes giftMessage in both gift emails", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmation).toContain("giftMessage");
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("giftMessage");
+  });
 });
