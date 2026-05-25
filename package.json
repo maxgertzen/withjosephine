@@ -40,7 +40,8 @@
     "migrate:apply:prod": "wrangler d1 migrations apply withjosephine_bookings --remote",
     "migrate:apply:staging": "wrangler d1 migrations apply withjosephine_bookings --env staging --remote",
     "migrate:apply:local": "wrangler d1 migrations apply withjosephine_bookings --local",
-    "seed:staging": "tsx scripts/seed-staging-dataset.ts"
+    "seed:staging": "tsx scripts/seed-staging-dataset.ts",
+    "sanity:validate": "tsx scripts/sanity-validate.mts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.4.1",

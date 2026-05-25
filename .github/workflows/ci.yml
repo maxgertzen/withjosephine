@@ -100,6 +100,28 @@ jobs:
           # Worker runtime secrets are configured via `wrangler secret put --env staging`,
           # not pushed from here. See docs/PHASE10_CLOUDFLARE_SETUP.md.
 
+  # Validate Sanity dataset schema-vs-data contract against the staging dataset
+  # after a clean staging deploy. Catches the drift class that hit prod twice
+  # on 2026-05-25 (Day-7 email Array-vs-String, then Sanity-mirror dataset
+  # misrouting) before it reaches Becky's eyes.
+  #
+  # Read-only — uses `SANITY_READ_TOKEN` (falls back to `SANITY_WRITE_TOKEN`
+  # if read token isn't configured).
+  sanity-validate-staging:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0' || github.ref == 'refs/heads/release/v1.2.1')
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    environment: staging
+    env:
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+      SANITY_READ_TOKEN: ${{ secrets.SANITY_READ_TOKEN }}
+      SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Validate staging Sanity dataset
+        run: pnpm sanity:validate staging
+
   # Deploy the production Worker. Runs only after staging deploys cleanly.
   # Top-level wrangler config (no --env flag) targets the prod worker
   # `withjosephine`. Required-reviewer gate on the production environment
