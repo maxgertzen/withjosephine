@@ -18,11 +18,16 @@ export function runMirror(promise: Promise<void>): void {
   try {
     const ctx = getCloudflareContext().ctx;
     if (ctx?.waitUntil) {
+      console.info("[sanityMirror] runMirror scheduled via ctx.waitUntil");
       ctx.waitUntil(promise);
       return;
     }
-  } catch {
-    // No CF request context — fall through to inline detached execution.
+    console.warn("[sanityMirror] runMirror got CF context but ctx.waitUntil missing — detaching");
+  } catch (error) {
+    console.warn(
+      "[sanityMirror] runMirror getCloudflareContext threw — detaching",
+      error instanceof Error ? error.message : error,
+    );
   }
   void promise.catch(() => {
     // Each mirror function logs its own errors; swallow here to avoid

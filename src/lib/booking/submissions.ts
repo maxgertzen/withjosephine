@@ -122,6 +122,7 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
     ...input,
     coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
   });
+  console.info(`[sanityMirror] createSubmission D1 row landed, scheduling mirror for ${input.id}`);
   runMirror(
     mirrorSubmissionCreate(input, {
       consentAcknowledgedAt,
