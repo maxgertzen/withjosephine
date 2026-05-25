@@ -125,7 +125,9 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
   ],
   preview: {
     prepare: () => ({
-      title: "Email — Gift Purchase Confirmation — Scheduled",
+      title: "Gift Confirmation → Purchaser (Scheduled)",
+      subtitle:
+        "Sent to someone who bought a gift reading and picked a future date for us to email the recipient automatically. No claim link in this email — it goes to the recipient on the scheduled date.",
     }),
   },
 });

@@ -150,6 +150,10 @@ export const emailOrderConfirmation = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Order Confirmation" }),
+    prepare: () => ({
+      title: "Order Confirmation → Self-Purchaser",
+      subtitle:
+        "Sent to a customer who bought a reading for themselves, right after their Stripe payment succeeds. Confirms the order and tells them their reading will arrive within 7 days.",
+    }),
   },
 });

@@ -125,6 +125,10 @@ export const emailGiftClaimReminder = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Gift Claim — Reminder (to recipient)" }),
+    prepare: () => ({
+      title: "Gift Claim → Recipient (Reminder)",
+      subtitle:
+        "Sent to a gift recipient who hasn't claimed yet — a gentle nudge to find the original gift email. Sends up to three times, at 7, 14, and 21 days after the first claim email.",
+    }),
   },
 });

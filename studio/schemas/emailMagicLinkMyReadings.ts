@@ -64,6 +64,10 @@ export const emailMagicLinkMyReadings = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Magic Link (My Readings)" }),
+    prepare: () => ({
+      title: "Magic Link → My Readings",
+      subtitle:
+        "Sent to a customer who asks for a sign-in link from the My Readings page, where they can see every reading they own. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
+    }),
   },
 });

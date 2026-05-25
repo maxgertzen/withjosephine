@@ -64,6 +64,10 @@ export const emailMagicLink = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Magic Link" }),
+    prepare: () => ({
+      title: "Magic Link → Listen Page",
+      subtitle:
+        "Sent to anyone who asks for a sign-in link from a reading's listen page — could be a customer, a gift recipient, or someone who typed an email that has no reading yet. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
+    }),
   },
 });

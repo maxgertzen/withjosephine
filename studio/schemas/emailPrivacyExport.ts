@@ -95,6 +95,10 @@ export const emailPrivacyExport = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Privacy Export (GDPR Art. 20)" }),
+    prepare: () => ({
+      title: "Privacy Export → Requester (GDPR)",
+      subtitle:
+        "Sent in response to a GDPR data-portability request, with a download link for the requester's reading data as a ZIP file. The download link expires in 7 days.",
+    }),
   },
 });

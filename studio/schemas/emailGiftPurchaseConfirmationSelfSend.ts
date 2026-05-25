@@ -139,7 +139,9 @@ export const emailGiftPurchaseConfirmationSelfSend = defineType({
   ],
   preview: {
     prepare: () => ({
-      title: "Email — Gift Purchase Confirmation — Self-Send",
+      title: "Gift Confirmation → Purchaser (Self-Send)",
+      subtitle:
+        "Sent to someone who bought a gift reading and chose to forward the claim link themselves instead of scheduling delivery. Contains the private claim URL the purchaser will share with their recipient.",
     }),
   },
 });

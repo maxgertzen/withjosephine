@@ -191,6 +191,10 @@ export const emailDay7Delivery = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Day-7 Delivery" }),
+    prepare: () => ({
+      title: "Reading Delivery → Customer",
+      subtitle:
+        "Sent to the customer (self-purchaser or gift recipient) when their reading is ready, with the voice note and PDF link inside. The customer can sign back in to listen again for 90 days from delivery.",
+    }),
   },
 });

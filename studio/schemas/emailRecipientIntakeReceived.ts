@@ -152,6 +152,10 @@ export const emailRecipientIntakeReceived = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Recipient Intake Received" }),
+    prepare: () => ({
+      title: "Intake Received → Gift Recipient",
+      subtitle:
+        "Sent to a gift recipient right after they finish filling out their intake form. Confirms their answers came through and tells them the reading will arrive within 7 days.",
+    }),
   },
 });
