@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useState, useSyncExternalStore } from "react";
 
 import { Input } from "@/components/Form/Input";
 import { Textarea } from "@/components/Form/Textarea";
@@ -23,6 +23,55 @@ import { errorClasses, errorClassesSmall, invalidBorderClasses } from "@/lib/for
 import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
 import { getLastReadingId, restore as restoreIntakeDraft } from "@/lib/intake/localStorageDraft";
 
+type PurchaserPrefill = { email: string; firstName: string };
+
+const EMPTY_PREFILL: PurchaserPrefill = { email: "", firstName: "" };
+
+// Snapshot cache — useSyncExternalStore requires getSnapshot to return a
+// stable reference between calls when the underlying data hasn't changed.
+// We compute the prefill once per render lifecycle and reuse the reference;
+// the cache key encodes the inputs so test resets (clearing localStorage)
+// take effect.
+// https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached
+let cachedSnapshot: PurchaserPrefill | null = null;
+let cachedKey: string | null = null;
+
+function readPurchaserPrefillSnapshot(): PurchaserPrefill {
+  if (typeof window === "undefined") return EMPTY_PREFILL;
+  const lastReadingId = getLastReadingId();
+  if (!lastReadingId) {
+    if (cachedKey !== "__none__") {
+      cachedKey = "__none__";
+      cachedSnapshot = EMPTY_PREFILL;
+    }
+    return cachedSnapshot ?? EMPTY_PREFILL;
+  }
+  const priorDraft = restoreIntakeDraft(lastReadingId);
+  const priorEmailRaw = priorDraft?.values.email;
+  const priorFirstNameRaw = priorDraft?.values.first_name;
+  const email =
+    typeof priorEmailRaw === "string" && priorEmailRaw.length > 0 ? priorEmailRaw : "";
+  const firstName =
+    typeof priorFirstNameRaw === "string" && priorFirstNameRaw.length > 0
+      ? priorFirstNameRaw
+      : "";
+  const key = `${lastReadingId}|${email}|${firstName}`;
+  if (cachedKey === key && cachedSnapshot) return cachedSnapshot;
+  cachedKey = key;
+  cachedSnapshot = email === "" && firstName === "" ? EMPTY_PREFILL : { email, firstName };
+  return cachedSnapshot;
+}
+
+export function __resetPurchaserPrefillCacheForTest(): void {
+  cachedSnapshot = null;
+  cachedKey = null;
+}
+
+// Lazy snapshot is read on first client render (server: empty). Using
+// useSyncExternalStore with a noop subscribe gives a synchronous, SSR-safe
+// read without triggering set-state-in-effect.
+const noopSubscribe = () => () => {};
+
 type FieldErrors = Partial<Record<string, string>>;
 
 const GIFT_MESSAGE_MAX = 280;
@@ -36,9 +85,22 @@ type Props = {
 };
 
 export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }: Props) {
+  // Prefill comes from a synchronous client-only snapshot of the prior intake
+  // draft (server snapshot is empty so SSR/hydration match). User-typed values
+  // are tracked separately and always win over the prefill.
+  const prefill = useSyncExternalStore(
+    noopSubscribe,
+    readPurchaserPrefillSnapshot,
+    () => EMPTY_PREFILL,
+  );
+
   const [deliveryMethod, setDeliveryMethod] = useState<GiftDeliveryMethod>(GIFT_DELIVERY.selfSend);
-  const [purchaserFirstName, setPurchaserFirstName] = useState("");
-  const [purchaserEmail, setPurchaserEmail] = useState("");
+  const [purchaserFirstNameOverride, setPurchaserFirstNameOverride] = useState<string | null>(null);
+  const [purchaserEmailOverride, setPurchaserEmailOverride] = useState<string | null>(null);
+  const purchaserFirstName = purchaserFirstNameOverride ?? prefill.firstName;
+  const purchaserEmail = purchaserEmailOverride ?? prefill.email;
+  const setPurchaserFirstName = setPurchaserFirstNameOverride;
+  const setPurchaserEmail = setPurchaserEmailOverride;
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
@@ -52,25 +114,6 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
   const [antiAbuseHit, setAntiAbuseHit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  const prefillAppliedRef = useRef(false);
-  useEffect(() => {
-    if (prefillAppliedRef.current) return;
-    prefillAppliedRef.current = true;
-    const lastReadingId = getLastReadingId();
-    if (!lastReadingId) return;
-    const priorDraft = restoreIntakeDraft(lastReadingId);
-    if (!priorDraft) return;
-    const priorEmail = priorDraft.values.email;
-    if (typeof priorEmail === "string" && priorEmail.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPurchaserEmail((current) => (current === "" ? priorEmail : current));
-    }
-    const priorFirstName = priorDraft.values.first_name;
-    if (typeof priorFirstName === "string" && priorFirstName.length > 0) {
-      setPurchaserFirstName((current) => (current === "" ? priorFirstName : current));
-    }
-  }, []);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileBypass =

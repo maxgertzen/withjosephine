@@ -39,15 +39,30 @@ function dayCounter(paidAt: Date, now: Date): string {
     : `Day ${day} of ${DELIVERY_WINDOW_DAYS}`;
 }
 
+function pluralizeDays(n: number): string {
+  return Math.abs(n) === 1 ? "day" : "days";
+}
+
 export function giftDeliveryCountdown(claimedAtValue: unknown, now: Date): string | null {
   const claimedAt = parseIso(claimedAtValue);
   if (!claimedAt) return null;
   const elapsedMs = now.getTime() - claimedAt.getTime();
+  if (elapsedMs < 0 && process.env.NODE_ENV === "development") {
+    // Future-dated giftClaimedAt is silently clamped to the full window
+    // ("7 days left"). Surface a dev-only warning so Studio editors notice
+    // the data anomaly during local work (gated to NODE_ENV=development to
+    // keep production + test output clean).
+    console.warn(
+      "[submissionPreview] giftClaimedAt is in the future; countdown clamped to full window",
+      { claimedAt: claimedAt.toISOString(), now: now.toISOString() },
+    );
+  }
   const daysElapsed = elapsedMs > 0 ? Math.floor(elapsedMs / DAY_MS) : 0;
   const daysRemaining = GIFT_DELIVERY_TARGET_DAYS - daysElapsed;
-  if (daysRemaining > 0) return `${daysRemaining} days left to deliver`;
+  if (daysRemaining > 0) return `${daysRemaining} ${pluralizeDays(daysRemaining)} left to deliver`;
   if (daysRemaining === 0) return "Due today";
-  return `Overdue by ${Math.abs(daysRemaining)} days`;
+  const overdue = Math.abs(daysRemaining);
+  return `Overdue by ${overdue} ${pluralizeDays(overdue)}`;
 }
 
 export function statusLabel(args: {

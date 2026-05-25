@@ -103,4 +103,100 @@ describe("buildContentDisposition", () => {
       }),
     ).toBe('inline; filename="soul-blueprint-voice-note-sub_1.m4a"');
   });
+
+  it("throws on header-injection candidates: double quote", () => {
+    expect(() =>
+      buildContentDisposition({ type: "attachment", filename: 'evil".pdf' }),
+    ).toThrow(/unsafe characters/);
+  });
+
+  it("throws on header-injection candidates: carriage return", () => {
+    expect(() =>
+      buildContentDisposition({ type: "attachment", filename: "evil\r.pdf" }),
+    ).toThrow(/unsafe characters/);
+  });
+
+  it("throws on header-injection candidates: newline", () => {
+    expect(() =>
+      buildContentDisposition({ type: "attachment", filename: "evil\n.pdf" }),
+    ).toThrow(/unsafe characters/);
+  });
+
+  it("throws on header-injection candidates: backslash", () => {
+    expect(() =>
+      buildContentDisposition({ type: "attachment", filename: "evil\\.pdf" }),
+    ).toThrow(/unsafe characters/);
+  });
+});
+
+describe("buildListenFilename — coverage gaps", () => {
+  const SAFE_URL = "https://cdn.sanity.io/files/reading.pdf";
+
+  it("falls back when slug contains a path-traversal sequence", () => {
+    expect(
+      buildListenFilename({
+        readingSlug: "../../etc/passwd",
+        submissionId: "sub_1",
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe("reading-reading-sub_1.pdf");
+  });
+
+  it("falls back when slug contains a URL-encoded slash", () => {
+    expect(
+      buildListenFilename({
+        readingSlug: "a%2Fb",
+        submissionId: "sub_1",
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe("reading-reading-sub_1.pdf");
+  });
+
+  it("falls back on a non-ASCII slug", () => {
+    expect(
+      buildListenFilename({
+        readingSlug: "café",
+        submissionId: "sub_1",
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe("reading-reading-sub_1.pdf");
+  });
+
+  it("falls back on an empty-string slug", () => {
+    expect(
+      buildListenFilename({
+        readingSlug: "",
+        submissionId: "sub_1",
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe("reading-reading-sub_1.pdf");
+  });
+
+  it("falls back on a 500-character slug (only the chars matter; length alone is fine, but extreme inputs still resolve)", () => {
+    const longSafeSlug = "a".repeat(500);
+    expect(
+      buildListenFilename({
+        readingSlug: longSafeSlug,
+        submissionId: "sub_1",
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe(`${longSafeSlug}-reading-sub_1.pdf`);
+  });
+
+  it("accepts a real submission id (UUIDv4 from crypto.randomUUID) without falling back", () => {
+    const realUuid = "550e8400-e29b-41d4-a716-446655440000";
+    expect(
+      buildListenFilename({
+        readingSlug: "soul-blueprint",
+        submissionId: realUuid,
+        sourceUrl: SAFE_URL,
+        kind: "reading",
+      }),
+    ).toBe(`soul-blueprint-reading-${realUuid}.pdf`);
+  });
 });
