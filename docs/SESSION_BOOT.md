@@ -1,6 +1,10 @@
 # Session Boot — Active State
 
-## ✅ RESOLVED 2026-05-25 — v1.2.1 workerd PT render + Sanity-mirror dataset misrouting
+## ✅ RESOLVED 2026-05-25 — `release/v1.2.1` MERGED to main via PR #199 (merge `5aa49bc`)
+
+v1.2.1 is shipped. Tag `v1.2.1` at `ec9c181` (release branch HEAD, matching v1.2.0 precedent). Awaiting `deploy-production` + `smoke-production` CI completion on main. dex `f7yhvvc3` closed. The v1.2.1 epic `d8pvexdm` remains open only because `k6ao10b8` carries `2un31amb` (PR-Email-2 cleanup pending post-prod-migration Becky verification) and `kf1nixad` carries `h1zu9nkr` (image-rendering polish follow-up). Next-priority epic: `wz9t979j` (U3, U4, U5, U7, U8) + remaining apex unpark hold-gate (`wdpz1ux4`).
+
+## Earlier in session — v1.2.1 workerd PT render + Sanity-mirror dataset misrouting
 
 Two production-class regressions root-caused and shipped today on `release/v1.2.1`. Staging is healthy; gift flow is fully working end-to-end.
 
