@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { EMAIL_PRIVACY_EXPORT_DEFAULTS } from "@/data/defaults";
 
+import { portableTextToPlainText } from "./PortableTextBody";
 import { PrivacyExport } from "./PrivacyExport";
 import { linkHrefs, visibleText } from "./test-helpers";
 
@@ -18,7 +19,7 @@ describe("PrivacyExport email", () => {
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );
     expect(text).toContain(EMAIL_PRIVACY_EXPORT_DEFAULTS.greeting);
-    expect(text).toContain(EMAIL_PRIVACY_EXPORT_DEFAULTS.introLine);
+    expect(text).toContain(portableTextToPlainText(EMAIL_PRIVACY_EXPORT_DEFAULTS.introLine));
   });
 
   it("interpolates submissionCount into the contents line", async () => {

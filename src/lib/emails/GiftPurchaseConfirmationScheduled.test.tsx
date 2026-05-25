@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS } from "@/data/defaults";
 
 import { GiftPurchaseConfirmationScheduled } from "./GiftPurchaseConfirmationScheduled";
+import { stringToPortableTextBlocks } from "./PortableTextBody";
 import { visibleText } from "./test-helpers";
 
 const VARS = {
@@ -87,7 +88,9 @@ describe("GiftPurchaseConfirmationScheduled", () => {
             ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
             body: undefined,
             greeting: "Hi Alice,",
-            detailLineScheduled: "Legacy fallback for {recipientName} on {sendAtDisplay}.",
+            detailLineScheduled: stringToPortableTextBlocks(
+              "Legacy fallback for {recipientName} on {sendAtDisplay}.",
+            ),
           }}
         />,
       ),
