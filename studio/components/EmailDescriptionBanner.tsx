@@ -16,14 +16,12 @@ export function EmailDescriptionBanner(props: InputProps) {
 
   return (
     <Stack space={4}>
-      <Card tone="primary" padding={4} radius={2} border>
+      <Card tone="default" padding={3} radius={2} border>
         <Stack space={2}>
-          <Text size={1} weight="semibold">
-            About this email
+          <Text size={1} weight="semibold" muted>
+            ABOUT THIS EMAIL
           </Text>
-          <Text size={1} muted>
-            {props.schemaType.description}
-          </Text>
+          <Text size={1}>{props.schemaType.description}</Text>
         </Stack>
       </Card>
       {props.renderDefault(props)}
