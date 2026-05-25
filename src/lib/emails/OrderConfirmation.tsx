@@ -38,63 +38,58 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
         className="bg-cream border border-divider rounded"
         style={{ maxWidth: 600, margin: "0 auto" }}
       >
+        <BrandHeader shell={shell} />
 
-            <BrandHeader shell={shell} />
+        <GoldHero text={copy.heroLine} nowrap />
 
+        <Section
+          className="font-sans text-body"
+          style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
+        >
+          {useFoldedBody ? (
+            <PortableTextBody value={copy.body} />
+          ) : (
+            <>
+              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={copy.thanksLine} />
+              </p>
+              <p style={{ margin: "0 0 18px 0" }}>
+                <PortableTextInline value={copy.timelineLine} />
+              </p>
+              <p style={{ margin: "0 0 32px 0" }}>
+                <PortableTextInline value={copy.contactLine} />
+              </p>
+            </>
+          )}
+        </Section>
 
-            <GoldHero text={copy.heroLine} nowrap />
-
-
-            <Section
-              className="font-sans text-body"
-              style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
+        <div style={{ padding: "0 48px" }}>
+          <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
+            <p
+              className="font-sans text-muted uppercase"
+              style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
             >
-              {useFoldedBody ? (
-                <PortableTextBody value={copy.body} />
-              ) : (
-                <>
-                  <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-                  <p style={{ margin: "0 0 18px 0" }}>
-                    <PortableTextInline value={copy.thanksLine} />
-                  </p>
-                  <p style={{ margin: "0 0 18px 0" }}>
-                    <PortableTextInline value={copy.timelineLine} />
-                  </p>
-                  <p style={{ margin: "0 0 32px 0" }}>
-                    <PortableTextInline value={copy.contactLine} />
-                  </p>
-                </>
-              )}
-            </Section>
+              {copy.cardLabel}
+            </p>
+            <p
+              className="font-serif text-ink"
+              style={{ margin: "0 0 12px 0", fontSize: 22 }}
+            >
+              {vars.readingName}
+            </p>
+            <p
+              className="font-sans text-body"
+              style={{ margin: 0, fontSize: 14 }}
+            >
+              <span className="text-muted">{copy.cardDeliveryLine}</span>
+              &nbsp;&middot;&nbsp;
+              <span>{price}</span>
+            </p>
+          </Section>
+        </div>
 
-
-            <div style={{ padding: "0 48px" }}>
-              <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
-                <p
-                  className="font-sans text-muted uppercase"
-                  style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
-                >
-                  {copy.cardLabel}
-                </p>
-                <p
-                  className="font-serif text-ink"
-                  style={{ margin: "0 0 12px 0", fontSize: 22 }}
-                >
-                  {vars.readingName}
-                </p>
-                <p
-                  className="font-sans text-body"
-                  style={{ margin: 0, fontSize: 14 }}
-                >
-                  <span className="text-muted">{copy.cardDeliveryLine}</span>
-                  &nbsp;&middot;&nbsp;
-                  <span>{price}</span>
-                </p>
-              </Section>
-            </div>
-
-
-            <EmailFooter shell={shell} />
+        <EmailFooter shell={shell} />
       </Container>
     </EmailShell>
   );

@@ -22,12 +22,6 @@ import { stringToPortableTextBlocks } from "./portableTextBuild";
 // (or we drop the workerd target) — at that point we can restore the upstream
 // renderer.
 
-type LinkMarkDef = {
-  _type: "link";
-  _key: string;
-  href?: string;
-};
-
 function isPortableTextBlock(entry: unknown): entry is PortableTextBlock {
   if (entry === null || typeof entry !== "object") return false;
   return (entry as { _type?: unknown })._type === "block";
@@ -67,10 +61,9 @@ function findLinkHref(
 ): string | undefined {
   if (!Array.isArray(markDefs)) return undefined;
   for (const def of markDefs) {
-    if (def && typeof def === "object" && (def as LinkMarkDef)._key === key) {
-      const candidate = (def as LinkMarkDef).href;
-      if (typeof candidate === "string") return candidate;
-    }
+    if (def?._key !== key) continue;
+    const candidate = def.href;
+    if (typeof candidate === "string") return candidate;
   }
   return undefined;
 }
@@ -92,7 +85,7 @@ function renderMarks(
       node = <strong key={childKey}>{node}</strong>;
     } else if (mark === "em") {
       node = <em key={childKey}>{node}</em>;
-    } else if (typeof mark === "string") {
+    } else {
       const href = findLinkHref(markDefs, mark);
       if (href) {
         node = (
@@ -110,17 +103,15 @@ function renderBlockChildren(block: PortableTextBlock, blockKey: string): ReactN
   const children = Array.isArray(block.children) ? block.children : [];
   return children.map((child, idx) => {
     if (!isPortableTextSpan(child)) return null;
-    const span = child as PortableTextSpan & { _key?: string; marks?: readonly string[] };
-    const text = typeof span.text === "string" ? span.text : "";
-    const childKey = span._key ?? `${blockKey}-c${idx}`;
-    const node = renderMarks(text, span.marks, block.markDefs, childKey);
+    const text = typeof child.text === "string" ? child.text : "";
+    const childKey = child._key ?? `${blockKey}-c${idx}`;
+    const node = renderMarks(text, child.marks, block.markDefs, childKey);
     return <Fragment key={childKey}>{node}</Fragment>;
   });
 }
 
 function getBlockKey(block: PortableTextBlock, idx: number): string {
-  const k = (block as { _key?: unknown })._key;
-  return typeof k === "string" && k.length > 0 ? k : `block-${idx}`;
+  return block._key && block._key.length > 0 ? block._key : `block-${idx}`;
 }
 
 export type PortableTextInlineProps = {
