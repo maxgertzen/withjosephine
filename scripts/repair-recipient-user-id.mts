@@ -64,6 +64,30 @@ export type ClassifiedRepair = {
   reason: string;
 };
 
+export type RepairStatus = "completed" | "mirror-failed" | "failed";
+
+export type RepairResult = {
+  status: RepairStatus;
+  reason: string | null;
+};
+
+/**
+ * Dependency seam for {@link applyRepair} and friends.
+ *
+ * Production callers wire {@link buildRealDeps} which routes `execD1` through
+ * `pnpm exec wrangler d1 execute` and `mirrorToSanity` through `@sanity/client`.
+ * Tests pass a fake — see `repair-recipient-user-id.test.ts`.
+ *
+ * The real `execD1` is fail-closed under vitest (see {@link buildRealDeps})
+ * because mocking `node:child_process` from `.mts` is unreliable and a forgotten
+ * DI seam in a test would otherwise hit real Cloudflare D1 via cached wrangler
+ * OAuth. See memory `feedback_wrangler_oauth_test_footgun.md`.
+ */
+export type Deps = {
+  execD1: <T>(sql: string) => T[];
+  mirrorToSanity: (submissionId: string, recipientUserId: string) => Promise<void>;
+};
+
 function parseArgs(argv: readonly string[]): Args {
   let env: Env | null = null;
   let apply = false;
@@ -117,7 +141,28 @@ function buildSanityClient(env: Env): SanityClient {
   });
 }
 
-function execD1<T>(env: Env, sql: string): T[] {
+/**
+ * Fail-closed env guard for the real wrangler-backed execD1.
+ *
+ * Triggers under vitest (`VITEST` or `NODE_ENV==="test"`) unless the dev sets
+ * `ALLOW_REAL_D1_IN_TESTS=1`. Lives in the real factory — NOT in the injected
+ * fake — so a test that forgets to inject still trips here instead of hitting
+ * real Cloudflare D1 via cached wrangler OAuth.
+ */
+function assertNotInTestMode(): void {
+  const inTestMode = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+  const allowOverride = process.env.ALLOW_REAL_D1_IN_TESTS === "1";
+  if (inTestMode && !allowOverride) {
+    throw new Error(
+      "Real execD1 invoked under vitest without ALLOW_REAL_D1_IN_TESTS=1. " +
+        "Tests must inject a Deps fake — see feedback_wrangler_oauth_test_footgun.md.",
+    );
+  }
+}
+
+/** Real wrangler-backed execD1. Fail-closed under vitest. */
+function realExecD1<T>(env: Env, sql: string): T[] {
+  assertNotInTestMode();
   const dbName = D1_DATABASE_BY_ENV[env];
   const envFlags = env === "staging" ? ["--env", "staging"] : [];
   const wranglerArgs = ["exec", "wrangler", "d1", "execute", dbName, ...envFlags, "--remote", "--json", "--command", sql];
@@ -127,6 +172,20 @@ function execD1<T>(env: Env, sql: string): T[] {
   }
   const parsed = JSON.parse(result.stdout) as Array<{ results: T[] }>;
   return parsed[0]?.results ?? [];
+}
+
+/**
+ * Production Deps factory. Wires {@link realExecD1} + a real Sanity patch call.
+ * Both impls fail closed under vitest — see {@link assertNotInTestMode}.
+ */
+export function buildRealDeps(env: Env, sanity: SanityClient): Deps {
+  return {
+    execD1: <T,>(sql: string) => realExecD1<T>(env, sql),
+    mirrorToSanity: async (submissionId: string, recipientUserId: string) => {
+      assertNotInTestMode();
+      await sanity.patch(submissionId).set({ recipientUserId }).commit();
+    },
+  };
 }
 
 function quoteSql(value: string): string {
@@ -213,12 +272,11 @@ export function classifyRow(
   };
 }
 
-function buildUserLookup(env: Env): (normalizedEmail: string) => { id: string } | null {
+export function buildUserLookup(deps: Deps): (normalizedEmail: string) => { id: string } | null {
   const cache = new Map<string, { id: string } | null>();
   return (normalizedEmail: string) => {
     if (cache.has(normalizedEmail)) return cache.get(normalizedEmail)!;
-    const rows = execD1<{ id: string }>(
-      env,
+    const rows = deps.execD1<{ id: string }>(
       `SELECT id FROM user WHERE email = ${quoteSql(normalizedEmail)} LIMIT 2`,
     );
     if (rows.length === 0) {
@@ -258,7 +316,7 @@ function writeCsv(rows: readonly ClassifiedRepair[], path: string): void {
   fs.writeFileSync(path, header + body + "\n");
 }
 
-function insertAuditPending(env: Env, args: {
+function insertAuditPending(deps: Deps, args: {
   id: string;
   submission_id: string;
   recipient_email_hash: string;
@@ -282,20 +340,20 @@ function insertAuditPending(env: Env, args: {
       ${quoteSql(args.performed_by)},
       ${args.started_at}
     )`;
-  execD1<unknown>(env, sql);
+  deps.execD1<unknown>(sql);
 }
 
-function updateAuditStatus(env: Env, auditId: string, status: "completed" | "mirror-failed" | "failed", failureReason: string | null, completedAt: number): void {
+function updateAuditStatus(deps: Deps, auditId: string, status: RepairStatus, failureReason: string | null, completedAt: number): void {
   const failureSql = failureReason ? quoteSql(failureReason) : "NULL";
   const sql = `UPDATE recipient_user_id_repair_log
     SET status = ${quoteSql(status)},
         failure_reason = ${failureSql},
         completed_at = ${completedAt}
     WHERE id = ${quoteSql(auditId)}`;
-  execD1<unknown>(env, sql);
+  deps.execD1<unknown>(sql);
 }
 
-async function applyRepair(env: Env, sanity: SanityClient, classified: ClassifiedRepair): Promise<{ status: "completed" | "mirror-failed" | "failed"; reason: string | null }> {
+export async function applyRepair(deps: Deps, env: Env, classified: ClassifiedRepair): Promise<RepairResult> {
   const auditId = crypto.randomUUID();
   const startedAt = Date.now();
   const performedBy = `repair-recipient-user-id@${env}`;
@@ -310,7 +368,7 @@ async function applyRepair(env: Env, sanity: SanityClient, classified: Classifie
         VALUES (${quoteSql(candidateId)}, ${quoteSql(normalizeEmail(classified.row.recipient_email))}, NULL, ${now}, ${now})
         ON CONFLICT(email) DO UPDATE SET id=id
         RETURNING id`;
-      const rows = execD1<{ id: string }>(env, upsertSql);
+      const rows = deps.execD1<{ id: string }>(upsertSql);
       newRecipientUserId = rows[0]?.id ?? candidateId;
     } else if (classified.proposed_action === "update" && classified.proposed_recipient_user_id) {
       newRecipientUserId = classified.proposed_recipient_user_id;
@@ -318,7 +376,7 @@ async function applyRepair(env: Env, sanity: SanityClient, classified: Classifie
       return { status: "failed", reason: `unexpected proposed_action ${classified.proposed_action}` };
     }
 
-    insertAuditPending(env, {
+    insertAuditPending(deps, {
       id: auditId,
       submission_id: classified.row.submission_id,
       recipient_email_hash: emailHash(classified.row.recipient_email),
@@ -329,25 +387,24 @@ async function applyRepair(env: Env, sanity: SanityClient, classified: Classifie
       started_at: startedAt,
     });
 
-    execD1<unknown>(
-      env,
+    deps.execD1<unknown>(
       `UPDATE submissions SET recipient_user_id = ${quoteSql(newRecipientUserId)} WHERE id = ${quoteSql(classified.row.submission_id)}`,
     );
 
     try {
-      await sanity.patch(classified.row.submission_id).set({ recipientUserId: newRecipientUserId }).commit();
+      await deps.mirrorToSanity(classified.row.submission_id, newRecipientUserId);
     } catch (mirrorErr) {
       const reason = mirrorErr instanceof Error ? mirrorErr.message : String(mirrorErr);
-      updateAuditStatus(env, auditId, "mirror-failed", reason, Date.now());
+      updateAuditStatus(deps, auditId, "mirror-failed", reason, Date.now());
       return { status: "mirror-failed", reason };
     }
 
-    updateAuditStatus(env, auditId, "completed", null, Date.now());
+    updateAuditStatus(deps, auditId, "completed", null, Date.now());
     return { status: "completed", reason: null };
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     try {
-      updateAuditStatus(env, auditId, "failed", reason, Date.now());
+      updateAuditStatus(deps, auditId, "failed", reason, Date.now());
     } catch {
       // Audit-status update may itself fail (e.g., if insertAuditPending didn't
       // land). Surface the original error regardless.
@@ -367,10 +424,13 @@ async function main(): Promise<void> {
 
   console.log(`[repair-recipient-user-id] env=${args.env} mode=${args.apply ? "APPLY" : "DRY-RUN"}`);
 
-  const detectorRows = execD1<DetectorRow>(args.env, DETECTOR_SQL);
+  const sanity = buildSanityClient(args.env);
+  const deps = buildRealDeps(args.env, sanity);
+
+  const detectorRows = deps.execD1<DetectorRow>(DETECTOR_SQL);
   console.log(`[repair] detector returned ${detectorRows.length} row(s)`);
 
-  const lookup = buildUserLookup(args.env);
+  const lookup = buildUserLookup(deps);
   const classified = detectorRows.map((row) => classifyRow(row, lookup));
 
   const updates = classified.filter((r) => r.proposed_action === "update");
@@ -394,10 +454,9 @@ async function main(): Promise<void> {
   let completed = 0;
   let mirrorFailed = 0;
   let failed = 0;
-  const sanity = buildSanityClient(args.env);
   for (const candidate of classified) {
     if (candidate.proposed_action === "ambiguous-skip") continue;
-    const result = await applyRepair(args.env, sanity, candidate);
+    const result = await applyRepair(deps, args.env, candidate);
     if (result.status === "completed") {
       completed += 1;
       console.log(`  [apply] ${candidate.row.submission_id}  OK`);
