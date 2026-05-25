@@ -1,9 +1,14 @@
 #!/usr/bin/env tsx
 //
-// Seed the 8 brand-shell fields onto the emailDay7Delivery singleton
-// (brandName, brandSubtitle, heroLine, cardLabel, cardDeliveryLine,
-// signOffLine1, signOffLine2, footerDisclaimer). Idempotent via
+// Seed the per-email brand-shell fields onto the emailDay7Delivery
+// singleton (heroLine, cardLabel, cardDeliveryLine). Idempotent via
 // setIfMissing — re-running does not overwrite editor changes.
+//
+// HISTORICAL NOTE: This script originally seeded 8 fields. The 5 that
+// are now shell-shared (brandName, brandSubtitle, signOffLine1, signOffLine2,
+// footerDisclaimer) moved to the emailSharedShell singleton in PR #193
+// and are seeded by migrate-shared-brand-shell-2026-05-25.ts. This script
+// retains only the per-email fields that remain on emailDay7Delivery.
 //
 // Usage:
 //   pnpm tsx scripts/migrate-day7-brand-shell-2026-05-25.ts staging
@@ -46,21 +51,16 @@ async function main(): Promise<void> {
   await client
     .patch(SINGLETON_ID)
     .setIfMissing({
-      brandName: EMAIL_DAY7_DELIVERY_DEFAULTS.brandName,
-      brandSubtitle: EMAIL_DAY7_DELIVERY_DEFAULTS.brandSubtitle,
       heroLine: EMAIL_DAY7_DELIVERY_DEFAULTS.heroLine,
       cardLabel: EMAIL_DAY7_DELIVERY_DEFAULTS.cardLabel,
       cardDeliveryLine: EMAIL_DAY7_DELIVERY_DEFAULTS.cardDeliveryLine,
-      signOffLine1: EMAIL_DAY7_DELIVERY_DEFAULTS.signOffLine1,
-      signOffLine2: EMAIL_DAY7_DELIVERY_DEFAULTS.signOffLine2,
-      footerDisclaimer: EMAIL_DAY7_DELIVERY_DEFAULTS.footerDisclaimer,
     })
     .commit();
 
   console.log(`[migrate-day7-brand-shell] ${dataset} patched`);
 
   const post = await client.fetch<Record<string, unknown> | null>(
-    `*[_id == $id][0]{ brandName, brandSubtitle, heroLine, cardLabel, cardDeliveryLine, signOffLine1, signOffLine2, footerDisclaimer }`,
+    `*[_id == $id][0]{ heroLine, cardLabel, cardDeliveryLine }`,
     { id: SINGLETON_ID },
   );
   console.log(`[migrate-day7-brand-shell] post-check:`, post);
