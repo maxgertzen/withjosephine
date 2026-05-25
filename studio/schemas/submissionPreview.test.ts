@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPreview, prepareSubmissionPreview } from "./submissionPreview";
+import {
+  buildPreview,
+  giftDeliveryCountdown,
+  prepareSubmissionPreview,
+  statusLabel,
+} from "./submissionPreview";
 
 const NAME_RESPONSES = [
   { fieldKey: "first_name", fieldType: "shortText", value: "Marie" },
@@ -241,5 +246,217 @@ describe("prepareSubmissionPreview — subtitle when title falls back to email (
     });
     expect(result.title).toBe("no name");
     expect(result.subtitle).toBe("Submitted 8 May 2026");
+  });
+});
+
+describe("giftDeliveryCountdown", () => {
+  const claimedAt = "2026-05-01T12:00:00.000Z";
+
+  it("returns null when giftClaimedAt is null", () => {
+    expect(giftDeliveryCountdown(null, new Date("2026-05-03T12:00:00.000Z"))).toBeNull();
+  });
+
+  it("returns null when giftClaimedAt is undefined", () => {
+    expect(giftDeliveryCountdown(undefined, new Date("2026-05-03T12:00:00.000Z"))).toBeNull();
+  });
+
+  it("returns null when giftClaimedAt is malformed", () => {
+    expect(giftDeliveryCountdown("not-a-date", new Date("2026-05-03T12:00:00.000Z"))).toBeNull();
+  });
+
+  it("returns '7 days left to deliver' on day-of-claim (no elapsed)", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-01T12:00:00.001Z"))).toBe(
+      "7 days left to deliver",
+    );
+  });
+
+  it("returns '5 days left to deliver' after 2 full days elapsed", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-03T12:00:00.000Z"))).toBe(
+      "5 days left to deliver",
+    );
+  });
+
+  it("returns 'Due today' at exactly 7 days elapsed", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-08T12:00:00.000Z"))).toBe(
+      "Due today",
+    );
+  });
+
+  it("returns 'Overdue by 2 days' when 9 days elapsed", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-10T12:00:00.000Z"))).toBe(
+      "Overdue by 2 days",
+    );
+  });
+
+  it("clamps future giftClaimedAt to '7 days left to deliver' (no negative-N-days)", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-04-28T12:00:00.000Z"))).toBe(
+      "7 days left to deliver",
+    );
+  });
+});
+
+describe("statusLabel", () => {
+  const NOW = new Date("2026-05-06T12:00:00.000Z");
+
+  it("returns 'Paid · awaiting claim' when gift paid but not yet claimed", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: null,
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Paid · awaiting claim");
+  });
+
+  it("returns 'Claimed · N days left to deliver' when gift claimed but not delivered", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-05-04T12:00:00.000Z",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Claimed · 5 days left to deliver");
+  });
+
+  it("returns null once deliveredAt is set (delivered label takes over)", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-05-04T12:00:00.000Z",
+        deliveredAt: "2026-05-05T12:00:00.000Z",
+        now: NOW,
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for non-gift paid submissions (no claim label)", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: false,
+        giftClaimedAt: null,
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for pending status (no claim label)", () => {
+    expect(
+      statusLabel({
+        status: "pending",
+        isGift: true,
+        giftClaimedAt: null,
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBeNull();
+  });
+
+  it("returns 'Claimed · Due today' on day-7 boundary", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-04-29T12:00:00.000Z",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Claimed · Due today");
+  });
+
+  it("returns 'Claimed · Overdue by 1 days' past the 7-day window", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-04-28T12:00:00.000Z",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Claimed · Overdue by 1 days");
+  });
+});
+
+describe("buildPreview — gift claim status integration", () => {
+  it("subtitle includes claim label when isGift+giftClaimedAt set", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "alice@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+        giftClaimedAt: "2026-05-03T12:00:00.000Z",
+      },
+      new Date("2026-05-05T12:00:00.000Z"),
+    );
+    expect(result.subtitle).toContain("Claimed · 5 days left to deliver");
+  });
+
+  it("subtitle includes 'Paid · awaiting claim' for unclaimed gifts", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "alice@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+        giftClaimedAt: null,
+      },
+      new Date("2026-05-02T12:00:00.000Z"),
+    );
+    expect(result.subtitle).toContain("Paid · awaiting claim");
+  });
+
+  it("subtitle preserves email-first ordering when name is the title", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "alice@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+        giftClaimedAt: "2026-05-03T12:00:00.000Z",
+      },
+      new Date("2026-05-05T12:00:00.000Z"),
+    );
+    expect(result.title).toBe("Marie Dupont");
+    expect(result.subtitle.startsWith("alice@example.com")).toBe(true);
+  });
+
+  it("non-gift paid submissions render unchanged (no claim label)", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "alice@example.com",
+        status: "paid",
+        paidAt: "2026-05-03T12:00:00.000Z",
+        isGift: false,
+      },
+      new Date("2026-05-06T12:00:00.000Z"),
+    );
+    expect(result.subtitle).toBe("alice@example.com · Paid 3 May 2026 · Day 4 of 7");
+  });
+
+  it("delivered gifts render delivered label, not claim countdown", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "alice@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+        giftClaimedAt: "2026-05-02T12:00:00.000Z",
+        deliveredAt: "2026-05-06T12:00:00.000Z",
+      },
+      new Date("2026-05-07T12:00:00.000Z"),
+    );
+    expect(result.subtitle).toBe("alice@example.com · Delivered 6 May 2026");
   });
 });

@@ -398,6 +398,8 @@ export const submission = defineType({
       deliveredAt: "deliveredAt",
       listenedAt: "listenedAt",
       responses: "responses",
+      giftClaimedAt: "giftClaimedAt",
+      isGift: "isGift",
     },
     prepare: prepareSubmissionPreview,
   },
