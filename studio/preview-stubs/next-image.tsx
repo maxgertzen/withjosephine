@@ -14,10 +14,19 @@ type NextImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   quality?: number;
 };
 
+const PREVIEW_ASSET_ORIGIN = "https://withjosephine.com";
+
 function resolveSrc(src: NextImageProps["src"]): string {
-  if (typeof src === "string") return src;
-  if ("default" in src) return src.default.src;
-  return src.src;
+  const raw =
+    typeof src === "string"
+      ? src
+      : "default" in src
+        ? src.default.src
+        : src.src;
+  if (raw.startsWith("/") && !raw.startsWith("//")) {
+    return `${PREVIEW_ASSET_ORIGIN}${raw}`;
+  }
+  return raw;
 }
 
 export default function Image({
