@@ -6,10 +6,10 @@ import { useMemo } from "react";
 import {
   COMPANION_SUFFIX_GEONAMEID,
   COMPANION_SUFFIX_UNKNOWN,
-  PHOTO_PUBLIC_URL_BASE,
 } from "@/lib/booking/constants";
 import type { IntakePage } from "@/lib/booking/derivePages";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import type { SanityFormField } from "@/lib/sanity/types";
 
 import type { FieldValues } from "./types";
@@ -72,7 +72,7 @@ function renderFieldValue(field: SanityFormField, values: FieldValues): ReactNod
       if (typeof raw !== "string" || raw === "") return EMPTY_VALUE;
       // `raw` is the R2 object key (e.g. `submissions/abc/photo.jpg`), not a
       // full URL — same convention as <FileUpload>'s saved-state preview.
-      const src = `${PHOTO_PUBLIC_URL_BASE}/${raw}`;
+      const src = `${R2_PUBLIC_ORIGIN}/${raw}`;
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img

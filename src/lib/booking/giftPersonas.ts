@@ -1,4 +1,4 @@
-import type { SubmissionRecord } from "./submissions";
+import type { SubmissionRecord } from "@/lib/page-previews/types";
 
 /**
  * Strip `{tag}` patterns from purchaser-controlled inputs at the API

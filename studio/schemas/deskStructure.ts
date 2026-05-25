@@ -3,10 +3,13 @@ import type { StructureBuilder } from "sanity/structure";
 
 import { EmailPreview } from "../views/EmailPreview";
 import {
+  GiftClaimPagePreview,
+  GiftIntakePagePreview,
   ListenPagePreview,
+  MagicLinkVerifyPagePreview,
   MyGiftsPagePreview,
   MyReadingsPagePreview,
-} from "../views/PagePreview";
+} from "../views/StudioPagePreview";
 
 export const SINGLETON_TYPES = new Set([
   "landingPage",
@@ -169,9 +172,24 @@ const pagesGroup = (S: StructureBuilder) =>
           pagePreviewSingletonListItem(S, "listenPage", "Listen Page", ListenPagePreview),
           pagePreviewSingletonListItem(S, "myReadingsPage", "My Readings Page", MyReadingsPagePreview),
           pagePreviewSingletonListItem(S, "myGiftsPage", "My Gifts Page", MyGiftsPagePreview),
-          singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
-          singletonListItem(S, "giftClaimPage", "Gift Claim Page (recipient lands here)"),
-          singletonListItem(S, "giftIntakePage", "Gift Intake Page (recipient fills details)"),
+          pagePreviewSingletonListItem(
+            S,
+            "magicLinkVerifyPage",
+            "Magic Link — Confirm Email Page",
+            MagicLinkVerifyPagePreview,
+          ),
+          pagePreviewSingletonListItem(
+            S,
+            "giftClaimPage",
+            "Gift Claim Page (recipient lands here)",
+            GiftClaimPagePreview,
+          ),
+          pagePreviewSingletonListItem(
+            S,
+            "giftIntakePage",
+            "Gift Intake Page (recipient fills details)",
+            GiftIntakePagePreview,
+          ),
           S.divider(),
           bookingFlowGroup(S),
         ]),

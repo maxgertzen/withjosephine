@@ -4,15 +4,12 @@ import type {
   SubmissionRecord,
   SubmissionStatus,
 } from "@/lib/page-previews/types";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import {
-  GIFT_DELIVERY,
-  type GiftCancelledReason,
-  PHOTO_PUBLIC_URL_BASE,
-} from "./constants";
+import { GIFT_DELIVERY, type GiftCancelledReason } from "./constants";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
@@ -454,7 +451,7 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
     readingPriceDisplay: priceDisplayFor(submission),
     amountPaidDisplay: formatAmountPaid(submission.amountPaidCents, submission.amountPaidCurrency),
     responses,
-    photoUrl: submission.photoR2Key ? `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}` : null,
+    photoUrl: submission.photoR2Key ? `${R2_PUBLIC_ORIGIN}/${submission.photoR2Key}` : null,
     createdAt: submission.createdAt,
   };
 }
