@@ -15,7 +15,7 @@ Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.
 **Tags:** `v1.1.0` at `882752d`, `v1.2.0` at `94e9d5d`, `v1.2.1` at `ec9c181`
 
 **Follow-ups filed during the arc:**
-- `zhyes1s7` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler — CSS rule can't bridge)
+- `ym2efbwn` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler — CSS rule can't bridge). NOTE: originally claimed-filed as `zhyes1s7` in commit `e92c7cc` but that create was a silent no-op (the pattern from `feedback_dex_create_verify_with_show`); re-filed correctly 2026-05-25.
 
 **Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
