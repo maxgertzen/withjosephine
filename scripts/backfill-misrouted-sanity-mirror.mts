@@ -1,0 +1,331 @@
+#!/usr/bin/env tsx
+//
+// Backfill orphan Sanity submissions misrouted to the production dataset
+// during the 2026-05-25T04:39Z–07:00Z dataset-misrouting window
+// (root-caused + fixed in PR #190).
+//
+// Approach:
+//   1. GROQ production dataset for submissions in the misroute window.
+//   2. For each candidate, confirm the row exists in the staging D1
+//      database (a real orphan = exists in staging D1 + exists only in
+//      production Sanity).
+//   3. Skip candidates that ALSO exist in staging Sanity (cross-pollution
+//      requires manual review — see ISC-A8a).
+//   4. Dry-run prints + CSV. --apply creates on staging Sanity (preserving
+//      _id), then deletes from production Sanity.
+//
+// Usage:
+//   pnpm tsx scripts/backfill-misrouted-sanity-mirror.mts
+//   pnpm tsx scripts/backfill-misrouted-sanity-mirror.mts --apply
+//   pnpm tsx scripts/backfill-misrouted-sanity-mirror.mts --from 2026-05-25T04:39:00Z --to 2026-05-25T07:00:00Z
+//
+// Env: reads .env.local for SANITY_WRITE_TOKEN + NEXT_PUBLIC_SANITY_PROJECT_ID.
+
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { createClient, type SanityClient } from "@sanity/client";
+import { loadDotenv } from "./_lib/loadDotenv.mts";
+
+const DEFAULT_FROM = "2026-05-25T04:39:00Z";
+const DEFAULT_TO = "2026-05-25T07:00:00Z";
+const SANITY_API_VERSION = "2025-01-01";
+const STAGING_D1_DATABASE = "withjosephine-bookings-staging";
+
+// MIRRORS src/lib/resend.tsx (the canonical SANDBOX_EMAIL_PREFIXES list).
+// Dex task `65udsxnp` tracks lifting both copies to a shared module.
+const SANDBOX_EMAIL_PREFIXES = [
+  "gift-roundtrip-purchaser+",
+  "gift-roundtrip-recipient+",
+  "gift-recipient-listen-purchaser+",
+  "gift-recipient-listen-recipient+",
+  "listen-roundtrip+",
+  "stripe-roundtrip+",
+  "v120-qa+",
+] as const;
+const SANDBOX_DOMAIN = "@withjosephine.com";
+
+function isSandboxEmail(address: string | null | undefined): boolean {
+  if (!address) return false;
+  const lower = address.toLowerCase();
+  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
+  return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
+}
+
+type Args = {
+  apply: boolean;
+  from: string;
+  to: string;
+};
+
+type SanitySubmissionStub = {
+  _id: string;
+  _createdAt: string;
+  recipientEmail?: string | null;
+  email?: string | null;
+};
+
+type SanityDocWithSystemFields = {
+  _id: string;
+  _type: string;
+  _rev?: string;
+  _createdAt?: string;
+  _updatedAt?: string;
+  [key: string]: unknown;
+};
+
+type D1SubmissionRow = {
+  id: string;
+  email: string | null;
+  recipient_email: string | null;
+};
+
+type ClassifiedRow = {
+  _id: string;
+  _createdAt: string;
+  recipient_email: string | null;
+  purchaser_email: string | null;
+  classification: "orphan" | "sandbox-residue" | "non-orphan-skip" | "cross-pollution-skip";
+};
+
+function parseArgs(argv: readonly string[]): Args {
+  let apply = false;
+  let from = DEFAULT_FROM;
+  let to = DEFAULT_TO;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--apply") apply = true;
+    else if (arg === "--dry-run") apply = false;
+    else if (arg === "--from") from = argv[++i] ?? from;
+    else if (arg === "--to") to = argv[++i] ?? to;
+    else if (arg === "--help" || arg === "-h") {
+      console.log(`Usage: backfill-misrouted-sanity-mirror.mts [--apply] [--from ISO] [--to ISO]`);
+      process.exit(0);
+    } else {
+      console.error(`Unknown arg: ${arg}`);
+      process.exit(2);
+    }
+  }
+  return { apply, from, to };
+}
+
+function buildSanityClient(dataset: "production" | "staging"): SanityClient {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  const token = process.env.SANITY_WRITE_TOKEN;
+  if (!projectId) throw new Error("NEXT_PUBLIC_SANITY_PROJECT_ID is not set in .env.local");
+  if (!token) throw new Error("SANITY_WRITE_TOKEN is not set in .env.local");
+  return createClient({
+    projectId,
+    dataset,
+    apiVersion: SANITY_API_VERSION,
+    useCdn: false,
+    token,
+  });
+}
+
+function quoteSql(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function bulkQueryStagingD1(submissionIds: readonly string[]): Map<string, D1SubmissionRow> {
+  const out = new Map<string, D1SubmissionRow>();
+  if (submissionIds.length === 0) return out;
+  const inList = submissionIds.map(quoteSql).join(",");
+  const sql = `SELECT id, email, recipient_email FROM submissions WHERE id IN (${inList})`;
+  const result = spawnSync(
+    "pnpm",
+    ["exec", "wrangler", "d1", "execute", STAGING_D1_DATABASE, "--env", "staging", "--remote", "--json", "--command", sql],
+    { encoding: "utf-8" },
+  );
+  if (result.status !== 0) {
+    throw new Error(`wrangler d1 execute failed: ${result.stderr}`);
+  }
+  const parsed = JSON.parse(result.stdout) as Array<{ results: D1SubmissionRow[] }>;
+  for (const row of parsed[0]?.results ?? []) {
+    out.set(row.id, row);
+  }
+  return out;
+}
+
+async function classifyCandidate(
+  candidate: SanitySubmissionStub,
+  d1Hits: Map<string, D1SubmissionRow>,
+  stagingSanity: SanityClient,
+): Promise<ClassifiedRow> {
+  const d1Row = d1Hits.get(candidate._id);
+  const purchaserEmail = d1Row?.email ?? candidate.email ?? null;
+  const recipientEmail = d1Row?.recipient_email ?? candidate.recipientEmail ?? null;
+  const isSandbox = isSandboxEmail(purchaserEmail) && isSandboxEmail(recipientEmail);
+
+  // Sandbox-prefix rows in either branch are e2e residue. Staging-D1 cleanup
+  // helpers handle their D1 side; production-Sanity needs explicit delete.
+  // No staging mirror create — sandbox rows shouldn't pollute staging Studio.
+  if (isSandbox) {
+    return {
+      _id: candidate._id,
+      _createdAt: candidate._createdAt,
+      recipient_email: recipientEmail,
+      purchaser_email: purchaserEmail,
+      classification: "sandbox-residue",
+    };
+  }
+  if (!d1Row) {
+    return {
+      _id: candidate._id,
+      _createdAt: candidate._createdAt,
+      recipient_email: recipientEmail,
+      purchaser_email: purchaserEmail,
+      classification: "non-orphan-skip",
+    };
+  }
+  const stagingDoc = await stagingSanity.getDocument(candidate._id);
+  if (stagingDoc) {
+    return {
+      _id: candidate._id,
+      _createdAt: candidate._createdAt,
+      recipient_email: recipientEmail,
+      purchaser_email: purchaserEmail,
+      classification: "cross-pollution-skip",
+    };
+  }
+  return {
+    _id: candidate._id,
+    _createdAt: candidate._createdAt,
+    recipient_email: recipientEmail,
+    purchaser_email: purchaserEmail,
+    classification: "orphan",
+  };
+}
+
+function csvEscape(value: string | null): string {
+  const safe = value ?? "";
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+function writeCsv(rows: readonly ClassifiedRow[], path: string): void {
+  const header = "_id,_createdAt,recipient_email,purchaser_email,classification\n";
+  const body = rows
+    .map((r) => [r._id, r._createdAt, r.recipient_email, r.purchaser_email, r.classification].map(csvEscape).join(","))
+    .join("\n");
+  fs.writeFileSync(path, header + body + "\n");
+}
+
+type ApplyResult =
+  | { stage: "completed" }
+  | { stage: "create-failed"; error: string }
+  | { stage: "delete-failed"; error: string };
+
+async function applyBackfillForOrphan(
+  productionClient: SanityClient,
+  stagingClient: SanityClient,
+  orphanId: string,
+): Promise<ApplyResult> {
+  const fullDoc = (await productionClient.getDocument(orphanId)) as SanityDocWithSystemFields | null;
+  if (!fullDoc) {
+    return { stage: "create-failed", error: `production document ${orphanId} no longer exists` };
+  }
+  // _rev is server-managed; passing it to createOrReplace causes a 409.
+  // _updatedAt is reset on every write. _createdAt is preserved so the
+  // restored staging doc has the same creation timestamp as the prod orphan.
+  const { _rev: _rev, _updatedAt: _updatedAt, ...docToWrite } = fullDoc;
+  void _rev;
+  void _updatedAt;
+  try {
+    await stagingClient.createOrReplace(docToWrite as SanityDocWithSystemFields);
+  } catch (err) {
+    return { stage: "create-failed", error: err instanceof Error ? err.message : String(err) };
+  }
+  try {
+    await productionClient.delete(orphanId);
+  } catch (err) {
+    // Doc is now in BOTH datasets. Operator must manually delete from prod;
+    // next dry-run will surface this as cross-pollution-skip until cleaned.
+    return { stage: "delete-failed", error: err instanceof Error ? err.message : String(err) };
+  }
+  return { stage: "completed" };
+}
+
+async function main(): Promise<void> {
+  loadDotenv();
+  const args = parseArgs(process.argv.slice(2));
+
+  console.log(`[backfill-misrouted-sanity-mirror] mode=${args.apply ? "APPLY" : "DRY-RUN"} from=${args.from} to=${args.to}`);
+
+  const productionClient = buildSanityClient("production");
+  const stagingClient = buildSanityClient("staging");
+
+  const candidates = await productionClient.fetch<SanitySubmissionStub[]>(
+    `*[_type == "submission" && _createdAt >= $from && _createdAt < $to]{ _id, _createdAt, recipientEmail, email } | order(_createdAt asc)`,
+    { from: args.from, to: args.to },
+  );
+
+  console.log(`[backfill] ${candidates.length} production-Sanity submission(s) in window`);
+
+  const d1Hits = bulkQueryStagingD1(candidates.map((c) => c._id));
+  const classified = await Promise.all(
+    candidates.map((candidate) => classifyCandidate(candidate, d1Hits, stagingClient)),
+  );
+
+  const orphans = classified.filter((r) => r.classification === "orphan");
+  const residue = classified.filter((r) => r.classification === "sandbox-residue");
+  const nonOrphans = classified.filter((r) => r.classification === "non-orphan-skip");
+  const crossPollution = classified.filter((r) => r.classification === "cross-pollution-skip");
+
+  console.log(`[backfill] orphan=${orphans.length}  sandbox-residue=${residue.length}  non-orphan-skip=${nonOrphans.length}  cross-pollution-skip=${crossPollution.length}`);
+
+  const csvPath = `/tmp/orphan-backfill-${Date.now()}.csv`;
+  writeCsv(classified, csvPath);
+  console.log(`[backfill] CSV written → ${csvPath}`);
+
+  for (const row of classified) {
+    console.log(`  ${row.classification.padEnd(22)} ${row._id}  ${row._createdAt}  recipient=${row.recipient_email ?? "(null)"}  purchaser=${row.purchaser_email ?? "(null)"}`);
+  }
+
+  if (!args.apply) {
+    console.log(`[backfill] DRY-RUN — no mutations performed. Review CSV then re-run with --apply.`);
+    return;
+  }
+
+  if (crossPollution.length > 0) {
+    console.error(`[backfill] REFUSING to apply: ${crossPollution.length} cross-pollution row(s) require manual review first.`);
+    process.exit(1);
+  }
+
+  let completed = 0;
+  let createFailed = 0;
+  let deleteFailed = 0;
+  for (const orphan of orphans) {
+    const result = await applyBackfillForOrphan(productionClient, stagingClient, orphan._id);
+    if (result.stage === "completed") {
+      completed += 1;
+      console.log(`  [apply] ${orphan._id}  OK  (created on staging, deleted from production)`);
+    } else if (result.stage === "create-failed") {
+      createFailed += 1;
+      console.error(`  [apply] ${orphan._id}  CREATE-FAILED  ${result.error}`);
+    } else {
+      deleteFailed += 1;
+      console.error(`  [apply] ${orphan._id}  DELETE-FAILED  ${result.error}  (now in BOTH datasets; manual prod delete required)`);
+    }
+  }
+
+  let residueDeleted = 0;
+  let residueFailed = 0;
+  for (const r of residue) {
+    try {
+      await productionClient.delete(r._id);
+      residueDeleted += 1;
+      console.log(`  [apply-residue] ${r._id}  DELETED from production`);
+    } catch (err) {
+      residueFailed += 1;
+      const reason = err instanceof Error ? err.message : String(err);
+      console.error(`  [apply-residue] ${r._id}  DELETE-FAILED  ${reason}`);
+    }
+  }
+
+  console.log(`[backfill] APPLY complete  completed=${completed}  create-failed=${createFailed}  delete-failed=${deleteFailed}  residue-deleted=${residueDeleted}  residue-failed=${residueFailed}`);
+  if (createFailed > 0 || deleteFailed > 0 || residueFailed > 0) process.exit(1);
+}
+
+if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+  await main();
+}
