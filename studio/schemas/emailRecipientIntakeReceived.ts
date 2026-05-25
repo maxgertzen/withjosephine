@@ -7,10 +7,10 @@ const validateRecipientIntakeSlots = slotValidation("emailRecipientIntakeReceive
 
 export const emailRecipientIntakeReceived = defineType({
   name: "emailRecipientIntakeReceived",
-  title: "Email — Recipient Intake Received",
+  title: "Intake Received → Gift Recipient",
   type: "document",
   description:
-    "Sent to a gift recipient immediately after they submit their intake. Confirms the answers landed and sets timing expectations.",
+    "Sent to a gift recipient right after they finish filling out their intake form. Confirms their answers came through and tells them the reading will arrive within 7 days.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },

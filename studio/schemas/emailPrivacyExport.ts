@@ -5,10 +5,10 @@ import { slotValidation } from "../lib/validateSlots";
 
 export const emailPrivacyExport = defineType({
   name: "emailPrivacyExport",
-  title: "Email — Privacy Export (GDPR Art. 20)",
+  title: "Privacy Export → Requester (GDPR)",
   type: "document",
   description:
-    "Sent in response to a GDPR Article 20 data-portability request. Contains a 7-day-expiring pre-signed download URL for the user's reading data ZIP.",
+    "Sent in response to a GDPR data-portability request, with a download link for the requester's reading data as a ZIP file. The download link expires in 7 days.",
   fields: [
     tokenReferenceField("emailPrivacyExport"),
     defineField({

@@ -7,10 +7,10 @@ const validateGiftClaimReminderSlots = slotValidation("emailGiftClaimReminder");
 
 export const emailGiftClaimReminder = defineType({
   name: "emailGiftClaimReminder",
-  title: "Email — Gift Claim — Reminder (to recipient)",
+  title: "Gift Claim → Recipient (Reminder)",
   type: "document",
   description:
-    "Reminder follow-up sent to a gift recipient who hasn't claimed yet. Asks them to find the original email rather than minting a fresh link.",
+    "Sent to a gift recipient who hasn't claimed yet — a gentle nudge to find the original gift email. Sends up to three times, at 7, 14, and 21 days after the first claim email.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },

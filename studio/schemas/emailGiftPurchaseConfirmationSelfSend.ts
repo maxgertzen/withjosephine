@@ -7,10 +7,10 @@ const validateSelfSendSlots = slotValidation("emailGiftPurchaseConfirmationSelfS
 
 export const emailGiftPurchaseConfirmationSelfSend = defineType({
   name: "emailGiftPurchaseConfirmationSelfSend",
-  title: "Email — Gift Purchase Confirmation — Self-Send (to purchaser)",
+  title: "Gift Confirmation → Purchaser (Self-Send)",
   type: "document",
   description:
-    "Sent to the purchaser after they buy a gift reading and choose to share the claim link themselves. Includes the private claim URL.",
+    "Sent to someone who bought a gift reading and chose to forward the claim link themselves instead of scheduling delivery. Contains the private claim URL the purchaser will share with their recipient.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },

@@ -7,10 +7,10 @@ const validateScheduledSlots = slotValidation("emailGiftPurchaseConfirmationSche
 
 export const emailGiftPurchaseConfirmationScheduled = defineType({
   name: "emailGiftPurchaseConfirmationScheduled",
-  title: "Email — Gift Purchase Confirmation — Scheduled (to purchaser)",
+  title: "Gift Confirmation → Purchaser (Scheduled)",
   type: "document",
   description:
-    "Sent to the purchaser after they buy a gift reading and pick a future send date — we send the claim email to the recipient automatically on that date. No claim link in this email.",
+    "Sent to someone who bought a gift reading and picked a future date for us to email the recipient automatically. No claim link in this email — it goes to the recipient on the scheduled date.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
