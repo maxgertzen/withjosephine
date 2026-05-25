@@ -263,14 +263,16 @@ export async function findSubmissionListenContext(
   recipientUserId: string | null;
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
+  readingSlug: string;
 } | null> {
   const rows = await dbQuery<{
     id: string;
     recipient_user_id: string | null;
     voice_note_url: string | null;
     pdf_url: string | null;
+    reading_slug: string;
   }>(
-    `SELECT id, recipient_user_id, voice_note_url, pdf_url
+    `SELECT id, recipient_user_id, voice_note_url, pdf_url, reading_slug
        FROM submissions WHERE id = ? LIMIT 1`,
     [id],
   );
@@ -281,6 +283,7 @@ export async function findSubmissionListenContext(
     recipientUserId: row.recipient_user_id,
     voiceNoteUrl: row.voice_note_url,
     pdfUrl: row.pdf_url,
+    readingSlug: row.reading_slug,
   };
 }
 

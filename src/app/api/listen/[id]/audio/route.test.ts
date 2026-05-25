@@ -49,7 +49,12 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   gateMock.mockReset().mockResolvedValue({
     ok: true,
-    asset: { voiceNoteUrl: SUBMISSION.voiceNoteUrl ?? null, pdfUrl: SUBMISSION.pdfUrl ?? null },
+    asset: {
+      voiceNoteUrl: SUBMISSION.voiceNoteUrl ?? null,
+      pdfUrl: SUBMISSION.pdfUrl ?? null,
+      readingSlug: "soul-blueprint",
+      submissionId: "sub_1",
+    },
   });
   markListenedMock.mockReset();
   fetchMock.mockReset();
@@ -97,7 +102,9 @@ describe("GET /api/listen/[id]/audio", () => {
     );
     const fetchHeaders = fetchMock.mock.calls[0]?.[1].headers as Headers;
     expect(fetchHeaders.get("range")).toBe("bytes=100-199");
-    expect(response.headers.get("content-disposition")).toBe("inline");
+    expect(response.headers.get("content-disposition")).toBe(
+      'inline; filename="soul-blueprint-voice-note-sub_1.m4a"',
+    );
   });
 
   it("fires scheduleListenedAtMirror on opener (no Range header)", async () => {
@@ -131,7 +138,12 @@ describe("GET /api/listen/[id]/audio", () => {
   it("returns 404 when gate.asset.voiceNoteUrl is null", async () => {
     gateMock.mockResolvedValueOnce({
       ok: true,
-      asset: { voiceNoteUrl: null, pdfUrl: null },
+      asset: {
+        voiceNoteUrl: null,
+        pdfUrl: null,
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+      },
     });
     const { GET } = await import("./route");
     const response = await GET(audioRequest(), { params });
