@@ -7,10 +7,10 @@ const validateOrderSlots = slotValidation("emailOrderConfirmation");
 
 export const emailOrderConfirmation = defineType({
   name: "emailOrderConfirmation",
-  title: "Email — Order Confirmation",
+  title: "Order Confirmation → Self-Purchaser",
   type: "document",
   description:
-    "Sent to a customer after their Stripe payment succeeds for a self-purchase. Confirms order receipt and sets timing expectations for the reading.",
+    "Sent to a customer who bought a reading for themselves, right after their Stripe payment succeeds. Confirms the order and tells them their reading will arrive within 7 days.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -150,6 +150,10 @@ export const emailOrderConfirmation = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Order Confirmation" }),
+    prepare: () => ({
+      title: "Order Confirmation → Self-Purchaser",
+      subtitle:
+        "Sent to a customer who bought a reading for themselves, right after their Stripe payment succeeds. Confirms the order and tells them their reading will arrive within 7 days.",
+    }),
   },
 });

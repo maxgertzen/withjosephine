@@ -7,10 +7,10 @@ const validateDay7Slots = slotValidation("emailDay7Delivery");
 
 export const emailDay7Delivery = defineType({
   name: "emailDay7Delivery",
-  title: "Email — Day-7 Delivery",
+  title: "Reading Delivery → Customer",
   type: "document",
   description:
-    "Sent to the customer when their reading is ready — voice note + PDF link inside.",
+    "Sent to the customer (self-purchaser or gift recipient) when their reading is ready, with the voice note and PDF link inside. The customer can sign back in to listen again for 90 days from delivery.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -191,6 +191,10 @@ export const emailDay7Delivery = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Day-7 Delivery" }),
+    prepare: () => ({
+      title: "Reading Delivery → Customer",
+      subtitle:
+        "Sent to the customer (self-purchaser or gift recipient) when their reading is ready, with the voice note and PDF link inside. The customer can sign back in to listen again for 90 days from delivery.",
+    }),
   },
 });

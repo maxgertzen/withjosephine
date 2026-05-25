@@ -7,10 +7,10 @@ const validateMagicLinkSlots = slotValidation("emailMagicLinkMyGifts");
 
 export const emailMagicLinkMyGifts = defineType({
   name: "emailMagicLinkMyGifts",
-  title: "Email — Magic Link (My Gifts)",
+  title: "Magic Link → My Gifts",
   type: "document",
   description:
-    "Sent when a purchaser requests a sign-in link from the My Gifts dashboard (to manage scheduled gifts, regenerate claim links, etc.). Distinct from the listen-page link because the recipient context is gifting, not a reading they're about to open themselves.",
+    "Sent to a purchaser who asks for a sign-in link from the My Gifts dashboard, where they manage scheduled gifts and regenerate claim links. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
   fields: [
     tokenReferenceField("emailMagicLinkMyGifts"),
     defineField({
@@ -64,6 +64,10 @@ export const emailMagicLinkMyGifts = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Magic Link (My Gifts)" }),
+    prepare: () => ({
+      title: "Magic Link → My Gifts",
+      subtitle:
+        "Sent to a purchaser who asks for a sign-in link from the My Gifts dashboard, where they manage scheduled gifts and regenerate claim links. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
+    }),
   },
 });

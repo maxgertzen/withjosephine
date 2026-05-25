@@ -7,10 +7,10 @@ const validateGiftClaimSlots = slotValidation("emailGiftClaim");
 
 export const emailGiftClaim = defineType({
   name: "emailGiftClaim",
-  title: "Email — Gift Claim — First Send (to recipient)",
+  title: "Gift Claim → Recipient (First Send)",
   type: "document",
   description:
-    "Sent to the gift recipient with a private link to claim their reading. The reminder variant lives in a separate schema — see Email — Gift Claim — Reminder.",
+    "Sent to a gift recipient with a private link to claim and start their reading — this is the first time they hear from us. Reminders follow at 7, 14, and 21 days if they don't claim (see the Reminder template).",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -209,6 +209,10 @@ export const emailGiftClaim = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Gift Claim — First Send (to recipient)" }),
+    prepare: () => ({
+      title: "Gift Claim → Recipient (First Send)",
+      subtitle:
+        "Sent to a gift recipient with a private link to claim and start their reading — this is the first time they hear from us. Reminders follow at 7, 14, and 21 days if they don't claim (see the Reminder template).",
+    }),
   },
 });

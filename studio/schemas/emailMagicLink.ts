@@ -7,10 +7,10 @@ const validateMagicLinkSlots = slotValidation("emailMagicLink");
 
 export const emailMagicLink = defineType({
   name: "emailMagicLink",
-  title: "Email — Magic Link",
+  title: "Magic Link → Listen Page",
   type: "document",
   description:
-    "Sent when a customer or gift recipient requests a sign-in link. The link is generic — this email goes to anyone trying to authenticate, including strangers who don't have a reading yet, so no customer-specific tokens are available here.",
+    "Sent to anyone who asks for a sign-in link from a reading's listen page — could be a customer, a gift recipient, or someone who typed an email that has no reading yet. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
   fields: [
     tokenReferenceField("emailMagicLink"),
     defineField({
@@ -64,6 +64,10 @@ export const emailMagicLink = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Magic Link" }),
+    prepare: () => ({
+      title: "Magic Link → Listen Page",
+      subtitle:
+        "Sent to anyone who asks for a sign-in link from a reading's listen page — could be a customer, a gift recipient, or someone who typed an email that has no reading yet. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
+    }),
   },
 });
