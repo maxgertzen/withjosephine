@@ -1,35 +1,11 @@
+import type { D1Database } from "@cloudflare/workers-types";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { taintServerObject } from "@/lib/taint";
 
-import type { SqlClient, SqlValue } from "./sqlClient";
+import type { SqlClient } from "./sqlClient";
 
 const BOOKINGS_BINDING_NAME = "withjosephine_bookings" as const;
-
-type D1RunResult = {
-  success: boolean;
-  meta?: {
-    changes?: number;
-    rows_written?: number;
-  };
-};
-
-type D1AllResult<T> = {
-  results: T[];
-  success: boolean;
-  meta?: Record<string, unknown>;
-};
-
-type D1PreparedStatement = {
-  bind(...values: readonly SqlValue[]): D1PreparedStatement;
-  all<T = Record<string, SqlValue>>(): Promise<D1AllResult<T>>;
-  run(): Promise<D1RunResult>;
-};
-
-type D1Database = {
-  prepare(query: string): D1PreparedStatement;
-  batch(statements: readonly D1PreparedStatement[]): Promise<readonly D1RunResult[]>;
-};
 
 declare global {
   interface CloudflareEnv {
@@ -63,9 +39,7 @@ export function createD1BindingClient(): SqlClient {
     },
     async batch(statements) {
       const db = await getDb();
-      const prepared = statements.map((s) =>
-        db.prepare(s.sql).bind(...((s.params ?? []) as readonly SqlValue[])),
-      );
+      const prepared = statements.map((s) => db.prepare(s.sql).bind(...(s.params ?? [])));
       await db.batch(prepared);
     },
   };

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { EMAIL_MAGIC_LINK_DEFAULTS } from "@/data/defaults";
 
 import { MagicLink } from "./MagicLink";
+import { portableTextToPlainText, stringToPortableTextBlocks } from "./PortableTextBody";
 import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
 
 const PROPS = {
@@ -18,7 +19,7 @@ describe("MagicLink email", () => {
   it("renders Sanity-supplied greeting + body paragraphs", async () => {
     const text = visibleText(await render(<MagicLink {...PROPS} />));
     expect(text).toContain(PROPS.greeting);
-    for (const paragraph of PROPS.body) {
+    for (const paragraph of portableTextToPlainText(PROPS.body).split("\n\n")) {
       expect(text).toContain(paragraph);
     }
     expect(text).toContain("Josephine ✦");
@@ -41,10 +42,13 @@ describe("MagicLink email", () => {
 
   it("renders editable single-paragraph body without a default fallback in body slot", async () => {
     const html = await render(
-      <MagicLink {...PROPS} body={["Just one line of body copy here."]} />,
+      <MagicLink
+        {...PROPS}
+        body={stringToPortableTextBlocks("Just one line of body copy here.")}
+      />,
     );
     const text = visibleText(html);
     expect(text).toContain("Just one line of body copy here.");
-    expect(text).not.toContain(PROPS.body[0]);
+    expect(text).not.toContain(portableTextToPlainText(PROPS.body).split("\n\n")[0]);
   });
 });

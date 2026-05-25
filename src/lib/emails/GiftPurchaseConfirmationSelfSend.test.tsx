@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS } from "@/data/defaults";
 
 import { GiftPurchaseConfirmationSelfSend } from "./GiftPurchaseConfirmationSelfSend";
+import { stringToPortableTextBlocks } from "./PortableTextBody";
 import { visibleText } from "./test-helpers";
 
 const VARS = {
@@ -57,7 +58,9 @@ describe("GiftPurchaseConfirmationSelfSend", () => {
           vars={{ ...VARS, recipientName: "Laura" }}
           copy={{
             ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
-            shareUrlHelper: "This link is for {recipientName}. Share it the way you'd give them a handwritten card.",
+            shareUrlHelper: stringToPortableTextBlocks(
+              "This link is for {recipientName}. Share it the way you'd give them a handwritten card.",
+            ),
           }}
         />,
       ),
@@ -73,7 +76,9 @@ describe("GiftPurchaseConfirmationSelfSend", () => {
           vars={{ ...VARS, recipientName: null }}
           copy={{
             ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
-            shareUrlHelper: "This link is for {recipientName}. Share it however you like.",
+            shareUrlHelper: stringToPortableTextBlocks(
+              "This link is for {recipientName}. Share it however you like.",
+            ),
           }}
         />,
       ),
@@ -135,7 +140,9 @@ describe("GiftPurchaseConfirmationSelfSend", () => {
             ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
             body: undefined,
             greeting: "Hi Alice,",
-            detailLineSelfSend: "Legacy fallback prose for {recipientName}.",
+            detailLineSelfSend: stringToPortableTextBlocks(
+              "Legacy fallback prose for {recipientName}.",
+            ),
           }}
         />,
       ),
