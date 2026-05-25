@@ -1,35 +1,31 @@
 # Session Boot — Active State
 
-## ✅ RESOLVED 2026-05-25 — v1.2.1 email preview blank, root cause locked + fix shipped
+## ✅ RESOLVED 2026-05-25 — v1.2.1 workerd PT render + Sanity-mirror dataset misrouting
 
-Email-preview iframe blank in deployed Studio (`vej2v0x5`) is **fixed via commit `dbb5602` on `release/v1.2.1`**: `fix(studio): Force iframe remount in EmailPreview when html loads`. Verified working against deployed Studio (5921-char HTML renders correctly across multiple email singletons).
+Two production-class regressions root-caused and shipped today on `release/v1.2.1`. Staging is healthy; gift flow is fully working end-to-end.
 
-**Root cause:** Chromium won't navigate a sandboxed iframe to a new srcdoc value once it's loaded with an empty one. React correctly updated the attribute; Chrome left the iframe document blank. Fix: `key={html ? "loaded" : "empty"}` on the iframe forces a fresh remount when html arrives. New durable memory: `feedback_chromium_iframe_srcdoc_no_renavigate.md`.
+**PR #189** (squash `fea50ce`) — Workerd PT renderer + canonical vendor types audit. Replaced `<PortableText>` from `@portabletext/react` (uses `useMemo`; null React dispatcher in workerd `react-dom/server.edge`) with a hand-rolled hook-free renderer in `src/lib/emails/PortableTextBody.tsx`. Was throwing `TypeError: Cannot read properties of null (reading 'useMemo')` on every gift email send — surfaced only on gift paths because `notifyPaid.ts` `.catch()` silently swallows the same throw for OC / Day7 / magic-link / privacy-export. Audit collapses `EmailRichText` fuzzy union → `PortableTextBlock[]`, migrates 29 defaults via `stringToPortableTextBlocks`, aliases `SanityPortableTextBlock` to `@portabletext/types`, swaps `D1Database` + R2 leaf types to `@cloudflare/workers-types`. Bonus fix: `SanityEmailMagicLink.body` was hand-typed `string[]` despite block-array schema.
 
-**Red herrings disproved along the way (all worth noting):**
-- PR #186's `stripRenderBlockers` is a no-op for `@react-email/render` v2.0.8 in Node — but keep it, the function IS invoked in browser builds where react-email DOES emit the blocking link. Harmless future-proofing either way.
-- PR #187's seq-guard pattern (closed unmerged) was a red-herring fix attempt. The cancellation-flag was never the bug.
-- Deploy/source desync masked the situation: deployed Studio was running PR #187's branch code for ~12h while Max thought he'd reverted. Sanity deploy doesn't follow git revert; it's bound to whatever's in `studio/dist` when `pnpm sanity deploy` runs.
+**PR #190** (squash `29413e1`) — Sanity mirror dataset-resolution hotfix. `getSanityWriteClient()` now async, resolves `NEXT_PUBLIC_SANITY_DATASET` at call time from `getCloudflareContext().env`, not from the Next-DefinePlugin-baked string literal. Root cause: a manual `wrangler deploy --env staging` from a local checkout whose `.env.local` carried `NEXT_PUBLIC_SANITY_DATASET=production` baked `dataset:"production"` into the staging worker bundle; the wrangler runtime override was ignored because the read had been replaced before execution. Result: every D1-mirrored submission from 2026-05-25T04:39Z onward landed in `e8jsb14m/production` instead of `e8jsb14m/staging`. ~10 orphan rows stranded in production — backfill tracked in dex `gai69xwr`.
 
 **Outstanding for v1.2.1 → main merge (in execution order):**
-- 🟢 **`k6ao10b8` — Email body field consolidation across templates. PR #188 opened 2026-05-25.** Collapses 3–5 per-email PT body fields into one `body` PT field across 9 schemas + splits the variant-overloaded `emailGiftClaim` / `emailGiftPurchaseConfirmation` schemas into single-purpose documents. Staging deployed + migrated successfully (7 mutated + 2 cloned + 1 deferred-then-fixed). Sub-PRs queued under `k6ao10b8`: PR-Email-2 cleanup (`2un31amb`), visual uniformity (`6eeo28cm`), shared brand+footer singleton (`9t7143kz`), canonical vendor-type tightening (`3tg8bjp4`), email titles/descriptions (`6qayweun`). Prod deploy + migration deferred until end of Sanity arc.
-- 🟡 `kf1nixad` — Gated-page preview replan, Studio-bundled. Paused at PLAN-approved before BUILD (branch `refactor/studio-bundle-purity-prep` exists, no commits). PRD at `MEMORY/WORK/20260524-172503_gated-page-preview-replan/PRD.md`. Resumes after the Sanity arc closes.
-- ⚪ `cpwaqf4d` — Sanity validation harness (optional, would have caught the seed-vs-schema PT mismatch that bit staging today).
+- 🟡 `gai69xwr` — **Backfill ~10 orphan rows** stranded in `e8jsb14m/production` from the dataset-misrouting window (2026-05-25T04:39Z–~07:00Z). Script suggested: `scripts/backfill-misrouted-sanity-mirror.ts`. Enumerate via GROQ on production, cross-reference D1 staging, mutate-create in staging + delete from production. Not auto-handled by reconcile-mirror cron.
+- 🟡 `k14jh76o` — Post-deploy QATester smoke of email-preview iframes in deployed Studio. Ready now that staging is on `fea50ce` + `29413e1`.
+- 🟡 `kf1nixad` — Gated-page preview replan, Studio-bundled. Paused at PLAN-approved before BUILD. PRD at `MEMORY/WORK/20260524-172503_gated-page-preview-replan/PRD.md`. Resumes after the Sanity arc closes.
+- ⚪ `cpwaqf4d` — Sanity validation harness (optional).
 - 🟡 `f7yhvvc3` — Cumulative `/simplify` on `release/v1.2.1...main` diff. Runs before the merge-to-main PR per `feedback_simplify_scale_to_change_size`.
-- 🟡 PR #186 decision: **keep** (recommendation) as harmless future-proofing for react-email version bumps.
-- 🟡 Open `release/v1.2.1` → `main` PR.
+- 🟡 Open `release/v1.2.1` → `main` PR (final step before apex unpark planning).
 
-Order: PR #188 merge → PR-Email-2 cleanup (`2un31amb`) → other `k6ao10b8` sub-PRs → kf1nixad → cpwaqf4d (optional) → f7yhvvc3 → merge-to-main PR.
+**Open PRs on release/v1.2.1:** none.
 
-**Open PRs on release/v1.2.1:** #188 (email body consolidation + variant split).
-
-**Memories captured this session that govern next-session behavior:**
-- `feedback_canonical_vendor_types` — **NEW (2026-05-25)**. Use canonical vendor types (`@portabletext/types`, `@sanity/types`, `stripe`, `resend`, `@cloudflare/workers-types`) over hand-rolled fuzzy unions. EmailRichText `string | string[] | PortableTextBlock[]` shielded a real schema-mismatch bug from typecheck and shipped it to staging during PR #188. No `any`/`unknown`/permissive-union workarounds-to-pass-typecheck.
-- `feedback_chromium_iframe_srcdoc_no_renavigate` — Sandboxed iframes whose srcdoc toggles empty→populated need React `key` to force remount. Don't trust Node-side render-output tests to validate browser-path; don't escalate useEffect dedup patterns when state is set but UI doesn't reflect; deploy/source desync is real — re-deploy after local reverts.
-- `feedback_real_browser_smoke_before_ship_claim` — REQUIRED for UI-touching PRs. vitest jsdom is not sufficient.
-- `feedback_stop_the_fix_spiral` — never push a second untested fix on top of an unverified first.
-- `feedback_simplify_scale_to_change_size` — run cumulative simplify on `main...release/v1.2.1` diff before the merge PR, not per sub-PR.
-- `feedback_pr_body_use_sentry_pr_writer` — sentry-skills:pr-writer + sentry-skills:commit for PRs/commits.
+**Memories captured 2026-05-25 (binding for next sessions):**
+- `feedback_canonical_vendor_types` — Use canonical vendor types over hand-rolled fuzzy unions. No `any`/`unknown`/permissive-union workarounds to pass typecheck. The `EmailRichText` collapse + `SanityEmailMagicLink.body` fix close the loop on this rule's first surface.
+- `feedback_never_local_deploy_cross_env` — NEVER `wrangler deploy --env <target>` from a local checkout whose `.env.local` doesn't match. Next DefinePlugin bakes `NEXT_PUBLIC_*` as string literals at build, overriding wrangler runtime vars. Use CI deploy via git push. If you must local-deploy, run the 4-step pre-flight (inspect .env.local, set to target values, grep bundled output, restore after).
+- `reference_staging_cf_access` — `staging.withjosephine.com` HTTP is behind CF Access; `wrangler tail` + d1 admin + Sanity API all bypass cleanly. Diagnostic-by-tool matrix in the memory.
+- `feedback_brief_agents_on_staging_cf_access` — Include the CF Access constraint up front in any agent prompt that touches "diagnose staging" so they don't burn 20min on tail-via-curl loops. Trust negative results from subagents that contradict the orchestrator's hypothesis — reframe, don't bias.
+- `feedback_dex_create_verify_with_show` — After every `dex create`, immediately `dex show <id>` to confirm persistence. `Updated:` without `Created:` means silent no-op.
+- `feedback_chromium_iframe_srcdoc_no_renavigate` (carry-over) — Sandboxed iframes need React `key` to force remount when srcdoc toggles empty→populated.
+- `feedback_real_browser_smoke_before_ship_claim` (carry-over) — REQUIRED for UI-touching PRs. vitest jsdom is not sufficient. **PR #188's workerd bug was a textbook recurrence** — jsdom passed, workerd 500'd; this rule didn't get applied to PR #188 and cost ~3hrs of session time today.
 
 ## 🚨 TOP OF MIND — 2026-05-24 release/v1.2.0 → main shipped
 
