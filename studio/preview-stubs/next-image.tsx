@@ -14,7 +14,13 @@ type NextImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   quality?: number;
 };
 
-const PREVIEW_ASSET_ORIGIN = "https://withjosephine.com";
+// Public-origin static assets are blocked from loading inside the
+// sandboxed iframe by Cross-Origin-Resource-Policy: same-origin. Swap
+// the src for a tiny transparent placeholder so the layout (width /
+// height / opacity) is preserved without a broken-image icon. Data
+// URLs are not subject to CORP and load synchronously.
+const TRANSPARENT_PIXEL =
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E";
 
 function resolveSrc(src: NextImageProps["src"]): string {
   const raw =
@@ -24,7 +30,7 @@ function resolveSrc(src: NextImageProps["src"]): string {
         ? src.default.src
         : src.src;
   if (raw.startsWith("/") && !raw.startsWith("//")) {
-    return `${PREVIEW_ASSET_ORIGIN}${raw}`;
+    return TRANSPARENT_PIXEL;
   }
   return raw;
 }
