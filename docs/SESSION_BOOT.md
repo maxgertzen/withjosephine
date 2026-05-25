@@ -1,26 +1,29 @@
 # Session Boot — Active State
 
-## ✅ ACTIVE 2026-05-25 — `release/v1.3.0` cut from main at `ec8a8f1`
+## ✅ ACTIVE 2026-05-25 — `release/v1.3.0` — U3-U8 EPIC SHIPPED, apex unpark remaining
 
-New release line for the U3–U7 + apex unpark cleanup arc. Cut via commit `56dec00` (CI wiring: added `release/v1.3.0` to `.github/workflows/ci.yml` push branches + `deploy-staging` + `sanity-validate-staging` gates, mirroring the v1.2.x convention).
+Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.3.0` in one session:
+- ✅ `wwqgjtjo` — U3 download filenames (PR #200 `00bae05`)
+- ✅ `k9x59wwp` — U5 gift-purchase prefill purchaser email (PR #201 `4b7c4b6`)
+- ✅ `dtq86ycp` — U4 hover affordance audit (PR #202 `53bfa40`)
+- ✅ `em3o7rz6` — U7 + U8 Studio bundle (PR #203 `75daeac`). U7 audit found booking + thank-you already wired via Sanity Presentation Tool (PR #198 + `studio/presentation.ts`). U8 decision LOCKED: compute claimed-vs-paid from `giftClaimedAt` presence — no enum, no migration. Status label + 7-day countdown derived in `studio/schemas/submissionPreview.ts` via pure helpers. 25 new tests, 1816/1816 passing.
 
 **Active branch:** `release/v1.3.0`
-**Most-recent commit:** `56dec00` (CI wiring)
+**Most-recent commit:** `75daeac`
 **Open PRs on release/v1.3.0:** none
-**Main:** `ec8a8f1` (post-merge bookkeeping)
+**Main:** `ec8a8f1` (v1.2.1 + bookkeeping)
 **Tags:** `v1.1.0` at `882752d`, `v1.2.0` at `94e9d5d`, `v1.2.1` at `ec9c181`
 
-**Sprint queue (dex epic `wz9t979j`):**
-- `wwqgjtjo` — U3 download filenames (Content-Disposition)
-- `dtq86ycp` — U4 hover affordance audit
-- `k9x59wwp` — U5 gift-purchase prefill purchaser email
-- `em3o7rz6` — U7 + U8 Studio bundle (preview + claimed-at + countdown)
+**Follow-ups filed during the arc:**
+- `zhyes1s7` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler — CSS rule can't bridge)
 
-**Parallel apex-unpark cleanup (dex epic `wdpz1ux4`):**
+**Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
 - `cdw3mnpg` — Stripe test-mode webhook split
 - `ttys8qku` — Re-run smoke walkthrough on prod
 - (operator) Production-side `recipient-user-id` repair behind `--i-understand-this-is-production`
+
+**Next steps:** when apex unpark hold-gate items above are operationally cleared, open `release/v1.3.0` → `main` PR (cumulative simplify + code-review pass via `sentry-skills:code-simplifier` + `sentry-skills:code-review` before opening, per `feedback_simplify_scale_to_change_size`).
 
 ## ✅ RESOLVED 2026-05-25 — `release/v1.2.1` MERGED to main via PR #199 (merge `5aa49bc`)
 
