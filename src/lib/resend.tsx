@@ -93,6 +93,18 @@ function redactRecipient(to: string | string[]) {
 
 type SkipReason = "sandbox_prefix" | "flag" | "header";
 
+async function resolveSkipReason(
+  recipients: readonly string[],
+  originatorEmail: string | null,
+): Promise<SkipReason | null> {
+  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
+    return "sandbox_prefix";
+  }
+  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  if (await shouldDryRunFromRequestHeader()) return "header";
+  return null;
+}
+
 // Fail-closed: header present + worker secret unset → skip the send.
 // Without this, a runner-only secret silently burns Resend quota per CI run.
 async function shouldDryRunFromRequestHeader(): Promise<boolean> {
@@ -146,14 +158,7 @@ async function sendOrSkip(args: {
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
   const recipientList = Array.isArray(args.to) ? args.to : [args.to];
-  const skipReason: SkipReason | null =
-    recipientList.some(isSandboxEmail) || isSandboxEmail(args.originatorEmail)
-      ? "sandbox_prefix"
-      : isFlagEnabled("RESEND_DRY_RUN")
-        ? "flag"
-        : (await shouldDryRunFromRequestHeader())
-          ? "header"
-          : null;
+  const skipReason = await resolveSkipReason(recipientList, args.originatorEmail ?? null);
   if (skipReason) {
     const captureUrl = process.env.E2E_CAPTURE_URL;
     if (captureUrl) {

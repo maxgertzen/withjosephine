@@ -23,13 +23,9 @@ export type OrderConfirmationProps = {
   shell?: EmailSharedShellContent;
 };
 
-function priceCell(vars: OrderConfirmationVars): string {
-  return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
-}
-
 export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: OrderConfirmationProps) {
   const copy = applyTokens(rawCopy, vars);
-  const price = priceCell(vars);
+  const price = vars.amountPaidDisplay ?? vars.readingPriceDisplay;
   const useFoldedBody = hasBodyContent(copy.body);
 
   return (

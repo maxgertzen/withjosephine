@@ -27,10 +27,6 @@ export type GiftPurchaseConfirmationScheduledProps = {
   shell?: EmailSharedShellContent;
 };
 
-function priceCell(vars: GiftPurchaseConfirmationScheduledVars): string {
-  return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
-}
-
 export function GiftPurchaseConfirmationScheduled({
   vars,
   copy: rawCopy,
@@ -41,7 +37,7 @@ export function GiftPurchaseConfirmationScheduled({
     recipientName: vars.recipientName ?? "your recipient",
   };
   const copy = applyTokens(rawCopy, tokens);
-  const price = priceCell(vars);
+  const price = vars.amountPaidDisplay ?? vars.readingPriceDisplay;
   const useFoldedBody = hasBodyContent(copy.body);
 
   return (
