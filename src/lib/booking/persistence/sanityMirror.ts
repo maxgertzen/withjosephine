@@ -7,6 +7,8 @@
  * Sanity and pushes the missing rows.
  */
 
+import type { SanityClient } from "next-sanity";
+
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import {
@@ -35,11 +37,9 @@ function ackBlock(
   return ackAt ? { labelText: label, acknowledgedAt: ackAt } : undefined;
 }
 
-type SanityWritable = ReturnType<typeof getSanityWriteClient>;
-
-function getClient(): SanityWritable | null {
+async function getClient(): Promise<SanityClient | null> {
   try {
-    return getSanityWriteClient();
+    return await getSanityWriteClient();
   } catch (error) {
     console.warn("[sanityMirror] Sanity client not configured — mirror skipped", error);
     return null;
@@ -60,7 +60,7 @@ function getClient(): SanityWritable | null {
 const readingRefCache = new Map<string, { _type: "reference"; _ref: string }>();
 
 async function findReadingRef(
-  client: SanityWritable,
+  client: SanityClient,
   slug: string,
 ): Promise<{ _type: "reference"; _ref: string } | null> {
   const cached = readingRefCache.get(slug);
@@ -85,7 +85,7 @@ export async function mirrorSubmissionCreate(
   consent: MirrorCreateConsent,
 ): Promise<void> {
   console.info(`[sanityMirror] mirrorSubmissionCreate entered for ${input.id}`);
-  const client = getClient();
+  const client = await getClient();
   if (!client) {
     console.warn(`[sanityMirror] mirrorSubmissionCreate no client for ${input.id} — skipping`);
     return;
@@ -179,7 +179,7 @@ export async function mirrorSubmissionPatch(
     readingSlug: string;
   }>,
 ): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   if (!client) return;
 
   // Sanity requires `_key` on each array item. Inject keys for responses
@@ -208,7 +208,7 @@ export async function mirrorSubmissionPatch(
 }
 
 export async function mirrorSubmissionDelete(id: string): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   if (!client) return;
   try {
     await client.delete(id);
@@ -228,7 +228,7 @@ export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
 ): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   if (!client) return;
   try {
     await client
@@ -247,7 +247,7 @@ export async function mirrorMarkSubmissionListened(
   id: string,
   listenedAt: string,
 ): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   if (!client) return;
   try {
     await client.patch(id).setIfMissing({ listenedAt }).commit({ visibility: "async" });
@@ -257,7 +257,7 @@ export async function mirrorMarkSubmissionListened(
 }
 
 export async function mirrorUnsetPhotoKey(id: string): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   if (!client) return;
   try {
     await client.patch(id).unset(["photoR2Key"]).commit({ visibility: "async" });

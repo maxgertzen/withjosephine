@@ -30,7 +30,7 @@ async function reconcileMirror(): Promise<Summary> {
   }
 
   const ids = d1Rows.map((row) => row._id);
-  const sanity = getSanityWriteClient();
+  const sanity = await getSanityWriteClient();
   const sanityDocs = await sanity.fetch<SanityMirrorSnapshot[]>(
     `*[_type == "submission" && _id in $ids]{
       _id, status, paidAt, expiredAt,

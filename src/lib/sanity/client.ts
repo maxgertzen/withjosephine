@@ -1,14 +1,43 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createClient, type SanityClient } from "next-sanity";
 
 import { requireEnv } from "../env";
 import { taintServerObject } from "../taint";
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
+const buildBakedDataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 const apiVersion = "2025-01-01";
 
 const apiHost = process.env.SANITY_API_HOST;
 const hostOverride = apiHost ? { apiHost, useCdn: false, useProjectHostname: false } : {};
+
+/**
+ * `NEXT_PUBLIC_SANITY_DATASET` is inlined as a string literal at build time by
+ * Next.js's DefinePlugin. A manual `wrangler deploy --env staging` from a dev
+ * machine whose `.env.local` carries the wrong dataset bakes that value and
+ * deploys it to the staging worker — silently mirroring submissions into the
+ * production dataset (2026-05-25 incident).
+ *
+ * For write operations (which must hit the correct dataset or the booking
+ * disappears as far as Studio is concerned), read the dataset name from the
+ * Cloudflare runtime env. `wrangler.jsonc` declares the per-env value as a
+ * worker var, which is the authoritative runtime source-of-truth.
+ *
+ * Falls back to the build-baked value when CF context is unavailable (vitest,
+ * scripts, build-time) — tests stub the client anyway, and the baked value is
+ * correct for the env Next was built in.
+ */
+async function resolveDataset(): Promise<string> {
+  try {
+    const { env } = await getCloudflareContext({ async: true });
+    const runtime = (env as { NEXT_PUBLIC_SANITY_DATASET?: string })
+      ?.NEXT_PUBLIC_SANITY_DATASET;
+    if (runtime) return runtime;
+  } catch {
+    // No CF runtime context — fall through to the build-baked value.
+  }
+  return buildBakedDataset;
+}
 
 /**
  * `stega.studioUrl` tells the `<VisualEditing />` overlay where to send
@@ -26,7 +55,7 @@ const studioUrl = process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "http://localhost
  */
 export const sanityClient = createClient({
   projectId,
-  dataset,
+  dataset: buildBakedDataset,
   apiVersion,
   useCdn: true,
   stega: { studioUrl },
@@ -38,12 +67,20 @@ export const sanityClient = createClient({
  * booking submissions). Lazy so importing this module doesn't blow up in build
  * environments without `SANITY_WRITE_TOKEN` set. `useCdn:false` is required
  * for writes.
+ *
+ * Async + per-dataset cache because the dataset is resolved at runtime from
+ * `getCloudflareContext().env.NEXT_PUBLIC_SANITY_DATASET` rather than the
+ * build-baked literal. See `resolveDataset` above. Cache is keyed by dataset
+ * so the worker isolate never holds more than one client per dataset (in
+ * practice always one — workers don't cross datasets within a request).
  */
-let cachedWriteClient: SanityClient | null = null;
+const cachedWriteClientsByDataset = new Map<string, SanityClient>();
 
-export function getSanityWriteClient(): SanityClient {
-  if (cachedWriteClient) return cachedWriteClient;
-  cachedWriteClient = createClient({
+export async function getSanityWriteClient(): Promise<SanityClient> {
+  const dataset = await resolveDataset();
+  const cached = cachedWriteClientsByDataset.get(dataset);
+  if (cached) return cached;
+  const client = createClient({
     projectId,
     dataset,
     apiVersion,
@@ -53,7 +90,8 @@ export function getSanityWriteClient(): SanityClient {
   });
   taintServerObject(
     "Sanity write client carries SANITY_WRITE_TOKEN; do not pass to client components.",
-    cachedWriteClient,
+    client,
   );
-  return cachedWriteClient;
+  cachedWriteClientsByDataset.set(dataset, client);
+  return client;
 }
