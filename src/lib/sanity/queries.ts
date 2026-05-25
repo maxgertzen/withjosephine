@@ -265,6 +265,7 @@ export const emailPrivacyExportQuery = groq`
   *[_type == "emailPrivacyExport"][0] {
     subject,
     preview,
+    heroLine,
     bodyIntro,
     bodyPostButton,
     greeting,
@@ -280,6 +281,8 @@ export const emailMagicLinkQuery = groq`
   *[_type == "emailMagicLink"][0] {
     subject,
     preview,
+    heroLine,
+    buttonLabel,
     greeting,
     body,
     signOff
@@ -290,6 +293,8 @@ export const emailMagicLinkMyReadingsQuery = groq`
   *[_type == "emailMagicLinkMyReadings"][0] {
     subject,
     preview,
+    heroLine,
+    buttonLabel,
     greeting,
     body,
     signOff
@@ -300,6 +305,8 @@ export const emailMagicLinkMyGiftsQuery = groq`
   *[_type == "emailMagicLinkMyGifts"][0] {
     subject,
     preview,
+    heroLine,
+    buttonLabel,
     greeting,
     body,
     signOff
@@ -438,6 +445,16 @@ export const emailDay7DeliveryQuery = groq`
     accessWindowLine,
     comfortFollowUp,
     signOff
+  }
+`;
+
+export const emailSharedShellQuery = groq`
+  *[_id == "emailSharedShell"][0] {
+    brandName,
+    brandSubtitle,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
   }
 `;
 

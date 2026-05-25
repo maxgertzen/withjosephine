@@ -50,15 +50,18 @@ describe("PrivacyExport email", () => {
     expect(text).toContain("Josephine ✦");
   });
 
-  it("renders the override sign-off when supplied", async () => {
+  it("honors shared-shell signoff overrides", async () => {
+    const { EMAIL_SHARED_SHELL_DEFAULTS } = await import("@/data/defaults");
     const text = visibleText(
       await render(
         <PrivacyExport
           vars={VARS}
-          copy={{ ...EMAIL_PRIVACY_EXPORT_DEFAULTS, signOff: "In peace, J." }}
+          copy={EMAIL_PRIVACY_EXPORT_DEFAULTS}
+          shell={{ ...EMAIL_SHARED_SHELL_DEFAULTS, signOffLine1: "In peace,", signOffLine2: "J." }}
         />,
       ),
     );
-    expect(text).toContain("In peace, J.");
+    expect(text).toContain("In peace,");
+    expect(text).toContain("J.");
   });
 });

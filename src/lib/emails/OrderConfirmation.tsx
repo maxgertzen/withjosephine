@@ -1,6 +1,7 @@
 import { Container, Hr, Link, Section } from "@react-email/components";
 
-import type { EmailOrderConfirmationContent } from "@/data/defaults";
+import type { EmailOrderConfirmationContent, EmailSharedShellContent } from "@/data/defaults";
+import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
@@ -16,13 +17,14 @@ export type OrderConfirmationVars = {
 export type OrderConfirmationProps = {
   vars: OrderConfirmationVars;
   copy: EmailOrderConfirmationContent;
+  shell?: EmailSharedShellContent;
 };
 
 function priceCell(vars: OrderConfirmationVars): string {
   return vars.amountPaidDisplay ?? vars.readingPriceDisplay;
 }
 
-export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProps) {
+export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: OrderConfirmationProps) {
   const copy = applyTokens(rawCopy, vars);
   const price = priceCell(vars);
   const useFoldedBody = hasBodyContent(copy.body);
@@ -39,13 +41,13 @@ export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProp
                 className="font-serif text-ink"
                 style={{ margin: 0, fontWeight: 500, fontSize: 38, lineHeight: 1, letterSpacing: "0.005em" }}
               >
-                {copy.brandName}
+                {shell.brandName}
               </p>
               <p
                 className="font-sans text-muted uppercase"
                 style={{ margin: "10px 0 0 0", fontSize: 11, letterSpacing: "0.32em" }}
               >
-                {copy.brandSubtitle}
+                {shell.brandSubtitle}
               </p>
             </Section>
 
@@ -126,8 +128,8 @@ export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProp
               className="font-serif italic text-ink"
               style={{ padding: "36px 48px 16px 48px", fontSize: 22, lineHeight: 1.4 }}
             >
-              <p style={{ margin: "0 0 4px 0" }}>{copy.signOffLine1}</p>
-              <p style={{ margin: 0 }}>{copy.signOffLine2}</p>
+              <p style={{ margin: "0 0 4px 0" }}>{shell.signOffLine1}</p>
+              <p style={{ margin: 0 }}>{shell.signOffLine2}</p>
             </Section>
 
 
@@ -145,7 +147,7 @@ export function OrderConfirmation({ vars, copy: rawCopy }: OrderConfirmationProp
                   withjosephine.com
                 </Link>
               </p>
-              <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
+              <p style={{ margin: "8px 0 0 0" }}>{shell.footerDisclaimer}</p>
             </Section>
       </Container>
     </EmailShell>

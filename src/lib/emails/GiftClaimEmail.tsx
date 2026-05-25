@@ -1,6 +1,7 @@
 import { Button, Container, Hr, Link, Section } from "@react-email/components";
 
-import type { EmailGiftClaimContent } from "@/data/defaults";
+import type { EmailGiftClaimContent, EmailSharedShellContent } from "@/data/defaults";
+import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { EmailShell } from "./EmailShell";
@@ -18,9 +19,10 @@ export type GiftClaimEmailVars = {
 export type GiftClaimEmailProps = {
   vars: GiftClaimEmailVars;
   copy: EmailGiftClaimContent;
+  shell?: EmailSharedShellContent;
 };
 
-export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
+export function GiftClaimEmail({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: GiftClaimEmailProps) {
   const copy = applyTokens(rawCopy, vars);
   const useFoldedBody = hasBodyContent(copy.body);
 
@@ -41,13 +43,13 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
                   letterSpacing: "0.005em",
                 }}
               >
-                {copy.brandName}
+                {shell.brandName}
               </p>
               <p
                 className="font-sans text-muted uppercase"
                 style={{ margin: "10px 0 0 0", fontSize: 11, letterSpacing: "0.32em" }}
               >
-                {copy.brandSubtitle}
+                {shell.brandSubtitle}
               </p>
             </Section>
 
@@ -157,8 +159,8 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
               className="font-serif italic text-ink"
               style={{ padding: "36px 48px 16px 48px", fontSize: 22, lineHeight: 1.4 }}
             >
-              <p style={{ margin: "0 0 4px 0" }}>{copy.signOffLine1}</p>
-              <p style={{ margin: 0 }}>{copy.signOffLine2}</p>
+              <p style={{ margin: "0 0 4px 0" }}>{shell.signOffLine1}</p>
+              <p style={{ margin: 0 }}>{shell.signOffLine2}</p>
             </Section>
 
             <Hr className="border-divider" style={{ margin: 0 }} />
@@ -175,7 +177,7 @@ export function GiftClaimEmail({ vars, copy: rawCopy }: GiftClaimEmailProps) {
                   withjosephine.com
                 </Link>
               </p>
-              <p style={{ margin: "8px 0 0 0" }}>{copy.footerDisclaimer}</p>
+              <p style={{ margin: "8px 0 0 0" }}>{shell.footerDisclaimer}</p>
             </Section>
       </Container>
     </EmailShell>

@@ -35,6 +35,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Your reading is booked — here's what happens next",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandName",
       title: "Brand wordmark",
       type: "string",
@@ -42,6 +44,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Josephine",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandSubtitle",
       title: "Brand sub-line",
       type: "string",
@@ -118,6 +122,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Delivery within 7 days",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine1",
       title: "Sign-off line 1",
       type: "string",
@@ -125,6 +131,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "With love,",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine2",
       title: "Sign-off line 2",
       type: "string",
@@ -132,6 +140,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Josephine ✦",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "footerDisclaimer",
       title: "Footer disclaimer",
       type: "string",

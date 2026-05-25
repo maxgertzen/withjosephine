@@ -1,7 +1,7 @@
 import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
-import { EMAIL_GIFT_CLAIM_DEFAULTS } from "@/data/defaults";
+import { EMAIL_GIFT_CLAIM_DEFAULTS, EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { GiftClaimEmail } from "./GiftClaimEmail";
 import { stringToPortableTextBlocks } from "./PortableTextBody";
@@ -19,7 +19,7 @@ const VARS = {
 describe("GiftClaimEmail — first-send variant", () => {
   it("renders the recipient + purchaser names", async () => {
     const text = visibleText(
-      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("Mira");
     expect(text).toContain("Lior");
@@ -27,7 +27,7 @@ describe("GiftClaimEmail — first-send variant", () => {
 
   it("includes the claim URL + CTA label", async () => {
     const html = await render(
-      <GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
+      <GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />,
     );
     expect(html).toContain("https://withjosephine.com/gift/claim?token=abc123");
     expect(html).toContain(EMAIL_GIFT_CLAIM_DEFAULTS.claimButtonLabel);
@@ -35,7 +35,7 @@ describe("GiftClaimEmail — first-send variant", () => {
 
   it("renders the gift message when present", async () => {
     const text = visibleText(
-      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("happy birthday");
   });
@@ -84,7 +84,7 @@ describe("GiftClaimEmail — first-send variant", () => {
 
   it("renders the new body PT path when copy.body has content", async () => {
     const text = visibleText(
-      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("Lior has given you a Soul Blueprint");
   });
