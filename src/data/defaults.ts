@@ -805,6 +805,9 @@ export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent =
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
   preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
   bodyIntro?: EmailRichText;
   bodyPostButton?: EmailRichText;
   greeting?: string;
@@ -814,6 +817,11 @@ export interface EmailDay7DeliveryContent {
   signedInDisclosure?: EmailRichText;
   accessWindowLine?: EmailRichText;
   comfortFollowUp?: EmailRichText;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
   signOff: string | null;
 }
 
@@ -858,6 +866,9 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  heroLine: "Your reading is ready",
   bodyIntro: [
     ...stringToPortableTextBlocks("Hi {firstName},"),
     ...stringToPortableTextBlocks("Your {readingName} is here."),
@@ -891,6 +902,11 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   comfortFollowUp: stringToPortableTextBlocks(
     "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
   ),
+  cardLabel: "Your reading",
+  cardDeliveryLine: "Voice note + PDF",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
   signOff: null,
 };
 

@@ -52,23 +52,64 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
     expect(() => assertBrandTokens(html, { ink: true })).not.toThrow();
   });
 
-  it("falls back to the default SignOff when copy.signOff is null", async () => {
+  it("renders the italic-serif signOff lines from copy", async () => {
     const text = visibleText(
       await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />),
     );
+    expect(text).toContain("With love,");
     expect(text).toContain("Josephine ✦");
   });
 
-  it("renders a custom sign-off when copy.signOff is set (Sanity override)", async () => {
+  it("honors Sanity overrides on signOffLine1 + signOffLine2", async () => {
     const text = visibleText(
       await render(
         <Day7Delivery
           vars={VARS}
-          copy={{ ...EMAIL_DAY7_DELIVERY_DEFAULTS, signOff: "In peace, J." }}
+          copy={{
+            ...EMAIL_DAY7_DELIVERY_DEFAULTS,
+            signOffLine1: "In peace,",
+            signOffLine2: "J.",
+          }}
         />,
       ),
     );
-    expect(text).toContain("In peace, J.");
+    expect(text).toContain("In peace,");
+    expect(text).toContain("J.");
+  });
+
+  it("renders the brand header (brandName + brandSubtitle)", async () => {
+    const text = visibleText(
+      await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />),
+    );
+    expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.brandName);
+    expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.brandSubtitle);
+  });
+
+  it("renders the gold-bordered hero line", async () => {
+    const text = visibleText(
+      await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />),
+    );
+    expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.heroLine);
+  });
+
+  it("renders the reading card with readingName + readingPriceDisplay + delivery line", async () => {
+    const text = visibleText(
+      await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />),
+    );
+    expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.cardLabel);
+    expect(text).toContain(VARS.readingName);
+    expect(text).toContain(VARS.readingPriceDisplay);
+    expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.cardDeliveryLine);
+  });
+
+  it("renders the footer disclaimer + mailto/site links", async () => {
+    const html = await render(
+      <Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} />,
+    );
+    expect(visibleText(html)).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.footerDisclaimer);
+    const links = linkHrefs(html);
+    expect(links.has("mailto:hello@withjosephine.com")).toBe(true);
+    expect(links.has("https://withjosephine.com")).toBe(true);
   });
 
   it("escapes HTML in firstName + readingName via templating", async () => {
