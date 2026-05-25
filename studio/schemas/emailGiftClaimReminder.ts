@@ -38,6 +38,8 @@ export const emailGiftClaimReminder = defineType({
       initialValue: "A small reminder about the reading {purchaserFirstName} sent you.",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandName",
       title: "Brand wordmark",
       type: "string",
@@ -45,6 +47,8 @@ export const emailGiftClaimReminder = defineType({
       initialValue: "Josephine",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandSubtitle",
       title: "Brand sub-line",
       type: "string",
@@ -93,6 +97,8 @@ export const emailGiftClaimReminder = defineType({
       initialValue: "Delivered within 7 days of your intake",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine1",
       title: "Sign-off line 1",
       type: "string",
@@ -100,6 +106,8 @@ export const emailGiftClaimReminder = defineType({
       initialValue: "With love,",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine2",
       title: "Sign-off line 2",
       type: "string",
@@ -107,6 +115,8 @@ export const emailGiftClaimReminder = defineType({
       initialValue: "Josephine ✦",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "footerDisclaimer",
       title: "Footer disclaimer",
       type: "string",

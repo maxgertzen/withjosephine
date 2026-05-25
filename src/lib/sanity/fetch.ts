@@ -19,6 +19,7 @@ import {
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
   emailRecipientIntakeReceivedQuery,
+  emailSharedShellQuery,
   faqItemsQuery,
   giftClaimPageQuery,
   giftIntakePageQuery,
@@ -53,6 +54,7 @@ import type {
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailRecipientIntakeReceived,
+  SanityEmailSharedShell,
   SanityFaqItem,
   SanityGiftClaimPage,
   SanityGiftIntakePage,
@@ -296,6 +298,15 @@ export const fetchEmailGiftPurchaseConfirmationScheduled = cache(
   async (): Promise<SanityEmailGiftPurchaseConfirmationScheduled | null> => {
     const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmationScheduled | null>({
       query: emailGiftPurchaseConfirmationScheduledQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailSharedShell = cache(
+  async (): Promise<SanityEmailSharedShell | null> => {
+    const { data } = await sanityFetch<SanityEmailSharedShell | null>({
+      query: emailSharedShellQuery,
     });
     return data;
   },

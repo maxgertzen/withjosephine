@@ -23,6 +23,7 @@ import { emailGiftPurchaseConfirmationScheduled } from "./emailGiftPurchaseConfi
 import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfirmationSelfSend";
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
 import { emailPrivacyExport } from "./emailPrivacyExport";
+import { emailSharedShell } from "./emailSharedShell";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -58,6 +59,7 @@ export const schemaTypes = [
   emailGiftClaimReminder,
   emailRecipientIntakeReceived,
   emailPrivacyExport,
+  emailSharedShell,
   giftClaimPage,
   giftIntakePage,
   listenPage,

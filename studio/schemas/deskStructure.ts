@@ -32,6 +32,7 @@ export const SINGLETON_TYPES = new Set([
   "emailGiftClaimReminder",
   "emailRecipientIntakeReceived",
   "emailPrivacyExport",
+  "emailSharedShell",
   "giftClaimPage",
   "giftIntakePage",
   "listenPage",
@@ -211,6 +212,8 @@ const emailsGroup = (S: StructureBuilder) =>
           emailSingletonListItem(S, "emailMagicLinkMyReadings", "Magic Link — My Readings"),
           emailSingletonListItem(S, "emailMagicLinkMyGifts", "Magic Link — My Gifts"),
           emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export (GDPR)"),
+          S.divider(),
+          singletonListItem(S, "emailSharedShell", "Shared Shell (brand + footer)"),
         ]),
     );
 

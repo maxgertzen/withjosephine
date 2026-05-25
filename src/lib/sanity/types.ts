@@ -324,6 +324,14 @@ export type SanityEmailDay7Delivery = {
   signOff: string | null;
 };
 
+export type SanityEmailSharedShell = {
+  brandName: string;
+  brandSubtitle: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
 export type SanityListenPage = {
   welcomeRibbon: string;
   deliveredHeading: string;

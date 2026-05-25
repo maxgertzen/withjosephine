@@ -38,6 +38,8 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
       initialValue: "We'll send it to {recipientName} on {sendAtDisplay}.",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandName",
       title: "Brand wordmark",
       type: "string",
@@ -45,6 +47,8 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
       initialValue: "Josephine",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandSubtitle",
       title: "Brand sub-line",
       type: "string",
@@ -92,6 +96,8 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
       validation: validateScheduledSlots,
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine1",
       title: "Sign-off line 1",
       type: "string",
@@ -99,6 +105,8 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
       initialValue: "With love,",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine2",
       title: "Sign-off line 2",
       type: "string",
@@ -106,6 +114,8 @@ export const emailGiftPurchaseConfirmationScheduled = defineType({
       initialValue: "Josephine ✦",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "footerDisclaimer",
       title: "Footer disclaimer",
       type: "string",

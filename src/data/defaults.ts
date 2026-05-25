@@ -521,11 +521,28 @@ export const EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS: EmailMagicLinkContent = {
   signOff: null,
 };
 
+// Brand + footer fields shared across every customer-facing email template.
+// Sourced from the `emailSharedShell` Sanity singleton at render time; this
+// constant is the fallback when the GROQ fetch returns null.
+export interface EmailSharedShellContent {
+  brandName: string;
+  brandSubtitle: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_SHARED_SHELL_DEFAULTS: EmailSharedShellContent = {
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
 export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: EmailRichText;
   greeting?: string;
@@ -534,16 +551,11 @@ export interface EmailOrderConfirmationContent {
   contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = {
   subject: "Your reading is booked — here’s what happens next",
   preview: "Your reading is booked — here’s what happens next",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Your reading is booked",
   body: [
     ...stringToPortableTextBlocks("Hi {firstName},"),
@@ -569,16 +581,11 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailRecipientIntakeReceivedContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: EmailRichText;
   greeting?: string;
@@ -587,16 +594,11 @@ export interface EmailRecipientIntakeReceivedContent {
   contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeReceivedContent = {
   subject: "Your reading is in my hands now",
   preview: "Your answers landed safely — here's what happens next.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Your reading is in my hands",
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
@@ -622,16 +624,11 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
   ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailGiftPurchaseConfirmationSelfSendContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: EmailRichText;
   greeting?: string;
@@ -641,16 +638,11 @@ export interface EmailGiftPurchaseConfirmationSelfSendContent {
   cardLabel: string;
   cardDeliveryLine: string;
   refundLine: EmailRichText;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurchaseConfirmationSelfSendContent = {
   subject: "Your gift is ready to share",
   preview: "Your shareable link is inside.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "A reading, ready for them",
   body: [
     ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
@@ -671,16 +663,11 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurch
   refundLine: stringToPortableTextBlocks(
     "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
   ),
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailGiftPurchaseConfirmationScheduledContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: EmailRichText;
   greeting?: string;
@@ -688,16 +675,11 @@ export interface EmailGiftPurchaseConfirmationScheduledContent {
   cardLabel: string;
   cardDeliveryLine: string;
   refundLine: EmailRichText;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurchaseConfirmationScheduledContent = {
   subject: "Your gift is scheduled",
   preview: "We’ll send it to {recipientName} on {sendAtDisplay}.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "A reading, on its way",
   body: [
     ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
@@ -714,16 +696,11 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurch
   refundLine: stringToPortableTextBlocks(
     "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
   ),
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailGiftClaimContent {
   subjectFirstSend: string;
   previewFirstSend: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLineFirstSend: string;
   body?: EmailRichText;
   greeting?: string;
@@ -733,16 +710,11 @@ export interface EmailGiftClaimContent {
   claimUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   subjectFirstSend: "A reading, waiting for you",
   previewFirstSend: "{purchaserFirstName} has sent you a reading.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLineFirstSend: "A reading, for you",
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
@@ -761,31 +733,21 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivered within 7 days of your intake",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailGiftClaimReminderContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: EmailRichText;
   giftMessageLabel: string;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent = {
   subject: "A reading is still waiting for you",
   preview: "A small reminder about the reading {purchaserFirstName} sent you.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Still here, when you’re ready",
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
@@ -796,17 +758,12 @@ export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent =
   giftMessageLabel: "A note from {purchaserFirstName}",
   cardLabel: "The gift",
   cardDeliveryLine: "Delivered within 7 days of your intake",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   bodyIntro?: EmailRichText;
   bodyPostButton?: EmailRichText;
@@ -819,9 +776,6 @@ export interface EmailDay7DeliveryContent {
   comfortFollowUp?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
   signOff: string | null;
 }
 
@@ -866,8 +820,6 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Your reading is ready",
   bodyIntro: [
     ...stringToPortableTextBlocks("Hi {firstName},"),
@@ -904,9 +856,6 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Voice note + PDF",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
   signOff: null,
 };
 

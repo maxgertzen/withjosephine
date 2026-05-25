@@ -40,6 +40,7 @@ vi.mock("./sanity/fetch", () => ({
   fetchEmailGiftClaimReminder: vi.fn().mockResolvedValue(null),
   fetchEmailGiftPurchaseConfirmationSelfSend: vi.fn().mockResolvedValue(null),
   fetchEmailGiftPurchaseConfirmationScheduled: vi.fn().mockResolvedValue(null),
+  fetchEmailSharedShell: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {

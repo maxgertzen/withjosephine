@@ -1,7 +1,7 @@
 import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
-import { EMAIL_ORDER_CONFIRMATION_DEFAULTS } from "@/data/defaults";
+import { EMAIL_ORDER_CONFIRMATION_DEFAULTS, EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { OrderConfirmation } from "./OrderConfirmation";
 import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
@@ -35,21 +35,21 @@ const SIGNATURE_LINES = ["With love,", "Josephine ✦"] as const;
 describe("OrderConfirmation — visual parity with locked copy", () => {
   it("renders header lines from Sanity-driven copy", async () => {
     const text = visibleText(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     for (const line of HEADER_LINES) expect(text).toContain(line);
   });
 
   it("renders body paragraphs after firstName/readingName templating", async () => {
     const text = visibleText(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     for (const line of BODY_LINES) expect(text).toContain(line);
   });
 
   it("renders the inset price card with amountPaidDisplay when set", async () => {
     const text = visibleText(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     for (const line of PRICE_CARD_LINES) expect(text).toContain(line);
     expect(text).toContain("$129.00");
@@ -69,21 +69,21 @@ describe("OrderConfirmation — visual parity with locked copy", () => {
 
   it("renders the Sanity-driven signature block", async () => {
     const text = visibleText(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     for (const line of SIGNATURE_LINES) expect(text).toContain(line);
   });
 
   it("renders the Sanity-driven footer copy", async () => {
     const text = visibleText(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     for (const line of FOOTER_LINES) expect(text).toContain(line);
   });
 
   it("emits the mailto + site links", async () => {
     const hrefs = linkHrefs(
-      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />),
+      await render(<OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(hrefs.has("mailto:hello@withjosephine.com")).toBe(true);
     expect(hrefs.has("https://withjosephine.com")).toBe(true);
@@ -91,7 +91,7 @@ describe("OrderConfirmation — visual parity with locked copy", () => {
 
   it("uses the brand serif family + cream + warm + ink + gold tokens", async () => {
     const html = await render(
-      <OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} />,
+      <OrderConfirmation vars={VARS} copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />,
     );
     expect(() =>
       assertBrandTokens(html, { serif: true, cream: true, warm: true, ink: true, gold: true }),

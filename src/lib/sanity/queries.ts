@@ -441,6 +441,16 @@ export const emailDay7DeliveryQuery = groq`
   }
 `;
 
+export const emailSharedShellQuery = groq`
+  *[_id == "emailSharedShell"][0] {
+    brandName,
+    brandSubtitle,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
 export const listenPageQuery = groq`
   *[_type == "listenPage"][0] {
     welcomeRibbon,
