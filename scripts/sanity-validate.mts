@@ -75,7 +75,7 @@ if (!projectId) {
 // configured — read-only is strongly preferred for a validation harness so we
 // can't accidentally mutate, but write works as a fallback since reads are a
 // subset of write permissions.
-const token = process.env.SANITY_READ_TOKEN ?? process.env.SANITY_WRITE_TOKEN;
+const token = process.env.SANITY_READ_TOKEN || process.env.SANITY_WRITE_TOKEN;
 if (!token) {
   console.error("SANITY_READ_TOKEN (or SANITY_WRITE_TOKEN fallback) missing in env.");
   process.exit(2);
