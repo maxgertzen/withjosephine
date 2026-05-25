@@ -60,10 +60,8 @@ export function statusLabel(args: {
   if (args.status !== "paid") return null;
   if (args.isGift !== true) return null;
   if (args.deliveredAt) return null;
-  const claimedAt = parseIso(args.giftClaimedAt);
-  if (!claimedAt) return "Paid · awaiting claim";
   const countdown = giftDeliveryCountdown(args.giftClaimedAt, args.now);
-  return countdown ? `Claimed · ${countdown}` : "Claimed";
+  return countdown ? `Claimed · ${countdown}` : "Paid · awaiting claim";
 }
 
 function buildDates(args: {
