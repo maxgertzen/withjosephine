@@ -285,7 +285,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
           {copy.deliveryMethodLabel}
         </legend>
         <div role="radiogroup" aria-labelledby="delivery-method-label" className="flex flex-col gap-3">
-          <label className="flex gap-3 items-start cursor-pointer">
+          <label className="flex gap-3 items-start">
             <input
               type="radio"
               name="deliveryMethod"
@@ -303,7 +303,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
               </span>
             </span>
           </label>
-          <label className="flex gap-3 items-start cursor-pointer">
+          <label className="flex gap-3 items-start">
             <input
               type="radio"
               name="deliveryMethod"
@@ -468,7 +468,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       <button
         type="submit"
         disabled={submitting || !isFormValid}
-        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         {submitting ? (
           copy.loadingStateCopy

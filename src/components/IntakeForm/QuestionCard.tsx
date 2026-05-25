@@ -49,7 +49,7 @@ export function QuestionCard({
     >
       <label
         htmlFor={inputId}
-        className="flex items-start gap-3 cursor-pointer min-h-11"
+        className="flex items-start gap-3 min-h-11"
       >
         <span className="relative flex-shrink-0">
           <input
@@ -62,7 +62,7 @@ export function QuestionCard({
             onChange={onToggle}
             tabIndex={softened ? 0 : undefined}
             aria-disabled={softened || undefined}
-            className="absolute inset-0 w-[22px] h-[22px] opacity-0 cursor-pointer m-0 z-[2] focus-visible:outline-none"
+            className="absolute inset-0 w-[22px] h-[22px] opacity-0 m-0 z-[2] focus-visible:outline-none"
           />
           <span
             aria-hidden="true"

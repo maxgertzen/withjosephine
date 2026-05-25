@@ -176,7 +176,7 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors cursor-pointer"
+              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors"
             >
               Done
             </button>
@@ -184,7 +184,7 @@ export function TimePicker({
         ) : null}
       </div>
       {unknownToggle ? (
-        <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text cursor-pointer">
+        <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
           <input
             type="checkbox"
             checked={unknownToggle.checked}

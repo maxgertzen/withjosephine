@@ -54,14 +54,14 @@ export function ConsentBanner({ onAccept, onDecline, content }: ConsentBannerPro
           <button
             type="button"
             onClick={onDecline}
-            className="cursor-pointer rounded-[50px] border border-j-border-subtle px-5 py-2.5 font-body text-sm uppercase tracking-[0.12em] text-j-text-muted transition-colors hover:border-j-text-muted hover:text-j-text"
+            className="rounded-[50px] border border-j-border-subtle px-5 py-2.5 font-body text-sm uppercase tracking-[0.12em] text-j-text-muted transition-colors hover:border-j-text-muted hover:text-j-text"
           >
             {declineLabel}
           </button>
           <button
             type="button"
             onClick={onAccept}
-            className="cursor-pointer rounded-[50px] bg-j-bg-interactive px-5 py-2.5 font-body text-sm uppercase tracking-[0.12em] text-j-text-on-dark transition-colors hover:bg-j-midnight"
+            className="rounded-[50px] bg-j-bg-interactive px-5 py-2.5 font-body text-sm uppercase tracking-[0.12em] text-j-text-on-dark transition-colors hover:bg-j-midnight"
           >
             {acceptLabel}
           </button>

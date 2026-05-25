@@ -176,7 +176,7 @@ export function PlaceAutocomplete({
                   event.preventDefault();
                   commit(match);
                 }}
-                className={`px-4 py-2 cursor-pointer font-body text-base ${
+                className={`px-4 py-2 font-body text-base ${
                   index === active
                     ? "bg-j-blush/40 text-j-text-heading"
                     : "text-j-text"
