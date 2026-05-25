@@ -64,7 +64,7 @@ export function FaqSection({
                 onClick={() => toggle(item.id)}
                 aria-expanded={isOpen}
                 aria-controls={`faq-answer-${item.id}`}
-                className="w-full text-left px-6 py-5 flex items-center justify-between gap-4 cursor-pointer"
+                className="w-full text-left px-6 py-5 flex items-center justify-between gap-4"
               >
                 <span className="font-display text-lg italic text-j-text-heading leading-snug">
                   {item.question}

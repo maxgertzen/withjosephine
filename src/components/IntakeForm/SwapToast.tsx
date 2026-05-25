@@ -50,7 +50,7 @@ export function SwapToast({
           setOpen(false);
           onDismiss?.();
         }}
-        className="shrink-0 p-1 text-j-text-muted hover:text-j-text-heading transition-colors cursor-pointer"
+        className="shrink-0 p-1 text-j-text-muted hover:text-j-text-heading transition-colors"
         aria-label="Dismiss"
       >
         <X className="w-4 h-4" />

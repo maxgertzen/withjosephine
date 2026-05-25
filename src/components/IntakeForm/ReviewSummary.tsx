@@ -184,7 +184,7 @@ export function ReviewSummary({
             <button
               type="button"
               onClick={() => onEdit(card.pageIndex)}
-              className="font-body text-sm text-j-accent underline-offset-4 hover:underline focus-visible:underline shrink-0 cursor-pointer"
+              className="font-body text-sm text-j-accent underline-offset-4 hover:underline focus-visible:underline shrink-0"
               aria-label={`Edit ${card.sectionTitle}`}
             >
               Edit

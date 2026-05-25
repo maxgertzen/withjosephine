@@ -31,7 +31,7 @@ export function PageValidationSummary({
           <button
             type="button"
             onClick={onJumpToFirstError}
-            className="underline underline-offset-2 hover:text-j-text-heading transition-colors cursor-pointer"
+            className="underline underline-offset-2 hover:text-j-text-heading transition-colors"
           >
             {firstFieldLabel}
           </button>

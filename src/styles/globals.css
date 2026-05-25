@@ -105,6 +105,29 @@
 }
 
 /* ── Base Styles ── */
+@layer base {
+  button:not(:disabled),
+  a[href],
+  summary,
+  select:not(:disabled),
+  label[for],
+  label:has(> input:not([disabled]), > select:not([disabled])),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }

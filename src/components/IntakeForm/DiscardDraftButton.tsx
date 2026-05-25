@@ -40,7 +40,7 @@ export function DiscardDraftButton({ onConfirm }: DiscardDraftButtonProps) {
         type="button"
         onClick={() => setMode("confirming")}
         data-testid="discard-draft-button"
-        className="font-display italic text-sm text-j-text-muted hover:text-j-text underline-offset-2 hover:underline transition-colors cursor-pointer"
+        className="font-display italic text-sm text-j-text-muted hover:text-j-text underline-offset-2 hover:underline transition-colors"
       >
         Clear form
       </button>
@@ -71,7 +71,7 @@ export function DiscardDraftButton({ onConfirm }: DiscardDraftButtonProps) {
         type="button"
         onClick={handleCancel}
         data-testid="discard-draft-cancel"
-        className="font-body text-sm text-j-text-muted hover:text-j-text-heading underline-offset-2 hover:underline transition-colors cursor-pointer py-2 -my-2"
+        className="font-body text-sm text-j-text-muted hover:text-j-text-heading underline-offset-2 hover:underline transition-colors py-2 -my-2"
       >
         Keep it
       </button>
@@ -79,7 +79,7 @@ export function DiscardDraftButton({ onConfirm }: DiscardDraftButtonProps) {
         type="button"
         onClick={handleConfirm}
         data-testid="discard-draft-confirm-yes"
-        className="font-body text-sm font-medium text-j-rose hover:text-j-text-heading underline underline-offset-2 decoration-j-rose/40 hover:decoration-j-text-heading transition-colors cursor-pointer py-2 -my-2"
+        className="font-body text-sm font-medium text-j-rose hover:text-j-text-heading underline underline-offset-2 decoration-j-rose/40 hover:decoration-j-text-heading transition-colors py-2 -my-2"
       >
         Yes, clear it
       </button>

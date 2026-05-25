@@ -88,7 +88,7 @@ export function Navigation({ content, className }: NavigationProps) {
                 key={link.sectionId}
                 type="button"
                 onClick={() => scrollToSection(link.sectionId)}
-                className="text-[0.78rem] tracking-[0.12em] cursor-pointer uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
+                className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
               >
                 {link.label}
               </button>
@@ -100,7 +100,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
           <button
             type="button"
-            className="lg:hidden text-j-deep cursor-pointer"
+            className="lg:hidden text-j-deep"
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
