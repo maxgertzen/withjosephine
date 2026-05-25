@@ -8,14 +8,21 @@ Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.
 - ✅ `dtq86ycp` — U4 hover affordance audit (PR #202 `53bfa40`)
 - ✅ `em3o7rz6` — U7 + U8 Studio bundle (PR #203 `75daeac`). U7 audit found booking + thank-you already wired via Sanity Presentation Tool (PR #198 + `studio/presentation.ts`). U8 decision LOCKED: compute claimed-vs-paid from `giftClaimedAt` presence — no enum, no migration. Status label + 7-day countdown derived in `studio/schemas/submissionPreview.ts` via pure helpers. 25 new tests, 1816/1816 passing.
 
+**Post-U3-U8 work shipped on `release/v1.3.0`:**
+- `d7df7d2` — Simplifier ref: collapse statusLabel double-parse + dead Claimed fallback
+- `96a5703` — Empty-body bug fix: `scripts/backfill-empty-email-bodies-2026-05-25.mts` + seed-script update for `emailSharedShell`; backfilled 4 prod email singletons (OrderConfirmation, Day-7 Delivery, RecipientIntakeReceived, PrivacyExport) where the v1.2.1 body migration never reached production
+- `2ee6f20` (PR #204) — Address ALL code-review findings: H1 header-injection defense in `buildContentDisposition`, M1 slug coverage tests, M2 CSS `:not([readonly])` carve-out, M3 `useSyncExternalStore` GiftForm prefill refactor (no eslint-disable), M4 cross-flow draft guard, L1 plural grammar, L2 dev-only future-clamp warn, L3 `webm` dead-branch removal. Final test suite: 1836/1836.
+- Studio deployed to `withjosephine.sanity.studio` (both workspaces): `pnpm run deploy` from `studio/` after CI green on `2ee6f20`. Includes the new submissionPreview status label + countdown widget.
+
 **Active branch:** `release/v1.3.0`
-**Most-recent commit:** `75daeac`
+**Most-recent commit:** `2ee6f20`
 **Open PRs on release/v1.3.0:** none
 **Main:** `ec8a8f1` (v1.2.1 + bookkeeping)
 **Tags:** `v1.1.0` at `882752d`, `v1.2.0` at `94e9d5d`, `v1.2.1` at `ec9c181`
 
 **Follow-ups filed during the arc:**
-- `ym2efbwn` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler — CSS rule can't bridge). NOTE: originally claimed-filed as `zhyes1s7` in commit `e92c7cc` but that create was a silent no-op (the pattern from `feedback_dex_create_verify_with_show`); re-filed correctly 2026-05-25.
+- `ym2efbwn` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler; CSS rule can't bridge). NOTE: originally claimed-filed as `zhyes1s7` in commit `e92c7cc` but that create was a silent no-op (the pattern from `feedback_dex_create_verify_with_show`); re-filed correctly 2026-05-25.
+- `vw4zmbp5` — Studio workspace auth config divergence (warning at deploy time). Consolidate production + staging auth blocks to one shared config.
 
 **Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
