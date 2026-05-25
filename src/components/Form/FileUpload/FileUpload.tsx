@@ -7,11 +7,11 @@ import {
   ACCEPTED_PHOTO_MIME,
   ACCEPTED_PHOTO_MIME_SET,
   MAX_PHOTO_BYTES,
-  PHOTO_PUBLIC_URL_BASE,
 } from "@/lib/booking/constants";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import { errorClasses, labelClasses } from "@/lib/formStyles";
 import { UPLOAD_URL_API_ROUTE } from "@/lib/http/routes";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
 const ACCEPT_ATTR = ACCEPTED_PHOTO_MIME.join(",");
@@ -107,7 +107,7 @@ export function FileUpload({
     return () => URL.revokeObjectURL(objectUrl);
   }, [objectUrl]);
 
-  const previewSrc = objectUrl ?? (value ? `${PHOTO_PUBLIC_URL_BASE}/${value}` : null);
+  const previewSrc = objectUrl ?? (value ? `${R2_PUBLIC_ORIGIN}/${value}` : null);
 
   async function handleFile(file: File) {
     if (!ACCEPTED_PHOTO_MIME_SET.has(file.type)) {

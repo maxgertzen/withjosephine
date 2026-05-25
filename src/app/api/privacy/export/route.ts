@@ -12,7 +12,6 @@ import {
 } from "@/lib/auth/listenSession";
 import { getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { findUserById } from "@/lib/auth/users";
-import { PHOTO_PUBLIC_URL_BASE } from "@/lib/booking/constants";
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 import {
   listSubmissionsByRecipientUserId,
@@ -24,6 +23,7 @@ import {
   TAX_RETENTION_YEARS,
 } from "@/lib/compliance/retention";
 import { getSignedDownloadUrl, putObject } from "@/lib/r2";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { sendPrivacyExportEmail } from "@/lib/resend";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
@@ -157,7 +157,7 @@ function buildReadme(submissionCount: number): string {
 function collectAssetTasks(submission: SubmissionRecord): AssetTask[] {
   const tasks: AssetTask[] = [];
   if (submission.photoR2Key) {
-    const url = `${PHOTO_PUBLIC_URL_BASE}/${submission.photoR2Key}`;
+    const url = `${R2_PUBLIC_ORIGIN}/${submission.photoR2Key}`;
     tasks.push({ key: `${submission._id}/photo.${extFromUrl(url, "jpg")}`, url });
   }
   if (submission.voiceNoteUrl) {

@@ -37,6 +37,7 @@ next-env.d.ts
 # sanity studio
 studio/node_modules/
 studio/dist/
+studio/.generated/
 
 # AI tooling (local work tracking)
 .claude/

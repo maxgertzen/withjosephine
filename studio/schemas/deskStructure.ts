@@ -6,7 +6,7 @@ import {
   ListenPagePreview,
   MyGiftsPagePreview,
   MyReadingsPagePreview,
-} from "../views/PagePreview";
+} from "../views/StudioPagePreview";
 
 export const SINGLETON_TYPES = new Set([
   "landingPage",
