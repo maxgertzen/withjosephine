@@ -1,7 +1,9 @@
+import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
 import type { ListenViewState } from "@/app/listen/[id]/ListenView";
 import type { MyGiftsViewProps } from "@/app/my-gifts/MyGiftsView";
 import type { MyReadingsViewProps } from "@/app/my-readings/MyReadingsView";
 
+import type { GiftIntakePagePreviewState } from "./GiftIntakePagePreview";
 import type { SubmissionRecord } from "./types";
 
 const BASE_SUBMISSION: SubmissionRecord = {
@@ -132,11 +134,41 @@ export const MY_GIFTS_FIXTURES: Record<string, MyGiftsViewProps["state"]> = {
   checkEmail: { kind: "checkEmail" },
 };
 
-export const PREVIEW_SURFACES = ["listen", "my-readings", "my-gifts"] as const;
+export type GiftClaimFixtureKey = "no-token" | "invalid" | "expired";
+
+export const GIFT_CLAIM_FIXTURE_KEYS: GiftClaimFixtureKey[] = [
+  "no-token",
+  "invalid",
+  "expired",
+];
+
+export const VERIFY_FIXTURES: Record<string, VerifyPageViewState> = {
+  confirm: { kind: "confirm", token: "preview-token", next: "/my-readings" },
+  rested: { kind: "rested" },
+};
+
+export const GIFT_INTAKE_FIXTURES: Record<string, GiftIntakePagePreviewState> = {
+  welcome: { kind: "welcome" },
+  return: { kind: "return" },
+};
+
+export const GIFT_INTAKE_FIXTURE_READING_NAME = "Soul Blueprint";
+
+export const PREVIEW_SURFACES = [
+  "listen",
+  "my-readings",
+  "my-gifts",
+  "gift-claim",
+  "magic-link-verify",
+  "gift-intake",
+] as const;
 export type PreviewSurface = (typeof PREVIEW_SURFACES)[number];
 
 export function previewStateKeysFor(surface: PreviewSurface): string[] {
   if (surface === "listen") return Object.keys(LISTEN_FIXTURES);
   if (surface === "my-readings") return Object.keys(MY_READINGS_FIXTURES);
-  return Object.keys(MY_GIFTS_FIXTURES);
+  if (surface === "my-gifts") return Object.keys(MY_GIFTS_FIXTURES);
+  if (surface === "gift-claim") return GIFT_CLAIM_FIXTURE_KEYS;
+  if (surface === "magic-link-verify") return Object.keys(VERIFY_FIXTURES);
+  return Object.keys(GIFT_INTAKE_FIXTURES);
 }

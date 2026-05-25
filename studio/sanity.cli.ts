@@ -38,6 +38,8 @@ const STUDIO_SRC_ALIASES = [
   { find: /^@\/app\/listen\//, replacement: `${SRC}/app/listen/` },
   { find: /^@\/app\/my-readings\//, replacement: `${SRC}/app/my-readings/` },
   { find: /^@\/app\/my-gifts\//, replacement: `${SRC}/app/my-gifts/` },
+  { find: /^@\/app\/auth\//, replacement: `${SRC}/app/auth/` },
+  { find: /^@\/lib\/auth\/safeNext$/, replacement: `${SRC}/lib/auth/safeNext.ts` },
 ];
 
 export default defineCliConfig({
