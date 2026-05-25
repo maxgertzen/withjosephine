@@ -31,6 +31,13 @@ describe("MagicLink email", () => {
     expect(linkHrefs(html).has(PROPS.magicLinkUrl)).toBe(true);
   });
 
+  it("renders the magic-link URL as visible body text for clients that strip button styling", async () => {
+    const html = await render(<MagicLink {...PROPS} />);
+    const text = visibleText(html);
+    expect(text).toContain(PROPS.magicLinkUrl);
+    expect(text).toContain("Or copy this link:");
+  });
+
   it("uses the ink color token for the button", async () => {
     const html = await render(<MagicLink {...PROPS} />);
     expect(() => assertBrandTokens(html, { ink: true })).not.toThrow();

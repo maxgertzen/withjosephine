@@ -92,6 +92,18 @@ export function MagicLink({
         </div>
 
         <Section
+          className="font-sans text-muted text-center"
+          style={{ padding: "16px 48px 0 48px", fontSize: 13, lineHeight: 1.6 }}
+        >
+          <p style={{ margin: 0 }}>
+            Or copy this link:{" "}
+            <Link href={magicLinkUrl} className="text-ink">
+              {magicLinkUrl}
+            </Link>
+          </p>
+        </Section>
+
+        <Section
           className="font-serif italic text-ink"
           style={{ padding: "36px 48px 16px 48px", fontSize: 22, lineHeight: 1.4 }}
         >
