@@ -6,6 +6,7 @@ import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { regenerateGiftClaimAction } from "./actions/regenerateGiftClaim";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
+import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
@@ -35,6 +36,11 @@ export default defineConfig([
     basePath: "/production",
     plugins: sharedPlugins("https://withjosephine.com"),
     schema: { types: schemaTypes },
+    form: {
+      components: {
+        input: EmailDescriptionBanner,
+      },
+    },
     document: {
       actions: (prev, { schemaType }) => {
         if (SINGLETON_TYPES.has(schemaType)) {
@@ -64,6 +70,11 @@ export default defineConfig([
     basePath: "/staging",
     plugins: sharedPlugins("https://staging.withjosephine.com"),
     schema: { types: schemaTypes },
+    form: {
+      components: {
+        input: EmailDescriptionBanner,
+      },
+    },
     document: {
       actions: (prev, { schemaType }) => {
         if (SINGLETON_TYPES.has(schemaType)) {
