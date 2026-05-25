@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Input } from "@/components/Form/Input";
 import { Textarea } from "@/components/Form/Textarea";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/compliance/intakeConsent";
 import { errorClasses, errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
+import { getLastReadingId, restore as restoreIntakeDraft } from "@/lib/intake/localStorageDraft";
 
 type FieldErrors = Partial<Record<string, string>>;
 
@@ -51,6 +52,25 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
   const [antiAbuseHit, setAntiAbuseHit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const prefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (prefillAppliedRef.current) return;
+    prefillAppliedRef.current = true;
+    const lastReadingId = getLastReadingId();
+    if (!lastReadingId) return;
+    const priorDraft = restoreIntakeDraft(lastReadingId);
+    if (!priorDraft) return;
+    const priorEmail = priorDraft.values.email;
+    if (typeof priorEmail === "string" && priorEmail.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPurchaserEmail((current) => (current === "" ? priorEmail : current));
+    }
+    const priorFirstName = priorDraft.values.first_name;
+    if (typeof priorFirstName === "string" && priorFirstName.length > 0) {
+      setPurchaserFirstName((current) => (current === "" ? priorFirstName : current));
+    }
+  }, []);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileBypass =
