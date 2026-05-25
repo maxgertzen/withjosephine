@@ -1,4 +1,4 @@
-import { R2_PUBLIC_ORIGIN } from "@/lib/constants";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 
 export const HONEYPOT_FIELD = "website";
 

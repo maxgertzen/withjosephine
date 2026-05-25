@@ -8,9 +8,9 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyReadingsPageContent } from "@/data/defaults";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
-import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import type { SubmissionRecord } from "@/lib/page-previews/types";
 
 export type MyReadingsViewProps = {
   copy: MyReadingsPageContent;
