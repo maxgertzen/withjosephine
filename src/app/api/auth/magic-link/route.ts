@@ -8,7 +8,13 @@ import { safeNext } from "@/lib/auth/safeNext";
 import { findUserByEmail } from "@/lib/auth/users";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { siteOrigin } from "@/lib/env";
-import { sendMagicLink } from "@/lib/resend";
+import { type MagicLinkContext, sendMagicLink } from "@/lib/resend";
+
+function deriveMagicLinkContext(cleanNext: string): MagicLinkContext {
+  if (cleanNext.startsWith("/listen/")) return "listen";
+  if (cleanNext === "/my-gifts" || cleanNext.startsWith("/my-gifts/")) return "my-gifts";
+  return "my-readings";
+}
 
 // Uniform response across known/unknown email (no enumeration leak); Resend send
 // rides runMirror so timing doesn't betray either. Throttle fires before email
@@ -42,8 +48,13 @@ export async function POST(request: Request) {
       // forward whenever the caller asked for a specific non-default target
       // (listen page, /my-gifts) so verify lands them back where they came from.
       if (cleanNext !== "/my-readings") verifyUrl.searchParams.set("next", cleanNext);
+      const context = deriveMagicLinkContext(cleanNext);
       runMirror(
-        sendMagicLink({ to: user.email, magicLinkUrl: verifyUrl.toString() }).then(() => {}),
+        sendMagicLink({
+          to: user.email,
+          magicLinkUrl: verifyUrl.toString(),
+          context,
+        }).then(() => {}),
       );
     }
   }

@@ -153,6 +153,9 @@ export const myReadingsPageQuery = groq`
     openButtonLabel,
     emptyHeading,
     emptyCtaLabel,
+    expiredRowLabel,
+    expiredMailtoLabel,
+    expiredMailtoSubject,
     signInHeading,
     signInBody,
     signInButtonLabel,
@@ -262,6 +265,9 @@ export const emailPrivacyExportQuery = groq`
   *[_type == "emailPrivacyExport"][0] {
     subject,
     preview,
+    heroLine,
+    bodyIntro,
+    bodyPostButton,
     greeting,
     introLine,
     contentsLine,
@@ -275,6 +281,32 @@ export const emailMagicLinkQuery = groq`
   *[_type == "emailMagicLink"][0] {
     subject,
     preview,
+    heroLine,
+    buttonLabel,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailMagicLinkMyReadingsQuery = groq`
+  *[_type == "emailMagicLinkMyReadings"][0] {
+    subject,
+    preview,
+    heroLine,
+    buttonLabel,
+    greeting,
+    body,
+    signOff
+  }
+`;
+
+export const emailMagicLinkMyGiftsQuery = groq`
+  *[_type == "emailMagicLinkMyGifts"][0] {
+    subject,
+    preview,
+    heroLine,
+    buttonLabel,
     greeting,
     body,
     signOff
@@ -288,6 +320,7 @@ export const emailOrderConfirmationQuery = groq`
     brandName,
     brandSubtitle,
     heroLine,
+    body,
     greeting,
     thanksLine,
     timelineLine,
@@ -307,6 +340,7 @@ export const emailRecipientIntakeReceivedQuery = groq`
     brandName,
     brandSubtitle,
     heroLine,
+    body,
     greeting,
     thanksLine,
     timelineLine,
@@ -319,21 +353,37 @@ export const emailRecipientIntakeReceivedQuery = groq`
   }
 `;
 
-export const emailGiftPurchaseConfirmationQuery = groq`
-  *[_type == "emailGiftPurchaseConfirmation"][0] {
-    subjectSelfSend,
-    subjectScheduled,
-    previewSelfSend,
-    previewScheduled,
+export const emailGiftPurchaseConfirmationSelfSendQuery = groq`
+  *[_type == "emailGiftPurchaseConfirmationSelfSend"][0] {
+    subject,
+    preview,
     brandName,
     brandSubtitle,
-    heroLineSelfSend,
-    heroLineScheduled,
+    heroLine,
+    body,
     greeting,
     detailLineSelfSend,
-    detailLineScheduled,
     shareButtonLabel,
     shareUrlHelper,
+    cardLabel,
+    cardDeliveryLine,
+    refundLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailGiftPurchaseConfirmationScheduledQuery = groq`
+  *[_type == "emailGiftPurchaseConfirmationScheduled"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    body,
+    greeting,
+    detailLineScheduled,
     cardLabel,
     cardDeliveryLine,
     refundLine,
@@ -346,22 +396,35 @@ export const emailGiftPurchaseConfirmationQuery = groq`
 export const emailGiftClaimQuery = groq`
   *[_type == "emailGiftClaim"][0] {
     subjectFirstSend,
-    subjectReminder,
     previewFirstSend,
-    previewReminder,
     brandName,
     brandSubtitle,
     heroLineFirstSend,
-    heroLineReminder,
+    body,
     greeting,
     bodyFirstSend,
-    bodyReminder,
     giftMessageLabel,
     claimButtonLabel,
     claimUrlHelper,
     cardLabel,
     cardDeliveryLine,
-    reminderContactLine,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
+  }
+`;
+
+export const emailGiftClaimReminderQuery = groq`
+  *[_type == "emailGiftClaimReminder"][0] {
+    subject,
+    preview,
+    brandName,
+    brandSubtitle,
+    heroLine,
+    body,
+    giftMessageLabel,
+    cardLabel,
+    cardDeliveryLine,
     signOffLine1,
     signOffLine2,
     footerDisclaimer
@@ -372,13 +435,26 @@ export const emailDay7DeliveryQuery = groq`
   *[_type == "emailDay7Delivery"][0] {
     subjectTemplate,
     preview,
+    bodyIntro,
+    bodyPostButton,
     greeting,
     lineReady,
     comfortLine,
     openButtonLabel,
     signedInDisclosure,
+    accessWindowLine,
     comfortFollowUp,
     signOff
+  }
+`;
+
+export const emailSharedShellQuery = groq`
+  *[_id == "emailSharedShell"][0] {
+    brandName,
+    brandSubtitle,
+    signOffLine1,
+    signOffLine2,
+    footerDisclaimer
   }
 `;
 
@@ -410,7 +486,11 @@ export const listenPageQuery = groq`
     assetTroubleBody,
     assetTroubleTryAgainLabel,
     assetTroubleMailtoLabel,
-    assetTroubleMailtoSubject
+    assetTroubleMailtoSubject,
+    expiredHeading,
+    expiredBody,
+    expiredMailtoLabel,
+    expiredMailtoSubject
   }
 `;
 

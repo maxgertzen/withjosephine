@@ -39,7 +39,7 @@ export async function fetchDeliverableSubmissions(
   ids: readonly string[],
 ): Promise<DeliverableSubmission[]> {
   if (ids.length === 0) return [];
-  const client = getSanityWriteClient();
+  const client = await getSanityWriteClient();
   const docs = await client.fetch<SanitySubmissionDeliveryShape[]>(DELIVERABLE_GROQ, { ids });
   return docs.filter(isDeliverable);
 }
@@ -48,7 +48,7 @@ export async function fetchUndeliveredSubmissionIds(
   ids: readonly string[],
 ): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
-  const client = getSanityWriteClient();
+  const client = await getSanityWriteClient();
   const result = await client.fetch<string[]>(UNDELIVERED_GROQ, { ids });
   return new Set(result);
 }

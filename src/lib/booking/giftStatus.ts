@@ -1,5 +1,6 @@
+import type { EmailFiredEntry, SubmissionRecord } from "@/lib/page-previews/types";
+
 import { GIFT_DELIVERY, GIFT_STATUS_KIND } from "./constants";
-import type { EmailFiredEntry, SubmissionRecord } from "./submissions";
 
 /**
  * Discriminated union summarising what a purchaser should see on

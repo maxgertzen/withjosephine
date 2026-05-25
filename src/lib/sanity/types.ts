@@ -1,3 +1,5 @@
+import type { PortableTextBlock } from "@portabletext/types";
+
 export type SanityReading = {
   _id: string;
   name: string;
@@ -94,6 +96,9 @@ export type SanityMyReadingsPage = {
   openButtonLabel: string;
   emptyHeading: string;
   emptyCtaLabel: string;
+  expiredRowLabel: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
   signInHeading: string;
   signInBody: string;
   signInButtonLabel: string;
@@ -193,10 +198,15 @@ export type SanityMagicLinkVerifyPage = {
 export type SanityEmailMagicLink = {
   subject: string;
   preview: string;
-  greeting: string;
-  body: string[];
+  heroLine: string;
+  buttonLabel: string;
+  greeting?: string;
+  body: PortableTextBlock[];
   signOff: string | null;
 };
+
+export type SanityEmailMagicLinkMyReadings = SanityEmailMagicLink;
+export type SanityEmailMagicLinkMyGifts = SanityEmailMagicLink;
 
 export type SanityEmailOrderConfirmation = {
   subject: string;
@@ -204,10 +214,11 @@ export type SanityEmailOrderConfirmation = {
   brandName: string;
   brandSubtitle: string;
   heroLine: string;
-  greeting: string;
-  thanksLine: string;
-  timelineLine: string;
-  contactLine: string;
+  body?: PortableTextBlock[];
+  greeting?: string;
+  thanksLine?: PortableTextBlock[];
+  timelineLine?: PortableTextBlock[];
+  contactLine?: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
   signOffLine1: string;
@@ -217,23 +228,37 @@ export type SanityEmailOrderConfirmation = {
 
 export type SanityEmailRecipientIntakeReceived = SanityEmailOrderConfirmation;
 
-export type SanityEmailGiftPurchaseConfirmation = {
-  subjectSelfSend: string;
-  subjectScheduled: string;
-  previewSelfSend: string;
-  previewScheduled: string;
+export type SanityEmailGiftPurchaseConfirmationSelfSend = {
+  subject: string;
+  preview: string;
   brandName: string;
   brandSubtitle: string;
-  heroLineSelfSend: string;
-  heroLineScheduled: string;
-  greeting: string;
-  detailLineSelfSend: string;
-  detailLineScheduled: string;
+  heroLine: string;
+  body?: PortableTextBlock[];
+  greeting?: string;
+  detailLineSelfSend?: PortableTextBlock[];
   shareButtonLabel: string;
-  shareUrlHelper: string;
+  shareUrlHelper: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
-  refundLine: string;
+  refundLine: PortableTextBlock[];
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailGiftPurchaseConfirmationScheduled = {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  body?: PortableTextBlock[];
+  greeting?: string;
+  detailLineScheduled?: PortableTextBlock[];
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: PortableTextBlock[];
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -241,22 +266,33 @@ export type SanityEmailGiftPurchaseConfirmation = {
 
 export type SanityEmailGiftClaim = {
   subjectFirstSend: string;
-  subjectReminder: string;
   previewFirstSend: string;
-  previewReminder: string;
   brandName: string;
   brandSubtitle: string;
   heroLineFirstSend: string;
-  heroLineReminder: string;
-  greeting: string;
-  bodyFirstSend: string;
-  bodyReminder: string;
+  body?: PortableTextBlock[];
+  greeting?: string;
+  bodyFirstSend?: PortableTextBlock[];
   giftMessageLabel: string;
   claimButtonLabel: string;
-  claimUrlHelper: string;
+  claimUrlHelper: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
-  reminderContactLine: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+};
+
+export type SanityEmailGiftClaimReminder = {
+  subject: string;
+  preview: string;
+  brandName: string;
+  brandSubtitle: string;
+  heroLine: string;
+  body?: PortableTextBlock[];
+  giftMessageLabel: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -265,24 +301,38 @@ export type SanityEmailGiftClaim = {
 export type SanityEmailPrivacyExport = {
   subject: string;
   preview: string;
-  greeting: string;
-  introLine: string;
-  contentsLine: string;
+  heroLine: string;
+  bodyIntro?: PortableTextBlock[];
+  bodyPostButton?: PortableTextBlock[];
+  greeting?: string;
+  introLine?: PortableTextBlock[];
+  contentsLine?: PortableTextBlock[];
   ctaLabel: string;
-  expiryLine: string;
+  expiryLine?: PortableTextBlock[];
   signOff: string | null;
 };
 
 export type SanityEmailDay7Delivery = {
   subjectTemplate: string;
   preview: string;
-  greeting: string;
-  lineReady: string;
-  comfortLine: string;
+  bodyIntro?: PortableTextBlock[];
+  bodyPostButton?: PortableTextBlock[];
+  greeting?: string;
+  lineReady?: string;
+  comfortLine?: PortableTextBlock[];
   openButtonLabel: string;
-  signedInDisclosure: string;
-  comfortFollowUp: string;
+  signedInDisclosure?: PortableTextBlock[];
+  accessWindowLine?: PortableTextBlock[];
+  comfortFollowUp?: PortableTextBlock[];
   signOff: string | null;
+};
+
+export type SanityEmailSharedShell = {
+  brandName: string;
+  brandSubtitle: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
 };
 
 export type SanityListenPage = {
@@ -313,6 +363,10 @@ export type SanityListenPage = {
   assetTroubleTryAgainLabel: string;
   assetTroubleMailtoLabel: string;
   assetTroubleMailtoSubject: string;
+  expiredHeading: string;
+  expiredBody: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 };
 
 export type SanityThankYouOverride = {
@@ -423,29 +477,7 @@ export type SanitySeo = {
   ogImage?: { asset: { url: string } };
 };
 
-/**
- * A Portable Text block. The shape comes from Sanity's block editor output.
- * We re-export a minimal structural type rather than pulling in the full
- * `@sanity/types` dependency tree.
- */
-export type SanityPortableTextBlock = {
-  _type: string;
-  _key?: string;
-  style?: string;
-  children?: Array<{
-    _type: "span";
-    _key?: string;
-    text: string;
-    marks?: string[];
-  }>;
-  markDefs?: Array<{
-    _type: string;
-    _key: string;
-    href?: string;
-  }>;
-  listItem?: "bullet" | "number";
-  level?: number;
-};
+export type SanityPortableTextBlock = PortableTextBlock;
 
 export type SanityFormFieldType =
   | "shortText"

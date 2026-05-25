@@ -1,16 +1,20 @@
 export type EmailTemplateKey =
   | "emailOrderConfirmation"
   | "emailDay7Delivery"
-  | "emailGiftPurchaseConfirmation"
+  | "emailGiftPurchaseConfirmationSelfSend"
+  | "emailGiftPurchaseConfirmationScheduled"
   | "emailGiftClaim"
+  | "emailGiftClaimReminder"
   | "emailMagicLink"
+  | "emailMagicLinkMyReadings"
+  | "emailMagicLinkMyGifts"
   | "emailPrivacyExport"
   | "emailRecipientIntakeReceived";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
   emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
-  emailGiftPurchaseConfirmation: [
+  emailGiftPurchaseConfirmationSelfSend: [
     "purchaserFirstName",
     "recipientName",
     "readingName",
@@ -19,6 +23,15 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
     "giftMessage",
     "myGiftsUrl",
     "claimUrl",
+  ],
+  emailGiftPurchaseConfirmationScheduled: [
+    "purchaserFirstName",
+    "recipientName",
+    "readingName",
+    "readingPriceDisplay",
+    "amountPaidDisplay",
+    "giftMessage",
+    "myGiftsUrl",
     "sendAtDisplay",
   ],
   emailGiftClaim: [
@@ -29,7 +42,16 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
     "giftMessage",
     "claimUrl",
   ],
+  emailGiftClaimReminder: [
+    "purchaserFirstName",
+    "recipientName",
+    "readingName",
+    "readingPriceDisplay",
+    "giftMessage",
+  ],
   emailMagicLink: [],
+  emailMagicLinkMyReadings: [],
+  emailMagicLinkMyGifts: [],
   emailPrivacyExport: ["downloadUrl", "submissionCount", "expiryDays"],
   emailRecipientIntakeReceived: ["recipientName", "purchaserFirstName", "readingName"],
 } as const;
@@ -54,6 +76,8 @@ export function collectUnknownSlots(value: unknown, allowed: readonly string[]):
       }
     } else if (Array.isArray(input)) {
       for (const entry of input) walk(entry);
+    } else if (input && typeof input === "object") {
+      for (const child of Object.values(input as Record<string, unknown>)) walk(child);
     }
   };
   walk(value);

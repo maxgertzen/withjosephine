@@ -1,6 +1,15 @@
+import type { ComponentType } from "react";
 import type { StructureBuilder } from "sanity/structure";
 
 import { EmailPreview } from "../views/EmailPreview";
+import {
+  GiftClaimPagePreview,
+  GiftIntakePagePreview,
+  ListenPagePreview,
+  MagicLinkVerifyPagePreview,
+  MyGiftsPagePreview,
+  MyReadingsPagePreview,
+} from "../views/StudioPagePreview";
 
 export const SINGLETON_TYPES = new Set([
   "landingPage",
@@ -16,12 +25,17 @@ export const SINGLETON_TYPES = new Set([
   "myGiftsPage",
   "magicLinkVerifyPage",
   "emailMagicLink",
+  "emailMagicLinkMyReadings",
+  "emailMagicLinkMyGifts",
   "emailDay7Delivery",
   "emailOrderConfirmation",
-  "emailGiftPurchaseConfirmation",
+  "emailGiftPurchaseConfirmationSelfSend",
+  "emailGiftPurchaseConfirmationScheduled",
   "emailGiftClaim",
+  "emailGiftClaimReminder",
   "emailRecipientIntakeReceived",
   "emailPrivacyExport",
+  "emailSharedShell",
   "giftClaimPage",
   "giftIntakePage",
   "listenPage",
@@ -42,6 +56,22 @@ const emailSingletonListItem = (S: StructureBuilder, typeName: string, title: st
         .schemaType(typeName)
         .documentId(typeName)
         .views([S.view.form(), S.view.component(EmailPreview).title("Preview")]),
+    );
+
+const pagePreviewSingletonListItem = (
+  S: StructureBuilder,
+  typeName: string,
+  title: string,
+  PreviewComponent: ComponentType,
+) =>
+  S.listItem()
+    .title(title)
+    .id(typeName)
+    .child(
+      S.document()
+        .schemaType(typeName)
+        .documentId(typeName)
+        .views([S.view.form(), S.view.component(PreviewComponent).title("Preview")]),
     );
 
 const awaitingPayment = (S: StructureBuilder) =>
@@ -139,12 +169,27 @@ const pagesGroup = (S: StructureBuilder) =>
           singletonListItem(S, "underConstructionPage", "Under Construction Page"),
           singletonListItem(S, "notFoundPage", "404 Page"),
           S.divider(),
-          singletonListItem(S, "listenPage", "Listen Page"),
-          singletonListItem(S, "myReadingsPage", "My Readings Page"),
-          singletonListItem(S, "myGiftsPage", "My Gifts Page"),
-          singletonListItem(S, "magicLinkVerifyPage", "Magic Link — Confirm Email Page"),
-          singletonListItem(S, "giftClaimPage", "Gift Claim Page (recipient lands here)"),
-          singletonListItem(S, "giftIntakePage", "Gift Intake Page (recipient fills details)"),
+          pagePreviewSingletonListItem(S, "listenPage", "Listen Page", ListenPagePreview),
+          pagePreviewSingletonListItem(S, "myReadingsPage", "My Readings Page", MyReadingsPagePreview),
+          pagePreviewSingletonListItem(S, "myGiftsPage", "My Gifts Page", MyGiftsPagePreview),
+          pagePreviewSingletonListItem(
+            S,
+            "magicLinkVerifyPage",
+            "Magic Link — Confirm Email Page",
+            MagicLinkVerifyPagePreview,
+          ),
+          pagePreviewSingletonListItem(
+            S,
+            "giftClaimPage",
+            "Gift Claim Page (recipient lands here)",
+            GiftClaimPagePreview,
+          ),
+          pagePreviewSingletonListItem(
+            S,
+            "giftIntakePage",
+            "Gift Intake Page (recipient fills details)",
+            GiftIntakePagePreview,
+          ),
           S.divider(),
           bookingFlowGroup(S),
         ]),
@@ -158,21 +203,35 @@ const emailsGroup = (S: StructureBuilder) =>
       S.list()
         .title("Emails")
         .items([
-          emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation"),
+          emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation → Self-Purchaser"),
           emailSingletonListItem(
             S,
-            "emailGiftPurchaseConfirmation",
-            "Gift Purchase Confirmation",
+            "emailGiftPurchaseConfirmationSelfSend",
+            "Gift Confirmation → Purchaser (Self-Send)",
           ),
-          emailSingletonListItem(S, "emailGiftClaim", "Gift Claim (to recipient)"),
+          emailSingletonListItem(
+            S,
+            "emailGiftPurchaseConfirmationScheduled",
+            "Gift Confirmation → Purchaser (Scheduled)",
+          ),
+          emailSingletonListItem(S, "emailGiftClaim", "Gift Claim → Recipient (First Send)"),
+          emailSingletonListItem(
+            S,
+            "emailGiftClaimReminder",
+            "Gift Claim → Recipient (Reminder)",
+          ),
           emailSingletonListItem(
             S,
             "emailRecipientIntakeReceived",
-            "Recipient Intake Received",
+            "Intake Received → Gift Recipient",
           ),
-          emailSingletonListItem(S, "emailDay7Delivery", "Day-7 Delivery"),
-          emailSingletonListItem(S, "emailMagicLink", "Magic Link"),
-          emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export (GDPR)"),
+          emailSingletonListItem(S, "emailDay7Delivery", "Reading Delivery → Customer"),
+          emailSingletonListItem(S, "emailMagicLink", "Magic Link → Listen Page"),
+          emailSingletonListItem(S, "emailMagicLinkMyReadings", "Magic Link → My Readings"),
+          emailSingletonListItem(S, "emailMagicLinkMyGifts", "Magic Link → My Gifts"),
+          emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export → Requester (GDPR)"),
+          S.divider(),
+          singletonListItem(S, "emailSharedShell", "Shared Shell (brand + footer)"),
         ]),
     );
 

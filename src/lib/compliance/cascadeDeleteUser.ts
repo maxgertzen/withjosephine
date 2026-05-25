@@ -88,7 +88,7 @@ async function deleteSanityAssetsForSubmission(
 ): Promise<void> {
   let client;
   try {
-    client = getSanityWriteClient();
+    client = await getSanityWriteClient();
   } catch {
     partialFailures.push(`sanity-client: not configured for ${submissionId}`);
     return;

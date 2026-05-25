@@ -10,11 +10,16 @@ import {
   bookingPageQuery,
   emailDay7DeliveryQuery,
   emailGiftClaimQuery,
-  emailGiftPurchaseConfirmationQuery,
+  emailGiftClaimReminderQuery,
+  emailGiftPurchaseConfirmationScheduledQuery,
+  emailGiftPurchaseConfirmationSelfSendQuery,
+  emailMagicLinkMyGiftsQuery,
+  emailMagicLinkMyReadingsQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
   emailRecipientIntakeReceivedQuery,
+  emailSharedShellQuery,
   faqItemsQuery,
   giftClaimPageQuery,
   giftIntakePageQuery,
@@ -40,11 +45,16 @@ import type {
   SanityBookingPage,
   SanityEmailDay7Delivery,
   SanityEmailGiftClaim,
-  SanityEmailGiftPurchaseConfirmation,
+  SanityEmailGiftClaimReminder,
+  SanityEmailGiftPurchaseConfirmationScheduled,
+  SanityEmailGiftPurchaseConfirmationSelfSend,
   SanityEmailMagicLink,
+  SanityEmailMagicLinkMyGifts,
+  SanityEmailMagicLinkMyReadings,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailRecipientIntakeReceived,
+  SanityEmailSharedShell,
   SanityFaqItem,
   SanityGiftClaimPage,
   SanityGiftIntakePage,
@@ -207,6 +217,24 @@ export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink 
   return data;
 });
 
+export const fetchEmailMagicLinkMyReadings = cache(
+  async (): Promise<SanityEmailMagicLinkMyReadings | null> => {
+    const { data } = await sanityFetch<SanityEmailMagicLinkMyReadings | null>({
+      query: emailMagicLinkMyReadingsQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailMagicLinkMyGifts = cache(
+  async (): Promise<SanityEmailMagicLinkMyGifts | null> => {
+    const { data } = await sanityFetch<SanityEmailMagicLinkMyGifts | null>({
+      query: emailMagicLinkMyGiftsQuery,
+    });
+    return data;
+  },
+);
+
 export const fetchEmailPrivacyExport = cache(
   async (): Promise<SanityEmailPrivacyExport | null> => {
     const { data } = await sanityFetch<SanityEmailPrivacyExport | null>({
@@ -248,10 +276,37 @@ export const fetchEmailGiftClaim = cache(async (): Promise<SanityEmailGiftClaim 
   return data;
 });
 
-export const fetchEmailGiftPurchaseConfirmation = cache(
-  async (): Promise<SanityEmailGiftPurchaseConfirmation | null> => {
-    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmation | null>({
-      query: emailGiftPurchaseConfirmationQuery,
+export const fetchEmailGiftClaimReminder = cache(
+  async (): Promise<SanityEmailGiftClaimReminder | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftClaimReminder | null>({
+      query: emailGiftClaimReminderQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailGiftPurchaseConfirmationSelfSend = cache(
+  async (): Promise<SanityEmailGiftPurchaseConfirmationSelfSend | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmationSelfSend | null>({
+      query: emailGiftPurchaseConfirmationSelfSendQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailGiftPurchaseConfirmationScheduled = cache(
+  async (): Promise<SanityEmailGiftPurchaseConfirmationScheduled | null> => {
+    const { data } = await sanityFetch<SanityEmailGiftPurchaseConfirmationScheduled | null>({
+      query: emailGiftPurchaseConfirmationScheduledQuery,
+    });
+    return data;
+  },
+);
+
+export const fetchEmailSharedShell = cache(
+  async (): Promise<SanityEmailSharedShell | null> => {
+    const { data } = await sanityFetch<SanityEmailSharedShell | null>({
+      query: emailSharedShellQuery,
     });
     return data;
   },

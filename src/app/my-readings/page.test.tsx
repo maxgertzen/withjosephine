@@ -86,6 +86,9 @@ describe("/my-readings page logic", () => {
       checkEmailHeading: "Check",
       checkEmailBody: "Body",
       checkEmailResendLabel: "Again",
+      expiredRowLabel: "Rested",
+      expiredMailtoLabel: "Email Josephine",
+      expiredMailtoSubject: "Fresh link",
     });
     const props = await getPageProps();
     expect(props.copy.signInHeading).toBe("Override-signin");

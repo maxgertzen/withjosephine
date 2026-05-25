@@ -1,13 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  NONCE_HEADER,
-  PRODUCTION_HOSTS,
-  R2_PUBLIC_ORIGIN,
-  STUDIO_LOCAL_DEV_ORIGINS,
-  STUDIO_ORIGIN_ALLOWLIST,
-} from "@/lib/constants";
+import { NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
 
 /**
@@ -62,6 +57,12 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/privacy",
   "/terms",
   "/refund-policy",
+  // /preview/* renders user-gated pages (listen, my-readings, my-gifts) with
+  // fixture state for Studio's iframe — bypass apex-lockdown so Becky can
+  // preview them even when the holding page is on. The routes themselves
+  // never read real D1/R2 data; metadata `robots: { index: false }` keeps
+  // them out of search engines.
+  "/preview/",
 ];
 
 function isApexAllowlisted(pathname: string): boolean {
@@ -85,24 +86,17 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { isDraft: boolean; isEmailPreview: boolean; nonce: string }): string {
-  const { isDraft, isEmailPreview, nonce } = opts;
+function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
+  const { isDraft, nonce } = opts;
   // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
   // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
   const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
-  const emailPreviewAncestorOrigins =
-    process.env.NODE_ENV === "production"
-      ? STUDIO_ORIGIN_ALLOWLIST
-      : [...STUDIO_ORIGIN_ALLOWLIST, ...STUDIO_LOCAL_DEV_ORIGINS];
-  const emailPreviewFrameAncestors = `'self' ${emailPreviewAncestorOrigins.join(" ")}`;
-  const frameAncestors = isEmailPreview
-    ? emailPreviewFrameAncestors
-    : isDraft
-      ? `'self' https://*.sanity.studio https://*.sanity.io`
-      : `'none'`;
+  const frameAncestors = isDraft
+    ? `'self' https://*.sanity.studio https://*.sanity.io`
+    : `'none'`;
   const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
     : `https://challenges.cloudflare.com`;
@@ -135,9 +129,6 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
   const { pathname } = request.nextUrl;
-  // Studio iframes /api/email-preview/[type] via direct URL — no draft cookie
-  // is set, so we explicitly relax CSP frame-ancestors here too.
-  const isEmailPreview = pathname.startsWith("/api/email-preview/");
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
   // allowlisted (Stripe webhook, crons, /listen/[id]) gets rewritten to `/`
@@ -174,12 +165,12 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
-  // (preview/workers.dev hosts, draft cookie, email-preview route) needs
-  // Studio as a valid frame-ancestor for the iframe to load.
-  const isStrict = isPublicApex && !isDraft && !isEmailPreview;
+  // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
+  // frame-ancestor for the iframe to load.
+  const isStrict = isPublicApex && !isDraft;
   response.headers.set(
     "Content-Security-Policy",
-    buildCsp({ isDraft: !isStrict, isEmailPreview, nonce }),
+    buildCsp({ isDraft: !isStrict, nonce }),
   );
 
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");

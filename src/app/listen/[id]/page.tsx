@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 
 import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
-import { findSubmissionById, SUBMISSION_STATUS, type SubmissionRecord } from "@/lib/booking/submissions";
+import { isReadingExpired } from "@/lib/booking/readingRetention";
+import { findSubmissionById, SUBMISSION_STATUS } from "@/lib/booking/submissions";
+import type { SubmissionRecord } from "@/lib/page-previews/types";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 
 import { ListenView, type ListenViewProps, type ListenViewState } from "./ListenView";
@@ -74,6 +76,12 @@ function resolveAuthenticatedState(args: {
   const isDeliverable =
     args.submission.status === SUBMISSION_STATUS.paid && args.submission.deliveredAt && hasAssets;
   if (!isDeliverable) return { kind: "assetTrouble", submissionId: args.id };
+  const deliveredAtMs = args.submission.deliveredAt
+    ? Date.parse(args.submission.deliveredAt)
+    : null;
+  if (isReadingExpired(deliveredAtMs)) {
+    return { kind: "expired", submissionId: args.id };
+  }
 
   return {
     kind: "delivered",

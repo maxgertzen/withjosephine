@@ -7,7 +7,13 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/data/*": ["../src/data/*"],
+      "@/lib/emails/*": ["../src/lib/emails/*"],
+      "@/lib/theme/*": ["../src/lib/theme/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

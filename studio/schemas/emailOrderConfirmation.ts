@@ -7,10 +7,10 @@ const validateOrderSlots = slotValidation("emailOrderConfirmation");
 
 export const emailOrderConfirmation = defineType({
   name: "emailOrderConfirmation",
-  title: "Email — Order Confirmation",
+  title: "Order Confirmation → Self-Purchaser",
   type: "document",
   description:
-    "Sent to a customer after their Stripe payment succeeds for a self-purchase. Confirms order receipt and sets timing expectations for the reading.",
+    "Sent to a customer who bought a reading for themselves, right after their Stripe payment succeeds. Confirms the order and tells them their reading will arrive within 7 days.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -35,6 +35,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Your reading is booked — here's what happens next",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandName",
       title: "Brand wordmark",
       type: "string",
@@ -42,6 +44,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Josephine",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandSubtitle",
       title: "Brand sub-line",
       type: "string",
@@ -56,42 +60,52 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Your reading is booked",
     }),
     defineField({
+      name: "body",
+      title: "Body",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      group: "body",
+      description:
+        'The full body of the email. Bold/italic/link via the toolbar. Use "{firstName}" to insert the customer\'s first name and "{readingName}" to insert the reading name.',
+      validation: validateOrderSlots,
+    }),
+    defineField({
       name: "greeting",
-      title: "Greeting",
+      title: "Greeting (legacy — folded into Body)",
       type: "string",
       group: "body",
-      description: 'Use "{firstName}" to insert the customer\'s first name.',
+      hidden: true,
+      readOnly: true,
       validation: validateOrderSlots,
       initialValue: "Hi {firstName},",
     }),
     defineField({
       name: "thanksLine",
-      title: "Thanks paragraph",
-      type: "text",
-      rows: 2,
+      title: "Thanks paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      description: 'Use "{readingName}" to insert the reading name.',
+      hidden: true,
+      readOnly: true,
       validation: validateOrderSlots,
-      initialValue:
-        "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don't need to do anything else.",
     }),
     defineField({
       name: "timelineLine",
-      title: "Timeline paragraph",
-      type: "text",
-      rows: 3,
+      title: "Timeline paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: "contactLine",
-      title: "Contact paragraph",
-      type: "text",
-      rows: 2,
+      title: "Contact paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: "cardLabel",
@@ -108,6 +122,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Delivery within 7 days",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine1",
       title: "Sign-off line 1",
       type: "string",
@@ -115,6 +131,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "With love,",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine2",
       title: "Sign-off line 2",
       type: "string",
@@ -122,6 +140,8 @@ export const emailOrderConfirmation = defineType({
       initialValue: "Josephine ✦",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "footerDisclaimer",
       title: "Footer disclaimer",
       type: "string",
@@ -130,6 +150,10 @@ export const emailOrderConfirmation = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Order Confirmation" }),
+    prepare: () => ({
+      title: "Order Confirmation → Self-Purchaser",
+      subtitle:
+        "Sent to a customer who bought a reading for themselves, right after their Stripe payment succeeds. Confirms the order and tells them their reading will arrive within 7 days.",
+    }),
   },
 });

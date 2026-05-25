@@ -1,34 +1,25 @@
 import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
-import { EMAIL_GIFT_CLAIM_DEFAULTS } from "@/data/defaults";
+import { EMAIL_GIFT_CLAIM_DEFAULTS, EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { GiftClaimEmail } from "./GiftClaimEmail";
+import { stringToPortableTextBlocks } from "./PortableTextBody";
 import { visibleText } from "./test-helpers";
 
-const FIRST_SEND_VARS = {
+const VARS = {
   recipientName: "Mira",
   purchaserFirstName: "Lior",
   readingName: "Soul Blueprint",
   readingPriceDisplay: "$179",
   giftMessage: "happy birthday",
-  variant: "first_send" as const,
   claimUrl: "https://withjosephine.com/gift/claim?token=abc123",
 };
 
-const REMINDER_VARS = {
-  recipientName: "Mira",
-  purchaserFirstName: "Lior",
-  readingName: "Soul Blueprint",
-  readingPriceDisplay: "$179",
-  giftMessage: null,
-  variant: "reminder" as const,
-};
-
-describe("GiftClaimEmail — first_send variant", () => {
+describe("GiftClaimEmail — first-send variant", () => {
   it("renders the recipient + purchaser names", async () => {
     const text = visibleText(
-      await render(<GiftClaimEmail vars={FIRST_SEND_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("Mira");
     expect(text).toContain("Lior");
@@ -36,7 +27,7 @@ describe("GiftClaimEmail — first_send variant", () => {
 
   it("includes the claim URL + CTA label", async () => {
     const html = await render(
-      <GiftClaimEmail vars={FIRST_SEND_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
+      <GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />,
     );
     expect(html).toContain("https://withjosephine.com/gift/claim?token=abc123");
     expect(html).toContain(EMAIL_GIFT_CLAIM_DEFAULTS.claimButtonLabel);
@@ -44,7 +35,7 @@ describe("GiftClaimEmail — first_send variant", () => {
 
   it("renders the gift message when present", async () => {
     const text = visibleText(
-      await render(<GiftClaimEmail vars={FIRST_SEND_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("happy birthday");
   });
@@ -52,44 +43,19 @@ describe("GiftClaimEmail — first_send variant", () => {
   it("escapes raw <script> in giftMessage", async () => {
     const html = await render(
       <GiftClaimEmail
-        vars={{ ...FIRST_SEND_VARS, giftMessage: "<script>alert(1)</script>" }}
+        vars={{ ...VARS, giftMessage: "<script>alert(1)</script>" }}
         copy={EMAIL_GIFT_CLAIM_DEFAULTS}
       />,
     );
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("&lt;script&gt;");
   });
-});
 
-describe("GiftClaimEmail — reminder variant", () => {
-  it("does NOT include a claim URL", async () => {
-    const html = await render(
-      <GiftClaimEmail vars={REMINDER_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
-    );
-    expect(html).not.toContain("/gift/claim?token=");
-  });
-
-  it("renders the reminder contact line", async () => {
-    const text = visibleText(
-      await render(<GiftClaimEmail vars={REMINDER_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />),
-    );
-    expect(text).toContain("hello@withjosephine.com");
-  });
-
-  it("does NOT include the claim button label", async () => {
-    const html = await render(
-      <GiftClaimEmail vars={REMINDER_VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} />,
-    );
-    expect(html).not.toContain(EMAIL_GIFT_CLAIM_DEFAULTS.claimButtonLabel);
-  });
-});
-
-describe("GiftClaimEmail — environment-aware claim URL (C-6 audit)", () => {
   it("renders the staging origin verbatim when supplied (no hardcoded prod URL)", async () => {
     const html = await render(
       <GiftClaimEmail
         vars={{
-          ...FIRST_SEND_VARS,
+          ...VARS,
           claimUrl: "https://staging.withjosephine.com/gift/claim?token=stagingABC",
         }}
         copy={EMAIL_GIFT_CLAIM_DEFAULTS}
@@ -98,19 +64,48 @@ describe("GiftClaimEmail — environment-aware claim URL (C-6 audit)", () => {
     expect(html).toContain("staging.withjosephine.com/gift/claim?token=stagingABC");
   });
 
-  it("interpolates the {purchaserFirstName} slot in body copy (no literal placeholder leak)", async () => {
+  it("interpolates the {purchaserFirstName} slot in body copy", async () => {
     const text = visibleText(
       await render(
         <GiftClaimEmail
-          vars={{ ...FIRST_SEND_VARS, purchaserFirstName: "Yoram" }}
+          vars={{ ...VARS, purchaserFirstName: "Yoram" }}
           copy={{
             ...EMAIL_GIFT_CLAIM_DEFAULTS,
-            bodyFirstSend: "A note from {purchaserFirstName} — your reading awaits.",
+            body: stringToPortableTextBlocks(
+              "A note from {purchaserFirstName} — your reading awaits.",
+            ),
           }}
         />,
       ),
     );
     expect(text).toContain("A note from Yoram");
     expect(text).not.toContain("{purchaserFirstName}");
+  });
+
+  it("renders the new body PT path when copy.body has content", async () => {
+    const text = visibleText(
+      await render(<GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
+    );
+    expect(text).toContain("Lior has given you a Soul Blueprint");
+  });
+
+  it("falls back to legacy bodyFirstSend when body is empty", async () => {
+    const text = visibleText(
+      await render(
+        <GiftClaimEmail
+          vars={VARS}
+          copy={{
+            ...EMAIL_GIFT_CLAIM_DEFAULTS,
+            body: undefined,
+            greeting: "Hi Mira,",
+            bodyFirstSend: stringToPortableTextBlocks(
+              "Legacy first-send prose for {recipientName}.",
+            ),
+          }}
+        />,
+      ),
+    );
+    expect(text).toContain("Hi Mira,");
+    expect(text).toContain("Legacy first-send prose for Mira.");
   });
 });

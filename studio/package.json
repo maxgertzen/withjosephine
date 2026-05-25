@@ -3,15 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "sanity dev",
-    "build": "sanity build",
-    "deploy": "sanity deploy",
+    "dev": "pnpm --dir .. run build:studio-preview-css && sanity dev",
+    "build": "pnpm --dir .. run build:studio-preview-css && sanity build",
+    "deploy": "pnpm --dir .. run build:studio-preview-css && sanity deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
     "@sanity/color-input": "^6.0.4",
     "@sanity/icons": "^3.7.4",
-    "@sanity/preview-url-secret": "^4.0.6",
     "@sanity/ui": "^3.2.0",
     "@sanity/vision": "^5.24.0",
     "react": "^19.2.6",

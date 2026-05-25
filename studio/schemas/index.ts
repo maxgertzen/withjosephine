@@ -13,12 +13,17 @@ import { myReadingsPage } from "./myReadingsPage";
 import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
+import { emailMagicLinkMyGifts } from "./emailMagicLinkMyGifts";
+import { emailMagicLinkMyReadings } from "./emailMagicLinkMyReadings";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
-import { emailGiftPurchaseConfirmation } from "./emailGiftPurchaseConfirmation";
+import { emailGiftClaimReminder } from "./emailGiftClaimReminder";
+import { emailGiftPurchaseConfirmationScheduled } from "./emailGiftPurchaseConfirmationScheduled";
+import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfirmationSelfSend";
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
 import { emailPrivacyExport } from "./emailPrivacyExport";
+import { emailSharedShell } from "./emailSharedShell";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -44,12 +49,17 @@ export const schemaTypes = [
   myGiftsPage,
   magicLinkVerifyPage,
   emailMagicLink,
+  emailMagicLinkMyReadings,
+  emailMagicLinkMyGifts,
   emailDay7Delivery,
   emailOrderConfirmation,
-  emailGiftPurchaseConfirmation,
+  emailGiftPurchaseConfirmationSelfSend,
+  emailGiftPurchaseConfirmationScheduled,
   emailGiftClaim,
+  emailGiftClaimReminder,
   emailRecipientIntakeReceived,
   emailPrivacyExport,
+  emailSharedShell,
   giftClaimPage,
   giftIntakePage,
   listenPage,

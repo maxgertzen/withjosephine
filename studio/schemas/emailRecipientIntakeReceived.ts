@@ -7,10 +7,10 @@ const validateRecipientIntakeSlots = slotValidation("emailRecipientIntakeReceive
 
 export const emailRecipientIntakeReceived = defineType({
   name: "emailRecipientIntakeReceived",
-  title: "Email — Recipient Intake Received",
+  title: "Intake Received → Gift Recipient",
   type: "document",
   description:
-    "Sent to a gift recipient immediately after they submit their intake. Confirms the answers landed and sets timing expectations.",
+    "Sent to a gift recipient right after they finish filling out their intake form. Confirms their answers came through and tells them the reading will arrive within 7 days.",
   groups: [
     { name: "envelope", title: "Inbox preview" },
     { name: "header", title: "Brand header" },
@@ -37,6 +37,8 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "Your answers landed safely — here's what happens next.",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandName",
       title: "Brand wordmark",
       type: "string",
@@ -44,6 +46,8 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "Josephine",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "brandSubtitle",
       title: "Brand sub-line",
       type: "string",
@@ -58,42 +62,52 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "Your reading is in my hands",
     }),
     defineField({
+      name: "body",
+      title: "Body",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      group: "body",
+      description:
+        'The full body of the email. Bold/italic/link via the toolbar. Use "{recipientName}", "{purchaserFirstName}", "{readingName}" placeholders.',
+      validation: validateRecipientIntakeSlots,
+    }),
+    defineField({
       name: "greeting",
-      title: "Greeting",
+      title: "Greeting (legacy — folded into Body)",
       type: "string",
       group: "body",
-      description: 'Use "{recipientName}" to insert the recipient\'s name.',
+      hidden: true,
+      readOnly: true,
       validation: validateRecipientIntakeSlots,
       initialValue: "Hi {recipientName},",
     }),
     defineField({
       name: "thanksLine",
-      title: "Thanks paragraph",
-      type: "text",
-      rows: 2,
+      title: "Thanks paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      description: 'Use "{readingName}" / "{purchaserFirstName}" placeholders.',
+      hidden: true,
+      readOnly: true,
       validation: validateRecipientIntakeSlots,
-      initialValue:
-        "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
     }),
     defineField({
       name: "timelineLine",
-      title: "Timeline paragraph",
-      type: "text",
-      rows: 3,
+      title: "Timeline paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: "contactLine",
-      title: "Contact paragraph",
-      type: "text",
-      rows: 2,
+      title: "Contact paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       group: "body",
-      initialValue:
-        "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: "cardLabel",
@@ -110,6 +124,8 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "Delivery within 7 days",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine1",
       title: "Sign-off line 1",
       type: "string",
@@ -117,6 +133,8 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "With love,",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "signOffLine2",
       title: "Sign-off line 2",
       type: "string",
@@ -124,6 +142,8 @@ export const emailRecipientIntakeReceived = defineType({
       initialValue: "Josephine ✦",
     }),
     defineField({
+      hidden: true,
+      readOnly: true,
       name: "footerDisclaimer",
       title: "Footer disclaimer",
       type: "string",
@@ -132,6 +152,10 @@ export const emailRecipientIntakeReceived = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Recipient Intake Received" }),
+    prepare: () => ({
+      title: "Intake Received → Gift Recipient",
+      subtitle:
+        "Sent to a gift recipient right after they finish filling out their intake form. Confirms their answers came through and tells them the reading will arrive within 7 days.",
+    }),
   },
 });

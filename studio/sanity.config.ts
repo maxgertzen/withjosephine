@@ -1,3 +1,4 @@
+import type { DocumentActionsResolver, NewDocumentOptionsResolver } from "sanity";
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 import { presentationTool } from "sanity/presentation";
@@ -6,6 +7,7 @@ import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { regenerateGiftClaimAction } from "./actions/regenerateGiftClaim";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
+import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { schemaTypes } from "./schemas";
 import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
@@ -25,6 +27,37 @@ const sharedPlugins = (previewOrigin: string) => [
   colorInput(),
 ];
 
+const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
+  if (SINGLETON_TYPES.has(schemaType)) {
+    return prev.filter(
+      ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
+    );
+  }
+  if (schemaType === "submission") {
+    return [
+      ...prev,
+      deleteCustomerDataAction,
+      regenerateGiftClaimAction,
+      resendCustomerEmailAction,
+    ];
+  }
+  return prev;
+};
+
+const sharedNewDocumentOptions: NewDocumentOptionsResolver = (prev) =>
+  prev.filter((item) => !SINGLETON_TYPES.has(item.templateId));
+
+const sharedDocument = {
+  actions: sharedActions,
+  newDocumentOptions: sharedNewDocumentOptions,
+};
+
+const sharedForm = {
+  components: {
+    input: EmailDescriptionBanner,
+  },
+};
+
 export default defineConfig([
   {
     name: "production",
@@ -35,25 +68,8 @@ export default defineConfig([
     basePath: "/production",
     plugins: sharedPlugins("https://withjosephine.com"),
     schema: { types: schemaTypes },
-    document: {
-      actions: (prev, { schemaType }) => {
-        if (SINGLETON_TYPES.has(schemaType)) {
-          return prev.filter(
-            ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
-          );
-        }
-        if (schemaType === "submission") {
-          return [
-            ...prev,
-            deleteCustomerDataAction,
-            regenerateGiftClaimAction,
-            resendCustomerEmailAction,
-          ];
-        }
-        return prev;
-      },
-      newDocumentOptions: (prev) => prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
-    },
+    form: sharedForm,
+    document: sharedDocument,
   },
   {
     name: "staging",
@@ -64,24 +80,7 @@ export default defineConfig([
     basePath: "/staging",
     plugins: sharedPlugins("https://staging.withjosephine.com"),
     schema: { types: schemaTypes },
-    document: {
-      actions: (prev, { schemaType }) => {
-        if (SINGLETON_TYPES.has(schemaType)) {
-          return prev.filter(
-            ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
-          );
-        }
-        if (schemaType === "submission") {
-          return [
-            ...prev,
-            deleteCustomerDataAction,
-            regenerateGiftClaimAction,
-            resendCustomerEmailAction,
-          ];
-        }
-        return prev;
-      },
-      newDocumentOptions: (prev) => prev.filter((item) => !SINGLETON_TYPES.has(item.templateId)),
-    },
+    form: sharedForm,
+    document: sharedDocument,
   },
 ]);

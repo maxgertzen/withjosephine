@@ -5,10 +5,10 @@ import { slotValidation } from "../lib/validateSlots";
 
 export const emailPrivacyExport = defineType({
   name: "emailPrivacyExport",
-  title: "Email — Privacy Export (GDPR Art. 20)",
+  title: "Privacy Export → Requester (GDPR)",
   type: "document",
   description:
-    "Sent in response to a GDPR Article 20 data-portability request. Contains a 7-day-expiring pre-signed download URL for the user's reading data ZIP.",
+    "Sent in response to a GDPR data-portability request, with a download link for the requester's reading data as a ZIP file. The download link expires in 7 days.",
   fields: [
     tokenReferenceField("emailPrivacyExport"),
     defineField({
@@ -24,28 +24,19 @@ export const emailPrivacyExport = defineType({
       initialValue: "Your Josephine data export is ready",
     }),
     defineField({
-      name: "greeting",
-      title: "Greeting",
+      name: "heroLine",
+      title: "Hero line (after divider)",
       type: "string",
-      initialValue: "Hi,",
+      initialValue: "Your data export is ready",
     }),
     defineField({
-      name: "introLine",
-      title: "Intro paragraph",
-      type: "text",
-      rows: 2,
-      initialValue: "Your Josephine data export is ready.",
-    }),
-    defineField({
-      name: "contentsLine",
-      title: "Contents paragraph",
-      type: "text",
-      rows: 3,
+      name: "bodyIntro",
+      title: "Body — before button",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
-        'Use "{submissionCount}" to insert how many readings the export contains.',
+        'Body paragraphs shown above the download button. Use "{submissionCount}" to insert how many readings the export contains.',
       validation: slotValidation("emailPrivacyExport"),
-      initialValue:
-        "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
     }),
     defineField({
       name: "ctaLabel",
@@ -54,15 +45,47 @@ export const emailPrivacyExport = defineType({
       initialValue: "Download your export (ZIP)",
     }),
     defineField({
-      name: "expiryLine",
-      title: "Expiry paragraph",
-      type: "text",
-      rows: 2,
+      name: "bodyPostButton",
+      title: "Body — after button",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
-        'Use "{expiryDays}" to insert the link lifetime in days.',
+        'Body paragraphs shown below the download button. Use "{expiryDays}" to insert the link lifetime in days.',
       validation: slotValidation("emailPrivacyExport"),
-      initialValue:
-        "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+    }),
+    defineField({
+      name: "greeting",
+      title: "Greeting (legacy — folded into Body)",
+      type: "string",
+      hidden: true,
+      readOnly: true,
+      initialValue: "Hi,",
+    }),
+    defineField({
+      name: "introLine",
+      title: "Intro paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
+      name: "contentsLine",
+      title: "Contents paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      hidden: true,
+      readOnly: true,
+      validation: slotValidation("emailPrivacyExport"),
+    }),
+    defineField({
+      name: "expiryLine",
+      title: "Expiry paragraph (legacy — folded into Body)",
+      type: "array",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      hidden: true,
+      readOnly: true,
+      validation: slotValidation("emailPrivacyExport"),
     }),
     defineField({
       name: "signOff",
@@ -72,6 +95,10 @@ export const emailPrivacyExport = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Privacy Export (GDPR Art. 20)" }),
+    prepare: () => ({
+      title: "Privacy Export → Requester (GDPR)",
+      subtitle:
+        "Sent in response to a GDPR data-portability request, with a download link for the requester's reading data as a ZIP file. The download link expires in 7 days.",
+    }),
   },
 });

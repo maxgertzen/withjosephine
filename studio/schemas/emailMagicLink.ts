@@ -7,10 +7,10 @@ const validateMagicLinkSlots = slotValidation("emailMagicLink");
 
 export const emailMagicLink = defineType({
   name: "emailMagicLink",
-  title: "Email — Magic Link",
+  title: "Magic Link → Listen Page",
   type: "document",
   description:
-    "Sent when a customer or gift recipient requests a sign-in link. The link is generic — this email goes to anyone trying to authenticate, including strangers who don't have a reading yet, so no customer-specific tokens are available here.",
+    "Sent to anyone who asks for a sign-in link from a reading's listen page — could be a customer, a gift recipient, or someone who typed an email that has no reading yet. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
   fields: [
     tokenReferenceField("emailMagicLink"),
     defineField({
@@ -27,9 +27,23 @@ export const emailMagicLink = defineType({
       initialValue: "Open your reading",
     }),
     defineField({
-      name: "greeting",
-      title: "Greeting",
+      name: "heroLine",
+      title: "Hero line (after divider)",
       type: "string",
+      initialValue: "Open your reading",
+    }),
+    defineField({
+      name: "buttonLabel",
+      title: "Button label",
+      type: "string",
+      initialValue: "Open your reading",
+    }),
+    defineField({
+      name: "greeting",
+      title: "Greeting (legacy — folded into Body)",
+      type: "string",
+      hidden: true,
+      readOnly: true,
       validation: validateMagicLinkSlots,
       initialValue: "Hi,",
     }),
@@ -37,13 +51,10 @@ export const emailMagicLink = defineType({
       name: "body",
       title: "Body paragraphs",
       type: "array",
-      of: [{ type: "text", rows: 3 }],
-      description: "Each entry is a paragraph in the body. Order = render order.",
+      of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
+      description:
+        "Body paragraphs. Bold/italic via the toolbar; links via the link button. Each block becomes one paragraph in the email.",
       validation: validateMagicLinkSlots,
-      initialValue: [
-        "Here's a fresh link to open your reading. It'll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
-        "This link expires in twenty-four hours. If you didn't ask for it, it's safe to ignore — nothing happens until someone clicks.",
-      ],
     }),
     defineField({
       name: "signOff",
@@ -53,6 +64,10 @@ export const emailMagicLink = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "Email — Magic Link" }),
+    prepare: () => ({
+      title: "Magic Link → Listen Page",
+      subtitle:
+        "Sent to anyone who asks for a sign-in link from a reading's listen page — could be a customer, a gift recipient, or someone who typed an email that has no reading yet. The link works for 24 hours and the sign-in stays active for 7 days after they use it.",
+    }),
   },
 });

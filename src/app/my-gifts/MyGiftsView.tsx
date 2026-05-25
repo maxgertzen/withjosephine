@@ -9,8 +9,8 @@ import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
 import { giftResendRateLimit, giftStatusFor } from "@/lib/booking/giftStatus";
-import type { SubmissionRecord } from "@/lib/booking/submissions";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
+import type { SubmissionRecord } from "@/lib/page-previews/types";
 
 import {
   GiftCardActions,

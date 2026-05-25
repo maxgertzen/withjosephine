@@ -27,7 +27,8 @@ export type ListenViewState =
   | { kind: "checkEmail"; submissionId: string }
   | { kind: "rested"; submissionId: string }
   | { kind: "throttled"; submissionId: string }
-  | { kind: "assetTrouble"; submissionId: string };
+  | { kind: "assetTrouble"; submissionId: string }
+  | { kind: "expired"; submissionId: string };
 
 export type ListenViewProps = {
   copy: ListenPageContent;
@@ -56,6 +57,7 @@ function renderCard(copy: ListenPageContent, state: ListenViewState) {
   if (state.kind === "checkEmail") return <CheckEmailCard copy={copy} submissionId={state.submissionId} />;
   if (state.kind === "rested") return <RestedCard copy={copy} submissionId={state.submissionId} />;
   if (state.kind === "throttled") return <ThrottledCard copy={copy} submissionId={state.submissionId} />;
+  if (state.kind === "expired") return <ExpiredCard copy={copy} submissionId={state.submissionId} />;
   return <AssetTroubleCard copy={copy} submissionId={state.submissionId} />;
 }
 
@@ -207,6 +209,31 @@ function ThrottledCard({
           className="underline"
         >
           {copy.throttledMailtoLabel}
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function ExpiredCard({
+  copy,
+  submissionId,
+}: {
+  copy: ListenPageContent;
+  submissionId: string;
+}) {
+  return (
+    <div className="max-w-md mx-auto bg-j-ivory border border-j-blush rounded-2xl p-10 text-center">
+      <h1 className="font-display italic text-3xl text-j-text-heading">
+        {copy.expiredHeading}
+      </h1>
+      <p className="font-body text-base text-j-text mt-4 leading-[1.6]">{copy.expiredBody}</p>
+      <p className="font-display italic text-base text-j-text-muted mt-8">
+        <a
+          href={brandMailtoHref(copy.expiredMailtoSubject, submissionId)}
+          className="underline"
+        >
+          {copy.expiredMailtoLabel}
         </a>
       </p>
     </div>

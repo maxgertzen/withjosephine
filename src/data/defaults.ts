@@ -1,3 +1,9 @@
+import type { PortableTextBlock } from "@portabletext/types";
+
+import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
+
+export type EmailRichText = PortableTextBlock[];
+
 export interface HeroContent {
   tagline: string;
   introGreeting: string;
@@ -240,6 +246,9 @@ export interface MyReadingsPageContent extends AuthGatedPageContent {
   openButtonLabel: string;
   emptyHeading: string;
   emptyCtaLabel: string;
+  expiredRowLabel: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -248,6 +257,9 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   openButtonLabel: "Open your reading",
   emptyHeading: "Your readings will appear here once they’re delivered.",
   emptyCtaLabel: "Explore Readings",
+  expiredRowLabel: "Rested past 90 days",
+  expiredMailtoLabel: "Email for a fresh link",
+  expiredMailtoSubject: "I need a fresh link to my reading",
   signInHeading: "Welcome back",
   signInBody:
     "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
@@ -459,243 +471,401 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
 export interface EmailMagicLinkContent {
   subject: string;
   preview: string;
-  greeting: string;
-  body: string[];
+  heroLine: string;
+  greeting?: string | null;
+  body: EmailRichText;
+  buttonLabel: string;
   signOff: string | null;
 }
 
 export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   subject: "Open your reading",
   preview: "Open your reading",
+  heroLine: "Open your reading",
+  buttonLabel: "Open your reading",
   greeting: "Hi,",
   body: [
-    "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
-    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
   ],
   signOff: null,
+};
+
+export const EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS: EmailMagicLinkContent = {
+  subject: "Open your readings",
+  preview: "A fresh link to your readings.",
+  heroLine: "Open your readings",
+  buttonLabel: "Open my readings",
+  greeting: "Hi,",
+  body: [
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to your readings library. It’ll sign you in for the next seven days so you can come back to anything you’ve had with me without asking again.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
+  ],
+  signOff: null,
+};
+
+export const EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS: EmailMagicLinkContent = {
+  subject: "Open your gifts dashboard",
+  preview: "A fresh link to your gifts.",
+  heroLine: "Open your gifts dashboard",
+  buttonLabel: "Open my gifts",
+  greeting: "Hi,",
+  body: [
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to your gifts dashboard. From there you can manage the readings you’ve gifted — change a recipient detail, regenerate a claim link, or pick a new send date.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
+  ],
+  signOff: null,
+};
+
+// Brand + footer fields shared across every customer-facing email template.
+// Sourced from the `emailSharedShell` Sanity singleton at render time; this
+// constant is the fallback when the GROQ fetch returns null.
+export interface EmailSharedShellContent {
+  brandName: string;
+  brandSubtitle: string;
+  signOffLine1: string;
+  signOffLine2: string;
+  footerDisclaimer: string;
+}
+
+export const EMAIL_SHARED_SHELL_DEFAULTS: EmailSharedShellContent = {
+  brandName: "Josephine",
+  brandSubtitle: "Soul Readings",
+  signOffLine1: "With love,",
+  signOffLine2: "Josephine ✦",
+  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
-  greeting: string;
-  thanksLine: string;
-  timelineLine: string;
-  contactLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  thanksLine?: EmailRichText;
+  timelineLine?: EmailRichText;
+  contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = {
   subject: "Your reading is booked — here’s what happens next",
   preview: "Your reading is booked — here’s what happens next",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Your reading is booked",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
+    ),
+    ...stringToPortableTextBlocks(
+      "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+    ),
+  ],
   greeting: "Hi {firstName},",
-  thanksLine:
+  thanksLine: stringToPortableTextBlocks(
     "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
-  timelineLine:
+  ),
+  timelineLine: stringToPortableTextBlocks(
     "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  contactLine:
+  ),
+  contactLine: stringToPortableTextBlocks(
     "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
 export interface EmailRecipientIntakeReceivedContent {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
-  greeting: string;
-  thanksLine: string;
-  timelineLine: string;
-  contactLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  thanksLine?: EmailRichText;
+  timelineLine?: EmailRichText;
+  contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeReceivedContent = {
   subject: "Your reading is in my hands now",
   preview: "Your answers landed safely — here's what happens next.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLine: "Your reading is in my hands",
+  body: [
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+    ),
+    ...stringToPortableTextBlocks(
+      "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+    ),
+  ],
   greeting: "Hi {recipientName},",
-  thanksLine:
+  thanksLine: stringToPortableTextBlocks(
     "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
-  timelineLine:
+  ),
+  timelineLine: stringToPortableTextBlocks(
     "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  contactLine:
+  ),
+  contactLine: stringToPortableTextBlocks(
     "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
-export interface EmailGiftPurchaseConfirmationContent {
-  subjectSelfSend: string;
-  subjectScheduled: string;
-  previewSelfSend: string;
-  previewScheduled: string;
-  brandName: string;
-  brandSubtitle: string;
-  heroLineSelfSend: string;
-  heroLineScheduled: string;
-  greeting: string;
-  detailLineSelfSend: string;
-  detailLineScheduled: string;
+export interface EmailGiftPurchaseConfirmationSelfSendContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  detailLineSelfSend?: EmailRichText;
   shareButtonLabel: string;
-  shareUrlHelper: string;
+  shareUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  refundLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
+  refundLine: EmailRichText;
 }
 
-export const EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS: EmailGiftPurchaseConfirmationContent = {
-  subjectSelfSend: "Your gift is ready to share",
-  subjectScheduled: "Your gift is scheduled",
-  previewSelfSend: "Your shareable link is inside.",
-  previewScheduled: "We’ll send it to {recipientName} on {sendAtDisplay}.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
-  heroLineSelfSend: "A reading, ready for them",
-  heroLineScheduled: "A reading, on its way",
+export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurchaseConfirmationSelfSendContent = {
+  subject: "Your gift is ready to share",
+  preview: "Your shareable link is inside.",
+  heroLine: "A reading, ready for them",
+  body: [
+    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+    ),
+  ],
   greeting: "Hi {purchaserFirstName},",
-  detailLineSelfSend:
+  detailLineSelfSend: stringToPortableTextBlocks(
     "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
-  detailLineScheduled:
-    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  ),
   shareButtonLabel: "Share the link",
-  shareUrlHelper:
+  shareUrlHelper: stringToPortableTextBlocks(
     "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
+  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
-  refundLine:
+  refundLine: stringToPortableTextBlocks(
     "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+  ),
+};
+
+export interface EmailGiftPurchaseConfirmationScheduledContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body?: EmailRichText;
+  greeting?: string;
+  detailLineScheduled?: EmailRichText;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  refundLine: EmailRichText;
+}
+
+export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurchaseConfirmationScheduledContent = {
+  subject: "Your gift is scheduled",
+  preview: "We’ll send it to {recipientName} on {sendAtDisplay}.",
+  heroLine: "A reading, on its way",
+  body: [
+    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+    ),
+  ],
+  greeting: "Hi {purchaserFirstName},",
+  detailLineScheduled: stringToPortableTextBlocks(
+    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  ),
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivery within 7 days of claim",
+  refundLine: stringToPortableTextBlocks(
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+  ),
 };
 
 export interface EmailGiftClaimContent {
   subjectFirstSend: string;
-  subjectReminder: string;
   previewFirstSend: string;
-  previewReminder: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLineFirstSend: string;
-  heroLineReminder: string;
-  greeting: string;
-  bodyFirstSend: string;
-  bodyReminder: string;
+  body?: EmailRichText;
+  greeting?: string;
+  bodyFirstSend?: EmailRichText;
   giftMessageLabel: string;
   claimButtonLabel: string;
-  claimUrlHelper: string;
+  claimUrlHelper: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  reminderContactLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 }
 
 export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   subjectFirstSend: "A reading, waiting for you",
-  subjectReminder: "A reading is still waiting for you",
   previewFirstSend: "{purchaserFirstName} has sent you a reading.",
-  previewReminder: "A small reminder about the reading {purchaserFirstName} sent you.",
-  brandName: "Josephine",
-  brandSubtitle: "Soul Readings",
   heroLineFirstSend: "A reading, for you",
-  heroLineReminder: "Still here, when you’re ready",
+  body: [
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+    ),
+  ],
   greeting: "Hi {recipientName},",
-  bodyFirstSend:
+  bodyFirstSend: stringToPortableTextBlocks(
     "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
-  bodyReminder:
-    "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+  ),
   giftMessageLabel: "A note from {purchaserFirstName}",
   claimButtonLabel: "Open your gift",
-  claimUrlHelper:
+  claimUrlHelper: stringToPortableTextBlocks(
     "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
+  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivered within 7 days of your intake",
-  reminderContactLine:
-    "If you can’t find the earlier email, write to hello@withjosephine.com and I’ll send you a fresh link.",
-  signOffLine1: "With love,",
-  signOffLine2: "Josephine ✦",
-  footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
+};
+
+export interface EmailGiftClaimReminderContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body?: EmailRichText;
+  giftMessageLabel: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+}
+
+export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent = {
+  subject: "A reading is still waiting for you",
+  preview: "A small reminder about the reading {purchaserFirstName} sent you.",
+  heroLine: "Still here, when you’re ready",
+  body: [
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+    ),
+  ],
+  giftMessageLabel: "A note from {purchaserFirstName}",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivered within 7 days of your intake",
 };
 
 
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
   preview: string;
-  greeting: string;
-  lineReady: string;
-  comfortLine: string;
+  heroLine: string;
+  bodyIntro?: EmailRichText;
+  bodyPostButton?: EmailRichText;
+  greeting?: string;
+  lineReady?: string;
+  comfortLine?: EmailRichText;
   openButtonLabel: string;
-  signedInDisclosure: string;
-  comfortFollowUp: string;
+  signedInDisclosure?: EmailRichText;
+  accessWindowLine?: EmailRichText;
+  comfortFollowUp?: EmailRichText;
+  cardLabel: string;
+  cardDeliveryLine: string;
   signOff: string | null;
 }
 
 export interface EmailPrivacyExportContent {
   subject: string;
   preview: string;
-  greeting: string;
-  introLine: string;
-  contentsLine: string;
+  heroLine: string;
+  bodyIntro?: EmailRichText;
+  bodyPostButton?: EmailRichText;
+  greeting?: string;
+  introLine?: EmailRichText;
+  contentsLine?: EmailRichText;
   ctaLabel: string;
-  expiryLine: string;
+  expiryLine?: EmailRichText;
   signOff: string | null;
 }
 
 export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   subject: "Your Josephine data export",
   preview: "Your Josephine data export is ready",
-  greeting: "Hi,",
-  introLine: "Your Josephine data export is ready.",
-  contentsLine:
-    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
-  ctaLabel: "Download your export (ZIP)",
-  expiryLine:
+  heroLine: "Your data export is ready",
+  bodyIntro: [
+    ...stringToPortableTextBlocks("Hi,"),
+    ...stringToPortableTextBlocks("Your Josephine data export is ready."),
+    ...stringToPortableTextBlocks(
+      "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+    ),
+  ],
+  bodyPostButton: stringToPortableTextBlocks(
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  ),
+  greeting: "Hi,",
+  introLine: stringToPortableTextBlocks("Your Josephine data export is ready."),
+  contentsLine: stringToPortableTextBlocks(
+    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+  ),
+  ctaLabel: "Download your export (ZIP)",
+  expiryLine: stringToPortableTextBlocks(
+    "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  ),
   signOff: null,
 };
 
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",
+  heroLine: "Your reading is ready",
+  bodyIntro: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks("Your {readingName} is here."),
+    ...stringToPortableTextBlocks(
+      "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+    ),
+  ],
+  bodyPostButton: [
+    ...stringToPortableTextBlocks(
+      "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
+    ),
+    ...stringToPortableTextBlocks(
+      "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+    ),
+  ],
   greeting: "Hi {firstName},",
   lineReady: "Your {readingName} is here.",
-  comfortLine:
+  comfortLine: stringToPortableTextBlocks(
     "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+  ),
   openButtonLabel: "Open your reading",
-  signedInDisclosure:
+  signedInDisclosure: stringToPortableTextBlocks(
     "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
-  comfortFollowUp:
+  ),
+  accessWindowLine: stringToPortableTextBlocks(
+    "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
+  ),
+  comfortFollowUp: stringToPortableTextBlocks(
     "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+  ),
+  cardLabel: "Your reading",
+  cardDeliveryLine: "Voice note + PDF",
   signOff: null,
 };
 
@@ -727,6 +897,10 @@ export interface ListenPageContent {
   assetTroubleTryAgainLabel: string;
   assetTroubleMailtoLabel: string;
   assetTroubleMailtoSubject: string;
+  expiredHeading: string;
+  expiredBody: string;
+  expiredMailtoLabel: string;
+  expiredMailtoSubject: string;
 }
 
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
@@ -763,6 +937,11 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   assetTroubleTryAgainLabel: "Try again",
   assetTroubleMailtoLabel: "Write to Josephine",
   assetTroubleMailtoSubject: "Trouble opening my reading",
+  expiredHeading: "This reading has rested",
+  expiredBody:
+    "Self-serve links to your reading rest after ninety days. Write to me and I’ll send a fresh one in a moment — no rush.",
+  expiredMailtoLabel: "Email Josephine for a fresh link",
+  expiredMailtoSubject: "I need a fresh link to my reading",
 };
 
 export const ABOUT_DEFAULTS: MappedAbout = {

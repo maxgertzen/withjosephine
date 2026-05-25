@@ -7,8 +7,10 @@ import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyReadingsPageContent } from "@/data/defaults";
-import type { SubmissionRecord } from "@/lib/booking/submissions";
+import { isReadingExpired } from "@/lib/booking/readingRetention";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
+import { CONTACT_EMAIL } from "@/lib/constants";
+import type { SubmissionRecord } from "@/lib/page-previews/types";
 
 export type MyReadingsViewProps = {
   copy: MyReadingsPageContent;
@@ -59,35 +61,56 @@ function ReadingsList({
       {readings.length === 0 ? (
         <EmptyState copy={copy} />
       ) : (
-        <Cards readings={readings} openLabel={copy.openButtonLabel} />
+        <Cards readings={readings} copy={copy} />
       )}
     </>
   );
 }
 
-function Cards({ readings, openLabel }: { readings: SubmissionRecord[]; openLabel: string }) {
+function Cards({ readings, copy }: { readings: SubmissionRecord[]; copy: MyReadingsPageContent }) {
   return (
     <ul className="space-y-6">
-      {readings.map((reading) => (
-        <li
-          key={reading._id}
-          className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h2 className="font-display italic text-xl text-j-text-heading">
-              {reading.reading?.name ?? "Your reading"}
-            </h2>
-            <p className="font-body text-sm text-j-text-muted mt-1">
-              Delivered {formatDate(reading.deliveredAt ?? reading.createdAt)}
-            </p>
-          </div>
-          <Button href={`/listen/${reading._id}`}>
-            {openLabel}
-          </Button>
-        </li>
-      ))}
+      {readings.map((reading) => {
+        const deliveredAtMs = reading.deliveredAt
+          ? Date.parse(reading.deliveredAt)
+          : null;
+        const expired = isReadingExpired(deliveredAtMs);
+        return (
+          <li
+            key={reading._id}
+            className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          >
+            <div>
+              <h2 className="font-display italic text-xl text-j-text-heading">
+                {reading.reading?.name ?? "Your reading"}
+              </h2>
+              <p className="font-body text-sm text-j-text-muted mt-1">
+                {expired
+                  ? copy.expiredRowLabel
+                  : `Delivered ${formatDate(reading.deliveredAt ?? reading.createdAt)}`}
+              </p>
+            </div>
+            {expired ? (
+              <a
+                href={expiredMailtoHref(copy.expiredMailtoSubject, reading._id)}
+                className="font-display italic text-base text-j-text-muted underline whitespace-nowrap"
+              >
+                {copy.expiredMailtoLabel}
+              </a>
+            ) : (
+              <Button href={`/listen/${reading._id}`}>{copy.openButtonLabel}</Button>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
+}
+
+function expiredMailtoHref(subject: string, submissionId: string): string {
+  const encodedSubject = encodeURIComponent(subject);
+  const body = encodeURIComponent(`Reading ID: ${submissionId}`);
+  return `mailto:${CONTACT_EMAIL}?subject=${encodedSubject}&body=${body}`;
 }
 
 function EmptyState({ copy }: { copy: MyReadingsPageContent }) {

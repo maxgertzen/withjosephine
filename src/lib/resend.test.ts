@@ -30,10 +30,17 @@ vi.mock("./analytics/server", () => ({
 
 vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
+  fetchEmailMagicLinkMyReadings: vi.fn().mockResolvedValue(null),
+  fetchEmailMagicLinkMyGifts: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
   fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
   fetchEmailPrivacyExport: vi.fn().mockResolvedValue(null),
+  fetchEmailGiftClaim: vi.fn().mockResolvedValue(null),
+  fetchEmailGiftClaimReminder: vi.fn().mockResolvedValue(null),
+  fetchEmailGiftPurchaseConfirmationSelfSend: vi.fn().mockResolvedValue(null),
+  fetchEmailGiftPurchaseConfirmationScheduled: vi.fn().mockResolvedValue(null),
+  fetchEmailSharedShell: vi.fn().mockResolvedValue(null),
 }));
 
 beforeEach(() => {
@@ -323,14 +330,22 @@ describe("sendPrivacyExportEmail", () => {
   it("renders Sanity-fetched copy with submissionCount + expiryDays interpolated", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_priv" } });
     const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
     vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
       subject: "Custom export subject",
       preview: "Custom export preview",
+      heroLine: "Your data export is ready",
+      bodyIntro: [
+        ...stringToPortableTextBlocks("Greetings,"),
+        ...stringToPortableTextBlocks("Your export is queued."),
+        ...stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
+      ],
+      bodyPostButton: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       greeting: "Greetings,",
-      introLine: "Your export is queued.",
-      contentsLine: "Contains data for {submissionCount} reading(s).",
+      introLine: stringToPortableTextBlocks("Your export is queued."),
+      contentsLine: stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
       ctaLabel: "Grab your ZIP",
-      expiryLine: "Link expires in {expiryDays} days.",
+      expiryLine: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       signOff: null,
     });
     const { sendPrivacyExportEmail } = await import("./resend");
@@ -492,6 +507,7 @@ describe("sendRecipientIntakeReceived (I-10)", () => {
   it("substitutes {recipientName} and {readingName} in the subject if used in Sanity copy", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_rir" } });
     const { fetchEmailRecipientIntakeReceived } = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
     vi.mocked(fetchEmailRecipientIntakeReceived).mockResolvedValueOnce({
       subject: "{recipientName}, your {readingName} is in my hands",
       preview: "x",
@@ -499,9 +515,9 @@ describe("sendRecipientIntakeReceived (I-10)", () => {
       brandSubtitle: "Soul Readings",
       heroLine: "x",
       greeting: "Hi {recipientName},",
-      thanksLine: "x",
-      timelineLine: "x",
-      contactLine: "x",
+      thanksLine: stringToPortableTextBlocks("x"),
+      timelineLine: stringToPortableTextBlocks("x"),
+      contactLine: stringToPortableTextBlocks("x"),
       cardLabel: "x",
       cardDeliveryLine: "x",
       signOffLine1: "x",
@@ -700,6 +716,7 @@ describe("sendMagicLink", () => {
     const result = await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
+      context: "listen",
     });
 
     expect(getResendId(result)).toBe("msg_ml");
@@ -718,6 +735,7 @@ describe("sendMagicLink", () => {
     await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
+      context: "listen",
     });
 
     const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
@@ -733,11 +751,44 @@ describe("sendMagicLink", () => {
     const result = await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://example.com/x",
+      context: "listen",
     });
 
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
+  });
+
+  it("uses my-readings copy and sub_type when context is 'my-readings'", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_mr" } });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=mr",
+      context: "my-readings",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Open your readings");
+    const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(props.sub_type).toBe("magic_link_my_readings");
+  });
+
+  it("uses my-gifts copy and sub_type when context is 'my-gifts'", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_mg" } });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=mg",
+      context: "my-gifts",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Open your gifts dashboard");
+    const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(props.sub_type).toBe("magic_link_my_gifts");
   });
 });
 
@@ -940,5 +991,222 @@ describe("redactEmail", () => {
   it("returns the input unchanged when @ is the first character", async () => {
     const { redactEmail } = await import("./resend");
     expect(redactEmail("@example.com")).toBe("@example.com");
+  });
+});
+
+// PR #188's gift-email-variant split + body-PT consolidation shipped without a
+// render-path test. Staging then 500'd on every gift email send with
+// `TypeError: Cannot read properties of null (reading 'useMemo')` thrown out
+// of `@portabletext/react`'s `<PortableText>` inside `@react-email/render`'s
+// workerd entry. These tests exercise the four gift send paths against the
+// Sanity shape Becky's Studio + the body-consolidation migration actually
+// produce, so any regression that swaps the hook-free PT renderer back for
+// `@portabletext/react` (or drops `body`/`refundLine`/`shareUrlHelper`
+// rendering on the migrated shape) trips the suite at PR time.
+describe("gift email send paths (PR #188 regression)", () => {
+  function buildClaimSanityShape() {
+    return async () => {
+      const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+      return {
+        subjectFirstSend: "A reading, waiting for you",
+        previewFirstSend: "{purchaserFirstName} has sent you a reading.",
+        brandName: "Josephine",
+        brandSubtitle: "Soul Readings",
+        heroLineFirstSend: "A reading, for you",
+        body: stringToPortableTextBlocks(
+          "Hi {recipientName}, {purchaserFirstName} sent you a {readingName}.",
+        ),
+        giftMessageLabel: "A note from {purchaserFirstName}",
+        claimButtonLabel: "Open your gift",
+        claimUrlHelper: stringToPortableTextBlocks(
+          "Open it from a quiet moment.",
+        ),
+        cardLabel: "The gift",
+        cardDeliveryLine: "Delivered within 7 days of your intake",
+        signOffLine1: "With love,",
+        signOffLine2: "Josephine",
+        footerDisclaimer: "Readings are offered for entertainment.",
+      };
+    };
+  }
+
+  it("sendGiftClaimEmail (first_send) renders with post-migration Sanity shape", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gc_fs" } });
+    const { fetchEmailGiftClaim } = await import("./sanity/fetch");
+    vi.mocked(fetchEmailGiftClaim).mockResolvedValueOnce(
+      (await buildClaimSanityShape()()) as never,
+    );
+
+    const { sendGiftClaimEmail } = await import("./resend");
+    const result = await sendGiftClaimEmail({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Grace",
+      purchaserFirstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+      giftMessage: null,
+      variant: "first_send",
+      claimUrl: "https://example.com/gift/claim/abc",
+    });
+    expect(getResendId(result)).toBe("msg_gc_fs");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("A reading, waiting for you");
+    const body = visibleText(args.html);
+    expect(body).toContain("Grace");
+    expect(body).toContain("Ada");
+    expect(body).toContain("Soul Blueprint");
+    expect(args.html).toContain('href="https://example.com/gift/claim/abc"');
+    expect(body).not.toContain("{recipientName}");
+    expect(body).not.toContain("{purchaserFirstName}");
+    expect(body).not.toContain("{readingName}");
+  });
+
+  it("sendGiftClaimEmail (reminder) renders with post-migration Sanity shape", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gc_rm" } });
+    const { fetchEmailGiftClaimReminder } = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchEmailGiftClaimReminder).mockResolvedValueOnce({
+      subject: "A reading is still waiting for you",
+      preview: "A small reminder about the reading {purchaserFirstName} sent you.",
+      brandName: "Josephine",
+      brandSubtitle: "Soul Readings",
+      heroLine: "Still here, when you’re ready",
+      body: stringToPortableTextBlocks(
+        "Hi {recipientName}, {purchaserFirstName} still wants you to have this {readingName}.",
+      ),
+      giftMessageLabel: "A note from {purchaserFirstName}",
+      cardLabel: "The gift",
+      cardDeliveryLine: "Delivered within 7 days of your intake",
+      signOffLine1: "With love,",
+      signOffLine2: "Josephine",
+      footerDisclaimer: "Readings are offered for entertainment.",
+    } as never);
+
+    const { sendGiftClaimEmail } = await import("./resend");
+    const result = await sendGiftClaimEmail({
+      submissionId: "sub_test",
+      recipientEmail: "recipient@example.com",
+      recipientName: "Grace",
+      purchaserFirstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+      giftMessage: null,
+      variant: "reminder",
+    });
+    expect(getResendId(result)).toBe("msg_gc_rm");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("A reading is still waiting for you");
+    const body = visibleText(args.html);
+    expect(body).toContain("Grace");
+    expect(body).toContain("Ada");
+    expect(body).toContain("Soul Blueprint");
+  });
+
+  it("sendGiftPurchaseConfirmation (self_send) renders with post-migration Sanity shape", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gp_ss" } });
+    const { fetchEmailGiftPurchaseConfirmationSelfSend } = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchEmailGiftPurchaseConfirmationSelfSend).mockResolvedValueOnce({
+      subject: "Your gift is ready to share",
+      preview: "Your shareable link is inside.",
+      brandName: "Josephine",
+      brandSubtitle: "Soul Readings",
+      heroLine: "A reading, ready for them",
+      body: stringToPortableTextBlocks(
+        "Hi {purchaserFirstName}, here is the link for {recipientName}.",
+      ),
+      shareButtonLabel: "Share the link",
+      shareUrlHelper: stringToPortableTextBlocks("This link is for {recipientName}."),
+      cardLabel: "The gift",
+      cardDeliveryLine: "Delivery within 7 days of claim",
+      refundLine: stringToPortableTextBlocks(
+        "Gifts are non-refundable. Manage at {myGiftsUrl}.",
+      ),
+      signOffLine1: "With love,",
+      signOffLine2: "Josephine",
+      footerDisclaimer: "Readings are offered for entertainment.",
+    } as never);
+
+    const { sendGiftPurchaseConfirmation } = await import("./resend");
+    const result = await sendGiftPurchaseConfirmation({
+      submissionId: "sub_test",
+      purchaserEmail: "purchaser@example.com",
+      purchaserFirstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+      amountPaidDisplay: "$179.00",
+      recipientName: "Grace",
+      giftMessage: null,
+      variant: "self_send",
+      claimUrl: "https://example.com/gift/claim/abc",
+    });
+    expect(getResendId(result)).toBe("msg_gp_ss");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Your gift is ready to share");
+    const body = visibleText(args.html);
+    expect(body).toContain("Ada");
+    expect(body).toContain("Grace");
+    expect(args.html).toContain('href="https://example.com/gift/claim/abc"');
+    expect(body).not.toContain("{purchaserFirstName}");
+    expect(body).not.toContain("{recipientName}");
+    expect(body).not.toContain("{myGiftsUrl}");
+  });
+
+  it("sendGiftPurchaseConfirmation (scheduled) renders with post-migration Sanity shape", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gp_sch" } });
+    const { fetchEmailGiftPurchaseConfirmationScheduled } = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchEmailGiftPurchaseConfirmationScheduled).mockResolvedValueOnce({
+      subject: "Your gift is scheduled",
+      preview: "We’ll send it to {recipientName} on {sendAtDisplay}.",
+      brandName: "Josephine",
+      brandSubtitle: "Soul Readings",
+      heroLine: "A reading, on its way",
+      body: stringToPortableTextBlocks(
+        "Hi {purchaserFirstName}, I’ll let {recipientName} know on {sendAtDisplay}.",
+      ),
+      cardLabel: "The gift",
+      cardDeliveryLine: "Delivery within 7 days of claim",
+      refundLine: stringToPortableTextBlocks("Non-refundable."),
+      signOffLine1: "With love,",
+      signOffLine2: "Josephine",
+      footerDisclaimer: "Readings are offered for entertainment.",
+    } as never);
+
+    const { sendGiftPurchaseConfirmation } = await import("./resend");
+    const result = await sendGiftPurchaseConfirmation({
+      submissionId: "sub_test",
+      purchaserEmail: "purchaser@example.com",
+      purchaserFirstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+      amountPaidDisplay: "$179.00",
+      recipientName: "Grace",
+      giftMessage: null,
+      variant: "scheduled",
+      sendAtDisplay: "May 26",
+    });
+    expect(getResendId(result)).toBe("msg_gp_sch");
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Your gift is scheduled");
+    const body = visibleText(args.html);
+    expect(body).toContain("Ada");
+    expect(body).toContain("Grace");
+    expect(body).toContain("May 26");
+  });
+
+  it("PortableTextBody does NOT import @portabletext/react (hook-free renderer guard)", async () => {
+    // The bug surface that bit staging: `<PortableText>` from
+    // `@portabletext/react` calls `useMemo`, which throws when react-email's
+    // workerd render path dispatches without a hook context. If this import
+    // creeps back in via a future refactor, this guard fails immediately.
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const file = await fs.readFile(
+      path.resolve(process.cwd(), "src/lib/emails/PortableTextBody.tsx"),
+      "utf-8",
+    );
+    expect(file).not.toMatch(/from\s+["']@portabletext\/react["']/);
   });
 });

@@ -9,8 +9,10 @@ import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
-import { GiftClaimEmail, type GiftClaimEmailVars } from "./emails/GiftClaimEmail";
-import { GiftPurchaseConfirmation, type GiftPurchaseConfirmationVars } from "./emails/GiftPurchaseConfirmation";
+import { GiftClaimEmail } from "./emails/GiftClaimEmail";
+import { GiftClaimReminderEmail } from "./emails/GiftClaimReminderEmail";
+import { GiftPurchaseConfirmationScheduled } from "./emails/GiftPurchaseConfirmationScheduled";
+import { GiftPurchaseConfirmationSelfSend } from "./emails/GiftPurchaseConfirmationSelfSend";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
@@ -44,6 +46,16 @@ export type EmailSendResult =
   | { kind: "dry_run" }
   | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" }
   | { kind: "failed"; error: string };
+
+// Brand + footer copy shared across every branded template. Sanity edit on
+// the `emailSharedShell` singleton propagates to every customer-facing email.
+// Falls back to the in-code defaults if the GROQ returns null.
+async function fetchSharedShell() {
+  const { EMAIL_SHARED_SHELL_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailSharedShell } = await import("@/lib/sanity/fetch");
+  const sanity = await fetchEmailSharedShell().catch(() => null);
+  return { ...EMAIL_SHARED_SHELL_DEFAULTS, ...(sanity ?? {}) };
+}
 
 export function getResendId(result: EmailSendResult): string | null {
   return result.kind === "sent" ? result.resendId : null;
@@ -80,6 +92,18 @@ function redactRecipient(to: string | string[]) {
 }
 
 type SkipReason = "sandbox_prefix" | "flag" | "header";
+
+async function resolveSkipReason(
+  recipients: readonly string[],
+  originatorEmail: string | null,
+): Promise<SkipReason | null> {
+  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
+    return "sandbox_prefix";
+  }
+  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  if (await shouldDryRunFromRequestHeader()) return "header";
+  return null;
+}
 
 // Fail-closed: header present + worker secret unset → skip the send.
 // Without this, a runner-only secret silently burns Resend quota per CI run.
@@ -134,14 +158,7 @@ async function sendOrSkip(args: {
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
   const recipientList = Array.isArray(args.to) ? args.to : [args.to];
-  const skipReason: SkipReason | null =
-    recipientList.some(isSandboxEmail) || isSandboxEmail(args.originatorEmail)
-      ? "sandbox_prefix"
-      : isFlagEnabled("RESEND_DRY_RUN")
-        ? "flag"
-        : (await shouldDryRunFromRequestHeader())
-          ? "header"
-          : null;
+  const skipReason = await resolveSkipReason(recipientList, args.originatorEmail ?? null);
   if (skipReason) {
     const captureUrl = process.env.E2E_CAPTURE_URL;
     if (captureUrl) {
@@ -250,7 +267,10 @@ export async function sendRecipientIntakeReceived(
 ): Promise<EmailSendResult> {
   const [{ EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS }, { fetchEmailRecipientIntakeReceived }] =
     await Promise.all([import("@/data/defaults"), import("@/lib/sanity/fetch")]);
-  const sanity = await fetchEmailRecipientIntakeReceived().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailRecipientIntakeReceived().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(
     <RecipientIntakeReceived
@@ -260,6 +280,7 @@ export async function sendRecipientIntakeReceived(
         readingName: input.readingName,
       }}
       copy={copy}
+      shell={shell}
     />,
   );
   const subject = applyTokens(copy.subject, {
@@ -280,7 +301,10 @@ export async function sendOrderConfirmation(
 ): Promise<EmailSendResult> {
   const { EMAIL_ORDER_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailOrderConfirmation } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailOrderConfirmation().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailOrderConfirmation().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...EMAIL_ORDER_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(
     <OrderConfirmation
@@ -291,6 +315,7 @@ export async function sendOrderConfirmation(
         amountPaidDisplay: submission.amountPaidDisplay,
       }}
       copy={copy}
+      shell={shell}
     />,
   );
 
@@ -320,16 +345,30 @@ export type GiftPurchaseConfirmationInput = {
 export async function sendGiftPurchaseConfirmation(
   input: GiftPurchaseConfirmationInput,
 ): Promise<EmailSendResult> {
-  const { EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailGiftPurchaseConfirmation } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailGiftPurchaseConfirmation().catch(() => null);
-  const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
-
+  const {
+    EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
+    EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
+  } = await import("@/data/defaults");
+  const {
+    fetchEmailGiftPurchaseConfirmationScheduled,
+    fetchEmailGiftPurchaseConfirmationSelfSend,
+  } = await import("@/lib/sanity/fetch");
   const myGiftsUrl = `${siteOrigin()}/my-gifts`;
-  const vars: GiftPurchaseConfirmationVars =
-    input.variant === GIFT_DELIVERY.selfSend
-      ? {
-          variant: GIFT_DELIVERY.selfSend,
+
+  let html: string;
+  let interpolatedSubject: string;
+  if (input.variant === GIFT_DELIVERY.selfSend) {
+    const [sanity, shell] = await Promise.all([
+      fetchEmailGiftPurchaseConfirmationSelfSend().catch(() => null),
+      fetchSharedShell(),
+    ]);
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      recipientName: input.recipientName ?? "your recipient",
+    });
+    html = await render(
+      <GiftPurchaseConfirmationSelfSend
+        vars={{
           claimUrl: input.claimUrl,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -338,9 +377,24 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
-        }
-      : {
-          variant: GIFT_DELIVERY.scheduled,
+        }}
+        copy={copy}
+        shell={shell}
+      />,
+    );
+  } else {
+    const [sanity, shell] = await Promise.all([
+      fetchEmailGiftPurchaseConfirmationScheduled().catch(() => null),
+      fetchSharedShell(),
+    ]);
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      recipientName: input.recipientName ?? "your recipient",
+      sendAtDisplay: input.sendAtDisplay,
+    });
+    html = await render(
+      <GiftPurchaseConfirmationScheduled
+        vars={{
           sendAtDisplay: input.sendAtDisplay,
           purchaserFirstName: input.purchaserFirstName,
           readingName: input.readingName,
@@ -349,15 +403,12 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
-        };
-
-  const subject = input.variant === GIFT_DELIVERY.selfSend ? copy.subjectSelfSend : copy.subjectScheduled;
-  const interpolatedSubject = applyTokens(subject, {
-    recipientName: input.recipientName ?? "your recipient",
-    sendAtDisplay: input.variant === GIFT_DELIVERY.scheduled ? input.sendAtDisplay : "",
-  });
-
-  const html = await render(<GiftPurchaseConfirmation vars={vars} copy={copy} />);
+        }}
+        copy={copy}
+        shell={shell}
+      />,
+    );
+  }
 
   return sendOrSkip({
     to: input.purchaserEmail,
@@ -383,10 +434,10 @@ export type GiftClaimEmailInput = {
 );
 
 export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<EmailSendResult> {
-  const { EMAIL_GIFT_CLAIM_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailGiftClaim } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailGiftClaim().catch(() => null);
-  const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+  const { EMAIL_GIFT_CLAIM_DEFAULTS, EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS } = await import(
+    "@/data/defaults"
+  );
+  const { fetchEmailGiftClaim, fetchEmailGiftClaimReminder } = await import("@/lib/sanity/fetch");
 
   const shared = {
     recipientName: input.recipientName,
@@ -395,20 +446,36 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
     readingPriceDisplay: input.readingPriceDisplay,
     giftMessage: input.giftMessage,
   };
-  const vars: GiftClaimEmailVars =
-    input.variant === "first_send"
-      ? { variant: "first_send", claimUrl: input.claimUrl, ...shared }
-      : { variant: "reminder", ...shared };
 
-  const subject =
-    input.variant === "first_send" ? copy.subjectFirstSend : copy.subjectReminder;
-  const interpolatedSubject = applyTokens(subject, {
-    purchaserFirstName: input.purchaserFirstName,
-    readingName: input.readingName,
-    readingPriceDisplay: input.readingPriceDisplay,
-  });
-
-  const html = await render(<GiftClaimEmail vars={vars} copy={copy} />);
+  let html: string;
+  let interpolatedSubject: string;
+  if (input.variant === "first_send") {
+    const [sanity, shell] = await Promise.all([
+      fetchEmailGiftClaim().catch(() => null),
+      fetchSharedShell(),
+    ]);
+    const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subjectFirstSend, {
+      purchaserFirstName: input.purchaserFirstName,
+      readingName: input.readingName,
+      readingPriceDisplay: input.readingPriceDisplay,
+    });
+    html = await render(
+      <GiftClaimEmail vars={{ ...shared, claimUrl: input.claimUrl }} copy={copy} shell={shell} />,
+    );
+  } else {
+    const [sanity, shell] = await Promise.all([
+      fetchEmailGiftClaimReminder().catch(() => null),
+      fetchSharedShell(),
+    ]);
+    const copy = { ...EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS, ...(sanity ?? {}) };
+    interpolatedSubject = applyTokens(copy.subject, {
+      purchaserFirstName: input.purchaserFirstName,
+      readingName: input.readingName,
+      readingPriceDisplay: input.readingPriceDisplay,
+    });
+    html = await render(<GiftClaimReminderEmail vars={shared} copy={copy} shell={shell} />);
+  }
 
   return sendOrSkip({
     to: input.recipientEmail,
@@ -427,7 +494,10 @@ export async function sendDay7Delivery(
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailDay7Delivery().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailDay7Delivery().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...(sanity ?? {}) };
   const subject = applyTokens(copy.subjectTemplate, {
     readingName: submission.readingName,
@@ -438,10 +508,10 @@ export async function sendDay7Delivery(
       vars={{
         firstName: submission.firstName,
         readingName: submission.readingName,
-        readingPriceDisplay: submission.readingPriceDisplay,
         listenUrl,
       }}
       copy={copy}
+      shell={shell}
     />,
   );
   return sendOrSkip({
@@ -453,29 +523,57 @@ export async function sendDay7Delivery(
   });
 }
 
+export type MagicLinkContext = "listen" | "my-readings" | "my-gifts";
+
 export async function sendMagicLink(args: {
   to: string;
   magicLinkUrl: string;
+  context: MagicLinkContext;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const { EMAIL_MAGIC_LINK_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailMagicLink } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailMagicLink().catch(() => null);
-  const copy = { ...EMAIL_MAGIC_LINK_DEFAULTS, ...(sanity ?? {}) };
+  const {
+    EMAIL_MAGIC_LINK_DEFAULTS,
+    EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+    EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
+  } = await import("@/data/defaults");
+  const { fetchEmailMagicLink, fetchEmailMagicLinkMyReadings, fetchEmailMagicLinkMyGifts } =
+    await import("@/lib/sanity/fetch");
+
+  const sources = {
+    listen: { defaults: EMAIL_MAGIC_LINK_DEFAULTS, fetch: fetchEmailMagicLink, subType: "magic_link" as const },
+    "my-readings": {
+      defaults: EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+      fetch: fetchEmailMagicLinkMyReadings,
+      subType: "magic_link_my_readings" as const,
+    },
+    "my-gifts": {
+      defaults: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
+      fetch: fetchEmailMagicLinkMyGifts,
+      subType: "magic_link_my_gifts" as const,
+    },
+  };
+  const source = sources[args.context];
+  const [sanity, shell] = await Promise.all([
+    source.fetch().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...source.defaults, ...(sanity ?? {}) };
   const html = await render(
     <MagicLink
       magicLinkUrl={args.magicLinkUrl}
       preview={copy.preview}
+      heroLine={copy.heroLine}
+      buttonLabel={copy.buttonLabel}
       greeting={copy.greeting}
       body={copy.body}
-      signOff={copy.signOff}
+      shell={shell}
     />,
   );
   return sendOrSkip({
     to: args.to,
     subject: copy.subject,
     html,
-    subType: "magic_link",
+    subType: source.subType,
     submissionId: null,
   });
 }
@@ -488,7 +586,10 @@ export async function sendPrivacyExportEmail(args: {
 }): Promise<EmailSendResult> {
   const { EMAIL_PRIVACY_EXPORT_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailPrivacyExport } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailPrivacyExport().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailPrivacyExport().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(
     <PrivacyExport
@@ -498,6 +599,7 @@ export async function sendPrivacyExportEmail(args: {
         expiryDays: args.expiryDays,
       }}
       copy={copy}
+      shell={shell}
     />,
   );
   return sendOrSkip({
