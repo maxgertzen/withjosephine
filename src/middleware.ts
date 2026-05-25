@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  NONCE_HEADER,
-  PRODUCTION_HOSTS,
-  R2_PUBLIC_ORIGIN,
-} from "@/lib/constants";
+import { NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
 
 /**
