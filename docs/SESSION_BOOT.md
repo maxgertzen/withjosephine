@@ -1,5 +1,19 @@
 # Session Boot — Active State
 
+## 🆕 ACTIVE 2026-05-26 — Architectural epic `23ctexvw`: one-tap delivery + unified library + step-up auth
+
+MAX-APPROVED 2026-05-26 implementation arc, supersedes the day-7 copy fix from the audit epic. **Before touching any email / auth / listen-page / /my-readings / /my-gifts / gift-cancellation code, read `dex show 23ctexvw` and the relevant phase child.** Source artifacts at `www/MEMORY/WORK/20260525-230307_copy-audit-emails-and-pages/`: AUDIT.md (30-surface audit), RESEARCH.md (Bucket A vs Bucket B industry pattern), COUNCIL-1-chain-length.md (UX 4-persona), COUNCIL-2-library-auth.md (with Devi code-verification). Durable memory: `project_one_tap_architecture.md`.
+
+**Six phase children (sequenced for safe shipping):**
+- Phase 1 `rbl5u2st`: tokenized listen-link primitive + one-tap day-7 + admin-resend alignment
+- Phase 2 `vwfcb5jr`: unified `/my-readings` library with gifts tab (URL stable)
+- Phase 3 `khb6hor6`: step-up OTP (`elevatedAt`, 10-min TTL) on edit-recipient + send-now + claim-for-yourself
+- Phase 4 `zgd1sjpu`: replace destructive cancel-scheduled with claim-for-yourself; UI cancel gone (Max 2026-05-26); server-side stage gate `giftClaimedAt || responses != null`
+- Phase 5 `l0xynlxs`: stacked-vertical button hierarchy in emails + day-7 copy rewrite (drop em-dashes) + post-redemption new-device notice
+- Phase 6 `09z53mtu`: OPTIONAL watermark + geo-reverify (defer unless incident)
+
+Audit-epic `2wlp1oys` children `558hhza8`, `m259wtc9`, `j4y4yv0n` marked superseded; close on Phase 1 ship.
+
 ## ✅ ACTIVE 2026-05-25 — `release/v1.3.0` — U3-U8 EPIC SHIPPED, apex unpark remaining
 
 Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.3.0` in one session:
