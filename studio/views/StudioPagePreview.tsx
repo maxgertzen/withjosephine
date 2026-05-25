@@ -39,6 +39,7 @@ function makeStudioPagePreview(surface: PreviewSurface, label: string) {
     const [stateKey, setStateKey] = useState<string>(stateKeys[0] ?? "");
     const [html, setHtml] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [renderTick, setRenderTick] = useState(0);
 
     useEffect(() => {
       let cancelled = false;
@@ -47,6 +48,7 @@ function makeStudioPagePreview(surface: PreviewSurface, label: string) {
           if (!cancelled) {
             setHtml(rendered);
             setError(null);
+            setRenderTick((tick) => tick + 1);
           }
         })
         .catch((err) => {
@@ -100,7 +102,7 @@ function makeStudioPagePreview(surface: PreviewSurface, label: string) {
           </Flex>
         </Card>
         <iframe
-          key={`${surface}-${stateKey}-${html ? "loaded" : "empty"}`}
+          key={`${surface}-${stateKey}-${renderTick}`}
           srcDoc={html ?? ""}
           title={`${label} preview — ${stateKey}`}
           sandbox=""
