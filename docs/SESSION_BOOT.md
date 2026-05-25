@@ -1,8 +1,30 @@
 # Session Boot — Active State
 
+## ✅ ACTIVE 2026-05-25 — `release/v1.3.0` cut from main at `ec8a8f1`
+
+New release line for the U3–U7 + apex unpark cleanup arc. Cut via commit `56dec00` (CI wiring: added `release/v1.3.0` to `.github/workflows/ci.yml` push branches + `deploy-staging` + `sanity-validate-staging` gates, mirroring the v1.2.x convention).
+
+**Active branch:** `release/v1.3.0`
+**Most-recent commit:** `56dec00` (CI wiring)
+**Open PRs on release/v1.3.0:** none
+**Main:** `ec8a8f1` (post-merge bookkeeping)
+**Tags:** `v1.1.0` at `882752d`, `v1.2.0` at `94e9d5d`, `v1.2.1` at `ec9c181`
+
+**Sprint queue (dex epic `wz9t979j`):**
+- `wwqgjtjo` — U3 download filenames (Content-Disposition)
+- `dtq86ycp` — U4 hover affordance audit
+- `k9x59wwp` — U5 gift-purchase prefill purchaser email
+- `em3o7rz6` — U7 + U8 Studio bundle (preview + claimed-at + countdown)
+
+**Parallel apex-unpark cleanup (dex epic `wdpz1ux4`):**
+- `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
+- `cdw3mnpg` — Stripe test-mode webhook split
+- `ttys8qku` — Re-run smoke walkthrough on prod
+- (operator) Production-side `recipient-user-id` repair behind `--i-understand-this-is-production`
+
 ## ✅ RESOLVED 2026-05-25 — `release/v1.2.1` MERGED to main via PR #199 (merge `5aa49bc`)
 
-v1.2.1 is shipped. Tag `v1.2.1` at `ec9c181` (release branch HEAD, matching v1.2.0 precedent). Awaiting `deploy-production` + `smoke-production` CI completion on main. dex `f7yhvvc3` closed. The v1.2.1 epic `d8pvexdm` remains open only because `k6ao10b8` carries `2un31amb` (PR-Email-2 cleanup pending post-prod-migration Becky verification) and `kf1nixad` carries `h1zu9nkr` (image-rendering polish follow-up). Next-priority epic: `wz9t979j` (U3, U4, U5, U7, U8) + remaining apex unpark hold-gate (`wdpz1ux4`).
+v1.2.1 is shipped + deployed to production. Tag `v1.2.1` at `ec9c181`. All CI green on main (`5aa49bc`) including `deploy-production` + `smoke-production`. dex `f7yhvvc3` + `cpwaqf4d` + `x2lhyv0j` + `o1hejeb1` closed. The v1.2.1 epic `d8pvexdm` remains open only because `k6ao10b8` carries `2un31amb` (PR-Email-2 cleanup pending Becky verification on prod Sanity) and `kf1nixad` carries `h1zu9nkr` (image-rendering polish follow-up).
 
 ## Earlier in session — v1.2.1 workerd PT render + Sanity-mirror dataset misrouting
 
