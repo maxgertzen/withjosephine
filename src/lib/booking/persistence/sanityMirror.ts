@@ -84,25 +84,17 @@ export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
   consent: MirrorCreateConsent,
 ): Promise<void> {
-  console.info(`[sanityMirror] mirrorSubmissionCreate entered for ${input.id}`);
   const client = await getClient();
-  if (!client) {
-    console.warn(`[sanityMirror] mirrorSubmissionCreate no client for ${input.id} — skipping`);
-    return;
-  }
+  if (!client) return;
 
   try {
     const readingRef = await findReadingRef(client, input.readingSlug);
-    console.info(
-      `[sanityMirror] mirrorSubmissionCreate readingRef=${readingRef ? readingRef._ref : "null"} for ${input.id}`,
-    );
     const responsesWithKeys = input.responses.map((response, index) => ({
       _key: `${response.fieldKey}-${index}`,
       _type: "submissionResponse" as const,
       ...response,
     }));
-    console.info(`[sanityMirror] mirrorSubmissionCreate calling client.create for ${input.id}`);
-    const createResult = await client.create(
+    await client.create(
       {
         _id: input.id,
         _type: "submission",
@@ -140,9 +132,6 @@ export async function mirrorSubmissionCreate(
           : {}),
       },
       { visibility: "async" },
-    );
-    console.info(
-      `[sanityMirror] mirrorSubmissionCreate resolved for ${input.id} (resp._id=${createResult?._id ?? "?"} rev=${createResult?._rev ?? "?"})`,
     );
   } catch (error) {
     console.error(`[sanityMirror] create failed for ${input.id} (drift; reconcile cron will retry)`, error);
