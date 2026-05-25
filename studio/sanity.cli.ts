@@ -14,6 +14,7 @@ const SRC = path.resolve(__dirname, "../src");
 const STUDIO_STUBS = path.resolve(__dirname, "preview-stubs");
 const STUDIO_SRC_ALIASES = [
   { find: /^next\/navigation$/, replacement: `${STUDIO_STUBS}/next-navigation.ts` },
+  { find: /^next\/image$/, replacement: `${STUDIO_STUBS}/next-image.tsx` },
   { find: /^@\/data\//, replacement: `${SRC}/data/` },
   { find: /^@\/lib\/emails\//, replacement: `${SRC}/lib/emails/` },
   { find: /^@\/lib\/theme\//, replacement: `${SRC}/lib/theme/` },

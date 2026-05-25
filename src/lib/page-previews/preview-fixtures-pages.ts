@@ -60,7 +60,6 @@ export const LISTEN_FIXTURES: Record<string, ListenViewState> = {
 };
 
 export const MY_READINGS_FIXTURES: Record<string, MyReadingsViewProps["state"]> = {
-  "list-empty": { kind: "list", readings: [] },
   "list-populated": {
     kind: "list",
     readings: [
@@ -76,12 +75,12 @@ export const MY_READINGS_FIXTURES: Record<string, MyReadingsViewProps["state"]> 
       },
     ],
   },
+  "list-empty": { kind: "list", readings: [] },
   signIn: { kind: "signIn" },
   checkEmail: { kind: "checkEmail" },
 };
 
 export const MY_GIFTS_FIXTURES: Record<string, MyGiftsViewProps["state"]> = {
-  "list-empty": { kind: "list", gifts: [] },
   "list-populated": {
     kind: "list",
     gifts: [
@@ -128,6 +127,7 @@ export const MY_GIFTS_FIXTURES: Record<string, MyGiftsViewProps["state"]> = {
       },
     ],
   },
+  "list-empty": { kind: "list", gifts: [] },
   signIn: { kind: "signIn" },
   checkEmail: { kind: "checkEmail" },
 };
