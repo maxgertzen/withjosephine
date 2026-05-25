@@ -30,8 +30,12 @@ const inlineComponents: PortableTextComponents = {
 
 function isPortableTextBlock(entry: unknown): entry is PortableTextBlock {
   if (entry === null || typeof entry !== "object") return false;
-  const block = entry as { _type?: unknown };
-  return typeof block._type === "string";
+  return (entry as { _type?: unknown })._type === "block";
+}
+
+function warnNonPortableText(value: unknown): void {
+  if (process.env.NODE_ENV === "production") return;
+  console.warn("[PortableTextBody] received non-PT value, coercing", value);
 }
 
 function sanitizeToPortableTextBlocks(value: unknown): PortableTextBlock[] {
@@ -41,19 +45,14 @@ function sanitizeToPortableTextBlocks(value: unknown): PortableTextBlock[] {
   }
   if (typeof value === "string") {
     if (value.trim().length === 0) return [];
-    console.warn(
-      "[PortableTextBody] received non-PT value, coercing via stringToPortableTextBlocks",
-      value,
-    );
+    warnNonPortableText(value);
     return stringToPortableTextBlocks(value);
   }
   if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
-    console.warn(
-      "[PortableTextBody] received non-PT value, coercing via stringToPortableTextBlocks",
-      value,
-    );
+    warnNonPortableText(value);
     return value.flatMap((entry) => stringToPortableTextBlocks(entry));
   }
+  warnNonPortableText(value);
   return [];
 }
 
