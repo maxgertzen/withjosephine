@@ -146,7 +146,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ skipped: "pii type" }, { status: 200 });
   }
 
-  const writeClient = getSanityWriteClient();
+  const writeClient = await getSanityWriteClient();
 
   if (operation === "delete") {
     await writeClient.delete(docId);

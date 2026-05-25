@@ -114,7 +114,7 @@ async function fetchConsentSnapshots(
 ): Promise<Record<string, unknown>> {
   if (ids.length === 0) return {};
   try {
-    const client = getSanityWriteClient();
+    const client = await getSanityWriteClient();
     const docs = await client.fetch<Array<{ _id: string; consentSnapshot?: unknown }>>(
       `*[_id in $ids]{ _id, consentSnapshot }`,
       { ids },
