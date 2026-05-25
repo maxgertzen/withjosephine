@@ -1,3 +1,4 @@
+import { buildContentDisposition, buildListenFilename } from "../downloadFilename";
 import { forwardRangeHeader, gateListenAssetRequest, proxySanityAsset } from "../proxySanityAsset";
 
 export async function GET(
@@ -13,7 +14,13 @@ export async function GET(
     headers: forwardRangeHeader(request),
   });
 
+  const filename = buildListenFilename({
+    readingSlug: gate.asset.readingSlug,
+    submissionId: gate.asset.submissionId,
+    sourceUrl: gate.asset.pdfUrl,
+    kind: "reading",
+  });
   return proxySanityAsset(upstream, {
-    contentDisposition: 'attachment; filename="reading.pdf"',
+    contentDisposition: buildContentDisposition({ type: "attachment", filename }),
   });
 }
