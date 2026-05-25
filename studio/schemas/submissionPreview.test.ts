@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildPreview,
@@ -288,10 +288,44 @@ describe("giftDeliveryCountdown", () => {
     );
   });
 
+  it("returns 'Overdue by 1 day' (singular grammar) when exactly 8 days elapsed", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-09T12:00:00.000Z"))).toBe(
+      "Overdue by 1 day",
+    );
+  });
+
+  it("returns '1 day left to deliver' (singular grammar) when 6 days elapsed", () => {
+    expect(giftDeliveryCountdown(claimedAt, new Date("2026-05-07T12:00:00.000Z"))).toBe(
+      "1 day left to deliver",
+    );
+  });
+
   it("clamps future giftClaimedAt to '7 days left to deliver' (no negative-N-days)", () => {
     expect(giftDeliveryCountdown(claimedAt, new Date("2026-04-28T12:00:00.000Z"))).toBe(
       "7 days left to deliver",
     );
+  });
+
+  describe("future-clamp dev warning", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.restoreAllMocks();
+    });
+
+    it("emits console.warn in NODE_ENV=development when giftClaimedAt is future-dated", () => {
+      vi.stubEnv("NODE_ENV", "development");
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      giftDeliveryCountdown(claimedAt, new Date("2026-04-28T12:00:00.000Z"));
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(/giftClaimedAt is in the future/);
+    });
+
+    it("does not emit console.warn in NODE_ENV=test (silent in CI)", () => {
+      vi.stubEnv("NODE_ENV", "test");
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      giftDeliveryCountdown(claimedAt, new Date("2026-04-28T12:00:00.000Z"));
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 });
 
@@ -370,7 +404,7 @@ describe("statusLabel", () => {
     ).toBe("Claimed · Due today");
   });
 
-  it("returns 'Claimed · Overdue by 1 days' past the 7-day window", () => {
+  it("returns 'Claimed · Overdue by 1 day' (singular) at exactly 1 day past window", () => {
     expect(
       statusLabel({
         status: "paid",
@@ -379,7 +413,43 @@ describe("statusLabel", () => {
         deliveredAt: null,
         now: NOW,
       }),
-    ).toBe("Claimed · Overdue by 1 days");
+    ).toBe("Claimed · Overdue by 1 day");
+  });
+
+  it("returns 'Claimed · Overdue by 2 days' (plural) at 2 days past window", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-04-27T12:00:00.000Z",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Claimed · Overdue by 2 days");
+  });
+
+  it("returns 'Claimed · 1 day left to deliver' (singular) at exactly 1 day remaining", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "2026-04-30T12:00:00.000Z",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Claimed · 1 day left to deliver");
+  });
+
+  it("falls back to 'Paid · awaiting claim' when isGift+paid but giftClaimedAt is a malformed date string", () => {
+    expect(
+      statusLabel({
+        status: "paid",
+        isGift: true,
+        giftClaimedAt: "invalid-date-string",
+        deliveredAt: null,
+        now: NOW,
+      }),
+    ).toBe("Paid · awaiting claim");
   });
 });
 

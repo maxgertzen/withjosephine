@@ -6,7 +6,7 @@ const FALLBACK_EXTENSION: Record<AssetKind, string> = {
 };
 
 const ALLOWED_EXTENSIONS: Record<AssetKind, ReadonlySet<string>> = {
-  "voice-note": new Set(["mp3", "m4a", "wav", "ogg", "aac", "opus", "webm"]),
+  "voice-note": new Set(["mp3", "m4a", "wav", "ogg", "aac", "opus"]),
   reading: new Set(["pdf"]),
 };
 
@@ -40,9 +40,14 @@ export function buildListenFilename(input: {
   return `${slug}-${input.kind}-${id}.${extension}`;
 }
 
+const UNSAFE_FILENAME_CHARS = /["\r\n\\]/;
+
 export function buildContentDisposition(input: {
   type: "inline" | "attachment";
   filename: string;
 }): string {
+  if (UNSAFE_FILENAME_CHARS.test(input.filename)) {
+    throw new Error("buildContentDisposition: filename contains unsafe characters");
+  }
   return `${input.type}; filename="${input.filename}"`;
 }
