@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { EMAIL_GIFT_CLAIM_DEFAULTS } from "@/data/defaults";
 
 import { GiftClaimEmail } from "./GiftClaimEmail";
+import { stringToPortableTextBlocks } from "./PortableTextBody";
 import { visibleText } from "./test-helpers";
 
 const VARS = {
@@ -70,7 +71,9 @@ describe("GiftClaimEmail — first-send variant", () => {
           vars={{ ...VARS, purchaserFirstName: "Yoram" }}
           copy={{
             ...EMAIL_GIFT_CLAIM_DEFAULTS,
-            body: ["A note from {purchaserFirstName} — your reading awaits."],
+            body: stringToPortableTextBlocks(
+              "A note from {purchaserFirstName} — your reading awaits.",
+            ),
           }}
         />,
       ),
@@ -95,7 +98,9 @@ describe("GiftClaimEmail — first-send variant", () => {
             ...EMAIL_GIFT_CLAIM_DEFAULTS,
             body: undefined,
             greeting: "Hi Mira,",
-            bodyFirstSend: "Legacy first-send prose for {recipientName}.",
+            bodyFirstSend: stringToPortableTextBlocks(
+              "Legacy first-send prose for {recipientName}.",
+            ),
           }}
         />,
       ),

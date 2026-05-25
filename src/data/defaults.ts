@@ -1,11 +1,8 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-/**
- * Rich-text body fields accept any of three shapes so legacy plain-string
- * defaults keep working alongside Sanity-authored Portable Text after the
- * v1.2.1 rich-text migration. The render path normalizes all three.
- */
-export type EmailRichText = string | string[] | PortableTextBlock[];
+import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
+
+export type EmailRichText = PortableTextBlock[];
 
 export interface HeroContent {
   tagline: string;
@@ -484,8 +481,12 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   preview: "Open your reading",
   greeting: "Hi,",
   body: [
-    "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
-    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
   ],
   signOff: null,
 };
@@ -495,8 +496,12 @@ export const EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS: EmailMagicLinkContent = {
   preview: "A fresh link to your readings.",
   greeting: "Hi,",
   body: [
-    "Here’s a fresh link to your readings library. It’ll sign you in for the next seven days so you can come back to anything you’ve had with me without asking again.",
-    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to your readings library. It’ll sign you in for the next seven days so you can come back to anything you’ve had with me without asking again.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
   ],
   signOff: null,
 };
@@ -506,8 +511,12 @@ export const EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS: EmailMagicLinkContent = {
   preview: "A fresh link to your gifts.",
   greeting: "Hi,",
   body: [
-    "Here’s a fresh link to your gifts dashboard. From there you can manage the readings you’ve gifted — change a recipient detail, regenerate a claim link, or pick a new send date.",
-    "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ...stringToPortableTextBlocks(
+      "Here’s a fresh link to your gifts dashboard. From there you can manage the readings you’ve gifted — change a recipient detail, regenerate a claim link, or pick a new send date.",
+    ),
+    ...stringToPortableTextBlocks(
+      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore — nothing happens until someone clicks.",
+    ),
   ],
   signOff: null,
 };
@@ -537,18 +546,27 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   brandSubtitle: "Soul Readings",
   heroLine: "Your reading is booked",
   body: [
-    "Hi {firstName},",
-    "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
-    "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
-    "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
+    ),
+    ...stringToPortableTextBlocks(
+      "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+    ),
   ],
   greeting: "Hi {firstName},",
-  thanksLine:
+  thanksLine: stringToPortableTextBlocks(
     "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
-  timelineLine:
+  ),
+  timelineLine: stringToPortableTextBlocks(
     "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  contactLine:
+  ),
+  contactLine: stringToPortableTextBlocks(
     "If anything comes up before then — a question, a detail you forgot to mention, anything at all — just reply to this email. It comes straight to me.",
+  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
   signOffLine1: "With love,",
@@ -581,18 +599,27 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
   brandSubtitle: "Soul Readings",
   heroLine: "Your reading is in my hands",
   body: [
-    "Hi {recipientName},",
-    "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
-    "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-    "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+    ),
+    ...stringToPortableTextBlocks(
+      "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+    ),
   ],
   greeting: "Hi {recipientName},",
-  thanksLine:
+  thanksLine: stringToPortableTextBlocks(
     "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
-  timelineLine:
+  ),
+  timelineLine: stringToPortableTextBlocks(
     "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  contactLine:
+  ),
+  contactLine: stringToPortableTextBlocks(
     "If something in what you sent needs a correction — a date, a detail, anything at all — just reply to this email. It comes straight to me.",
+  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
   signOffLine1: "With love,",
@@ -626,19 +653,24 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurch
   brandSubtitle: "Soul Readings",
   heroLine: "A reading, ready for them",
   body: [
-    "Hi {purchaserFirstName},",
-    "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+    ),
   ],
   greeting: "Hi {purchaserFirstName},",
-  detailLineSelfSend:
+  detailLineSelfSend: stringToPortableTextBlocks(
     "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right — folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+  ),
   shareButtonLabel: "Share the link",
-  shareUrlHelper:
+  shareUrlHelper: stringToPortableTextBlocks(
     "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
+  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
-  refundLine:
+  refundLine: stringToPortableTextBlocks(
     "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+  ),
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
@@ -668,16 +700,20 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurch
   brandSubtitle: "Soul Readings",
   heroLine: "A reading, on its way",
   body: [
-    "Hi {purchaserFirstName},",
-    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+    ),
   ],
   greeting: "Hi {purchaserFirstName},",
-  detailLineScheduled:
+  detailLineScheduled: stringToPortableTextBlocks(
     "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay} — they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
-  refundLine:
+  refundLine: stringToPortableTextBlocks(
     "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+  ),
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
@@ -709,16 +745,20 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   brandSubtitle: "Soul Readings",
   heroLineFirstSend: "A reading, for you",
   body: [
-    "Hi {recipientName},",
-    "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+    ),
   ],
   greeting: "Hi {recipientName},",
-  bodyFirstSend:
+  bodyFirstSend: stringToPortableTextBlocks(
     "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, the link below opens a short form so I know what to read for you — your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+  ),
   giftMessageLabel: "A note from {purchaserFirstName}",
   claimButtonLabel: "Open your gift",
-  claimUrlHelper:
+  claimUrlHelper: stringToPortableTextBlocks(
     "This link is for you. Open it from a quiet moment — the form takes about ten minutes.",
+  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivered within 7 days of your intake",
   signOffLine1: "With love,",
@@ -748,8 +788,10 @@ export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent =
   brandSubtitle: "Soul Readings",
   heroLine: "Still here, when you’re ready",
   body: [
-    "Hi {recipientName},",
-    "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+    ...stringToPortableTextBlocks("Hi {recipientName},"),
+    ...stringToPortableTextBlocks(
+      "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one — no rush, the reading is yours whenever you’re ready.",
+    ),
   ],
   giftMessageLabel: "A note from {purchaserFirstName}",
   cardLabel: "The gift",
@@ -792,20 +834,24 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   subject: "Your Josephine data export",
   preview: "Your Josephine data export is ready",
   bodyIntro: [
-    "Hi,",
-    "Your Josephine data export is ready.",
-    "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+    ...stringToPortableTextBlocks("Hi,"),
+    ...stringToPortableTextBlocks("Your Josephine data export is ready."),
+    ...stringToPortableTextBlocks(
+      "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+    ),
   ],
-  bodyPostButton: [
+  bodyPostButton: stringToPortableTextBlocks(
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
-  ],
+  ),
   greeting: "Hi,",
-  introLine: "Your Josephine data export is ready.",
-  contentsLine:
+  introLine: stringToPortableTextBlocks("Your Josephine data export is ready."),
+  contentsLine: stringToPortableTextBlocks(
     "It contains the data we hold for your {submissionCount} reading(s) — intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+  ),
   ctaLabel: "Download your export (ZIP)",
-  expiryLine:
+  expiryLine: stringToPortableTextBlocks(
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
+  ),
   signOff: null,
 };
 
@@ -813,26 +859,38 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   subjectTemplate: "Your {readingName} is ready",
   preview: "A short note before you press play.",
   bodyIntro: [
-    "Hi {firstName},",
-    "Your {readingName} is here.",
-    "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks("Your {readingName} is here."),
+    ...stringToPortableTextBlocks(
+      "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+    ),
   ],
   bodyPostButton: [
-    "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
-    "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
-    "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+    ...stringToPortableTextBlocks(
+      "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
+    ),
+    ...stringToPortableTextBlocks(
+      "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
+    ),
+    ...stringToPortableTextBlocks(
+      "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+    ),
   ],
   greeting: "Hi {firstName},",
   lineReady: "Your {readingName} is here.",
-  comfortLine:
+  comfortLine: stringToPortableTextBlocks(
     "Open it whenever the timing feels right — it’s saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
+  ),
   openButtonLabel: "Open your reading",
-  signedInDisclosure:
+  signedInDisclosure: stringToPortableTextBlocks(
     "One small thing: opening this from the link above signs you into your reading for the next seven days, so you can come back to the voice note and the PDF without asking again. After that, just tell us your email and we’ll send you back in.",
-  accessWindowLine:
+  ),
+  accessWindowLine: stringToPortableTextBlocks(
     "Your link is good for the next ninety days. After that, just email me and I’ll send you a fresh one.",
-  comfortFollowUp:
+  ),
+  comfortFollowUp: stringToPortableTextBlocks(
     "If anything you hear sits hard, or a question opens up after, write to me. I’d rather know than not.",
+  ),
   signOff: null,
 };
 
