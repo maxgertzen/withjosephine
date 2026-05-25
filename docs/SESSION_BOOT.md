@@ -24,11 +24,21 @@ Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.
 - `ym2efbwn` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler; CSS rule can't bridge). NOTE: originally claimed-filed as `zhyes1s7` in commit `e92c7cc` but that create was a silent no-op (the pattern from `feedback_dex_create_verify_with_show`); re-filed correctly 2026-05-25.
 - `vw4zmbp5` — Studio workspace auth config divergence (warning at deploy time). Consolidate production + staging auth blocks to one shared config.
 
-**Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`):**
+**Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`, 6 open subtasks):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
 - `cdw3mnpg` — Stripe test-mode webhook split
 - `ttys8qku` — Re-run smoke walkthrough on prod
+- `lc9w5xd1` — Birth-time picker z-index (customer-facing intake bug, promoted 2026-05-26)
+- `td3f86z6` — Seed `notFoundPage` + `underConstructionPage` singletons (customer-facing 404/under-construction fallback, promoted 2026-05-26)
+- `ym2efbwn` — Hero.tsx motion.div a11y (keyboard-accessibility on landing, promoted 2026-05-26)
 - (operator) Production-side `recipient-user-id` repair behind `--i-understand-this-is-production`
+
+**Pending categorization** (Max is filing magic-link-flow tasks 2026-05-26; revisit after that):
+- `ipicaebk` C5: `/api/booking/gift-redeem` intermittent 400
+- `njrrqb0f` C3-b: `/my-gifts` empty listing race
+- `yf5ciq64` C4-b: J3 heading + listen-page greeting copy
+- `a042z5dj` magic-link email copy neutralization
+- `zs255zyi` rotate `DO_DISPATCH_SECRET`
 
 **Next steps:** when apex unpark hold-gate items above are operationally cleared, open `release/v1.3.0` → `main` PR (cumulative simplify + code-review pass via `sentry-skills:code-simplifier` + `sentry-skills:code-review` before opening, per `feedback_simplify_scale_to_change_size`).
 
