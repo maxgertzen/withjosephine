@@ -1,28 +1,10 @@
-/**
- * Minimal R2 binding shapes the backup cron consumes. Mirrors the relevant
- * surface of `@cloudflare/workers-types` without pulling the full package in.
- * Same approach as `src/lib/booking/persistence/d1BindingClient.ts`'s
- * D1Database typing.
- */
+export type {
+  R2MultipartOptions as R2CreateMultipartUploadOptions,
+  R2HTTPMetadata,
+  R2UploadedPart,
+} from "@cloudflare/workers-types";
 
-export interface R2UploadedPart {
-  partNumber: number;
-  etag: string;
-}
-
-export interface R2HTTPMetadata {
-  contentType?: string;
-  contentLanguage?: string;
-  contentDisposition?: string;
-  contentEncoding?: string;
-  cacheControl?: string;
-  cacheExpiry?: Date;
-}
-
-export interface R2CreateMultipartUploadOptions {
-  httpMetadata?: R2HTTPMetadata;
-  customMetadata?: Record<string, string>;
-}
+import type { R2HTTPMetadata, R2UploadedPart } from "@cloudflare/workers-types";
 
 export interface R2Object {
   key: string;
@@ -57,7 +39,7 @@ export interface R2PutOptions {
 export interface R2Bucket {
   createMultipartUpload(
     key: string,
-    options?: R2CreateMultipartUploadOptions,
+    options?: { httpMetadata?: R2HTTPMetadata; customMetadata?: Record<string, string> },
   ): Promise<R2MultipartUpload>;
   get(key: string): Promise<R2ObjectBody | null>;
   head(key: string): Promise<R2Object | null>;
