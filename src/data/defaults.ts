@@ -471,14 +471,18 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
 export interface EmailMagicLinkContent {
   subject: string;
   preview: string;
+  heroLine: string;
   greeting?: string | null;
   body: EmailRichText;
+  buttonLabel: string;
   signOff: string | null;
 }
 
 export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   subject: "Open your reading",
   preview: "Open your reading",
+  heroLine: "Open your reading",
+  buttonLabel: "Open your reading",
   greeting: "Hi,",
   body: [
     ...stringToPortableTextBlocks(
@@ -494,6 +498,8 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
 export const EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS: EmailMagicLinkContent = {
   subject: "Open your readings",
   preview: "A fresh link to your readings.",
+  heroLine: "Open your readings",
+  buttonLabel: "Open my readings",
   greeting: "Hi,",
   body: [
     ...stringToPortableTextBlocks(
@@ -509,6 +515,8 @@ export const EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS: EmailMagicLinkContent = {
 export const EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS: EmailMagicLinkContent = {
   subject: "Open your gifts dashboard",
   preview: "A fresh link to your gifts.",
+  heroLine: "Open your gifts dashboard",
+  buttonLabel: "Open my gifts",
   greeting: "Hi,",
   body: [
     ...stringToPortableTextBlocks(
@@ -782,6 +790,7 @@ export interface EmailDay7DeliveryContent {
 export interface EmailPrivacyExportContent {
   subject: string;
   preview: string;
+  heroLine: string;
   bodyIntro?: EmailRichText;
   bodyPostButton?: EmailRichText;
   greeting?: string;
@@ -795,6 +804,7 @@ export interface EmailPrivacyExportContent {
 export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   subject: "Your Josephine data export",
   preview: "Your Josephine data export is ready",
+  heroLine: "Your data export is ready",
   bodyIntro: [
     ...stringToPortableTextBlocks("Hi,"),
     ...stringToPortableTextBlocks("Your Josephine data export is ready."),

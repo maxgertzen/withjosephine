@@ -503,7 +503,6 @@ export async function sendDay7Delivery(
       vars={{
         firstName: submission.firstName,
         readingName: submission.readingName,
-        readingPriceDisplay: submission.readingPriceDisplay,
         listenUrl,
       }}
       copy={copy}
@@ -549,15 +548,20 @@ export async function sendMagicLink(args: {
     },
   };
   const source = sources[args.context];
-  const sanity = await source.fetch().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    source.fetch().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...source.defaults, ...(sanity ?? {}) };
   const html = await render(
     <MagicLink
       magicLinkUrl={args.magicLinkUrl}
       preview={copy.preview}
+      heroLine={copy.heroLine}
+      buttonLabel={copy.buttonLabel}
       greeting={copy.greeting}
       body={copy.body}
-      signOff={copy.signOff}
+      shell={shell}
     />,
   );
   return sendOrSkip({
@@ -577,7 +581,10 @@ export async function sendPrivacyExportEmail(args: {
 }): Promise<EmailSendResult> {
   const { EMAIL_PRIVACY_EXPORT_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailPrivacyExport } = await import("@/lib/sanity/fetch");
-  const sanity = await fetchEmailPrivacyExport().catch(() => null);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailPrivacyExport().catch(() => null),
+    fetchSharedShell(),
+  ]);
   const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
   const html = await render(
     <PrivacyExport
@@ -587,6 +594,7 @@ export async function sendPrivacyExportEmail(args: {
         expiryDays: args.expiryDays,
       }}
       copy={copy}
+      shell={shell}
     />,
   );
   return sendOrSkip({

@@ -74,7 +74,6 @@ async function renderRaw(
           vars={{
             firstName: PREVIEW_FIXTURE.firstName,
             readingName: PREVIEW_FIXTURE.readingName,
-            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
             listenUrl: PREVIEW_FIXTURE.listenUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
@@ -147,9 +146,10 @@ async function renderRaw(
         <MagicLink
           magicLinkUrl={PREVIEW_FIXTURE.magicLinkUrl}
           preview={copy.preview}
+          heroLine={copy.heroLine}
+          buttonLabel={copy.buttonLabel}
           greeting={copy.greeting}
           body={copy.body}
-          signOff={copy.signOff}
         />,
       );
     }

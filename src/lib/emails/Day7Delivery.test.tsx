@@ -9,7 +9,6 @@ import { assertBrandTokens, linkHrefs, visibleText } from "./test-helpers";
 const VARS = {
   firstName: "Ada",
   readingName: "Soul Blueprint",
-  readingPriceDisplay: "$179",
   listenUrl: "https://withjosephine.com/listen/sub_123",
 };
 
@@ -93,14 +92,14 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
     expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.heroLine);
   });
 
-  it("renders the reading card with readingName + readingPriceDisplay + delivery line", async () => {
+  it("renders the reading card with readingName + delivery line (no price — gift-recipient case)", async () => {
     const text = visibleText(
       await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.cardLabel);
     expect(text).toContain(VARS.readingName);
-    expect(text).toContain(VARS.readingPriceDisplay);
     expect(text).toContain(EMAIL_DAY7_DELIVERY_DEFAULTS.cardDeliveryLine);
+    expect(text).not.toContain("$");
   });
 
   it("renders the footer disclaimer + mailto/site links", async () => {

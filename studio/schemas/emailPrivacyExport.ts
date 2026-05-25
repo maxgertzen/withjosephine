@@ -24,6 +24,12 @@ export const emailPrivacyExport = defineType({
       initialValue: "Your Josephine data export is ready",
     }),
     defineField({
+      name: "heroLine",
+      title: "Hero line (after divider)",
+      type: "string",
+      initialValue: "Your data export is ready",
+    }),
+    defineField({
       name: "bodyIntro",
       title: "Body — before button",
       type: "array",

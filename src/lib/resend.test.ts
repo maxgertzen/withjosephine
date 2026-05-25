@@ -334,6 +334,7 @@ describe("sendPrivacyExportEmail", () => {
     vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
       subject: "Custom export subject",
       preview: "Custom export preview",
+      heroLine: "Your data export is ready",
       bodyIntro: [
         ...stringToPortableTextBlocks("Greetings,"),
         ...stringToPortableTextBlocks("Your export is queued."),

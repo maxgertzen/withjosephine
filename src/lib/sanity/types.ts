@@ -198,6 +198,8 @@ export type SanityMagicLinkVerifyPage = {
 export type SanityEmailMagicLink = {
   subject: string;
   preview: string;
+  heroLine: string;
+  buttonLabel: string;
   greeting?: string;
   body: PortableTextBlock[];
   signOff: string | null;
@@ -299,6 +301,7 @@ export type SanityEmailGiftClaimReminder = {
 export type SanityEmailPrivacyExport = {
   subject: string;
   preview: string;
+  heroLine: string;
   bodyIntro?: PortableTextBlock[];
   bodyPostButton?: PortableTextBlock[];
   greeting?: string;

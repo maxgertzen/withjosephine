@@ -27,6 +27,18 @@ export const emailMagicLinkMyReadings = defineType({
       initialValue: "A fresh link to your readings.",
     }),
     defineField({
+      name: "heroLine",
+      title: "Hero line (after divider)",
+      type: "string",
+      initialValue: "Open your readings",
+    }),
+    defineField({
+      name: "buttonLabel",
+      title: "Button label",
+      type: "string",
+      initialValue: "Open my readings",
+    }),
+    defineField({
       name: "greeting",
       title: "Greeting (legacy — folded into Body)",
       type: "string",

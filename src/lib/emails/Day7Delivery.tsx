@@ -10,7 +10,6 @@ import { hasBodyContent, PortableTextBody, PortableTextInline } from "./Portable
 export type Day7DeliveryVars = {
   firstName: string;
   readingName: string;
-  readingPriceDisplay: string;
   listenUrl: string;
 };
 
@@ -85,14 +84,20 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
           )}
         </Section>
 
-        <Section style={{ padding: "0 48px 8px 48px" }}>
+        <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
           <Button
             href={vars.listenUrl}
-            className="bg-ink text-cream font-sans text-base rounded-full px-8 py-4 w-full text-center block"
+            className="bg-ink text-cream font-sans no-underline"
+            style={{
+              padding: "16px 32px",
+              fontSize: 16,
+              borderRadius: 50,
+              letterSpacing: "0.02em",
+            }}
           >
             {copy.openButtonLabel}
           </Button>
-        </Section>
+        </div>
 
         <Section
           className="font-sans text-body"
@@ -130,12 +135,10 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
               {vars.readingName}
             </p>
             <p
-              className="font-sans text-body"
+              className="font-sans text-muted"
               style={{ margin: 0, fontSize: 14 }}
             >
-              <span className="text-muted">{copy.cardDeliveryLine}</span>
-              &nbsp;&middot;&nbsp;
-              <span>{vars.readingPriceDisplay}</span>
+              {copy.cardDeliveryLine}
             </p>
           </Section>
         </div>
