@@ -13,6 +13,7 @@ import {
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
   EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+  EMAIL_SHARED_SHELL_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
   MY_GIFTS_PAGE_DEFAULTS,
@@ -177,6 +178,11 @@ const SEEDS = [
     _id: "emailPrivacyExport",
     _type: "emailPrivacyExport",
     ...omitNullish(EMAIL_PRIVACY_EXPORT_DEFAULTS),
+  },
+  {
+    _id: "emailSharedShell",
+    _type: "emailSharedShell",
+    ...omitNullish(EMAIL_SHARED_SHELL_DEFAULTS),
   },
 ];
 
