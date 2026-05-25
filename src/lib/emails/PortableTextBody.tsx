@@ -1,36 +1,41 @@
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
-import type { PortableTextBlock } from "@portabletext/types";
+import type { PortableTextBlock, PortableTextSpan } from "@portabletext/types";
 import { Link, Text } from "@react-email/components";
+import { Fragment, type ReactNode } from "react";
 
 import { stringToPortableTextBlocks } from "./portableTextBuild";
 
-const components: PortableTextComponents = {
-  block: {
-    normal: ({ children }) => (
-      <Text className="text-base leading-[1.75]">{children}</Text>
-    ),
-  },
-  marks: {
-    strong: ({ children }) => <strong>{children}</strong>,
-    em: ({ children }) => <em>{children}</em>,
-    link: ({ value, children }) => (
-      <Link href={value?.href} className="text-ink underline">
-        {children}
-      </Link>
-    ),
-  },
-};
+// Hand-rolled PT-block renderer. We deliberately do NOT use `@portabletext/react`
+// here: its `<PortableText>` component calls `useMemo` at the top of render,
+// and the @react-email/render path inside the Cloudflare workerd worker
+// dispatches into a React entry where the dispatcher is null for hooks called
+// from a function-component nested under `renderToReadableStream`. The classic
+// "Cannot read properties of null (reading 'useMemo')" surface bit the gift
+// email send paths in production after PR #188 (the equivalent throw in the
+// OC + Day7 + Magic-link + Privacy-export render paths is silently swallowed
+// by upstream `.catch()` handlers; the gift paths have no catch, so the throw
+// reaches the route handler and returns 500). Our renderer is plain JSX with
+// zero hooks — every existing email template uses only `normal` styles and
+// `strong`/`em`/`link` marks, which we cover here. Anything richer would need
+// to be added here as a separate, hook-free branch.
+//
+// Revisit when @portabletext/react ships a `react-server` export condition
+// (or we drop the workerd target) — at that point we can restore the upstream
+// renderer.
 
-const inlineComponents: PortableTextComponents = {
-  block: {
-    normal: ({ children }) => <>{children}</>,
-  },
-  marks: components.marks,
+type LinkMarkDef = {
+  _type: "link";
+  _key: string;
+  href?: string;
 };
 
 function isPortableTextBlock(entry: unknown): entry is PortableTextBlock {
   if (entry === null || typeof entry !== "object") return false;
   return (entry as { _type?: unknown })._type === "block";
+}
+
+function isPortableTextSpan(entry: unknown): entry is PortableTextSpan {
+  if (entry === null || typeof entry !== "object") return false;
+  return (entry as { _type?: unknown })._type === "span";
 }
 
 function warnNonPortableText(value: unknown): void {
@@ -56,6 +61,68 @@ function sanitizeToPortableTextBlocks(value: unknown): PortableTextBlock[] {
   return [];
 }
 
+function findLinkHref(
+  markDefs: PortableTextBlock["markDefs"] | undefined,
+  key: string,
+): string | undefined {
+  if (!Array.isArray(markDefs)) return undefined;
+  for (const def of markDefs) {
+    if (def && typeof def === "object" && (def as LinkMarkDef)._key === key) {
+      const candidate = (def as LinkMarkDef).href;
+      if (typeof candidate === "string") return candidate;
+    }
+  }
+  return undefined;
+}
+
+function renderMarks(
+  text: string,
+  marks: readonly string[] | undefined,
+  markDefs: PortableTextBlock["markDefs"] | undefined,
+  keyPrefix: string,
+): ReactNode {
+  let node: ReactNode = text;
+  if (!marks || marks.length === 0) return node;
+  // Outermost mark wraps last so the rendered nesting reads
+  // markDefs[0] → markDefs[N-1] → text from the outside in.
+  for (let i = marks.length - 1; i >= 0; i -= 1) {
+    const mark = marks[i];
+    const childKey = `${keyPrefix}-m${i}`;
+    if (mark === "strong") {
+      node = <strong key={childKey}>{node}</strong>;
+    } else if (mark === "em") {
+      node = <em key={childKey}>{node}</em>;
+    } else if (typeof mark === "string") {
+      const href = findLinkHref(markDefs, mark);
+      if (href) {
+        node = (
+          <Link key={childKey} href={href} className="text-ink underline">
+            {node}
+          </Link>
+        );
+      }
+    }
+  }
+  return node;
+}
+
+function renderBlockChildren(block: PortableTextBlock, blockKey: string): ReactNode {
+  const children = Array.isArray(block.children) ? block.children : [];
+  return children.map((child, idx) => {
+    if (!isPortableTextSpan(child)) return null;
+    const span = child as PortableTextSpan & { _key?: string; marks?: readonly string[] };
+    const text = typeof span.text === "string" ? span.text : "";
+    const childKey = span._key ?? `${blockKey}-c${idx}`;
+    const node = renderMarks(text, span.marks, block.markDefs, childKey);
+    return <Fragment key={childKey}>{node}</Fragment>;
+  });
+}
+
+function getBlockKey(block: PortableTextBlock, idx: number): string {
+  const k = (block as { _key?: unknown })._key;
+  return typeof k === "string" && k.length > 0 ? k : `block-${idx}`;
+}
+
 export type PortableTextInlineProps = {
   value: PortableTextBlock[] | null | undefined;
 };
@@ -63,7 +130,14 @@ export type PortableTextInlineProps = {
 export function PortableTextInline({ value }: PortableTextInlineProps) {
   const blocks = sanitizeToPortableTextBlocks(value);
   if (blocks.length === 0) return null;
-  return <PortableText value={blocks} components={inlineComponents} />;
+  return (
+    <>
+      {blocks.map((block, idx) => {
+        const key = getBlockKey(block, idx);
+        return <Fragment key={key}>{renderBlockChildren(block, key)}</Fragment>;
+      })}
+    </>
+  );
 }
 
 export type PortableTextBodyProps = {
@@ -80,7 +154,18 @@ export function hasBodyContent(
 export function PortableTextBody({ value }: PortableTextBodyProps) {
   const blocks = sanitizeToPortableTextBlocks(value);
   if (blocks.length === 0) return null;
-  return <PortableText value={blocks} components={components} />;
+  return (
+    <>
+      {blocks.map((block, idx) => {
+        const key = getBlockKey(block, idx);
+        return (
+          <Text key={key} className="text-base leading-[1.75]">
+            {renderBlockChildren(block, key)}
+          </Text>
+        );
+      })}
+    </>
+  );
 }
 
 export function portableTextToPlainText(
