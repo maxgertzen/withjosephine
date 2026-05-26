@@ -1,8 +1,26 @@
 # Session Boot — Active State
 
-## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 of epic 23ctexvw; deployed to staging
+## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 of epic 23ctexvw
 
-**`release/v1.4.0`** cut from `release/v1.3.0@2ee6f20`. PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. All 7 CI jobs green on `89768f4`: lint+typecheck, security-audit, storybook, test, **deploy-staging ✅**, sanity-validate-staging ✅. **Phase 1 is live on `staging.withjosephine.com`.**
+**`release/v1.4.0`** cut from `release/v1.3.0@2ee6f20`. Phase 1 PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. **Phase 2 PR #206 squash-merged (`da006dd`) 2026-05-26.** Phase 1 is live on `staging.withjosephine.com`; Phase 2 ships next deploy.
+
+**Phase 2 (dex `vwfcb5jr`, closed):** Unified `/my-readings` library with gifts tab; `/my-readings/gifts` deep-link; legacy `/my-gifts` 308-redirects. New HMAC library-token primitive (`src/lib/auth/libraryToken.ts`) + single-use D1 ledger (migration `0015`) + POST-confirm interstitial at `/my-readings/welcome` + redeem route at `/api/library/redeem`. Hand-rolled semantic ARIA Tabs component (first in codebase). 4 purchaser-facing email templates carry a tokenized library button (OC + both Gift Purchase Confirmation variants use primary variant; Day-7 uses secondary). Recipient-bearer emails do NOT carry the library button. Stripe webhook gift branches resolve purchaser via `getOrCreateUser` and persist `purchaserUserId`. **Auth-secret consolidation:** single master `AUTH_TOKEN_SECRET` with HKDF-SHA256 per-purpose subkey derivation in `src/lib/auth/tokenSubkey.ts`. Drops both `LISTEN_TOKEN_SECRET` and `LIBRARY_TOKEN_SECRET`. Three in-session review passes (Designer, reuse/quality/efficiency, security) surfaced 1 P1 security blocker + 4 important fixes; all must-fix items landed in the same PR before merge. +68 tests (1896 → 1964).
+
+**🚨 Outstanding Max-actions for Phase 2 verification:**
+
+1. **Provision `AUTH_TOKEN_SECRET` on staging worker BEFORE next deploy:** `openssl rand -hex 32 | pnpm exec wrangler secret put AUTH_TOKEN_SECRET --env staging`. Then mirror to GH staging env: `gh secret set STAGING_AUTH_TOKEN_SECRET --env staging --body "<value>"`. The previously-pending `STAGING_LISTEN_TOKEN_SECRET` becomes redundant. Without this, the day-7 cron fails pre-flight with 500 `AUTH_TOKEN_SECRET missing` and the worker can't mint listen/library tokens.
+2. **Apply D1 migration 0015 to staging post-deploy:** `pnpm migrate:apply:staging` adds the `library_token_redemptions` table.
+3. **Re-deploy Studio:** Phase 2 added new fields to `myReadingsPage` Sanity singleton (`readingsTabLabel`, `giftsTabLabel`, `welcomeHeading`, `welcomeSubhead`, `welcomeButtonLabel`). `pnpm run deploy` from `studio/` so Becky sees the new fields. All have hardcoded fallbacks so missing edits are non-blocking.
+4. **Real-browser smoke against staging:** verify the tab strip, deep-link `/my-readings/gifts`, legacy `/my-gifts` 308 redirect, and a one-tap library-link round-trip via a forced day-7 send. Per `feedback_real_browser_smoke_before_ship_claim`.
+5. **Phase 1 follow-up still open:** `STAGING_LISTEN_TOKEN_SECRET` is now superseded by `STAGING_AUTH_TOKEN_SECRET` (Max-action #1 above). Real-browser smoke of the Phase 1 one-tap day-7 path still pending; can be folded into Phase 2's smoke walk.
+
+**Phase 2 deferrals captured in dex `e737za2a`** (under parent epic 23ctexvw, NOT release-blocking): welcome page bfcache hardening, redactSearchParams fragment defense, user-exists check at redeem, requestAudit HKDF migration, middleware isMyGifts cleanup, verifyTokenEnvelope dedupe between listen + library, mint-source enum centralization, replay-rejection UX for legitimate double-clicks (Phase 1 listen-redeem has the same flaw).
+
+**Next phase: dex `khb6hor6` (Phase 3 step-up OTP auth).** Branch off `release/v1.4.0`; will declare a new HKDF subkey (`stepup.v1`), no new env var. Gates the three high-risk gift mutations: edit-recipient, send-now, claim-for-yourself.
+
+## Earlier — Phase 1 shipped 2026-05-26
+
+PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. All 7 CI jobs green on `89768f4`: lint+typecheck, security-audit, storybook, test, **deploy-staging ✅**, sanity-validate-staging ✅. Phase 1 is live on `staging.withjosephine.com`.
 
 **Phase 1 (dex `rbl5u2st`, closed via dex complete on merge):** HMAC-SHA-256 listen-token primitive + D1 single-use ledger (migration 0014) + POST-confirm interstitial + admin manual-resend bug fix (was passing raw R2 URL as listen URL) + `Referrer-Policy: no-referrer` on `/listen/*` + Sentry `beforeSend` redaction. Auto-probe pattern in `tests/e2e/specs/listen-one-tap-roundtrip.spec.ts` self-activates when the redeem route is deployed (no env-var flip required). Red-team passes closed all 5 Pentester P1 blockers; 3 simplify reviews + 1 security review surfaced 6 fix-ups, landed in one commit pre-PR. +60 tests (1836 → 1896).
 
