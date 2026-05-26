@@ -14,6 +14,10 @@ out/
 # storybook
 storybook-static/
 
+# local-only dev preview routes (never shipped; pattern superseded by Storybook
+# once epic whe2lpn3 lands — see dex qlhejlwb for the canonical library story).
+src/app/dev-preview/
+
 # production
 build/
 
