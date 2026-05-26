@@ -1,8 +1,8 @@
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
-import { READING_ACCESS_TTL_MS } from "./readingRetention";
 import { redactEmail, sendDay7Delivery, sendOrderConfirmation } from "../resend";
+import { READING_ACCESS_TTL_MS } from "./readingRetention";
 import {
   appendEmailFired,
   buildSubmissionContext,
