@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
 import { getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { issueStepUpOtp } from "@/lib/auth/stepUpOtp";
-import { sendStepUpOtpEmail } from "@/lib/auth/stepUpOtpEmail";
 import { findUserById } from "@/lib/auth/users";
+import { sendStepUpOtpEmail } from "@/lib/resend";
 
 /**
  * POST /api/auth/step-up/request
@@ -101,7 +101,7 @@ export async function POST(request: Request): Promise<Response> {
   // flag) OR a dry-run header was provided, surface the OTP code back to
   // the test runner. Production never falls into this branch because the
   // header is gated by a worker secret inside the sender.
-  if (send.kind === "skipped" || send.kind === "dry_run" || dryRunHeader) {
+  if (send.kind === "skipped" || dryRunHeader) {
     return NextResponse.json({ devCode: issueResult.code });
   }
 

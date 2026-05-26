@@ -28,7 +28,7 @@ vi.mock("@/lib/auth/stepUpOtp", async () => {
 });
 
 const sendStepUpOtpEmailMock = vi.fn();
-vi.mock("@/lib/auth/stepUpOtpEmail", () => ({ sendStepUpOtpEmail: sendStepUpOtpEmailMock }));
+vi.mock("@/lib/resend", () => ({ sendStepUpOtpEmail: sendStepUpOtpEmailMock }));
 
 const getRequestAuditContextMock = vi.fn();
 vi.mock("@/lib/auth/requestAudit", () => ({
@@ -158,7 +158,7 @@ describe("POST /api/auth/step-up/request", () => {
     issueStepUpOtpMock.mockResolvedValueOnce({ ok: true, code: "424242", expiresAt: 999 });
     // Sender reports skipped/dry-run when header is honored; route surfaces
     // devCode either way (header presence is the discriminator).
-    sendStepUpOtpEmailMock.mockResolvedValueOnce({ kind: "dry_run" });
+    sendStepUpOtpEmailMock.mockResolvedValueOnce({ kind: "skipped" });
 
     const res = await callRoute({ headers: { "x-e2e-resend-dry-run": "secret-value" } });
     expect(res.status).toBe(200);
@@ -181,7 +181,7 @@ describe("POST /api/auth/step-up/request", () => {
       email: "maxgertzen+sandbox@gmail.com",
     });
     issueStepUpOtpMock.mockResolvedValueOnce({ ok: true, code: "555000", expiresAt: 999 });
-    sendStepUpOtpEmailMock.mockResolvedValueOnce({ kind: "skipped", reason: "sandbox_prefix" });
+    sendStepUpOtpEmailMock.mockResolvedValueOnce({ kind: "skipped" });
 
     const res = await callRoute();
     expect(res.status).toBe(200);
