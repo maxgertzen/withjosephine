@@ -117,10 +117,6 @@ async function dispatchGiftPurchaseConfirmation(
     send_at: submission.giftSendAt ?? null,
   });
 
-  // Resolve the purchaser's user record + persist it on the submission row.
-  // Phase 2 sends the purchaser to the unified library; the library link is
-  // tokenized against this userId. Degrade silently on either failure: the
-  // gift purchase confirmation still ships, just without the library button.
   let purchaserUserId: string | null = null;
   try {
     const { userId } = await getOrCreateUser({

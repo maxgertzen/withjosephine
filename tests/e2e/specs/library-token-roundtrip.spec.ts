@@ -1,19 +1,3 @@
-// Phase 2 one-tap library-token roundtrip (epic 23ctexvw).
-//
-// Mirrors `listen-one-tap-roundtrip.spec.ts`. The library token is
-// user-id-establishing (not submission-scoped), so this spec mints tokens
-// IN-PROCESS via `mintLibraryToken`, exercises them against staging's
-// /my-readings/welcome interstitial + /api/library/redeem route, and asserts
-// the cookie + redirect surface.
-//
-// CI env MUST set `LIBRARY_TOKEN_SECRET` to staging's value:
-//
-//   .github/workflows/e2e-sandbox.yml needs:
-//     LIBRARY_TOKEN_SECRET: ${{ secrets.STAGING_LIBRARY_TOKEN_SECRET }}
-//
-// Self-activating: a one-shot beforeAll probes /api/library/redeem and skips
-// the suite when staging answers 404 (route not deployed yet).
-
 import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";
@@ -297,7 +281,6 @@ test.describe("Library one-tap round-trip, staging", () => {
       maxRedirects: 0,
       failOnStatusCode: false,
     });
-    // Next.js `redirect()` from a server component emits a 307/308 redirect.
     expect([302, 307, 308]).toContain(response.status());
     const location = response.headers().location ?? "";
     expect(location).toContain("/my-readings");

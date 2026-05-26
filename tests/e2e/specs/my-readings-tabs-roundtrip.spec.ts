@@ -1,12 +1,3 @@
-// Phase 2 unified library tabs roundtrip (epic 23ctexvw).
-//
-// Verifies the merged /my-readings surface: tablist renders, default tab is
-// readings when the user has readings, deep-link /my-readings/gifts lands on
-// the gifts tab, and the legacy /my-gifts 308-redirects to /my-readings/gifts.
-//
-// Self-activating: probes the library redeem route at start; skips when
-// staging hasn't deployed Phase 2 yet (mirrors the listen-one-tap pattern).
-
 import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";

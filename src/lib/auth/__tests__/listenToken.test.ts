@@ -15,7 +15,7 @@ const NOW = 1_700_000_000_000;
 const FIXED_JTI = "0123456789abcdef0123456789abcdef";
 
 beforeEach(() => {
-  vi.stubEnv("LISTEN_TOKEN_SECRET", "test-secret-please-rotate");
+  vi.stubEnv("AUTH_TOKEN_SECRET", "test-secret-please-rotate");
 });
 
 afterEach(() => {
@@ -212,8 +212,8 @@ describe("listen token mint + verify", () => {
     expect(result).toEqual({ valid: false, reason: "recipient_changed" });
   });
 
-  it("throws explicit error from mint when LISTEN_TOKEN_SECRET missing", async () => {
-    vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+  it("throws explicit error from mint when AUTH_TOKEN_SECRET missing", async () => {
+    vi.stubEnv("AUTH_TOKEN_SECRET", "");
     await expect(
       mintListenToken({
         submissionId: SUBMISSION_ID,
@@ -221,24 +221,24 @@ describe("listen token mint + verify", () => {
         mintSource: "cron_day7",
         now: NOW,
       }),
-    ).rejects.toThrow("LISTEN_TOKEN_SECRET is required for listen tokens");
+    ).rejects.toThrow("AUTH_TOKEN_SECRET is required for auth tokens");
   });
 
-  it("throws explicit error from verify when LISTEN_TOKEN_SECRET missing", async () => {
+  it("throws explicit error from verify when AUTH_TOKEN_SECRET missing", async () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
       mintSource: "cron_day7",
       now: NOW,
     });
-    vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+    vi.stubEnv("AUTH_TOKEN_SECRET", "");
     await expect(
       verifyListenToken({
         token,
         currentRecipientUserId: RECIPIENT_USER_ID,
         now: NOW + 1,
       }),
-    ).rejects.toThrow("LISTEN_TOKEN_SECRET is required for listen tokens");
+    ).rejects.toThrow("AUTH_TOKEN_SECRET is required for auth tokens");
   });
 
   it("does not expose plain submissionId in the encoded token", async () => {
@@ -273,7 +273,9 @@ describe("listen token mint + verify", () => {
     // Hand-craft a payload that signs cleanly but has 5 segments instead of 6.
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = "listen.v1:sub:hash:jti:cron_day7"; // missing expMs
-    const sig = await signHmacSha256("test-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("listen.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyListenToken({
       token,
@@ -286,7 +288,9 @@ describe("listen token mint + verify", () => {
   it("rejects a token with an unknown payload prefix even if signed", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = "evil.v1:sub:hash:jti:cron_day7:9999999999999";
-    const sig = await signHmacSha256("test-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("listen.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyListenToken({
       token,
@@ -299,7 +303,9 @@ describe("listen token mint + verify", () => {
   it("rejects a token whose mintSource is not in the allow-list", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = `listen.v1:sub:hash:jti:hacker_source:${NOW + 1_000}`;
-    const sig = await signHmacSha256("test-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("listen.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyListenToken({
       token,

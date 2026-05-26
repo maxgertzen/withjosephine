@@ -20,7 +20,7 @@ function getTrustedClientIp(request: Request): string | null {
 }
 
 export async function getRequestAuditContext(request: Request): Promise<RequestAuditContext> {
-  const secret = process.env.LISTEN_TOKEN_SECRET;
+  const secret = process.env.AUTH_TOKEN_SECRET;
   const ip = getTrustedClientIp(request);
   const ua = request.headers.get(USER_AGENT_HEADER);
   return {

@@ -27,10 +27,9 @@
 	//   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
-	//   - LISTEN_TOKEN_SECRET        HMAC secret used as IP-audit salt for listen-session auth (32-byte hex)
-	//   - LIBRARY_TOKEN_SECRET       HMAC secret for one-tap library tokens (Phase 2 epic 23ctexvw). Distinct
-	//                                rotation from LISTEN_TOKEN_SECRET. 32-byte hex. Set identically on staging
-	//                                and production worker secrets.
+	//   - AUTH_TOKEN_SECRET          Master HMAC secret (32-byte hex). Per-purpose subkeys for listen tokens,
+	//                                library tokens, gift-claim sessions, and request audit are HKDF-derived
+	//                                in src/lib/auth/tokenSubkey.ts.
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
 	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
 	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked

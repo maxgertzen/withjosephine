@@ -3,10 +3,10 @@
 // This spec mints listen tokens IN-PROCESS via `mintListenToken`, then exercises
 // them against staging's `/listen/[id]` interstitial + `/api/listen/[id]/redeem`
 // route. For tokens minted here to verify on the staging worker, the CI env
-// MUST set `LISTEN_TOKEN_SECRET` to the same value staging runs with:
+// MUST set `AUTH_TOKEN_SECRET` to the same value staging runs with:
 //
 //   .github/workflows/e2e-sandbox.yml needs:
-//     LISTEN_TOKEN_SECRET: ${{ secrets.STAGING_LISTEN_TOKEN_SECRET }}
+//     AUTH_TOKEN_SECRET: ${{ secrets.STAGING_AUTH_TOKEN_SECRET }}
 //
 // Without that, every mint produces a signature staging rejects as bad_signature
 // and Scenarios A-C/G/H silently fall through to the signIn surface.

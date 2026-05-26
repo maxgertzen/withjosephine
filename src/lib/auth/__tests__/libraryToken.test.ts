@@ -14,7 +14,7 @@ const NOW = 1_700_000_000_000;
 const FIXED_JTI = "0123456789abcdef0123456789abcdef";
 
 beforeEach(() => {
-  vi.stubEnv("LIBRARY_TOKEN_SECRET", "test-library-secret-please-rotate");
+  vi.stubEnv("AUTH_TOKEN_SECRET", "test-library-secret-please-rotate");
 });
 
 afterEach(() => {
@@ -183,27 +183,27 @@ describe("library token mint + verify", () => {
     expect(result).toEqual({ valid: false, reason: "malformed" });
   });
 
-  it("throws explicit error from mint when LIBRARY_TOKEN_SECRET missing", async () => {
-    vi.stubEnv("LIBRARY_TOKEN_SECRET", "");
+  it("throws explicit error from mint when AUTH_TOKEN_SECRET missing", async () => {
+    vi.stubEnv("AUTH_TOKEN_SECRET", "");
     await expect(
       mintLibraryToken({
         userId: USER_ID,
         mintSource: "order_confirmation",
         now: NOW,
       }),
-    ).rejects.toThrow("LIBRARY_TOKEN_SECRET is required for library tokens");
+    ).rejects.toThrow("AUTH_TOKEN_SECRET is required for auth tokens");
   });
 
-  it("throws explicit error from verify when LIBRARY_TOKEN_SECRET missing", async () => {
+  it("throws explicit error from verify when AUTH_TOKEN_SECRET missing", async () => {
     const token = await mintLibraryToken({
       userId: USER_ID,
       mintSource: "order_confirmation",
       now: NOW,
     });
-    vi.stubEnv("LIBRARY_TOKEN_SECRET", "");
+    vi.stubEnv("AUTH_TOKEN_SECRET", "");
     await expect(
       verifyLibraryToken({ token, now: NOW + 1 }),
-    ).rejects.toThrow("LIBRARY_TOKEN_SECRET is required for library tokens");
+    ).rejects.toThrow("AUTH_TOKEN_SECRET is required for auth tokens");
   });
 
   it("does not expose plain userId in the encoded token", async () => {
@@ -231,7 +231,9 @@ describe("library token mint + verify", () => {
   it("rejects a token whose payload has the wrong field count", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = "library.v1:user:jti:order_confirmation"; // missing expMs
-    const sig = await signHmacSha256("test-library-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("library.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyLibraryToken({ token, now: NOW });
     expect(result).toEqual({ valid: false, reason: "malformed" });
@@ -240,7 +242,9 @@ describe("library token mint + verify", () => {
   it("rejects a token with an unknown payload prefix even if signed", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = `evil.v1:user:jti:order_confirmation:${NOW + 1_000}`;
-    const sig = await signHmacSha256("test-library-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("library.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyLibraryToken({ token, now: NOW });
     expect(result).toEqual({ valid: false, reason: "malformed" });
@@ -249,7 +253,9 @@ describe("library token mint + verify", () => {
   it("rejects a token whose mintSource is not in the allow-list", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
     const badPayload = `library.v1:user:jti:hacker_source:${NOW + 1_000}`;
-    const sig = await signHmacSha256("test-library-secret-please-rotate", badPayload);
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("library.v1");
+    const sig = await signHmacSha256(secret, badPayload);
     const token = `${base64UrlEncodeBytes(new TextEncoder().encode(badPayload))}.${base64UrlEncodeBytes(sig)}`;
     const result = await verifyLibraryToken({ token, now: NOW });
     expect(result).toEqual({ valid: false, reason: "malformed" });

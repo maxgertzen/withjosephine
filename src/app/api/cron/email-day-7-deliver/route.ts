@@ -50,8 +50,6 @@ async function deliverOne(
     mintSource: "cron_day7",
   });
   const listenUrl = `${siteOrigin()}/listen/${refreshed._id}?t=${token}`;
-  // Degrade gracefully on library-URL mint failure: ship the email with the
-  // primary listen button only. Recipient still has the primary CTA.
   let libraryUrl: string | undefined;
   try {
     libraryUrl = await buildLibraryUrl({
@@ -157,15 +155,9 @@ async function handle(request: Request): Promise<Response> {
   if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!process.env.LISTEN_TOKEN_SECRET) {
+  if (!process.env.AUTH_TOKEN_SECRET) {
     return NextResponse.json(
-      { error: "LISTEN_TOKEN_SECRET missing" },
-      { status: 500 },
-    );
-  }
-  if (!process.env.LIBRARY_TOKEN_SECRET) {
-    return NextResponse.json(
-      { error: "LIBRARY_TOKEN_SECRET missing" },
+      { error: "AUTH_TOKEN_SECRET missing" },
       { status: 500 },
     );
   }

@@ -18,9 +18,6 @@ export type GiftPurchaseConfirmationScheduledVars = {
   amountPaidDisplay: string | null;
   recipientName: string | null;
   giftMessage: string | null;
-  // Legacy `{myGiftsUrl}` slot in refundLine copy. Phase 2 routes this to the
-  // unified library URL so Becky's existing copy keeps working without a
-  // Sanity edit. `libraryUrl` is the same value, rendered as a button below.
   myGiftsUrl: string;
   libraryUrl?: string;
   sendAtDisplay: string;

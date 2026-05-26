@@ -1,3 +1,4 @@
+import { deriveTokenSubkeyHex } from "@/lib/auth/tokenSubkey";
 import {
   base64UrlDecodeToBytes,
   base64UrlEncodeBytes,
@@ -67,12 +68,8 @@ const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
 const JTI_BYTE_LENGTH = 16;
 
-function getSecret(): string {
-  const secret = process.env.LIBRARY_TOKEN_SECRET;
-  if (!secret) {
-    throw new Error("LIBRARY_TOKEN_SECRET is required for library tokens");
-  }
-  return secret;
+function getSecret(): Promise<string> {
+  return deriveTokenSubkeyHex("library.v1");
 }
 
 function generateJti(): string {
@@ -99,7 +96,7 @@ export async function mintLibraryToken(args: MintLibraryTokenArgs): Promise<stri
   if (args.jti !== undefined && args.jti.includes(":")) {
     throw new Error("jti must not contain ':'");
   }
-  const secret = getSecret();
+  const secret = await getSecret();
   const now = args.now ?? Date.now();
   const ttlMs = args.ttlMs ?? LIBRARY_TOKEN_TTL_MS;
   const expMs = now + ttlMs;
@@ -128,7 +125,7 @@ function isValidMintSource(value: string): value is LibraryTokenMintSource {
 export async function verifyLibraryToken(
   args: VerifyLibraryTokenArgs,
 ): Promise<LibraryTokenVerifyResult> {
-  const secret = getSecret();
+  const secret = await getSecret();
   const now = args.now ?? Date.now();
   const parts = args.token.split(".");
   if (parts.length !== 2) return { valid: false, reason: "malformed" };

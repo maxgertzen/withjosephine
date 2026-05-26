@@ -81,8 +81,7 @@ const DELIVERABLE = {
 };
 
 beforeEach(() => {
-  vi.stubEnv("LISTEN_TOKEN_SECRET", "test-listen-token-secret");
-  vi.stubEnv("LIBRARY_TOKEN_SECRET", "test-library-token-secret");
+  vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
@@ -293,20 +292,20 @@ describe("/api/cron/email-day-7-deliver", () => {
       }
     });
 
-    it("returns 500 pre-flight when LISTEN_TOKEN_SECRET is missing", async () => {
-      vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+    it("returns 500 pre-flight when AUTH_TOKEN_SECRET is missing", async () => {
+      vi.stubEnv("AUTH_TOKEN_SECRET", "");
       mockAuth.mockReturnValueOnce(true);
       const res = await callRoute();
       expect(res.status).toBe(500);
       const body = await res.json();
-      expect(body).toEqual({ error: "LISTEN_TOKEN_SECRET missing" });
+      expect(body).toEqual({ error: "AUTH_TOKEN_SECRET missing" });
       // Pre-flight runs before any work: candidate query never happens.
       expect(mockList).not.toHaveBeenCalled();
       expect(mockFindById).not.toHaveBeenCalled();
     });
 
-    it("returns 500 pre-flight in force mode when LISTEN_TOKEN_SECRET is missing", async () => {
-      vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+    it("returns 500 pre-flight in force mode when AUTH_TOKEN_SECRET is missing", async () => {
+      vi.stubEnv("AUTH_TOKEN_SECRET", "");
       mockAuth.mockReturnValueOnce(true);
       const res = await callRoute("http://localhost/api/cron/email-day-7-deliver?force=sub_x");
       expect(res.status).toBe(500);

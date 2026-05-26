@@ -82,9 +82,6 @@ export async function applyPaidEvent(
   // Gift purchasers receive `gift_purchase_confirmation` from the webhook
   // handler; skipping here avoids duplicate sends.
   if (!submission.isGift) {
-    // Mint a tokenized library URL for the secondary CTA. Degrade gracefully:
-    // if LIBRARY_TOKEN_SECRET is missing or any other mint failure occurs,
-    // ship the email without the button rather than block the OC entirely.
     let libraryUrl: string | undefined;
     if (recipientUserId) {
       try {

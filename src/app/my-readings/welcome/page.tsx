@@ -14,7 +14,7 @@ import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchMyReadingsPage } from "@/lib/sanity/fetch";
 
 export const metadata: Metadata = {
-  title: "Welcome to your library — Josephine",
+  title: "Welcome to your library | Josephine",
   description: "Continue to your reading library.",
   robots: { index: false, follow: false },
 };

@@ -66,8 +66,6 @@ export async function POST(request: Request): Promise<Response> {
   const audit = await getRequestAuditContext(request);
   const now = Date.now();
 
-  // Atomic single-use: INSERT OR IGNORE in library_token_redemptions. First
-  // caller wins; concurrent redeems on the same jti can't both observe ok=true.
   const recordResult = await recordLibraryTokenRedemption({
     jti: verify.jti,
     userId: verify.userId,
@@ -84,8 +82,6 @@ export async function POST(request: Request): Promise<Response> {
     now,
   });
 
-  // Forensic audit for the happy path. mintSource is preserved in the ledger
-  // row; the audit row simply marks the redemption succeeded for the user.
   await writeAudit({
     userId: verify.userId,
     eventType: AUDIT_EVENT_TYPE.library_token_redeemed,

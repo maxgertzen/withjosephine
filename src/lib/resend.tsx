@@ -356,10 +356,6 @@ export async function sendGiftPurchaseConfirmation(
     fetchEmailGiftPurchaseConfirmationScheduled,
     fetchEmailGiftPurchaseConfirmationSelfSend,
   } = await import("@/lib/sanity/fetch");
-  // Legacy `{myGiftsUrl}` slot in refundLine copy now resolves to the unified
-  // library URL (Phase 2). Prefers the tokenized library URL so a tap is
-  // one-tap auth; falls back to the un-tokenized library path which still
-  // works via the magic-link sign-in flow.
   const myGiftsUrl = input.libraryUrl ?? `${siteOrigin()}/my-readings/gifts`;
 
   let html: string;
