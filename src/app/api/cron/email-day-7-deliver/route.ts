@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { mintListenToken } from "@/lib/auth/listenToken";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import {
   type DeliverableSubmission,
@@ -23,6 +24,13 @@ async function deliverOne(
 ): Promise<"sent" | "skipped"> {
   if (d1Submission.status !== "paid") return "skipped";
 
+  if (!d1Submission.recipientUserId) {
+    console.error(
+      `[cron-day-7] missing recipientUserId for ${d1Submission._id}, cannot mint token`,
+    );
+    return "skipped";
+  }
+
   await markSubmissionDelivered(d1Submission._id, {
     deliveredAt: resolved.deliveredAt,
     voiceNoteUrl: resolved.voiceNoteUrl,
@@ -35,7 +43,12 @@ async function deliverOne(
     pdfUrl: resolved.pdfUrl,
   };
 
-  const listenUrl = `${siteOrigin()}/listen/${refreshed._id}`;
+  const token = await mintListenToken({
+    submissionId: refreshed._id,
+    recipientUserId: d1Submission.recipientUserId,
+    mintSource: "cron_day7",
+  });
+  const listenUrl = `${siteOrigin()}/listen/${refreshed._id}?t=${token}`;
   const context = buildSubmissionContext(refreshed);
   const sendResult = await sendAndRecord({
     submissionId: refreshed._id,
@@ -128,6 +141,12 @@ async function runForce(submissionId: string): Promise<{
 async function handle(request: Request): Promise<Response> {
   if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!process.env.LISTEN_TOKEN_SECRET) {
+    return NextResponse.json(
+      { error: "LISTEN_TOKEN_SECRET missing" },
+      { status: 500 },
+    );
   }
   const url = new URL(request.url);
   const force = url.searchParams.get("force");

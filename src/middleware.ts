@@ -174,6 +174,16 @@ export function middleware(request: NextRequest) {
   );
 
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
+  const isListen = pathname.startsWith("/listen/");
+
+  // /listen/[id] receives the one-tap `?t=<token>` query param via the
+  // day-7 delivery email. Strict `no-referrer` keeps the token off the
+  // Referer header on any outbound nav (audio player, PDF download, mailto)
+  // so the token can't leak via a third-party referer log. Overrides the
+  // looser `strict-origin-when-cross-origin` set in public/_headers.
+  if (isListen) {
+    response.headers.set("Referrer-Policy", "no-referrer");
+  }
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");

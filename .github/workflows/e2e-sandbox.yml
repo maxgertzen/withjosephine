@@ -42,6 +42,12 @@ jobs:
       RESEND_E2E_DRY_RUN_SECRET: ${{ secrets.STAGING_RESEND_E2E_DRY_RUN_SECRET }}
       ADMIN_API_KEY: ${{ secrets.STAGING_ADMIN_API_KEY }}
       DO_DISPATCH_SECRET: ${{ secrets.STAGING_DO_DISPATCH_SECRET }}
+      # Needed by the one-tap listen-token spec to mint tokens that staging
+      # accepts. Must hold the same value as the staging worker's
+      # LISTEN_TOKEN_SECRET (see wrangler secret put --env staging). The spec
+      # auto-detects whether the redeem route is deployed and skips itself
+      # until then, so no env-var flip is required on first deploy.
+      LISTEN_TOKEN_SECRET: ${{ secrets.STAGING_LISTEN_TOKEN_SECRET }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       SANITY_WRITE_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}

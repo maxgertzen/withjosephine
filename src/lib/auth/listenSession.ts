@@ -56,6 +56,24 @@ export const MISMATCH_LIMIT = 5;
 
 export { AUDIT_EVENT_TYPE, type AuditEventType } from "@/lib/audit/eventTypes";
 
+/**
+ * Canonical `Set-Cookie` header value for the listen session. `__Host-`
+ * prefix mandates Secure + Path=/ + no Domain; SameSite=Lax allows top-level
+ * navigation POSTs from the email-button form while blocking cross-origin
+ * XHR. Both the magic-link verify route and the one-tap redeem route MUST
+ * call this so the two redemption paths can't drift on cookie attributes.
+ */
+export function buildListenSessionCookieHeader(cookieValue: string): string {
+  return [
+    `${COOKIE_NAME}=${cookieValue}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
+  ].join("; ");
+}
+
 export type RedeemResult =
   | { ok: true; userId: string; sessionId: string; cookieValue: string }
   | {
@@ -248,13 +266,55 @@ export async function redeemMagicLink(args: {
 
   // Session insert + redeem-success audits in one batch — guarantees
   // consume-and-session-emit cohere; no half-redeemed state on D1 hiccup.
+  const { sessionId, cookieValue } = await createListenSessionForUser({
+    userId: row.user_id,
+    ipHash: args.ipHash ?? null,
+    userAgentHash: args.userAgentHash ?? null,
+    now,
+    includeLinkRedeemedAudit: true,
+  });
+
+  return { ok: true, userId: row.user_id, sessionId, cookieValue };
+}
+
+export type CreateListenSessionForUserArgs = {
+  userId: string;
+  ipHash: string | null;
+  userAgentHash: string | null;
+};
+
+export type CreateListenSessionForUserResult = {
+  sessionId: string;
+  cookieValue: string;
+  expiresAt: number;
+};
+
+/**
+ * Create a listen session row + emit the `listen_session_started` audit
+ * row for a given user. Atomic batch: session insert and audit emit cohere
+ * so no half-started state can persist on a D1 hiccup.
+ *
+ * Cookie setting is the CALLER's job (keeps this helper testable without
+ * `next/headers`). Caller receives `cookieValue` + `expiresAt` and is
+ * expected to write the `__Host-listen_session` cookie itself.
+ *
+ * `includeLinkRedeemedAudit` is an internal flag used by `redeemMagicLink`
+ * to preserve byte-equal behavior: that path emits BOTH `link_redeemed`
+ * AND `listen_session_started` in one batch. One-tap callers pass `false`
+ * (the default) so only `listen_session_started` lands.
+ */
+export async function createListenSessionForUser(
+  args: CreateListenSessionForUserArgs & {
+    now?: number;
+    includeLinkRedeemedAudit?: boolean;
+  },
+): Promise<CreateListenSessionForUserResult> {
+  const now = args.now ?? Date.now();
   const sessionId = crypto.randomUUID();
   const cookieValue = randomToken();
   const cookieHash = await sha256Hex(cookieValue);
-  const sessionExpiresAt = now + SESSION_TTL_MS;
+  const expiresAt = now + SESSION_TTL_MS;
 
-  const auditId1 = crypto.randomUUID();
-  const auditId2 = crypto.randomUUID();
   const stmts: SqlStatement[] = [
     {
       sql: `INSERT INTO listen_session
@@ -262,46 +322,51 @@ export async function redeemMagicLink(args: {
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
       params: [
         sessionId,
-        row.user_id,
+        args.userId,
         cookieHash,
-        sessionExpiresAt,
+        expiresAt,
         now,
-        args.ipHash ?? null,
-        args.userAgentHash ?? null,
-      ],
-    },
-    {
-      sql: `INSERT INTO listen_audit
-              (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      params: [
-        auditId1,
-        row.user_id,
-        null,
-        "link_redeemed",
-        now,
-        args.ipHash ?? null,
-        args.userAgentHash ?? null,
-      ],
-    },
-    {
-      sql: `INSERT INTO listen_audit
-              (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      params: [
-        auditId2,
-        row.user_id,
-        null,
-        "listen_session_started",
-        now,
-        args.ipHash ?? null,
-        args.userAgentHash ?? null,
+        args.ipHash,
+        args.userAgentHash,
       ],
     },
   ];
+
+  if (args.includeLinkRedeemedAudit) {
+    stmts.push({
+      sql: `INSERT INTO listen_audit
+              (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+      params: [
+        crypto.randomUUID(),
+        args.userId,
+        null,
+        AUDIT_EVENT_TYPE.link_redeemed,
+        now,
+        args.ipHash,
+        args.userAgentHash,
+      ],
+    });
+  }
+
+  stmts.push({
+    sql: `INSERT INTO listen_audit
+            (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+    params: [
+      crypto.randomUUID(),
+      args.userId,
+      null,
+      AUDIT_EVENT_TYPE.listen_session_started,
+      now,
+      args.ipHash,
+      args.userAgentHash,
+    ],
+  });
+
   await dbBatch(stmts);
 
-  return { ok: true, userId: row.user_id, sessionId, cookieValue };
+  return { sessionId, cookieValue, expiresAt };
 }
 
 export async function getActiveSession(args: {

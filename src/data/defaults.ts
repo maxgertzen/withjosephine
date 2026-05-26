@@ -903,6 +903,19 @@ export interface ListenPageContent {
   expiredMailtoSubject: string;
 }
 
+export interface ListenInterstitialContent {
+  heading: string;
+  subhead: string;
+  buttonLabel: string;
+}
+
+export const LISTEN_INTERSTITIAL_DEFAULTS: ListenInterstitialContent = {
+  heading: "Welcome, your reading is here.",
+  subhead:
+    "Tap the button below to open your reading. This link is private to you, please do not forward.",
+  buttonLabel: "Continue to your reading",
+};
+
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   welcomeRibbon: "Welcome back. You’re signed in for the next seven days.",
   deliveredHeading: "Your {readingName} is ready",
