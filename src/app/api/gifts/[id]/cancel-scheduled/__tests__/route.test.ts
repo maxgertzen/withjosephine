@@ -78,13 +78,13 @@ describe("POST /api/gifts/[id]/cancel-scheduled", () => {
   });
 
   it("returns 404 when purchaser doesn't match session", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     expect((await callRoute()).status).toBe(404);
   });
 
   it("returns 409 when gift is not scheduled (self_send)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftDeliveryMethod: "self_send",
@@ -94,7 +94,7 @@ describe("POST /api/gifts/[id]/cancel-scheduled", () => {
   });
 
   it("returns 409 when claim email already fired by alarm", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftClaimEmailFiredAt: "2026-05-15T00:00:00.000Z",
@@ -104,7 +104,7 @@ describe("POST /api/gifts/[id]/cancel-scheduled", () => {
   });
 
   it("returns 409 when send-now already fired", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftClaimSentNowAt: "2026-05-19T00:00:00.000Z",
@@ -114,7 +114,7 @@ describe("POST /api/gifts/[id]/cancel-scheduled", () => {
   });
 
   it("returns 409 when gift already cancelled", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftCancelledAt: "2026-05-15T00:00:00.000Z",
@@ -124,14 +124,14 @@ describe("POST /api/gifts/[id]/cancel-scheduled", () => {
   });
 
   it("returns 409 when WHERE-guarded UPDATE loses a race", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     applyCancelScheduledMock.mockResolvedValueOnce(false);
     expect((await callRoute()).status).toBe(409);
   });
 
   it("cancels alarm BEFORE UPDATE on happy path", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute();
     expect(res.status).toBe(200);

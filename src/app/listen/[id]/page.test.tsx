@@ -76,7 +76,7 @@ async function getPageProps(opts: {
 describe("/listen/[id] page logic", () => {
   it("State 1: renders delivered surface with welcome ribbon when ?welcome=1 and owner session", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue(OWNED_DELIVERED);
 
     const props = await getPageProps({ search: { welcome: "1" } });
@@ -91,7 +91,7 @@ describe("/listen/[id] page logic", () => {
 
   it("State 2: renders delivered surface WITHOUT ribbon on plain return visit", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue(OWNED_DELIVERED);
 
     const props = await getPageProps();
@@ -110,7 +110,7 @@ describe("/listen/[id] page logic", () => {
 
   it("State 3 (privacy): renders sign-in card when cookie maps to a DIFFERENT user", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_other", sessionId: "sess_x" });
+    sessionMock.mockResolvedValue({ userId: "user_other", sessionId: "sess_x", elevatedAt: null });
     submissionMock.mockResolvedValue(OWNED_DELIVERED);
 
     const props = await getPageProps();
@@ -119,7 +119,7 @@ describe("/listen/[id] page logic", () => {
 
   it("strips leading 'The ' from readingName so 'Your {readingName}' doesn't read 'Your The Birth Chart'", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue({
       ...OWNED_DELIVERED,
       reading: { slug: "birth-chart", name: "The Birth Chart Reading", priceDisplay: "$99" },
@@ -135,7 +135,7 @@ describe("/listen/[id] page logic", () => {
 
   it("State 3 (privacy): renders sign-in card when submission doesn't exist", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue(null);
     const props = await getPageProps();
     expect(props.state.kind).toBe("signIn");
@@ -161,7 +161,7 @@ describe("/listen/[id] page logic", () => {
 
   it("State 5d: renders asset-trouble card when owner session but submission has no assets yet", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue({
       ...OWNED_DELIVERED,
       voiceNoteUrl: undefined,
@@ -173,7 +173,7 @@ describe("/listen/[id] page logic", () => {
 
   it("State 5d: renders asset-trouble when owner session but submission not yet delivered", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue({ ...OWNED_DELIVERED, deliveredAt: undefined });
     const props = await getPageProps();
     expect(props.state.kind).toBe("assetTrouble");
@@ -181,7 +181,7 @@ describe("/listen/[id] page logic", () => {
 
   it("delivered with voice note only (no PDF) renders audio path; pdf path is null", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     submissionMock.mockResolvedValue({ ...OWNED_DELIVERED, pdfUrl: undefined });
     const props = await getPageProps();
     expect(props.state.kind).toBe("delivered");

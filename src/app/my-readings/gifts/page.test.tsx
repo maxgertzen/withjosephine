@@ -46,7 +46,7 @@ async function getPageProps(): Promise<LibraryViewProps> {
 describe("/my-readings/gifts deep-link page", () => {
   it("renders with defaultTab=gifts regardless of data shape", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([]);
     const props = await getPageProps();
@@ -55,7 +55,7 @@ describe("/my-readings/gifts deep-link page", () => {
 
   it("renders with defaultTab=gifts even when user has readings (deep link wins)", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([]);
     const props = await getPageProps();

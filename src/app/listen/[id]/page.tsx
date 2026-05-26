@@ -111,7 +111,7 @@ export default async function ListenPage({
 
 function resolveAuthenticatedState(args: {
   id: string;
-  session: { userId: string; sessionId: string } | null;
+  session: { userId: string; sessionId: string; elevatedAt: number | null } | null;
   submission: SubmissionRecord | null;
   welcome: string | undefined;
 }): ListenViewState {

@@ -98,7 +98,7 @@ describe("/my-readings page (unified library)", () => {
 
   it("default-tab readings when authenticated session has readings, regardless of gifts", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([makeReading("r1")]);
     listGiftsMock.mockResolvedValue([makeReading("g1")]);
     const props = await getPageProps();
@@ -112,7 +112,7 @@ describe("/my-readings page (unified library)", () => {
 
   it("default-tab gifts when readings empty but gifts present", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([makeReading("g1")]);
     const props = await getPageProps();
@@ -121,7 +121,7 @@ describe("/my-readings page (unified library)", () => {
 
   it("default-tab readings when both readings and gifts are empty (warm consumption-first)", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([]);
     const props = await getPageProps();
@@ -134,7 +134,7 @@ describe("/my-readings page (unified library)", () => {
 
   it("parallel-fetches both submission lists in a single load", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([]);
     await getPageProps();
