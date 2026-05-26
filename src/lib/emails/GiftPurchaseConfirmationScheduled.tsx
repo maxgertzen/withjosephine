@@ -8,6 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { LibraryButton } from "./LibraryButton";
 import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type GiftPurchaseConfirmationScheduledVars = {
@@ -17,7 +18,11 @@ export type GiftPurchaseConfirmationScheduledVars = {
   amountPaidDisplay: string | null;
   recipientName: string | null;
   giftMessage: string | null;
+  // Legacy `{myGiftsUrl}` slot in refundLine copy. Phase 2 routes this to the
+  // unified library URL so Becky's existing copy keeps working without a
+  // Sanity edit. `libraryUrl` is the same value, rendered as a button below.
   myGiftsUrl: string;
+  libraryUrl?: string;
   sendAtDisplay: string;
 };
 
@@ -96,6 +101,8 @@ export function GiftPurchaseConfirmationScheduled({
             <PortableTextInline value={copy.refundLine} />
           </p>
         </Section>
+
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
 
         <EmailFooter shell={shell} />
       </Container>

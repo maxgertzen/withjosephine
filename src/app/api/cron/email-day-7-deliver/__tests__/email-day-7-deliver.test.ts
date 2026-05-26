@@ -82,6 +82,7 @@ const DELIVERABLE = {
 
 beforeEach(() => {
   vi.stubEnv("LISTEN_TOKEN_SECRET", "test-listen-token-secret");
+  vi.stubEnv("LIBRARY_TOKEN_SECRET", "test-library-token-secret");
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);

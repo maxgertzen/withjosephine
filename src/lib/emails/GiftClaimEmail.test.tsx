@@ -108,4 +108,13 @@ describe("GiftClaimEmail — first-send variant", () => {
     expect(text).toContain("Hi Mira,");
     expect(text).toContain("Legacy first-send prose for Mira.");
   });
+
+  it("recipient-bearer email does NOT include any library button or library URL", async () => {
+    const html = await render(
+      <GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />,
+    );
+    expect(html).not.toContain("/my-readings/welcome");
+    expect(html).not.toContain("libraryUrl");
+    expect(html).not.toContain("See all your readings");
+  });
 });

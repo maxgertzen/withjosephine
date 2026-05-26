@@ -444,6 +444,16 @@ export async function setSubmissionRecipientUser(
   );
 }
 
+export async function setSubmissionPurchaserUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET purchaser_user_id = ? WHERE id = ?`,
+    [userId, submissionId],
+  );
+}
+
 export async function markSubmissionDelivered(
   id: string,
   delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },

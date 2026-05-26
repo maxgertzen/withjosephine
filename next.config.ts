@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
   // deletes the .map files from .open-next/assets after upload, so they
   // never reach the public asset output.
   productionBrowserSourceMaps: true,
+  // Legacy gift surface redirect. `/my-gifts` was the standalone gift
+  // management URL before the Phase 2 library merge; now the gift listing
+  // lives as a tab inside `/my-readings`. The 308 (permanent) keeps any
+  // shipped email link, bookmark, or external reference working forever.
+  async redirects() {
+    return [
+      {
+        source: "/my-gifts",
+        destination: "/my-readings/gifts",
+        permanent: true,
+      },
+    ];
+  },
   // `outputFileTracingExcludes` deliberately absent. Any non-empty value
   // makes Next 16.2.x + OpenNext 1.19.4 + workerd duplicate
   // `AsyncLocalStorage`, so per-request workStore is never initialized and

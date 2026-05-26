@@ -106,6 +106,11 @@ export type SanityMyReadingsPage = {
   checkEmailHeading: string;
   checkEmailBody: string;
   checkEmailResendLabel: string;
+  readingsTabLabel?: string;
+  giftsTabLabel?: string;
+  welcomeHeading?: string;
+  welcomeSubhead?: string;
+  welcomeButtonLabel?: string;
 };
 
 export type SanityMyGiftsPage = {

@@ -8,12 +8,14 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { LibraryButton } from "./LibraryButton";
 import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type Day7DeliveryVars = {
   firstName: string;
   readingName: string;
   listenUrl: string;
+  libraryUrl?: string;
 };
 
 export type Day7DeliveryProps = {
@@ -68,6 +70,8 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
             {copy.openButtonLabel}
           </Button>
         </div>
+
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
 
         <Section
           className="font-sans text-body"

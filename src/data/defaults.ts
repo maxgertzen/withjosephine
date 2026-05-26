@@ -249,6 +249,11 @@ export interface MyReadingsPageContent extends AuthGatedPageContent {
   expiredRowLabel: string;
   expiredMailtoLabel: string;
   expiredMailtoSubject: string;
+  readingsTabLabel: string;
+  giftsTabLabel: string;
+  welcomeHeading?: string;
+  welcomeSubhead?: string;
+  welcomeButtonLabel?: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -260,6 +265,12 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   expiredRowLabel: "Rested past 90 days",
   expiredMailtoLabel: "Email for a fresh link",
   expiredMailtoSubject: "I need a fresh link to my reading",
+  readingsTabLabel: "Readings",
+  giftsTabLabel: "Gifts",
+  welcomeHeading: "Welcome to your library.",
+  welcomeSubhead:
+    "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
+  welcomeButtonLabel: "Continue to your library",
   signInHeading: "Welcome back",
   signInBody:
     "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
@@ -559,7 +570,10 @@ export interface EmailOrderConfirmationContent {
   contactLine?: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
+  libraryButtonLabel?: string;
 }
+
+export const EMAIL_LIBRARY_BUTTON_LABEL_DEFAULT = "See all your readings";
 
 export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = {
   subject: "Your reading is booked — here’s what happens next",
@@ -646,6 +660,7 @@ export interface EmailGiftPurchaseConfirmationSelfSendContent {
   cardLabel: string;
   cardDeliveryLine: string;
   refundLine: EmailRichText;
+  libraryButtonLabel?: string;
 }
 
 export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurchaseConfirmationSelfSendContent = {
@@ -683,6 +698,7 @@ export interface EmailGiftPurchaseConfirmationScheduledContent {
   cardLabel: string;
   cardDeliveryLine: string;
   refundLine: EmailRichText;
+  libraryButtonLabel?: string;
 }
 
 export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurchaseConfirmationScheduledContent = {
@@ -779,6 +795,7 @@ export interface EmailDay7DeliveryContent {
   lineReady?: string;
   comfortLine?: EmailRichText;
   openButtonLabel: string;
+  libraryButtonLabel?: string;
   signedInDisclosure?: EmailRichText;
   accessWindowLine?: EmailRichText;
   comfortFollowUp?: EmailRichText;
@@ -914,6 +931,19 @@ export const LISTEN_INTERSTITIAL_DEFAULTS: ListenInterstitialContent = {
   subhead:
     "Tap the button below to open your reading. This link is private to you, please do not forward.",
   buttonLabel: "Continue to your reading",
+};
+
+export interface LibraryInterstitialContent {
+  welcomeHeading: string;
+  welcomeSubhead: string;
+  welcomeButtonLabel: string;
+}
+
+export const LIBRARY_INTERSTITIAL_DEFAULTS: LibraryInterstitialContent = {
+  welcomeHeading: "Welcome to your library.",
+  welcomeSubhead:
+    "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
+  welcomeButtonLabel: "Continue to your library",
 };
 
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {

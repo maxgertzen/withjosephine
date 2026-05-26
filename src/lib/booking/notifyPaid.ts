@@ -1,5 +1,6 @@
 import "server-only";
 
+import { buildLibraryUrl } from "../auth/libraryUrl";
 import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
@@ -81,8 +82,25 @@ export async function applyPaidEvent(
   // Gift purchasers receive `gift_purchase_confirmation` from the webhook
   // handler; skipping here avoids duplicate sends.
   if (!submission.isGift) {
+    // Mint a tokenized library URL for the secondary CTA. Degrade gracefully:
+    // if LIBRARY_TOKEN_SECRET is missing or any other mint failure occurs,
+    // ship the email without the button rather than block the OC entirely.
+    let libraryUrl: string | undefined;
+    if (recipientUserId) {
+      try {
+        libraryUrl = await buildLibraryUrl({
+          userId: recipientUserId,
+          mintSource: "order_confirmation",
+        });
+      } catch (error) {
+        console.error(
+          `[notifyPaid] library URL mint failed for ${submission._id}`,
+          error,
+        );
+      }
+    }
     dispatches.push(
-      sendOrderConfirmation(context)
+      sendOrderConfirmation(context, libraryUrl)
         .then(async (result) => {
           if (result.kind !== "sent") return;
           try {

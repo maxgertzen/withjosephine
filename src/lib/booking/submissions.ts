@@ -359,6 +359,13 @@ export async function setSubmissionRecipientUser(
   await repo.setSubmissionRecipientUser(submissionId, userId);
 }
 
+export async function setSubmissionPurchaserUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await repo.setSubmissionPurchaserUser(submissionId, userId);
+}
+
 export async function appendEmailFired(
   submissionId: string,
   entry: EmailFiredEntry,

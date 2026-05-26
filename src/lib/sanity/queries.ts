@@ -162,7 +162,12 @@ export const myReadingsPageQuery = groq`
     signInFootnote,
     checkEmailHeading,
     checkEmailBody,
-    checkEmailResendLabel
+    checkEmailResendLabel,
+    readingsTabLabel,
+    giftsTabLabel,
+    welcomeHeading,
+    welcomeSubhead,
+    welcomeButtonLabel
   }
 `;
 

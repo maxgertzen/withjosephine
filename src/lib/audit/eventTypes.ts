@@ -12,6 +12,7 @@ export const AUDIT_EVENT_TYPE = {
   listen_token_id_mismatch: "listen_token_id_mismatch",
   listen_token_redeemed: "listen_token_redeemed",
   listen_cross_user_denied: "listen_cross_user_denied",
+  library_token_redeemed: "library_token_redeemed",
   export_request: "export_request",
   export_throttled: "export_throttled",
   deletion_request: "deletion_request",

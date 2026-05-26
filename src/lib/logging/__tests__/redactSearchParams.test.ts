@@ -68,4 +68,16 @@ describe("redactSearchParams", () => {
     expect(out).toContain("#frag");
     expect(out).toContain("t=%5BREDACTED%5D");
   });
+
+  it("redacts library one-tap tokens on /my-readings/welcome (Phase 2)", () => {
+    const SENSITIVE_QUERY_PARAMS = ["t"] as const;
+    const out = redactSearchParams(
+      "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig",
+      SENSITIVE_QUERY_PARAMS,
+    );
+    expect(out).toBe(
+      "https://withjosephine.com/my-readings/welcome?t=%5BREDACTED%5D",
+    );
+    expect(out).not.toContain("fakeToken.signedSig");
+  });
 });
