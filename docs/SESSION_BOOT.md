@@ -1,6 +1,17 @@
 # Session Boot — Active State
 
-## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 of epic 23ctexvw
+## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 + Phase 3 of epic 23ctexvw
+
+**Phase 3 (dex `khb6hor6`, closed):** PR #207 squash-merged (`9238f82`). Sandbox CI revealed Phase 2's merge commit `da006dd` never triggered ci.yml, so staging was stale at Phase 1 code. PR #207 merge re-fired ci.yml → deploy-staging deployed Phase 2 + Phase 3 together (ci.yml run `26457695131`). Migration 0016 applied to staging D1 (added migrations 0014, 0015 too — they hadn't been applied either). `AUTH_TOKEN_SECRET` rotated atomically on staging worker + `STAGING_AUTH_TOKEN_SECRET` in GH env (both match). `STAGING_LISTEN_TOKEN_SECRET` is now redundant (legacy fallback only; can be removed in next session). Workflow `e2e-sandbox.yml` updated to map `STAGING_AUTH_TOKEN_SECRET → AUTH_TOKEN_SECRET` for in-spec token minting.
+
+Surface: D1 migration 0016 (elevated_at column on listen_session + step_up_otp ledger), HKDF stepup.v1 subkey, OTP primitive (15-min code TTL, 10-min elevation TTL, 5-attempt poison, 30s gap + 3/30min throttle), POST /api/auth/step-up/{request,verify}, requireElevation guard wired into edit-recipient + send-now (other 3 gift mutations untouched per Council 2), Sanity emailStepUpOtp singleton + StepUpOtp.tsx (brand-lite, no GoldHero), StepUpOtpModal with full a11y (role=dialog, focus trap, ESC, backdrop close, aria-modal, inputmode=numeric, autocomplete=one-time-code), useMutationAction extended additively with elevationRequired + retry. 76/76 ISC, 2054/2054 vitest tests (+99 baseline). PRD complete at `MEMORY/WORK/20260526-115511_phase3-stepup-otp-auth/PRD.md`.
+
+Filed during the merge sweep: dex `dsk9z62m` — backfill `/my-gifts` URL redirect into legacy e2e specs (gift-send-now, gift-flip-to-scheduled-tz, my-gifts-local, gift-local) where `signInViaMagicLink({next: "/my-gifts"})` waits on a URL that 308-redirects to `/my-readings/gifts`.
+
+Phase 3 outstanding (post-deploy):
+1. Real-browser smoke against staging per `feedback_real_browser_smoke_before_ship_claim`: open `/my-readings/gifts`, attempt edit-recipient mutation, expect modal, fetch OTP from staging inbox, verify round trip, verify ESC + backdrop close + ARIA via DevTools.
+
+## ✅ Earlier 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 of epic 23ctexvw
 
 **`release/v1.4.0`** cut from `release/v1.3.0@2ee6f20`. Phase 1 PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. **Phase 2 PR #206 squash-merged (`da006dd`) 2026-05-26.** Phase 1 is live on `staging.withjosephine.com`; Phase 2 ships next deploy.
 
@@ -8,7 +19,7 @@
 
 **🚨 Outstanding Max-actions for Phase 2 verification:**
 
-1. **Provision `AUTH_TOKEN_SECRET` on staging worker BEFORE next deploy:** `openssl rand -hex 32 | pnpm exec wrangler secret put AUTH_TOKEN_SECRET --env staging`. Then mirror to GH staging env: `gh secret set STAGING_AUTH_TOKEN_SECRET --env staging --body "<value>"`. The previously-pending `STAGING_LISTEN_TOKEN_SECRET` becomes redundant. Without this, the day-7 cron fails pre-flight with 500 `AUTH_TOKEN_SECRET missing` and the worker can't mint listen/library tokens.
+1. ✅ **Provisioned `AUTH_TOKEN_SECRET` on staging worker** — confirmed by Max 2026-05-26. Staging worker + GH staging env (`STAGING_AUTH_TOKEN_SECRET`) both carry the secret. `STAGING_LISTEN_TOKEN_SECRET` is redundant and can be removed.
 2. **Apply D1 migration 0015 to staging post-deploy:** `pnpm migrate:apply:staging` adds the `library_token_redemptions` table.
 3. **Re-deploy Studio:** Phase 2 added new fields to `myReadingsPage` Sanity singleton (`readingsTabLabel`, `giftsTabLabel`, `welcomeHeading`, `welcomeSubhead`, `welcomeButtonLabel`). `pnpm run deploy` from `studio/` so Becky sees the new fields. All have hardcoded fallbacks so missing edits are non-blocking.
 4. **Real-browser smoke against staging:** verify the tab strip, deep-link `/my-readings/gifts`, legacy `/my-gifts` 308 redirect, and a one-tap library-link round-trip via a forced day-7 send. Per `feedback_real_browser_smoke_before_ship_claim`.
@@ -16,7 +27,7 @@
 
 **Phase 2 deferrals captured in dex `e737za2a`** (under parent epic 23ctexvw, NOT release-blocking): welcome page bfcache hardening, redactSearchParams fragment defense, user-exists check at redeem, requestAudit HKDF migration, middleware isMyGifts cleanup, verifyTokenEnvelope dedupe between listen + library, mint-source enum centralization, replay-rejection UX for legitimate double-clicks (Phase 1 listen-redeem has the same flaw).
 
-**Next phase: dex `khb6hor6` (Phase 3 step-up OTP auth).** Branch off `release/v1.4.0`; will declare a new HKDF subkey (`stepup.v1`), no new env var. Gates the three high-risk gift mutations: edit-recipient, send-now, claim-for-yourself.
+**Next phase: dex `khb6hor6` (Phase 3 step-up OTP auth) — IMPLEMENTATION COMPLETE on `feat/phase3-stepup-otp-auth` 2026-05-26, awaiting PR-open.** Branch sits 4 commits ahead of `release/v1.4.0`: Agent A foundation (`ac18412`) + Agent B email/Sanity (`4eedc4c`) + Agent C UI modal (`e4c8329`) + stub→canonical sender fixup (`5e1c3c0`). All gates green: typecheck, lint, test (2054/2054, +99 net), build. 76/76 ISC complete. PRD at `MEMORY/WORK/20260526-115511_phase3-stepup-otp-auth/PRD.md`. Outstanding Max-actions: (1) real-browser smoke against staging post-deploy, (2) `pnpm migrate:apply:staging` for D1 0016, (3) PR-open via `sentry-skills:pr-writer`, (4) `dex complete khb6hor6` after squash-merge. Pentester sweep skipped (inherits Phase 1 listen-token verdict on same primitive shape); simplify + code-review deferred to release/v1.4.0 → main merge per `feedback_simplify_scale_to_change_size`.
 
 ## Earlier — Phase 1 shipped 2026-05-26
 
