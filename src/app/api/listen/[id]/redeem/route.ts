@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 
 import {
   AUDIT_EVENT_TYPE,
-  COOKIE_NAME,
+  buildListenSessionCookieHeader,
   createListenSessionForUser,
-  SESSION_TTL_MS,
   writeAudit,
 } from "@/lib/auth/listenSession";
 import { verifyListenToken } from "@/lib/auth/listenToken";
@@ -27,10 +26,8 @@ import { findSubmissionById } from "@/lib/booking/submissions";
  * from "right token, already used" via response shape. The fall-through page
  * renders the existing magic-link form (see ListenView's signIn state).
  *
- * Cookie attributes are byte-equal to the magic-link verify route's writer
- * (`src/app/api/auth/magic-link/verify/route.ts`) so the two redemption paths
- * produce identical `__Host-listen_session` cookies. No auth drift between
- * one-tap and form-based flows.
+ * Cookie attributes come from `buildListenSessionCookieHeader` so this route
+ * and the magic-link verify route can't drift on auth-cookie shape.
  */
 function fallThroughResponse(origin: string, id: string): NextResponse {
   const response = NextResponse.redirect(new URL(`/listen/${id}`, origin), { status: 303 });
@@ -47,17 +44,7 @@ function successResponse(args: {
   const target = new URL(`/listen/${args.id}`, args.origin);
   target.searchParams.set("welcome", "1");
   const response = NextResponse.redirect(target, { status: 303 });
-  // Mirror the verify-route cookie writer byte-for-byte. `__Host-` requires
-  // Secure + Path=/ + no Domain; Max-Age tracks SESSION_TTL_MS.
-  const cookieAttrs = [
-    `${COOKIE_NAME}=${args.cookieValue}`,
-    "Path=/",
-    "HttpOnly",
-    "Secure",
-    "SameSite=Lax",
-    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
-  ];
-  response.headers.append("Set-Cookie", cookieAttrs.join("; "));
+  response.headers.append("Set-Cookie", buildListenSessionCookieHeader(args.cookieValue));
   response.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
   response.headers.set("Vary", "Cookie");
   return response;

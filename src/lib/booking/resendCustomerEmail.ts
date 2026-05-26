@@ -1,6 +1,7 @@
-import { mintListenToken } from "@/lib/auth/listenToken";
+import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
+import { READING_ACCESS_TTL_MS } from "./readingRetention";
 import { redactEmail, sendDay7Delivery, sendOrderConfirmation } from "../resend";
 import {
   appendEmailFired,
@@ -29,11 +30,6 @@ export type ResendOutcome =
 
 const RESEND_WINDOW_MS = 24 * 60 * 60 * 1000;
 const RESEND_MAX_PER_WINDOW = 3;
-
-// Reading-retention window: Phase 1 caps admin-resend listen tokens so they
-// never outlive the underlying reading assets (Engineer #5 mitigation).
-const READING_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
-const DEFAULT_LISTEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function countRecentResends(
   submission: SubmissionRecord,
@@ -97,16 +93,17 @@ async function dispatchResend(
       if (!submission.recipientUserId) {
         return { kind: "failed", error: "missing recipientUserId" };
       }
+      // Cap admin-resend TTL so a token can't outlive the reading retention window.
       const deliveredAtMs = submission.deliveredAt
         ? Date.parse(submission.deliveredAt)
         : null;
       const msUntilReadingExpires =
         deliveredAtMs !== null
-          ? deliveredAtMs + READING_RETENTION_MS - Date.now()
-          : DEFAULT_LISTEN_TTL_MS;
+          ? deliveredAtMs + READING_ACCESS_TTL_MS - Date.now()
+          : LISTEN_TOKEN_TTL_MS;
       const cappedTtl = Math.max(
         0,
-        Math.min(DEFAULT_LISTEN_TTL_MS, msUntilReadingExpires),
+        Math.min(LISTEN_TOKEN_TTL_MS, msUntilReadingExpires),
       );
       if (cappedTtl === 0) {
         return { kind: "failed", error: "reading already expired" };

@@ -8,6 +8,12 @@ import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
+import { redactSearchParams } from "./src/lib/logging/redactSearchParams";
+
+// Query params whose values are sensitive bearer credentials and must be
+// stripped before reaching Sentry. `t` carries one-tap listen tokens
+// (Phase 1 epic 23ctexvw); add new names here as new tokenized surfaces ship.
+const SENSITIVE_QUERY_PARAMS = ["t"] as const;
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
@@ -26,7 +32,8 @@ function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
     delete (request.headers as Record<string, unknown>).authorization;
   }
   if (request?.url) {
-    request.url = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
   }
   return event;
 }

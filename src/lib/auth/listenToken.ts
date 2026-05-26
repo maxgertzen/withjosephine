@@ -1,6 +1,7 @@
 import {
   base64UrlDecodeToBytes,
   base64UrlEncodeBytes,
+  bytesToHex,
   sha256Hex,
   signHmacSha256,
   timingSafeStringEqual,
@@ -53,11 +54,7 @@ function getSecret(): string {
 }
 
 function generateJti(): string {
-  const bytes = new Uint8Array(JTI_BYTE_LENGTH);
-  crypto.getRandomValues(bytes);
-  let hex = "";
-  for (const byte of bytes) hex += byte.toString(16).padStart(2, "0");
-  return hex;
+  return bytesToHex(crypto.getRandomValues(new Uint8Array(JTI_BYTE_LENGTH)));
 }
 
 function buildCanonicalPayload(args: {
@@ -72,6 +69,15 @@ function buildCanonicalPayload(args: {
 }
 
 export async function mintListenToken(args: MintListenTokenArgs): Promise<string> {
+  // `:` is the canonical-payload field separator. Refuse any input that would
+  // smuggle an extra field on round-trip parse, even though current callers
+  // pass opaque ids (Sanity slugs + UUID hex) that never include it.
+  if (args.submissionId.includes(":")) {
+    throw new Error("submissionId must not contain ':'");
+  }
+  if (args.jti !== undefined && args.jti.includes(":")) {
+    throw new Error("jti must not contain ':'");
+  }
   const secret = getSecret();
   const now = args.now ?? Date.now();
   const ttlMs = args.ttlMs ?? LISTEN_TOKEN_TTL_MS;

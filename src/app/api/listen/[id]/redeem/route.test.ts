@@ -5,6 +5,8 @@ vi.mock("@/lib/auth/listenSession", () => ({
   SESSION_TTL_MS: 7 * 24 * 60 * 60 * 1000,
   createListenSessionForUser: vi.fn(),
   writeAudit: vi.fn(),
+  buildListenSessionCookieHeader: (value: string) =>
+    `__Host-listen_session=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`,
   AUDIT_EVENT_TYPE: {
     listen_token_redeemed: "listen_token_redeemed",
     listen_token_id_mismatch: "listen_token_id_mismatch",

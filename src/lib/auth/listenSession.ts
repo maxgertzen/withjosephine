@@ -56,6 +56,24 @@ export const MISMATCH_LIMIT = 5;
 
 export { AUDIT_EVENT_TYPE, type AuditEventType } from "@/lib/audit/eventTypes";
 
+/**
+ * Canonical `Set-Cookie` header value for the listen session. `__Host-`
+ * prefix mandates Secure + Path=/ + no Domain; SameSite=Lax allows top-level
+ * navigation POSTs from the email-button form while blocking cross-origin
+ * XHR. Both the magic-link verify route and the one-tap redeem route MUST
+ * call this so the two redemption paths can't drift on cookie attributes.
+ */
+export function buildListenSessionCookieHeader(cookieValue: string): string {
+  return [
+    `${COOKIE_NAME}=${cookieValue}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
+  ].join("; ");
+}
+
 export type RedeemResult =
   | { ok: true; userId: string; sessionId: string; cookieValue: string }
   | {
