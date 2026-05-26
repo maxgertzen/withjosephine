@@ -11,15 +11,15 @@ export const GIFT_CLAIM_COOKIE = "__Host-gift_claim_session";
 export const GIFT_CLAIM_TTL_MS = 30 * 60 * 1000;
 
 function getSecret(): string {
-  const secret = process.env.LISTEN_TOKEN_SECRET;
+  const secret = process.env.AUTH_TOKEN_SECRET;
   if (!secret) {
-    throw new Error("LISTEN_TOKEN_SECRET is required for gift claim sessions");
+    throw new Error("AUTH_TOKEN_SECRET is required for gift claim sessions");
   }
   return secret;
 }
 
 // Cookie value format: `<submissionId>.<expMs>.<sig>` with sig =
-// HMAC-SHA-256 over `<submissionId>.<expMs>` using LISTEN_TOKEN_SECRET.
+// HMAC-SHA-256 over `<submissionId>.<expMs>` using AUTH_TOKEN_SECRET.
 export async function signGiftClaimCookie(
   submissionId: string,
   now: number = Date.now(),

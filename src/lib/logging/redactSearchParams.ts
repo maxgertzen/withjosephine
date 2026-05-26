@@ -1,5 +1,7 @@
 const RELATIVE_URL_SENTINEL = "https://redact.local";
 
+export const SENSITIVE_QUERY_PARAMS = ["t"] as const;
+
 /**
  * Returns a sanitized URL string with the specified query parameters
  * replaced by "[REDACTED]" for safe logging. Used to keep one-tap listen

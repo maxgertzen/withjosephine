@@ -73,4 +73,16 @@ describe("RecipientIntakeReceived — visual parity with locked copy", () => {
     expect(text).toContain("Josephine ✦");
     expect(text).toContain("Readings are offered for entertainment");
   });
+
+  it("recipient-bearer email does NOT include any library button or library URL", async () => {
+    const html = await render(
+      <RecipientIntakeReceived
+        vars={VARS}
+        copy={EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS}
+      />,
+    );
+    expect(html).not.toContain("/my-readings/welcome");
+    expect(html).not.toContain("libraryUrl");
+    expect(html).not.toContain("See all your readings");
+  });
 });

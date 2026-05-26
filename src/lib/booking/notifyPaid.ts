@@ -1,5 +1,6 @@
 import "server-only";
 
+import { tryBuildLibraryUrl } from "../auth/libraryUrl";
 import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
@@ -81,8 +82,15 @@ export async function applyPaidEvent(
   // Gift purchasers receive `gift_purchase_confirmation` from the webhook
   // handler; skipping here avoids duplicate sends.
   if (!submission.isGift) {
+    const libraryUrl = recipientUserId
+      ? await tryBuildLibraryUrl({
+          userId: recipientUserId,
+          mintSource: "order_confirmation",
+          siteContext: `notifyPaid:${submission._id}`,
+        })
+      : undefined;
     dispatches.push(
-      sendOrderConfirmation(context)
+      sendOrderConfirmation(context, libraryUrl)
         .then(async (result) => {
           if (result.kind !== "sent") return;
           try {

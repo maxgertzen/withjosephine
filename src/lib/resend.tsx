@@ -298,6 +298,7 @@ export async function sendRecipientIntakeReceived(
 
 export async function sendOrderConfirmation(
   submission: SubmissionContext,
+  libraryUrl?: string,
 ): Promise<EmailSendResult> {
   const { EMAIL_ORDER_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailOrderConfirmation } = await import("@/lib/sanity/fetch");
@@ -313,6 +314,7 @@ export async function sendOrderConfirmation(
         readingName: submission.readingName,
         readingPriceDisplay: submission.readingPriceDisplay,
         amountPaidDisplay: submission.amountPaidDisplay,
+        libraryUrl,
       }}
       copy={copy}
       shell={shell}
@@ -337,6 +339,7 @@ export type GiftPurchaseConfirmationInput = {
   amountPaidDisplay: string | null;
   recipientName: string | null;
   giftMessage: string | null;
+  libraryUrl?: string;
 } & (
   | { variant: "self_send"; claimUrl: string; sendAtDisplay?: never }
   | { variant: "scheduled"; sendAtDisplay: string; claimUrl?: never }
@@ -353,7 +356,7 @@ export async function sendGiftPurchaseConfirmation(
     fetchEmailGiftPurchaseConfirmationScheduled,
     fetchEmailGiftPurchaseConfirmationSelfSend,
   } = await import("@/lib/sanity/fetch");
-  const myGiftsUrl = `${siteOrigin()}/my-gifts`;
+  const myGiftsUrl = input.libraryUrl ?? `${siteOrigin()}/my-readings/gifts`;
 
   let html: string;
   let interpolatedSubject: string;
@@ -377,6 +380,7 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
+          libraryUrl: input.libraryUrl,
         }}
         copy={copy}
         shell={shell}
@@ -403,6 +407,7 @@ export async function sendGiftPurchaseConfirmation(
           recipientName: input.recipientName,
           giftMessage: input.giftMessage,
           myGiftsUrl,
+          libraryUrl: input.libraryUrl,
         }}
         copy={copy}
         shell={shell}
@@ -490,6 +495,7 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
 export async function sendDay7Delivery(
   submission: SubmissionContext,
   listenUrl: string,
+  libraryUrl?: string,
 ): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
@@ -509,6 +515,7 @@ export async function sendDay7Delivery(
         firstName: submission.firstName,
         readingName: submission.readingName,
         listenUrl,
+        libraryUrl,
       }}
       copy={copy}
       shell={shell}

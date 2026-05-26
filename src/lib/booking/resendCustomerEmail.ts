@@ -1,3 +1,4 @@
+import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
@@ -87,8 +88,16 @@ async function dispatchResend(
 ): Promise<DispatchOutcome> {
   const context = buildSubmissionContext(submission);
   switch (emailType) {
-    case "order_confirmation":
-      return sendOrderConfirmation(context);
+    case "order_confirmation": {
+      const libraryUrl = submission.recipientUserId
+        ? await tryBuildLibraryUrl({
+            userId: submission.recipientUserId,
+            mintSource: "admin_resend",
+            siteContext: `resendCustomerEmail:oc:${submission._id}`,
+          })
+        : undefined;
+      return sendOrderConfirmation(context, libraryUrl);
+    }
     case "day7": {
       if (!submission.recipientUserId) {
         return { kind: "failed", error: "missing recipientUserId" };
@@ -115,7 +124,12 @@ async function dispatchResend(
         ttlMs: cappedTtl,
       });
       const listenUrl = `${siteOrigin()}/listen/${submission._id}?t=${token}`;
-      return sendDay7Delivery(context, listenUrl);
+      const libraryUrl = await tryBuildLibraryUrl({
+        userId: submission.recipientUserId,
+        mintSource: "admin_resend",
+        siteContext: `resendCustomerEmail:day7:${submission._id}`,
+      });
+      return sendDay7Delivery(context, listenUrl, libraryUrl);
     }
   }
 }

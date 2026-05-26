@@ -50,7 +50,7 @@ function buildPaidSubmission(overrides: Partial<SubmissionRecord> = {}): Submiss
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.stubEnv("LISTEN_TOKEN_SECRET", "test-listen-token-secret");
+  vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
 });
 
 afterEach(() => {

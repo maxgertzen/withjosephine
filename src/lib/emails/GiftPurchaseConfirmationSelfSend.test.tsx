@@ -150,4 +150,28 @@ describe("GiftPurchaseConfirmationSelfSend", () => {
     expect(text).toContain("Hi Alice,");
     expect(text).toContain("Legacy fallback prose for Bob");
   });
+
+  it("renders the secondary library button when libraryUrl is provided", async () => {
+    const libraryUrl =
+      "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig";
+    const html = await render(
+      <GiftPurchaseConfirmationSelfSend
+        vars={{ ...VARS, libraryUrl }}
+        copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS}
+      />,
+    );
+    expect(html).toContain(libraryUrl);
+    expect(visibleText(html)).toContain("See all your readings");
+  });
+
+  it("does NOT render the library button when libraryUrl is absent", async () => {
+    const html = await render(
+      <GiftPurchaseConfirmationSelfSend
+        vars={VARS}
+        copy={EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS}
+      />,
+    );
+    expect(visibleText(html)).not.toContain("See all your readings");
+    expect(html).not.toContain("/my-readings/welcome");
+  });
 });

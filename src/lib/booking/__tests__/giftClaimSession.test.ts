@@ -7,7 +7,7 @@ import {
 } from "../giftClaimSession";
 
 beforeEach(() => {
-  vi.stubEnv("LISTEN_TOKEN_SECRET", "test-secret-please-rotate");
+  vi.stubEnv("AUTH_TOKEN_SECRET", "test-secret-please-rotate");
 });
 
 afterEach(() => {

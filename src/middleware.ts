@@ -173,25 +173,21 @@ export function middleware(request: NextRequest) {
     buildCsp({ isDraft: !isStrict, nonce }),
   );
 
+  const isMyReadings = pathname === "/my-readings" || pathname.startsWith("/my-readings/");
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
   const isListen = pathname.startsWith("/listen/");
+  const isLibraryWelcome = pathname === "/my-readings/welcome";
 
-  // /listen/[id] receives the one-tap `?t=<token>` query param via the
-  // day-7 delivery email. Strict `no-referrer` keeps the token off the
-  // Referer header on any outbound nav (audio player, PDF download, mailto)
-  // so the token can't leak via a third-party referer log. Overrides the
-  // looser `strict-origin-when-cross-origin` set in public/_headers.
-  if (isListen) {
+  // Both surfaces receive `?t=<token>` on GET; no-referrer prevents the token
+  // leaking via the Referer header on outbound nav.
+  if (isListen || isLibraryWelcome) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  } else if (isMyGifts) {
-    // Purchaser-scoped page reflects gift state that mutates via flip / send-now
-    // / cancel-scheduled. Cloudflare and any intermediary must never serve a
-    // cached snapshot to a different purchaser session or after a state change.
+  } else if (isMyReadings || isMyGifts) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
   } else if (!isPublicApex) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");

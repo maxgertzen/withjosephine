@@ -142,4 +142,17 @@ describe("scrubSensitiveData (via beforeSend)", () => {
       "https://withjosephine.com/listen/[REDACTED]?ref=email",
     );
   });
+
+  it("redacts the ?t= library token on /my-readings/welcome", () => {
+    const beforeSend = getBeforeSend();
+    const event = {
+      request: {
+        url: "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig",
+      },
+    };
+    const out = beforeSend(event) as { request: { url: string } };
+    expect(out.request.url).toBe(
+      "https://withjosephine.com/my-readings/welcome?t=%5BREDACTED%5D",
+    );
+  });
 });

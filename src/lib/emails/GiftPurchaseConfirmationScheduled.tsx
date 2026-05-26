@@ -8,6 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { LibraryButton } from "./LibraryButton";
 import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type GiftPurchaseConfirmationScheduledVars = {
@@ -18,6 +19,7 @@ export type GiftPurchaseConfirmationScheduledVars = {
   recipientName: string | null;
   giftMessage: string | null;
   myGiftsUrl: string;
+  libraryUrl?: string;
   sendAtDisplay: string;
 };
 
@@ -96,6 +98,8 @@ export function GiftPurchaseConfirmationScheduled({
             <PortableTextInline value={copy.refundLine} />
           </p>
         </Section>
+
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} variant="primary" />
 
         <EmailFooter shell={shell} />
       </Container>

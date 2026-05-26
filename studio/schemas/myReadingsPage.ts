@@ -105,6 +105,48 @@ export const myReadingsPage = defineType({
       type: "string",
       initialValue: "Send another",
     }),
+    defineField({
+      name: "readingsTabLabel",
+      title: "Tabs (readings tab label)",
+      type: "string",
+      description:
+        "Label for the readings tab in the unified library. Counts appear next to this label.",
+      initialValue: "Readings",
+    }),
+    defineField({
+      name: "giftsTabLabel",
+      title: "Tabs (gifts tab label)",
+      type: "string",
+      description:
+        "Label for the gifts tab in the unified library. Counts appear next to this label.",
+      initialValue: "Gifts",
+    }),
+    defineField({
+      name: "welcomeHeading",
+      title: "Welcome interstitial (heading)",
+      type: "string",
+      description:
+        "Shown on /my-readings/welcome when a customer taps the library link in a purchaser email. Leave blank to use the hardcoded fallback.",
+      initialValue: "Welcome to your library.",
+    }),
+    defineField({
+      name: "welcomeSubhead",
+      title: "Welcome interstitial (subhead)",
+      type: "text",
+      rows: 3,
+      description:
+        "Body copy on the welcome interstitial. Leave blank to use the hardcoded fallback.",
+      initialValue:
+        "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
+    }),
+    defineField({
+      name: "welcomeButtonLabel",
+      title: "Welcome interstitial (button label)",
+      type: "string",
+      description:
+        "Continue button label on the welcome interstitial. Leave blank to use the hardcoded fallback.",
+      initialValue: "Continue to your library",
+    }),
   ],
   preview: {
     prepare: () => ({ title: "My Readings Page" }),
