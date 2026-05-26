@@ -6,10 +6,7 @@ import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
-import {
-  LIBRARY_INTERSTITIAL_DEFAULTS,
-  MY_READINGS_PAGE_DEFAULTS,
-} from "@/data/defaults";
+import { MY_READINGS_PAGE_DEFAULTS } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchMyReadingsPage } from "@/lib/sanity/fetch";
 
@@ -39,16 +36,17 @@ export default async function MyReadingsWelcomePage({
 }) {
   const params = await searchParams;
   const token = params.t;
-  if (!token) {
+  // Library tokens are ~150-200 chars in practice; cap at 1024 to defang
+  // pathological URLs without losing a real token.
+  if (!token || token.length > 1024) {
     redirect("/my-readings");
   }
 
   const sanity = await fetchMyReadingsPage().catch(() => null);
   const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...(sanity ?? {}) };
-  const heading = copy.welcomeHeading ?? LIBRARY_INTERSTITIAL_DEFAULTS.welcomeHeading;
-  const subhead = copy.welcomeSubhead ?? LIBRARY_INTERSTITIAL_DEFAULTS.welcomeSubhead;
-  const buttonLabel =
-    copy.welcomeButtonLabel ?? LIBRARY_INTERSTITIAL_DEFAULTS.welcomeButtonLabel;
+  const heading = copy.welcomeHeading || MY_READINGS_PAGE_DEFAULTS.welcomeHeading!;
+  const subhead = copy.welcomeSubhead || MY_READINGS_PAGE_DEFAULTS.welcomeSubhead!;
+  const buttonLabel = copy.welcomeButtonLabel || MY_READINGS_PAGE_DEFAULTS.welcomeButtonLabel!;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">

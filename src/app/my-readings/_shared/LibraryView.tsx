@@ -2,7 +2,6 @@
 
 import { format, parseISO } from "date-fns";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { GiftCardActions, type GiftCardData, type ResendVerdictSummary } from "@/app/my-gifts/GiftCardActions";
 import { AuthGatedPage } from "@/components/AuthGatedPage/AuthGatedPage";
@@ -102,17 +101,10 @@ function LibraryListView({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [activeTab, setActiveTab] = useState<LibraryTabId>(defaultTab);
-  const [prevPathname, setPrevPathname] = useState(pathname);
-
-  if (prevPathname !== pathname) {
-    setPrevPathname(pathname);
-    setActiveTab(pathname === GIFTS_PATH ? "gifts" : "readings");
-  }
+  const activeTab: LibraryTabId = pathname === GIFTS_PATH ? "gifts" : defaultTab;
 
   function handleChange(nextId: string) {
     if (nextId !== "readings" && nextId !== "gifts") return;
-    setActiveTab(nextId);
     const nextPath = pathForTab(nextId);
     if (nextPath !== pathname) {
       router.push(nextPath, { scroll: false });

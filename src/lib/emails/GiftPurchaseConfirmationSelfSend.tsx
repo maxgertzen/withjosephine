@@ -131,7 +131,7 @@ export function GiftPurchaseConfirmationSelfSend({
           </p>
         </Section>
 
-        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} variant="primary" />
 
         <EmailFooter shell={shell} />
       </Container>

@@ -1,4 +1,4 @@
-import { buildLibraryUrl } from "@/lib/auth/libraryUrl";
+import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
@@ -89,20 +89,13 @@ async function dispatchResend(
   const context = buildSubmissionContext(submission);
   switch (emailType) {
     case "order_confirmation": {
-      let libraryUrl: string | undefined;
-      if (submission.recipientUserId) {
-        try {
-          libraryUrl = await buildLibraryUrl({
+      const libraryUrl = submission.recipientUserId
+        ? await tryBuildLibraryUrl({
             userId: submission.recipientUserId,
             mintSource: "admin_resend",
-          });
-        } catch (error) {
-          console.error(
-            `[resendCustomerEmail] library URL mint failed for ${submission._id}`,
-            error,
-          );
-        }
-      }
+            siteContext: `resendCustomerEmail:oc:${submission._id}`,
+          })
+        : undefined;
       return sendOrderConfirmation(context, libraryUrl);
     }
     case "day7": {
@@ -131,18 +124,11 @@ async function dispatchResend(
         ttlMs: cappedTtl,
       });
       const listenUrl = `${siteOrigin()}/listen/${submission._id}?t=${token}`;
-      let libraryUrl: string | undefined;
-      try {
-        libraryUrl = await buildLibraryUrl({
-          userId: submission.recipientUserId,
-          mintSource: "admin_resend",
-        });
-      } catch (error) {
-        console.error(
-          `[resendCustomerEmail] library URL mint failed for ${submission._id}`,
-          error,
-        );
-      }
+      const libraryUrl = await tryBuildLibraryUrl({
+        userId: submission.recipientUserId,
+        mintSource: "admin_resend",
+        siteContext: `resendCustomerEmail:day7:${submission._id}`,
+      });
       return sendDay7Delivery(context, listenUrl, libraryUrl);
     }
   }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { serverTrack } from "@/lib/analytics/server";
-import { buildLibraryUrl } from "@/lib/auth/libraryUrl";
+import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
 import { getOrCreateUser } from "@/lib/auth/users";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
@@ -136,20 +136,13 @@ async function dispatchGiftPurchaseConfirmation(
     submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend
       ? "gift_purchase_self_send"
       : "gift_purchase_scheduled";
-  let libraryUrl: string | undefined;
-  if (purchaserUserId) {
-    try {
-      libraryUrl = await buildLibraryUrl({
+  const libraryUrl = purchaserUserId
+    ? await tryBuildLibraryUrl({
         userId: purchaserUserId,
         mintSource: libraryMintSource,
-      });
-    } catch (error) {
-      console.error(
-        `[stripe-webhook] library URL mint failed for ${submission._id}`,
-        error,
-      );
-    }
-  }
+        siteContext: `stripe-webhook:${submission._id}`,
+      })
+    : undefined;
 
   if (submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend) {
     const { tokenHash, claimUrl } = await issueGiftClaimToken();

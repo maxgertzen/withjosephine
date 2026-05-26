@@ -1,24 +1,37 @@
 import { Button } from "@react-email/components";
 
 import { EMAIL_LIBRARY_BUTTON_LABEL_DEFAULT } from "@/data/defaults";
+import { emailTokens } from "@/lib/theme/email-tokens.generated";
 
-/**
- * Outlined secondary library-link button used by every purchaser-facing
- * email template (OrderConfirmation, Day7Delivery, GiftPurchaseConfirmation
- * both variants). Renders nothing when `libraryUrl` is undefined so the
- * caller can stay declarative.
- *
- * Visual treatment: transparent fill + ink border + ink text. Visually
- * subordinate to the primary CTA (Day7 listen button, gift share button)
- * which uses solid `bg-ink text-cream`. OC has no primary today, so the
- * outlined treatment is intentionally lower-weight than a solid CTA.
- */
+export type LibraryButtonVariant = "primary" | "secondary";
+
 export type LibraryButtonProps = {
   libraryUrl: string | undefined;
   label?: string;
+  variant?: LibraryButtonVariant;
 };
 
-export function LibraryButton({ libraryUrl, label }: LibraryButtonProps) {
+const SHARED_BUTTON_STYLE = {
+  padding: "14px 30px",
+  fontSize: 15,
+  borderRadius: 50,
+  letterSpacing: "0.02em",
+} as const;
+
+const VARIANT_STYLES: Record<LibraryButtonVariant, React.CSSProperties> = {
+  primary: {
+    color: emailTokens.cream,
+    backgroundColor: emailTokens.ink,
+    border: `1.5px solid ${emailTokens.ink}`,
+  },
+  secondary: {
+    color: emailTokens.ink,
+    backgroundColor: "transparent",
+    border: `1.5px solid ${emailTokens.ink}`,
+  },
+};
+
+export function LibraryButton({ libraryUrl, label, variant = "secondary" }: LibraryButtonProps) {
   if (!libraryUrl) return null;
   const buttonLabel = label ?? EMAIL_LIBRARY_BUTTON_LABEL_DEFAULT;
   return (
@@ -26,15 +39,7 @@ export function LibraryButton({ libraryUrl, label }: LibraryButtonProps) {
       <Button
         href={libraryUrl}
         className="font-sans no-underline"
-        style={{
-          padding: "14px 30px",
-          fontSize: 15,
-          borderRadius: 50,
-          letterSpacing: "0.02em",
-          color: "#1C1935",
-          backgroundColor: "transparent",
-          border: "1.5px solid #1C1935",
-        }}
+        style={{ ...SHARED_BUTTON_STYLE, ...VARIANT_STYLES[variant] }}
       >
         {buttonLabel}
       </Button>

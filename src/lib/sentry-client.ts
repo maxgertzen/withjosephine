@@ -3,14 +3,11 @@
 import * as Sentry from "@sentry/browser";
 
 import { deriveEnvironmentFromHost } from "@/lib/constants";
+import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "@/lib/logging/redactSearchParams";
 
 let bootstrapped = false;
 let live = false;
 
-// Mirror of custom-worker.ts scrubSensitiveRequestData. The listen page carries
-// an HMAC-signed delivery token in the URL path; cookies and Authorization
-// headers can carry session-equivalent secrets. None should be replayable from
-// the issue tracker.
 function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
   const request = event.request;
   if (request?.headers && typeof request.headers === "object") {
@@ -18,7 +15,8 @@ function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
     delete (request.headers as Record<string, unknown>).authorization;
   }
   if (request?.url) {
-    request.url = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
   }
   return event;
 }

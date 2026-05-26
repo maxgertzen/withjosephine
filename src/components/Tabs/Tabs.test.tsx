@@ -3,7 +3,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TabPanel } from "./TabPanel";
-import { tabControlId, tabPanelId,Tabs } from "./Tabs";
+import { tabControlId, tabPanelId, Tabs } from "./Tabs";
 
 type Harness = {
   initial?: string;

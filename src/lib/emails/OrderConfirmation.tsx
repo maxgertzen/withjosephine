@@ -87,7 +87,7 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
           </Section>
         </div>
 
-        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} variant="primary" />
 
         <EmailFooter shell={shell} />
       </Container>

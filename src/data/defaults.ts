@@ -933,19 +933,6 @@ export const LISTEN_INTERSTITIAL_DEFAULTS: ListenInterstitialContent = {
   buttonLabel: "Continue to your reading",
 };
 
-export interface LibraryInterstitialContent {
-  welcomeHeading: string;
-  welcomeSubhead: string;
-  welcomeButtonLabel: string;
-}
-
-export const LIBRARY_INTERSTITIAL_DEFAULTS: LibraryInterstitialContent = {
-  welcomeHeading: "Welcome to your library.",
-  welcomeSubhead:
-    "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
-  welcomeButtonLabel: "Continue to your library",
-};
-
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   welcomeRibbon: "Welcome back. You’re signed in for the next seven days.",
   deliveredHeading: "Your {readingName} is ready",
