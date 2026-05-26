@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, release/v1.2.0, release/v1.2.1, release/v1.3.0]
+    branches: [main, release/v1.2.0, release/v1.2.1, release/v1.3.0, release/v1.4.0]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -69,7 +69,7 @@ jobs:
   # first. Per-env vars resolve from the GH `staging` environment because
   # of `environment: staging` below.
   deploy-staging:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0' || github.ref == 'refs/heads/release/v1.2.1' || github.ref == 'refs/heads/release/v1.3.0')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0' || github.ref == 'refs/heads/release/v1.2.1' || github.ref == 'refs/heads/release/v1.3.0' || github.ref == 'refs/heads/release/v1.4.0')
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test, security-audit, storybook]
     environment: staging
@@ -108,7 +108,7 @@ jobs:
   # Read-only — uses `SANITY_READ_TOKEN` (falls back to `SANITY_WRITE_TOKEN`
   # if read token isn't configured).
   sanity-validate-staging:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0' || github.ref == 'refs/heads/release/v1.2.1' || github.ref == 'refs/heads/release/v1.3.0')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.2.0' || github.ref == 'refs/heads/release/v1.2.1' || github.ref == 'refs/heads/release/v1.3.0' || github.ref == 'refs/heads/release/v1.4.0')
     runs-on: ubuntu-latest
     needs: [deploy-staging]
     environment: staging
