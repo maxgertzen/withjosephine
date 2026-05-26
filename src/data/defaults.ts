@@ -559,6 +559,34 @@ export const EMAIL_SHARED_SHELL_DEFAULTS: EmailSharedShellContent = {
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
+// Step-up OTP email. Short transactional code delivered when a purchaser
+// attempts a high-risk gift mutation (edit recipient, send now, claim for
+// yourself). Brand-light shell: header + body + footer, no GoldHero. The
+// 6-digit code is rendered as a slot in body so the modal's verify step
+// reads back what the user sees in their inbox.
+export interface SanityEmailStepUpOtp {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  intro: string;
+  codeLabel: string;
+  expiryLine: string;
+  closingLine: string;
+  signoff: string;
+}
+
+export const STEP_UP_OTP_EMAIL_DEFAULTS: SanityEmailStepUpOtp = {
+  subject: "Your verification code",
+  preview: "Your verification code",
+  heroLine: "Verify it's you",
+  intro:
+    "We will email you a code to confirm. This protects against a forwarded link being misused.",
+  codeLabel: "Your code",
+  expiryLine: "This code expires in 15 minutes.",
+  closingLine: "If you did not request this code, you can ignore this email.",
+  signoff: "Josephine",
+};
+
 export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;

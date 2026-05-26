@@ -10,6 +10,7 @@ import {
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
   EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+  STEP_UP_OTP_EMAIL_DEFAULTS,
 } from "@/data/defaults";
 
 export const PREVIEW_FIXTURE = {
@@ -28,6 +29,7 @@ export const PREVIEW_FIXTURE = {
   downloadUrl: "https://images.withjosephine.com/exports/preview.zip",
   submissionCount: 2,
   expiryDays: 7,
+  stepUpOtpCode: "428913",
 } as const;
 
 export const PREVIEW_DEFAULTS = {
@@ -42,4 +44,5 @@ export const PREVIEW_DEFAULTS = {
   emailMagicLinkMyGifts: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
   emailPrivacyExport: EMAIL_PRIVACY_EXPORT_DEFAULTS,
   emailRecipientIntakeReceived: EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+  emailStepUpOtp: STEP_UP_OTP_EMAIL_DEFAULTS,
 } as const;

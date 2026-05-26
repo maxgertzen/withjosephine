@@ -20,6 +20,7 @@ import {
   emailPrivacyExportQuery,
   emailRecipientIntakeReceivedQuery,
   emailSharedShellQuery,
+  emailStepUpOtpQuery,
   faqItemsQuery,
   giftClaimPageQuery,
   giftIntakePageQuery,
@@ -55,6 +56,7 @@ import type {
   SanityEmailPrivacyExport,
   SanityEmailRecipientIntakeReceived,
   SanityEmailSharedShell,
+  SanityEmailStepUpOtp,
   SanityFaqItem,
   SanityGiftClaimPage,
   SanityGiftIntakePage,
@@ -234,6 +236,13 @@ export const fetchEmailMagicLinkMyGifts = cache(
     return data;
   },
 );
+
+export const fetchEmailStepUpOtp = cache(async (): Promise<SanityEmailStepUpOtp | null> => {
+  const { data } = await sanityFetch<SanityEmailStepUpOtp | null>({
+    query: emailStepUpOtpQuery,
+  });
+  return data;
+});
 
 export const fetchEmailPrivacyExport = cache(
   async (): Promise<SanityEmailPrivacyExport | null> => {

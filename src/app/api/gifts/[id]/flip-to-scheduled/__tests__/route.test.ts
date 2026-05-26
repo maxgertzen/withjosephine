@@ -105,7 +105,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 404 when purchaser doesn't match session", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     expect(
       (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO })).status,
@@ -113,7 +113,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 409 if already scheduled", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SELF_SEND_GIFT,
       giftDeliveryMethod: "scheduled",
@@ -124,7 +124,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 409 if already claimed", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SELF_SEND_GIFT,
       giftClaimedAt: "2026-05-15T00:00:00.000Z",
@@ -135,7 +135,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 422 when recipient email is the purchaser's own email", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     const res = await callRoute({
       recipientEmail: "purchaser@example.com",
@@ -146,7 +146,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 422 when giftSendAt is in the past", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     const past = new Date(Date.now() - 1000).toISOString();
     const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: past });
@@ -155,7 +155,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 409 when concurrent caller already flipped (flip returns false)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     flipMock.mockResolvedValueOnce(false);
     const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
@@ -166,7 +166,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 502 when DO alarm scheduling fails (binding missing or unreachable)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     stubFetchMock.mockResolvedValueOnce(new Response("Server error", { status: 500 }));
     const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
@@ -176,7 +176,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 502 when GIFT_CLAIM_SCHEDULER binding is absent on env (production bug reproducer)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     getCloudflareContextMock.mockReset().mockResolvedValueOnce({ env: {} });
     const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
@@ -186,7 +186,7 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("happy path: flips, schedules DO alarm, sends scheduled-variant purchaser email, appends audit", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
 
     const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });

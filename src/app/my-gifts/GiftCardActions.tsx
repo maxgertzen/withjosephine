@@ -8,6 +8,7 @@ import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
 import { TimezoneFallbackPicker } from "@/components/Form/TimezoneFallbackPicker";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
+import { StepUpOtpModal } from "@/components/StepUpOtpModal";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
@@ -127,6 +128,14 @@ function EditRecipientControl({
     }
   }
 
+  async function onElevated() {
+    const result = await action.retry();
+    if (result && result.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }
+
   if (!open) {
     return (
       <Button variant="outlined" size="sm" onClick={() => setOpen(true)}>
@@ -235,6 +244,12 @@ function EditRecipientControl({
           {action.submitting ? copy.editRecipientSavingLabel : copy.editRecipientSaveButtonLabel}
         </Button>
       </div>
+      <StepUpOtpModal
+        open={action.elevationRequired !== null}
+        onClose={() => action.reset()}
+        onElevated={onElevated}
+        contactMailto={action.elevationRequired?.contactMailto}
+      />
     </form>
   );
 }

@@ -11,6 +11,7 @@ import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
 import { RecipientIntakeReceived } from "./RecipientIntakeReceived";
 import type { EmailTemplateKey } from "./slots";
+import { StepUpOtp } from "./StepUpOtp";
 
 /**
  * `@react-email/render` injects `<link rel="expect" href="#_R_" blocking="render">`
@@ -36,6 +37,7 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailMagicLinkMyGifts",
   "emailPrivacyExport",
   "emailRecipientIntakeReceived",
+  "emailStepUpOtp",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -173,6 +175,13 @@ async function renderRaw(
             readingName: PREVIEW_FIXTURE.readingName,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailRecipientIntakeReceived}
+        />,
+      );
+    case "emailStepUpOtp":
+      return render(
+        <StepUpOtp
+          code={PREVIEW_FIXTURE.stepUpOtpCode}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailStepUpOtp}
         />,
       );
     default: {

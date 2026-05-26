@@ -52,7 +52,7 @@ export async function loadLibraryData(args: {
 }
 
 async function resolveState(args: {
-  session: { userId: string; sessionId: string } | null;
+  session: { userId: string; sessionId: string; elevatedAt: number | null } | null;
   justSent: boolean;
 }): Promise<LibraryViewState> {
   if (args.session) {

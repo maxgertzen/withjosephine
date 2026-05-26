@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { InlineError } from "@/components/Form/InlineError";
+import { StepUpOtpModal } from "@/components/StepUpOtpModal";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
@@ -63,11 +64,34 @@ export function ConfirmArmedButton({
       if (onSuccess) onSuccess();
       else router.refresh();
     } else {
+      // Keep the button armed while the step-up modal is open so a
+      // successful elevation can replay the mutation without the user
+      // re-arming. Disarm on any other non-success.
+      const stillElevating =
+        result.status === 401 &&
+        typeof result.errorBody === "object" &&
+        result.errorBody !== null &&
+        (result.errorBody as { error?: unknown }).error === "elevation_required";
+      if (!stillElevating) setArmed(false);
+    }
+  }
+
+  async function onElevated() {
+    const result = await action.retry();
+    if (result && result.ok) {
+      if (onSuccess) onSuccess();
+      else router.refresh();
       setArmed(false);
     }
   }
 
+  function onModalClose() {
+    action.reset();
+    setArmed(false);
+  }
+
   const topError = actionErrorLabel(action.topError, copy, errorOverrides);
+  const elevationOpen = action.elevationRequired !== null;
 
   return (
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
@@ -86,6 +110,12 @@ export function ConfirmArmedButton({
         </Button>
       )}
       <InlineError message={topError} />
+      <StepUpOtpModal
+        open={elevationOpen}
+        onClose={onModalClose}
+        onElevated={onElevated}
+        contactMailto={action.elevationRequired?.contactMailto}
+      />
     </div>
   );
 }
