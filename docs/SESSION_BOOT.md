@@ -1,19 +1,25 @@
 # Session Boot — Active State
 
-## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` cut, Phase 1 of epic 23ctexvw is in review (PR #205)
+## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 of epic 23ctexvw; deployed to staging
 
-**`release/v1.4.0` cut from `release/v1.3.0@2ee6f20`** + `ci.yml` push branches + deploy-staging gates extended. `e2e-sandbox.yml` wires `STAGING_LISTEN_TOKEN_SECRET` for the new spec. Branch pushed; CI running.
+**`release/v1.4.0`** cut from `release/v1.3.0@2ee6f20`. PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. All 7 CI jobs green on `89768f4`: lint+typecheck, security-audit, storybook, test, **deploy-staging ✅**, sanity-validate-staging ✅. **Phase 1 is live on `staging.withjosephine.com`.**
 
-**Phase 1 (dex `rbl5u2st`) shipped to `feat/epic-23ctexvw-phase-1-one-tap`** in 9 commits, ~2000 LoC, +60 tests (1836 → 1896). HMAC-SHA-256 listen-token primitive + D1 single-use ledger (migration 0014) + POST-confirm interstitial + admin manual-resend bug fix (was passing raw R2 URL) + `Referrer-Policy: no-referrer` + Sentry `beforeSend` redaction. Red-team-driven design closed all 5 Pentester P1 blockers (POST-confirm, single-use jti, `recipientUserId` binding, Sentry redaction, Referrer-Policy). 3 simplify reviews + 1 security review surfaced 6 follow-ups, landed as one fix commit before PR open.
+**Phase 1 (dex `rbl5u2st`, closed via dex complete on merge):** HMAC-SHA-256 listen-token primitive + D1 single-use ledger (migration 0014) + POST-confirm interstitial + admin manual-resend bug fix (was passing raw R2 URL as listen URL) + `Referrer-Policy: no-referrer` on `/listen/*` + Sentry `beforeSend` redaction. Auto-probe pattern in `tests/e2e/specs/listen-one-tap-roundtrip.spec.ts` self-activates when the redeem route is deployed (no env-var flip required). Red-team passes closed all 5 Pentester P1 blockers; 3 simplify reviews + 1 security review surfaced 6 fix-ups, landed in one commit pre-PR. +60 tests (1836 → 1896).
 
-**Phase 1 PRD:** `MEMORY/WORK/20260526-060559_implement-epic-23ctexvw-phase-1/PRD.md`.
+**Phase 1 PRD:** `MEMORY/WORK/20260526-060559_implement-epic-23ctexvw-phase-1/PRD.md` (phase: complete, 91/93). Two ISC PENDING (real-browser smoke + dex flip) both completed post-merge.
 
-**PR #205 (draft):** https://github.com/maxgertzen/withjosephine/pull/205
+**🚨 Outstanding Max-actions for full Phase 1 verification:**
 
-**Max-actions blocking the un-gate of `PHASE1_ONE_TAP_DEPLOYED`:**
-- Set `STAGING_LISTEN_TOKEN_SECRET` GH secret (value must equal staging worker's `LISTEN_TOKEN_SECRET`).
-- After CI merges to `release/v1.4.0` and staging redeploys, flip `PHASE1_ONE_TAP_DEPLOYED=true` in the `e2e-sandbox` env so the 8-scenario roundtrip spec runs.
-- Real-browser QA smoke against `staging.withjosephine.com` before opening the release/v1.4.0 → main PR.
+1. **`STAGING_LISTEN_TOKEN_SECRET` GH secret NOT YET SET** (verified missing via `gh secret list --env staging` 2026-05-26). Without it, the 8 e2e roundtrip scenarios B/C/G/H fail because in-spec `mintListenToken` produces sigs staging rejects as `bad_signature`. Two options:
+   - **Use existing staging worker value:** retrieve from 1Password or wherever the value was saved at first provisioning, then `gh secret set STAGING_LISTEN_TOKEN_SECRET --env staging --body "<value>"`. No rotation, no side effects.
+   - **Rotate** (only on staging — production is fine): `NEW=$(openssl rand -hex 32) && echo "$NEW" | pnpm exec wrangler secret put LISTEN_TOKEN_SECRET --env staging && gh secret set STAGING_LISTEN_TOKEN_SECRET --env staging --body "$NEW"`. Side effect: any in-flight staging gift-claim cookies (shared secret) fail to verify, recipients re-claim cleanly.
+   - **Skip entirely** by waiting for dex `qz94q5g2` (test-mint endpoint refactor) which eliminates this coupling.
+
+2. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`, binding): force a day-7 send for a delivered staging submission via `curl -X POST -H "Authorization: Bearer $STAGING_CRON_SECRET" "https://staging.withjosephine.com/api/cron/email-day-7-deliver?force=<submissionId>"` → check inbox (or wrangler-tail) → tap email button → expect Welcome interstitial → tap Continue → expect `/listen/[id]?welcome=1` with audio + PDF visible. Verify Sentry breadcrumbs don't leak `?t=` by injecting a controlled error.
+
+3. **Phase 2 starts** when ready: dex `vwfcb5jr` (unified `/my-readings` library with gifts tab). Branch off `release/v1.4.0`, apply the canonical-helpers-Explore pattern (per `feedback_canonical_helpers_before_agent_dispatch`) before Wave 1 dispatch.
+
+4. **release/v1.4.0 → main PR** is later, after all 6 phases (or 5 if Phase 6 stays deferred) land on the release branch. Independently, `release/v1.3.0 → main` apex-unpark hold-gate is still open from before this epic started.
 
 **Phase 6 deferrals documented in PRD** (do not re-litigate in Phase 1 PR review): HKDF subkey, `kid` rotation, AEAD-encrypted payload, customer-education page (DMARC `p=reject` audit + sender-domain footer + how-to-verify-a-real-email page), revoke-all-links affordance, GET-side response-shape oracle (drop GET verify, render interstitial unconditionally), `formString` triplication across magic-link + redeem routes, audit-row copy-paste in `listenSession`.
 
