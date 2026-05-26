@@ -11,8 +11,10 @@
 // Without that, every mint produces a signature staging rejects as bad_signature
 // and Scenarios A-C/G/H silently fall through to the signIn surface.
 //
-// Gated on PHASE1_ONE_TAP_DEPLOYED until release/v1.4.0 redeploys staging with
-// the redeem route + token-aware page (memory feedback_e2e_against_deployed_code).
+// Self-activating: a one-shot beforeAll probes /api/listen/__probe__/redeem and
+// skips the suite when staging answers 404 (route not deployed yet). Replaces
+// the older env-var-gated pattern from listen-roundtrip.spec.ts so this spec
+// runs the moment release/v1.4.0 deploys, with no manual flip required.
 
 import { randomUUID } from "node:crypto";
 
@@ -42,13 +44,12 @@ import { stubTurnstile } from "../helpers/turnstileStub";
 
 test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
-const PHASE1_GATE_REASON =
-  "Un-gate after release/v1.4.0 deploys to staging with Phase 1 one-tap code (redeem route + token-aware page).";
+let redeemRouteAvailable = false;
 
 function skipIfNotDeployed(): void {
   test.skip(
-    process.env.PHASE1_ONE_TAP_DEPLOYED !== "true",
-    PHASE1_GATE_REASON,
+    !redeemRouteAvailable,
+    "Phase 1 redeem route not deployed on staging yet (auto-detected via probe).",
   );
 }
 
@@ -127,7 +128,23 @@ async function setupReadyToRedeem(
 }
 
 test.describe("Listen one-tap round-trip, staging", () => {
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ request }) => {
+    // Auto-detect deployment: POST against a synthetic id with no token body
+    // triggers the redeem handler's fall-through redirect (303) when the route
+    // exists, or a 404 from Next's router when it doesn't. Anything not-404
+    // means staging carries the Phase 1 code.
+    const probe = await request.post("/api/listen/__deploy_probe__/redeem", {
+      failOnStatusCode: false,
+      maxRedirects: 0,
+    });
+    redeemRouteAvailable = probe.status() !== 404;
+    if (!redeemRouteAvailable) {
+      console.log(
+        `[listen-one-tap] redeem route probe -> ${probe.status()}, skipping suite until release/v1.4.0 deploys`,
+      );
+      return;
+    }
+
     const { sanityDeleted } = await cleanupSandboxResidue({
       emailPrefix: "listen-one-tap+",
     });
