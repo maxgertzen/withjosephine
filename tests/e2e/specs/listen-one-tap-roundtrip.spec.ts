@@ -168,19 +168,8 @@ test.describe("Listen one-tap round-trip, staging", () => {
     const email = `listen-one-tap+a-${runId}@withjosephine.com`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
-    console.log(`[debug-A] submissionId=${submissionId} tokenLen=${token.length} tokenPrefix=${token.slice(0, 40)}`);
-
     const response = await page.goto(`/listen/${submissionId}?t=${token}`);
     expect(response?.status(), "GET interstitial should return 200").toBe(200);
-
-    const renderedTitle = await page.title();
-    const formCount = await page.locator("form").count();
-    const allFormActions = await page.locator("form").evaluateAll((forms) =>
-      forms.map((f) => (f as HTMLFormElement).action),
-    );
-    const bodyText = await page.locator("body").innerText().catch(() => "<body read failed>");
-    console.log(`[debug-A] title=${JSON.stringify(renderedTitle)} formCount=${formCount} actions=${JSON.stringify(allFormActions)}`);
-    console.log(`[debug-A] body excerpt: ${bodyText.slice(0, 400).replace(/\s+/g, " ")}`);
 
     // Interstitial submit form posts to redeem route with token in hidden input.
     const form = page.locator(
