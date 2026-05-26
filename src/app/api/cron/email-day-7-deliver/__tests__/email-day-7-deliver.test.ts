@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/booking/cron-auth", () => ({
   isCronRequestAuthorized: vi.fn(),
@@ -58,7 +58,7 @@ const PAID_SUBMISSION: SubmissionRecord = {
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
   amountPaidCents: null,
   amountPaidCurrency: null,
-  recipientUserId: null,
+  recipientUserId: "user_recipient_1",
   isGift: false,
   purchaserUserId: null,
   recipientEmail: null,
@@ -81,6 +81,7 @@ const DELIVERABLE = {
 };
 
 beforeEach(() => {
+  vi.stubEnv("LISTEN_TOKEN_SECRET", "test-listen-token-secret");
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
@@ -89,6 +90,12 @@ beforeEach(() => {
   mockAppend.mockReset().mockResolvedValue(undefined);
   mockFindById.mockReset().mockResolvedValue(null);
 });
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+const TOKEN_URL_PATTERN = /^https?:\/\/[^/]+\/listen\/[^?]+\?t=[A-Za-z0-9_.-]+$/;
 
 async function callRoute(url = "http://localhost/api/cron/email-day-7-deliver"): Promise<Response> {
   const { POST } = await import("../route");
@@ -130,7 +137,9 @@ describe("/api/cron/email-day-7-deliver", () => {
       pdfUrl: DELIVERABLE.pdfUrl,
     });
     const sendArgs = mockSend.mock.calls[0];
-    expect(sendArgs?.[1]).toBe("https://withjosephine.com/listen/sub_1");
+    const listenUrl = sendArgs?.[1] as string;
+    expect(listenUrl).toMatch(TOKEN_URL_PATTERN);
+    expect(listenUrl).toContain("/listen/sub_1?t=");
     expect(mockAppend).toHaveBeenCalledWith(
       "sub_1",
       expect.objectContaining({ type: "day7", resendId: "msg_d7" }),
@@ -233,8 +242,91 @@ describe("/api/cron/email-day-7-deliver", () => {
     const res = await callRoute();
     const body = await res.json();
     // Default path returns the original sweep summary shape (no submissionId
-    // field) — force-mode is the ONLY branch that adds that field.
+    // field). Force-mode is the ONLY branch that adds that field.
     expect(body).toEqual({ processed: 1, sent: 1, skipped: 0, awaitingAssets: 0 });
     expect(mockFindById).not.toHaveBeenCalled();
+  });
+
+  describe("listen-token wiring (Phase 1 one-tap)", () => {
+    it("mints a token-bearing URL in cron path with mintSource=cron_day7", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+      mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+      await callRoute();
+      const listenUrl = mockSend.mock.calls[0]?.[1] as string;
+      expect(listenUrl).toMatch(TOKEN_URL_PATTERN);
+      const token = new URL(listenUrl).searchParams.get("t") ?? "";
+      const { verifyListenToken } = await import("@/lib/auth/listenToken");
+      const verified = await verifyListenToken({
+        token,
+        currentRecipientUserId: "user_recipient_1",
+      });
+      expect(verified.valid).toBe(true);
+      if (verified.valid) {
+        expect(verified.mintSource).toBe("cron_day7");
+        expect(verified.submissionId).toBe("sub_1");
+      }
+    });
+
+    it("mints a token-bearing URL in force path with mintSource=cron_day7", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockFindById.mockResolvedValueOnce({
+        ...PAID_SUBMISSION,
+        _id: "sub_force",
+        recipientUserId: "user_recipient_force",
+      });
+      mockFetchDeliverable.mockResolvedValueOnce([{ ...DELIVERABLE, _id: "sub_force" }]);
+      await callRoute("http://localhost/api/cron/email-day-7-deliver?force=sub_force");
+      const listenUrl = mockSend.mock.calls[0]?.[1] as string;
+      expect(listenUrl).toMatch(TOKEN_URL_PATTERN);
+      expect(listenUrl).toContain("/listen/sub_force?t=");
+      const token = new URL(listenUrl).searchParams.get("t") ?? "";
+      const { verifyListenToken } = await import("@/lib/auth/listenToken");
+      const verified = await verifyListenToken({
+        token,
+        currentRecipientUserId: "user_recipient_force",
+      });
+      expect(verified.valid).toBe(true);
+      if (verified.valid) {
+        expect(verified.mintSource).toBe("cron_day7");
+      }
+    });
+
+    it("returns 500 pre-flight when LISTEN_TOKEN_SECRET is missing", async () => {
+      vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+      mockAuth.mockReturnValueOnce(true);
+      const res = await callRoute();
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body).toEqual({ error: "LISTEN_TOKEN_SECRET missing" });
+      // Pre-flight runs before any work: candidate query never happens.
+      expect(mockList).not.toHaveBeenCalled();
+      expect(mockFindById).not.toHaveBeenCalled();
+    });
+
+    it("returns 500 pre-flight in force mode when LISTEN_TOKEN_SECRET is missing", async () => {
+      vi.stubEnv("LISTEN_TOKEN_SECRET", "");
+      mockAuth.mockReturnValueOnce(true);
+      const res = await callRoute("http://localhost/api/cron/email-day-7-deliver?force=sub_x");
+      expect(res.status).toBe(500);
+      expect(mockFindById).not.toHaveBeenCalled();
+    });
+
+    it("skips submissions with null recipientUserId without crashing the sweep", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      const orphan: SubmissionRecord = { ...PAID_SUBMISSION, _id: "sub_orphan", recipientUserId: null };
+      mockList.mockResolvedValueOnce([orphan, PAID_SUBMISSION]);
+      mockFetchDeliverable.mockResolvedValueOnce([
+        { ...DELIVERABLE, _id: "sub_orphan" },
+        DELIVERABLE,
+      ]);
+      const res = await callRoute();
+      const body = await res.json();
+      expect(body).toEqual({ processed: 2, sent: 1, skipped: 1, awaitingAssets: 0 });
+      // The orphan submission must never be sent: only one send call landed.
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      const listenUrl = mockSend.mock.calls[0]?.[1] as string;
+      expect(listenUrl).toContain("/listen/sub_1?t=");
+    });
   });
 });

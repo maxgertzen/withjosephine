@@ -1,3 +1,6 @@
+import { mintListenToken } from "@/lib/auth/listenToken";
+import { siteOrigin } from "@/lib/env";
+
 import { redactEmail, sendDay7Delivery, sendOrderConfirmation } from "../resend";
 import {
   appendEmailFired,
@@ -18,8 +21,7 @@ export type ResendRefusalReason =
   | "not_found"
   | "not_paid"
   | "rate_limited"
-  | "send_failed"
-  | "missing_listen_url";
+  | "send_failed";
 
 export type ResendOutcome =
   | { ok: true; emailType: ResendableEmailType; targetEmailRedacted: string }
@@ -27,6 +29,11 @@ export type ResendOutcome =
 
 const RESEND_WINDOW_MS = 24 * 60 * 60 * 1000;
 const RESEND_MAX_PER_WINDOW = 3;
+
+// Reading-retention window: Phase 1 caps admin-resend listen tokens so they
+// never outlive the underlying reading assets (Engineer #5 mitigation).
+const READING_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+const DEFAULT_LISTEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function countRecentResends(
   submission: SubmissionRecord,
@@ -55,9 +62,6 @@ export async function resendCustomerEmail(
   }
 
   const sendResult = await dispatchResend(submission, emailType);
-  if (sendResult.kind === "missing_listen_url") {
-    return { ok: false, reason: "missing_listen_url" };
-  }
   if (sendResult.kind !== "sent" && sendResult.kind !== "dry_run") {
     return { ok: false, reason: "send_failed" };
   }
@@ -79,8 +83,7 @@ type DispatchOutcome =
   | { kind: "sent"; resendId: string }
   | { kind: "dry_run" }
   | { kind: "skipped"; reason: string }
-  | { kind: "failed"; error: string }
-  | { kind: "missing_listen_url" };
+  | { kind: "failed"; error: string };
 
 async function dispatchResend(
   submission: SubmissionRecord,
@@ -91,8 +94,30 @@ async function dispatchResend(
     case "order_confirmation":
       return sendOrderConfirmation(context);
     case "day7": {
-      const listenUrl = submission.voiceNoteUrl ?? submission.pdfUrl ?? "";
-      if (!listenUrl) return { kind: "missing_listen_url" };
+      if (!submission.recipientUserId) {
+        return { kind: "failed", error: "missing recipientUserId" };
+      }
+      const deliveredAtMs = submission.deliveredAt
+        ? Date.parse(submission.deliveredAt)
+        : null;
+      const msUntilReadingExpires =
+        deliveredAtMs !== null
+          ? deliveredAtMs + READING_RETENTION_MS - Date.now()
+          : DEFAULT_LISTEN_TTL_MS;
+      const cappedTtl = Math.max(
+        0,
+        Math.min(DEFAULT_LISTEN_TTL_MS, msUntilReadingExpires),
+      );
+      if (cappedTtl === 0) {
+        return { kind: "failed", error: "reading already expired" };
+      }
+      const token = await mintListenToken({
+        submissionId: submission._id,
+        recipientUserId: submission.recipientUserId,
+        mintSource: "admin_resend",
+        ttlMs: cappedTtl,
+      });
+      const listenUrl = `${siteOrigin()}/listen/${submission._id}?t=${token}`;
       return sendDay7Delivery(context, listenUrl);
     }
   }
