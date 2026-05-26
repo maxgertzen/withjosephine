@@ -24,6 +24,7 @@ import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfir
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
+import { emailStepUpOtp } from "./emailStepUpOtp";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -59,6 +60,7 @@ export const schemaTypes = [
   emailGiftClaimReminder,
   emailRecipientIntakeReceived,
   emailPrivacyExport,
+  emailStepUpOtp,
   emailSharedShell,
   giftClaimPage,
   giftIntakePage,

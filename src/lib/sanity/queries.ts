@@ -318,6 +318,19 @@ export const emailMagicLinkMyGiftsQuery = groq`
   }
 `;
 
+export const emailStepUpOtpQuery = groq`
+  *[_type == "emailStepUpOtp"][0] {
+    subject,
+    preview,
+    heroLine,
+    intro,
+    codeLabel,
+    expiryLine,
+    closingLine,
+    signoff
+  }
+`;
+
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,

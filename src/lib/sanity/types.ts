@@ -213,6 +213,17 @@ export type SanityEmailMagicLink = {
 export type SanityEmailMagicLinkMyReadings = SanityEmailMagicLink;
 export type SanityEmailMagicLinkMyGifts = SanityEmailMagicLink;
 
+export type SanityEmailStepUpOtp = {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  intro: string;
+  codeLabel: string;
+  expiryLine: string;
+  closingLine: string;
+  signoff: string;
+};
+
 export type SanityEmailOrderConfirmation = {
   subject: string;
   preview: string;

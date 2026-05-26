@@ -100,6 +100,7 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailOrderConfirmation",
         "emailPrivacyExport",
         "emailRecipientIntakeReceived",
+        "emailStepUpOtp",
       ].sort(),
     );
   });

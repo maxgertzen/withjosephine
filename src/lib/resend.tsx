@@ -18,6 +18,7 @@ import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
+import { StepUpOtp } from "./emails/StepUpOtp";
 import { isFlagEnabled, siteOrigin } from "./env";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -663,4 +664,107 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     submissionId: submission.id,
     originatorEmail: submission.email,
   });
+}
+
+// Step-up OTP send. Called from the step-up request endpoint with the raw
+// 6-digit code (never persisted: only the HMAC hash is written to D1). The
+// endpoint passes the X-E2E-Resend-DryRun header value explicitly because
+// the next/headers indirection used by other senders does not survive the
+// DO alarm / cron paths that may later issue OTPs out-of-band.
+export type SendStepUpOtpEmailInput = {
+  code: string;
+  toEmail: string;
+  ipHash: string | null;
+  dryRunHeader: string | null;
+};
+
+export type SendStepUpOtpEmailResult =
+  | { kind: "sent"; resendId: string }
+  | { kind: "skipped" }
+  | { kind: "failed"; error: string };
+
+export async function sendStepUpOtpEmail(
+  input: SendStepUpOtpEmailInput,
+): Promise<SendStepUpOtpEmailResult> {
+  // Sandbox-prefix guard: e2e fixture inboxes never receive real OTPs. The
+  // test harness reads the code from the captured-email sidecar or the
+  // request-context dry-run response instead.
+  if (isSandboxEmail(input.toEmail)) {
+    console.warn(
+      `[resend] step_up_otp skipped (sandbox_prefix, to=${redactEmail(input.toEmail)})`,
+    );
+    return { kind: "skipped" };
+  }
+
+  // Explicit dry-run match (caller passes the header value). Fail-closed
+  // when the secret is unset so a runner-only env never bills real Resend.
+  if (input.dryRunHeader) {
+    const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
+    if (!secret) {
+      console.error(
+        "[resend] step_up_otp DRY_RUN_SECRET_UNSET: request carries dryRunHeader but worker has no RESEND_E2E_DRY_RUN_SECRET configured; skipping the Resend send (fail-closed).",
+      );
+      return { kind: "skipped" };
+    }
+    if (input.dryRunHeader === secret) {
+      console.warn(
+        `[resend] step_up_otp skipped (dry_run_header, to=${redactEmail(input.toEmail)})`,
+      );
+      return { kind: "skipped" };
+    }
+  }
+
+  // Honor the existing zone-wide RESEND_DRY_RUN flag (matches sendOrSkip).
+  if (isFlagEnabled("RESEND_DRY_RUN")) {
+    console.warn(
+      `[resend] step_up_otp skipped (flag, to=${redactEmail(input.toEmail)})`,
+    );
+    return { kind: "skipped" };
+  }
+
+  const [{ STEP_UP_OTP_EMAIL_DEFAULTS }, { fetchEmailStepUpOtp }] = await Promise.all([
+    import("@/data/defaults"),
+    import("@/lib/sanity/fetch"),
+  ]);
+  const [sanity, shell] = await Promise.all([
+    fetchEmailStepUpOtp().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...STEP_UP_OTP_EMAIL_DEFAULTS, ...(sanity ?? {}) };
+
+  const html = await render(<StepUpOtp code={input.code} copy={copy} shell={shell} />);
+
+  const client = getResendClient();
+  if (!client) {
+    console.warn("[resend] RESEND_API_KEY not set, skipping step_up_otp");
+    return { kind: "skipped" };
+  }
+
+  let resendId: string | null;
+  try {
+    const response = await client.emails.send({
+      from: FROM_ADDRESS,
+      to: input.toEmail,
+      subject: copy.subject,
+      html,
+    });
+    resendId = response.data?.id ?? null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[resend] step_up_otp send failed: ${message}`);
+    return { kind: "failed", error: message };
+  }
+
+  void serverTrack("email_sent", {
+    distinct_id: input.ipHash ?? generateAnonymousDistinctId(),
+    sub_type: "step_up_otp",
+    submission_id: null,
+    recipient_redacted: redactEmail(input.toEmail),
+    resend_id_present: resendId !== null,
+  });
+
+  if (resendId === null) {
+    return { kind: "failed", error: "Resend returned no id" };
+  }
+  return { kind: "sent", resendId };
 }
