@@ -1,6 +1,23 @@
 # Session Boot — Active State
 
-## 🆕 ACTIVE 2026-05-26 — Architectural epic `23ctexvw`: one-tap delivery + unified library + step-up auth
+## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` cut, Phase 1 of epic 23ctexvw is in review (PR #205)
+
+**`release/v1.4.0` cut from `release/v1.3.0@2ee6f20`** + `ci.yml` push branches + deploy-staging gates extended. `e2e-sandbox.yml` wires `STAGING_LISTEN_TOKEN_SECRET` for the new spec. Branch pushed; CI running.
+
+**Phase 1 (dex `rbl5u2st`) shipped to `feat/epic-23ctexvw-phase-1-one-tap`** in 9 commits, ~2000 LoC, +60 tests (1836 → 1896). HMAC-SHA-256 listen-token primitive + D1 single-use ledger (migration 0014) + POST-confirm interstitial + admin manual-resend bug fix (was passing raw R2 URL) + `Referrer-Policy: no-referrer` + Sentry `beforeSend` redaction. Red-team-driven design closed all 5 Pentester P1 blockers (POST-confirm, single-use jti, `recipientUserId` binding, Sentry redaction, Referrer-Policy). 3 simplify reviews + 1 security review surfaced 6 follow-ups, landed as one fix commit before PR open.
+
+**Phase 1 PRD:** `MEMORY/WORK/20260526-060559_implement-epic-23ctexvw-phase-1/PRD.md`.
+
+**PR #205 (draft):** https://github.com/maxgertzen/withjosephine/pull/205
+
+**Max-actions blocking the un-gate of `PHASE1_ONE_TAP_DEPLOYED`:**
+- Set `STAGING_LISTEN_TOKEN_SECRET` GH secret (value must equal staging worker's `LISTEN_TOKEN_SECRET`).
+- After CI merges to `release/v1.4.0` and staging redeploys, flip `PHASE1_ONE_TAP_DEPLOYED=true` in the `e2e-sandbox` env so the 8-scenario roundtrip spec runs.
+- Real-browser QA smoke against `staging.withjosephine.com` before opening the release/v1.4.0 → main PR.
+
+**Phase 6 deferrals documented in PRD** (do not re-litigate in Phase 1 PR review): HKDF subkey, `kid` rotation, AEAD-encrypted payload, customer-education page (DMARC `p=reject` audit + sender-domain footer + how-to-verify-a-real-email page), revoke-all-links affordance, GET-side response-shape oracle (drop GET verify, render interstitial unconditionally), `formString` triplication across magic-link + redeem routes, audit-row copy-paste in `listenSession`.
+
+## ✅ STILL ACTIVE — Architectural epic `23ctexvw`: phases 2-6 remaining
 
 MAX-APPROVED 2026-05-26 implementation arc, supersedes the day-7 copy fix from the audit epic. **Before touching any email / auth / listen-page / /my-readings / /my-gifts / gift-cancellation code, read `dex show 23ctexvw` and the relevant phase child.** Source artifacts at `www/MEMORY/WORK/20260525-230307_copy-audit-emails-and-pages/`: AUDIT.md (30-surface audit), RESEARCH.md (Bucket A vs Bucket B industry pattern), COUNCIL-1-chain-length.md (UX 4-persona), COUNCIL-2-library-auth.md (with Devi code-verification). Durable memory: `project_one_tap_architecture.md`.
 
