@@ -1,7 +1,6 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
-import { usePathname, useRouter } from "next/navigation";
 
 import { GiftCardActions, type GiftCardData, type ResendVerdictSummary } from "@/app/my-gifts/GiftCardActions";
 import { AuthGatedPage } from "@/components/AuthGatedPage/AuthGatedPage";
@@ -11,8 +10,6 @@ import { Footer } from "@/components/Footer";
 import { GiftStatusPill } from "@/components/GiftStatusPill";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
-import { TabPanel } from "@/components/Tabs/TabPanel";
-import { Tabs } from "@/components/Tabs/Tabs";
 import type { MyGiftsPageContent, MyReadingsPageContent } from "@/data/defaults";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
@@ -24,8 +21,6 @@ import type { SubmissionRecord } from "@/lib/page-previews/types";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
-
-export type LibraryTabId = "readings" | "gifts";
 
 export type LibraryViewState =
   | {
@@ -40,21 +35,12 @@ export type LibraryViewProps = {
   state: LibraryViewState;
   readingsCopy: MyReadingsPageContent;
   giftsCopy: MyGiftsPageContent;
-  defaultTab: LibraryTabId;
 };
-
-const READINGS_PATH = "/my-readings";
-const GIFTS_PATH = "/my-readings/gifts";
-
-function pathForTab(tab: LibraryTabId): string {
-  return tab === "gifts" ? GIFTS_PATH : READINGS_PATH;
-}
 
 export function LibraryView({
   state,
   readingsCopy,
   giftsCopy,
-  defaultTab,
 }: LibraryViewProps) {
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
@@ -70,14 +56,13 @@ export function LibraryView({
             gifts={state.gifts}
             readingsCopy={readingsCopy}
             giftsCopy={giftsCopy}
-            defaultTab={defaultTab}
           />
         ) : (
           <AuthGatedPage
             state={state.kind}
             copy={readingsCopy}
-            magicLinkNext={pathForTab(defaultTab)}
-            resendHref={pathForTab(defaultTab)}
+            magicLinkNext="/my-readings"
+            resendHref="/my-readings"
           />
         )}
         <Footer />
@@ -91,26 +76,12 @@ function LibraryListView({
   gifts,
   readingsCopy,
   giftsCopy,
-  defaultTab,
 }: {
   readings: SubmissionRecord[];
   gifts: SubmissionRecord[];
   readingsCopy: MyReadingsPageContent;
   giftsCopy: MyGiftsPageContent;
-  defaultTab: LibraryTabId;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const activeTab: LibraryTabId = pathname === GIFTS_PATH ? "gifts" : defaultTab;
-
-  function handleChange(nextId: string) {
-    if (nextId !== "readings" && nextId !== "gifts") return;
-    const nextPath = pathForTab(nextId);
-    if (nextPath !== pathname) {
-      router.push(nextPath, { scroll: false });
-    }
-  }
-
   return (
     <>
       <header className="text-center">
@@ -122,38 +93,40 @@ function LibraryListView({
         </p>
       </header>
       <GoldDivider className="max-w-xs mx-auto my-12" />
-      <Tabs
-        tabs={[
-          {
-            id: "readings",
-            label: readingsCopy.readingsTabLabel,
-            count: readings.length,
-          },
-          {
-            id: "gifts",
-            label: readingsCopy.giftsTabLabel,
-            count: gifts.length,
-          },
-        ]}
-        activeTabId={activeTab}
-        onChange={handleChange}
-        label={readingsCopy.listHeading}
-        className="mb-10"
-      />
-      <TabPanel tabId="readings" isActive={activeTab === "readings"}>
-        {readings.length === 0 ? (
-          <ReadingsEmptyState copy={readingsCopy} />
-        ) : (
-          <ReadingsCards readings={readings} copy={readingsCopy} />
-        )}
-      </TabPanel>
-      <TabPanel tabId="gifts" isActive={activeTab === "gifts"}>
-        {gifts.length === 0 ? (
-          <GiftsEmptyState copy={giftsCopy} />
-        ) : (
-          <GiftsCards gifts={gifts} copy={giftsCopy} />
-        )}
-      </TabPanel>
+
+      <section aria-labelledby="library-mine-heading">
+        <h2
+          id="library-mine-heading"
+          className="font-display italic text-2xl text-j-text-heading"
+        >
+          {readingsCopy.readingsTabLabel}
+        </h2>
+        <div className="mt-8">
+          {readings.length === 0 ? (
+            <ReadingsEmptyState copy={readingsCopy} />
+          ) : (
+            <ReadingsCards readings={readings} copy={readingsCopy} />
+          )}
+        </div>
+      </section>
+
+      <GoldDivider className="max-w-xs mx-auto my-16" />
+
+      <section aria-labelledby="library-for-others-heading">
+        <h2
+          id="library-for-others-heading"
+          className="font-display italic text-2xl text-j-text-heading"
+        >
+          {readingsCopy.giftsTabLabel}
+        </h2>
+        <div className="mt-8">
+          {gifts.length === 0 ? (
+            <GiftsEmptyState copy={giftsCopy} />
+          ) : (
+            <GiftsCards gifts={gifts} copy={giftsCopy} />
+          )}
+        </div>
+      </section>
     </>
   );
 }
@@ -178,9 +151,9 @@ function ReadingsCards({
             className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <div>
-              <h2 className="font-display italic text-xl text-j-text-heading">
+              <h3 className="font-display italic text-xl text-j-text-heading">
                 {reading.reading?.name ?? "Your reading"}
-              </h2>
+              </h3>
               <p className="font-body text-sm text-j-text-muted mt-1">
                 {expired
                   ? copy.expiredRowLabel
@@ -282,10 +255,10 @@ function GiftCard({
     <li className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h2 className="font-display italic text-xl text-j-text-heading">
+          <h3 className="font-display italic text-xl text-j-text-heading">
             {gift.reading?.name ?? "A reading"}
             <span className="font-display italic text-j-text-muted"> · for {recipientName}</span>
-          </h2>
+          </h3>
           {showsEmailUnderName ? (
             <p className="font-body text-xs text-j-text-muted mt-0.5">{recipientEmail}</p>
           ) : null}
@@ -300,7 +273,7 @@ function GiftCard({
 function GiftsEmptyState({ copy }: { copy: MyGiftsPageContent }) {
   return (
     <div className="text-center">
-      <h2 className="font-display italic text-2xl text-j-text-heading">{copy.emptyHeading}</h2>
+      <h3 className="font-display italic text-2xl text-j-text-heading">{copy.emptyHeading}</h3>
       <p className="font-body text-base text-j-text mt-4 max-w-md mx-auto leading-[1.6]">
         {copy.emptyBody}
       </p>

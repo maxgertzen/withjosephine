@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { LibraryView } from "./_shared/LibraryView";
-import { loadLibraryData, pickDefaultTab } from "./_shared/loadLibraryData";
+import { loadLibraryData } from "./_shared/loadLibraryData";
 
 export const metadata: Metadata = {
   title: "Your readings, Josephine",
@@ -16,13 +16,11 @@ export default async function MyReadingsPage({
 }) {
   const params = await searchParams;
   const data = await loadLibraryData({ justSent: params.sent === "1" });
-  const defaultTab = pickDefaultTab(data.state);
   return (
     <LibraryView
       state={data.state}
       readingsCopy={data.readingsCopy}
       giftsCopy={data.giftsCopy}
-      defaultTab={defaultTab}
     />
   );
 }
