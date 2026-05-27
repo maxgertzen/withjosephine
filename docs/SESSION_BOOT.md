@@ -12,7 +12,9 @@ These close the outstanding "real-browser smoke against staging" Max-actions for
 
 **✅ SHIPPED 2026-05-27 — dex `0bjxc38w` (PR #208, squash `0132fa7`):** `/my-readings` redesigned as a single scrollable page with stacked "Mine" + "For others" sections; tab strip + `/my-readings/gifts` route + `Tabs`/`TabPanel` deleted. Both section headings always render → closed the gift-only unreachable-tab bug `7v1vx0wm` at the root (both `0bjxc38w` + `7v1vx0wm` dex-completed). Verified: 2046/2046 vitest + build + real-Chromium smoke at 375px (4 scenarios, zero errors). Follow-ups filed: dex `5fqrgvia` (stale `MyReadingsView` Studio-preview twin) + `laj8x38r` (reconcile `defaults.ts` with Becky's prod Sanity edits). **Max-action:** Studio re-deploy so Becky sees the renamed section-heading fields (`readingsTabLabel`/`giftsTabLabel` values now "Mine"/"For others", keys unchanged).
 
-**▶ Top open smoke finding remains `pknswojr`** (audio first-load OOM/429 storm, HIGH) on the core listen-delivery surface. Other ready items: dex `5fqrgvia`, `laj8x38r`, Phase 4 `zgd1sjpu` (replace destructive cancel-scheduled).
+**✅ RESOLVED 2026-05-27 — `pknswojr` (PR #209, squash `8357c32`):** audio first-load OOM/429 storm fixed with a one-attribute change `preload="metadata"` → `preload="none"` on the `/listen` voice-note element. The `metadata` value probed the media on page load (server component, not React) → no-Range full-file 200 streams → ~20 concurrent × 4.27MB hit the 128MB workerd cap → stall/retry cascade tripped `LISTEN_ASSET_LIMITER` → 429. `preload="none"` fires zero load-time requests; play issues sequential Range requests. Proxy/route/rate-limit untouched. Verified in real Chromium. dex `pknswojr` closed.
+
+**▶ Ready items:** dex `5fqrgvia` (stale `MyReadingsView` Studio-preview twin), `laj8x38r` (reconcile `defaults.ts` with Becky's prod Sanity edits), Phase 4 `zgd1sjpu` (replace destructive cancel-scheduled with claim-for-yourself).
 
 **Smoke residue to clean on staging:** forced day-7 on submission `4b3b2bdb`; gift `b82267d4` recipient was edited during J-C.
 
