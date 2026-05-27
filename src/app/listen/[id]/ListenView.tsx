@@ -101,7 +101,7 @@ function DeliveredSurface({
           <h2 className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted mb-3">
             {copy.voiceNoteLabel}
           </h2>
-          <audio controls preload="metadata" className="w-full" src={state.voiceNoteAudioPath}>
+          <audio controls preload="none" className="w-full" src={state.voiceNoteAudioPath}>
             Your browser does not support the audio element.
           </audio>
         </section>
