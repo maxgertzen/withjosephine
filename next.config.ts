@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/my-gifts",
-        destination: "/my-readings/gifts",
+        destination: "/my-readings",
         permanent: true,
       },
     ];

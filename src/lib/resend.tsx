@@ -357,7 +357,7 @@ export async function sendGiftPurchaseConfirmation(
     fetchEmailGiftPurchaseConfirmationScheduled,
     fetchEmailGiftPurchaseConfirmationSelfSend,
   } = await import("@/lib/sanity/fetch");
-  const myGiftsUrl = input.libraryUrl ?? `${siteOrigin()}/my-readings/gifts`;
+  const myGiftsUrl = input.libraryUrl ?? `${siteOrigin()}/my-readings`;
 
   let html: string;
   let interpolatedSubject: string;

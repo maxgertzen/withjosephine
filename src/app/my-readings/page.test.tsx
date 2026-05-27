@@ -87,7 +87,6 @@ describe("/my-readings page (unified library)", () => {
     cookiesGet.mockReturnValue(undefined);
     const props = await getPageProps();
     expect(props.state.kind).toBe("signIn");
-    expect(props.defaultTab).toBe("readings");
   });
 
   it("passes checkEmail state when ?sent=1 and no session", async () => {
@@ -96,36 +95,26 @@ describe("/my-readings page (unified library)", () => {
     expect(props.state.kind).toBe("checkEmail");
   });
 
-  it("default-tab readings when authenticated session has readings, regardless of gifts", async () => {
+  it("passes both readings and gifts in list state when authenticated", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([makeReading("r1")]);
     listGiftsMock.mockResolvedValue([makeReading("g1")]);
     const props = await getPageProps();
     expect(props.state.kind).toBe("list");
-    expect(props.defaultTab).toBe("readings");
     if (props.state.kind === "list") {
       expect(props.state.readings).toHaveLength(1);
       expect(props.state.gifts).toHaveLength(1);
     }
   });
 
-  it("default-tab gifts when readings empty but gifts present", async () => {
-    cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
-    listReadingsMock.mockResolvedValue([]);
-    listGiftsMock.mockResolvedValue([makeReading("g1")]);
-    const props = await getPageProps();
-    expect(props.defaultTab).toBe("gifts");
-  });
-
-  it("default-tab readings when both readings and gifts are empty (warm consumption-first)", async () => {
+  it("passes empty lists in list state when authenticated user has no items", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     listReadingsMock.mockResolvedValue([]);
     listGiftsMock.mockResolvedValue([]);
     const props = await getPageProps();
-    expect(props.defaultTab).toBe("readings");
+    expect(props.state.kind).toBe("list");
     if (props.state.kind === "list") {
       expect(props.state.readings).toHaveLength(0);
       expect(props.state.gifts).toHaveLength(0);

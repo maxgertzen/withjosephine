@@ -265,8 +265,8 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   expiredRowLabel: "Rested past 90 days",
   expiredMailtoLabel: "Email for a fresh link",
   expiredMailtoSubject: "I need a fresh link to my reading",
-  readingsTabLabel: "Readings",
-  giftsTabLabel: "Gifts",
+  readingsTabLabel: "Mine",
+  giftsTabLabel: "For others",
   welcomeHeading: "Welcome to your library.",
   welcomeSubhead:
     "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",

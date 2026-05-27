@@ -107,19 +107,19 @@ export const myReadingsPage = defineType({
     }),
     defineField({
       name: "readingsTabLabel",
-      title: "Tabs (readings tab label)",
+      title: "Section heading (your own readings)",
       type: "string",
       description:
-        "Label for the readings tab in the unified library. Counts appear next to this label.",
-      initialValue: "Readings",
+        "Heading for the section listing the reader's own readings in the unified library.",
+      initialValue: "Mine",
     }),
     defineField({
       name: "giftsTabLabel",
-      title: "Tabs (gifts tab label)",
+      title: "Section heading (gifts you've sent)",
       type: "string",
       description:
-        "Label for the gifts tab in the unified library. Counts appear next to this label.",
-      initialValue: "Gifts",
+        "Heading for the section listing readings the reader has gifted to others.",
+      initialValue: "For others",
     }),
     defineField({
       name: "welcomeHeading",

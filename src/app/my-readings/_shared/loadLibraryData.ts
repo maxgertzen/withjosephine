@@ -23,10 +23,9 @@ export type LibraryPageData = {
 };
 
 /**
- * Single data-loader shared by `/my-readings/page.tsx` (defaultTab=readings)
- * and `/my-readings/gifts/page.tsx` (defaultTab=gifts). Parallel-fetches the
- * cookie session, both Sanity singletons, AND (when authenticated) both
- * submission queries so the unified page can render both tab panels.
+ * Data-loader for `/my-readings`. Parallel-fetches the cookie session, both
+ * Sanity singletons, AND (when authenticated) both submission queries so the
+ * page can render the stacked "Mine" + "For others" sections in one pass.
  */
 export async function loadLibraryData(args: {
   justSent: boolean;
@@ -68,10 +67,4 @@ async function resolveState(args: {
   }
   if (args.justSent) return { kind: "checkEmail" };
   return { kind: "signIn" };
-}
-
-export function pickDefaultTab(state: LibraryViewState): "readings" | "gifts" {
-  if (state.kind !== "list") return "readings";
-  if (state.readings.length === 0 && state.gifts.length > 0) return "gifts";
-  return "readings";
 }
