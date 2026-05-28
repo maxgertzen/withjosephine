@@ -1,5 +1,14 @@
 # Session Boot — Active State
 
+## ✅ 2026-05-28 — RESOLVED `lc9w5xd1` (intake picker "stacking" bug) — actually a data-corruption bug
+
+Three PRs to reach the real fix; the picker was never losing the z-order battle.
+
+- **PR #213 (squash `906894c`, the actual fix)** — Staging Sanity stored `blush`, `ivory`, `rose` as recursively-nested color objects 4 layers deep (`{hex: {hex: {hex: {hex: "#…"}}}}`), most likely from a re-save loop in the Studio colorInput plugin. Build-time `${color.hex}` template literal stringified the top object as `"[object Object]"`, landed `--j-blush: [object Object]` in tokens CSS, made `bg-j-ivory` resolve to invalid color, **popover background went transparent**, and form FloatingLabels + the unknownToggle checkbox showed through the picker exactly like a z-index inversion. Fix: `extractHex` helper that walks `.hex` until it finds a `#…` string. Applied to semantic-color loop, RGB-channel writers, and email-tokens emitter. Regression test asserts a 4-deep shape resolves cleanly. Verified end-to-end: deployed CSS has 0 `[object Object]` (was 3); Max confirmed staging is clean.
+- **PRs #210 / #211 / #212** — all attacked the wrong layer (z-index, then hand-rolled createPortal, then Radix Popover). Code from #212 stays (Radix migration is a genuine quality improvement — proper a11y, ESC, focus, no hand-rolled stacking logic — even if it wasn't the bug fix). The wrapper-z-30 and the manual portal hook from #210/#211 are gone.
+- **Follow-up:** dex `axfyutyx` (clean the Sanity content — re-set blush/ivory/rose in Studio so the document shape is flat). Defensive code makes the build safe regardless; the data is still misshapen.
+- **New durable memory:** `feedback_check_data_when_ui_fix_keeps_failing` — when a UI bug recurs through 2+ fix attempts at the same layer (component, z-index, portal), the cause is somewhere else (data, generated CSS, build pipeline). Open the deployed bundle, follow the var chain to the resolved value, audit the build pipeline. Companion to `feedback_settle_counts_with_grep_not_agents` and `feedback_stop_the_fix_spiral`.
+
 ## ✅ 2026-05-27 — v1.4.0 real-browser smoke on staging (Phase 1/2/3)
 
 Ran the v1.4.0 smoke against `staging.withjosephine.com` with a live `wrangler tail` monitor (guide: `docs/SMOKE_v1.4.0.md`). Day-7 force-send done via `cloudflared access` JWT + `.env.staging` CRON_SECRET (raw curl 302s on CF Access; `.env.local` CRON_SECRET differs and would 401 — staging value is the right one).
