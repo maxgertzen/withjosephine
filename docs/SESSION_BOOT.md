@@ -1,5 +1,32 @@
 # Session Boot — Active State
 
+## 🟡 2026-05-29 — PR #218 open: release/v1.4.0 → main (Phases 1-5 + PR #214 + PR #217)
+
+46 commits on `release/v1.4.0`. PR #218 against `main` opened end of session, CI running, NOT merged (Max wanted to hold). URL: https://github.com/maxgertzen/withjosephine/pull/218
+
+**Phase 5 (dex `l0xynlxs`) work landed on `release/v1.4.0` this session:**
+- **One-tap new-device notice** — migration 0018 adds `ua_hash` columns to both redemption ledgers + new `listen_device_notifications` dedup table. New `NewDeviceNotice.tsx` template + `emailNewDeviceNotice` Sanity singleton. Detection helper `src/lib/auth/newDeviceNotice.ts` fires from the `/listen/[id]` server component when current UA hash differs from the first-redemption baseline. "This wasn't me" CTA goes through `/api/auth/revoke-recipient-sessions` (HMAC-signed token, 15-min TTL, `new_device_revoke.v1` HKDF subkey) → revokes every active listen_session for the recipient + fires admin alert. Skip-silently when no baseline. Dedup key `(submission_id, ua_hash)` so each genuinely-new device fires exactly one notice per submission, lifetime.
+- **A1 magic-link library collapse + full rename** — the dual `emailMagicLinkMyReadings` + `emailMagicLinkMyGifts` model (stale post-Phase-2 unified library) collapses into ONE `emailMagicLinkLibrary` singleton. Rename propagated across code (`MagicLinkContext`, `EmailSubType.magic_link_library`, defaults constant, fetch fn, query, type alias, slots, snapshots, seed script, validate contract) + Studio (schema file renamed, registry + desk + SINGLETON_TYPES updated). Sanity migration `scripts/migrate-magiclink-library-rename-2026-05-29.ts` deletes orphan + renames in-place with Becky-edit-preserving plaintext-match guards. `/listen/` magic-link variant kept distinct (per-reading sign-in).
+- **Day-7 schema collapse** — legacy fragment fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) removed from `EMAIL_DAY7_DELIVERY_DEFAULTS`, `studio/schemas/emailDay7Delivery.ts`, and the `Day7Delivery.tsx` dual-mode branch. Template now renders `bodyIntro` + `bodyPostButton` only.
+- **Day-7 copy rewrite + privacy nudge** — honest one-tap phrasing in defaults.ts ("Tap below to open your reading. You will be signed in for the next seven days, so you can come back to the voice note and the PDF without asking again. This link is just for you; please do not share it. Your reading stays here for the next ninety days..."). Em-dashes removed.
+- **Em-dash sweep** — 33 em-dashes in `src/data/defaults.ts` removed; further sweep across new files. Binding rule `feedback_no_em_dashes`.
+- **Becky-edit audit** — pulled prod state across all customer email singletons. 8 Becky-edited fields identified + verified the migration scripts' plaintext-match guards preserve them: `Day7Delivery.preview` ("I'm so pleased..."), `GiftClaim.subjectFirstSend` + `previewFirstSend`, `GiftPurchaseConfirmationScheduled.subject` + `preview`, `GiftPurchaseConfirmationSelfSend.subject` + `preview`, `OrderConfirmation.subject` (Becky added "Yay!"). `RecipientIntakeReceived.subject` was OLD code default ("Your reading is in my hands now"); Max chose to keep it → code default reverted to match prod + migration's intake-subject overwrite removed.
+- **GiftPurchaseConfirmationSelfSend.tsx fix** — `<LibraryButton variant="primary">` → `variant="secondary"` so the "Share the link" CTA stays the primary action.
+- **Subject + flow audits** — `MEMORY/WORK/20260528-161243_carryovers-and-phase5-emails/SUBJECT_AUDIT.md` + `FLOW_AUDIT.md` capture the audit tables and decisions.
+
+**Migrations applied to BOTH staging AND production this session** (Max authorized "we are not live, run prod migration now"):
+- D1: 0018 (`pnpm migrate:apply:prod` also caught up 0013-0017 which had been pending on prod)
+- Sanity: my-gifts cancel-scheduled cleanup (PR #214 carry-over), day-7 body rewrite + legacy field unset, `emailMagicLinkMyGifts` orphan delete, `emailMagicLinkMyReadings → emailMagicLinkLibrary` rename. All per-field guards intact; Becky's editorial work preserved.
+
+**🚨 Outstanding when PR #218 merges:**
+
+1. **Sanity Studio re-deploy** (`pnpm run deploy` from `studio/`) — publishes new `emailMagicLinkLibrary` + `emailNewDeviceNotice` schemas + the collapsed `emailDay7Delivery` (legacy fields removed). Becky won't see the new editor surface until this lands.
+2. **Real-browser smoke against the deployed prod worker** — force a day-7 delivery via the cron route, verify new copy renders + tokenized listen URL one-tap-redeems + sign-in-to-library variant subject is "Sign in to your library". Trigger a new-device-notice from a second browser. Per `feedback_real_browser_smoke_before_ship_claim` (binding).
+
+**Phase 5 follow-up dex tasks filed this session (parented under `l0xynlxs`, not blocking merge):**
+- `zkib97ns` — `GiftPurchaseConfirmationScheduled.preview` (Becky's "You don't need to do anything else.") slightly misaligns with the still-existing purchaser-side management affordances on `/my-readings`. Propose to Becky a reframe that preserves the warmth but surfaces the management option. URL is `/my-readings` (NOT `/my-readings/gifts` — PR #208 collapsed the tabs).
+- `5cyibtb0` — Mechanical comment-narration guard. Recurrence-prevention for `feedback_comments_over_logged`: the memory entry is in context but keeps getting violated by me and dispatched Engineer agents. Small vitest scanner in `src/scanners/` that fails CI on `Phase \d+`, `dex [a-z0-9]{6,}`, `epic [a-z0-9]{6,}`, date prefixes inside comments, and multi-line `//` blocks over 4 consecutive lines in non-test source files. Allowlist `docs/`, `MEMORY/`, `*.test.*`, `*.md`.
+
 ## ✅ 2026-05-28 — PR #217 shipped: three follow-up fixes bundled on `release/v1.4.0`
 
 Squash-merged at `9931964`. All three fixes from the locked plan landed in one PR (per Max's "should have been one combined PR" feedback after I initially set up three stacked draft PRs).
@@ -15,7 +42,7 @@ Squash-merged at `9931964`. All three fixes from the locked plan landed in one P
 **🚨 Outstanding Max-actions:**
 
 1. ✅ **Apply D1 migration 0017 to staging** — done 2026-05-28 by Max. `purchaser_time_zone TEXT` column now exists on staging `submissions`.
-2. **Apply D1 migration 0017 to production:** at `release/v1.4.0 → main` merge time via `pnpm migrate:apply:prod`.
+2. ✅ **Apply D1 migration 0017 to production** — done 2026-05-29 as a side effect of `pnpm migrate:apply:prod` for 0018 (0013-0017 had been pending on prod; all applied together).
 3. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`): walk through a scheduled-gift purchase to verify the OC email subject + body render the send-at in the purchaser's tz. Walk through `/my-readings` (and any of the moved routes) to verify the brand top-bar shows up. Open the edit-recipient drawer on `/my-readings/gifts` and verify the new DateTimePicker behaves correctly on real mobile (the iOS scroll-snap behavior inside Radix Portal is a known a11y-review flag worth verifying on device).
 4. ✅ **Carry-over from PR #214** — done 2026-05-28. Sanity migration applied to production (4 deprecated cancelScheduled* fields unset on `myGiftsPage`, `flipToSelfSendCtaLabel` relabeled from "Send the link myself instead" → "Cancel the schedule and send it myself"; GROQ verified). Studio re-deployed to https://withjosephine.sanity.studio/ after a surgical fix to `studio/sanity.cli.ts` vite aliases (PR #217's `(authed)` route group move missed updating the studio's path-resolution regex — `^@\/app\/listen\/` → `^@\/app\/\(authed\)\/listen\/` etc.).
 
