@@ -1,5 +1,87 @@
 # Session Boot — Active State
 
+## 🔜 NEXT SESSION — three follow-up fixes on `/my-readings` (locked plan, ready to execute)
+
+Max approved 2026-05-28 to ship as **three sequential sub-PRs on `release/v1.4.0`** (option a from the scope question). Order: 1 → 2 → 3. PR #214 must merge first (done; squash `aadf98d`) so each follow-up branches off the up-to-date release branch.
+
+**Fix #1 — Email scheduled-date/time in purchaser's timezone (NOT UTC)**
+
+Current: `src/lib/booking/formatSendAt.ts:14-18` hard-locks `timeZone: "UTC"`. Doc-comment claims "purchaser's timezone is unknown server-side" — that's wrong; the system already collects the IANA tz client-side via `useEffectiveTimeZone` and passes it to `localInputToUtcIso(giftSendAt, effectiveTz)` for the UTC conversion. The tz is just thrown away after conversion.
+
+Approach (locked): server still computes the display string, but accepts the IANA tz at call time. Single source of truth.
+
+| File | Change |
+|---|---|
+| `src/lib/booking/formatSendAt.ts` | `formatSendAt(iso, tz?)` — tz param, default UTC for legacy |
+| `src/app/api/booking/gift/route.ts` | Accept `purchaserTimeZone` in body, include in Stripe Checkout Session metadata |
+| `src/app/api/stripe/webhook/route.ts:184` | Read `purchaserTimeZone` from session metadata, pass to `formatSendAt` |
+| `src/app/api/gifts/[id]/flip-to-scheduled/route.ts:112` | Accept `purchaserTimeZone` in body, pass to `formatSendAt` |
+| `src/components/IntakeForm/...` (gift booking form path) | Include `effectiveTz` in submission body |
+| `src/app/my-gifts/GiftCardActions.tsx` (FlipToScheduledControl) | Include `effectiveTz` in flip-to-scheduled body |
+| Tests across all of the above | Assert tz plumbed through end-to-end |
+
+No new D1 column. No new env. Branch: `feat/email-scheduled-tz-fix`.
+
+**Fix #2 — Top nav / back-to-site affordance on auth-gated surfaces**
+
+Max picked: **Light top-bar — logo + 'Home' link only (auth-gated surfaces)**.
+
+```
+┌─────────────────────────────┐
+│  ✦ Josephine          Home  │
+├─────────────────────────────┤
+│                             │
+│       Gifts                 │
+│       ...                   │
+```
+
+Implementation: new `src/app/(authed)/layout.tsx` route group; move `/my-readings`, `/my-readings/welcome`, `/listen/[id]`, `/gift/intake`, `/gift/claim/[token]`, `/thank-you/[readingId]` into the group. Root `src/app/layout.tsx` already has zero nav; the new layout adds the light top-bar above `children`. Brand: `✦ Josephine` (Cormorant) on the left, `Home` link on the right, Cream background, Deep border-bottom hairline.
+
+Branch: `feat/auth-gated-top-nav`.
+
+**Fix #3 — Combined `<DateTimePicker>` brand component in edit-recipient drawer**
+
+Current: `src/app/my-gifts/GiftCardActions.tsx:195-205` uses native `<input type="datetime-local">` (system-styled, doesn't match the brand). Same gap in `FlipToScheduledControl` further down.
+
+Plan (locked): new `src/components/Form/DateTimePicker/` brand component composing existing `<DatePicker>` + `<TimePicker>` (the intake form already uses these via `src/components/IntakeForm/renderField.tsx:96,119`). Drop-in replacement for the native input.
+
+```ts
+type DateTimePickerProps = {
+  id: string;
+  name: string;
+  label: string;
+  value: string;        // "YYYY-MM-DDTHH:mm" (datetime-local shape)
+  onChange: (value: string) => void;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  min?: string;
+  max?: string;
+};
+```
+
+Internals: splits `value` → renders `<DatePicker>` + `<TimePicker>` side-by-side (stacked on mobile) → recombines on change. Tests: ISO split/join roundtrip, min/max delegation to children, change-propagation invariants.
+
+Branch: `feat/datetimepicker-brand-combined`.
+
+## ⚠️ Open Max-actions from PR #214 (2026-05-28)
+
+- **Run Sanity migration against production**: `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts` — unsets 4 removed fields + applies new flip label only if old default present (preserves any Becky edits). Idempotent. Staging already run + verified (4 fields unset, label flipped) during the session.
+- **Re-deploy Studio**: `pnpm run deploy` from `studio/` so Becky sees the updated `flipToSelfSendCtaLabel` field title + description.
+
+## 📌 Resend leak post-mortem (2026-05-28)
+
+For ~2 days (since Phase 1 deploy 2026-05-26), Stripe-webhook order-confirmation emails sent to test-spec recipient addresses (`library-one-tap+...@withjosephine.com`, `listen-one-tap+...@withjosephine.com`, `prod-smoke+...@withjosephine.com`) leaked into Max's real inbox via Cloudflare Email Routing. Root cause: hardcoded `SANDBOX_EMAIL_PREFIXES` list in `src/lib/resend.tsx` went stale when Phase 1/2/3 specs introduced new prefixes without registering them. The prefix guard is load-bearing for cron / DO alarm / webhook paths that have no request context for the `X-E2E-Resend-DryRun` header to reach.
+
+Plugged in PR #214 commit `a5cfad1`: added missing prefixes + new vitest scanner `src/lib/resend.sandboxPrefixes.test.ts` walks all e2e specs and asserts every `*@withjosephine.com` prefix is registered. Drift now fails pre-push.
+
+**Layer-3 defense filed as dex `5f0bqd2d` (p1, under mktrrouq)**: env-gated allowlist — in staging/sandbox, reject ALL Resend sends to recipients NOT in a tiny production allowlist (Max, Becky, `hello@`, `NOTIFICATION_EMAIL`). Layers 1 (prefix list) + 2 (scanner test) catch ~all known drift; layer 3 makes it structurally impossible. Not blocking, but should land before another set of Phase-class specs introduces a new prefix.
+
+New durable memories:
+- [feedback_no_emails_in_testing_period](../MEMORY/...) — three-layer email-defense rule.
+- [feedback_run_tests_locally_before_push](../MEMORY/...) — don't burn sandbox CI cycles iterating on test fixes; vitest + Playwright mock mode locally first.
+- Updated [feedback_resend_dry_run_paths] with the prefix-drift failure mode call-out.
+
 ## ✅ 2026-05-28 — RESOLVED `lc9w5xd1` (intake picker "stacking" bug) — actually a data-corruption bug
 
 Three PRs to reach the real fix; the picker was never losing the z-order battle.
