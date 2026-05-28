@@ -70,6 +70,35 @@ describe("generateTokensCss", () => {
     expect(css).toContain("--j-deep-rgb: var(--j-bg-interactive-rgb);");
   });
 
+  it("unwraps recursively-nested hex objects from corrupt Sanity color shapes", () => {
+    // Staging Sanity stored blush/ivory/rose 4 layers deep
+    // (`{ hex: { hex: { hex: { hex: "#…" }}}}`) likely from a re-save loop in
+    // the Studio color input. The build-time `${color.hex}` template literal
+    // stringified that as `[object Object]` and broke popover backgrounds.
+    const nested = (hex: string, depth: number): unknown => {
+      let value: unknown = hex;
+      for (let i = 0; i < depth; i += 1) {
+        value = { _type: "color", alpha: 1, hex: value };
+      }
+      return value;
+    };
+    const theme = {
+      ...DEFAULT_THEME,
+      colors: {
+        ...DEFAULT_THEME.colors,
+        blush: nested("#E8D5C4", 4),
+        ivory: nested("#FAFAF8", 4),
+        rose: nested("#BF9B8B", 4),
+      },
+    } as unknown as SanityTheme;
+
+    const css = generateTokensCss(theme);
+    expect(css).toContain("--j-blush: #E8D5C4;");
+    expect(css).toContain("--j-ivory: #FAFAF8;");
+    expect(css).toContain("--j-rose: #BF9B8B;");
+    expect(css).not.toContain("[object Object]");
+  });
+
   it("reflects color changes from Sanity", () => {
     const customTheme: SanityTheme = {
       ...DEFAULT_THEME,

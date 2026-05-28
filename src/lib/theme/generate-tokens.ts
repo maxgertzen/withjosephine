@@ -30,6 +30,26 @@ function hexToRgb(hex: string): string {
   return `${r}, ${g}, ${b}`;
 }
 
+/**
+ * The staging Sanity theme document has historically been written with
+ * recursively-nested hex values (`{ hex: { hex: { hex: "#…" }}}`) on some
+ * color fields — likely a re-save loop in the Studio color input. A
+ * `${color.hex}` template literal on that shape stringifies the object as
+ * "[object Object]", which lands as `--j-ivory: [object Object]` in the
+ * generated tokens CSS, making `bg-j-ivory` resolve to invalid color and the
+ * popover backgrounds turn transparent. Walk down `.hex` until we find the
+ * actual string so future re-saves can't reintroduce the bug.
+ */
+function extractHex(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value.startsWith("#") ? value : undefined;
+  }
+  if (value && typeof value === "object" && "hex" in value) {
+    return extractHex((value as { hex: unknown }).hex);
+  }
+  return undefined;
+}
+
 export function generateTokensCss(theme: SanityTheme | null): string {
   if (!theme?.colors) return "";
 
@@ -41,8 +61,9 @@ export function generateTokensCss(theme: SanityTheme | null): string {
 
   for (const [field, config] of Object.entries(COLOR_CONFIG)) {
     const color = theme.colors[field as SemanticColorKey];
-    if (color?.hex) {
-      lines.push(`  ${config.semantic}: ${color.hex};`);
+    const hex = extractHex(color?.hex);
+    if (hex) {
+      lines.push(`  ${config.semantic}: ${hex};`);
     }
     if (config.palette) {
       paletteAliases.push(`  ${config.palette}: var(${config.semantic});`);
@@ -55,14 +76,14 @@ export function generateTokensCss(theme: SanityTheme | null): string {
 
   lines.push("");
   lines.push("  /* RGB channels for opacity variants */");
-  const accent = theme.colors.accent;
-  if (accent?.hex) {
-    lines.push(`  --j-accent-rgb: ${hexToRgb(accent.hex)};`);
+  const accentHex = extractHex(theme.colors.accent?.hex);
+  if (accentHex) {
+    lines.push(`  --j-accent-rgb: ${hexToRgb(accentHex)};`);
     lines.push(`  --j-gold-rgb: var(--j-accent-rgb);`);
   }
-  const bgInteractive = theme.colors.bgInteractive;
-  if (bgInteractive?.hex) {
-    lines.push(`  --j-bg-interactive-rgb: ${hexToRgb(bgInteractive.hex)};`);
+  const bgInteractiveHex = extractHex(theme.colors.bgInteractive?.hex);
+  if (bgInteractiveHex) {
+    lines.push(`  --j-bg-interactive-rgb: ${hexToRgb(bgInteractiveHex)};`);
     lines.push(`  --j-deep-rgb: var(--j-bg-interactive-rgb);`);
   }
 
@@ -94,7 +115,7 @@ export function generateEmailTokensModule(theme: SanityTheme | null): string {
   const colors = (Object.keys(EMAIL_TOKEN_DEFAULTS) as Array<keyof typeof EMAIL_TOKEN_DEFAULTS>)
     .map((tokenKey) => {
       const sanityKey = EMAIL_COLOR_SOURCES[tokenKey];
-      const overrideHex = theme?.colors?.[sanityKey]?.hex;
+      const overrideHex = extractHex(theme?.colors?.[sanityKey]?.hex);
       const value = overrideHex ?? EMAIL_TOKEN_DEFAULTS[tokenKey];
       return `  ${tokenKey}: "${value}",`;
     })
