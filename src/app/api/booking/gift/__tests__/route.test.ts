@@ -139,7 +139,8 @@ describe("/api/booking/gift", () => {
   });
 
   it("rejects 400 when purchaserTimeZone is missing entirely (invalid body shape)", async () => {
-    const { purchaserTimeZone: _drop, ...withoutTz } = SELF_SEND_BODY;
+    const withoutTz: Record<string, unknown> = { ...SELF_SEND_BODY };
+    delete withoutTz.purchaserTimeZone;
     const res = await callRoute(withoutTz);
     expect(res.status).toBe(400);
   });

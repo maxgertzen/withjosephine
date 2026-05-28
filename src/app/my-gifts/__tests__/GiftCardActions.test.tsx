@@ -211,8 +211,11 @@ describe("GiftCardActions — JSON-fetch contract", () => {
         getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
       );
       expect(container.querySelector("input[type='datetime-local']")).toBeNull();
-      expect(getByLabelText(/date/i)).toBeInTheDocument();
-      expect(getByLabelText(/time/i)).toBeInTheDocument();
+      const sendAtInput = getByLabelText(
+        new RegExp(MY_GIFTS_PAGE_DEFAULTS.editRecipientFormSendAtLabel, "i"),
+      ) as HTMLInputElement;
+      expect(sendAtInput).toBeInTheDocument();
+      expect(sendAtInput.getAttribute("aria-haspopup")).toBe("dialog");
     });
   });
 
