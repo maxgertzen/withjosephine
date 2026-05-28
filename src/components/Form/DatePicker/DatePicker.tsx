@@ -3,11 +3,12 @@
 import { differenceInYears, format, isValid, parse } from "date-fns";
 import { useEffect, useId, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
+import { createPortal } from "react-dom";
 
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { usePopoverPortal } from "@/components/Form/usePopoverPortal";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
-import { mergeClasses } from "@/lib/utils";
 
 const ISO_DATE = "yyyy-MM-dd";
 const SLASH_DATE = "dd/MM/yyyy";
@@ -71,15 +72,11 @@ export function DatePicker({
           return parsed ? format(parsed, SLASH_DATE) : value;
         })();
 
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
+  const { popoverRef, position } = usePopoverPortal({
+    open,
+    onClose: () => setOpen(false),
+    anchorRef: wrapperRef,
+  });
 
   const selected = parseIso(value);
   const minDate = min ? parseIso(min) : undefined;
@@ -134,7 +131,7 @@ export function DatePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className={mergeClasses("relative", open && "z-30")}>
+      <div ref={wrapperRef} className="relative">
         <input
           id={id}
           name={name}
@@ -167,56 +164,61 @@ export function DatePicker({
             correct, no need to change a thing.
           </p>
         ) : null}
-        {open ? (
-          <div
-            id={popoverId}
-            role="dialog"
-            aria-label="Choose a date"
-            className="absolute left-0 top-full mt-2 z-20 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
-          >
-            <DayPicker
-              mode="single"
-              selected={selected}
-              onSelect={handleSelect}
-              startMonth={minDate}
-              endMonth={maxDate}
-              month={month ?? new Date()}
-              onMonthChange={setMonth}
-              captionLayout="dropdown"
-              showOutsideDays
-              classNames={{
-                root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
-                months: "flex flex-col gap-3",
-                month: "flex flex-col gap-3",
-                month_caption:
-                  "flex items-center justify-center gap-2 font-display italic text-base text-j-text-heading",
-                caption_label: "sr-only",
-                dropdowns: "flex gap-2 items-center",
-                dropdown:
-                  "font-body text-sm bg-j-cream border border-j-border-subtle rounded-sm px-2 py-1 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                nav: "flex items-center justify-between absolute inset-x-0 top-0 px-1 pointer-events-none",
-                button_previous:
-                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                button_next:
-                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                month_grid: "w-full border-collapse",
-                weekdays: "flex",
-                weekday:
-                  "flex-1 font-body text-[0.7rem] tracking-wider uppercase text-j-text-muted py-2 text-center",
-                week: "flex w-full",
-                day: "flex-1 text-center p-0",
-                day_button:
-                  "w-9 h-9 inline-flex items-center justify-center font-body text-sm rounded-sm transition-colors hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                outside: "[&>button]:text-j-text-muted/50",
-                selected: "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
-                today: "[&>button]:font-semibold [&>button]:text-j-accent",
-                disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
-                chevron: "fill-j-text-heading w-4 h-4",
-              }}
-            />
-          </div>
-        ) : null}
       </div>
+      {open && position
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              id={popoverId}
+              role="dialog"
+              aria-label="Choose a date"
+              style={{ position: "absolute", top: position.top, left: position.left }}
+              className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
+            >
+              <DayPicker
+                mode="single"
+                selected={selected}
+                onSelect={handleSelect}
+                startMonth={minDate}
+                endMonth={maxDate}
+                month={month ?? new Date()}
+                onMonthChange={setMonth}
+                captionLayout="dropdown"
+                showOutsideDays
+                classNames={{
+                  root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
+                  months: "flex flex-col gap-3",
+                  month: "flex flex-col gap-3",
+                  month_caption:
+                    "flex items-center justify-center gap-2 font-display italic text-base text-j-text-heading",
+                  caption_label: "sr-only",
+                  dropdowns: "flex gap-2 items-center",
+                  dropdown:
+                    "font-body text-sm bg-j-cream border border-j-border-subtle rounded-sm px-2 py-1 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                  nav: "flex items-center justify-between absolute inset-x-0 top-0 px-1 pointer-events-none",
+                  button_previous:
+                    "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                  button_next:
+                    "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                  month_grid: "w-full border-collapse",
+                  weekdays: "flex",
+                  weekday:
+                    "flex-1 font-body text-[0.7rem] tracking-wider uppercase text-j-text-muted py-2 text-center",
+                  week: "flex w-full",
+                  day: "flex-1 text-center p-0",
+                  day_button:
+                    "w-9 h-9 inline-flex items-center justify-center font-body text-sm rounded-sm transition-colors hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
+                  outside: "[&>button]:text-j-text-muted/50",
+                  selected: "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
+                  today: "[&>button]:font-semibold [&>button]:text-j-accent",
+                  disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
+                  chevron: "fill-j-text-heading w-4 h-4",
+                }}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </FieldShell>
   );
 }
