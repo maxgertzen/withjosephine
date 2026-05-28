@@ -14,8 +14,8 @@ Squash-merged at `9931964`. All three fixes from the locked plan landed in one P
 
 **🚨 Outstanding Max-actions:**
 
-1. **Apply D1 migration 0017 to staging:** `pnpm migrate:apply:staging` adds `purchaser_time_zone TEXT` to the `submissions` table. Without it, the gift POST will write a column that doesn't exist and fail.
-2. **Apply D1 migration 0017 to production:** at `release/v1.4.0 → main` merge time via `pnpm migrate:apply:prod`. Same as above but on prod D1.
+1. ✅ **Apply D1 migration 0017 to staging** — done 2026-05-28 by Max. `purchaser_time_zone TEXT` column now exists on staging `submissions`.
+2. **Apply D1 migration 0017 to production:** at `release/v1.4.0 → main` merge time via `pnpm migrate:apply:prod`.
 3. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`): walk through a scheduled-gift purchase to verify the OC email subject + body render the send-at in the purchaser's tz. Walk through `/my-readings` (and any of the moved routes) to verify the brand top-bar shows up. Open the edit-recipient drawer on `/my-readings/gifts` and verify the new DateTimePicker behaves correctly on real mobile (the iOS scroll-snap behavior inside Radix Portal is a known a11y-review flag worth verifying on device).
 4. **Carry-over from PR #214** — still open: run Sanity migration against production (`scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts`) + re-deploy Studio (`pnpm run deploy` from `studio/`).
 
