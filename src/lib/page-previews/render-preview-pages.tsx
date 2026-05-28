@@ -1,9 +1,9 @@
 import { renderToString } from "react-dom/server";
 
+import { ListenView } from "@/app/(authed)/listen/[id]/ListenView";
+import { MyReadingsView } from "@/app/(authed)/my-readings/MyReadingsView";
 import { VerifyPageView } from "@/app/auth/verify/VerifyPageView";
-import { ListenView } from "@/app/listen/[id]/ListenView";
 import { MyGiftsView } from "@/app/my-gifts/MyGiftsView";
-import { MyReadingsView } from "@/app/my-readings/MyReadingsView";
 import { VellumShell } from "@/components/VellumShell";
 import type {
   GiftClaimPageContent,

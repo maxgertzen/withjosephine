@@ -109,6 +109,7 @@ const SUBMISSION_BASE = {
   stripeSessionId: "cs_test_1",
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,
@@ -300,6 +301,7 @@ describe("cascadeDeleteUser — LB-4 purchaser walk (Phase 5 Session 4b)", () =>
     _id: "gift_1",
     isGift: true,
     purchaserUserId: "user_a",
+    purchaserTimeZone: null,
     photoR2Key: undefined,
     stripeSessionId: "cs_gift_1",
     responses: [

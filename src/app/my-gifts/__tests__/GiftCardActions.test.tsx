@@ -31,6 +31,7 @@ const baseGift: SubmissionRecord = {
   giftDeliveryMethod: "scheduled",
   isGift: true,
   purchaserUserId: "user_purchaser",
+  purchaserTimeZone: null,
   emailsFired: [],
   createdAt: "2026-05-01T00:00:00.000Z",
 } as unknown as SubmissionRecord;
@@ -202,18 +203,19 @@ describe("GiftCardActions — JSON-fetch contract", () => {
       expect(form?.getAttribute("aria-labelledby")).toBe(headingId);
     });
 
-    it("send-at input has matching label association via htmlFor + id", () => {
-      const { container, getByRole } = render(
+    it("send-at uses the brand DateTimePicker (no native datetime-local input)", () => {
+      const { container, getByRole, getByLabelText } = render(
         <GiftCardActions gift={baseGift} status={scheduledStatus} copy={MY_GIFTS_PAGE_DEFAULTS} />,
       );
       fireEvent.click(
         getByRole("button", { name: MY_GIFTS_PAGE_DEFAULTS.editRecipientCtaLabel }),
       );
-      const input = container.querySelector("input[type='datetime-local']");
-      const inputId = input?.getAttribute("id");
-      expect(inputId).toBeTruthy();
-      const label = container.querySelector(`label[for='${inputId}']`);
-      expect(label).toBeTruthy();
+      expect(container.querySelector("input[type='datetime-local']")).toBeNull();
+      const sendAtInput = getByLabelText(
+        new RegExp(MY_GIFTS_PAGE_DEFAULTS.editRecipientFormSendAtLabel, "i"),
+      ) as HTMLInputElement;
+      expect(sendAtInput).toBeInTheDocument();
+      expect(sendAtInput.getAttribute("aria-haspopup")).toBe("dialog");
     });
   });
 

@@ -54,6 +54,7 @@ const SELF_SEND_GIFT: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: PURCHASER_ID,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: "self_send",
   giftSendAt: null,

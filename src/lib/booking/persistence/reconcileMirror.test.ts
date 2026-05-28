@@ -17,6 +17,7 @@ function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
     recipientUserId: null,
     isGift: false,
     purchaserUserId: null,
+    purchaserTimeZone: null,
     recipientEmail: null,
     giftDeliveryMethod: null,
     giftSendAt: null,

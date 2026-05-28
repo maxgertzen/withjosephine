@@ -478,6 +478,7 @@ describe("repository against in-memory SQLite", () => {
         photoR2Key: null,
         isGift: true,
         purchaserUserId: "user_x",
+        purchaserTimeZone: null,
         giftDeliveryMethod: "self_send",
       });
       await markSubmissionPaid(id, {

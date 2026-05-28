@@ -32,6 +32,7 @@ function buildPaidSubmission(overrides: Partial<SubmissionRecord> = {}): Submiss
     recipientUserId: null,
     isGift: false,
     purchaserUserId: null,
+    purchaserTimeZone: null,
     giftDeliveryMethod: null,
     giftClaimTokenHash: null,
     giftClaimSentAt: null,

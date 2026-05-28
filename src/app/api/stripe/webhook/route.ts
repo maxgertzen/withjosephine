@@ -108,6 +108,7 @@ async function dispatchGiftPurchaseConfirmation(
   const purchaserFirstName = purchaserFirstNameFromResponses || extractFirstName(submission.email);
 
   const nowIso = new Date().toISOString();
+  const purchaserTimeZone = submission.purchaserTimeZone ?? undefined;
 
   void serverTrack("gift_purchased", {
     distinct_id: submission._id,
@@ -181,7 +182,7 @@ async function dispatchGiftPurchaseConfirmation(
       giftMessage: submission.giftMessage,
       libraryUrl,
       variant: GIFT_DELIVERY.scheduled,
-      sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso),
+      sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso, purchaserTimeZone),
     }),
     scheduleGiftClaimAlarm(submission._id, submission.giftSendAt ?? nowIso),
   ]);

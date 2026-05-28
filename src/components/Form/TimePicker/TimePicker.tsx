@@ -106,6 +106,7 @@ export function TimePicker({
             id={id}
             name={name}
             type="text"
+            role="combobox"
             value={visible}
             onChange={(event) => handleManualInput(event.target.value)}
             onFocus={() => !inputDisabled && setOpen(true)}
@@ -117,6 +118,7 @@ export function TimePicker({
             inputMode="numeric"
             aria-haspopup="dialog"
             aria-controls={popoverId}
+            aria-expanded={open}
             aria-invalid={error ? true : undefined}
             className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
           />
@@ -184,16 +186,21 @@ export function TimePicker({
         </Popover.Portal>
       </Popover.Root>
       {unknownToggle ? (
-        <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
-          <input
-            type="checkbox"
-            checked={unknownToggle.checked}
-            onChange={(event) => unknownToggle.onChange(event.target.checked)}
-            disabled={disabled}
-            className="h-4 w-4 accent-j-accent"
-          />
-          <span>{unknownToggle.label}</span>
-        </label>
+        <>
+          <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
+            <input
+              type="checkbox"
+              checked={unknownToggle.checked}
+              onChange={(event) => unknownToggle.onChange(event.target.checked)}
+              disabled={disabled}
+              className="h-4 w-4 accent-j-accent"
+            />
+            <span>{unknownToggle.label}</span>
+          </label>
+          <span role="status" aria-live="polite" className="sr-only">
+            {unknownToggle.checked ? "Birth time set to unknown." : ""}
+          </span>
+        </>
       ) : null}
     </FieldShell>
   );

@@ -53,6 +53,7 @@ const SUBMISSION: SubmissionRecord = {
   recipientUserId: "user_1",
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,

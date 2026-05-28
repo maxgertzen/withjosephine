@@ -78,6 +78,7 @@ const SUBMISSION: SubmissionRecord = {
   recipientUserId: null,
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,
@@ -530,6 +531,21 @@ describe("/api/stripe/webhook", () => {
           send_at: "2026-06-01T15:00:00.000Z",
         }),
       );
+    });
+
+    it("scheduled: renders sendAtDisplay in the purchaser's persisted IANA timezone", async () => {
+      mockConstruct.mockReturnValueOnce(event("evt_g_tz", "sub_gift_sched") as never);
+      mockFind.mockResolvedValueOnce({
+        ...GIFT_SCHEDULED,
+        purchaserTimeZone: "America/Los_Angeles",
+      });
+
+      await callRoute("{}");
+
+      const sentArgs = mockSendGiftConfirmation.mock.calls[0]![0];
+      if (sentArgs.variant !== "scheduled") throw new Error("expected scheduled variant");
+      expect(sentArgs.sendAtDisplay).toContain("June 1, 2026");
+      expect(sentArgs.sendAtDisplay).toMatch(/8:00\s?AM/);
     });
 
     it("non-gift submission: does NOT trigger gift email or gift_purchased event", async () => {

@@ -15,6 +15,7 @@ import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
 import { GIFT_DELIVERY, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import type { GiftDeliveryMethod } from "@/lib/booking/persistence/repository";
+import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
 import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
@@ -94,6 +95,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     () => EMPTY_PREFILL,
   );
 
+  const { effectiveTz } = useEffectiveTimeZone();
   const [deliveryMethod, setDeliveryMethod] = useState<GiftDeliveryMethod>(GIFT_DELIVERY.selfSend);
   const [purchaserFirstNameOverride, setPurchaserFirstNameOverride] = useState<string | null>(null);
   const [purchaserEmailOverride, setPurchaserEmailOverride] = useState<string | null>(null);
@@ -220,6 +222,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         readingSlug,
         purchaserEmail: purchaserEmail.trim().toLowerCase(),
         purchaserFirstName: purchaserFirstName.trim(),
+        purchaserTimeZone: effectiveTz ?? "UTC",
         deliveryMethod,
         art6Consent: consentSnapshot.art6.acknowledged,
         coolingOffConsent: consentSnapshot.coolingOff.acknowledged,

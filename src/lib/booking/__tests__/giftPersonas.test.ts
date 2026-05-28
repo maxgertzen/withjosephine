@@ -15,6 +15,7 @@ const BASE_REDEEMED_GIFT: SubmissionRecord = {
   recipientUserId: "user_recipient",
   isGift: true,
   purchaserUserId: "user_purchaser",
+  purchaserTimeZone: null,
   recipientEmail: "recipient@example.com",
   giftDeliveryMethod: "scheduled",
   giftSendAt: "2026-05-19T00:00:00.000Z",

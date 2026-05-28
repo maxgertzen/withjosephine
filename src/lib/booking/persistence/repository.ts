@@ -28,6 +28,7 @@ type Row = {
   recipient_user_id: string | null;
   is_gift: number | null;
   purchaser_user_id: string | null;
+  purchaser_time_zone: string | null;
   recipient_email: string | null;
   gift_delivery_method: string | null;
   gift_send_at: string | null;
@@ -79,6 +80,7 @@ function rowToRecord(row: Row): SubmissionRecord {
     recipientUserId: row.recipient_user_id ?? null,
     isGift: (row.is_gift ?? 0) === 1,
     purchaserUserId: row.purchaser_user_id ?? null,
+    purchaserTimeZone: row.purchaser_time_zone ?? null,
     recipientEmail: row.recipient_email ?? null,
     giftDeliveryMethod: parseGiftDeliveryMethod(row.gift_delivery_method),
     giftSendAt: row.gift_send_at ?? null,
@@ -105,10 +107,9 @@ export type CreateSubmissionInput = {
   photoR2Key: string | null;
   createdAt: string;
   coolingOffAcknowledgedAt?: string | null;
-  // Optional so existing self-purchase call sites stay unchanged; only the
-  // gift booking route sets these.
   isGift?: boolean;
   purchaserUserId?: string | null;
+  purchaserTimeZone?: string | null;
   recipientEmail?: string | null;
   giftDeliveryMethod?: GiftDeliveryMethod | null;
   giftSendAt?: string | null;
@@ -121,9 +122,9 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
        cooling_off_acknowledged_at,
-       is_gift, purchaser_user_id, recipient_email, gift_delivery_method,
-       gift_send_at, gift_message
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       is_gift, purchaser_user_id, purchaser_time_zone, recipient_email,
+       gift_delivery_method, gift_send_at, gift_message
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -138,6 +139,7 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       input.coolingOffAcknowledgedAt ?? null,
       input.isGift ? 1 : 0,
       input.purchaserUserId ?? null,
+      input.purchaserTimeZone ?? null,
       input.recipientEmail ?? null,
       input.giftDeliveryMethod ?? null,
       input.giftSendAt ?? null,
