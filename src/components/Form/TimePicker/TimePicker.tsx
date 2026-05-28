@@ -1,10 +1,9 @@
 "use client";
 
+import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
-import { usePopoverPortal } from "@/components/Form/usePopoverPortal";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -58,15 +57,9 @@ export function TimePicker({
   unknownToggle,
 }: TimePickerProps) {
   const popoverId = useId();
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
-
-  const { popoverRef, position } = usePopoverPortal({
-    open,
-    onClose: () => setOpen(false),
-    anchorRef: wrapperRef,
-  });
 
   const isUnknown = value === TIME_UNKNOWN_SENTINEL || unknownToggle?.checked === true;
   const visible = draft !== null ? draft : isUnknown ? "" : value;
@@ -106,27 +99,90 @@ export function TimePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
-        <input
-          id={id}
-          name={name}
-          type="text"
-          value={visible}
-          onChange={(event) => handleManualInput(event.target.value)}
-          onFocus={() => !inputDisabled && setOpen(true)}
-          onBlur={() => setDraft(null)}
-          placeholder=" "
-          disabled={inputDisabled}
-          required={required && !isUnknown}
-          autoComplete="off"
-          inputMode="numeric"
-          aria-haspopup="dialog"
-          aria-controls={popoverId}
-          aria-invalid={error ? true : undefined}
-          className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
-        />
-        <FloatingLabel id={id} label={label} required={required} />
-      </div>
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Anchor className="relative block">
+          <input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="text"
+            value={visible}
+            onChange={(event) => handleManualInput(event.target.value)}
+            onFocus={() => !inputDisabled && setOpen(true)}
+            onBlur={() => setDraft(null)}
+            placeholder=" "
+            disabled={inputDisabled}
+            required={required && !isUnknown}
+            autoComplete="off"
+            inputMode="numeric"
+            aria-haspopup="dialog"
+            aria-controls={popoverId}
+            aria-invalid={error ? true : undefined}
+            className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
+          />
+          <FloatingLabel id={id} label={label} required={required} />
+        </Popover.Anchor>
+        <Popover.Portal>
+          <Popover.Content
+            id={popoverId}
+            side="bottom"
+            align="start"
+            sideOffset={8}
+            aria-label="Choose a time"
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              if (event.target === inputRef.current) event.preventDefault();
+            }}
+            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]"
+          >
+            <p className="font-display italic text-sm text-j-text-muted text-center mb-3">
+              Hour and minute
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <select
+                aria-label="Hour"
+                value={hh}
+                onChange={(event) => commit(event.target.value, mm || "00")}
+                className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
+              >
+                <option value="" disabled>
+                  HH
+                </option>
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true" className="font-display italic text-j-text-heading">
+                :
+              </span>
+              <select
+                aria-label="Minute"
+                value={mm}
+                onChange={(event) => commit(hh || "00", event.target.value)}
+                className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
+              >
+                <option value="" disabled>
+                  MM
+                </option>
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors"
+            >
+              Done
+            </button>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
       {unknownToggle ? (
         <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
           <input
@@ -139,65 +195,6 @@ export function TimePicker({
           <span>{unknownToggle.label}</span>
         </label>
       ) : null}
-      {open && position
-        ? createPortal(
-            <div
-              ref={popoverRef}
-              id={popoverId}
-              role="dialog"
-              aria-label="Choose a time"
-              style={{ position: "absolute", top: position.top, left: position.left }}
-              className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]"
-            >
-              <p className="font-display italic text-sm text-j-text-muted text-center mb-3">
-                Hour and minute
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                <select
-                  aria-label="Hour"
-                  value={hh}
-                  onChange={(event) => commit(event.target.value, mm || "00")}
-                  className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
-                >
-                  <option value="" disabled>
-                    HH
-                  </option>
-                  {HOURS.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-                <span aria-hidden="true" className="font-display italic text-j-text-heading">
-                  :
-                </span>
-                <select
-                  aria-label="Minute"
-                  value={mm}
-                  onChange={(event) => commit(hh || "00", event.target.value)}
-                  className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
-                >
-                  <option value="" disabled>
-                    MM
-                  </option>
-                  {MINUTES.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors"
-              >
-                Done
-              </button>
-            </div>,
-            document.body,
-          )
-        : null}
     </FieldShell>
   );
 }
