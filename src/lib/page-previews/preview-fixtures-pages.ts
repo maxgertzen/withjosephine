@@ -1,7 +1,7 @@
 import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
-import type { ListenViewState } from "@/app/listen/[id]/ListenView";
+import type { ListenViewState } from "@/app/(authed)/listen/[id]/ListenView";
+import type { MyReadingsViewProps } from "@/app/(authed)/my-readings/MyReadingsView";
 import type { MyGiftsViewProps } from "@/app/my-gifts/MyGiftsView";
-import type { MyReadingsViewProps } from "@/app/my-readings/MyReadingsView";
 
 import type { GiftIntakePagePreviewState } from "./GiftIntakePagePreview";
 import type { SubmissionRecord } from "./types";
