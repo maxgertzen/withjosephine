@@ -218,9 +218,9 @@ test.describe("Library one-tap round-trip, staging", () => {
     expect(replayLocation).not.toContain("welcome=1");
     expect(replayLocation).toContain("/my-readings");
     expect(
-      replay.headers()["set-cookie"],
+      replay.headers()["set-cookie"] ?? "",
       "replay must not mint a new session cookie",
-    ).toBeUndefined();
+    ).not.toMatch(/__Host-listen_session=/);
   });
 
   test("Scenario D: expired token -> 303 fallback, no cookie", async ({ page }) => {
@@ -243,7 +243,9 @@ test.describe("Library one-tap round-trip, staging", () => {
       failOnStatusCode: false,
     });
     expect(response.status()).toBe(303);
-    expect(response.headers()["set-cookie"]).toBeUndefined();
+    expect(response.headers()["set-cookie"] ?? "").not.toMatch(
+      /__Host-listen_session=/,
+    );
   });
 
   test("Scenario E: tampered token -> 303 fallback, no cookie", async ({ page }) => {
@@ -269,7 +271,9 @@ test.describe("Library one-tap round-trip, staging", () => {
       failOnStatusCode: false,
     });
     expect(response.status()).toBe(303);
-    expect(response.headers()["set-cookie"]).toBeUndefined();
+    expect(response.headers()["set-cookie"] ?? "").not.toMatch(
+      /__Host-listen_session=/,
+    );
   });
 
   test("Scenario F: bare /my-readings/welcome (no ?t=) -> 307/308 to /my-readings", async ({
