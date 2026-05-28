@@ -6,6 +6,7 @@ import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { mergeClasses } from "@/lib/utils";
 
 const HHMM = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
 
@@ -108,7 +109,7 @@ export function TimePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
+      <div ref={wrapperRef} className={mergeClasses("relative", open && "z-30")}>
         <input
           id={id}
           name={name}
