@@ -52,6 +52,7 @@ const BASE_SUBMISSION: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: "user_purchaser",
+  purchaserTimeZone: null,
   recipientEmail: "recipient@example.com",
   giftDeliveryMethod: "scheduled",
   giftSendAt: "2026-06-01T15:00:00.000Z",

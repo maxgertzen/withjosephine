@@ -31,6 +31,7 @@ const baseGift: SubmissionRecord = {
   giftDeliveryMethod: "scheduled",
   isGift: true,
   purchaserUserId: "user_purchaser",
+  purchaserTimeZone: null,
   emailsFired: [],
   createdAt: "2026-05-01T00:00:00.000Z",
 } as unknown as SubmissionRecord;

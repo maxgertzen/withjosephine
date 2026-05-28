@@ -17,13 +17,23 @@ import { authorizeGiftPurchaser } from "../_lib/authorizeGiftPurchaser";
 import { giftMutationGate } from "../_lib/giftMutationGate";
 import { validateGiftRecipientFields } from "../_lib/validateGiftRecipientFields";
 
-type FlipBody = { recipientEmail: string; giftSendAt: string };
+type FlipBody = { recipientEmail: string; giftSendAt: string; purchaserTimeZone: string };
 
 function parseBody(value: unknown): FlipBody | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Record<string, unknown>;
-  if (typeof v.recipientEmail !== "string" || typeof v.giftSendAt !== "string") return null;
-  return { recipientEmail: v.recipientEmail, giftSendAt: v.giftSendAt };
+  if (
+    typeof v.recipientEmail !== "string" ||
+    typeof v.giftSendAt !== "string" ||
+    typeof v.purchaserTimeZone !== "string"
+  ) {
+    return null;
+  }
+  return {
+    recipientEmail: v.recipientEmail,
+    giftSendAt: v.giftSendAt,
+    purchaserTimeZone: v.purchaserTimeZone,
+  };
 }
 
 export async function POST(
@@ -109,7 +119,7 @@ export async function POST(
     recipientName: recipientNameFor(submission),
     giftMessage: submission.giftMessage,
     variant: GIFT_DELIVERY.scheduled,
-    sendAtDisplay: formatSendAt(cleaned.giftSendAt),
+    sendAtDisplay: formatSendAt(cleaned.giftSendAt, body.purchaserTimeZone),
   });
   if (send.kind === "sent") {
     await appendEmailFired(id, {

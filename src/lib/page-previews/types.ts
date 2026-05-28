@@ -50,6 +50,7 @@ export type SubmissionRecord = {
   recipientUserId: string | null;
   isGift: boolean;
   purchaserUserId: string | null;
+  purchaserTimeZone: string | null;
   recipientEmail: string | null;
   giftDeliveryMethod: GiftDeliveryMethod | null;
   giftSendAt: string | null;

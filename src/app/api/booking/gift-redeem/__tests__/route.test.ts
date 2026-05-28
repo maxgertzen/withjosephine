@@ -141,6 +141,7 @@ const SUBMISSION = {
   paidAt: "2026-05-01T01:00:00Z",
   isGift: true,
   purchaserUserId: "alice-user",
+  purchaserTimeZone: null,
   recipientUserId: null,
   recipientEmail: "bob@example.com",
   giftDeliveryMethod: "self_send" as const,

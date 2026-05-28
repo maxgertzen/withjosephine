@@ -50,6 +50,7 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
     recipientUserId: null,
     isGift: false,
     purchaserUserId: null,
+    purchaserTimeZone: null,
     recipientEmail: null,
     giftDeliveryMethod: null,
     giftSendAt: null,

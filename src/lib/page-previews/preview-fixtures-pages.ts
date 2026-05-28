@@ -20,6 +20,7 @@ const BASE_SUBMISSION: SubmissionRecord = {
   recipientUserId: null,
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,

@@ -61,6 +61,7 @@ const PAID_SUBMISSION: SubmissionRecord = {
   recipientUserId: "user_recipient_1",
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,

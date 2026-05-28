@@ -323,6 +323,7 @@ function FlipToScheduledControl({
     const result = await action.run({
       recipientEmail: recipientEmail.trim(),
       giftSendAt: conversion.utcIso,
+      purchaserTimeZone: effectiveTz ?? "UTC",
     });
     if (result.ok) {
       setOpen(false);
