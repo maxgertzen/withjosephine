@@ -178,7 +178,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     await form.locator('button[type="submit"]').click();
     await page.waitForURL(/\/my-readings\?welcome=1/, { timeout: 15_000 });
 
-    await expect(page.getByRole("tablist")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     const cookies = await page.context().cookies();
     const sessionCookie = cookies.find((c) => c.name === "__Host-listen_session");

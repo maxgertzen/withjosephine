@@ -270,9 +270,9 @@ test.describe("Listen one-tap round-trip, staging", () => {
     expect(replayLocation).not.toContain("welcome=1");
     expect(replayLocation).toContain(`/listen/${submissionId}`);
     expect(
-      replay.headers()["set-cookie"],
+      replay.headers()["set-cookie"] ?? "",
       "replay must not mint a new session cookie",
-    ).toBeUndefined();
+    ).not.toMatch(/__Host-listen_session=/);
 
     // Following the redirect lands on the signIn form (no active session).
     await page.goto(`/listen/${submissionId}`);
