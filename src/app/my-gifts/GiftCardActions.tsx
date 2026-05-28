@@ -15,7 +15,6 @@ import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import { localInputToUtcIso } from "@/lib/booking/scheduling/timezone";
 import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
-import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 
@@ -199,6 +198,7 @@ function EditRecipientControl({
             value={giftSendAt}
             onChange={setGiftSendAt}
             error={action.fieldErrors.giftSendAt}
+            min={toDatetimeLocalValue(new Date().toISOString())}
           />
           <TimezonePreview
             value={giftSendAt}
@@ -366,6 +366,7 @@ function FlipToScheduledControl({
           value={giftSendAt}
           onChange={setGiftSendAt}
           error={action.fieldErrors.giftSendAt}
+          min={toDatetimeLocalValue(new Date().toISOString())}
         />
         <TimezonePreview
           value={giftSendAt}

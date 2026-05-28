@@ -2,7 +2,6 @@
 
 import { DatePicker } from "@/components/Form/DatePicker";
 import { TimePicker } from "@/components/Form/TimePicker";
-import { errorClassesSmall } from "@/lib/formStyles";
 
 type DateTimePickerProps = {
   id: string;
@@ -17,10 +16,12 @@ type DateTimePickerProps = {
   max?: string;
 };
 
+const DATETIME_LOCAL_SHAPE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2})?$/;
+
 function splitDateTime(value: string): { date: string; time: string } {
-  if (!value) return { date: "", time: "" };
-  const [datePart, timePart] = value.split("T");
-  return { date: datePart ?? "", time: timePart?.slice(0, 5) ?? "" };
+  const match = DATETIME_LOCAL_SHAPE.exec(value);
+  if (!match) return { date: "", time: "" };
+  return { date: match[1], time: match[2] };
 }
 
 function combineDateTime(date: string, time: string): string {
@@ -46,43 +47,29 @@ export function DateTimePicker({
   max,
 }: DateTimePickerProps) {
   const { date, time } = splitDateTime(value);
-  const dateId = `${id}-date`;
-  const timeId = `${id}-time`;
-  const errorId = error ? `${id}-error` : undefined;
-
   return (
-    <div className="flex flex-col gap-1" aria-describedby={errorId}>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="flex-1">
-          <DatePicker
-            id={dateId}
-            name={`${name}-date`}
-            label={`${label} — date`}
-            value={date}
-            onChange={(next) => onChange(combineDateTime(next, time))}
-            required={required}
-            disabled={disabled}
-            min={toDateBoundary(min)}
-            max={toDateBoundary(max)}
-          />
-        </div>
-        <div className="flex-1">
-          <TimePicker
-            id={timeId}
-            name={`${name}-time`}
-            label={`${label} — time`}
-            value={time}
-            onChange={(next) => onChange(combineDateTime(date, next))}
-            required={required}
-            disabled={disabled}
-          />
-        </div>
-      </div>
-      {error ? (
-        <span id={errorId} className={errorClassesSmall}>
-          {error}
-        </span>
-      ) : null}
+    <div className="flex flex-col sm:flex-row gap-2">
+      <DatePicker
+        id={`${id}-date`}
+        name={`${name}-date`}
+        label={`${label} (date)`}
+        value={date}
+        onChange={(next) => onChange(combineDateTime(next, time))}
+        error={error}
+        required={required}
+        disabled={disabled}
+        min={toDateBoundary(min)}
+        max={toDateBoundary(max)}
+      />
+      <TimePicker
+        id={`${id}-time`}
+        name={`${name}-time`}
+        label={`${label} (time)`}
+        value={time}
+        onChange={(next) => onChange(combineDateTime(date, next))}
+        required={required}
+        disabled={disabled}
+      />
     </div>
   );
 }

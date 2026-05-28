@@ -131,6 +131,19 @@ describe("/api/booking/gift", () => {
     expect(body.fieldErrors.purchaserEmail).toBeTruthy();
   });
 
+  it("rejects when purchaserTimeZone is not a valid IANA zone", async () => {
+    const res = await callRoute({ ...SELF_SEND_BODY, purchaserTimeZone: "Not/A_Zone!" });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.purchaserTimeZone).toBeTruthy();
+  });
+
+  it("rejects 400 when purchaserTimeZone is missing entirely (invalid body shape)", async () => {
+    const { purchaserTimeZone: _drop, ...withoutTz } = SELF_SEND_BODY;
+    const res = await callRoute(withoutTz);
+    expect(res.status).toBe(400);
+  });
+
   it("rejects when recipient = purchaser", async () => {
     const res = await callRoute(
       scheduledBody({

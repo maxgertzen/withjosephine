@@ -14,6 +14,7 @@ import {
   countActivePendingGiftsForRecipient,
   type GiftDeliveryMethod,
 } from "@/lib/booking/persistence/repository";
+import { isIanaTimeZone } from "@/lib/booking/scheduling/timezone";
 import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import {
   giftPurchaserConsentSnapshot,
@@ -64,16 +65,6 @@ function isGiftBody(body: unknown): body is GiftBookingBody {
 
 type FieldError = { field: string; message: string };
 
-function isValidIanaTimeZone(tz: string): boolean {
-  if (!tz) return false;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
   const errors: FieldError[] = [];
 
@@ -87,7 +78,7 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
     });
   }
 
-  if (!isValidIanaTimeZone(body.purchaserTimeZone)) {
+  if (!isIanaTimeZone(body.purchaserTimeZone)) {
     errors.push({ field: "purchaserTimeZone", message: "Invalid time zone." });
   }
 

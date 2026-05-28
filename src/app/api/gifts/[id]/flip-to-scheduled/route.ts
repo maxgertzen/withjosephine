@@ -6,6 +6,7 @@ import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { provisionalTokenHash } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
+import { isIanaTimeZone } from "@/lib/booking/scheduling/timezone";
 import {
   appendEmailFired,
   flipGiftToScheduled,
@@ -58,6 +59,12 @@ export async function POST(
   const raw = await request.json().catch(() => null);
   const body = parseBody(raw);
   if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  if (!isIanaTimeZone(body.purchaserTimeZone)) {
+    return NextResponse.json(
+      { error: "Invalid", fieldErrors: [{ field: "purchaserTimeZone", message: "Invalid time zone." }] },
+      { status: 422 },
+    );
+  }
   const purchasedAt = new Date(submission.paidAt ?? submission.createdAt);
   const { errors, cleaned } = validateGiftRecipientFields(body, {
     purchaserEmail: submission.email,

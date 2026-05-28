@@ -105,6 +105,26 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
     ).toBe(401);
   });
 
+  it("returns 422 when purchaserTimeZone is not a valid IANA zone", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    const res = await callRoute({
+      recipientEmail: "r@example.com",
+      giftSendAt: FUTURE_ISO,
+      purchaserTimeZone: "Not/A_Zone!",
+    });
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.fieldErrors?.[0]?.field).toBe("purchaserTimeZone");
+  });
+
+  it("returns 400 when purchaserTimeZone is missing entirely (invalid body shape)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    expect(res.status).toBe(400);
+  });
+
   it("returns 404 when purchaser doesn't match session", async () => {
     getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);

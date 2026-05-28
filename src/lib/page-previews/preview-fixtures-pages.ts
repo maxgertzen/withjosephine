@@ -1,6 +1,6 @@
-import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
 import type { ListenViewState } from "@/app/(authed)/listen/[id]/ListenView";
 import type { MyReadingsViewProps } from "@/app/(authed)/my-readings/MyReadingsView";
+import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
 import type { MyGiftsViewProps } from "@/app/my-gifts/MyGiftsView";
 
 import type { GiftIntakePagePreviewState } from "./GiftIntakePagePreview";
