@@ -128,9 +128,11 @@ export const myGiftsPage = defineType({
     }),
     defineField({
       name: "flipToSelfSendCtaLabel",
-      title: "Action — Flip to self-send",
+      title: "Action — Cancel the schedule and send myself",
       type: "string",
-      initialValue: "Send the link myself instead",
+      description:
+        "Shown on scheduled gifts. Cancels the scheduled send and reverts the gift to self-send mode (link goes back to the purchaser, who then shares it directly or re-schedules with a new date).",
+      initialValue: "Cancel the schedule and send it myself",
     }),
     defineField({
       name: "resendLinkCtaLabel",
@@ -353,38 +355,6 @@ export const myGiftsPage = defineType({
     defineField({
       name: "sendNowSessionExpiredError",
       title: "Send now — session-expired error",
-      type: "string",
-      description:
-        "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",
-      initialValue: "Your session expired. Please refresh and try again.",
-    }),
-    defineField({
-      name: "cancelScheduledCtaLabel",
-      title: "Cancel scheduled — initial CTA",
-      type: "string",
-      description:
-        "Shown on scheduled gifts. Terminally cancels delivery (no email ever fires). Distinct from \"send the link myself\" which only switches mode.",
-      initialValue: "Cancel this gift",
-    }),
-    defineField({
-      name: "cancelScheduledConfirmCtaLabel",
-      title: "Cancel scheduled — armed confirm CTA",
-      type: "string",
-      description:
-        "Second click of the 2-stage confirm pattern. Must explicitly state non-refundable (binding business policy + EU CRD waiver clarity).",
-      initialValue:
-        "Tap again to confirm — your reading will not be sent. This purchase is non-refundable.",
-    }),
-    defineField({
-      name: "cancelScheduledSendingLabel",
-      title: "Cancel scheduled — submitting label",
-      type: "string",
-      description: "Shown on the confirm button while the cancel request is in flight.",
-      initialValue: "Cancelling…",
-    }),
-    defineField({
-      name: "cancelScheduledSessionExpiredError",
-      title: "Cancel scheduled — session-expired error",
       type: "string",
       description:
         "Shown when the purchaser's session expired during the 5s arm window and the confirm tap returns 401.",

@@ -121,7 +121,7 @@ describe("ConfirmArmedButton", () => {
     );
     const { getByRole, queryByRole } = render(
       <ConfirmArmedButton
-        endpoint="/api/gifts/g1/cancel-scheduled"
+        endpoint="/api/gifts/g1/send-now"
         copy={MY_GIFTS_PAGE_DEFAULTS}
         labels={baseLabels}
         errorOverrides={{ http_409: "actionClosedError" }}
@@ -167,7 +167,7 @@ describe("ConfirmArmedButton", () => {
   it("renders destructive variant when variant='destructive'", () => {
     const { getByRole } = render(
       <ConfirmArmedButton
-        endpoint="/api/gifts/g1/cancel-scheduled"
+        endpoint="/api/gifts/g1/send-now"
         copy={MY_GIFTS_PAGE_DEFAULTS}
         labels={baseLabels}
         variant="destructive"

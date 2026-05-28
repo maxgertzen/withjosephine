@@ -128,7 +128,7 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
 
 // DO alarms, cron sweeps, and the Stripe webhook have no request context,
 // so the X-E2E-Resend-DryRun header can't reach them — match by email instead.
-const SANDBOX_EMAIL_PREFIXES = [
+export const SANDBOX_EMAIL_PREFIXES = [
   "gift-roundtrip-purchaser+",
   "gift-roundtrip-recipient+",
   "gift-recipient-listen-purchaser+",
@@ -136,6 +136,9 @@ const SANDBOX_EMAIL_PREFIXES = [
   "listen-roundtrip+",
   "stripe-roundtrip+",
   "v120-qa+",
+  "library-one-tap+",
+  "listen-one-tap+",
+  "prod-smoke+",
 ] as const;
 const SANDBOX_DOMAIN = "@withjosephine.com";
 

@@ -59,7 +59,6 @@ export function GiftCardActions({ gift, status, copy }: Props) {
         <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
         <SendNowControl gift={gift} copy={copy} />
         <FlipToSelfSendControl gift={gift} copy={copy} />
-        <CancelScheduledControl gift={gift} copy={copy} />
       </div>
     );
   }
@@ -292,31 +291,6 @@ function SendNowControl({
       }}
       errorOverrides={{
         http_401: "sendNowSessionExpiredError",
-        http_409: "actionClosedError",
-      }}
-    />
-  );
-}
-
-function CancelScheduledControl({
-  gift,
-  copy,
-}: {
-  gift: GiftCardData;
-  copy: MyGiftsPageContent;
-}) {
-  return (
-    <ConfirmArmedButton
-      endpoint={`/api/gifts/${gift._id}/cancel-scheduled`}
-      copy={copy}
-      labels={{
-        idle: copy.cancelScheduledCtaLabel,
-        confirm: copy.cancelScheduledConfirmCtaLabel,
-        sending: copy.cancelScheduledSendingLabel,
-      }}
-      variant="destructive"
-      errorOverrides={{
-        http_401: "cancelScheduledSessionExpiredError",
         http_409: "actionClosedError",
       }}
     />

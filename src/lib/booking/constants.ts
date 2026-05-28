@@ -17,15 +17,6 @@ export const EMAIL_FIELD_KEY = "email";
 
 export { GIFT_DELIVERY_VARIANT as GIFT_DELIVERY } from "@/lib/emails/giftDeliveryVariant";
 
-export const GIFT_CANCELLED_REASON = {
-  purchaserRequest: "purchaser-request",
-  fraud: "fraud",
-  refund: "refund",
-} as const;
-
-export type GiftCancelledReason =
-  (typeof GIFT_CANCELLED_REASON)[keyof typeof GIFT_CANCELLED_REASON];
-
 export const GIFT_STATUS_KIND = {
   scheduled: "scheduled",
   selfSendReady: "self_send_ready",

@@ -328,10 +328,6 @@ export interface MyGiftsPageContent extends AuthGatedPageContent {
   sendNowConfirmCtaLabel: string;
   sendNowSendingLabel: string;
   sendNowSessionExpiredError: string;
-  cancelScheduledCtaLabel: string;
-  cancelScheduledConfirmCtaLabel: string;
-  cancelScheduledSendingLabel: string;
-  cancelScheduledSessionExpiredError: string;
 }
 
 export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
@@ -356,7 +352,7 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   statusDeliveredLabel: "Delivered",
   statusCancelledLabel: "Cancelled",
   editRecipientCtaLabel: "Edit recipient",
-  flipToSelfSendCtaLabel: "Send the link myself instead",
+  flipToSelfSendCtaLabel: "Cancel the schedule and send it myself",
   resendLinkCtaLabel: "Resend the link to me",
   privacyNote:
     "We only show you status here — your recipient’s answers, voice note, and PDF stay private to them.",
@@ -392,12 +388,6 @@ export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
   sendNowConfirmCtaLabel: "Tap again to send today",
   sendNowSendingLabel: "Sending…",
   sendNowSessionExpiredError:
-    "Your session expired. Please refresh and try again.",
-  cancelScheduledCtaLabel: "Cancel this gift",
-  cancelScheduledConfirmCtaLabel:
-    "Tap again to confirm — your reading will not be sent. This purchase is non-refundable.",
-  cancelScheduledSendingLabel: "Cancelling…",
-  cancelScheduledSessionExpiredError:
     "Your session expired. Please refresh and try again.",
 };
 

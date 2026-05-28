@@ -39,7 +39,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   timeout: isSandbox ? 5 * 60 * 1000 : 60_000,
   expect: { timeout: 10_000 },
-  globalTimeout: isSandbox ? 10 * 60 * 1000 : 6 * 60 * 1000,
+  globalTimeout: isSandbox ? 25 * 60 * 1000 : 6 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
 
   use: {
