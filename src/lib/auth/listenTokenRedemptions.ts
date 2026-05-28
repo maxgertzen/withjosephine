@@ -16,6 +16,7 @@ export type RecordRedemptionArgs = {
   recipientUserId: string;
   redeemedAt: number;
   ipHash: string | null;
+  uaHash: string | null;
   mintSource: ListenTokenMintSource;
 };
 
@@ -28,8 +29,8 @@ export async function recordListenTokenRedemption(
 ): Promise<RecordRedemptionResult> {
   const rows = await dbQuery<{ jti: string }>(
     `INSERT OR IGNORE INTO listen_token_redemptions
-       (jti, submission_id, recipient_user_id, redeemed_at, ip_hash, mint_source)
-     VALUES (?, ?, ?, ?, ?, ?)
+       (jti, submission_id, recipient_user_id, redeemed_at, ip_hash, ua_hash, mint_source)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      RETURNING jti`,
     [
       args.jti,
@@ -37,6 +38,7 @@ export async function recordListenTokenRedemption(
       args.recipientUserId,
       args.redeemedAt,
       args.ipHash,
+      args.uaHash,
       args.mintSource,
     ],
   );

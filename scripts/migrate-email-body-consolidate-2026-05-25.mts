@@ -350,8 +350,7 @@ await migrateRecipientIntakeReceived();
 await migrateDay7Delivery();
 await migratePrivacyExport();
 await migrateMagicLink("emailMagicLink");
-await migrateMagicLink("emailMagicLinkMyReadings");
-await migrateMagicLink("emailMagicLinkMyGifts");
+await migrateMagicLink("emailMagicLinkLibrary");
 await migrateGiftClaimSplit();
 await migrateGiftPurchaseSplit();
 

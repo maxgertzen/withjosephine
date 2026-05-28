@@ -15,6 +15,7 @@ import { GiftPurchaseConfirmationScheduled } from "./emails/GiftPurchaseConfirma
 import { GiftPurchaseConfirmationSelfSend } from "./emails/GiftPurchaseConfirmationSelfSend";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
+import { NewDeviceNotice } from "./emails/NewDeviceNotice";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
@@ -139,6 +140,7 @@ export const SANDBOX_EMAIL_PREFIXES = [
   "library-one-tap+",
   "listen-one-tap+",
   "prod-smoke+",
+  "new-device-notice+",
 ] as const;
 const SANDBOX_DOMAIN = "@withjosephine.com";
 
@@ -534,7 +536,53 @@ export async function sendDay7Delivery(
   });
 }
 
-export type MagicLinkContext = "listen" | "my-readings" | "my-gifts";
+export async function sendNewDeviceRevokeAdminAlert(args: {
+  submissionId: string;
+  revokedCount: number;
+}): Promise<EmailSendResult> {
+  const notificationEmail = requireNotificationEmail("new_device_revoke_admin");
+  if (typeof notificationEmail !== "string") return notificationEmail;
+  const subject = `Recipient pressed "this was not me": ${args.submissionId}`;
+  const html = `<p>Submission <strong>${args.submissionId}</strong>: recipient pressed the "this was not me" button on a new-device notice. Revoked ${args.revokedCount} active listen session(s).</p><p>Worth a quick follow-up email to confirm they are safe.</p>`;
+  return sendOrSkip({
+    to: notificationEmail,
+    subject,
+    html,
+    subType: "new_device_revoke_admin",
+    submissionId: args.submissionId,
+  });
+}
+
+export async function sendNewDeviceNotice(args: {
+  to: string;
+  firstName: string;
+  submissionId: string;
+  revokeUrl: string;
+}): Promise<EmailSendResult> {
+  const { EMAIL_NEW_DEVICE_NOTICE_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailNewDeviceNotice } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailNewDeviceNotice().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_NEW_DEVICE_NOTICE_DEFAULTS, ...(sanity ?? {}) };
+  const html = await render(
+    <NewDeviceNotice
+      vars={{ firstName: args.firstName, revokeUrl: args.revokeUrl }}
+      copy={copy}
+      shell={shell}
+    />,
+  );
+  return sendOrSkip({
+    to: args.to,
+    subject: copy.subject,
+    html,
+    subType: "new_device_notice",
+    submissionId: args.submissionId,
+  });
+}
+
+export type MagicLinkContext = "listen" | "library";
 
 export async function sendMagicLink(args: {
   to: string;
@@ -542,25 +590,17 @@ export async function sendMagicLink(args: {
   context: MagicLinkContext;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const {
-    EMAIL_MAGIC_LINK_DEFAULTS,
-    EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
-    EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
-  } = await import("@/data/defaults");
-  const { fetchEmailMagicLink, fetchEmailMagicLinkMyReadings, fetchEmailMagicLinkMyGifts } =
-    await import("@/lib/sanity/fetch");
+  const { EMAIL_MAGIC_LINK_DEFAULTS, EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS } = await import(
+    "@/data/defaults"
+  );
+  const { fetchEmailMagicLink, fetchEmailMagicLinkLibrary } = await import("@/lib/sanity/fetch");
 
   const sources = {
     listen: { defaults: EMAIL_MAGIC_LINK_DEFAULTS, fetch: fetchEmailMagicLink, subType: "magic_link" as const },
-    "my-readings": {
-      defaults: EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
-      fetch: fetchEmailMagicLinkMyReadings,
-      subType: "magic_link_my_readings" as const,
-    },
-    "my-gifts": {
-      defaults: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
-      fetch: fetchEmailMagicLinkMyGifts,
-      subType: "magic_link_my_gifts" as const,
+    library: {
+      defaults: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS,
+      fetch: fetchEmailMagicLinkLibrary,
+      subType: "magic_link_library" as const,
     },
   };
   const source = sources[args.context];

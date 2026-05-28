@@ -294,20 +294,8 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
-export const emailMagicLinkMyReadingsQuery = groq`
-  *[_type == "emailMagicLinkMyReadings"][0] {
-    subject,
-    preview,
-    heroLine,
-    buttonLabel,
-    greeting,
-    body,
-    signOff
-  }
-`;
-
-export const emailMagicLinkMyGiftsQuery = groq`
-  *[_type == "emailMagicLinkMyGifts"][0] {
+export const emailMagicLinkLibraryQuery = groq`
+  *[_type == "emailMagicLinkLibrary"][0] {
     subject,
     preview,
     heroLine,
@@ -328,6 +316,18 @@ export const emailStepUpOtpQuery = groq`
     expiryLine,
     closingLine,
     signoff
+  }
+`;
+
+export const emailNewDeviceNoticeQuery = groq`
+  *[_type == "emailNewDeviceNotice"][0] {
+    subject,
+    preview,
+    heroLine,
+    bodyIntro,
+    wasItYouButtonLabel,
+    bodyPostButton,
+    signOff
   }
 `;
 

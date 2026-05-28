@@ -12,8 +12,7 @@ import { type MagicLinkContext, sendMagicLink } from "@/lib/resend";
 
 function deriveMagicLinkContext(cleanNext: string): MagicLinkContext {
   if (cleanNext.startsWith("/listen/")) return "listen";
-  if (cleanNext === "/my-gifts" || cleanNext.startsWith("/my-gifts/")) return "my-gifts";
-  return "my-readings";
+  return "library";
 }
 
 // Uniform response across known/unknown email (no enumeration leak); Resend send

@@ -16,6 +16,7 @@ const baseArgs = {
   userId: "user-xyz",
   redeemedAt: 1_700_000_000_000,
   ipHash: "deadbeef",
+  uaHash: "uahash-baseline",
   mintSource: "order_confirmation" as const,
 };
 
@@ -63,17 +64,18 @@ describe("recordLibraryTokenRedemption", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("persists all five columns verbatim", async () => {
+  it("persists all six columns verbatim", async () => {
     await recordLibraryTokenRedemption({
       jti: "jti-cols",
       userId: "user-cols",
       redeemedAt: 1_700_000_123_456,
       ipHash: "hash-cols",
+      uaHash: "ua-cols",
       mintSource: "day7_delivery",
     });
 
-    const rows = await dbQuery<LedgerRow>(
-      `SELECT jti, user_id, redeemed_at, ip_hash, mint_source
+    const rows = await dbQuery<LedgerRow & { ua_hash: string | null }>(
+      `SELECT jti, user_id, redeemed_at, ip_hash, ua_hash, mint_source
        FROM library_token_redemptions WHERE jti = ?`,
       ["jti-cols"],
     );
@@ -82,6 +84,7 @@ describe("recordLibraryTokenRedemption", () => {
       user_id: "user-cols",
       redeemed_at: 1_700_000_123_456,
       ip_hash: "hash-cols",
+      ua_hash: "ua-cols",
       mint_source: "day7_delivery",
     });
   });
@@ -92,6 +95,7 @@ describe("recordLibraryTokenRedemption", () => {
       userId: "user-null",
       redeemedAt: 1_700_000_000_000,
       ipHash: null,
+      uaHash: null,
       mintSource: "order_confirmation",
     });
     expect(result).toEqual({ ok: true });
@@ -143,6 +147,7 @@ describe("recordLibraryTokenRedemption", () => {
       userId: "user-original",
       redeemedAt: 1_700_000_000_000,
       ipHash: "ip-original",
+      uaHash: "ua-original",
       mintSource: "order_confirmation",
     });
 
@@ -151,6 +156,7 @@ describe("recordLibraryTokenRedemption", () => {
       userId: "user-different",
       redeemedAt: 1_700_000_999_999,
       ipHash: "ip-different",
+      uaHash: "ua-different",
       mintSource: "admin_resend",
     });
     expect(second).toEqual({ ok: false, reason: "already_redeemed" });

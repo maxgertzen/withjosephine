@@ -15,6 +15,7 @@ export type RecordLibraryRedemptionArgs = {
   userId: string;
   redeemedAt: number;
   ipHash: string | null;
+  uaHash: string | null;
   mintSource: LibraryTokenMintSource;
 };
 
@@ -27,10 +28,10 @@ export async function recordLibraryTokenRedemption(
 ): Promise<RecordLibraryRedemptionResult> {
   const rows = await dbQuery<{ jti: string }>(
     `INSERT OR IGNORE INTO library_token_redemptions
-       (jti, user_id, redeemed_at, ip_hash, mint_source)
-     VALUES (?, ?, ?, ?, ?)
+       (jti, user_id, redeemed_at, ip_hash, ua_hash, mint_source)
+     VALUES (?, ?, ?, ?, ?, ?)
      RETURNING jti`,
-    [args.jti, args.userId, args.redeemedAt, args.ipHash, args.mintSource],
+    [args.jti, args.userId, args.redeemedAt, args.ipHash, args.uaHash, args.mintSource],
   );
 
   return rows.length === 0 ? { ok: false, reason: "already_redeemed" } : { ok: true };

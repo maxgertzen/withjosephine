@@ -210,8 +210,7 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
-export type SanityEmailMagicLinkMyReadings = SanityEmailMagicLink;
-export type SanityEmailMagicLinkMyGifts = SanityEmailMagicLink;
+export type SanityEmailMagicLinkLibrary = SanityEmailMagicLink;
 
 export type SanityEmailStepUpOtp = {
   subject: string;
@@ -222,6 +221,16 @@ export type SanityEmailStepUpOtp = {
   expiryLine: string;
   closingLine: string;
   signoff: string;
+};
+
+export type SanityEmailNewDeviceNotice = {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  bodyIntro?: PortableTextBlock[];
+  wasItYouButtonLabel: string;
+  bodyPostButton?: PortableTextBlock[];
+  signOff: string | null;
 };
 
 export type SanityEmailOrderConfirmation = {

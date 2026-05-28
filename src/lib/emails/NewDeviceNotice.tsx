@@ -1,6 +1,6 @@
 import { Button, Container, Section } from "@react-email/components";
 
-import type { EmailDay7DeliveryContent, EmailSharedShellContent } from "@/data/defaults";
+import type { EmailNewDeviceNoticeContent, EmailSharedShellContent } from "@/data/defaults";
 import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
@@ -8,23 +8,24 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
-import { LibraryButton } from "./LibraryButton";
 import { PortableTextBody } from "./PortableTextBody";
 
-export type Day7DeliveryVars = {
+export type NewDeviceNoticeVars = {
   firstName: string;
-  readingName: string;
-  listenUrl: string;
-  libraryUrl?: string;
+  revokeUrl: string;
 };
 
-export type Day7DeliveryProps = {
-  vars: Day7DeliveryVars;
-  copy: EmailDay7DeliveryContent;
+export type NewDeviceNoticeProps = {
+  vars: NewDeviceNoticeVars;
+  copy: EmailNewDeviceNoticeContent;
   shell?: EmailSharedShellContent;
 };
 
-export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: Day7DeliveryProps) {
+export function NewDeviceNotice({
+  vars,
+  copy: rawCopy,
+  shell = EMAIL_SHARED_SHELL_DEFAULTS,
+}: NewDeviceNoticeProps) {
   const copy = applyTokens(rawCopy, vars);
 
   return (
@@ -46,7 +47,7 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
 
         <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
           <Button
-            href={vars.listenUrl}
+            href={vars.revokeUrl}
             className="bg-ink text-cream font-sans no-underline"
             style={{
               padding: "16px 32px",
@@ -55,11 +56,9 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
               letterSpacing: "0.02em",
             }}
           >
-            {copy.openButtonLabel}
+            {copy.wasItYouButtonLabel}
           </Button>
         </div>
-
-        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
 
         <Section
           className="font-sans text-body"
@@ -67,29 +66,6 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
         >
           <PortableTextBody value={copy.bodyPostButton} />
         </Section>
-
-        <div style={{ padding: "0 48px" }}>
-          <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
-            <p
-              className="font-sans text-muted uppercase"
-              style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
-            >
-              {copy.cardLabel}
-            </p>
-            <p
-              className="font-serif text-ink"
-              style={{ margin: "0 0 12px 0", fontSize: 22 }}
-            >
-              {vars.readingName}
-            </p>
-            <p
-              className="font-sans text-muted"
-              style={{ margin: 0, fontSize: 14 }}
-            >
-              {copy.cardDeliveryLine}
-            </p>
-          </Section>
-        </div>
 
         <EmailFooter shell={shell} />
       </Container>

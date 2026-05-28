@@ -32,7 +32,8 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
       await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
     expect(text).toContain("Open it whenever the timing feels right");
-    expect(text).toContain("signs you into your reading for the next seven days");
+    expect(text).toContain("You will be signed in for the next seven days");
+    expect(text).toContain("This link is just for you");
     expect(text).toContain("If anything you hear sits hard");
   });
 

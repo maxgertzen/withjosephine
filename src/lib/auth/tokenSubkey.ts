@@ -5,7 +5,11 @@ const SALT = TEXT_ENCODER.encode("withjosephine.com.auth-token.v1");
 const INFO_PREFIX = "josephine.auth-token-subkey.";
 const SUBKEY_BIT_LENGTH = 256;
 
-export type TokenSubkeyPurpose = "listen.v1" | "library.v1" | "stepup.v1";
+export type TokenSubkeyPurpose =
+  | "listen.v1"
+  | "library.v1"
+  | "stepup.v1"
+  | "new_device_revoke.v1";
 
 export async function deriveTokenSubkeyHex(purpose: TokenSubkeyPurpose): Promise<string> {
   const secret = process.env.AUTH_TOKEN_SECRET;

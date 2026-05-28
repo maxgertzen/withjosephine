@@ -71,6 +71,7 @@ export async function POST(request: Request): Promise<Response> {
     userId: verify.userId,
     redeemedAt: now,
     ipHash: audit.ipHash,
+    uaHash: audit.userAgentHash,
     mintSource: verify.mintSource,
   });
   if (!recordResult.ok) return fallThroughResponse(origin);

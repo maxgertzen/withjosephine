@@ -17,17 +17,18 @@ Squash-merged at `9931964`. All three fixes from the locked plan landed in one P
 1. ✅ **Apply D1 migration 0017 to staging** — done 2026-05-28 by Max. `purchaser_time_zone TEXT` column now exists on staging `submissions`.
 2. **Apply D1 migration 0017 to production:** at `release/v1.4.0 → main` merge time via `pnpm migrate:apply:prod`.
 3. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`): walk through a scheduled-gift purchase to verify the OC email subject + body render the send-at in the purchaser's tz. Walk through `/my-readings` (and any of the moved routes) to verify the brand top-bar shows up. Open the edit-recipient drawer on `/my-readings/gifts` and verify the new DateTimePicker behaves correctly on real mobile (the iOS scroll-snap behavior inside Radix Portal is a known a11y-review flag worth verifying on device).
-4. **Carry-over from PR #214** — still open: run Sanity migration against production (`scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts`) + re-deploy Studio (`pnpm run deploy` from `studio/`).
+4. ✅ **Carry-over from PR #214** — done 2026-05-28. Sanity migration applied to production (4 deprecated cancelScheduled* fields unset on `myGiftsPage`, `flipToSelfSendCtaLabel` relabeled from "Send the link myself instead" → "Cancel the schedule and send it myself"; GROQ verified). Studio re-deployed to https://withjosephine.sanity.studio/ after a surgical fix to `studio/sanity.cli.ts` vite aliases (PR #217's `(authed)` route group move missed updating the studio's path-resolution regex — `^@\/app\/listen\/` → `^@\/app\/\(authed\)\/listen\/` etc.).
 
 **NOT touched, flagged for explicit approval before any next session:**
 - Removing `onFocus={() => setOpen(true)}` on DatePicker/TimePicker (changes intake form UX on `/book/intake` — TikTok-mobile primary traffic).
 - iOS native `<select>` wheel risk inside Radix Popover in TimePicker (audit-flagged, needs real-device smoke).
 - Replacing TimePicker's native `<select>` dropdowns with the same scroll-snap UX as DateTimePicker.
 
-## ⚠️ Open Max-actions from PR #214 (2026-05-28)
+## ✅ PR #214 carry-overs — CLOSED 2026-05-28
 
-- **Run Sanity migration against production**: `set -a && source .env.local && set +a && pnpm tsx scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts` — unsets 4 removed fields + applies new flip label only if old default present (preserves any Becky edits). Idempotent. Staging already run + verified (4 fields unset, label flipped) during the session.
-- **Re-deploy Studio**: `pnpm run deploy` from `studio/` so Becky sees the updated `flipToSelfSendCtaLabel` field title + description.
+- Sanity migration applied to production (prod `myGiftsPage`: 4 cancelScheduled* fields unset, `flipToSelfSendCtaLabel` relabeled). GROQ verified post-state.
+- Studio re-deployed to https://withjosephine.sanity.studio/ — picks up the relabeled CTA + new field copy for Becky.
+- Surgical fix to `studio/sanity.cli.ts`: PR #217 moved `listen/` + `my-readings/` under `(authed)/` route group but missed updating the studio's vite alias regex patterns. Studio build failed `Failed to resolve import "@/app/(authed)/listen/[id]/ListenView"`. Two alias regexes updated to escape the parens (`^@\/app\/\(authed\)\/listen\/` etc.). Zero callers of the old top-level paths (grep-confirmed) so old aliases replaced, not additively kept.
 
 ## 📌 Resend leak post-mortem (2026-05-28)
 

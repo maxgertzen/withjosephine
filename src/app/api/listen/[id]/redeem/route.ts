@@ -102,6 +102,7 @@ export async function POST(
     recipientUserId: submission.recipientUserId,
     redeemedAt: now,
     ipHash: audit.ipHash,
+    uaHash: audit.userAgentHash,
     mintSource: verify.mintSource,
   });
   if (!recordResult.ok) return fallThroughResponse(origin, id);

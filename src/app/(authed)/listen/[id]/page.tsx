@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { LISTEN_INTERSTITIAL_DEFAULTS, LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import {
   AUDIT_EVENT_TYPE,
   COOKIE_NAME,
   getActiveSession,
+  hashUserAgent,
   writeAudit,
 } from "@/lib/auth/listenSession";
 import { verifyListenToken } from "@/lib/auth/listenToken";
+import {
+  maybeRecordNewDeviceForSubmission,
+  mintNewDeviceRevokeToken,
+} from "@/lib/auth/newDeviceNotice";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
-import { findSubmissionById, SUBMISSION_STATUS } from "@/lib/booking/submissions";
+import {
+  buildSubmissionContext,
+  findSubmissionById,
+  SUBMISSION_STATUS,
+} from "@/lib/booking/submissions";
+import { siteOrigin } from "@/lib/env";
+import { USER_AGENT_HEADER } from "@/lib/http/headers";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
+import { sendNewDeviceNotice } from "@/lib/resend";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 
 import { ListenTokenInterstitial } from "./ListenTokenInterstitial";
@@ -106,7 +118,71 @@ export default async function ListenPage({
 
   const submission = session ? await findSubmissionById(id) : null;
   const state = resolveAuthenticatedState({ id, session, submission, welcome: search.welcome });
+
+  // New-device notice detection. Fires only when the session is valid AND the
+  // submission belongs to the session user AND the current UA-hash differs
+  // from the earliest-recorded redemption baseline for this submission.
+  // Best-effort; swallows DB errors so the page render never blocks on it.
+  if (
+    session &&
+    submission &&
+    state.kind === "delivered" &&
+    submission.recipientUserId === session.userId
+  ) {
+    void detectAndFireNewDeviceNotice({
+      submissionId: id,
+      recipientUserId: session.userId,
+      submission,
+    });
+  }
+
   return <ListenView copy={copy} state={state} />;
+}
+
+async function detectAndFireNewDeviceNotice(args: {
+  submissionId: string;
+  recipientUserId: string;
+  submission: SubmissionRecord;
+}): Promise<void> {
+  try {
+    const requestHeaders = await headers();
+    const ua = requestHeaders.get(USER_AGENT_HEADER) ?? "";
+    if (!ua) return;
+    const currentUaHash = await hashUserAgent(ua);
+    const record = await maybeRecordNewDeviceForSubmission({
+      submissionId: args.submissionId,
+      recipientUserId: args.recipientUserId,
+      currentUaHash,
+    });
+    if (!record.fired) return;
+
+    const ctx = buildSubmissionContext(args.submission);
+    const revokeToken = await mintNewDeviceRevokeToken({
+      recipientUserId: args.recipientUserId,
+      submissionId: args.submissionId,
+    });
+    const revokeUrl = new URL(
+      "/api/auth/revoke-recipient-sessions",
+      siteOrigin(),
+    );
+    revokeUrl.searchParams.set("t", revokeToken);
+
+    await sendNewDeviceNotice({
+      to: ctx.email,
+      firstName: ctx.firstName,
+      submissionId: args.submissionId,
+      revokeUrl: revokeUrl.toString(),
+    });
+
+    await writeAudit({
+      userId: args.recipientUserId,
+      submissionId: args.submissionId,
+      eventType: AUDIT_EVENT_TYPE.new_device_notice_sent,
+      success: true,
+    });
+  } catch (err) {
+    console.error("[new-device-notice] fire failed", err);
+  }
 }
 
 function resolveAuthenticatedState(args: {

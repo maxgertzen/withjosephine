@@ -13,9 +13,9 @@ import {
   emailGiftClaimReminderQuery,
   emailGiftPurchaseConfirmationScheduledQuery,
   emailGiftPurchaseConfirmationSelfSendQuery,
-  emailMagicLinkMyGiftsQuery,
-  emailMagicLinkMyReadingsQuery,
+  emailMagicLinkLibraryQuery,
   emailMagicLinkQuery,
+  emailNewDeviceNoticeQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
   emailRecipientIntakeReceivedQuery,
@@ -50,8 +50,8 @@ import type {
   SanityEmailGiftPurchaseConfirmationScheduled,
   SanityEmailGiftPurchaseConfirmationSelfSend,
   SanityEmailMagicLink,
-  SanityEmailMagicLinkMyGifts,
-  SanityEmailMagicLinkMyReadings,
+  SanityEmailMagicLinkLibrary,
+  SanityEmailNewDeviceNotice,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailRecipientIntakeReceived,
@@ -219,19 +219,10 @@ export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink 
   return data;
 });
 
-export const fetchEmailMagicLinkMyReadings = cache(
-  async (): Promise<SanityEmailMagicLinkMyReadings | null> => {
-    const { data } = await sanityFetch<SanityEmailMagicLinkMyReadings | null>({
-      query: emailMagicLinkMyReadingsQuery,
-    });
-    return data;
-  },
-);
-
-export const fetchEmailMagicLinkMyGifts = cache(
-  async (): Promise<SanityEmailMagicLinkMyGifts | null> => {
-    const { data } = await sanityFetch<SanityEmailMagicLinkMyGifts | null>({
-      query: emailMagicLinkMyGiftsQuery,
+export const fetchEmailMagicLinkLibrary = cache(
+  async (): Promise<SanityEmailMagicLinkLibrary | null> => {
+    const { data } = await sanityFetch<SanityEmailMagicLinkLibrary | null>({
+      query: emailMagicLinkLibraryQuery,
     });
     return data;
   },
@@ -243,6 +234,15 @@ export const fetchEmailStepUpOtp = cache(async (): Promise<SanityEmailStepUpOtp 
   });
   return data;
 });
+
+export const fetchEmailNewDeviceNotice = cache(
+  async (): Promise<SanityEmailNewDeviceNotice | null> => {
+    const { data } = await sanityFetch<SanityEmailNewDeviceNotice | null>({
+      query: emailNewDeviceNoticeQuery,
+    });
+    return data;
+  },
+);
 
 export const fetchEmailPrivacyExport = cache(
   async (): Promise<SanityEmailPrivacyExport | null> => {
