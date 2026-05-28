@@ -25,7 +25,6 @@ Use **incognito / private windows** for every customer journey. Cached state bre
 | `+recipient-scheduled` | Gift recipient via auto-fire | J4 |
 | `+gift-cancel-auto` / `+recipient-cancel-auto` | J5 cancel-auto-send test pair | J5 |
 | `+gift-sendnow` / `+recipient-sendnow` | J5 send-now test pair | J5 |
-| `+gift-cancel-sched` / `+recipient-cancel-sched` | J5 cancel-scheduled test pair | J5 |
 
 Add a date suffix (e.g. `+self-20260520`) if you want to tell smoke rounds apart.
 
@@ -188,13 +187,13 @@ Same as J3b + J3c but for the J4 recipient submission. Confirm Day-7 + magic-lin
 
 ## Journey 5 — /my-gifts purchaser actions
 
-The purchaser manages a scheduled gift via `/my-gifts`. Some actions are repeatable (edit-recipient, reschedule, view-link, regenerate); three actions are **terminal** (cancel-auto-send, send-now, cancel-scheduled) — each consumes a fresh scheduled gift, so this journey requires **3 separate scheduled gift purchases** (use the `+gift-cancel-auto`, `+gift-sendnow`, `+gift-cancel-sched` pairs from the suffix table).
+The purchaser manages a scheduled gift via `/my-gifts`. Some actions are repeatable (edit-recipient, reschedule, view-link, regenerate); two actions are **terminal** (cancel-auto-send, send-now), each consuming a fresh scheduled gift, so this journey requires **2 separate scheduled gift purchases** (use the `+gift-cancel-auto` and `+gift-sendnow` pairs from the suffix table).
 
 For each terminal-action test, do a fresh `J4a` purchase first to set up the scheduled gift, picking send-at ~20 minutes out (so you have time to take the action before it fires).
 
 ### J5a — Sign in to /my-gifts
 
-For each of the three purchaser inboxes:
+For each of the two purchaser inboxes:
 1. Incognito. Go to staging home → click **My Gifts** in the footer (or hit `/my-gifts` directly).
 2. Enter the purchaser's email. **Send sign-in link**.
 3. Check inbox → click **Magic Link** email.
@@ -206,7 +205,7 @@ For each of the three purchaser inboxes:
 **Watch for:**
 - ❌ Cross-user leak (shows another purchaser's gift) → **CRITICAL**, flag instantly.
 
-### J5b — Repeatable actions (run on any of the 3 purchases)
+### J5b — Repeatable actions (run on either purchase)
 
 | Action | What to do | What to expect |
 |--------|-----------|----------------|
@@ -237,22 +236,11 @@ For each of the three purchaser inboxes:
 - ❌ Claim email doesn't fire within ~1 min of send-now click → flag.
 - ❌ Both the send-now email AND the original scheduled email fire → idempotency broken, flag.
 
-### J5e — Cancel-scheduled (uses `+gift-cancel-sched`)
-
-1. On the `+gift-cancel-sched` scheduled gift, click **Cancel this gift** → 5-second confirm window — the confirm CTA must surface the wording **"this purchase is non-refundable"** (load-bearing for EU CRD waiver clarity).
-2. Confirm.
-3. Card flips to **cancelled** state.
-4. Verify: at the originally-scheduled fire time, **no claim email** arrives at `+recipient-cancel-sched`.
-
-**Watch for:**
-- ❌ The confirm CTA does not surface "non-refundable" — copy regression in Sanity, flag.
-- ❌ Claim email fires anyway → DO didn't pick up the cancel, flag.
-
-### J5f — Sanity-editable copy on /my-gifts (post-launch editability proof)
+### J5e — Sanity-editable copy on /my-gifts (post-launch editability proof)
 
 **As Becky (in Studio, on the staging dataset):**
 1. Open the **My Gifts page** singleton.
-2. Change `cancelScheduledCtaLabel` to a different string (e.g. add a period).
+2. Change `flipToSelfSendCtaLabel` to a different string (e.g. add a period).
 3. **Publish**.
 
 **Back as purchaser** on `/my-gifts`:

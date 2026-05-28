@@ -3,7 +3,7 @@
 // Removes the 4 cancelScheduled* fields from the myGiftsPage singleton
 // (destructive-cancel mechanism deleted). Also relabels
 // flipToSelfSendCtaLabel from the old "Send the link myself instead" to the
-// new "Cancel the schedule and send it myself" — but only if the current
+// new "Cancel the schedule and send it myself", but only if the current
 // value still matches the old default (preserves any Becky-edited value).
 //
 // Idempotent: re-running mutates 0.
