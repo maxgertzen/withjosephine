@@ -7,6 +7,7 @@ import { DayPicker } from "react-day-picker";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { mergeClasses } from "@/lib/utils";
 
 const ISO_DATE = "yyyy-MM-dd";
 const SLASH_DATE = "dd/MM/yyyy";
@@ -133,7 +134,7 @@ export function DatePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
+      <div ref={wrapperRef} className={mergeClasses("relative", open && "z-30")}>
         <input
           id={id}
           name={name}

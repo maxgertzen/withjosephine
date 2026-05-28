@@ -6,6 +6,7 @@ import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import { type CityMatch, searchCities } from "@/lib/places/cities";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { mergeClasses } from "@/lib/utils";
 
 type PlaceAutocompleteProps = {
   id: string;
@@ -126,7 +127,7 @@ export function PlaceAutocomplete({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
+      <div ref={wrapperRef} className={mergeClasses("relative", open && "z-30")}>
         <input
           ref={inputRef}
           id={id}
