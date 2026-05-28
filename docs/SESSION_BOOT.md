@@ -1,68 +1,28 @@
 # Session Boot — Active State
 
-## 🔜 NEXT SESSION — three follow-up fixes on `/my-readings` (locked plan, ready to execute)
+## ✅ 2026-05-28 — PR #217 shipped: three follow-up fixes bundled on `release/v1.4.0`
 
-Max approved 2026-05-28 to ship as **three sequential sub-PRs on `release/v1.4.0`** (option a from the scope question). Order: 1 → 2 → 3. PR #214 must merge first (done; squash `aadf98d`) so each follow-up branches off the up-to-date release branch.
+Squash-merged at `9931964`. All three fixes from the locked plan landed in one PR (per Max's "should have been one combined PR" feedback after I initially set up three stacked draft PRs).
 
-**Fix #1 — Email scheduled-date/time in purchaser's timezone (NOT UTC)**
+- **Fix #1 — purchaser tz on scheduled-gift OC email (dex `c1u7yn8g`, closed):** new D1 column `submissions.purchaser_time_zone` (migration `0017_purchaser_time_zone.sql`), `formatSendAt(iso, tz?)` accepts optional IANA zone, default UTC for legacy. Both gift POST + flip-to-scheduled validate via canonical `isIanaTimeZone`. Webhook reads tz from D1 row (mid-PR architecture pivot from the locked Stripe-metadata round-trip; D1 column matches Calendly/Eventbrite/Airbnb pattern).
+- **Fix #2 — `(authed)` route group + brand top-bar (dex `gj1s46yv`, closed):** first Next.js route group in the codebase. `my-readings` (+ welcome), `listen/[id]`, `gift/intake`, `gift/claim/[token]`, `thank-you/[readingId]` moved underneath. New `src/app/(authed)/layout.tsx` adds sticky brand top-bar (✦ Josephine wordmark + Home link, `aria-label="Site"`, `border-j-border-subtle`). URLs unchanged so middleware path-based auth gating still works.
+- **Fix #3 — brand DateTimePicker (dex `ahfwbcot`, closed):** new `src/components/Form/DateTimePicker/` replacing native `<input type="datetime-local">` in edit-recipient drawer + FlipToScheduledControl. After multiple rewrites, final shape is ONE text input → ONE popover with calendar on left + two scroll-snap HH/MM columns (60 minutes) on right. ARIA-APG roving-tabindex listbox on time columns (arrows move active option, Enter/Space commits). Done button + Escape close via `closeAndReturnFocus` (with `justClosedRef` guard against the `onFocus` reopen race). Partial state renders `dd/MM/yyyy` or `HH:mm` so selections feel responsive.
+- **Bonus a11y polish on intake DatePicker + TimePicker:** `role="combobox"` + `aria-expanded`, today indicator as ring not gold-on-cream (was 2.6:1 → WCAG fail), 40×40 day buttons, calendar/dropdown SR labels, backspace-clears-onChange, partial-draft-preserved-on-blur, future-date-no-age-warning. TimePicker `aria-live` for "I don't know my birth time" toggle.
+- **Shared `src/components/Form/DayPickerShared/dayPickerShared.ts`** — extracted duplicated `DAY_PICKER_LABELS` + `DAY_PICKER_BASE_CLASSES` (~55 LoC dedup).
+- **New Storybook story** at `Form/DateTimePicker` (Empty / WithInitialValue / WithMinNow / WithError).
+- **15 functionality tests** on DateTimePicker covering click + Enter + Escape + Done + Tab navigation + partial-state. CI green at 16m23s. 2067/2067 vitest.
 
-Current: `src/lib/booking/formatSendAt.ts:14-18` hard-locks `timeZone: "UTC"`. Doc-comment claims "purchaser's timezone is unknown server-side" — that's wrong; the system already collects the IANA tz client-side via `useEffectiveTimeZone` and passes it to `localInputToUtcIso(giftSendAt, effectiveTz)` for the UTC conversion. The tz is just thrown away after conversion.
+**🚨 Outstanding Max-actions:**
 
-Approach (locked): server still computes the display string, but accepts the IANA tz at call time. Single source of truth.
+1. **Apply D1 migration 0017 to staging:** `pnpm migrate:apply:staging` adds `purchaser_time_zone TEXT` to the `submissions` table. Without it, the gift POST will write a column that doesn't exist and fail.
+2. **Apply D1 migration 0017 to production:** at `release/v1.4.0 → main` merge time via `pnpm migrate:apply:prod`. Same as above but on prod D1.
+3. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`): walk through a scheduled-gift purchase to verify the OC email subject + body render the send-at in the purchaser's tz. Walk through `/my-readings` (and any of the moved routes) to verify the brand top-bar shows up. Open the edit-recipient drawer on `/my-readings/gifts` and verify the new DateTimePicker behaves correctly on real mobile (the iOS scroll-snap behavior inside Radix Portal is a known a11y-review flag worth verifying on device).
+4. **Carry-over from PR #214** — still open: run Sanity migration against production (`scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts`) + re-deploy Studio (`pnpm run deploy` from `studio/`).
 
-| File | Change |
-|---|---|
-| `src/lib/booking/formatSendAt.ts` | `formatSendAt(iso, tz?)` — tz param, default UTC for legacy |
-| `src/app/api/booking/gift/route.ts` | Accept `purchaserTimeZone` in body, include in Stripe Checkout Session metadata |
-| `src/app/api/stripe/webhook/route.ts:184` | Read `purchaserTimeZone` from session metadata, pass to `formatSendAt` |
-| `src/app/api/gifts/[id]/flip-to-scheduled/route.ts:112` | Accept `purchaserTimeZone` in body, pass to `formatSendAt` |
-| `src/components/IntakeForm/...` (gift booking form path) | Include `effectiveTz` in submission body |
-| `src/app/my-gifts/GiftCardActions.tsx` (FlipToScheduledControl) | Include `effectiveTz` in flip-to-scheduled body |
-| Tests across all of the above | Assert tz plumbed through end-to-end |
-
-No new D1 column. No new env. Branch: `feat/email-scheduled-tz-fix`.
-
-**Fix #2 — Top nav / back-to-site affordance on auth-gated surfaces**
-
-Max picked: **Light top-bar — logo + 'Home' link only (auth-gated surfaces)**.
-
-```
-┌─────────────────────────────┐
-│  ✦ Josephine          Home  │
-├─────────────────────────────┤
-│                             │
-│       Gifts                 │
-│       ...                   │
-```
-
-Implementation: new `src/app/(authed)/layout.tsx` route group; move `/my-readings`, `/my-readings/welcome`, `/listen/[id]`, `/gift/intake`, `/gift/claim/[token]`, `/thank-you/[readingId]` into the group. Root `src/app/layout.tsx` already has zero nav; the new layout adds the light top-bar above `children`. Brand: `✦ Josephine` (Cormorant) on the left, `Home` link on the right, Cream background, Deep border-bottom hairline.
-
-Branch: `feat/auth-gated-top-nav`.
-
-**Fix #3 — Combined `<DateTimePicker>` brand component in edit-recipient drawer**
-
-Current: `src/app/my-gifts/GiftCardActions.tsx:195-205` uses native `<input type="datetime-local">` (system-styled, doesn't match the brand). Same gap in `FlipToScheduledControl` further down.
-
-Plan (locked): new `src/components/Form/DateTimePicker/` brand component composing existing `<DatePicker>` + `<TimePicker>` (the intake form already uses these via `src/components/IntakeForm/renderField.tsx:96,119`). Drop-in replacement for the native input.
-
-```ts
-type DateTimePickerProps = {
-  id: string;
-  name: string;
-  label: string;
-  value: string;        // "YYYY-MM-DDTHH:mm" (datetime-local shape)
-  onChange: (value: string) => void;
-  error?: string;
-  required?: boolean;
-  disabled?: boolean;
-  min?: string;
-  max?: string;
-};
-```
-
-Internals: splits `value` → renders `<DatePicker>` + `<TimePicker>` side-by-side (stacked on mobile) → recombines on change. Tests: ISO split/join roundtrip, min/max delegation to children, change-propagation invariants.
-
-Branch: `feat/datetimepicker-brand-combined`.
+**NOT touched, flagged for explicit approval before any next session:**
+- Removing `onFocus={() => setOpen(true)}` on DatePicker/TimePicker (changes intake form UX on `/book/intake` — TikTok-mobile primary traffic).
+- iOS native `<select>` wheel risk inside Radix Popover in TimePicker (audit-flagged, needs real-device smoke).
+- Replacing TimePicker's native `<select>` dropdowns with the same scroll-snap UX as DateTimePicker.
 
 ## ⚠️ Open Max-actions from PR #214 (2026-05-28)
 
