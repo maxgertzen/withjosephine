@@ -161,8 +161,6 @@ export async function mirrorSubmissionPatch(
     giftClaimSentNowActor: string | null;
     giftClaimPriorAlarmAt: string | null;
     giftCancelledAt: string | null;
-    giftCancelledBy: string | null;
-    giftCancelledReason: string | null;
     purchaserUserId: string | null;
     email: string;
     readingSlug: string;

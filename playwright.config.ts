@@ -39,7 +39,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   timeout: isSandbox ? 5 * 60 * 1000 : 60_000,
   expect: { timeout: 10_000 },
-  globalTimeout: isSandbox ? 10 * 60 * 1000 : 6 * 60 * 1000,
+  globalTimeout: isSandbox ? 25 * 60 * 1000 : 6 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
 
   use: {
@@ -99,7 +99,7 @@ export default defineConfig({
             SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
             STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
             STRIPE_WEBHOOK_SECRET: e2eWebhookSecret,
-            LISTEN_TOKEN_SECRET: "e2e_listen_token_secret_dummy",
+            AUTH_TOKEN_SECRET: "e2e_auth_token_secret_dummy",
             ADMIN_API_KEY: "e2e_admin_api_key_dummy",
           },
         },

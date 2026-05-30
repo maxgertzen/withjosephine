@@ -8,12 +8,14 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
-import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
+import { LibraryButton } from "./LibraryButton";
+import { PortableTextBody } from "./PortableTextBody";
 
 export type Day7DeliveryVars = {
   firstName: string;
   readingName: string;
   listenUrl: string;
+  libraryUrl?: string;
 };
 
 export type Day7DeliveryProps = {
@@ -24,8 +26,6 @@ export type Day7DeliveryProps = {
 
 export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: Day7DeliveryProps) {
   const copy = applyTokens(rawCopy, vars);
-  const useFoldedIntro = hasBodyContent(copy.bodyIntro);
-  const useFoldedPost = hasBodyContent(copy.bodyPostButton);
 
   return (
     <EmailShell preview={copy.preview} bareContainer>
@@ -41,17 +41,7 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {useFoldedIntro ? (
-            <PortableTextBody value={copy.bodyIntro} />
-          ) : (
-            <>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.lineReady}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.comfortLine} />
-              </p>
-            </>
-          )}
+          <PortableTextBody value={copy.bodyIntro} />
         </Section>
 
         <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
@@ -69,25 +59,13 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
           </Button>
         </div>
 
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} />
+
         <Section
           className="font-sans text-body"
           style={{ padding: "24px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {useFoldedPost ? (
-            <PortableTextBody value={copy.bodyPostButton} />
-          ) : (
-            <>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.signedInDisclosure} />
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.accessWindowLine} />
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.comfortFollowUp} />
-              </p>
-            </>
-          )}
+          <PortableTextBody value={copy.bodyPostButton} />
         </Section>
 
         <div style={{ padding: "0 48px" }}>

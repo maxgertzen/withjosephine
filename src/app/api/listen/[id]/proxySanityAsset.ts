@@ -55,6 +55,8 @@ export function isFirstByteRequest(request: Request): boolean {
 type AssetContext = {
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
+  readingSlug: string;
+  submissionId: string;
 };
 
 type GateResult =
@@ -117,5 +119,13 @@ export async function gateListenAssetRequest(
     return { ok: false, response: new Response("Forbidden", { status: 403 }) };
   }
 
-  return { ok: true, asset: { voiceNoteUrl: ctx.voiceNoteUrl, pdfUrl: ctx.pdfUrl } };
+  return {
+    ok: true,
+    asset: {
+      voiceNoteUrl: ctx.voiceNoteUrl,
+      pdfUrl: ctx.pdfUrl,
+      readingSlug: ctx.readingSlug,
+      submissionId: ctx.submissionId,
+    },
+  };
 }

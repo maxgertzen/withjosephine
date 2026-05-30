@@ -2,6 +2,7 @@ const longDateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium"
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERY_WINDOW_DAYS = 7;
+const GIFT_DELIVERY_TARGET_DAYS = 7;
 
 function parseIso(value: unknown): Date | null {
   if (typeof value !== "string" || value === "") return null;
@@ -36,6 +37,46 @@ function dayCounter(paidAt: Date, now: Date): string {
   return day > DELIVERY_WINDOW_DAYS
     ? `Day ${day} — overdue`
     : `Day ${day} of ${DELIVERY_WINDOW_DAYS}`;
+}
+
+function pluralizeDays(n: number): string {
+  return Math.abs(n) === 1 ? "day" : "days";
+}
+
+export function giftDeliveryCountdown(claimedAtValue: unknown, now: Date): string | null {
+  const claimedAt = parseIso(claimedAtValue);
+  if (!claimedAt) return null;
+  const elapsedMs = now.getTime() - claimedAt.getTime();
+  if (elapsedMs < 0 && process.env.NODE_ENV === "development") {
+    // Future-dated giftClaimedAt is silently clamped to the full window
+    // ("7 days left"). Surface a dev-only warning so Studio editors notice
+    // the data anomaly during local work (gated to NODE_ENV=development to
+    // keep production + test output clean).
+    console.warn(
+      "[submissionPreview] giftClaimedAt is in the future; countdown clamped to full window",
+      { claimedAt: claimedAt.toISOString(), now: now.toISOString() },
+    );
+  }
+  const daysElapsed = elapsedMs > 0 ? Math.floor(elapsedMs / DAY_MS) : 0;
+  const daysRemaining = GIFT_DELIVERY_TARGET_DAYS - daysElapsed;
+  if (daysRemaining > 0) return `${daysRemaining} ${pluralizeDays(daysRemaining)} left to deliver`;
+  if (daysRemaining === 0) return "Due today";
+  const overdue = Math.abs(daysRemaining);
+  return `Overdue by ${overdue} ${pluralizeDays(overdue)}`;
+}
+
+export function statusLabel(args: {
+  status: unknown;
+  isGift: unknown;
+  giftClaimedAt: unknown;
+  deliveredAt: unknown;
+  now: Date;
+}): string | null {
+  if (args.status !== "paid") return null;
+  if (args.isGift !== true) return null;
+  if (args.deliveredAt) return null;
+  const countdown = giftDeliveryCountdown(args.giftClaimedAt, args.now);
+  return countdown ? `Claimed · ${countdown}` : "Paid · awaiting claim";
 }
 
 function buildDates(args: {
@@ -77,15 +118,24 @@ export function buildPreview(selection: Record<string, unknown>, now: Date) {
     listenedAt: selection.listenedAt,
     now,
   });
+  const claim = statusLabel({
+    status: selection.status,
+    isGift: selection.isGift,
+    giftClaimedAt: selection.giftClaimedAt,
+    deliveredAt: selection.deliveredAt,
+    now,
+  });
+
+  const datesWithClaim = claim ? `${claim} · ${dates}` : dates;
 
   if (fullName) {
-    const subtitleParts = email ? [email, dates] : [dates];
+    const subtitleParts = email ? [email, datesWithClaim] : [datesWithClaim];
     return { title: fullName, subtitle: subtitleParts.join(" · ") };
   }
   if (email) {
-    return { title: email, subtitle: dates };
+    return { title: email, subtitle: datesWithClaim };
   }
-  return { title: "no name", subtitle: dates };
+  return { title: "no name", subtitle: datesWithClaim };
 }
 
 export function prepareSubmissionPreview(selection: Record<string, unknown>) {

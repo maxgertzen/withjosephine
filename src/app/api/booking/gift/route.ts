@@ -14,6 +14,7 @@ import {
   countActivePendingGiftsForRecipient,
   type GiftDeliveryMethod,
 } from "@/lib/booking/persistence/repository";
+import { isIanaTimeZone } from "@/lib/booking/scheduling/timezone";
 import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import {
   giftPurchaserConsentSnapshot,
@@ -35,6 +36,7 @@ type GiftBookingBody = {
   readingSlug: string;
   purchaserEmail: string;
   purchaserFirstName: string;
+  purchaserTimeZone: string;
   deliveryMethod: GiftDeliveryMethod;
   recipientName?: string;
   recipientEmail?: string;
@@ -53,6 +55,7 @@ function isGiftBody(body: unknown): body is GiftBookingBody {
     typeof c.readingSlug === "string" &&
     typeof c.purchaserEmail === "string" &&
     typeof c.purchaserFirstName === "string" &&
+    typeof c.purchaserTimeZone === "string" &&
     (c.deliveryMethod === GIFT_DELIVERY.selfSend || c.deliveryMethod === GIFT_DELIVERY.scheduled) &&
     typeof c.art6Consent === "boolean" &&
     typeof c.coolingOffConsent === "boolean" &&
@@ -73,6 +76,10 @@ function validateBody(body: GiftBookingBody, now: Date): FieldError[] {
       field: "purchaserEmail",
       message: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
     });
+  }
+
+  if (!isIanaTimeZone(body.purchaserTimeZone)) {
+    errors.push({ field: "purchaserTimeZone", message: "Invalid time zone." });
   }
 
   const purchaserFirstName = body.purchaserFirstName.trim();
@@ -328,6 +335,7 @@ export async function POST(request: Request): Promise<Response> {
       coolingOffAcknowledgedAt: nowIso,
       isGift: true,
       purchaserUserId,
+      purchaserTimeZone: parsedBody.purchaserTimeZone,
       recipientEmail,
       giftDeliveryMethod: parsedBody.deliveryMethod,
       giftSendAt: parsedBody.deliveryMethod === GIFT_DELIVERY.scheduled ? parsedBody.giftSendAt! : null,

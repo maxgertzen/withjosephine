@@ -6,11 +6,13 @@ import { GiftClaimReminderEmail } from "./GiftClaimReminderEmail";
 import { GiftPurchaseConfirmationScheduled } from "./GiftPurchaseConfirmationScheduled";
 import { GiftPurchaseConfirmationSelfSend } from "./GiftPurchaseConfirmationSelfSend";
 import { MagicLink } from "./MagicLink";
+import { NewDeviceNotice } from "./NewDeviceNotice";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
 import { RecipientIntakeReceived } from "./RecipientIntakeReceived";
 import type { EmailTemplateKey } from "./slots";
+import { StepUpOtp } from "./StepUpOtp";
 
 /**
  * `@react-email/render` injects `<link rel="expect" href="#_R_" blocking="render">`
@@ -32,10 +34,11 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailGiftClaim",
   "emailGiftClaimReminder",
   "emailMagicLink",
-  "emailMagicLinkMyReadings",
-  "emailMagicLinkMyGifts",
+  "emailMagicLinkLibrary",
   "emailPrivacyExport",
   "emailRecipientIntakeReceived",
+  "emailStepUpOtp",
+  "emailNewDeviceNotice",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -139,8 +142,7 @@ async function renderRaw(
         />,
       );
     case "emailMagicLink":
-    case "emailMagicLinkMyReadings":
-    case "emailMagicLinkMyGifts": {
+    case "emailMagicLinkLibrary": {
       const copy = merged as typeof PREVIEW_DEFAULTS.emailMagicLink;
       return render(
         <MagicLink
@@ -173,6 +175,23 @@ async function renderRaw(
             readingName: PREVIEW_FIXTURE.readingName,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailRecipientIntakeReceived}
+        />,
+      );
+    case "emailStepUpOtp":
+      return render(
+        <StepUpOtp
+          code={PREVIEW_FIXTURE.stepUpOtpCode}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailStepUpOtp}
+        />,
+      );
+    case "emailNewDeviceNotice":
+      return render(
+        <NewDeviceNotice
+          vars={{
+            firstName: PREVIEW_FIXTURE.firstName,
+            revokeUrl: PREVIEW_FIXTURE.revokeUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailNewDeviceNotice}
         />,
       );
     default: {

@@ -30,8 +30,7 @@ vi.mock("./analytics/server", () => ({
 
 vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
-  fetchEmailMagicLinkMyReadings: vi.fn().mockResolvedValue(null),
-  fetchEmailMagicLinkMyGifts: vi.fn().mockResolvedValue(null),
+  fetchEmailMagicLinkLibrary: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
   fetchEmailRecipientIntakeReceived: vi.fn().mockResolvedValue(null),
@@ -201,7 +200,7 @@ describe("sendOrderConfirmation", () => {
     expect(getResendId(result)).toBe("msg_oc");
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe(submission.email);
-    expect(args.subject).toBe("Your reading is booked — here’s what happens next");
+    expect(args.subject).toBe("Your reading is booked: what happens next");
     const body = visibleText(args.html);
     expect(body).toContain("Hi Ada,");
     expect(body).toContain(`Thank you for booking a ${submission.readingName}`);
@@ -321,7 +320,7 @@ describe("sendDay7Delivery", () => {
     const body = visibleText(args.html);
     expect(body).toContain(`Your ${submission.readingName} is here.`);
     expect(body).toContain("Open it whenever the timing feels right");
-    expect(body).toContain("signs you into your reading for the next seven days");
+    expect(body).toContain("signed in for the next seven days");
     expect(body).toContain("Open your reading");
   });
 });
@@ -759,37 +758,22 @@ describe("sendMagicLink", () => {
     expect(serverTrackMock).not.toHaveBeenCalled();
   });
 
-  it("uses my-readings copy and sub_type when context is 'my-readings'", async () => {
+  it("uses library copy and sub_type when context is 'library'", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_ml_mr" } });
     const { sendMagicLink } = await import("./resend");
 
     await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=mr",
-      context: "my-readings",
+      context: "library",
     });
 
     const args = sendMock.mock.calls[0]?.[0];
-    expect(args.subject).toBe("Open your readings");
+    expect(args.subject).toBe("Sign in to your library");
     const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(props.sub_type).toBe("magic_link_my_readings");
+    expect(props.sub_type).toBe("magic_link_library");
   });
 
-  it("uses my-gifts copy and sub_type when context is 'my-gifts'", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_ml_mg" } });
-    const { sendMagicLink } = await import("./resend");
-
-    await sendMagicLink({
-      to: "ada@example.com",
-      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=mg",
-      context: "my-gifts",
-    });
-
-    const args = sendMock.mock.calls[0]?.[0];
-    expect(args.subject).toBe("Open your gifts dashboard");
-    const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(props.sub_type).toBe("magic_link_my_gifts");
-  });
 });
 
 describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {

@@ -4,16 +4,17 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
+import { DateTimePicker } from "@/components/Form/DateTimePicker";
 import { InlineError } from "@/components/Form/InlineError";
 import { Input } from "@/components/Form/Input";
 import { TimezoneFallbackPicker } from "@/components/Form/TimezoneFallbackPicker";
 import { TimezonePreview } from "@/components/Form/TimezonePreview";
+import { StepUpOtpModal } from "@/components/StepUpOtpModal";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import { localInputToUtcIso } from "@/lib/booking/scheduling/timezone";
 import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
-import { errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { useMutationAction } from "@/lib/hooks/useMutationAction";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 
@@ -58,7 +59,6 @@ export function GiftCardActions({ gift, status, copy }: Props) {
         <EditRecipientControl gift={gift} copy={copy} mode="scheduled" />
         <SendNowControl gift={gift} copy={copy} />
         <FlipToSelfSendControl gift={gift} copy={copy} />
-        <CancelScheduledControl gift={gift} copy={copy} />
       </div>
     );
   }
@@ -127,6 +127,14 @@ function EditRecipientControl({
     }
   }
 
+  async function onElevated() {
+    const result = await action.retry();
+    if (result && result.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }
+
   if (!open) {
     return (
       <Button variant="outlined" size="sm" onClick={() => setOpen(true)}>
@@ -182,24 +190,16 @@ function EditRecipientControl({
         autoComplete="off"
       />
       {mode === "scheduled" && (
-        <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
-          <span className="font-body text-xs text-j-text-muted">{copy.editRecipientFormSendAtLabel}</span>
-          <input
+        <div className="flex flex-col gap-1">
+          <DateTimePicker
             id={sendAtInputId}
-            type="datetime-local"
+            name="giftSendAt"
+            label={copy.editRecipientFormSendAtLabel}
             value={giftSendAt}
-            onChange={(e) => setGiftSendAt(e.target.value)}
-            aria-describedby={
-              action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
-            }
-            aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
-            className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+            onChange={setGiftSendAt}
+            error={action.fieldErrors.giftSendAt}
+            min={toDatetimeLocalValue(new Date().toISOString())}
           />
-          {action.fieldErrors.giftSendAt ? (
-            <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
-              {action.fieldErrors.giftSendAt}
-            </span>
-          ) : null}
           <TimezonePreview
             value={giftSendAt}
             template={copy.editRecipientSendAtPreviewTemplate}
@@ -214,7 +214,7 @@ function EditRecipientControl({
               placeholder={copy.editRecipientTimezonePlaceholder}
             />
           ) : null}
-        </label>
+        </div>
       )}
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
@@ -235,6 +235,12 @@ function EditRecipientControl({
           {action.submitting ? copy.editRecipientSavingLabel : copy.editRecipientSaveButtonLabel}
         </Button>
       </div>
+      <StepUpOtpModal
+        open={action.elevationRequired !== null}
+        onClose={() => action.reset()}
+        onElevated={onElevated}
+        contactMailto={action.elevationRequired?.contactMailto}
+      />
     </form>
   );
 }
@@ -283,31 +289,6 @@ function SendNowControl({
   );
 }
 
-function CancelScheduledControl({
-  gift,
-  copy,
-}: {
-  gift: GiftCardData;
-  copy: MyGiftsPageContent;
-}) {
-  return (
-    <ConfirmArmedButton
-      endpoint={`/api/gifts/${gift._id}/cancel-scheduled`}
-      copy={copy}
-      labels={{
-        idle: copy.cancelScheduledCtaLabel,
-        confirm: copy.cancelScheduledConfirmCtaLabel,
-        sending: copy.cancelScheduledSendingLabel,
-      }}
-      variant="destructive"
-      errorOverrides={{
-        http_401: "cancelScheduledSessionExpiredError",
-        http_409: "actionClosedError",
-      }}
-    />
-  );
-}
-
 function FlipToScheduledControl({
   gift,
   copy,
@@ -334,6 +315,7 @@ function FlipToScheduledControl({
     const result = await action.run({
       recipientEmail: recipientEmail.trim(),
       giftSendAt: conversion.utcIso,
+      purchaserTimeZone: effectiveTz ?? "UTC",
     });
     if (result.ok) {
       setOpen(false);
@@ -376,26 +358,16 @@ function FlipToScheduledControl({
         error={action.fieldErrors.recipientEmail}
         autoComplete="off"
       />
-      <label htmlFor={sendAtInputId} className="flex flex-col gap-1">
-        <span className="font-body text-xs text-j-text-muted">
-          {copy.editRecipientFormSendAtLabel}
-        </span>
-        <input
+      <div className="flex flex-col gap-1">
+        <DateTimePicker
           id={sendAtInputId}
-          type="datetime-local"
+          name="giftSendAt"
+          label={copy.editRecipientFormSendAtLabel}
           value={giftSendAt}
-          onChange={(e) => setGiftSendAt(e.target.value)}
-          aria-describedby={
-            action.fieldErrors.giftSendAt ? `${sendAtInputId}-error` : undefined
-          }
-          aria-invalid={Boolean(action.fieldErrors.giftSendAt)}
-          className={`rounded-sm border border-j-border-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent ${invalidBorderClasses}`}
+          onChange={setGiftSendAt}
+          error={action.fieldErrors.giftSendAt}
+          min={toDatetimeLocalValue(new Date().toISOString())}
         />
-        {action.fieldErrors.giftSendAt ? (
-          <span id={`${sendAtInputId}-error`} className={errorClassesSmall}>
-            {action.fieldErrors.giftSendAt}
-          </span>
-        ) : null}
         <TimezonePreview
           value={giftSendAt}
           template={copy.editRecipientSendAtPreviewTemplate}
@@ -410,7 +382,7 @@ function FlipToScheduledControl({
             placeholder={copy.editRecipientTimezonePlaceholder}
           />
         ) : null}
-      </label>
+      </div>
       <InlineError message={topError} />
       <div className="flex gap-2 justify-end">
         <Button

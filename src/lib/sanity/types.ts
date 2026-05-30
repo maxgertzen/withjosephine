@@ -106,6 +106,11 @@ export type SanityMyReadingsPage = {
   checkEmailHeading: string;
   checkEmailBody: string;
   checkEmailResendLabel: string;
+  readingsTabLabel?: string;
+  giftsTabLabel?: string;
+  welcomeHeading?: string;
+  welcomeSubhead?: string;
+  welcomeButtonLabel?: string;
 };
 
 export type SanityMyGiftsPage = {
@@ -205,8 +210,28 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
-export type SanityEmailMagicLinkMyReadings = SanityEmailMagicLink;
-export type SanityEmailMagicLinkMyGifts = SanityEmailMagicLink;
+export type SanityEmailMagicLinkLibrary = SanityEmailMagicLink;
+
+export type SanityEmailStepUpOtp = {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  intro: string;
+  codeLabel: string;
+  expiryLine: string;
+  closingLine: string;
+  signoff: string;
+};
+
+export type SanityEmailNewDeviceNotice = {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  bodyIntro?: PortableTextBlock[];
+  wasItYouButtonLabel: string;
+  bodyPostButton?: PortableTextBlock[];
+  signOff: string | null;
+};
 
 export type SanityEmailOrderConfirmation = {
   subject: string;

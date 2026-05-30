@@ -28,6 +28,14 @@ export type JsonPostResult<T> = {
   data?: T;
   fieldErrors?: Record<string, string>;
   topError?: string;
+  /**
+   * Parsed JSON body for non-2xx responses, when available. Used by callers
+   * that need to read structured error payloads (e.g. step-up auth surfaces
+   * an `elevation_required` discriminator + `contactMailto` on 401). The
+   * happy-path body lives on `data`; this field carries the error-path body
+   * without changing existing branches.
+   */
+  errorBody?: unknown;
 };
 
 export async function jsonPost<T = unknown>(
@@ -52,15 +60,22 @@ export async function jsonPost<T = unknown>(
     } | null;
     const errs: Record<string, string> = {};
     for (const e of json?.fieldErrors ?? []) errs[e.field] = e.message;
-    return { ok: false, status: 422, fieldErrors: errs };
+    return { ok: false, status: 422, fieldErrors: errs, errorBody: json };
   }
 
   if (res.status === 429) {
-    return { ok: false, status: 429, topError: "rate_limited" };
+    const json = await res.json().catch(() => null);
+    return { ok: false, status: 429, topError: "rate_limited", errorBody: json };
   }
 
   if (!res.ok) {
-    return { ok: false, status: res.status, topError: `http_${res.status}` };
+    const json = await res.json().catch(() => null);
+    return {
+      ok: false,
+      status: res.status,
+      topError: `http_${res.status}`,
+      errorBody: json,
+    };
   }
 
   const data = (await res.json().catch(() => undefined)) as T | undefined;

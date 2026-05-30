@@ -15,7 +15,7 @@ vi.mock("@marsidev/react-turnstile", () => ({
 
 import { BOOKING_GIFT_FORM_DEFAULTS } from "@/data/defaults";
 
-import { GiftForm } from "./GiftForm";
+import { __resetPurchaserPrefillCacheForTest, GiftForm } from "./GiftForm";
 
 const READING_PROPS = {
   readingSlug: "soul-blueprint" as const,
@@ -35,6 +35,8 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   });
+  __resetPurchaserPrefillCacheForTest();
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -236,6 +238,163 @@ describe("GiftForm", () => {
       expect(hiddenSpans.length).toBeGreaterThan(0);
       const text = Array.from(hiddenSpans).map((s) => s.textContent).join("");
       expect(text).toMatch(/✦/);
+    });
+  });
+
+  describe("purchaser prefill from prior intake draft", () => {
+    afterEach(() => {
+      window.localStorage.clear();
+    });
+
+    function seedPriorIntakeDraft(
+      readingId: string,
+      values: Record<string, string>,
+    ): void {
+      window.localStorage.setItem("josephine.intake.lastReadingId", readingId);
+      window.localStorage.setItem(
+        `josephine.intake.draft.${readingId}`,
+        JSON.stringify({
+          version: 1,
+          savedAt: new Date().toISOString(),
+          currentPage: 0,
+          values,
+        }),
+      );
+    }
+
+    it("prefills purchaser email and first name from prior intake draft", async () => {
+      seedPriorIntakeDraft("akashic-record", {
+        email: "ada@example.com",
+        first_name: "Ada",
+      });
+      render(<GiftForm {...READING_PROPS} />);
+
+      const purchaserEmail = await screen.findByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      const purchaserFirstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      await waitFor(() =>
+        expect(purchaserEmail).toHaveValue("ada@example.com"),
+      );
+      expect(purchaserFirstName).toHaveValue("Ada");
+    });
+
+    it("does not prefill recipient fields even when prior draft has email + first_name", async () => {
+      seedPriorIntakeDraft("akashic-record", {
+        email: "ada@example.com",
+        first_name: "Ada",
+      });
+      const user = userEvent.setup();
+      render(<GiftForm {...READING_PROPS} />);
+
+      const purchaserEmail = await screen.findByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      await waitFor(() =>
+        expect(purchaserEmail).toHaveValue("ada@example.com"),
+      );
+
+      const recipientName = screen.getByLabelText(/who.+s this for/i);
+      expect(recipientName).toHaveValue("");
+
+      await user.click(
+        screen.getByRole("radio", {
+          name: new RegExp(READING_PROPS.copy.deliveryMethodScheduledLabel, "i"),
+        }),
+      );
+      const recipientEmail = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.recipientEmailLabel, "i"),
+      );
+      expect(recipientEmail).toHaveValue("");
+    });
+
+    it("renders empty purchaser fields when no prior reading is tracked", () => {
+      render(<GiftForm {...READING_PROPS} />);
+      const purchaserEmail = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      const purchaserFirstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      expect(purchaserEmail).toHaveValue("");
+      expect(purchaserFirstName).toHaveValue("");
+    });
+
+    it("does not overwrite a user-typed purchaser email if the user types before the effect", async () => {
+      seedPriorIntakeDraft("akashic-record", { email: "ada@example.com" });
+      const user = userEvent.setup();
+      render(<GiftForm {...READING_PROPS} />);
+
+      const purchaserEmail = await screen.findByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      await waitFor(() =>
+        expect(purchaserEmail).toHaveValue("ada@example.com"),
+      );
+
+      await user.clear(purchaserEmail);
+      await user.type(purchaserEmail, "betty@example.com");
+      expect(purchaserEmail).toHaveValue("betty@example.com");
+    });
+
+    it("ignores a prior draft whose email is an empty string (does not prefill empty)", () => {
+      seedPriorIntakeDraft("akashic-record", { email: "", first_name: "" });
+      render(<GiftForm {...READING_PROPS} />);
+      const purchaserEmail = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      const purchaserFirstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      expect(purchaserEmail).toHaveValue("");
+      expect(purchaserFirstName).toHaveValue("");
+    });
+
+    it("does not prefill from a gift-redeem draft (cross-flow namespace isolation)", () => {
+      // gift-redeem flow stores drafts under `gift-redeem.<submissionId>`, NOT
+      // the canonical readingId key. Verify the purchaser-prefill path only
+      // reads from the canonical key and never leaks the recipient's email
+      // into the purchaser field on a subsequent gift purchase.
+      window.localStorage.setItem(
+        "josephine.intake.lastReadingId",
+        "akashic-record",
+      );
+      window.localStorage.setItem(
+        "josephine.intake.draft.gift-redeem.sub-recipient-1",
+        JSON.stringify({
+          version: 1,
+          savedAt: new Date().toISOString(),
+          currentPage: 0,
+          values: { email: "recipient@example.com", first_name: "Recipient" },
+        }),
+      );
+      render(<GiftForm {...READING_PROPS} />);
+      const purchaserEmail = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      const purchaserFirstName = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserFirstNameLabel, "i"),
+      );
+      expect(purchaserEmail).toHaveValue("");
+      expect(purchaserFirstName).toHaveValue("");
+    });
+
+    it("user-typed value wins immediately on first render (no race window)", async () => {
+      seedPriorIntakeDraft("akashic-record", { email: "ada@example.com" });
+      const user = userEvent.setup();
+      render(<GiftForm {...READING_PROPS} />);
+
+      const purchaserEmail = screen.getByLabelText(
+        new RegExp(READING_PROPS.copy.purchaserEmailLabel, "i"),
+      );
+      // Synchronously typing into the field — the prefill must already be
+      // resolved (no setTimeout-style race). With useSyncExternalStore,
+      // the initial render already reflects the prefill snapshot.
+      await user.clear(purchaserEmail);
+      await user.type(purchaserEmail, "betty@example.com");
+      expect(purchaserEmail).toHaveValue("betty@example.com");
     });
   });
 });

@@ -8,11 +8,13 @@ import {
   EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
   EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
-  EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
-  EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+  EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS,
+  EMAIL_NEW_DEVICE_NOTICE_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
   EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
+  EMAIL_SHARED_SHELL_DEFAULTS,
+  STEP_UP_OTP_EMAIL_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
   MY_GIFTS_PAGE_DEFAULTS,
@@ -81,12 +83,12 @@ const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
     "expiryLine",
   ]),
   emailMagicLink: new Set(["body"]),
-  emailMagicLinkMyReadings: new Set(["body"]),
-  emailMagicLinkMyGifts: new Set(["body"]),
+  emailMagicLinkLibrary: new Set(["body"]),
   emailGiftClaim: new Set(["body", "claimUrlHelper", "bodyFirstSend", "bodyReminder", "reminderContactLine"]),
   emailGiftClaimReminder: new Set(["body"]),
   emailGiftPurchaseConfirmationSelfSend: new Set(["body", "shareUrlHelper", "refundLine"]),
   emailGiftPurchaseConfirmationScheduled: new Set(["body", "refundLine"]),
+  emailNewDeviceNotice: new Set(["bodyIntro", "bodyPostButton"]),
 };
 
 function isPortableTextArray(value: unknown): boolean {
@@ -139,14 +141,9 @@ const SEEDS = [
   },
   { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
   {
-    _id: "emailMagicLinkMyReadings",
-    _type: "emailMagicLinkMyReadings",
-    ...omitNullish(EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS),
-  },
-  {
-    _id: "emailMagicLinkMyGifts",
-    _type: "emailMagicLinkMyGifts",
-    ...omitNullish(EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS),
+    _id: "emailMagicLinkLibrary",
+    _type: "emailMagicLinkLibrary",
+    ...omitNullish(EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS),
   },
   {
     _id: "emailGiftClaim",
@@ -177,6 +174,21 @@ const SEEDS = [
     _id: "emailPrivacyExport",
     _type: "emailPrivacyExport",
     ...omitNullish(EMAIL_PRIVACY_EXPORT_DEFAULTS),
+  },
+  {
+    _id: "emailSharedShell",
+    _type: "emailSharedShell",
+    ...omitNullish(EMAIL_SHARED_SHELL_DEFAULTS),
+  },
+  {
+    _id: "emailStepUpOtp",
+    _type: "emailStepUpOtp",
+    ...omitNullish(STEP_UP_OTP_EMAIL_DEFAULTS),
+  },
+  {
+    _id: "emailNewDeviceNotice",
+    _type: "emailNewDeviceNotice",
+    ...omitNullish(EMAIL_NEW_DEVICE_NOTICE_DEFAULTS),
   },
 ];
 

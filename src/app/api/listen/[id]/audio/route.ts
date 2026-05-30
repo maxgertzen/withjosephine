@@ -1,5 +1,6 @@
 import { scheduleListenedAtMirror } from "@/lib/booking/submissions";
 
+import { buildContentDisposition, buildListenFilename } from "../downloadFilename";
 import {
   forwardRangeHeader,
   gateListenAssetRequest,
@@ -24,5 +25,13 @@ export async function GET(
     scheduleListenedAtMirror(id, new Date().toISOString());
   }
 
-  return proxySanityAsset(upstream, { contentDisposition: "inline" });
+  const filename = buildListenFilename({
+    readingSlug: gate.asset.readingSlug,
+    submissionId: gate.asset.submissionId,
+    sourceUrl: gate.asset.voiceNoteUrl,
+    kind: "voice-note",
+  });
+  return proxySanityAsset(upstream, {
+    contentDisposition: buildContentDisposition({ type: "inline", filename }),
+  });
 }

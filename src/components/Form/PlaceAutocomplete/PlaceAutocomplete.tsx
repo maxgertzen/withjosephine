@@ -1,11 +1,13 @@
 "use client";
 
+import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import { type CityMatch, searchCities } from "@/lib/places/cities";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { mergeClasses } from "@/lib/utils";
 
 type PlaceAutocompleteProps = {
   id: string;
@@ -40,7 +42,6 @@ export function PlaceAutocomplete({
 }: PlaceAutocompleteProps) {
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const [open, setOpen] = useState(false);
   const [matches, setMatches] = useState<CityMatch[]>([]);
@@ -75,16 +76,7 @@ export function PlaceAutocomplete({
   const trimmedValue = value.trim();
   const showMatches = open && trimmedValue.length >= 2 && matches.length > 0;
   const showEmptyHint = open && trimmedValue.length >= 2 && matches.length === 0 && searched;
-
-  useEffect(() => {
-    function onDocClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    if (!open) return;
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
+  const popoverOpen = showMatches || showEmptyHint;
 
   function commit(match: CityMatch) {
     onChange(match.display);
@@ -126,76 +118,97 @@ export function PlaceAutocomplete({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
-        <input
-          ref={inputRef}
-          id={id}
-          name={name}
-          type="text"
-          value={value}
-          onChange={(event) => {
-            onChange(event.target.value);
-            onGeonameIdChange?.(null);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder ?? " "}
-          disabled={disabled}
-          required={required}
-          autoComplete="off"
-          inputMode="text"
-          autoCapitalize="words"
-          spellCheck={false}
-          enterKeyHint="search"
-          aria-autocomplete="list"
-          aria-controls={listboxId}
-          aria-expanded={showMatches}
-          aria-activedescendant={
-            showMatches && matches[active] ? `${listboxId}-option-${active}` : undefined
-          }
-          aria-invalid={error ? true : undefined}
-          role="combobox"
-          className={inputClasses}
-        />
-        <FloatingLabel id={id} label={label} required={required} />
-        {showMatches ? (
-          <ul
-            id={listboxId}
-            role="listbox"
-            className="absolute left-0 right-0 top-full mt-1 z-10 bg-j-ivory border border-j-border-gold rounded-md shadow-j-soft max-h-64 overflow-y-auto"
+      <Popover.Root
+        open={popoverOpen}
+        onOpenChange={(next) => {
+          if (!next) setOpen(false);
+        }}
+      >
+        <Popover.Anchor className="relative block">
+          <input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="text"
+            value={value}
+            onChange={(event) => {
+              onChange(event.target.value);
+              onGeonameIdChange?.(null);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder ?? " "}
+            disabled={disabled}
+            required={required}
+            autoComplete="off"
+            inputMode="text"
+            autoCapitalize="words"
+            spellCheck={false}
+            enterKeyHint="search"
+            aria-autocomplete="list"
+            aria-controls={listboxId}
+            aria-expanded={showMatches}
+            aria-activedescendant={
+              showMatches && matches[active] ? `${listboxId}-option-${active}` : undefined
+            }
+            aria-invalid={error ? true : undefined}
+            role="combobox"
+            className={inputClasses}
+          />
+          <FloatingLabel id={id} label={label} required={required} />
+        </Popover.Anchor>
+        <Popover.Portal>
+          <Popover.Content
+            side="bottom"
+            align="start"
+            sideOffset={4}
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              if (event.target === inputRef.current) event.preventDefault();
+            }}
+            style={{ width: "var(--radix-popover-trigger-width)" }}
+            className={mergeClasses(
+              "z-50 bg-j-ivory rounded-md shadow-j-soft border",
+              showMatches
+                ? "border-j-border-gold max-h-64 overflow-y-auto"
+                : "border-j-border-subtle",
+            )}
           >
-            {matches.map((match, index) => (
-              <li
-                key={match.geonameid}
-                id={`${listboxId}-option-${index}`}
-                role="option"
-                aria-selected={index === active}
-                onMouseEnter={() => setActive(index)}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  commit(match);
-                }}
-                className={`px-4 py-2 cursor-pointer font-body text-base ${
-                  index === active
-                    ? "bg-j-blush/40 text-j-text-heading"
-                    : "text-j-text"
-                }`}
+            {showMatches ? (
+              <ul id={listboxId} role="listbox">
+                {matches.map((match, index) => (
+                  <li
+                    key={match.geonameid}
+                    id={`${listboxId}-option-${index}`}
+                    role="option"
+                    aria-selected={index === active}
+                    onMouseEnter={() => setActive(index)}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      commit(match);
+                    }}
+                    className={`px-4 py-2 font-body text-base ${
+                      index === active
+                        ? "bg-j-blush/40 text-j-text-heading"
+                        : "text-j-text"
+                    }`}
+                  >
+                    {match.display}
+                  </li>
+                ))}
+              </ul>
+            ) : showEmptyHint ? (
+              <p
+                role="status"
+                className="px-4 py-3 font-display italic text-sm text-j-text-muted"
               >
-                {match.display}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {showEmptyHint ? (
-          <p
-            role="status"
-            className="absolute left-0 right-0 top-full mt-1 z-10 bg-j-ivory border border-j-border-subtle rounded-md px-4 py-3 font-display italic text-sm text-j-text-muted shadow-j-soft"
-          >
-            Can&rsquo;t find your town? Try a more well-known place nearby.
-          </p>
-        ) : null}
-      </div>
+                Can&rsquo;t find your town? Try a more well-known place nearby.
+              </p>
+            ) : null}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     </FieldShell>
   );
 }

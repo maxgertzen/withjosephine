@@ -103,6 +103,7 @@ const SUBMISSION: SubmissionRecord = {
   emailsFired: [{ type: "order_confirmation", sentAt: "2026-04-21T10:00:01Z", resendId: "msg_a" }],
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,

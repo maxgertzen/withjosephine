@@ -7,7 +7,7 @@ import { findSubmissionById } from "@/lib/booking/submissions";
 
 export type AuthorizedPurchaser = {
   ok: true;
-  session: { userId: string; sessionId: string };
+  session: { userId: string; sessionId: string; elevatedAt: number | null };
   submission: SubmissionRecord;
 };
 

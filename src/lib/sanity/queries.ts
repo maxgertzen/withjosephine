@@ -162,7 +162,12 @@ export const myReadingsPageQuery = groq`
     signInFootnote,
     checkEmailHeading,
     checkEmailBody,
-    checkEmailResendLabel
+    checkEmailResendLabel,
+    readingsTabLabel,
+    giftsTabLabel,
+    welcomeHeading,
+    welcomeSubhead,
+    welcomeButtonLabel
   }
 `;
 
@@ -289,8 +294,8 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
-export const emailMagicLinkMyReadingsQuery = groq`
-  *[_type == "emailMagicLinkMyReadings"][0] {
+export const emailMagicLinkLibraryQuery = groq`
+  *[_type == "emailMagicLinkLibrary"][0] {
     subject,
     preview,
     heroLine,
@@ -301,14 +306,27 @@ export const emailMagicLinkMyReadingsQuery = groq`
   }
 `;
 
-export const emailMagicLinkMyGiftsQuery = groq`
-  *[_type == "emailMagicLinkMyGifts"][0] {
+export const emailStepUpOtpQuery = groq`
+  *[_type == "emailStepUpOtp"][0] {
     subject,
     preview,
     heroLine,
-    buttonLabel,
-    greeting,
-    body,
+    intro,
+    codeLabel,
+    expiryLine,
+    closingLine,
+    signoff
+  }
+`;
+
+export const emailNewDeviceNoticeQuery = groq`
+  *[_type == "emailNewDeviceNotice"][0] {
+    subject,
+    preview,
+    heroLine,
+    bodyIntro,
+    wasItYouButtonLabel,
+    bodyPostButton,
     signOff
   }
 `;

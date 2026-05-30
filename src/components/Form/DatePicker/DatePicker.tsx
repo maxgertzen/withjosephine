@@ -1,9 +1,14 @@
 "use client";
 
+import * as Popover from "@radix-ui/react-popover";
 import { differenceInYears, format, isValid, parse } from "date-fns";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 
+import {
+  DAY_PICKER_BASE_CLASSES,
+  DAY_PICKER_LABELS,
+} from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -58,7 +63,7 @@ export function DatePicker({
   minAge,
 }: DatePickerProps) {
   const popoverId = useId();
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<string | null>(null);
 
@@ -70,28 +75,17 @@ export function DatePicker({
           return parsed ? format(parsed, SLASH_DATE) : value;
         })();
 
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
   const selected = parseIso(value);
   const minDate = min ? parseIso(min) : undefined;
   const maxDate = max ? parseIso(max) : undefined;
-  const [month, setMonth] = useState<Date | undefined>(selected ?? maxDate);
-
-  useEffect(() => {
-    if (selected) setMonth(selected);
-    // `selected` is recomputed each render; key off the stable string `value`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  const [month, setMonth] = useState<Date | undefined>(selected ?? maxDate ?? new Date());
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setMonth(selected ?? maxDate ?? new Date());
+  }
   const ageWarning =
-    typeof minAge === "number" && selected
+    typeof minAge === "number" && selected && selected <= new Date()
       ? differenceInYears(new Date(), selected) < minAge
       : false;
 
@@ -118,8 +112,10 @@ export function DatePicker({
       const slashed = parse(formatted, SLASH_DATE, new Date());
       if (isValid(slashed)) {
         onChange(format(slashed, ISO_DATE));
+        return;
       }
     }
+    if (value) onChange("");
   }
 
   return (
@@ -133,45 +129,58 @@ export function DatePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
-        <input
-          id={id}
-          name={name}
-          type="text"
-          value={draft}
-          onChange={(event) => handleManualInput(event.target.value)}
-          onFocus={() => setOpen(true)}
-          placeholder=" "
-          disabled={disabled}
-          required={required}
-          autoComplete="bday"
-          inputMode="numeric"
-          aria-haspopup="dialog"
-          aria-controls={popoverId}
-          aria-invalid={error ? true : undefined}
-          className={inputClasses}
-          onBlur={() => setManualDraft(null)}
-        />
-        <FloatingLabel id={id} label={label} required={required} />
-        {ageWarning ? (
-          <p
-            data-testid="dob-age-warning"
-            role="note"
-            className="mt-2 font-display italic text-sm text-j-text-muted"
-          >
-            <span aria-hidden="true" className="text-j-accent mr-2">
-              ✦
-            </span>
-            That puts you under {minAge}. Please double-check the date — if it&rsquo;s
-            correct, no need to change a thing.
-          </p>
-        ) : null}
-        {open ? (
-          <div
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Anchor className="relative block">
+          <input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="text"
+            role="combobox"
+            value={draft}
+            onChange={(event) => handleManualInput(event.target.value)}
+            onFocus={() => setOpen(true)}
+            placeholder=" "
+            disabled={disabled}
+            required={required}
+            autoComplete="bday"
+            inputMode="numeric"
+            aria-haspopup="dialog"
+            aria-controls={popoverId}
+            aria-expanded={open}
+            aria-invalid={error ? true : undefined}
+            className={inputClasses}
+            onBlur={() => {
+              if (manualDraft === "" || manualDraft?.length === 10) setManualDraft(null);
+            }}
+          />
+          <FloatingLabel id={id} label={label} required={required} />
+          {ageWarning ? (
+            <p
+              data-testid="dob-age-warning"
+              role="note"
+              className="mt-2 font-display italic text-sm text-j-text-muted"
+            >
+              <span aria-hidden="true" className="text-j-accent mr-2">
+                ✦
+              </span>
+              That puts you under {minAge}. Please double-check the date — if it&rsquo;s
+              correct, no need to change a thing.
+            </p>
+          ) : null}
+        </Popover.Anchor>
+        <Popover.Portal>
+          <Popover.Content
             id={popoverId}
-            role="dialog"
+            side="bottom"
+            align="start"
+            sideOffset={8}
             aria-label="Choose a date"
-            className="absolute left-0 top-full mt-2 z-20 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              if (event.target === inputRef.current) event.preventDefault();
+            }}
+            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
           >
             <DayPicker
               mode="single"
@@ -183,39 +192,12 @@ export function DatePicker({
               onMonthChange={setMonth}
               captionLayout="dropdown"
               showOutsideDays
-              classNames={{
-                root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
-                months: "flex flex-col gap-3",
-                month: "flex flex-col gap-3",
-                month_caption:
-                  "flex items-center justify-center gap-2 font-display italic text-base text-j-text-heading",
-                caption_label: "sr-only",
-                dropdowns: "flex gap-2 items-center",
-                dropdown:
-                  "font-body text-sm bg-j-cream border border-j-border-subtle rounded-sm px-2 py-1 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                nav: "flex items-center justify-between absolute inset-x-0 top-0 px-1 pointer-events-none",
-                button_previous:
-                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                button_next:
-                  "pointer-events-auto inline-flex items-center justify-center w-8 h-8 rounded-sm text-j-text-heading hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                month_grid: "w-full border-collapse",
-                weekdays: "flex",
-                weekday:
-                  "flex-1 font-body text-[0.7rem] tracking-wider uppercase text-j-text-muted py-2 text-center",
-                week: "flex w-full",
-                day: "flex-1 text-center p-0",
-                day_button:
-                  "w-9 h-9 inline-flex items-center justify-center font-body text-sm rounded-sm transition-colors hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
-                outside: "[&>button]:text-j-text-muted/50",
-                selected: "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
-                today: "[&>button]:font-semibold [&>button]:text-j-accent",
-                disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
-                chevron: "fill-j-text-heading w-4 h-4",
-              }}
+              labels={DAY_PICKER_LABELS}
+              classNames={DAY_PICKER_BASE_CLASSES}
             />
-          </div>
-        ) : null}
-      </div>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     </FieldShell>
   );
 }

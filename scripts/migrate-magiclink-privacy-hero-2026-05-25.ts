@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 //
-// Seed heroLine (+ buttonLabel on magic-link variants) onto the four
+// Seed heroLine (+ buttonLabel on magic-link variants) onto the
 // singletons that just adopted the brand shell: emailMagicLink,
-// emailMagicLinkMyReadings, emailMagicLinkMyGifts, emailPrivacyExport.
+// emailMagicLinkLibrary (formerly emailMagicLinkMyReadings), emailPrivacyExport.
 // setIfMissing so editor changes survive re-runs.
 //
 // Usage:
@@ -16,8 +16,7 @@ import { createClient } from "@sanity/client";
 
 import {
   EMAIL_MAGIC_LINK_DEFAULTS,
-  EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS,
-  EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS,
+  EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
 } from "../src/data/defaults";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
@@ -33,17 +32,10 @@ const SEEDS = [
     },
   },
   {
-    id: "emailMagicLinkMyReadings",
+    id: "emailMagicLinkLibrary",
     fields: {
-      heroLine: EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS.heroLine,
-      buttonLabel: EMAIL_MAGIC_LINK_MY_READINGS_DEFAULTS.buttonLabel,
-    },
-  },
-  {
-    id: "emailMagicLinkMyGifts",
-    fields: {
-      heroLine: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS.heroLine,
-      buttonLabel: EMAIL_MAGIC_LINK_MY_GIFTS_DEFAULTS.buttonLabel,
+      heroLine: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS.heroLine,
+      buttonLabel: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS.buttonLabel,
     },
   },
   {

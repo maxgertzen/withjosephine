@@ -54,6 +54,7 @@ const SELF_SEND_GIFT: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: PURCHASER_ID,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: "self_send",
   giftSendAt: null,
@@ -106,7 +107,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   });
 
   it("returns 409 when gift is not self_send", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(
       gift({ giftDeliveryMethod: "scheduled", giftClaimEmailFiredAt: null }),
     );
@@ -114,7 +115,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   });
 
   it("returns 409 when already claimed", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift({ giftClaimedAt: "2026-05-05T00:00:00.000Z" }));
     expect((await callRoute()).status).toBe(409);
   });
@@ -127,7 +128,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
       sentAt: "2026-05-10T11:30:00.000Z",
       resendId: "msg_prev",
     };
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift({ emailsFired: [recent] }));
     const res = await callRoute();
     expect(res.status).toBe(429);
@@ -142,14 +143,14 @@ describe("POST /api/gifts/[id]/resend-link", () => {
       { type: "gift_resend", sentAt: "2026-05-09T20:00:00.000Z", resendId: "b" },
       { type: "gift_resend", sentAt: "2026-05-09T16:00:00.000Z", resendId: "c" },
     ];
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift({ emailsFired: window24 }));
     const res = await callRoute();
     expect(res.status).toBe(429);
   });
 
   it("returns 200 with claim URL and appends gift_resend entry", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift());
     const res = await callRoute();
     expect(res.status).toBe(200);
@@ -167,7 +168,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   });
 
   it("returns 502 when Resend send fails (state untouched)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift());
     sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
@@ -178,7 +179,7 @@ describe("POST /api/gifts/[id]/resend-link", () => {
 
   // Phase 5 Session 4b — B6.20 atomic lock.
   it("returns 429 when the atomic lock is already held (concurrent POST)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift());
     acquireLockMock.mockResolvedValueOnce(false); // someone else has the lock
     const res = await callRoute();
@@ -188,14 +189,14 @@ describe("POST /api/gifts/[id]/resend-link", () => {
   });
 
   it("releases the atomic lock after success", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift());
     await callRoute();
     expect(releaseLockMock).toHaveBeenCalledWith("sub_gift");
   });
 
   it("releases the atomic lock after Resend failure (502)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(gift());
     sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     await callRoute();

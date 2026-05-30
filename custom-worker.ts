@@ -8,6 +8,7 @@ import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
+import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "./src/lib/logging/redactSearchParams";
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
@@ -26,7 +27,8 @@ function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
     delete (request.headers as Record<string, unknown>).authorization;
   }
   if (request?.url) {
-    request.url = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
+    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
   }
   return event;
 }

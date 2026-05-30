@@ -15,6 +15,8 @@ const gateMock = vi.mocked(gateListenAssetRequest);
 const ASSET = {
   voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
   pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
+  readingSlug: "soul-blueprint",
+  submissionId: "sub_1",
 };
 
 const fetchMock = vi.fn();
@@ -42,9 +44,27 @@ describe("GET /api/listen/[id]/pdf", () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="reading.pdf"',
+      'attachment; filename="soul-blueprint-reading-sub_1.pdf"',
     );
     expect(response.headers.get("content-type")).toBe("application/pdf");
+  });
+
+  it("encodes the reading slug into the filename", async () => {
+    gateMock.mockResolvedValue({
+      ok: true,
+      asset: { ...ASSET, readingSlug: "akashic-record", submissionId: "sub_42" },
+    });
+    fetchMock.mockResolvedValue(
+      new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
+    );
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("https://withjosephine.com/api/listen/sub_42/pdf"),
+      { params: Promise.resolve({ id: "sub_42" }) },
+    );
+    expect(response.headers.get("content-disposition")).toBe(
+      'attachment; filename="akashic-record-reading-sub_42.pdf"',
+    );
   });
 
   it("403 on gate denial without fetching", async () => {
@@ -59,7 +79,10 @@ describe("GET /api/listen/[id]/pdf", () => {
   });
 
   it("returns 404 when gate.asset.pdfUrl is null", async () => {
-    gateMock.mockResolvedValue({ ok: true, asset: { voiceNoteUrl: null, pdfUrl: null } });
+    gateMock.mockResolvedValue({
+      ok: true,
+      asset: { voiceNoteUrl: null, pdfUrl: null, readingSlug: "soul-blueprint", submissionId: "sub_1" },
+    });
     const { GET } = await import("./route");
     const response = await GET(
       new Request("https://withjosephine.com/api/listen/sub_1/pdf"),

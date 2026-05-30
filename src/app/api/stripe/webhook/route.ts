@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { serverTrack } from "@/lib/analytics/server";
+import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
+import { getOrCreateUser } from "@/lib/auth/users";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { formatSendAt } from "@/lib/booking/formatSendAt";
@@ -13,6 +15,7 @@ import {
   findSubmissionById,
   markGiftClaimSent,
   markSubmissionExpired,
+  setSubmissionPurchaserUser,
 } from "@/lib/booking/submissions";
 import { getResendId, sendGiftPurchaseConfirmation } from "@/lib/resend";
 import { constructWebhookEvent } from "@/lib/stripe";
@@ -105,6 +108,7 @@ async function dispatchGiftPurchaseConfirmation(
   const purchaserFirstName = purchaserFirstNameFromResponses || extractFirstName(submission.email);
 
   const nowIso = new Date().toISOString();
+  const purchaserTimeZone = submission.purchaserTimeZone ?? undefined;
 
   void serverTrack("gift_purchased", {
     distinct_id: submission._id,
@@ -113,6 +117,33 @@ async function dispatchGiftPurchaseConfirmation(
     delivery_method: submission.giftDeliveryMethod,
     send_at: submission.giftSendAt ?? null,
   });
+
+  let purchaserUserId: string | null = null;
+  try {
+    const { userId } = await getOrCreateUser({
+      email: submission.email,
+      name: purchaserFirstName,
+    });
+    purchaserUserId = userId;
+    await setSubmissionPurchaserUser(submission._id, userId);
+  } catch (error) {
+    console.error(
+      `[stripe-webhook] purchaser user-create failed for ${submission._id}`,
+      error,
+    );
+  }
+
+  const libraryMintSource =
+    submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend
+      ? "gift_purchase_self_send"
+      : "gift_purchase_scheduled";
+  const libraryUrl = purchaserUserId
+    ? await tryBuildLibraryUrl({
+        userId: purchaserUserId,
+        mintSource: libraryMintSource,
+        siteContext: `stripe-webhook:${submission._id}`,
+      })
+    : undefined;
 
   if (submission.giftDeliveryMethod === GIFT_DELIVERY.selfSend) {
     const { tokenHash, claimUrl } = await issueGiftClaimToken();
@@ -127,6 +158,7 @@ async function dispatchGiftPurchaseConfirmation(
       amountPaidDisplay,
       recipientName,
       giftMessage: submission.giftMessage,
+      libraryUrl,
       variant: GIFT_DELIVERY.selfSend,
       claimUrl,
     });
@@ -148,8 +180,9 @@ async function dispatchGiftPurchaseConfirmation(
       amountPaidDisplay,
       recipientName,
       giftMessage: submission.giftMessage,
+      libraryUrl,
       variant: GIFT_DELIVERY.scheduled,
-      sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso),
+      sendAtDisplay: formatSendAt(submission.giftSendAt ?? nowIso, purchaserTimeZone),
     }),
     scheduleGiftClaimAlarm(submission._id, submission.giftSendAt ?? nowIso),
   ]);

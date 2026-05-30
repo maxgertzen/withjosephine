@@ -54,7 +54,7 @@ export function PageNav({
           <button
             type="button"
             onClick={onBack}
-            className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer"
+            className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2"
           >
             ← Previous page
           </button>
@@ -66,7 +66,7 @@ export function PageNav({
           type="button"
           onClick={onSaveLater}
           disabled={saveLaterDisabled}
-          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-j-text-muted"
+          className="font-display italic text-sm text-j-text-muted hover:text-j-text transition-colors inline-flex items-center min-h-11 px-2 disabled:opacity-50 disabled:hover:text-j-text-muted"
         >
           {saveLaterLabel}
         </button>
@@ -78,7 +78,7 @@ export function PageNav({
             type="submit"
             size="lg"
             data-testid="intake-submit"
-            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50"
             disabled={isSubmitting}
             aria-disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
@@ -92,7 +92,7 @@ export function PageNav({
             data-testid="intake-next"
             onClick={onNext}
             aria-disabled={nextDisabled}
-            className="min-h-11 whitespace-nowrap aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+            className="min-h-11 whitespace-nowrap aria-disabled:opacity-50"
           >
             {nextLabel}
           </Button>

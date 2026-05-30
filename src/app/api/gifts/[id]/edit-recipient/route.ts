@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireElevation } from "@/lib/auth/requireElevation";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { editGiftRecipient } from "@/lib/booking/submissions";
 import { scheduleGiftAlarm } from "@/lib/durable-objects/giftClaimSchedulerClient";
@@ -39,6 +40,8 @@ export async function POST(
   const { id } = await context.params;
   const auth = await authorizeGiftPurchaser(id);
   if (!auth.ok) return auth.response;
+  const elevationFailure = requireElevation(auth.session);
+  if (elevationFailure) return elevationFailure;
   const { submission } = auth;
 
   if (submission.giftClaimedAt || submission.giftCancelledAt) {

@@ -13,8 +13,7 @@ import { myReadingsPage } from "./myReadingsPage";
 import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
-import { emailMagicLinkMyGifts } from "./emailMagicLinkMyGifts";
-import { emailMagicLinkMyReadings } from "./emailMagicLinkMyReadings";
+import { emailMagicLinkLibrary } from "./emailMagicLinkLibrary";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftClaim } from "./emailGiftClaim";
@@ -22,8 +21,10 @@ import { emailGiftClaimReminder } from "./emailGiftClaimReminder";
 import { emailGiftPurchaseConfirmationScheduled } from "./emailGiftPurchaseConfirmationScheduled";
 import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfirmationSelfSend";
 import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
+import { emailNewDeviceNotice } from "./emailNewDeviceNotice";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
+import { emailStepUpOtp } from "./emailStepUpOtp";
 import { giftClaimPage } from "./giftClaimPage";
 import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
@@ -49,8 +50,7 @@ export const schemaTypes = [
   myGiftsPage,
   magicLinkVerifyPage,
   emailMagicLink,
-  emailMagicLinkMyReadings,
-  emailMagicLinkMyGifts,
+  emailMagicLinkLibrary,
   emailDay7Delivery,
   emailOrderConfirmation,
   emailGiftPurchaseConfirmationSelfSend,
@@ -59,6 +59,8 @@ export const schemaTypes = [
   emailGiftClaimReminder,
   emailRecipientIntakeReceived,
   emailPrivacyExport,
+  emailStepUpOtp,
+  emailNewDeviceNotice,
   emailSharedShell,
   giftClaimPage,
   giftIntakePage,

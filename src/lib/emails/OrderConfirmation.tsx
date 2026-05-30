@@ -8,6 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { LibraryButton } from "./LibraryButton";
 import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type OrderConfirmationVars = {
@@ -15,6 +16,7 @@ export type OrderConfirmationVars = {
   readingName: string;
   readingPriceDisplay: string;
   amountPaidDisplay: string | null;
+  libraryUrl?: string;
 };
 
 export type OrderConfirmationProps = {
@@ -84,6 +86,8 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
             </p>
           </Section>
         </div>
+
+        <LibraryButton libraryUrl={vars.libraryUrl} label={copy.libraryButtonLabel} variant="primary" />
 
         <EmailFooter shell={shell} />
       </Container>

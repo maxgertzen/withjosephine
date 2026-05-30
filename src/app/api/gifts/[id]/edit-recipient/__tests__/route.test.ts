@@ -66,6 +66,7 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: PURCHASER_ID,
+  purchaserTimeZone: null,
   recipientEmail: "recipient@example.com",
   giftDeliveryMethod: "scheduled",
   giftSendAt: "2026-06-01T15:00:00.000Z",
@@ -108,21 +109,21 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   });
 
   it("returns 404 when purchaser_user_id does not match session", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: "other_user", sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: "other_user", sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute({ body: { recipientEmail: "new@example.com" } });
     expect(res.status).toBe(404);
   });
 
   it("returns 404 when submission missing", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(null);
     const res = await callRoute({ body: { recipientEmail: "new@example.com" } });
     expect(res.status).toBe(404);
   });
 
   it("returns 409 when claim email already fired", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftClaimEmailFiredAt: "2026-05-15T00:00:00.000Z",
@@ -132,7 +133,7 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   });
 
   it("returns 422 when recipient email equals purchaser email", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute({ body: { recipientEmail: "purchaser@example.com" } });
     expect(res.status).toBe(422);
@@ -141,14 +142,14 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   });
 
   it("returns 422 when recipientName too long", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute({ body: { recipientName: "x".repeat(120) } });
     expect(res.status).toBe(422);
   });
 
   it("returns 422 when recipientEmail exceeds RFC 5321 254-char cap", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const longEmail = `${"x".repeat(245)}@example.com`; // 257 chars
     const res = await callRoute({ body: { recipientEmail: longEmail } });
@@ -160,7 +161,7 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   it("treats plus-aliased purchaser email as the purchaser (rejects)", async () => {
     // alice+gift@example.com normalizes to alice@example.com; gifting to a
     // plus-alias of your own inbox is still gifting to yourself.
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute({
       body: { recipientEmail: "purchaser+gift@example.com" },
@@ -171,7 +172,7 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   });
 
   it("returns 200 and re-schedules DO alarm when gift_send_at changes", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const newSendAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
     const res = await callRoute({ body: { giftSendAt: newSendAt } });
@@ -187,10 +188,39 @@ describe("POST /api/gifts/[id]/edit-recipient", () => {
   });
 
   it("returns 200 when only recipient_email changes (no DO call)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: Date.now() });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute({ body: { recipientEmail: "new@example.com" } });
     expect(res.status).toBe(200);
     expect(stubFetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 elevation_required when session is not elevated", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({
+      userId: PURCHASER_ID,
+      sessionId: "s",
+      elevatedAt: null,
+    });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    const res = await callRoute({ body: { recipientEmail: "new@example.com" } });
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: string; contactMailto: string };
+    expect(body.error).toBe("elevation_required");
+    expect(body.contactMailto).toMatch(/^mailto:/);
+    expect(editGiftRecipientMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 elevation_required when elevatedAt is past the 10-min TTL", async () => {
+    const stale = Date.now() - 11 * 60 * 1000;
+    getActiveSessionMock.mockResolvedValueOnce({
+      userId: PURCHASER_ID,
+      sessionId: "s",
+      elevatedAt: stale,
+    });
+    findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
+    const res = await callRoute({ body: { recipientEmail: "new@example.com" } });
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("elevation_required");
   });
 });

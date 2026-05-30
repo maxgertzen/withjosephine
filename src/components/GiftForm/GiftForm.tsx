@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useSyncExternalStore } from "react";
 
 import { Input } from "@/components/Form/Input";
 import { Textarea } from "@/components/Form/Textarea";
@@ -15,12 +15,63 @@ import type { ReadingId } from "@/lib/analytics";
 import { track } from "@/lib/analytics";
 import { GIFT_DELIVERY, HONEYPOT_FIELD } from "@/lib/booking/constants";
 import type { GiftDeliveryMethod } from "@/lib/booking/persistence/repository";
+import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
 import {
   emptyGiftPurchaserConsentSnapshot,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
 import { errorClasses, errorClassesSmall, invalidBorderClasses } from "@/lib/formStyles";
 import { BOOKING_API_GIFT_ROUTE } from "@/lib/http/routes";
+import { getLastReadingId, restore as restoreIntakeDraft } from "@/lib/intake/localStorageDraft";
+
+type PurchaserPrefill = { email: string; firstName: string };
+
+const EMPTY_PREFILL: PurchaserPrefill = { email: "", firstName: "" };
+
+// Snapshot cache — useSyncExternalStore requires getSnapshot to return a
+// stable reference between calls when the underlying data hasn't changed.
+// We compute the prefill once per render lifecycle and reuse the reference;
+// the cache key encodes the inputs so test resets (clearing localStorage)
+// take effect.
+// https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached
+let cachedSnapshot: PurchaserPrefill | null = null;
+let cachedKey: string | null = null;
+
+function readPurchaserPrefillSnapshot(): PurchaserPrefill {
+  if (typeof window === "undefined") return EMPTY_PREFILL;
+  const lastReadingId = getLastReadingId();
+  if (!lastReadingId) {
+    if (cachedKey !== "__none__") {
+      cachedKey = "__none__";
+      cachedSnapshot = EMPTY_PREFILL;
+    }
+    return cachedSnapshot ?? EMPTY_PREFILL;
+  }
+  const priorDraft = restoreIntakeDraft(lastReadingId);
+  const priorEmailRaw = priorDraft?.values.email;
+  const priorFirstNameRaw = priorDraft?.values.first_name;
+  const email =
+    typeof priorEmailRaw === "string" && priorEmailRaw.length > 0 ? priorEmailRaw : "";
+  const firstName =
+    typeof priorFirstNameRaw === "string" && priorFirstNameRaw.length > 0
+      ? priorFirstNameRaw
+      : "";
+  const key = `${lastReadingId}|${email}|${firstName}`;
+  if (cachedKey === key && cachedSnapshot) return cachedSnapshot;
+  cachedKey = key;
+  cachedSnapshot = email === "" && firstName === "" ? EMPTY_PREFILL : { email, firstName };
+  return cachedSnapshot;
+}
+
+export function __resetPurchaserPrefillCacheForTest(): void {
+  cachedSnapshot = null;
+  cachedKey = null;
+}
+
+// Lazy snapshot is read on first client render (server: empty). Using
+// useSyncExternalStore with a noop subscribe gives a synchronous, SSR-safe
+// read without triggering set-state-in-effect.
+const noopSubscribe = () => () => {};
 
 type FieldErrors = Partial<Record<string, string>>;
 
@@ -35,9 +86,23 @@ type Props = {
 };
 
 export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }: Props) {
+  // Prefill comes from a synchronous client-only snapshot of the prior intake
+  // draft (server snapshot is empty so SSR/hydration match). User-typed values
+  // are tracked separately and always win over the prefill.
+  const prefill = useSyncExternalStore(
+    noopSubscribe,
+    readPurchaserPrefillSnapshot,
+    () => EMPTY_PREFILL,
+  );
+
+  const { effectiveTz } = useEffectiveTimeZone();
   const [deliveryMethod, setDeliveryMethod] = useState<GiftDeliveryMethod>(GIFT_DELIVERY.selfSend);
-  const [purchaserFirstName, setPurchaserFirstName] = useState("");
-  const [purchaserEmail, setPurchaserEmail] = useState("");
+  const [purchaserFirstNameOverride, setPurchaserFirstNameOverride] = useState<string | null>(null);
+  const [purchaserEmailOverride, setPurchaserEmailOverride] = useState<string | null>(null);
+  const purchaserFirstName = purchaserFirstNameOverride ?? prefill.firstName;
+  const purchaserEmail = purchaserEmailOverride ?? prefill.email;
+  const setPurchaserFirstName = setPurchaserFirstNameOverride;
+  const setPurchaserEmail = setPurchaserEmailOverride;
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
@@ -157,6 +222,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
         readingSlug,
         purchaserEmail: purchaserEmail.trim().toLowerCase(),
         purchaserFirstName: purchaserFirstName.trim(),
+        purchaserTimeZone: effectiveTz ?? "UTC",
         deliveryMethod,
         art6Consent: consentSnapshot.art6.acknowledged,
         coolingOffConsent: consentSnapshot.coolingOff.acknowledged,
@@ -285,7 +351,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
           {copy.deliveryMethodLabel}
         </legend>
         <div role="radiogroup" aria-labelledby="delivery-method-label" className="flex flex-col gap-3">
-          <label className="flex gap-3 items-start cursor-pointer">
+          <label className="flex gap-3 items-start">
             <input
               type="radio"
               name="deliveryMethod"
@@ -303,7 +369,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
               </span>
             </span>
           </label>
-          <label className="flex gap-3 items-start cursor-pointer">
+          <label className="flex gap-3 items-start">
             <input
               type="radio"
               name="deliveryMethod"
@@ -468,7 +534,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
       <button
         type="submit"
         disabled={submitting || !isFormValid}
-        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        className="inline-flex items-center justify-center min-h-14 px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         {submitting ? (
           copy.loadingStateCopy

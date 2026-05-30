@@ -95,11 +95,12 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailGiftPurchaseConfirmationScheduled",
         "emailGiftPurchaseConfirmationSelfSend",
         "emailMagicLink",
-        "emailMagicLinkMyGifts",
-        "emailMagicLinkMyReadings",
+        "emailMagicLinkLibrary",
+        "emailNewDeviceNotice",
         "emailOrderConfirmation",
         "emailPrivacyExport",
         "emailRecipientIntakeReceived",
+        "emailStepUpOtp",
       ].sort(),
     );
   });

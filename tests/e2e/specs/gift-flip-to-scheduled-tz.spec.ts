@@ -50,13 +50,13 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     });
     expect(webhookResponse.status()).toBe(200);
 
-    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-readings" });
 
     const flipCta = page.getByRole("button", { name: /let josephine send it for me/i });
     await expect(flipCta).toBeVisible();
     await flipCta.click();
 
-    const sendAtInput = page.locator("input[type='datetime-local']");
+    const sendAtInput = page.locator("input[name='giftSendAt']");
     await expect(sendAtInput).toBeVisible();
 
     const recipientEmail = "flip-tz-recipient@withjosephine.com";
@@ -66,7 +66,9 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
       .last();
     await flipRecipientInput.fill(recipientEmail);
     const localInput = await datetimeLocalPlus(page, 60);
-    await sendAtInput.fill(localInput);
+    const [datePart, timePart] = localInput.split("T");
+    const [yyyy, mo, dd] = datePart.split("-");
+    await sendAtInput.fill(`${dd}/${mo}/${yyyy} ${timePart}`);
 
     const browserTz = await page.evaluate(
       () => Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -156,17 +158,19 @@ test.describe("Flip-to-scheduled — TZ-aware client conversion (D-9) — mock m
     });
     expect(webhookResponse.status()).toBe(200);
 
-    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-readings" });
 
     const editCta = page.getByRole("button", { name: /edit recipient/i });
     await expect(editCta).toBeVisible();
     await editCta.click();
 
-    const sendAtInput = page.locator("input[type='datetime-local']");
+    const sendAtInput = page.locator("input[name='giftSendAt']");
     await expect(sendAtInput).toBeVisible();
 
     const newLocalInput = await datetimeLocalPlus(page, 60 * 48);
-    await sendAtInput.fill(newLocalInput);
+    const [editDatePart, editTimePart] = newLocalInput.split("T");
+    const [editYyyy, editMo, editDd] = editDatePart.split("-");
+    await sendAtInput.fill(`${editDd}/${editMo}/${editYyyy} ${editTimePart}`);
 
     const browserTz = await page.evaluate(
       () => Intl.DateTimeFormat().resolvedOptions().timeZone,

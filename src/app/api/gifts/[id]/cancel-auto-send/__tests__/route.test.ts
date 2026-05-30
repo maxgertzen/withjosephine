@@ -66,6 +66,7 @@ const SCHEDULED_GIFT: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: PURCHASER_ID,
+  purchaserTimeZone: null,
   recipientEmail: "recipient@example.com",
   giftDeliveryMethod: "scheduled",
   giftSendAt: "2026-06-01T15:00:00.000Z",
@@ -114,13 +115,13 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
   });
 
   it("returns 404 when purchaser doesn't match session", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     expect((await callRoute()).status).toBe(404);
   });
 
   it("returns 409 if already self_send", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftDeliveryMethod: "self_send",
@@ -129,7 +130,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
   });
 
   it("returns 409 if claim email already fired", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SCHEDULED_GIFT,
       giftClaimEmailFiredAt: "2026-05-15T00:00:00.000Z",
@@ -138,7 +139,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
   });
 
   it("returns 502 when Resend send fails (row remains in self_send with provisional token)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     sendMock.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
     const res = await callRoute();
@@ -153,7 +154,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
 
   // Phase 5 Session 4b — B6.21 atomic-flip-first.
   it("returns 409 when concurrent caller already flipped (flip returns false)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     flipMock.mockResolvedValueOnce(false); // someone else got there first
     const res = await callRoute();
@@ -166,7 +167,7 @@ describe("POST /api/gifts/[id]/cancel-auto-send", () => {
   });
 
   it("flips atomically THEN cancels DO alarm THEN sends THEN updates real token hash", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SCHEDULED_GIFT);
     const res = await callRoute();
     expect(res.status).toBe(200);

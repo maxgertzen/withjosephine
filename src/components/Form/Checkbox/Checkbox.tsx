@@ -29,7 +29,7 @@ export function Checkbox({
     <div>
       <label
         htmlFor={id}
-        className="flex items-start gap-3 font-body text-sm text-j-text leading-[1.6] cursor-pointer"
+        className="flex items-start gap-3 font-body text-sm text-j-text leading-[1.6]"
       >
         <input
           id={id}
@@ -41,7 +41,7 @@ export function Checkbox({
           required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
-          className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent cursor-pointer"
+          className="mt-[3px] h-4 w-4 shrink-0 accent-j-accent"
         />
         <span>{children}</span>
       </label>

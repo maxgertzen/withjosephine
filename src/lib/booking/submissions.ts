@@ -9,7 +9,7 @@ import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { GIFT_DELIVERY, type GiftCancelledReason } from "./constants";
+import { GIFT_DELIVERY } from "./constants";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
@@ -127,6 +127,7 @@ export async function findSubmissionListenContext(
   recipientUserId: string | null;
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
+  readingSlug: string;
 } | null> {
   return repo.findSubmissionListenContext(id);
 }
@@ -293,27 +294,6 @@ export async function applyGiftSendNow(
   return updated;
 }
 
-export async function applyGiftCancelScheduled(
-  submissionId: string,
-  args: {
-    cancelledAtIso: string;
-    by: string;
-    reason: GiftCancelledReason;
-  },
-): Promise<boolean> {
-  const updated = await repo.applyGiftCancelScheduled(submissionId, args);
-  if (updated) {
-    runMirror(
-      mirrorSubmissionPatch(submissionId, {
-        giftCancelledAt: args.cancelledAtIso,
-        giftCancelledBy: args.by,
-        giftCancelledReason: args.reason,
-      }),
-    );
-  }
-  return updated;
-}
-
 export async function flipGiftToScheduled(
   submissionId: string,
   args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
@@ -356,6 +336,13 @@ export async function setSubmissionRecipientUser(
   userId: string,
 ): Promise<void> {
   await repo.setSubmissionRecipientUser(submissionId, userId);
+}
+
+export async function setSubmissionPurchaserUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await repo.setSubmissionPurchaserUser(submissionId, userId);
 }
 
 export async function appendEmailFired(

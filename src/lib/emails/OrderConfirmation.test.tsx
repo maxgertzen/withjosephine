@@ -108,4 +108,30 @@ describe("OrderConfirmation — visual parity with locked copy", () => {
     expect(html).not.toContain("<script>x</script>");
     expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
   });
+
+  it("renders the secondary library button when libraryUrl is provided", async () => {
+    const libraryUrl =
+      "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig";
+    const html = await render(
+      <OrderConfirmation
+        vars={{ ...VARS, libraryUrl }}
+        copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS}
+        shell={EMAIL_SHARED_SHELL_DEFAULTS}
+      />,
+    );
+    expect(linkHrefs(html).has(libraryUrl)).toBe(true);
+    expect(visibleText(html)).toContain("See all your readings");
+  });
+
+  it("does NOT render the library button when libraryUrl is absent", async () => {
+    const html = await render(
+      <OrderConfirmation
+        vars={VARS}
+        copy={EMAIL_ORDER_CONFIRMATION_DEFAULTS}
+        shell={EMAIL_SHARED_SHELL_DEFAULTS}
+      />,
+    );
+    expect(visibleText(html)).not.toContain("See all your readings");
+    expect(html).not.toContain("/my-readings/welcome");
+  });
 });

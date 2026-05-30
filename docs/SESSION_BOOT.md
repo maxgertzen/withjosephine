@@ -1,8 +1,213 @@
 # Session Boot — Active State
 
+## 🟡 2026-05-29 — PR #218 open: release/v1.4.0 → main (Phases 1-5 + PR #214 + PR #217)
+
+46 commits on `release/v1.4.0`. PR #218 against `main` opened end of session, CI running, NOT merged (Max wanted to hold). URL: https://github.com/maxgertzen/withjosephine/pull/218
+
+**Phase 5 (dex `l0xynlxs`) work landed on `release/v1.4.0` this session:**
+- **One-tap new-device notice** — migration 0018 adds `ua_hash` columns to both redemption ledgers + new `listen_device_notifications` dedup table. New `NewDeviceNotice.tsx` template + `emailNewDeviceNotice` Sanity singleton. Detection helper `src/lib/auth/newDeviceNotice.ts` fires from the `/listen/[id]` server component when current UA hash differs from the first-redemption baseline. "This wasn't me" CTA goes through `/api/auth/revoke-recipient-sessions` (HMAC-signed token, 15-min TTL, `new_device_revoke.v1` HKDF subkey) → revokes every active listen_session for the recipient + fires admin alert. Skip-silently when no baseline. Dedup key `(submission_id, ua_hash)` so each genuinely-new device fires exactly one notice per submission, lifetime.
+- **A1 magic-link library collapse + full rename** — the dual `emailMagicLinkMyReadings` + `emailMagicLinkMyGifts` model (stale post-Phase-2 unified library) collapses into ONE `emailMagicLinkLibrary` singleton. Rename propagated across code (`MagicLinkContext`, `EmailSubType.magic_link_library`, defaults constant, fetch fn, query, type alias, slots, snapshots, seed script, validate contract) + Studio (schema file renamed, registry + desk + SINGLETON_TYPES updated). Sanity migration `scripts/migrate-magiclink-library-rename-2026-05-29.ts` deletes orphan + renames in-place with Becky-edit-preserving plaintext-match guards. `/listen/` magic-link variant kept distinct (per-reading sign-in).
+- **Day-7 schema collapse** — legacy fragment fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) removed from `EMAIL_DAY7_DELIVERY_DEFAULTS`, `studio/schemas/emailDay7Delivery.ts`, and the `Day7Delivery.tsx` dual-mode branch. Template now renders `bodyIntro` + `bodyPostButton` only.
+- **Day-7 copy rewrite + privacy nudge** — honest one-tap phrasing in defaults.ts ("Tap below to open your reading. You will be signed in for the next seven days, so you can come back to the voice note and the PDF without asking again. This link is just for you; please do not share it. Your reading stays here for the next ninety days..."). Em-dashes removed.
+- **Em-dash sweep** — 33 em-dashes in `src/data/defaults.ts` removed; further sweep across new files. Binding rule `feedback_no_em_dashes`.
+- **Becky-edit audit** — pulled prod state across all customer email singletons. 8 Becky-edited fields identified + verified the migration scripts' plaintext-match guards preserve them: `Day7Delivery.preview` ("I'm so pleased..."), `GiftClaim.subjectFirstSend` + `previewFirstSend`, `GiftPurchaseConfirmationScheduled.subject` + `preview`, `GiftPurchaseConfirmationSelfSend.subject` + `preview`, `OrderConfirmation.subject` (Becky added "Yay!"). `RecipientIntakeReceived.subject` was OLD code default ("Your reading is in my hands now"); Max chose to keep it → code default reverted to match prod + migration's intake-subject overwrite removed.
+- **GiftPurchaseConfirmationSelfSend.tsx fix** — `<LibraryButton variant="primary">` → `variant="secondary"` so the "Share the link" CTA stays the primary action.
+- **Subject + flow audits** — `MEMORY/WORK/20260528-161243_carryovers-and-phase5-emails/SUBJECT_AUDIT.md` + `FLOW_AUDIT.md` capture the audit tables and decisions.
+
+**Migrations applied to BOTH staging AND production this session** (Max authorized "we are not live, run prod migration now"):
+- D1: 0018 (`pnpm migrate:apply:prod` also caught up 0013-0017 which had been pending on prod)
+- Sanity: my-gifts cancel-scheduled cleanup (PR #214 carry-over), day-7 body rewrite + legacy field unset, `emailMagicLinkMyGifts` orphan delete, `emailMagicLinkMyReadings → emailMagicLinkLibrary` rename. All per-field guards intact; Becky's editorial work preserved.
+
+**🚨 Outstanding when PR #218 merges:**
+
+1. **Sanity Studio re-deploy** (`pnpm run deploy` from `studio/`) — publishes new `emailMagicLinkLibrary` + `emailNewDeviceNotice` schemas + the collapsed `emailDay7Delivery` (legacy fields removed). Becky won't see the new editor surface until this lands.
+2. **Real-browser smoke against the deployed prod worker** — force a day-7 delivery via the cron route, verify new copy renders + tokenized listen URL one-tap-redeems + sign-in-to-library variant subject is "Sign in to your library". Trigger a new-device-notice from a second browser. Per `feedback_real_browser_smoke_before_ship_claim` (binding).
+
+**Phase 5 follow-up dex tasks filed this session (parented under `l0xynlxs`, not blocking merge):**
+- `zkib97ns` — `GiftPurchaseConfirmationScheduled.preview` (Becky's "You don't need to do anything else.") slightly misaligns with the still-existing purchaser-side management affordances on `/my-readings`. Propose to Becky a reframe that preserves the warmth but surfaces the management option. URL is `/my-readings` (NOT `/my-readings/gifts` — PR #208 collapsed the tabs).
+- `5cyibtb0` — Mechanical comment-narration guard. Recurrence-prevention for `feedback_comments_over_logged`: the memory entry is in context but keeps getting violated by me and dispatched Engineer agents. Small vitest scanner in `src/scanners/` that fails CI on `Phase \d+`, `dex [a-z0-9]{6,}`, `epic [a-z0-9]{6,}`, date prefixes inside comments, and multi-line `//` blocks over 4 consecutive lines in non-test source files. Allowlist `docs/`, `MEMORY/`, `*.test.*`, `*.md`.
+
+## ✅ 2026-05-28 — PR #217 shipped: three follow-up fixes bundled on `release/v1.4.0`
+
+Squash-merged at `9931964`. All three fixes from the locked plan landed in one PR (per Max's "should have been one combined PR" feedback after I initially set up three stacked draft PRs).
+
+- **Fix #1 — purchaser tz on scheduled-gift OC email (dex `c1u7yn8g`, closed):** new D1 column `submissions.purchaser_time_zone` (migration `0017_purchaser_time_zone.sql`), `formatSendAt(iso, tz?)` accepts optional IANA zone, default UTC for legacy. Both gift POST + flip-to-scheduled validate via canonical `isIanaTimeZone`. Webhook reads tz from D1 row (mid-PR architecture pivot from the locked Stripe-metadata round-trip; D1 column matches Calendly/Eventbrite/Airbnb pattern).
+- **Fix #2 — `(authed)` route group + brand top-bar (dex `gj1s46yv`, closed):** first Next.js route group in the codebase. `my-readings` (+ welcome), `listen/[id]`, `gift/intake`, `gift/claim/[token]`, `thank-you/[readingId]` moved underneath. New `src/app/(authed)/layout.tsx` adds sticky brand top-bar (✦ Josephine wordmark + Home link, `aria-label="Site"`, `border-j-border-subtle`). URLs unchanged so middleware path-based auth gating still works.
+- **Fix #3 — brand DateTimePicker (dex `ahfwbcot`, closed):** new `src/components/Form/DateTimePicker/` replacing native `<input type="datetime-local">` in edit-recipient drawer + FlipToScheduledControl. After multiple rewrites, final shape is ONE text input → ONE popover with calendar on left + two scroll-snap HH/MM columns (60 minutes) on right. ARIA-APG roving-tabindex listbox on time columns (arrows move active option, Enter/Space commits). Done button + Escape close via `closeAndReturnFocus` (with `justClosedRef` guard against the `onFocus` reopen race). Partial state renders `dd/MM/yyyy` or `HH:mm` so selections feel responsive.
+- **Bonus a11y polish on intake DatePicker + TimePicker:** `role="combobox"` + `aria-expanded`, today indicator as ring not gold-on-cream (was 2.6:1 → WCAG fail), 40×40 day buttons, calendar/dropdown SR labels, backspace-clears-onChange, partial-draft-preserved-on-blur, future-date-no-age-warning. TimePicker `aria-live` for "I don't know my birth time" toggle.
+- **Shared `src/components/Form/DayPickerShared/dayPickerShared.ts`** — extracted duplicated `DAY_PICKER_LABELS` + `DAY_PICKER_BASE_CLASSES` (~55 LoC dedup).
+- **New Storybook story** at `Form/DateTimePicker` (Empty / WithInitialValue / WithMinNow / WithError).
+- **15 functionality tests** on DateTimePicker covering click + Enter + Escape + Done + Tab navigation + partial-state. CI green at 16m23s. 2067/2067 vitest.
+
+**🚨 Outstanding Max-actions:**
+
+1. ✅ **Apply D1 migration 0017 to staging** — done 2026-05-28 by Max. `purchaser_time_zone TEXT` column now exists on staging `submissions`.
+2. ✅ **Apply D1 migration 0017 to production** — done 2026-05-29 as a side effect of `pnpm migrate:apply:prod` for 0018 (0013-0017 had been pending on prod; all applied together).
+3. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`): walk through a scheduled-gift purchase to verify the OC email subject + body render the send-at in the purchaser's tz. Walk through `/my-readings` (and any of the moved routes) to verify the brand top-bar shows up. Open the edit-recipient drawer on `/my-readings/gifts` and verify the new DateTimePicker behaves correctly on real mobile (the iOS scroll-snap behavior inside Radix Portal is a known a11y-review flag worth verifying on device).
+4. ✅ **Carry-over from PR #214** — done 2026-05-28. Sanity migration applied to production (4 deprecated cancelScheduled* fields unset on `myGiftsPage`, `flipToSelfSendCtaLabel` relabeled from "Send the link myself instead" → "Cancel the schedule and send it myself"; GROQ verified). Studio re-deployed to https://withjosephine.sanity.studio/ after a surgical fix to `studio/sanity.cli.ts` vite aliases (PR #217's `(authed)` route group move missed updating the studio's path-resolution regex — `^@\/app\/listen\/` → `^@\/app\/\(authed\)\/listen\/` etc.).
+
+**NOT touched, flagged for explicit approval before any next session:**
+- Removing `onFocus={() => setOpen(true)}` on DatePicker/TimePicker (changes intake form UX on `/book/intake` — TikTok-mobile primary traffic).
+- iOS native `<select>` wheel risk inside Radix Popover in TimePicker (audit-flagged, needs real-device smoke).
+- Replacing TimePicker's native `<select>` dropdowns with the same scroll-snap UX as DateTimePicker.
+
+## ✅ PR #214 carry-overs — CLOSED 2026-05-28
+
+- Sanity migration applied to production (prod `myGiftsPage`: 4 cancelScheduled* fields unset, `flipToSelfSendCtaLabel` relabeled). GROQ verified post-state.
+- Studio re-deployed to https://withjosephine.sanity.studio/ — picks up the relabeled CTA + new field copy for Becky.
+- Surgical fix to `studio/sanity.cli.ts`: PR #217 moved `listen/` + `my-readings/` under `(authed)/` route group but missed updating the studio's vite alias regex patterns. Studio build failed `Failed to resolve import "@/app/(authed)/listen/[id]/ListenView"`. Two alias regexes updated to escape the parens (`^@\/app\/\(authed\)\/listen\/` etc.). Zero callers of the old top-level paths (grep-confirmed) so old aliases replaced, not additively kept.
+
+## 📌 Resend leak post-mortem (2026-05-28)
+
+For ~2 days (since Phase 1 deploy 2026-05-26), Stripe-webhook order-confirmation emails sent to test-spec recipient addresses (`library-one-tap+...@withjosephine.com`, `listen-one-tap+...@withjosephine.com`, `prod-smoke+...@withjosephine.com`) leaked into Max's real inbox via Cloudflare Email Routing. Root cause: hardcoded `SANDBOX_EMAIL_PREFIXES` list in `src/lib/resend.tsx` went stale when Phase 1/2/3 specs introduced new prefixes without registering them. The prefix guard is load-bearing for cron / DO alarm / webhook paths that have no request context for the `X-E2E-Resend-DryRun` header to reach.
+
+Plugged in PR #214 commit `a5cfad1`: added missing prefixes + new vitest scanner `src/lib/resend.sandboxPrefixes.test.ts` walks all e2e specs and asserts every `*@withjosephine.com` prefix is registered. Drift now fails pre-push.
+
+**Layer-3 defense filed as dex `5f0bqd2d` (p1, under mktrrouq)**: env-gated allowlist — in staging/sandbox, reject ALL Resend sends to recipients NOT in a tiny production allowlist (Max, Becky, `hello@`, `NOTIFICATION_EMAIL`). Layers 1 (prefix list) + 2 (scanner test) catch ~all known drift; layer 3 makes it structurally impossible. Not blocking, but should land before another set of Phase-class specs introduces a new prefix.
+
+New durable memories:
+- [feedback_no_emails_in_testing_period](../MEMORY/...) — three-layer email-defense rule.
+- [feedback_run_tests_locally_before_push](../MEMORY/...) — don't burn sandbox CI cycles iterating on test fixes; vitest + Playwright mock mode locally first.
+- Updated [feedback_resend_dry_run_paths] with the prefix-drift failure mode call-out.
+
+## ✅ 2026-05-28 — RESOLVED `lc9w5xd1` (intake picker "stacking" bug) — actually a data-corruption bug
+
+Three PRs to reach the real fix; the picker was never losing the z-order battle.
+
+- **PR #213 (squash `906894c`, the actual fix)** — Staging Sanity stored `blush`, `ivory`, `rose` as recursively-nested color objects 4 layers deep (`{hex: {hex: {hex: {hex: "#…"}}}}`), most likely from a re-save loop in the Studio colorInput plugin. Build-time `${color.hex}` template literal stringified the top object as `"[object Object]"`, landed `--j-blush: [object Object]` in tokens CSS, made `bg-j-ivory` resolve to invalid color, **popover background went transparent**, and form FloatingLabels + the unknownToggle checkbox showed through the picker exactly like a z-index inversion. Fix: `extractHex` helper that walks `.hex` until it finds a `#…` string. Applied to semantic-color loop, RGB-channel writers, and email-tokens emitter. Regression test asserts a 4-deep shape resolves cleanly. Verified end-to-end: deployed CSS has 0 `[object Object]` (was 3); Max confirmed staging is clean.
+- **PRs #210 / #211 / #212** — all attacked the wrong layer (z-index, then hand-rolled createPortal, then Radix Popover). Code from #212 stays (Radix migration is a genuine quality improvement — proper a11y, ESC, focus, no hand-rolled stacking logic — even if it wasn't the bug fix). The wrapper-z-30 and the manual portal hook from #210/#211 are gone.
+- **Follow-up:** dex `axfyutyx` (clean the Sanity content — re-set blush/ivory/rose in Studio so the document shape is flat). Defensive code makes the build safe regardless; the data is still misshapen.
+- **New durable memory:** `feedback_check_data_when_ui_fix_keeps_failing` — when a UI bug recurs through 2+ fix attempts at the same layer (component, z-index, portal), the cause is somewhere else (data, generated CSS, build pipeline). Open the deployed bundle, follow the var chain to the resolved value, audit the build pipeline. Companion to `feedback_settle_counts_with_grep_not_agents` and `feedback_stop_the_fix_spiral`.
+
+## ✅ 2026-05-27 — v1.4.0 real-browser smoke on staging (Phase 1/2/3)
+
+Ran the v1.4.0 smoke against `staging.withjosephine.com` with a live `wrangler tail` monitor (guide: `docs/SMOKE_v1.4.0.md`). Day-7 force-send done via `cloudflared access` JWT + `.env.staging` CRON_SECRET (raw curl 302s on CF Access; `.env.local` CRON_SECRET differs and would 401 — staging value is the right one).
+
+- **J-A one-tap day-7 delivery — PASS with a finding.** Email (single button) → `/my-readings/welcome` → `/listen/[id]?welcome=1`, audio plays, PDF downloads. BUT first load fired ~20 parallel `/api/listen/[id]/audio` GETs all OOM-killed at once (42× `Worker exceeded memory limit`, runtime-terminated as `Canceled`) and tripped `LISTEN_ASSET_LIMITER` → user-visible "too many requests" 429 before it recovered. Upstream `cdn.sanity.io` honors Range (206 verified) but the proxy logged 200 every time. 4.27MB file. Filed dex **`pknswojr`** under epic 23ctexvw — real defect on the core delivery surface, especially risky on mobile/TikTok 375px. Root-cause deferred to next (client parallel-burst + 200-vs-206 forwarding).
+- **J-B unified library + redirects — PARTIAL.** `/my-readings` two-tab strip, Gifts tab → `/my-readings/gifts`, deep-link, legacy `/my-gifts` 308 all work. BUT for gift-only accounts (0 readings) the **Readings tab is unreachable** — clicking it is a no-op. `LibraryView.tsx:104` derives `activeTab` from `defaultTab` (which is `gifts` when readings empty) and `handleChange` only navigates on path change, so selecting Readings at `/my-readings` (already the path) does nothing. Masked for users with ≥1 reading. Filed dex **`7v1vx0wm`**.
+- **J-C step-up OTP — PASS (incl. elevation reuse).** Confirmed in tail on gift `b82267d4` (purchaser maxgertzen@gmail.com): `edit-recipient` 200(elevationRequired) → `step-up/request` 200 → `step-up/verify` 200 → `edit-recipient` 200. Step-6 elevation reuse verified by force-setting `elevated_at=now` on the active sessions: a subsequent `edit-recipient` succeeded (19:50:52) with NO preceding `step-up/request` → within the 10-min window a second mutation skips the OTP. The earlier apparent re-prompt was a two-active-sessions artifact (a newer un-elevated session `03c7236e` spawned alongside the elevated `898fc34a`), not a reuse bug — though worth noting that a fresh session spawned mid-flow.
+
+These close the outstanding "real-browser smoke against staging" Max-actions for Phase 1/2/3 below (audio caveat tracked in `pknswojr`).
+
+**✅ SHIPPED 2026-05-27 — dex `0bjxc38w` (PR #208, squash `0132fa7`):** `/my-readings` redesigned as a single scrollable page with stacked "Mine" + "For others" sections; tab strip + `/my-readings/gifts` route + `Tabs`/`TabPanel` deleted. Both section headings always render → closed the gift-only unreachable-tab bug `7v1vx0wm` at the root (both `0bjxc38w` + `7v1vx0wm` dex-completed). Verified: 2046/2046 vitest + build + real-Chromium smoke at 375px (4 scenarios, zero errors). Follow-ups filed: dex `5fqrgvia` (stale `MyReadingsView` Studio-preview twin) + `laj8x38r` (reconcile `defaults.ts` with Becky's prod Sanity edits). **Max-action:** Studio re-deploy so Becky sees the renamed section-heading fields (`readingsTabLabel`/`giftsTabLabel` values now "Mine"/"For others", keys unchanged).
+
+**✅ RESOLVED 2026-05-27 — `pknswojr` (PR #209, squash `8357c32`):** audio first-load OOM/429 storm fixed with a one-attribute change `preload="metadata"` → `preload="none"` on the `/listen` voice-note element. The `metadata` value probed the media on page load (server component, not React) → no-Range full-file 200 streams → ~20 concurrent × 4.27MB hit the 128MB workerd cap → stall/retry cascade tripped `LISTEN_ASSET_LIMITER` → 429. `preload="none"` fires zero load-time requests; play issues sequential Range requests. Proxy/route/rate-limit untouched. Verified in real Chromium. dex `pknswojr` closed.
+
+**▶ Ready items:** dex `5fqrgvia` (stale `MyReadingsView` Studio-preview twin), `laj8x38r` (reconcile `defaults.ts` with Becky's prod Sanity edits), Phase 4 `zgd1sjpu` (replace destructive cancel-scheduled with claim-for-yourself).
+
+**Smoke residue to clean on staging:** forced day-7 on submission `4b3b2bdb`; gift `b82267d4` recipient was edited during J-C.
+
+## 🆕 ACTIVE 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 + Phase 3 of epic 23ctexvw
+
+**Phase 3 (dex `khb6hor6`, closed):** PR #207 squash-merged (`9238f82`). Sandbox CI revealed Phase 2's merge commit `da006dd` never triggered ci.yml, so staging was stale at Phase 1 code. PR #207 merge re-fired ci.yml → deploy-staging deployed Phase 2 + Phase 3 together (ci.yml run `26457695131`). Migration 0016 applied to staging D1 (added migrations 0014, 0015 too — they hadn't been applied either). `AUTH_TOKEN_SECRET` rotated atomically on staging worker + `STAGING_AUTH_TOKEN_SECRET` in GH env (both match). `STAGING_LISTEN_TOKEN_SECRET` is now redundant (legacy fallback only; can be removed in next session). Workflow `e2e-sandbox.yml` updated to map `STAGING_AUTH_TOKEN_SECRET → AUTH_TOKEN_SECRET` for in-spec token minting.
+
+Surface: D1 migration 0016 (elevated_at column on listen_session + step_up_otp ledger), HKDF stepup.v1 subkey, OTP primitive (15-min code TTL, 10-min elevation TTL, 5-attempt poison, 30s gap + 3/30min throttle), POST /api/auth/step-up/{request,verify}, requireElevation guard wired into edit-recipient + send-now (other 3 gift mutations untouched per Council 2), Sanity emailStepUpOtp singleton + StepUpOtp.tsx (brand-lite, no GoldHero), StepUpOtpModal with full a11y (role=dialog, focus trap, ESC, backdrop close, aria-modal, inputmode=numeric, autocomplete=one-time-code), useMutationAction extended additively with elevationRequired + retry. 76/76 ISC, 2054/2054 vitest tests (+99 baseline). PRD complete at `MEMORY/WORK/20260526-115511_phase3-stepup-otp-auth/PRD.md`.
+
+Filed during the merge sweep: dex `dsk9z62m` — backfill `/my-gifts` URL redirect into legacy e2e specs (gift-send-now, gift-flip-to-scheduled-tz, my-gifts-local, gift-local) where `signInViaMagicLink({next: "/my-gifts"})` waits on a URL that 308-redirects to `/my-readings/gifts`.
+
+Phase 3 outstanding (post-deploy):
+1. Real-browser smoke against staging per `feedback_real_browser_smoke_before_ship_claim`: open `/my-readings/gifts`, attempt edit-recipient mutation, expect modal, fetch OTP from staging inbox, verify round trip, verify ESC + backdrop close + ARIA via DevTools.
+
+## ✅ Earlier 2026-05-26 — `release/v1.4.0` carries Phase 1 + Phase 2 of epic 23ctexvw
+
+**`release/v1.4.0`** cut from `release/v1.3.0@2ee6f20`. Phase 1 PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. **Phase 2 PR #206 squash-merged (`da006dd`) 2026-05-26.** Phase 1 is live on `staging.withjosephine.com`; Phase 2 ships next deploy.
+
+**Phase 2 (dex `vwfcb5jr`, closed):** Unified `/my-readings` library with gifts tab; `/my-readings/gifts` deep-link; legacy `/my-gifts` 308-redirects. New HMAC library-token primitive (`src/lib/auth/libraryToken.ts`) + single-use D1 ledger (migration `0015`) + POST-confirm interstitial at `/my-readings/welcome` + redeem route at `/api/library/redeem`. Hand-rolled semantic ARIA Tabs component (first in codebase). 4 purchaser-facing email templates carry a tokenized library button (OC + both Gift Purchase Confirmation variants use primary variant; Day-7 uses secondary). Recipient-bearer emails do NOT carry the library button. Stripe webhook gift branches resolve purchaser via `getOrCreateUser` and persist `purchaserUserId`. **Auth-secret consolidation:** single master `AUTH_TOKEN_SECRET` with HKDF-SHA256 per-purpose subkey derivation in `src/lib/auth/tokenSubkey.ts`. Drops both `LISTEN_TOKEN_SECRET` and `LIBRARY_TOKEN_SECRET`. Three in-session review passes (Designer, reuse/quality/efficiency, security) surfaced 1 P1 security blocker + 4 important fixes; all must-fix items landed in the same PR before merge. +68 tests (1896 → 1964).
+
+**🚨 Outstanding Max-actions for Phase 2 verification:**
+
+1. ✅ **Provisioned `AUTH_TOKEN_SECRET` on staging worker** — confirmed by Max 2026-05-26. Staging worker + GH staging env (`STAGING_AUTH_TOKEN_SECRET`) both carry the secret. `STAGING_LISTEN_TOKEN_SECRET` is redundant and can be removed.
+2. **Apply D1 migration 0015 to staging post-deploy:** `pnpm migrate:apply:staging` adds the `library_token_redemptions` table.
+3. **Re-deploy Studio:** Phase 2 added new fields to `myReadingsPage` Sanity singleton (`readingsTabLabel`, `giftsTabLabel`, `welcomeHeading`, `welcomeSubhead`, `welcomeButtonLabel`). `pnpm run deploy` from `studio/` so Becky sees the new fields. All have hardcoded fallbacks so missing edits are non-blocking.
+4. **Real-browser smoke against staging:** verify the tab strip, deep-link `/my-readings/gifts`, legacy `/my-gifts` 308 redirect, and a one-tap library-link round-trip via a forced day-7 send. Per `feedback_real_browser_smoke_before_ship_claim`.
+5. **Phase 1 follow-up still open:** `STAGING_LISTEN_TOKEN_SECRET` is now superseded by `STAGING_AUTH_TOKEN_SECRET` (Max-action #1 above). Real-browser smoke of the Phase 1 one-tap day-7 path still pending; can be folded into Phase 2's smoke walk.
+
+**Phase 2 deferrals captured in dex `e737za2a`** (under parent epic 23ctexvw, NOT release-blocking): welcome page bfcache hardening, redactSearchParams fragment defense, user-exists check at redeem, requestAudit HKDF migration, middleware isMyGifts cleanup, verifyTokenEnvelope dedupe between listen + library, mint-source enum centralization, replay-rejection UX for legitimate double-clicks (Phase 1 listen-redeem has the same flaw).
+
+**Next phase: dex `khb6hor6` (Phase 3 step-up OTP auth) — IMPLEMENTATION COMPLETE on `feat/phase3-stepup-otp-auth` 2026-05-26, awaiting PR-open.** Branch sits 4 commits ahead of `release/v1.4.0`: Agent A foundation (`ac18412`) + Agent B email/Sanity (`4eedc4c`) + Agent C UI modal (`e4c8329`) + stub→canonical sender fixup (`5e1c3c0`). All gates green: typecheck, lint, test (2054/2054, +99 net), build. 76/76 ISC complete. PRD at `MEMORY/WORK/20260526-115511_phase3-stepup-otp-auth/PRD.md`. Outstanding Max-actions: (1) real-browser smoke against staging post-deploy, (2) `pnpm migrate:apply:staging` for D1 0016, (3) PR-open via `sentry-skills:pr-writer`, (4) `dex complete khb6hor6` after squash-merge. Pentester sweep skipped (inherits Phase 1 listen-token verdict on same primitive shape); simplify + code-review deferred to release/v1.4.0 → main merge per `feedback_simplify_scale_to_change_size`.
+
+## Earlier — Phase 1 shipped 2026-05-26
+
+PR #205 squash-merged (`c792ed5`) + lint hotfix `89768f4`. All 7 CI jobs green on `89768f4`: lint+typecheck, security-audit, storybook, test, **deploy-staging ✅**, sanity-validate-staging ✅. Phase 1 is live on `staging.withjosephine.com`.
+
+**Phase 1 (dex `rbl5u2st`, closed via dex complete on merge):** HMAC-SHA-256 listen-token primitive + D1 single-use ledger (migration 0014) + POST-confirm interstitial + admin manual-resend bug fix (was passing raw R2 URL as listen URL) + `Referrer-Policy: no-referrer` on `/listen/*` + Sentry `beforeSend` redaction. Auto-probe pattern in `tests/e2e/specs/listen-one-tap-roundtrip.spec.ts` self-activates when the redeem route is deployed (no env-var flip required). Red-team passes closed all 5 Pentester P1 blockers; 3 simplify reviews + 1 security review surfaced 6 fix-ups, landed in one commit pre-PR. +60 tests (1836 → 1896).
+
+**Phase 1 PRD:** `MEMORY/WORK/20260526-060559_implement-epic-23ctexvw-phase-1/PRD.md` (phase: complete, 91/93). Two ISC PENDING (real-browser smoke + dex flip) both completed post-merge.
+
+**🚨 Outstanding Max-actions for full Phase 1 verification:**
+
+1. **`STAGING_LISTEN_TOKEN_SECRET` GH secret NOT YET SET** (verified missing via `gh secret list --env staging` 2026-05-26). Without it, the 8 e2e roundtrip scenarios B/C/G/H fail because in-spec `mintListenToken` produces sigs staging rejects as `bad_signature`. Two options:
+   - **Use existing staging worker value:** retrieve from 1Password or wherever the value was saved at first provisioning, then `gh secret set STAGING_LISTEN_TOKEN_SECRET --env staging --body "<value>"`. No rotation, no side effects.
+   - **Rotate** (only on staging — production is fine): `NEW=$(openssl rand -hex 32) && echo "$NEW" | pnpm exec wrangler secret put LISTEN_TOKEN_SECRET --env staging && gh secret set STAGING_LISTEN_TOKEN_SECRET --env staging --body "$NEW"`. Side effect: any in-flight staging gift-claim cookies (shared secret) fail to verify, recipients re-claim cleanly.
+   - **Skip entirely** by waiting for dex `qz94q5g2` (test-mint endpoint refactor) which eliminates this coupling.
+
+2. **Real-browser smoke against staging** (per `feedback_real_browser_smoke_before_ship_claim`, binding): force a day-7 send for a delivered staging submission via `curl -X POST -H "Authorization: Bearer $STAGING_CRON_SECRET" "https://staging.withjosephine.com/api/cron/email-day-7-deliver?force=<submissionId>"` → check inbox (or wrangler-tail) → tap email button → expect Welcome interstitial → tap Continue → expect `/listen/[id]?welcome=1` with audio + PDF visible. Verify Sentry breadcrumbs don't leak `?t=` by injecting a controlled error.
+
+3. **Phase 2 starts** when ready: dex `vwfcb5jr` (unified `/my-readings` library with gifts tab). Branch off `release/v1.4.0`, apply the canonical-helpers-Explore pattern (per `feedback_canonical_helpers_before_agent_dispatch`) before Wave 1 dispatch.
+
+4. **release/v1.4.0 → main PR** is later, after all 6 phases (or 5 if Phase 6 stays deferred) land on the release branch. Independently, `release/v1.3.0 → main` apex-unpark hold-gate is still open from before this epic started.
+
+**Phase 6 deferrals documented in PRD** (do not re-litigate in Phase 1 PR review): HKDF subkey, `kid` rotation, AEAD-encrypted payload, customer-education page (DMARC `p=reject` audit + sender-domain footer + how-to-verify-a-real-email page), revoke-all-links affordance, GET-side response-shape oracle (drop GET verify, render interstitial unconditionally), `formString` triplication across magic-link + redeem routes, audit-row copy-paste in `listenSession`.
+
+## ✅ STILL ACTIVE — Architectural epic `23ctexvw`: phases 2-6 remaining
+
+MAX-APPROVED 2026-05-26 implementation arc, supersedes the day-7 copy fix from the audit epic. **Before touching any email / auth / listen-page / /my-readings / /my-gifts / gift-cancellation code, read `dex show 23ctexvw` and the relevant phase child.** Source artifacts at `www/MEMORY/WORK/20260525-230307_copy-audit-emails-and-pages/`: AUDIT.md (30-surface audit), RESEARCH.md (Bucket A vs Bucket B industry pattern), COUNCIL-1-chain-length.md (UX 4-persona), COUNCIL-2-library-auth.md (with Devi code-verification). Durable memory: `project_one_tap_architecture.md`.
+
+**Six phase children (sequenced for safe shipping):**
+- Phase 1 `rbl5u2st`: tokenized listen-link primitive + one-tap day-7 + admin-resend alignment
+- Phase 2 `vwfcb5jr`: unified `/my-readings` library with gifts tab (URL stable)
+- Phase 3 `khb6hor6`: step-up OTP (`elevatedAt`, 10-min TTL) on edit-recipient + send-now + claim-for-yourself
+- Phase 4 `zgd1sjpu`: replace destructive cancel-scheduled with claim-for-yourself; UI cancel gone (Max 2026-05-26); server-side stage gate `giftClaimedAt || responses != null`
+- Phase 5 `l0xynlxs`: stacked-vertical button hierarchy in emails + day-7 copy rewrite (drop em-dashes) + post-redemption new-device notice
+- Phase 6 `09z53mtu`: OPTIONAL watermark + geo-reverify (defer unless incident)
+
+Audit-epic `2wlp1oys` children `558hhza8`, `m259wtc9`, `j4y4yv0n` marked superseded; close on Phase 1 ship.
+
+## ✅ ACTIVE 2026-05-25 — `release/v1.3.0` — U3-U8 EPIC SHIPPED, apex unpark remaining
+
+Promoted UX epic `wz9t979j` (U3-U8) COMPLETE. 4 PRs shipped against `release/v1.3.0` in one session:
+- ✅ `wwqgjtjo` — U3 download filenames (PR #200 `00bae05`)
+- ✅ `k9x59wwp` — U5 gift-purchase prefill purchaser email (PR #201 `4b7c4b6`)
+- ✅ `dtq86ycp` — U4 hover affordance audit (PR #202 `53bfa40`)
+- ✅ `em3o7rz6` — U7 + U8 Studio bundle (PR #203 `75daeac`). U7 audit found booking + thank-you already wired via Sanity Presentation Tool (PR #198 + `studio/presentation.ts`). U8 decision LOCKED: compute claimed-vs-paid from `giftClaimedAt` presence — no enum, no migration. Status label + 7-day countdown derived in `studio/schemas/submissionPreview.ts` via pure helpers. 25 new tests, 1816/1816 passing.
+
+**Post-U3-U8 work shipped on `release/v1.3.0`:**
+- `d7df7d2` — Simplifier ref: collapse statusLabel double-parse + dead Claimed fallback
+- `96a5703` — Empty-body bug fix: `scripts/backfill-empty-email-bodies-2026-05-25.mts` + seed-script update for `emailSharedShell`; backfilled 4 prod email singletons (OrderConfirmation, Day-7 Delivery, RecipientIntakeReceived, PrivacyExport) where the v1.2.1 body migration never reached production
+- `2ee6f20` (PR #204) — Address ALL code-review findings: H1 header-injection defense in `buildContentDisposition`, M1 slug coverage tests, M2 CSS `:not([readonly])` carve-out, M3 `useSyncExternalStore` GiftForm prefill refactor (no eslint-disable), M4 cross-flow draft guard, L1 plural grammar, L2 dev-only future-clamp warn, L3 `webm` dead-branch removal. Final test suite: 1836/1836.
+- Studio deployed to `withjosephine.sanity.studio` (both workspaces): `pnpm run deploy` from `studio/` after CI green on `2ee6f20`. Includes the new submissionPreview status label + countdown widget.
+
+**Active branch:** `release/v1.3.0`
+**Most-recent commit:** `2ee6f20`
+**Open PRs on release/v1.3.0:** none
+**Main:** `ec8a8f1` (v1.2.1 + bookkeeping)
+**Tags:** `v1.1.0` at `882752d`, `v1.2.0` at `94e9d5d`, `v1.2.1` at `ec9c181`
+
+**Follow-ups filed during the arc:**
+- `ym2efbwn` — Hero.tsx motion.div a11y gap (onClick without role=button + keyboard handler; CSS rule can't bridge). NOTE: originally claimed-filed as `zhyes1s7` in commit `e92c7cc` but that create was a silent no-op (the pattern from `feedback_dex_create_verify_with_show`); re-filed correctly 2026-05-25.
+- `vw4zmbp5` — Studio workspace auth config divergence (warning at deploy time). Consolidate production + staging auth blocks to one shared config.
+
+**Remaining apex-unpark hold-gate (dex epic `wdpz1ux4`, 6 open subtasks):**
+- `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity)
+- `cdw3mnpg` — Stripe test-mode webhook split
+- `ttys8qku` — Re-run smoke walkthrough on prod
+- `lc9w5xd1` — Birth-time picker z-index (customer-facing intake bug, promoted 2026-05-26)
+- `td3f86z6` — Seed `notFoundPage` + `underConstructionPage` singletons (customer-facing 404/under-construction fallback, promoted 2026-05-26)
+- `ym2efbwn` — Hero.tsx motion.div a11y (keyboard-accessibility on landing, promoted 2026-05-26)
+- (operator) Production-side `recipient-user-id` repair behind `--i-understand-this-is-production`
+
+**Pending categorization** (Max is filing magic-link-flow tasks 2026-05-26; revisit after that):
+- `ipicaebk` C5: `/api/booking/gift-redeem` intermittent 400
+- `njrrqb0f` C3-b: `/my-gifts` empty listing race
+- `yf5ciq64` C4-b: J3 heading + listen-page greeting copy
+- `a042z5dj` magic-link email copy neutralization
+- `zs255zyi` rotate `DO_DISPATCH_SECRET`
+
+**Next steps:** when apex unpark hold-gate items above are operationally cleared, open `release/v1.3.0` → `main` PR (cumulative simplify + code-review pass via `sentry-skills:code-simplifier` + `sentry-skills:code-review` before opening, per `feedback_simplify_scale_to_change_size`).
+
 ## ✅ RESOLVED 2026-05-25 — `release/v1.2.1` MERGED to main via PR #199 (merge `5aa49bc`)
 
-v1.2.1 is shipped. Tag `v1.2.1` at `ec9c181` (release branch HEAD, matching v1.2.0 precedent). Awaiting `deploy-production` + `smoke-production` CI completion on main. dex `f7yhvvc3` closed. The v1.2.1 epic `d8pvexdm` remains open only because `k6ao10b8` carries `2un31amb` (PR-Email-2 cleanup pending post-prod-migration Becky verification) and `kf1nixad` carries `h1zu9nkr` (image-rendering polish follow-up). Next-priority epic: `wz9t979j` (U3, U4, U5, U7, U8) + remaining apex unpark hold-gate (`wdpz1ux4`).
+v1.2.1 is shipped + deployed to production. Tag `v1.2.1` at `ec9c181`. All CI green on main (`5aa49bc`) including `deploy-production` + `smoke-production`. dex `f7yhvvc3` + `cpwaqf4d` + `x2lhyv0j` + `o1hejeb1` closed. The v1.2.1 epic `d8pvexdm` remains open only because `k6ao10b8` carries `2un31amb` (PR-Email-2 cleanup pending Becky verification on prod Sanity) and `kf1nixad` carries `h1zu9nkr` (image-rendering polish follow-up).
 
 ## Earlier in session — v1.2.1 workerd PT render + Sanity-mirror dataset misrouting
 

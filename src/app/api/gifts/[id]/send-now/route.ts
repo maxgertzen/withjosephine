@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireElevation } from "@/lib/auth/requireElevation";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
 import { purchaserFirstNameFor, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
@@ -17,6 +18,8 @@ export async function POST(
   const { id } = await context.params;
   const auth = await authorizeGiftPurchaser(id);
   if (!auth.ok) return auth.response;
+  const elevationFailure = requireElevation(auth.session);
+  if (elevationFailure) return elevationFailure;
   const { submission } = auth;
 
   const gated = giftMutationGate(submission, { requireMethod: "scheduled" });

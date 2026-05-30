@@ -68,6 +68,7 @@ const SELF_SEND_BODY = {
   readingSlug: "soul-blueprint",
   purchaserEmail: "alice@example.com",
   purchaserFirstName: "Alice",
+  purchaserTimeZone: "America/Los_Angeles",
   deliveryMethod: "self_send" as const,
   art6Consent: true,
   coolingOffConsent: true,
@@ -79,6 +80,7 @@ function scheduledBody(overrides: Record<string, unknown> = {}) {
     readingSlug: "soul-blueprint",
     purchaserEmail: "alice@example.com",
     purchaserFirstName: "Alice",
+    purchaserTimeZone: "America/Los_Angeles",
     deliveryMethod: "scheduled" as const,
     recipientName: "Bob",
     recipientEmail: "bob@example.com",
@@ -127,6 +129,20 @@ describe("/api/booking/gift", () => {
     const body = await res.json();
     expect(res.status).toBe(400);
     expect(body.fieldErrors.purchaserEmail).toBeTruthy();
+  });
+
+  it("rejects when purchaserTimeZone is not a valid IANA zone", async () => {
+    const res = await callRoute({ ...SELF_SEND_BODY, purchaserTimeZone: "Not/A_Zone!" });
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.fieldErrors.purchaserTimeZone).toBeTruthy();
+  });
+
+  it("rejects 400 when purchaserTimeZone is missing entirely (invalid body shape)", async () => {
+    const withoutTz: Record<string, unknown> = { ...SELF_SEND_BODY };
+    delete withoutTz.purchaserTimeZone;
+    const res = await callRoute(withoutTz);
+    expect(res.status).toBe(400);
   });
 
   it("rejects when recipient = purchaser", async () => {

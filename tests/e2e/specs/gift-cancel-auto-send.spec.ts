@@ -46,9 +46,9 @@ test.describe("Cancel-auto-send — purchaser flips a scheduled gift to self-sen
 
     const { submissionId } = await intercept.captured;
 
-    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-readings" });
 
-    const flipCta = page.getByRole("button", { name: /send the link myself instead/i });
+    const flipCta = page.getByRole("button", { name: /cancel the schedule and send it myself/i });
     await expect(flipCta).toBeVisible();
     await flipCta.click();
 

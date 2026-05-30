@@ -38,7 +38,6 @@ const MIGRATION_ORDER = [
   "migrate-thank-you-gift-recipient-name-2026-05-18.ts",
   "migrate-thank-you-gift-self-send-2026-05-18.ts",
   "migrate-refund-line-my-gifts-url-2026-05-18.ts",
-  "migrate-my-gifts-cancel-scheduled-copy-2026-05-19.ts",
   "migrate-refund-policy-no-refunds-2026-05-19.ts",
 ] as const;
 

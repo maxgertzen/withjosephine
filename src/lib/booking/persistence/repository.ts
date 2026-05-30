@@ -1,4 +1,4 @@
-import { GIFT_DELIVERY, type GiftCancelledReason } from "../constants";
+import { GIFT_DELIVERY } from "../constants";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
@@ -28,6 +28,7 @@ type Row = {
   recipient_user_id: string | null;
   is_gift: number | null;
   purchaser_user_id: string | null;
+  purchaser_time_zone: string | null;
   recipient_email: string | null;
   gift_delivery_method: string | null;
   gift_send_at: string | null;
@@ -79,6 +80,7 @@ function rowToRecord(row: Row): SubmissionRecord {
     recipientUserId: row.recipient_user_id ?? null,
     isGift: (row.is_gift ?? 0) === 1,
     purchaserUserId: row.purchaser_user_id ?? null,
+    purchaserTimeZone: row.purchaser_time_zone ?? null,
     recipientEmail: row.recipient_email ?? null,
     giftDeliveryMethod: parseGiftDeliveryMethod(row.gift_delivery_method),
     giftSendAt: row.gift_send_at ?? null,
@@ -105,10 +107,9 @@ export type CreateSubmissionInput = {
   photoR2Key: string | null;
   createdAt: string;
   coolingOffAcknowledgedAt?: string | null;
-  // Optional so existing self-purchase call sites stay unchanged; only the
-  // gift booking route sets these.
   isGift?: boolean;
   purchaserUserId?: string | null;
+  purchaserTimeZone?: string | null;
   recipientEmail?: string | null;
   giftDeliveryMethod?: GiftDeliveryMethod | null;
   giftSendAt?: string | null;
@@ -121,9 +122,9 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
        cooling_off_acknowledged_at,
-       is_gift, purchaser_user_id, recipient_email, gift_delivery_method,
-       gift_send_at, gift_message
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       is_gift, purchaser_user_id, purchaser_time_zone, recipient_email,
+       gift_delivery_method, gift_send_at, gift_message
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -138,6 +139,7 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       input.coolingOffAcknowledgedAt ?? null,
       input.isGift ? 1 : 0,
       input.purchaserUserId ?? null,
+      input.purchaserTimeZone ?? null,
       input.recipientEmail ?? null,
       input.giftDeliveryMethod ?? null,
       input.giftSendAt ?? null,
@@ -263,14 +265,16 @@ export async function findSubmissionListenContext(
   recipientUserId: string | null;
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
+  readingSlug: string;
 } | null> {
   const rows = await dbQuery<{
     id: string;
     recipient_user_id: string | null;
     voice_note_url: string | null;
     pdf_url: string | null;
+    reading_slug: string;
   }>(
-    `SELECT id, recipient_user_id, voice_note_url, pdf_url
+    `SELECT id, recipient_user_id, voice_note_url, pdf_url, reading_slug
        FROM submissions WHERE id = ? LIMIT 1`,
     [id],
   );
@@ -281,6 +285,7 @@ export async function findSubmissionListenContext(
     recipientUserId: row.recipient_user_id,
     voiceNoteUrl: row.voice_note_url,
     pdfUrl: row.pdf_url,
+    readingSlug: row.reading_slug,
   };
 }
 
@@ -437,6 +442,16 @@ export async function setSubmissionRecipientUser(
 ): Promise<void> {
   await dbExec(
     `UPDATE submissions SET recipient_user_id = ? WHERE id = ?`,
+    [userId, submissionId],
+  );
+}
+
+export async function setSubmissionPurchaserUser(
+  submissionId: string,
+  userId: string,
+): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET purchaser_user_id = ? WHERE id = ?`,
     [userId, submissionId],
   );
 }
@@ -662,31 +677,6 @@ export async function applyGiftSendNow(
       args.priorAlarmAt,
       id,
     ],
-  );
-  return result.rowsWritten > 0;
-}
-
-export async function applyGiftCancelScheduled(
-  id: string,
-  args: {
-    cancelledAtIso: string;
-    by: string;
-    reason: GiftCancelledReason;
-  },
-): Promise<boolean> {
-  const result = await dbExec(
-    `UPDATE submissions
-        SET gift_cancelled_at = ?,
-            gift_cancelled_by = ?,
-            gift_cancelled_reason = ?
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_delivery_method = 'scheduled'
-        AND gift_cancelled_at IS NULL
-        AND gift_claim_email_fired_at IS NULL
-        AND gift_claim_sent_now_at IS NULL
-        AND gift_claimed_at IS NULL`,
-    [args.cancelledAtIso, args.by, args.reason, id],
   );
   return result.rowsWritten > 0;
 }

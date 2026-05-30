@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { COOKIE_NAME, redeemMagicLink, SESSION_TTL_MS } from "@/lib/auth/listenSession";
+import { buildListenSessionCookieHeader, redeemMagicLink } from "@/lib/auth/listenSession";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { isListenNext, safeNext } from "@/lib/auth/safeNext";
@@ -47,19 +47,9 @@ export async function POST(request: Request) {
 
   if (!result.ok) return restedRedirect(origin, next, "");
 
-  // `__Host-` requires Secure + Path=/ + no Domain — always on, even in dev.
-  const cookieAttrs = [
-    `${COOKIE_NAME}=${result.cookieValue}`,
-    "Path=/",
-    "HttpOnly",
-    "Secure",
-    "SameSite=Lax",
-    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
-  ];
-
   const target = new URL(next, origin);
   if (isListenNext(next)) target.searchParams.set("welcome", "1");
   const response = NextResponse.redirect(target, { status: 303 });
-  response.headers.append("Set-Cookie", cookieAttrs.join("; "));
+  response.headers.append("Set-Cookie", buildListenSessionCookieHeader(result.cookieValue));
   return response;
 }

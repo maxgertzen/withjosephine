@@ -173,15 +173,21 @@ export function middleware(request: NextRequest) {
     buildCsp({ isDraft: !isStrict, nonce }),
   );
 
+  const isMyReadings = pathname === "/my-readings" || pathname.startsWith("/my-readings/");
   const isMyGifts = pathname === "/my-gifts" || pathname.startsWith("/my-gifts/");
+  const isListen = pathname.startsWith("/listen/");
+  const isLibraryWelcome = pathname === "/my-readings/welcome";
+
+  // Both surfaces receive `?t=<token>` on GET; no-referrer prevents the token
+  // leaking via the Referer header on outbound nav.
+  if (isListen || isLibraryWelcome) {
+    response.headers.set("Referrer-Policy", "no-referrer");
+  }
 
   if (isDraft) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  } else if (isMyGifts) {
-    // Purchaser-scoped page reflects gift state that mutates via flip / send-now
-    // / cancel-scheduled. Cloudflare and any intermediary must never serve a
-    // cached snapshot to a different purchaser session or after a state change.
+  } else if (isMyReadings || isMyGifts) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
   } else if (!isPublicApex) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");

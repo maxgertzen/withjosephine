@@ -57,6 +57,7 @@ const SELF_SEND_GIFT: SubmissionRecord = {
   recipientUserId: null,
   isGift: true,
   purchaserUserId: PURCHASER_ID,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: "self_send",
   giftSendAt: null,
@@ -100,65 +101,85 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   it("returns 401 without session", async () => {
     getActiveSessionMock.mockResolvedValueOnce(null);
     expect(
-      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO })).status,
+      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"})).status,
     ).toBe(401);
   });
 
+  it("returns 422 when purchaserTimeZone is not a valid IANA zone", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    const res = await callRoute({
+      recipientEmail: "r@example.com",
+      giftSendAt: FUTURE_ISO,
+      purchaserTimeZone: "Not/A_Zone!",
+    });
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.fieldErrors?.[0]?.field).toBe("purchaserTimeZone");
+  });
+
+  it("returns 400 when purchaserTimeZone is missing entirely (invalid body shape)", async () => {
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
+    findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    expect(res.status).toBe(400);
+  });
+
   it("returns 404 when purchaser doesn't match session", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: "other", sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     expect(
-      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO })).status,
+      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"})).status,
     ).toBe(404);
   });
 
   it("returns 409 if already scheduled", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SELF_SEND_GIFT,
       giftDeliveryMethod: "scheduled",
     });
     expect(
-      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO })).status,
+      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"})).status,
     ).toBe(409);
   });
 
   it("returns 409 if already claimed", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce({
       ...SELF_SEND_GIFT,
       giftClaimedAt: "2026-05-15T00:00:00.000Z",
     });
     expect(
-      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO })).status,
+      (await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"})).status,
     ).toBe(409);
   });
 
   it("returns 422 when recipient email is the purchaser's own email", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     const res = await callRoute({
       recipientEmail: "purchaser@example.com",
-      giftSendAt: FUTURE_ISO,
+      giftSendAt: FUTURE_ISO, purchaserTimeZone: "America/Los_Angeles",
     });
     expect(res.status).toBe(422);
     expect(flipMock).not.toHaveBeenCalled();
   });
 
   it("returns 422 when giftSendAt is in the past", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     const past = new Date(Date.now() - 1000).toISOString();
-    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: past });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: past , purchaserTimeZone: "America/Los_Angeles"});
     expect(res.status).toBe(422);
     expect(flipMock).not.toHaveBeenCalled();
   });
 
   it("returns 409 when concurrent caller already flipped (flip returns false)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     flipMock.mockResolvedValueOnce(false);
-    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"});
     expect(res.status).toBe(409);
     expect(stubFetchMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
@@ -166,30 +187,30 @@ describe("POST /api/gifts/[id]/flip-to-scheduled (I-12)", () => {
   });
 
   it("returns 502 when DO alarm scheduling fails (binding missing or unreachable)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     stubFetchMock.mockResolvedValueOnce(new Response("Server error", { status: 500 }));
-    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"});
     expect(res.status).toBe(502);
     expect(sendMock).not.toHaveBeenCalled();
     expect(appendEmailFiredMock).not.toHaveBeenCalled();
   });
 
   it("returns 502 when GIFT_CLAIM_SCHEDULER binding is absent on env (production bug reproducer)", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
     getCloudflareContextMock.mockReset().mockResolvedValueOnce({ env: {} });
-    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"});
     expect(res.status).toBe(502);
     expect(stubFetchMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
   it("happy path: flips, schedules DO alarm, sends scheduled-variant purchaser email, appends audit", async () => {
-    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s" });
+    getActiveSessionMock.mockResolvedValueOnce({ userId: PURCHASER_ID, sessionId: "s", elevatedAt: null });
     findSubmissionMock.mockResolvedValueOnce(SELF_SEND_GIFT);
 
-    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO });
+    const res = await callRoute({ recipientEmail: "r@example.com", giftSendAt: FUTURE_ISO , purchaserTimeZone: "America/Los_Angeles"});
     expect(res.status).toBe(200);
 
     expect(flipMock).toHaveBeenCalledOnce();

@@ -55,7 +55,7 @@ test.describe("Send-now — purchaser fires claim email ahead of schedule (D-10)
     });
     expect(webhookResponse.status()).toBe(200);
 
-    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-readings" });
 
     const sendNowCta = page.getByRole("button", { name: /^send now$/i });
     await expect(sendNowCta).toBeVisible();

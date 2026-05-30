@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
+import { useId, useRef, useState } from "react";
 
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
@@ -56,7 +57,7 @@ export function TimePicker({
   unknownToggle,
 }: TimePickerProps) {
   const popoverId = useId();
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -68,16 +69,6 @@ export function TimePicker({
     const match = HHMM.test(value) ? value.split(":") : ["", ""];
     return [match[0] ?? "", match[1] ?? ""];
   })();
-
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
 
   function commit(nextHh: string, nextMm: string) {
     if (!nextHh || !nextMm) return;
@@ -108,32 +99,43 @@ export function TimePicker({
       error={error}
       noLabel
     >
-      <div ref={wrapperRef} className="relative">
-        <input
-          id={id}
-          name={name}
-          type="text"
-          value={visible}
-          onChange={(event) => handleManualInput(event.target.value)}
-          onFocus={() => !inputDisabled && setOpen(true)}
-          onBlur={() => setDraft(null)}
-          placeholder=" "
-          disabled={inputDisabled}
-          required={required && !isUnknown}
-          autoComplete="off"
-          inputMode="numeric"
-          aria-haspopup="dialog"
-          aria-controls={popoverId}
-          aria-invalid={error ? true : undefined}
-          className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
-        />
-        <FloatingLabel id={id} label={label} required={required} />
-        {open ? (
-          <div
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Anchor className="relative block">
+          <input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="text"
+            role="combobox"
+            value={visible}
+            onChange={(event) => handleManualInput(event.target.value)}
+            onFocus={() => !inputDisabled && setOpen(true)}
+            onBlur={() => setDraft(null)}
+            placeholder=" "
+            disabled={inputDisabled}
+            required={required && !isUnknown}
+            autoComplete="off"
+            inputMode="numeric"
+            aria-haspopup="dialog"
+            aria-controls={popoverId}
+            aria-expanded={open}
+            aria-invalid={error ? true : undefined}
+            className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
+          />
+          <FloatingLabel id={id} label={label} required={required} />
+        </Popover.Anchor>
+        <Popover.Portal>
+          <Popover.Content
             id={popoverId}
-            role="dialog"
+            side="bottom"
+            align="start"
+            sideOffset={8}
             aria-label="Choose a time"
-            className="absolute left-0 top-full mt-2 z-20 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]"
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              if (event.target === inputRef.current) event.preventDefault();
+            }}
+            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]"
           >
             <p className="font-display italic text-sm text-j-text-muted text-center mb-3">
               Hour and minute
@@ -176,24 +178,29 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors cursor-pointer"
+              className="mt-4 block mx-auto font-display italic text-sm text-j-text-muted hover:text-j-text-heading transition-colors"
             >
               Done
             </button>
-          </div>
-        ) : null}
-      </div>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
       {unknownToggle ? (
-        <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text cursor-pointer">
-          <input
-            type="checkbox"
-            checked={unknownToggle.checked}
-            onChange={(event) => unknownToggle.onChange(event.target.checked)}
-            disabled={disabled}
-            className="h-4 w-4 accent-j-accent"
-          />
-          <span>{unknownToggle.label}</span>
-        </label>
+        <>
+          <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
+            <input
+              type="checkbox"
+              checked={unknownToggle.checked}
+              onChange={(event) => unknownToggle.onChange(event.target.checked)}
+              disabled={disabled}
+              className="h-4 w-4 accent-j-accent"
+            />
+            <span>{unknownToggle.label}</span>
+          </label>
+          <span role="status" aria-live="polite" className="sr-only">
+            {unknownToggle.checked ? "Birth time set to unknown." : ""}
+          </span>
+        </>
       ) : null}
     </FieldShell>
   );

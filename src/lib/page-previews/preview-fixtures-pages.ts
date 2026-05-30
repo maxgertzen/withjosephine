@@ -1,7 +1,7 @@
+import type { ListenViewState } from "@/app/(authed)/listen/[id]/ListenView";
+import type { MyReadingsViewProps } from "@/app/(authed)/my-readings/MyReadingsView";
 import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
-import type { ListenViewState } from "@/app/listen/[id]/ListenView";
 import type { MyGiftsViewProps } from "@/app/my-gifts/MyGiftsView";
-import type { MyReadingsViewProps } from "@/app/my-readings/MyReadingsView";
 
 import type { GiftIntakePagePreviewState } from "./GiftIntakePagePreview";
 import type { SubmissionRecord } from "./types";
@@ -20,6 +20,7 @@ const BASE_SUBMISSION: SubmissionRecord = {
   recipientUserId: null,
   isGift: false,
   purchaserUserId: null,
+  purchaserTimeZone: null,
   recipientEmail: null,
   giftDeliveryMethod: null,
   giftSendAt: null,

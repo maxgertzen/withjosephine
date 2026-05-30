@@ -309,21 +309,8 @@ export const SINGLETONS: SingletonContract[] = [
     ],
   },
   {
-    id: "emailMagicLinkMyGifts",
-    type: "emailMagicLinkMyGifts",
-    fields: [
-      { name: "subject", type: "string" },
-      { name: "preview", type: "string" },
-      { name: "heroLine", type: "string" },
-      { name: "buttonLabel", type: "string" },
-      { name: "greeting", type: "string" },
-      { name: "body", type: "array<block>" },
-      { name: "signOff", type: "string" },
-    ],
-  },
-  {
-    id: "emailMagicLinkMyReadings",
-    type: "emailMagicLinkMyReadings",
+    id: "emailMagicLinkLibrary",
+    type: "emailMagicLinkLibrary",
     fields: [
       { name: "subject", type: "string" },
       { name: "preview", type: "string" },
