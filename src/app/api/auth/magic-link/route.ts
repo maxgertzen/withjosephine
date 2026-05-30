@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isValidAuthEmail } from "@/lib/auth/emailValidation";
 import { issueMagicLink } from "@/lib/auth/listenSession";
+import { lookupMagicLinkVars } from "@/lib/auth/magicLinkVars";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { safeNext } from "@/lib/auth/safeNext";
@@ -48,11 +49,19 @@ export async function POST(request: Request) {
       // (listen page, /my-gifts) so verify lands them back where they came from.
       if (cleanNext !== "/my-readings") verifyUrl.searchParams.set("next", cleanNext);
       const context = deriveMagicLinkContext(cleanNext);
+      const vars = await lookupMagicLinkVars(user.id).catch(() => ({
+        firstName: "there",
+        readingName: "",
+        readingPriceDisplay: "",
+      }));
       runMirror(
         sendMagicLink({
           to: user.email,
           magicLinkUrl: verifyUrl.toString(),
           context,
+          firstName: vars.firstName,
+          readingName: vars.readingName,
+          readingPriceDisplay: vars.readingPriceDisplay,
         }).then(() => {}),
       );
     }

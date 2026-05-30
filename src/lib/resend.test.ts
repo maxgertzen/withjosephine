@@ -836,6 +836,64 @@ describe("sendMagicLink", () => {
     expect(props.sub_type).toBe("magic_link_library");
   });
 
+  it("substitutes {firstName}/{readingName}/{readingPriceDisplay} when vars are supplied", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_tokens" } });
+    const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchModule.fetchEmailMagicLink).mockResolvedValue({
+      subject: "Open your {readingName}, {firstName}",
+      preview: "{firstName}, your reading is one tap away",
+      heroLine: "Welcome back, {firstName}",
+      buttonLabel: "Open my {readingName}",
+      body: stringToPortableTextBlocks(
+        "Tap the button to open your {readingName} ({readingPriceDisplay}).",
+      ),
+      signOff: null,
+    });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=tk",
+      context: "listen",
+      firstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Open your Soul Blueprint, Ada");
+    const body = visibleText(args.html);
+    expect(body).toContain("Welcome back, Ada");
+    expect(body).toContain("Open my Soul Blueprint");
+    expect(body).toContain("Tap the button to open your Soul Blueprint ($179).");
+  });
+
+  it("falls back to 'there' for firstName when no vars supplied", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_fallback" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailMagicLink).mockResolvedValue({
+      subject: "Hello {firstName}",
+      preview: "Hi {firstName}",
+      heroLine: "Hi {firstName}",
+      buttonLabel: "Open my reading",
+      body: (await import("./emails/portableTextBuild")).stringToPortableTextBlocks(
+        "Hi {firstName}, your link is below.",
+      ),
+      signOff: null,
+    });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://example.com/x",
+      context: "listen",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Hello there");
+    expect(visibleText(args.html)).toContain("Hi there, your link is below.");
+  });
 });
 
 describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {

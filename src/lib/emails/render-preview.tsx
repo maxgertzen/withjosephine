@@ -146,11 +146,18 @@ async function renderRaw(
       const copy = merged as typeof PREVIEW_DEFAULTS.emailMagicLink;
       return render(
         <MagicLink
-          magicLinkUrl={PREVIEW_FIXTURE.magicLinkUrl}
-          preview={copy.preview}
-          heroLine={copy.heroLine}
-          buttonLabel={copy.buttonLabel}
-          body={copy.body}
+          vars={{
+            magicLinkUrl: PREVIEW_FIXTURE.magicLinkUrl,
+            firstName: PREVIEW_FIXTURE.firstName,
+            readingName: PREVIEW_FIXTURE.readingName,
+            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
+          }}
+          copy={{
+            preview: copy.preview,
+            heroLine: copy.heroLine,
+            buttonLabel: copy.buttonLabel,
+            body: copy.body,
+          }}
         />,
       );
     }
