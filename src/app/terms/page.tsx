@@ -12,7 +12,7 @@ const FALLBACK: LegalPageFallback = {
   tag: "✦ Terms",
   title: "Terms of Service",
   lastUpdated: "2026-04-15",
-  metaTitle: "Terms of Service — Josephine",
+  metaTitle: "Terms of Service · Josephine",
   metaDescription:
     "The agreement between you and Josephine when you book a soul reading: what's delivered, how, and the limits of it.",
 };
@@ -73,7 +73,7 @@ export default async function TermsPage() {
           <p className="font-body text-base text-j-text leading-[1.9] font-light">
             Josephine aims to deliver within <strong className="font-medium">7 days</strong> of
             receiving your completed intake form. The clock starts once the intake form has been
-            submitted, not at payment — because readings require birth details and context to begin.
+            submitted, not at payment - because readings require birth details and context to begin.
             If a delay is expected, Josephine will contact you directly with a revised date.
           </p>
 

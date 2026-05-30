@@ -10,7 +10,7 @@ const FALLBACK: LegalPageFallback = {
   tag: "✦ Privacy",
   title: "Privacy Policy",
   lastUpdated: "2026-04-15",
-  metaTitle: "Privacy Policy — Josephine",
+  metaTitle: "Privacy Policy · Josephine",
   metaDescription:
     "How Josephine collects, uses, and protects the information you share when booking a soul reading.",
 };
@@ -35,8 +35,8 @@ export default async function PrivacyPage() {
               covers <span className="italic">withjosephine.com</span> and any subdomains of it.
             </p>
             <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
-              Josephine is the sole data controller for everything described here. There is no team
-              — it&rsquo;s one person reading for you.
+              Josephine is the sole data controller for everything described here. There is no
+              team - it&rsquo;s one person reading for you.
             </p>
           </section>
 
@@ -45,34 +45,34 @@ export default async function PrivacyPage() {
           </h2>
           <ul className="flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
             <li>
-              <strong className="font-medium">Contact details</strong> — your name and email
+              <strong className="font-medium">Contact details</strong>: your name and email
               address, which you provide when booking.
             </li>
             <li>
-              <strong className="font-medium">Reading details</strong> — the inputs Josephine needs
+              <strong className="font-medium">Reading details</strong>: the inputs Josephine needs
               to prepare your reading, submitted through the intake form after booking. What is
               collected depends on which reading you book:
               <ul className="mt-2 flex flex-col gap-2 list-disc pl-5">
                 <li>
-                  <em>Birth Chart Reading</em> — your date, time, and place of birth. No name or
+                  <em>Birth Chart Reading</em>: your date, time, and place of birth. No name or
                   photograph is required.
                 </li>
                 <li>
-                  <em>Akashic Record Reading</em> — your full name and a recent photograph with your
+                  <em>Akashic Record Reading</em>: your full name and a recent photograph with your
                   eyes open.
                 </li>
                 <li>
-                  <em>Soul Blueprint Reading</em> — both of the above combined.
+                  <em>Soul Blueprint Reading</em>: both of the above combined.
                 </li>
               </ul>
             </li>
             <li>
-              <strong className="font-medium">Payment information</strong> — handled entirely by
+              <strong className="font-medium">Payment information</strong>: handled entirely by
               Stripe. Josephine never sees your card number, CVV, or full billing address. She only
               receives a confirmation that you paid, along with the email you used at checkout.
             </li>
             <li>
-              <strong className="font-medium">Basic technical data</strong> — IP address, browser,
+              <strong className="font-medium">Basic technical data</strong>: IP address, browser,
               and referrer, logged by Cloudflare for abuse protection. No analytics or advertising
               cookies are used.
             </li>
@@ -95,7 +95,7 @@ export default async function PrivacyPage() {
           </p>
           <ul className="mt-3 flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
             <li>
-              <strong className="font-medium">Stripe</strong> — processes your payment. See{" "}
+              <strong className="font-medium">Stripe</strong>: processes your payment. See{" "}
               <a
                 href="https://stripe.com/privacy"
                 target="_blank"
@@ -108,23 +108,23 @@ export default async function PrivacyPage() {
               .
             </li>
             <li>
-              <strong className="font-medium">Web3Forms</strong> — relays the contact form to
+              <strong className="font-medium">Web3Forms</strong>: relays the contact form to
               Josephine&rsquo;s inbox.
             </li>
             <li>
-              <strong className="font-medium">Google Forms</strong> — intake form for your reading
+              <strong className="font-medium">Google Forms</strong>: intake form for your reading
               details after booking.
             </li>
             <li>
-              <strong className="font-medium">Gmail (Google Workspace)</strong> — where Josephine
+              <strong className="font-medium">Gmail (Google Workspace)</strong>: where Josephine
               receives your messages and delivers your voice note + PDF.
             </li>
             <li>
-              <strong className="font-medium">Sanity</strong> — content management system for the
+              <strong className="font-medium">Sanity</strong>: content management system for the
               editable parts of the site. No customer data lives in Sanity.
             </li>
             <li>
-              <strong className="font-medium">Cloudflare</strong> — DNS, email routing, and edge
+              <strong className="font-medium">Cloudflare</strong>: DNS, email routing, and edge
               hosting (Cloudflare Pages).
             </li>
           </ul>
@@ -138,11 +138,20 @@ export default async function PrivacyPage() {
           </h2>
           <ul className="flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
             <li>
-              Reading details — which vary by reading and may include your intake form answers, date
-              of birth, name, and photograph — are kept in Josephine&rsquo;s inbox and private
-              Google Drive until she has completed and delivered the reading, plus up to{" "}
+              Reading details (which vary by reading and may include your intake form answers, date
+              of birth, name, and photograph) are kept in Josephine&rsquo;s inbox and private Google
+              Drive until she has completed and delivered the reading, plus up to{" "}
               <strong className="font-medium">30 days</strong> afterwards in case of follow-up
               questions. After that they are deleted.
+            </li>
+            <li>
+              After delivery, your <strong className="font-medium">voice note and PDF</strong> stay
+              reachable from your unique reading link for{" "}
+              <strong className="font-medium">90 days</strong>, so you can come back to them
+              whenever you want. After the 90-day access window the link expires, and the files
+              themselves are removed from secure storage within roughly{" "}
+              <strong className="font-medium">120 days</strong> of delivery (the access window plus
+              a short grace period for late re-issues).
             </li>
             <li>Payment records are kept for 7 years to meet accounting and tax requirements.</li>
             <li>Contact-form messages that do not lead to a booking are deleted within 90 days.</li>
@@ -156,7 +165,7 @@ export default async function PrivacyPage() {
             United Kingdom and the European Economic Area, including countries that do not have a UK
             or EU adequacy decision. When that happens, the transfer is necessary for the
             performance of your booking contract with Josephine (UK GDPR / GDPR Article 49(1)(b)).
-            No customer data is stored on local devices long-term — it lives in Gmail, Google Drive,
+            No customer data is stored on local devices long-term: it lives in Gmail, Google Drive,
             and Stripe, which are operated under their own international-transfer safeguards.
           </p>
 

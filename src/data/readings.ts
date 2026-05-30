@@ -45,7 +45,7 @@ export const READINGS: Reading[] = [
       "Your purpose, past lives & ancestral patterns",
       "Personalised question menu sent in advance",
       "Detailed voice note recording",
-      "Supporting PDF — entirely bespoke",
+      "Supporting PDF - entirely bespoke",
     ],
     requiresBirthChart: true,
     requiresAkashic: true,
@@ -67,13 +67,13 @@ export const READINGS: Reading[] = [
       "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
     ],
     bookingSummary:
-      "A deep dive into your chart. Your core themes, gifts, patterns — and what the current stars are saying about where you are right now.",
+      "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
     includes: [
       "Full natal chart analysis",
       "Your gifts, wounds and soul patterns",
       "Current transits and what they mean for you",
       "Detailed voice note recording",
-      "Supporting PDF — entirely bespoke",
+      "Supporting PDF - entirely bespoke",
     ],
     requiresBirthChart: true,
     requiresAkashic: false,
@@ -101,7 +101,7 @@ export const READINGS: Reading[] = [
       "Akashic Record reading with card pulls",
       "Personalised question menu sent in advance",
       "Detailed voice note recording",
-      "Supporting PDF — entirely bespoke",
+      "Supporting PDF - entirely bespoke",
     ],
     requiresBirthChart: false,
     requiresAkashic: true,
@@ -114,7 +114,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 1,
     quote:
-      "I've had many readings over the years but nothing has come close to this. Josephine saw things in my chart and records that I had never spoken out loud to anyone. I listened to my voice note three times and cried each time — in the best possible way.",
+      "I've had many readings over the years but nothing has come close to this. Josephine saw things in my chart and records that I had never spoken out loud to anyone. I listened to my voice note three times and cried each time - in the best possible way.",
     name: "Amelia R.",
     detail: "Soul Blueprint Reading",
   },
