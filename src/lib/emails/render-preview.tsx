@@ -150,7 +150,6 @@ async function renderRaw(
           preview={copy.preview}
           heroLine={copy.heroLine}
           buttonLabel={copy.buttonLabel}
-          greeting={copy.greeting}
           body={copy.body}
         />,
       );

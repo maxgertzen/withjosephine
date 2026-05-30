@@ -89,26 +89,6 @@ describe("GiftClaimEmail — first-send variant", () => {
     expect(text).toContain("Lior has given you a Soul Blueprint");
   });
 
-  it("falls back to legacy bodyFirstSend when body is empty", async () => {
-    const text = visibleText(
-      await render(
-        <GiftClaimEmail
-          vars={VARS}
-          copy={{
-            ...EMAIL_GIFT_CLAIM_DEFAULTS,
-            body: undefined,
-            greeting: "Hi Mira,",
-            bodyFirstSend: stringToPortableTextBlocks(
-              "Legacy first-send prose for {recipientName}.",
-            ),
-          }}
-        />,
-      ),
-    );
-    expect(text).toContain("Hi Mira,");
-    expect(text).toContain("Legacy first-send prose for Mira.");
-  });
-
   it("recipient-bearer email does NOT include any library button or library URL", async () => {
     const html = await render(
       <GiftClaimEmail vars={VARS} copy={EMAIL_GIFT_CLAIM_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />,

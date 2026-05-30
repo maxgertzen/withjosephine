@@ -39,15 +39,6 @@ export const emailMagicLink = defineType({
       initialValue: "Open your reading",
     }),
     defineField({
-      name: "greeting",
-      title: "Greeting (legacy — folded into Body)",
-      type: "string",
-      hidden: true,
-      readOnly: true,
-      validation: validateMagicLinkSlots,
-      initialValue: "Hi,",
-    }),
-    defineField({
       name: "body",
       title: "Body paragraphs",
       type: "array",

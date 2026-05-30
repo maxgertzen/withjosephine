@@ -14,22 +14,27 @@ const VARS = {
 };
 
 describe("PrivacyExport email", () => {
-  it("renders greeting and intro from copy", async () => {
+  it("renders body intro from copy", async () => {
     const text = visibleText(
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );
-    expect(text).toContain(EMAIL_PRIVACY_EXPORT_DEFAULTS.greeting);
-    expect(text).toContain(portableTextToPlainText(EMAIL_PRIVACY_EXPORT_DEFAULTS.introLine));
+    const expected = portableTextToPlainText(EMAIL_PRIVACY_EXPORT_DEFAULTS.bodyIntro).replace(
+      "{submissionCount}",
+      String(VARS.submissionCount),
+    );
+    for (const paragraph of expected.split("\n\n")) {
+      expect(text).toContain(paragraph);
+    }
   });
 
-  it("interpolates submissionCount into the contents line", async () => {
+  it("interpolates submissionCount into the body intro", async () => {
     const text = visibleText(
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );
     expect(text).toContain("for your 3 reading(s)");
   });
 
-  it("interpolates expiryDays into the expiry line", async () => {
+  it("interpolates expiryDays into the body post-button", async () => {
     const text = visibleText(
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );

@@ -36,11 +36,11 @@ describe("render-preview", () => {
     );
 
     it("merges sanity copy on top of defaults", async () => {
-      const customGreeting = "Hello from the test suite";
+      const customHero = "Hello from the test suite";
       const html = await renderEmailPreview("emailMagicLink", {
-        greeting: customGreeting,
+        heroLine: customHero,
       });
-      expect(html).toContain(customGreeting);
+      expect(html).toContain(customHero);
     });
 
     it("falls back to defaults when sanityCopy is null", async () => {

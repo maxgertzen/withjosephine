@@ -131,26 +131,6 @@ describe("GiftPurchaseConfirmationSelfSend", () => {
     expect(text).toContain("Thank you for gifting a Soul Blueprint");
   });
 
-  it("falls back to legacy detailLineSelfSend when body is empty", async () => {
-    const text = visibleText(
-      await render(
-        <GiftPurchaseConfirmationSelfSend
-          vars={VARS}
-          copy={{
-            ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
-            body: undefined,
-            greeting: "Hi Alice,",
-            detailLineSelfSend: stringToPortableTextBlocks(
-              "Legacy fallback prose for {recipientName}.",
-            ),
-          }}
-        />,
-      ),
-    );
-    expect(text).toContain("Hi Alice,");
-    expect(text).toContain("Legacy fallback prose for Bob");
-  });
-
   it("renders the secondary library button when libraryUrl is provided", async () => {
     const libraryUrl =
       "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig";

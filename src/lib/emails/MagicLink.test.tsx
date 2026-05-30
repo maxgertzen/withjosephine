@@ -12,14 +12,12 @@ const PROPS = {
   preview: EMAIL_MAGIC_LINK_DEFAULTS.preview,
   heroLine: EMAIL_MAGIC_LINK_DEFAULTS.heroLine,
   buttonLabel: EMAIL_MAGIC_LINK_DEFAULTS.buttonLabel,
-  greeting: EMAIL_MAGIC_LINK_DEFAULTS.greeting,
   body: EMAIL_MAGIC_LINK_DEFAULTS.body,
 };
 
 describe("MagicLink email", () => {
-  it("renders Sanity-supplied greeting + body paragraphs", async () => {
+  it("renders Sanity-supplied body paragraphs", async () => {
     const text = visibleText(await render(<MagicLink {...PROPS} />));
-    expect(text).toContain(PROPS.greeting);
     for (const paragraph of portableTextToPlainText(PROPS.body).split("\n\n")) {
       expect(text).toContain(paragraph);
     }
