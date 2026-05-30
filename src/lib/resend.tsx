@@ -588,6 +588,9 @@ export async function sendMagicLink(args: {
   to: string;
   magicLinkUrl: string;
   context: MagicLinkContext;
+  firstName?: string;
+  readingName?: string;
+  readingPriceDisplay?: string;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_MAGIC_LINK_DEFAULTS, EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS } = await import(
@@ -609,19 +612,28 @@ export async function sendMagicLink(args: {
     fetchSharedShell(),
   ]);
   const copy = { ...source.defaults, ...(sanity ?? {}) };
+  const vars = {
+    magicLinkUrl: args.magicLinkUrl,
+    firstName: args.firstName ?? "there",
+    readingName: args.readingName ?? "",
+    readingPriceDisplay: args.readingPriceDisplay ?? "",
+  };
+  const subject = applyTokens(copy.subject, vars);
   const html = await render(
     <MagicLink
-      magicLinkUrl={args.magicLinkUrl}
-      preview={copy.preview}
-      heroLine={copy.heroLine}
-      buttonLabel={copy.buttonLabel}
-      body={copy.body}
+      vars={vars}
+      copy={{
+        preview: copy.preview,
+        heroLine: copy.heroLine,
+        buttonLabel: copy.buttonLabel,
+        body: copy.body,
+      }}
       shell={shell}
     />,
   );
   return sendOrSkip({
     to: args.to,
-    subject: copy.subject,
+    subject,
     html,
     subType: source.subType,
     submissionId: null,

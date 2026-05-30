@@ -36,7 +36,7 @@ describe("slots — validateSlotsInValue (string fields)", () => {
     if (!result.ok) expect(result.unknown).toEqual(["totallyWrong"]);
   });
   it("rejects unknown slots for slot-free templates", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailMagicLink");
+    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.unknown).toEqual(["firstName"]);
   });
@@ -79,7 +79,7 @@ describe("slots — formatSlotValidationError", () => {
     }
   });
   it("explains slot-free templates clearly", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailMagicLink");
+    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(formatSlotValidationError(result)).toContain("no slots");
   });
