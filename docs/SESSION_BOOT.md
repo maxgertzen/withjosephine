@@ -1,5 +1,50 @@
 # Session Boot — Active State
 
+## ✅ 2026-05-31 — release/v1.5.0 READY FOR MAIN MERGE (9 commits, mc6p8m8t full sweep + simplify polish)
+
+Closed the Phase 7 Studio/email epic `mc6p8m8t` end-to-end in one session. Six sub-PRs merged into `release/v1.5.0` in order (#221, #222, #223, #225, #226, #224) plus 2 CI-config bookkeeping commits and the cumulative `/simplify` polish commit. All 7 release-branch CI runs green. `ath44ovq` closed in dex (Studio deploy was satisfied by v1.3.0 + 2026-05-30 redeploys).
+
+**Sub-PRs (squash-merged in order):**
+- **#221 (evpoius0)** — generalize `tokenReferenceField` to accept either `EmailTemplateKey` or `{ tokens: readonly string[] }`; wires the catalog banner into `listenPage` ({readingName}), `giftIntakePage` ({readingName}), `thankYouPage` ({purchaserFirstName, recipientName}). 12 existing email schema call sites unchanged via back-compat string overload.
+- **#222 (qvco44xz)** — plumb `{firstName}` into `emailPrivacyExport`. `emailPrivacyExport` allowlist widened; `sendPrivacyExportEmail` accepts + forwards `firstName`; subject now goes through `applyTokens` matching the OrderConfirmation/GiftClaim/Day7Delivery pattern. `extractFirstName` promoted from private to exported.
+- **#223 (ws8r39uu)** — `defineLocations` entries for 12 email singletons in `studio/presentation.tsx` (renamed from .ts to allow JSX for the `EnvelopeIcon`). Surfaces emails in Presentation's "Used on" panel via `showHref:false` (matches Sanity v5.13 non-URL preview pattern).
+- **#225 (47w420v0)** — `docs/CROSS_CLIENT_EMAIL_EVAL.md`: evaluation of Litmus / Email-On-Acid / Resend native preview / Mailchimp Inbox Inspector / preprocessing tools. **Decision: defer adoption.** Promotion trigger documented (≥1 customer render-bug report in 30 days, OR ~100 customer emails/month, OR new template with non-trivial CSS, OR brand redesign).
+- **#226 (cfor9w5f)** — Studio "Send preview to inbox…" doc action available on 12 email singletons. Two new admin routes: `GET /api/admin/list-preview-recipients` + `POST /api/admin/send-email-preview`. New `ALLOWED_PREVIEW_RECIPIENTS` env var (Max-action post-merge). New audit event `admin_email_preview_sent`. New `EmailSubType.admin_email_preview` in analytics taxonomy. Subject prefixed `[PREVIEW]` so a test render to a shared inbox cannot be confused with a real customer email.
+- **#224 (c3l45o0n)** — `MagicLink.tsx` refactored to vars+copy applyTokens pattern; widens `emailMagicLink` allowlist to `[magicLinkUrl, firstName, readingName, readingPriceDisplay]` and `emailMagicLinkLibrary` to `[magicLinkUrl, firstName]`. New `src/lib/auth/magicLinkVars.ts` helper looks up the user's most-recent paid submission and derives the three vars via existing `extractFirstName` + `priceDisplayFor` helpers. Fail-safe `MAGIC_LINK_VARS_FALLBACK` shape when no paid submission.
+
+**Bookkeeping commits direct on `release/v1.5.0`:**
+- **`a2c0678`** — enable CI + auto-deploy-staging on `release/v1.5.0` (mirrors v1.4.0 pattern).
+- **`eb3bd16`** — drop deleted `v1.2.0/v1.2.1/v1.3.0` from CI config (those branches were cleaned during v1.4.0 post-merge bookkeeping; v1.4.0 stays alive for hotfix).
+
+**Cumulative `/simplify` polish commit `27c65aa` (12 findings applied across 3 vantages — reuse, quality, efficiency):**
+- 3 HIGH: em-dashes purged from 5 sites; `sendEmailPreview` now routes through canonical `sendOrSkip` in `resend.tsx` (gets sandbox-prefix guard + RESEND_DRY_RUN + x-e2e-resend-dry-run header + cached client + redacted logging + serverTrack — closes the same divergence shape that caused the v1.2.0 dry-run-leak incident); magic-link fallback DRY'd via single `FIRST_NAME_FALLBACK` constant + `MAGIC_LINK_VARS_FALLBACK` (redundant route-level `.catch` removed because the helper swallows internally).
+- 9 MEDIUM: new `findMostRecentPaidByRecipientUserId` repo method (SELECT...LIMIT 1) replaces in-memory `.find(paid)`; `TEMPLATE_LABELS` promoted from `Partial<Record>` to exhaustive `Record<EmailTemplateKey, string>` (no more raw machine keys leaking to Becky's subject lines); `EMAIL_PREVIEW_SINGLETON_TYPES` derived from `EMAIL_ALLOWED_SLOTS` keys (adding a new template auto-enrolls it in the send-to-test action); dispatch object → switch statement; admin route 503 JSON shape aligned (`{outcome, reason}` not `{error}`); noisy block comments trimmed to load-bearing claims; shared `AdminTokenInput` component lifts the password input from both Studio admin actions (`resendCustomerEmail` + `sendEmailPreview`); vendor type cast dropped on `response.data?.id`; `privacy/export` route uses `FIRST_NAME_FALLBACK` constant.
+
+**Quality gates (final state on release tip `27c65aa`):**
+- vitest: 2105/2105 ✅
+- typecheck: clean ✅
+- lint: clean (2 pre-existing warnings unrelated) ✅
+- main build: clean ✅
+- studio build: clean (~11s) ✅
+- 7/7 release-branch CI runs green across the arc
+
+**🚨 Max-actions before `release/v1.5.0 → main` merge:**
+1. **Set `ALLOWED_PREVIEW_RECIPIENTS` worker secret** on staging + prod:
+   ```sh
+   pnpm exec wrangler secret put ALLOWED_PREVIEW_RECIPIENTS --env staging
+   # value: hello@withjosephine.com,maxgertzen+withjosephine-preview@gmail.com
+   pnpm exec wrangler secret put ALLOWED_PREVIEW_RECIPIENTS
+   ```
+   Verify the `maxgertzen` spelling (PR #226 body has the locked value). Without this set the new `/api/admin/send-email-preview` returns 503 and the Studio dialog shows "not configured" — fail-closed by design.
+2. **Open `release/v1.5.0 → main` PR**. CI will fire the full Playwright + vitest + build matrix.
+
+**🚨 Max-actions post-`main` merge:**
+3. **Re-deploy Studio** (`pnpm studio:deploy` from `studio/`) so Becky sees the new `EnvelopeIcon` entries in Presentation's "Used on" panel + the "Send preview to inbox…" doc action + the `tokenReferenceField` banner on `listenPage`/`giftIntakePage`/`thankYouPage`.
+4. **Real-browser smoke** per `feedback_real_browser_smoke_before_ship_claim`: open any email singleton in Studio, tap "Send preview to inbox…", confirm a test render lands in the allowlisted inbox with `[PREVIEW]` subject prefix. Trigger a magic-link sign-in for a user with a paid submission and verify `{firstName}`/`{readingName}` substitute (publish a Sanity edit using those tokens first for a positive case). Trigger a privacy export and verify the firstName substitution.
+5. **Tag `v1.5.0`** at the merge commit. Delete `release/v1.4.0` (still alive from prior arc) and `release/v1.5.0` after smoke completes.
+
+**Carry-over from v1.4.0 (still open):** Real-browser smoke against the deployed v1.4.0 changes (day-7 delivery, library magic-link, new-device notice). Folds into the v1.5.0 smoke walk above since those surfaces are unchanged in v1.5.0.
+
 ## ✅ 2026-05-30 — PR #218 SHIPPED; v1.4.0 tagged; 5 release branches deleted; silent-no-op audit; new spec-backfill commit
 
 PR #218 merged to `main` at squash `b1ebbf8` after CI re-ran fully green. Tag `v1.4.0` pushed against the merge commit. Also tagged `v1.0.0` at `3b060fc` and `v1.3.0` at `c9128ed` (both shipped earlier without tags) so the SHAs stay reachable after branch deletion.
