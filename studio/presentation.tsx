@@ -7,7 +7,7 @@ import { defineLocations, type PresentationPluginOptions } from "sanity/presenta
  * `previewDrafts` perspective when that mode is active.
  *
  * Email singletons surface in Presentation's "Used on" panel via showHref:false
- * locations — they aren't real URL targets, just navigation affordances.
+ * locations; they aren't real URL targets, just navigation affordances.
  */
 const emailLocation = (title: string) =>
   defineLocations({
@@ -48,11 +48,11 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       }),
     }),
     siteSettings: defineLocations({
-      message: "Global site settings — affects every page.",
+      message: "Global site settings: affects every page.",
       locations: [{ title: "Landing Page", href: "/" }],
     }),
     theme: defineLocations({
-      message: "Global theme tokens — affects every page.",
+      message: "Global theme tokens: affects every page.",
       locations: [{ title: "Landing Page", href: "/" }],
     }),
     testimonial: defineLocations({

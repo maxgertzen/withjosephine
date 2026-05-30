@@ -15,18 +15,8 @@ import { sendEmailPreview } from "@/lib/emails/sendEmailPreview";
 
 const REFUSED = () => new NextResponse(null, { status: 404 });
 
-/**
- * Studio doc-action POST: render PUBLISHED Sanity copy for `template` and
- * send a cross-client test render to `recipient`.
- *
- * Defense-in-depth: x-admin-token auth + env-var allowlist + WAF rate-limit
- * on /api/admin/* (5 req/10s/IP). The env-var-only allowlist means a Studio
- * compromise can never widen the recipient set; rotating recipients
- * requires a deploy. (Locked design 2026-05-24.)
- *
- * Returns 503 when ALLOWED_PREVIEW_RECIPIENTS is unset so the Studio dialog
- * can render "not configured" rather than failing silently.
- */
+// Allowlist lives in Worker env vars (not Sanity) so a Studio compromise
+// can't widen it; rotating recipients = deploy. Locked 2026-05-24.
 export async function POST(request: Request): Promise<Response> {
   const auth = await authorizeAdminToken(request);
   if (!auth.authorized) return REFUSED();
@@ -57,11 +47,14 @@ export async function POST(request: Request): Promise<Response> {
     eventType: AUDIT_EVENT_TYPE.admin_email_preview_sent,
     ipHash: auth.audit.ipHash,
     userAgentHash: auth.audit.userAgentHash,
-    success: result.kind === "sent",
+    success: result.kind === "sent" || result.kind === "dry_run",
   });
 
   if (result.kind === "sent") {
     return NextResponse.json({ outcome: "sent", template, recipient });
+  }
+  if (result.kind === "dry_run") {
+    return NextResponse.json({ outcome: "dry_run", template, recipient });
   }
   if (result.kind === "skipped") {
     return NextResponse.json(

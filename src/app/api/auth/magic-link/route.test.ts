@@ -160,10 +160,18 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     expect(args.readingPriceDisplay).toBe("$179");
   });
 
-  it("falls back to 'there' when lookupMagicLinkVars throws", async () => {
+  it("passes through the 'there'/'' fallback shape when the user has no paid submission", async () => {
+    // lookupMagicLinkVars swallows DB errors internally and returns the
+    // MAGIC_LINK_VARS_FALLBACK shape; the route just forwards whatever it
+    // receives. This test fixes the contract by mocking the resolved fallback
+    // (the realistic case) rather than the deprecated route-level catch.
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { lookupMagicLinkVars } = await import("@/lib/auth/magicLinkVars");
-    vi.mocked(lookupMagicLinkVars).mockRejectedValueOnce(new Error("D1 down"));
+    vi.mocked(lookupMagicLinkVars).mockResolvedValueOnce({
+      firstName: "there",
+      readingName: "",
+      readingPriceDisplay: "",
+    });
     const { POST } = await import("./route");
     await POST(jsonRequest({ email: "ada@example.com" }));
     await flushFireAndForget();

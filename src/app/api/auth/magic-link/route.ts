@@ -49,11 +49,7 @@ export async function POST(request: Request) {
       // (listen page, /my-gifts) so verify lands them back where they came from.
       if (cleanNext !== "/my-readings") verifyUrl.searchParams.set("next", cleanNext);
       const context = deriveMagicLinkContext(cleanNext);
-      const vars = await lookupMagicLinkVars(user.id).catch(() => ({
-        firstName: "there",
-        readingName: "",
-        readingPriceDisplay: "",
-      }));
+      const vars = await lookupMagicLinkVars(user.id);
       runMirror(
         sendMagicLink({
           to: user.email,

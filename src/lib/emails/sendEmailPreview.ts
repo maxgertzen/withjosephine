@@ -1,95 +1,83 @@
 import "server-only";
 
+import { type EmailSendResult,sendOrSkip } from "@/lib/resend";
+
 import { isPreviewTemplateKey, renderEmailPreview } from "./render-preview";
 import { type EmailTemplateKey } from "./slots";
 
-type FetchFn = () => Promise<unknown>;
+const SUBJECT_PREVIEW_PREFIX = "[PREVIEW] ";
+
+const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
+  emailOrderConfirmation: "Order Confirmation",
+  emailDay7Delivery: "Reading Delivery (Day 7)",
+  emailGiftPurchaseConfirmationSelfSend: "Gift Confirmation (Self-Send)",
+  emailGiftPurchaseConfirmationScheduled: "Gift Confirmation (Scheduled)",
+  emailGiftClaim: "Gift Claim (First Send)",
+  emailGiftClaimReminder: "Gift Claim (Reminder)",
+  emailMagicLink: "Magic Link (Listen Page)",
+  emailMagicLinkLibrary: "Magic Link (Library)",
+  emailPrivacyExport: "Privacy Export (GDPR)",
+  emailRecipientIntakeReceived: "Intake Received (Recipient)",
+  emailStepUpOtp: "Step-up Code",
+  emailNewDeviceNotice: "New Device Notice",
+};
 
 async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> {
   const fetch = await import("@/lib/sanity/fetch");
-  const dispatch: Record<EmailTemplateKey, FetchFn> = {
-    emailOrderConfirmation: fetch.fetchEmailOrderConfirmation,
-    emailDay7Delivery: fetch.fetchEmailDay7Delivery,
-    emailGiftPurchaseConfirmationSelfSend: fetch.fetchEmailGiftPurchaseConfirmationSelfSend,
-    emailGiftPurchaseConfirmationScheduled: fetch.fetchEmailGiftPurchaseConfirmationScheduled,
-    emailGiftClaim: fetch.fetchEmailGiftClaim,
-    emailGiftClaimReminder: fetch.fetchEmailGiftClaimReminder,
-    emailMagicLink: fetch.fetchEmailMagicLink,
-    emailMagicLinkLibrary: fetch.fetchEmailMagicLinkLibrary,
-    emailPrivacyExport: fetch.fetchEmailPrivacyExport,
-    emailRecipientIntakeReceived: fetch.fetchEmailRecipientIntakeReceived,
-    emailStepUpOtp: fetch.fetchEmailStepUpOtp,
-    emailNewDeviceNotice: fetch.fetchEmailNewDeviceNotice,
-  };
-  return dispatch[template]().catch(() => null);
+  switch (template) {
+    case "emailOrderConfirmation":
+      return fetch.fetchEmailOrderConfirmation().catch(() => null);
+    case "emailDay7Delivery":
+      return fetch.fetchEmailDay7Delivery().catch(() => null);
+    case "emailGiftPurchaseConfirmationSelfSend":
+      return fetch.fetchEmailGiftPurchaseConfirmationSelfSend().catch(() => null);
+    case "emailGiftPurchaseConfirmationScheduled":
+      return fetch.fetchEmailGiftPurchaseConfirmationScheduled().catch(() => null);
+    case "emailGiftClaim":
+      return fetch.fetchEmailGiftClaim().catch(() => null);
+    case "emailGiftClaimReminder":
+      return fetch.fetchEmailGiftClaimReminder().catch(() => null);
+    case "emailMagicLink":
+      return fetch.fetchEmailMagicLink().catch(() => null);
+    case "emailMagicLinkLibrary":
+      return fetch.fetchEmailMagicLinkLibrary().catch(() => null);
+    case "emailPrivacyExport":
+      return fetch.fetchEmailPrivacyExport().catch(() => null);
+    case "emailRecipientIntakeReceived":
+      return fetch.fetchEmailRecipientIntakeReceived().catch(() => null);
+    case "emailStepUpOtp":
+      return fetch.fetchEmailStepUpOtp().catch(() => null);
+    case "emailNewDeviceNotice":
+      return fetch.fetchEmailNewDeviceNotice().catch(() => null);
+  }
 }
 
-const SUBJECT_PREVIEW_PREFIX = "[PREVIEW] ";
-
-export type SendEmailPreviewResult =
-  | { kind: "sent"; resendId: string | null }
-  | { kind: "skipped"; reason: string }
-  | { kind: "failed"; error: string };
-
 /**
- * Renders the requested email template with PUBLISHED Sanity copy + fixture
- * vars, then sends the result to the recipient via Resend.
+ * Renders the requested template with PUBLISHED Sanity copy + fixture vars,
+ * then routes through sendOrSkip so the canonical guards apply (sandbox-prefix,
+ * RESEND_DRY_RUN flag, x-e2e-resend-dry-run header, cached client, redacted
+ * logging, serverTrack). Subject is [PREVIEW]-prefixed so a test send to a
+ * shared inbox can't be confused with a real customer email.
  *
- * Subject is prefixed with [PREVIEW] so it cannot be confused with a real
- * customer email if the test recipient is a shared inbox.
- *
- * The recipient is NOT re-validated here; callers MUST check
- * `isAllowedPreviewRecipient` before invoking.
+ * Caller MUST validate `recipient` against isAllowedPreviewRecipient first.
  */
 export async function sendEmailPreview(args: {
   template: EmailTemplateKey;
   recipient: string;
-}): Promise<SendEmailPreviewResult> {
+}): Promise<EmailSendResult> {
   if (!isPreviewTemplateKey(args.template)) {
     return { kind: "failed", error: `Unknown template: ${args.template}` };
   }
 
   const sanityCopy = await fetchPublishedCopy(args.template);
   const html = await renderEmailPreview(args.template, sanityCopy);
+  const subject = `${SUBJECT_PREVIEW_PREFIX}${TEMPLATE_LABELS[args.template]}`;
 
-  const { Resend } = await import("resend");
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { kind: "skipped", reason: "RESEND_API_KEY not configured" };
-
-  const subject = `${SUBJECT_PREVIEW_PREFIX}${describeTemplate(args.template)}`;
-
-  try {
-    const client = new Resend(apiKey);
-    const response = await client.emails.send({
-      from: "Josephine <hello@withjosephine.com>",
-      to: args.recipient,
-      subject,
-      html,
-    });
-    const resendId = (response.data as { id?: string } | null)?.id ?? null;
-    return { kind: "sent", resendId };
-  } catch (error) {
-    return {
-      kind: "failed",
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-function describeTemplate(template: EmailTemplateKey): string {
-  const labels: Partial<Record<EmailTemplateKey, string>> = {
-    emailOrderConfirmation: "Order Confirmation",
-    emailDay7Delivery: "Reading Delivery (Day 7)",
-    emailGiftPurchaseConfirmationSelfSend: "Gift Confirmation (Self-Send)",
-    emailGiftPurchaseConfirmationScheduled: "Gift Confirmation (Scheduled)",
-    emailGiftClaim: "Gift Claim (First Send)",
-    emailGiftClaimReminder: "Gift Claim (Reminder)",
-    emailMagicLink: "Magic Link (Listen Page)",
-    emailMagicLinkLibrary: "Magic Link (Library)",
-    emailPrivacyExport: "Privacy Export (GDPR)",
-    emailRecipientIntakeReceived: "Intake Received (Recipient)",
-    emailStepUpOtp: "Step-up Code",
-    emailNewDeviceNotice: "New Device Notice",
-  };
-  return labels[template] ?? template;
+  return sendOrSkip({
+    to: args.recipient,
+    subject,
+    html,
+    subType: "admin_email_preview",
+    submissionId: null,
+  });
 }

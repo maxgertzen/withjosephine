@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { GIFT_DELIVERY } from "./booking/constants";
+import { FIRST_NAME_FALLBACK } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day7Delivery } from "./emails/Day7Delivery";
@@ -151,7 +152,7 @@ export function isSandboxEmail(address: string | null | undefined): boolean {
   return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
 }
 
-async function sendOrSkip(args: {
+export async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
   html: string;
@@ -614,7 +615,7 @@ export async function sendMagicLink(args: {
   const copy = { ...source.defaults, ...(sanity ?? {}) };
   const vars = {
     magicLinkUrl: args.magicLinkUrl,
-    firstName: args.firstName ?? "there",
+    firstName: args.firstName ?? FIRST_NAME_FALLBACK,
     readingName: args.readingName ?? "",
     readingPriceDisplay: args.readingPriceDisplay ?? "",
   };

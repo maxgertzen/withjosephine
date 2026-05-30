@@ -15,7 +15,8 @@ export type EmailSubType =
   | "recipient_intake_received"
   | "step_up_otp"
   | "new_device_notice"
-  | "new_device_revoke_admin";
+  | "new_device_revoke_admin"
+  | "admin_email_preview";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
@@ -33,6 +34,7 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   step_up_otp: "step-up OTP",
   new_device_notice: "new device notice",
   new_device_revoke_admin: "new device revoke (admin alert)",
+  admin_email_preview: "admin email preview (Studio send-to-test)",
 };
 
 export type ServerEventMap = {

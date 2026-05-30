@@ -1,7 +1,9 @@
 import { EnvelopeIcon } from "@sanity/icons";
-import { Box, Button, Select, Stack, Text, TextInput, useToast } from "@sanity/ui";
+import { Box, Button, Select, Stack, Text, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
 import type { DocumentActionComponent, DocumentActionProps } from "sanity";
+
+import { AdminTokenInput } from "../components/AdminTokenInput";
 
 const LIST_ROUTE = "/api/admin/list-preview-recipients";
 const SEND_ROUTE = "/api/admin/send-email-preview";
@@ -41,7 +43,7 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
         return;
       }
       if (!response.ok) {
-        setLoadError(`HTTP ${response.status} — check the admin token.`);
+        setLoadError(`HTTP ${response.status}, check the admin token.`);
         return;
       }
       const data = (await response.json()) as { recipients?: string[] };
@@ -70,7 +72,7 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
         toast.push({
           status: "error",
           title: "Preview send failed",
-          description: `HTTP ${response.status}${detail ? ` — ${detail.slice(0, 200)}` : ""}`,
+          description: `HTTP ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`,
         });
         setIsPending(false);
         return;
@@ -115,21 +117,12 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
             the ALLOWED_PREVIEW_RECIPIENTS Worker env var; only those addresses
             can receive previews.
           </Text>
-          <Box>
-            <Text size={1} weight="semibold">
-              Admin token:
-            </Text>
-            <Box marginTop={2}>
-              <TextInput
-                type="password"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.currentTarget.value)}
-                onBlur={loadRecipients}
-                disabled={isPending}
-                placeholder="Paste the admin token"
-              />
-            </Box>
-          </Box>
+          <AdminTokenInput
+            value={adminToken}
+            onChange={setAdminToken}
+            onBlur={loadRecipients}
+            disabled={isPending}
+          />
           {loadError ? (
             <Text size={1} muted>
               {loadError}

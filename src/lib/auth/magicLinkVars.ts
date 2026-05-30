@@ -1,8 +1,8 @@
 import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
   extractFirstName,
-  listSubmissionsByRecipientUserId,
-  SUBMISSION_STATUS,
+  findMostRecentPaidByRecipientUserId,
+  FIRST_NAME_FALLBACK,
 } from "@/lib/booking/submissions";
 
 export type MagicLinkUserVars = {
@@ -11,24 +11,21 @@ export type MagicLinkUserVars = {
   readingPriceDisplay: string;
 };
 
-const FALLBACK: MagicLinkUserVars = {
-  firstName: "there",
+export const MAGIC_LINK_VARS_FALLBACK: MagicLinkUserVars = {
+  firstName: FIRST_NAME_FALLBACK,
   readingName: "",
   readingPriceDisplay: "",
 };
 
 /**
- * Resolves the {firstName}, {readingName}, {readingPriceDisplay} tokens for
- * magic-link emails by looking up the user's most-recent PAID submission.
- *
- * Falls back to a 'there' / '' shape when the user has no paid submission
- * (typical for the listen-page sign-in flow where the recipient has a user
- * record but not a purchase under their email).
+ * Resolves {firstName}, {readingName}, {readingPriceDisplay} for magic-link
+ * emails. Falls back to MAGIC_LINK_VARS_FALLBACK whenever the user has no
+ * paid submission OR the lookup itself fails; keeps the email send path
+ * fire-and-forget safe so a DB blip never blocks sign-in.
  */
 export async function lookupMagicLinkVars(userId: string): Promise<MagicLinkUserVars> {
-  const subs = await listSubmissionsByRecipientUserId(userId).catch(() => []);
-  const paid = subs.find((s) => s.status === SUBMISSION_STATUS.paid);
-  if (!paid) return FALLBACK;
+  const paid = await findMostRecentPaidByRecipientUserId(userId).catch(() => null);
+  if (!paid) return MAGIC_LINK_VARS_FALLBACK;
   return {
     firstName: extractFirstName(paid.responses),
     readingName: paid.reading?.name ?? "",

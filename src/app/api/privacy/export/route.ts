@@ -15,6 +15,7 @@ import { findUserById } from "@/lib/auth/users";
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 import {
   extractFirstName,
+  FIRST_NAME_FALLBACK,
   listSubmissionsByRecipientUserId,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
@@ -313,7 +314,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const signedUrl = await getSignedDownloadUrl(exportKey, EXPORT_URL_EXPIRY_SECONDS);
 
-  const firstName = submissions[0] ? extractFirstName(submissions[0].responses) : "there";
+  const firstName = submissions[0]
+    ? extractFirstName(submissions[0].responses)
+    : FIRST_NAME_FALLBACK;
 
   await sendPrivacyExportEmail({
     to: user.email,

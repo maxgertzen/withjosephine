@@ -25,6 +25,7 @@ vi.mock("@/lib/auth/requestAudit", () => ({
 vi.mock("@/lib/booking/submissions", () => ({
   listSubmissionsByRecipientUserId: vi.fn(),
   extractFirstName: vi.fn(() => "Ada"),
+  FIRST_NAME_FALLBACK: "there",
 }));
 vi.mock("@/lib/r2", () => ({
   putObject: vi.fn(),
