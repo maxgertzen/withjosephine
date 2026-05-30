@@ -24,6 +24,7 @@ vi.mock("@/lib/auth/requestAudit", () => ({
 }));
 vi.mock("@/lib/booking/submissions", () => ({
   listSubmissionsByRecipientUserId: vi.fn(),
+  extractFirstName: vi.fn(() => "Ada"),
 }));
 vi.mock("@/lib/r2", () => ({
   putObject: vi.fn(),
@@ -192,6 +193,7 @@ describe("POST /api/privacy/export", () => {
     expect(mockSignedUrl).toHaveBeenCalledWith(expect.stringMatching(/^exports\/user_a\//), 7 * 24 * 60 * 60);
     expect(mockEmail).toHaveBeenCalledWith({
       to: "ada@example.com",
+      firstName: expect.any(String),
       downloadUrl: "https://r2.example.com/exports/user_a/1.zip?sig=abc",
       submissionCount: 1,
       expiryDays: 7,

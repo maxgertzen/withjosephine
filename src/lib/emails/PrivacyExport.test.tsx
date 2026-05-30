@@ -8,6 +8,7 @@ import { PrivacyExport } from "./PrivacyExport";
 import { linkHrefs, visibleText } from "./test-helpers";
 
 const VARS = {
+  firstName: "Ada",
   downloadUrl: "https://r2.withjosephine.com/exports/abc123.zip",
   submissionCount: 3,
   expiryDays: 7,

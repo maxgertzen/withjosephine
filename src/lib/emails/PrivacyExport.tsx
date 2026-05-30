@@ -11,6 +11,7 @@ import { GoldHero } from "./GoldHero";
 import { PortableTextBody } from "./PortableTextBody";
 
 export type PrivacyExportVars = {
+  firstName: string;
   downloadUrl: string;
   submissionCount: number;
   expiryDays: number;

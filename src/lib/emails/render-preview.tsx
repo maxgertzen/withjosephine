@@ -158,6 +158,7 @@ async function renderRaw(
       return render(
         <PrivacyExport
           vars={{
+            firstName: PREVIEW_FIXTURE.firstName,
             downloadUrl: PREVIEW_FIXTURE.downloadUrl,
             submissionCount: PREVIEW_FIXTURE.submissionCount,
             expiryDays: PREVIEW_FIXTURE.expiryDays,

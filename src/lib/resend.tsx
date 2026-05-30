@@ -630,6 +630,7 @@ export async function sendMagicLink(args: {
 
 export async function sendPrivacyExportEmail(args: {
   to: string;
+  firstName: string;
   downloadUrl: string;
   submissionCount: number;
   expiryDays: number;
@@ -641,9 +642,15 @@ export async function sendPrivacyExportEmail(args: {
     fetchSharedShell(),
   ]);
   const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
+  const subject = applyTokens(copy.subject, {
+    firstName: args.firstName,
+    submissionCount: args.submissionCount,
+    expiryDays: args.expiryDays,
+  });
   const html = await render(
     <PrivacyExport
       vars={{
+        firstName: args.firstName,
         downloadUrl: args.downloadUrl,
         submissionCount: args.submissionCount,
         expiryDays: args.expiryDays,
@@ -654,7 +661,7 @@ export async function sendPrivacyExportEmail(args: {
   );
   return sendOrSkip({
     to: args.to,
-    subject: copy.subject,
+    subject,
     html,
     subType: "privacy_export",
     submissionId: null,

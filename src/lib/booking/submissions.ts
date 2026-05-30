@@ -413,7 +413,7 @@ export async function scrubSubmissionPhoto(
   return true;
 }
 
-function extractFirstName(responses: SubmissionRecord["responses"]) {
+export function extractFirstName(responses: SubmissionRecord["responses"]) {
   const entry = responses.find((response) => response.fieldKey === "first_name");
   const value = entry?.value?.trim();
   if (value) return value;

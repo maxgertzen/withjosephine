@@ -14,6 +14,7 @@ import { getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { findUserById } from "@/lib/auth/users";
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 import {
+  extractFirstName,
   listSubmissionsByRecipientUserId,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
@@ -312,8 +313,11 @@ export async function POST(request: Request): Promise<Response> {
 
   const signedUrl = await getSignedDownloadUrl(exportKey, EXPORT_URL_EXPIRY_SECONDS);
 
+  const firstName = submissions[0] ? extractFirstName(submissions[0].responses) : "there";
+
   await sendPrivacyExportEmail({
     to: user.email,
+    firstName,
     downloadUrl: signedUrl,
     submissionCount: submissions.length,
     expiryDays: 7,
