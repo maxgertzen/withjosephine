@@ -1,5 +1,7 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
+
 export const listenPage = defineType({
   name: "listenPage",
   title: "Listen Page",
@@ -15,6 +17,7 @@ export const listenPage = defineType({
     { name: "expired", title: "Expired (past 90 days)" },
   ],
   fields: [
+    tokenReferenceField({ tokens: ["readingName"] }),
     defineField({
       name: "welcomeRibbon",
       title: "Welcome ribbon",
