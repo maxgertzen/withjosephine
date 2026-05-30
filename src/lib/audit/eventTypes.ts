@@ -26,6 +26,7 @@ export const AUDIT_EVENT_TYPE = {
   new_device_notice_sent: "new_device_notice_sent",
   recipient_sessions_revoked: "recipient_sessions_revoked",
   recipient_sessions_revoke_invalid: "recipient_sessions_revoke_invalid",
+  admin_email_preview_sent: "admin_email_preview_sent",
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPE)[keyof typeof AUDIT_EVENT_TYPE];
