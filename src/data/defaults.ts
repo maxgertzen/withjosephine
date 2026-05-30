@@ -75,7 +75,7 @@ export const HOW_IT_WORKS_DEFAULTS: HowItWorksContent = {
     {
       title: "Share Your Details",
       description:
-        "After payment, I\u2019ll send you everything you need \u2014 a simple form for your birth details and a personalised question menu.",
+        "After payment, I\u2019ll send you everything you need: a simple form for your birth details and a personalised question menu.",
     },
     {
       title: "Receive Your Reading",
@@ -114,7 +114,7 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
     "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726",
   dropCapCta: "Tell me about you \u2192",
   dropCapCaption:
-    "The intake form \u2014 about five minutes. You\u2019ll review before paying.",
+    "The intake form: about five minutes. You\u2019ll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three \u2192",
   aboutJosephineLinkText: "About Josephine",
   giftToggleForMeLabel: "For myself",
@@ -209,12 +209,12 @@ export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
   sendAtPresetWeek: "On a chosen morning",
   sendAtPresetMonth: "At a specific moment",
   sendAtCustomLabel: "Choose the date and time",
-  consentIntro: "Before this travels onward \u2014",
+  consentIntro: "Before this travels onward:",
   nonRefundableNotice:
     "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
   submitButtonSelfSend: "Send this gift",
   submitButtonScheduled: "Prepare this gift",
-  loadingStateCopy: "One moment \u2014 taking you to checkout.",
+  loadingStateCopy: "One moment - taking you to checkout.",
   antiAbuseCapHeading: "A gentle pause",
   antiAbuseCapBody:
     "There\u2019s already a reading waiting for this person. Give them a quiet moment to open it before sending another.",
@@ -441,8 +441,8 @@ export const GIFT_INTAKE_PAGE_DEFAULTS: GiftIntakePageContent = {
   seoTitle: "Open your gift, with Josephine",
   seoDescription: "Share your details so Josephine can prepare your reading.",
   eyebrow: "✦ Opening your gift",
-  heading: "A few things, before we begin.",
-  headingWelcome: "Welcome. A few things before we begin.",
+  heading: "Let’s open your gift.",
+  headingWelcome: "Welcome. Let’s open your gift.",
   lede: "Someone sent you a {readingName}. Share your details and Josephine will prepare your reading.",
 };
 
@@ -463,7 +463,7 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
   confirmEmailLabel: "Email",
   confirmButtonLabel: "Continue",
   confirmFootnote: "Your reading is still here, exactly as it was.",
-  restedHeading: "This link has rested",
+  restedHeading: "This link has been used",
   restedBody:
     "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one; it’ll arrive in a moment.",
   restedCtaLabel: "Send me a fresh link",
@@ -972,7 +972,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   checkEmailBody:
     "If we have a reading on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
   checkEmailResendLabel: "Send another",
-  restedHeading: "This link has rested",
+  restedHeading: "This link has been used",
   restedBody:
     "This link’s already been opened. Sometimes that’s because you clicked it on another device. No problem; we’ll send a fresh one.",
   restedCtaLabel: "Send me a fresh link",
@@ -999,7 +999,7 @@ export const ABOUT_DEFAULTS: MappedAbout = {
   heading: "who i am + what this is",
   imageUrl: "/images/akasha.webp",
   paragraphs: [
-    "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up \u2014 this led me to astrology and then to the Akashic Records.",
+    "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up - this led me to astrology and then to the Akashic Records.",
     "These two things together changed everything for me. And now I use them as a bridge for others. Astrology maps your soul\u2019s blueprint through your birth chart. Your gifts, your wounds, your patterns and your path.",
     "The Akashic Records go even deeper. They\u2019re a spiritual record of your soul across time. Every experience, every contract, every lesson your soul has carried into this lifetime.",
     "Together they create a level of understanding that\u2019s hard to describe until you\u2019ve experienced it.",
