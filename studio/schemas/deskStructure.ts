@@ -11,6 +11,23 @@ import {
   MyReadingsPagePreview,
 } from "../views/StudioPagePreview";
 
+// Email singletons that support the send-to-test doc action (PR-6 cfor9w5f).
+// Excludes emailSharedShell (brand config, not a standalone email template).
+export const EMAIL_PREVIEW_SINGLETON_TYPES = new Set([
+  "emailMagicLink",
+  "emailMagicLinkLibrary",
+  "emailDay7Delivery",
+  "emailOrderConfirmation",
+  "emailGiftPurchaseConfirmationSelfSend",
+  "emailGiftPurchaseConfirmationScheduled",
+  "emailGiftClaim",
+  "emailGiftClaimReminder",
+  "emailRecipientIntakeReceived",
+  "emailPrivacyExport",
+  "emailStepUpOtp",
+  "emailNewDeviceNotice",
+]);
+
 export const SINGLETON_TYPES = new Set([
   "landingPage",
   "bookingPage",

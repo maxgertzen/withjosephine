@@ -46,6 +46,14 @@
 	//                                CRON_SECRET. Set on the worker secret AND identically on the
 	//                                staging worker. The Stripe-webhook → DO `.fetch(/schedule)` call
 	//                                runs inside the same isolate so it does NOT need the secret.
+	//   - ALLOWED_PREVIEW_RECIPIENTS Comma-separated email allowlist for the Studio
+	//                                "Send preview to inbox..." action (cfor9w5f). Lives as an
+	//                                env var (not Sanity siteSettings) so a Studio compromise
+	//                                cannot widen the allowlist; rotating recipients requires
+	//                                a deploy. Example value:
+	//                                "hello@withjosephine.com,maxgertzen+withjosephine-preview@gmail.com"
+	//                                Unset = the route returns 503 + the Studio dialog shows
+	//                                "Send-to-test is not configured on this environment".
 	//
 	// Public vars used by the backup cron (set as Variables, plain text):
 	//   - SANITY_BACKUP_ENABLED      Deploy-flag gate for /api/cron/backup-sanity-dataset. Set to "1"
