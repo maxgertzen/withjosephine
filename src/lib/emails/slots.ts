@@ -52,7 +52,7 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
   ],
   emailMagicLink: [],
   emailMagicLinkLibrary: [],
-  emailPrivacyExport: ["downloadUrl", "submissionCount", "expiryDays"],
+  emailPrivacyExport: ["firstName", "downloadUrl", "submissionCount", "expiryDays"],
   emailRecipientIntakeReceived: ["recipientName", "purchaserFirstName", "readingName"],
   emailStepUpOtp: [],
   emailNewDeviceNotice: ["firstName"],
