@@ -1,5 +1,7 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
+
 export const giftIntakePage = defineType({
   name: "giftIntakePage",
   title: "Gift Intake Page",
@@ -7,6 +9,7 @@ export const giftIntakePage = defineType({
   description:
     "Copy that wraps the intake form on /gift/intake — the page a recipient sees after their token is validated and they're ready to fill in their birth details. The form itself is configured in Booking Form; this only covers the chrome around it.",
   fields: [
+    tokenReferenceField({ tokens: ["readingName"] }),
     defineField({
       name: "seoTitle",
       title: "SEO — Page title",

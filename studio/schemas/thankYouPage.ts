@@ -1,10 +1,13 @@
 import { defineField, defineType } from "sanity";
 
+import { tokenReferenceField } from "../lib/tokenHelp";
+
 export const thankYouPage = defineType({
   name: "thankYouPage",
   title: "Thank You Page",
   type: "document",
   fields: [
+    tokenReferenceField({ tokens: ["purchaserFirstName", "recipientName"] }),
     defineField({
       name: "heading",
       title: "Heading",
