@@ -1,6 +1,41 @@
 # Session Boot — Active State
 
-## 🟡 2026-05-29 — PR #218 open: release/v1.4.0 → main (Phases 1-5 + PR #214 + PR #217)
+## ✅ 2026-05-30 — PR #218 SHIPPED; v1.4.0 tagged; 5 release branches deleted; silent-no-op audit; new spec-backfill commit
+
+PR #218 merged to `main` at squash `b1ebbf8` after CI re-ran fully green. Tag `v1.4.0` pushed against the merge commit. Also tagged `v1.0.0` at `3b060fc` and `v1.3.0` at `c9128ed` (both shipped earlier without tags) so the SHAs stay reachable after branch deletion.
+
+**Spec-backfill commit `1dca541` (no PR; landed directly on `release/v1.4.0` before the merge):** PR #218's first CI run failed with 5 specs timing out at `signInViaMagicLink` — 4 preconditions had drifted during the 46-commit release arc but the specs were never exercised because `e2e.yml` only fires on PRs to main. Surgical fixes:
+1. `signInViaMagicLink({next: "/my-gifts"})` → `"/my-readings"` across 6 sites (PR #208 collapsed `/my-readings/gifts` into a single scrollable page).
+2. `gift-cancel-auto-send` CTA selector `/send the link myself instead/i` → `/cancel the schedule and send it myself/i` (PR #214 Sanity relabel).
+3. `gift-flip-to-scheduled-tz` × 2: `input[type='datetime-local']` → `input[name='giftSendAt']` + display-format fill (PR #217 brand DateTimePicker replaced native input).
+4. `gift-cross-purchaser-leak` POST `/cancel-scheduled` → `/cancel-auto-send` (Phase 4 removed destructive cancel-scheduled).
+Verified locally pre-push: lint 0 errors, typecheck clean, vitest 2093/2093, build clean, mock-mode Playwright 55/55. CI re-run Playwright passed at 3m55s. **Memory** `feedback_run_tests_locally_before_push` was the load-bearing rule that was skipped on the original PR-open; reinforced.
+
+**Silent-no-op audit (105 dex IDs claimed across SESSION_BOOT + CHANGELOG + memory + recent commits intersected against authoritative `.dex/tasks.jsonl`):** 1 unknown silent no-op found and re-filed.
+- `dsk9z62m` (claimed PR #207 commit) — KNOWN missing, the spec-backfill commit above closed the underlying work.
+- `zhyes1s7` (SESSION_BOOT note) — KNOWN missing, already re-filed as `ym2efbwn` 2026-05-25.
+- **`gi0ux0tn` (claimed PR #205 commit / CHANGELOG#21) — UNKNOWN missing.** Was supposed to track retrofitting the auto-probe pattern onto the `UA_AUDIT_HASH_DEPLOYED` env-gate at `listen-roundtrip.spec.ts:170-174`. Verified the gate still exists; work was lost. **Re-filed as `eti8rzqv`** (parent `mktrrouq`, p3).
+- Pattern: both silent no-ops were filed during PR-merge bookkeeping commits with many dex operations in sequence. **Binding rule** `feedback_dex_create_verify_with_show` extended this session to add a second checkpoint: cross-check every dex ID mentioned in a commit / CHANGELOG / SESSION_BOOT against `dex show <id>` before the line is written.
+
+**Branch cleanup (local + remote):** deleted `release/v1.0.0`, `release/v1.1.0`, `release/v1.2.0`, `release/v1.2.1`, `release/v1.3.0`. All five fully contained in `release/v1.4.0` (0 commits ahead each). Tags preserve every SHA. `release/v1.4.0` deliberately KEPT until post-merge smoke completes so a hotfix doesn't have to start from main.
+
+**Two new dex tasks filed under `mktrrouq` (parallel-safe non-blockers, p3) — both verified with `dex show`:**
+- `t380yxay` — `GiftStatusPill.tsx:42` SSR/client TZ hydration mismatch. Non-breaking (React regenerates client-side; button selectors don't depend on pill text) but noisy in dev + Sentry and triggers a gift-card subtree re-render on every `/my-readings` load with a scheduled gift. Surfaced during the spec-backfill local run.
+- `eti8rzqv` — Retrofit auto-probe onto `UA_AUDIT_HASH_DEPLOYED` (re-files lost `gi0ux0tn`).
+
+**✅ Post-merge follow-through executed 2026-05-30:**
+
+1. **Sanity seed run on BOTH datasets** via `scripts/seed-customer-emails-and-pages.mts` (idempotent `createIfNotExists`):
+   - Staging: 2 new singletons created — `emailStepUpOtp` (Phase 3) and `emailNewDeviceNotice` (Phase 5). All others "already exists".
+   - Production: 4 created — `magicLinkVerifyPage`, `emailSharedShell`, `emailStepUpOtp`, `emailNewDeviceNotice`. Note: `magicLinkVerifyPage` and `emailSharedShell` should have been seeded in earlier releases (v1.2.1 / Phase 2) but never were — the static-fallback pattern (binding rule `feedback_static_fallbacks_can_mask_outages`) was rendering defaults to customers on prod with no editor affordance for Becky. Closed by this seed run.
+2. **Sanity Studio deployed** via `pnpm studio:deploy` to https://withjosephine.sanity.studio/. Schema deploy: 2/2 workspaces. Build clean. Studio now exposes `emailMagicLinkLibrary`, `emailNewDeviceNotice`, `emailStepUpOtp`, the collapsed `emailDay7Delivery`, and the freshly-seeded prod singletons to Becky's editor surface. (Workspace auth-divergence warning still firing — tracked at dex `vw4zmbp5`, not blocking.)
+
+**🚨 Max-actions still owed:**
+
+1. **Real-browser smoke against the deployed prod worker** — force a day-7 delivery via the cron route, verify new copy renders + tokenized listen URL one-tap-redeems + sign-in-to-library variant subject is "Sign in to your library". Trigger a new-device notice from a second browser. Per `feedback_real_browser_smoke_before_ship_claim` (binding). Requires actually receiving + tapping the email; I cannot do this end-to-end from here.
+2. Once #1 is green, delete `release/v1.4.0` (local + remote) to fully close the v1.4.0 arc.
+
+## ✅ 2026-05-29 — PR #218 opened: release/v1.4.0 → main (Phases 1-5 + PR #214 + PR #217)
 
 46 commits on `release/v1.4.0`. PR #218 against `main` opened end of session, CI running, NOT merged (Max wanted to hold). URL: https://github.com/maxgertzen/withjosephine/pull/218
 
