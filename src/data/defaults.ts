@@ -473,7 +473,6 @@ export interface EmailMagicLinkContent {
   subject: string;
   preview: string;
   heroLine: string;
-  greeting?: string | null;
   body: EmailRichText;
   buttonLabel: string;
   signOff: string | null;
@@ -484,7 +483,6 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   preview: "Open your reading",
   heroLine: "Open your reading",
   buttonLabel: "Open your reading",
-  greeting: "Hi,",
   body: [
     ...stringToPortableTextBlocks(
       "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
@@ -501,7 +499,6 @@ export const EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS: EmailMagicLinkContent = {
   preview: "A fresh sign-in link for your readings and gifts.",
   heroLine: "Sign in to your library",
   buttonLabel: "Sign in",
-  greeting: "Hi,",
   body: [
     ...stringToPortableTextBlocks(
       "Here’s a fresh sign-in link for your library. It’ll sign you in for the next seven days so you can come back to your readings (and any gifts you’ve shared) without asking again.",
@@ -600,11 +597,7 @@ export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;
   heroLine: string;
-  body?: EmailRichText;
-  greeting?: string;
-  thanksLine?: EmailRichText;
-  timelineLine?: EmailRichText;
-  contactLine?: EmailRichText;
+  body: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   libraryButtonLabel?: string;
@@ -628,16 +621,6 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
       "If anything comes up before then. A question, a detail you forgot to mention, anything at all. Just reply to this email; it comes straight to me.",
     ),
   ],
-  greeting: "Hi {firstName},",
-  thanksLine: stringToPortableTextBlocks(
-    "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
-  ),
-  timelineLine: stringToPortableTextBlocks(
-    "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  ),
-  contactLine: stringToPortableTextBlocks(
-    "If anything comes up before then. A question, a detail you forgot to mention, anything at all. Just reply to this email; it comes straight to me.",
-  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
 };
@@ -646,11 +629,7 @@ export interface EmailRecipientIntakeReceivedContent {
   subject: string;
   preview: string;
   heroLine: string;
-  body?: EmailRichText;
-  greeting?: string;
-  thanksLine?: EmailRichText;
-  timelineLine?: EmailRichText;
-  contactLine?: EmailRichText;
+  body: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
 }
@@ -671,16 +650,6 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
       "If something in what you sent needs a correction. A date, a detail, anything at all. Just reply to this email; it comes straight to me.",
     ),
   ],
-  greeting: "Hi {recipientName},",
-  thanksLine: stringToPortableTextBlocks(
-    "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
-  ),
-  timelineLine: stringToPortableTextBlocks(
-    "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-  ),
-  contactLine: stringToPortableTextBlocks(
-    "If something in what you sent needs a correction. A date, a detail, anything at all. Just reply to this email; it comes straight to me.",
-  ),
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
 };
@@ -689,9 +658,7 @@ export interface EmailGiftPurchaseConfirmationSelfSendContent {
   subject: string;
   preview: string;
   heroLine: string;
-  body?: EmailRichText;
-  greeting?: string;
-  detailLineSelfSend?: EmailRichText;
+  body: EmailRichText;
   shareButtonLabel: string;
   shareUrlHelper: EmailRichText;
   cardLabel: string;
@@ -710,10 +677,6 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurch
       "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right; folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
     ),
   ],
-  greeting: "Hi {purchaserFirstName},",
-  detailLineSelfSend: stringToPortableTextBlocks(
-    "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right; folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
-  ),
   shareButtonLabel: "Share the link",
   shareUrlHelper: stringToPortableTextBlocks(
     "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
@@ -729,9 +692,7 @@ export interface EmailGiftPurchaseConfirmationScheduledContent {
   subject: string;
   preview: string;
   heroLine: string;
-  body?: EmailRichText;
-  greeting?: string;
-  detailLineScheduled?: EmailRichText;
+  body: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
   refundLine: EmailRichText;
@@ -748,10 +709,6 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurch
       "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay}, when they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
     ),
   ],
-  greeting: "Hi {purchaserFirstName},",
-  detailLineScheduled: stringToPortableTextBlocks(
-    "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay}, when they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
-  ),
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine: stringToPortableTextBlocks(
@@ -763,9 +720,7 @@ export interface EmailGiftClaimContent {
   subjectFirstSend: string;
   previewFirstSend: string;
   heroLineFirstSend: string;
-  body?: EmailRichText;
-  greeting?: string;
-  bodyFirstSend?: EmailRichText;
+  body: EmailRichText;
   giftMessageLabel: string;
   claimButtonLabel: string;
   claimUrlHelper: EmailRichText;
@@ -783,10 +738,6 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
       "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, tap the link below to begin. A short welcome opens first, then a form so I know what to read for you: your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
     ),
   ],
-  greeting: "Hi {recipientName},",
-  bodyFirstSend: stringToPortableTextBlocks(
-    "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, tap the link below to begin. A short welcome opens first, then a form so I know what to read for you: your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
-  ),
   giftMessageLabel: "A note from {purchaserFirstName}",
   claimButtonLabel: "Open your gift",
   claimUrlHelper: stringToPortableTextBlocks(
@@ -839,13 +790,9 @@ export interface EmailPrivacyExportContent {
   subject: string;
   preview: string;
   heroLine: string;
-  bodyIntro?: EmailRichText;
-  bodyPostButton?: EmailRichText;
-  greeting?: string;
-  introLine?: EmailRichText;
-  contentsLine?: EmailRichText;
+  bodyIntro: EmailRichText;
+  bodyPostButton: EmailRichText;
   ctaLabel: string;
-  expiryLine?: EmailRichText;
   signOff: string | null;
 }
 
@@ -863,15 +810,7 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   bodyPostButton: stringToPortableTextBlocks(
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
   ),
-  greeting: "Hi,",
-  introLine: stringToPortableTextBlocks("Your Josephine data export is ready."),
-  contentsLine: stringToPortableTextBlocks(
-    "It contains the data we hold for your {submissionCount} reading(s): intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
-  ),
   ctaLabel: "Download your export (ZIP)",
-  expiryLine: stringToPortableTextBlocks(
-    "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
-  ),
   signOff: null,
 };
 

@@ -9,7 +9,7 @@ import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
 import { LibraryButton } from "./LibraryButton";
-import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
+import { PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type GiftPurchaseConfirmationSelfSendVars = {
   purchaserFirstName: string;
@@ -40,7 +40,6 @@ export function GiftPurchaseConfirmationSelfSend({
   };
   const copy = applyTokens(rawCopy, tokens);
   const price = vars.amountPaidDisplay ?? vars.readingPriceDisplay;
-  const useFoldedBody = hasBodyContent(copy.body);
 
   return (
     <EmailShell preview={copy.preview} bareContainer>
@@ -56,16 +55,7 @@ export function GiftPurchaseConfirmationSelfSend({
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {useFoldedBody ? (
-            <PortableTextBody value={copy.body} />
-          ) : (
-            <>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.detailLineSelfSend} />
-              </p>
-            </>
-          )}
+          <PortableTextBody value={copy.body} />
         </Section>
 
         <div style={{ padding: "0 48px 8px 48px", textAlign: "center" }}>

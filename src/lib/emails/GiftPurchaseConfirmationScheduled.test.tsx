@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS } from "@/data/defaults";
 
 import { GiftPurchaseConfirmationScheduled } from "./GiftPurchaseConfirmationScheduled";
-import { stringToPortableTextBlocks } from "./PortableTextBody";
 import { visibleText } from "./test-helpers";
 
 const VARS = {
@@ -77,26 +76,6 @@ describe("GiftPurchaseConfirmationScheduled", () => {
       ),
     );
     expect(text).toContain("Thank you for gifting a Soul Blueprint");
-  });
-
-  it("falls back to legacy detailLineScheduled when body is empty", async () => {
-    const text = visibleText(
-      await render(
-        <GiftPurchaseConfirmationScheduled
-          vars={VARS}
-          copy={{
-            ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
-            body: undefined,
-            greeting: "Hi Alice,",
-            detailLineScheduled: stringToPortableTextBlocks(
-              "Legacy fallback for {recipientName} on {sendAtDisplay}.",
-            ),
-          }}
-        />,
-      ),
-    );
-    expect(text).toContain("Hi Alice,");
-    expect(text).toContain("Legacy fallback for Bob on Tuesday, May 19 at 9:00 AM");
   });
 
   it("renders the secondary library button when libraryUrl is provided", async () => {

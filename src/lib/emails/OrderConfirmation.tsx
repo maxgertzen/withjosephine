@@ -9,7 +9,7 @@ import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
 import { LibraryButton } from "./LibraryButton";
-import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
+import { PortableTextBody } from "./PortableTextBody";
 
 export type OrderConfirmationVars = {
   firstName: string;
@@ -28,7 +28,6 @@ export type OrderConfirmationProps = {
 export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: OrderConfirmationProps) {
   const copy = applyTokens(rawCopy, vars);
   const price = vars.amountPaidDisplay ?? vars.readingPriceDisplay;
-  const useFoldedBody = hasBodyContent(copy.body);
 
   return (
     <EmailShell preview={copy.preview} bareContainer>
@@ -44,22 +43,7 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {useFoldedBody ? (
-            <PortableTextBody value={copy.body} />
-          ) : (
-            <>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.thanksLine} />
-              </p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.timelineLine} />
-              </p>
-              <p style={{ margin: "0 0 32px 0" }}>
-                <PortableTextInline value={copy.contactLine} />
-              </p>
-            </>
-          )}
+          <PortableTextBody value={copy.body} />
         </Section>
 
         <div style={{ padding: "0 48px" }}>

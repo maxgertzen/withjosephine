@@ -615,7 +615,6 @@ export async function sendMagicLink(args: {
       preview={copy.preview}
       heroLine={copy.heroLine}
       buttonLabel={copy.buttonLabel}
-      greeting={copy.greeting}
       body={copy.body}
       shell={shell}
     />,

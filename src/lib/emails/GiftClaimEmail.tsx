@@ -8,7 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
-import { hasBodyContent, PortableTextBody, PortableTextInline } from "./PortableTextBody";
+import { PortableTextBody, PortableTextInline } from "./PortableTextBody";
 
 export type GiftClaimEmailVars = {
   recipientName: string;
@@ -27,7 +27,6 @@ export type GiftClaimEmailProps = {
 
 export function GiftClaimEmail({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: GiftClaimEmailProps) {
   const copy = applyTokens(rawCopy, vars);
-  const useFoldedBody = hasBodyContent(copy.body);
 
   return (
     <EmailShell preview={copy.previewFirstSend} bareContainer>
@@ -43,16 +42,7 @@ export function GiftClaimEmail({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {useFoldedBody ? (
-            <PortableTextBody value={copy.body} />
-          ) : (
-            <>
-              <p style={{ margin: "0 0 18px 0" }}>{copy.greeting}</p>
-              <p style={{ margin: "0 0 18px 0" }}>
-                <PortableTextInline value={copy.bodyFirstSend} />
-              </p>
-            </>
-          )}
+          <PortableTextBody value={copy.body} />
         </Section>
 
         {vars.giftMessage ? (

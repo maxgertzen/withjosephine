@@ -14,7 +14,6 @@ export type MagicLinkProps = {
   preview: string;
   heroLine: string;
   buttonLabel: string;
-  greeting?: string | null;
   body: EmailRichText;
   shell?: EmailSharedShellContent;
 };
@@ -24,7 +23,6 @@ export function MagicLink({
   preview,
   heroLine,
   buttonLabel,
-  greeting,
   body,
   shell = EMAIL_SHARED_SHELL_DEFAULTS,
 }: MagicLinkProps) {
@@ -42,7 +40,6 @@ export function MagicLink({
           className="font-sans text-body"
           style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
         >
-          {greeting ? <p style={{ margin: "0 0 18px 0" }}>{greeting}</p> : null}
           <PortableTextBody value={body} />
         </Section>
 
