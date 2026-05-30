@@ -42,7 +42,7 @@ test.describe("/my-gifts surfaces purchased gifts (B-11) — mock mode", () => {
     await page.getByRole("button", { name: /(send|schedule|gift)/i }).first().click();
     await page.waitForURL(/\/thank-you\//, { timeout: 30_000 });
 
-    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: purchaserEmail, next: "/my-readings" });
 
     await expect(page.getByText(recipientName)).toBeVisible();
   });

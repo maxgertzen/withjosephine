@@ -91,11 +91,11 @@ test.describe("Cross-purchaser gift isolation — mock mode", () => {
     });
 
     const unauthRes = await request.post(
-      `/api/gifts/${aGift1Id}/cancel-scheduled`,
+      `/api/gifts/${aGift1Id}/cancel-auto-send`,
     );
     expect(unauthRes.status()).toBe(401);
 
-    await signInViaMagicLink(page, { email: B_EMAIL, next: "/my-gifts" });
+    await signInViaMagicLink(page, { email: B_EMAIL, next: "/my-readings" });
 
     await expect(page.getByText(B_RECIPIENT)).toBeVisible();
     await expect(page.getByText(A_RECIPIENT_1)).toHaveCount(0);
@@ -105,7 +105,7 @@ test.describe("Cross-purchaser gift isolation — mock mode", () => {
     // unknown-id and cross-user to the same shape so an attacker cannot
     // enumerate gift IDs by status code. Flipping this to 403 is a regression.
     const crossUserRes = await page.context().request.post(
-      `/api/gifts/${aGift1Id}/cancel-scheduled`,
+      `/api/gifts/${aGift1Id}/cancel-auto-send`,
     );
     expect(crossUserRes.status()).toBe(404);
   });
