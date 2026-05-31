@@ -94,7 +94,7 @@ function redactRecipient(to: string | string[]) {
   return Array.isArray(to) ? to.map(redactEmail).join(",") : redactEmail(to);
 }
 
-type SkipReason = "sandbox_prefix" | "flag" | "header";
+type SkipReason = "sandbox_prefix" | "env_guard" | "flag" | "header";
 
 async function resolveSkipReason(
   recipients: readonly string[],
@@ -103,9 +103,40 @@ async function resolveSkipReason(
   if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
     return "sandbox_prefix";
   }
+  if (!isProductionEnv()) {
+    const allAllowed = recipients.every(isProductionAllowlistedRecipient);
+    if (!allAllowed) {
+      console.warn(
+        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add the prefix to SANDBOX_EMAIL_PREFIXES for test specs, or set ALLOWED_PREVIEW_RECIPIENTS for one-off previews.`,
+      );
+      return "env_guard";
+    }
+  }
   if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
   if (await shouldDryRunFromRequestHeader()) return "header";
   return null;
+}
+
+function isProductionEnv(): boolean {
+  return process.env.NEXT_PUBLIC_SANITY_DATASET === "production";
+}
+
+const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
+  "hello@withjosephine.com",
+  "maxgertzen@gmail.com",
+];
+
+export function isProductionAllowlistedRecipient(
+  addr: string | null | undefined,
+): boolean {
+  if (!addr) return false;
+  const lower = addr.toLowerCase().trim();
+  if (PRODUCTION_RECIPIENT_ALLOWLIST.includes(lower)) return true;
+  const withoutPlus = lower.replace(/\+[^@]*(?=@)/, "");
+  if (PRODUCTION_RECIPIENT_ALLOWLIST.includes(withoutPlus)) return true;
+  const notif = process.env.NOTIFICATION_EMAIL?.toLowerCase().trim();
+  if (notif && notif === lower) return true;
+  return false;
 }
 
 // Fail-closed: header present + worker secret unset → skip the send.
