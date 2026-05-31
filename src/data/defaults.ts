@@ -1,6 +1,7 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
 import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
+import type { SanityNotFoundPage, SanityUnderConstructionPage } from "@/lib/sanity/types";
 
 export type EmailRichText = PortableTextBlock[];
 
@@ -467,6 +468,21 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
   restedBody:
     "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one; it’ll arrive in a moment.",
   restedCtaLabel: "Send me a fresh link",
+};
+
+export const NOT_FOUND_PAGE_DEFAULTS: SanityNotFoundPage = {
+  tag: "✦ Lost in the Stars",
+  heading: "This page doesn’t exist",
+  description: "The path you followed leads nowhere - but the one home is always clear.",
+  buttonText: "Return Home",
+};
+
+export const UNDER_CONSTRUCTION_PAGE_DEFAULTS: SanityUnderConstructionPage = {
+  tag: "✦ Something Beautiful is Coming",
+  heading: "Josephine",
+  description: "Coming soon - a space for soul readings, birth charts, and Akashic records.",
+  imageAlt: "Mystical gathering around a pyramid of light",
+  contactText: "In the meantime, reach out at",
 };
 
 export interface EmailMagicLinkContent {
