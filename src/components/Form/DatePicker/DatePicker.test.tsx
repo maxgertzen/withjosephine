@@ -113,4 +113,24 @@ describe("DatePicker", () => {
     );
     expect(screen.queryByTestId("dob-age-warning")).toBeNull();
   });
+
+  describe("Radix Select integration (post 50dqawuf)", () => {
+    it("renders Month + Year dropdowns as Radix Select comboboxes when the popover opens", async () => {
+      render(
+        <DatePicker
+          id="birthDate"
+          name="birthDate"
+          label="Birth date"
+          value="1992-04-21"
+          onChange={vi.fn()}
+        />,
+      );
+      fireEvent.focus(screen.getByLabelText(/Birth date/));
+
+      // react-day-picker labels its dropdowns Month / Year; the custom
+      // adapter forwards those to BrandSelect's ariaLabel.
+      expect(await screen.findByRole("combobox", { name: "Month" })).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Year" })).toBeInTheDocument();
+    });
+  });
 });
