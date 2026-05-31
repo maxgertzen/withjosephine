@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { TimePicker } from "./TimePicker";
@@ -138,5 +139,65 @@ describe("TimePicker", () => {
     );
     fireEvent.click(screen.getByLabelText(/I don't know my birth time/));
     expect(onToggle).toHaveBeenCalledWith(true);
+  });
+
+  describe("Radix Select integration (post 50dqawuf)", () => {
+    it("opens the popover on focus and shows Hour + Minute Select triggers", async () => {
+      render(
+        <TimePicker
+          id="birthTime"
+          name="birthTime"
+          label="Birth time"
+          value=""
+          onChange={vi.fn()}
+        />,
+      );
+      const input = screen.getByLabelText(/Birth time/);
+      fireEvent.focus(input);
+
+      expect(await screen.findByRole("combobox", { name: "Hour" })).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Minute" })).toBeInTheDocument();
+    });
+
+    it("commits a value when the user picks an hour via click", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TimePicker
+          id="birthTime"
+          name="birthTime"
+          label="Birth time"
+          value=""
+          onChange={onChange}
+        />,
+      );
+      fireEvent.focus(screen.getByLabelText(/Birth time/));
+
+      await user.click(await screen.findByRole("combobox", { name: "Hour" }));
+      // Pick "14" from the listbox.
+      await user.click(await screen.findByRole("option", { name: "14" }));
+
+      expect(onChange).toHaveBeenCalledWith("14:00");
+    });
+
+    it("preserves existing minute when only hour changes", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TimePicker
+          id="birthTime"
+          name="birthTime"
+          label="Birth time"
+          value="09:30"
+          onChange={onChange}
+        />,
+      );
+      fireEvent.focus(screen.getByLabelText(/Birth time/));
+
+      await user.click(await screen.findByRole("combobox", { name: "Hour" }));
+      await user.click(await screen.findByRole("option", { name: "11" }));
+
+      expect(onChange).toHaveBeenCalledWith("11:30");
+    });
   });
 });
