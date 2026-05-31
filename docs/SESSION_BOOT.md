@@ -24,8 +24,16 @@
 
 **🚨 Max-actions still owed:**
 
-1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Walk the 9 journeys in `docs/MANUAL_SMOKE_TEST.md`. Folds in the v1.4.0 + v1.5.0 carry-overs since those surfaces are unchanged. Specifically watch: brand Radix Select in DatePicker/TimePicker/DateTimePicker on real mobile (375px iOS scroll-snap behavior in popovers); the new 404 + under-construction pages (now Sanity-editable in prod); GiftStatusPill rendering on `/my-readings` (hydration warning should be gone); scheduled-gift OC email subject + body shows the new preview phrase.
+1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Walk the now-extended journeys in `docs/MANUAL_SMOKE_TEST.md` (J1-J14: J13 covers v1.4.0 carry-overs, J14 covers v1.6.0). Specifically watch: brand Radix Select in DatePicker/TimePicker/DateTimePicker on real mobile (375px iOS scroll-snap behavior in popovers); the new 404 + under-construction pages (now Sanity-editable in prod); GiftStatusPill rendering on `/my-readings` (hydration warning should be gone); scheduled-gift OC email subject + body shows the new preview phrase.
 2. After smoke green: delete `release/v1.4.0`, `release/v1.5.0`, `release/v1.6.0` (local + remote). Tags preserve every SHA.
+
+**✅ Hold-gate item closed 2026-05-31: `u0lgsw47` (recipient_user_id corruption data repair).**
+
+Operator dry-runs of `scripts/repair-recipient-user-id.mts` (Sub-PR D, already shipped code) executed against both datasets:
+- **Production: 0 corrupted rows detected.** The bb5fe157 vector never reached production.
+- **Staging: 2 ambiguous-skip rows** (pre-claim `gift_claimed_at is null` test-data residue from prior smoke walks — gifts `81ea25b7` + `b82267d4`). Correctly NOT auto-repaired; they fold into `wc4rzud9` pre-prod cleanup.
+
+PR #170 instrumentation (`[gift-redeem.gate]` + `[gift-redeem.claim]` log lines with redacted hashed payloads) remains live to catch any future occurrence. Sub-PR B `rncenffc` (CheckEmailCard polish) also closed as deferred-indefinitely (no field-test surfacing per `project_recipient_user_id_corruption_mode` memory).
 
 **Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity test rows).
