@@ -132,8 +132,17 @@ export function Hero({ content, className }: HeroProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.8 }}
+        role="button"
+        tabIndex={0}
+        aria-label="Scroll to readings"
         onClick={handleScrollToReadings}
-        className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleScrollToReadings();
+          }
+        }}
+        className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         <div
           className="h-[50px] w-px"
