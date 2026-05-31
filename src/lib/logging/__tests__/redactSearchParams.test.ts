@@ -63,10 +63,30 @@ describe("redactSearchParams", () => {
     expect(out).not.toContain("t=b");
   });
 
-  it("preserves the URL fragment", () => {
+  it("preserves a plain fragment (no sensitive params in hash)", () => {
     const out = redactSearchParams("https://example.com/p?t=x#frag", ["t"]);
     expect(out).toContain("#frag");
     expect(out).toContain("t=%5BREDACTED%5D");
+  });
+
+  it("redacts sensitive params landing in the URL fragment", () => {
+    const out = redactSearchParams("https://example.com/p#t=secret&keep=ok", ["t"]);
+    expect(out).toContain("t=%5BREDACTED%5D");
+    expect(out).toContain("keep=ok");
+    expect(out).not.toContain("secret");
+  });
+
+  it("redacts sensitive params in BOTH query and fragment", () => {
+    const out = redactSearchParams("https://example.com/p?t=q-secret#t=f-secret", ["t"]);
+    const matches = out.match(/%5BREDACTED%5D/g) ?? [];
+    expect(matches.length).toBe(2);
+    expect(out).not.toContain("q-secret");
+    expect(out).not.toContain("f-secret");
+  });
+
+  it("is a no-op on a fragment with no sensitive param", () => {
+    const input = "https://example.com/p#section-2";
+    expect(redactSearchParams(input, ["t"])).toBe(input);
   });
 
   it("redacts library one-tap tokens on /my-readings/welcome (Phase 2)", () => {

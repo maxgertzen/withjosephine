@@ -21,22 +21,32 @@ vi.mock("@/lib/auth/libraryTokenRedemptions", () => ({
 vi.mock("@/lib/auth/requestAudit", () => ({
   getRequestAuditContext: vi.fn().mockResolvedValue({ ipHash: "ip-h", userAgentHash: "ua-h" }),
 }));
+vi.mock("@/lib/auth/users", () => ({
+  findUserById: vi.fn(),
+}));
 
 import { verifyLibraryToken } from "@/lib/auth/libraryToken";
 import { recordLibraryTokenRedemption } from "@/lib/auth/libraryTokenRedemptions";
 import { createListenSessionForUser, writeAudit } from "@/lib/auth/listenSession";
+import { findUserById } from "@/lib/auth/users";
 
 const verifyMock = vi.mocked(verifyLibraryToken);
 const recordMock = vi.mocked(recordLibraryTokenRedemption);
 const sessionMock = vi.mocked(createListenSessionForUser);
 const auditMock = vi.mocked(writeAudit);
+const findUserMock = vi.mocked(findUserById);
 
 beforeEach(() => {
   verifyMock.mockReset();
   recordMock.mockReset();
   sessionMock.mockReset();
   auditMock.mockReset();
+  findUserMock.mockReset();
 });
+
+function mockUserExists(id = "user_1") {
+  findUserMock.mockResolvedValue({ id, email: "ada@example.com" });
+}
 
 function form(values: Record<string, string>): Request {
   const body = new URLSearchParams(values).toString();
@@ -61,6 +71,7 @@ describe("POST /api/library/redeem", () => {
       mintSource: "order_confirmation",
       expMs: Date.now() + 365 * 24 * 60 * 60 * 1000,
     });
+    mockUserExists("user_1");
     recordMock.mockResolvedValue({ ok: true });
     sessionMock.mockResolvedValue({
       sessionId: "sess_1",
@@ -107,6 +118,7 @@ describe("POST /api/library/redeem", () => {
       mintSource: "order_confirmation",
       expMs: Date.now() + 365 * 24 * 60 * 60 * 1000,
     });
+    mockUserExists("user_1");
     recordMock.mockResolvedValue({ ok: false, reason: "already_redeemed" });
 
     const response = await invoke(form({ t: "valid.token" }));
@@ -139,5 +151,46 @@ describe("POST /api/library/redeem", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("set-cookie")).toBeNull();
     expect(recordMock).not.toHaveBeenCalled();
+  });
+
+  it("valid token but user_id has been deleted: 303 fallback, no session created", async () => {
+    verifyMock.mockResolvedValue({
+      valid: true,
+      userId: "user_deleted",
+      jti: "jti-abc",
+      mintSource: "order_confirmation",
+      expMs: Date.now() + 365 * 24 * 60 * 60 * 1000,
+    });
+    findUserMock.mockResolvedValue(null);
+
+    const response = await invoke(form({ t: "valid.token.for.deleted.user" }));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings");
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(recordMock).not.toHaveBeenCalled();
+    expect(sessionMock).not.toHaveBeenCalled();
+    expect(auditMock).not.toHaveBeenCalled();
+  });
+
+  it("success response sets Clear-Site-Data: cache to break bfcache snapshot", async () => {
+    verifyMock.mockResolvedValue({
+      valid: true,
+      userId: "user_1",
+      jti: "jti-abc",
+      mintSource: "order_confirmation",
+      expMs: Date.now() + 365 * 24 * 60 * 60 * 1000,
+    });
+    mockUserExists("user_1");
+    recordMock.mockResolvedValue({ ok: true });
+    sessionMock.mockResolvedValue({
+      sessionId: "sess_1",
+      cookieValue: "raw-cookie-value",
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const response = await invoke(form({ t: "valid.token" }));
+
+    expect(response.headers.get("clear-site-data")).toBe('"cache"');
   });
 });
