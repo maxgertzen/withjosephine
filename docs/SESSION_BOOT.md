@@ -20,12 +20,22 @@
 - **`693cd81`** — enable CI + auto-deploy-staging on `release/v1.6.0` (mirrors v1.5.0 pattern).
 - **`1bedb95`** — extend `pull_request.branches` so PR-to-release/* fires lint/typecheck/test/storybook (the previous config only fired on PR-to-main; release-branch sub-PRs had no CI gate until merged).
 
+**Late-arc additions (squash-merged 2026-05-31 PM):**
+- **#238 (`zkib97ns`, squash `6ff253a`)** — Refine scheduled-gift preview copy. `preview-fixtures.ts` `myGiftsUrl` moved from `/my-gifts` (308-redirected) to `/my-readings`. New set-if-matches Sanity migration `scripts/migrate-gift-purchase-confirmation-scheduled-preview-2026-05-31.ts` swaps Becky's "You don't need to do anything else." prod text for the code-default phrasing IF it still matches the misaligned phrase. 2 email-shell snapshots regenerated.
+- **#239 (picker-select integration tests, squash `96b2a7e`)** — 3 TimePicker + 1 DatePicker test covering the new Radix Select primitive inside the picker popovers. Locks the ARIA contract via `byRole("combobox", { name: "Hour" / "Minute" / "Month" / "Year" })` queries — any future picker refactor that breaks the Select integration fails these jsdom tests before reaching CI Playwright.
+
+**Late-arc decisions:**
+- **`61lzvbjt` a11y audit on pickers — closed by inspection** during v1.6.0. Pickers + Select have correct ARIA (`role=combobox` + `aria-haspopup=dialog` + `aria-controls` + `aria-expanded` on inputs; Radix Select provides listbox/option roles; ItemIndicator Check icon `aria-hidden`). #239's tests lock the contract.
+- **Multi-line `//` block detection in commentNarration scanner — deferred to a separate session.** The strict spec threshold (>4 lines) hits 33 pre-existing sites, predominantly load-bearing protocol comments in middleware / auth routes / instrumentation. Triaging each (trim vs allowlist vs grandfather marker) is a content-review session in its own right; shipping with the check active now would block CI on unrelated code. Re-engage by either bumping the threshold to 10+ (catches only the most egregious — middleware.ts has 19-20 line blocks; gift-redeem has 8; flip-to-scheduled has 7) OR adding a `// scanner: ignore-block` marker convention and applying to each existing site.
+- **e2e-sandbox manually triggered on `release/v1.6.0`** via `workflow_dispatch` 2026-05-31 — PASS. None of the v1.6.0 sub-PRs touched paths in the workflow's path filter, so the auto-fire didn't catch them; the manual run confirmed the suite stays green against staging on the cumulative release diff.
+
 **🚨 Max-actions before `release/v1.6.0 → main` merge:**
 1. **Cumulative `/simplify` 3-vantage pass** on the `release/v1.6.0 → main` diff per `feedback_simplify_scale_to_change_size`. Findings landed in a single commit on `release/v1.6.0` before the merge PR opens.
 2. **Open `release/v1.6.0 → main` PR**. The full Playwright matrix + content-contract fires (PR-to-main triggers).
 3. **`pnpm tsx scripts/seed-customer-emails-and-pages.mts staging && … production`** (PR #231 — creates the notFoundPage + underConstructionPage singletons; idempotent for the 17 already-seeded).
 4. **`pnpm tsx scripts/repair-theme-color-shape-2026-05-31.ts staging && … production`** (PR #232 — repairs nested-hex blush/ivory/rose in the theme doc).
-5. **Studio re-deploy** via `pnpm studio:deploy` so Becky sees any schema changes from this arc (Select primitive doesn't touch Studio, but the seed script + theme repair both end with Studio reflecting the cleaner state).
+5. **`pnpm tsx scripts/migrate-gift-purchase-confirmation-scheduled-preview-2026-05-31.ts staging && … production`** (PR #238 — refines Becky's misaligned preview text; only acts if Becky's current text still matches the known misaligned phrase).
+6. **Studio re-deploy** via `pnpm studio:deploy` so Becky sees any schema changes from this arc.
 
 **Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
 - `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity test rows).
