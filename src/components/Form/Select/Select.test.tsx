@@ -5,42 +5,68 @@ import { describe, expect, it, vi } from "vitest";
 import { Select } from "./Select";
 
 const OPTIONS = [
-  { value: "morning", label: "Morning" },
-  { value: "evening", label: "Evening" },
+  { value: "01", label: "01" },
+  { value: "02", label: "02" },
+  { value: "03", label: "03" },
 ];
 
 describe("Select", () => {
-  it("renders all options plus the placeholder", () => {
+  it("renders trigger with placeholder when value is empty", () => {
     render(
       <Select
-        id="time"
-        name="time"
-        label="Best time"
+        ariaLabel="Hour"
+        placeholder="HH"
         value=""
-        onChange={vi.fn()}
+        onValueChange={() => {}}
         options={OPTIONS}
       />,
     );
-    const dropdown = screen.getByLabelText(/Best time/);
-    expect(dropdown).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Morning" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Evening" })).toBeInTheDocument();
+    const trigger = screen.getByRole("combobox", { name: "Hour" });
+    expect(trigger).toHaveTextContent("HH");
   });
 
-  it("emits onChange with the selected value", async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
+  it("renders trigger with current value label when set", () => {
     render(
       <Select
-        id="time"
-        name="time"
-        label="Best time"
-        value=""
-        onChange={onChange}
+        ariaLabel="Hour"
+        placeholder="HH"
+        value="02"
+        onValueChange={() => {}}
         options={OPTIONS}
       />,
     );
-    await user.selectOptions(screen.getByLabelText(/Best time/), "evening");
-    expect(onChange).toHaveBeenCalledWith("evening");
+    expect(screen.getByRole("combobox", { name: "Hour" })).toHaveTextContent("02");
+  });
+
+  it("fires onValueChange when an option is picked via keyboard", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <Select
+        ariaLabel="Hour"
+        placeholder="HH"
+        value=""
+        onValueChange={onValueChange}
+        options={OPTIONS}
+      />,
+    );
+    await user.click(screen.getByRole("combobox", { name: "Hour" }));
+    // Radix Select renders an aria-label on items via ItemText; pick by text.
+    await user.click(await screen.findByText("02"));
+    expect(onValueChange).toHaveBeenCalledWith("02");
+  });
+
+  it("respects disabled state", () => {
+    render(
+      <Select
+        ariaLabel="Hour"
+        placeholder="HH"
+        value=""
+        onValueChange={() => {}}
+        options={OPTIONS}
+        disabled
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Hour" })).toBeDisabled();
   });
 });

@@ -2,14 +2,15 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { differenceInYears, format, isValid, parse } from "date-fns";
-import { useId, useRef, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import { type ChangeEvent, useId, useRef, useState } from "react";
+import { DayPicker, type DropdownProps } from "react-day-picker";
 
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { Select, type SelectOption } from "@/components/Form/Select";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 
@@ -64,8 +65,34 @@ export function DatePicker({
 }: DatePickerProps) {
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<string | null>(null);
+
+  const dayPickerComponents = {
+    Dropdown: (props: DropdownProps) => {
+      const { value, onChange, options, "aria-label": ariaLabel } = props;
+      const stringValue = value !== undefined ? String(value) : "";
+      const selectOptions: ReadonlyArray<SelectOption> =
+        options?.map((o) => ({ value: String(o.value), label: o.label })) ?? [];
+      return (
+        <Select
+          ariaLabel={ariaLabel ?? "Choose"}
+          value={stringValue}
+          onValueChange={(next) => {
+            if (!onChange) return;
+            const synthetic = {
+              target: { value: next },
+              currentTarget: { value: next },
+            } as unknown as ChangeEvent<HTMLSelectElement>;
+            onChange(synthetic);
+          }}
+          options={selectOptions}
+          portalContainer={contentNode}
+        />
+      );
+    },
+  };
 
   const draft =
     manualDraft !== null
@@ -171,6 +198,7 @@ export function DatePicker({
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
+            ref={setContentNode}
             id={popoverId}
             side="bottom"
             align="start"
@@ -194,6 +222,7 @@ export function DatePicker({
               showOutsideDays
               labels={DAY_PICKER_LABELS}
               classNames={DAY_PICKER_BASE_CLASSES}
+              components={dayPickerComponents}
             />
           </Popover.Content>
         </Popover.Portal>

@@ -4,6 +4,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState } from "react";
 
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { Select, type SelectOption } from "@/components/Form/Select";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -36,6 +37,9 @@ function pad(n: number): string {
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
 const MINUTES = Array.from({ length: 12 }, (_, i) => pad(i * 5));
 
+const HOUR_OPTIONS: ReadonlyArray<SelectOption> = HOURS.map((h) => ({ value: h, label: h }));
+const MINUTE_OPTIONS: ReadonlyArray<SelectOption> = MINUTES.map((m) => ({ value: m, label: m }));
+
 function autoformatTime(text: string): string {
   const digits = text.replace(/\D/g, "").slice(0, 4);
   if (digits.length <= 2) return digits;
@@ -58,6 +62,7 @@ export function TimePicker({
 }: TimePickerProps) {
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -126,6 +131,7 @@ export function TimePicker({
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
+            ref={setContentNode}
             id={popoverId}
             side="bottom"
             align="start"
@@ -141,39 +147,25 @@ export function TimePicker({
               Hour and minute
             </p>
             <div className="flex items-center justify-center gap-2">
-              <select
-                aria-label="Hour"
+              <Select
+                ariaLabel="Hour"
+                placeholder="HH"
                 value={hh}
-                onChange={(event) => commit(event.target.value, mm || "00")}
-                className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
-              >
-                <option value="" disabled>
-                  HH
-                </option>
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(next) => commit(next, mm || "00")}
+                options={HOUR_OPTIONS}
+                portalContainer={contentNode}
+              />
               <span aria-hidden="true" className="font-display italic text-j-text-heading">
                 :
               </span>
-              <select
-                aria-label="Minute"
+              <Select
+                ariaLabel="Minute"
+                placeholder="MM"
                 value={mm}
-                onChange={(event) => commit(hh || "00", event.target.value)}
-                className="font-body text-base bg-j-cream border border-j-border-subtle rounded-sm px-3 py-2 text-j-text-heading focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
-              >
-                <option value="" disabled>
-                  MM
-                </option>
-                {MINUTES.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(next) => commit(hh || "00", next)}
+                options={MINUTE_OPTIONS}
+                portalContainer={contentNode}
+              />
             </div>
             <button
               type="button"
