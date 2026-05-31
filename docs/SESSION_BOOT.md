@@ -1,6 +1,18 @@
 # Session Boot — Active State
 
-## ✅ 2026-05-31 — release/v1.5.0 READY FOR MAIN MERGE (9 commits, mc6p8m8t full sweep + simplify polish)
+## ✅ 2026-05-31 — v1.5.0 SHIPPED + tagged + Studio deployed (PR #227 squash `a72cf2f`)
+
+`release/v1.5.0 → main` merged at `a72cf2f`. Tag `v1.5.0` annotated + pushed against the merge commit. `ALLOWED_PREVIEW_RECIPIENTS` had already been provisioned on both staging and production workers pre-merge (Max). Studio re-deployed via `pnpm studio:deploy` post-merge — schema deploy 2/2 workspaces, build clean (~11s). The "Send preview to inbox…" doc action, `EnvelopeIcon` Presentation entries on 12 email singletons, and `tokenReferenceField` banner on `listenPage`/`giftIntakePage`/`thankYouPage` are now live for Becky at https://withjosephine.sanity.studio/. The workspace auth-divergence warning still fires (dex `vw4zmbp5`, non-blocking).
+
+**Bookkeeping commit `5751451` on the release branch (rolled into the squash):** closed the `kqb7jntj` subtree — Phase 3 scheduling PR-D + PR-E shipped in v1.1.0 via PRs #148 + #150 (commits `4bff524` + `4edad74`) but were never marked complete after dex bootstrap on 2026-05-23. 7 tasks closed (`kqb7jntj`, `kimf70kl` + 4 children, `dqikjshw`). Note for the historical record: PR-D's cancel-scheduled route + control + tests were later removed by Phase 4 / PR #214 when destructive cancel-scheduled was retired, but the original work did ship.
+
+**🚨 Max-actions still owed (post-merge):**
+
+1. **Real-browser smoke per `feedback_real_browser_smoke_before_ship_claim`** — folded into `docs/MANUAL_SMOKE_TEST.md` as a new v1.5.0 journey. Covers Studio Send-preview round-trip, magic-link `{firstName}`/`{readingName}` substitution, privacy-export `{firstName}` substitution.
+2. **Carry-over from v1.4.0** — real-browser smoke against deployed v1.4.0 changes (day-7 delivery, library magic-link, new-device notice). Folds into the v1.5.0 smoke walk since those surfaces are unchanged in v1.5.0.
+3. **Branch cleanup post-smoke:** `git push origin --delete release/v1.4.0 release/v1.5.0` after smoke completes. Both fully contained in main; tags preserve every SHA.
+
+## ✅ 2026-05-31 — release/v1.5.0 READY FOR MAIN MERGE (9 commits, mc6p8m8t full sweep + simplify polish) [SHIPPED — see section above]
 
 Closed the Phase 7 Studio/email epic `mc6p8m8t` end-to-end in one session. Six sub-PRs merged into `release/v1.5.0` in order (#221, #222, #223, #225, #226, #224) plus 2 CI-config bookkeeping commits and the cumulative `/simplify` polish commit. All 7 release-branch CI runs green. `ath44ovq` closed in dex (Studio deploy was satisfied by v1.3.0 + 2026-05-30 redeploys).
 
@@ -28,20 +40,20 @@ Closed the Phase 7 Studio/email epic `mc6p8m8t` end-to-end in one session. Six s
 - studio build: clean (~11s) ✅
 - 7/7 release-branch CI runs green across the arc
 
-**🚨 Max-actions before `release/v1.5.0 → main` merge:**
-1. **Set `ALLOWED_PREVIEW_RECIPIENTS` worker secret** on staging + prod:
+**Max-actions before `release/v1.5.0 → main` merge — ✅ ALL DONE:**
+1. ✅ **Set `ALLOWED_PREVIEW_RECIPIENTS` worker secret** on staging + prod:
    ```sh
    pnpm exec wrangler secret put ALLOWED_PREVIEW_RECIPIENTS --env staging
    # value: hello@withjosephine.com,maxgertzen+withjosephine-preview@gmail.com
    pnpm exec wrangler secret put ALLOWED_PREVIEW_RECIPIENTS
    ```
    Verify the `maxgertzen` spelling (PR #226 body has the locked value). Without this set the new `/api/admin/send-email-preview` returns 503 and the Studio dialog shows "not configured" — fail-closed by design.
-2. **Open `release/v1.5.0 → main` PR**. CI will fire the full Playwright + vitest + build matrix.
+2. ✅ **Opened `release/v1.5.0 → main` PR #227**, squash-merged at `a72cf2f`.
 
-**🚨 Max-actions post-`main` merge:**
-3. **Re-deploy Studio** (`pnpm studio:deploy` from `studio/`) so Becky sees the new `EnvelopeIcon` entries in Presentation's "Used on" panel + the "Send preview to inbox…" doc action + the `tokenReferenceField` banner on `listenPage`/`giftIntakePage`/`thankYouPage`.
-4. **Real-browser smoke** per `feedback_real_browser_smoke_before_ship_claim`: open any email singleton in Studio, tap "Send preview to inbox…", confirm a test render lands in the allowlisted inbox with `[PREVIEW]` subject prefix. Trigger a magic-link sign-in for a user with a paid submission and verify `{firstName}`/`{readingName}` substitute (publish a Sanity edit using those tokens first for a positive case). Trigger a privacy export and verify the firstName substitution.
-5. **Tag `v1.5.0`** at the merge commit. Delete `release/v1.4.0` (still alive from prior arc) and `release/v1.5.0` after smoke completes.
+**Max-actions post-`main` merge:**
+3. ✅ **Re-deployed Studio** via `pnpm studio:deploy` 2026-05-31; both workspaces, 2/2 schemas.
+4. ⏳ **Real-browser smoke** per `feedback_real_browser_smoke_before_ship_claim` — see new v1.5.0 journey in `docs/MANUAL_SMOKE_TEST.md`.
+5. ✅ **Tagged `v1.5.0`** at `a72cf2f` and pushed. Branch cleanup of `release/v1.4.0` + `release/v1.5.0` deferred until smoke completes.
 
 **Carry-over from v1.4.0 (still open):** Real-browser smoke against the deployed v1.4.0 changes (day-7 delivery, library magic-link, new-device notice). Folds into the v1.5.0 smoke walk above since those surfaces are unchanged in v1.5.0.
 

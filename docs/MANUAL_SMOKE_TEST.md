@@ -337,6 +337,76 @@ Eyeball that the from-address is `Josephine <hello@withjosephine.com>` and the s
 
 ---
 
+## Journey 12 — v1.5.0 Studio editor surface (admin-side)
+
+Verifies the Phase 7 changes that shipped in v1.5.0 (PR #227, tag `v1.5.0`). All three sub-journeys are admin-side — no customer-facing flow change.
+
+### J12a — Send preview to inbox (Studio doc action)
+
+**As Becky (Studio):**
+1. Open https://withjosephine.sanity.studio/ → **Production** workspace → any customer email singleton (e.g. **Order Confirmation**).
+2. Open the document menu (⋮) at top right. Confirm **Send preview to inbox…** is listed.
+3. Tap it. Paste the admin token. The recipient dropdown should populate from the worker `ALLOWED_PREVIEW_RECIPIENTS` env var (`hello@withjosephine.com` + `maxgertzen+withjosephine-preview@gmail.com`).
+4. Pick a recipient → **Send preview**.
+
+**Expect:**
+- ✅ Toast confirms send.
+- ✅ Email arrives in the chosen inbox within ~1 minute, subject prefixed `[PREVIEW]`.
+- ✅ Body renders the **currently-published** Sanity copy (not draft).
+
+**Watch for:**
+- ❌ "Not configured" dialog → `ALLOWED_PREVIEW_RECIPIENTS` env var unset on the worker — flag.
+- ❌ Action label shows "Send preview… (publish first)" and is disabled → there's an unpublished draft; publish first then retry.
+- ❌ `[PREVIEW]` prefix missing → action wired wrong, flag.
+- ❌ Audit row not landing in `audit_events` (Admin tooling check) → flag.
+
+Repeat on at least 2 other email singletons (e.g. **Day-7 Delivery**, **Gift Claim**) to confirm the action is broadly available.
+
+### J12b — Magic-link customer-name tokens
+
+Requires a user with at least one **paid** submission in the target environment.
+
+**As customer:**
+1. Hit any magic-link sign-in entry point (e.g. `/listen/<id>`, `/my-readings` first visit, gift-claim flow).
+2. Enter the email of a user with a paid submission.
+
+**Expect:**
+- ✅ The Magic Link email subject + body substitute `{firstName}` to the user's actual first name (extracted from their most recent paid submission's responses).
+- ✅ If the Sanity-edited copy uses `{readingName}` or `{readingPriceDisplay}`, those substitute correctly too (publish a Sanity edit with those tokens first if you want a positive test).
+- ✅ For a brand-new email with **no** paid submission yet, the fallback "there" renders (not the literal `{firstName}` token).
+
+**Watch for:**
+- ❌ Literal `{firstName}` or `{readingName}` leaks into subject/body → token allowlist mismatch, flag.
+- ❌ Wrong name (someone else's) → repo helper picked the wrong row, flag.
+
+### J12c — Privacy export `{firstName}` substitution
+
+**As customer:**
+1. Trigger a GDPR Art. 20 privacy export from `/privacy/export` for an email tied to a paid submission.
+2. Wait for the export email.
+
+**Expect:**
+- ✅ Subject + body greeting substitute `{firstName}` to the user's actual first name.
+- ✅ ZIP attachment renders correctly (unchanged from prior smoke).
+
+**Watch for:**
+- ❌ Literal `{firstName}` leaks → allowlist mismatch in `emailPrivacyExport`, flag.
+
+### J12d — Studio "Used on" / Presentation entries (eyeball)
+
+**As Becky (Studio):**
+1. Open any of the 12 customer email singletons in the **Production** workspace.
+2. Use Presentation's "Used on" panel (envelope icon in the sidebar).
+
+**Expect:**
+- ✅ Each email singleton lists where it's referenced (via the `defineLocations` entries shipped in PR #223).
+- ✅ The `tokenReferenceField` banner is visible at the top of `listenPage`, `giftIntakePage`, and `thankYouPage` schemas (lists the available `{token}` placeholders Becky can use in copy).
+
+**Watch for:**
+- ❌ Token banner missing or empty → schema deploy didn't pick up the change, flag (and try `pnpm studio:deploy` again).
+
+---
+
 ## When done — hand off to the maintainer
 
 You ran the test. Cleanup is **not your job** — D1, Sanity, and R2 deletions are infra operations and a wrong click there can break staging for everyone.
