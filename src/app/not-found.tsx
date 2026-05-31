@@ -1,17 +1,10 @@
 import { Button } from "@/components/Button";
 import { Portal } from "@/components/Portal";
+import { NOT_FOUND_PAGE_DEFAULTS } from "@/data/defaults";
 import { fetchNotFoundPage } from "@/lib/sanity/fetch";
-import type { SanityNotFoundPage } from "@/lib/sanity/types";
-
-const DEFAULTS: SanityNotFoundPage = {
-  tag: "\u2726 Lost in the Stars",
-  heading: "This page doesn\u2019t exist",
-  description: "The path you followed leads nowhere \u2014 but the one home is always clear.",
-  buttonText: "Return Home",
-};
 
 export default async function NotFound() {
-  const content = (await fetchNotFoundPage()) ?? DEFAULTS;
+  const content = (await fetchNotFoundPage()) ?? NOT_FOUND_PAGE_DEFAULTS;
   const { tag, heading, description, buttonText } = content;
 
   return (
