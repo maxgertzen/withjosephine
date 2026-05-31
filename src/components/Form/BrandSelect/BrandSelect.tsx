@@ -49,7 +49,7 @@ export function BrandSelect({
       </Select.Trigger>
       <Select.Portal container={portalContainer ?? undefined}>
         <Select.Content
-          className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading"
+          className="z-50 w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)] bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading"
           position="popper"
           sideOffset={4}
         >
