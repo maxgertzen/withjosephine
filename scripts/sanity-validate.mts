@@ -19,20 +19,27 @@
 // Run locally:
 //   pnpm sanity:validate staging
 //   pnpm sanity:validate production   # Max-action only
+//   pnpm sanity:validate staging --strict   # promote SCHEMA-DRIFT to a hard fail
 //
 // Result categories:
-//   DRIFT   — doc exists but a field's value type ≠ schema's expected type.
-//             This is the Day-7-class bug. Exit code 1 (fails CI).
-//   MISSING — singleton doc absent from dataset (no published, no draft).
-//             Initialization/seeding gap, not type drift. Warning only.
-//   WARNING — soft issues (e.g. legacy `formField` consent type). Warning only.
+//   DRIFT         doc exists but a field's value type does not match the
+//                 schema's expected type. Exit code 1 (fails CI).
+//   MISSING       singleton doc absent from dataset (no published, no
+//                 draft). Initialization gap. Warning only.
+//   SCHEMA-DRIFT  doc carries a field not declared in this script's
+//                 contract. Warning only by default; --strict promotes to
+//                 hard fail.
+//   WARNING       soft issues (e.g. legacy formField consent type). Warning
+//                 only.
 //
-// Exit code is non-zero ONLY when DRIFT count > 0.
+// Exit code is non-zero on DRIFT, or on SCHEMA-DRIFT when --strict is set.
 
 import fs from "node:fs";
 import { createClient, type SanityClient } from "@sanity/client";
 
+import { describeValueShape } from "./_lib/sanityValueShape.mts";
 import { SINGLETONS, type FieldContract, type ExpectedType } from "./sanity-validate-contract.mts";
+import { findSchemaDrift, type SchemaDrift } from "./sanity-validate-drift.mts";
 
 // ---------- env loading ----------
 //
@@ -100,13 +107,6 @@ interface Drift {
 }
 
 type SanityValue = unknown;
-
-function describeActual(value: SanityValue): string {
-  if (value === null) return "null";
-  if (value === undefined) return "missing";
-  if (Array.isArray(value)) return `array(len=${value.length})`;
-  return typeof value;
-}
 
 function isPortableTextBlockArray(value: SanityValue): boolean {
   if (!Array.isArray(value)) return false;
@@ -177,7 +177,7 @@ function validateField(
           singleton: singletonId,
           field: field.name,
           expected: field.type,
-          actual: describeActual(value),
+          actual: describeValueShape(value),
           detail: "required field missing",
         },
       ];
@@ -191,7 +191,7 @@ function validateField(
       singleton: singletonId,
       field: field.name,
       expected: field.type,
-      actual: describeActual(value),
+      actual: describeValueShape(value),
       detail: result.detail,
     },
   ];
@@ -227,15 +227,17 @@ async function existsAnywhere(id: string): Promise<boolean> {
   return result > 0;
 }
 
-async function runSingletonChecks(): Promise<{ drifts: Drift[]; missing: Missing[] }> {
+async function runSingletonChecks(): Promise<{
+  drifts: Drift[];
+  missing: Missing[];
+  schemaDrifts: SchemaDrift[];
+}> {
   const drifts: Drift[] = [];
   const missing: Missing[] = [];
+  const schemaDrifts: SchemaDrift[] = [];
   for (const singleton of SINGLETONS) {
     const doc = await fetchSingleton(singleton.id);
     if (!doc) {
-      // Doc doesn't exist (published). Distinguish "never initialized" from
-      // "only-draft-exists" for the operator — both fall under MISSING but
-      // the draft case hints that someone started editing and never published.
       const draftExists = await existsAnywhere(singleton.id);
       missing.push({
         singleton: singleton.id,
@@ -251,13 +253,13 @@ async function runSingletonChecks(): Promise<{ drifts: Drift[]; missing: Missing
         actual: String(doc._type),
         detail: `expected _type "${singleton.type}"`,
       });
-      // Continue field checks anyway — partial info is better than none.
     }
     for (const field of singleton.fields) {
       drifts.push(...validateField(singleton.id, doc, field));
     }
+    schemaDrifts.push(...findSchemaDrift(singleton, doc));
   }
-  return { drifts, missing };
+  return { drifts, missing, schemaDrifts };
 }
 
 interface ConsentWarning {
@@ -296,11 +298,16 @@ function formatWarning(w: ConsentWarning): string {
   return `  [WARNING] formField(${w.docId})${w.name ? ` name="${w.name}"` : ""}: legacy type="consent" — schema no longer renders this; consider migrating or deleting.`;
 }
 
+function formatSchemaDrift(d: SchemaDrift): string {
+  return `  [SCHEMA-DRIFT] ${d.singleton}.${d.unknownField}: not declared in contract (value type=${d.valueType}). Add to scripts/sanity-validate-contract.mts or remove from the schema.`;
+}
+
 async function main(): Promise<void> {
-  console.log(`[sanity-validate] dataset=${dataset} projectId=${projectId}`);
+  const strict = process.argv.includes("--strict");
+  console.log(`[sanity-validate] dataset=${dataset} projectId=${projectId} strict=${strict}`);
   console.log(`[sanity-validate] checking ${SINGLETONS.length} singletons…`);
 
-  const { drifts, missing } = await runSingletonChecks();
+  const { drifts, missing, schemaDrifts } = await runSingletonChecks();
   const warnings = await runZombieConsentCheck();
 
   if (drifts.length === 0) {
@@ -315,18 +322,22 @@ async function main(): Promise<void> {
     for (const m of missing) console.log(formatMissing(m));
   }
 
+  if (schemaDrifts.length > 0) {
+    console.log(`[sanity-validate] ${schemaDrifts.length} schema-additive drift(s) detected:`);
+    for (const d of schemaDrifts) console.log(formatSchemaDrift(d));
+  }
+
   if (warnings.length > 0) {
     console.log(`[sanity-validate] ${warnings.length} warning(s):`);
     for (const w of warnings) console.log(formatWarning(w));
   }
 
   console.log(
-    `[sanity-validate] summary: drift=${drifts.length} missing=${missing.length} warnings=${warnings.length} singletons_checked=${SINGLETONS.length}`,
+    `[sanity-validate] summary: drift=${drifts.length} missing=${missing.length} schema-drift=${schemaDrifts.length} warnings=${warnings.length} singletons_checked=${SINGLETONS.length}`,
   );
 
-  // Exit non-zero ONLY on DRIFT — that's the Day-7-class bug the harness exists
-  // to catch. MISSING and WARNING are operator signal, not CI gates.
-  process.exit(drifts.length === 0 ? 0 : 1);
+  const hardFailures = drifts.length + (strict ? schemaDrifts.length : 0);
+  process.exit(hardFailures === 0 ? 0 : 1);
 }
 
 await main();
