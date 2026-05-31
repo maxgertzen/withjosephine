@@ -20,7 +20,7 @@ export const PREVIEW_FIXTURE = {
   amountPaidDisplay: "$179",
   listenUrl: "https://withjosephine.com/listen/preview",
   magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=preview",
-  myGiftsUrl: "https://withjosephine.com/my-gifts",
+  myGiftsUrl: "https://withjosephine.com/my-readings",
   purchaserFirstName: "Maya",
   recipientName: "River",
   giftMessage: "Thinking of you — I hope this lands at the right moment.",
