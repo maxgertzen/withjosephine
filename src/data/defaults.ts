@@ -473,14 +473,14 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
 export const NOT_FOUND_PAGE_DEFAULTS: SanityNotFoundPage = {
   tag: "✦ Lost in the Stars",
   heading: "This page doesn’t exist",
-  description: "The path you followed leads nowhere - but the one home is always clear.",
+  description: "The path you followed leads nowhere, but the way home is always clear.",
   buttonText: "Return Home",
 };
 
 export const UNDER_CONSTRUCTION_PAGE_DEFAULTS: SanityUnderConstructionPage = {
   tag: "✦ Something Beautiful is Coming",
   heading: "Josephine",
-  description: "Coming soon - a space for soul readings, birth charts, and Akashic records.",
+  description: "Coming soon: a space for soul readings, birth charts, and Akashic records.",
   imageAlt: "Mystical gathering around a pyramid of light",
   contactText: "In the meantime, reach out at",
 };

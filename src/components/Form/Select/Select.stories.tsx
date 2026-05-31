@@ -39,7 +39,7 @@ function Playground({
     <div className="bg-j-cream min-h-screen p-12">
       <div className="max-w-sm mx-auto bg-j-ivory border border-j-blush rounded-sm p-6 flex flex-col gap-6">
         <p className="font-display italic text-sm text-j-text-muted">
-          Select — Radix Select styled with the cream / Cormorant / rounded design language.
+          Select: Radix Select styled with the cream / Cormorant / rounded design language.
           Click the trigger to open the listbox.
         </p>
         <Select

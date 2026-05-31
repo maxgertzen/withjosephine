@@ -3,21 +3,21 @@
 import * as Popover from "@radix-ui/react-popover";
 import { format, isValid, parse } from "date-fns";
 import {
-  type ChangeEvent,
   type KeyboardEvent,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
 } from "react";
-import { DayPicker, type DropdownProps } from "react-day-picker";
+import { DayPicker } from "react-day-picker";
 
+import { createSelectDropdown } from "@/components/Form/DayPickerShared/createSelectDropdown";
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
-import { Select, type SelectOption } from "@/components/Form/Select";
 import { inputClasses } from "@/lib/formStyles";
 
 const ISO_DATE = "yyyy-MM-dd";
@@ -140,30 +140,10 @@ export function DateTimePicker({
   const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const justClosedRef = useRef(false);
 
-  const dayPickerComponents = {
-    Dropdown: (props: DropdownProps) => {
-      const { value, onChange, options, "aria-label": ariaLabel } = props;
-      const stringValue = value !== undefined ? String(value) : "";
-      const selectOptions: ReadonlyArray<SelectOption> =
-        options?.map((o) => ({ value: String(o.value), label: o.label })) ?? [];
-      return (
-        <Select
-          ariaLabel={ariaLabel ?? "Choose"}
-          value={stringValue}
-          onValueChange={(next) => {
-            if (!onChange) return;
-            const synthetic = {
-              target: { value: next },
-              currentTarget: { value: next },
-            } as unknown as ChangeEvent<HTMLSelectElement>;
-            onChange(synthetic);
-          }}
-          options={selectOptions}
-          portalContainer={contentNode}
-        />
-      );
-    },
-  };
+  const dayPickerComponents = useMemo(
+    () => ({ Dropdown: createSelectDropdown(contentNode) }),
+    [contentNode],
+  );
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 

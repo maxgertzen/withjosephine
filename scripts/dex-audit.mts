@@ -53,23 +53,41 @@ function listOpenTasks(): DexTask[] {
   return arr.filter((t) => t.status !== "completed" && t.status !== "archived");
 }
 
-function findCommitMatches(id: string, mode: "any" | "closes"): string[] {
+type CommitLogEntry = { sha: string; subject: string; body: string };
+
+function loadCommitLog(): CommitLogEntry[] {
   try {
     const since = new Date(Date.now() - LOOKBACK_DAYS * 86400_000)
       .toISOString()
       .slice(0, 10);
-    const pattern =
-      mode === "closes"
-        ? `(closes|fixes|resolves):? *dex *${id}`
-        : id;
-    const grep = execSync(
-      `git log --since=${since} --all -i -E --grep='${pattern}' '--format=%H\t%s'`,
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    const out = execSync(
+      `git log --since=${since} --all --format=%H%x09%s%x09%b%x00`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 },
     );
-    return grep.trim() ? grep.trim().split("\n") : [];
+    return out
+      .split("\0")
+      .map((rec) => rec.replace(/^\n/, ""))
+      .filter((rec) => rec.length > 0)
+      .map((rec) => {
+        const [sha = "", subject = "", body = ""] = rec.split("\t");
+        return { sha, subject, body };
+      });
   } catch {
     return [];
   }
+}
+
+function findCommitMatches(
+  log: CommitLogEntry[],
+  id: string,
+  mode: "any" | "closes",
+): string[] {
+  const closesRe = new RegExp(`(closes|fixes|resolves):? *dex *${id}\\b`, "i");
+  const anyRe = new RegExp(`\\b${id}\\b`, "i");
+  const re = mode === "closes" ? closesRe : anyRe;
+  return log
+    .filter((c) => re.test(c.subject) || re.test(c.body))
+    .map((c) => `${c.sha}\t${c.subject}`);
 }
 
 function extractFilePaths(text: string): string[] {
@@ -78,12 +96,28 @@ function extractFilePaths(text: string): string[] {
   return Array.from(new Set(matches));
 }
 
-function classify(task: DexTask, hasOpenChildren: boolean): AuditEntry {
+function partitionPathsByExistence(paths: string[]): {
+  existing: string[];
+  missing: string[];
+} {
+  const existing: string[] = [];
+  const missing: string[] = [];
+  for (const p of paths) {
+    (existsSync(resolve(process.cwd(), p)) ? existing : missing).push(p);
+  }
+  return { existing, missing };
+}
+
+function classify(
+  task: DexTask,
+  hasOpenChildren: boolean,
+  log: CommitLogEntry[],
+): AuditEntry {
   const signals: string[] = [];
   const body = `${task.name}\n${task.description ?? ""}`;
 
-  const closesCommits = findCommitMatches(task.id, "closes");
-  const anyCommits = findCommitMatches(task.id, "any");
+  const closesCommits = findCommitMatches(log, task.id, "closes");
+  const anyCommits = findCommitMatches(log, task.id, "any");
 
   if (closesCommits.length > 0) {
     signals.push(`'Closes/Fixes dex ${task.id}' in commit(s): ${closesCommits.length}`);
@@ -96,8 +130,7 @@ function classify(task: DexTask, hasOpenChildren: boolean): AuditEntry {
   }
 
   const paths = extractFilePaths(body);
-  const missingPaths = paths.filter((p) => !existsSync(resolve(process.cwd(), p)));
-  const existingPaths = paths.filter((p) => existsSync(resolve(process.cwd(), p)));
+  const { existing: existingPaths, missing: missingPaths } = partitionPathsByExistence(paths);
   if (paths.length > 0) {
     signals.push(`paths in body: ${paths.length} (${existingPaths.length} exist, ${missingPaths.length} missing)`);
   }
@@ -173,6 +206,7 @@ function renderText(entries: AuditEntry[]): string {
 async function main(): Promise<void> {
   const wantJson = process.argv.includes("--json");
   const tasks = listOpenTasks();
+  const log = loadCommitLog();
   const openIds = new Set(tasks.map((t) => t.id));
   const childByParent = new Map<string, number>();
   for (const t of tasks) {
@@ -181,7 +215,7 @@ async function main(): Promise<void> {
     childByParent.set(t.parent_id, (childByParent.get(t.parent_id) ?? 0) + 1);
   }
   const entries: AuditEntry[] = tasks.map((t) =>
-    classify(t, (childByParent.get(t.id) ?? 0) > 0),
+    classify(t, (childByParent.get(t.id) ?? 0) > 0, log),
   );
 
   if (wantJson) {

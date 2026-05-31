@@ -52,7 +52,7 @@ export function FormSelect({
         value={value}
         onValueChange={onChange}
         disabled={disabled}
-        options={options.map(({ value: v, label: l }) => ({ value: v, label: l }))}
+        options={options}
         className="w-full"
       />
     </FieldShell>
