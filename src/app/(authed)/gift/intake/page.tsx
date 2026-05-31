@@ -17,6 +17,7 @@ import {
   fetchGiftIntakePage,
   fetchReading,
 } from "@/lib/sanity/fetch";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 
 import { RecipientEmailEscapeHatch } from "./RecipientEmailEscapeHatch";
 
@@ -72,7 +73,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
 
-  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...(intakePageCopy ?? {}) };
+  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
   const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
 
   const filteredSections = filterSectionsForReading(

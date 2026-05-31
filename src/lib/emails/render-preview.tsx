@@ -1,5 +1,7 @@
 import { render } from "@react-email/render";
 
+import { pickDefined } from "@/lib/sanity/pickDefined";
+
 import { Day7Delivery } from "./Day7Delivery";
 import { GiftClaimEmail } from "./GiftClaimEmail";
 import { GiftClaimReminderEmail } from "./GiftClaimReminderEmail";
@@ -57,7 +59,10 @@ async function renderRaw(
   template: EmailTemplateKey,
   sanityCopy: unknown,
 ): Promise<string> {
-  const merged = { ...PREVIEW_DEFAULTS[template], ...((sanityCopy as object | null) ?? {}) };
+  const merged = {
+    ...PREVIEW_DEFAULTS[template],
+    ...pickDefined((sanityCopy as Record<string, unknown> | null) ?? {}),
+  };
   switch (template) {
     case "emailOrderConfirmation":
       return render(

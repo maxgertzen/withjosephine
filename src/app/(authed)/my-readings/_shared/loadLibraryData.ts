@@ -13,6 +13,7 @@ import {
 } from "@/lib/booking/submissions";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 import { fetchMyGiftsPage, fetchMyReadingsPage } from "@/lib/sanity/fetch";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 
 import type { LibraryViewState } from "./LibraryView";
 
@@ -39,11 +40,11 @@ export async function loadLibraryData(args: {
   ]);
   const readingsCopy: MyReadingsPageContent = {
     ...MY_READINGS_PAGE_DEFAULTS,
-    ...(readingsSanity ?? {}),
+    ...pickDefined(readingsSanity ?? {}),
   };
   const giftsCopy: MyGiftsPageContent = {
     ...MY_GIFTS_PAGE_DEFAULTS,
-    ...(giftsSanity ?? {}),
+    ...pickDefined(giftsSanity ?? {}),
   };
 
   const state = await resolveState({ session, justSent: args.justSent });
