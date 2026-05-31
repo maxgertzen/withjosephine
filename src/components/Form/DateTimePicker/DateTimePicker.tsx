@@ -2,9 +2,17 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { format, isValid, parse } from "date-fns";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import {
+  type ChangeEvent,
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { DayPicker, type DropdownProps } from "react-day-picker";
 
+import { BrandSelect, type BrandSelectOption } from "@/components/Form/BrandSelect";
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
@@ -129,7 +137,33 @@ export function DateTimePicker({
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const calendarWrapRef = useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const justClosedRef = useRef(false);
+
+  const dayPickerComponents = {
+    Dropdown: (props: DropdownProps) => {
+      const { value, onChange, options, "aria-label": ariaLabel } = props;
+      const stringValue = value !== undefined ? String(value) : "";
+      const brandOptions: ReadonlyArray<BrandSelectOption> =
+        options?.map((o) => ({ value: String(o.value), label: o.label })) ?? [];
+      return (
+        <BrandSelect
+          ariaLabel={ariaLabel ?? "Choose"}
+          value={stringValue}
+          onValueChange={(next) => {
+            if (!onChange) return;
+            const synthetic = {
+              target: { value: next },
+              currentTarget: { value: next },
+            } as unknown as ChangeEvent<HTMLSelectElement>;
+            onChange(synthetic);
+          }}
+          options={brandOptions}
+          portalContainer={contentNode}
+        />
+      );
+    },
+  };
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -250,6 +284,7 @@ export function DateTimePicker({
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
+            ref={setContentNode}
             id={popoverId}
             side="bottom"
             align="start"
@@ -278,6 +313,7 @@ export function DateTimePicker({
                   showOutsideDays
                   labels={DAY_PICKER_LABELS}
                   classNames={DAY_PICKER_CLASSES}
+                  components={dayPickerComponents}
                 />
               </div>
               <div className="flex gap-2 items-center justify-center">
