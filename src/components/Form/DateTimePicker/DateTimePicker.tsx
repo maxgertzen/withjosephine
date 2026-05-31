@@ -2,9 +2,17 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { format, isValid, parse } from "date-fns";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DayPicker } from "react-day-picker";
 
+import { createSelectDropdown } from "@/components/Form/DayPickerShared/createSelectDropdown";
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
@@ -129,7 +137,13 @@ export function DateTimePicker({
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const calendarWrapRef = useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const justClosedRef = useRef(false);
+
+  const dayPickerComponents = useMemo(
+    () => ({ Dropdown: createSelectDropdown(contentNode) }),
+    [contentNode],
+  );
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -250,6 +264,7 @@ export function DateTimePicker({
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
+            ref={setContentNode}
             id={popoverId}
             side="bottom"
             align="start"
@@ -278,6 +293,7 @@ export function DateTimePicker({
                   showOutsideDays
                   labels={DAY_PICKER_LABELS}
                   classNames={DAY_PICKER_CLASSES}
+                  components={dayPickerComponents}
                 />
               </div>
               <div className="flex gap-2 items-center justify-center">

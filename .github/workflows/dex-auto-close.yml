@@ -1,0 +1,60 @@
+name: dex auto-close on PR merge
+
+# Listens for merged PRs and closes any referenced dex tasks automatically.
+# Parses the PR body + the squashed commit message for two pattern families:
+#   - "Closes dex <id>"   -> dex complete <id> --commit <merge_sha>
+#   - "Refs dex <id>"     -> only logged; doesn't close (use Closes for intent)
+#
+# This is the durable mechanical fix for the recurring stale-dex-tasks problem
+# (feedback_dex_create_verify_with_show + a long tail of bookkeeping misses).
+# No human discipline required — the task closes when the PR merges, by the
+# same merge-commit SHA the manual `dex complete --commit <sha>` would record.
+#
+# Runs after PR merge, on the default branch (main) or any release/* branch.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  dex-auto-close:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dex CLI
+        run: npm install -g @zeeg/dex
+
+      - name: Extract dex IDs and close
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/dex-auto-close.mjs
+
+      - name: Commit and push .dex/tasks.jsonl if changed
+        run: |
+          if git diff --quiet -- .dex/tasks.jsonl; then
+            echo "no dex changes to commit"
+            exit 0
+          fi
+          git config user.name "dex-auto-close[bot]"
+          git config user.email "noreply@github.com"
+          git add .dex/tasks.jsonl
+          git commit -m "chore(dex): auto-close tasks for PR #${{ github.event.pull_request.number }}
+
+Closes-via: ${{ github.event.pull_request.merge_commit_sha }}"
+          git push origin HEAD:${{ github.event.pull_request.base.ref }}

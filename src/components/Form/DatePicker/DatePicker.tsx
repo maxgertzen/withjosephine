@@ -2,9 +2,10 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { differenceInYears, format, isValid, parse } from "date-fns";
-import { useId, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 
+import { createSelectDropdown } from "@/components/Form/DayPickerShared/createSelectDropdown";
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
@@ -64,8 +65,14 @@ export function DatePicker({
 }: DatePickerProps) {
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<string | null>(null);
+
+  const dayPickerComponents = useMemo(
+    () => ({ Dropdown: createSelectDropdown(contentNode) }),
+    [contentNode],
+  );
 
   const draft =
     manualDraft !== null
@@ -171,6 +178,7 @@ export function DatePicker({
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
+            ref={setContentNode}
             id={popoverId}
             side="bottom"
             align="start"
@@ -194,6 +202,7 @@ export function DatePicker({
               showOutsideDays
               labels={DAY_PICKER_LABELS}
               classNames={DAY_PICKER_BASE_CLASSES}
+              components={dayPickerComponents}
             />
           </Popover.Content>
         </Popover.Portal>

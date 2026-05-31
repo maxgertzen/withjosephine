@@ -51,6 +51,7 @@ beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubEnv("RESEND_API_KEY", "re_test");
   vi.stubEnv("NOTIFICATION_EMAIL", "hello@withjosephine.com");
+  vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "production");
 });
 
 afterEach(() => {
@@ -1070,6 +1071,94 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("reason=sandbox_prefix"),
     );
+    warnSpy.mockRestore();
+  });
+});
+
+describe("env_guard (layer-3 defense in non-production envs)", () => {
+  it("blocks non-allowlisted recipient in staging env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "real-customer@example.com" }),
+    );
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("allows production-allowlisted recipient in staging env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    sendMock.mockResolvedValue({ data: { id: "msg_allowed" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "maxgertzen@gmail.com" }),
+    );
+
+    expect(getResendId(result)).toBe("msg_allowed");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("strips +addressing when matching the production allowlist", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    sendMock.mockResolvedValue({ data: { id: "msg_plussed" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "maxgertzen+sandbox-test@gmail.com" }),
+    );
+
+    expect(getResendId(result)).toBe("msg_plussed");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("allows the NOTIFICATION_EMAIL env value", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("NOTIFICATION_EMAIL", "ops@withjosephine.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_notif" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "ops@withjosephine.com" }),
+    );
+
+    expect(getResendId(result)).toBe("msg_notif");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("does not fire in production env regardless of recipient", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "production");
+    sendMock.mockResolvedValue({ data: { id: "msg_prod" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "real-customer@example.com" }),
+    );
+
+    expect(getResendId(result)).toBe("msg_prod");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("tags the skip-log reason for wrangler-tail observability", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    headersGetMock.mockReturnValue(null);
+
+    const { sendOrderConfirmation } = await import("./resend");
+    await sendOrderConfirmation(
+      buildSubmission({ email: "real-customer@example.com" }),
+    );
+
+    const allWarnCalls = warnSpy.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(allWarnCalls).toMatch(/env_guard/);
+    expect(allWarnCalls).toMatch(/reason=env_guard/);
     warnSpy.mockRestore();
   });
 });

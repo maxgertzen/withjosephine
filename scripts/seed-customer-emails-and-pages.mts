@@ -19,6 +19,8 @@ import {
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
   MY_GIFTS_PAGE_DEFAULTS,
   MY_READINGS_PAGE_DEFAULTS,
+  NOT_FOUND_PAGE_DEFAULTS,
+  UNDER_CONSTRUCTION_PAGE_DEFAULTS,
 } from "../src/data/defaults";
 import { stringToPortableTextBlocks } from "../src/lib/emails/portableTextBuild";
 
@@ -189,6 +191,16 @@ const SEEDS = [
     _id: "emailNewDeviceNotice",
     _type: "emailNewDeviceNotice",
     ...omitNullish(EMAIL_NEW_DEVICE_NOTICE_DEFAULTS),
+  },
+  {
+    _id: "notFoundPage",
+    _type: "notFoundPage",
+    ...omitNullish(NOT_FOUND_PAGE_DEFAULTS),
+  },
+  {
+    _id: "underConstructionPage",
+    _type: "underConstructionPage",
+    ...omitNullish(UNDER_CONSTRUCTION_PAGE_DEFAULTS),
   },
 ];
 
