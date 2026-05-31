@@ -210,6 +210,12 @@ export async function listSubmissionsByRecipientUserId(
   return repo.listSubmissionsByRecipientUserId(userId);
 }
 
+export async function findMostRecentPaidByRecipientUserId(
+  userId: string,
+): Promise<SubmissionRecord | null> {
+  return repo.findMostRecentPaidByRecipientUserId(userId);
+}
+
 export async function listGiftsByPurchaserUserId(
   userId: string,
 ): Promise<SubmissionRecord[]> {
@@ -413,13 +419,15 @@ export async function scrubSubmissionPhoto(
   return true;
 }
 
-function extractFirstName(responses: SubmissionRecord["responses"]) {
+export const FIRST_NAME_FALLBACK = "there";
+
+export function extractFirstName(responses: SubmissionRecord["responses"]) {
   const entry = responses.find((response) => response.fieldKey === "first_name");
   const value = entry?.value?.trim();
   if (value) return value;
   const legacy = responses.find((response) => response.fieldKey === "legal_full_name");
   const legacyFirst = legacy?.value?.trim().split(/\s+/)[0];
-  return legacyFirst || "there";
+  return legacyFirst || FIRST_NAME_FALLBACK;
 }
 
 export function buildSubmissionContext(submission: SubmissionRecord): SubmissionContext {

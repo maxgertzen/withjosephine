@@ -351,6 +351,7 @@ describe("sendPrivacyExportEmail", () => {
 
     const result = await sendPrivacyExportEmail({
       to: "ada@example.com",
+      firstName: "Ada",
       downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
       submissionCount: 4,
       expiryDays: 14,
@@ -375,6 +376,7 @@ describe("sendPrivacyExportEmail", () => {
 
     await sendPrivacyExportEmail({
       to: "ada@example.com",
+      firstName: "Ada",
       downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
       submissionCount: 1,
       expiryDays: 7,
@@ -385,6 +387,66 @@ describe("sendPrivacyExportEmail", () => {
     const body = visibleText(args.html);
     expect(body).toContain("for your 1 reading(s)");
     expect(body).toContain("expires in 7 days");
+  });
+
+  it("substitutes {firstName} in Sanity-edited copy", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv_first" } });
+    const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
+      subject: "Hello {firstName}, your export is ready",
+      preview: "{firstName}, the link is below",
+      heroLine: "Your export is ready, {firstName}",
+      bodyIntro: stringToPortableTextBlocks("Hi {firstName}, here it comes."),
+      bodyPostButton: stringToPortableTextBlocks("Take care, {firstName}."),
+      ctaLabel: "Download",
+      signOff: null,
+    });
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      firstName: "Ada",
+      downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
+      submissionCount: 1,
+      expiryDays: 7,
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Hello Ada, your export is ready");
+    const body = visibleText(args.html);
+    expect(body).toContain("Your export is ready, Ada");
+    expect(body).toContain("Hi Ada, here it comes.");
+    expect(body).toContain("Take care, Ada.");
+  });
+
+  it("renders with 'there' fallback when no firstName known", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_priv_fallback" } });
+    const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchModule.fetchEmailPrivacyExport).mockResolvedValue({
+      subject: "Hello {firstName}",
+      preview: "Hi {firstName}",
+      heroLine: "Hi {firstName}",
+      bodyIntro: stringToPortableTextBlocks("Hi {firstName}."),
+      bodyPostButton: stringToPortableTextBlocks("Bye {firstName}."),
+      ctaLabel: "Download",
+      signOff: null,
+    });
+    const { sendPrivacyExportEmail } = await import("./resend");
+
+    await sendPrivacyExportEmail({
+      to: "ada@example.com",
+      firstName: "there",
+      downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
+      submissionCount: 1,
+      expiryDays: 7,
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Hello there");
+    const body = visibleText(args.html);
+    expect(body).toContain("Hi there");
   });
 });
 
@@ -774,6 +836,64 @@ describe("sendMagicLink", () => {
     expect(props.sub_type).toBe("magic_link_library");
   });
 
+  it("substitutes {firstName}/{readingName}/{readingPriceDisplay} when vars are supplied", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_tokens" } });
+    const fetchModule = await import("./sanity/fetch");
+    const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
+    vi.mocked(fetchModule.fetchEmailMagicLink).mockResolvedValue({
+      subject: "Open your {readingName}, {firstName}",
+      preview: "{firstName}, your reading is one tap away",
+      heroLine: "Welcome back, {firstName}",
+      buttonLabel: "Open my {readingName}",
+      body: stringToPortableTextBlocks(
+        "Tap the button to open your {readingName} ({readingPriceDisplay}).",
+      ),
+      signOff: null,
+    });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=tk",
+      context: "listen",
+      firstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Open your Soul Blueprint, Ada");
+    const body = visibleText(args.html);
+    expect(body).toContain("Welcome back, Ada");
+    expect(body).toContain("Open my Soul Blueprint");
+    expect(body).toContain("Tap the button to open your Soul Blueprint ($179).");
+  });
+
+  it("falls back to 'there' for firstName when no vars supplied", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_ml_fallback" } });
+    const fetchModule = await import("./sanity/fetch");
+    vi.mocked(fetchModule.fetchEmailMagicLink).mockResolvedValue({
+      subject: "Hello {firstName}",
+      preview: "Hi {firstName}",
+      heroLine: "Hi {firstName}",
+      buttonLabel: "Open my reading",
+      body: (await import("./emails/portableTextBuild")).stringToPortableTextBlocks(
+        "Hi {firstName}, your link is below.",
+      ),
+      signOff: null,
+    });
+    const { sendMagicLink } = await import("./resend");
+
+    await sendMagicLink({
+      to: "ada@example.com",
+      magicLinkUrl: "https://example.com/x",
+      context: "listen",
+    });
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.subject).toBe("Hello there");
+    expect(visibleText(args.html)).toContain("Hi there, your link is below.");
+  });
 });
 
 describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {

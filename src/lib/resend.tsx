@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { GIFT_DELIVERY } from "./booking/constants";
+import { FIRST_NAME_FALLBACK } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { Day7Delivery } from "./emails/Day7Delivery";
@@ -151,7 +152,7 @@ export function isSandboxEmail(address: string | null | undefined): boolean {
   return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
 }
 
-async function sendOrSkip(args: {
+export async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
   html: string;
@@ -588,6 +589,9 @@ export async function sendMagicLink(args: {
   to: string;
   magicLinkUrl: string;
   context: MagicLinkContext;
+  firstName?: string;
+  readingName?: string;
+  readingPriceDisplay?: string;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_MAGIC_LINK_DEFAULTS, EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS } = await import(
@@ -609,19 +613,28 @@ export async function sendMagicLink(args: {
     fetchSharedShell(),
   ]);
   const copy = { ...source.defaults, ...(sanity ?? {}) };
+  const vars = {
+    magicLinkUrl: args.magicLinkUrl,
+    firstName: args.firstName ?? FIRST_NAME_FALLBACK,
+    readingName: args.readingName ?? "",
+    readingPriceDisplay: args.readingPriceDisplay ?? "",
+  };
+  const subject = applyTokens(copy.subject, vars);
   const html = await render(
     <MagicLink
-      magicLinkUrl={args.magicLinkUrl}
-      preview={copy.preview}
-      heroLine={copy.heroLine}
-      buttonLabel={copy.buttonLabel}
-      body={copy.body}
+      vars={vars}
+      copy={{
+        preview: copy.preview,
+        heroLine: copy.heroLine,
+        buttonLabel: copy.buttonLabel,
+        body: copy.body,
+      }}
       shell={shell}
     />,
   );
   return sendOrSkip({
     to: args.to,
-    subject: copy.subject,
+    subject,
     html,
     subType: source.subType,
     submissionId: null,
@@ -630,6 +643,7 @@ export async function sendMagicLink(args: {
 
 export async function sendPrivacyExportEmail(args: {
   to: string;
+  firstName: string;
   downloadUrl: string;
   submissionCount: number;
   expiryDays: number;
@@ -641,9 +655,15 @@ export async function sendPrivacyExportEmail(args: {
     fetchSharedShell(),
   ]);
   const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
+  const subject = applyTokens(copy.subject, {
+    firstName: args.firstName,
+    submissionCount: args.submissionCount,
+    expiryDays: args.expiryDays,
+  });
   const html = await render(
     <PrivacyExport
       vars={{
+        firstName: args.firstName,
         downloadUrl: args.downloadUrl,
         submissionCount: args.submissionCount,
         expiryDays: args.expiryDays,
@@ -654,7 +674,7 @@ export async function sendPrivacyExportEmail(args: {
   );
   return sendOrSkip({
     to: args.to,
-    subject: copy.subject,
+    subject,
     html,
     subType: "privacy_export",
     submissionId: null,

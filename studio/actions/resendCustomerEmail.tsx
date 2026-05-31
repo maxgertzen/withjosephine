@@ -1,7 +1,9 @@
 import { EnvelopeIcon } from "@sanity/icons";
-import { Box, Button, Select, Stack, Text, TextInput, useToast } from "@sanity/ui";
+import { Box, Button, Select, Stack, Text, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
 import type { DocumentActionComponent, DocumentActionProps } from "sanity";
+
+import { AdminTokenInput } from "../components/AdminTokenInput";
 
 const ADMIN_ROUTE = "/api/admin/resend-customer-email";
 
@@ -124,18 +126,11 @@ export const resendCustomerEmailAction: DocumentActionComponent = (
               </Select>
             </Box>
           </Box>
-          <Box>
-            <Text size={1} weight="semibold">Admin token:</Text>
-            <Box marginTop={2}>
-              <TextInput
-                type="password"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.currentTarget.value)}
-                disabled={isPending}
-                placeholder="Paste the admin token"
-              />
-            </Box>
-          </Box>
+          <AdminTokenInput
+            value={adminToken}
+            onChange={setAdminToken}
+            disabled={isPending}
+          />
         </Stack>
       ),
       footer: (

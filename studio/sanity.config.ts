@@ -7,9 +7,14 @@ import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { regenerateGiftClaimAction } from "./actions/regenerateGiftClaim";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
+import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { schemaTypes } from "./schemas";
-import { deskStructure, SINGLETON_TYPES } from "./schemas/deskStructure";
+import {
+  deskStructure,
+  EMAIL_PREVIEW_SINGLETON_TYPES,
+  SINGLETON_TYPES,
+} from "./schemas/deskStructure";
 import { presentationResolve } from "./presentation";
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!;
@@ -29,9 +34,13 @@ const sharedPlugins = (previewOrigin: string) => [
 
 const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
   if (SINGLETON_TYPES.has(schemaType)) {
-    return prev.filter(
+    const base = prev.filter(
       ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
     );
+    if (EMAIL_PREVIEW_SINGLETON_TYPES.has(schemaType)) {
+      return [...base, sendEmailPreviewAction];
+    }
+    return base;
   }
   if (schemaType === "submission") {
     return [

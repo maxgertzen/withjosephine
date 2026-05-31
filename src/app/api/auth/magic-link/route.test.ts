@@ -16,6 +16,13 @@ vi.mock("@/lib/auth/requestAudit", () => ({
 vi.mock("@/lib/resend", () => ({
   sendMagicLink: vi.fn().mockResolvedValue({ kind: "sent", resendId: "msg_1" }),
 }));
+vi.mock("@/lib/auth/magicLinkVars", () => ({
+  lookupMagicLinkVars: vi.fn().mockResolvedValue({
+    firstName: "there",
+    readingName: "",
+    readingPriceDisplay: "",
+  }),
+}));
 
 import { issueMagicLink } from "@/lib/auth/listenSession";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
@@ -134,6 +141,43 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     await POST(jsonRequest({ email: "ada@example.com" }));
     await flushFireAndForget();
     expect(sendMock.mock.calls[0]?.[0].context).toBe("library");
+  });
+
+  it("forwards firstName/readingName/readingPriceDisplay from lookupMagicLinkVars", async () => {
+    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
+    const { lookupMagicLinkVars } = await import("@/lib/auth/magicLinkVars");
+    vi.mocked(lookupMagicLinkVars).mockResolvedValueOnce({
+      firstName: "Ada",
+      readingName: "Soul Blueprint",
+      readingPriceDisplay: "$179",
+    });
+    const { POST } = await import("./route");
+    await POST(jsonRequest({ email: "ada@example.com" }));
+    await flushFireAndForget();
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.firstName).toBe("Ada");
+    expect(args.readingName).toBe("Soul Blueprint");
+    expect(args.readingPriceDisplay).toBe("$179");
+  });
+
+  it("passes through the 'there'/'' fallback shape when the user has no paid submission", async () => {
+    // lookupMagicLinkVars swallows DB errors internally and returns the
+    // MAGIC_LINK_VARS_FALLBACK shape; the route just forwards whatever it
+    // receives. This test fixes the contract by mocking the resolved fallback
+    // (the realistic case) rather than the deprecated route-level catch.
+    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
+    const { lookupMagicLinkVars } = await import("@/lib/auth/magicLinkVars");
+    vi.mocked(lookupMagicLinkVars).mockResolvedValueOnce({
+      firstName: "there",
+      readingName: "",
+      readingPriceDisplay: "",
+    });
+    const { POST } = await import("./route");
+    await POST(jsonRequest({ email: "ada@example.com" }));
+    await flushFireAndForget();
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.firstName).toBe("there");
+    expect(args.readingName).toBe("");
   });
 
   it("strips an unsafe `next` from the emailed link (pre-validates at send)", async () => {

@@ -508,6 +508,19 @@ export async function listSubmissionsByRecipientUserId(
   return rows.map(rowToRecord);
 }
 
+export async function findMostRecentPaidByRecipientUserId(
+  userId: string,
+): Promise<SubmissionRecord | null> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions
+     WHERE recipient_user_id = ? AND status = 'paid'
+     ORDER BY paid_at DESC
+     LIMIT 1`,
+    [userId],
+  );
+  return rows[0] ? rowToRecord(rows[0]) : null;
+}
+
 export async function listGiftsByPurchaserUserId(
   userId: string,
 ): Promise<SubmissionRecord[]> {

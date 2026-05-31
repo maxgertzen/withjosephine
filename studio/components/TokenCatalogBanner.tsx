@@ -2,8 +2,8 @@ import { Card, Code, Flex, Stack, Text } from "@sanity/ui";
 
 import { EMAIL_ALLOWED_SLOTS, type EmailTemplateKey } from "../../src/lib/emails/slots";
 
-export function tokenCatalogBanner(template: EmailTemplateKey) {
-  const tokens = EMAIL_ALLOWED_SLOTS[template];
+export function tokenCatalogBanner(source: EmailTemplateKey | readonly string[]) {
+  const tokens = Array.isArray(source) ? source : EMAIL_ALLOWED_SLOTS[source as EmailTemplateKey];
   return function TokenCatalogBannerField() {
     return (
       <Card tone="primary" padding={4} radius={2} border>

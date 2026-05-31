@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { StructureBuilder } from "sanity/structure";
 
+import { EMAIL_ALLOWED_SLOTS } from "../../src/lib/emails/slots";
 import { EmailPreview } from "../views/EmailPreview";
 import {
   GiftClaimPagePreview,
@@ -10,6 +11,15 @@ import {
   MyGiftsPagePreview,
   MyReadingsPagePreview,
 } from "../views/StudioPagePreview";
+
+// Email singletons that support the send-to-test doc action.
+// Derived from EmailTemplateKey via EMAIL_ALLOWED_SLOTS keys so adding a
+// new template (and its slot allowlist) auto-enrolls it in the action.
+// emailSharedShell is intentionally not in EmailTemplateKey: it's brand
+// config, not a standalone email.
+export const EMAIL_PREVIEW_SINGLETON_TYPES: ReadonlySet<string> = new Set(
+  Object.keys(EMAIL_ALLOWED_SLOTS),
+);
 
 export const SINGLETON_TYPES = new Set([
   "landingPage",
@@ -176,7 +186,7 @@ const pagesGroup = (S: StructureBuilder) =>
           pagePreviewSingletonListItem(
             S,
             "magicLinkVerifyPage",
-            "Magic Link — Confirm Email Page",
+            "Magic Link: Confirm Email Page",
             MagicLinkVerifyPagePreview,
           ),
           pagePreviewSingletonListItem(
