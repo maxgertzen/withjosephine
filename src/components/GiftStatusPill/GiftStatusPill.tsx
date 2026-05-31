@@ -9,9 +9,18 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import type { MyGiftsPageContent } from "@/data/defaults";
+
+const noopSubscribe = () => () => {};
+function useIsClient(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import { mergeClasses } from "@/lib/utils";
@@ -75,12 +84,8 @@ export function GiftStatusPill({ status, copy, className }: GiftStatusPillProps)
   const Icon = STATUS_ICON[status.kind];
   const { label, momentIso } = labelPartsFor(status, copy);
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const moment = mounted && momentIso ? formatMoment(momentIso) : "";
+  const isClient = useIsClient();
+  const moment = isClient && momentIso ? formatMoment(momentIso) : "";
   const fullLabel = moment ? `${label} ${moment}` : label;
 
   return (
