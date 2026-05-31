@@ -1,3 +1,5 @@
+"use client";
+
 import { format, parseISO } from "date-fns";
 import {
   CalendarClock,
@@ -7,6 +9,7 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
@@ -39,24 +42,26 @@ const STATUS_ICON: Record<GiftStatus["kind"], typeof CalendarClock> = {
   [GIFT_STATUS_KIND.cancelled]: XCircle,
 };
 
-function formatScheduledMoment(iso: string): string {
+function formatMoment(iso: string): string {
   return format(parseISO(iso), DATE_FORMAT);
 }
 
-function labelFor(status: GiftStatus, copy: GiftStatusCopy): string {
+type LabelParts = { label: string; momentIso?: string };
+
+function labelPartsFor(status: GiftStatus, copy: GiftStatusCopy): LabelParts {
   switch (status.kind) {
     case GIFT_STATUS_KIND.scheduled:
-      return `${copy.statusScheduledLabel} ${formatScheduledMoment(status.sendAt)}`;
+      return { label: copy.statusScheduledLabel, momentIso: status.sendAt };
     case GIFT_STATUS_KIND.selfSendReady:
-      return copy.statusSelfSendReadyLabel;
+      return { label: copy.statusSelfSendReadyLabel };
     case GIFT_STATUS_KIND.sentWaitingRecipient:
-      return copy.statusSentLabel;
+      return { label: copy.statusSentLabel };
     case GIFT_STATUS_KIND.recipientPreparing:
-      return copy.statusPreparingLabel;
+      return { label: copy.statusPreparingLabel };
     case GIFT_STATUS_KIND.delivered:
-      return `${copy.statusDeliveredLabel} ${formatScheduledMoment(status.deliveredAt)}`;
+      return { label: copy.statusDeliveredLabel, momentIso: status.deliveredAt };
     case GIFT_STATUS_KIND.cancelled:
-      return copy.statusCancelledLabel;
+      return { label: copy.statusCancelledLabel };
   }
 }
 
@@ -68,17 +73,25 @@ export type GiftStatusPillProps = {
 
 export function GiftStatusPill({ status, copy, className }: GiftStatusPillProps) {
   const Icon = STATUS_ICON[status.kind];
-  const label = labelFor(status, copy);
+  const { label, momentIso } = labelPartsFor(status, copy);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const moment = mounted && momentIso ? formatMoment(momentIso) : "";
+  const fullLabel = moment ? `${label} ${moment}` : label;
 
   return (
     <span
       role="status"
-      aria-label={label}
+      aria-label={fullLabel}
       data-status={status.kind}
       className={mergeClasses(PILL_BASE_CLASSES, className)}
     >
       <Icon data-pill-icon className={ICON_CLASSES} aria-hidden="true" />
-      <span>{label}</span>
+      <span>{fullLabel}</span>
     </span>
   );
 }
