@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 
-import { BrandSelect, type BrandSelectOption } from "./BrandSelect";
+import { Select, type SelectOption } from "./Select";
 
-const HOUR_OPTIONS: BrandSelectOption[] = Array.from({ length: 24 }, (_, i) => {
+const HOUR_OPTIONS: SelectOption[] = Array.from({ length: 24 }, (_, i) => {
   const v = i.toString().padStart(2, "0");
   return { value: v, label: v };
 });
 
-const MONTH_OPTIONS: BrandSelectOption[] = [
+const MONTH_OPTIONS: SelectOption[] = [
   "January",
   "February",
   "March",
@@ -31,7 +31,7 @@ function Playground({
 }: {
   ariaLabel: string;
   placeholder: string;
-  options: BrandSelectOption[];
+  options: SelectOption[];
   initial?: string;
 }) {
   const [value, setValue] = useState(initial ?? "");
@@ -39,10 +39,10 @@ function Playground({
     <div className="bg-j-cream min-h-screen p-12">
       <div className="max-w-sm mx-auto bg-j-ivory border border-j-blush rounded-sm p-6 flex flex-col gap-6">
         <p className="font-display italic text-sm text-j-text-muted">
-          BrandSelect — Radix Select styled with the cream / Cormorant / rounded design language.
+          Select — Radix Select styled with the cream / Cormorant / rounded design language.
           Click the trigger to open the listbox.
         </p>
-        <BrandSelect
+        <Select
           ariaLabel={ariaLabel}
           placeholder={placeholder}
           value={value}
@@ -58,7 +58,7 @@ function Playground({
 }
 
 const meta: Meta<typeof Playground> = {
-  title: "Form/BrandSelect",
+  title: "Form/Select",
   component: Playground,
 };
 
@@ -111,17 +111,17 @@ export const SideBySideLikeTimePicker: Story = {
 function HourMinuteDemo() {
   const [hh, setHh] = useState("");
   const [mm, setMm] = useState("");
-  const minutes: BrandSelectOption[] = Array.from({ length: 12 }, (_, i) => {
+  const minutes: SelectOption[] = Array.from({ length: 12 }, (_, i) => {
     const v = (i * 5).toString().padStart(2, "0");
     return { value: v, label: v };
   });
   return (
     <>
-      <BrandSelect ariaLabel="Hour" placeholder="HH" value={hh} onValueChange={setHh} options={HOUR_OPTIONS} />
+      <Select ariaLabel="Hour" placeholder="HH" value={hh} onValueChange={setHh} options={HOUR_OPTIONS} />
       <span aria-hidden="true" className="font-display italic text-j-text-heading">
         :
       </span>
-      <BrandSelect ariaLabel="Minute" placeholder="MM" value={mm} onValueChange={setMm} options={minutes} />
+      <Select ariaLabel="Minute" placeholder="MM" value={mm} onValueChange={setMm} options={minutes} />
     </>
   );
 }

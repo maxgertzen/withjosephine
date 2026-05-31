@@ -3,8 +3,8 @@
 import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState } from "react";
 
-import { BrandSelect, type BrandSelectOption } from "@/components/Form/BrandSelect";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { Select, type SelectOption } from "@/components/Form/Select";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -37,8 +37,8 @@ function pad(n: number): string {
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
 const MINUTES = Array.from({ length: 12 }, (_, i) => pad(i * 5));
 
-const HOUR_OPTIONS: ReadonlyArray<BrandSelectOption> = HOURS.map((h) => ({ value: h, label: h }));
-const MINUTE_OPTIONS: ReadonlyArray<BrandSelectOption> = MINUTES.map((m) => ({ value: m, label: m }));
+const HOUR_OPTIONS: ReadonlyArray<SelectOption> = HOURS.map((h) => ({ value: h, label: h }));
+const MINUTE_OPTIONS: ReadonlyArray<SelectOption> = MINUTES.map((m) => ({ value: m, label: m }));
 
 function autoformatTime(text: string): string {
   const digits = text.replace(/\D/g, "").slice(0, 4);
@@ -147,7 +147,7 @@ export function TimePicker({
               Hour and minute
             </p>
             <div className="flex items-center justify-center gap-2">
-              <BrandSelect
+              <Select
                 ariaLabel="Hour"
                 placeholder="HH"
                 value={hh}
@@ -158,7 +158,7 @@ export function TimePicker({
               <span aria-hidden="true" className="font-display italic text-j-text-heading">
                 :
               </span>
-              <BrandSelect
+              <Select
                 ariaLabel="Minute"
                 placeholder="MM"
                 value={mm}

@@ -1,9 +1,9 @@
 import { DatePicker } from "@/components/Form/DatePicker";
 import { FileUpload } from "@/components/Form/FileUpload";
+import { FormSelect } from "@/components/Form/FormSelect";
 import { Input } from "@/components/Form/Input";
 import { MultiSelectExact } from "@/components/Form/MultiSelectExact";
 import { PlaceAutocomplete } from "@/components/Form/PlaceAutocomplete";
-import { Select } from "@/components/Form/Select";
 import { Textarea } from "@/components/Form/Textarea";
 import { TimePicker } from "@/components/Form/TimePicker";
 import { COMPANION_SUFFIX_GEONAMEID } from "@/lib/booking/constants";
@@ -145,7 +145,7 @@ export function renderField(field: SanityFormField, ctx: RenderContext) {
 
     case "select":
       return (
-        <Select
+        <FormSelect
           key={field._id}
           id={id}
           name={field.key}

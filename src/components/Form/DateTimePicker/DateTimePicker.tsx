@@ -12,12 +12,12 @@ import {
 } from "react";
 import { DayPicker, type DropdownProps } from "react-day-picker";
 
-import { BrandSelect, type BrandSelectOption } from "@/components/Form/BrandSelect";
 import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { Select, type SelectOption } from "@/components/Form/Select";
 import { inputClasses } from "@/lib/formStyles";
 
 const ISO_DATE = "yyyy-MM-dd";
@@ -144,10 +144,10 @@ export function DateTimePicker({
     Dropdown: (props: DropdownProps) => {
       const { value, onChange, options, "aria-label": ariaLabel } = props;
       const stringValue = value !== undefined ? String(value) : "";
-      const brandOptions: ReadonlyArray<BrandSelectOption> =
+      const selectOptions: ReadonlyArray<SelectOption> =
         options?.map((o) => ({ value: String(o.value), label: o.label })) ?? [];
       return (
-        <BrandSelect
+        <Select
           ariaLabel={ariaLabel ?? "Choose"}
           value={stringValue}
           onValueChange={(next) => {
@@ -158,7 +158,7 @@ export function DateTimePicker({
             } as unknown as ChangeEvent<HTMLSelectElement>;
             onChange(synthetic);
           }}
-          options={brandOptions}
+          options={selectOptions}
           portalContainer={contentNode}
         />
       );
