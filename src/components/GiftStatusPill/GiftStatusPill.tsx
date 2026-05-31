@@ -9,20 +9,11 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
-import { useSyncExternalStore } from "react";
 
 import type { MyGiftsPageContent } from "@/data/defaults";
-
-const noopSubscribe = () => () => {};
-function useIsClient(): boolean {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
-}
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
+import { useIsClient } from "@/lib/hooks/useIsClient";
 import { mergeClasses } from "@/lib/utils";
 
 type GiftStatusCopy = Pick<
