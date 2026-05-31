@@ -1,19 +1,13 @@
 /**
- * Returns a shallow copy of the input with `null` and `undefined` values
- * removed. Empty strings, zero, and `false` are preserved.
- *
- * Used at every `{ ...DEFAULTS, ...pickDefined(sanity ?? {}) }` site so a
- * Sanity field returning null cannot blank the code-side default. Becky's
- * unset-an-optional-field workflow in Studio yields null rather than absent;
- * the bare spread treats null as a real override, which we never want.
+ * Sanity returns `null` (not absent) for unset optional fields, so
+ * `{ ...DEFAULTS, ...sanity }` blanks the default. Filter before merging.
+ * Empty string, `0`, and `false` are preserved.
  */
 export function pickDefined<T extends object>(obj: T): Partial<T> {
   const out: Partial<T> = {};
-  for (const key in obj) {
+  for (const key of Object.keys(obj) as Array<keyof T>) {
     const value = obj[key];
-    if (value !== null && value !== undefined) {
-      out[key] = value;
-    }
+    if (value != null) out[key] = value;
   }
   return out;
 }

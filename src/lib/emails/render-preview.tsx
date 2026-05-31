@@ -59,9 +59,10 @@ async function renderRaw(
   template: EmailTemplateKey,
   sanityCopy: unknown,
 ): Promise<string> {
+  type TemplateDefaults = (typeof PREVIEW_DEFAULTS)[typeof template];
   const merged = {
     ...PREVIEW_DEFAULTS[template],
-    ...pickDefined((sanityCopy as Record<string, unknown> | null) ?? {}),
+    ...pickDefined((sanityCopy as Partial<TemplateDefaults> | null) ?? {}),
   };
   switch (template) {
     case "emailOrderConfirmation":

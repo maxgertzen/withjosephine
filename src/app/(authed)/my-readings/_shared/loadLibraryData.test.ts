@@ -24,6 +24,14 @@ import { loadLibraryData } from "./loadLibraryData";
 const fetchReadingsCopyMock = vi.mocked(fetchMyReadingsPage);
 const fetchGiftsCopyMock = vi.mocked(fetchMyGiftsPage);
 
+type ReadingsCopy = Awaited<ReturnType<typeof fetchMyReadingsPage>>;
+type GiftsCopy = Awaited<ReturnType<typeof fetchMyGiftsPage>>;
+
+const mockReadings = (value: unknown) =>
+  fetchReadingsCopyMock.mockResolvedValue(value as ReadingsCopy);
+const mockGifts = (value: unknown) =>
+  fetchGiftsCopyMock.mockResolvedValue(value as GiftsCopy);
+
 beforeEach(() => {
   fetchReadingsCopyMock.mockReset();
   fetchGiftsCopyMock.mockReset();
@@ -31,11 +39,8 @@ beforeEach(() => {
 
 describe("loadLibraryData null-merge defense", () => {
   it("preserves default section headings when Sanity returns null for those fields", async () => {
-    fetchReadingsCopyMock.mockResolvedValue({
-      readingsTabLabel: null,
-      giftsTabLabel: null,
-    } as unknown as Awaited<ReturnType<typeof fetchMyReadingsPage>>);
-    fetchGiftsCopyMock.mockResolvedValue(null);
+    mockReadings({ readingsTabLabel: null, giftsTabLabel: null });
+    mockGifts(null);
 
     const data = await loadLibraryData({ justSent: false });
 
@@ -44,11 +49,11 @@ describe("loadLibraryData null-merge defense", () => {
   });
 
   it("preserves all gift-page defaults when Sanity gift-page fetch returns an all-null shape", async () => {
-    fetchReadingsCopyMock.mockResolvedValue(null);
+    mockReadings(null);
     const allNullGifts = Object.fromEntries(
       Object.keys(MY_GIFTS_PAGE_DEFAULTS).map((key) => [key, null]),
     );
-    fetchGiftsCopyMock.mockResolvedValue(allNullGifts as unknown as Awaited<ReturnType<typeof fetchMyGiftsPage>>);
+    mockGifts(allNullGifts);
 
     const data = await loadLibraryData({ justSent: false });
 
@@ -57,12 +62,9 @@ describe("loadLibraryData null-merge defense", () => {
     }
   });
 
-  it("real Becky edits still override defaults (non-null values win)", async () => {
-    fetchReadingsCopyMock.mockResolvedValue({
-      readingsTabLabel: "My Readings (edited)",
-      giftsTabLabel: null,
-    } as unknown as Awaited<ReturnType<typeof fetchMyReadingsPage>>);
-    fetchGiftsCopyMock.mockResolvedValue(null);
+  it("non-null edits override defaults", async () => {
+    mockReadings({ readingsTabLabel: "My Readings (edited)", giftsTabLabel: null });
+    mockGifts(null);
 
     const data = await loadLibraryData({ justSent: false });
 

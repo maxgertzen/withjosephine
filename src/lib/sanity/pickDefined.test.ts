@@ -23,9 +23,13 @@ describe("pickDefined", () => {
     expect(pickDefined({ enabled: false, disabled: null })).toEqual({ enabled: false });
   });
 
-  it("preserves nested objects without recursing", () => {
+  it("is a shallow copy: nested object reference is preserved", () => {
     const nested = { inner: { keep: null } };
-    expect(pickDefined(nested)).toEqual({ inner: { keep: null } });
+    expect(pickDefined(nested).inner).toBe(nested.inner);
+  });
+
+  it("arrays pass through verbatim, even with null elements", () => {
+    expect(pickDefined({ list: [null, "x"] })).toEqual({ list: [null, "x"] });
   });
 
   it("returns empty object for empty input", () => {
