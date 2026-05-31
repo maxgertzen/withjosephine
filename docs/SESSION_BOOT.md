@@ -1,5 +1,41 @@
 # Session Boot — Active State
 
+## ✅ 2026-05-31 — release/v1.6.0 FULLY POPULATED (10 sub-PRs merged, awaiting cumulative simplify + main merge)
+
+`release/v1.6.0` cut from `main`. 10 sub-PRs landed into it this session. Eight of the original recommended slate plus two dex-hygiene additions in response to Max's frustration with recurring stale dex tasks. CI now fires on PR-to-release/* (the `pull_request.branches` config was extended this arc — commit `1bedb95`). All 10 merged via squash. No prod deploy yet; that comes after the cumulative `/simplify` 3-vantage pass + the `release/v1.6.0 → main` PR.
+
+**Sub-PRs (squash-merged in order):**
+- **#228 (`ym2efbwn`, squash `83f3ac9`)** — Hero scroll-down indicator a11y. Adds `role="button"` + `tabIndex={0}` + `onKeyDown` (Enter/Space) + `aria-label` to the previously div+onClick element. Motion mock updated to spread-all-props instead of destructuring four. +4 keyboard tests.
+- **#229 (`sqnozgtu`, squash `1aba21b`)** — DatePicker prev/next arrows aligned with month/year dropdowns. `h-9` on both `nav` and `month_caption` in `dayPickerShared.ts`; both rows now occupy 36px with their existing `items-center`. DateTimePicker re-uses these classes — confirmed unchanged.
+- **#230 (`t380yxay`, squash `e31eecc`)** — GiftStatusPill hydration mismatch fixed. New shared `useIsClient` hook (`src/lib/hooks/useIsClient.ts`) using the react-aria `useIsSSR` `useSyncExternalStore` pattern. Pill renders empty moment during SSR + first client render (matches), then full moment post-hydration. No more "Hydration failed" on every `/my-readings` render with a scheduled gift.
+- **#231 (`td3f86z6`, squash `d84f1f2`)** — `notFoundPage` + `underConstructionPage` defaults centralized in `src/data/defaults.ts`; both singletons added to `scripts/seed-customer-emails-and-pages.mts`. Both `not-found.tsx` and `UnderConstruction.tsx` now consume the centralized constants (closes the inline-DEFAULTS violation of the "fallback defaults centralized in defaults.ts" binding constraint).
+- **#232 (`axfyutyx`, squash `482c804`)** — `scripts/repair-theme-color-shape-2026-05-31.ts` one-off mutation script. Idempotent. Repairs Sanity theme `blush`/`ivory`/`rose` color fields where they ended up as recursively-nested `{hex:{hex:{hex:{hex:"#…"}}}}` shapes from a re-save loop in the Studio colorInput plugin. PR #213 already plugged the rendering side via defensive `extractHex`; this cleans the data itself.
+- **#233 (`5cyibtb0`, squash `08b55ca`)** — `src/scanners/commentNarration.test.ts` fails CI when source comments carry `Phase \d+`, `dex [a-z0-9]{6,}`, `epic [a-z0-9]{6,}`, or date-prefix narration. Recurrence-prevention for `feedback_comments_over_logged`. 0 violations across `src/` at ship; the multi-line block-detection arm was deferred (33 pre-existing candidates need a content-review pass).
+- **#234 (`5f0bqd2d`, squash `6a07267`)** — Layer-3 env-gated production allowlist in `src/lib/resend.tsx`. In non-production envs (`NEXT_PUBLIC_SANITY_DATASET !== "production"`), rejects all Resend sends to recipients not on a tiny prod allowlist (`hello@withjosephine.com`, `maxgertzen@gmail.com`, `NOTIFICATION_EMAIL`). New `SkipReason` `env_guard` fires before the existing flag + header checks. +6 tests. Belt-and-suspenders defense after the 2026-05-28 Resend leak.
+- **#235 (`50dqawuf`, squash `c80ad43`)** — Native `<select>` replaced with brand Radix Select in pickers. Refactor: the new Radix-backed primitive is the canonical `Select` (`src/components/Form/Select/`); the prior native-wrapper is `FormSelect` (`src/components/Form/FormSelect/`) and now uses `Select` internally so IntakeForm Sanity-driven dropdowns also get the visual upgrade. `BrandSelect` interim name gone. Listbox width pinned to trigger via `var(--radix-select-trigger-width)`. PickerSelect renders inside the Popover's portal container so the listbox doesn't escape the popover stacking context.
+- **#236 (dex auto-close GH Action, squash `a507bf6`)** — `.github/workflows/dex-auto-close.yml` + `.github/scripts/dex-auto-close.mjs`. Listens for `pull_request.closed` with `merged==true`; parses the PR body + squash-merge commit for `Closes dex <id>` / `Fixes dex <id>` / `Resolves dex <id>`; runs `dex complete <id> --commit <merge_sha> --force` per match; commits the updated `.dex/tasks.jsonl` back to the base branch as `chore(dex): auto-close tasks for PR #<n>`. Stops the recurring stale-dex-tasks pattern at the source.
+- **#237 (dex audit reconciler, squash `7e5d1ed`)** — `scripts/dex-audit.mts` read-only sweep tool. Classifies open tasks into `likely-done` (has explicit Closes-commit + no open children), `stale-orphan` (old + all referenced paths missing + no open children), `needs-review` (neither). First run flagged 8 likely-done — exactly the 8 v1.6.0 sub-PR tasks above, which were closed manually during bookkeeping this session (auto-close runs on PR-to-main, so sub-PR-to-release/v1.6.0 doesn't trigger it).
+
+**Bookkeeping commits direct on `release/v1.6.0`:**
+- **`693cd81`** — enable CI + auto-deploy-staging on `release/v1.6.0` (mirrors v1.5.0 pattern).
+- **`1bedb95`** — extend `pull_request.branches` so PR-to-release/* fires lint/typecheck/test/storybook (the previous config only fired on PR-to-main; release-branch sub-PRs had no CI gate until merged).
+
+**🚨 Max-actions before `release/v1.6.0 → main` merge:**
+1. **Cumulative `/simplify` 3-vantage pass** on the `release/v1.6.0 → main` diff per `feedback_simplify_scale_to_change_size`. Findings landed in a single commit on `release/v1.6.0` before the merge PR opens.
+2. **Open `release/v1.6.0 → main` PR**. The full Playwright matrix + content-contract fires (PR-to-main triggers).
+3. **`pnpm tsx scripts/seed-customer-emails-and-pages.mts staging && … production`** (PR #231 — creates the notFoundPage + underConstructionPage singletons; idempotent for the 17 already-seeded).
+4. **`pnpm tsx scripts/repair-theme-color-shape-2026-05-31.ts staging && … production`** (PR #232 — repairs nested-hex blush/ivory/rose in the theme doc).
+5. **Studio re-deploy** via `pnpm studio:deploy` so Becky sees any schema changes from this arc (Select primitive doesn't touch Studio, but the seed script + theme repair both end with Studio reflecting the cleaner state).
+
+**Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
+- `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg` — Stripe test-mode webhook split.
+- `61lzvbjt` — a11y audit on time + calendar picker components.
+- `ttys8qku` — Re-run smoke walkthrough on prod.
+- (operator) Production-side `recipient_user_id` repair behind `--i-understand-this-is-production`.
+
+**v1.4.0 + v1.5.0 carry-overs (real-browser smoke still owed):** folds into the v1.6.0 smoke walk once #1-#5 above complete.
+
 ## ✅ 2026-05-31 — v1.5.0 SHIPPED + tagged + Studio deployed (PR #227 squash `a72cf2f`)
 
 `release/v1.5.0 → main` merged at `a72cf2f`. Tag `v1.5.0` annotated + pushed against the merge commit. `ALLOWED_PREVIEW_RECIPIENTS` had already been provisioned on both staging and production workers pre-merge (Max). Studio re-deployed via `pnpm studio:deploy` post-merge — schema deploy 2/2 workspaces, build clean (~11s). The "Send preview to inbox…" doc action, `EnvelopeIcon` Presentation entries on 12 email singletons, and `tokenReferenceField` banner on `listenPage`/`giftIntakePage`/`thankYouPage` are now live for Becky at https://withjosephine.sanity.studio/. The workspace auth-divergence warning still fires (dex `vw4zmbp5`, non-blocking).
