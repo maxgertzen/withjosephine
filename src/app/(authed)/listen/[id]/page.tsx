@@ -25,6 +25,7 @@ import { USER_AGENT_HEADER } from "@/lib/http/headers";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 import { sendNewDeviceNotice } from "@/lib/resend";
 import { fetchListenPage } from "@/lib/sanity/fetch";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 
 import { ListenTokenInterstitial } from "./ListenTokenInterstitial";
 import { ListenView, type ListenViewProps, type ListenViewState } from "./ListenView";
@@ -59,7 +60,7 @@ export default async function ListenPage({
     cookieValue ? getActiveSession({ cookieValue }) : Promise.resolve(null),
   ]);
 
-  const copy: ListenViewProps["copy"] = { ...LISTEN_PAGE_DEFAULTS, ...(sanity ?? {}) };
+  const copy: ListenViewProps["copy"] = { ...LISTEN_PAGE_DEFAULTS, ...pickDefined(sanity ?? {}) };
 
   // One-tap token branch. The `?t=` arrives via the day-7 delivery email.
   // GET renders the interstitial (no redemption side effect); POST to the

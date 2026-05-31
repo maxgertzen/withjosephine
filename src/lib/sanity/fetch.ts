@@ -4,6 +4,7 @@ import { GIFT_CLAIM_PAGE_DEFAULTS } from "@/data/defaults";
 
 import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
+import { pickDefined } from "./pickDefined";
 import {
   bookingFormQuery,
   bookingGiftFormQuery,
@@ -197,7 +198,7 @@ export const fetchGiftClaimPage = cache(async (): Promise<SanityGiftClaimPage | 
 
 export const loadGiftClaimCopy = cache(async () => {
   const sanityCopy = await fetchGiftClaimPage();
-  return { ...GIFT_CLAIM_PAGE_DEFAULTS, ...(sanityCopy ?? {}) };
+  return { ...GIFT_CLAIM_PAGE_DEFAULTS, ...pickDefined(sanityCopy ?? {}) };
 });
 
 export const fetchGiftIntakePage = cache(async (): Promise<SanityGiftIntakePage | null> => {
