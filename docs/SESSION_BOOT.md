@@ -1,6 +1,41 @@
 # Session Boot — Active State
 
-## ✅ 2026-05-31 — release/v1.6.0 FULLY POPULATED (10 sub-PRs merged, awaiting cumulative simplify + main merge)
+## ✅ 2026-05-31 — v1.6.0 SHIPPED + tagged + Studio deployed (PR #240 squash `24b53a0`)
+
+`release/v1.6.0 → main` merged at `24b53a0` after full CI green (Playwright chromium 3m57s, test 2m4s, storybook, lint+typecheck, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.6.0` annotated + pushed against the merge commit. Studio re-deployed via `pnpm studio:deploy` post-merge: 2/2 schemas, build clean (~11s). Workspace auth-divergence warning still firing (dex `vw4zmbp5`, non-blocking).
+
+**Cumulative simplify polish (`7219b5f`):** 3 parallel review agents (reuse / quality / efficiency) produced 36 candidate findings; 10 accepted after dedup and binding-rule validation (reconciled in `MEMORY/WORK/20260531-130513_v160-simplify-and-merge-pr/FINDINGS.md`). Net diff +137/-85 across 9 files. Extract DayPicker `Dropdown` adapter into shared `createSelectDropdown(contentNode)` consumed by both pickers (collapses the duplicated synthetic `ChangeEvent` cast); `useMemo` the `dayPickerComponents` object in both pickers; drop identity `.map` in `FormSelect`; em-dash to colon in `Select.stories` caption; single-hyphen sentence dividers to comma/colon in two `defaults.ts` strings; add `useIsClient.test.tsx` covering SSR + client; hoist `git log` to single subprocess in `dex-audit.mts`; single-pass `partitionPathsByExistence`; single `dex list --flat --json` load replacing per-id `dex show` in the auto-close action.
+
+**Rejected findings (13):** pre-existing em-dashes outside v1.6.0 hunks (minimal-scope rule); FormSelect-to-Select picker-migration (scope creep); `isProductionAllowlistedRecipient` test gap (agent overclaimed: tests exist at `resend.test.ts:1078-1106`); `useIsClient` JSDoc trim (the WHY is non-obvious per CLAUDE.md); plus low-value or withdrawn findings.
+
+**🚨 Post-merge follow-through EXECUTED 2026-05-31:**
+
+1. **Tag `v1.6.0`** at `24b53a0`, pushed. ✅
+2. **Sanity seed run on BOTH datasets** via `scripts/seed-customer-emails-and-pages.mts`:
+   - Staging: 2 created (`notFoundPage`, `underConstructionPage`), 17 already exist. ✅
+   - **Production: 7 created, 9 already exist.** 2 expected (`notFoundPage`, `underConstructionPage`); 5 unexpected (`listenPage`, `myReadingsPage`, `magicLinkVerifyPage`, `emailSharedShell`, `emailStepUpOtp`, `emailNewDeviceNotice`) had never been seeded on prod despite being introduced in v1.2.1 / v1.3.0 / v1.4.0. The static-fallback pattern (binding rule `feedback_static_fallbacks_can_mask_outages`) was rendering defaults to customers on prod with no editor affordance for Becky. **All filled in this session.** ✅
+3. **Sanity theme color repair** via `scripts/repair-theme-color-shape-2026-05-31.ts`:
+   - Staging: 3 repaired (blush/ivory/rose flattened from nested-hex). ✅
+   - **Production: 3 repaired (PROD CARRIED THE SAME BUG).** PR #213's defensive build-time `extractHex` was masking it on the rendering side; the underlying data is now flat. ✅
+4. **Gift-purchase scheduled preview migration** via `scripts/migrate-gift-purchase-confirmation-scheduled-preview-2026-05-31.ts`:
+   - Staging: misaligned phrase "You don't need to do anything else." rewritten to "We'll send it to {recipientName} on {sendAtDisplay}." ✅
+   - Production: same misaligned phrase, same rewrite. ✅
+5. **Studio re-deployed** via `pnpm studio:deploy`. 2/2 schemas, ~11s. ✅
+
+**🚨 Max-actions still owed:**
+
+1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Walk the 9 journeys in `docs/MANUAL_SMOKE_TEST.md`. Folds in the v1.4.0 + v1.5.0 carry-overs since those surfaces are unchanged. Specifically watch: brand Radix Select in DatePicker/TimePicker/DateTimePicker on real mobile (375px iOS scroll-snap behavior in popovers); the new 404 + under-construction pages (now Sanity-editable in prod); GiftStatusPill rendering on `/my-readings` (hydration warning should be gone); scheduled-gift OC email subject + body shows the new preview phrase.
+2. After smoke green: delete `release/v1.4.0`, `release/v1.5.0`, `release/v1.6.0` (local + remote). Tags preserve every SHA.
+
+**Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
+- `wc4rzud9` — Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg` — Stripe test-mode webhook split.
+- `ttys8qku` — Re-run smoke walkthrough on prod.
+- (operator) Production-side `recipient_user_id` repair behind `--i-understand-this-is-production`.
+
+---
+
+## ✅ 2026-05-31 — release/v1.6.0 FULLY POPULATED (10 sub-PRs merged, awaiting cumulative simplify + main merge) [SHIPPED — see section above]
 
 `release/v1.6.0` cut from `main`. 10 sub-PRs landed into it this session. Eight of the original recommended slate plus two dex-hygiene additions in response to Max's frustration with recurring stale dex tasks. CI now fires on PR-to-release/* (the `pull_request.branches` config was extended this arc — commit `1bedb95`). All 10 merged via squash. No prod deploy yet; that comes after the cumulative `/simplify` 3-vantage pass + the `release/v1.6.0 → main` PR.
 
