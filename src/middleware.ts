@@ -189,6 +189,7 @@ export function middleware(request: NextRequest) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   } else if (isMyReadings || isMyGifts) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
+    response.headers.set("Vary", "Cookie");
   } else if (!isPublicApex) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }

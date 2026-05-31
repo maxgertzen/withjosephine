@@ -9,6 +9,7 @@ import {
   writeAudit,
 } from "@/lib/auth/listenSession";
 import { getRequestAuditContext } from "@/lib/auth/requestAudit";
+import { findUserById } from "@/lib/auth/users";
 
 /**
  * POST /api/library/redeem
@@ -45,6 +46,7 @@ function successResponse(args: { origin: string; cookieValue: string }): NextRes
   response.headers.append("Set-Cookie", buildListenSessionCookieHeader(args.cookieValue));
   response.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
   response.headers.set("Vary", "Cookie");
+  response.headers.set("Clear-Site-Data", '"cache"');
   return response;
 }
 
@@ -62,6 +64,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const verify = await verifyLibraryToken({ token });
   if (!verify.valid) return fallThroughResponse(origin);
+
+  const user = await findUserById(verify.userId);
+  if (!user) return fallThroughResponse(origin);
 
   const audit = await getRequestAuditContext(request);
   const now = Date.now();
