@@ -1,6 +1,6 @@
 import type { PortableTextBlock } from "@portabletext/types";
 import { render } from "@react-email/render";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   PortableTextBody,
@@ -51,6 +51,37 @@ describe("PortableTextBody runtime defensive coercion", () => {
     expect(nullRender).toBe(undefinedRender);
     expect(emptyArrayRender).toBe(undefinedRender);
     expect(whitespaceRender).toBe(undefinedRender);
+  });
+});
+
+describe("PortableTextBody unknown marks", () => {
+  it("renders text content when a span carries an unknown mark with no markDef", async () => {
+    const blockWithUnknownMark: PortableTextBlock = {
+      _type: "block",
+      _key: "b1",
+      style: "normal",
+      markDefs: [],
+      children: [
+        {
+          _type: "span",
+          _key: "s1",
+          text: "Underlined text",
+          marks: ["underline"],
+        },
+      ],
+    };
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const html = await render(<PortableTextBody value={[blockWithUnknownMark]} />);
+
+    expect(html).toContain("Underlined text");
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });
 
