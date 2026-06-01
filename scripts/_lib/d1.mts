@@ -23,7 +23,7 @@ export function assertNotInTestMode(): void {
   if (inTestMode && !allowOverride) {
     throw new Error(
       "Real execD1 invoked under vitest without ALLOW_REAL_D1_IN_TESTS=1. " +
-        "Tests must inject a Deps fake — see feedback_wrangler_oauth_test_footgun.md.",
+        "Tests must inject a Deps fake (see feedback_wrangler_oauth_test_footgun.md).",
     );
   }
 }
@@ -35,7 +35,7 @@ export type ExecD1Options = {
 
 /**
  * Execute a SQL statement against the chosen D1 database via wrangler.
- * Fail-closed under vitest — callers MUST dependency-inject a fake in tests.
+ * Fail-closed under vitest, so callers MUST dependency-inject a fake in tests.
  */
 export function realExecD1<T>(options: ExecD1Options): T[] {
   assertNotInTestMode();

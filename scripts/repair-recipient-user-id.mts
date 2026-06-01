@@ -133,7 +133,7 @@ function buildSanityClient(env: Env): SanityClient {
 
 /**
  * Production Deps factory. Wires {@link realExecD1} + a real Sanity patch
- * call. Both impls fail closed under vitest — see `_lib/d1.mts`.
+ * call. Both impls fail closed under vitest (see `_lib/d1.mts`).
  */
 export function buildRealDeps(env: Env, sanity: SanityClient): Deps {
   return {
