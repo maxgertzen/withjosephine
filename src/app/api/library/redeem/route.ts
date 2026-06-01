@@ -65,10 +65,12 @@ export async function POST(request: Request): Promise<Response> {
   const verify = await verifyLibraryToken({ token });
   if (!verify.valid) return fallThroughResponse(origin);
 
-  const user = await findUserById(verify.userId);
+  const [user, audit] = await Promise.all([
+    findUserById(verify.userId),
+    getRequestAuditContext(request),
+  ]);
   if (!user) return fallThroughResponse(origin);
 
-  const audit = await getRequestAuditContext(request);
   const now = Date.now();
 
   const recordResult = await recordLibraryTokenRedemption({

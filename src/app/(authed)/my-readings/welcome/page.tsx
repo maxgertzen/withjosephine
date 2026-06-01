@@ -45,9 +45,9 @@ export default async function MyReadingsWelcomePage({
 
   const sanity = await fetchMyReadingsPage().catch(() => null);
   const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...pickDefined(sanity ?? {}) };
-  const heading = copy.welcomeHeading || MY_READINGS_PAGE_DEFAULTS.welcomeHeading!;
-  const subhead = copy.welcomeSubhead || MY_READINGS_PAGE_DEFAULTS.welcomeSubhead!;
-  const buttonLabel = copy.welcomeButtonLabel || MY_READINGS_PAGE_DEFAULTS.welcomeButtonLabel!;
+  const heading = copy.welcomeHeading ?? MY_READINGS_PAGE_DEFAULTS.welcomeHeading!;
+  const subhead = copy.welcomeSubhead ?? MY_READINGS_PAGE_DEFAULTS.welcomeSubhead!;
+  const buttonLabel = copy.welcomeButtonLabel ?? MY_READINGS_PAGE_DEFAULTS.welcomeButtonLabel!;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
