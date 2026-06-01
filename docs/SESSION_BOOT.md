@@ -1,6 +1,27 @@
 # Session Boot — Active State
 
-## 🚧 2026-06-01 — release/v1.8.0 arc landed in release branch, awaiting merge-to-main PR
+## ✅ 2026-06-01 — v1.8.0 SHIPPED + tagged (PR #252 squash `e6c5bd1`)
+
+`release/v1.8.0 → main` merged at `e6c5bd1` after full CI green (Playwright chromium 3m56s, GROQ content contract 37s, test, lint+typecheck, storybook, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.8.0` annotated + pushed at `e6c5bd1`. No Sanity migration this arc; no Studio re-deploy required.
+
+**Arc contents (all already in CHANGELOG):** 5 v1.8.0-core sub-PRs (#246, #247, #248, #249, #250) + cumulative simplify polish (`53a2c5c`, `30ab663`) + PR #251 test-only coverage backfill. 21 dex tasks closed across the arc; the dex auto-close GH Action handled all release-branch sub-PR merges + PR #251 cleanly (corrects the prior session's mis-belief that the workflow only fires on PR-to-main).
+
+**Auto-close audit:** workflow YAML at `.github/workflows/dex-auto-close.yml` has no branch filter on the `pull_request.closed` trigger; the `if: merged == true` gate is base-branch-agnostic. Recent runs against `release/v1.8.0` all succeeded (5 v1.8.0 sub-PRs + PR #251). The 2026-05-31 SESSION_BOOT note claiming "auto-close runs on PR-to-main only" was an artifact of when PR #236 hadn't yet landed in `release/v1.6.0` — the workflow file simply wasn't on the base branch then.
+
+**🚨 Max-actions still owed:**
+
+1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Folds in still-owed carry-overs from v1.4.0 + v1.5.0 + v1.6.0 + v1.7.0 (J1–J15 in `docs/MANUAL_SMOKE_TEST.md`). v1.8.0 itself has no new customer-visible surfaces; the smoke is the carry-over backlog.
+2. **Operator action `95rhce6i`** — run `audit-defaults-drift.mts` against prod Sanity; reconcile per `docs/DEFAULTS_RECONCILE_WORKFLOW.md`. The only remaining open subtask of epic `lxighqj6` after PR #251 closed the other 7.
+3. **Branch cleanup post-smoke:** `git push origin --delete release/v1.8.0` once smoke completes (local + remote). Branch deliberately KEPT until post-merge smoke so a hotfix doesn't have to start from main.
+
+**Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
+- `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg`: Stripe test-mode webhook split.
+- `ttys8qku`: Re-run smoke walkthrough on prod.
+
+---
+
+## ✅ 2026-06-01 — release/v1.8.0 arc landed in release branch [SHIPPED — see section above]
 
 6 sub-PRs (PR #246, #247, #248, #249, #250, #251) all squash-merged into `release/v1.8.0`. Each sub-PR ran the binding pre-push gate (lint + typecheck + vitest + `code-review --effort high` + 3-vantage `/simplify`). Sandbox CI dropped from ~14min to 10m26s after Sub-PR 5's `workers: 2` bump (~28% reduction).
 
