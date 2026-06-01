@@ -1,6 +1,7 @@
 import { GoldDivider } from "@/components/GoldDivider";
 import { SectionHeading } from "@/components/SectionHeading";
 import { HOW_IT_WORKS_DEFAULTS, type HowItWorksContent } from "@/data/defaults";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
 interface HowItWorksProps {
@@ -9,7 +10,10 @@ interface HowItWorksProps {
 }
 
 export function HowItWorks({ content, className }: HowItWorksProps) {
-  const { sectionTag, heading, steps } = { ...HOW_IT_WORKS_DEFAULTS, ...content };
+  const { sectionTag, heading, steps } = {
+    ...HOW_IT_WORKS_DEFAULTS,
+    ...pickDefined(content ?? {}),
+  };
 
   return (
     <section id="how-it-works" className={mergeClasses("py-20 px-6 md:px-12", className)}>

@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { StarField } from "@/components/StarField";
 import { HERO_DEFAULTS, type HeroContent } from "@/data/defaults";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
 interface HeroProps {
@@ -23,7 +24,10 @@ function MoonCrescent({ className }: { className?: string }) {
 }
 
 export function Hero({ content, className }: HeroProps) {
-  const { tagline, introGreeting, introBody, ctaText } = { ...HERO_DEFAULTS, ...content };
+  const { tagline, introGreeting, introBody, ctaText } = {
+    ...HERO_DEFAULTS,
+    ...pickDefined(content ?? {}),
+  };
   const [bodyFirst, bodySecond] = introBody.split("\n\n");
 
   const handleScrollToReadings = () => {

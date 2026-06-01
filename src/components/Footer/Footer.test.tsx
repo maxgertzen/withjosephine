@@ -38,10 +38,10 @@ describe("Footer", () => {
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
   });
 
-  it("hides logo when content explicitly sets logoUrl to null", () => {
+  it("hides logo when content sets logoUrl to empty string (Becky-cleared field)", () => {
     const content = {
       brandName: "No Logo Brand",
-      logoUrl: null,
+      logoUrl: "",
       copyrightText: "No Logo Brand.",
     };
 
@@ -49,6 +49,18 @@ describe("Footer", () => {
 
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
+  });
+
+  it("falls back to default logo when content sets logoUrl to null (Sanity-missing field)", () => {
+    const content = {
+      brandName: "Defaulted Brand",
+      logoUrl: null,
+      copyrightText: "Defaulted Brand.",
+    };
+
+    render(<Footer content={content} />);
+
+    expect(screen.getByAltText("Defaulted Brand")).toBeInTheDocument();
   });
 
   it("includes current year in copyright", () => {
