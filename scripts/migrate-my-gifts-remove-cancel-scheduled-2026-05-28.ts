@@ -14,7 +14,7 @@
 //     scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts
 //   set -a && source .env.local && set +a && \
 //     pnpm tsx scripts/migrate-my-gifts-remove-cancel-scheduled-2026-05-28.ts
-import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
+import { patchSingleton } from "./_lib/seedSingleton.mts";
 
 const REMOVED_FIELDS = [
   "cancelScheduledCtaLabel",
@@ -28,32 +28,27 @@ const NEW_FLIP_LABEL = "Cancel the schedule and send it myself";
 
 const LOG_PREFIX = "migrate-my-gifts-remove-cancel-scheduled";
 
-async function main(): Promise<void> {
-  const client = sanityWriteClient();
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-  console.log(`[${LOG_PREFIX}] dataset=${dataset}`);
-  if (!process.env.SANITY_WRITE_TOKEN) {
-    throw new Error("SANITY_WRITE_TOKEN is required");
-  }
-  const doc = await client.fetch<
-    | {
-        _id: string;
-        flipToSelfSendCtaLabel?: string;
-      }
-    | null
-  >(`*[_type == "myGiftsPage"][0]{_id, flipToSelfSendCtaLabel}`);
-  if (!doc) {
-    console.warn(`[${LOG_PREFIX}] no myGiftsPage singleton in this dataset.`);
-    return;
-  }
+type MyGiftsProjection = {
+  _id: string;
+  flipToSelfSendCtaLabel?: string;
+};
 
-  let patch = client.patch(doc._id).unset([...REMOVED_FIELDS]);
+async function main(): Promise<void> {
   let labelChanged = false;
-  if (doc.flipToSelfSendCtaLabel === OLD_FLIP_LABEL) {
-    patch = patch.set({ flipToSelfSendCtaLabel: NEW_FLIP_LABEL });
-    labelChanged = true;
-  }
-  await patch.commit();
+  const doc = await patchSingleton<MyGiftsProjection>({
+    docType: "myGiftsPage",
+    projection: "{_id, flipToSelfSendCtaLabel}",
+    logPrefix: LOG_PREFIX,
+    mutate: (patch, projected) => {
+      let next = patch.unset([...REMOVED_FIELDS]);
+      if (projected.flipToSelfSendCtaLabel === OLD_FLIP_LABEL) {
+        next = next.set({ flipToSelfSendCtaLabel: NEW_FLIP_LABEL });
+        labelChanged = true;
+      }
+      return next;
+    },
+  });
+  if (!doc) return;
   console.log(
     `[${LOG_PREFIX}] applied to ${doc._id}: unset=${REMOVED_FIELDS.join(",")}` +
       (labelChanged ? `, flipToSelfSendCtaLabel relabelled` : `, flipToSelfSendCtaLabel preserved`),
