@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useScrolled } from "@/hooks/useScrolled";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
 interface NavLink {
@@ -37,7 +38,10 @@ type NavigationProps = {
 };
 
 export function Navigation({ content, className }: NavigationProps) {
-  const { navLinks, navCtaText } = { ...NAV_DEFAULTS, ...content };
+  const { navLinks, navCtaText } = {
+    ...NAV_DEFAULTS,
+    ...pickDefined(content ?? {}),
+  };
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);

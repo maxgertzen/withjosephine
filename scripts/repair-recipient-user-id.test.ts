@@ -4,6 +4,7 @@ import {
   applyRepair,
   classifyRow,
   normalizeEmail,
+  runRepair,
   type ClassifiedRepair,
   type Deps,
   type DetectorRow,
@@ -381,5 +382,68 @@ describe("applyRepair write path", () => {
       .prepare("SELECT COUNT(*) AS n FROM recipient_user_id_repair_log")
       .get() as { n: number };
     expect(audit.n).toBe(0);
+  });
+});
+
+describe("runRepair main-flow dry-run (7e3rd74y)", () => {
+  let db: Database.Database;
+  let csvPath: string;
+
+  beforeEach(() => {
+    db = makeFakeDb();
+    csvPath = `/tmp/repair-dry-run-${Date.now()}-${Math.random().toString(36).slice(2)}.csv`;
+  });
+
+  afterEach(() => {
+    db.close();
+    try {
+      require("node:fs").unlinkSync(csvPath);
+    } catch {
+      // CSV may not exist on empty-detector path.
+    }
+  });
+
+  it("with apply=false: detector runs, classification logs, but zero submissions or audit writes happen", async () => {
+    seedUser(db, { id: "user-purchaser", email: "purchaser@example.com" });
+    seedUser(db, { id: "user-recipient", email: "recipient@example.com" });
+    seedSubmission(db);
+    const { deps, mirrorCalls } = makeFakeDeps(db);
+
+    const summary = await runRepair({ deps, env: "staging", apply: false, csvPath });
+
+    expect(summary.appliedAny).toBe(false);
+    expect(summary.completed).toBe(0);
+    expect(summary.failed).toBe(0);
+
+    const submissionAfter = db
+      .prepare("SELECT recipient_user_id FROM submissions WHERE id = ?")
+      .get(baseRow.submission_id) as { recipient_user_id: string };
+    expect(submissionAfter.recipient_user_id).toBe(baseRow.current_recipient_user_id);
+
+    const auditCount = db
+      .prepare("SELECT COUNT(*) AS n FROM recipient_user_id_repair_log")
+      .get() as { n: number };
+    expect(auditCount.n).toBe(0);
+
+    expect(mirrorCalls).toEqual([]);
+  });
+
+  it("with apply=true: applies updates, writes audit row, calls mirror", async () => {
+    seedUser(db, { id: "user-purchaser", email: "purchaser@example.com" });
+    seedUser(db, { id: "user-recipient", email: "recipient@example.com" });
+    seedSubmission(db);
+    const { deps, mirrorCalls } = makeFakeDeps(db);
+
+    const summary = await runRepair({ deps, env: "staging", apply: true, csvPath });
+
+    expect(summary.appliedAny).toBe(true);
+    expect(summary.completed).toBe(1);
+
+    const submissionAfter = db
+      .prepare("SELECT recipient_user_id FROM submissions WHERE id = ?")
+      .get(baseRow.submission_id) as { recipient_user_id: string };
+    expect(submissionAfter.recipient_user_id).toBe("user-recipient");
+
+    expect(mirrorCalls).toHaveLength(1);
   });
 });

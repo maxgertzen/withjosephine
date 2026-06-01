@@ -479,6 +479,7 @@ export const emailSharedShellQuery = groq`
 export const listenPageQuery = groq`
   *[_type == "listenPage"][0] {
     welcomeRibbon,
+    recipientGreeting,
     deliveredHeading,
     deliveredSubheading,
     voiceNoteLabel,

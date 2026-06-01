@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
 const SOCIAL_LABELS: Record<string, string> = {
@@ -35,7 +36,10 @@ interface FooterProps {
 }
 
 export function Footer({ content, socialLinks, className }: FooterProps) {
-  const { brandName, logoUrl, copyrightText } = { ...FOOTER_DEFAULTS, ...content };
+  const { brandName, logoUrl, copyrightText } = {
+    ...FOOTER_DEFAULTS,
+    ...pickDefined(content ?? {}),
+  };
 
   return (
     <footer

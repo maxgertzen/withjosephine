@@ -53,31 +53,73 @@ async function getClient(): Promise<SanityClient | null> {
  *
  * Reading docs are effectively immutable in practice (3 readings, slugs
  * have never changed). Memoize lookups per slug in module scope to skip
- * the Sanity round-trip on every booking submit. A schema-rename would
- * require a worker restart, which matches how Sanity Studio publishes
- * propagate to the worker today.
+ * the Sanity round-trip on every booking submit.
+ *
+ * Cloudflare Workers isolate lifetime is non-deterministic. A long-lived
+ * isolate serving traffic after a Studio reading-slug rename would return
+ * a stale `_ref` until the isolate recycled. The TTL bounds the staleness
+ * window. `clearReadingRefCache()` is exported for tests and any future
+ * webhook-driven invalidation.
+ *
+ * The cache stores in-flight Promises (not resolved entries), so concurrent
+ * first-time misses for the same slug share a single Sanity round-trip
+ * instead of fanning out duplicates. A second known race: a
+ * `clearReadingRefCache()` call during an in-flight fetch will see the
+ * fetch repopulate the cache after the clear. A webhook invalidator would
+ * need an epoch counter checked at set-time to fully close that gap.
  */
-const readingRefCache = new Map<string, { _type: "reference"; _ref: string }>();
+const READING_REF_TTL_MS = 5 * 60 * 1000;
 
-async function findReadingRef(
+type ReadingRef = { _type: "reference"; _ref: string };
+
+type ReadingRefEntry = {
+  promise: Promise<ReadingRef | null>;
+  expiresAt: number;
+};
+
+const readingRefCache = new Map<string, ReadingRefEntry>();
+
+export function clearReadingRefCache(): void {
+  readingRefCache.clear();
+}
+
+async function fetchReadingRef(
   client: SanityClient,
   slug: string,
-): Promise<{ _type: "reference"; _ref: string } | null> {
-  const cached = readingRefCache.get(slug);
-  if (cached) return cached;
+): Promise<ReadingRef | null> {
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
       { slug },
     );
     if (!result) return null;
-    const ref = { _type: "reference" as const, _ref: result._id };
-    readingRefCache.set(slug, ref);
-    return ref;
+    return { _type: "reference" as const, _ref: result._id };
   } catch (error) {
     console.warn(`[sanityMirror] reading ref lookup failed for ${slug}`, error);
     return null;
   }
+}
+
+export async function findReadingRef(
+  client: SanityClient,
+  slug: string,
+): Promise<ReadingRef | null> {
+  const cached = readingRefCache.get(slug);
+  if (cached && cached.expiresAt > Date.now()) return cached.promise;
+  if (cached) readingRefCache.delete(slug);
+  const promise = fetchReadingRef(client, slug);
+  readingRefCache.set(slug, {
+    promise,
+    expiresAt: Date.now() + READING_REF_TTL_MS,
+  });
+  // If the fetch resolves null (or rejects internally), drop the cache entry
+  // so the next call retries instead of serving null for the full TTL.
+  promise
+    .then((value) => {
+      if (value === null) readingRefCache.delete(slug);
+    })
+    .catch(() => readingRefCache.delete(slug));
+  return promise;
 }
 
 export async function mirrorSubmissionCreate(

@@ -21,35 +21,27 @@
 //
 // Env: reads .env.local for SANITY_WRITE_TOKEN + NEXT_PUBLIC_SANITY_PROJECT_ID.
 
-import { spawnSync } from "node:child_process";
-import fs from "node:fs";
-import { fileURLToPath } from "node:url";
-import { createClient, type SanityClient } from "@sanity/client";
+import { type SanityClient } from "@sanity/client";
+
+import {
+  SANDBOX_DOMAIN,
+  SANDBOX_EMAIL_PREFIX_LIST,
+} from "../src/lib/booking/sandboxEmails";
+
+import { writeCsv } from "./_lib/csv.mts";
+import { quoteSql, realExecD1 } from "./_lib/d1.mts";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
+import { isMainModule } from "./_lib/main.mts";
+import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const DEFAULT_FROM = "2026-05-25T04:39:00Z";
 const DEFAULT_TO = "2026-05-25T07:00:00Z";
-const SANITY_API_VERSION = "2025-01-01";
-const STAGING_D1_DATABASE = "withjosephine-bookings-staging";
-
-// MIRRORS src/lib/resend.tsx (the canonical SANDBOX_EMAIL_PREFIXES list).
-// Dex task `65udsxnp` tracks lifting both copies to a shared module.
-const SANDBOX_EMAIL_PREFIXES = [
-  "gift-roundtrip-purchaser+",
-  "gift-roundtrip-recipient+",
-  "gift-recipient-listen-purchaser+",
-  "gift-recipient-listen-recipient+",
-  "listen-roundtrip+",
-  "stripe-roundtrip+",
-  "v120-qa+",
-] as const;
-const SANDBOX_DOMAIN = "@withjosephine.com";
 
 function isSandboxEmail(address: string | null | undefined): boolean {
   if (!address) return false;
   const lower = address.toLowerCase();
   if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
-  return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
+  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
 }
 
 type Args = {
@@ -110,21 +102,7 @@ function parseArgs(argv: readonly string[]): Args {
 }
 
 function buildSanityClient(dataset: "production" | "staging"): SanityClient {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-  const token = process.env.SANITY_WRITE_TOKEN;
-  if (!projectId) throw new Error("NEXT_PUBLIC_SANITY_PROJECT_ID is not set in .env.local");
-  if (!token) throw new Error("SANITY_WRITE_TOKEN is not set in .env.local");
-  return createClient({
-    projectId,
-    dataset,
-    apiVersion: SANITY_API_VERSION,
-    useCdn: false,
-    token,
-  });
-}
-
-function quoteSql(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`;
+  return sanityWriteClient({ dataset });
 }
 
 function bulkQueryStagingD1(submissionIds: readonly string[]): Map<string, D1SubmissionRow> {
@@ -132,16 +110,8 @@ function bulkQueryStagingD1(submissionIds: readonly string[]): Map<string, D1Sub
   if (submissionIds.length === 0) return out;
   const inList = submissionIds.map(quoteSql).join(",");
   const sql = `SELECT id, email, recipient_email FROM submissions WHERE id IN (${inList})`;
-  const result = spawnSync(
-    "pnpm",
-    ["exec", "wrangler", "d1", "execute", STAGING_D1_DATABASE, "--env", "staging", "--remote", "--json", "--command", sql],
-    { encoding: "utf-8" },
-  );
-  if (result.status !== 0) {
-    throw new Error(`wrangler d1 execute failed: ${result.stderr}`);
-  }
-  const parsed = JSON.parse(result.stdout) as Array<{ results: D1SubmissionRow[] }>;
-  for (const row of parsed[0]?.results ?? []) {
+  const results = realExecD1<D1SubmissionRow>({ env: "staging", sql });
+  for (const row of results) {
     out.set(row.id, row);
   }
   return out;
@@ -197,18 +167,13 @@ async function classifyCandidate(
   };
 }
 
-function csvEscape(value: string | null): string {
-  const safe = value ?? "";
-  return `"${safe.replace(/"/g, '""')}"`;
-}
-
-function writeCsv(rows: readonly ClassifiedRow[], path: string): void {
-  const header = "_id,_createdAt,recipient_email,purchaser_email,classification\n";
-  const body = rows
-    .map((r) => [r._id, r._createdAt, r.recipient_email, r.purchaser_email, r.classification].map(csvEscape).join(","))
-    .join("\n");
-  fs.writeFileSync(path, header + body + "\n");
-}
+const CSV_COLUMNS = [
+  { name: "_id", get: (r: ClassifiedRow) => r._id },
+  { name: "_createdAt", get: (r: ClassifiedRow) => r._createdAt },
+  { name: "recipient_email", get: (r: ClassifiedRow) => r.recipient_email },
+  { name: "purchaser_email", get: (r: ClassifiedRow) => r.purchaser_email },
+  { name: "classification", get: (r: ClassifiedRow) => r.classification },
+] as const;
 
 type ApplyResult =
   | { stage: "completed" }
@@ -274,7 +239,7 @@ async function main(): Promise<void> {
   console.log(`[backfill] orphan=${orphans.length}  sandbox-residue=${residue.length}  non-orphan-skip=${nonOrphans.length}  cross-pollution-skip=${crossPollution.length}`);
 
   const csvPath = `/tmp/orphan-backfill-${Date.now()}.csv`;
-  writeCsv(classified, csvPath);
+  writeCsv({ path: csvPath, rows: classified, columns: CSV_COLUMNS });
   console.log(`[backfill] CSV written → ${csvPath}`);
 
   for (const row of classified) {
@@ -326,6 +291,6 @@ async function main(): Promise<void> {
   if (createFailed > 0 || deleteFailed > 0 || residueFailed > 0) process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   await main();
 }

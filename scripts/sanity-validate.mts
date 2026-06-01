@@ -68,7 +68,11 @@ loadDotEnv();
 
 const dataset = process.argv[2];
 if (dataset !== "staging" && dataset !== "production") {
-  console.error("Usage: pnpm sanity:validate <staging|production>");
+  const received = dataset === undefined ? "(no argument)" : `'${dataset}'`;
+  console.error(
+    `[sanity-validate] dataset argument required. Received ${received}.\n` +
+      `Usage: pnpm sanity:validate <staging|production>`,
+  );
   process.exit(2);
 }
 
@@ -79,14 +83,19 @@ if (!projectId) {
 }
 
 // Prefer the read-only token. Fall back to write token if read token is not
-// configured — read-only is strongly preferred for a validation harness so we
+// configured. Read-only is strongly preferred for a validation harness so we
 // can't accidentally mutate, but write works as a fallback since reads are a
-// subset of write permissions.
-const token = process.env.SANITY_READ_TOKEN || process.env.SANITY_WRITE_TOKEN;
+// subset of write permissions. The token source is logged so an operator can
+// see which env var resolved without grepping the script.
+const readToken = process.env.SANITY_READ_TOKEN;
+const writeToken = process.env.SANITY_WRITE_TOKEN;
+const token = readToken || writeToken;
 if (!token) {
   console.error("SANITY_READ_TOKEN (or SANITY_WRITE_TOKEN fallback) missing in env.");
   process.exit(2);
 }
+const tokenSource = readToken ? "SANITY_READ_TOKEN" : "SANITY_WRITE_TOKEN";
+console.log(`[sanity-validate] dataset=${dataset} token=${tokenSource}`);
 
 const client: SanityClient = createClient({
   projectId,

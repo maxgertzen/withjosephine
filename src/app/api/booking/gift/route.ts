@@ -31,6 +31,26 @@ const MAX_GIFT_MESSAGE_CHARS = 280;
 const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
+const PURCHASER_USER_RETRY_ATTEMPTS = 3;
+const PURCHASER_USER_RETRY_BASE_MS = 50;
+
+async function resolvePurchaserUser(args: { email: string; name: string }): Promise<
+  { userId: string } | null
+> {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= PURCHASER_USER_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await getOrCreateUser({ email: args.email, name: args.name });
+    } catch (error) {
+      lastError = error;
+      if (attempt === PURCHASER_USER_RETRY_ATTEMPTS) break;
+      const backoff = PURCHASER_USER_RETRY_BASE_MS * 2 ** (attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+  console.error("[booking-gift] purchaser user-create failed after retries", lastError);
+  return null;
+}
 
 type GiftBookingBody = {
   readingSlug: string;
@@ -251,16 +271,16 @@ export async function POST(request: Request): Promise<Response> {
 
   const [reading, userResult] = await Promise.all([
     fetchReading(parsedBody.readingSlug),
-    getOrCreateUser({ email: purchaserEmail, name: purchaserFirstName }).catch(
-      (error) => {
-        console.error("[booking-gift] purchaser user-create failed", error);
-        return null;
-      },
-    ),
+    resolvePurchaserUser({ email: purchaserEmail, name: purchaserFirstName }),
   ]);
   if (!reading) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
+  // C3-b: an unretried transient user-resolve failure used to land a NULL
+  // purchaser_user_id. Retry first (most transients clear in 150ms); on
+  // sustained failure fall through to NULL and let the Stripe webhook's
+  // post-payment getOrCreateUser self-heal via setSubmissionPurchaserUser.
+  // The retry tightens the common case; the webhook remains the safety net.
   const purchaserUserId = userResult?.userId ?? null;
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName

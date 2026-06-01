@@ -8,6 +8,7 @@ import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { formatAmountPaid } from "@/lib/booking/formatAmount";
 import { formatSendAt } from "@/lib/booking/formatSendAt";
 import { issueGiftClaimToken } from "@/lib/booking/giftClaim";
+import { purchaserSuppliedRecipientName } from "@/lib/booking/giftPersonas";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import { priceDisplayFor } from "@/lib/booking/priceDisplayFor";
 import {
@@ -100,8 +101,7 @@ async function dispatchGiftPurchaseConfirmation(
     session.amount_total ?? null,
     session.currency ?? null,
   );
-  const recipientName =
-    submission.responses.find((r) => r.fieldKey === "recipient_name")?.value || null;
+  const recipientName = purchaserSuppliedRecipientName(submission);
   const purchaserFirstNameFromResponses = submission.responses
     .find((r) => r.fieldKey === "purchaser_first_name")
     ?.value?.trim();

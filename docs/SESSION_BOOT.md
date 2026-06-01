@@ -1,5 +1,46 @@
 # Session Boot — Active State
 
+## 🚧 2026-06-01 — release/v1.8.0 arc landed in release branch, awaiting merge-to-main PR
+
+6 sub-PRs (PR #246, #247, #248, #249, #250, #251) all squash-merged into `release/v1.8.0`. Each sub-PR ran the binding pre-push gate (lint + typecheck + vitest + `code-review --effort high` + 3-vantage `/simplify`). Sandbox CI dropped from ~14min to 10m26s after Sub-PR 5's `workers: 2` bump (~28% reduction).
+
+**HEAD of `release/v1.8.0`:** `b0ef59a` (PR #251 squash `4855a57` + dex auto-close bot commit `b0ef59a`). Cumulative simplify + comments sweep complete; all 10 v1.8.0-core findings folded in (4 immediate, 6 follow-up-now per Max). PR #251 added test-only coverage backfill on top.
+
+**21 dex tasks closed across the arc:**
+
+- Sub-PR 1 (`refactor(scripts): extract _lib helpers + pickDefined rollout + CSP audit`): `e0hourn7`, `nkiqfpln`, `52bcq6kk`, `7e3rd74y`, `1pv3m55c`
+- Sub-PR 2 (`fix(sanityMirror): TTL cache + sanity-validate ergonomics + defaults audit script`): `35txg0an`, `w7iz3o2t`, `laj8x38r`
+- Sub-PR 3 (`fix(studio): preview badge + font fallback + paint guards + workerd edge test`): `5imv4l0e`, `qhd4j1xk`, `dsyeraob`, `3syvah89`
+- Sub-PR 4 (`fix(booking): gift retry + recipient personalization`): `njrrqb0f`, `yf5ciq64`
+- Sub-PR 5 (`perf(e2e): workers: 2 for sandbox suite`): `w48m94vw`
+- PR #251 (`test(v180): backfill coverage for v1.8.0 surfaces`): `6hfzgo13`, `9vb4iz95`, `jmt52c7r`, `nvbgx1n8`, `qqfj212c`, `ry40itf2`, `vjtos13w` — 5 unit + 2 e2e, auto-closed by `dex-auto-close.yml` on merge (corrects an earlier mis-belief that the workflow only fires on PR-to-main; per the workflow YAML it fires on any merged PR against any base, including release/*).
+
+Plus one pre-arc auto-close: `eti8rzqv` (UA_AUDIT_HASH_DEPLOYED auto-probe — obviated by PR #245's `ztpk6mz7`).
+
+**Architectural decisions worth knowing for next session:**
+
+- Sub-PR 4 `resolvePurchaserUser` retries 3× with 50/100ms backoff then falls through to `purchaser_user_id = NULL`, preserving the Stripe webhook's `setSubmissionPurchaserUser` self-heal (Max-approved 2026-06-01 — fail-loud 503 was reverted because it removed a revenue-capture safety net for transient D1 outages).
+- Sub-PR 4 listen-page recipient lookup uses `recipientNameFor` from `giftPersonas` (canonical chain: purchaser-supplied → first_name → legal_full_name → email-local), gated on `submission.isGift`, so the greeting survives the redeem-time `responses_json` overwrite.
+- Sub-PR 2 `readingRefCache` now stores in-flight Promises (cumulative polish), coalescing concurrent first-time misses on the same slug into a single Sanity round-trip.
+- New shared helpers in `scripts/_lib/`: `d1.mts`, `csv.mts`, `main.mts`, plus `seedSingleton.mts` extended with `patchSingleton` + `setIfMatchesDefault`. All options-object signatures.
+- New helper `purchaserSuppliedRecipientName` exported from `src/lib/booking/giftPersonas.ts`; 3 callers (gift intake page, stripe webhook, GiftCardActions).
+- PR #251 vjtos13w e2e is wiring-only (no literal `{recipientName}` leak) because the default + current Sanity `giftIntakePage.headingWelcome` don't include the token — substitution is Becky-opt-in. Helper unit tests cover the substitution path itself.
+
+**🚨 Next-session checklist (release-to-main + post-merge):**
+
+1. **Cumulative simplify polish** ALREADY DONE on `release/v1.8.0` (commits `53a2c5c` + `30ab663`). Skip the per-binding-rule cumulative pass.
+2. **Open `release/v1.8.0 → main` PR via `sentry-skills:pr-writer`.** PR-to-main triggers full Playwright matrix + content-contract job.
+3. **Watch CI**; merge on green; tag `v1.8.0` at the squash-merge commit.
+4. **Real-browser smoke** on deployed prod (no Sanity migration to run; just deploy and smoke). Folds into v1.4.0 + v1.5.0 + v1.6.0 + v1.7.0 carry-overs still outstanding.
+5. **Operator action: run `audit-defaults-drift.mts` against prod Sanity** (dex `95rhce6i`). Reconcile per `docs/DEFAULTS_RECONCILE_WORKFLOW.md`. This is the only remaining open subtask of epic `lxighqj6` — the 7 code coverage gaps were closed by PR #251.
+
+**🚨 Operator items still owed (carried over):**
+
+- Real-browser smoke against deployed prod for v1.4.0 + v1.5.0 + v1.6.0 + v1.7.0 (J1–J15 in `docs/MANUAL_SMOKE_TEST.md`).
+- Hold-gate (`wdpz1ux4` epic): `wc4rzud9` pre-prod data cleanup, `cdw3mnpg` Stripe test-mode webhook split, `ttys8qku` smoke walk.
+
+---
+
 ## ✅ 2026-06-01 — Post-v1.7.0 quick-win batch SHIPPED (PR #245 squash `6f3a0c1`)
 
 8 dex tasks batched into a single PR against `main` (no release arc). Full CI green at merge: Playwright chromium 3m49s, GROQ content contract 58s, test 2m16s, lint+typecheck, storybook, osv-scanner, security-audit all SUCCESS. Squash-merged via `gh pr merge --squash --delete-branch` at `6f3a0c1`.

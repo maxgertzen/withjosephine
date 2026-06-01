@@ -173,8 +173,12 @@ test.describe("Gift round-trip — staging", () => {
     await seedGiftIntakeDraft(page, submissionId, { recipientEmail });
     await page.goto(claimPath);
 
-    await page.waitForURL(/\/gift\/intake/, { timeout: 30_000 });
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.waitForURL(/\/gift\/intake\?welcome=1/, { timeout: 30_000 });
+    // {recipientName} substitution is Becky-opt-in; assert the wiring (no
+    // literal token leak) since the live copy may or may not include it.
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+    await expect(heading).not.toContainText("{recipientName}");
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);
@@ -292,6 +296,12 @@ test.describe("Gift round-trip — staging", () => {
     await expect(
       page.locator(`a[href="/api/listen/${submissionId}/pdf"]`),
     ).toBeVisible();
+    // "Mira" is the first_name hardcoded in seedGiftIntakeDraft; the redeem
+    // wipes purchaser-supplied recipient_name so recipientNameFor falls
+    // through to intake first_name.
+    await expect(
+      page.getByTestId("listen-recipient-greeting"),
+    ).toContainText("Mira");
   });
 
   test("birth-chart self_send: purchaser → Stripe → claim URL ready to forward", async ({

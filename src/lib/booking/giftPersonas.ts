@@ -43,10 +43,24 @@ export function purchaserFirstNameFor(submission: SubmissionRecord): string {
   return purchaserFirstNameOrNull(submission) ?? firstNameFromEmailLocal(submission.email, "Someone");
 }
 
+/**
+ * The literal value the purchaser typed into the recipient-name field, or
+ * null if absent / empty after trim. Distinct from recipientNameFor which
+ * falls back to the intake-side first-name chain after redeem wipes the
+ * original response.
+ */
+export function purchaserSuppliedRecipientName(
+  submission: { responses: { fieldKey: string; value: string }[] },
+): string | null {
+  return (
+    submission.responses
+      .find((r) => r.fieldKey === "recipient_name")
+      ?.value?.trim() || null
+  );
+}
+
 export function recipientNameFor(submission: SubmissionRecord): string {
-  const fromPurchaser = submission.responses
-    .find((r) => r.fieldKey === "recipient_name")
-    ?.value?.trim();
+  const fromPurchaser = purchaserSuppliedRecipientName(submission);
   if (fromPurchaser) return fromPurchaser;
   return recipientFirstNameFromIntakeResponses(submission.responses, submission.email ?? "");
 }

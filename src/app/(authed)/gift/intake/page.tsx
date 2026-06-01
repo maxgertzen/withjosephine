@@ -10,6 +10,7 @@ import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import { purchaserSuppliedRecipientName } from "@/lib/booking/giftPersonas";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
@@ -74,7 +75,16 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   }
 
   const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
-  const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
+  const readingName = reading.name;
+  const lede = copy.lede.replaceAll("{readingName}", () => readingName);
+  // {recipientName} substitution is welcome-path only: the non-welcome heading
+  // never advertised the token and Becky's editor doesn't show it for that
+  // field. Scoping the replace keeps a literal `{recipientName}` rendering as
+  // text on the return-visit heading if anyone ever types it there.
+  const recipientNameToken = purchaserSuppliedRecipientName(submission) ?? "";
+  const heading = welcome
+    ? copy.headingWelcome.replaceAll("{recipientName}", () => recipientNameToken)
+    : copy.heading;
 
   const filteredSections = filterSectionsForReading(
     bookingForm.sections,
@@ -96,7 +106,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               {copy.eyebrow}
             </p>
             <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-              {welcome ? copy.headingWelcome : copy.heading}
+              {heading}
             </h1>
             <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-6">
               {lede}

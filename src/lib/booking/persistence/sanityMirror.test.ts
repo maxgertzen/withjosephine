@@ -115,3 +115,100 @@ describe("mirrorSubmissionPatch — art9 requires readingSlug (d5y8qzl5)", () =>
     expect(bad).toBeDefined();
   });
 });
+
+describe("findReadingRef cache TTL (35txg0an)", () => {
+  it("caches the first lookup, serves the second from cache within TTL, refetches after expiry", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ _id: "reading-akashic-v1" })
+      .mockResolvedValueOnce({ _id: "reading-akashic-v2" });
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-01T12:00:00Z"));
+
+    try {
+      const first = await findReadingRef(fakeClient, "akashic-record");
+      expect(first).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      const cached = await findReadingRef(fakeClient, "akashic-record");
+      expect(cached).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      vi.setSystemTime(new Date("2026-06-01T12:06:00Z"));
+
+      const refetched = await findReadingRef(fakeClient, "akashic-record");
+      expect(refetched).toEqual({ _type: "reference", _ref: "reading-akashic-v2" });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+      clearReadingRefCache();
+    }
+  });
+
+  it("coalesces concurrent first-time misses on the same slug into a single fetch", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+
+    let resolveFetch: (value: { _id: string }) => void = () => {};
+    const pending = new Promise<{ _id: string }>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockReturnValue(pending);
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    const [first, second] = [
+      findReadingRef(fakeClient, "akashic-record"),
+      findReadingRef(fakeClient, "akashic-record"),
+    ];
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveFetch({ _id: "reading-akashic-v1" });
+    const [a, b] = await Promise.all([first, second]);
+
+    expect(a).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(b).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the cache entry when the fetch resolves null so the next call retries", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ _id: "reading-akashic-v1" });
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    const first = await findReadingRef(fakeClient, "akashic-record");
+    expect(first).toBeNull();
+
+    const second = await findReadingRef(fakeClient, "akashic-record");
+    expect(second).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("clearReadingRefCache forces the next call to re-fetch from Sanity", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ _id: "reading-birth-v1" })
+      .mockResolvedValueOnce({ _id: "reading-birth-v2" });
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    const first = await findReadingRef(fakeClient, "birth-chart");
+    expect(first?._ref).toBe("reading-birth-v1");
+
+    clearReadingRefCache();
+
+    const refetched = await findReadingRef(fakeClient, "birth-chart");
+    expect(refetched?._ref).toBe("reading-birth-v2");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
