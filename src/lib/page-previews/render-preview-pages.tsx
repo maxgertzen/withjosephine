@@ -35,7 +35,12 @@ import {
 
 const FONT_LINKS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">`;
 
-const FONT_VARIABLES = `:root{--font-display-source:'Cormorant Garamond',serif;--font-body-source:'Inter',sans-serif;}html,body{margin:0;padding:0;font-family:var(--font-body-source);}`;
+// Display + body font fallback chains end in a generic family so the iframe
+// stays legible if the Google Fonts request is ever blocked by a tightened
+// Studio CSP. The chain mirrors src/app/layout.tsx's Inter / Cormorant CSS
+// variables (--font-display / --font-body), with system serif/sans-serif
+// terminals so the browser always has something to render.
+const FONT_VARIABLES = `:root{--font-display-source:'Cormorant Garamond',Georgia,'Times New Roman',serif;--font-body-source:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}html,body{margin:0;padding:0;font-family:var(--font-body-source);}`;
 
 export async function renderPagePreview(
   surface: PreviewSurface,
