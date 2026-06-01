@@ -10,6 +10,7 @@ import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
+import { purchaserSuppliedRecipientName } from "@/lib/booking/giftPersonas";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
@@ -80,8 +81,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   // never advertised the token and Becky's editor doesn't show it for that
   // field. Scoping the replace keeps a literal `{recipientName}` rendering as
   // text on the return-visit heading if anyone ever types it there.
-  const recipientNameToken =
-    submission.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
+  const recipientNameToken = purchaserSuppliedRecipientName(submission) ?? "";
   const heading = welcome
     ? copy.headingWelcome.replaceAll("{recipientName}", () => recipientNameToken)
     : copy.heading;

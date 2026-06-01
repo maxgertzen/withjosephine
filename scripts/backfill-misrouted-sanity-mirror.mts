@@ -21,8 +21,6 @@
 //
 // Env: reads .env.local for SANITY_WRITE_TOKEN + NEXT_PUBLIC_SANITY_PROJECT_ID.
 
-import { fileURLToPath } from "node:url";
-
 import { type SanityClient } from "@sanity/client";
 
 import {
@@ -33,6 +31,7 @@ import {
 import { writeCsv } from "./_lib/csv.mts";
 import { quoteSql, realExecD1 } from "./_lib/d1.mts";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
+import { isMainModule } from "./_lib/main.mts";
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const DEFAULT_FROM = "2026-05-25T04:39:00Z";
@@ -240,7 +239,7 @@ async function main(): Promise<void> {
   console.log(`[backfill] orphan=${orphans.length}  sandbox-residue=${residue.length}  non-orphan-skip=${nonOrphans.length}  cross-pollution-skip=${crossPollution.length}`);
 
   const csvPath = `/tmp/orphan-backfill-${Date.now()}.csv`;
-  writeCsv(csvPath, classified, CSV_COLUMNS);
+  writeCsv({ path: csvPath, rows: classified, columns: CSV_COLUMNS });
   console.log(`[backfill] CSV written → ${csvPath}`);
 
   for (const row of classified) {
@@ -292,6 +291,6 @@ async function main(): Promise<void> {
   if (createFailed > 0 || deleteFailed > 0 || residueFailed > 0) process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   await main();
 }

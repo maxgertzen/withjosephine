@@ -18,7 +18,6 @@
 // Env: reads .env.local for SANITY_WRITE_TOKEN + NEXT_PUBLIC_SANITY_PROJECT_ID.
 
 import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { type SanityClient } from "@sanity/client";
 
 import { writeCsv } from "./_lib/csv.mts";
@@ -29,6 +28,7 @@ import {
   realExecD1,
 } from "./_lib/d1.mts";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
+import { isMainModule } from "./_lib/main.mts";
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const SANITY_DATASET_BY_ENV = {
@@ -386,7 +386,7 @@ export async function runRepair(args: {
   const skips = classified.filter((r) => r.proposed_action === "ambiguous-skip");
   console.log(`[repair] update=${updates.length}  create-then-update=${creates.length}  ambiguous-skip=${skips.length}`);
 
-  writeCsv(args.csvPath, classified, CSV_COLUMNS);
+  writeCsv({ path: args.csvPath, rows: classified, columns: CSV_COLUMNS });
   console.log(`[repair] CSV written → ${args.csvPath}`);
 
   for (const c of classified) {
@@ -460,6 +460,6 @@ async function main(): Promise<void> {
   if (summary.failed > 0) process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   await main();
 }

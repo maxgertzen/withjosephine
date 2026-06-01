@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SanityReading } from "@/lib/sanity/types";
 
@@ -437,6 +437,15 @@ describe("/api/booking/gift", () => {
   });
 
   describe("purchaser user-resolve retry (njrrqb0f)", () => {
+    // Fake timers fast-forward the 50/100ms exponential backoffs so each
+    // retry test runs in microtask-time instead of 150ms wall-clock.
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it("retries getOrCreateUser up to 3 times before failing", async () => {
       getOrCreateUserMock
         .mockReset()
@@ -444,7 +453,9 @@ describe("/api/booking/gift", () => {
         .mockRejectedValueOnce(new Error("transient 2"))
         .mockResolvedValueOnce({ userId: "user-after-retry", isNew: false });
 
-      const res = await callRoute(SELF_SEND_BODY);
+      const pending = callRoute(SELF_SEND_BODY);
+      await vi.advanceTimersByTimeAsync(500);
+      const res = await pending;
       expect(res.status).toBe(200);
       expect(getOrCreateUserMock).toHaveBeenCalledTimes(3);
       const persisted = createSubmissionMock.mock.calls[0]![0];
@@ -456,7 +467,9 @@ describe("/api/booking/gift", () => {
         .mockReset()
         .mockRejectedValue(new Error("sustained D1 outage"));
 
-      const res = await callRoute(SELF_SEND_BODY);
+      const pending = callRoute(SELF_SEND_BODY);
+      await vi.advanceTimersByTimeAsync(500);
+      const res = await pending;
       expect(res.status).toBe(200);
       expect(getOrCreateUserMock).toHaveBeenCalledTimes(3);
       const persisted = createSubmissionMock.mock.calls[0]![0];

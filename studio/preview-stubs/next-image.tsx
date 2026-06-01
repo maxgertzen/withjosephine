@@ -66,6 +66,20 @@ const BADGE_WRAPPER_STYLE: CSSProperties = {
   display: "inline-block",
 };
 
+const FILL_WRAPPER_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+};
+
+const FILL_IMG_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+};
+
 export default function Image({
   src,
   alt,
@@ -83,7 +97,9 @@ export default function Image({
 }: NextImageProps) {
   const resolved = resolveSrc(src);
   const finalStyle = fill
-    ? { position: "absolute" as const, inset: 0, width: "100%", height: "100%", ...style }
+    ? style
+      ? { ...FILL_IMG_STYLE, ...style }
+      : FILL_IMG_STYLE
     : style;
   const img = (
     <img
@@ -100,9 +116,7 @@ export default function Image({
   // does so the badge overlay sizes to the intended image box. Otherwise
   // the wrapper collapses to zero on the relative-ancestor and the badge
   // never paints visibly.
-  const wrapperStyle: CSSProperties = fill
-    ? { position: "absolute", inset: 0, width: "100%", height: "100%" }
-    : BADGE_WRAPPER_STYLE;
+  const wrapperStyle = fill ? FILL_WRAPPER_STYLE : BADGE_WRAPPER_STYLE;
   return (
     <span style={wrapperStyle} data-preview-image-hidden="true">
       {img}

@@ -12,6 +12,7 @@ import { TimezonePreview } from "@/components/Form/TimezonePreview";
 import { StepUpOtpModal } from "@/components/StepUpOtpModal";
 import type { MyGiftsPageContent } from "@/data/defaults";
 import { GIFT_STATUS_KIND } from "@/lib/booking/constants";
+import { purchaserSuppliedRecipientName } from "@/lib/booking/giftPersonas";
 import type { GiftStatus } from "@/lib/booking/giftStatus";
 import { localInputToUtcIso } from "@/lib/booking/scheduling/timezone";
 import { useEffectiveTimeZone } from "@/lib/booking/scheduling/useEffectiveTimeZone";
@@ -85,8 +86,7 @@ function EditRecipientControl({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const initialName =
-    gift.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
+  const initialName = purchaserSuppliedRecipientName(gift) ?? "";
   const initialEmail = gift.recipientEmail ?? "";
   const initialSendAt = gift.giftSendAt ? toDatetimeLocalValue(gift.giftSendAt) : "";
 

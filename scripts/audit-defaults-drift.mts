@@ -2,8 +2,6 @@
 // Read-only diff of in-code defaults (src/data/defaults.ts) vs the live
 // Sanity document for each registered singleton. Does NOT mutate Sanity.
 
-import { fileURLToPath } from "node:url";
-
 import {
   ENTRY_PAGE_DEFAULTS,
   GIFT_CLAIM_PAGE_DEFAULTS,
@@ -16,6 +14,7 @@ import {
 } from "../src/data/defaults";
 
 import { loadDotenv } from "./_lib/loadDotenv.mts";
+import { isMainModule } from "./_lib/main.mts";
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 type Dataset = "staging" | "production";
@@ -202,7 +201,7 @@ async function main(): Promise<void> {
   if (totalDrifts > 0) process.exitCode = 1;
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   await main();
 }
 
