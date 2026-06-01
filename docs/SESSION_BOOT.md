@@ -1,5 +1,29 @@
 # Session Boot — Active State
 
+## ✅ 2026-06-01 — Post-v1.7.0 quick-win batch SHIPPED (PR #245 squash `6f3a0c1`)
+
+8 dex tasks batched into a single PR against `main` (no release arc). Full CI green at merge: Playwright chromium 3m49s, GROQ content contract 58s, test 2m16s, lint+typecheck, storybook, osv-scanner, security-audit all SUCCESS. Squash-merged via `gh pr merge --squash --delete-branch` at `6f3a0c1`.
+
+**Per-fix breakdown:**
+- `m7e8iz7y` — Dropped `ConfirmArmedButton` `variant="destructive"` arm (no production callsite remained after PR #214).
+- `vf1seylg` — Added `PortableTextBody` unknown-mark plain-text regression test (locks the silent-drop behavior in `portableText.snapshot.test.tsx`).
+- `dn17560j` — Added `EmailPreview` iframe key-remount regression test at `studio/views/EmailPreview.test.tsx`. Required adding `dedupe: ["react", "react-dom"]` to `vitest.config.ts` because the studio sub-package declares its own React copy.
+- `d5y8qzl5` — Tightened `mirrorSubmissionPatch` to a discriminated union: `art9AcknowledgedAt` requires `readingSlug` at the type level; runtime throw covers type-bypass callers so missing-slug becomes a loud failure instead of silently writing the wrong Art. 9 label.
+- `0h4gbkdo` — Dropped 5 reminder-split legacy fields + the empty `legacy` group from `emailGiftClaim` schema. `LEGACY_FIELDS_BY_SINGLETON` already lists them so the drift detector ignores persisted Sanity data harmlessly. **No Studio re-deploy required** (schema cleanup not yet pushed to Studio; the drift detector keeps things honest).
+- `f9d5zdim` — Removed the resolved `GHSA-jxxr-4gwj-5jf2` brace-expansion ignore from `osv-scanner.toml`. Lockfile only ships patched versions (1.1.14 / 2.1.0 / 5.0.6); CI's osv-scan passes clean.
+- `65udsxnp` — Extracted `SANDBOX_EMAIL_PREFIXES` + `SANDBOX_DOMAIN` to `src/lib/booking/sandboxEmails.ts` as a typed object. 7 Playwright specs and `isSandboxEmail` import from the canonical module; a typo or rename now fails TypeScript compile instead of silently re-opening the Resend quota-leak failure mode.
+- `ztpk6mz7` — Un-gated `test.skip` on `listen-roundtrip.spec.ts` `user_agent_hash` assertion. Staging is on v1.7.0 which threads `user_agent_hash` end-to-end; the `UA_AUDIT_HASH_DEPLOYED` gate had been stale since v1.2.0.
+
+**Pre-push gates (binding rule [[feedback-code-review-and-simplify-pre-push]]):** Beyond lint + typecheck + vitest, ran `code-review --effort high` (verdict: SHIP) and `/simplify --scope diff` (3-vantage parallel). Simplify surfaced 2 real defense-in-depth findings folded into 2 follow-up commits: (a) runtime throw on art9-without-readingSlug, (b) updated `env_guard` warning in `resend.tsx` to point at the new module path. Captured the new memory at `~/.claude/projects/-Users-maxgertzen-dev-projects-josephine-soul-readings/memory/feedback_code_review_and_simplify_pre_push.md`: BOTH skills must run pre-push, not as an after-the-fact confirmation when Max prompts.
+
+**Post-merge bookkeeping (commits `b0ab602` + `1506231` on main):**
+- Closed epics `23ctexvw` (one-tap delivery + unified library + step-up auth) and `dv03dcbj` (post-v1.2.0 BACKLOG surface).
+- Reparented 3 still-open subtasks of `23ctexvw` to top-level so they remain discoverable: `09z53mtu` (Phase 6 P3 watermark/geo-reverify defensibility, deferred unless leakage incident), `5fqrgvia` (`MyReadingsView` preview-twin stale vs stacked `/my-readings`), `qz94q5g2` (replace in-spec `mintListenToken` with auth-gated `/api/internal/test-mint-token`).
+- All 8 leaves marked complete with PR #245 link in their `result` field.
+- CHANGELOG ledger row added for PR #245.
+
+---
+
 ## ✅ 2026-06-01 — v1.7.0 SHIPPED + tagged + release branches cleaned (PR #244 squash `62a71d0`)
 
 `release/v1.7.0 → main` merged at `62a71d0` after full CI green (Playwright chromium 3m55s, GROQ content contract 40s, test 1m58s, lint+typecheck, storybook, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.7.0` annotated + pushed at `62a71d0`. No Studio re-deploy required for this arc: PR #242's 30 contract additions are script-side, not schema-side; PR #241 (`pickDefined` helper) and PR #243 (Phase 2 security hardening) are pure code changes.
