@@ -29,11 +29,14 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  // Mock mode shares a single D1 database across workers — `/api/e2e-reset`
-  // in one test's `beforeEach` truncates state mid-flight for another
-  // worker. Until per-worker D1 isolation lands, serial workers are the
-  // load-bearing fix for stability.
-  workers: 1,
+  // Mock mode shares a single D1 database across workers; `/api/e2e-reset` in
+  // one test's `beforeEach` truncates state mid-flight for another worker.
+  // Until per-worker D1 isolation lands, serial workers are the load-bearing
+  // fix for mock-mode stability. Sandbox mode runs against staging where
+  // every spec uses random email prefixes + per-spec residue cleanup keyed
+  // by prefix, so parallelism is safe and cuts the suite wall-clock roughly
+  // in half (dex w48m94vw goal: 14min -> <8min).
+  workers: isSandbox ? 2 : 1,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }], ["list"]]
     : [["list"], ["html", { open: "never" }]],
