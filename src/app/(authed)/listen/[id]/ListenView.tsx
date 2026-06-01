@@ -63,7 +63,7 @@ function renderCard(copy: ListenPageContent, state: ListenViewState) {
 }
 
 function fillTemplate(text: string, vars: { readingName: string }): string {
-  return text.replaceAll("{readingName}", vars.readingName);
+  return text.replaceAll("{readingName}", () => vars.readingName);
 }
 
 function DeliveredSurface({

@@ -37,7 +37,7 @@ describe.each(PREVIEW_SURFACES)("renderPagePreview, %s", (surface) => {
   });
 });
 
-// dsyeraob: srcDoc + sandbox="" paint regression guards.
+// srcDoc + sandbox="" paint regression guards.
 //
 // The blank-iframe bug that bit EmailPreview on 2026-05-24 happens when
 // react-dom injects `<link rel="expect" blocking="render">` into the rendered

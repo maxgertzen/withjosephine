@@ -74,7 +74,8 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   }
 
   const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
-  const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
+  const readingName = reading.name;
+  const lede = copy.lede.replaceAll("{readingName}", () => readingName);
   // {recipientName} substitution is welcome-path only: the non-welcome heading
   // never advertised the token and Becky's editor doesn't show it for that
   // field. Scoping the replace keeps a literal `{recipientName}` rendering as
@@ -82,7 +83,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
   const recipientNameToken =
     submission.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
   const heading = welcome
-    ? copy.headingWelcome.replace(/\{recipientName\}/g, () => recipientNameToken)
+    ? copy.headingWelcome.replaceAll("{recipientName}", () => recipientNameToken)
     : copy.heading;
 
   const filteredSections = filterSectionsForReading(

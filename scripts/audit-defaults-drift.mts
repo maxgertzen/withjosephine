@@ -1,14 +1,6 @@
 #!/usr/bin/env tsx
 // Read-only diff of in-code defaults (src/data/defaults.ts) vs the live
-// Sanity document for each registered singleton. Produces a structured
-// report so Becky-edited fields can be folded back into the defaults at
-// reconcile time. Does NOT mutate Sanity.
-//
-// Usage:
-//   pnpm tsx scripts/audit-defaults-drift.mts staging
-//   pnpm tsx scripts/audit-defaults-drift.mts production
-//
-// dex: laj8x38r
+// Sanity document for each registered singleton. Does NOT mutate Sanity.
 
 import { fileURLToPath } from "node:url";
 
@@ -167,13 +159,22 @@ async function main(): Promise<void> {
 
   console.log(`[audit-defaults-drift] dataset=${dataset} singletons=${AUDIT_TABLE.length}`);
 
+  // Fetch all singleton docs in parallel; the audit doesn't depend on order
+  // and Sanity API tolerates concurrent reads. Sequential await wasted ~1.5s
+  // of wall-clock across 8 RTTs.
+  const fetchedDocs = await Promise.all(
+    AUDIT_TABLE.map((entry) =>
+      client.fetch<Record<string, unknown> | null>(`*[_type == $type][0]`, {
+        type: entry.docType,
+      }),
+    ),
+  );
+
   let totalScanned = 0;
   let totalDrifts = 0;
-  for (const entry of AUDIT_TABLE) {
-    const doc = await client.fetch<Record<string, unknown> | null>(
-      `*[_type == $type][0]`,
-      { type: entry.docType },
-    );
+  for (let i = 0; i < AUDIT_TABLE.length; i += 1) {
+    const entry = AUDIT_TABLE[i];
+    const doc = fetchedDocs[i];
     if (!doc) {
       console.log(`[audit] ${entry.docType}: no document in this dataset, skipping.`);
       continue;

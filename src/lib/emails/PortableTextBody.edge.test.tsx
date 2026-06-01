@@ -1,4 +1,4 @@
-// 3syvah89: workerd-mode regression guard for PortableTextBody.
+// Workerd-mode regression guard for PortableTextBody.
 //
 // Hand-rolled PortableTextBody (PortableTextBody.tsx) exists precisely because
 // `@portabletext/react`'s `<PortableText>` calls `useMemo` at the top of render,
