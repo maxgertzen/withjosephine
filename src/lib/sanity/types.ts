@@ -362,6 +362,7 @@ export type SanityEmailSharedShell = {
 
 export type SanityListenPage = {
   welcomeRibbon: string;
+  recipientGreeting: string;
   deliveredHeading: string;
   deliveredSubheading: string;
   voiceNoteLabel: string;

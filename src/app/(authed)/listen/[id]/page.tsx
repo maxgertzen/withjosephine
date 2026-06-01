@@ -210,9 +210,19 @@ function resolveAuthenticatedState(args: {
     return { kind: "expired", submissionId: args.id };
   }
 
+  // recipientName lives in responses_json under fieldKey "recipient_name".
+  // Only present for gift submissions where the purchaser provided the name
+  // at gift creation OR the recipient filled it in at intake. Falls through
+  // to null for self-purchases so the greeting drops silently.
+  const recipientResponse = args.submission.responses?.find(
+    (r) => r.fieldKey === "recipient_name",
+  );
+  const recipientName = recipientResponse?.value?.trim() || null;
+
   return {
     kind: "delivered",
     readingName: (args.submission.reading?.name ?? "your reading").replace(/^The\s+/, ""),
+    recipientName,
     voiceNoteAudioPath: args.submission.voiceNoteUrl ? `/api/listen/${args.id}/audio` : null,
     pdfDownloadPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf` : null,
     showWelcomeRibbon: args.welcome === "1",

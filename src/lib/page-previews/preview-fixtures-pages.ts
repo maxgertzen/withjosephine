@@ -50,6 +50,7 @@ export const LISTEN_FIXTURES: Record<string, ListenViewState> = {
   delivered: {
     kind: "delivered",
     readingName: "Soul Blueprint",
+    recipientName: "Bob",
     voiceNoteAudioPath: "/preview-fixture/voice-note.m4a",
     pdfDownloadPath: "/preview-fixture/reading.pdf",
     showWelcomeRibbon: true,

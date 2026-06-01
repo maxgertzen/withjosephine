@@ -863,6 +863,7 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
 
 export interface ListenPageContent {
   welcomeRibbon: string;
+  recipientGreeting: string;
   deliveredHeading: string;
   deliveredSubheading: string;
   voiceNoteLabel: string;
@@ -910,6 +911,7 @@ export const LISTEN_INTERSTITIAL_DEFAULTS: ListenInterstitialContent = {
 
 export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   welcomeRibbon: "Welcome back. You’re signed in for the next seven days.",
+  recipientGreeting: "A reading made for you, {recipientName}.",
   deliveredHeading: "Your {readingName} is ready",
   deliveredSubheading: "Best with headphones, somewhere quiet.",
   voiceNoteLabel: "Voice note",
