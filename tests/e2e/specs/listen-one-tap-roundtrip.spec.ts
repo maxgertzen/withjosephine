@@ -21,6 +21,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 
 import { mintListenToken } from "@/lib/auth/listenToken";
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 
 import {
   clickThroughIntakePages,
@@ -146,7 +147,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     }
 
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "listen-one-tap+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.listenOneTap,
     });
     console.log(
       `[listen-one-tap] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -165,7 +166,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+a-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}a-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     const response = await page.goto(`/listen/${submissionId}?t=${token}`);
@@ -199,7 +200,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+b-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}b-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     await page.goto(`/listen/${submissionId}?t=${token}`);
@@ -235,7 +236,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+c-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}c-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     // First redeem via page.request so we can inspect the 303 directly.
@@ -286,7 +287,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+d-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}d-${runId}${SANDBOX_DOMAIN}`;
     const submissionId = await createPaidSubmission(page, email);
     const paid = await pollUntilPaid(submissionId, { timeoutMs: 45_000 });
     expect(paid).toBe(true);
@@ -319,7 +320,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+e-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}e-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     // Mutate one character in the signature portion (after the "."). Flip a
@@ -352,7 +353,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+f-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}f-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId } = await setupReadyToRedeem(page, email);
 
     // Migration guard: pre-existing day-7 emails in the wild carry no `?t=`.
@@ -375,7 +376,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+g-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}g-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     const response = await page.request.post(
@@ -401,7 +402,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-one-tap+h-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}h-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId, token } = await setupReadyToRedeem(page, email);
 
     const response = await page.request.post(

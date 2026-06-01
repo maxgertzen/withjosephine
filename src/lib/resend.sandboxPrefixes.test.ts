@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { isSandboxEmail,SANDBOX_EMAIL_PREFIXES } from "./resend";
+import { SANDBOX_EMAIL_PREFIX_LIST } from "./booking/sandboxEmails";
+import { isSandboxEmail } from "./resend";
 
 const SPECS_DIR = join(process.cwd(), "tests", "e2e", "specs");
 const PREFIX_PATTERN = /["`']([a-z][a-z0-9-]*)\+[^@"`']*@withjosephine\.com["`']/g;
@@ -33,19 +34,19 @@ function collectPrefixesFromSpecs(): Set<string> {
   return found;
 }
 
-describe("SANDBOX_EMAIL_PREFIXES vs tests/e2e/specs/", () => {
-  it("every email prefix used in e2e specs is registered in SANDBOX_EMAIL_PREFIXES", () => {
+describe("SANDBOX_EMAIL_PREFIX_LIST vs tests/e2e/specs/", () => {
+  it("every email prefix used in e2e specs is registered in SANDBOX_EMAIL_PREFIX_LIST", () => {
     const used = collectPrefixesFromSpecs();
-    const registered = new Set<string>(SANDBOX_EMAIL_PREFIXES);
+    const registered = new Set<string>(SANDBOX_EMAIL_PREFIX_LIST);
     const missing = [...used].filter((p) => !registered.has(p));
     expect(
       missing,
-      `e2e spec(s) use email prefix(es) not registered in SANDBOX_EMAIL_PREFIXES (src/lib/resend.tsx). Add to the list, otherwise Resend will fire real emails on the cron/webhook/DO paths that bypass the request-header guard. Missing: ${missing.join(", ")}`,
+      `e2e spec(s) use email prefix(es) not registered in SANDBOX_EMAIL_PREFIX_LIST (src/lib/resend.tsx). Add to the list, otherwise Resend will fire real emails on the cron/webhook/DO paths that bypass the request-header guard. Missing: ${missing.join(", ")}`,
     ).toEqual([]);
   });
 
   it("isSandboxEmail returns true for each registered prefix on @withjosephine.com", () => {
-    for (const prefix of SANDBOX_EMAIL_PREFIXES) {
+    for (const prefix of SANDBOX_EMAIL_PREFIX_LIST) {
       expect(isSandboxEmail(`${prefix}probe-12345@withjosephine.com`)).toBe(true);
     }
   });

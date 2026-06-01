@@ -5,6 +5,10 @@ import { Resend } from "resend";
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { GIFT_DELIVERY } from "./booking/constants";
+import {
+  SANDBOX_DOMAIN,
+  SANDBOX_EMAIL_PREFIX_LIST,
+} from "./booking/sandboxEmails";
 import { FIRST_NAME_FALLBACK } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
@@ -162,26 +166,11 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
 
 // DO alarms, cron sweeps, and the Stripe webhook have no request context,
 // so the X-E2E-Resend-DryRun header can't reach them — match by email instead.
-export const SANDBOX_EMAIL_PREFIXES = [
-  "gift-roundtrip-purchaser+",
-  "gift-roundtrip-recipient+",
-  "gift-recipient-listen-purchaser+",
-  "gift-recipient-listen-recipient+",
-  "listen-roundtrip+",
-  "stripe-roundtrip+",
-  "v120-qa+",
-  "library-one-tap+",
-  "listen-one-tap+",
-  "prod-smoke+",
-  "new-device-notice+",
-] as const;
-const SANDBOX_DOMAIN = "@withjosephine.com";
-
 export function isSandboxEmail(address: string | null | undefined): boolean {
   if (!address) return false;
   const lower = address.toLowerCase();
   if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
-  return SANDBOX_EMAIL_PREFIXES.some((prefix) => lower.startsWith(prefix));
+  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
 }
 
 export async function sendOrSkip(args: {

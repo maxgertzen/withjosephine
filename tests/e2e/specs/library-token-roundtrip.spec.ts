@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 
 import { mintLibraryToken } from "@/lib/auth/libraryToken";
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 
 import {
   clickThroughIntakePages,
@@ -117,7 +118,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     }
 
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "library-one-tap+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.libraryOneTap,
     });
     console.log(
       `[library-one-tap] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -136,7 +137,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `library-one-tap+a-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.libraryOneTap}a-${runId}${SANDBOX_DOMAIN}`;
     const { token } = await setupReadyUser(page, email);
 
     const response = await page.goto(`/my-readings/welcome?t=${token}`);
@@ -168,7 +169,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `library-one-tap+b-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.libraryOneTap}b-${runId}${SANDBOX_DOMAIN}`;
     const { token } = await setupReadyUser(page, email);
 
     await page.goto(`/my-readings/welcome?t=${token}`);
@@ -195,7 +196,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `library-one-tap+c-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.libraryOneTap}c-${runId}${SANDBOX_DOMAIN}`;
     const { token } = await setupReadyUser(page, email);
 
     const firstRedeem = await page.request.post("/api/library/redeem", {
@@ -228,7 +229,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `library-one-tap+d-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.libraryOneTap}d-${runId}${SANDBOX_DOMAIN}`;
     const { userId } = await setupReadyUser(page, email);
 
     const expiredToken = await mintLibraryToken({
@@ -253,7 +254,7 @@ test.describe("Library one-tap round-trip, staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `library-one-tap+e-${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.libraryOneTap}e-${runId}${SANDBOX_DOMAIN}`;
     const { token } = await setupReadyUser(page, email);
 
     const dotIndex = token.indexOf(".");

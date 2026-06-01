@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@sanity/client";
 
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
+
 const STRIPE_LIVE_BUY_URL = /^https:\/\/buy\.stripe\.com\/[A-Za-z0-9_-]+/;
 
 // Apex is parked while the launch hold-gate runs. Middleware short-circuits
@@ -52,7 +54,7 @@ test.describe("Prod read-only booking smoke", () => {
       data: {
         readingSlug: "birth-chart",
         values: {
-          email: "prod-smoke+invalid@withjosephine.com",
+          email: `${SANDBOX_EMAIL_PREFIXES.prodSmoke}invalid${SANDBOX_DOMAIN}`,
         },
         turnstileToken: "XXXX.SMOKE.TOKEN.XXXX",
         art6Consent: true,

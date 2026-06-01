@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
+
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
@@ -15,12 +17,13 @@ import { stubTurnstile } from "../helpers/turnstileStub";
 test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 const stripeTestEmail =
-  process.env.STRIPE_ROUNDTRIP_EMAIL ?? "v120-qa+stripe@withjosephine.com";
+  process.env.STRIPE_ROUNDTRIP_EMAIL ??
+  `${SANDBOX_EMAIL_PREFIXES.v120Qa}stripe${SANDBOX_DOMAIN}`;
 
 test.describe("v1.2.0 QA validation — staging", () => {
   test.beforeAll(async () => {
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "v120-qa+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.v120Qa,
     });
     console.log(
       `[v120-qa] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -69,7 +72,7 @@ test.describe("v1.2.0 QA validation — staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `v120-qa+${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.v120Qa}${runId}${SANDBOX_DOMAIN}`;
 
     await seedIntakeDraft(page, "birth-chart", { values: { email } });
 
@@ -107,7 +110,7 @@ test.describe("v1.2.0 QA validation — staging", () => {
 
     const runId = randomUUID().slice(0, 8);
     const purchaserFirstName = "Ada";
-    const purchaserEmail = `v120-qa+gift-${runId}@withjosephine.com`;
+    const purchaserEmail = `${SANDBOX_EMAIL_PREFIXES.v120Qa}gift-${runId}${SANDBOX_DOMAIN}`;
     const recipientFirstName = "Grace";
     const giftMessage =
       "Sending you the stars for your birthday — with love from Ada.";

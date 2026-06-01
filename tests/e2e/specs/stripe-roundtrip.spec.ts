@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
+
 import {
   clickThroughIntakePages,
   seedIntakeDraft,
@@ -17,7 +19,7 @@ test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 test.describe("Stripe sandbox round-trip — staging", () => {
   test.beforeAll(async () => {
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "stripe-roundtrip+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.stripeRoundtrip,
     });
     console.log(
       `[stripe-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -34,7 +36,7 @@ test.describe("Stripe sandbox round-trip — staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `stripe-roundtrip+${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.stripeRoundtrip}${runId}${SANDBOX_DOMAIN}`;
     const stripeTestEmail = process.env.STRIPE_ROUNDTRIP_EMAIL ?? email;
 
     await seedIntakeDraft(page, "birth-chart", { values: { email } });
