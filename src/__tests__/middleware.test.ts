@@ -255,4 +255,15 @@ describe("middleware apex lockdown (under-construction on)", () => {
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
   });
+
+  it("/my-readings paths get Vary: Cookie so intermediate caches respect per-user state", () => {
+    type Headered = { headers: { get(name: string): string | null } };
+    for (const pathname of ["/my-readings", "/my-readings/welcome", "/my-readings/gifts"]) {
+      const res = middleware(
+        makeRequest({ hasDraft: false, host: "preview.withjosephine.com", pathname }),
+      ) as unknown as Headered;
+      expect(res.headers.get("vary"), `vary on ${pathname}`).toBe("Cookie");
+      expect(res.headers.get("cache-control"), `cache-control on ${pathname}`).toContain("no-store");
+    }
+  });
 });

@@ -1,5 +1,38 @@
 # Session Boot — Active State
 
+## 🆕 2026-05-31 — release/v1.7.0 pre-launch hardening: 3 sub-PRs landed, awaiting cumulative simplify + main merge
+
+`release/v1.7.0` cut from `main` after the v1.6.0 ship + the u0lgsw47 operator dry-run confirmed prod was clean. Three sub-PRs merged into the release branch (squash). All three followed the `feedback_per_subpr_simplify_and_comments_sweep_v170` binding rule: 3-vantage `/simplify` + dedicated comments sweep run per sub-PR (retroactively on PR #241, pre-PR-open on #242 + #243).
+
+**Sub-PRs (squash-merged in order):**
+
+- **#241 (`j707svbs`, squash `a73a043`)** — Defensive null-filter on Sanity-merge spread sites. New `pickDefined<T>(obj: T): Partial<T>` helper at `src/lib/sanity/pickDefined.ts` strips null + undefined, preserves empty-string + zero + false (Becky-edit semantics). 19 spread sites converted from `{...DEFAULTS, ...(x ?? {})}` to `{...DEFAULTS, ...pickDefined(x ?? {})}` across `loadLibraryData`, `welcome` / `listen` / `auth/verify` / `gift/intake` pages, `lib/resend.tsx` (11 sites), `lib/sanity/fetch.ts`, `lib/emails/render-preview.tsx`. 12 new tests (9 unit + 3 integration-shape on loadLibraryData). Risk was escalated by the 2026-05-31 prod seed of 7 new singletons Becky will edit; any null she accidentally sets would have blanked the default.
+- **#242 (`thdesb5b`, squash `a97929f`)** — Schema-additive drift detector. New `scripts/sanity-validate-drift.mts` exports `findSchemaDrift`, `SANITY_META_FIELDS`, `LEGACY_FIELDS_BY_SINGLETON`. Wired into `runSingletonChecks` as a third output stream logged as `[SCHEMA-DRIFT]`; `--strict` flag promotes to hard fail. `describeActual` deduplicated into `scripts/_lib/sanityValueShape.mts` so the `[DRIFT]` and `[SCHEMA-DRIFT]` log formats can't diverge. 30 `myGiftsPage` string fields added to the contract (edit-recipient drawer, flip-to-scheduled, send-now, resend-throttle, action error surfaces). Honest staging+prod drift after this PR: 14 remaining (10 `_system` object fields appearing on landing/thankYou/siteSettings + 7 email singletons, likely Sanity-side plugin metadata; 4 stale `detailLine*` + `greeting` fields on the 3 gift-confirmation email singletons, pre-schema-collapse leftovers). Documented for follow-up triage.
+- **#243 (`e737za2a`, squash `ac3a612`)** — Phase 2 security hardening. (a) bfcache: middleware sets `Vary: Cookie` on `/my-readings/*`, redeem success redirect adds `Clear-Site-Data: "cache"` to wipe the bfcache snapshot of pre-auth state. (b) Fragment defense in `redactSearchParams`: new private `redactFragmentParams` + shared `redactInParams` helpers, plus early-exit when no sensitive key is in the hash. (c) User-exists guard at `/api/library/redeem`: `findUserById(verify.userId)` must return non-null before `createListenSessionForUser`. Token valid for a GDPR-purged user falls through to the uniform 303 (preserves the route's locked-design "no information leak via response shape" invariant). P3-2 ipHash HKDF migration deferred. +6 tests across redact + redeem + middleware suites.
+
+**Bookkeeping commit `c76387e`** direct on `release/v1.7.0` enabled CI + auto-deploy-staging on the branch (mirrors v1.6.0 pattern).
+
+**Hold-gate item closed earlier this session: `u0lgsw47` (recipient_user_id data repair)** — operator dry-runs of `scripts/repair-recipient-user-id.mts` confirmed production carried 0 corrupted rows (the bb5fe157 vector never reached prod). PR #170 instrumentation remains live.
+
+**🚨 Next-session checklist (CI gate + release-to-main flow):**
+
+1. **Verify release/v1.7.0 push-CI is green** after the 3 squash-merges. The push-CI runs lint + typecheck + test + storybook + security-audit + sanity-validate-staging + deploy-staging on the release branch. Each squash-merge fires a fresh run; the latest run (post-PR-#243 squash `ac3a612`) is the load-bearing one.
+   ```
+   gh run list --branch release/v1.7.0 --limit 5
+   gh pr checks --watch  # if iterating
+   ```
+2. **Cumulative 3-vantage `/simplify` pass on the `release/v1.7.0 → main` diff** per `feedback_simplify_scale_to_change_size`. The per-sub-PR simplify already ran on each individual PR, but the cumulative-arc simplify catches cross-sub-PR drift the per-sub-PR pass can't see. Findings as a single commit on `release/v1.7.0` before the merge PR opens.
+3. **Open `release/v1.7.0 → main` PR** via `sentry-skills:pr-writer`. PR-to-main triggers the full Playwright matrix + content-contract job. Verify all green before merging.
+4. **Tag `v1.7.0`** at the squash-merge commit; push tag.
+5. **Real-browser smoke** on deployed prod (v1.7.0 changes have no Sanity migration to run; just deploy and smoke). Folds into the v1.4.0 + v1.5.0 + v1.6.0 carry-overs still outstanding.
+
+**🚨 Operator items still owed (carried over):**
+
+- Real-browser smoke against deployed prod for v1.4.0 + v1.5.0 + v1.6.0 (J1–J14 in `docs/MANUAL_SMOKE_TEST.md`).
+- Hold-gate (`wdpz1ux4` epic): `wc4rzud9` pre-prod data cleanup, `cdw3mnpg` Stripe test-mode webhook split, `ttys8qku` smoke walk.
+
+---
+
 ## ✅ 2026-05-31 — v1.6.0 SHIPPED + tagged + Studio deployed (PR #240 squash `24b53a0`)
 
 `release/v1.6.0 → main` merged at `24b53a0` after full CI green (Playwright chromium 3m57s, test 2m4s, storybook, lint+typecheck, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.6.0` annotated + pushed against the merge commit. Studio re-deployed via `pnpm studio:deploy` post-merge: 2/2 schemas, build clean (~11s). Workspace auth-divergence warning still firing (dex `vw4zmbp5`, non-blocking).

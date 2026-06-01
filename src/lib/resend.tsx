@@ -22,6 +22,7 @@ import { PrivacyExport } from "./emails/PrivacyExport";
 import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
 import { StepUpOtp } from "./emails/StepUpOtp";
 import { isFlagEnabled, siteOrigin } from "./env";
+import { pickDefined } from "./sanity/pickDefined";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
@@ -57,7 +58,7 @@ async function fetchSharedShell() {
   const { EMAIL_SHARED_SHELL_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailSharedShell } = await import("@/lib/sanity/fetch");
   const sanity = await fetchEmailSharedShell().catch(() => null);
-  return { ...EMAIL_SHARED_SHELL_DEFAULTS, ...(sanity ?? {}) };
+  return { ...EMAIL_SHARED_SHELL_DEFAULTS, ...pickDefined(sanity ?? {}) };
 }
 
 export function getResendId(result: EmailSendResult): string | null {
@@ -309,7 +310,7 @@ export async function sendRecipientIntakeReceived(
     fetchEmailRecipientIntakeReceived().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const html = await render(
     <RecipientIntakeReceived
       vars={{
@@ -344,7 +345,7 @@ export async function sendOrderConfirmation(
     fetchEmailOrderConfirmation().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_ORDER_CONFIRMATION_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...EMAIL_ORDER_CONFIRMATION_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const html = await render(
     <OrderConfirmation
       vars={{
@@ -403,7 +404,7 @@ export async function sendGiftPurchaseConfirmation(
       fetchEmailGiftPurchaseConfirmationSelfSend().catch(() => null),
       fetchSharedShell(),
     ]);
-    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS, ...(sanity ?? {}) };
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS, ...pickDefined(sanity ?? {}) };
     interpolatedSubject = applyTokens(copy.subject, {
       recipientName: input.recipientName ?? "your recipient",
     });
@@ -429,7 +430,7 @@ export async function sendGiftPurchaseConfirmation(
       fetchEmailGiftPurchaseConfirmationScheduled().catch(() => null),
       fetchSharedShell(),
     ]);
-    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS, ...(sanity ?? {}) };
+    const copy = { ...EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS, ...pickDefined(sanity ?? {}) };
     interpolatedSubject = applyTokens(copy.subject, {
       recipientName: input.recipientName ?? "your recipient",
       sendAtDisplay: input.sendAtDisplay,
@@ -497,7 +498,7 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
       fetchEmailGiftClaim().catch(() => null),
       fetchSharedShell(),
     ]);
-    const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...(sanity ?? {}) };
+    const copy = { ...EMAIL_GIFT_CLAIM_DEFAULTS, ...pickDefined(sanity ?? {}) };
     interpolatedSubject = applyTokens(copy.subjectFirstSend, {
       purchaserFirstName: input.purchaserFirstName,
       readingName: input.readingName,
@@ -511,7 +512,7 @@ export async function sendGiftClaimEmail(input: GiftClaimEmailInput): Promise<Em
       fetchEmailGiftClaimReminder().catch(() => null),
       fetchSharedShell(),
     ]);
-    const copy = { ...EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS, ...(sanity ?? {}) };
+    const copy = { ...EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS, ...pickDefined(sanity ?? {}) };
     interpolatedSubject = applyTokens(copy.subject, {
       purchaserFirstName: input.purchaserFirstName,
       readingName: input.readingName,
@@ -542,7 +543,7 @@ export async function sendDay7Delivery(
     fetchEmailDay7Delivery().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const subject = applyTokens(copy.subjectTemplate, {
     readingName: submission.readingName,
     readingPriceDisplay: submission.readingPriceDisplay,
@@ -597,7 +598,7 @@ export async function sendNewDeviceNotice(args: {
     fetchEmailNewDeviceNotice().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_NEW_DEVICE_NOTICE_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...EMAIL_NEW_DEVICE_NOTICE_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const html = await render(
     <NewDeviceNotice
       vars={{ firstName: args.firstName, revokeUrl: args.revokeUrl }}
@@ -643,7 +644,7 @@ export async function sendMagicLink(args: {
     source.fetch().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...source.defaults, ...(sanity ?? {}) };
+  const copy = { ...source.defaults, ...pickDefined(sanity ?? {}) };
   const vars = {
     magicLinkUrl: args.magicLinkUrl,
     firstName: args.firstName ?? FIRST_NAME_FALLBACK,
@@ -685,7 +686,7 @@ export async function sendPrivacyExportEmail(args: {
     fetchEmailPrivacyExport().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const subject = applyTokens(copy.subject, {
     firstName: args.firstName,
     submissionCount: args.submissionCount,
@@ -823,7 +824,7 @@ export async function sendStepUpOtpEmail(
     fetchEmailStepUpOtp().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...STEP_UP_OTP_EMAIL_DEFAULTS, ...(sanity ?? {}) };
+  const copy = { ...STEP_UP_OTP_EMAIL_DEFAULTS, ...pickDefined(sanity ?? {}) };
 
   const html = await render(<StepUpOtp code={input.code} copy={copy} shell={shell} />);
 

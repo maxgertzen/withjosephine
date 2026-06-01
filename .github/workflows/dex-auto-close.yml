@@ -54,7 +54,7 @@ jobs:
           git config user.name "dex-auto-close[bot]"
           git config user.email "noreply@github.com"
           git add .dex/tasks.jsonl
-          git commit -m "chore(dex): auto-close tasks for PR #${{ github.event.pull_request.number }}
-
-Closes-via: ${{ github.event.pull_request.merge_commit_sha }}"
+          git commit \
+            -m "chore(dex): auto-close tasks for PR #${{ github.event.pull_request.number }}" \
+            -m "Closes-via: ${{ github.event.pull_request.merge_commit_sha }}"
           git push origin HEAD:${{ github.event.pull_request.base.ref }}

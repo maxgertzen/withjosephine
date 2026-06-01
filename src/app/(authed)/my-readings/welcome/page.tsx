@@ -9,6 +9,7 @@ import { StarField } from "@/components/StarField";
 import { MY_READINGS_PAGE_DEFAULTS } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { fetchMyReadingsPage } from "@/lib/sanity/fetch";
+import { pickDefined } from "@/lib/sanity/pickDefined";
 
 export const metadata: Metadata = {
   title: "Welcome to your library | Josephine",
@@ -43,10 +44,10 @@ export default async function MyReadingsWelcomePage({
   }
 
   const sanity = await fetchMyReadingsPage().catch(() => null);
-  const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...(sanity ?? {}) };
-  const heading = copy.welcomeHeading || MY_READINGS_PAGE_DEFAULTS.welcomeHeading!;
-  const subhead = copy.welcomeSubhead || MY_READINGS_PAGE_DEFAULTS.welcomeSubhead!;
-  const buttonLabel = copy.welcomeButtonLabel || MY_READINGS_PAGE_DEFAULTS.welcomeButtonLabel!;
+  const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const heading = copy.welcomeHeading ?? MY_READINGS_PAGE_DEFAULTS.welcomeHeading!;
+  const subhead = copy.welcomeSubhead ?? MY_READINGS_PAGE_DEFAULTS.welcomeSubhead!;
+  const buttonLabel = copy.welcomeButtonLabel ?? MY_READINGS_PAGE_DEFAULTS.welcomeButtonLabel!;
 
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
