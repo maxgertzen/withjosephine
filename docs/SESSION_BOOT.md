@@ -10,7 +10,7 @@
 
 **🚨 Max-actions still owed:**
 
-1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Folds in still-owed carry-overs from v1.4.0 + v1.5.0 + v1.6.0 + v1.7.0 (J1–J15 in `docs/MANUAL_SMOKE_TEST.md`). v1.8.0 itself has no new customer-visible surfaces; the smoke is the carry-over backlog.
+1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim` (binding). Folds in still-owed carry-overs from v1.4.0 + v1.5.0 + v1.6.0 + v1.7.0 (J1–J15 in `docs/MANUAL_SMOKE_TEST.md`) plus the new **J16** (v1.8.0 gift recipient personalization on the listen page — the one new customer-visible behavior in v1.8.0).
 2. **Operator action `95rhce6i`** — run `audit-defaults-drift.mts` against prod Sanity; reconcile per `docs/DEFAULTS_RECONCILE_WORKFLOW.md`. The only remaining open subtask of epic `lxighqj6` after PR #251 closed the other 7.
 3. **Branch cleanup post-smoke:** `git push origin --delete release/v1.8.0` once smoke completes (local + remote). Branch deliberately KEPT until post-merge smoke so a hotfix doesn't have to start from main.
 

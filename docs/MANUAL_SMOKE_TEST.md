@@ -639,6 +639,29 @@ After tapping a Day-7 delivery link and redeeming the one-tap library token, the
 
 ---
 
+## Journey 16 — v1.8.0 gift recipient personalization
+
+Verifies the v1.8.0 arc (PR #252 squash `e6c5bd1`, tag `v1.8.0`). The arc is mostly internal (script-side helpers, sanity-mirror cache, studio preview tweaks, CI perf), so the smoke is brief. The only customer-visible behavior change is the listen-page greeting for gift recipients: `recipientGreeting` now substitutes the recipient's name via the canonical chain (purchaser-supplied → first_name → legal_full_name → email-local) and survives the redeem-time `responses_json` overwrite.
+
+### J16a — Listen-page recipient greeting after gift redeem
+
+After a gift recipient redeems and lands on the listen page, the greeting heading must include the recipient's name (not "there", not `{recipientName}` literal). Self-purchase listens render no greeting at all (gated on `submission.isGift`).
+
+**As gift recipient (continues from J3c or J4d):**
+1. Complete the gift redeem flow until you land on `/listen/<id>?welcome=1`.
+2. Below the welcome ribbon, look for the greeting line in the page copy.
+3. The greeting should include your first name (whatever you typed into the intake `first_name` field during redeem). It should NOT contain a literal `{recipientName}` placeholder.
+
+**As self-purchaser (continues from J1c):**
+4. On your own `/listen/<id>?welcome=1`, confirm there is NO recipient greeting block. Self-purchase intentionally renders nothing in that slot.
+
+**Watch for:**
+- ❌ Greeting reads "Hi there" or "Welcome, friend" → fallback chain failed; the recipient's intake first_name didn't reach `recipientNameFor`. Screenshot + report.
+- ❌ Greeting contains a literal `{recipientName}` → substitution wiring broken in `ListenView.tsx`. Screenshot.
+- ❌ Self-purchase shows a recipient greeting block → `isGift` gate broken; check submission row.
+
+---
+
 ## When done — hand off to the maintainer
 
 You ran the test. Cleanup is **not your job** — D1, Sanity, and R2 deletions are infra operations and a wrong click there can break staging for everyone.
