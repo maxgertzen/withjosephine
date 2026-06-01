@@ -190,7 +190,12 @@ export async function mirrorSubmissionPatch(
       ...response,
     }));
   }
-  if (art9AcknowledgedAt && readingSlug) {
+  if (art9AcknowledgedAt) {
+    if (!readingSlug) {
+      throw new Error(
+        `[sanityMirror] art9AcknowledgedAt provided without readingSlug for ${id}; label text would be wrong`,
+      );
+    }
     sanitized["consentSnapshot.art9Consent"] = {
       labelText: art9ConsentLabel(readingSlug),
       acknowledgedAt: art9AcknowledgedAt,

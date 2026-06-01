@@ -112,7 +112,7 @@ async function resolveSkipReason(
     const allAllowed = recipients.every(isProductionAllowlistedRecipient);
     if (!allAllowed) {
       console.warn(
-        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add the prefix to SANDBOX_EMAIL_PREFIXES for test specs, or set ALLOWED_PREVIEW_RECIPIENTS for one-off previews.`,
+        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or set ALLOWED_PREVIEW_RECIPIENTS for one-off previews.`,
       );
       return "env_guard";
     }

@@ -92,6 +92,15 @@ describe("mirrorSubmissionPatch — art9 requires readingSlug (d5y8qzl5)", () =>
     expect(art9.acknowledgedAt).toBe("2026-06-01T10:00:00.000Z");
   });
 
+  it("throws at runtime if a type-bypassing caller passes art9 without readingSlug", async () => {
+    const { mirrorSubmissionPatch } = await import("./sanityMirror");
+    await expect(
+      mirrorSubmissionPatch("sub_bypass", {
+        art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
+      } as never),
+    ).rejects.toThrow(/readingSlug/);
+  });
+
   it("rejects patches that include art9 without readingSlug at the type level", () => {
     const ok: MirrorSubmissionPatchInput = {
       art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
