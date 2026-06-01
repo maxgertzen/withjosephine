@@ -173,8 +173,12 @@ test.describe("Gift round-trip — staging", () => {
     await seedGiftIntakeDraft(page, submissionId, { recipientEmail });
     await page.goto(claimPath);
 
-    await page.waitForURL(/\/gift\/intake/, { timeout: 30_000 });
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.waitForURL(/\/gift\/intake\?welcome=1/, { timeout: 30_000 });
+    // {recipientName} substitution is welcome-path only; the purchaser-supplied
+    // recipient name must land in the H1 verbatim (vjtos13w).
+    await expect(
+      page.getByRole("heading", { level: 1 }),
+    ).toContainText(recipientFirstName);
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);
@@ -292,6 +296,14 @@ test.describe("Gift round-trip — staging", () => {
     await expect(
       page.locator(`a[href="/api/listen/${submissionId}/pdf"]`),
     ).toBeVisible();
+    // Gift submission: recipientGreeting must render with the recipient's
+    // name substituted via the canonical chain in giftPersonas (6hfzgo13).
+    // Post-redeem the purchaser-supplied `recipient_name` is wiped by the
+    // recipient's intake; the chain falls through to intake first_name, which
+    // is hardcoded to "Mira" in seedGiftIntakeDraft.
+    await expect(
+      page.getByTestId("listen-recipient-greeting"),
+    ).toContainText("Mira");
   });
 
   test("birth-chart self_send: purchaser → Stripe → claim URL ready to forward", async ({

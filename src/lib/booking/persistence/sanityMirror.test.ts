@@ -149,6 +149,50 @@ describe("findReadingRef cache TTL (35txg0an)", () => {
     }
   });
 
+  it("coalesces concurrent first-time misses on the same slug into a single fetch (ry40itf2)", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+
+    let resolveFetch: (value: { _id: string }) => void = () => {};
+    const pending = new Promise<{ _id: string }>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockReturnValue(pending);
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    const [first, second] = [
+      findReadingRef(fakeClient, "akashic-record"),
+      findReadingRef(fakeClient, "akashic-record"),
+    ];
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveFetch({ _id: "reading-akashic-v1" });
+    const [a, b] = await Promise.all([first, second]);
+
+    expect(a).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(b).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the cache entry when the fetch resolves null so the next call retries (ry40itf2)", async () => {
+    const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
+    clearReadingRefCache();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ _id: "reading-akashic-v1" });
+    const fakeClient = { fetch: fetchMock } as unknown as Parameters<typeof findReadingRef>[0];
+
+    const first = await findReadingRef(fakeClient, "akashic-record");
+    expect(first).toBeNull();
+
+    const second = await findReadingRef(fakeClient, "akashic-record");
+    expect(second).toEqual({ _type: "reference", _ref: "reading-akashic-v1" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("clearReadingRefCache forces the next call to re-fetch from Sanity", async () => {
     const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
     clearReadingRefCache();
