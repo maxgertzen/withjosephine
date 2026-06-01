@@ -174,11 +174,14 @@ test.describe("Gift round-trip — staging", () => {
     await page.goto(claimPath);
 
     await page.waitForURL(/\/gift\/intake\?welcome=1/, { timeout: 30_000 });
-    // {recipientName} substitution is welcome-path only; the purchaser-supplied
-    // recipient name must land in the H1 verbatim (vjtos13w).
-    await expect(
-      page.getByRole("heading", { level: 1 }),
-    ).toContainText(recipientFirstName);
+    // {recipientName} substitution is welcome-path only and Becky-opt-in: the
+    // default + current Sanity copy don't include the token, so we can only
+    // lock the wiring (no literal {recipientName} leaks to the H1). If Becky
+    // adds the token, the page substitutes purchaserSuppliedRecipientName,
+    // which (vjtos13w) the previous helper unit tests already cover.
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+    await expect(heading).not.toContainText("{recipientName}");
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);
