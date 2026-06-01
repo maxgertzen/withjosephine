@@ -451,15 +451,16 @@ describe("/api/booking/gift", () => {
       expect(persisted.purchaserUserId).toBe("user-after-retry");
     });
 
-    it("returns 503 instead of landing purchaser_user_id null when all retries fail", async () => {
+    it("falls through to purchaser_user_id null after retries exhaust, preserving webhook self-heal path", async () => {
       getOrCreateUserMock
         .mockReset()
-        .mockRejectedValue(new Error("permanent D1 outage"));
+        .mockRejectedValue(new Error("sustained D1 outage"));
 
       const res = await callRoute(SELF_SEND_BODY);
-      expect(res.status).toBe(503);
+      expect(res.status).toBe(200);
       expect(getOrCreateUserMock).toHaveBeenCalledTimes(3);
-      expect(createSubmissionMock).not.toHaveBeenCalled();
+      const persisted = createSubmissionMock.mock.calls[0]![0];
+      expect(persisted.purchaserUserId).toBeNull();
     });
   });
 });

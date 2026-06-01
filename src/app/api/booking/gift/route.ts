@@ -276,19 +276,12 @@ export async function POST(request: Request): Promise<Response> {
   if (!reading) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
-  // C3-b root cause: a transient user-resolve failure used to silently land
-  // purchaser_user_id = NULL on the gift row, hiding the gift from the
-  // purchaser's /my-gifts view forever. Fail loud (503) instead so the
-  // customer can retry the submit and the gift never lands disowned.
-  if (!userResult) {
-    return NextResponse.json(
-      {
-        error: "Could not resolve your account. Please try submitting again in a moment.",
-      },
-      { status: 503 },
-    );
-  }
-  const purchaserUserId = userResult.userId;
+  // C3-b: an unretried transient user-resolve failure used to land a NULL
+  // purchaser_user_id. Retry first (most transients clear in 150ms); on
+  // sustained failure fall through to NULL and let the Stripe webhook's
+  // post-payment getOrCreateUser self-heal via setSubmissionPurchaserUser.
+  // The retry tightens the common case; the webhook remains the safety net.
+  const purchaserUserId = userResult?.userId ?? null;
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName
     ? stripTemplateTags(parsedBody.recipientName.trim())

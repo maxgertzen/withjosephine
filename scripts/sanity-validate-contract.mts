@@ -168,6 +168,7 @@ export const SINGLETONS: SingletonContract[] = [
     type: "listenPage",
     fields: [
       { name: "welcomeRibbon", type: "string" },
+      { name: "recipientGreeting", type: "string" },
       { name: "deliveredHeading", type: "string" },
       { name: "deliveredSubheading", type: "string" },
       { name: "voiceNoteLabel", type: "string" },

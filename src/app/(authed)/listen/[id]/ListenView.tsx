@@ -74,8 +74,11 @@ function DeliveredSurface({
   state: Extract<ListenViewState, { kind: "delivered" }>;
 }) {
   const heading = fillTemplate(copy.deliveredHeading, { readingName: state.readingName });
-  const recipientGreeting = state.recipientName
-    ? copy.recipientGreeting.replaceAll("{recipientName}", state.recipientName)
+  // Function-replacer form so a recipient name containing `$&` / `$1` / `$$`
+  // doesn't fire string-replacement backreference expansion.
+  const recipientName = state.recipientName;
+  const recipientGreeting = recipientName
+    ? copy.recipientGreeting.replaceAll("{recipientName}", () => recipientName)
     : null;
   return (
     <>

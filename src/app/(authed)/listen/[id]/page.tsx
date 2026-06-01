@@ -14,6 +14,7 @@ import {
   maybeRecordNewDeviceForSubmission,
   mintNewDeviceRevokeToken,
 } from "@/lib/auth/newDeviceNotice";
+import { recipientNameFor } from "@/lib/booking/giftPersonas";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
 import {
   buildSubmissionContext,
@@ -210,14 +211,14 @@ function resolveAuthenticatedState(args: {
     return { kind: "expired", submissionId: args.id };
   }
 
-  // recipientName lives in responses_json under fieldKey "recipient_name".
-  // Only present for gift submissions where the purchaser provided the name
-  // at gift creation OR the recipient filled it in at intake. Falls through
-  // to null for self-purchases so the greeting drops silently.
-  const recipientResponse = args.submission.responses?.find(
-    (r) => r.fieldKey === "recipient_name",
-  );
-  const recipientName = recipientResponse?.value?.trim() || null;
+  // recipientNameFor walks the canonical chain: purchaser-supplied recipient_name,
+  // then recipient-intake first_name, then legal_full_name, then email-local.
+  // The intake overwrites responses at redeem, so the bare recipient_name lookup
+  // would lose the name for the actual recipient leg. Gate on isGift so a
+  // self-purchase doesn't show a greeting at all.
+  const recipientName = args.submission.isGift
+    ? recipientNameFor(args.submission)
+    : null;
 
   return {
     kind: "delivered",

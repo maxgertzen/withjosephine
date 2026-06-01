@@ -75,13 +75,15 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
 
   const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
   const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
-  // recipientName lives in responses_json under fieldKey "recipient_name"
-  // when the purchaser provided it at gift purchase. Fall back to an empty
-  // string so the token interpolation drops cleanly if absent.
+  // {recipientName} substitution is welcome-path only: the non-welcome heading
+  // never advertised the token and Becky's editor doesn't show it for that
+  // field. Scoping the replace keeps a literal `{recipientName}` rendering as
+  // text on the return-visit heading if anyone ever types it there.
   const recipientNameToken =
     submission.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
-  const headingCopy = welcome ? copy.headingWelcome : copy.heading;
-  const heading = headingCopy.replace(/\{recipientName\}/g, recipientNameToken);
+  const heading = welcome
+    ? copy.headingWelcome.replace(/\{recipientName\}/g, () => recipientNameToken)
+    : copy.heading;
 
   const filteredSections = filterSectionsForReading(
     bookingForm.sections,
