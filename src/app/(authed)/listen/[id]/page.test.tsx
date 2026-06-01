@@ -195,6 +195,7 @@ describe("/listen/[id] page logic", () => {
     cookiesGet.mockReturnValue(undefined);
     fetchCopyMock.mockResolvedValue({
       welcomeRibbon: "Override ribbon",
+      recipientGreeting: "Override greeting, {recipientName}.",
       deliveredHeading: "Override heading",
       deliveredSubheading: "Override sub",
       voiceNoteLabel: "VN",

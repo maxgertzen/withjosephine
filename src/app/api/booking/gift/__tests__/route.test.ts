@@ -10,6 +10,12 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchReading: vi.fn(),
 }));
 
+const getOrCreateUserMock = vi.fn();
+vi.mock("@/lib/auth/users", () => ({
+  getOrCreateUser: (...args: unknown[]) => getOrCreateUserMock(...args),
+  normalizeEmail: (email: string) => email.trim().toLowerCase(),
+}));
+
 const createSubmissionMock = vi.fn();
 vi.mock("@/lib/booking/submissions", () => ({
   createSubmission: createSubmissionMock,
@@ -51,6 +57,9 @@ beforeEach(() => {
   mockReading.mockReset().mockResolvedValue(READING);
   createSubmissionMock.mockReset().mockResolvedValue(undefined);
   countActiveMock.mockReset().mockResolvedValue(0);
+  getOrCreateUserMock
+    .mockReset()
+    .mockResolvedValue({ userId: "user-default", isNew: false });
 });
 
 async function callRoute(body: unknown): Promise<Response> {
@@ -425,5 +434,33 @@ describe("/api/booking/gift", () => {
     const persisted = createSubmissionMock.mock.calls[0]![0];
     expect(persisted.email).toBe("alice@example.com");
     expect(persisted.recipientEmail).toBe("bob@example.com");
+  });
+
+  describe("purchaser user-resolve retry (njrrqb0f)", () => {
+    it("retries getOrCreateUser up to 3 times before failing", async () => {
+      getOrCreateUserMock
+        .mockReset()
+        .mockRejectedValueOnce(new Error("transient 1"))
+        .mockRejectedValueOnce(new Error("transient 2"))
+        .mockResolvedValueOnce({ userId: "user-after-retry", isNew: false });
+
+      const res = await callRoute(SELF_SEND_BODY);
+      expect(res.status).toBe(200);
+      expect(getOrCreateUserMock).toHaveBeenCalledTimes(3);
+      const persisted = createSubmissionMock.mock.calls[0]![0];
+      expect(persisted.purchaserUserId).toBe("user-after-retry");
+    });
+
+    it("falls through to purchaser_user_id null after retries exhaust, preserving webhook self-heal path", async () => {
+      getOrCreateUserMock
+        .mockReset()
+        .mockRejectedValue(new Error("sustained D1 outage"));
+
+      const res = await callRoute(SELF_SEND_BODY);
+      expect(res.status).toBe(200);
+      expect(getOrCreateUserMock).toHaveBeenCalledTimes(3);
+      const persisted = createSubmissionMock.mock.calls[0]![0];
+      expect(persisted.purchaserUserId).toBeNull();
+    });
   });
 });

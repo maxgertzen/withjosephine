@@ -19,6 +19,7 @@ export type ListenViewState =
   | {
       kind: "delivered";
       readingName: string;
+      recipientName: string | null;
       voiceNoteAudioPath: string | null;
       pdfDownloadPath: string | null;
       showWelcomeRibbon: boolean;
@@ -73,8 +74,22 @@ function DeliveredSurface({
   state: Extract<ListenViewState, { kind: "delivered" }>;
 }) {
   const heading = fillTemplate(copy.deliveredHeading, { readingName: state.readingName });
+  // Function-replacer form so a recipient name containing `$&` / `$1` / `$$`
+  // doesn't fire string-replacement backreference expansion.
+  const recipientName = state.recipientName;
+  const recipientGreeting = recipientName
+    ? copy.recipientGreeting.replaceAll("{recipientName}", () => recipientName)
+    : null;
   return (
     <>
+      {recipientGreeting ? (
+        <p
+          className="recipient-greeting font-display italic text-base text-j-text-muted text-center mb-3"
+          data-testid="listen-recipient-greeting"
+        >
+          {recipientGreeting}
+        </p>
+      ) : null}
       {state.showWelcomeRibbon ? (
         <p
           className="welcome-ribbon font-body text-xs tracking-[0.18em] uppercase text-j-text-muted text-center mb-6"

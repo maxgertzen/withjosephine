@@ -17,7 +17,7 @@ export const listenPage = defineType({
     { name: "expired", title: "Expired (past 90 days)" },
   ],
   fields: [
-    tokenReferenceField({ tokens: ["readingName"] }),
+    tokenReferenceField({ tokens: ["readingName", "recipientName"] }),
     defineField({
       name: "welcomeRibbon",
       title: "Welcome ribbon",
@@ -26,6 +26,15 @@ export const listenPage = defineType({
       description:
         "One-line ribbon shown above the reading H1 right after the customer confirms their email. Fades in then disappears.",
       initialValue: "Welcome back. You're signed in for the next seven days.",
+    }),
+    defineField({
+      name: "recipientGreeting",
+      title: "Recipient greeting",
+      type: "string",
+      group: "welcome",
+      description:
+        "Personalised line shown above the welcome ribbon when the listener is a gift recipient (recipient name lives on the submission). Use {recipientName} to substitute. Drops out cleanly when no recipient name is present.",
+      initialValue: "A reading made for you, {recipientName}.",
     }),
     defineField({
       name: "deliveredHeading",
