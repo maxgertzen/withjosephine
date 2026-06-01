@@ -142,6 +142,9 @@ test.describe("Listen round-trip — staging", () => {
     await expect(
       page.locator(`a[href="/api/listen/${submissionId}/pdf"]`),
     ).toBeVisible();
+    // ListenView gates recipientGreeting on submission.isGift; self-purchase
+    // must render no testid at all.
+    await expect(page.getByTestId("listen-recipient-greeting")).toHaveCount(0);
 
     // 10. Fetch audio with a Range header from the SAME browser context so
     //     the __Host-listen_session cookie travels with the request. This

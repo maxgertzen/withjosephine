@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { recipientNameFor, stripTemplateTags } from "../giftPersonas";
+import {
+  purchaserSuppliedRecipientName,
+  recipientNameFor,
+  stripTemplateTags,
+} from "../giftPersonas";
 import type { SubmissionRecord } from "../submissions";
 
 const BASE_REDEEMED_GIFT: SubmissionRecord = {
@@ -54,6 +58,40 @@ describe("stripTemplateTags", () => {
   it("trims trailing/leading whitespace after stripping", () => {
     expect(stripTemplateTags("{tag}")).toBe("");
     expect(stripTemplateTags("  {tag} hi {tag2}  ")).toBe("hi");
+  });
+});
+
+describe("purchaserSuppliedRecipientName", () => {
+  it("returns the trimmed name when recipient_name is present", () => {
+    expect(
+      purchaserSuppliedRecipientName({
+        responses: [{ fieldKey: "recipient_name", value: "  Mira  " }],
+      }),
+    ).toBe("Mira");
+  });
+
+  it("returns null when no recipient_name response is present", () => {
+    expect(
+      purchaserSuppliedRecipientName({
+        responses: [{ fieldKey: "first_name", value: "Mira" }],
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null when recipient_name is the empty string", () => {
+    expect(
+      purchaserSuppliedRecipientName({
+        responses: [{ fieldKey: "recipient_name", value: "" }],
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null when recipient_name is whitespace-only", () => {
+    expect(
+      purchaserSuppliedRecipientName({
+        responses: [{ fieldKey: "recipient_name", value: "   \t  " }],
+      }),
+    ).toBeNull();
   });
 });
 
