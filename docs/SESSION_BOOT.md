@@ -1,6 +1,27 @@
 # Session Boot — Active State
 
-## 🆕 2026-05-31 — release/v1.7.0 pre-launch hardening: 3 sub-PRs landed, awaiting cumulative simplify + main merge
+## ✅ 2026-06-01 — v1.7.0 SHIPPED + tagged + release branches cleaned (PR #244 squash `62a71d0`)
+
+`release/v1.7.0 → main` merged at `62a71d0` after full CI green (Playwright chromium 3m55s, GROQ content contract 40s, test 1m58s, lint+typecheck, storybook, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.7.0` annotated + pushed at `62a71d0`. No Studio re-deploy required for this arc: PR #242's 30 contract additions are script-side, not schema-side; PR #241 (`pickDefined` helper) and PR #243 (Phase 2 security hardening) are pure code changes.
+
+**Sub-PRs (already shipped to `release/v1.7.0` earlier in the arc):** #241 (`j707svbs` defensive null-filter on Sanity-merge: new `src/lib/sanity/pickDefined.ts` strips null + undefined while preserving empty-string + 0 + false for Becky-edit semantics; 19 spread sites converted; +12 tests), #242 (`thdesb5b` schema-additive drift detector at `scripts/sanity-validate-drift.mts` + 30 `myGiftsPage` contract additions; +9 tests), #243 (`e737za2a` Phase 2 security hardening: bfcache via `Vary: Cookie` middleware + `Clear-Site-Data: "cache"` on redeem success, fragment defense in `redactSearchParams`, user-exists guard at `/api/library/redeem`; +6 tests).
+
+**Cumulative simplify polish commit `6a0065f`** (3-vantage parallel pass: reuse, quality, efficiency). 2 findings accepted: parallelize `findUserById` + `getRequestAuditContext` after the `verifyLibraryToken` gate in `src/app/api/library/redeem/route.ts` via `Promise.all` (trims one D1 round-trip per redemption); swap `||` for `??` on the three welcome-page fallbacks in `src/app/(authed)/my-readings/welcome/page.tsx` so PR #241's empty-string preservation invariant survives. 7 findings rejected (reasoned in `MEMORY/WORK/20260601-050720_v170-release-to-main/FINDINGS.md`). Net diff: +7 / -5 LoC across 2 files.
+
+**Branch cleanup executed this session:** deleted `release/v1.4.0`, `release/v1.5.0`, `release/v1.6.0`, `release/v1.7.0` (local + remote). All four fully contained in main; tags `v1.4.0`/`v1.5.0`/`v1.6.0`/`v1.7.0` preserve every SHA.
+
+**🚨 Max-actions still owed:**
+
+1. **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim`. New v1.7.0 journey **J15** in `docs/MANUAL_SMOKE_TEST.md` covers the bfcache back-button invariant on `/my-readings/welcome` after a library-token redeem. Folds in still-owed carry-overs: J12 (v1.5.0 Studio editor surface), J13 (v1.4.0 one-tap delivery + unified library + step-up OTP), J14 (v1.6.0 form polish + hydration + env-guard + dex automation).
+
+**Open items (still gating apex unpark, see dex epic `wdpz1ux4`):**
+- `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg`: Stripe test-mode webhook split.
+- `ttys8qku`: Re-run smoke walkthrough on prod.
+
+---
+
+## ✅ 2026-05-31 — release/v1.7.0 pre-launch hardening: 3 sub-PRs landed, awaiting cumulative simplify + main merge [SHIPPED — see section above]
 
 `release/v1.7.0` cut from `main` after the v1.6.0 ship + the u0lgsw47 operator dry-run confirmed prod was clean. Three sub-PRs merged into the release branch (squash). All three followed the `feedback_per_subpr_simplify_and_comments_sweep_v170` binding rule: 3-vantage `/simplify` + dedicated comments sweep run per sub-PR (retroactively on PR #241, pre-PR-open on #242 + #243).
 

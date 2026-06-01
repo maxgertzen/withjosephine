@@ -617,6 +617,26 @@ This fires on the next PR-to-main merge that includes a `Closes/Fixes/Resolves d
 - ❌ Workflow doesn't fire → `.github/workflows/dex-auto-close.yml` not deployed, or `pull_request` event missing the `closed`/`merged` filter.
 - ❌ Tasks not actually closed in `.dex/tasks.jsonl` after the commit lands → `dex complete --force` failed silently.
 
+## Journey 15 — v1.7.0 pre-launch hardening (bfcache + Sanity null-filter + fragment defense)
+
+Verifies the v1.7.0 arc (PR #244 squash `62a71d0`, tag `v1.7.0`). Defensive hardening with no new user-facing surface, so the journey is brief; pickDefined null-filter, schema-drift detector, fragment defense, and user-exists guard are covered by unit + integration tests (2156 vitest cases) rather than smoke. Only the bfcache behavior is hard to verify without a real browser.
+
+### J15a — bfcache invariant after library-token redeem
+
+After tapping a Day-7 delivery link and redeeming the one-tap library token, the back button must NOT restore the pre-auth interstitial from bfcache. PR #243 wired `Vary: Cookie` on `/my-readings/*` plus `Clear-Site-Data: "cache"` on the redeem success response so the snapshot can't be served back.
+
+**As customer:**
+1. Receive a Day-7 delivery email (or have the maintainer fire the cron). Open in the phone's email client.
+2. Tap **Listen to your reading**. Land on `/my-readings/welcome?t=...`.
+3. Tap the Continue button. Wait for the 303 redirect to `/my-readings?welcome=1`. Confirm signed-in state (your readings render).
+4. Hit the browser **back** button.
+5. The interstitial does NOT silently restore from bfcache with the consumed token still in the URL. Either a fresh navigation happens (the now-used token falls through to the magic-link page) OR the browser refuses to restore the cached page.
+6. The current URL stays clean: no `?t=...` reappears from the prior view.
+
+**Watch for:**
+- ❌ Back button restores the interstitial with the consumed token visible in the URL → `Clear-Site-Data: "cache"` not landing, or `Vary: Cookie` not on the `/my-readings/*` response. Check DevTools → Network → response headers on `/my-readings/welcome` and on `/api/library/redeem`.
+- ❌ Back button shows pre-auth state then a flicker into authed state → `Cache-Control: no-store` on the welcome page works but bfcache restore still happens; expected on some browsers if `Clear-Site-Data` is unsupported. Note browser + version.
+
 ---
 
 ## When done — hand off to the maintainer
