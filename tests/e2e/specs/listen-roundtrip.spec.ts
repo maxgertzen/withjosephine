@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 
 import {
   clickThroughIntakePages,
@@ -66,7 +67,7 @@ async function createPaidSubmission(page: Page, email: string): Promise<string> 
 test.describe("Listen round-trip — staging", () => {
   test.beforeAll(async () => {
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "listen-roundtrip+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.listenRoundtrip,
     });
     console.log(
       `[listen-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -84,7 +85,7 @@ test.describe("Listen round-trip — staging", () => {
     test.setTimeout(4 * 60 * 1000);
 
     const runId = randomUUID().slice(0, 8);
-    const email = `listen-roundtrip+${runId}@withjosephine.com`;
+    const email = `${SANDBOX_EMAIL_PREFIXES.listenRoundtrip}${runId}${SANDBOX_DOMAIN}`;
 
     // 1+2. Create paid submission via the shared booking flow + wait for webhook.
     const submissionId = await createPaidSubmission(page, email);
@@ -164,14 +165,7 @@ test.describe("Listen round-trip — staging", () => {
     expect(ageMs).toBeLessThan(30_000);
   });
 
-  // Gated until the staging worker is on the PR that threads userAgentHash
-  // through issueMagicLink. Un-gate by setting UA_AUDIT_HASH_DEPLOYED=true in
-  // CI once release/v1.2.0 has redeployed with the new code.
   test("link_issued audit row carries user_agent_hash", async () => {
-    test.skip(
-      process.env.UA_AUDIT_HASH_DEPLOYED !== "true",
-      "Un-gate after release/v1.2.0 merges and staging redeploys with the userAgentHash threading change.",
-    );
     const rows = await queryStagingD1<{ user_agent_hash: string | null }>(
       `SELECT user_agent_hash
          FROM listen_audit

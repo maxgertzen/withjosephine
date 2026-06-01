@@ -31,7 +31,6 @@ export function ConfirmArmedButton({
   endpoint,
   copy,
   labels,
-  variant = "primary",
   errorOverrides,
   onSuccess,
 }: {
@@ -42,7 +41,6 @@ export function ConfirmArmedButton({
     confirm: string;
     sending: string;
   };
-  variant?: "primary" | "destructive";
   errorOverrides?: Partial<Record<string, keyof MyGiftsPageContent>>;
   onSuccess?: () => void;
 }) {
@@ -97,7 +95,7 @@ export function ConfirmArmedButton({
     <div className="flex flex-col gap-1 items-stretch sm:items-end">
       {armed ? (
         <Button
-          variant={variant}
+          variant="primary"
           size="sm"
           disabled={action.submitting}
           onClick={onConfirm}

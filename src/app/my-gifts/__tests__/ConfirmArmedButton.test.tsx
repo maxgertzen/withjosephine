@@ -164,21 +164,6 @@ describe("ConfirmArmedButton", () => {
     expect(getByRole("button", { name: baseLabels.idle })).toBeTruthy();
   });
 
-  it("renders destructive variant when variant='destructive'", () => {
-    const { getByRole } = render(
-      <ConfirmArmedButton
-        endpoint="/api/gifts/g1/send-now"
-        copy={MY_GIFTS_PAGE_DEFAULTS}
-        labels={baseLabels}
-        variant="destructive"
-      />,
-    );
-    fireEvent.click(getByRole("button", { name: baseLabels.idle }));
-    const confirmButton = getByRole("button", { name: baseLabels.confirm });
-    // Destructive variant uses the j-rose token; idle uses outlined.
-    expect(confirmButton.className).toContain("bg-j-rose");
-  });
-
   describe("WCAG 2.2.1 reduced-motion arm window (R-2 anchor)", () => {
     it("uses ARM_RESET_MS (5s) when reduced motion is off", () => {
       reducedMotionStub = false;

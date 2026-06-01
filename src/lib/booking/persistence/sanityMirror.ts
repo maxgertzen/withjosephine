@@ -138,40 +138,50 @@ export async function mirrorSubmissionCreate(
   }
 }
 
+type MirrorPatchBase = Partial<{
+  status: SubmissionRecord["status"];
+  paidAt: string;
+  expiredAt: string;
+  stripeEventId: string;
+  stripeSessionId: string;
+  amountPaidCents: number | null;
+  amountPaidCurrency: string | null;
+  responses: SubmissionRecord["responses"];
+  giftClaimedAt: string;
+  recipientUserId: string;
+  recipientEmail: string;
+  giftSendAt: string | null;
+  giftDeliveryMethod: GiftDeliveryMethod;
+  giftClaimTokenHash: string;
+  giftClaimEmailFiredAt: string | null;
+  giftClaimSentNowAt: string | null;
+  giftClaimSentNowActor: string | null;
+  giftClaimPriorAlarmAt: string | null;
+  giftCancelledAt: string | null;
+  purchaserUserId: string | null;
+  email: string;
+}>;
+
+// Art9 label text is derived from readingSlug. A patch that sets art9 without
+// also providing readingSlug would write the wrong label for non-soul-blueprint
+// readings, so the type requires the pair.
+export type MirrorSubmissionPatchInput =
+  | (MirrorPatchBase & { art9AcknowledgedAt: string; readingSlug: string })
+  | (MirrorPatchBase & { art9AcknowledgedAt?: never; readingSlug?: string });
+
 export async function mirrorSubmissionPatch(
   id: string,
-  patch: Partial<{
-    status: SubmissionRecord["status"];
-    paidAt: string;
-    expiredAt: string;
-    stripeEventId: string;
-    stripeSessionId: string;
-    amountPaidCents: number | null;
-    amountPaidCurrency: string | null;
-    responses: SubmissionRecord["responses"];
-    giftClaimedAt: string;
-    recipientUserId: string;
-    art9AcknowledgedAt: string;
-    recipientEmail: string;
-    giftSendAt: string | null;
-    giftDeliveryMethod: GiftDeliveryMethod;
-    giftClaimTokenHash: string;
-    giftClaimEmailFiredAt: string | null;
-    giftClaimSentNowAt: string | null;
-    giftClaimSentNowActor: string | null;
-    giftClaimPriorAlarmAt: string | null;
-    giftCancelledAt: string | null;
-    purchaserUserId: string | null;
-    email: string;
-    readingSlug: string;
-  }>,
+  patch: MirrorSubmissionPatchInput,
 ): Promise<void> {
   const client = await getClient();
   if (!client) return;
 
   // Sanity requires `_key` on each array item. Inject keys for responses
   // (the only array-type field in this patch) so writes don't reject.
-  const { readingSlug, art9AcknowledgedAt, ...rest } = patch;
+  const { readingSlug, art9AcknowledgedAt, ...rest } = patch as MirrorPatchBase & {
+    readingSlug?: string;
+    art9AcknowledgedAt?: string;
+  };
   const sanitized: Record<string, unknown> = { ...rest };
   if (rest.responses) {
     sanitized.responses = rest.responses.map((response, index) => ({
@@ -181,8 +191,13 @@ export async function mirrorSubmissionPatch(
     }));
   }
   if (art9AcknowledgedAt) {
+    if (!readingSlug) {
+      throw new Error(
+        `[sanityMirror] art9AcknowledgedAt provided without readingSlug for ${id}; label text would be wrong`,
+      );
+    }
     sanitized["consentSnapshot.art9Consent"] = {
-      labelText: art9ConsentLabel(readingSlug ?? "soul-blueprint"),
+      labelText: art9ConsentLabel(readingSlug),
       acknowledgedAt: art9AcknowledgedAt,
     };
   }

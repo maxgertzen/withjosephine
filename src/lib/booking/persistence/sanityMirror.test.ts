@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { MirrorSubmissionPatchInput } from "./sanityMirror";
+
 const mockInsert = vi.fn();
 const mockSetIfMissing = vi.fn();
+const mockSet = vi.fn();
 const mockCommit = vi.fn();
 const mockPatch = vi.fn();
 
@@ -15,7 +18,11 @@ beforeEach(() => {
   mockCommit.mockReset().mockResolvedValue(undefined);
   mockInsert.mockReset().mockReturnValue({ commit: mockCommit });
   mockSetIfMissing.mockReset().mockReturnValue({ insert: mockInsert });
-  mockPatch.mockReset().mockReturnValue({ setIfMissing: mockSetIfMissing });
+  mockSet.mockReset().mockReturnValue({ commit: mockCommit });
+  mockPatch.mockReset().mockImplementation(() => ({
+    setIfMissing: mockSetIfMissing,
+    set: mockSet,
+  }));
 });
 
 describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
@@ -65,5 +72,46 @@ describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
     });
     const key = mockInsert.mock.calls[0][2][0]._key as string;
     expect(key).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+});
+
+describe("mirrorSubmissionPatch — art9 requires readingSlug (d5y8qzl5)", () => {
+  it("writes the art9 label derived from the provided readingSlug", async () => {
+    const { mirrorSubmissionPatch } = await import("./sanityMirror");
+    await mirrorSubmissionPatch("sub_art9", {
+      art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
+      readingSlug: "akashic-record",
+    });
+    expect(mockSet).toHaveBeenCalledOnce();
+    const setArg = mockSet.mock.calls[0][0] as Record<string, unknown>;
+    const art9 = setArg["consentSnapshot.art9Consent"] as {
+      labelText: string;
+      acknowledgedAt: string;
+    };
+    expect(art9.labelText).toContain("Akashic Record");
+    expect(art9.acknowledgedAt).toBe("2026-06-01T10:00:00.000Z");
+  });
+
+  it("throws at runtime if a type-bypassing caller passes art9 without readingSlug", async () => {
+    const { mirrorSubmissionPatch } = await import("./sanityMirror");
+    await expect(
+      mirrorSubmissionPatch("sub_bypass", {
+        art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
+      } as never),
+    ).rejects.toThrow(/readingSlug/);
+  });
+
+  it("rejects patches that include art9 without readingSlug at the type level", () => {
+    const ok: MirrorSubmissionPatchInput = {
+      art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
+      readingSlug: "akashic-record",
+    };
+    expect(ok.art9AcknowledgedAt).toBeDefined();
+
+    // @ts-expect-error — art9AcknowledgedAt without readingSlug is rejected
+    const bad: MirrorSubmissionPatchInput = {
+      art9AcknowledgedAt: "2026-06-01T10:00:00.000Z",
+    };
+    expect(bad).toBeDefined();
   });
 });

@@ -19,6 +19,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "src"),
       // `server-only` is a Next.js-runtime guard that throws on import

@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
+
 import { datetimeLocalPlus } from "../helpers/datetimeLocal";
 import { seedGiftIntakeDraft } from "../helpers/giftDraft";
 import {
@@ -107,7 +109,7 @@ async function drivePurchaserLeg(
 test.describe("Gift round-trip — staging", () => {
   test.beforeAll(async () => {
     const { sanityDeleted } = await cleanupSandboxResidue({
-      emailPrefix: "gift-roundtrip-purchaser+",
+      emailPrefix: SANDBOX_EMAIL_PREFIXES.giftRoundtripPurchaser,
     });
     console.log(
       `[gift-roundtrip] preflight wipe: D1 cleared + ${sanityDeleted} Sanity submission(s) deleted`,
@@ -127,9 +129,9 @@ test.describe("Gift round-trip — staging", () => {
 
     const runId = crypto.randomUUID().slice(0, 8);
     const purchaserFirstName = `Roundtrip${runId}`;
-    const purchaserEmail = `gift-roundtrip-purchaser+${runId}@withjosephine.com`;
+    const purchaserEmail = `${SANDBOX_EMAIL_PREFIXES.giftRoundtripPurchaser}${runId}${SANDBOX_DOMAIN}`;
     const recipientFirstName = `Recipient${runId}`;
-    const recipientEmail = `gift-roundtrip-recipient+${runId}@withjosephine.com`;
+    const recipientEmail = `${SANDBOX_EMAIL_PREFIXES.giftRoundtripRecipient}${runId}${SANDBOX_DOMAIN}`;
     const giftMessage = `Automated scheduled round-trip ${runId}.`;
 
     const { stripeSessionId } = await drivePurchaserLeg(page, "scheduled", {
@@ -196,9 +198,9 @@ test.describe("Gift round-trip — staging", () => {
 
     const runId = crypto.randomUUID().slice(0, 8);
     const purchaserFirstName = `Purch${runId}`;
-    const purchaserEmail = `gift-recipient-listen-purchaser+${runId}@withjosephine.com`;
+    const purchaserEmail = `${SANDBOX_EMAIL_PREFIXES.giftRecipientListenPurchaser}${runId}${SANDBOX_DOMAIN}`;
     const recipientFirstName = `Recip${runId}`;
-    const recipientEmail = `gift-recipient-listen-recipient+${runId}@withjosephine.com`;
+    const recipientEmail = `${SANDBOX_EMAIL_PREFIXES.giftRecipientListenRecipient}${runId}${SANDBOX_DOMAIN}`;
     const giftMessage = `Automated recipient-listen round-trip ${runId}.`;
 
     const { stripeSessionId } = await drivePurchaserLeg(page, "scheduled", {
@@ -300,7 +302,7 @@ test.describe("Gift round-trip — staging", () => {
 
     const runId = crypto.randomUUID().slice(0, 8);
     const purchaserFirstName = `Selfsend${runId}`;
-    const purchaserEmail = `gift-roundtrip-purchaser+${runId}@withjosephine.com`;
+    const purchaserEmail = `${SANDBOX_EMAIL_PREFIXES.giftRoundtripPurchaser}${runId}${SANDBOX_DOMAIN}`;
     const recipientFirstName = `Recipient${runId}`;
     const giftMessage = `Automated self-send round-trip ${runId}.`;
 
