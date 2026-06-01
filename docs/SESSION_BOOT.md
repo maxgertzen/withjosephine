@@ -1,5 +1,70 @@
 # Session Boot — Active State
 
+## 🚧 2026-06-01 — v1.9.0 arc landed in release branch, BLOCKED on browser-verified runtime regressions
+
+All 9 v1.9.0 storybook arc subtasks (under epic `whe2lpn3`) shipped via PRs #253–#261 squash-merged into `release/v1.9.0`. Dex auto-close fired on each merge. PRD at `MEMORY/WORK/20260601-160000_v190-storybook-prd/PRD.md` (gitignored); audit at `MEMORY/WORK/20260601-160000_v190-storybook-prd/AUDIT.md`.
+
+**The arc is NOT ready for `release/v1.9.0 → main`.** The first `pnpm storybook` open by Max revealed runtime regressions every page-level story crashed on, plus architecture feedback that should land before merge.
+
+### Runtime regressions surfaced 2026-06-01 inspection
+
+All four issues observable at `http://localhost:6006` after `pnpm storybook` cold start; all four invisible to `pnpm storybook:build` (which passed clean throughout the arc — the load-bearing lesson, captured in `feedback_storybook_build_not_runtime.md`).
+
+1. **Multiple React copies → `Cannot read properties of null (reading 'useMemo')` in `HeadManagerProvider`.** PR #254's webpack alias for `react` / `react-dom` resolved with `path.resolve(projectRoot, "node_modules/...")` which doesn't traverse pnpm's symlink store consistently. Stack trace path `vendors-node_modules_pnpm_pmmmwh_react-refresh-webpack-plugin_0_5_17_react-refresh_0_14_2_typ-...` confirms transitive React-refresh loads its own React copy. Fix direction: `require.resolve("react/package.json")` + `dirname` + `resolve.symlinks = false` + granular aliases for `react/jsx-runtime`, `react/jsx-dev-runtime`, `react-dom/client`, `react-dom/server`. Attempted unpushed; not browser-verified; discarded pending fresh-session approach.
+
+2. **`useLinkStatus is not a function`** on stories that pull in `<NavigationButton>`. `src/components/NavigationButton/LinkSpinner.tsx:3` imports `useLinkStatus` from `next/link` (Next 16+ hook). `@storybook/nextjs` 10.3.6's `next/link` mock at `node_modules/.pnpm/@storybook+nextjs@10.3.6.../dist/export-mocks/link/index.js` does NOT export `useLinkStatus` (verified via `grep -c "useLinkStatus" $mockfile` → 0). Fix direction: webpack alias `next/link$` → local stub that re-implements the Link mock + exports `useLinkStatus() => ({ pending: false })`. Attempted unpushed; Max reports the alias as written still showed the error — needs broader pattern (drop the `$`, or also alias `next/link/...` deep imports), full server restart (HMR may not pick up alias config changes), AND post-restart browser smoke before claiming green.
+
+3. **Page-shell chrome absent from `Pages/IntakeForm` and `Pages/GiftForm`.** Stories render the inner form component in isolation; the production page wraps it with `<BookingFlowHeader>`, the eyebrow + title + subtitle copy, an `<article>` parchment shell, and `<Footer>`. Max's framing: "it says PAGE it needs to be a PAGE". Fix direction: page-shell decorator in each story file that wraps the View with the real chrome from `src/app/book/[readingId]/intake/page.tsx` and `src/app/book/[readingId]/gift/page.tsx`. Attempted unpushed.
+
+4. **Brand fonts not loading (CSS vars unset).** Production wires `--font-display-source` and `--font-body-source` via `next/font` at the root layout level; Storybook's `preview.ts` imports `globals.css` (which reads those vars) but nothing sets them, so Tailwind's `font-display` / `font-body` classes fall through to the browser default. Max's architectural feedback: don't duplicate font wiring in `.storybook/storybook-fonts.css`. **Build a `<StyleProvider>` (or similar root-layout fragment) that sets the CSS variables once, reusable both in production root layout AND as a Storybook preview decorator. Single source of truth.** Attempted partial unpushed (set vars in storybook-fonts.css) and discarded because it duplicates the production wiring instead of converging on a provider.
+
+### Architectural direction from Max (load-bearing for v1.10+)
+
+**Container / Presentational split.** Pages with internal state (IntakeForm, GiftForm) should be split into a presentational shell + a functional container. ListenView + ThankYouView are already presentational after the v1.9.0 audit + ThankYouView extraction (PR #258). Apply the same pattern to IntakeForm / GiftForm in v1.10+:
+- Page-level container does data fetch + wraps with the page chrome (header, main, footer).
+- Inner View is pure-presentation, prop-driven, story-friendly.
+
+**Style provider as single source of truth.** Replace the `.storybook/storybook-fonts.css` duplication with a `<StyleProvider>` component (or theme-tokens fragment) that gets composed into both the root layout (`src/app/layout.tsx`) and the Storybook preview decorator (`.storybook/preview.ts`). Same applies to any future global CSS variable bootstrapping (theme tokens, custom properties).
+
+### What's NOT done before merge-to-main
+
+- [ ] Fix #1 React multi-copy: implement `require.resolve` based alias + `resolve.symlinks: false` + granular sub-path aliases, then verify in a real browser session.
+- [ ] Fix #2 `useLinkStatus`: design a robust `next/link` stub strategy (alias scope + full server restart), browser-verify.
+- [ ] Fix #3 Page-shell decorators on IntakeForm + GiftForm stories.
+- [ ] Fix #4 StyleProvider component pattern; integrate into root layout + Storybook preview.
+- [ ] Per-story manual inspection: every `Pages/*` story must render without console errors and look like the deployed page. Specifically Max called out `Pages/ListenView/AssetTrouble`, `Pages/ListenView/DeliveredGiftRecipient`, `Pages/ThankYouView/*` as still erroring.
+- [ ] Container/presentational refactor for IntakeForm + GiftForm (v1.10+ scope; not blocking v1.9.0 merge IF the page-shell decorator route is taken in #3 above).
+- [ ] Additional page stories Max asked about: Home, /book/<reading> letter, /auth/verify, /privacy /terms /refund-policy, /not-found, /under-construction. Either decide to ship now as separate stories or defer to v1.10+ explicitly.
+- [ ] Cumulative `code-review` + 3-vantage `/simplify` on the `release/v1.9.0 → main` diff — DO NOT run until #1–#5 above are green and Max has eyeballed each touched story in a browser.
+
+### Sub-PRs already merged into `release/v1.9.0`
+
+| PR | Closes | Notes |
+|---|---|---|
+| #253 | `j70gvgfc` | Install `@storybook/addon-mcp` |
+| #254 | `3rbj1sys` | Env defaults + React dedupe bootstrap (DEDUPE INSUFFICIENT — see fix #1) |
+| #255 | `hl5zfado` | Routing-hooks smoke story |
+| #256 | `qkop390f` | ListenView 8-state stories (template) — STILL ERRORS on AssetTrouble + DeliveredGiftRecipient |
+| #257 | `p5cu5wmy` | IntakeForm 4 fixture variants — MISSING PAGE CHROME |
+| #258 | `mrv18w0r` | ThankYouView extraction + 7 stories + RTL test — STILL ERRORS |
+| #259 | `t5p4morz` | GiftForm 4 fixture variants — MISSING PAGE CHROME |
+| #260 | `6b4qr7c4` | Node 22 → 24 on dex-auto-close.yml |
+| #261 | `h1zu9nkr` | Studio iframe brand-mark SVG |
+| direct | `970ize1c` | Audit + CI enable on release/v1.9.0 |
+| direct | `umyb19e6` | Verified storybook:build CI gate already in place |
+
+**HEAD of `release/v1.9.0`:** `f346156` (after PR #261 auto-close commit).
+
+### Architectural decisions worth knowing for next session
+
+- ThankYouView is now a Client Component in `src/app/(authed)/thank-you/[readingId]/ThankYouView.tsx`, receiving fully-derived props from a server-side `deriveThankYouViewProps` helper in `page.tsx`. Mirrors the `deriveDeliveredState` pattern in `listen/page.tsx`. RTL test at `ThankYouView.test.tsx` covers the discount-rendering branch + the purchaser-only-sections gate (6 cases).
+- Storybook MCP addon installed (`@storybook/addon-mcp`). Operator action when running storybook locally: `claude mcp add storybook-mcp --transport http http://localhost:6006/mcp --scope project`.
+- Routing-hooks smoke story at `src/components/RoutingSmoke/RoutingSmoke.stories.tsx` confirms `useParams() returning null` regression is resolved in this dep tree.
+- `studio/preview-stubs/next-image.tsx` now returns an inline `Josephine ✦` SVG for `/images/logo*` paths in the Studio Presentation iframe.
+- `.github/workflows/dex-auto-close.yml` last residual Node 22 pin bumped to 24.
+
+---
+
 ## ✅ 2026-06-01 — v1.8.0 SHIPPED + tagged (PR #252 squash `e6c5bd1`)
 
 `release/v1.8.0 → main` merged at `e6c5bd1` after full CI green (Playwright chromium 3m56s, GROQ content contract 37s, test, lint+typecheck, storybook, security-audit, sanity-validate-staging, deploy-staging all SUCCESS, zero failures). Tag `v1.8.0` annotated + pushed at `e6c5bd1`. No Sanity migration this arc; no Studio re-deploy required.
