@@ -53,18 +53,34 @@ async function getClient(): Promise<SanityClient | null> {
  *
  * Reading docs are effectively immutable in practice (3 readings, slugs
  * have never changed). Memoize lookups per slug in module scope to skip
- * the Sanity round-trip on every booking submit. A schema-rename would
- * require a worker restart, which matches how Sanity Studio publishes
- * propagate to the worker today.
+ * the Sanity round-trip on every booking submit.
+ *
+ * Cloudflare Workers isolate lifetime is non-deterministic. A long-lived
+ * isolate serving traffic after a Studio reading-slug rename would return
+ * a stale `_ref` until the isolate recycled. The TTL bounds the staleness
+ * window. `clearReadingRefCache()` is exported for tests and any future
+ * webhook-driven invalidation.
  */
-const readingRefCache = new Map<string, { _type: "reference"; _ref: string }>();
+const READING_REF_TTL_MS = 5 * 60 * 1000;
 
-async function findReadingRef(
+type ReadingRefEntry = {
+  ref: { _type: "reference"; _ref: string };
+  expiresAt: number;
+};
+
+const readingRefCache = new Map<string, ReadingRefEntry>();
+
+export function clearReadingRefCache(): void {
+  readingRefCache.clear();
+}
+
+export async function findReadingRef(
   client: SanityClient,
   slug: string,
 ): Promise<{ _type: "reference"; _ref: string } | null> {
   const cached = readingRefCache.get(slug);
-  if (cached) return cached;
+  if (cached && cached.expiresAt > Date.now()) return cached.ref;
+  if (cached) readingRefCache.delete(slug);
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
@@ -72,7 +88,10 @@ async function findReadingRef(
     );
     if (!result) return null;
     const ref = { _type: "reference" as const, _ref: result._id };
-    readingRefCache.set(slug, ref);
+    readingRefCache.set(slug, {
+      ref,
+      expiresAt: Date.now() + READING_REF_TTL_MS,
+    });
     return ref;
   } catch (error) {
     console.warn(`[sanityMirror] reading ref lookup failed for ${slug}`, error);
