@@ -1,13 +1,6 @@
-import { Mail } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { Button } from "@/components/Button";
-import { CelestialOrb } from "@/components/CelestialOrb";
-import { Footer } from "@/components/Footer";
-import { GoldDivider } from "@/components/GoldDivider";
-import { StarField } from "@/components/StarField";
-import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { purchaserFirstNameOrNull, recipientNameFor } from "@/lib/booking/giftPersonas";
@@ -17,11 +10,12 @@ import {
   fetchThankYouSessionSnapshot,
   type ThankYouPaidAmount,
 } from "@/lib/booking/thankYouSession";
-import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
-import { renderWithSlots } from "@/lib/copy/templateSlots";
 import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
+import type { SanitySiteSettings, SanityThankYouPage } from "@/lib/sanity/types";
+
+import { type ThankYouMode, ThankYouView, type ThankYouViewProps } from "./ThankYouView";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -67,8 +61,6 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: false, follow: false },
   };
 }
-
-type ThankYouMode = "purchase" | "giftPurchaser" | "giftRecipient";
 
 type ResolvedContext = {
   mode: ThankYouMode;
@@ -199,51 +191,62 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     fetchSiteSettings(),
   ]);
 
-  const { mode, reading, paidAmount, purchaserFirstName, recipientName } = context;
-  const slugForOverride = context.submission?.reading?.slug ?? readingId;
+  const viewProps = deriveThankYouViewProps({
+    context,
+    thankYouPageContent,
+    siteSettings,
+    slugForOverride: context.submission?.reading?.slug ?? readingId,
+  });
 
-  const showsDiscountedPrice =
-    paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
+  return <ThankYouView {...viewProps} />;
+}
 
-  const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === slugForOverride);
-
+function deriveThankYouViewProps(args: {
+  context: ResolvedContext;
+  thankYouPageContent: SanityThankYouPage | null;
+  siteSettings: SanitySiteSettings | null;
+  slugForOverride: string;
+}): ThankYouViewProps {
+  const { context, thankYouPageContent, siteSettings, slugForOverride } = args;
+  const { mode, reading, paidAmount, purchaserFirstName, recipientName, submission } = context;
   const isPurchaser = mode === "giftPurchaser";
   const isRecipient = mode === "giftRecipient";
   const isSelfSendPurchaser =
-    isPurchaser && context.submission?.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
-  const showsPurchaserOnlySections = !isRecipient;
+    isPurchaser && submission?.giftDeliveryMethod === GIFT_DELIVERY.selfSend;
+  const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === slugForOverride);
 
-  const heading =
-    isPurchaser
-      ? (thankYouPageContent?.giftPurchaserHeading ?? "Thank you, {purchaserFirstName}. Your gift is on its way.")
+  const heading = isPurchaser
+    ? (thankYouPageContent?.giftPurchaserHeading ?? "Thank you, {purchaserFirstName}. Your gift is on its way.")
+    : isRecipient
+      ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you, {recipientName}. Your reading is in my hands now.")
+      : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
+
+  const subheading = isSelfSendPurchaser
+    ? (thankYouPageContent?.giftPurchaserSelfSendSubheading ??
+      "Your gift link is ready in the email I just sent \u2014 share it with them whenever feels right.")
+    : isPurchaser
+      ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
       : isRecipient
-        ? (thankYouPageContent?.giftRecipientHeading ?? "Thank you, {recipientName}. Your reading is in my hands now.")
-        : (override?.heading ?? thankYouPageContent?.heading ?? "Thank you. I\u2019ve got everything I need.");
-  const subheading =
-    isSelfSendPurchaser
-      ? (thankYouPageContent?.giftPurchaserSelfSendSubheading ??
-        "Your gift link is ready in the email I just sent \u2014 share it with them whenever feels right.")
-      : isPurchaser
-        ? (thankYouPageContent?.giftPurchaserSubheading ?? "I'll take it from here. The recipient will receive a note from me with their claim link.")
-        : isRecipient
-          ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
-          : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
+        ? (thankYouPageContent?.giftRecipientSubheading ?? "I've received everything I need to begin.")
+        : (override?.subheading ?? thankYouPageContent?.subheading ?? "Your reading is in my hands now.");
+
   const readingLabel = isPurchaser
     ? (thankYouPageContent?.giftPurchaserReadingLabel ?? "Your gift")
     : (thankYouPageContent?.readingLabel ?? "Your Reading");
-  const confirmationBody =
-    isSelfSendPurchaser
-      ? (thankYouPageContent?.giftPurchaserSelfSendBody ??
-        "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready \u2014 they'll claim from there.")
-      : isPurchaser
-        ? (thankYouPageContent?.giftPurchaserBody ??
-          "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
-        : isRecipient
-          ? (thankYouPageContent?.giftRecipientBody ??
-            "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
-          : (override?.confirmationBody ??
-            thankYouPageContent?.confirmationBody ??
-            "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
+
+  const confirmationBody = isSelfSendPurchaser
+    ? (thankYouPageContent?.giftPurchaserSelfSendBody ??
+      "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready \u2014 they'll claim from there.")
+    : isPurchaser
+      ? (thankYouPageContent?.giftPurchaserBody ??
+        "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link \u2014 they'll share their intake details with me from there.")
+      : isRecipient
+        ? (thankYouPageContent?.giftRecipientBody ??
+          "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.")
+        : (override?.confirmationBody ??
+          thankYouPageContent?.confirmationBody ??
+          "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.");
+
   const timelineBody = isPurchaser
     ? (thankYouPageContent?.giftPurchaserTimelineBody ??
       "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.")
@@ -253,7 +256,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
       : (override?.timelineBody ??
         thankYouPageContent?.timelineBody ??
         "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.");
-  const deliveryDaysPhrase = thankYouPageContent?.deliveryDaysPhrase ?? "seven days";
+
   const contactBody = isPurchaser
     ? (thankYouPageContent?.giftPurchaserContactBody ??
       "If anything comes up with the gift \u2014 a wrong recipient email, a change of plan, anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.")
@@ -263,108 +266,25 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
       : (override?.contactBody ??
         thankYouPageContent?.contactBody ??
         "If anything comes up \u2014 a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation \u2014 just reply to that email or write to me at {email}. It comes straight to me.");
-  const closingMessage =
-    override?.closingMessage ??
-    thankYouPageContent?.closingMessage ??
-    "With love, Josephine \u2726";
-  const returnButtonText = thankYouPageContent?.returnButtonText ?? "Return to Home";
-  const contactEmail = siteSettings?.contactEmail || CONTACT_EMAIL;
-  const purchaserSlotValue = purchaserFirstName ?? "";
-  const recipientSlotValue = recipientName ?? "";
 
-  return (
-    <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <ThankYouGuard />
-      <StarField count={30} className="opacity-[0.03]" />
-      {PAGE_ORBS.map((orb, index) => (
-        <CelestialOrb key={index} {...orb} />
-      ))}
-
-      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center">
-        <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <Mail className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
-        </div>
-
-        <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {renderWithSlots(heading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
-        </h1>
-        <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {renderWithSlots(subheading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
-        </p>
-
-        <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
-          <div className="text-left">
-            <span className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted">
-              {readingLabel}
-            </span>
-            <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
-          </div>
-          {showsPurchaserOnlySections &&
-            (showsDiscountedPrice ? (
-              <span className="font-display text-2xl italic flex items-baseline gap-2">
-                <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-                <span className="text-j-accent">{paidAmount.display}</span>
-              </span>
-            ) : (
-              <span className="font-display text-2xl italic text-j-accent">
-                {paidAmount.display ?? reading.price}
-              </span>
-            ))}
-        </div>
-
-        <GoldDivider className="max-w-xs mx-auto my-12" />
-
-        <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          {showsPurchaserOnlySections && (
-            <p className="whitespace-pre-line">
-              {renderWithSlots(confirmationBody, {
-                purchaserFirstName: purchaserSlotValue,
-                recipientName: recipientSlotValue,
-              })}
-            </p>
-          )}
-          <p className="whitespace-pre-line">
-            {renderWithSlots(timelineBody, {
-              deliveryDays: (
-                <span className="font-display italic text-j-accent">{deliveryDaysPhrase}</span>
-              ),
-              recipientName: recipientSlotValue,
-            })}
-          </p>
-          <p className="whitespace-pre-line">
-            {renderWithSlots(contactBody, {
-              email: (
-                <a
-                  href={`mailto:${contactEmail}`}
-                  className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
-                >
-                  {contactEmail}
-                </a>
-              ),
-            })}
-          </p>
-        </div>
-
-        <GoldDivider className="max-w-xs mx-auto my-12" />
-
-        <p className="font-display italic text-base text-j-text max-w-sm mx-auto whitespace-pre-line">
-          {closingMessage}
-        </p>
-
-        <div className="mt-10">
-          <Button href="/" variant="ghost" size="lg">
-            {returnButtonText}
-          </Button>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
+  return {
+    mode,
+    reading,
+    paidAmount,
+    purchaserFirstName,
+    recipientName,
+    contactEmail: siteSettings?.contactEmail || CONTACT_EMAIL,
+    copy: {
+      heading,
+      subheading,
+      readingLabel,
+      confirmationBody,
+      timelineBody,
+      contactBody,
+      closingMessage:
+        override?.closingMessage ?? thankYouPageContent?.closingMessage ?? "With love, Josephine \u2726",
+      returnButtonText: thankYouPageContent?.returnButtonText ?? "Return to Home",
+      deliveryDaysPhrase: thankYouPageContent?.deliveryDaysPhrase ?? "seven days",
+    },
+  };
 }
