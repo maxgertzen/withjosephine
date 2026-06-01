@@ -60,6 +60,16 @@ async function getClient(): Promise<SanityClient | null> {
  * a stale `_ref` until the isolate recycled. The TTL bounds the staleness
  * window. `clearReadingRefCache()` is exported for tests and any future
  * webhook-driven invalidation.
+ *
+ * Two known races on the current shape, both acceptable at the 3-reading
+ * scale but worth knowing before wiring a webhook invalidation path:
+ *
+ * 1. Concurrent first-time misses on the same slug fire duplicate fetches
+ *    (last-writer-wins on the set). To coalesce, store the in-flight
+ *    Promise rather than the resolved entry.
+ * 2. `clearReadingRefCache()` racing with an in-flight fetch will see the
+ *    fetch repopulate the cache after the clear. A webhook invalidator
+ *    would need an epoch counter checked at set-time.
  */
 const READING_REF_TTL_MS = 5 * 60 * 1000;
 

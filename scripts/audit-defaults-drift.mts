@@ -77,7 +77,7 @@ function truncate(value: string, max = 80): string {
   return `${value.slice(0, max - 1)}…`;
 }
 
-type DriftKind = "missing-in-prod" | "drift" | "extra-in-prod";
+type DriftKind = "missing-in-prod" | "drift" | "extra-in-prod" | "shape-mismatch";
 
 type Drift = {
   docType: string;
@@ -97,24 +97,48 @@ function diffSingleton(entry: AuditEntry, doc: Record<string, unknown> | null): 
   const drifts: Drift[] = [];
   let scanned = 0;
   for (const [field, defaultValue] of Object.entries(entry.defaults)) {
-    if (!isScalar(defaultValue)) continue;
-    scanned += 1;
     const prodValue = doc[field];
-    if (prodValue === undefined || prodValue === null) {
-      drifts.push({
-        docType: entry.docType,
-        field,
-        kind: "missing-in-prod",
-        defaultValue,
-        prodValue,
-      });
+    if (isScalar(defaultValue)) {
+      scanned += 1;
+      if (prodValue === undefined || prodValue === null) {
+        drifts.push({
+          docType: entry.docType,
+          field,
+          kind: "missing-in-prod",
+          defaultValue,
+          prodValue,
+        });
+        continue;
+      }
+      if (!isScalar(prodValue)) {
+        drifts.push({
+          docType: entry.docType,
+          field,
+          kind: "shape-mismatch",
+          defaultValue,
+          prodValue,
+        });
+        continue;
+      }
+      if (prodValue !== defaultValue) {
+        drifts.push({
+          docType: entry.docType,
+          field,
+          kind: "drift",
+          defaultValue,
+          prodValue,
+        });
+      }
       continue;
     }
-    if (prodValue !== defaultValue) {
+    // Default is non-scalar (object/array). Per-section walkers handle the
+    // deep diff; here we only catch the loud case where prod stores a scalar
+    // at the same key (real schema drift, not a missing walker).
+    if (isScalar(prodValue)) {
       drifts.push({
         docType: entry.docType,
         field,
-        kind: "drift",
+        kind: "shape-mismatch",
         defaultValue,
         prodValue,
       });

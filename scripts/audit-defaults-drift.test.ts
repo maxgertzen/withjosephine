@@ -53,19 +53,53 @@ describe("audit-defaults-drift diffSingleton (laj8x38r)", () => {
     ]);
   });
 
-  it("ignores non-scalar default fields (objects, arrays) — they need a separate walker", () => {
-    const { scanned, drifts } = diffSingleton(
+  it("flags shape-mismatch when prod stores a scalar at a key whose default is non-scalar", () => {
+    const { drifts } = diffSingleton(
       {
         docType: "fakeSingleton",
         defaults: {
           heading: "Hello",
           nested: { foo: "bar" },
-          list: ["a", "b"],
         },
       },
-      { _id: "fake", heading: "Hello", nested: { foo: "wrong" }, list: ["c"] },
+      { _id: "fake", heading: "Hello", nested: "Becky flattened me" },
     );
-    expect(scanned).toBe(1);
+    expect(drifts).toEqual([
+      {
+        docType: "fakeSingleton",
+        field: "nested",
+        kind: "shape-mismatch",
+        defaultValue: { foo: "bar" },
+        prodValue: "Becky flattened me",
+      },
+    ]);
+  });
+
+  it("flags shape-mismatch when prod stores a non-scalar at a key whose default is scalar", () => {
+    const { drifts } = diffSingleton(
+      { docType: "fakeSingleton", defaults: { heading: "Hello" } },
+      { _id: "fake", heading: { localized: "Hola" } },
+    );
+    expect(drifts).toEqual([
+      {
+        docType: "fakeSingleton",
+        field: "heading",
+        kind: "shape-mismatch",
+        defaultValue: "Hello",
+        prodValue: { localized: "Hola" },
+      },
+    ]);
+  });
+
+  it("skips non-scalar both sides (deep diff is a separate walker)", () => {
+    const { scanned, drifts } = diffSingleton(
+      {
+        docType: "fakeSingleton",
+        defaults: { nested: { foo: "bar" }, list: ["a", "b"] },
+      },
+      { _id: "fake", nested: { foo: "wrong" }, list: ["c"] },
+    );
+    expect(scanned).toBe(0);
     expect(drifts).toEqual([]);
   });
 
