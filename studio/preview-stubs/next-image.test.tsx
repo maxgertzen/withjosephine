@@ -10,6 +10,23 @@ describe("resolveSrc", () => {
     expect(result.src.startsWith("data:image/svg+xml")).toBe(true);
   });
 
+  it("renders an inline brand-mark SVG for /images/logo* paths", () => {
+    const main = resolveSrc("/images/logo-main.webp");
+    expect(main.swapped).toBe(false);
+    expect(main.src).toContain("Josephine");
+
+    const horizontal = resolveSrc("/images/logo-horizontal.webp");
+    expect(horizontal.swapped).toBe(false);
+    expect(horizontal.src).toContain("Josephine");
+
+    const text = resolveSrc("/images/logo-horizontal-text.png");
+    expect(text.swapped).toBe(false);
+    expect(text.src).toContain("Josephine");
+
+    const otherImage = resolveSrc("/images/akasha.webp");
+    expect(otherImage.swapped).toBe(true);
+  });
+
   it("passes through https URLs unchanged", () => {
     const url = "https://cdn.example.com/hero.jpg";
     expect(resolveSrc(url)).toEqual({ src: url, swapped: false });

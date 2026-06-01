@@ -22,7 +22,14 @@ type NextImageProps = ImgHTMLAttributes<HTMLImageElement> & {
 const TRANSPARENT_PIXEL =
   "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E";
 
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" preserveAspectRatio="xMidYMid meet"><text x="120" y="40" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="32" font-style="italic" fill="%230D0B1A">Josephine ✦</text></svg>`;
+const LOGO_DATA_URL = `data:image/svg+xml;utf8,${LOGO_SVG.replace(/\n/g, "").replace(/#/g, "%23")}`;
+
 type ResolvedSrc = { src: string; swapped: boolean };
+
+function isLogoPath(raw: string): boolean {
+  return /\/images\/logo[-_a-z0-9]*\.(webp|png|jpg|svg)$/i.test(raw);
+}
 
 export function resolveSrc(src: NextImageProps["src"]): ResolvedSrc {
   const raw =
@@ -35,6 +42,9 @@ export function resolveSrc(src: NextImageProps["src"]): ResolvedSrc {
     return { src: TRANSPARENT_PIXEL, swapped: true };
   }
   if (raw.startsWith("/") && !raw.startsWith("//")) {
+    if (isLogoPath(raw)) {
+      return { src: LOGO_DATA_URL, swapped: false };
+    }
     return { src: TRANSPARENT_PIXEL, swapped: true };
   }
   return { src: raw, swapped: false };
