@@ -29,8 +29,11 @@ export function resolveSrc(src: NextImageProps["src"]): ResolvedSrc {
     typeof src === "string"
       ? src
       : "default" in src
-        ? src.default.src
+        ? src.default?.src
         : src.src;
+  if (typeof raw !== "string" || raw.length === 0) {
+    return { src: TRANSPARENT_PIXEL, swapped: true };
+  }
   if (raw.startsWith("/") && !raw.startsWith("//")) {
     return { src: TRANSPARENT_PIXEL, swapped: true };
   }
@@ -51,6 +54,11 @@ const BADGE_STYLE: CSSProperties = {
   textAlign: "center",
   padding: "0.5rem",
   pointerEvents: "none",
+  // Studio host CSS sometimes applies text-transform or filter at body level;
+  // pin these locally so the badge stays readable regardless of cascade.
+  textTransform: "none",
+  filter: "none",
+  mixBlendMode: "normal",
 };
 
 const BADGE_WRAPPER_STYLE: CSSProperties = {
@@ -88,8 +96,12 @@ export default function Image({
     />
   );
   if (!resolved.swapped) return img;
+  // fill-mode wrappers must carry the same absolute+inset0 the inner img
+  // does so the badge overlay sizes to the intended image box. Otherwise
+  // the wrapper collapses to zero on the relative-ancestor and the badge
+  // never paints visibly.
   const wrapperStyle: CSSProperties = fill
-    ? { position: "absolute", inset: 0 }
+    ? { position: "absolute", inset: 0, width: "100%", height: "100%" }
     : BADGE_WRAPPER_STYLE;
   return (
     <span style={wrapperStyle} data-preview-image-hidden="true">

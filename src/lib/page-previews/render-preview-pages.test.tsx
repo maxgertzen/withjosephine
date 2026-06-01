@@ -58,14 +58,17 @@ describe.each(PREVIEW_SURFACES)("renderPagePreview srcDoc paint guards, %s", (su
   );
 
   it.each(FIXTURE_KEYS[surface])(
-    "wraps body content that is non-empty after HTML parse for state %s",
+    "wraps body content that has at least one rendered child for state %s",
     async (stateKey) => {
       const html = await renderPagePreview(surface, stateKey, null, "/* styles */");
       const parsed = new DOMParser().parseFromString(html, "text/html");
-      const bodyText = parsed.body.textContent?.trim() ?? "";
+      // textContent ignores image-only, aria-only, and input-value surfaces.
+      // Asserting element count guards the same regression (a structurally
+      // blank body parse) without false-failing on visual-only fixtures.
+      const childCount = parsed.body.children.length;
       expect(
-        bodyText.length,
-        `renderPagePreview output for ${surface}/${stateKey} parsed to an empty body`,
+        childCount,
+        `renderPagePreview output for ${surface}/${stateKey} parsed with no body children`,
       ).toBeGreaterThan(0);
     },
   );

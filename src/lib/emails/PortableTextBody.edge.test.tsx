@@ -7,7 +7,7 @@
 // hooks called from a function-component nested under `renderToReadableStream`.
 //
 // Vitest runs in Node, but we can drive the same edge-conditioned react-dom
-// entry that workerd uses — `react-dom/server.edge` exports
+// entry that workerd uses. `react-dom/server.edge` exports
 // `renderToReadableStream`. If the renderer ever regressed (a hook snuck in,
 // a component swapped to one that uses useMemo, etc.) this test fails with
 // "Cannot read properties of null (reading 'useMemo')" before workerd ever
