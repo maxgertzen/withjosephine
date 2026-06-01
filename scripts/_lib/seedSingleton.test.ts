@@ -26,7 +26,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("patchSingleton (qqfj212c)", () => {
+describe("patchSingleton", () => {
   it("returns null and skips the patch builder when the singleton is missing", async () => {
     mockFetch.mockResolvedValueOnce(null);
     const mutate = vi.fn();
@@ -76,7 +76,7 @@ describe("patchSingleton (qqfj212c)", () => {
   });
 });
 
-describe("setIfMatchesDefault (qqfj212c)", () => {
+describe("setIfMatchesDefault", () => {
   it("rewrites the field when the current value equals oldValue", async () => {
     mockFetch.mockResolvedValueOnce({ _id: "doc1", heading: "Stale" });
 

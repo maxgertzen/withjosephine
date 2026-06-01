@@ -174,11 +174,8 @@ test.describe("Gift round-trip — staging", () => {
     await page.goto(claimPath);
 
     await page.waitForURL(/\/gift\/intake\?welcome=1/, { timeout: 30_000 });
-    // {recipientName} substitution is welcome-path only and Becky-opt-in: the
-    // default + current Sanity copy don't include the token, so we can only
-    // lock the wiring (no literal {recipientName} leaks to the H1). If Becky
-    // adds the token, the page substitutes purchaserSuppliedRecipientName,
-    // which (vjtos13w) the previous helper unit tests already cover.
+    // {recipientName} substitution is Becky-opt-in; assert the wiring (no
+    // literal token leak) since the live copy may or may not include it.
     const heading = page.getByRole("heading", { level: 1 });
     await expect(heading).toBeVisible();
     await expect(heading).not.toContainText("{recipientName}");
@@ -299,11 +296,9 @@ test.describe("Gift round-trip — staging", () => {
     await expect(
       page.locator(`a[href="/api/listen/${submissionId}/pdf"]`),
     ).toBeVisible();
-    // Gift submission: recipientGreeting must render with the recipient's
-    // name substituted via the canonical chain in giftPersonas (6hfzgo13).
-    // Post-redeem the purchaser-supplied `recipient_name` is wiped by the
-    // recipient's intake; the chain falls through to intake first_name, which
-    // is hardcoded to "Mira" in seedGiftIntakeDraft.
+    // "Mira" is the first_name hardcoded in seedGiftIntakeDraft; the redeem
+    // wipes purchaser-supplied recipient_name so recipientNameFor falls
+    // through to intake first_name.
     await expect(
       page.getByTestId("listen-recipient-greeting"),
     ).toContainText("Mira");

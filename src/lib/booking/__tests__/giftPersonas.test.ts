@@ -61,7 +61,7 @@ describe("stripTemplateTags", () => {
   });
 });
 
-describe("purchaserSuppliedRecipientName (9vb4iz95)", () => {
+describe("purchaserSuppliedRecipientName", () => {
   it("returns the trimmed name when recipient_name is present", () => {
     expect(
       purchaserSuppliedRecipientName({

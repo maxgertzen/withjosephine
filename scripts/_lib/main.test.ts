@@ -7,7 +7,7 @@ import { isMainModule } from "./main.mts";
 const SELF_URL = import.meta.url;
 const SELF_PATH = fileURLToPath(SELF_URL);
 
-describe("isMainModule (nvbgx1n8)", () => {
+describe("isMainModule", () => {
   const originalArgv1: string | undefined = process.argv[1];
 
   afterEach(() => {

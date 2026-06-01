@@ -149,7 +149,7 @@ describe("findReadingRef cache TTL (35txg0an)", () => {
     }
   });
 
-  it("coalesces concurrent first-time misses on the same slug into a single fetch (ry40itf2)", async () => {
+  it("coalesces concurrent first-time misses on the same slug into a single fetch", async () => {
     const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
     clearReadingRefCache();
 
@@ -175,7 +175,7 @@ describe("findReadingRef cache TTL (35txg0an)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("drops the cache entry when the fetch resolves null so the next call retries (ry40itf2)", async () => {
+  it("drops the cache entry when the fetch resolves null so the next call retries", async () => {
     const { findReadingRef, clearReadingRefCache } = await import("./sanityMirror");
     clearReadingRefCache();
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import Image, { resolveSrc } from "./next-image";
 
-describe("resolveSrc (jmt52c7r)", () => {
+describe("resolveSrc", () => {
   it("swaps absolute-path string src for the transparent pixel", () => {
     const result = resolveSrc("/images/hero.jpg");
     expect(result.swapped).toBe(true);
@@ -34,7 +34,7 @@ describe("resolveSrc (jmt52c7r)", () => {
   });
 });
 
-describe("Image (jmt52c7r)", () => {
+describe("Image", () => {
   it("renders a bare <img> when src is a passthrough URL", () => {
     const { container } = render(
       <Image src="https://cdn.example.com/hero.jpg" alt="hero" width={100} height={80} />,
