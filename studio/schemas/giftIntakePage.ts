@@ -9,7 +9,7 @@ export const giftIntakePage = defineType({
   description:
     "Copy that wraps the intake form on /gift/intake — the page a recipient sees after their token is validated and they're ready to fill in their birth details. The form itself is configured in Booking Form; this only covers the chrome around it.",
   fields: [
-    tokenReferenceField({ tokens: ["readingName"] }),
+    tokenReferenceField({ tokens: ["readingName", "recipientName"] }),
     defineField({
       name: "seoTitle",
       title: "SEO — Page title",
@@ -44,7 +44,7 @@ export const giftIntakePage = defineType({
       title: "Heading (first arrival via claim)",
       type: "string",
       description:
-        "Shown on first arrival straight after claiming — when /gift/claim redirects with ?welcome=1.",
+        "Shown on first arrival straight after claiming (when /gift/claim redirects with ?welcome=1). Use {recipientName} to personalise (e.g. 'Welcome, Bob').",
       initialValue: "Welcome — a few things before we begin.",
     }),
     defineField({

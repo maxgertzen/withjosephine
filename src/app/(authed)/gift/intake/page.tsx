@@ -75,6 +75,13 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
 
   const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
   const lede = copy.lede.replace(/\{readingName\}/g, reading.name);
+  // recipientName lives in responses_json under fieldKey "recipient_name"
+  // when the purchaser provided it at gift purchase. Fall back to an empty
+  // string so the token interpolation drops cleanly if absent.
+  const recipientNameToken =
+    submission.responses.find((r) => r.fieldKey === "recipient_name")?.value ?? "";
+  const headingCopy = welcome ? copy.headingWelcome : copy.heading;
+  const heading = headingCopy.replace(/\{recipientName\}/g, recipientNameToken);
 
   const filteredSections = filterSectionsForReading(
     bookingForm.sections,
@@ -96,7 +103,7 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
               {copy.eyebrow}
             </p>
             <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-              {welcome ? copy.headingWelcome : copy.heading}
+              {heading}
             </h1>
             <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-6">
               {lede}
