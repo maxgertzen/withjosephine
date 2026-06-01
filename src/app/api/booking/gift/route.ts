@@ -31,6 +31,26 @@ const MAX_GIFT_MESSAGE_CHARS = 280;
 const MAX_GIFT_NAME_CHARS = 80;
 const MAX_PURCHASER_FIRST_NAME_CHARS = 80;
 const SEND_AT_MAX_DAYS = 365;
+const PURCHASER_USER_RETRY_ATTEMPTS = 3;
+const PURCHASER_USER_RETRY_BASE_MS = 50;
+
+async function resolvePurchaserUser(args: { email: string; name: string }): Promise<
+  { userId: string } | null
+> {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= PURCHASER_USER_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await getOrCreateUser({ email: args.email, name: args.name });
+    } catch (error) {
+      lastError = error;
+      if (attempt === PURCHASER_USER_RETRY_ATTEMPTS) break;
+      const backoff = PURCHASER_USER_RETRY_BASE_MS * 2 ** (attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+  console.error("[booking-gift] purchaser user-create failed after retries", lastError);
+  return null;
+}
 
 type GiftBookingBody = {
   readingSlug: string;
@@ -251,17 +271,24 @@ export async function POST(request: Request): Promise<Response> {
 
   const [reading, userResult] = await Promise.all([
     fetchReading(parsedBody.readingSlug),
-    getOrCreateUser({ email: purchaserEmail, name: purchaserFirstName }).catch(
-      (error) => {
-        console.error("[booking-gift] purchaser user-create failed", error);
-        return null;
-      },
-    ),
+    resolvePurchaserUser({ email: purchaserEmail, name: purchaserFirstName }),
   ]);
   if (!reading) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
-  const purchaserUserId = userResult?.userId ?? null;
+  // C3-b root cause: a transient user-resolve failure used to silently land
+  // purchaser_user_id = NULL on the gift row, hiding the gift from the
+  // purchaser's /my-gifts view forever. Fail loud (503) instead so the
+  // customer can retry the submit and the gift never lands disowned.
+  if (!userResult) {
+    return NextResponse.json(
+      {
+        error: "Could not resolve your account. Please try submitting again in a moment.",
+      },
+      { status: 503 },
+    );
+  }
+  const purchaserUserId = userResult.userId;
   const recipientEmail = parsedBody.recipientEmail?.trim().toLowerCase() ?? null;
   const recipientName = parsedBody.recipientName
     ? stripTemplateTags(parsedBody.recipientName.trim())
