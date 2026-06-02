@@ -1,6 +1,38 @@
 # Session Boot — Active State
 
-## 🚧 2026-06-01 — v1.9.0 arc landed in release branch, BLOCKED on browser-verified runtime regressions
+## ✅ 2026-06-02 — v1.9.0 4 runtime regressions FIXED + container/presentational + StyleProvider locked (PR #262 squash `b1207d7`)
+
+PR #262 squash-merged into `release/v1.9.0` at `b1207d7`. Full CI green (lint+typecheck, test, storybook, security-audit, osv-scanner). Real-browser Playwright smoke confirms all 13 stories PASS (6 ThankYouView, 4 IntakeForm, 1 GiftForm, 2 sanity): zero console errors, font CSS vars set on every story, page chrome present where expected. Storybook is now usable end-to-end on `release/v1.9.0`.
+
+**What landed (atomic single PR, dex epic `k7snhn1p`):**
+- **Container/presentational convention** at `docs/CONTAINER_PRESENTATIONAL.md`, referenced from project CLAUDE.md required-reading list. Locks page.tsx-is-container (extract helper module above ~40 LOC), XxxView.tsx route-folder co-located, workerd-binding import-graph rule, error-boundary carve-out, Storybook contract.
+- **`<StyleProvider>` single source of truth** at `src/components/StyleProvider/`. Exports `styleProviderClassName` (applied to `<body>` in `src/app/layout.tsx`) AND `<StyleProvider>` component (global Storybook decorator). Deletes `.storybook/storybook-fonts.css` (was setting wrong CSS var names). next/font cascade verdict cited Next.js Multiple-Fonts docs.
+- **T2a React multi-copy fix** in `.storybook/main.ts` via `require.resolve` + `resolve.symlinks: false` + sub-path aliases (`react/jsx-runtime`, `react/jsx-dev-runtime`, `react-dom/client`, `react-dom/server`).
+- **T2b defensive `useLinkStatus`** in `src/components/NavigationButton/LinkSpinner.tsx` (`import * as NextLink` + `?? () => ({ pending: false })`). Webpack alias approach was abandoned (framework wins); source-level fix is portable. Captured `feedback_defensive_source_over_webpack_alias` memory.
+- **T2c-as-decorator** `withBookingPageShell` at `.storybook/decorators/BookingPageShell.tsx`. Imports real BookingFlowHeader + Footer from production; per-story copy via `parameters.bookingPageShell` ({eyebrow, title, subtitle, backHref}).
+
+**Reorient (research-driven):** T3c (IntakeForm refactor) + T3d (GiftForm refactor) CANCELLED won't-do. Common-practices research (Storybook docs, Claffey 2025, sb.mock blog, storybook-rsc-demo) said keep useState in component, mock custom hooks via `sb.mock` in `.storybook/preview.ts`, wrap in shared page-shell decorator. With 14 useState + 4 custom hooks, IntakeForm/GiftForm are below the community refactor threshold. Captured `feedback_research_common_practices_before_refactor` memory.
+
+**Process learnings captured this session (memory files):**
+- `feedback_research_common_practices_before_refactor`: 30s research pass BEFORE proposing architectural refactors.
+- `feedback_defensive_source_over_webpack_alias`: framework-mock gaps fix at source, not webpack alias.
+- `feedback_council_research_in_parallel`: spawn council + vendor research in PARALLEL during BUILD.
+- `reference_styleprovider_and_container_presentational`: pointer to convention doc + epic state.
+
+**Dex state for `k7snhn1p`:**
+- ✅ T1a `zlx3wmd1` shipped (auto-close fire). T2a `97vwei9x`, T2b `ed8jmrlj`, T2c `b98gfftr` shipped (manual close 2026-06-02 because dex-auto-close didn't parse the comma-separated commit-msg list — only T1a auto-closed).
+- ✅ T3c `roocn1a0`, T3d `i2tn6gdy` cancelled won't-do.
+- Open: T1b `i9xgm11t` (import-graph CI script), T3a/T3b/T3e/T3f (per-page refactors that are still warranted), T4a-T4d (v1.10+ polish), and `whe2lpn3` epic's open children.
+
+### What's NOT done before `release/v1.9.0 → main`
+- [ ] T1b `i9xgm11t`: import-graph check script + CI wire-up. Blocks per-page refactor work (Tier 3).
+- [ ] Real-browser eyeball by Max on the merged release branch (production-grade verification beyond Playwright smoke).
+- [ ] Cumulative `code-review` + 3-vantage `/simplify` on the `release/v1.9.0 → main` diff (per `feedback_simplify_scale_to_change_size`).
+- [ ] Open `release/v1.9.0 → main` PR via `sentry-skills:pr-writer` when ready.
+
+---
+
+## 🚧 2026-06-01 — v1.9.0 arc landed in release branch, BLOCKED on browser-verified runtime regressions [SUPERSEDED by 2026-06-02 section above]
 
 All 9 v1.9.0 storybook arc subtasks (under epic `whe2lpn3`) shipped via PRs #253–#261 squash-merged into `release/v1.9.0`. Dex auto-close fired on each merge. PRD at `MEMORY/WORK/20260601-160000_v190-storybook-prd/PRD.md` (gitignored); audit at `MEMORY/WORK/20260601-160000_v190-storybook-prd/AUDIT.md`.
 
