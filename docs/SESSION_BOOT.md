@@ -1,5 +1,33 @@
 # Session Boot — Active State
 
+## 🛎️ 2026-06-03 — Session handoff (resume here)
+
+### What's the state of the world
+- On `release/v1.9.0` at `fae964e` (bookkeeping HEAD). origin in sync. No uncommitted state. No open feature branches.
+- Epic `k7snhn1p` (container/presentational + StyleProvider + per-page rollout) Tier 1–3 fully shipped this session via 4 sequential sub-PRs (#263 T1b, #264 T3a, #265 T3b, #266 T3e) + T3f closed as confirm-by-existence. All green CI on each. See section below for details.
+- Only Tier-4 polish remains under the epic, all p2/p3, all non-blocking for `release/v1.9.0 → main`: `1rr9f1cc` T4a LegalPageLayout stories, `sjbq2dhs` T4b error-boundary stories, `z30nev3r` T4d Storybook folder taxonomy audit, `nlnpkjvo` T4c (p3) delete /dev-preview/library.
+
+### Real user-impact blockers (lead with these)
+- [ ] **Max real-browser eyeball on `release/v1.9.0`** of the 4 refactored Views (BookingEntryView, LetterView, GiftIntakeView, plus the pre-existing ListenView). `storybook:build` green ≠ runtime render — see `feedback_storybook_build_not_runtime`. Binding gate per `feedback_real_browser_smoke_before_ship_claim`.
+- [ ] **Cumulative `/code-review --effort high` + 3-vantage `/simplify`** on the `release/v1.9.0 → main` diff. Deferred to merge-gate per `feedback_simplify_scale_to_change_size`. The diff now includes the full v1.9.0 arc PLUS the four k7snhn1p sub-PRs — meaningful scope.
+- [ ] **Open `release/v1.9.0 → main` PR** via `sentry-skills:pr-writer` once the two above are done.
+
+### Most likely next action(s) — pick one
+1. **Drive `release/v1.9.0 → main`** — Max real-browser smoke → cumulative simplify → open merge PR. Best path if Max is ready to ship v1.9.0.
+2. **Pick up Tier-4 polish under `k7snhn1p`** — `1rr9f1cc` T4a (LegalPageLayout stories, 3 fixtures), `sjbq2dhs` T4b (3 error-boundary stories with `parameters: { styleProvider: false }` opt-out per convention doc), `z30nev3r` T4d (Storybook folder taxonomy audit), or `nlnpkjvo` T4c p3 (delete `/dev-preview/library`). All non-blocking, can ship as small individual sub-PRs against `release/v1.9.0`.
+3. **Other backlog** — `wdpz1ux4` Apex unpark hold-gate (Stripe webhook split + pre-prod data cleanup + manual smoke), `lxighqj6` v1.8.0 follow-up coverage, `oxaalntc` evaluate `@storybook/nextjs-vite` migration for v1.10+. All deferred-but-real.
+
+### Process learnings from this session (carry forward)
+- **Committed on release branch by mistake on T3e.** First commit of a sub-PR cycle needs the `git checkout -b feat/...` step before `git commit`. Recovery was clean (origin untouched, `git branch feat/... <sha>` + `git reset --hard origin/release/...`), but it's a watch-out. No durable memory captured because this is a one-line checklist item, not a pattern.
+- **`dex complete` confirm-by-existence is a legitimate close path.** T3f was filed against stale state (the migration had already happened in a prior arc). Closing with `dex complete --no-commit --result "Already done prior to filing, ..."` is cleaner than ginning up a no-op PR. Verified afterward with `dex show` per `feedback_dex_create_verify_with_show`.
+- **Transitive-binding-reach > folder-path-prefix** for the stories-import-graph gate. The semantic decision was load-bearing for T3a–T3e — pure helpers under `src/lib/booking/*` (constants, giftStatus, sectionFilters, etc.) stay story-safe and didn't need relocations. Worth keeping the same call for any future analogous "what does this folder *mean*" question.
+
+### Things that aren't broken but worth a glance next session
+- **dex audit clean** at ship time — 47 open tasks all "needs review" (legitimate backlog), zero flagged as likely-done or stale. `pnpm exec tsx scripts/dex-audit.mts` if you want the breakdown.
+- **Storybook story count: 26.** Up from 23 at session start. All pass the T1b gate. None of the 3 new stories (BookingEntryView, LetterView, GiftIntakeView) have been opened in a real browser yet — they're build-verified only.
+
+---
+
 ## ✅ 2026-06-02 — Epic `k7snhn1p` Tier 1–3 SHIPPED (PRs #263, #264, #265, #266)
 
 All Tier-1, Tier-2, and Tier-3 work under epic `k7snhn1p` (container/presentational + StyleProvider + workerd-binding gate) is merged into `release/v1.9.0`. Four sequential sub-PRs landed clean with full PR-level CI green on each (lint+typecheck, test, storybook, security-audit, osv-scanner).
