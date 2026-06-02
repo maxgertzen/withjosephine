@@ -2,25 +2,20 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-import { BookingFlowHeader } from "@/components/BookingFlowHeader";
-import { Footer } from "@/components/Footer";
-import { IntakeForm } from "@/components/IntakeForm";
 import { GIFT_INTAKE_PAGE_DEFAULTS } from "@/data/defaults";
 import {
   GIFT_CLAIM_COOKIE,
   verifyGiftClaimCookie,
 } from "@/lib/booking/giftClaimSession";
-import { purchaserSuppliedRecipientName } from "@/lib/booking/giftPersonas";
-import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import {
   fetchBookingForm,
   fetchGiftIntakePage,
   fetchReading,
 } from "@/lib/sanity/fetch";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 
-import { RecipientEmailEscapeHatch } from "./RecipientEmailEscapeHatch";
+import { deriveGiftIntakeViewProps } from "./deriveGiftIntakeViewProps";
+import { GiftIntakeView } from "./GiftIntakeView";
 
 export const dynamic = "force-dynamic";
 
@@ -74,66 +69,13 @@ export default async function GiftIntakePage({ searchParams }: GiftIntakePagePro
     notFound();
   }
 
-  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...pickDefined(intakePageCopy ?? {}) };
-  const readingName = reading.name;
-  const lede = copy.lede.replaceAll("{readingName}", () => readingName);
-  // {recipientName} substitution is welcome-path only: the non-welcome heading
-  // never advertised the token and Becky's editor doesn't show it for that
-  // field. Scoping the replace keeps a literal `{recipientName}` rendering as
-  // text on the return-visit heading if anyone ever types it there.
-  const recipientNameToken = purchaserSuppliedRecipientName(submission) ?? "";
-  const heading = welcome
-    ? copy.headingWelcome.replaceAll("{recipientName}", () => recipientNameToken)
-    : copy.heading;
+  const props = deriveGiftIntakeViewProps({
+    submission,
+    reading,
+    bookingForm,
+    intakePageCopy,
+    welcome: Boolean(welcome),
+  });
 
-  const filteredSections = filterSectionsForReading(
-    bookingForm.sections,
-    reading.slug,
-  );
-
-  return (
-    <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <BookingFlowHeader backHref="/" />
-
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
-        <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
-          />
-          <div className="relative px-6 py-10 md:px-12 md:py-14">
-            <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
-              {copy.eyebrow}
-            </p>
-            <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-              {heading}
-            </h1>
-            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-6">
-              {lede}
-            </p>
-            <RecipientEmailEscapeHatch recipientEmail={submission.recipientEmail ?? null} />
-
-            <IntakeForm
-              readingId={reading.slug}
-              readingName={reading.name}
-              sections={filteredSections}
-              nonRefundableNotice=""
-              pagination={bookingForm.pagination}
-              loadingStateCopy="Sending your answers…"
-              submitLabel="Send my answers"
-              nextLabel={bookingForm.nextButtonText}
-              saveLaterLabel={bookingForm.saveAndContinueLaterText}
-              pageIndicatorTagline={bookingForm.pageIndicatorTagline}
-              mode="redeem"
-              redeemSubmissionId={submission._id}
-              redeemSuccessUrl={`/thank-you/${submission._id}?gift=1&redeemed=1`}
-              prefilledEmail={submission.recipientEmail ?? null}
-            />
-          </div>
-        </article>
-      </main>
-
-      <Footer />
-    </div>
-  );
+  return <GiftIntakeView {...props} />;
 }
