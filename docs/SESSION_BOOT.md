@@ -1,6 +1,43 @@
 # Session Boot — Active State
 
-## ✅ 2026-06-02 — v1.9.0 4 runtime regressions FIXED + container/presentational + StyleProvider locked (PR #262 squash `b1207d7`)
+## ✅ 2026-06-02 — Epic `k7snhn1p` Tier 1–3 SHIPPED (PRs #263, #264, #265, #266)
+
+All Tier-1, Tier-2, and Tier-3 work under epic `k7snhn1p` (container/presentational + StyleProvider + workerd-binding gate) is merged into `release/v1.9.0`. Four sequential sub-PRs landed clean with full PR-level CI green on each (lint+typecheck, test, storybook, security-audit, osv-scanner).
+
+**What shipped this session:**
+
+| PR | dex | Surface | Net change |
+|---|---|---|---|
+| #263 | `i9xgm11t` | T1b: stories-import-graph CI gate | +441 LOC (script + 13 tests + CI wire) |
+| #264 | `v56gbpqw` | T3a: `/book/[readingId]` → BookingEntryView + deriveBookingEntryProps | page.tsx 234 → 60 LOC; +7 derive tests, 2 stories |
+| #265 | `8e5grog2` | T3b: `/book/[readingId]/letter` → LetterView + deriveLetterViewProps | page.tsx 141 → 56 LOC; +6 derive tests, 2 stories |
+| #266 | `68ggveqr` | T3e: `/(authed)/gift/intake` → GiftIntakeView + deriveGiftIntakeViewProps | page.tsx 139 → 81 LOC; +7 derive tests, 3 stories |
+| (closed) | `s5d96p2z` | T3f: ListenView migration | Already done in prior arc — closed as confirm-by-existence (no PR) |
+
+**Gate semantics (Max-approved this session):** T1b uses **transitive-binding-reach**, not folder-path-prefix. The script walks each `*.stories.tsx` graph via the TS compiler API and fails only when a story (directly or via any local chain) imports `@opennextjs/cloudflare`, `next/headers`, `next/cache`, or `server-only`. Pure helpers under `src/lib/booking/*` (constants, giftStatus, sectionFilters) remain story-safe. 26 stories pass the gate after T3a+T3b+T3e.
+
+**Pattern repeated cleanly across all 3 refactors:**
+- `page.tsx` — container: `generateMetadata` (unchanged) + fetch + derive + render
+- `derive*ViewProps.ts` — pure derivation (resolveX + prop assembly, Sanity fallback to defaults)
+- `*View.tsx` — presentational RSC, prop-driven, route-folder co-located
+- `*View.stories.tsx` — 2–3 fixture states, plain object args (no binding-reach)
+- `derive*ViewProps.test.ts` — null path + Sanity-hydrated path + defaults-fallback path
+
+**Dex state for `k7snhn1p` after this session:**
+- ✅ T1a `zlx3wmd1`, T1b `i9xgm11t`, T2a `97vwei9x`, T2b `ed8jmrlj`, T2c `b98gfftr`, T3a `v56gbpqw`, T3b `8e5grog2`, T3e `68ggveqr`, T3f `s5d96p2z` — all closed.
+- ✅ T3c `roocn1a0`, T3d `i2tn6gdy` — cancelled won't-do (per common-practices research).
+- Open: T4a `1rr9f1cc` (p2), T4b `sjbq2dhs` (p2), T4c `nlnpkjvo` (p3), T4d `z30nev3r` (p2). All optional polish; none block `release/v1.9.0 → main`.
+
+### What's NOT done before `release/v1.9.0 → main`
+- [ ] Real-browser eyeball by Max on the merged release branch (production-grade verification beyond Playwright smoke). Per `feedback_real_browser_smoke_before_ship_claim` — `storybook:build` passing does not imply per-story render works in a browser.
+- [ ] Cumulative `code-review` + 3-vantage `/simplify` on the `release/v1.9.0 → main` diff (per `feedback_simplify_scale_to_change_size`). Deferred to merge-gate per binding rule.
+- [ ] Open `release/v1.9.0 → main` PR via `sentry-skills:pr-writer` when ready.
+
+**Recovery note (process):** During T3e ship, I committed onto `release/v1.9.0` directly by skipping the feature-branch step. Recovered by parking the commit on `feat/t3e-gift-intake-view` and `git reset --hard origin/release/v1.9.0` (origin was untouched, no force-push needed). The mistake is a missed checklist item for first commit in a sub-PR cycle, not a tooling bug.
+
+---
+
+## ✅ 2026-06-02 — v1.9.0 4 runtime regressions FIXED + container/presentational + StyleProvider locked (PR #262 squash `b1207d7`) [SUPERSEDED by section above for current Tier 1–3 state]
 
 PR #262 squash-merged into `release/v1.9.0` at `b1207d7`. Full CI green (lint+typecheck, test, storybook, security-audit, osv-scanner). Real-browser Playwright smoke confirms all 13 stories PASS (6 ThankYouView, 4 IntakeForm, 1 GiftForm, 2 sanity): zero console errors, font CSS vars set on every story, page chrome present where expected. Storybook is now usable end-to-end on `release/v1.9.0`.
 
