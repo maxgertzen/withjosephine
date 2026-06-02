@@ -25,7 +25,7 @@ PR #262 squash-merged into `release/v1.9.0` at `b1207d7`. Full CI green (lint+ty
 - Open: T1b `i9xgm11t` (import-graph CI script), T3a/T3b/T3e/T3f (per-page refactors that are still warranted), T4a-T4d (v1.10+ polish), and `whe2lpn3` epic's open children.
 
 ### What's NOT done before `release/v1.9.0 → main`
-- [ ] T1b `i9xgm11t`: import-graph check script + CI wire-up. Blocks per-page refactor work (Tier 3).
+- [~] T1b `i9xgm11t`: import-graph check script + CI wire-up. **IN-FLIGHT via PR #263** (`feat/t1b-stories-import-graph` → `release/v1.9.0`). 23/23 live stories pass the gate; 13 unit tests; CI green-watch in progress. Blocks per-page refactor work (Tier 3) until merged.
 - [ ] Real-browser eyeball by Max on the merged release branch (production-grade verification beyond Playwright smoke).
 - [ ] Cumulative `code-review` + 3-vantage `/simplify` on the `release/v1.9.0 → main` diff (per `feedback_simplify_scale_to_change_size`).
 - [ ] Open `release/v1.9.0 → main` PR via `sentry-skills:pr-writer` when ready.
