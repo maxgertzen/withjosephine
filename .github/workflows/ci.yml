@@ -62,6 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      - run: pnpm check:stories-imports
       - run: pnpm storybook:build
 
   # Deploy the staging Worker (built via @opennextjs/cloudflare). Runs on
