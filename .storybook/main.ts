@@ -1,9 +1,16 @@
+import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import type { StorybookConfig } from "@storybook/nextjs";
 
-const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+const require = createRequire(import.meta.url);
+
+// Pin React + ReactDOM to the project's installed copy by resolving the actual
+// package.json on disk (pnpm symlinks otherwise leave Storybook's transitive
+// react-refresh loader pulling in a second React instance, which triggers
+// "Cannot read properties of null (reading 'useMemo')" inside HeadManagerProvider).
+const reactDir = path.dirname(require.resolve("react/package.json"));
+const reactDomDir = path.dirname(require.resolve("react-dom/package.json"));
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(js|jsx|ts|tsx|mdx)"],
@@ -23,13 +30,18 @@ const config: StorybookConfig = {
   }),
   webpackFinal: async (webpack) => {
     webpack.resolve = webpack.resolve ?? {};
+    webpack.resolve.symlinks = false;
     const existingAlias = webpack.resolve.alias as
       | Record<string, string | false | string[]>
       | undefined;
     webpack.resolve.alias = {
       ...existingAlias,
-      react: path.resolve(projectRoot, "node_modules/react"),
-      "react-dom": path.resolve(projectRoot, "node_modules/react-dom"),
+      react: reactDir,
+      "react-dom": reactDomDir,
+      "react/jsx-runtime": path.join(reactDir, "jsx-runtime.js"),
+      "react/jsx-dev-runtime": path.join(reactDir, "jsx-dev-runtime.js"),
+      "react-dom/client": path.join(reactDomDir, "client.js"),
+      "react-dom/server": path.join(reactDomDir, "server.js"),
     };
     return webpack;
   },

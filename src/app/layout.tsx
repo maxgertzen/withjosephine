@@ -7,7 +7,7 @@ import { VisualEditing } from "next-sanity/visual-editing";
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
 import { DisableDraftMode } from "@/components/DisableDraftMode";
-import { bodyFont, displayFont } from "@/lib/fonts.generated";
+import { styleProviderClassName } from "@/components/StyleProvider";
 import { CONSENT_HEADER } from "@/lib/region";
 import { fetchSiteSettings } from "@/lib/sanity/fetch";
 import { SanityLive } from "@/lib/sanity/live";
@@ -28,9 +28,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       : null;
 
   return (
-    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html lang="en">
       <body
-        className="bg-j-cream text-j-text font-body antialiased"
+        className={`${styleProviderClassName} bg-j-cream text-j-text font-body antialiased`}
         suppressHydrationWarning
       >
         {children}

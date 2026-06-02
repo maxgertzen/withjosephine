@@ -1,7 +1,8 @@
 import "../src/styles/globals.css";
-import "./storybook-fonts.css";
 
 import type { Preview } from "@storybook/react";
+
+import { StyleProvider } from "../src/components/StyleProvider";
 
 const preview: Preview = {
   parameters: {
@@ -13,7 +14,20 @@ const preview: Preview = {
         { name: "warm", value: "#F5F0E8" },
       ],
     },
+    styleProvider: true,
   },
+  decorators: [
+    (Story, context) => {
+      if (context.parameters?.styleProvider === false) {
+        return <Story />;
+      }
+      return (
+        <StyleProvider>
+          <Story />
+        </StyleProvider>
+      );
+    },
+  ],
 };
 
 export default preview;
