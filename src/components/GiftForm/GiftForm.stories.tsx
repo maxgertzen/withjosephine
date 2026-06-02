@@ -2,12 +2,19 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { BOOKING_GIFT_FORM_DEFAULTS } from "@/data/defaults";
 
+import { withBookingPageShell } from "../../../.storybook/decorators/BookingPageShell";
 import { GiftForm } from "./GiftForm";
 
 const meta: Meta<typeof GiftForm> = {
   title: "Pages/GiftForm",
   component: GiftForm,
-  parameters: { layout: "fullscreen" },
+  decorators: [withBookingPageShell],
+  parameters: {
+    layout: "fullscreen",
+    bookingPageShell: {
+      backHref: "/book/soul-blueprint/letter",
+    },
+  },
   args: {
     readingSlug: "soul-blueprint",
     readingName: "Soul Blueprint",

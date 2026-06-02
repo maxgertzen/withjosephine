@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
+import { withBookingPageShell } from "../../../.storybook/decorators/BookingPageShell";
 import bookingFormFixture from "../../__fixtures__/sanity/e2e/bookingForm.json";
 import { IntakeForm } from "./IntakeForm";
 
@@ -25,8 +26,16 @@ const baseArgs = {
 const meta: Meta<typeof IntakeForm> = {
   title: "Pages/IntakeForm",
   component: IntakeForm,
+  decorators: [withBookingPageShell],
   parameters: {
     layout: "fullscreen",
+    bookingPageShell: {
+      eyebrow: "An invitation",
+      title: "Tell me where to begin",
+      subtitle:
+        "These questions help me hold the energy of your reading. Take your time, no rush.",
+      backHref: "/book/soul-blueprint/letter",
+    },
     nextjs: {
       appDirectory: true,
       navigation: {
