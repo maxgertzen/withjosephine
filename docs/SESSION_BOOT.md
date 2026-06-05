@@ -10,8 +10,8 @@
 
 ### Real user-impact blockers (lead with these)
 - [ ] **Max real-browser eyeball on `release/v1.9.0`** of all 7 refactored Views (BookingEntryView, LetterView, GiftIntakeView, ListenView, ThankYouView, IntakeForm, GiftForm) + the 4 new T4 stories landed this session (LegalPageLayout, NotFound, ErrorBoundary, GlobalError). `storybook:build` green ≠ runtime render. Binding gate per `feedback_real_browser_smoke_before_ship_claim`.
-- [ ] **Cumulative `/code-review --effort high` + 3-vantage `/simplify`** on the full `release/v1.9.0 → main` diff. Per-sub-PR gates ran during the arc; the cumulative gate is the merge-gate per `feedback_simplify_scale_to_change_size`.
-- [ ] **Open `release/v1.9.0 → main` PR** via `sentry-skills:pr-writer` once the two above are done.
+- [x] **Cumulative `/code-review --effort high` + 3-vantage `/simplify`** on the full `release/v1.9.0 → main` diff. **DONE** at commit `cab4c36`. 4 findings accepted (em-dash sub, deriveThankYouViewProps extraction + test, dedupe recipient fallback strings, drop `"use client"` from ThankYouView). 2 deferred to dex (`dss693yd` BookingPageShell extraction, `jzvhs9x4` THANK_YOU_PAGE_DEFAULTS const). FINDINGS.md at `MEMORY/WORK/20260605-232512_v190-cumulative-review-and-simplify/`. Push CI all green.
+- [ ] **Open `release/v1.9.0 → main` PR** via `sentry-skills:pr-writer` once the real-browser eyeball is done.
 
 ### Most likely next action(s) — pick one
 1. **Drive `release/v1.9.0 → main`** — Max real-browser smoke → cumulative simplify → open merge PR. Best path if Max is ready to ship v1.9.0.
@@ -25,9 +25,10 @@
 - **Sed for mechanical multi-file string rewrites is appropriate.** The Edit-must-Read-first rule pushed me into 13 sequential Reads; one 12-line sed script in a single Bash call was faster and verifiable via post-sed grep. Don't fight the dedicated-tool default when the dedicated tool's preconditions make the task slower than the shell does it.
 
 ### Things that aren't broken but worth a glance next session
-- **dex audit clean** at ship time — only `nlnpkjvo` T4c open under epic `k7snhn1p`; everything else closed.
-- **Storybook story count: 30.** Up from 26 at session start (Default + CustomCopy on NotFound, Default + TimeoutLike on ErrorBoundary, Default on GlobalError, Privacy + Terms + RefundPolicy on LegalPageLayout). None of the 4 new stories has been opened in a real browser yet — they're build-verified only.
+- **dex audit clean** at ship time — only `nlnpkjvo` T4c open under epic `k7snhn1p`; the cumulative simplify pass added 2 new top-level dex tickets (`dss693yd` BookingPageShell, `jzvhs9x4` THANK_YOU_PAGE_DEFAULTS).
+- **Storybook story count: 30.** Up from 26 at session start. None of the 4 new stories has been opened in a real browser yet; they're build-verified only.
 - **hono 4.12.23 floor** in `package.json`. If you bump pnpm-lock.yaml again, do not regress below this.
+- **Local `pnpm test` is flaky.** On this checkout, 9 tests time out at the default 5s under setup latency (full run takes ~210s with setup=463s, env=708s). The bare `release/v1.9.0` HEAD shows the same 9 failures (confirmed by stash + re-run). CI's clean runner passes them all. If you see local timeouts, suspect environment first; do not chase them as real failures without comparing against a bare-HEAD run.
 
 ---
 
