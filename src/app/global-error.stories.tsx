@@ -1,0 +1,93 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
+import type { Meta, StoryObj } from "@storybook/react";
+
+const inlineStyles = `
+  .global-error-root {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FAF8F4;
+    color: #3D3633;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .global-error-root h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.2;
+    color: #3D3633;
+    margin: 0 0 1rem;
+  }
+  .global-error-root p {
+    color: #7A6F6A;
+    margin: 0 0 2rem;
+    max-width: 28rem;
+  }
+  .global-error-root .actions { display: flex; gap: 1rem; justify-content: center; }
+  .global-error-root button, .global-error-root a {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .global-error-root button {
+    background: #1C1935;
+    color: #FAF8F4;
+    border: none;
+  }
+  .global-error-root a {
+    background: transparent;
+    color: #7A6F6A;
+  }
+  .global-error-root button:hover, .global-error-root a:hover { opacity: 0.8; }
+  .global-error-root .tag {
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #C4A46B;
+    margin-bottom: 1rem;
+  }
+`;
+
+function GlobalErrorRender() {
+  return (
+    <div className="global-error-root">
+      <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
+      <div>
+        <div className="tag">✦ Something Went Wrong</div>
+        <h1>an unexpected error occurred</h1>
+        <p>We&apos;re sorry for the inconvenience. Please try again or return to the homepage.</p>
+        <div className="actions">
+          <button type="button">Try Again</button>
+          <a href="/">Return Home</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const meta: Meta<typeof GlobalErrorRender> = {
+  title: "Pages/GlobalError",
+  component: GlobalErrorRender,
+  parameters: {
+    layout: "fullscreen",
+    styleProvider: false,
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof GlobalErrorRender>;
+
+export const Default: Story = {};
