@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ContactForm } from "./ContactForm";
 
 const meta: Meta<typeof ContactForm> = {
-  title: "Components/ContactForm",
+  title: "Content/ContactForm",
   component: ContactForm,
   decorators: [(Story) => <div style={{ maxWidth: 640, margin: "0 auto" }}><Story /></div>],
 };

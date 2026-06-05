@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FaqSection } from "./FaqSection";
 
 const meta: Meta<typeof FaqSection> = {
-  title: "Components/FaqSection",
+  title: "Content/FaqSection",
   component: FaqSection,
 };
 

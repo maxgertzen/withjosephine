@@ -39,7 +39,7 @@ function Playground({
 }
 
 const meta: Meta<typeof Playground> = {
-  title: "Form/DateTimePicker",
+  title: "Forms/DateTimePicker",
   component: Playground,
   parameters: {
     layout: "fullscreen",
