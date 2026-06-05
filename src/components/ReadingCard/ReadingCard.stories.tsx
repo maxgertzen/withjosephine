@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ReadingCard } from "./ReadingCard";
 
 const meta: Meta<typeof ReadingCard> = {
-  title: "Components/ReadingCard",
+  title: "Content/ReadingCard",
   component: ReadingCard,
   parameters: {
     layout: "centered",

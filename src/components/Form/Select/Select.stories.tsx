@@ -58,7 +58,7 @@ function Playground({
 }
 
 const meta: Meta<typeof Playground> = {
-  title: "Form/Select",
+  title: "Forms/Select",
   component: Playground,
 };
 
