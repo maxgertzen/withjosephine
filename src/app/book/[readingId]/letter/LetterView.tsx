@@ -74,7 +74,7 @@ export function LetterView({ reading, letterContent, aboutJosephineLinkText }: L
               href={BOOKING_PAGE_ROUTES.intake(reading.slug)}
               event="cta_click_intake"
               properties={{ reading_id: reading.slug, position: "drop-cap" }}
-              aria-label={`${letterContent.dropCapCta} — go to intake form`}
+              aria-label={`${letterContent.dropCapCta}, go to intake form`}
               className="relative group block w-max max-w-full mx-auto px-4 py-3 font-display italic font-medium text-2xl text-j-deep leading-tight tracking-tight text-center border-b border-transparent hover:border-j-accent transition-colors"
               style={{ minHeight: "56px" }}
             >
