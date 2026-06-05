@@ -1,6 +1,37 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-03 — Session handoff (resume here)
+## 🛎️ 2026-06-05 — Tier-4 polish SHIPPED, release/v1.9.0 → main is the next move
+
+### What's the state of the world
+- On `release/v1.9.0` at `874a423` (T4b auto-close HEAD). origin in sync. No uncommitted state. No open feature branches.
+- Epic `k7snhn1p` Tier-4 polish fully shipped this session via 3 sequential sub-PRs (#267 T4d, #268 T4a, #269 T4b). All green CI on each. Storybook story count: 30 (up from 26 last session). dex tickets `z30nev3r`, `1rr9f1cc`, `sjbq2dhs` closed via auto-close.
+- Epic `k7snhn1p` open child: only `nlnpkjvo` T4c (p3) remains, which is the destructive delete of `/dev-preview/library`. Deliberately NOT pulled in this arc; needs Max decision before pulling the trigger.
+- T4d also bumped hono devDep 4.12.18 → 4.12.23 (GHSA-f577-qrjj-4474 + GHSA-xrhx-7g5j-rcj5) to clear security-audit / osv-scan; both CVEs landed against the locked 4.12.18 since the last release/v1.9.0 push CI on 2026-06-02.
+
+### Real user-impact blockers (lead with these)
+- [ ] **Max real-browser eyeball on `release/v1.9.0`** of all 7 refactored Views (BookingEntryView, LetterView, GiftIntakeView, ListenView, ThankYouView, IntakeForm, GiftForm) + the 4 new T4 stories landed this session (LegalPageLayout, NotFound, ErrorBoundary, GlobalError). `storybook:build` green ≠ runtime render. Binding gate per `feedback_real_browser_smoke_before_ship_claim`.
+- [ ] **Cumulative `/code-review --effort high` + 3-vantage `/simplify`** on the full `release/v1.9.0 → main` diff. Per-sub-PR gates ran during the arc; the cumulative gate is the merge-gate per `feedback_simplify_scale_to_change_size`.
+- [ ] **Open `release/v1.9.0 → main` PR** via `sentry-skills:pr-writer` once the two above are done.
+
+### Most likely next action(s) — pick one
+1. **Drive `release/v1.9.0 → main`** — Max real-browser smoke → cumulative simplify → open merge PR. Best path if Max is ready to ship v1.9.0.
+2. **Pick up `nlnpkjvo` T4c** — only if Max confirms deleting `/dev-preview/library`. Small sub-PR. Otherwise leave deferred.
+3. **Other backlog** — `wdpz1ux4` Apex unpark hold-gate (Stripe webhook split + pre-prod data cleanup + manual smoke), `lxighqj6` v1.8.0 follow-up coverage, `oxaalntc` evaluate `@storybook/nextjs-vite` migration for v1.10+. All deferred-but-real.
+
+### Process learnings from this session (carry forward)
+- **Local lint exit code != green.** Trusted a "exit code 0" notification from a background lint run that was actually the second invocation on a different branch; the T4b run had 1 real error (`<a href="/">` in global-error story missing the eslint-disable that the production file carries). Read the actual output, not just the notification. CI caught it on the first PR push and forced a fix-up commit + re-run.
+- **Eslint-disable mirrors at file level on parity stories.** When a story duplicates JSX from a production page that carries a file-level `eslint-disable`, the story needs the same disable. `global-error.tsx` disables `@next/next/no-html-link-for-pages` because it cannot use `next/link`; the story mirrors that constraint and inherits the same rule.
+- **Piggyback sec-bumps on the lead sub-PR.** When a freshly-landed CVE trips security-audit on PR #N of an arc, bumping the dep on PR #N (rather than a separate PR) is the right call: unblocks the lead and rebase-on-merged-base cleans up subsequent PRs.
+- **Sed for mechanical multi-file string rewrites is appropriate.** The Edit-must-Read-first rule pushed me into 13 sequential Reads; one 12-line sed script in a single Bash call was faster and verifiable via post-sed grep. Don't fight the dedicated-tool default when the dedicated tool's preconditions make the task slower than the shell does it.
+
+### Things that aren't broken but worth a glance next session
+- **dex audit clean** at ship time — only `nlnpkjvo` T4c open under epic `k7snhn1p`; everything else closed.
+- **Storybook story count: 30.** Up from 26 at session start (Default + CustomCopy on NotFound, Default + TimeoutLike on ErrorBoundary, Default on GlobalError, Privacy + Terms + RefundPolicy on LegalPageLayout). None of the 4 new stories has been opened in a real browser yet — they're build-verified only.
+- **hono 4.12.23 floor** in `package.json`. If you bump pnpm-lock.yaml again, do not regress below this.
+
+---
+
+## 🛎️ 2026-06-03 — Session handoff [SUPERSEDED by section above]
 
 ### What's the state of the world
 - On `release/v1.9.0` at `fae964e` (bookkeeping HEAD). origin in sync. No uncommitted state. No open feature branches.
