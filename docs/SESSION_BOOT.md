@@ -26,22 +26,39 @@
 - [ ] **v1.9.0 prod smoke** still owed from session start (J17 + J1–J16 in `docs/MANUAL_SMOKE_TEST.md`).
 - [ ] **Branch cleanup post-smoke:** `git push origin --delete release/v1.9.0` once v1.9.0 smoke completes.
 
-### 🎯 Next session pickup — cumulative review + open merge PR
-Per Max's bookkeeping signal ("next session we run simplifier and review on diff"):
-1. `Skill code-review --effort high` on `git diff origin/main...release/v1.10.0` (the cumulative arc diff).
-2. `Skill simplify --scope diff` (3-vantage) on same diff.
-3. Address findings.
-4. Open `release/v1.10.0 → main` merge PR via `sentry-skills:pr-writer`. Title format: `feat(v1.10.0): Release v1.10.0 — <theme>`.
-5. Watch CI matrix (Playwright on PR-to-main is the first PR-CI exposure for the v1.10.0 arc; lint+typecheck+test+storybook ran per sub-PR on release branch already).
-6. Wait for Max real-browser smoke + merge approval.
-7. Merge → tag `v1.10.0` annotated at the squash commit → push tag → add CHANGELOG entry.
+### 🎯 Next session pickup — fold audit findings + cumulative review + open merge PR
+
+Per Max's directives (1) "we run simplifier and review on diff" and (2) "audit findings should be folded to this release":
+
+**Step A — Fold audit findings into release (NEW Sub-PR 8 before merge):**
+1. Update `src/data/defaults.ts` with Becky's canonical content for the 2 real divergences:
+   - `GIFT_INTAKE_PAGE_DEFAULTS.heading`: "Let's open your gift." → "A few things, before we begin."
+   - `GIFT_INTAKE_PAGE_DEFAULTS.headingWelcome`: "Welcome. Let's open your gift." → "Welcome, a few things before we begin." (em-dash substituted per binding rule from Becky's "Welcome — a few things...")
+   - `MAGIC_LINK_VERIFY_PAGE_DEFAULTS.restedHeading`: "This link has been used" → "This link has rested"
+2. Write `scripts/migrate-em-dash-strings-2026-06-06.ts` patterned on PR #238's set-if-matches migration. Reconcile the 14 em-dash drifts (3 myGiftsPage + 4 giftClaimPage + 3 giftIntakePage + 3 magicLinkVerifyPage + 1 already covered in step 1). Each step idempotent: read field, if equals legacy em-dash string, write the no-em-dash substitute. Run against prod after PR merges. `Closes dex 5eggk3jy`.
+3. Write `scripts/seed-my-readings-page-fields-2026-06-06.ts` for the 8 missing-in-prod myReadingsPage fields (`expiredRowLabel`, `expiredMailtoLabel`, `expiredMailtoSubject`, `readingsTabLabel`, `giftsTabLabel`, `welcomeHeading`, `welcomeSubhead`, `welcomeButtonLabel`). Verify Sanity schema declares them first; if not, schema-add step too. `Closes dex 7wzggnwj`.
+4. Re-run `pnpm tsx scripts/audit-defaults-drift.mts production` post-migration; confirm `drifts=0` on the 5 touched singletons.
+5. Pre-push gates per binding rule: lint + typecheck + test + `Skill code-review` + `Skill simplify` on Sub-PR 8 diff.
+6. Open Sub-PR 8 PR, watch CI, merge.
+
+**Step B — Cumulative review on `release/v1.10.0 → main` diff:**
+7. `Skill code-review --effort high` on `git diff origin/main...release/v1.10.0`.
+8. `Skill simplify --scope diff` (3-vantage) on same diff.
+9. Address findings (likely small if any).
+
+**Step C — Open merge PR and ship:**
+10. Open `release/v1.10.0 → main` merge PR via `sentry-skills:pr-writer`. Title format: `feat(v1.10.0): Release v1.10.0`.
+11. Watch CI matrix (Playwright on PR-to-main is the first PR-CI exposure for the v1.10.0 arc; lint+typecheck+test+storybook ran per sub-PR on release branch already).
+12. Wait for Max real-browser smoke + merge approval.
+13. Merge → tag `v1.10.0` annotated at the squash commit → push tag → add CHANGELOG release entry.
 
 ### Deferred dex tickets from v1.10.0 arc
 - `76nnmb5b`: Mirror test-mint pattern for library-token-roundtrip spec (so `AUTH_TOKEN_SECRET` can finally drop from `e2e-sandbox.yml`).
 - `djw51vtk`: Extract shared gift-card helpers across LibraryView/MyGiftsView/MyReadingsView (3-way duplication after Sub-PR 2).
+- `rkqhw2jj`: Extract `BookingPageHeading` sub-component for eyebrow + title duplication across 4 sites (Sub-PR 3 simplify deferral).
 - `kojs9xli`: v1.11.0 Storybook nextjs-vite migration (gated on `storybookjs/storybook#34688` upstream fix).
-- `5eggk3jy`: Studio em-dash cleanup on prod Sanity content (Becky-action, 14 fields surfaced by audit).
-- `7wzggnwj`: Seed or schema-wire 8 missing myReadingsPage flat fields in prod.
+- `5eggk3jy`: Studio em-dash cleanup on prod Sanity content — will be ABSORBED into next-session Sub-PR 8 migration script (closes via `Closes dex 5eggk3jy` in the migration PR).
+- `7wzggnwj`: Seed 8 missing myReadingsPage fields in prod — will be ABSORBED into next-session Sub-PR 8 seed script (closes via `Closes dex 7wzggnwj`).
 
 ### Open items (still gating apex unpark, see dex epic `wdpz1ux4`)
 - `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
