@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { BookingFlowHeader } from "@/components/BookingFlowHeader";
-import { Footer } from "@/components/Footer";
+import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
@@ -76,43 +75,29 @@ export default async function IntakePage({ params }: IntakePageProps) {
   const copy = VARIANT_COPY[reading.slug] ?? FALLBACK_COPY;
 
   return (
-    <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <BookingFlowHeader backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)} />
+    <BookingPageShell backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)}>
+      <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
+        {copy.eyebrow}
+      </p>
+      <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
+        {copy.title}
+      </h1>
+      <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+        {copy.subtitle}
+      </p>
 
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
-        <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
-          />
-          <div className="relative px-6 py-10 md:px-12 md:py-14">
-            <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
-              {copy.eyebrow}
-            </p>
-            <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-              {copy.title}
-            </h1>
-            <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
-              {copy.subtitle}
-            </p>
-
-            <IntakeForm
-              readingId={reading.slug}
-              readingName={reading.name}
-              sections={filteredSections}
-              nonRefundableNotice={bookingForm.nonRefundableNotice}
-              pagination={bookingForm.pagination}
-              loadingStateCopy={bookingForm.loadingStateCopy}
-              submitLabel={bookingPage?.paymentButtonText}
-              nextLabel={bookingForm.nextButtonText}
-              saveLaterLabel={bookingForm.saveAndContinueLaterText}
-              pageIndicatorTagline={bookingForm.pageIndicatorTagline}
-            />
-          </div>
-        </article>
-      </main>
-
-      <Footer />
-    </div>
+      <IntakeForm
+        readingId={reading.slug}
+        readingName={reading.name}
+        sections={filteredSections}
+        nonRefundableNotice={bookingForm.nonRefundableNotice}
+        pagination={bookingForm.pagination}
+        loadingStateCopy={bookingForm.loadingStateCopy}
+        submitLabel={bookingPage?.paymentButtonText}
+        nextLabel={bookingForm.nextButtonText}
+        saveLaterLabel={bookingForm.saveAndContinueLaterText}
+        pageIndicatorTagline={bookingForm.pageIndicatorTagline}
+      />
+    </BookingPageShell>
   );
 }
