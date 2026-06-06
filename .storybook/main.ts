@@ -42,6 +42,7 @@ const config: StorybookConfig = {
       "react/jsx-dev-runtime": path.join(reactDir, "jsx-dev-runtime.js"),
       "react-dom/client": path.join(reactDomDir, "client.js"),
       "react-dom/server": path.join(reactDomDir, "server.js"),
+      "@story-fixtures": path.resolve(import.meta.dirname, "../tests/stories/fixtures"),
     };
     return webpack;
   },

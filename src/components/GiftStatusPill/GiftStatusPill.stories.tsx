@@ -9,7 +9,7 @@ import { GiftStatusPill } from "./GiftStatusPill";
 const SAMPLE_DATE = "2026-06-15T14:30:00.000Z";
 
 const meta: Meta<typeof GiftStatusPill> = {
-  title: "Feedback/GiftStatusPill",
+  title: "Components/Feedback/GiftStatusPill",
   component: GiftStatusPill,
   args: { copy: MY_GIFTS_PAGE_DEFAULTS },
 };

@@ -1,21 +1,30 @@
+import {
+  LISTEN_VIEW_ASSET_TROUBLE_STATE,
+  LISTEN_VIEW_CHECK_EMAIL_STATE,
+  LISTEN_VIEW_DELIVERED_GIFT_RECIPIENT_STATE,
+  LISTEN_VIEW_DELIVERED_STATE,
+  LISTEN_VIEW_EXPIRED_STATE,
+  LISTEN_VIEW_RESTED_STATE,
+  LISTEN_VIEW_SIGN_IN_STATE,
+  LISTEN_VIEW_SUBMISSION_ID,
+  LISTEN_VIEW_THROTTLED_STATE,
+} from "@story-fixtures/pages/listen";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 
-import { ListenView, type ListenViewState } from "./ListenView";
-
-const SUBMISSION_ID = "sub_storybook_listen_view";
+import { ListenView } from "./ListenView";
 
 const meta: Meta<typeof ListenView> = {
-  title: "Pages/ListenView",
+  title: "Pages/Listen",
   component: ListenView,
   parameters: {
     layout: "fullscreen",
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: `/listen/${SUBMISSION_ID}`,
-        segments: [["id", SUBMISSION_ID]],
+        pathname: `/listen/${LISTEN_VIEW_SUBMISSION_ID}`,
+        segments: [["id", LISTEN_VIEW_SUBMISSION_ID]],
         query: {},
       },
     },
@@ -29,46 +38,34 @@ const baseArgs = {
   copy: LISTEN_PAGE_DEFAULTS,
 };
 
-const deliveredState: Extract<ListenViewState, { kind: "delivered" }> = {
-  kind: "delivered",
-  readingName: "Soul Blueprint",
-  recipientName: null,
-  voiceNoteAudioPath: `/api/listen/${SUBMISSION_ID}/audio`,
-  pdfDownloadPath: `/api/listen/${SUBMISSION_ID}/pdf`,
-  showWelcomeRibbon: true,
-};
-
 export const SignIn: Story = {
-  args: { ...baseArgs, state: { kind: "signIn", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_SIGN_IN_STATE },
 };
 
 export const CheckEmail: Story = {
-  args: { ...baseArgs, state: { kind: "checkEmail", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_CHECK_EMAIL_STATE },
 };
 
 export const Rested: Story = {
-  args: { ...baseArgs, state: { kind: "rested", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_RESTED_STATE },
 };
 
 export const Throttled: Story = {
-  args: { ...baseArgs, state: { kind: "throttled", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_THROTTLED_STATE },
 };
 
 export const AssetTrouble: Story = {
-  args: { ...baseArgs, state: { kind: "assetTrouble", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_ASSET_TROUBLE_STATE },
 };
 
 export const Delivered: Story = {
-  args: { ...baseArgs, state: deliveredState },
+  args: { ...baseArgs, state: LISTEN_VIEW_DELIVERED_STATE },
 };
 
 export const DeliveredGiftRecipient: Story = {
-  args: {
-    ...baseArgs,
-    state: { ...deliveredState, recipientName: "Mira" },
-  },
+  args: { ...baseArgs, state: LISTEN_VIEW_DELIVERED_GIFT_RECIPIENT_STATE },
 };
 
 export const Expired: Story = {
-  args: { ...baseArgs, state: { kind: "expired", submissionId: SUBMISSION_ID } },
+  args: { ...baseArgs, state: LISTEN_VIEW_EXPIRED_STATE },
 };

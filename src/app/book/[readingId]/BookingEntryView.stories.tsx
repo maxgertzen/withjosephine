@@ -1,55 +1,19 @@
+import {
+  BOOKING_ENTRY_AKASHIC_READING,
+  BOOKING_ENTRY_BASE_COPY,
+  BOOKING_ENTRY_SOUL_BLUEPRINT_READING,
+} from "@story-fixtures/pages/bookingEntry";
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-  type BookingEntryCopy,
-  type BookingEntryReading,
-  BookingEntryView,
-} from "./BookingEntryView";
-
-const baseCopy: BookingEntryCopy = {
-  changeReadingLinkText: "Change reading",
-  deliveryNote: "Within 7 days.",
-  deliverableNote:
-    "Detailed voice note recording + a supporting PDF created entirely for you.",
-  whatsIncludedHeading: "What's included",
-  bookReadingCtaText: "Begin",
-  giftToggleAsGiftLabel: "Gift this reading",
-};
-
-const soulBlueprint: BookingEntryReading = {
-  slug: "soul-blueprint",
-  tag: "Signature",
-  name: "The Soul Blueprint",
-  priceLabel: "$179",
-  shortDescription:
-    "The complete picture. Your full chart, your records, and the patterns running underneath both.",
-  includedItems: [
-    "A detailed voice-note reading",
-    "A supporting PDF, written entirely for you",
-    "Two weeks of follow-up questions",
-  ],
-};
-
-const akashic: BookingEntryReading = {
-  slug: "akashic-record",
-  tag: "Reading",
-  name: "Akashic Record Reading",
-  priceLabel: "$79",
-  shortDescription:
-    "The why beneath the chart. Records of your soul's history, in plain language.",
-  includedItems: [
-    "A detailed voice-note reading",
-    "A supporting PDF, written entirely for you",
-  ],
-};
+import { BookingEntryView } from "./BookingEntryView";
 
 const meta: Meta<typeof BookingEntryView> = {
-  title: "Pages/BookingEntryView",
+  title: "Pages/BookingEntry",
   component: BookingEntryView,
   parameters: { layout: "fullscreen" },
   args: {
-    reading: soulBlueprint,
-    copy: baseCopy,
+    reading: BOOKING_ENTRY_SOUL_BLUEPRINT_READING,
+    copy: BOOKING_ENTRY_BASE_COPY,
     aboutJosephineLinkText: "About Josephine",
   },
 };
@@ -60,5 +24,5 @@ type Story = StoryObj<typeof BookingEntryView>;
 export const SoulBlueprint: Story = {};
 
 export const AkashicRecord: Story = {
-  args: { reading: akashic },
+  args: { reading: BOOKING_ENTRY_AKASHIC_READING },
 };
