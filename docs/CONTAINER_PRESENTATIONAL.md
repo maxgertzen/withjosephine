@@ -82,7 +82,7 @@ These surfaces are inherently presentational by binding constraint. `not-found.t
 Routes left as-is in the 2026-06-02 audit:
 
 - Trivial RSC pages under ~60 LOC with no significant rendering surface: `/gift/claim`, `/gift/already-submitted`, `/(authed)/gift/claim/[token]`, `/(authed)/my-readings/welcome`, `/auth/revoked`, `/auth/revoked-error`.
-- Pages that orchestrate already-presentational sub-components without their own render logic: `/` (home), `/dev-preview/library` (dev-only).
+- Pages that orchestrate already-presentational sub-components without their own render logic: `/` (home).
 - Pages that already wrap a shared presentational shell: `/privacy`, `/terms`, `/refund-policy` (all use `LegalPageLayout`).
 
 When a route exceeds ~100 LOC of rendering JSX OR introduces a stateful interactive surface, the split becomes load-bearing and the per-page dex task gets filed.
