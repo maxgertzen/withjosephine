@@ -30,9 +30,7 @@ export function LetterView({ reading, letterContent, aboutJosephineLinkText }: L
     <BookingPageShell
       backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
       aboutLinkText={aboutJosephineLinkText}
-      maxW="2xl"
-      shadow="soft"
-      contentPadding="letter"
+      variant="letter"
     >
       <div className="relative flex justify-center mb-6">
         <Image

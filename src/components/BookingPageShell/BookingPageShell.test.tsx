@@ -23,7 +23,7 @@ describe("BookingPageShell", () => {
     expect(backLink).toBeTruthy();
   });
 
-  it("uses cream outer bg + 3xl max-w + card shadow + default content padding by default", () => {
+  it("uses cream outer bg and the standard variant (3xl max-w, card shadow, default padding) by default", () => {
     const { container } = render(
       <BookingPageShell backHref="/back">
         <p>x</p>
@@ -45,32 +45,16 @@ describe("BookingPageShell", () => {
     expect(container.querySelector(".bg-j-cream")).toBeFalsy();
   });
 
-  it("applies max-w-2xl when maxW='2xl'", () => {
+  it("applies the letter variant bundle (2xl max-w + soft shadow + letter padding) when variant='letter'", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" maxW="2xl">
+      <BookingPageShell backHref="/back" variant="letter">
         <p>x</p>
       </BookingPageShell>,
     );
     expect(container.querySelector(".max-w-2xl")).toBeTruthy();
     expect(container.querySelector(".max-w-3xl")).toBeFalsy();
-  });
-
-  it("applies shadow-j-soft when shadow='soft'", () => {
-    const { container } = render(
-      <BookingPageShell backHref="/back" shadow="soft">
-        <p>x</p>
-      </BookingPageShell>,
-    );
     expect(container.querySelector(".shadow-j-soft")).toBeTruthy();
     expect(container.querySelector(".shadow-j-card")).toBeFalsy();
-  });
-
-  it("applies letter content padding when contentPadding='letter'", () => {
-    const { container } = render(
-      <BookingPageShell backHref="/back" contentPadding="letter">
-        <p>x</p>
-      </BookingPageShell>,
-    );
     expect(container.querySelector(".py-12")).toBeTruthy();
     expect(container.querySelector(".md\\:px-10")).toBeTruthy();
   });
