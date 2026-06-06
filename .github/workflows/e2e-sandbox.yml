@@ -42,11 +42,13 @@ jobs:
       RESEND_E2E_DRY_RUN_SECRET: ${{ secrets.STAGING_RESEND_E2E_DRY_RUN_SECRET }}
       ADMIN_API_KEY: ${{ secrets.STAGING_ADMIN_API_KEY }}
       DO_DISPATCH_SECRET: ${{ secrets.STAGING_DO_DISPATCH_SECRET }}
-      # LISTEN_TOKEN_SECRET is retained for the cookie-signing path that
-      # has not yet migrated to the HKDF-derived AUTH_TOKEN_SECRET subkey.
-      # In-spec listen-token minting moved to the staging worker's
-      # /api/internal/test-mint-token endpoint, so AUTH_TOKEN_SECRET no
-      # longer needs to be synced to the CI runner.
+      # listen-one-tap-roundtrip now mints via /api/internal/test-mint-token
+      # so it no longer needs AUTH_TOKEN_SECRET, but library-token-roundtrip
+      # still calls mintLibraryToken in-process (which derives an HKDF subkey
+      # from AUTH_TOKEN_SECRET). Keep AUTH_TOKEN_SECRET until that spec also
+      # migrates to an endpoint. LISTEN_TOKEN_SECRET is retained for the
+      # cookie-signing path that has not migrated to HKDF subkeys yet.
+      AUTH_TOKEN_SECRET: ${{ secrets.STAGING_AUTH_TOKEN_SECRET }}
       LISTEN_TOKEN_SECRET: ${{ secrets.STAGING_LISTEN_TOKEN_SECRET }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
