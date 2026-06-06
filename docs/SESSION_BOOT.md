@@ -1,6 +1,40 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-05 — Tier-4 polish SHIPPED, release/v1.9.0 → main is the next move
+## 🛎️ 2026-06-06 — v1.9.0 SHIPPED + tagged (PR #270 squash `936fed0`)
+
+### What's the state of the world
+- On `main` at `936fed0`. `release/v1.9.0` branch DELIBERATELY KEPT until post-merge smoke completes so a hotfix doesn't have to start from main (per the v1.7.0 / v1.8.0 precedent).
+- Tag `v1.9.0` annotated + pushed at `936fed0`.
+- The full v1.9.0 arc landed: container/presentational convention + `<StyleProvider>` + 7 page-level View extractions (BookingEntry, BookingLetter, BookingIntake, BookingGift, GiftIntake, Listen, ThankYou) + HomePageView extraction + 9 additional Pages stories (Home, AuthVerify, UnderConstruction, Privacy, Terms, RefundPolicy, NotFound, ErrorBoundary, GlobalError) + Pages/Components 2-tier taxonomy + T1b stories-import-graph CI gate + centralised story fixtures at `tests/stories/fixtures/` + hono CVE bump + cumulative simplify polish (`cab4c36`).
+- All PR-CI green at merge: Playwright (chromium) 4m6s, lint-and-typecheck, test, storybook, security-audit / osv-scan, deploy-staging, sanity-validate-staging — every job SUCCESS.
+
+### 🚨 Max-actions still owed
+- [ ] **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim`. v1.9.0 has no Sanity migration to run; just deploy and smoke. The 4 new Pages stories landed this session (Home, Privacy/Terms/RefundPolicy, AuthVerify, UnderConstruction) plus the 3 error-boundary stories haven't been opened in a real browser yet beyond `storybook:build`. Folds in still-owed carry-overs from v1.4.0 / v1.5.0 / v1.6.0 / v1.7.0 / v1.8.0 (J1–J16 in `docs/MANUAL_SMOKE_TEST.md`). Add a J17 line for the v1.9.0 Storybook surface and any of the 7 refactored Views you want to spot-check on prod.
+- [ ] **Branch cleanup post-smoke:** `git push origin --delete release/v1.9.0` once smoke completes (local + remote).
+
+### Open items (still gating apex unpark, see dex epic `wdpz1ux4`)
+- `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg`: Stripe test-mode webhook split.
+- `ttys8qku`: Re-run smoke walkthrough on prod.
+
+### Deferred dex tickets seeded during the v1.9.0 cumulative review
+- `dss693yd`: Extract shared `BookingPageShell` for 6 duplicate-chrome sites (v1.10+).
+- `jzvhs9x4`: Add `THANK_YOU_PAGE_DEFAULTS` const to `src/data/defaults.ts` to mirror sibling page-defaults exports.
+
+### Process learnings from this session (carry forward)
+- **Local `pnpm test` flake from setup latency.** Full suite takes ~210s with setup=463s, env=708s on this checkout; tests with async setup time out at the default 5s. The bare release/v1.9.0 HEAD reproduces the failures; CI's clean runner passes them all. Caught one date-bomb in the process (`MyReadingsView.test.tsx` deliveredAt fixtures crossing 90-day TTL on 2026-06-06 wall-clock). Fixed via `vi.useFakeTimers()` + `setSystemTime(2026-04-15)`.
+- **Capability-invocation honesty.** Selecting `Skill("code-review")` and `Skill("simplify")` in OBSERVE creates a binding to call them per-sub-PR. I dispatched Agent (Engineer) calls in their place a few times; the methodology was applied but the audit trail prefers explicit Skill tool calls. Future: re-invoke the skill itself per-sub-PR even when methodology is fresh from a prior call.
+- **Story content goes in `tests/stories/fixtures/`.** Path alias `@story-fixtures/*` wired in `tsconfig.json` + `.storybook/main.ts`. Stories must NOT hardcode inline content; pull from production `*_DEFAULTS` where they exist, otherwise from this tree.
+- **Pages titles drop View/Form/Page suffixes.** Names are what the user sees at the route, not the file. `Pages/ListenView` → `Pages/Listen`. Booking sub-routes are prefixed so they group alphabetically: `Pages/BookingEntry`, `Pages/BookingIntake`, `Pages/BookingGift`, `Pages/BookingLetter`.
+- **`feedback_let_user_verify_before_merge` still binding.** I rode this merge green at Max's explicit `merge when green` + `yes` ride-through. Default for next merge-to-main: hold for real-browser eyeball.
+
+### Things that aren't broken but worth a glance next session
+- **Storybook story count: 36.** dex audit clean — only `nlnpkjvo` T4c (p3) open under epic `k7snhn1p` (destructive delete of `/dev-preview/library`, deferred pending Max decision).
+- **hono 4.12.23 floor** in `package.json`. Do not regress.
+
+---
+
+## 🛎️ 2026-06-05 — Tier-4 polish SHIPPED, release/v1.9.0 → main is the next move [SUPERSEDED by section above]
 
 ### What's the state of the world
 - On `release/v1.9.0` at `874a423` (T4b auto-close HEAD). origin in sync. No uncommitted state. No open feature branches.
