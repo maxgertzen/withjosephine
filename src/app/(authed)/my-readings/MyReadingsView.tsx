@@ -1,10 +1,7 @@
 import { format, parseISO } from "date-fns";
 
-import {
-  GiftCardActions,
-  type GiftCardData,
-  type ResendVerdictSummary,
-} from "@/app/my-gifts/GiftCardActions";
+import { GiftCardActions } from "@/app/my-gifts/GiftCardActions";
+import { toGiftCardData } from "@/app/my-gifts/giftCardData";
 import { AuthGatedPage } from "@/components/AuthGatedPage/AuthGatedPage";
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
@@ -13,16 +10,12 @@ import { GiftStatusPill } from "@/components/GiftStatusPill";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyGiftsPageContent, MyReadingsPageContent } from "@/data/defaults";
-import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
-import { giftResendRateLimit, giftStatusFor } from "@/lib/booking/giftStatus";
+import { giftStatusFor } from "@/lib/booking/giftStatus";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
-
-const ONE_HOUR_MS = 60 * 60 * 1000;
-const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
 export type MyReadingsViewProps = {
   readingsCopy: MyReadingsPageContent;
@@ -177,32 +170,6 @@ function ReadingsEmptyState({ copy }: { copy: MyReadingsPageContent }) {
       </div>
     </div>
   );
-}
-
-function computeResendVerdict(gift: SubmissionRecord): ResendVerdictSummary | undefined {
-  if (gift.giftDeliveryMethod !== GIFT_DELIVERY.selfSend) return undefined;
-  const nowMs = Date.now();
-  const verdict = giftResendRateLimit(gift.emailsFired, nowMs);
-  if (verdict.allowed) return { allowed: true };
-  const resendsMs = (gift.emailsFired ?? [])
-    .filter((e) => e.type === "gift_resend")
-    .map((e) => Date.parse(e.sentAt))
-    .filter((t) => Number.isFinite(t))
-    .sort((a, b) => a - b);
-  const windowMs = verdict.reason === "hour_cap" ? ONE_HOUR_MS : ONE_DAY_MS;
-  const oldestInWindow = resendsMs.find((t) => nowMs - t < windowMs) ?? nowMs;
-  const nextAvailableAt = new Date(oldestInWindow + windowMs).toISOString();
-  return { allowed: false, reason: verdict.reason, nextAvailableAt };
-}
-
-function toGiftCardData(gift: SubmissionRecord): GiftCardData {
-  return {
-    _id: gift._id,
-    responses: gift.responses,
-    recipientEmail: gift.recipientEmail,
-    giftSendAt: gift.giftSendAt,
-    resendVerdict: computeResendVerdict(gift),
-  };
 }
 
 function GiftsCards({

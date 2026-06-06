@@ -6,55 +6,13 @@ import { GiftStatusPill } from "@/components/GiftStatusPill";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
 import type { MyGiftsPageContent } from "@/data/defaults";
-import { GIFT_DELIVERY } from "@/lib/booking/constants";
 import { recipientLabelFor } from "@/lib/booking/giftPersonas";
-import { giftResendRateLimit, giftStatusFor } from "@/lib/booking/giftStatus";
+import { giftStatusFor } from "@/lib/booking/giftStatus";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 
-import {
-  GiftCardActions,
-  type GiftCardData,
-  type ResendVerdictSummary,
-} from "./GiftCardActions";
-
-const ONE_HOUR_MS = 60 * 60 * 1000;
-const ONE_DAY_MS = 24 * ONE_HOUR_MS;
-
-function computeResendVerdict(gift: SubmissionRecord): ResendVerdictSummary | undefined {
-  if (gift.giftDeliveryMethod !== GIFT_DELIVERY.selfSend) return undefined;
-  const nowMs = Date.now();
-  const verdict = giftResendRateLimit(gift.emailsFired, nowMs);
-  if (verdict.allowed) return { allowed: true };
-  // Compute when the hour-cap or day-cap window rolls forward enough to
-  // allow another send. The cap is set against the most recent gift_resend
-  // entry; nextAvailable = oldestEntryInWindow + windowMs.
-  const resendsMs = (gift.emailsFired ?? [])
-    .filter((e) => e.type === "gift_resend")
-    .map((e) => Date.parse(e.sentAt))
-    .filter((t) => Number.isFinite(t))
-    .sort((a, b) => a - b);
-  const windowMs = verdict.reason === "hour_cap" ? ONE_HOUR_MS : ONE_DAY_MS;
-  const oldestInWindow = resendsMs.find((t) => nowMs - t < windowMs) ?? nowMs;
-  const nextAvailableAt = new Date(oldestInWindow + windowMs).toISOString();
-  return { allowed: false, reason: verdict.reason, nextAvailableAt };
-}
-
-/**
- * Drops purchaser email + financial fields + stripe ids so they never enter
- * the React tree of the client component. Pre-computed `resendVerdict`
- * exposes only the verdict the UI needs without leaking raw `emailsFired`
- * entries (which carry Resend message IDs).
- */
-function toGiftCardData(gift: SubmissionRecord): GiftCardData {
-  return {
-    _id: gift._id,
-    responses: gift.responses,
-    recipientEmail: gift.recipientEmail,
-    giftSendAt: gift.giftSendAt,
-    resendVerdict: computeResendVerdict(gift),
-  };
-}
+import { GiftCardActions } from "./GiftCardActions";
+import { toGiftCardData } from "./giftCardData";
 
 export type MyGiftsViewProps = {
   copy: MyGiftsPageContent;
