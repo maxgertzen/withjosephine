@@ -1,7 +1,11 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
 import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
-import type { SanityNotFoundPage, SanityUnderConstructionPage } from "@/lib/sanity/types";
+import type {
+  SanityNotFoundPage,
+  SanityThankYouPage,
+  SanityUnderConstructionPage,
+} from "@/lib/sanity/types";
 
 export type EmailRichText = PortableTextBlock[];
 
@@ -962,4 +966,44 @@ export const ABOUT_DEFAULTS: MappedAbout = {
     "Together they create a level of understanding that\u2019s hard to describe until you\u2019ve experienced it.",
   ],
   signoff: "Josephine",
+};
+
+export type ThankYouPageContent = Required<Omit<SanityThankYouPage, "overrides" | "seo">>;
+
+const THANK_YOU_RECIPIENT_TIMELINE_BODY =
+  "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.";
+
+const THANK_YOU_GENERIC_CONTACT_BODY =
+  "If anything comes up (a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation), just reply to that email or write to me at {email}. It comes straight to me.";
+
+export const THANK_YOU_PAGE_DEFAULTS: ThankYouPageContent = {
+  heading: "Thank you. I\u2019ve got everything I need.",
+  subheading: "Your reading is in my hands now.",
+  readingLabel: "Your Reading",
+  confirmationBody:
+    "A confirmation email is on its way to your inbox in the next minute or two. If you can\u2019t find it, please check your promotions folder.",
+  timelineBody:
+    "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used at checkout.",
+  deliveryDaysPhrase: "seven days",
+  contactBody: THANK_YOU_GENERIC_CONTACT_BODY,
+  closingMessage: "With love, Josephine \u2726",
+  returnButtonText: "Return to Home",
+  giftPurchaserHeading: "Thank you, {purchaserFirstName}. Your gift is on its way.",
+  giftPurchaserSubheading:
+    "I'll take it from here. The recipient will receive a note from me with their claim link.",
+  giftPurchaserBody:
+    "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link, and they\u2019ll share their intake details with me from there.",
+  giftPurchaserSelfSendSubheading:
+    "Your gift link is ready in the email I just sent. Share it with them whenever feels right.",
+  giftPurchaserSelfSendBody:
+    "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready, and they'll claim from there.",
+  giftPurchaserReadingLabel: "Your gift",
+  giftPurchaserTimelineBody:
+    "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.",
+  giftPurchaserContactBody:
+    "If anything comes up with the gift (a wrong recipient email, a change of plan, anything that doesn\u2019t look right in your confirmation), just reply to that email or write to me at {email}. It comes straight to me.",
+  giftRecipientHeading: "Thank you, {recipientName}. Your reading is in my hands now.",
+  giftRecipientSubheading: "I've received everything I need to begin.",
+  giftRecipientBody: THANK_YOU_RECIPIENT_TIMELINE_BODY,
+  giftRecipientContactBody: THANK_YOU_GENERIC_CONTACT_BODY,
 };
