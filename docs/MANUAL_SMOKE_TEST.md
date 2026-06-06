@@ -662,6 +662,70 @@ After a gift recipient redeems and lands on the listen page, the greeting headin
 
 ---
 
+## Journey 17 — v1.10.0 refactor surfaces + defaults reconcile
+
+Verifies the v1.10.0 arc (PR #278 squash `3464fbf`, tag `v1.10.0`). The arc is mostly refactor (`BookingPageShell` extraction across 5 sites, `MyReadingsView` preview-twin elimination, `THANK_YOU_PAGE_DEFAULTS` consolidation, resend-helper extraction) plus a defaults reconcile that rewrote 11 Sanity strings in production to drop em-dashes and seeded 8 missing `myReadingsPage` fields. No new customer behavior; the smoke is a visual parity walk to catch anything the refactors silently shifted.
+
+### J17a — BookingPageShell sites render identically across 5 routes
+
+Each of the 5 sites below uses the same `BookingPageShell` component (extracted in PR #274, prop matrix collapsed in v1.10.0 follow-up). Expected: identical header + gold-bordered article + footer, with `letter` and `gift` carrying their known variations.
+
+**Walk in this order, same browser window, mobile viewport (375px):**
+1. `/book/soul-blueprint` (BookingEntryView — NOT wrapped in BookingPageShell; this is the control to compare against)
+2. `/book/soul-blueprint/letter` — letter variant: narrower max-width (`2xl`), softer shadow, slightly different content padding
+3. `/book/soul-blueprint/intake` — standard variant, cream outer bg
+4. `/book/soul-blueprint/gift` — standard variant, ivory outer bg (page-scoped colour shift)
+5. `/(authed)/gift/intake?welcome=1` — standard variant (only reachable after a real gift claim flow; can also be inspected via Studio preview)
+
+**Watch for:**
+- ❌ Header height or back-link position jumps between routes 2–5 (other than the legitimate letter narrower max-width). All should share the same outer chrome.
+- ❌ Footer wraps onto two lines on mobile on some routes but not others.
+- ❌ Gold inner border guard (`inset-2 md:inset-3`) breaks or doubles on any route.
+- ❌ Letter route loses the `shadow-j-soft` look and falls back to `shadow-j-card`.
+
+### J17b — /my-readings live (LibraryView, twin eliminated)
+
+The standalone `MyReadingsView` preview-twin was deleted in v1.10.0; Studio preview now renders the production `LibraryView` directly. Visual parity should be perfect.
+
+**As self-purchaser signed into prod:**
+1. Visit `/my-readings`. Confirm the stacked layout (Mine + For others) renders, with reading cards in the upper section and gift cards (if any) in the lower section.
+2. Open Studio Presentation Tool, navigate to the `My Readings` page singleton, observe the preview iframe.
+3. Confirm preview matches production layout 1:1 (same section headings, same divider position, same empty-state copy).
+
+**Watch for:**
+- ❌ Studio preview shows a single-list "stacked"-but-different layout than production → twin elimination silently regressed (unlikely; production now is the source of truth, but flag if found).
+- ❌ Reading card or gift card renders without the recipient name / status pill → `toGiftCardData` helper (now in `src/app/my-gifts/giftCardData.ts`) regressed.
+
+### J17c — ThankYou page renders all 3 modes (defaults consolidated)
+
+PR #275 moved 17 fallback strings into `THANK_YOU_PAGE_DEFAULTS`. Each branch should render the same way it did before consolidation.
+
+**Walk each mode, same browser:**
+1. Self-purchase `/thank-you/<your-reading-id>` after J1a — assert heading, subheading, reading label, confirmation body, timeline body, contact body, closing line all render with no `{placeholder}` literals.
+2. Gift purchase `/thank-you/<gift-reading-id>?recipient=…` after J2 — same fields, gift-purchaser variants (auto-send vs self-send).
+3. Gift recipient `/thank-you/<gift-reading-id>?mode=giftRecipient` (or via the natural redeem flow) — recipient-flavoured copy, no purchaser-only sections (discount, confirmation body).
+
+**Watch for:**
+- ❌ Any `{purchaserFirstName}` / `{recipientName}` / `{deliveryDays}` literal slot bleeds through unsubstituted.
+- ❌ Discount line absent on a purchaser flow that used a promo code.
+
+### J17d — Defaults reconcile applied to prod Sanity (no em-dashes)
+
+The em-dash sweep rewrote 11 fields across 5 singletons; the seed script added 8 fields to `myReadingsPage`. All applied 2026-06-06 (audit confirmed `drifts=0`).
+
+**On any browser, sampling-walk these surfaces and look for em-dashes (`—`) in customer-facing copy:**
+1. `/my-gifts` — `statusSentLabel`, `privacyNote`, the edit-recipient self-send indicator.
+2. `/gift/claim` (with no token in URL) — `noTokenBody`, `seoTitle` (tab title), `alreadySubmittedHeading` if you've already claimed.
+3. `/auth/verify` (open a magic link a second time) — `confirmBody`, `restedBody`, `restedHeading`.
+4. `/listen/<id>` rested state — `restedBody`.
+5. `/(authed)/gift/intake?welcome=1` SEO title (tab) and `headingWelcome`.
+
+**Watch for:**
+- ❌ Any em-dash (`—`) visible on the page or in the browser tab title. Audit should be at zero; any em-dash means a string was missed.
+- ❌ Missing copy in `/my-readings` expired-row label, mailto link, tabs heading, or welcome heading → seed script missed a field (audit should have caught this, but trust-but-verify).
+
+---
+
 ## When done — hand off to the maintainer
 
 You ran the test. Cleanup is **not your job** — D1, Sanity, and R2 deletions are infra operations and a wrong click there can break staging for everyone.

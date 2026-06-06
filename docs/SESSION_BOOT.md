@@ -1,6 +1,46 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-06 — v1.10.0 release branch open, 5/7 sub-PRs SHIPPED, awaiting cumulative review + merge-to-main
+## 🛎️ 2026-06-06 — v1.10.0 SHIPPED + tagged (PR #278 squash `3464fbf`) + defaults reconcile applied to prod
+
+### What's the state of the world
+- On `main` at `fb80be4` (auto-close HEAD after PR #278 merge). Tag `v1.10.0` annotated + pushed at `3464fbf`.
+- `release/v1.10.0` and `release/v1.9.0` still alive locally + remote. Both deliberately KEPT until post-merge smoke completes (v1.4.0 / v1.7.0 / v1.8.0 / v1.9.0 precedent: hotfix should start from release branch, not main, until smoke clears).
+- The v1.10.0 arc landed: 7 sub-PRs (test-mint endpoint, MyReadingsView preview-twin layout, BookingPageShell extraction, THANK_YOU_PAGE_DEFAULTS consolidation, dev-preview/library gitignore drop, defaults reconcile + 2 migration scripts) + cumulative-review fold of all 7 deferred simplify findings before the merge (silent-404 invariant, schema initialValue em-dash sweep, resend-helpers extraction, scripts on `_lib/seedSingleton`, MyReadingsView twin elimination, BookingPageShell variant collapse, generic `reconcile-defaults.mts` dispatcher).
+- All PR-CI green at merge: Playwright (chromium) 4m1s, GROQ content contract 36s, lint-and-typecheck, test, storybook, security-audit / osv-scan, deploy-staging, sanity-validate-staging — every job SUCCESS.
+
+### Operator actions completed 2026-06-06 after merge
+- ✅ `pnpm tsx scripts/migrate-em-dash-strings-2026-06-06.ts` against staging (`patched=12`), then production (`patched=12`).
+- ✅ `pnpm tsx scripts/seed-my-readings-page-fields-2026-06-06.ts` against staging, then production (`setIfMissing` applied to all 8 fields).
+- ✅ `pnpm tsx scripts/audit-defaults-drift.mts production` → `drifts=0` across all 8 audited singletons.
+
+### 🚨 Max-actions still owed
+- [ ] **Real-browser smoke against deployed prod** per `feedback_real_browser_smoke_before_ship_claim`. v1.10.0 has J17 added to `docs/MANUAL_SMOKE_TEST.md` covering BookingPageShell sites parity, /my-readings (LibraryView, twin eliminated), ThankYouView modes, and defaults-reconcile spot-check on em-dash absence. Plus still-owed carry-overs from v1.4.0 / v1.5.0 / v1.6.0 / v1.7.0 / v1.8.0 / v1.9.0 (J1–J16).
+- [ ] **Branch cleanup post-smoke:** `git push origin --delete release/v1.10.0` and `git push origin --delete release/v1.9.0` once smoke completes (local + remote, both branches).
+
+### Open items (still gating apex unpark, see dex epic `wdpz1ux4`)
+- `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg`: Stripe test-mode webhook split.
+- `ttys8qku`: Re-run smoke walkthrough on prod.
+
+### Most likely next action(s) — pick one
+1. **Real-browser smoke + branch cleanup** — finish the v1.10.0 ship gate; ~30 min including J17 walkthrough.
+2. **Drive `wdpz1ux4` Apex unpark hold-gate** — the actual customer-visible blocker for unparking `withjosephine.com`. Three children: pre-prod data cleanup, Stripe test-mode webhook split, re-run manual smoke.
+3. **Backlog**: `lxighqj6` v1.8.0 follow-up coverage, `djw51vtk` finish gift-card helper extraction (3 of 5 helpers still 2-way duplicated post-twin-deletion), `rkqhw2jj` BookingPageHeading sub-component, `kojs9xli` v1.11.0 Storybook nextjs-vite (gated upstream).
+
+### Process learnings from this session (carry forward)
+- **`feedback_no_more_splitting_and_deferring` applied at the merge gate.** Initial plan deferred 7 cumulative-simplify findings to dex. Max pushed back ("why not implement … to fold into release branch") and all 7 landed before merge. Result: cleaner arc, lower future maintenance, and the new `reconcile-defaults.mts` dispatcher means future drift batches don't need bespoke scripts.
+- **Simplify findings classified into 3 buckets, not 2.** Audit-gap folds (parallel surfaces the original audit missed — e.g. `LISTEN_PAGE_DEFAULTS.restedHeading` parity), refactor-defers (real but separate units of work), and won't-do (`o86n1yyt` isRecipient branch is defensive forward-compat for the showsPurchaserOnlySections gate; PR #275 even added a test to lock the branch — simplify finding refuted on closer look).
+- **Schema initialValue is the structural source of em-dashes regenerating.** Sanity migration scripts that rewrite prod values become "perpetual sweepers" if the schema seeds em-dashes back on every fresh dataset. v1.10.0 fix: schema initialValue sweep in lockstep with the data migration so the migration becomes a one-shot, not a recurring chore.
+- **Skill skill code-review/simplify deserved twice in the same arc:** once per sub-PR, once on the cumulative diff. Per-sub-PR catches scope-local issues; cumulative catches cross-sub-PR drift (the `LISTEN_PAGE_DEFAULTS.restedHeading` parity gap and the `computeResendVerdict` triplication only surface when looking across all sub-PRs at once).
+
+### Things that aren't broken but worth a glance next session
+- **dex audit:** `djw51vtk` (extract shared gift-card helpers) is partially complete — `computeResendVerdict` + `toGiftCardData` extracted via `19xz01in`; `GiftCard`, `GiftsEmptyState`, `expiredMailtoHref` still 2-way duplicated between LibraryView and MyGiftsView (down from 3-way after `kyoojyf1` deleted the twin).
+- **`scripts/reconcile-defaults.mts`** is available for future drift batches. Dry-run by default; `--apply` gates writes. Won't replace bespoke scripts when drift is non-em-dash and non-missing-in-prod.
+- **`release/v1.10.0` deleted-then-recreate hazard.** Don't push `release/v1.10.0` again — branch is shipped + tagged. If a v1.10.x hotfix is needed, branch off the `v1.10.0` tag.
+
+---
+
+## 🛎️ 2026-06-06 (earlier) — v1.10.0 release branch open, 5/7 sub-PRs SHIPPED, awaiting cumulative review + merge-to-main [SUPERSEDED by section above]
 
 ### What's the state of the world
 - On `release/v1.10.0` at `14b615e` (dex auto-close HEAD after PR #276 merge). origin in sync.
