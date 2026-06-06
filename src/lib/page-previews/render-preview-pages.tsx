@@ -65,8 +65,14 @@ function renderSurfaceMarkup(
   }
   if (surface === "my-readings") {
     const state = MY_READINGS_FIXTURES[stateKey] ?? MY_READINGS_FIXTURES["list-populated"];
-    const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...merged } as MyReadingsPageContent;
-    return renderToString(<MyReadingsView copy={copy} state={state} />);
+    const readingsCopy = { ...MY_READINGS_PAGE_DEFAULTS, ...merged } as MyReadingsPageContent;
+    return renderToString(
+      <MyReadingsView
+        readingsCopy={readingsCopy}
+        giftsCopy={MY_GIFTS_PAGE_DEFAULTS}
+        state={state}
+      />,
+    );
   }
   if (surface === "my-gifts") {
     const state = MY_GIFTS_FIXTURES[stateKey] ?? MY_GIFTS_FIXTURES["list-populated"];
