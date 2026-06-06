@@ -42,14 +42,12 @@ jobs:
       RESEND_E2E_DRY_RUN_SECRET: ${{ secrets.STAGING_RESEND_E2E_DRY_RUN_SECRET }}
       ADMIN_API_KEY: ${{ secrets.STAGING_ADMIN_API_KEY }}
       DO_DISPATCH_SECRET: ${{ secrets.STAGING_DO_DISPATCH_SECRET }}
-      # Needed by the one-tap listen-token spec to mint tokens that staging
-      # accepts. Phase 2 consolidated listen + library secrets into a single
-      # master AUTH_TOKEN_SECRET with HKDF-derived per-purpose subkeys (see
-      # src/lib/auth/tokenSubkey.ts), so in-spec mintListenToken now reads
-      # AUTH_TOKEN_SECRET. Must hold the same value as the staging worker's
-      # AUTH_TOKEN_SECRET (wrangler secret put --env staging). The legacy
-      # LISTEN_TOKEN_SECRET mapping is retained for the cookie-signing path
-      # that has not yet migrated.
+      # listen-one-tap-roundtrip now mints via /api/internal/test-mint-token
+      # so it no longer needs AUTH_TOKEN_SECRET, but library-token-roundtrip
+      # still calls mintLibraryToken in-process (which derives an HKDF subkey
+      # from AUTH_TOKEN_SECRET). Keep AUTH_TOKEN_SECRET until that spec also
+      # migrates to an endpoint. LISTEN_TOKEN_SECRET is retained for the
+      # cookie-signing path that has not migrated to HKDF subkeys yet.
       AUTH_TOKEN_SECRET: ${{ secrets.STAGING_AUTH_TOKEN_SECRET }}
       LISTEN_TOKEN_SECRET: ${{ secrets.STAGING_LISTEN_TOKEN_SECRET }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
