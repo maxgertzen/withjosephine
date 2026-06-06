@@ -105,7 +105,7 @@ export const bookingForm = defineType({
       title: "Loading State Copy",
       type: "string",
       description: "Shown in the submit overlay while we hand off to Stripe.",
-      initialValue: "One moment — taking you to checkout.",
+      initialValue: "One moment - taking you to checkout.",
     }),
     defineField({
       name: "nextButtonText",

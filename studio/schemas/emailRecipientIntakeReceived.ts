@@ -34,7 +34,7 @@ export const emailRecipientIntakeReceived = defineType({
       title: "Inbox preview text",
       type: "string",
       group: "envelope",
-      initialValue: "Your answers landed safely — here's what happens next.",
+      initialValue: "Your answers landed safely. Here's what happens next.",
     }),
     defineField({
       hidden: true,
