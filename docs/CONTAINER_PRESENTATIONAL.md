@@ -68,7 +68,7 @@ next/font's CSS variables propagate via standard CSS cascade. The className can 
 - Error boundaries must never fetch CMS data (Sanity could be what's down).
 - `global-error.tsx` inlines its own fonts and styles since root layout may be broken.
 
-These surfaces are inherently presentational by binding constraint, with no data to derive. Their Storybook stories MUST opt out of the `<StyleProvider>` decorator via `parameters: { styleProvider: false }` to mirror the production constraint that they cannot depend on the styling chain.
+These surfaces are inherently presentational by binding constraint. `not-found.tsx` and `error.tsx` ARE wrapped by the root layout in Next.js, so they inherit `<body>`'s `styleProviderClassName` cascade in production and their Storybook stories use `<StyleProvider>` normally. `global-error.tsx` replaces the entire `<html>/<body>` document when it fires, so it inlines its own fonts and styles, and ONLY its Storybook story sets `parameters: { styleProvider: false }` to mirror that production constraint.
 
 ## Storybook contract
 

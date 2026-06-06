@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { SectionHeading } from "./SectionHeading";
 
 const meta: Meta<typeof SectionHeading> = {
-  title: "UI/SectionHeading",
+  title: "Components/UI/SectionHeading",
   component: SectionHeading,
 };
 

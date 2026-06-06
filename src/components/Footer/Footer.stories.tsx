@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Footer } from "./Footer";
 
 const meta: Meta<typeof Footer> = {
-  title: "Navigation/Footer",
+  title: "Components/Navigation/Footer",
   component: Footer,
   decorators: [
     (Story) => (

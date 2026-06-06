@@ -1,3 +1,4 @@
+import { NOT_FOUND_CUSTOM_COPY } from "@story-fixtures/pages/notFound";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Button } from "@/components/Button";
@@ -53,10 +54,5 @@ export const Default: Story = {
 };
 
 export const CustomCopy: Story = {
-  args: {
-    tag: "✦ Off the path",
-    heading: "you've wandered somewhere quiet",
-    description: "There's nothing here, but the way back is always lit.",
-    buttonText: "Return to the start",
-  },
+  args: NOT_FOUND_CUSTOM_COPY,
 };

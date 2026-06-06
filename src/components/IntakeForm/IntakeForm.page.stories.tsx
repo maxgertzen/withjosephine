@@ -1,32 +1,20 @@
+import {
+  INTAKE_FORM_AKASHIC_RECORD_ARGS,
+  INTAKE_FORM_BIRTH_CHART_ARGS,
+  INTAKE_FORM_REDEEM_MODE_ARGS,
+  INTAKE_FORM_SOUL_BLUEPRINT_ARGS,
+  INTAKE_FORM_STORY_BASE_ARGS,
+} from "@story-fixtures/pages/intakeForm";
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
-import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
-
 import { withBookingPageShell } from "../../../.storybook/decorators/BookingPageShell";
-import bookingFormFixture from "../../__fixtures__/sanity/e2e/bookingForm.json";
 import { IntakeForm } from "./IntakeForm";
-
-const sections = bookingFormFixture.sections as unknown as SanityFormSection[];
-const pagination = bookingFormFixture.pagination as SanityPagination;
-
-const baseArgs = {
-  sections,
-  pagination,
-  readingId: "soul-blueprint",
-  readingName: "Soul Blueprint",
-  nonRefundableNotice: bookingFormFixture.nonRefundableNotice ?? "",
-  loadingStateCopy: bookingFormFixture.loadingStateCopy ?? "",
-  pageIndicatorTagline: bookingFormFixture.pageIndicatorTagline ?? "",
-  nextLabel: bookingFormFixture.nextButtonText ?? "Next",
-  saveLaterLabel: bookingFormFixture.saveAndContinueLaterText ?? "Save & continue later",
-  submitLabel: "Continue to payment",
-};
 
 const meta: Meta<typeof IntakeForm> = {
   title: "Pages/IntakeForm",
   component: IntakeForm,
   decorators: [withBookingPageShell],
+  args: INTAKE_FORM_STORY_BASE_ARGS,
   parameters: {
     layout: "fullscreen",
     bookingPageShell: {
@@ -51,21 +39,11 @@ export default meta;
 type Story = StoryObj<typeof IntakeForm>;
 
 export const SoulBlueprint: Story = {
-  args: {
-    ...baseArgs,
-    sections: filterSectionsForReading(sections, "soul-blueprint"),
-    readingId: "soul-blueprint",
-    readingName: "Soul Blueprint",
-  },
+  args: INTAKE_FORM_SOUL_BLUEPRINT_ARGS,
 };
 
 export const AkashicRecord: Story = {
-  args: {
-    ...baseArgs,
-    sections: filterSectionsForReading(sections, "akashic-record"),
-    readingId: "akashic-record",
-    readingName: "Akashic Record Reading",
-  },
+  args: INTAKE_FORM_AKASHIC_RECORD_ARGS,
   parameters: {
     layout: "fullscreen",
     nextjs: {
@@ -80,12 +58,7 @@ export const AkashicRecord: Story = {
 };
 
 export const BirthChart: Story = {
-  args: {
-    ...baseArgs,
-    sections: filterSectionsForReading(sections, "birth-chart"),
-    readingId: "birth-chart",
-    readingName: "Birth Chart Reading",
-  },
+  args: INTAKE_FORM_BIRTH_CHART_ARGS,
   parameters: {
     layout: "fullscreen",
     nextjs: {
@@ -100,12 +73,5 @@ export const BirthChart: Story = {
 };
 
 export const RedeemMode: Story = {
-  args: {
-    ...baseArgs,
-    sections: filterSectionsForReading(sections, "soul-blueprint"),
-    mode: "redeem",
-    redeemSubmissionId: "sub_storybook_redeem",
-    prefilledEmail: "recipient@example.com",
-    submitLabel: "Submit intake",
-  },
+  args: INTAKE_FORM_REDEEM_MODE_ARGS,
 };

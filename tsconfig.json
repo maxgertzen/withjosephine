@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@story-fixtures/*": ["./tests/stories/fixtures/*"]
     }
   },
   "include": [

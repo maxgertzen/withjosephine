@@ -1,6 +1,11 @@
+import {
+  GIFT_FORM_AKASHIC_RECORD_ARGS,
+  GIFT_FORM_BIRTH_CHART_ARGS,
+  GIFT_FORM_CUSTOM_COPY_ARGS,
+  GIFT_FORM_SOUL_BLUEPRINT_ARGS,
+  GIFT_FORM_STORY_BASE_ARGS,
+} from "@story-fixtures/pages/giftForm";
 import type { Meta, StoryObj } from "@storybook/react";
-
-import { BOOKING_GIFT_FORM_DEFAULTS } from "@/data/defaults";
 
 import { withBookingPageShell } from "../../../.storybook/decorators/BookingPageShell";
 import { GiftForm } from "./GiftForm";
@@ -15,44 +20,24 @@ const meta: Meta<typeof GiftForm> = {
       backHref: "/book/soul-blueprint/letter",
     },
   },
-  args: {
-    readingSlug: "soul-blueprint",
-    readingName: "Soul Blueprint",
-    readingPriceDisplay: "$179",
-    copy: BOOKING_GIFT_FORM_DEFAULTS,
-  },
+  args: GIFT_FORM_STORY_BASE_ARGS,
 };
 export default meta;
 
 type Story = StoryObj<typeof GiftForm>;
 
-export const SoulBlueprint: Story = {};
+export const SoulBlueprint: Story = {
+  args: GIFT_FORM_SOUL_BLUEPRINT_ARGS,
+};
 
 export const BirthChart: Story = {
-  args: {
-    readingSlug: "birth-chart",
-    readingName: "Birth Chart Reading",
-    readingPriceDisplay: "$99",
-  },
+  args: GIFT_FORM_BIRTH_CHART_ARGS,
 };
 
 export const AkashicRecord: Story = {
-  args: {
-    readingSlug: "akashic-record",
-    readingName: "Akashic Record Reading",
-    readingPriceDisplay: "$79",
-  },
+  args: GIFT_FORM_AKASHIC_RECORD_ARGS,
 };
 
 export const CustomCopy: Story = {
-  args: {
-    copy: {
-      ...BOOKING_GIFT_FORM_DEFAULTS,
-      heading: "Give the gift of a reading.",
-      subheading: "A few details and it's on its way.",
-      consentIntro: "By giving this gift, you confirm the following:",
-      submitButtonSelfSend: "Send me the gift link",
-      submitButtonScheduled: "Schedule the gift",
-    },
-  },
+  args: GIFT_FORM_CUSTOM_COPY_ARGS,
 };

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { StarField } from "./StarField";
 
 const meta: Meta<typeof StarField> = {
-  title: "Decorative/StarField",
+  title: "Components/Decorative/StarField",
   component: StarField,
   decorators: [
     (Story) => (
