@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { MY_READINGS_PAGE_DEFAULTS } from "@/data/defaults";
 
@@ -12,6 +12,18 @@ function withState(state: MyReadingsViewProps["state"]) {
 }
 
 describe("MyReadingsView", () => {
+  // Pin the wall clock so the test fixtures' deliveredAt values (March / April
+  // 2026) stay inside the 90-day reading-access TTL. Without this the test
+  // expecting 2 unexpired reading cards starts failing the moment real time
+  // crosses ~June 6 2026 and sub_1's March-08 deliveredAt ages past the TTL.
+  beforeAll(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+    vi.setSystemTime(new Date("2026-04-15T00:00:00Z"));
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
   it("renders the sign-in card from copy props (State 3)", () => {
     const { getByRole, getByText } = withState({ kind: "signIn" });
     expect(getByRole("heading", { name: COPY.signInHeading })).toBeTruthy();

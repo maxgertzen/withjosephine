@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Hero } from "./Hero";
 
 const meta: Meta<typeof Hero> = {
-  title: "Components/Hero",
+  title: "Components/Content/Hero",
   component: Hero,
   parameters: {
     layout: "fullscreen",

@@ -48,7 +48,7 @@ function IntakeChain() {
 }
 
 const meta: Meta<typeof IntakeChain> = {
-  title: "Form/PickerStacking",
+  title: "Components/Forms/PickerStacking",
   component: IntakeChain,
 };
 export default meta;

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { TestimonialCard } from "./TestimonialCard";
 
 const meta: Meta<typeof TestimonialCard> = {
-  title: "Components/TestimonialCard",
+  title: "Components/Content/TestimonialCard",
   component: TestimonialCard,
   decorators: [(Story) => <div style={{ maxWidth: 420, margin: "0 auto" }}><Story /></div>],
 };

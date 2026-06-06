@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ThankYouViewProps } from "./ThankYouView";
+
+type ThankYouRendered = { props: ThankYouViewProps };
+
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchThankYouPage: vi.fn(),
   fetchReading: vi.fn(),
@@ -225,58 +229,54 @@ describe("ThankYouPage paid amount", () => {
     mockFetchThankYouPage.mockResolvedValue(thankYouPage());
   });
 
-  it("renders the discounted amount alongside the strikethrough list price", async () => {
+  it("passes a paid amount strictly below the list price (discount UI eligible)", async () => {
     mockRetrieveSession.mockResolvedValue({
       amount_total: 9900,
       currency: "usd",
     } as never);
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("$179");
-    expect(html).toContain("$99.00");
-    expect(html).toContain("line-through");
+    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
+    expect(result.props.reading.cents).toBe(17900);
+    expect(result.props.paidAmount.cents).toBe(9900);
+    expect(result.props.paidAmount.display).toBe("$99.00");
   });
 
-  it("renders only the paid amount when it equals the list price", async () => {
+  it("passes an equal paid amount (no discount UI)", async () => {
     mockRetrieveSession.mockResolvedValue({
       amount_total: 17900,
       currency: "usd",
     } as never);
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("$179.00");
-    expect(html).not.toContain("line-through");
+    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
+    expect(result.props.paidAmount.cents).toBe(17900);
+    expect(result.props.paidAmount.display).toBe("$179.00");
   });
 
-  it("does not strike when paid is HIGHER than list (Stripe / Sanity drift, not a discount)", async () => {
+  it("passes a paid amount higher than list (Stripe / Sanity drift; no discount)", async () => {
     mockRetrieveSession.mockResolvedValue({
       amount_total: 22900,
       currency: "usd",
     } as never);
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("$229.00");
-    expect(html).not.toContain("line-through");
+    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
+    expect(result.props.paidAmount.cents).toBe(22900);
+    expect(result.props.reading.cents).toBe(17900);
   });
 
-  it("renders the list price (no paid amount) when amount_total is null", async () => {
+  it("passes null paid amount when Stripe amount_total is null", async () => {
     mockRetrieveSession.mockResolvedValue({
       amount_total: null,
       currency: null,
     } as never);
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("$179");
-    expect(html).not.toContain("line-through");
+    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
+    expect(result.props.paidAmount.cents).toBeNull();
+    expect(result.props.paidAmount.display).toBeNull();
+    expect(result.props.reading.price).toBe("$179");
   });
 
-  it("renders the list price when the Stripe API throws (fail-safe)", async () => {
+  it("passes null paid amount when the Stripe API throws (fail-safe)", async () => {
     mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("$179");
-    expect(html).not.toContain("line-through");
+    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
+    expect(result.props.paidAmount.cents).toBeNull();
+    expect(result.props.reading.price).toBe("$179");
   });
 });
 

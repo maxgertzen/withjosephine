@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { GoldDivider } from "./GoldDivider";
 
 const meta: Meta<typeof GoldDivider> = {
-  title: "UI/GoldDivider",
+  title: "Components/UI/GoldDivider",
   component: GoldDivider,
 };
 
