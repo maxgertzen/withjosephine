@@ -78,8 +78,24 @@ export const MY_READINGS_FIXTURES: Record<string, MyReadingsViewProps["state"]> 
         deliveredAt: "2026-03-09T14:00:00.000Z",
       },
     ],
+    gifts: [
+      {
+        ...BASE_SUBMISSION,
+        _id: "preview-gift-001",
+        isGift: true,
+        reading: READING_AKASHIC,
+        amountPaidCents: 7900,
+        recipientEmail: "river@example.com",
+        giftDeliveryMethod: "scheduled",
+        giftSendAt: "2026-12-12T17:00:00.000Z",
+        deliveredAt: undefined,
+        responses: [
+          { fieldKey: "recipientFirstName", fieldLabelSnapshot: "Recipient", fieldType: "string", value: "River" },
+        ],
+      },
+    ],
   },
-  "list-empty": { kind: "list", readings: [] },
+  "list-empty": { kind: "list", readings: [], gifts: [] },
   signIn: { kind: "signIn" },
   checkEmail: { kind: "checkEmail" },
 };
