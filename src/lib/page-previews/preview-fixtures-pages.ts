@@ -1,5 +1,5 @@
 import type { ListenViewState } from "@/app/(authed)/listen/[id]/ListenView";
-import type { MyReadingsViewProps } from "@/app/(authed)/my-readings/MyReadingsView";
+import type { LibraryViewState } from "@/app/(authed)/my-readings/_shared/LibraryView";
 import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
 import type { MyGiftsViewProps } from "@/app/my-gifts/MyGiftsView";
 
@@ -63,7 +63,7 @@ export const LISTEN_FIXTURES: Record<string, ListenViewState> = {
   expired: { kind: "expired", submissionId: "preview-submission-001" },
 };
 
-export const MY_READINGS_FIXTURES: Record<string, MyReadingsViewProps["state"]> = {
+export const MY_READINGS_FIXTURES: Record<string, LibraryViewState> = {
   "list-populated": {
     kind: "list",
     readings: [
