@@ -100,7 +100,7 @@ export const myGiftsPage = defineType({
       name: "statusSentLabel",
       title: "Status label — Sent, waiting",
       type: "string",
-      initialValue: "Sent — waiting for them to open it",
+      initialValue: "Sent, resting in their inbox",
     }),
     defineField({
       name: "statusPreparingLabel",
@@ -163,7 +163,7 @@ export const myGiftsPage = defineType({
       type: "string",
       description:
         "Shown only when the gift is in self-send mode (purchaser hands off the link themselves). Reminds the purchaser they're editing a self-send gift even while we collect a recipient email.",
-      initialValue: "Self-send delivery — you share the link yourself",
+      initialValue: "Self-send delivery: you share the link yourself",
     }),
     defineField({
       name: "editRecipientFormRecipientNameLabel",

@@ -202,7 +202,7 @@ export const bookingGiftForm = defineType({
       title: "Consent section intro",
       type: "string",
       group: "consent",
-      initialValue: "Before this travels onward —",
+      initialValue: "Before this travels onward:",
     }),
     defineField({
       name: "nonRefundableNotice",
@@ -234,7 +234,7 @@ export const bookingGiftForm = defineType({
       title: "Loading state copy",
       type: "string",
       group: "submit",
-      initialValue: "One moment — taking you to checkout.",
+      initialValue: "One moment - taking you to checkout.",
     }),
     defineField({
       name: "antiAbuseCapHeading",

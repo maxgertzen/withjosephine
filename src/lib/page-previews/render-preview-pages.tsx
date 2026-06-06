@@ -1,7 +1,7 @@
 import { renderToString } from "react-dom/server";
 
 import { ListenView } from "@/app/(authed)/listen/[id]/ListenView";
-import { MyReadingsView } from "@/app/(authed)/my-readings/MyReadingsView";
+import { LibraryView } from "@/app/(authed)/my-readings/_shared/LibraryView";
 import { VerifyPageView } from "@/app/auth/verify/VerifyPageView";
 import { MyGiftsView } from "@/app/my-gifts/MyGiftsView";
 import { VellumShell } from "@/components/VellumShell";
@@ -65,8 +65,14 @@ function renderSurfaceMarkup(
   }
   if (surface === "my-readings") {
     const state = MY_READINGS_FIXTURES[stateKey] ?? MY_READINGS_FIXTURES["list-populated"];
-    const copy = { ...MY_READINGS_PAGE_DEFAULTS, ...merged } as MyReadingsPageContent;
-    return renderToString(<MyReadingsView copy={copy} state={state} />);
+    const readingsCopy = { ...MY_READINGS_PAGE_DEFAULTS, ...merged } as MyReadingsPageContent;
+    return renderToString(
+      <LibraryView
+        state={state}
+        readingsCopy={readingsCopy}
+        giftsCopy={MY_GIFTS_PAGE_DEFAULTS}
+      />,
+    );
   }
   if (surface === "my-gifts") {
     const state = MY_GIFTS_FIXTURES[stateKey] ?? MY_GIFTS_FIXTURES["list-populated"];

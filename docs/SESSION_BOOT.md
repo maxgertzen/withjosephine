@@ -1,6 +1,84 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-06 — v1.9.0 SHIPPED + tagged (PR #270 squash `936fed0`)
+## 🛎️ 2026-06-06 — v1.10.0 release branch open, 5/7 sub-PRs SHIPPED, awaiting cumulative review + merge-to-main
+
+### What's the state of the world
+- On `release/v1.10.0` at `14b615e` (dex auto-close HEAD after PR #276 merge). origin in sync.
+- `main` still at `fdd948b` (v1.9.0 bookkeeping). The v1.10.0 → main merge has NOT happened yet — pending Max's cumulative review + real-browser smoke + merge approval.
+- `release/v1.9.0` still alive locally + remote. v1.9.0 prod smoke STILL OWED from session start (pre-condition deferred per Max's explicit override).
+- `release/v1.10.0` is a multi-scope arc per `MEMORY/WORK/20260606-v1100-scope/PRD.md`. Algorithm-run PRD with phased ISC at `MEMORY/WORK/20260606-180000_v1100-implement/PRD.md` (69/87 ISC complete).
+
+### v1.10.0 sub-PR roster
+
+| PR | Sub-PR | dex closed | Commit on release/v1.10.0 |
+|---|---|---|---|
+| #272 | qz94q5g2 — test-mint endpoint + e2e-sandbox secret cleanup | `qz94q5g2` ✓ | `badf40f` |
+| #273 | 5fqrgvia — MyReadingsView preview-twin stacked layout | `5fqrgvia` ✓ | `0a6e698` |
+| (direct) | ci.yml — wire release/v1.10.0 into trigger + deploy gates | n/a | `5e8f48e` |
+| #274 | dss693yd — BookingPageShell extraction across 5 sites | `dss693yd` ✓ | `24f51a1` |
+| #275 | jzvhs9x4 — THANK_YOU_PAGE_DEFAULTS consolidation | `jzvhs9x4` ✓ | `4ad91d8` |
+| #276 | nlnpkjvo — drop /dev-preview/library gitignore + doc ref | `nlnpkjvo` ✓ | `eb03e8b` |
+| (no PR) | oxaalntc — Storybook nextjs-vite spike | `oxaalntc` DEFER → `kojs9xli` | — |
+| (no PR) | 95rhce6i — defaults-drift audit | `95rhce6i` ✓ (drift deferred to 5eggk3jy + 7wzggnwj) | — |
+
+### 🚨 Max-actions still owed for v1.10.0 → main
+- [ ] **Real-browser smoke against v1.10.0 release branch.** Cover the BookingPageShell migration surfaces (`/book/[id]/intake`, `/book/[id]/gift`, letter, GiftIntakeView, GiftIntakePagePreview), MyReadingsView Sanity preview, ThankYouView. Binding gate per `feedback_real_browser_smoke_before_ship_claim`.
+- [ ] **v1.9.0 prod smoke** still owed from session start (J17 + J1–J16 in `docs/MANUAL_SMOKE_TEST.md`).
+- [ ] **Branch cleanup post-smoke:** `git push origin --delete release/v1.9.0` once v1.9.0 smoke completes.
+
+### 🎯 Next session pickup — fold audit findings + cumulative review + open merge PR
+
+Per Max's directives (1) "we run simplifier and review on diff" and (2) "audit findings should be folded to this release":
+
+**Step A — Fold audit findings into release (NEW Sub-PR 8 before merge):**
+1. Update `src/data/defaults.ts` with Becky's canonical content for the 2 real divergences:
+   - `GIFT_INTAKE_PAGE_DEFAULTS.heading`: "Let's open your gift." → "A few things, before we begin."
+   - `GIFT_INTAKE_PAGE_DEFAULTS.headingWelcome`: "Welcome. Let's open your gift." → "Welcome, a few things before we begin." (em-dash substituted per binding rule from Becky's "Welcome — a few things...")
+   - `MAGIC_LINK_VERIFY_PAGE_DEFAULTS.restedHeading`: "This link has been used" → "This link has rested"
+2. Write `scripts/migrate-em-dash-strings-2026-06-06.ts` patterned on PR #238's set-if-matches migration. Reconcile the 14 em-dash drifts (3 myGiftsPage + 4 giftClaimPage + 3 giftIntakePage + 3 magicLinkVerifyPage + 1 already covered in step 1). Each step idempotent: read field, if equals legacy em-dash string, write the no-em-dash substitute. Run against prod after PR merges. `Closes dex 5eggk3jy`.
+3. Write `scripts/seed-my-readings-page-fields-2026-06-06.ts` for the 8 missing-in-prod myReadingsPage fields (`expiredRowLabel`, `expiredMailtoLabel`, `expiredMailtoSubject`, `readingsTabLabel`, `giftsTabLabel`, `welcomeHeading`, `welcomeSubhead`, `welcomeButtonLabel`). Verify Sanity schema declares them first; if not, schema-add step too. `Closes dex 7wzggnwj`.
+4. Re-run `pnpm tsx scripts/audit-defaults-drift.mts production` post-migration; confirm `drifts=0` on the 5 touched singletons.
+5. Pre-push gates per binding rule: lint + typecheck + test + `Skill code-review` + `Skill simplify` on Sub-PR 8 diff.
+6. Open Sub-PR 8 PR, watch CI, merge.
+
+**Step B — Cumulative review on `release/v1.10.0 → main` diff:**
+7. `Skill code-review --effort high` on `git diff origin/main...release/v1.10.0`.
+8. `Skill simplify --scope diff` (3-vantage) on same diff.
+9. Address findings (likely small if any).
+
+**Step C — Open merge PR and ship:**
+10. Open `release/v1.10.0 → main` merge PR via `sentry-skills:pr-writer`. Title format: `feat(v1.10.0): Release v1.10.0`.
+11. Watch CI matrix (Playwright on PR-to-main is the first PR-CI exposure for the v1.10.0 arc; lint+typecheck+test+storybook ran per sub-PR on release branch already).
+12. Wait for Max real-browser smoke + merge approval.
+13. Merge → tag `v1.10.0` annotated at the squash commit → push tag → add CHANGELOG release entry.
+
+### Deferred dex tickets from v1.10.0 arc
+- `76nnmb5b`: Mirror test-mint pattern for library-token-roundtrip spec (so `AUTH_TOKEN_SECRET` can finally drop from `e2e-sandbox.yml`).
+- `djw51vtk`: Extract shared gift-card helpers across LibraryView/MyGiftsView/MyReadingsView (3-way duplication after Sub-PR 2).
+- `rkqhw2jj`: Extract `BookingPageHeading` sub-component for eyebrow + title duplication across 4 sites (Sub-PR 3 simplify deferral).
+- `kojs9xli`: v1.11.0 Storybook nextjs-vite migration (gated on `storybookjs/storybook#34688` upstream fix).
+- `5eggk3jy`: Studio em-dash cleanup on prod Sanity content — will be ABSORBED into next-session Sub-PR 8 migration script (closes via `Closes dex 5eggk3jy` in the migration PR).
+- `7wzggnwj`: Seed 8 missing myReadingsPage fields in prod — will be ABSORBED into next-session Sub-PR 8 seed script (closes via `Closes dex 7wzggnwj`).
+
+### Open items (still gating apex unpark, see dex epic `wdpz1ux4`)
+- `wc4rzud9`: Pre-prod data cleanup (D1 + R2 + Sanity test rows).
+- `cdw3mnpg`: Stripe test-mode webhook split.
+- `ttys8qku`: Re-run smoke walkthrough on prod.
+
+### Process learnings from this session (carry forward)
+- **PR-to-release-branch CI gap.** ci.yml's trigger branches list excluded release/v1.10.0 at branch-cut time, so Sub-PR 2's PR-CI initially showed "no checks reported". Fixed via direct commit on release branch (`5e8f48e`). Pattern: every new release branch needs ci.yml wired up — preferably automated, but currently a manual add to 4 ref lists (push trigger, PR trigger, deploy-staging gate, sanity-validate-staging gate). File a follow-up if this recurs on v1.11.0.
+- **`src/data/**` em-dash lint rule fires on extracted defaults.** Moving fallback strings from `deriveThankYouViewProps` (em-dash-permissive) into `src/data/defaults.ts` (em-dash-banned) forced 5 substitutions. Substitution per memory guidance (parens or sentence breaks) is the right move; flagged in Sub-PR 4 PR body for transparency.
+- **Storybook framework migrations are gated on real-browser dev-mode smoke.** Sub-PR 6 spike found upstream `storybookjs/storybook#34688` (Next 16 + Vite 8 dev mode) before any code swap. Saved us from a v1.9.0-style 4-regression arc. Pattern: spike BEFORE swap for any framework change.
+- **Worktree agent for risky framework changes is the right altitude.** The nextjs-vite spike ran in an isolated worktree, produced SPIKE.md without polluting main checkout, returned a clean DEFER recommendation. Cheap context isolation for high-research tasks.
+
+### Things that aren't broken but worth a glance next session
+- Storybook story count: 36 (unchanged from v1.9.0).
+- hono 4.12.23 floor in `package.json`. Do not regress.
+- The Sub-PR 6 spike worktree may still be locked (agent process). `git worktree remove .claude/worktrees/agent-a6cbfa96b0797412b -f -f` if it's stale.
+
+---
+
+## 🛎️ 2026-06-06 — v1.9.0 SHIPPED + tagged (PR #270 squash `936fed0`) [SUPERSEDED by section above]
 
 ### What's the state of the world
 - On `main` at `936fed0`. `release/v1.9.0` branch DELIBERATELY KEPT until post-merge smoke completes so a hotfix doesn't have to start from main (per the v1.7.0 / v1.8.0 precedent).

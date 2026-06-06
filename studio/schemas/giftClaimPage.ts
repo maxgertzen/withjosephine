@@ -12,7 +12,7 @@ export const giftClaimPage = defineType({
       title: "SEO — Page title",
       type: "string",
       description: "Appears in the browser tab. Recipients only see this in inbox previews and tabs.",
-      initialValue: "Claim your gift — Josephine",
+      initialValue: "Claim your gift, with Josephine",
     }),
     defineField({
       name: "seoDescription",
@@ -80,7 +80,7 @@ export const giftClaimPage = defineType({
       type: "string",
       description:
         "Shown when a recipient revisits /gift/intake after they have already submitted their answers. Replaces the previous abrupt redirect to the homepage with a warmer acknowledgment + recovery path.",
-      initialValue: "We have your answers — thank you.",
+      initialValue: "We have your answers. Thank you.",
     }),
     defineField({
       name: "alreadySubmittedBody",

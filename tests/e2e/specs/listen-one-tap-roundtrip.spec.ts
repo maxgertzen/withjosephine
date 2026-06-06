@@ -1,15 +1,12 @@
 // Phase 1 one-tap listen-token roundtrip (ISC-69 through ISC-77).
 //
-// This spec mints listen tokens IN-PROCESS via `mintListenToken`, then exercises
-// them against staging's `/listen/[id]` interstitial + `/api/listen/[id]/redeem`
-// route. For tokens minted here to verify on the staging worker, the CI env
-// MUST set `AUTH_TOKEN_SECRET` to the same value staging runs with:
-//
-//   .github/workflows/e2e-sandbox.yml needs:
-//     AUTH_TOKEN_SECRET: ${{ secrets.STAGING_AUTH_TOKEN_SECRET }}
-//
-// Without that, every mint produces a signature staging rejects as bad_signature
-// and Scenarios A-C/G/H silently fall through to the signIn surface.
+// This spec mints listen tokens via the staging worker's
+// `/api/internal/test-mint-token` admin-gated endpoint, then exercises them
+// against staging's `/listen/[id]` interstitial + `/api/listen/[id]/redeem`
+// route. The endpoint signs tokens with staging's own `AUTH_TOKEN_SECRET`, so
+// the CI runner only needs `ADMIN_API_KEY` (already wired in
+// `.github/workflows/e2e-sandbox.yml`). Rotating `AUTH_TOKEN_SECRET` no
+// longer breaks the spec; it only invalidates outstanding tokens.
 //
 // Self-activating: a one-shot beforeAll probes /api/listen/__probe__/redeem and
 // skips the suite when staging answers 404 (route not deployed yet). Replaces
@@ -20,7 +17,6 @@ import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";
 
-import { mintListenToken } from "@/lib/auth/listenToken";
 import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 
 import {
@@ -28,6 +24,7 @@ import {
   seedIntakeDraft,
   waitForDraftRestore,
 } from "../helpers/intakeDraft";
+import { mintTokenForTest } from "../helpers/mintTokenForTest";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import {
   forceD1Mirror,
@@ -46,11 +43,12 @@ import { stubTurnstile } from "../helpers/turnstileStub";
 test.use({ extraHTTPHeaders: sandboxRequestHeaders() });
 
 let redeemRouteAvailable = false;
+let mintEndpointAvailable = false;
 
 function skipIfNotDeployed(): void {
   test.skip(
-    !redeemRouteAvailable,
-    "Phase 1 redeem route not deployed on staging yet (auto-detected via probe).",
+    !redeemRouteAvailable || !mintEndpointAvailable,
+    "Phase 1 redeem route or /api/internal/test-mint-token endpoint not deployed on staging yet (auto-detected via probe).",
   );
 }
 
@@ -120,7 +118,8 @@ async function setupReadyToRedeem(
   expect(mirror.awaitingAssets, "force-mode should see Sanity assets").toBe(0);
 
   const recipientUserId = await fetchRecipientUserId(submissionId);
-  const token = await mintListenToken({
+  const token = await mintTokenForTest({
+    page,
     submissionId,
     recipientUserId,
     mintSource: "cron_day7",
@@ -142,6 +141,30 @@ test.describe("Listen one-tap round-trip, staging", () => {
     if (!redeemRouteAvailable) {
       console.log(
         `[listen-one-tap] redeem route probe -> ${probe.status()}, skipping suite until release/v1.4.0 deploys`,
+      );
+      return;
+    }
+
+    // Probe the v1.10.0 test-mint-token endpoint. A 200 confirms staging is on
+    // release/v1.10.0 (or later). Sandbox CI on PR-open runs against the
+    // prev-deploy staging worker, so the suite skips cleanly until v1.10.0
+    // deploys. Side-effect-free: the minted token is discarded.
+    const mintProbe = await request.post("/api/internal/test-mint-token", {
+      data: {
+        submissionId: "__probe__",
+        recipientUserId: "__probe__",
+        mintSource: "cron_day7",
+      },
+      headers: {
+        "content-type": "application/json",
+        "x-admin-token": process.env.ADMIN_API_KEY ?? "",
+      },
+      failOnStatusCode: false,
+    });
+    mintEndpointAvailable = mintProbe.status() === 200;
+    if (!mintEndpointAvailable) {
+      console.log(
+        `[listen-one-tap] test-mint-token endpoint probe -> ${mintProbe.status()}, skipping suite until release/v1.10.0 deploys`,
       );
       return;
     }
@@ -297,7 +320,8 @@ test.describe("Listen one-tap round-trip, staging", () => {
     const recipientUserId = await fetchRecipientUserId(submissionId);
     // ttlMs negative ⇒ expMs is in the past ⇒ verifyListenToken returns
     // { valid: false, reason: "expired" } and the page falls through.
-    const expiredToken = await mintListenToken({
+    const expiredToken = await mintTokenForTest({
+      page,
       submissionId,
       recipientUserId,
       mintSource: "cron_day7",

@@ -25,14 +25,14 @@ export const emailOrderConfirmation = defineType({
       title: "Subject",
       type: "string",
       group: "envelope",
-      initialValue: "Your reading is booked — here's what happens next",
+      initialValue: "Your reading is booked: what happens next",
     }),
     defineField({
       name: "preview",
       title: "Inbox preview text",
       type: "string",
       group: "envelope",
-      initialValue: "Your reading is booked — here's what happens next",
+      initialValue: "Your reading is booked: what happens next",
     }),
     defineField({
       hidden: true,

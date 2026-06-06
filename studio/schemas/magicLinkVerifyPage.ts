@@ -17,7 +17,7 @@ export const magicLinkVerifyPage = defineType({
       title: "Confirm form — body",
       type: "text",
       rows: 2,
-      initialValue: "Type the email you used to book — we'll open your reading from there.",
+      initialValue: "Type the email you used to book, and we'll open your reading from there.",
     }),
     defineField({
       name: "confirmEmailLabel",

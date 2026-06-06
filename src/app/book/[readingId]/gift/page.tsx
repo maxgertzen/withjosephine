@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { BookingFlowHeader } from "@/components/BookingFlowHeader";
-import { Footer } from "@/components/Footer";
+import { BookingPageShell } from "@/components/BookingPageShell";
 import { GiftForm } from "@/components/GiftForm";
 import {
   BOOKING_GIFT_FORM_DEFAULTS,
@@ -131,30 +130,17 @@ export default async function GiftPage({ params }: GiftPageProps) {
     ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText;
 
   return (
-    <div className="relative min-h-screen bg-j-ivory overflow-hidden">
-      <BookingFlowHeader
-        backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
-        aboutLinkText={aboutLabel}
+    <BookingPageShell
+      backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
+      aboutLinkText={aboutLabel}
+      outerBg="ivory"
+    >
+      <GiftForm
+        readingSlug={reading.slug}
+        readingName={reading.name}
+        readingPriceDisplay={reading.priceDisplay}
+        copy={mergeCopy(giftFormCopy)}
       />
-
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
-        <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
-          />
-          <div className="relative px-6 py-10 md:px-12 md:py-14">
-            <GiftForm
-              readingSlug={reading.slug}
-              readingName={reading.name}
-              readingPriceDisplay={reading.priceDisplay}
-              copy={mergeCopy(giftFormCopy)}
-            />
-          </div>
-        </article>
-      </main>
-
-      <Footer />
-    </div>
+    </BookingPageShell>
   );
 }

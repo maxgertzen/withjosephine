@@ -206,3 +206,4 @@ if (isMainModule(import.meta.url)) {
 }
 
 export { AUDIT_TABLE, diffSingleton };
+export type { AuditEntry, Drift, DriftKind };

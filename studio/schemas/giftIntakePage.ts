@@ -14,7 +14,7 @@ export const giftIntakePage = defineType({
       name: "seoTitle",
       title: "SEO — Page title",
       type: "string",
-      initialValue: "Open your gift — Josephine",
+      initialValue: "Open your gift, with Josephine",
     }),
     defineField({
       name: "seoDescription",
@@ -45,7 +45,7 @@ export const giftIntakePage = defineType({
       type: "string",
       description:
         "Shown on first arrival straight after claiming (when /gift/claim redirects with ?welcome=1). Use {recipientName} to personalise (e.g. 'Welcome, Bob').",
-      initialValue: "Welcome — a few things before we begin.",
+      initialValue: "Welcome, a few things before we begin.",
     }),
     defineField({
       name: "lede",
