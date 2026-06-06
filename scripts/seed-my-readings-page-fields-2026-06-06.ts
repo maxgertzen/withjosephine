@@ -11,7 +11,7 @@
 
 import { MY_READINGS_PAGE_DEFAULTS } from "../src/data/defaults";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
-import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
+import { seedSingletonFields } from "./_lib/seedSingleton.mts";
 
 const TARGET_FIELDS = [
   "expiredRowLabel",
@@ -26,35 +26,21 @@ const TARGET_FIELDS = [
 
 async function main(): Promise<void> {
   loadDotenv();
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-  console.log(`[seed-my-readings-page-fields] dataset=${dataset} fields=${TARGET_FIELDS.length}`);
-  if (!process.env.SANITY_WRITE_TOKEN) {
-    throw new Error("SANITY_WRITE_TOKEN is required");
-  }
 
-  const client = sanityWriteClient();
-  const doc = await client.fetch<{ _id: string } | null>(
-    `*[_type == "myReadingsPage"][0]{_id}`,
-  );
-  if (!doc) {
-    console.warn("[skip] no myReadingsPage singleton in this dataset.");
-    return;
-  }
-
-  const patch: Record<string, string> = {};
+  const fields: Record<string, string> = {};
   for (const field of TARGET_FIELDS) {
     const value = MY_READINGS_PAGE_DEFAULTS[field];
     if (typeof value !== "string") {
       throw new Error(`MY_READINGS_PAGE_DEFAULTS.${field} is not a string; refusing to seed.`);
     }
-    patch[field] = value;
+    fields[field] = value;
   }
 
-  await client.patch(doc._id).setIfMissing(patch).commit();
-  console.log(`[seed-my-readings-page-fields] setIfMissing applied to ${doc._id}`);
-  for (const field of TARGET_FIELDS) {
-    console.log(`  - ${field}`);
-  }
+  await seedSingletonFields({
+    docType: "myReadingsPage",
+    fields,
+    logPrefix: "seed-my-readings-page-fields",
+  });
 }
 
 main().catch((err) => {

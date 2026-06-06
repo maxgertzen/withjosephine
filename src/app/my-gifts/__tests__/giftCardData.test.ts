@@ -50,7 +50,11 @@ describe("computeResendVerdict", () => {
   it("blocks on hour_cap when one resend landed within the hour", () => {
     const gift = makeGift({
       emailsFired: [
-        { type: "gift_resend", sentAt: new Date(NOW_MS - 10 * 60 * 1000).toISOString() },
+        {
+          type: "gift_resend",
+          sentAt: new Date(NOW_MS - 10 * 60 * 1000).toISOString(),
+          resendId: null,
+        },
       ],
     });
     const v = computeResendVerdict(gift, NOW_MS);
@@ -69,8 +73,9 @@ describe("computeResendVerdict", () => {
     ];
     const gift = makeGift({
       emailsFired: sends.map((t) => ({
-        type: "gift_resend",
+        type: "gift_resend" as const,
         sentAt: new Date(t).toISOString(),
+        resendId: null,
       })),
     });
     const v = computeResendVerdict(gift, NOW_MS);

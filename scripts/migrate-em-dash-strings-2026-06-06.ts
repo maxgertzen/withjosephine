@@ -18,21 +18,15 @@ import {
   MY_GIFTS_PAGE_DEFAULTS,
 } from "../src/data/defaults";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
-import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
+import { patchSingleton } from "./_lib/seedSingleton.mts";
 
 const EM_DASH = "—";
 
 type Defaults = Readonly<Record<string, unknown>>;
 
-type Target = {
-  docType: string;
-  field: string;
-  defaults: Defaults;
-};
-
 const asDefaults = (value: object): Defaults => value as Defaults;
 
-const TARGETS: readonly Target[] = [
+const TARGETS: ReadonlyArray<{ docType: string; field: string; defaults: Defaults }> = [
   { docType: "myGiftsPage", field: "statusSentLabel", defaults: asDefaults(MY_GIFTS_PAGE_DEFAULTS) },
   { docType: "myGiftsPage", field: "privacyNote", defaults: asDefaults(MY_GIFTS_PAGE_DEFAULTS) },
   { docType: "myGiftsPage", field: "editRecipientSelfSendIndicator", defaults: asDefaults(MY_GIFTS_PAGE_DEFAULTS) },
@@ -47,53 +41,46 @@ const TARGETS: readonly Target[] = [
   { docType: "listenPage", field: "restedBody", defaults: asDefaults(LISTEN_PAGE_DEFAULTS) },
 ];
 
-type Counts = { patched: number; skipped: number; missing: number };
-
 async function main(): Promise<void> {
   loadDotenv();
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-  console.log(`[migrate-em-dash-strings] dataset=${dataset} targets=${TARGETS.length}`);
-  if (!process.env.SANITY_WRITE_TOKEN) {
-    throw new Error("SANITY_WRITE_TOKEN is required");
-  }
+  console.log(`[migrate-em-dash-strings] targets=${TARGETS.length}`);
 
-  const client = sanityWriteClient();
-  const counts: Counts = { patched: 0, skipped: 0, missing: 0 };
+  let patched = 0;
+  let skipped = 0;
+  let missing = 0;
 
   for (const target of TARGETS) {
-    const doc = await client.fetch<{ _id: string; [key: string]: unknown } | null>(
-      `*[_type == $type][0]`,
-      { type: target.docType },
-    );
-    if (!doc) {
-      console.log(`[${target.docType}.${target.field}] missing-doc — skipped`);
-      counts.missing += 1;
-      continue;
-    }
-    const current = doc[target.field];
-    if (typeof current !== "string" || !current.includes(EM_DASH)) {
-      console.log(`[${target.docType}.${target.field}] no em-dash — skipped`);
-      counts.skipped += 1;
-      continue;
-    }
-    const replacement = target.defaults[target.field];
-    if (typeof replacement !== "string") {
-      throw new Error(
-        `defaults missing string for ${target.docType}.${target.field}; refusing to patch.`,
-      );
-    }
-    if (replacement.includes(EM_DASH)) {
-      throw new Error(
-        `defaults value for ${target.docType}.${target.field} contains em-dash; refusing to patch.`,
-      );
-    }
-    await client.patch(doc._id).set({ [target.field]: replacement }).commit();
-    console.log(`[${target.docType}.${target.field}] patched on ${doc._id}`);
-    counts.patched += 1;
+    type Doc = { _id: string } & Record<string, unknown>;
+    const doc = await patchSingleton<Doc>({
+      docType: target.docType,
+      projection: "",
+      logPrefix: `migrate-em-dash-strings:${target.docType}.${target.field}`,
+      mutate: (patch, doc) => {
+        const current = doc[target.field];
+        if (typeof current !== "string" || !current.includes(EM_DASH)) {
+          skipped += 1;
+          return null;
+        }
+        const replacement = target.defaults[target.field];
+        if (typeof replacement !== "string") {
+          throw new Error(
+            `defaults missing string for ${target.docType}.${target.field}; refusing to patch.`,
+          );
+        }
+        if (replacement.includes(EM_DASH)) {
+          throw new Error(
+            `defaults value for ${target.docType}.${target.field} contains em-dash; refusing to patch.`,
+          );
+        }
+        patched += 1;
+        return patch.set({ [target.field]: replacement });
+      },
+    });
+    if (!doc) missing += 1;
   }
 
   console.log(
-    `[migrate-em-dash-strings] summary: patched=${counts.patched} skipped=${counts.skipped} missing-doc=${counts.missing}`,
+    `[migrate-em-dash-strings] summary: patched=${patched} skipped=${skipped} missing-doc=${missing}`,
   );
 }
 
