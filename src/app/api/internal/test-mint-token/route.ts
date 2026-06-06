@@ -56,12 +56,17 @@ export async function POST(request: Request): Promise<Response> {
   const ttlMs = parseTtlMs(body);
   if (Number.isNaN(ttlMs)) return REFUSED();
 
-  const token = await mintListenToken({
-    submissionId,
-    recipientUserId,
-    mintSource,
-    ttlMs,
-  });
+  let token: string;
+  try {
+    token = await mintListenToken({
+      submissionId,
+      recipientUserId,
+      mintSource,
+      ttlMs,
+    });
+  } catch {
+    return REFUSED();
+  }
 
   return NextResponse.json({ token });
 }

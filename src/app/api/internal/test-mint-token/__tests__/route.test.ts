@@ -221,4 +221,16 @@ describe("POST /api/internal/test-mint-token", () => {
       );
     });
   });
+
+  describe("mintListenToken failure", () => {
+    it("returns 404 when mintListenToken throws (silent-404 invariant)", async () => {
+      mintMock.mockRejectedValueOnce(new Error("AUTH_TOKEN_SECRET missing"));
+      const res = await callRoute({
+        headers: { "x-admin-token": "test-admin-token" },
+        body: validBody,
+      });
+      expect(res.status).toBe(404);
+      expect(await res.text()).toBe("");
+    });
+  });
 });
