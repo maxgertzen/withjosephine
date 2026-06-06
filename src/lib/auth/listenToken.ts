@@ -93,7 +93,7 @@ export async function mintListenToken(args: MintListenTokenArgs): Promise<string
   return `${base64UrlEncodeBytes(payloadBytes)}.${base64UrlEncodeBytes(sig)}`;
 }
 
-function isValidMintSource(value: string): value is ListenTokenMintSource {
+export function isValidMintSource(value: string): value is ListenTokenMintSource {
   return value === "cron_day7" || value === "admin_resend";
 }
 
