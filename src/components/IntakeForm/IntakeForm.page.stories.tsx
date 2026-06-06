@@ -11,7 +11,7 @@ import { withBookingPageShell } from "../../../.storybook/decorators/BookingPage
 import { IntakeForm } from "./IntakeForm";
 
 const meta: Meta<typeof IntakeForm> = {
-  title: "Pages/IntakeForm",
+  title: "Pages/BookingIntake",
   component: IntakeForm,
   decorators: [withBookingPageShell],
   args: INTAKE_FORM_STORY_BASE_ARGS,

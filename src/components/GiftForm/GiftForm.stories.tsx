@@ -11,7 +11,7 @@ import { withBookingPageShell } from "../../../.storybook/decorators/BookingPage
 import { GiftForm } from "./GiftForm";
 
 const meta: Meta<typeof GiftForm> = {
-  title: "Pages/GiftForm",
+  title: "Pages/BookingGift",
   component: GiftForm,
   decorators: [withBookingPageShell],
   parameters: {

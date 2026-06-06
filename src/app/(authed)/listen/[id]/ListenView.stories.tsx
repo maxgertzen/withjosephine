@@ -16,7 +16,7 @@ import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import { ListenView } from "./ListenView";
 
 const meta: Meta<typeof ListenView> = {
-  title: "Pages/ListenView",
+  title: "Pages/Listen",
   component: ListenView,
   parameters: {
     layout: "fullscreen",

@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { LetterView } from "./LetterView";
 
 const meta: Meta<typeof LetterView> = {
-  title: "Pages/LetterView",
+  title: "Pages/BookingLetter",
   component: LetterView,
   parameters: { layout: "fullscreen" },
   args: {

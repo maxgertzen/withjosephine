@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { GiftIntakeView } from "./GiftIntakeView";
 
 const meta: Meta<typeof GiftIntakeView> = {
-  title: "Pages/GiftIntakeView",
+  title: "Pages/GiftIntake",
   component: GiftIntakeView,
   parameters: {
     layout: "fullscreen",

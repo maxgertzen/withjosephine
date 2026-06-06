@@ -10,7 +10,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ThankYouView } from "./ThankYouView";
 
 const meta: Meta<typeof ThankYouView> = {
-  title: "Pages/ThankYouView",
+  title: "Pages/ThankYou",
   component: ThankYouView,
   parameters: { layout: "fullscreen" },
   args: {

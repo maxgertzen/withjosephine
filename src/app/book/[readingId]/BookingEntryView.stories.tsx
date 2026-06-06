@@ -8,7 +8,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { BookingEntryView } from "./BookingEntryView";
 
 const meta: Meta<typeof BookingEntryView> = {
-  title: "Pages/BookingEntryView",
+  title: "Pages/BookingEntry",
   component: BookingEntryView,
   parameters: { layout: "fullscreen" },
   args: {

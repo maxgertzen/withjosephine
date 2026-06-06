@@ -4,7 +4,7 @@ Locked 2026-06-06 via dex `z30nev3r` (epic `k7snhn1p` Tier 4d) and refined the s
 
 ## Two top-level groups
 
-- **`Pages/<PageName>`** — page-level surfaces rendered by a Next route OR error-boundary surfaces (`NotFound`, `ErrorBoundary`, `GlobalError`). The `<PageName>` directly names what the user sees at the route, not the implementation file. Examples: `Pages/Home`, `Pages/Privacy`, `Pages/AuthVerify`, `Pages/ListenView`.
+- **`Pages/<PageName>`** — page-level surfaces rendered by a Next route OR error-boundary surfaces (`NotFound`, `ErrorBoundary`, `GlobalError`). `<PageName>` names what the user sees at the route, not the implementation file: NO `View` / `Form` / `Page` suffix. Prefix sibling routes that share a parent path so they group alphabetically in the sidebar (e.g. `/book/[r]` family is `BookingEntry` / `BookingIntake` / `BookingGift` / `BookingLetter`). Examples: `Pages/Home`, `Pages/Privacy`, `Pages/Listen`, `Pages/ThankYou`.
 - **`Components/<Subcategory>/<ComponentName>`** — every other story. Subcategory is one of the 7 listed below.
 
 ## Components subcategories
@@ -23,22 +23,22 @@ Locked 2026-06-06 via dex `z30nev3r` (epic `k7snhn1p` Tier 4d) and refined the s
 
 | Story | Title |
 |---|---|
-| BookingEntryView | `Pages/BookingEntryView` |
+| AuthVerify | `Pages/AuthVerify` |
+| BookingEntry | `Pages/BookingEntry` |
+| BookingGift | `Pages/BookingGift` |
+| BookingIntake | `Pages/BookingIntake` |
+| BookingLetter | `Pages/BookingLetter` |
 | ErrorBoundary | `Pages/ErrorBoundary` |
-| GiftForm | `Pages/GiftForm` |
-| GiftIntakeView | `Pages/GiftIntakeView` |
+| GiftIntake | `Pages/GiftIntake` |
 | GlobalError | `Pages/GlobalError` |
 | Home | `Pages/Home` |
-| IntakeForm | `Pages/IntakeForm` |
-| LetterView | `Pages/LetterView` |
-| ListenView | `Pages/ListenView` |
+| Listen | `Pages/Listen` |
 | NotFound | `Pages/NotFound` |
 | Privacy | `Pages/Privacy` |
 | RefundPolicy | `Pages/RefundPolicy` |
 | Terms | `Pages/Terms` |
-| ThankYouView | `Pages/ThankYouView` |
+| ThankYou | `Pages/ThankYou` |
 | UnderConstruction | `Pages/UnderConstruction` |
-| AuthVerify | `Pages/AuthVerify` |
 | Button | `Components/UI/Button` |
 | GoldDivider | `Components/UI/GoldDivider` |
 | SectionHeading | `Components/UI/SectionHeading` |
