@@ -446,8 +446,8 @@ export const GIFT_INTAKE_PAGE_DEFAULTS: GiftIntakePageContent = {
   seoTitle: "Open your gift, with Josephine",
   seoDescription: "Share your details so Josephine can prepare your reading.",
   eyebrow: "✦ Opening your gift",
-  heading: "Let’s open your gift.",
-  headingWelcome: "Welcome. Let’s open your gift.",
+  heading: "A few things, before we begin.",
+  headingWelcome: "Welcome, a few things before we begin.",
   lede: "Someone sent you a {readingName}. Share your details and Josephine will prepare your reading.",
 };
 
@@ -468,7 +468,7 @@ export const MAGIC_LINK_VERIFY_PAGE_DEFAULTS: MagicLinkVerifyPageContent = {
   confirmEmailLabel: "Email",
   confirmButtonLabel: "Continue",
   confirmFootnote: "Your reading is still here, exactly as it was.",
-  restedHeading: "This link has been used",
+  restedHeading: "This link has rested",
   restedBody:
     "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one; it’ll arrive in a moment.",
   restedCtaLabel: "Send me a fresh link",
@@ -933,7 +933,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   checkEmailBody:
     "If we have a reading on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
   checkEmailResendLabel: "Send another",
-  restedHeading: "This link has been used",
+  restedHeading: "This link has rested",
   restedBody:
     "This link’s already been opened. Sometimes that’s because you clicked it on another device. No problem; we’ll send a fresh one.",
   restedCtaLabel: "Send me a fresh link",

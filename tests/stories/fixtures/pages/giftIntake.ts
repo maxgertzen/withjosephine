@@ -11,7 +11,7 @@ export const GIFT_INTAKE_BASE_ARGS = {
   submissionId: GIFT_INTAKE_SUBMISSION_ID,
   recipientEmail: "recipient@example.com" as string | null,
   eyebrow: "✦ Opening your gift",
-  heading: "Let’s open your gift.",
+  heading: "A few things, before we begin.",
   lede: "Someone sent you a Soul Blueprint. Share your details and Josephine will prepare your reading.",
   readingSlug: "soul-blueprint",
   readingName: "Soul Blueprint",
@@ -24,4 +24,4 @@ export const GIFT_INTAKE_BASE_ARGS = {
   },
 };
 
-export const GIFT_INTAKE_WELCOME_ARRIVAL_HEADING = "Welcome. Let’s open your gift.";
+export const GIFT_INTAKE_WELCOME_ARRIVAL_HEADING = "Welcome, a few things before we begin.";
