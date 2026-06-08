@@ -53,8 +53,13 @@ export type SubmissionContext = {
 
 // Customer-facing emails route to the gift recipient when the submission is
 // a gift with a known recipient, otherwise to the purchaser (or self-buyer).
-// Centralised so every sender taking SubmissionContext picks the same address.
-export function resolveDeliveryAddress(submission: SubmissionContext): string {
+// Accepts a structural shape so both SubmissionContext (Resend dispatch) and
+// SubmissionRecord (D1 row, admin-resend audit logs) callers share one rule.
+export function resolveDeliveryAddress(submission: {
+  isGift: boolean;
+  recipientEmail: string | null;
+  email: string;
+}): string {
   return submission.isGift && submission.recipientEmail
     ? submission.recipientEmail
     : submission.email;
