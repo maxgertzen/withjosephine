@@ -9,6 +9,8 @@ vi.mock("@/lib/booking/submissions", () => ({
   buildSubmissionContext: vi.fn().mockReturnValue({
     id: "sub_1",
     email: "client@example.com",
+    recipientEmail: null,
+    isGift: false,
     firstName: "Ada",
     readingName: "Soul Blueprint",
     readingPriceDisplay: "$179",

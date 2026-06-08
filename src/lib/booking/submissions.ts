@@ -441,6 +441,8 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
   return {
     id: submission._id,
     email: submission.email,
+    recipientEmail: submission.recipientEmail,
+    isGift: submission.isGift,
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
     readingPriceDisplay: priceDisplayFor(submission),

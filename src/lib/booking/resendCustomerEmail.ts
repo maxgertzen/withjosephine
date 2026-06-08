@@ -2,7 +2,12 @@ import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
-import { redactEmail, sendDay7Delivery, sendOrderConfirmation } from "../resend";
+import {
+  redactEmail,
+  resolveDeliveryAddress,
+  sendDay7Delivery,
+  sendOrderConfirmation,
+} from "../resend";
 import { READING_ACCESS_TTL_MS } from "./readingRetention";
 import {
   appendEmailFired,
@@ -72,7 +77,7 @@ export async function resendCustomerEmail(
   return {
     ok: true,
     emailType,
-    targetEmailRedacted: redactEmail(submission.email),
+    targetEmailRedacted: redactEmail(resolveDeliveryAddress(submission)),
   };
 }
 
