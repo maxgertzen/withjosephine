@@ -3,6 +3,8 @@ import type { SubmissionContext } from "@/lib/resend";
 const BASE_SUBMISSION: SubmissionContext = {
   id: "sub_123",
   email: "client@example.com",
+  recipientEmail: null,
+  isGift: false,
   firstName: "Ada",
   readingName: "Soul Blueprint Reading",
   readingPriceDisplay: "$179",

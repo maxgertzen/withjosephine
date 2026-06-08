@@ -40,6 +40,8 @@ export type SubmissionResponse = {
 export type SubmissionContext = {
   id: string;
   email: string;
+  recipientEmail: string | null;
+  isGift: boolean;
   firstName: string;
   readingName: string;
   readingPriceDisplay: string;
@@ -48,6 +50,15 @@ export type SubmissionContext = {
   photoUrl: string | null;
   createdAt: string;
 };
+
+// Customer-facing emails route to the gift recipient when the submission is
+// a gift with a known recipient, otherwise to the purchaser (or self-buyer).
+// Centralised so every sender taking SubmissionContext picks the same address.
+export function resolveDeliveryAddress(submission: SubmissionContext): string {
+  return submission.isGift && submission.recipientEmail
+    ? submission.recipientEmail
+    : submission.email;
+}
 
 export type EmailSendResult =
   | { kind: "sent"; resendId: string }
@@ -350,7 +361,7 @@ export async function sendOrderConfirmation(
   );
 
   return sendOrSkip({
-    to: submission.email,
+    to: resolveDeliveryAddress(submission),
     subject: copy.subject,
     html,
     subType: "order_confirmation",
@@ -550,7 +561,7 @@ export async function sendDay7Delivery(
     />,
   );
   return sendOrSkip({
-    to: submission.email,
+    to: resolveDeliveryAddress(submission),
     subject,
     html,
     subType: "day_7_delivery",
