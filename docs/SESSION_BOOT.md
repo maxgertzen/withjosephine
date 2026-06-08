@@ -1,6 +1,49 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-06 — v1.10.0 SHIPPED + tagged (PR #278 squash `3464fbf`) + defaults reconcile applied to prod
+## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL
+
+### What's the state of the world
+- On `main` at `fb80be4` (unchanged from 2026-06-06 v1.10.0 merge). No new commits this session.
+- v1.10.0 staging smoke walked across 2 sessions (`www/MEMORY/SMOKE_LOGS/20260608T095645Z` + `www/MEMORY/SMOKE_LOGS/20260608T112231Z`).
+- Coverage: Cluster A (full), B1+B2+B3 (full, surfaced critical F14), C2, C5, D1, D2 (partial), E1, E2, E3, F. Deferred to post-fix: C1, C3, C4, E5, D2-end-of-flow.
+- 22 findings logged in per-session FINDINGS.md. 19 dex tickets filed + verified.
+- `docs/MANUAL_SMOKE_TEST.md` restructured this session from 17 release-numbered journeys (J1-J17) to 6 surface-clusters (A-F) + release coverage matrix. Old structure replaced (git history preserved).
+- New helper: `scripts/force-cron.sh <route> <submissionId> [--prod]` — single-command cron force-fire for staging + prod. One-time setup `brew install cloudflared` + `cloudflared access login`.
+
+### Findings severity breakdown
+| Sev | Count | Highlights |
+|---|---|---|
+| **CRITICAL** | 1 | `dpdpepfg` F14 — gift Day-7 delivery dispatches to purchaser instead of recipient (D1 data correct, bug in `SubmissionContext` design — surgical fix sketch in FINDINGS.md, ~10 LOC in 2 files + test) |
+| **HIGH** | 3 | `e8y823lu` listen 7-day remember-me regression · `z8dk78tn` privacy export API has no customer UI (GDPR compliance gap) · `ia4v3hck` no library-owner identity + no sign-out on /my-readings |
+| **MEDIUM** | 11 | article+double-noun cluster (ifpkcvln), Sanity orphan fields (vz3vp14x), Stripe email prefill (29fuqdga), env_guard allowlist (vdg6rdy9), DatePicker overflow (a46hqmr9), PDF loader stuck (t8jgtfym), booking page Studio preview (9sdtjug4), send-preview UX (5r2or1ff), mobile form footer (nie5h9li), asset filenames (lb3dn5t0), /my-readings card alignment (4ybq539f) |
+| **LOW** | 3 | fresh-link subject spec (7azl631f), gifts-page copy (i31g3i01), navbar redundancy (87n9qmbj) |
+| **INFO** | 1 | Birth Chart price $89 vs $99 doc reconcile (jbc5n109) |
+
+### 🚨 Max-actions still owed
+- [ ] **Fixes session** — start with `dpdpepfg` F14 (critical, ~10 LOC surgical, unblocks gift smoke). Then `z8dk78tn` F18 + `ia4v3hck` X-F22 + `e8y823lu` F3. Then article cluster `ifpkcvln`. Then medium-UI batch.
+- [ ] **Prod smoke** per `feedback_real_browser_smoke_before_ship_claim` — DEFER until F14 lands so gift flow can validate end-to-end against prod.
+- [ ] **Re-walk deferred smoke clusters** (C1, C3, C4, E5, D2-end-of-flow) after F14 fix lands on staging. ~25-30 min.
+- [ ] **Branch cleanup** (still owed from v1.10.0): `git push origin --delete release/v1.10.0` and `release/v1.9.0` once prod smoke completes.
+
+### Most likely next action(s) — pick one
+1. **Start F14 fix branch** (`dpdpepfg`) — open feature branch off main, edit `src/lib/resend.tsx:40-50` + `src/lib/booking/submissions.ts:441-451` + `src/lib/resend.tsx:553`. Add unit test for sendDay7Delivery gift vs self path. Open PR.
+2. **Triage F3 root cause** (`e8y823lu`) — pair-investigate with F14 since both touch listen-session model.
+3. **Sanity sweep for article cluster** (`ifpkcvln`) — could ship as a small standalone fix in parallel with F14 work since it's pure Sanity-content edit (no code change).
+
+### Process learnings from this session (carry forward)
+- **Surface-first smoke structure beats release-numbered.** 17 release-numbered journeys collapsed to 6 surface-clusters + release matrix. /my-readings is now visited once not seven times. Operator fatigue down, coverage same. Pattern transferable to other smoke-style documents.
+- **Operator "implicit green" rule cuts verification overhead.** "If I didn't explicitly say it doesn't work, assume green" lets the operator move fast through pass-state beats while still flagging fails. Apply to future smoke sessions.
+- **D1 query as fastest triage step.** F14 was diagnosed in ~5 min by querying D1 directly (`wrangler d1 execute --remote`) once the symptom + tail were clear. Avoided ~30 min of source-archaeology. Pair with the diagnostic-first rule in `project_recipient_user_id_corruption_mode.md`.
+- **PR #170 instrumentation fired correctly but on the wrong layer.** It logged the gift-redeem path where recipient_email IS read correctly. The actual bug is on the Day-7 dispatch path which has its own context-builder. Lesson: instrumentation should follow the data along its full lifecycle, not just at the write point.
+- **Fixture-driven Studio preview is a source-of-truth oracle.** The fixture state "list-populated" rendered reading names WITHOUT "The" prefix while production Sanity drifted to "The X Reading". Studio fixture matches `src/data/defaults.ts`; the prod content is the regression. Use fixture preview as the canonical reference when auditing for content drift.
+
+### Things that aren't broken but worth a glance next session
+- `MANUAL_SMOKE_TEST.md` cluster letters (A-F) don't match the `scripts/mark-journey.sh` regex `^J[0-9]+[a-z]?$`. Smoke session 2 worked around it by mapping cluster beats to J-numbers in the markers. Update the regex to accept `^[A-F][0-9]+$` so future smoke walks can mark cluster beats directly. Small follow-up dex worth filing on next visit.
+- `project_recipient_user_id_corruption_mode.md` memory file was updated 2026-06-08 to clarify F14 root cause is SEPARATE from the original 2026-05-24 `bb5fe157` corruption (which remains UNRESOLVED + unreproduced). Read the memory before any future "gift recipient didn't receive" report.
+
+---
+
+## 🛎️ 2026-06-06 — v1.10.0 SHIPPED + tagged (PR #278 squash `3464fbf`) + defaults reconcile applied to prod [SUPERSEDED by section above]
 
 ### What's the state of the world
 - On `main` at `fb80be4` (auto-close HEAD after PR #278 merge). Tag `v1.10.0` annotated + pushed at `3464fbf`.
