@@ -14,7 +14,7 @@
 - Execution tracker PRD: `MEMORY/WORK/20260612-104936_v1110-bim-fix-batch/PRD.md` (5/12).
 
 ### 🚨 Max-actions owed
-- [ ] **Set staging Worker secret `NONPROD_EMAIL_ALLOWLIST`** = a recipient test alias (unblocks G's recipient-intake email / F13). `echo "<alias>" | pnpm exec wrangler secret put NONPROD_EMAIL_ALLOWLIST --env staging`.
+- [ ] **DO NOT set a new secret yet — REVIEW env_guard allowlist sprawl first (dex `9joewxu4`).** Sub-PR G added `NONPROD_EMAIL_ALLOWLIST`, a 4th allowlist config (static list + `NOTIFICATION_EMAIL` + `ALLOWED_PREVIEW_RECIPIENTS` + this). Max flagged the sprawl. Before setting any secret: decide whether (a) the recipient can use a `maxgertzen+...` alias so existing +suffix stripping covers it (zero new config), (b) consolidate the 4 mechanisms, or (c) keep + document. May revert G's env-var to a simpler mechanism on `release/v1.11.0` before release→main. Only after that decision does the F13 recipient-intake email get unblocked.
 - [ ] **Real-browser smoke staging**: DatePicker month dropdown, listen PDF download, article-free titles + OC email body. Closes the loop that opened this session.
 - [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
 - [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
