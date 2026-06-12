@@ -110,16 +110,21 @@ export default async function ListenPage({
     return <ListenView copy={copy} state={{ kind: "checkEmail", submissionId: id }} />;
   }
 
-  if (search.error === "rested") {
-    return <ListenView copy={copy} state={{ kind: "rested", submissionId: id }} />;
-  }
-
-  if (search.error === "throttled") {
-    return <ListenView copy={copy} state={{ kind: "throttled", submissionId: id }} />;
-  }
-
   const submission = session ? await findSubmissionById(id) : null;
   const state = resolveAuthenticatedState({ id, session, submission, welcome: search.welcome });
+
+  // A valid, authorized session outranks a stale ?error left behind by a
+  // re-clicked or already-consumed magic link (the verify route 303s to
+  // ?error=rested on every failure mode). Only surface the error cards when the
+  // visitor is genuinely unauthenticated for this submission (state === signIn).
+  if (state.kind === "signIn") {
+    if (search.error === "rested") {
+      return <ListenView copy={copy} state={{ kind: "rested", submissionId: id }} />;
+    }
+    if (search.error === "throttled") {
+      return <ListenView copy={copy} state={{ kind: "throttled", submissionId: id }} />;
+    }
+  }
 
   // New-device notice detection. Fires only when the session is valid AND the
   // submission belongs to the session user AND the current UA-hash differs
