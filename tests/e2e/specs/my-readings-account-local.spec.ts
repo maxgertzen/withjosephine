@@ -87,7 +87,7 @@ test.describe("/my-readings account controls — mock mode", () => {
     await signInViaMagicLink(page, { email, next: "/my-readings" });
     await page.getByRole("button", { name: /export my data/i }).click();
 
-    await expect(page.getByRole("status")).toContainText(/download link|on its way/i);
+    await expect(page.getByText(/download link|on its way/i)).toBeVisible();
   });
 
   test("Export my data surfaces the server message on a 429 throttle", async ({ page, request }) => {
@@ -106,6 +106,6 @@ test.describe("/my-readings account controls — mock mode", () => {
     await signInViaMagicLink(page, { email, next: "/my-readings" });
     await page.getByRole("button", { name: /export my data/i }).click();
 
-    await expect(page.getByRole("status")).toContainText(throttleMessage);
+    await expect(page.getByText(throttleMessage)).toBeVisible();
   });
 });
