@@ -1,15 +1,16 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-12 — v1.11.0 arc: 5 of 13 sub-PRs shipped (A,B,I,M,G,H); staging deployed + migrations applied
+## 🛎️ 2026-06-12 — v1.11.0 arc: 8 of 13 sub-PRs shipped (A,B,I,M,G,H,K,L) + 9joewxu4 resolved; 4 remain (J,F,E,C,D)
 
 ### State of the world
-- `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `8b76921`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
+- `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `1104671`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
+- **Latest session (2026-06-12 eve) shipped 3 more: `9joewxu4` (#284 `1110ccb`, env_guard allowlist — REMOVED Sub-PR G's `NONPROD_EMAIL_ALLOWLIST`, no new secret), K (#285 `becc393`, listen filenames), L (#286 `9af0f08`, gift copy + L1 by-design).** See Max-actions + Remaining sub-PRs sections below for what's next. dex all closed; CHANGELOG current.
 - Shipped to `release/v1.11.0` this session (all CI-green, merged):
   - **A** (F14 gift Day-7 routing) — prior session, `898a0a2` / PR #279.
   - **B** article cluster — PR #280 `38fc38f`. Schema guard + idempotent migration. **Article migration RUN on staging** (titles now "Soul Blueprint"/"Birth Chart Reading"/"Akashic Record Reading"). **Prod article migration still DEFERRED** to release→main gate (plan D6).
   - **I** mobile UI batch — PR #281 `b2a8c07`. DatePicker month-dropdown width+overflow, PDF-loader-stuck (next/link `useLinkStatus`), intake footer, library card. **Live on staging.** 2 new mobile stories need a real-browser eyeball.
   - **M** price reconcile — dex `jbc5n109` closed. **Prod Birth Chart price patched $99→$89** (verified). CLAUDE.md + memory now $129/$89/$79.
-  - **G** env_guard — PR #282 `62e8ed8`. Config-driven `NONPROD_EMAIL_ALLOWLIST` (no test-code in prod).
+  - **G** env_guard — PR #282 `62e8ed8`. Config-driven `NONPROD_EMAIL_ALLOWLIST`. **SUPERSEDED: #284 (`1110ccb`) removed this mechanism — see `9joewxu4` resolution; G's `parseEmailList` extraction kept.**
   - **H** orphan fields + detector — PR #283 `8b76921`. **OC orphan-unset migration RUN on staging + prod** (validator schema-drift 8→4). Detector gap closed (stale contract mirror). New follow-up `bhkknsl6` for the 4 remaining gift-confirmation orphans (non-fatal drift).
 - Execution tracker PRD: `MEMORY/WORK/20260612-104936_v1110-bim-fix-batch/PRD.md` (5/12).
 
