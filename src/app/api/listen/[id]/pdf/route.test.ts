@@ -16,7 +16,10 @@ const ASSET = {
   voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
   pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
   readingSlug: "soul-blueprint",
+  readingName: "Soul Blueprint",
   submissionId: "sub_1",
+  firstName: "Test",
+  lastName: "User",
 };
 
 const fetchMock = vi.fn();
@@ -33,7 +36,7 @@ afterEach(() => {
 });
 
 describe("GET /api/listen/[id]/pdf", () => {
-  it("returns the upstream body with Content-Disposition: attachment", async () => {
+  it("returns the upstream body with Content-Disposition: attachment and human-readable name", async () => {
     fetchMock.mockResolvedValue(
       new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
     );
@@ -43,16 +46,24 @@ describe("GET /api/listen/[id]/pdf", () => {
       { params },
     );
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="soul-blueprint-reading-sub_1.pdf"',
-    );
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain("attachment");
+    expect(disposition).toContain('filename="Test User Soul Blueprint.pdf"');
+    expect(disposition).toContain("filename*=UTF-8''Test%20User%20Soul%20Blueprint.pdf");
     expect(response.headers.get("content-type")).toBe("application/pdf");
   });
 
-  it("encodes the reading slug into the filename", async () => {
+  it("uses name fields from a different reading when asset context carries them", async () => {
     gateMock.mockResolvedValue({
       ok: true,
-      asset: { ...ASSET, readingSlug: "akashic-record", submissionId: "sub_42" },
+      asset: {
+        ...ASSET,
+        readingSlug: "akashic-record",
+        readingName: "Akashic Record Reading",
+        submissionId: "sub_42",
+        firstName: "Ada",
+        lastName: "Lovelace",
+      },
     });
     fetchMock.mockResolvedValue(
       new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
@@ -62,9 +73,30 @@ describe("GET /api/listen/[id]/pdf", () => {
       new Request("https://withjosephine.com/api/listen/sub_42/pdf"),
       { params: Promise.resolve({ id: "sub_42" }) },
     );
-    expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="akashic-record-reading-sub_42.pdf"',
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain('filename="Ada Lovelace Akashic Record Reading.pdf"');
+  });
+
+  it("falls back to reading slug when name fields are absent", async () => {
+    gateMock.mockResolvedValue({
+      ok: true,
+      asset: {
+        ...ASSET,
+        firstName: null,
+        lastName: null,
+        readingName: null,
+      },
+    });
+    fetchMock.mockResolvedValue(
+      new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
     );
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("https://withjosephine.com/api/listen/sub_1/pdf"),
+      { params },
+    );
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain('filename="soul-blueprint.pdf"');
   });
 
   it("403 on gate denial without fetching", async () => {
@@ -81,7 +113,11 @@ describe("GET /api/listen/[id]/pdf", () => {
   it("returns 404 when gate.asset.pdfUrl is null", async () => {
     gateMock.mockResolvedValue({
       ok: true,
-      asset: { voiceNoteUrl: null, pdfUrl: null, readingSlug: "soul-blueprint", submissionId: "sub_1" },
+      asset: {
+        ...ASSET,
+        voiceNoteUrl: null,
+        pdfUrl: null,
+      },
     });
     const { GET } = await import("./route");
     const response = await GET(

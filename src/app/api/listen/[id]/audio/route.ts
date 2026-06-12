@@ -26,6 +26,9 @@ export async function GET(
   }
 
   const filename = buildListenFilename({
+    firstName: gate.asset.firstName,
+    lastName: gate.asset.lastName,
+    readingName: gate.asset.readingName,
     readingSlug: gate.asset.readingSlug,
     submissionId: gate.asset.submissionId,
     sourceUrl: gate.asset.voiceNoteUrl,

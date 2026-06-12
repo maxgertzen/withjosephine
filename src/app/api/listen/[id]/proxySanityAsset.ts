@@ -56,7 +56,10 @@ type AssetContext = {
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
   readingSlug: string;
+  readingName: string | null;
   submissionId: string;
+  firstName: string | null;
+  lastName: string | null;
 };
 
 type GateResult =
@@ -125,7 +128,10 @@ export async function gateListenAssetRequest(
       voiceNoteUrl: ctx.voiceNoteUrl,
       pdfUrl: ctx.pdfUrl,
       readingSlug: ctx.readingSlug,
+      readingName: ctx.readingName,
       submissionId: ctx.submissionId,
+      firstName: ctx.firstName,
+      lastName: ctx.lastName,
     },
   };
 }
