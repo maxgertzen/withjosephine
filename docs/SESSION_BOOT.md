@@ -19,8 +19,10 @@
 - [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
 - [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
 
-### Remaining v1.11.0 sub-PRs (7): D, E, F, C, J, K, L
-- **D** `z8dk78tn` GDPR Art.20 export customer UI · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **F** `29fuqdga` Stripe gift email prefill · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context) · **J** `9sdtjug4`+`5r2or1ff` Studio surfaces · **K** `lb3dn5t0` asset filenames · **L** `7azl631f`+`i31g3i01` fresh-link subject (keep "Open your reading") + gifts copy.
+### Remaining v1.11.0 sub-PRs (5): D, E, F, C, J — plus L (editorial)
+- **K** `lb3dn5t0` asset filenames — ✅ SHIPPED PR #285 `becc393` (human-readable download filenames, RFC 6266 header, hot-path preserved).
+- **D** `z8dk78tn` GDPR Art.20 export customer UI · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **F** `29fuqdga` Stripe gift email prefill · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context) · **J** `9sdtjug4`+`5r2or1ff` Studio surfaces.
+- **L** `7azl631f`+`i31g3i01` — NOT a code PR: both are editorial copy decisions on Sanity-editable email content (Max/Becky call). L1 = rested-link fresh-link subject "Open your reading" vs library spec "Sign in to your library" (likely by-design, investigate which template fires + document). L2 = gift-confirmation "your gifts page" anchor after v1.4.0 /my-gifts→/my-readings unification (rename vs keep).
 - Then: cumulative `/code-review` + `/simplify` on `release/v1.11.0 → main` diff → merge PR → tag `v1.11.0` → CHANGELOG.
 
 ### ⚠️ Process learnings (carry forward)
