@@ -160,6 +160,36 @@ describe("/listen/[id] page logic", () => {
     expect(props.state.kind).toBe("throttled");
   });
 
+  it("7-day remember-me: owner session bypasses a stale ?error=rested to delivered", async () => {
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
+    submissionMock.mockResolvedValue(OWNED_DELIVERED);
+
+    const props = await getPageProps({ search: { error: "rested" } });
+
+    expect(props.state.kind).toBe("delivered");
+  });
+
+  it("7-day remember-me: owner session bypasses a stale ?error=throttled to delivered", async () => {
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
+    submissionMock.mockResolvedValue(OWNED_DELIVERED);
+
+    const props = await getPageProps({ search: { error: "throttled" } });
+
+    expect(props.state.kind).toBe("delivered");
+  });
+
+  it("rested still shows when ?error=rested and session maps to a DIFFERENT user", async () => {
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_other", sessionId: "sess_x", elevatedAt: null });
+    submissionMock.mockResolvedValue(OWNED_DELIVERED);
+
+    const props = await getPageProps({ search: { error: "rested" } });
+
+    expect(props.state.kind).toBe("rested");
+  });
+
   it("State 5d: renders asset-trouble card when owner session but submission has no assets yet", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });

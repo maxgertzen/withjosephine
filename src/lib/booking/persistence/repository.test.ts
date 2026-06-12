@@ -8,6 +8,7 @@ import {
   type CreateSubmissionInput,
   deleteSubmission,
   findSubmissionById,
+  findSubmissionListenContext,
   findUnclaimedGiftByTokenHash,
   insertFinancialRecord,
   listAllReferencedPhotoKeys,
@@ -528,6 +529,59 @@ describe("repository against in-memory SQLite", () => {
         lockUntilMs: now + 60_100,
       });
       expect(next).toBe(true);
+    });
+  });
+
+  describe("findSubmissionListenContext", () => {
+    it("returns readingName, firstName, and lastName from the row", async () => {
+      await createSubmission({
+        ...BASE_INPUT,
+        id: "sub_listen_1",
+        readingName: "Soul Blueprint",
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First name", fieldType: "shortText", value: "Test" },
+          { fieldKey: "last_name", fieldLabelSnapshot: "Last name", fieldType: "shortText", value: "User" },
+        ],
+      });
+      const ctx = await findSubmissionListenContext("sub_listen_1");
+      expect(ctx).not.toBeNull();
+      expect(ctx?.readingSlug).toBe("soul-blueprint");
+      expect(ctx?.readingName).toBe("Soul Blueprint");
+      expect(ctx?.firstName).toBe("Test");
+      expect(ctx?.lastName).toBe("User");
+    });
+
+    it("returns null firstName and lastName when responses lack those fields", async () => {
+      await createSubmission({
+        ...BASE_INPUT,
+        id: "sub_listen_2",
+        readingName: "Birth Chart",
+        responses: [
+          { fieldKey: "anything_else", fieldLabelSnapshot: "Anything else?", fieldType: "longText", value: "No" },
+        ],
+      });
+      const ctx = await findSubmissionListenContext("sub_listen_2");
+      expect(ctx?.firstName).toBeNull();
+      expect(ctx?.lastName).toBeNull();
+      expect(ctx?.readingName).toBe("Birth Chart");
+    });
+
+    it("returns null readingName when the column is null", async () => {
+      await createSubmission({
+        ...BASE_INPUT,
+        id: "sub_listen_3",
+        readingName: null,
+        responses: [
+          { fieldKey: "first_name", fieldLabelSnapshot: "First name", fieldType: "shortText", value: "Ada" },
+        ],
+      });
+      const ctx = await findSubmissionListenContext("sub_listen_3");
+      expect(ctx?.readingName).toBeNull();
+      expect(ctx?.firstName).toBe("Ada");
+    });
+
+    it("returns null when submission does not exist", async () => {
+      expect(await findSubmissionListenContext("does-not-exist")).toBeNull();
     });
   });
 });

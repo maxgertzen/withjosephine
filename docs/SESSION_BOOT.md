@@ -1,67 +1,67 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-10 — v1.11.0 arc open; Commit 0 + Sub-PR A (F14) shipped to release branch; awaiting ISC-47 manual gate before Sub-PR G
+## 🛎️ 2026-06-13 — v1.11.0 arc COMPLETE on release; `release/v1.11.0 → main` PR open, HOLDING for Max real-browser smoke
 
-### What's the state of the world
-- `main` at `c8f78b5` (bookkeeping commit from 2026-06-08 smoke session — 19 dex tickets + smoke restructure + `scripts/force-cron.sh`).
-- `release/v1.11.0` cut from `c8f78b5` and pushed; current HEAD `e28d29c` carries:
-  - `eebe396` — Commit 0: `ci.yml` extended (4 ref-lists wired for `release/v1.11.0`)
-  - `898a0a2` — Sub-PR A squash merge (#279): F14 gift Day-7 + Order Confirmation routing fix + audit-log redaction fix from `/simplify`
-- Sub-PR A SHIPPED end-to-end on release branch:
-  - 5 sendDay7Delivery tests + 2 sendOrderConfirmation tests + 2 buildSubmissionContext tests + 1 admin-audit-log test (all green)
-  - Local `pnpm test` on `release/v1.11.0`: 233 files / 2328 tests pass
-  - Release-branch `ci.yml`: all 6 jobs SUCCESS (lint, test, storybook, security-audit, deploy-staging, sanity-validate-staging) at 13:34Z–13:41Z UTC
-  - F14 fix LIVE on `staging.withjosephine.com` since 2026-06-08 ~13:40Z
-  - e2e-sandbox manually dispatched on `release/v1.11.0`: PASSED (one Stripe flake on gift-roundtrip, retried green — same pattern as PR #279)
-- PRD: `MEMORY/WORK/20260608-120435_v1110-fix-arc-plan/PRD.md`, 55/55 ISC verified, phase: complete. Plan deliverable for full v1.11.0 arc (13 sub-PRs A–M).
+### State of the world
+- All 13 v1.11.0 sub-PRs are now on `release/v1.11.0`. This session shipped the last 4 + closed J:
+  - **C** `e8y823lu` (listen 7-day remember-me) — PR #287 `9c570e6`. A valid session now outranks a stale `?error=rested` (re-clicked/consumed magic link). Fix gates error cards behind `state.kind === "signIn"`; 3 regression tests.
+  - **F** `29fuqdga` (gift Stripe prefill) — PR #288 `943e5ad`. Added `prefilled_email` (purchaser's own email) to the gift Payment Link, **reversing locked B5.15** per Max; guard test flipped. Self-purchase already prefilled.
+  - **E** `ia4v3hck` + `87n9qmbj` (library identity + sign-out + nav) — PR #289 `6773c65`. Authed top-bar shows owner email + Sign out (`POST /api/auth/sign-out` revokes current session row + clears cookie + 303). Redundant Home link dropped (wordmark is sole home affordance).
+  - **D** `z8dk78tn` (GDPR Art.20 export UI) — PR #290 `66237e9`. Self-service "Export my data" on /my-readings -> existing `/api/privacy/export` (202/429/413 handled). Privacy policy **fallback** amended; live Sanity legalPage copy update owed (Max-action).
+  - **J** `9sdtjug4` + `5r2or1ff` — **closed confirm-by-existence (no code)**. Per-service preview + recipient picker already shipped. Admin token KEPT (only gate on a public Worker route; env-var auto-fill rejected: would bake the secret into the public Studio bundle).
+- Each sub-PR: own feature branch -> PR -> squash-merge, CI-green, **merged on green** per Max's call.
+- **Cumulative `/code-review` (high) + 4-agent `/simplify` run on the full `origin/main...origin/release/v1.11.0` diff.** No blocking findings. 2 quality deferrals filed: `0i9qk3m5` (extract shared buildPaymentUrl helper) + `ktq5io2l` (dedupe authed-layout session lookup via React cache()). ExportDataButton state-machine tidy considered + skipped (preference).
+- Execution PRD: `MEMORY/WORK/20260612-182422_v1110-remaining-subprs-cfedj/PRD.md`.
 
-### 🚨 Max-actions still owed for the arc
-- [ ] **ISC-47 manual smoke on deployed staging (BLOCKING Sub-PR G):** walk B1 → B2 → B3 on `staging.withjosephine.com`, Becky uploads audio + PDF + sets deliveredAt, run `bash scripts/force-cron.sh email-day-7-deliver <id>` from `www/`, confirm Day-7 + Order Confirmation emails land at RECIPIENT address (not purchaser). Per `feedback_real_browser_smoke_before_ship_claim` — unit tests + sandbox e2e prove no regression, but the recipient-inbox assertion is the actual proof F14 is fixed.
-- [ ] **Sub-PR G env_guard decision (blocks Sub-PR G start):** choose between (a) widen static allowlist with the recipient test alias, (b) add `gift && staging` bypass with audit log, (c) move allowlist to a Sanity singleton Becky can edit. F13 (recipient-intake-received email) was blocked by env_guard + F14's misroute; with A shipped, G is the second half of unblocking the gift Day-7 chain.
-- [ ] **Sub-PR M decision (F11 price):** is Birth Chart $89 (staging) or $99 (CLAUDE.md) canonical? Pure docs OR pure Sanity edit.
-- [ ] **Sub-PR L decision (F7 fresh-link subject):** keep "Open your reading" (current single-reading direct flow) or unify to "Sign in to your library" (J13d variant)? Default if deferred: keep current.
-- [ ] **Sub-PR C scope agreement (F3):** time-box diagnostic at 4 hours and defer code change to v1.11.1 if root cause not nailed within budget — agreed in PRD D3 but worth re-confirming when C starts.
-- [ ] **Branch cleanup (still owed from v1.10.0 + v1.9.0):** `git push origin --delete release/v1.10.0 release/v1.9.0` once Max real-browser smokes both releases on prod.
+### 🚨 Max-actions owed (release→main gate)
+- [ ] **Real-browser smoke on `release/v1.11.0`** (PR open to main): listen revisit (rested bypass), gift checkout email prefilled, /my-readings identity chip + Sign out, "Export my data" flow, privacy-policy link. HOLDING merge on this per `feedback_let_user_verify_before_merge`.
+- [ ] **Merge `release/v1.11.0 → main` + tag `v1.11.0`** after smoke. Then add the v1.11.0 CHANGELOG release entry at tag time.
+- [ ] **Deferred content migrations (run at the gate, after Day-7 queue drain):**
+  - **B prod article strip**: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply`
+  - **L2 gift-confirmation copy**: `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod
+  - **NEW — privacy policy Sanity copy**: the live privacy `legalPage` renders Sanity `doc.body`; update that copy to mention the self-service export (code only amended the fallback).
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0` (+ `release/v1.11.0` after merge).
 
-### v1.11.0 sub-PR roster (Plan from 2026-06-08 PRD)
-
-| Sub-PR | Status | Dex | Surface |
-|---|---|---|---|
-| Commit 0 | ✅ SHIPPED `eebe396` | n/a | `ci.yml` ref-list extension |
-| **A** F14 gift Day-7 + OC routing | ✅ SHIPPED `898a0a2` (PR #279) | `dpdpepfg` | `src/lib/resend.tsx` + `src/lib/booking/submissions.ts` + audit-log fix |
-| **G** env_guard recipient allowlist | ⏸ BLOCKED on decision | `vdg6rdy9` | `src/lib/env-guard.ts` |
-| **B** Article + double-noun cluster | queued | `ifpkcvln` | Sanity service titles + day-7 template + validation rule |
-| **C** Listen 7-day remember-me | queued (diagnostic-first) | `e8y823lu` | listen route + session cookie |
-| **D** GDPR Art.20 customer UI | queued | `z8dk78tn` | new /my-readings export button |
-| **E** Library identity + sign-out (folds F16) | queued | `ia4v3hck` + `87n9qmbj` | top-bar + revoke route |
-| **F** Stripe gift email prefill | queued | `29fuqdga` | Payment Link redirect builder |
-| **H** Sanity orphan fields + detector | queued | `vz3vp14x` | unset 4 orphan fields + extend drift detector |
-| **I** Mobile UI batch | queued | `a46hqmr9`+`t8jgtfym`+`nie5h9li`+`4ybq539f` | DatePicker, PDF loader, intake footer, library card |
-| **J** Studio surface | queued | `9sdtjug4` + `5r2or1ff` | booking preview + send-preview UX |
-| **K** Asset filenames | queued | `lb3dn5t0` | R2 Content-Disposition |
-| **L** Copy nits (post F16 fold into E) | queued | `7azl631f` + `i31g3i01` | fresh-link subject + gifts page copy |
-| **M** Birth Chart price reconcile | queued | `jbc5n109` | $89 vs $99 decision |
-
-### Most likely next session pickup
-1. **Recommended:** Max does ISC-47 manual walk on staging (~10 min), confirms F14 routes correctly, then makes Sub-PR G env_guard decision. Sub-PR G is XS-S (env_guard config change + 1-2 tests).
-2. **Parallel-safe alternate:** open Sub-PR B (Sanity article cluster) — no decision needed, pure Sanity-content + schema validation rule + template rewrite. Ships independently of A.
-3. **Parallel-safe alternate:** open Sub-PR H (Sanity orphan fields + detector) — small Sanity Studio + script update, fully scoped in plan.
-
-### Process learnings from this session (carry forward)
-- **`/code-review` and `/simplify` MUST be invoked as actual `Skill` tool calls pre-push, not as self-review against checklist text.** The Sentry `code-review` skill prints reference guidance; running it without then invoking the project-level reviewer leaves the binding rule (`feedback_code_review_and_simplify_pre_push`) un-honored. Caught 2026-06-08 by Max — `/simplify` then surfaced a real audit-log bug in `resendCustomerEmail.ts:75` post-F14 that would have shipped silently.
-- **Premortem item that landed early:** the cumulative-review prediction (item #6: "structural extraction needed when N+1 senders hit the same `to: submission.email` pattern") materialised on a single sub-PR via the cross-impact audit catching `sendOrderConfirmation` alongside `sendDay7Delivery`. Generalising `resolveDeliveryAddress` to a structural shape (instead of `SubmissionContext`-only) closed the same gap on the audit-log path. Pattern: when a fix touches a shared type, audit grep on the broader symbol surface, not just the originally-reported callsite.
-- **Stripe Checkout sandbox-mode flakes are a known pattern.** Both `gift-roundtrip.spec.ts:94` and `v120-smoke-validation-roundtrip.spec.ts:69` time out on Stripe-side interactions intermittently. Retry resolves. Don't investigate as a regression unless it fails on retry #2 too. Comparable behaviour on PR #279 + the manual e2e-sandbox dispatch on `release/v1.11.0`.
-- **Sub-PR A's e2e extension deferred deliberately.** The sandbox-mode gift-roundtrip spec does not assert the recipient inbox; extending it requires mocked Resend in cron context which has DryRun-path complexity per `feedback_resend_dry_run_paths`. ISC-47 manual gate is the actual proof-of-fix. Document this pattern: code-only sub-PRs ship with unit tests + sandbox-e2e regression coverage, and the user-facing observable lands in manual smoke not in CI.
-
-### Things that aren't broken but worth a glance next session
-- **dex audit clean** at session close; 25 ready + several epics. v1.11.0 arc consumes 19 of those.
-- **`scripts/force-cron.sh`** is the new helper for forcing cron routes on staging or prod via cloudflared. Use it for Day-7 verification on ISC-47. One-time setup `brew install cloudflared` + `cloudflared access login https://staging.withjosephine.com` if not already done.
-- **`feat/v1110-gift-day7-recipient-routing` branch deleted** (origin and local) post-merge. Don't recreate.
-- **`release/v1.10.0` and `release/v1.9.0`** still alive on remote per deliberate hold for hotfix optionality. Cleanup pending Max smoke confirmation.
+### ⚠️ Environment note (carry forward)
+- Local `pnpm` v11.6.0 ignores the `pnpm.onlyBuiltDependencies` allowlist, so **better-sqlite3 native bindings don't build locally** — the D1-integration suite (`listenSession.test.ts` etc.) fails locally with "Could not locate the bindings file". Confirmed identical on bare HEAD; CI builds native deps and runs green. Verify DB-integration tests via CI, or approve the build. Companion to `feedback_pnpm_install_drops_lockfile_overrides`.
 
 ---
 
-## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL [SUPERSEDED by section above]
+## 🛎️ 2026-06-12 — v1.11.0 arc: 8 of 13 sub-PRs shipped (A,B,I,M,G,H,K,L) + 9joewxu4 resolved; 4 remain (J,F,E,C,D) [SUPERSEDED by section above]
+
+### State of the world
+- `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `1104671`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
+- **Latest session (2026-06-12 eve) shipped 3 more: `9joewxu4` (#284 `1110ccb`, env_guard allowlist — REMOVED Sub-PR G's `NONPROD_EMAIL_ALLOWLIST`, no new secret), K (#285 `becc393`, listen filenames), L (#286 `9af0f08`, gift copy + L1 by-design).** See Max-actions + Remaining sub-PRs sections below for what's next. dex all closed; CHANGELOG current.
+- Shipped to `release/v1.11.0` this session (all CI-green, merged):
+  - **A** (F14 gift Day-7 routing) — prior session, `898a0a2` / PR #279.
+  - **B** article cluster — PR #280 `38fc38f`. Schema guard + idempotent migration. **Article migration RUN on staging** (titles now "Soul Blueprint"/"Birth Chart Reading"/"Akashic Record Reading"). **Prod article migration still DEFERRED** to release→main gate (plan D6).
+  - **I** mobile UI batch — PR #281 `b2a8c07`. DatePicker month-dropdown width+overflow, PDF-loader-stuck (next/link `useLinkStatus`), intake footer, library card. **Live on staging.** 2 new mobile stories need a real-browser eyeball.
+  - **M** price reconcile — dex `jbc5n109` closed. **Prod Birth Chart price patched $99→$89** (verified). CLAUDE.md + memory now $129/$89/$79.
+  - **G** env_guard — PR #282 `62e8ed8`. Config-driven `NONPROD_EMAIL_ALLOWLIST`. **SUPERSEDED: #284 (`1110ccb`) removed this mechanism — see `9joewxu4` resolution; G's `parseEmailList` extraction kept.**
+  - **H** orphan fields + detector — PR #283 `8b76921`. **OC orphan-unset migration RUN on staging + prod** (validator schema-drift 8→4). Detector gap closed (stale contract mirror). New follow-up `bhkknsl6` for the 4 remaining gift-confirmation orphans (non-fatal drift).
+- Execution tracker PRD: `MEMORY/WORK/20260612-104936_v1110-bim-fix-batch/PRD.md` (5/12).
+
+### 🚨 Max-actions owed
+- [x] **env_guard allowlist sprawl RESOLVED (dex `9joewxu4`, PR #284 squash `1110ccb`).** No new secret needed. Sub-PR G's `NONPROD_EMAIL_ALLOWLIST` removed: the production self-gift guard strips `+suffix` (via `ownEmailKey`), so plus-aliases can't be two gift parties, but the two addresses already on the static allowlist (distinct keys) serve as purchaser+recipient for staging gift smoke with zero config. Send path back to 2 sources. `vdg6rdy9` superseded (no `mgertzen2` added). F13 recipient-intake email is unblocked using a static-allowlisted recipient for smoke.
+- [ ] **Real-browser smoke staging**: DatePicker month dropdown, listen PDF download, article-free titles + OC email body. Closes the loop that opened this session.
+- [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
+- [ ] **Gift-confirmation copy migration (L2)**: run `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod (idempotent; no-op if Sanity unset). Reconciles live "your gifts page" → "your library" overrides on the 2 gift-confirmation singletons.
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
+
+### Remaining v1.11.0 sub-PRs (4): J, F, E, C
+- **K** `lb3dn5t0` asset filenames — ✅ SHIPPED PR #285 `becc393`.
+- **L** `i31g3i01`+`7azl631f` — ✅ SHIPPED PR #286 `9af0f08` (L2 "your library" copy + migration script; L1 confirmed by-design, no code). L2 Sanity content migration owed as Max-action above.
+- **J** `9sdtjug4`+`5r2or1ff` Studio surfaces · **F** `29fuqdga` Stripe gift email prefill · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context).
+- **D** `z8dk78tn` GDPR Art.20 export customer UI — order TBD with the above.
+- Then: cumulative `/code-review` + `/simplify` on `release/v1.11.0 → main` diff → merge PR → tag `v1.11.0` → CHANGELOG.
+
+### ⚠️ Process learnings (carry forward)
+- **Worktree-isolated implementer agents LEAK their feat branch into the main checkout** this session (B/I/G/H all did). NEVER run `git reset --hard`/`checkout` in the main checkout while a background agent is live there — it collided with the H agent and required a cherry-pick recovery. New memory: `feedback_no_git_mutations_during_background_agents`. Consider non-worktree agents with explicit `git checkout -b` briefs, or serialize.
+- `dex create`'d tickets die in a `git reset --hard` (lost `n88h1bc0` → re-filed as `bhkknsl6`). Commit dex bookkeeping promptly.
+
+---
+
+## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL
 
 ### What's the state of the world
 - On `main` at `fb80be4` (unchanged from 2026-06-06 v1.10.0 merge). No new commits this session.
