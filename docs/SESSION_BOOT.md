@@ -1,5 +1,34 @@
 # Session Boot — Active State
 
+## 🛎️ 2026-06-12 — v1.11.0 arc: 5 of 13 sub-PRs shipped (A,B,I,M,G,H); staging deployed + migrations applied
+
+### State of the world
+- `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `8b76921`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
+- Shipped to `release/v1.11.0` this session (all CI-green, merged):
+  - **A** (F14 gift Day-7 routing) — prior session, `898a0a2` / PR #279.
+  - **B** article cluster — PR #280 `38fc38f`. Schema guard + idempotent migration. **Article migration RUN on staging** (titles now "Soul Blueprint"/"Birth Chart Reading"/"Akashic Record Reading"). **Prod article migration still DEFERRED** to release→main gate (plan D6).
+  - **I** mobile UI batch — PR #281 `b2a8c07`. DatePicker month-dropdown width+overflow, PDF-loader-stuck (next/link `useLinkStatus`), intake footer, library card. **Live on staging.** 2 new mobile stories need a real-browser eyeball.
+  - **M** price reconcile — dex `jbc5n109` closed. **Prod Birth Chart price patched $99→$89** (verified). CLAUDE.md + memory now $129/$89/$79.
+  - **G** env_guard — PR #282 `62e8ed8`. Config-driven `NONPROD_EMAIL_ALLOWLIST` (no test-code in prod).
+  - **H** orphan fields + detector — PR #283 `8b76921`. **OC orphan-unset migration RUN on staging + prod** (validator schema-drift 8→4). Detector gap closed (stale contract mirror). New follow-up `bhkknsl6` for the 4 remaining gift-confirmation orphans (non-fatal drift).
+- Execution tracker PRD: `MEMORY/WORK/20260612-104936_v1110-bim-fix-batch/PRD.md` (5/12).
+
+### 🚨 Max-actions owed
+- [ ] **Set staging Worker secret `NONPROD_EMAIL_ALLOWLIST`** = a recipient test alias (unblocks G's recipient-intake email / F13). `echo "<alias>" | pnpm exec wrangler secret put NONPROD_EMAIL_ALLOWLIST --env staging`.
+- [ ] **Real-browser smoke staging**: DatePicker month dropdown, listen PDF download, article-free titles + OC email body. Closes the loop that opened this session.
+- [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
+
+### Remaining v1.11.0 sub-PRs (7): D, E, F, C, J, K, L
+- **D** `z8dk78tn` GDPR Art.20 export customer UI · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **F** `29fuqdga` Stripe gift email prefill · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context) · **J** `9sdtjug4`+`5r2or1ff` Studio surfaces · **K** `lb3dn5t0` asset filenames · **L** `7azl631f`+`i31g3i01` fresh-link subject (keep "Open your reading") + gifts copy.
+- Then: cumulative `/code-review` + `/simplify` on `release/v1.11.0 → main` diff → merge PR → tag `v1.11.0` → CHANGELOG.
+
+### ⚠️ Process learnings (carry forward)
+- **Worktree-isolated implementer agents LEAK their feat branch into the main checkout** this session (B/I/G/H all did). NEVER run `git reset --hard`/`checkout` in the main checkout while a background agent is live there — it collided with the H agent and required a cherry-pick recovery. New memory: `feedback_no_git_mutations_during_background_agents`. Consider non-worktree agents with explicit `git checkout -b` briefs, or serialize.
+- `dex create`'d tickets die in a `git reset --hard` (lost `n88h1bc0` → re-filed as `bhkknsl6`). Commit dex bookkeeping promptly.
+
+---
+
 ## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL
 
 ### What's the state of the world
