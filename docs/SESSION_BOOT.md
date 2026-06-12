@@ -1,6 +1,33 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-12 — v1.11.0 arc: 8 of 13 sub-PRs shipped (A,B,I,M,G,H,K,L) + 9joewxu4 resolved; 4 remain (J,F,E,C,D)
+## 🛎️ 2026-06-13 — v1.11.0 arc COMPLETE on release; `release/v1.11.0 → main` PR open, HOLDING for Max real-browser smoke
+
+### State of the world
+- All 13 v1.11.0 sub-PRs are now on `release/v1.11.0`. This session shipped the last 4 + closed J:
+  - **C** `e8y823lu` (listen 7-day remember-me) — PR #287 `9c570e6`. A valid session now outranks a stale `?error=rested` (re-clicked/consumed magic link). Fix gates error cards behind `state.kind === "signIn"`; 3 regression tests.
+  - **F** `29fuqdga` (gift Stripe prefill) — PR #288 `943e5ad`. Added `prefilled_email` (purchaser's own email) to the gift Payment Link, **reversing locked B5.15** per Max; guard test flipped. Self-purchase already prefilled.
+  - **E** `ia4v3hck` + `87n9qmbj` (library identity + sign-out + nav) — PR #289 `6773c65`. Authed top-bar shows owner email + Sign out (`POST /api/auth/sign-out` revokes current session row + clears cookie + 303). Redundant Home link dropped (wordmark is sole home affordance).
+  - **D** `z8dk78tn` (GDPR Art.20 export UI) — PR #290 `66237e9`. Self-service "Export my data" on /my-readings -> existing `/api/privacy/export` (202/429/413 handled). Privacy policy **fallback** amended; live Sanity legalPage copy update owed (Max-action).
+  - **J** `9sdtjug4` + `5r2or1ff` — **closed confirm-by-existence (no code)**. Per-service preview + recipient picker already shipped. Admin token KEPT (only gate on a public Worker route; env-var auto-fill rejected: would bake the secret into the public Studio bundle).
+- Each sub-PR: own feature branch -> PR -> squash-merge, CI-green, **merged on green** per Max's call.
+- **Cumulative `/code-review` (high) + 4-agent `/simplify` run on the full `origin/main...origin/release/v1.11.0` diff.** No blocking findings. 2 quality deferrals filed: `0i9qk3m5` (extract shared buildPaymentUrl helper) + `ktq5io2l` (dedupe authed-layout session lookup via React cache()). ExportDataButton state-machine tidy considered + skipped (preference).
+- Execution PRD: `MEMORY/WORK/20260612-182422_v1110-remaining-subprs-cfedj/PRD.md`.
+
+### 🚨 Max-actions owed (release→main gate)
+- [ ] **Real-browser smoke on `release/v1.11.0`** (PR open to main): listen revisit (rested bypass), gift checkout email prefilled, /my-readings identity chip + Sign out, "Export my data" flow, privacy-policy link. HOLDING merge on this per `feedback_let_user_verify_before_merge`.
+- [ ] **Merge `release/v1.11.0 → main` + tag `v1.11.0`** after smoke. Then add the v1.11.0 CHANGELOG release entry at tag time.
+- [ ] **Deferred content migrations (run at the gate, after Day-7 queue drain):**
+  - **B prod article strip**: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply`
+  - **L2 gift-confirmation copy**: `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod
+  - **NEW — privacy policy Sanity copy**: the live privacy `legalPage` renders Sanity `doc.body`; update that copy to mention the self-service export (code only amended the fallback).
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0` (+ `release/v1.11.0` after merge).
+
+### ⚠️ Environment note (carry forward)
+- Local `pnpm` v11.6.0 ignores the `pnpm.onlyBuiltDependencies` allowlist, so **better-sqlite3 native bindings don't build locally** — the D1-integration suite (`listenSession.test.ts` etc.) fails locally with "Could not locate the bindings file". Confirmed identical on bare HEAD; CI builds native deps and runs green. Verify DB-integration tests via CI, or approve the build. Companion to `feedback_pnpm_install_drops_lockfile_overrides`.
+
+---
+
+## 🛎️ 2026-06-12 — v1.11.0 arc: 8 of 13 sub-PRs shipped (A,B,I,M,G,H,K,L) + 9joewxu4 resolved; 4 remain (J,F,E,C,D) [SUPERSEDED by section above]
 
 ### State of the world
 - `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `1104671`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
