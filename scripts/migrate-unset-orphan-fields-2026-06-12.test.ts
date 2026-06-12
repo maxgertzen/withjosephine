@@ -144,13 +144,23 @@ describe("run — apply mode (idempotency)", () => {
     expect(mockCommit).not.toHaveBeenCalled();
   });
 
-  it("idempotent: a re-run after the first unset (fields now absent) is skipped", async () => {
+  it("idempotent: a real two-pass run unsets once, then skips with fields absent", async () => {
+    mockFetch.mockResolvedValueOnce({
+      _id: TARGET_ID,
+      _type: "emailOrderConfirmation",
+      contactLine: [{ _type: "block" }],
+      greeting: "Hi {firstName},",
+      thanksLine: [{ _type: "block" }],
+      timelineLine: [{ _type: "block" }],
+    });
+    const first = await run({ dataset: "staging", dryRun: false });
+    expect(first.action).toBe("unset");
+    expect(mockCommit).toHaveBeenCalledTimes(1);
+
     mockFetch.mockResolvedValueOnce(DOC_CLEAN);
-
-    const result = await run({ dataset: "staging", dryRun: false });
-
-    expect(result.action).toBe("skipped");
-    expect(result.fieldsFound).toEqual([]);
-    expect(mockCommit).not.toHaveBeenCalled();
+    const second = await run({ dataset: "staging", dryRun: false });
+    expect(second.action).toBe("skipped");
+    expect(second.fieldsFound).toEqual([]);
+    expect(mockCommit).toHaveBeenCalledTimes(1);
   });
 });
