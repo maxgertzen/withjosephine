@@ -59,6 +59,7 @@ export function ExportDataButton({ copy }: { copy: MyReadingsPageContent }) {
       {message ? (
         <p
           role="status"
+          data-testid="export-status"
           className={`font-body text-sm mt-4 max-w-md mx-auto ${
             status === "error" ? "text-j-rose" : "text-j-text-muted"
           }`}
