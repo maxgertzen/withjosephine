@@ -11,7 +11,19 @@ export const reading = defineType({
       name: "name",
       title: "Name",
       type: "string",
-      validation: (rule) => rule.required(),
+      description: 'The reading title without a leading article (e.g. "Soul Blueprint", not "The Soul Blueprint").',
+      validation: (rule) =>
+        rule.required().custom((value) => {
+          if (typeof value !== 'string') return true;
+          const match = /^(the|a|an)\s+(.+)$/i.exec(value);
+          if (match) {
+            return {
+              level: 'error' as const,
+              message: `Title must not start with an article. Use "${match[2]}" instead of "${value}".`,
+            };
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "slug",
