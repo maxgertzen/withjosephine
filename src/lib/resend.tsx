@@ -22,7 +22,6 @@ import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { NewDeviceNotice } from "./emails/NewDeviceNotice";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
-import { parseEmailList } from "./emails/previewRecipients";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { RecipientIntakeReceived } from "./emails/RecipientIntakeReceived";
 import { StepUpOtp } from "./emails/StepUpOtp";
@@ -129,7 +128,7 @@ async function resolveSkipReason(
     const allAllowed = recipients.every(isProductionAllowlistedRecipient);
     if (!allAllowed) {
       console.warn(
-        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or set NONPROD_EMAIL_ALLOWLIST for additional staging recipients.`,
+        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
       );
       return "env_guard";
     }
@@ -158,8 +157,6 @@ export function isProductionAllowlistedRecipient(
   if (staticList.includes(lower) || staticList.includes(withoutPlus)) return true;
   const notif = process.env.NOTIFICATION_EMAIL?.toLowerCase().trim();
   if (notif && notif === lower) return true;
-  const envList = parseEmailList(process.env.NONPROD_EMAIL_ALLOWLIST);
-  if (envList.includes(lower) || envList.includes(withoutPlus)) return true;
   return false;
 }
 
