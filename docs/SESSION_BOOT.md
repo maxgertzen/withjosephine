@@ -17,12 +17,14 @@
 - [x] **env_guard allowlist sprawl RESOLVED (dex `9joewxu4`, PR #284 squash `1110ccb`).** No new secret needed. Sub-PR G's `NONPROD_EMAIL_ALLOWLIST` removed: the production self-gift guard strips `+suffix` (via `ownEmailKey`), so plus-aliases can't be two gift parties, but the two addresses already on the static allowlist (distinct keys) serve as purchaser+recipient for staging gift smoke with zero config. Send path back to 2 sources. `vdg6rdy9` superseded (no `mgertzen2` added). F13 recipient-intake email is unblocked using a static-allowlisted recipient for smoke.
 - [ ] **Real-browser smoke staging**: DatePicker month dropdown, listen PDF download, article-free titles + OC email body. Closes the loop that opened this session.
 - [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
+- [ ] **Gift-confirmation copy migration (L2)**: run `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod (idempotent; no-op if Sanity unset). Reconciles live "your gifts page" → "your library" overrides on the 2 gift-confirmation singletons.
 - [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
 
-### Remaining v1.11.0 sub-PRs (5): D, E, F, C, J — plus L (editorial)
-- **K** `lb3dn5t0` asset filenames — ✅ SHIPPED PR #285 `becc393` (human-readable download filenames, RFC 6266 header, hot-path preserved).
-- **D** `z8dk78tn` GDPR Art.20 export customer UI · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **F** `29fuqdga` Stripe gift email prefill · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context) · **J** `9sdtjug4`+`5r2or1ff` Studio surfaces.
-- **L** `7azl631f`+`i31g3i01` — NOT a code PR: both are editorial copy decisions on Sanity-editable email content (Max/Becky call). L1 = rested-link fresh-link subject "Open your reading" vs library spec "Sign in to your library" (likely by-design, investigate which template fires + document). L2 = gift-confirmation "your gifts page" anchor after v1.4.0 /my-gifts→/my-readings unification (rename vs keep).
+### Remaining v1.11.0 sub-PRs (4): J, F, E, C
+- **K** `lb3dn5t0` asset filenames — ✅ SHIPPED PR #285 `becc393`.
+- **L** `i31g3i01`+`7azl631f` — ✅ SHIPPED PR #286 `9af0f08` (L2 "your library" copy + migration script; L1 confirmed by-design, no code). L2 Sanity content migration owed as Max-action above.
+- **J** `9sdtjug4`+`5r2or1ff` Studio surfaces · **F** `29fuqdga` Stripe gift email prefill · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context).
+- **D** `z8dk78tn` GDPR Art.20 export customer UI — order TBD with the above.
 - Then: cumulative `/code-review` + `/simplify` on `release/v1.11.0 → main` diff → merge PR → tag `v1.11.0` → CHANGELOG.
 
 ### ⚠️ Process learnings (carry forward)
