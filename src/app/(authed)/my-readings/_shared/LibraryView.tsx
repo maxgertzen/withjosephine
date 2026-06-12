@@ -19,6 +19,8 @@ import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 
+import { ExportDataButton } from "./ExportDataButton";
+
 export type LibraryViewState =
   | {
       kind: "list";
@@ -124,6 +126,10 @@ function LibraryListView({
           )}
         </div>
       </section>
+
+      <GoldDivider className="max-w-xs mx-auto my-16" />
+
+      <ExportDataButton copy={readingsCopy} />
     </>
   );
 }
