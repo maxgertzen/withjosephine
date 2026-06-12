@@ -75,6 +75,22 @@ export function buildListenSessionCookieHeader(cookieValue: string): string {
   ].join("; ");
 }
 
+/**
+ * Sign-out counterpart to buildListenSessionCookieHeader. Same attributes (so
+ * the browser matches and overwrites the cookie) with an empty value and
+ * Max-Age=0 to expire it immediately.
+ */
+export function buildClearedListenSessionCookieHeader(): string {
+  return [
+    `${COOKIE_NAME}=`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Max-Age=0",
+  ].join("; ");
+}
+
 export type RedeemResult =
   | { ok: true; userId: string; sessionId: string; cookieValue: string }
   | {
