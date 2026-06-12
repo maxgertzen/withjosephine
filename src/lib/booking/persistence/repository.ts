@@ -257,6 +257,10 @@ export async function redeemGiftSubmission(
  * just enough columns to authorize the request and proxy the asset —
  * skips the SELECT * + 2× JSON.parse that `findSubmissionById` does.
  * Hot path: every audio Range chunk hits this 5–10× per playback.
+ *
+ * reading_name is a cheap same-row column. first_name / last_name are
+ * extracted from the already-read responses_json in a single JSON.parse
+ * so there is no second D1 round-trip.
  */
 export async function findSubmissionListenContext(
   id: string,
@@ -266,6 +270,9 @@ export async function findSubmissionListenContext(
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
   readingSlug: string;
+  readingName: string | null;
+  firstName: string | null;
+  lastName: string | null;
 } | null> {
   const rows = await dbQuery<{
     id: string;
@@ -273,19 +280,27 @@ export async function findSubmissionListenContext(
     voice_note_url: string | null;
     pdf_url: string | null;
     reading_slug: string;
+    reading_name: string | null;
+    responses_json: string;
   }>(
-    `SELECT id, recipient_user_id, voice_note_url, pdf_url, reading_slug
+    `SELECT id, recipient_user_id, voice_note_url, pdf_url, reading_slug, reading_name, responses_json
        FROM submissions WHERE id = ? LIMIT 1`,
     [id],
   );
   const row = rows[0];
   if (!row) return null;
+  const responses = JSON.parse(row.responses_json) as Array<{ fieldKey: string; value?: string }>;
+  const firstName = responses.find((r) => r.fieldKey === "first_name")?.value?.trim() || null;
+  const lastName = responses.find((r) => r.fieldKey === "last_name")?.value?.trim() || null;
   return {
     submissionId: row.id,
     recipientUserId: row.recipient_user_id,
     voiceNoteUrl: row.voice_note_url,
     pdfUrl: row.pdf_url,
     readingSlug: row.reading_slug,
+    readingName: row.reading_name,
+    firstName,
+    lastName,
   };
 }
 

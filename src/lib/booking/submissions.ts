@@ -128,6 +128,9 @@ export async function findSubmissionListenContext(
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
   readingSlug: string;
+  readingName: string | null;
+  firstName: string | null;
+  lastName: string | null;
 } | null> {
   return repo.findSubmissionListenContext(id);
 }

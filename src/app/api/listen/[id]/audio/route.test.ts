@@ -11,52 +11,30 @@ vi.mock("@/lib/booking/submissions", () => ({
   scheduleListenedAtMirror: vi.fn(),
 }));
 
-import { scheduleListenedAtMirror, type SubmissionRecord } from "@/lib/booking/submissions";
+import { scheduleListenedAtMirror } from "@/lib/booking/submissions";
 
 import { gateListenAssetRequest } from "../proxySanityAsset";
 
 const gateMock = vi.mocked(gateListenAssetRequest);
 const markListenedMock = vi.mocked(scheduleListenedAtMirror);
 
-const SUBMISSION: SubmissionRecord = {
-  _id: "sub_1",
-  status: "paid",
-  email: "ada@example.com",
-  responses: [],
-  createdAt: "2026-05-01T00:00:00Z",
-  voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
-  pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
-  reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
-  amountPaidCents: null,
-  amountPaidCurrency: null,
-  recipientUserId: "user_1",
-  isGift: false,
-  purchaserUserId: null,
-  purchaserTimeZone: null,
-  recipientEmail: null,
-  giftDeliveryMethod: null,
-  giftSendAt: null,
-  giftMessage: null,
-  giftClaimTokenHash: null,
-  giftClaimEmailFiredAt: null,
-  giftClaimedAt: null,
-  giftCancelledAt: null,
-  giftClaimSentNowAt: null,
-  giftClaimSentNowActor: null,
-  giftClaimPriorAlarmAt: null,};
+const VOICE_URL = "https://cdn.sanity.io/files/voice.m4a";
+const PDF_URL = "https://cdn.sanity.io/files/reading.pdf";
+
+const ASSET = {
+  voiceNoteUrl: VOICE_URL,
+  pdfUrl: PDF_URL,
+  readingSlug: "soul-blueprint",
+  readingName: "Soul Blueprint",
+  submissionId: "sub_1",
+  firstName: "Test",
+  lastName: "User",
+};
 
 const fetchMock = vi.fn();
 
 beforeEach(() => {
-  gateMock.mockReset().mockResolvedValue({
-    ok: true,
-    asset: {
-      voiceNoteUrl: SUBMISSION.voiceNoteUrl ?? null,
-      pdfUrl: SUBMISSION.pdfUrl ?? null,
-      readingSlug: "soul-blueprint",
-      submissionId: "sub_1",
-    },
-  });
+  gateMock.mockReset().mockResolvedValue({ ok: true, asset: ASSET });
   markListenedMock.mockReset();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
@@ -98,14 +76,40 @@ describe("GET /api/listen/[id]/audio", () => {
     const response = await GET(audioRequest({ range: "bytes=100-199" }), { params });
     expect(response.status).toBe(206);
     expect(fetchMock).toHaveBeenCalledWith(
-      SUBMISSION.voiceNoteUrl,
+      VOICE_URL,
       expect.objectContaining({ headers: expect.any(Headers) }),
     );
     const fetchHeaders = fetchMock.mock.calls[0]?.[1].headers as Headers;
     expect(fetchHeaders.get("range")).toBe("bytes=100-199");
-    expect(response.headers.get("content-disposition")).toBe(
-      'inline; filename="soul-blueprint-voice-note-sub_1.m4a"',
-    );
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain("inline");
+    expect(disposition).toContain('filename="Test User Soul Blueprint.m4a"');
+    expect(disposition).toContain("filename*=UTF-8''Test%20User%20Soul%20Blueprint.m4a");
+  });
+
+  it("uses human-readable name in content-disposition when name fields are present", async () => {
+    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
+    const { GET } = await import("./route");
+    const response = await GET(audioRequest(), { params });
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain('filename="Test User Soul Blueprint.m4a"');
+  });
+
+  it("falls back to reading slug in content-disposition when name fields are absent", async () => {
+    gateMock.mockResolvedValueOnce({
+      ok: true,
+      asset: {
+        ...ASSET,
+        firstName: null,
+        lastName: null,
+        readingName: null,
+      },
+    });
+    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
+    const { GET } = await import("./route");
+    const response = await GET(audioRequest(), { params });
+    const disposition = response.headers.get("content-disposition");
+    expect(disposition).toContain('filename="soul-blueprint.m4a"');
   });
 
   it("fires scheduleListenedAtMirror on opener (no Range header)", async () => {
@@ -140,10 +144,9 @@ describe("GET /api/listen/[id]/audio", () => {
     gateMock.mockResolvedValueOnce({
       ok: true,
       asset: {
+        ...ASSET,
         voiceNoteUrl: null,
         pdfUrl: null,
-        readingSlug: "soul-blueprint",
-        submissionId: "sub_1",
       },
     });
     const { GET } = await import("./route");
