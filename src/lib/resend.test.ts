@@ -1245,6 +1245,99 @@ describe("env_guard (layer-3 defense in non-production envs)", () => {
     expect(allWarnCalls).toMatch(/reason=env_guard/);
     warnSpy.mockRestore();
   });
+
+  it("allows a recipient listed in NONPROD_EMAIL_ALLOWLIST in staging env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("NONPROD_EMAIL_ALLOWLIST", "testrecipient@example.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_nonprod_allowed" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_nonprod",
+      recipientEmail: "testrecipient@example.com",
+      recipientName: "Tester",
+      purchaserFirstName: "Buyer",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBe("msg_nonprod_allowed");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("still blocks a recipient absent from NONPROD_EMAIL_ALLOWLIST in staging env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("NONPROD_EMAIL_ALLOWLIST", "testrecipient@example.com");
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_nonprod_block",
+      recipientEmail: "other-person@example.com",
+      recipientName: "Other",
+      purchaserFirstName: "Buyer",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("allows NONPROD_EMAIL_ALLOWLIST recipient with +suffix in staging env", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("NONPROD_EMAIL_ALLOWLIST", "testrecipient@example.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_nonprod_plus" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_nonprod_plus",
+      recipientEmail: "testrecipient+alias@example.com",
+      recipientName: "Tester",
+      purchaserFirstName: "Buyer",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBe("msg_nonprod_plus");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("blocks the NONPROD_EMAIL_ALLOWLIST address in production env (guard only active in non-prod)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "production");
+    vi.stubEnv("NONPROD_EMAIL_ALLOWLIST", "testrecipient@example.com");
+    sendMock.mockResolvedValue({ data: { id: "msg_prod_bypass" } });
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_prod",
+      recipientEmail: "testrecipient@example.com",
+      recipientName: "Tester",
+      purchaserFirstName: "Buyer",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBe("msg_prod_bypass");
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("blocks when NONPROD_EMAIL_ALLOWLIST is unset and recipient is not on static list", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("NONPROD_EMAIL_ALLOWLIST", "");
+    headersGetMock.mockReturnValue(null);
+
+    const { sendRecipientIntakeReceived } = await import("./resend");
+    const result = await sendRecipientIntakeReceived({
+      submissionId: "sub_unset_allowlist",
+      recipientEmail: "unknown@example.com",
+      recipientName: "Unknown",
+      purchaserFirstName: "Buyer",
+      readingName: "Soul Blueprint",
+    });
+
+    expect(getResendId(result)).toBeNull();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("redactEmail", () => {
