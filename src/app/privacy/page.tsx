@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 import { LegalPageLayout } from "@/components/LegalPageLayout";
@@ -195,7 +196,12 @@ export default async function PrivacyPage() {
             <li>Stop processing it for anything beyond the reading itself.</li>
           </ul>
           <p className="font-body text-base text-j-text leading-[1.9] font-light mt-3">
-            Email <ContactEmailLink /> to make any of these requests. She responds within 30 days.
+            You can export a copy of your data yourself from{" "}
+            <Link href="/my-readings" className="underline hover:text-j-text-heading">
+              your library
+            </Link>
+            , and Josephine will email a private download link. For any other request, email{" "}
+            <ContactEmailLink />. She responds within 30 days.
           </p>
 
           <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">

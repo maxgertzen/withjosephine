@@ -259,6 +259,12 @@ export interface MyReadingsPageContent extends AuthGatedPageContent {
   welcomeHeading?: string;
   welcomeSubhead?: string;
   welcomeButtonLabel?: string;
+  exportHeading?: string;
+  exportBody?: string;
+  exportButtonLabel?: string;
+  exportPendingLabel?: string;
+  exportSuccessMessage?: string;
+  exportErrorMessage?: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -276,6 +282,15 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   welcomeSubhead:
     "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
   welcomeButtonLabel: "Continue to your library",
+  exportHeading: "Your data",
+  exportBody:
+    "Request a copy of everything we hold for you. We’ll email a private download link when it’s ready.",
+  exportButtonLabel: "Export my data",
+  exportPendingLabel: "Preparing your export…",
+  exportSuccessMessage:
+    "Your export is on its way. Check your email for a private download link, it expires in seven days.",
+  exportErrorMessage:
+    "Something went wrong preparing your export. Please try again in a few minutes.",
   signInHeading: "Welcome back",
   signInBody:
     "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
