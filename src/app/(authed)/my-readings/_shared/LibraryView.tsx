@@ -145,7 +145,7 @@ function ReadingsCards({
         return (
           <li
             key={reading._id}
-            className="border border-j-blush rounded-2xl bg-j-ivory px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            className="border border-j-blush rounded-2xl bg-j-ivory px-5 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4"
           >
             <div>
               <h3 className="font-display italic text-xl text-j-text-heading">
@@ -160,12 +160,14 @@ function ReadingsCards({
             {expired ? (
               <a
                 href={expiredMailtoHref(copy.expiredMailtoSubject, reading._id)}
-                className="font-display italic text-base text-j-text-muted underline whitespace-nowrap"
+                className="font-display italic text-base text-j-text-muted underline whitespace-nowrap self-start sm:self-auto"
               >
                 {copy.expiredMailtoLabel}
               </a>
             ) : (
-              <Button href={`/listen/${reading._id}`}>{copy.openButtonLabel}</Button>
+              <Button href={`/listen/${reading._id}`} className="self-start sm:self-auto">
+                {copy.openButtonLabel}
+              </Button>
             )}
           </li>
         );

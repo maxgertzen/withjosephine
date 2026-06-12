@@ -49,11 +49,11 @@ export function Select({
       </RadixSelect.Trigger>
       <RadixSelect.Portal container={portalContainer ?? undefined}>
         <RadixSelect.Content
-          className="z-50 w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)] bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading"
+          className="z-50 min-w-[var(--radix-select-trigger-width)] w-max max-w-[var(--radix-select-content-available-width)] bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading"
           position="popper"
           sideOffset={4}
         >
-          <RadixSelect.Viewport className="p-1 max-h-[280px]">
+          <RadixSelect.Viewport className="p-1 max-h-[240px] overflow-y-auto">
             {options.map((opt) => (
               <RadixSelect.Item
                 key={opt.value}
