@@ -8,6 +8,7 @@ export const SANITY_META_FIELDS: ReadonlySet<string> = new Set([
   "_createdAt",
   "_updatedAt",
   "_key",
+  "_system",
 ]);
 
 /**
