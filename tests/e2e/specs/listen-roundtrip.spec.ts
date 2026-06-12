@@ -157,6 +157,12 @@ test.describe("Listen round-trip — staging", () => {
     );
     expect([200, 206]).toContain(audioResponse.status());
 
+    // 10b. The PDF download carries a personalized RFC 6266 Content-Disposition
+    //      (filename* param), not the legacy slug-id name (lb3dn5t0 / Sub-PR K).
+    const pdfResponse = await page.request.get(`/api/listen/${submissionId}/pdf`);
+    expect(pdfResponse.status()).toBe(200);
+    expect(pdfResponse.headers()["content-disposition"] ?? "").toMatch(/filename\*=UTF-8''/);
+
     // 11. Poll Sanity for listenedAt to confirm the fire-and-forget mirror
     //     landed. Worker hot path typically takes 2-5s; ceiling is 15s.
     const listenedAt = await pollSanityListenedAt(submissionId, {

@@ -6,7 +6,7 @@ import { Button } from "./Button";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: Record<string, unknown>) => (
-    <a href={href as string} {...props}>
+    <a href={href as string} data-nextlink="true" {...props}>
       {children as React.ReactNode}
     </a>
   ),
@@ -70,5 +70,44 @@ describe("Button", () => {
     await user.click(screen.getByRole("button", { name: "Click" }));
 
     expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it("uses next/link for an in-app page route", () => {
+    render(<Button href="/my-readings">Library</Button>);
+    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute(
+      "data-nextlink",
+      "true",
+    );
+  });
+
+  it("uses a plain anchor (not next/link) for a download href so the link spinner can't hang", () => {
+    render(
+      <Button href="/api/listen/abc/pdf" download>
+        Download PDF
+      </Button>,
+    );
+    const link = screen.getByRole("link", { name: "Download PDF" });
+    expect(link).not.toHaveAttribute("data-nextlink");
+    expect(link).toHaveAttribute("href", "/api/listen/abc/pdf");
+    expect(link).toHaveAttribute("download");
+  });
+
+  it("uses a plain anchor for an /api/ route", () => {
+    render(<Button href="/api/privacy/export">Export</Button>);
+    expect(screen.getByRole("link", { name: "Export" })).not.toHaveAttribute("data-nextlink");
+  });
+
+  it("uses a plain anchor for target=_blank", () => {
+    render(
+      <Button href="/somewhere" target="_blank">
+        New tab
+      </Button>,
+    );
+    expect(screen.getByRole("link", { name: "New tab" })).not.toHaveAttribute("data-nextlink");
+  });
+
+  it("uses a plain anchor for a protocol-relative external href", () => {
+    render(<Button href="//cdn.example.com/x">External</Button>);
+    expect(screen.getByRole("link", { name: "External" })).not.toHaveAttribute("data-nextlink");
   });
 });
