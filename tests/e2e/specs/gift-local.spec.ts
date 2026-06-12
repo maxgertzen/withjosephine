@@ -180,4 +180,24 @@ test.describe("Gift round-trip — mock mode", () => {
     });
     expect(response.status()).toBe(400);
   });
+
+  test("F: gift Payment Link prefills the purchaser email (29fuqdga)", async ({ request }) => {
+    const purchaserEmail = "gift-prefill@withjosephine.com";
+    const response = await request.post("/api/booking/gift", {
+      data: {
+        readingSlug: READING_SLUG,
+        deliveryMethod: "self_send",
+        purchaserFirstName: "Prefill",
+        purchaserEmail,
+        purchaserTimeZone: "America/Los_Angeles",
+        turnstileToken: "bypass",
+        art6Consent: true,
+        coolingOffConsent: true,
+      },
+      headers: { "content-type": "application/json" },
+    });
+    expect(response.status()).toBe(200);
+    const { paymentUrl } = (await response.json()) as { paymentUrl: string };
+    expect(new URL(paymentUrl).searchParams.get("prefilled_email")).toBe(purchaserEmail);
+  });
 });
