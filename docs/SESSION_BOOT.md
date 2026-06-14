@@ -1,5 +1,15 @@
 # Session Boot — Active State
 
+## ▶ NEXT SESSION (planned): v1.11.0 staging SMOKE + monitoring + issue collection
+- **Goal:** Max real-browser smokes `release/v1.11.0` (PR #291, green + mergeable @ `e5b5ccf`), I monitor + collect notes/issues. NO merge until smoke clears.
+- **Scope the smoke to the v1.11.0 delta** (`git log main..release/v1.11.0`), not the full A-F matrix (`feedback_smoke_scope_to_deployed_delta`). New surfaces this arc: listen rested-bypass (C), gift checkout email prefill (F), /my-readings identity chip + Sign out (E), "Export my data" (D), personalized listen download filename (K), gift-confirmation "your library" copy (L). Plus regression-glance at A/B/I/M/G/H.
+- **Monitoring:** use the `smoke-monitor` skill. Staging is behind **CF Access** (`reference_staging_cf_access`) — `wrangler tail` on unauth curls captures nothing; drive cron force-fires via `scripts/force-cron.sh <route> <id> [--prod]` + `cloudflared access token` (`reference_staging_cron_curl_via_cloudflared`). D1 direct query is the fastest triage step.
+- **Collect issues** into a fresh `MEMORY/SMOKE_LOGS/<ts>/FINDINGS.md`; file dex tickets per finding.
+- **After smoke passes:** merge #291 → tag `v1.11.0` annotated → CHANGELOG release entry → run the 3 deferred content migrations (B prod article strip, L2 gift copy, privacy-policy Sanity copy) → branch cleanup (`release/v1.9.0`, `v1.10.0`, `v1.11.0`).
+- Full gate detail + Max-actions in the section below.
+
+---
+
 ## 🛎️ 2026-06-13 — v1.11.0 arc COMPLETE on release; `release/v1.11.0 → main` PR open, HOLDING for Max real-browser smoke
 
 ### State of the world
