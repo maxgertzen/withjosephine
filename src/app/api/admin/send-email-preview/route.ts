@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 
 import { parseStringField } from "@/lib/api/parseBody";
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
-import { authorizeAdminToken } from "@/lib/auth/adminTokenAuth";
 import { writeAudit } from "@/lib/auth/listenSession";
+import { getRequestAuditContext } from "@/lib/auth/requestAudit";
 import {
   isAllowedPreviewRecipient,
   readAllowedPreviewRecipients,
@@ -15,12 +15,11 @@ import { sendEmailPreview } from "@/lib/emails/sendEmailPreview";
 
 const REFUSED = () => new NextResponse(null, { status: 404 });
 
-// Allowlist lives in Worker env vars (not Sanity) so a Studio compromise
-// can't widen it; rotating recipients = deploy. Locked 2026-05-24.
+// No admin token: the ALLOWED_PREVIEW_RECIPIENTS env allowlist is the boundary.
+// A caller can only ever send a rendered preview to a fixed internal address,
+// so a missing/forged token can't widen the blast radius. The destructive
+// delete route keeps its token. Locked 2026-06-16.
 export async function POST(request: Request): Promise<Response> {
-  const auth = await authorizeAdminToken(request);
-  if (!auth.authorized) return REFUSED();
-
   if (readAllowedPreviewRecipients().length === 0) {
     return NextResponse.json(
       { outcome: "refused", reason: "preview-not-configured" },
@@ -40,13 +39,14 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  const audit = await getRequestAuditContext(request);
   const result = await sendEmailPreview({ template, recipient });
 
   await writeAudit({
     userId: null,
     eventType: AUDIT_EVENT_TYPE.admin_email_preview_sent,
-    ipHash: auth.audit.ipHash,
-    userAgentHash: auth.audit.userAgentHash,
+    ipHash: audit.ipHash,
+    userAgentHash: audit.userAgentHash,
     success: result.kind === "sent" || result.kind === "dry_run",
   });
 

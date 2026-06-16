@@ -69,22 +69,26 @@ describe("POST /api/admin/send-email-preview", () => {
     );
   });
 
-  it("returns 404 when admin token is missing", async () => {
+  it("delivers a preview WITHOUT an admin token (allowlist is the boundary)", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "sent", resendId: "msg_x" });
     const response = await callRoute(
       { template: "emailMagicLink", recipient: "hello@withjosephine.com" },
       {},
     );
-    expect(response.status).toBe(404);
-    expect(mockSend).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(mockSend).toHaveBeenCalledWith({
+      template: "emailMagicLink",
+      recipient: "hello@withjosephine.com",
+    });
   });
 
-  it("returns 404 when admin token is wrong", async () => {
+  it("ignores any provided admin token (no longer a gate)", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "sent", resendId: "msg_x" });
     const response = await callRoute(
       { template: "emailMagicLink", recipient: "hello@withjosephine.com" },
-      { "x-admin-token": "wrong-token" },
+      { "x-admin-token": "irrelevant" },
     );
-    expect(response.status).toBe(404);
-    expect(mockSend).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
   });
 
   it("returns 503 when ALLOWED_PREVIEW_RECIPIENTS is unset", async () => {
