@@ -72,6 +72,10 @@ beforeEach(() => {
   document.body.innerHTML = "";
 });
 
+function submitEvent(): React.FormEvent<HTMLFormElement> {
+  return { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>;
+}
+
 describe("useIntakeFormHandlers — setValue", () => {
   it("sets the value at the given key", () => {
     const { result } = renderHook(() => useTestHarness());
@@ -111,9 +115,7 @@ describe("useIntakeFormHandlers — navigation", () => {
 describe("useIntakeFormHandlers — handleSubmit", () => {
   it("is a no-op when submitIntentRef is false", async () => {
     const { result } = renderHook(() => useTestHarness());
-    const event = {
-      preventDefault: vi.fn(),
-    } as unknown as React.FormEvent<HTMLFormElement>;
+    const event = submitEvent();
     await act(async () => {
       await result.current.handlers.handleSubmit(event);
     });
@@ -123,12 +125,6 @@ describe("useIntakeFormHandlers — handleSubmit", () => {
 });
 
 describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
-  function submitEvent() {
-    return {
-      preventDefault: vi.fn(),
-    } as unknown as React.FormEvent<HTMLFormElement>;
-  }
-
   it("flips pending true before the first await (continue-payment, create mode)", async () => {
     const setIsSubmitting = vi.fn();
     const requestFreshTurnstileToken = vi.fn(async () => "tok");
