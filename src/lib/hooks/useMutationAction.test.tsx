@@ -143,6 +143,33 @@ describe("useMutationAction", () => {
     expect(result.current.elevationRequired).toBeNull();
   });
 
+  it("flips submitting true synchronously on run(), before the request resolves (u7usxewf)", async () => {
+    let resolveFetch: (r: Response) => void = () => {};
+    fetchMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useMutationAction("/api/x"));
+
+    const captured: { value: Promise<JsonPostResult<unknown>> | null } = {
+      value: null,
+    };
+    act(() => {
+      captured.value = result.current.run({ foo: 1 });
+    });
+
+    // submitting is set before the awaited POST resolves, so the armed
+    // "Send now" button disables + shows its sending label on the click beat.
+    expect(result.current.submitting).toBe(true);
+
+    await act(async () => {
+      resolveFetch(jsonResponse({ id: "ok" }, 200));
+      await captured.value;
+    });
+    expect(result.current.submitting).toBe(false);
+  });
+
   it("422 with fieldErrors still works (no regression)", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(
