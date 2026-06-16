@@ -1,12 +1,23 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (planned): v1.11.0 staging SMOKE + monitoring + issue collection
-- **Goal:** Max real-browser smokes `release/v1.11.0` (PR #291, green + mergeable @ `e5b5ccf`), I monitor + collect notes/issues. NO merge until smoke clears.
-- **Scope the smoke to the v1.11.0 delta** (`git log main..release/v1.11.0`), not the full A-F matrix (`feedback_smoke_scope_to_deployed_delta`). New surfaces this arc: listen rested-bypass (C), gift checkout email prefill (F), /my-readings identity chip + Sign out (E), "Export my data" (D), personalized listen download filename (K), gift-confirmation "your library" copy (L). Plus regression-glance at A/B/I/M/G/H.
-- **Monitoring:** use the `smoke-monitor` skill. Staging is behind **CF Access** (`reference_staging_cf_access`) — `wrangler tail` on unauth curls captures nothing; drive cron force-fires via `scripts/force-cron.sh <route> <id> [--prod]` + `cloudflared access token` (`reference_staging_cron_curl_via_cloudflared`). D1 direct query is the fastest triage step.
-- **Collect issues** into a fresh `MEMORY/SMOKE_LOGS/<ts>/FINDINGS.md`; file dex tickets per finding.
-- **After smoke passes:** merge #291 → tag `v1.11.0` annotated → CHANGELOG release entry → run the 3 deferred content migrations (B prod article strip, L2 gift copy, privacy-policy Sanity copy) → branch cleanup (`release/v1.9.0`, `v1.10.0`, `v1.11.0`).
-- Full gate detail + Max-actions in the section below.
+## ▶ NEXT SESSION (planned): implement the 9 v1.11.0 smoke-findings fixes on `release/v1.11.0`
+
+- **Smoke DONE 2026-06-16** (session `MEMORY/SMOKE_LOGS/20260616T104010Z` → SUMMARY.md + FINDINGS.md). Delta walked: A ✅ · B ✅ (**F14 recipient-routing CONFIRMED end-to-end via inbox** — delivery went to `+gift-reciever`, not purchaser) · C5 export ✅ (download verified) · E5 ✅ · D2 ⚠️ (works, token-UX rejected). Scheduled-gift mechanics (C1/C3/C4) **DEFERRED by Max** (F14 routing proven path-independently via self-send).
+- **11 findings → epic `qtrpoqpq` + 9 fix tickets** (committed `305a993`). Implement all on `release/v1.11.0` as feature-branch sub-PRs (`feedback_sub_pr_via_feature_branch`), unit + e2e where the surface allows, BEFORE the merge-to-main gate. Order (safe → design):
+  1. `9p65pc41` TimePicker → all 60 min (`src/components/Form/TimePicker/TimePicker.tsx:38` `length:12,i*5` → `length:60,i`)
+  2. `xj0z7wah` explicit audio **Download button** (Firefox native player has none)
+  3. `u7usxewf` submit buttons: pending state is **DELAYED, not missing** — set `pending=true` synchronously at click start, before any await (continue-payment + gift send-now + claim)
+  4. `7qskc340` listen `welcomeRibbon` subtitle flashes then disappears (hydration)
+  5. `qn3b5pjy` (D2) **DROP** send-preview admin token; rely on `ALLOWED_PREVIEW_RECIPIENTS`; keep token ONLY on destructive delete (`src/app/api/admin/send-email-preview/route.ts` + Studio `AdminTokenInput` usage)
+  6. `6wdpf3x0` Studio: surface `recipient_email` (not purchaser `email`) on claimed-gift submissions — **display only, routing already correct** (`resolveDeliveryAddress` resend.tsx:63)
+  7. `ekesibyy` **APPEND** "reading" in templates + normalize bare names + fix `src/data/readings.ts:29/58/86` fallbacks ("The X Reading" → bare). Decision: append, NOT rename.
+  - `645fr4tw` doc (allowlist base email) — partly done in commit `07f3469`; finish the Setup note in MANUAL_SMOKE_TEST.
+  - `iz79sxt6` investigate intermittent Studio TypeError (low, transient, no repro).
+- **Decisions locked (Max 2026-06-16):** readingName = **append "reading" in templates** (no service rename); send-preview = **drop token** (allowlist is the boundary).
+- **Execution choice still open:** sequential (me) vs worktree-agent fleet for the independent ones (#1–#4, #6). If fleet: run the canonical-helpers pre-pass first (`feedback_canonical_helpers_before_agent_dispatch`) and NEVER `git reset/checkout` the main checkout while agents are live (`feedback_no_git_mutations_during_background_agents`).
+- **Env note:** local `vitest` D1-integration specs fail (better-sqlite3 native bindings) — verify DB-touching tests in CI (`feedback_pnpm_install_drops_lockfile_overrides`).
+- **Smoke process lesson (NEW):** `wrangler tail` is **lossy** (samples under request bursts; 0 reconnects this session yet it still dropped the OC-email send + the export call). NEVER report a fail from tail-absence — ground truth = inbox / downloaded export / D1 / R2 / `emails_fired_json`. See `feedback_smoke_tail_is_lossy_use_ground_truth`.
+- **After all 9 land:** cumulative `/code-review --effort high` + `/simplify` on the `release/v1.11.0 → main` diff (`feedback_code_review_and_simplify_pre_push`) → real-browser re-smoke of touched surfaces → merge PR #291 → tag `v1.11.0` annotated → CHANGELOG release entry → 3 deferred content migrations (B prod article strip, L2 gift copy, privacy-policy Sanity copy) → branch cleanup (`release/v1.9.0`, `v1.10.0`, `v1.11.0`).
 
 ---
 
