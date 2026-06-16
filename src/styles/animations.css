@@ -93,18 +93,13 @@
   0% {
     opacity: 0;
   }
-  20%,
-  70% {
-    opacity: 1;
-  }
   100% {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 1;
   }
 }
 
 .welcome-ribbon {
-  animation: welcomeRibbon 6s ease-in-out forwards;
+  animation: welcomeRibbon 0.9s ease-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -112,9 +107,5 @@
   .j-fade-in-up,
   .welcome-ribbon {
     animation: none;
-  }
-  .welcome-ribbon {
-    opacity: 0;
-    visibility: hidden;
   }
 }

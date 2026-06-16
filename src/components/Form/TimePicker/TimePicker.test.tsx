@@ -199,5 +199,46 @@ describe("TimePicker", () => {
 
       expect(onChange).toHaveBeenCalledWith("11:30");
     });
+
+    it("offers every minute 00-59, not just 5-minute steps", async () => {
+      const user = userEvent.setup();
+      render(
+        <TimePicker
+          id="birthTime"
+          name="birthTime"
+          label="Birth time"
+          value=""
+          onChange={vi.fn()}
+        />,
+      );
+      fireEvent.focus(screen.getByLabelText(/Birth time/));
+
+      await user.click(await screen.findByRole("combobox", { name: "Minute" }));
+
+      const options = await screen.findAllByRole("option");
+      expect(options).toHaveLength(60);
+      expect(screen.getByRole("option", { name: "00" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "59" })).toBeInTheDocument();
+    });
+
+    it("commits a non-5-multiple minute selection", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TimePicker
+          id="birthTime"
+          name="birthTime"
+          label="Birth time"
+          value="09:00"
+          onChange={onChange}
+        />,
+      );
+      fireEvent.focus(screen.getByLabelText(/Birth time/));
+
+      await user.click(await screen.findByRole("combobox", { name: "Minute" }));
+      await user.click(await screen.findByRole("option", { name: "37" }));
+
+      expect(onChange).toHaveBeenCalledWith("09:37");
+    });
   });
 });
