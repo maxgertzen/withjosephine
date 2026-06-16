@@ -44,7 +44,7 @@ function appendReading(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(appendReading);
   }
-  if (value && typeof value === "object") {
+  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
     const out: Record<string, unknown> = {};
     for (const [key, inner] of Object.entries(value)) {
       out[key] = appendReading(inner);
