@@ -123,7 +123,7 @@ describe("BookingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("soul-blueprint"));
 
-    expect(metadata.title).toBe("Book The Soul Blueprint — Josephine");
+    expect(metadata.title).toBe("Book Soul Blueprint — Josephine");
   });
 
   it("uses generic title when reading slug is unknown and sanity returns null", async () => {

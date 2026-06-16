@@ -24,7 +24,7 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
     const text = visibleText(
       await render(<Day7Delivery vars={VARS} copy={EMAIL_DAY7_DELIVERY_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
-    expect(text).toContain("Your Soul Blueprint is here.");
+    expect(text).toContain("Your Soul Blueprint reading is here.");
   });
 
   it("renders the comfort line, signed-in disclosure, and follow-up paragraph", async () => {

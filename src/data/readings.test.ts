@@ -40,7 +40,7 @@ describe("testimonials data", () => {
 describe("getReadingById", () => {
   it("returns a reading by id", () => {
     const result = getReadingById("soul-blueprint");
-    expect(result?.name).toBe("The Soul Blueprint");
+    expect(result?.name).toBe("Soul Blueprint");
   });
 
   it("returns undefined for unknown id", () => {

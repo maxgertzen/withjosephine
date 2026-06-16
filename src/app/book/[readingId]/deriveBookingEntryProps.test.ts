@@ -67,7 +67,7 @@ describe("resolveReading", () => {
     const reading = resolveReading("soul-blueprint", null);
     expect(reading).not.toBeNull();
     expect(reading?.slug).toBe("soul-blueprint");
-    expect(reading?.name).toBe("The Soul Blueprint");
+    expect(reading?.name).toBe("Soul Blueprint");
   });
 
   it("returns null when both sanity and static lookup miss", () => {
