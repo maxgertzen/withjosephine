@@ -119,6 +119,11 @@ function DeliveredSurface({
           <audio controls preload="none" className="w-full" src={state.voiceNoteAudioPath}>
             Your browser does not support the audio element.
           </audio>
+          <div className="mt-4 text-center">
+            <Button href={state.voiceNoteAudioPath} variant="ghost" size="lg" download>
+              {copy.voiceNoteButtonLabel}
+            </Button>
+          </div>
         </section>
       ) : null}
 

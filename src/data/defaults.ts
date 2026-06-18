@@ -886,6 +886,7 @@ export interface ListenPageContent {
   deliveredHeading: string;
   deliveredSubheading: string;
   voiceNoteLabel: string;
+  voiceNoteButtonLabel: string;
   pdfLabel: string;
   pdfButtonLabel: string;
   closerLine1: string;
@@ -934,6 +935,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   deliveredHeading: "Your {readingName} is ready",
   deliveredSubheading: "Best with headphones, somewhere quiet.",
   voiceNoteLabel: "Voice note",
+  voiceNoteButtonLabel: "Download voice note",
   pdfLabel: "Supporting PDF",
   pdfButtonLabel: "Download PDF",
   closerLine1:

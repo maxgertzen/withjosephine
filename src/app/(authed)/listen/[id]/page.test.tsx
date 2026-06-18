@@ -229,6 +229,7 @@ describe("/listen/[id] page logic", () => {
       deliveredHeading: "Override heading",
       deliveredSubheading: "Override sub",
       voiceNoteLabel: "VN",
+      voiceNoteButtonLabel: "Download VN",
       pdfLabel: "PDF",
       pdfButtonLabel: "Download",
       closerLine1: "Override closer",

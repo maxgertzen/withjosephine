@@ -479,6 +479,7 @@ export const listenPageQuery = groq`
     deliveredHeading,
     deliveredSubheading,
     voiceNoteLabel,
+    voiceNoteButtonLabel,
     pdfLabel,
     pdfButtonLabel,
     closerLine1,
