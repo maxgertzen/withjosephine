@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
+import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
+import { findUserById } from "@/lib/auth/users";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
@@ -57,6 +61,11 @@ export async function generateMetadata({ params }: IntakePageProps): Promise<Met
 export default async function IntakePage({ params }: IntakePageProps) {
   const { readingId } = await params;
 
+  const cookieStore = await cookies();
+  const cookieValue = cookieStore.get(COOKIE_NAME)?.value ?? "";
+  const session = cookieValue ? await getActiveSession({ cookieValue }) : null;
+  const signedInUser = session ? await findUserById(session.userId) : null;
+
   const [reading, bookingForm, bookingPage] = await Promise.all([
     fetchReading(readingId),
     fetchBookingForm(),
@@ -86,6 +95,17 @@ export default async function IntakePage({ params }: IntakePageProps) {
         {copy.subtitle}
       </p>
 
+      {signedInUser ? (
+        <p className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
+          Signed in as {signedInUser.email}, so this reading will be saved to your library.
+          Booking for someone else?{" "}
+          <Link href={BOOKING_PAGE_ROUTES.gift(reading.slug)} className="underline">
+            Send it as a gift
+          </Link>
+          .
+        </p>
+      ) : null}
+
       <IntakeForm
         readingId={reading.slug}
         readingName={reading.name}
@@ -97,6 +117,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
         nextLabel={bookingForm.nextButtonText}
         saveLaterLabel={bookingForm.saveAndContinueLaterText}
         pageIndicatorTagline={bookingForm.pageIndicatorTagline}
+        prefilledEmail={signedInUser?.email ?? null}
       />
     </BookingPageShell>
   );
