@@ -2,17 +2,13 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 
-import { authorizeAdminToken } from "@/lib/auth/adminTokenAuth";
 import { readAllowedPreviewRecipients } from "@/lib/emails/previewRecipients";
 
-const REFUSED = () => new NextResponse(null, { status: 404 });
-
-// Populates the Studio send-to-test dropdown without exposing the env var
-// to the Studio bundle. 503 + reason matches the sibling POST shape.
-export async function GET(request: Request): Promise<Response> {
-  const auth = await authorizeAdminToken(request);
-  if (!auth.authorized) return REFUSED();
-
+// Populates the Studio send-to-test dropdown without exposing the env var to
+// the Studio bundle. No admin token (matches the sibling send-preview POST):
+// this only reveals the fixed internal allowlist, and sends stay bounded by it.
+// 503 + reason matches the sibling POST shape. Locked 2026-06-16.
+export async function GET(): Promise<Response> {
   const recipients = readAllowedPreviewRecipients();
   if (recipients.length === 0) {
     return NextResponse.json(

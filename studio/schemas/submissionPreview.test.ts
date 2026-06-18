@@ -530,3 +530,66 @@ describe("buildPreview — gift claim status integration", () => {
     expect(result.subtitle).toBe("alice@example.com · Delivered 6 May 2026");
   });
 });
+
+describe("buildPreview — gift purchaser vs recipient labeling (6wdpf3x0)", () => {
+  it("labels purchaser and recipient when a claimed gift carries a recipientEmail", () => {
+    const result = buildPreview(
+      {
+        responses: NAME_RESPONSES,
+        email: "buyer@example.com",
+        recipientEmail: "recipient@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+        giftClaimedAt: "2026-05-03T12:00:00.000Z",
+      },
+      new Date("2026-05-05T12:00:00.000Z"),
+    );
+    expect(result.subtitle).toContain("Purchaser buyer@example.com · Recipient recipient@example.com");
+  });
+
+  it("uses the recipient label as the title when there is no name yet", () => {
+    const result = buildPreview(
+      {
+        responses: [],
+        email: "buyer@example.com",
+        recipientEmail: "recipient@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+      },
+      new Date("2026-05-02T12:00:00.000Z"),
+    );
+    expect(result.title).toBe("Purchaser buyer@example.com · Recipient recipient@example.com");
+  });
+
+  it("keeps the bare purchaser email for an unclaimed gift (no recipientEmail yet)", () => {
+    const result = buildPreview(
+      {
+        responses: [],
+        email: "buyer@example.com",
+        status: "paid",
+        paidAt: "2026-05-01T12:00:00.000Z",
+        isGift: true,
+      },
+      new Date("2026-05-02T12:00:00.000Z"),
+    );
+    expect(result.title).toBe("buyer@example.com");
+  });
+
+  it("does not label a non-gift submission even if recipientEmail leaks in", () => {
+    const result = buildPreview(
+      {
+        responses: [],
+        email: "buyer@example.com",
+        recipientEmail: "recipient@example.com",
+        status: "paid",
+        paidAt: "2026-05-03T12:00:00.000Z",
+        isGift: false,
+      },
+      new Date("2026-05-06T12:00:00.000Z"),
+    );
+    expect(result.title).toBe("buyer@example.com");
+    expect(result.subtitle).not.toContain("Recipient");
+  });
+});

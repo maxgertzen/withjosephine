@@ -400,6 +400,7 @@ export const submission = defineType({
       responses: "responses",
       giftClaimedAt: "giftClaimedAt",
       isGift: "isGift",
+      recipientEmail: "recipientEmail",
     },
     prepare: prepareSubmissionPreview,
   },
