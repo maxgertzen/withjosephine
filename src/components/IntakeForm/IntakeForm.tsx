@@ -43,9 +43,9 @@ type IntakeFormProps = {
   mode?: "create" | "redeem";
   redeemSubmissionId?: string;
   redeemSuccessUrl?: string;
-  // D-12: when the gift was scheduled with a recipient_email, the recipient's
-  // intake form pre-fills + locks the email field. Null = self-send claim where
-  // the recipient supplies their own email here.
+  // Pre-fills + locks the email field, read-only. Set to a scheduled gift's
+  // recipient_email (D-12) or, for a signed-in self-booking, the session
+  // account's email. Null = editable (anonymous booking / self-send claim).
   prefilledEmail?: string | null;
 };
 
@@ -80,12 +80,17 @@ export function IntakeForm({
     defaultValuesSnapshot: rawDefaultValuesSnapshot,
   } = useIntakeSchema({ sections, readingId, pagination });
 
-  // D-12: when redeeming a scheduled gift with a known recipient_email, seed
-  // the email field's default value so draft-restore + read-only render both
-  // start from the canonical normalized form. Self-send claims (prefilledEmail
-  // === null) skip the seed and the field stays editable.
-  const seededEmail =
-    mode === "redeem" && prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
+  // Seed + lock the email whenever a prefilledEmail is supplied: a scheduled
+  // gift's recipient_email (D-12), or — for a signed-in self-booking — the
+  // session account's email so the reading lands in that person's library.
+  // A null prefilledEmail (anonymous booking or a self-send gift claim) skips
+  // the seed and the field stays editable. Seeding the default value keeps
+  // draft-restore + the read-only render starting from the canonical form.
+  const seededEmail = prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
+  const lockedValues = useMemo(
+    () => (seededEmail ? { [EMAIL_FIELD_KEY]: seededEmail } : undefined),
+    [seededEmail],
+  );
   const defaultValues = useMemo(
     () =>
       seededEmail ? { ...rawDefaultValues, [EMAIL_FIELD_KEY]: seededEmail } : rawDefaultValues,
@@ -112,6 +117,7 @@ export function IntakeForm({
     draftScope,
     defaultValues,
     totalPages,
+    lockedValues,
   });
 
   const [honeypot, setHoneypot] = useState("");

@@ -73,6 +73,11 @@ export type UseDraftRestoreArgs = {
   draftScope: string;
   defaultValues: FieldValues;
   totalPages: number;
+  // Fields that must survive a localStorage/swap restore unchanged — the locked
+  // email for a signed-in self-booking or a scheduled-gift recipient. Applied
+  // last so a stale draft can't reintroduce a different value into a read-only
+  // field (which the user can't correct).
+  lockedValues?: FieldValues;
 };
 
 export type UseDraftRestoreResult = {
@@ -93,6 +98,7 @@ export function useDraftRestore({
   draftScope,
   defaultValues,
   totalPages,
+  lockedValues,
 }: UseDraftRestoreArgs): UseDraftRestoreResult {
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [currentPage, setCurrentPage] = useState(0);
@@ -126,6 +132,7 @@ export function useDraftRestore({
       ...defaultValues,
       ...(restored?.values ?? {}),
       ...(preservedFromSwap ?? {}),
+      ...(lockedValues ?? {}),
     } as FieldValues;
     const clampedPage = clampRestoredPage(restored?.currentPage, totalPages);
     const restoredSavedAt: Date | null = (() => {
@@ -141,7 +148,7 @@ export function useDraftRestore({
       if (restoredSavedAt) setLastSavedAt(restoredSavedAt);
       setIsRestored(true);
     });
-  }, [readingId, draftScope, readingName, defaultValues, totalPages]);
+  }, [readingId, draftScope, readingName, defaultValues, totalPages, lockedValues]);
 
   return {
     values,

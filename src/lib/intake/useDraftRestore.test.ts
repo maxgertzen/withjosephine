@@ -206,6 +206,52 @@ describe("useDraftRestore — swap detection (P2.4e)", () => {
   });
 });
 
+describe("useDraftRestore — lockedValues are authoritative", () => {
+  it("overrides a restored draft email with the locked value", async () => {
+    saveDraft("soul-blueprint", {
+      currentPage: 1,
+      values: { email: "stale-anon@example.com", first_name: "Ada" },
+    });
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        readingName: "Soul Blueprint",
+        draftScope: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: 3,
+        lockedValues: { email: "session@example.com" },
+      }),
+    );
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.values.email).toBe("session@example.com");
+    // Non-locked fields still restore from the draft.
+    expect(result.current.values.first_name).toBe("Ada");
+  });
+
+  it("overrides a swap-preserved email with the locked value", async () => {
+    saveDraft("akashic-record", {
+      currentPage: 0,
+      values: { email: "stale-anon@example.com", first_name: "Ada" },
+    });
+    window.localStorage.setItem(LAST_READING_ID_KEY, "akashic-record");
+
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        readingName: "Soul Blueprint",
+        draftScope: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: 3,
+        lockedValues: { email: "session@example.com" },
+      }),
+    );
+    await waitFor(() =>
+      expect(result.current.values.email).toBe("session@example.com"),
+    );
+    expect(result.current.values.first_name).toBe("Ada");
+  });
+});
+
 describe("useDraftRestore — writes lastReadingId on mount", () => {
   it("persists current readingId for future swap-detection", () => {
     renderHook(() =>
