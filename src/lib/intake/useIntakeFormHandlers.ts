@@ -199,6 +199,12 @@ export function useIntakeFormHandlers({
         return;
       }
 
+      // Reflect pending synchronously, before the first await (the turnstile
+      // token fetch below). Otherwise the submit button looks dead for the
+      // first beat. Every non-navigating exit must reset it (failSubmit does;
+      // the validation-fail branch resets explicitly).
+      setIsSubmitting(true);
+
       function failSubmit(errorCode: IntakeSubmitErrorCode, userMessage: string) {
         setSubmitError(userMessage);
         setIsSubmitting(false);
@@ -230,6 +236,7 @@ export function useIntakeFormHandlers({
       }
 
       if (!validation.success || !consentOk) {
+        setIsSubmitting(false);
         setErrors(validation.fieldErrors);
         const message = !consentOk
           ? "All required acknowledgments below must be checked to continue."
@@ -243,7 +250,6 @@ export function useIntakeFormHandlers({
         return;
       }
 
-      setIsSubmitting(true);
       try {
         const companionKeys: Record<string, string> = {};
         for (const field of allFields) {

@@ -75,6 +75,47 @@ test.describe("Stripe round-trip — mock mode", () => {
       .toBeGreaterThan(0);
   });
 
+  test("intake submit button disables immediately on click (u7usxewf)", async ({ page }) => {
+    test.setTimeout(60_000);
+
+    // Hold the booking POST open so the in-flight pending state is observable.
+    // The fix sets pending synchronously at click, before this request fires.
+    let releaseBooking: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseBooking = resolve;
+    });
+    await page.route("**/api/booking", async (route) => {
+      await gate;
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: "{}",
+      });
+    });
+
+    await seedIntakeDraft(page, READING_SLUG);
+    await page.goto(`/book/${READING_SLUG}`);
+    await page.locator(`a[href="/book/${READING_SLUG}/letter"]`).click();
+    await page.waitForURL(/\/letter/);
+    await page.locator(`a[href="/book/${READING_SLUG}/intake"]`).click();
+    await page.waitForURL(/\/intake/);
+
+    await waitForDraftRestore(page);
+    await clickThroughIntakePages(page, 6);
+
+    await page.locator("#field-art6-consent").check();
+    await page.locator("#field-art9-consent").check();
+    await page.locator("#field-cooling-off-consent").check();
+
+    const submit = page.getByTestId("intake-submit");
+    await submit.click();
+
+    // Disabled while the (gated) POST is in flight — no dead first beat.
+    await expect(submit).toBeDisabled();
+
+    releaseBooking();
+  });
+
   test("unhappy: bad webhook signature returns 400 + no Sanity write captured", async ({
     request,
   }) => {
