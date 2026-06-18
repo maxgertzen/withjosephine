@@ -26,7 +26,7 @@ export const READINGS: Reading[] = [
   {
     id: "soul-blueprint",
     tag: "Signature",
-    name: "The Soul Blueprint",
+    name: "Soul Blueprint",
     subtitle: "Soul Blueprint Reading",
     price: "$179",
     valueProposition: "The most complete picture of your soul I can give you",
@@ -55,7 +55,7 @@ export const READINGS: Reading[] = [
   {
     id: "birth-chart",
     tag: "Astrology",
-    name: "The Birth Chart Reading",
+    name: "Birth Chart",
     subtitle: "Birth Chart Reading",
     price: "$99",
     valueProposition: "Understand yourself in a way that makes sense of your life",
@@ -83,7 +83,7 @@ export const READINGS: Reading[] = [
   {
     id: "akashic-record",
     tag: "Soul Records",
-    name: "The Akashic Record Reading",
+    name: "Akashic Record",
     subtitle: "Akashic Record Reading",
     price: "$79",
     valueProposition: "Direct answers from your soul's infinite records",

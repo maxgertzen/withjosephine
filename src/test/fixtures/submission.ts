@@ -6,7 +6,7 @@ const BASE_SUBMISSION: SubmissionContext = {
   recipientEmail: null,
   isGift: false,
   firstName: "Ada",
-  readingName: "Soul Blueprint Reading",
+  readingName: "Soul Blueprint",
   readingPriceDisplay: "$179",
   responses: [
     {
