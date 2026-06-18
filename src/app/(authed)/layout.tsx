@@ -19,6 +19,12 @@ export default async function AuthedLayout({ children }: { children: React.React
           </Link>
           {user ? (
             <div className="flex items-center gap-3 min-w-0">
+              <Link
+                href="/my-readings"
+                className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors shrink-0"
+              >
+                Library
+              </Link>
               <span
                 className="font-body text-sm text-j-text-muted truncate"
                 title={user.email}

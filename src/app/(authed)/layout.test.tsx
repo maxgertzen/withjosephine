@@ -53,6 +53,17 @@ describe("AuthedLayout top-bar", () => {
     expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
   });
 
+  it("links to the library (/my-readings) when signed in", async () => {
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
+    userMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
+
+    await renderLayout();
+
+    const libraryLink = screen.getByRole("link", { name: /^Library$/ });
+    expect(libraryLink).toHaveAttribute("href", "/my-readings");
+  });
+
   it("drops the redundant Home link; the wordmark is the sole home affordance", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
@@ -74,6 +85,7 @@ describe("AuthedLayout top-bar", () => {
     await renderLayout();
 
     expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Library$/ })).toBeNull();
     expect(userMock).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: /Josephine/ })).toBeInTheDocument();
   });
