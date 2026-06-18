@@ -16,3 +16,28 @@ reason = "Build-only transitive dep; esbuild dev-server CORS not exposed. Bump t
 id = "GHSA-g7r4-m6w7-qqqr"
 # esbuild <0.28.1 (CVSS 2.5), same build-only transitive surface as GHSA-gv7w-rqvm-qjhr.
 reason = "Build-only transitive dep. Fixed in 0.28.1; bump tracked in dex."
+
+[[IgnoredVulns]]
+id = "GHSA-fx2h-pf6j-xcff"
+# vite <8.0.16 — `server.fs.deny` bypass on Windows alternate paths. vite is a
+# build/test-only transitive (vitest, @vitejs/plugin-react Storybook, sanity cli);
+# it never ships in the Cloudflare Worker bundle and no exposed vite dev server
+# runs in CI (Linux) or production. The advisory is Windows-only. The
+# pnpm.overrides bump to ^8.0.16 cannot apply because vite is resolved purely as a
+# peer edge (pnpm --lockfile-only does not re-resolve peer-only deps); bump tracked.
+reason = "Build/test-only transitive dep; vite dev-server not exposed (Windows-only advisory)."
+
+[[IgnoredVulns]]
+id = "GHSA-v6wh-96g9-6wx3"
+# launch-editor NTLMv2 hash disclosure via the vite dev-server error overlay on
+# Windows. Same build/test-only vite surface as GHSA-fx2h-pf6j-xcff; no dev server
+# exposed in CI/prod and the advisory is Windows-only.
+reason = "Build/test-only transitive dep; vite dev-server editor-open not exposed (Windows-only advisory)."
+
+[[IgnoredVulns]]
+id = "GHSA-h67p-54hq-rp68"
+# js-yaml — fixed in 4.2.0. The 4.x line is pinned to ^4.2.0 via pnpm.overrides;
+# the only residual flagged instance is js-yaml@3.14.2, pulled exclusively by
+# @vercel/frameworks (Vercel-only build tooling that is dead code here — this
+# project deploys to Cloudflare Workers). No 3.x upstream fix exists.
+reason = "Residual instance is dev-only @vercel/frameworks (dead Vercel code); 4.x bumped to 4.2.0, no 3.x fix."
