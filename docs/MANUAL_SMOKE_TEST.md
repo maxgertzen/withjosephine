@@ -22,6 +22,8 @@ Use **incognito / private windows** for every customer journey. Cached state bre
 
 **Email plus-addressing on your own Gmail.** Gmail treats `yourname+anything@gmail.com` as the same inbox as `yourname@gmail.com`. The site sees each variant as a different user.
 
+> **Base must be the allowlisted address.** On staging, the base (the part before `+`) must be the exact dotless address that appears on the staging `ALLOWED_PREVIEW_RECIPIENTS` / non-prod email allowlist. Use the canonical form with no dots; a dotted variant (`your.name@…`) or any other base is a different key and staging sends fail closed via `env_guard`, so the email silently never arrives. Plus-suffixes are fine; the base is what the allowlist matches.
+
 | Suffix | Role | Used in |
 |---|---|---|
 | `+self` | Self-purchase customer | Cluster A |
