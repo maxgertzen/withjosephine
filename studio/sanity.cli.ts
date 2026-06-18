@@ -27,6 +27,7 @@ const STUDIO_SRC_ALIASES = [
   { find: /^@\/lib\/http\//, replacement: `${SRC}/lib/http/` },
   { find: /^@\/lib\/hooks\//, replacement: `${SRC}/lib/hooks/` },
   { find: /^@\/lib\/auth\/emailValidation$/, replacement: `${SRC}/lib/auth/emailValidation.ts` },
+  { find: /^@\/lib\/sanity\/pickDefined$/, replacement: `${SRC}/lib/sanity/pickDefined.ts` },
   { find: /^@\/lib\/a11y\//, replacement: `${SRC}/lib/a11y/` },
   { find: /^@\/lib\/booking\/formatGiftSendAt$/, replacement: `${SRC}/lib/booking/formatGiftSendAt.ts` },
   { find: /^@\/lib\/booking\/constants$/, replacement: `${SRC}/lib/booking/constants.ts` },
