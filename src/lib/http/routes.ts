@@ -5,6 +5,7 @@ export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
 
 export const AUTH_MAGIC_LINK_ROUTE = "/api/auth/magic-link";
 export const AUTH_MAGIC_LINK_VERIFY_ROUTE = "/api/auth/magic-link/verify";
+export const AUTH_SIGN_OUT_ROUTE = "/api/auth/sign-out";
 export const CONTACT_API_ROUTE = "/api/contact";
 export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 

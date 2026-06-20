@@ -61,6 +61,18 @@ describe("GiftForm", () => {
     expect(selfSend).toBeChecked();
   });
 
+  it("locks the purchaser email to the signed-in account when prefilledEmail is set", () => {
+    render(<GiftForm {...READING_PROPS} prefilledEmail="signed-in@example.com" />);
+    const email = screen.getByLabelText(/your email/i);
+    expect(email).toHaveValue("signed-in@example.com");
+    expect(email).toHaveAttribute("readonly");
+  });
+
+  it("leaves the purchaser email editable when not signed in", () => {
+    render(<GiftForm {...READING_PROPS} />);
+    expect(screen.getByLabelText(/your email/i)).not.toHaveAttribute("readonly");
+  });
+
   it("hides recipient email + send-at fields when self_send is selected", () => {
     render(<GiftForm {...READING_PROPS} />);
     expect(

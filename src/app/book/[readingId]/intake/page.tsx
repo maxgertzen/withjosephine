@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
+import { SignOutForm } from "@/components/SignOutForm";
 import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
 import { findUserById } from "@/lib/auth/users";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
@@ -96,14 +97,18 @@ export default async function IntakePage({ params }: IntakePageProps) {
       </p>
 
       {signedInUser ? (
-        <p className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
+        <div className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
           Signed in as {signedInUser.email}, so this reading will be saved to your library.
           Booking for someone else?{" "}
           <Link href={BOOKING_PAGE_ROUTES.gift(reading.slug)} className="underline">
             Send it as a gift
-          </Link>
+          </Link>{" "}
+          or{" "}
+          <SignOutForm className="inline" buttonClassName="underline hover:text-j-text-heading transition-colors">
+            sign out
+          </SignOutForm>
           .
-        </p>
+        </div>
       ) : null}
 
       <IntakeForm
