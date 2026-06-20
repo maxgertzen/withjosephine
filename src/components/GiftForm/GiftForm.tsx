@@ -83,9 +83,16 @@ type Props = {
   readingName: string;
   readingPriceDisplay: string;
   copy: BookingGiftFormContent;
+  prefilledEmail?: string | null;
 };
 
-export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }: Props) {
+export function GiftForm({
+  readingSlug,
+  readingName,
+  readingPriceDisplay,
+  copy,
+  prefilledEmail = null,
+}: Props) {
   // Prefill comes from a synchronous client-only snapshot of the prior intake
   // draft (server snapshot is empty so SSR/hydration match). User-typed values
   // are tracked separately and always win over the prefill.
@@ -95,12 +102,15 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
     () => EMPTY_PREFILL,
   );
 
+  // Locked to the session account when signed in, so the purchase ties to the buyer's library.
+  const emailLocked = Boolean(prefilledEmail);
+
   const { effectiveTz } = useEffectiveTimeZone();
   const [deliveryMethod, setDeliveryMethod] = useState<GiftDeliveryMethod>(GIFT_DELIVERY.selfSend);
   const [purchaserFirstNameOverride, setPurchaserFirstNameOverride] = useState<string | null>(null);
   const [purchaserEmailOverride, setPurchaserEmailOverride] = useState<string | null>(null);
   const purchaserFirstName = purchaserFirstNameOverride ?? prefill.firstName;
-  const purchaserEmail = purchaserEmailOverride ?? prefill.email;
+  const purchaserEmail = prefilledEmail ?? purchaserEmailOverride ?? prefill.email;
   const setPurchaserFirstName = setPurchaserFirstNameOverride;
   const setPurchaserEmail = setPurchaserEmailOverride;
   const [recipientName, setRecipientName] = useState("");
@@ -410,6 +420,7 @@ export function GiftForm({ readingSlug, readingName, readingPriceDisplay, copy }
           type="email"
           value={purchaserEmail}
           onChange={setPurchaserEmail}
+          readOnly={emailLocked}
           autoComplete="email"
           helpText={copy.purchaserEmailHelper}
           error={fieldErrors.purchaserEmail}
