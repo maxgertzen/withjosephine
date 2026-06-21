@@ -1,5 +1,9 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/AccountMenu", () => ({
+  AccountMenu: () => <div data-testid="account-menu" />,
+}));
 
 import { BookingPageShell } from "./BookingPageShell";
 
@@ -69,12 +73,12 @@ describe("BookingPageShell", () => {
     expect(guard).toBeTruthy();
   });
 
-  it("passes aboutLinkText through to BookingFlowHeader", () => {
-    const { getByText } = render(
-      <BookingPageShell backHref="/back" aboutLinkText="About Josephine">
+  it("renders the account menu slot in the header", () => {
+    const { getByTestId } = render(
+      <BookingPageShell backHref="/back">
         <p>x</p>
       </BookingPageShell>,
     );
-    expect(getByText("About Josephine")).toBeTruthy();
+    expect(getByTestId("account-menu")).toBeTruthy();
   });
 });

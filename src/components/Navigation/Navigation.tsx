@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
+import { AccountMenu } from "@/components/AccountMenu";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
@@ -70,7 +71,7 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="h-auto w-[140px] lg:hidden"
+              className="h-auto w-[140px] min-[900px]:hidden"
             />
             <Image
               src="/images/logo-horizontal-text.webp"
@@ -78,45 +79,49 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="hidden h-auto w-[clamp(120px,8vw,160px)] lg:block"
+              className="hidden h-auto w-[clamp(120px,8vw,160px)] min-[900px]:block"
             />
           </Link>
 
-          <div
-            className="hidden lg:flex items-center gap-8"
-            role="navigation"
-            aria-label="Main navigation"
-          >
-            {navLinks.map((link) => (
-              <button
-                key={link.sectionId}
-                type="button"
-                onClick={() => scrollToSection(link.sectionId)}
-                className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
-            <Button variant="outlined" size="sm" onClick={() => scrollToSection("readings")}>
-              {navCtaText}
-            </Button>
-          </div>
+          <div className="flex items-center gap-3 min-[900px]:gap-6">
+            <div
+              className="hidden min-[900px]:flex items-center gap-8"
+              role="navigation"
+              aria-label="Main navigation"
+            >
+              {navLinks.map((link) => (
+                <button
+                  key={link.sectionId}
+                  type="button"
+                  onClick={() => scrollToSection(link.sectionId)}
+                  className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
+                >
+                  {link.label}
+                </button>
+              ))}
+              <Button variant="outlined" size="sm" onClick={() => scrollToSection("readings")}>
+                {navCtaText}
+              </Button>
+            </div>
 
-          <button
-            type="button"
-            className="lg:hidden text-j-deep"
-            onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-          >
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            <AccountMenu signInClassName="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight" />
+
+            <button
+              type="button"
+              className="min-[900px]:hidden text-j-deep"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+            >
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </nav>
 
       <div
         aria-hidden={!menuOpen}
         className={mergeClasses(
-          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out lg:hidden",
+          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out min-[900px]:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

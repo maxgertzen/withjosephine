@@ -54,8 +54,6 @@ export function deriveBookingEntryProps(
 
   return {
     reading,
-    aboutJosephineLinkText:
-      entry.aboutJosephineLinkText ?? ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText,
     copy: {
       changeReadingLinkText:
         entry.changeReadingLinkText ?? ENTRY_PAGE_DEFAULTS.changeReadingLinkText,
