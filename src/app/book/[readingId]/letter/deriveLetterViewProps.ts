@@ -29,8 +29,6 @@ export function deriveLetterViewProps(
 
   return {
     reading,
-    aboutJosephineLinkText:
-      entry.aboutJosephineLinkText ?? ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText,
     letterContent: {
       letterOpener: entry.letterOpener ?? ENTRY_PAGE_DEFAULTS.letterOpener,
       letterBridge: entry.letterBridge ?? ENTRY_PAGE_DEFAULTS.letterBridge,

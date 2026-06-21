@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
@@ -8,14 +7,11 @@ import { SignOutForm } from "@/components/SignOutForm";
 import {
   BOOKING_GIFT_FORM_DEFAULTS,
   type BookingGiftFormContent,
-  ENTRY_PAGE_DEFAULTS,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
-import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
-import { findUserById } from "@/lib/auth/users";
+import { getSignedInUser } from "@/lib/auth/sessionUser";
 import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import {
-  fetchBookingForm,
   fetchBookingGiftForm,
   fetchReading,
 } from "@/lib/sanity/fetch";
@@ -107,17 +103,10 @@ function mergeCopy(
 export default async function GiftPage({ params }: GiftPageProps) {
   const { readingId } = await params;
 
-  const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(COOKIE_NAME)?.value ?? "";
-
-  const [sanityReading, bookingForm, giftFormCopy, signedInUser] = await Promise.all([
+  const [sanityReading, giftFormCopy, signedInUser] = await Promise.all([
     fetchReading(readingId),
-    fetchBookingForm(),
     fetchBookingGiftForm(),
-    (async () => {
-      const session = cookieValue ? await getActiveSession({ cookieValue }) : null;
-      return session ? findUserById(session.userId) : null;
-    })(),
+    getSignedInUser(),
   ]);
 
   const reading = sanityReading
@@ -137,14 +126,9 @@ export default async function GiftPage({ params }: GiftPageProps) {
     notFound();
   }
 
-  const aboutLabel =
-    bookingForm?.entryPageContent?.aboutJosephineLinkText ??
-    ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText;
-
   return (
     <BookingPageShell
       backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
-      aboutLinkText={aboutLabel}
       outerBg="ivory"
     >
       {signedInUser ? (

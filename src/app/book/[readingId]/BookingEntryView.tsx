@@ -27,13 +27,12 @@ export type BookingEntryCopy = {
 export type BookingEntryViewProps = {
   reading: BookingEntryReading;
   copy: BookingEntryCopy;
-  aboutJosephineLinkText: string;
 };
 
-export function BookingEntryView({ reading, copy, aboutJosephineLinkText }: BookingEntryViewProps) {
+export function BookingEntryView({ reading, copy }: BookingEntryViewProps) {
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <BookingFlowHeader backHref="/#readings" aboutLinkText={aboutJosephineLinkText} />
+      <BookingFlowHeader backHref="/#readings" />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-12 md:gap-x-16 md:gap-y-12 md:[grid-template-rows:auto_auto]">

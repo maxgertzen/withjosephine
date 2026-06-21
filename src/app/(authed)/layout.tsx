@@ -1,15 +1,10 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { UserMenu } from "@/components/UserMenu";
-import { COOKIE_NAME, getActiveSession } from "@/lib/auth/listenSession";
-import { findUserById } from "@/lib/auth/users";
+import { getSignedInUser } from "@/lib/auth/sessionUser";
 
 export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(COOKIE_NAME)?.value ?? "";
-  const session = cookieValue ? await getActiveSession({ cookieValue }) : null;
-  const user = session ? await findUserById(session.userId) : null;
+  const user = await getSignedInUser();
 
   return (
     <>
