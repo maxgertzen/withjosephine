@@ -221,6 +221,10 @@
 				{
 					"binding": "BACKUPS_BUCKET",
 					"bucket_name": "josephine-backups-staging"
+				},
+				{
+					"binding": "NEXT_INC_CACHE_R2_BUCKET",
+					"bucket_name": "withjosephine-next-cache-staging"
 				}
 			],
 			"d1_databases": [
@@ -233,11 +237,13 @@
 			],
 			"durable_objects": {
 				"bindings": [
-					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
+					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" },
+					{ "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
 				]
 			},
 			"migrations": [
-				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
+				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
+				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
 			],
 			"services": [
 				{ "binding": "SELF", "service": "withjosephine-staging" }
