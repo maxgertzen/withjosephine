@@ -1,6 +1,32 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (2026-06-22): PERF MIGRATION arc on `release/v1.11.5` — Stage 1 DONE, awaiting Max's Presentation re-test → then Stage 2 (cacheComponents)
+## ▶ NEXT SESSION (2026-06-22 LATE): Stage 2 (cacheComponents) SHIPPED TO STAGING → **REVERTED**. Speed issue UNSOLVED. PPR-on-Cloudflare does not work on this stack.
+
+**TL;DR for next session:** The cacheComponents/PPR migration (PR #307) was built, merged to `release/v1.11.5`, deployed to staging, and **reverted** (revert commit `38c1bff`) because it did NOT fix the nav latency and **introduced a runtime PPR failure + likely a regression** (staging measured ~4s on a `?_rsc=` nav vs the old ~1–2s). Site is back to the pre-Stage-2 dynamic-rendering baseline. **The original ~1–2s per-click latency is still unsolved and needs a genuinely different approach.**
+
+### What we proved on staging (hard evidence via `wrangler tail`, not theory)
+- The per-click cost is the **RSC soft-navigation payload** (`?_rsc=…`), not the HTML document and not asset loading. Network tab showed one `?_rsc=` fetch at **4.01s** while CSS/JS were 7–21ms.
+- During that render the Worker made **0 live Sanity GROQ calls** — so `'use cache'` DID cache the data. The Sanity fetch was never the real bottleneck (the original root-cause framing was wrong/incomplete).
+- The 4s came from **two things Stage 2 introduced/relied on**:
+  1. **PPR resume is broken on OpenNext + workerd.** Recurring runtime error: `Failed to parse postponed state RangeError: options.maxOutputLength out of range. Must be <= 134217728. Received 524288000`. "Postponed state" is PPR's static-shell→resume mechanism; when it fails Next falls back to full dynamic re-render, so the static-shell benefit **does not exist at runtime**. This is exactly the risk the plan's **Stage 1.5 one-page spike** was meant to catch — and that spike was skipped.
+  2. **The DO sharded tag cache is a round-trip storm.** `DOShardedTagCache.getTagData` fired **156×** in the click window (every cached read validates each of its tags against a Durable Object; next-sanity stamps each fetch with many syncTags). Plus `waitUntil() tasks … cancelled` warnings (background cache writes not completing).
+- Also a UX regression while it was live: **empty-page blink** on home + sign-in/auth-verify — caused by wrapping still-dynamic pages in `<Suspense fallback={null}>` to force the build green.
+
+### DO-NOT-REPEAT lessons (load-bearing)
+- **PPR / `cacheComponents` is NOT viable on this OpenNext + Cloudflare Workers version** — it throws `postponed state` at runtime. Do not re-attempt without first proving it on ONE page on staging (the skipped Stage 1.5 spike). Memory: `project_ppr_cachecomponents_broken_on_cloudflare`.
+- **The real latency axis is RSC-soft-nav → Worker render**, NOT first-paint/TTFB and NOT uncached GROQ. Any future perf attempt must target the `?_rsc=` Worker render time (measure with `wrangler tail` + network tab first). Candidate levers NOT yet tried: trim `src/middleware.ts` so it doesn't run on every request (it generates a CSP nonce + geo lookup on every nav), tune/disable `next/link` prefetch behavior, reduce per-nav Worker work, or step back and question whether App-Router-RSC-on-Workers is the right stack for this site at all (a static export / lighter SPA would not pay the per-click RSC round-trip).
+- Original root-cause memory `project_static_rendering_root_cause` is now **misleading** (it blames uncached GROQ/dynamic rendering; the tail disproved that). Treat it as superseded by `project_ppr_cachecomponents_broken_on_cloudflare`.
+
+### State of the world
+- `release/v1.11.5` HEAD = revert `38c1bff` (pushed; CI re-running → redeploys the pre-Stage-2 worker to staging). Verify that CI run goes green (esp. `deploy-staging` — if it errors on the removed `DOShardedTagCache` DO binding, add a `deleted_classes` migration).
+- **R2 buckets `withjosephine-next-cache` + `-staging` were created this session and are now UNUSED** — delete them (`wrangler r2 bucket delete …`) or leave empty (harmless, no cost at rest).
+- PR #307 is merged-then-reverted; the cacheComponents code is gone from the branch. `docs/PERF_STATIC_RENDERING_MIGRATION.md` plan doc remains but its Approach A (cacheComponents) is now disproven on CF — annotate it before reusing.
+- Two enforcement mechanisms added this session and KEPT (independent of the revert): a PostToolUse warning hook for added code comments (`~/.claude/hooks/warn-added-comments.mjs`) and memory `feedback_audit_before_adding_resources`.
+- Unrelated `release/v1.11.0` (#291) prod-merge hold is unchanged — see older sections below.
+
+---
+
+## ▶ EARLIER 2026-06-22: PERF MIGRATION arc on `release/v1.11.5` — Stage 1 DONE, awaiting Max's Presentation re-test → then Stage 2 (cacheComponents)
 
 **Big picture this session:** Diagnosed the site-wide **~1–2s navigation latency** (every link click). Root cause (evidence: `.next/prerender-manifest.json` prerenders 0 content pages): the root layout (`src/app/layout.tsx`) calls `draftMode()` + `headers()` unconditionally **and** `sanityFetch` (next-sanity `defineLive`) calls `draftMode()` internally → **every page renders dynamically**, running uncached Sanity GROQ per request. Full plan + Council verdict (evidence-cited): **`docs/PERF_STATIC_RENDERING_MIGRATION.md`**. Memory: `project_static_rendering_root_cause`.
 
