@@ -18,7 +18,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
   locations: {
     landingPage: defineLocations({
       message: "This document impacts the landing page.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     reading: defineLocations({
       select: { name: "name", slug: "slug.current" },
