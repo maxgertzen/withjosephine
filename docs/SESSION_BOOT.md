@@ -1,6 +1,40 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (2026-06-22 LATE): Stage 2 (cacheComponents) SHIPPED TO STAGING → **REVERTED**. Speed issue UNSOLVED. PPR-on-Cloudflare does not work on this stack.
+## ▶ NEXT SESSION (2026-06-22 EVENING): Path A static-rendering — Phases 1-2 SHIPPED + Presentation SMOKE PASSED → **build Phase 3 (the static cutover)**
+
+**TL;DR:** The nav-latency root cause is now CONFIRMED and a non-PPR fix (Path A) is underway on `release/v1.11.5`. Phases 1-2 are merged + deployed + smoked. Phase 3 is the actual speed win and is the next session's job. PPR/cacheComponents stays dead (see older section). The fix surface and the deploy-free test exist.
+
+### Confirmed root cause (supersedes the old "uncached GROQ" framing)
+Every content route renders **dynamically** (`/`, `/book/*`, `/privacy`, `/terms`, all `ƒ`; only `/robots.txt` static). Two triggers: (a) root layout `layout.tsx:22-23` `draftMode()` + `headers()`; (b) the live `sanityFetch` (next-sanity `defineLive`) reads `draftMode()` internally on EVERY public fetch. Because routes are dynamic AND have no `loading.tsx`, `next/link` can't prefetch them → the full worker render (incl. edge→Sanity GROQ) is paid on every click = the ~1-2s. Middleware is ~4ms (refuted). Local render is ~53ms warm, so prod cost = workerd CPU + edge→Sanity RTT, paid per-click only because the route is dynamic. Memory `project_static_rendering_root_cause` corrected to reflect this.
+
+### Path A (dex epic `tia2pzk1`) — make public pages static/ISR, move draft preview to a dedicated `/preview` surface (reuses existing Views). No PPR.
+- **Phase 1 `g0a3eqiv` — DONE (#309).** `publishedFetch` helper (`src/lib/sanity/publishedFetch.ts`): published perspective, `stega:false`, `revalidate=300` + cache tags, no `draftMode()`. Unused until Phase 3. 4 unit tests.
+- **Phase 2 `ocry192o` — DONE (#309) + SMOKE PASSED.** `src/app/preview/page.tsx` renders `HomePageView` via the live draft-aware path, `robots:noindex`. `studio/presentation.tsx` `landingPage` location repointed `/` → `/preview`. Shared `src/app/homePageViewProps.ts` (`toHomePageViewProps`) so public + preview can't drift. **Max confirmed Presentation works on `/preview` on staging 2026-06-22** (Studio redeployed). Additive; nothing public changed behavior.
+- **Phase 3 `21jupako` — NEXT (the cutover, the speed win).** Ordered, and it is semi-atomic (can't be half-done — see gotchas):
+  1. **Expand `/preview` to ALL previewable doc types** (book/reading → `/preview/book/[slug]`, thank-you, legal, 404) reusing each page's View, and repoint ALL remaining `presentationResolve` locations (`reading`, `bookingPage`, `thankYouPage`, `legalPage`, `siteSettings`, `theme`, `testimonial`, `faqItem`, `underConstructionPage`, `notFoundPage`) to `/preview/*`. Until this is complete you CANNOT do step 2.
+  2. **Strip `draftMode()`/`headers()` from the root layout** and MOVE the live tree (`SanityLive`/`VisualEditing`/`DisableDraftMode`) into a new `src/app/preview/layout.tsx` (so only `/preview` carries it; the root layout's current draft block disappears). Root layout becomes static.
+  3. **Switch public pages to `publishedFetch`** (home + legal first, then the rest) so they render static/ISR. Build gate (`node scripts/perf/assert-static-routes.mjs`) flips `/`, `/privacy`, `/terms`, `/refund-policy` from FAIL→PASS = deploy-free proof.
+  4. **Consent decoupling:** root layout's `headers()` reads `CONSENT_HEADER` (region) to gate the consent banner; for a static layout, set a consent COOKIE in middleware and read it client-side (keep the hardcoded legal UI untouched). GDPR-sensitive — smoke EU behavior.
+  5. **Static-safe CSP nonce:** home/FaqSection JSON-LD uses a per-request `x-nonce`; static pages have no per-request nonce. Use a sha256-hash CSP entry or drop the inline-nonce dependency for static routes. Keep the nonce path for still-dynamic routes.
+  6. **Under-construction relocation:** home `page.tsx` currently shows the holding page via `isUnderConstruction(host)` (needs `headers()`). For a static `/`, move that decision into middleware (rewrite apex `/` → a static holding route when under construction) so `/` itself is the static landing.
+  7. **Re-smoke Presentation** (hard gate, Max) after the layout strip — confirm ALL doc types still preview on `/preview` with drafts + overlays. THEN merge.
+- **Phase 4 `de287l3v` — webhook `revalidateTag`** for published content (300s `revalidate` is the fallback; webhook is the real-time path). Also add React `cache()` dedup to published fetchers (Phase-2 simplify watch-item).
+
+### Branch / deploy state
+- `release/v1.11.5` HEAD `53967b6`: harness (`c8c8f99`) + Path A P1-P2 (`5c407a9`) + loading add/revert (`38c515e`/`53967b6`). Deployed to staging.
+- **Loading state (Path B) was added then reverted** — full-screen root loader fired on every nav (too intrusive). Not shipped. Don't re-add a root `loading.tsx`.
+- Phase 3 branches off `release/v1.11.5`. Per convention: feature branch → PR → squash; the Presentation re-smoke is the merge gate.
+
+### Deploy-free test (use it every Phase 3 step)
+`node scripts/perf/assert-static-routes.mjs` (runs `next build`, asserts public routes static — extend `SHOULD_BE_STATIC` as you convert) + `scripts/perf/rsc-nav-probe.mjs <baseUrl>` (RSC-vs-HTML timing on `next start`). Build locally with `npx pnpm@10 run build` (NOT `CI=true` — it trips a dev-bypass guard; and pnpm@10 avoids the v11 purge prompt). The build route table (○/ƒ) is the canonical static-vs-dynamic signal — no deploy needed.
+
+### Tracked separately
+- `i1cd1q5a` (tech debt, non-blocking): migrate `pnpm.overrides` + build-approvals into `www/pnpm-workspace.yaml` to end the pnpm@10 dance + purge prompt.
+- Unrelated `release/v1.11.0` (#291) prod-merge hold is unchanged — see older sections.
+
+---
+
+## ▶ EARLIER 2026-06-22 (LATE): Stage 2 (cacheComponents) SHIPPED TO STAGING → **REVERTED**. Speed issue UNSOLVED. PPR-on-Cloudflare does not work on this stack.
 
 **TL;DR for next session:** The cacheComponents/PPR migration (PR #307) was built, merged to `release/v1.11.5`, deployed to staging, and **reverted** (revert commit `38c1bff`) because it did NOT fix the nav latency and **introduced a runtime PPR failure + likely a regression** (staging measured ~4s on a `?_rsc=` nav vs the old ~1–2s). Site is back to the pre-Stage-2 dynamic-rendering baseline. **The original ~1–2s per-click latency is still unsolved and needs a genuinely different approach.**
 
