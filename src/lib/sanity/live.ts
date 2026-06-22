@@ -1,6 +1,7 @@
 import { defineLive } from "next-sanity/live";
 
 import { sanityClient } from "./client";
+import { SANITY_CONTENT_TAG } from "./tags";
 
 /**
  * Live content layer for the App Router.
@@ -40,6 +41,10 @@ type SanityFetchResult<T> = {
 };
 
 export async function sanityFetch<T>(options: SanityFetchOptions): Promise<SanityFetchResult<T>> {
-  const result = await live.sanityFetch(options);
+  "use cache";
+  const result = await live.sanityFetch({
+    ...options,
+    tags: [...(options.tags ?? []), SANITY_CONTENT_TAG],
+  });
   return result as SanityFetchResult<T>;
 }

@@ -29,6 +29,9 @@ const LEGAL_LINKS = [
   { label: "Refunds", href: ROUTES.refundPolicy },
 ] as const;
 
+// Build-time: reading the clock during a static render is disallowed.
+const COPYRIGHT_YEAR = new Date().getFullYear();
+
 interface FooterProps {
   content?: FooterContent;
   socialLinks?: MappedSocialLink[];
@@ -114,7 +117,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
       </nav>
 
       <p className="text-[0.72rem] text-j-text-muted tracking-[0.06em] opacity-60 font-body">
-        &copy; {new Date().getFullYear()} {copyrightText}
+        &copy; {COPYRIGHT_YEAR} {copyrightText}
       </p>
       <p className="text-[0.68rem] text-j-text-muted tracking-[0.06em] opacity-40 font-body mt-2">
         Built by{" "}

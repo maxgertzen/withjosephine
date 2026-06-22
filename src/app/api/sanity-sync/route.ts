@@ -1,8 +1,10 @@
 import { decodeSignatureHeader, isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { optionalEnv } from "@/lib/env";
 import { getSanityWriteClient } from "@/lib/sanity/client";
+import { SANITY_CONTENT_TAG } from "@/lib/sanity/tags";
 
 /**
  * Sanity → staging dataset auto-sync.
@@ -150,6 +152,7 @@ export async function POST(request: Request): Promise<Response> {
 
   if (operation === "delete") {
     await writeClient.delete(docId);
+    revalidateTag(SANITY_CONTENT_TAG, "max");
     return NextResponse.json({ synced: docId, op: "delete" }, { status: 200 });
   }
 
@@ -169,5 +172,6 @@ export async function POST(request: Request): Promise<Response> {
     _type: docType,
   });
 
+  revalidateTag(SANITY_CONTENT_TAG, "max");
   return NextResponse.json({ synced: docId, op: operation }, { status: 200 });
 }

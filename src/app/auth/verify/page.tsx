@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { MAGIC_LINK_VERIFY_PAGE_DEFAULTS } from "@/data/defaults";
 import { safeNext } from "@/lib/auth/safeNext";
@@ -13,7 +14,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function VerifyPage({
+export default function VerifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string; next?: string; error?: string }>;
+}) {
+  return (
+    <Suspense fallback={null}>
+      <VerifyPageContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+export async function VerifyPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ token?: string; next?: string; error?: string }>;
