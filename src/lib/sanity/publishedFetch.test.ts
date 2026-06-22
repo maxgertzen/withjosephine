@@ -5,7 +5,7 @@ vi.mock("./client", () => ({
 }));
 
 import { sanityClient } from "./client";
-import { publishedFetch, PUBLISHED_REVALIDATE_SECONDS } from "./publishedFetch";
+import { PUBLISHED_REVALIDATE_SECONDS, publishedFetch } from "./publishedFetch";
 
 const mockRawFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
 
