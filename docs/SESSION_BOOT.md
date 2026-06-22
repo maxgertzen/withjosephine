@@ -1,5 +1,38 @@
 # Session Boot — Active State
 
+## ▶ NEXT SESSION (2026-06-22): PERF MIGRATION arc on `release/v1.11.5` — Stage 1 DONE, awaiting Max's Presentation re-test → then Stage 2 (cacheComponents)
+
+**Big picture this session:** Diagnosed the site-wide **~1–2s navigation latency** (every link click). Root cause (evidence: `.next/prerender-manifest.json` prerenders 0 content pages): the root layout (`src/app/layout.tsx`) calls `draftMode()` + `headers()` unconditionally **and** `sanityFetch` (next-sanity `defineLive`) calls `draftMode()` internally → **every page renders dynamically**, running uncached Sanity GROQ per request. Full plan + Council verdict (evidence-cited): **`docs/PERF_STATIC_RENDERING_MIGRATION.md`**. Memory: `project_static_rendering_root_cause`.
+
+### The migration is staged on a NEW release line `release/v1.11.5`
+- `release/v1.11.5` was cut from `release/v1.11.0` (contains all of v1.11.0) and **wired into ci.yml** (push+PR triggers, deploy-staging + sanity-validate gates). Max's call: v1.11.5 is the perf line; v1.11.0 (#291, still HELD for prod merge — see older section below) merges to main first, then v1.11.5 follows.
+- **Stage 1 — next-sanity v12.4.5 → v13 (DONE, merged + deployed to staging):**
+  - #304 website `next-sanity` 13.1.1 + `@sanity/client` ^7.23.0. We use NONE of v13's removed API (verified vs MIGRATE-v12-to-v13). Lockfile regen'd with **pnpm@10** to keep the security overrides.
+  - #305 Studio `sanity` 5.24 → 5.31.1 (next-sanity 13 peers `^5.29 || ^6`) + `studio/pnpm-workspace.yaml` `allowBuilds: esbuild: true`. **Max deployed the Studio himself** (`pnpm studio:deploy` with his `sanity login` — env tokens lack the `deployStudio` grant). Studio live at withjosephine.sanity.studio on 5.31.
+  - #306 `<SanityLive action="refresh" />` — fixes the v13 Presentation no-live-update (v13 removed default refresh-on-focus; default action only revalidates tags = no-op on our dynamic pages; `"refresh"` forces `router.refresh()`). Only renders in draftMode → no public overage.
+- **Stage 2 — `cacheComponents` (NEXT, the actual speed fix):** enable Next 16 `cacheComponents`, lift `draftMode()`/`headers()` out of the root layout into Suspense/`use cache` islands, `enableCacheInterception:false`. Static shell serves from CF Workers Static Assets (no Worker). See plan doc §4 Stage 2. **Gated on Stage 1 verification below.**
+- **Stage 3 — account-menu redo:** once pages are static, the menu MUST be client-resolved (a static page can't know the user) — client-resolve + an instant **hint cookie** to kill the blink + the **z-index fix** (`UserMenu` popover `z-50` → `z-[110]`, currently renders UNDER the nav).
+
+### 🚨 OWED FIRST — Max real-browser verify on staging (unblocks Stage 2)
+1. **Presentation live-update (the Stage 1 gate):** #306 just deployed. In Sanity Studio Presentation → edit a field → **preview updates WITHOUT publishing or reloading**. (Earlier it only updated on manual reload.) If it works → Stage 1 truly done → start Stage 2. If not → investigate before Stage 2.
+2. Optional re-check (shipped in #303, live on staging): mobile hamburger width-jump + nav switches at 900px not 1024.
+
+### Parked / tracked (do NOT lose)
+- **Scrollbar width-jump on hamburger** — dex `ccvoig0e`. `scrollbar-gutter:stable` + `documentElement` lock (shipped #303) did NOT fix it for Max (classic scrollbars). Headless Chromium can't reproduce. PARKED to after perf + Presentation. Needs forced-classic-scrollbar repro OR JS scrollbar-width compensation on both page + fixed nav.
+- **Account-menu z-index + blink** — Stage 3 (the server-resolve attempt that included these was DISCARDED because it conflicts with making pages static).
+- **Permanent pnpm fix (recommended, not yet done):** migrate `www`'s `pnpm.overrides` + build-approvals from `package.json` (pnpm field, IGNORED by pnpm 11) into `www/pnpm-workspace.yaml` (`overrides:` + `allowBuilds:`). Ends the pnpm@10 dance + `ERR_PNPM_IGNORED_BUILDS`. Verify osv-scan stays green. Memory: `feedback_attempt_credentialed_ops_from_env`.
+- **⚠️ pnpm gotcha live now:** `www/node_modules` was built with **pnpm@10** (to preserve overrides), so local **pnpm 11.6.0** commands prompt to purge/reinstall `www/node_modules` — which would regen `www/pnpm-lock.yaml` WITHOUT the overrides. Say **n** to that prompt; use `npx pnpm@10` for www installs until the pnpm-workspace.yaml migration lands.
+- Other dex: `r759m4bm` (reap orphaned `aboutJosephineLinkText` Sanity field), `5ep2j3h4` (hint-cookie perf for AccountMenu — folds into Stage 3), `n02vegpj` (named nav breakpoint token), `ktq5io2l` / `0i9qk3m5` (older quality defers).
+- **Minor:** Studio warns the two workspaces (`production`/`staging`) declare different `auth` configs (only first takes effect) — small consolidation later.
+
+### Session memories saved (read before related work)
+- `project_static_rendering_root_cause` · `feedback_research_online_before_architecture` (research vendor docs, don't guess) · `feedback_attempt_credentialed_ops_from_env` (run deploys with .env yourself; SANITY read/write tokens lack `deployStudio` grant).
+
+### Branch state
+- `release/v1.11.5` @ `e667673` (perf line; Stage 1 merged). `release/v1.11.0` unchanged, #291 (release→main) still HELD (see older section). The account-menu work (#303, #299–#302) is on `release/v1.11.0`.
+
+---
+
 ## ▶ NEXT SESSION (2026-06-20): G1 re-smoke fixes merged to release; #291 STILL HELD pending Max's header re-smoke
 
 - **Today's G1 re-smoke surfaced findings → 2 PRs merged to `release/v1.11.0` (CI green, staging redeployed):**
