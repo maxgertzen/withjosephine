@@ -23,7 +23,7 @@ vi.mock("next/link", () => ({
 import { getActiveSession } from "@/lib/auth/listenSession";
 import { findUserById } from "@/lib/auth/users";
 
-import AuthedLayout from "./layout";
+import AuthedLayout, { AuthedUserMenu } from "./layout";
 
 const sessionMock = vi.mocked(getActiveSession);
 const userMock = vi.mocked(findUserById);
@@ -39,13 +39,17 @@ async function renderLayout() {
   render(ui);
 }
 
+async function renderUserMenu() {
+  render(await AuthedUserMenu());
+}
+
 describe("AuthedLayout top-bar", () => {
   it("shows a single account-menu trigger when signed in (email/links live inside it)", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     userMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
 
-    await renderLayout();
+    await renderUserMenu();
 
     expect(
       screen.getByRole("button", { name: /your library and account/i }),
@@ -61,7 +65,7 @@ describe("AuthedLayout top-bar", () => {
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
     userMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
 
-    await renderLayout();
+    await renderUserMenu();
     await user.click(screen.getByRole("button", { name: /your library and account/i }));
 
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();

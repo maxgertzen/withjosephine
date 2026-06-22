@@ -1,8 +1,12 @@
-import { decodeSignatureHeader, isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
+import { SIGNATURE_HEADER_NAME } from "@sanity/webhook";
 import { NextResponse } from "next/server";
 
 import { optionalEnv } from "@/lib/env";
 import { getSanityWriteClient } from "@/lib/sanity/client";
+import {
+  MAX_WEBHOOK_BODY_BYTES,
+  verifySignedRequest,
+} from "@/lib/sanity/webhookVerification";
 
 /**
  * Sanity → staging dataset auto-sync.
@@ -63,35 +67,10 @@ const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
 // belt-and-braces refusal if the webhook filter is ever reverted or a new
 // PII type is added without updating the filter.
 const PII_TYPES = new Set(["submission", "magicLinkRequest", "giftPurchase"]);
-const REPLAY_WINDOW_MS = 5 * 60 * 1000;
-// Pre-HMAC body-size pre-check. Sanity webhook payloads are well under 100 KB
-// even for fat docs; 1 MB leaves headroom without giving unauthenticated
-// callers a cheap memory-pressure lever.
-const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
-
 type SanityOperation = "create" | "update" | "delete";
 
 function isSanityOperation(value: unknown): value is SanityOperation {
   return value === "create" || value === "update" || value === "delete";
-}
-
-function isTimestampFresh(timestampMs: number, now: number = Date.now()): boolean {
-  return Number.isFinite(timestampMs) && Math.abs(now - timestampMs) <= REPLAY_WINDOW_MS;
-}
-
-async function verifySignedRequest(
-  rawBody: string,
-  signatureHeader: string,
-  secret: string,
-): Promise<boolean> {
-  let decoded: { timestamp: number; hashedPayload: string };
-  try {
-    decoded = decodeSignatureHeader(signatureHeader);
-  } catch {
-    return false;
-  }
-  if (!isTimestampFresh(decoded.timestamp)) return false;
-  return isValidSignature(rawBody, signatureHeader, secret);
 }
 
 export async function POST(request: Request): Promise<Response> {
