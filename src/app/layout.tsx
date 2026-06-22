@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               and rendering it on every public request triggers Sanity Live
               connection attempts that the public CSP rightly blocks.
             */}
-            <SanityLive />
+            <SanityLive action="refresh" />
             <VisualEditing />
             <DisableDraftMode />
           </>
