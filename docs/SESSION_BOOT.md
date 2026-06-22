@@ -13,15 +13,18 @@
 - **Stage 2 — `cacheComponents` (NEXT, the actual speed fix):** enable Next 16 `cacheComponents`, lift `draftMode()`/`headers()` out of the root layout into Suspense/`use cache` islands, `enableCacheInterception:false`. Static shell serves from CF Workers Static Assets (no Worker). See plan doc §4 Stage 2. **Gated on Stage 1 verification below.**
 - **Stage 3 — account-menu redo:** once pages are static, the menu MUST be client-resolved (a static page can't know the user) — client-resolve + an instant **hint cookie** to kill the blink + the **z-index fix** (`UserMenu` popover `z-50` → `z-[110]`, currently renders UNDER the nav).
 
-### 🚨 OWED FIRST — Max real-browser verify on staging (unblocks Stage 2)
-1. **Presentation live-update (the Stage 1 gate):** #306 just deployed. In Sanity Studio Presentation → edit a field → **preview updates WITHOUT publishing or reloading**. (Earlier it only updated on manual reload.) If it works → Stage 1 truly done → start Stage 2. If not → investigate before Stage 2.
-2. Optional re-check (shipped in #303, live on staging): mobile hamburger width-jump + nav switches at 900px not 1024.
+### Stage 1 status — DONE enough; Stage 2 is UNBLOCKED (start it next session)
+- **Presentation preview works on RELOAD** (drafts + stega + overlay all good under v13). The **live-auto-update-on-edit is still broken** even with `<SanityLive action="refresh" />` (#306) — verified by Max 2026-06-22. Dex **`yqkukzlt`**. **Max accepted reload-only for now (non-blocking).** STRONG hypothesis: **Stage 2 (`cacheComponents`) fixes it for free** — cached+tagged data lets SanityLive's default tag-revalidation work (our dynamic/uncached pages are why neither default nor `refresh` re-renders). **RE-CHECK live-update after Stage 2 before any deeper investigation.**
+- So: **proceed to Stage 2 (`cacheComponents`)** — it's no longer gated on the live-update.
+- Already shipped + on staging (re-check casually): mobile hamburger width-jump (still broken, parked) + nav switches at 900px not 1024 (#303).
 
 ### Parked / tracked (do NOT lose)
 - **Scrollbar width-jump on hamburger** — dex `ccvoig0e`. `scrollbar-gutter:stable` + `documentElement` lock (shipped #303) did NOT fix it for Max (classic scrollbars). Headless Chromium can't reproduce. PARKED to after perf + Presentation. Needs forced-classic-scrollbar repro OR JS scrollbar-width compensation on both page + fixed nav.
 - **Account-menu z-index + blink** — Stage 3 (the server-resolve attempt that included these was DISCARDED because it conflicts with making pages static).
 - **Permanent pnpm fix (recommended, not yet done):** migrate `www`'s `pnpm.overrides` + build-approvals from `package.json` (pnpm field, IGNORED by pnpm 11) into `www/pnpm-workspace.yaml` (`overrides:` + `allowBuilds:`). Ends the pnpm@10 dance + `ERR_PNPM_IGNORED_BUILDS`. Verify osv-scan stays green. Memory: `feedback_attempt_credentialed_ops_from_env`.
 - **⚠️ pnpm gotcha live now:** `www/node_modules` was built with **pnpm@10** (to preserve overrides), so local **pnpm 11.6.0** commands prompt to purge/reinstall `www/node_modules` — which would regen `www/pnpm-lock.yaml` WITHOUT the overrides. Say **n** to that prompt; use `npx pnpm@10` for www installs until the pnpm-workspace.yaml migration lands.
+- **Presentation live-update** broken under v13 — dex `yqkukzlt` (re-check after Stage 2; may self-fix).
+- **Sanity Studio 5.x → 6.x** major upgrade — dex `hp8jight` (separate effort, no rush; 5.31 satisfies next-sanity 13's `^5.29||^6` peer so 6.x not needed now).
 - Other dex: `r759m4bm` (reap orphaned `aboutJosephineLinkText` Sanity field), `5ep2j3h4` (hint-cookie perf for AccountMenu — folds into Stage 3), `n02vegpj` (named nav breakpoint token), `ktq5io2l` / `0i9qk3m5` (older quality defers).
 - **Minor:** Studio warns the two workspaces (`production`/`staging`) declare different `auth` configs (only first takes effect) — small consolidation later.
 
