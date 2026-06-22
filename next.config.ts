@@ -1,7 +1,6 @@
 import bundleAnalyzer from "@next/bundle-analyzer";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
-import { sanity } from "next-sanity/live/cache-life";
 
 const PRODUCTION_BYPASS_FLAGS = [
   "BOOKING_TURNSTILE_BYPASS",
@@ -23,10 +22,7 @@ if (process.env.CI === "true" && process.env.NODE_ENV === "production") {
 }
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  cacheLife: {
-    default: sanity,
-  },
+  // See `src/lib/taint.ts` for the consumer-side helper.
   experimental: {
     taint: true,
   },

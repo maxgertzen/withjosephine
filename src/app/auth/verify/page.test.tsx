@@ -15,8 +15,8 @@ beforeEach(() => {
 });
 
 async function renderPage(searchParams: Record<string, string> = {}) {
-  const { VerifyPageContent } = await import("./page");
-  const tree = await VerifyPageContent({ searchParams: Promise.resolve(searchParams) });
+  const Page = (await import("./page")).default;
+  const tree = await Page({ searchParams: Promise.resolve(searchParams) });
   return render(tree);
 }
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { GiftForm } from "@/components/GiftForm";
@@ -101,15 +100,7 @@ function mergeCopy(
   };
 }
 
-export default function GiftPage({ params }: GiftPageProps) {
-  return (
-    <Suspense fallback={null}>
-      <GiftPageContent params={params} />
-    </Suspense>
-  );
-}
-
-async function GiftPageContent({ params }: GiftPageProps) {
+export default async function GiftPage({ params }: GiftPageProps) {
   const { readingId } = await params;
 
   const [sanityReading, giftFormCopy, signedInUser] = await Promise.all([

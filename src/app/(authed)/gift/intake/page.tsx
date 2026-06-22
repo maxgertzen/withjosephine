@@ -17,6 +17,8 @@ import {
 import { deriveGiftIntakeViewProps } from "./deriveGiftIntakeViewProps";
 import { GiftIntakeView } from "./GiftIntakeView";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const copy = (await fetchGiftIntakePage()) ?? GIFT_INTAKE_PAGE_DEFAULTS;
   return {

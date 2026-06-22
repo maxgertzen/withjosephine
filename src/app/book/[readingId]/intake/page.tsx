@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
@@ -60,15 +59,7 @@ export async function generateMetadata({ params }: IntakePageProps): Promise<Met
   };
 }
 
-export default function IntakePage({ params }: IntakePageProps) {
-  return (
-    <Suspense fallback={null}>
-      <IntakePageContent params={params} />
-    </Suspense>
-  );
-}
-
-async function IntakePageContent({ params }: IntakePageProps) {
+export default async function IntakePage({ params }: IntakePageProps) {
   const { readingId } = await params;
 
   const cookieStore = await cookies();

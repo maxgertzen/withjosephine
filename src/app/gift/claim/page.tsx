@@ -4,10 +4,11 @@
 // Renders fallback copy for the no-token and ?invalid=1 cases.
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 
 import { VellumShell } from "@/components/VellumShell";
 import { loadGiftClaimCopy } from "@/lib/sanity/fetch";
+
+export const dynamic = "force-dynamic";
 
 type GiftClaimPageProps = {
   searchParams: Promise<{ token?: string; invalid?: string; expired?: string }>;
@@ -22,15 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function GiftClaimPage({ searchParams }: GiftClaimPageProps) {
-  return (
-    <Suspense fallback={null}>
-      <GiftClaimPageContent searchParams={searchParams} />
-    </Suspense>
-  );
-}
-
-async function GiftClaimPageContent({ searchParams }: GiftClaimPageProps) {
+export default async function GiftClaimPage({ searchParams }: GiftClaimPageProps) {
   const { token, invalid, expired } = await searchParams;
 
   if (token) {

@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { Suspense } from "react";
 
 import { UserMenu } from "@/components/UserMenu";
 import { getSignedInUser } from "@/lib/auth/sessionUser";
 
-export async function AuthedUserMenu() {
+export default async function AuthedLayout({ children }: { children: React.ReactNode }) {
   const user = await getSignedInUser();
-  return user ? <UserMenu email={user.email} /> : null;
-}
 
-export default function AuthedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <header aria-label="Site" className="sticky top-0 z-20 bg-j-cream border-b border-j-border-subtle">
@@ -17,12 +13,10 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           <Link href="/" className="font-display italic text-lg text-j-text-heading">
             <span aria-hidden="true">✦</span> Josephine
           </Link>
-          <Suspense fallback={null}>
-            <AuthedUserMenu />
-          </Suspense>
+          {user ? <UserMenu email={user.email} /> : null}
         </div>
       </header>
-      <Suspense fallback={null}>{children}</Suspense>
+      {children}
     </>
   );
 }

@@ -7,6 +7,8 @@ import { recipientNameFor } from "@/lib/booking/giftPersonas";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 import { fetchGiftClaimPage } from "@/lib/sanity/fetch";
 
+export const dynamic = "force-dynamic";
+
 type GiftClaimGreetingProps = {
   params: Promise<{ token: string }>;
 };

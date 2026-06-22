@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { draftMode, headers } from "next/headers";
-import { Suspense } from "react";
 
 import { UnderConstruction } from "@/components/UnderConstruction";
 import { NONCE_HEADER } from "@/lib/constants";
@@ -43,15 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function LandingPage() {
-  return (
-    <Suspense fallback={null}>
-      <LandingPageContent />
-    </Suspense>
-  );
-}
-
-async function LandingPageContent() {
+export default async function LandingPage() {
   const { isEnabled: isDraftMode } = await draftMode();
   const headersList = await headers();
   const host = headersList.get("host");

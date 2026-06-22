@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
 import { verifyGiftClaimToken } from "@/lib/booking/giftClaim";
 import { setGiftClaimCookie } from "@/lib/booking/giftClaimSession";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const token = url.searchParams.get("token");

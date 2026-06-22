@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { VellumShell } from "@/components/VellumShell";
 import { loadGiftClaimCopy } from "@/lib/sanity/fetch";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const copy = await loadGiftClaimCopy();
   return {

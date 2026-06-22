@@ -87,10 +87,6 @@
 			"binding": "BACKUPS_BUCKET",
 			"bucket_name": "josephine-backups",
 		},
-		{
-			"binding": "NEXT_INC_CACHE_R2_BUCKET",
-			"bucket_name": "withjosephine-next-cache",
-		},
 	],
 	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
 	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
@@ -143,13 +139,11 @@
 	// and re-exported from custom-worker.ts so wrangler bundling picks it up.
 	"durable_objects": {
 		"bindings": [
-			{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" },
-			{ "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+			{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
 		]
 	},
 	"migrations": [
-		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
-		{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
+		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
 	],
 	// Self-binding (`env.SELF`) lets the GiftClaimScheduler Durable Object
 	// dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
@@ -227,10 +221,6 @@
 				{
 					"binding": "BACKUPS_BUCKET",
 					"bucket_name": "josephine-backups-staging"
-				},
-				{
-					"binding": "NEXT_INC_CACHE_R2_BUCKET",
-					"bucket_name": "withjosephine-next-cache-staging"
 				}
 			],
 			"d1_databases": [
@@ -243,13 +233,11 @@
 			],
 			"durable_objects": {
 				"bindings": [
-					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" },
-					{ "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
 				]
 			},
 			"migrations": [
-				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
-				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
+				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
 			],
 			"services": [
 				{ "binding": "SELF", "service": "withjosephine-staging" }
