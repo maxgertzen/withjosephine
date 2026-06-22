@@ -6,6 +6,7 @@ const deleteFn = vi.fn();
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: () => ({ createOrReplace, delete: deleteFn }),
 }));
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 
 const SECRET = "test-webhook-secret";
 
