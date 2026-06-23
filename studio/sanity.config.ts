@@ -23,7 +23,7 @@ const sharedPlugins = (previewOrigin: string) => [
   presentationTool({
     resolve: presentationResolve,
     previewUrl: {
-      initial: previewOrigin,
+      initial: `${previewOrigin}/preview`,
       previewMode: { enable: "/api/draft/enable" },
     },
   }),
