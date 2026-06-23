@@ -330,7 +330,7 @@ export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> 
 
 // Published-perspective fetchers keep public pages static/ISR; the live `fetch*`
 // above force dynamic via draftMode and are for the /preview surface only. Tags
-// are the revalidateTag handle for the Phase 4 Sanity webhook.
+// are the revalidateTag handle for the Sanity content webhook.
 export const fetchLandingPagePublished = cache(async (): Promise<SanityLandingPage | null> =>
   publishedFetch<SanityLandingPage | null>({ query: landingPageQuery, tags: ["landingPage"] }));
 
