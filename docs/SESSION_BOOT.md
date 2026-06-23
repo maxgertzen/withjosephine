@@ -1,6 +1,21 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (2026-06-22 EVENING): Path A static-rendering — Phases 1-2 SHIPPED + Presentation SMOKE PASSED → **build Phase 3 (the static cutover)**
+## ▶ NEXT SESSION (2026-06-23): Phase 3 static cutover SHIPPED + Max-smoked → next = convert the booking funnel ("the rest")
+
+**Phase 3 done.** Merged to `release/v1.11.5` (PR #311) + deployed to staging + Max-smoked 2026-06-23:
+- **Presentation** works on `/preview/*` for all doc types (drafts + click-to-edit overlay). Studio redeployed with `previewUrl.initial=/preview` so it cold-opens on the draft surface. Navigate to other pages by typing `/preview/book/<slug>`, `/preview/thank-you/<slug>`, `/preview/privacy`, `/preview/404`, `/preview/under-construction` (or via a doc's "Used on" links).
+- **Public static pages** (`/`, `/privacy`, `/terms`, `/refund-policy`) are now instant/prefetched. Per-route CSP (`'unsafe-inline'` on static routes, strict nonce on interactive); consent via `consent-required` cookie; under-construction relocated to middleware → static `/under-construction`.
+- **pnpm overrides + build-allowlist** migrated to `www/pnpm-workspace.yaml` (`i1cd1q5a` done, commit `62f6062`) — plain **pnpm 11** works now, no more `npx pnpm@10` dance.
+
+**NEXT (dex `ox2clqob`, child of `tia2pzk1`): convert the public booking funnel.** `/book/[readingId]` + `/book/[readingId]/letter` still use the live draft fetchers → ~4s per-click worker render (Max confirmed on staging). Convert those TWO public pages to `publishedFetch` (same pattern as home/legal); KEEP `/book/[id]/intake` + `/gift` + `/thank-you` dynamic (session/Stripe reads, locked #301). Verify the nav into `/letter` is a prefetching `next/link`; extend `assert-static-routes.mjs`.
+
+**Also queued (non-blocking):** `tu3kj5py` (CF Web Analytics beacon CSP-blocked — decide allow vs drop), `g28lo073` (FAQ collapse animation), `olus9jet` (Presentation `mainDocuments` resolver UX), `de287l3v` (Phase 4 webhook `revalidateTag` + confirm OpenNext incremental-cache binding for `unstable_cache`).
+
+**Phase 3 is on `release/v1.11.5`, NOT yet merged to `main`** — rides `release → main` with the rest of that line when ready.
+
+---
+
+## ▶ EARLIER (2026-06-22 EVENING): Path A static-rendering — Phases 1-2 SHIPPED + Presentation SMOKE PASSED → **build Phase 3 (the static cutover)**
 
 **TL;DR:** The nav-latency root cause is now CONFIRMED and a non-PPR fix (Path A) is underway on `release/v1.11.5`. Phases 1-2 are merged + deployed + smoked. Phase 3 is the actual speed win and is the next session's job. PPR/cacheComponents stays dead (see older section). The fix surface and the deploy-free test exist.
 
