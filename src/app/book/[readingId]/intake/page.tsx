@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
 import { SignOutForm } from "@/components/SignOutForm";
@@ -26,8 +27,7 @@ const VARIANT_COPY: Record<string, VariantCopy> = {
   "soul-blueprint": {
     eyebrow: "\u2726 Soul Blueprint Intake",
     title: "A few things, before we begin.",
-    subtitle:
-      "Take your time. The more honestly you write, the more your reading can hold.",
+    subtitle: "Take your time. The more honestly you write, the more your reading can hold.",
   },
   "birth-chart": {
     eyebrow: "\u2726 Birth Chart Intake",
@@ -37,8 +37,7 @@ const VARIANT_COPY: Record<string, VariantCopy> = {
   "akashic-record": {
     eyebrow: "\u2726 Akashic Record Intake",
     title: "A few things, before we begin.",
-    subtitle:
-      "For the records, I\u2019ll need your name, your photo, and three questions.",
+    subtitle: "For the records, I\u2019ll need your name, your photo, and three questions.",
   },
 };
 
@@ -85,45 +84,50 @@ export default async function IntakePage({ params }: IntakePageProps) {
   const copy = VARIANT_COPY[reading.slug] ?? FALLBACK_COPY;
 
   return (
-    <BookingPageShell backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)}>
-      <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
-        {copy.eyebrow}
-      </p>
-      <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-        {copy.title}
-      </h1>
-      <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
-        {copy.subtitle}
-      </p>
+    <HeaderBackProvider>
+      <BookingPageShell backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)}>
+        <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
+          {copy.eyebrow}
+        </p>
+        <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
+          {copy.title}
+        </h1>
+        <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+          {copy.subtitle}
+        </p>
 
-      {signedInUser ? (
-        <div className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
-          Signed in as {signedInUser.email}, so this reading will be saved to your library.
-          Booking for someone else?{" "}
-          <Link href={BOOKING_PAGE_ROUTES.gift(reading.slug)} className="underline">
-            Send it as a gift
-          </Link>{" "}
-          or{" "}
-          <SignOutForm className="inline" buttonClassName="underline hover:text-j-text-heading transition-colors">
-            sign out
-          </SignOutForm>
-          .
-        </div>
-      ) : null}
+        {signedInUser ? (
+          <div className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
+            Signed in as {signedInUser.email}, so this reading will be saved to your library.
+            Booking for someone else?{" "}
+            <Link href={BOOKING_PAGE_ROUTES.gift(reading.slug)} className="underline">
+              Send it as a gift
+            </Link>{" "}
+            or{" "}
+            <SignOutForm
+              className="inline"
+              buttonClassName="underline hover:text-j-text-heading transition-colors"
+            >
+              sign out
+            </SignOutForm>
+            .
+          </div>
+        ) : null}
 
-      <IntakeForm
-        readingId={reading.slug}
-        readingName={reading.name}
-        sections={filteredSections}
-        nonRefundableNotice={bookingForm.nonRefundableNotice}
-        pagination={bookingForm.pagination}
-        loadingStateCopy={bookingForm.loadingStateCopy}
-        submitLabel={bookingPage?.paymentButtonText}
-        nextLabel={bookingForm.nextButtonText}
-        saveLaterLabel={bookingForm.saveAndContinueLaterText}
-        pageIndicatorTagline={bookingForm.pageIndicatorTagline}
-        prefilledEmail={signedInUser?.email ?? null}
-      />
-    </BookingPageShell>
+        <IntakeForm
+          readingId={reading.slug}
+          readingName={reading.name}
+          sections={filteredSections}
+          nonRefundableNotice={bookingForm.nonRefundableNotice}
+          pagination={bookingForm.pagination}
+          loadingStateCopy={bookingForm.loadingStateCopy}
+          submitLabel={bookingPage?.paymentButtonText}
+          nextLabel={bookingForm.nextButtonText}
+          saveLaterLabel={bookingForm.saveAndContinueLaterText}
+          pageIndicatorTagline={bookingForm.pageIndicatorTagline}
+          prefilledEmail={signedInUser?.email ?? null}
+        />
+      </BookingPageShell>
+    </HeaderBackProvider>
   );
 }
