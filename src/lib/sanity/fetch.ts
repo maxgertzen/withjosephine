@@ -365,3 +365,6 @@ export const fetchUnderConstructionPagePublished = cache(
       tags: ["underConstructionPage"],
     }),
 );
+
+export const fetchNotFoundPagePublished = cache(async (): Promise<SanityNotFoundPage | null> =>
+  publishedFetch<SanityNotFoundPage | null>({ query: notFoundPageQuery, tags: ["notFoundPage"] }));

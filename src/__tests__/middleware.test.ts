@@ -16,6 +16,8 @@ vi.mock("next/server", () => {
   }
   class FakeResponse {
     headers = new FakeHeaders();
+    cookieStore = new Map<string, string>();
+    cookies = { set: (k: string, v: string) => this.cookieStore.set(k, v) };
     rewriteTo: string | null = null;
   }
   return {
@@ -38,17 +40,24 @@ function makeRequest({
   hasDraft,
   host = "withjosephine.com",
   pathname = "/",
+  country = null,
 }: {
   hasDraft: boolean;
   host?: string;
   pathname?: string;
+  country?: string | null;
 }) {
   return {
     cookies: {
       has: (name: string) => hasDraft && name === DRAFT_COOKIE,
     },
     headers: {
-      get: (name: string) => (name.toLowerCase() === "host" ? host : null),
+      get: (name: string) => {
+        const n = name.toLowerCase();
+        if (n === "host") return host;
+        if (n === "cf-ipcountry") return country;
+        return null;
+      },
     },
     nextUrl: {
       pathname,
@@ -130,6 +139,43 @@ describe("middleware CSP + draft hardening", () => {
     const imgDirective = csp.split(";").find((d) => d.trim().startsWith("img-src"));
     expect(imgDirective).toContain("https://*.clarity.ms");
   });
+
+  function scriptSrcOf(res: { headers: { get(name: string): string | null } }): string {
+    const csp = res.headers.get("content-security-policy") ?? "";
+    return csp.split(";").find((d) => d.trim().startsWith("script-src")) ?? "";
+  }
+
+  it("static content routes get 'unsafe-inline' script-src and no nonce (prerender)", () => {
+    for (const pathname of ["/", "/privacy", "/terms", "/refund-policy", "/under-construction"]) {
+      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
+      const scriptDirective = scriptSrcOf(res);
+      expect(scriptDirective, pathname).toContain("'unsafe-inline'");
+      expect(scriptDirective, pathname).not.toContain("'nonce-");
+    }
+  });
+
+  it("interactive routes keep the strict nonce and never get 'unsafe-inline'", () => {
+    for (const pathname of ["/book/soul-blueprint/intake", "/my-readings", "/auth/verify"]) {
+      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
+      const scriptDirective = scriptSrcOf(res);
+      expect(scriptDirective, pathname).toContain("'nonce-");
+      expect(scriptDirective, pathname).not.toContain("'unsafe-inline'");
+    }
+  });
+
+  it("sets the consent-required cookie to '0' for non-consent regions", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com" }),
+    ) as unknown as { cookieStore: Map<string, string> };
+    expect(res.cookieStore.get("consent-required")).toBe("0");
+  });
+
+  it("sets the consent-required cookie to '1' for GDPR-aligned regions", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", country: "DE" }),
+    ) as unknown as { cookieStore: Map<string, string> };
+    expect(res.cookieStore.get("consent-required")).toBe("1");
+  });
 });
 
 type RewriteResponse = { rewriteTo: string | null };
@@ -139,14 +185,14 @@ describe("middleware apex lockdown (under-construction on)", () => {
     vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "1");
   });
 
-  it("rewrites apex booking flow to / so it serves the holding page", () => {
+  it("rewrites apex booking flow to /under-construction so it serves the holding page", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, pathname: "/book/soul-blueprint/intake" }),
     ) as unknown as RewriteResponse;
-    expect(res.rewriteTo).toBe("/");
+    expect(res.rewriteTo).toBe("/under-construction");
   });
 
-  it("rewrites apex thank-you, contact, draft-mode, booking API to /", () => {
+  it("rewrites apex thank-you, contact, draft-mode, booking API to /under-construction", () => {
     const paths = [
       "/thank-you/abc123",
       "/api/contact",
@@ -158,7 +204,7 @@ describe("middleware apex lockdown (under-construction on)", () => {
       const res = middleware(
         makeRequest({ hasDraft: false, pathname }),
       ) as unknown as RewriteResponse;
-      expect(res.rewriteTo, `expected ${pathname} to be rewritten`).toBe("/");
+      expect(res.rewriteTo, `expected ${pathname} to be rewritten`).toBe("/under-construction");
     }
   });
 
@@ -249,9 +295,16 @@ describe("middleware apex lockdown (under-construction on)", () => {
     expect(res.rewriteTo).toBeNull();
   });
 
-  it("leaves `/` itself alone — page-level gate handles holding-page render", () => {
+  it("rewrites `/` itself to /under-construction (it is the static landing now, not allowlisted)", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, pathname: "/" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBe("/under-construction");
+  });
+
+  it("does NOT rewrite /under-construction itself (avoids an infinite rewrite loop)", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/under-construction" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
   });

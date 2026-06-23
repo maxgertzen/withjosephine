@@ -164,7 +164,14 @@ export function middleware(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/under-construction";
-    return NextResponse.rewrite(url);
+    const holdingResponse = NextResponse.rewrite(url);
+    // This path returns early, so set the CSP the shared block below would have.
+    // The holding route is static, so it uses the unsafe-inline script policy.
+    holdingResponse.headers.set(
+      "Content-Security-Policy",
+      buildCsp({ isDraft: false, nonce: generateNonce(), staticRoute: true }),
+    );
+    return holdingResponse;
   }
 
   // Consent gating moved from a request header (which would force the root

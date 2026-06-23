@@ -23,8 +23,6 @@ export function requiresConsent(
   return false;
 }
 
-export const CONSENT_HEADER = "x-josephine-consent-required";
-
 // JS-readable cookie carrying the region consent-required flag ("1"/"0"). Set by
 // middleware, read client-side by AnalyticsBootstrap so the layout stays static.
 export const CONSENT_REQUIRED_COOKIE = "consent-required";
