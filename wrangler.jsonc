@@ -246,7 +246,8 @@
 				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
 			],
 			"services": [
-				{ "binding": "SELF", "service": "withjosephine-staging" }
+				{ "binding": "SELF", "service": "withjosephine-staging" },
+				{ "binding": "WORKER_SELF_REFERENCE", "service": "withjosephine-staging" }
 			],
 			"ratelimits": [
 				{

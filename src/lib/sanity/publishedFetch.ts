@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 
 import { sanityClient } from "./client";
 
-export const PUBLISHED_REVALIDATE_SECONDS = 300;
+export const PUBLISHED_REVALIDATE_SECONDS = 60;
 
 /**
  * Published-perspective fetch for statically rendered public pages. Unlike
