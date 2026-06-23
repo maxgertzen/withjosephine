@@ -444,7 +444,7 @@ describe("IntakeForm — paginated flow", () => {
 });
 
 describe("IntakeForm — localStorage save/resume", () => {
-  it("restores values and currentPage from a saved draft on mount", async () => {
+  it("restores values from a saved draft but always resumes on the first page", async () => {
     window.localStorage.setItem(
       "josephine.intake.draft.soul-blueprint",
       JSON.stringify({
@@ -459,9 +459,10 @@ describe("IntakeForm — localStorage save/resume", () => {
     renderForm(TWO_PAGE_SECTIONS);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
     });
-    expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe("ada@example.com");
+    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
   });
 
   it("preserves email and name when reading slug differs from lastReadingId", async () => {
