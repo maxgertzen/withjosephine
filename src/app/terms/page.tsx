@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LegalPageLayout, TermsFallbackBody } from "@/components/LegalPageLayout";
 import { PortableTextContent } from "@/components/PortableTextContent";
 import { buildLegalMetadata, type LegalPageFallback, resolveLegalPage } from "@/lib/legalPage";
+import { fetchLegalPagePublished } from "@/lib/sanity/fetch";
 
 const SLUG = "terms";
 const FALLBACK: LegalPageFallback = {
@@ -15,11 +16,15 @@ const FALLBACK: LegalPageFallback = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  return buildLegalMetadata(SLUG, FALLBACK);
+  return buildLegalMetadata(SLUG, FALLBACK, fetchLegalPagePublished);
 }
 
 export default async function TermsPage() {
-  const { doc, tag, title, lastUpdated } = await resolveLegalPage(SLUG, FALLBACK);
+  const { doc, tag, title, lastUpdated } = await resolveLegalPage(
+    SLUG,
+    FALLBACK,
+    fetchLegalPagePublished,
+  );
 
   return (
     <LegalPageLayout tag={tag} title={title} lastUpdated={lastUpdated}>

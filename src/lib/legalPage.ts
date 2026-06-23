@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import { fetchLegalPage } from "@/lib/sanity/fetch";
 import type { SanityLegalPage } from "@/lib/sanity/types";
 
+// Public legal pages pass the published fetcher (static/ISR); the /preview
+// legal route uses the default live fetcher (draft-aware).
+type LegalFetcher = (slug: string) => Promise<SanityLegalPage | null>;
+
 export type LegalPageFallback = {
   tag: string;
   title: string;
@@ -31,8 +35,9 @@ export function formatLegalDate(value: string) {
 export async function resolveLegalPage(
   slug: string,
   fallback: LegalPageFallback,
+  fetcher: LegalFetcher = fetchLegalPage,
 ): Promise<ResolvedLegalPage> {
-  const doc = await fetchLegalPage(slug);
+  const doc = await fetcher(slug);
   return {
     doc,
     tag: doc?.tag ?? fallback.tag,
@@ -44,8 +49,9 @@ export async function resolveLegalPage(
 export async function buildLegalMetadata(
   slug: string,
   fallback: LegalPageFallback,
+  fetcher: LegalFetcher = fetchLegalPage,
 ): Promise<Metadata> {
-  const doc = await fetchLegalPage(slug);
+  const doc = await fetcher(slug);
   return {
     title: doc?.seo?.metaTitle ?? fallback.metaTitle,
     description: doc?.seo?.metaDescription ?? fallback.metaDescription,

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
-import { CONSENT_HEADER, requiresConsent } from "@/lib/region";
+import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
 
 /**
  * Edge middleware owns the Content-Security-Policy header because it has to
@@ -57,6 +57,9 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/privacy",
   "/terms",
   "/refund-policy",
+  // The static holding route itself must stay reachable so the under-construction
+  // rewrite below has a target that doesn't get rewritten back onto itself.
+  "/under-construction",
   // /preview/* renders user-gated pages (listen, my-readings, my-gifts) with
   // fixture state for Studio's iframe — bypass apex-lockdown so Becky can
   // preview them even when the holding page is on. The routes themselves
@@ -66,7 +69,6 @@ const APEX_ALLOWLIST_PREFIXES = [
 ];
 
 function isApexAllowlisted(pathname: string): boolean {
-  if (pathname === "/") return true;
   return APEX_ALLOWLIST_PREFIXES.some((prefix) =>
     prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix,
   );
@@ -86,11 +88,29 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { isDraft: boolean; nonce: string }): string {
-  const { isDraft, nonce } = opts;
+// Prerendered public content routes that must serve the 'unsafe-inline' script
+// CSP (see buildCsp). Interactive/dynamic routes are absent here and keep the
+// strict nonce CSP.
+const STATIC_CSP_PATHS: ReadonlySet<string> = new Set([
+  "/",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
+  "/under-construction",
+]);
+
+function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean }): string {
+  const { isDraft, nonce, staticRoute } = opts;
+  // Prerendered (static) routes have no per-request nonce, so Next's first-party
+  // inline bootstrap can only be admitted via 'unsafe-inline' (a nonce CSP forces
+  // dynamic rendering; hashes can't cover content/build-variable RSC flight data).
+  // These pages take no user input and reflect nothing, so the XSS surface stays
+  // low and 'self' still blocks externally injected scripts. Every interactive
+  // route keeps the strict per-request nonce.
+  const scriptInline = staticRoute ? "'unsafe-inline'" : `'nonce-${nonce}'`;
   // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
   // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
-  const scriptSrc = `'self' 'nonce-${nonce}'${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
+  const scriptSrc = `'self' ${scriptInline}${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
@@ -131,11 +151,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
-  // allowlisted (Stripe webhook, crons, /listen/[id]) gets rewritten to `/`
-  // so it serves the holding HTML. Draft mode bypasses this so Studio's
-  // Presentation tool keeps working if it's ever pointed at apex (currently
-  // it points at preview). Page-level gate in src/app/page.tsx still fires
-  // for `/` itself — both layers must remain.
+  // allowlisted (Stripe webhook, crons, /listen/[id], legal pages) gets
+  // rewritten to the static `/under-construction` holding route. `/` is the
+  // real static landing now, so it is no longer allowlisted and gets the
+  // rewrite too. Draft mode bypasses this so Studio's Presentation tool keeps
+  // working if it's ever pointed at apex (currently it points at preview).
   if (
     isPublicApex &&
     !isDraft &&
@@ -143,17 +163,18 @@ export function middleware(request: NextRequest) {
     !isApexAllowlisted(pathname)
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/under-construction";
     return NextResponse.rewrite(url);
   }
 
-  // Header set on the request (not response) so RSC reads it via headers().
+  // Consent gating moved from a request header (which would force the root
+  // layout dynamic) to a JS-readable cookie read client-side in
+  // AnalyticsBootstrap, so the layout stays static. The cookie is set on the
+  // response below.
   const country = request.headers.get("cf-ipcountry");
   const region = request.headers.get("cf-region");
+  const consentRequired = requiresConsent(country, region);
   const requestHeaders = new Headers(request.headers);
-  if (requiresConsent(country, region)) {
-    requestHeaders.set(CONSENT_HEADER, "1");
-  }
 
   // Per-request CSP nonce. Forwarded to RSC via x-nonce so layouts can read it
   // via headers() and propagate to <Script> / inline-script consumers (e.g.
@@ -164,13 +185,19 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
+  response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
+    sameSite: "lax",
+    path: "/",
+    secure: !isDev,
+  });
+
   // Strict CSP only on the public apex without draft mode. Anywhere else
   // (preview/workers.dev hosts, draft cookie) needs Studio as a valid
   // frame-ancestor for the iframe to load.
   const isStrict = isPublicApex && !isDraft;
   response.headers.set(
     "Content-Security-Policy",
-    buildCsp({ isDraft: !isStrict, nonce }),
+    buildCsp({ isDraft: !isStrict, nonce, staticRoute: STATIC_CSP_PATHS.has(pathname) }),
   );
 
   const isMyReadings = pathname === "/my-readings" || pathname.startsWith("/my-readings/");

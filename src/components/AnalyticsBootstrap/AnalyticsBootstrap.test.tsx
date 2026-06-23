@@ -10,57 +10,78 @@ vi.mock("@/lib/clarity-consent", () => ({
   clarityConsent: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: vi.fn(() => "/"),
+}));
+
 import { initAnalytics } from "@/lib/analytics";
 import { clarityConsent } from "@/lib/clarity-consent";
+import { usePathname } from "next/navigation";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 
 const STORAGE_KEY = "josephine.consent";
+const mockUsePathname = vi.mocked(usePathname);
+
+function setConsentRequired(required: boolean) {
+  document.cookie = `consent-required=${required ? "1" : "0"}; path=/`;
+}
+
+function clearConsentCookie() {
+  document.cookie = "consent-required=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+}
 
 beforeEach(() => {
   window.localStorage.clear();
+  clearConsentCookie();
+  mockUsePathname.mockReturnValue("/");
   vi.clearAllMocks();
 });
 
 afterEach(() => {
   window.localStorage.clear();
+  clearConsentCookie();
 });
 
 describe("AnalyticsBootstrap", () => {
-  describe("consentRequired = false (rest of world)", () => {
+  describe("consent not required (rest of world)", () => {
     it("calls initAnalytics on mount and renders no banner", async () => {
+      setConsentRequired(false);
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={false} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(initAnalytics).toHaveBeenCalledOnce();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 
-  describe("consentRequired = true with prior choice", () => {
+  describe("consent required with prior choice", () => {
     it("inits when prior choice is 'granted'", async () => {
+      setConsentRequired(true);
       window.localStorage.setItem(STORAGE_KEY, "granted");
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(initAnalytics).toHaveBeenCalledOnce();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
     it("does NOT init when prior choice is 'declined' and renders no banner", async () => {
+      setConsentRequired(true);
       window.localStorage.setItem(STORAGE_KEY, "declined");
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(initAnalytics).not.toHaveBeenCalled();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 
-  describe("consentRequired = true with no prior choice", () => {
+  describe("consent required with no prior choice", () => {
     it("renders the consent banner without initing analytics", async () => {
+      setConsentRequired(true);
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(initAnalytics).not.toHaveBeenCalled();
       expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -69,9 +90,10 @@ describe("AnalyticsBootstrap", () => {
     });
 
     it("Accept click writes 'granted', inits analytics, dismisses banner", async () => {
+      setConsentRequired(true);
       const user = userEvent.setup();
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       await user.click(screen.getByRole("button", { name: "Accept" }));
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("granted");
@@ -80,9 +102,10 @@ describe("AnalyticsBootstrap", () => {
     });
 
     it("Decline click writes 'declined', does NOT init, dismisses banner", async () => {
+      setConsentRequired(true);
       const user = userEvent.setup();
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       await user.click(screen.getByRole("button", { name: "Decline" }));
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("declined");
@@ -93,56 +116,56 @@ describe("AnalyticsBootstrap", () => {
 
   describe("Clarity Consent API v2", () => {
     it("calls clarityConsent(true) on the no-banner-needed path", async () => {
+      setConsentRequired(false);
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={false} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(clarityConsent).toHaveBeenCalledWith(true);
     });
 
     it("calls clarityConsent(true) when accepting the banner", async () => {
+      setConsentRequired(true);
       const user = userEvent.setup();
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       await user.click(screen.getByRole("button", { name: "Accept" }));
       expect(clarityConsent).toHaveBeenCalledWith(true);
     });
 
     it("does NOT call clarityConsent when declining the banner", async () => {
+      setConsentRequired(true);
       const user = userEvent.setup();
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       await user.click(screen.getByRole("button", { name: "Decline" }));
       expect(clarityConsent).not.toHaveBeenCalled();
     });
 
     it("calls clarityConsent(true) when prior consent was 'granted'", async () => {
+      setConsentRequired(true);
       window.localStorage.setItem(STORAGE_KEY, "granted");
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={true} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(clarityConsent).toHaveBeenCalledWith(true);
     });
   });
 
-  describe("previewMode (Studio Presentation iframe)", () => {
-    it("renders the banner by default in preview mode so editors can edit copy", async () => {
+  describe("preview mode (Studio Presentation iframe)", () => {
+    it("renders the banner by default in preview so editors can edit copy", async () => {
+      mockUsePathname.mockReturnValue("/preview");
       await act(async () => {
-        render(<AnalyticsBootstrap consentRequired={false} previewMode={true} />);
+        render(<AnalyticsBootstrap />);
       });
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
 
-    it("hides the banner in preview mode when consentBanner.hideInPreview is true", async () => {
+    it("hides the banner in preview when consentBanner.hideInPreview is true", async () => {
+      mockUsePathname.mockReturnValue("/preview");
       await act(async () => {
-        render(
-          <AnalyticsBootstrap
-            consentRequired={false}
-            previewMode={true}
-            consentBannerContent={{ hideInPreview: true }}
-          />,
-        );
+        render(<AnalyticsBootstrap consentBannerContent={{ hideInPreview: true }} />);
       });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
