@@ -14,9 +14,10 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/"),
 }));
 
+import { usePathname } from "next/navigation";
+
 import { initAnalytics } from "@/lib/analytics";
 import { clarityConsent } from "@/lib/clarity-consent";
-import { usePathname } from "next/navigation";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 
