@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CONSENT_HEADER, requiresConsent } from "./region";
+import { requiresConsent } from "./region";
 
 describe("requiresConsent", () => {
   it("returns false when country is null (no CF header / local dev / tests)", () => {
@@ -39,9 +39,5 @@ describe("requiresConsent", () => {
     for (const code of ["CA", "AU", "JP", "BR", "IN", "ZA"]) {
       expect(requiresConsent(code, null), code).toBe(false);
     }
-  });
-
-  it("CONSENT_HEADER is namespaced so it doesn't collide with anything else", () => {
-    expect(CONSENT_HEADER).toBe("x-josephine-consent-required");
   });
 });

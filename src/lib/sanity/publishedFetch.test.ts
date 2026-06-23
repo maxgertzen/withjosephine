@@ -4,6 +4,14 @@ vi.mock("./client", () => ({
   sanityClient: { fetch: vi.fn() },
 }));
 
+const unstableCacheSpy = vi.fn();
+vi.mock("next/cache", () => ({
+  unstable_cache: (cb: (...args: unknown[]) => unknown, _keys: string[], opts: unknown) => {
+    unstableCacheSpy(opts);
+    return cb;
+  },
+}));
+
 import { sanityClient } from "./client";
 import { PUBLISHED_REVALIDATE_SECONDS, publishedFetch } from "./publishedFetch";
 
@@ -11,6 +19,7 @@ const mockRawFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   mockRawFetch.mockReset();
+  unstableCacheSpy.mockReset();
 });
 
 describe("publishedFetch", () => {
@@ -23,13 +32,12 @@ describe("publishedFetch", () => {
     expect(options).toMatchObject({ perspective: "published", stega: false });
   });
 
-  it("applies the revalidate fallback and forwards cache tags", async () => {
+  it("applies the revalidate fallback and forwards cache tags to unstable_cache", async () => {
     mockRawFetch.mockResolvedValue(null);
 
     await publishedFetch({ query: "q", tags: ["landingPage", "siteSettings"] });
 
-    const [, , options] = mockRawFetch.mock.calls[0];
-    expect(options.next).toEqual({
+    expect(unstableCacheSpy).toHaveBeenCalledWith({
       revalidate: PUBLISHED_REVALIDATE_SECONDS,
       tags: ["landingPage", "siteSettings"],
     });

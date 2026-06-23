@@ -5,6 +5,7 @@ import { GIFT_CLAIM_PAGE_DEFAULTS } from "@/data/defaults";
 import { sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import { pickDefined } from "./pickDefined";
+import { publishedFetch } from "./publishedFetch";
 import {
   bookingFormQuery,
   bookingGiftFormQuery,
@@ -326,3 +327,44 @@ export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> 
   const { data } = await sanityFetch<SanityListenPage | null>({ query: listenPageQuery });
   return data;
 });
+
+// Published-perspective fetchers keep public pages static/ISR; the live `fetch*`
+// above force dynamic via draftMode and are for the /preview surface only. Tags
+// are the revalidateTag handle for the Sanity content webhook.
+export const fetchLandingPagePublished = cache(async (): Promise<SanityLandingPage | null> =>
+  publishedFetch<SanityLandingPage | null>({ query: landingPageQuery, tags: ["landingPage"] }));
+
+export const fetchReadingsPublished = cache(async (): Promise<SanityReading[]> =>
+  (await publishedFetch<SanityReading[] | null>({ query: readingsQuery, tags: ["reading"] })) ?? []);
+
+export const fetchTestimonialsPublished = cache(async (): Promise<SanityTestimonial[]> =>
+  (await publishedFetch<SanityTestimonial[] | null>({
+    query: testimonialsQuery,
+    tags: ["testimonial"],
+  })) ?? []);
+
+export const fetchFaqItemsPublished = cache(async (): Promise<SanityFaqItem[]> =>
+  (await publishedFetch<SanityFaqItem[] | null>({ query: faqItemsQuery, tags: ["faqItem"] })) ?? []);
+
+export const fetchSiteSettingsPublished = cache(async (): Promise<SanitySiteSettings | null> =>
+  publishedFetch<SanitySiteSettings | null>({ query: siteSettingsQuery, tags: ["siteSettings"] }));
+
+export const fetchLegalPagePublished = cache(
+  async (slug: string): Promise<SanityLegalPage | null> =>
+    publishedFetch<SanityLegalPage | null>({
+      query: legalPageBySlugQuery,
+      params: { slug },
+      tags: ["legalPage", `legalPage:${slug}`],
+    }),
+);
+
+export const fetchUnderConstructionPagePublished = cache(
+  async (): Promise<SanityUnderConstructionPage | null> =>
+    publishedFetch<SanityUnderConstructionPage | null>({
+      query: underConstructionPageQuery,
+      tags: ["underConstructionPage"],
+    }),
+);
+
+export const fetchNotFoundPagePublished = cache(async (): Promise<SanityNotFoundPage | null> =>
+  publishedFetch<SanityNotFoundPage | null>({ query: notFoundPageQuery, tags: ["notFoundPage"] }));

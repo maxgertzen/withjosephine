@@ -25,51 +25,51 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       resolve: (doc) => ({
         locations: doc?.slug
           ? [
-              { title: String(doc.name ?? "Reading"), href: `/book/${doc.slug}` },
-              { title: "Thank You", href: `/thank-you/${doc.slug}` },
+              { title: String(doc.name ?? "Reading"), href: `/preview/book/${doc.slug}` },
+              { title: "Thank You", href: `/preview/thank-you/${doc.slug}` },
             ]
           : [],
       }),
     }),
     bookingPage: defineLocations({
       message: "Affects all booking pages (/book/*).",
-      locations: [{ title: "Booking", href: "/book/soul-blueprint" }],
+      locations: [{ title: "Booking", href: "/preview/book/soul-blueprint" }],
     }),
     thankYouPage: defineLocations({
       message: "Affects all thank-you pages (/thank-you/*).",
-      locations: [{ title: "Thank You", href: "/thank-you/soul-blueprint" }],
+      locations: [{ title: "Thank You", href: "/preview/thank-you/soul-blueprint" }],
     }),
     legalPage: defineLocations({
       select: { title: "title", slug: "slug.current" },
       resolve: (doc) => ({
         locations: doc?.slug
-          ? [{ title: String(doc.title ?? "Legal Page"), href: `/${doc.slug}` }]
+          ? [{ title: String(doc.title ?? "Legal Page"), href: `/preview/${doc.slug}` }]
           : [],
       }),
     }),
     siteSettings: defineLocations({
       message: "Global site settings: affects every page.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     theme: defineLocations({
       message: "Global theme tokens: affects every page.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     testimonial: defineLocations({
       message: "Shown in the testimonials section on the landing page.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     faqItem: defineLocations({
       message: "Shown in the FAQ section on the landing page.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",
-      locations: [{ title: "Landing Page", href: "/" }],
+      locations: [{ title: "Under Construction", href: "/preview/under-construction" }],
     }),
     notFoundPage: defineLocations({
       message: "Shown for unknown routes (404).",
-      locations: [{ title: "404 Page", href: "/this-page-does-not-exist" }],
+      locations: [{ title: "404 Page", href: "/preview/404" }],
     }),
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
     emailDay7Delivery: emailLocation("Email: Reading Delivery (Day 7)"),

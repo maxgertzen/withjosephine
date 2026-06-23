@@ -1,16 +1,11 @@
 import "@/styles/globals.css";
 
 import type { Viewport } from "next";
-import { draftMode, headers } from "next/headers";
-import { VisualEditing } from "next-sanity/visual-editing";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
-import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { styleProviderClassName } from "@/components/StyleProvider";
-import { CONSENT_HEADER } from "@/lib/region";
-import { fetchSiteSettings } from "@/lib/sanity/fetch";
-import { SanityLive } from "@/lib/sanity/live";
+import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -19,13 +14,10 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { isEnabled: isDraftMode } = await draftMode();
-  const requestHeaders = await headers();
-  const consentRequired = requestHeaders.get(CONSENT_HEADER) === "1";
-  const consentBannerContent =
-    consentRequired || isDraftMode
-      ? (await fetchSiteSettings())?.consentBanner ?? null
-      : null;
+  // No draftMode()/headers() here: the root layout must stay static so public
+  // pages can prerender. The Sanity live tree lives in src/app/preview/layout.tsx;
+  // consent gating moved to a region cookie read client-side in AnalyticsBootstrap.
+  const consentBannerContent = (await fetchSiteSettingsPublished())?.consentBanner ?? null;
 
   return (
     <html lang="en">
@@ -34,27 +26,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         suppressHydrationWarning
       >
         {children}
-        <AnalyticsBootstrap
-          consentRequired={consentRequired}
-          consentBannerContent={consentBannerContent}
-          previewMode={isDraftMode}
-        />
+        <AnalyticsBootstrap consentBannerContent={consentBannerContent} />
         <DelegatedTracking />
-        {isDraftMode && (
-          <>
-            {/*
-              Gated to draft mode only per Sanity's documented production
-              guidance (sanity.io/docs/help/nextjs-16-sanitylive-status).
-              Outside Studio Presentation we don't need browser-side live
-              updates — server tag-revalidation already covers freshness —
-              and rendering it on every public request triggers Sanity Live
-              connection attempts that the public CSP rightly blocks.
-            */}
-            <SanityLive action="refresh" />
-            <VisualEditing />
-            <DisableDraftMode />
-          </>
-        )}
       </body>
     </html>
   );
