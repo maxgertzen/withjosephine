@@ -1,5 +1,11 @@
 # Session Boot — Active State
 
+## ▶ IN FLIGHT (2026-06-23 PM): booking funnel static (#312, ox2clqob) + R2 time-based ISR (de287l3v) — both on branches off release/v1.11.5, awaiting Max staging merge/smoke
+
+- **#312 `ox2clqob` (branch `feat/booking-funnel-static-publishedfetch`, draft PR open):** `/book/[readingId]` + `/letter` switched from the live draft fetchers to `publishedFetch` (3 new fetchers `fetchReadingPublished`/`fetchBookingPagePublished`/`fetchBookingFormPublished`). Build/typecheck/tests green. **Correction:** these pages were already `●` SSG in the build, NOT `ƒ`; #312 removes the runtime draft path. The actual booking-funnel SPEED fix is the incremental cache below (a `●` SSG page needs an incremental cache to be served from cache at runtime, else the Worker re-renders per request = the ~4s).
+- **de287l3v (branch `feat/r2-incremental-isr`, PR pending):** enable R2 **time-based ISR** (no tag cache, no DO, no PPR, no webhook). `open-next.config.ts` = `r2IncrementalCache` + `memoryQueue`; `wrangler.jsonc` staging gains a `WORKER_SELF_REFERENCE` service binding (R2 cache bucket `withjosephine-next-cache-staging` + `NEXT_INC_CACHE_R2_BUCKET` binding already existed inert from the reverted Stage 2); `publishedFetch` revalidate 300 to 60. Neither Stage 2 failure mode can recur (no `cacheComponents`/PPR `postponed state`; no `doShardedTagCache` read-storm). Build-time green; **the real proof is the staging deploy** (content edit reflects in <=60s AND booking nav gets fast). Bailout = one-line `open-next.config` revert, no migration to unwind. PRD `MEMORY/WORK/20260623-173338_r2-incremental-isr/PRD.md`.
+- **🚨 PROD-MERGE LANDMINE (de287l3v):** `open-next.config.ts` is shared by both envs. Prod top-level wrangler has NO `NEXT_INC_CACHE_R2_BUCKET` and NO `WORKER_SELF_REFERENCE`. **Before v1.11.5 -> main reaches a prod deploy:** create R2 bucket `withjosephine-next-cache` + add both bindings to the prod top-level block, or `r2IncrementalCache`/`memoryQueue` error at prod runtime. (Staging-scoped deliberately this release; prod apex still parked under `wdpz1ux4`.)
+
 ## ▶ NEXT SESSION (2026-06-23): Phase 3 static cutover SHIPPED + Max-smoked → next = convert the booking funnel ("the rest")
 
 **Phase 3 done.** Merged to `release/v1.11.5` (PR #311) + deployed to staging + Max-smoked 2026-06-23:
