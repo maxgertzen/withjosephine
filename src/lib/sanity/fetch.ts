@@ -368,3 +368,18 @@ export const fetchUnderConstructionPagePublished = cache(
 
 export const fetchNotFoundPagePublished = cache(async (): Promise<SanityNotFoundPage | null> =>
   publishedFetch<SanityNotFoundPage | null>({ query: notFoundPageQuery, tags: ["notFoundPage"] }));
+
+export const fetchReadingPublished = cache(
+  async (slug: string): Promise<SanityReading | null> =>
+    publishedFetch<SanityReading | null>({
+      query: readingBySlugQuery,
+      params: { slug },
+      tags: ["reading", `reading:${slug}`],
+    }),
+);
+
+export const fetchBookingPagePublished = cache(async (): Promise<SanityBookingPage | null> =>
+  publishedFetch<SanityBookingPage | null>({ query: bookingPageQuery, tags: ["bookingPage"] }));
+
+export const fetchBookingFormPublished = cache(async (): Promise<SanityBookingForm | null> =>
+  publishedFetch<SanityBookingForm | null>({ query: bookingFormQuery, tags: ["bookingForm"] }));
