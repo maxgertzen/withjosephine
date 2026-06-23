@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import {
+  fetchBookingFormPublished,
+  fetchBookingPagePublished,
+  fetchReadingPublished,
+} from "@/lib/sanity/fetch";
 import { buildOpenGraph } from "@/lib/seoMetadata";
 
 import { deriveLetterViewProps } from "./deriveLetterViewProps";
@@ -17,8 +21,8 @@ type LetterPageProps = {
 export async function generateMetadata({ params }: LetterPageProps): Promise<Metadata> {
   const { readingId } = await params;
   const [sanityReading, bookingPage] = await Promise.all([
-    fetchReading(readingId),
-    fetchBookingPage(),
+    fetchReadingPublished(readingId),
+    fetchBookingPagePublished(),
   ]);
 
   const readingName = (sanityReading ?? getReadingById(readingId))?.name;
@@ -44,8 +48,8 @@ export default async function LetterPage({ params }: LetterPageProps) {
   const { readingId } = await params;
 
   const [sanityReading, bookingForm] = await Promise.all([
-    fetchReading(readingId),
-    fetchBookingForm(),
+    fetchReadingPublished(readingId),
+    fetchBookingFormPublished(),
   ]);
 
   const props = deriveLetterViewProps({ readingId, sanityReading, bookingForm });

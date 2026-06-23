@@ -1,16 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchReading: vi.fn(),
-  fetchBookingPage: vi.fn(),
+  fetchReadingPublished: vi.fn(),
+  fetchBookingPagePublished: vi.fn(),
+  fetchBookingFormPublished: vi.fn(),
   fetchReadingSlugs: vi.fn(),
 }));
 
-import { fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import { fetchBookingPagePublished, fetchReadingPublished } from "@/lib/sanity/fetch";
 import type { SanityBookingPage, SanityReading } from "@/lib/sanity/types";
 
-const mockFetchReading = vi.mocked(fetchReading);
-const mockFetchBookingPage = vi.mocked(fetchBookingPage);
+const mockFetchReading = vi.mocked(fetchReadingPublished);
+const mockFetchBookingPage = vi.mocked(fetchBookingPagePublished);
 
 const SOUL_BLUEPRINT_SEO = {
   metaTitle: "Soul Blueprint Reading | Josephine — $179",

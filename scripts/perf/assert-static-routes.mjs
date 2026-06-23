@@ -10,7 +10,14 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const SHOULD_BE_STATIC = ["/", "/privacy", "/terms", "/refund-policy"];
+const SHOULD_BE_STATIC = [
+  "/",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
+  "/book/[readingId]",
+  "/book/[readingId]/letter",
+];
 
 function getBuildOutput() {
   const logFlagIndex = process.argv.indexOf("--from-log");

@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import {
+  fetchBookingFormPublished,
+  fetchBookingPagePublished,
+  fetchReadingPublished,
+} from "@/lib/sanity/fetch";
 import { buildOpenGraph } from "@/lib/seoMetadata";
 
 import { BookingEntryView } from "./BookingEntryView";
@@ -17,8 +21,8 @@ type BookingPageProps = {
 export async function generateMetadata({ params }: BookingPageProps): Promise<Metadata> {
   const { readingId } = await params;
   const [sanityReading, bookingPage] = await Promise.all([
-    fetchReading(readingId),
-    fetchBookingPage(),
+    fetchReadingPublished(readingId),
+    fetchBookingPagePublished(),
   ]);
 
   const readingName = (sanityReading ?? getReadingById(readingId))?.name;
@@ -42,9 +46,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
   const [sanityReading, bookingPage, bookingForm] = await Promise.all([
-    fetchReading(readingId),
-    fetchBookingPage(),
-    fetchBookingForm(),
+    fetchReadingPublished(readingId),
+    fetchBookingPagePublished(),
+    fetchBookingFormPublished(),
   ]);
 
   const props = deriveBookingEntryProps({
