@@ -1,5 +1,18 @@
 # Session Boot — Active State
 
+## ▶ SHIPPED TO MAIN (2026-06-24): v1.11.5 merged + tagged → prod deploy approved → apex unpark is the remaining work
+
+- **`release/v1.11.5` → `main` MERGED (squash `6d1859b`) + tagged `v1.11.5` (#315).** Ships the Path A static/ISR arc AND the held v1.11.0 feature arc to production. All CI green (the first-exposure Playwright run surfaced 3 e2e failures, all fixed pre-merge — 2 stale UserMenu-popover specs + 1 consent-banner/mock-cf-ipcountry fix).
+- **🚨 `deploy-production` APPROVED at the production environment gate (run 28101653865) — VERIFY IT WENT GREEN.** The prod build can hit the transient Sanity-CDN timeout (`enwvuaxd`); if `deploy-production` failed, `gh run rerun 28101653865 --failed`. Apex stays **parked** (`UNDER_CONSTRUCTION=1`) so the worker deploys with NO customer exposure.
+- **Prod cache bindings are live in `wrangler.jsonc` top-level** (`NEXT_INC_CACHE_R2_BUCKET` → `withjosephine-next-cache` bucket created + `WORKER_SELF_REFERENCE`) — the de287l3v landmine is closed.
+- **🚨 REMAINING = APEX UNPARK (Max), the only thing between here and live customers:**
+  1. Post-merge smoke on the deployed prod worker (still parked) + staging (`docs/MANUAL_SMOKE_TEST.md`).
+  2. Flip `APEX_UNPARKED=true` + `NEXT_PUBLIC_UNDER_CONSTRUCTION=0`.
+  3. Stripe **live**: paste `sk_live_…` on the prod worker + register the **live-mode** prod webhook (`withjosephine.com/api/stripe/webhook`) + set its `whsec_…` as prod `STRIPE_WEBHOOK_SECRET`. (Test-mode split `cdw3mnpg` already done → staging.)
+  4. M1 prod WAF rate-limit rule (`7h6tfse1`).
+  - **Prod-smoke MUST be read-only** once live — prod Sanity carries LIVE `buy.stripe.com` links; test card 4242 = real charge (`feedback_prod_smoke_live_payment_links`).
+- **Backlog hygiene this session:** closed 20 shipped-but-unclosed tickets + the `cdw3mnpg`/`wc4rzud9` gates (prod D1 + Sanity verified empty — no test residue). Open follow-ups: `enwvuaxd` (build-time Sanity timeout hardening), `dwe1iu6s` (STATIC_CSP_PATHS sync guard), `t0el2imf` (reap inert staging DOShardedTagCache via v3 migration), `ydmbfpep` (LOW review-cleanup bundle).
+
 ## ▶ DONE (2026-06-23 PM): Path A epic `tia2pzk1` COMPLETE — booking funnel static (#312) + R2 time-based ISR (#313) + intake-nav UX (#314), all merged to release/v1.11.5, staging-deployed, Max-verified
 
 - **Path A epic `tia2pzk1` CLOSED — all 5 phases shipped.** Public pages static/ISR with instant prefetched nav; Presentation/draft preview on `/preview/*`; booking funnel converted (#312); R2 time-based ISR (#313). PPR/cacheComponents stayed dead. Children all done: g0a3eqiv, ocry192o, 21jupako (#311), ox2clqob (#312), de287l3v (#313).
