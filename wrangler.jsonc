@@ -87,6 +87,10 @@
 			"binding": "BACKUPS_BUCKET",
 			"bucket_name": "josephine-backups",
 		},
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "withjosephine-next-cache",
+		},
 	],
 	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
 	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
@@ -151,7 +155,8 @@
 	// supports self-bindings declaratively. Without this, alarm dispatch
 	// pays edge latency + is subject to public WAF rules + Access policies.
 	"services": [
-		{ "binding": "SELF", "service": "withjosephine" }
+		{ "binding": "SELF", "service": "withjosephine" },
+		{ "binding": "WORKER_SELF_REFERENCE", "service": "withjosephine" }
 	],
 	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
 	// the platform; longer windows (15min, 1h) are owned by WAF Rate Limiting
