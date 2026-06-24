@@ -146,6 +146,33 @@ test.describe("Listen round-trip — staging", () => {
     // must render no testid at all.
     await expect(page.getByTestId("listen-recipient-greeting")).toHaveCount(0);
 
+    // The explicit audio-download button and the no-auto-dismiss welcome ribbon
+    // both ship in this PR. The PR-level sandbox runs against the PREVIOUS staging
+    // deploy, which has neither, so gate both assertions on the button's presence
+    // (a reliable marker that staging is on this bundle). Once staging picks up
+    // the deploy the button renders and both assertions enforce the regression.
+    const audioDownloadButton = page.locator(`a[href="/api/listen/${submissionId}/audio"]`);
+    if ((await audioDownloadButton.count()) === 0) {
+      console.log(
+        "[listen-roundtrip] audio-download button absent — staging not yet on this deploy; skipping new UI assertions",
+      );
+    } else {
+      // Explicit audio download button (xj0z7wah) — Firefox native player has no
+      // download affordance, so a parallel <a download> must be present.
+      await expect(
+        audioDownloadButton,
+        "explicit audio download button should be visible cross-browser",
+      ).toBeVisible();
+      // Welcome ribbon must persist past the animation window (7qskc340). The
+      // prior keyframe ended at visibility:hidden after 6s, so it vanished;
+      // waiting past that window asserts the auto-dismiss regression is gone.
+      await page.waitForTimeout(6500);
+      await expect(
+        page.getByTestId("listen-welcome-ribbon"),
+        "welcome ribbon should persist after the animation window",
+      ).toBeVisible();
+    }
+
     // 10. Fetch audio with a Range header from the SAME browser context so
     //     the __Host-listen_session cookie travels with the request. This
     //     triggers `scheduleListenedAtMirror` server-side.
@@ -156,6 +183,12 @@ test.describe("Listen round-trip — staging", () => {
       },
     );
     expect([200, 206]).toContain(audioResponse.status());
+
+    // 10b. The PDF download carries a personalized RFC 6266 Content-Disposition
+    //      (filename* param), not the legacy slug-id name (lb3dn5t0 / Sub-PR K).
+    const pdfResponse = await page.request.get(`/api/listen/${submissionId}/pdf`);
+    expect(pdfResponse.status()).toBe(200);
+    expect(pdfResponse.headers()["content-disposition"] ?? "").toMatch(/filename\*=UTF-8''/);
 
     // 11. Poll Sanity for listenedAt to confirm the fire-and-forget mirror
     //     landed. Worker hot path typically takes 2-5s; ceiling is 15s.

@@ -3,8 +3,6 @@ import { Box, Button, Select, Stack, Text, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
 import type { DocumentActionComponent, DocumentActionProps } from "sanity";
 
-import { AdminTokenInput } from "../components/AdminTokenInput";
-
 const LIST_ROUTE = "/api/admin/list-preview-recipients";
 const SEND_ROUTE = "/api/admin/send-email-preview";
 
@@ -13,29 +11,15 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
 ) => {
   const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [adminToken, setAdminToken] = useState("");
   const [recipients, setRecipients] = useState<readonly string[]>([]);
   const [recipient, setRecipient] = useState<string>("");
   const [isPending, setIsPending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setAdminToken("");
-      setRecipients([]);
-      setRecipient("");
-      setLoadError(null);
-    }
-  }, [isOpen]);
-
   const loadRecipients = useCallback(async () => {
-    if (!adminToken) return;
     setLoadError(null);
     try {
-      const response = await fetch(LIST_ROUTE, {
-        method: "GET",
-        headers: { "X-Admin-Token": adminToken },
-      });
+      const response = await fetch(LIST_ROUTE, { method: "GET" });
       if (response.status === 503) {
         setLoadError(
           "Send-to-test is not configured on this environment (ALLOWED_PREVIEW_RECIPIENTS unset).",
@@ -43,7 +27,7 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
         return;
       }
       if (!response.ok) {
-        setLoadError(`HTTP ${response.status}, check the admin token.`);
+        setLoadError(`HTTP ${response.status}, could not load recipients.`);
         return;
       }
       const data = (await response.json()) as { recipients?: string[] };
@@ -53,18 +37,27 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error));
     }
-  }, [adminToken]);
+  }, []);
+
+  // The allowlist is the boundary now (no admin token), so the dropdown loads
+  // as soon as the dialog opens instead of waiting on a token blur.
+  useEffect(() => {
+    if (!isOpen) {
+      setRecipients([]);
+      setRecipient("");
+      setLoadError(null);
+      return;
+    }
+    void loadRecipients();
+  }, [isOpen, loadRecipients]);
 
   const handleSend = useCallback(async () => {
-    if (!adminToken || !recipient) return;
+    if (!recipient) return;
     setIsPending(true);
     try {
       const response = await fetch(SEND_ROUTE, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Token": adminToken,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template: props.type, recipient }),
       });
       if (!response.ok) {
@@ -93,10 +86,10 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
       });
       setIsPending(false);
     }
-  }, [adminToken, props, recipient, toast]);
+  }, [props, recipient, toast]);
 
   const hasUnpublishedChanges = Boolean(props.draft && props.draft._rev !== props.published?._rev);
-  const canSend = Boolean(adminToken && recipient && !isPending);
+  const canSend = Boolean(recipient && !isPending);
 
   return {
     label: hasUnpublishedChanges
@@ -117,12 +110,6 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
             the ALLOWED_PREVIEW_RECIPIENTS Worker env var; only those addresses
             can receive previews.
           </Text>
-          <AdminTokenInput
-            value={adminToken}
-            onChange={setAdminToken}
-            onBlur={loadRecipients}
-            disabled={isPending}
-          />
           {loadError ? (
             <Text size={1} muted>
               {loadError}

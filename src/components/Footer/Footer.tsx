@@ -92,6 +92,15 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
         </div>
       )}
 
+      <nav aria-label="Account" className="flex justify-center mb-4">
+        <Link
+          href={ROUTES.library}
+          className="font-body text-xs tracking-wide text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+        >
+          Library
+        </Link>
+      </nav>
+
       <nav aria-label="Legal" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
         {LEGAL_LINKS.map((link) => (
           <Link

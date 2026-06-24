@@ -17,6 +17,10 @@ vi.mock("../resend", () => ({
   sendOrderConfirmation: vi.fn(),
   sendDay7Delivery: vi.fn(),
   redactEmail: vi.fn((s: string) => s.replace(/^./, "*")),
+  resolveDeliveryAddress: vi.fn(
+    (s: { isGift: boolean; recipientEmail: string | null; email: string }) =>
+      s.isGift && s.recipientEmail ? s.recipientEmail : s.email,
+  ),
 }));
 
 function buildPaidSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
@@ -31,6 +35,7 @@ function buildPaidSubmission(overrides: Partial<SubmissionRecord> = {}): Submiss
     amountPaidCurrency: "usd",
     recipientUserId: null,
     isGift: false,
+    recipientEmail: null,
     purchaserUserId: null,
     purchaserTimeZone: null,
     giftDeliveryMethod: null,
@@ -132,6 +137,27 @@ describe("resendCustomerEmail", () => {
       type: "order_confirmation",
       resendId: "msg_re_1",
     }));
+  });
+
+  // Regression: F14 (dpdpepfg) audit-log mismatch. After routing gift emails to
+  // the recipient via resolveDeliveryAddress, the admin-resend audit response
+  // must redact the resolved address (recipient), not the purchaser email.
+  it("audit log redacts the recipient email when admin-resending a gift", async () => {
+    const { findSubmissionById, appendEmailFired } = await import("./submissions");
+    const { sendOrderConfirmation } = await import("../resend");
+    vi.mocked(findSubmissionById).mockResolvedValue(
+      buildPaidSubmission({
+        isGift: true,
+        email: "purchaser@example.com",
+        recipientEmail: "recipient@example.com",
+      }),
+    );
+    vi.mocked(sendOrderConfirmation).mockResolvedValue({ kind: "sent", resendId: "msg_gift_oc" });
+    vi.mocked(appendEmailFired).mockResolvedValue(undefined);
+    const { resendCustomerEmail } = await import("./resendCustomerEmail");
+    const result = await resendCustomerEmail("sub_1", "order_confirmation");
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.targetEmailRedacted).toBe("*ecipient@example.com");
   });
 
   it("returns send_failed when send returns failed kind", async () => {

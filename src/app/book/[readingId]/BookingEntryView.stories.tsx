@@ -14,7 +14,6 @@ const meta: Meta<typeof BookingEntryView> = {
   args: {
     reading: BOOKING_ENTRY_SOUL_BLUEPRINT_READING,
     copy: BOOKING_ENTRY_BASE_COPY,
-    aboutJosephineLinkText: "About Josephine",
   },
 };
 export default meta;

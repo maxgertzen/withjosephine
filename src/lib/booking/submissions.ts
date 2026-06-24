@@ -128,6 +128,9 @@ export async function findSubmissionListenContext(
   voiceNoteUrl: string | null;
   pdfUrl: string | null;
   readingSlug: string;
+  readingName: string | null;
+  firstName: string | null;
+  lastName: string | null;
 } | null> {
   return repo.findSubmissionListenContext(id);
 }
@@ -441,6 +444,8 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
   return {
     id: submission._id,
     email: submission.email,
+    recipientEmail: submission.recipientEmail,
+    isGift: submission.isGift,
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
     readingPriceDisplay: priceDisplayFor(submission),

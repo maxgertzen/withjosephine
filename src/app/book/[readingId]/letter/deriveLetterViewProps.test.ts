@@ -74,12 +74,10 @@ describe("deriveLetterViewProps", () => {
         letterClosing: "Bye.",
         dropCapCta: "Go →",
         dropCapCaption: "Five minutes.",
-        aboutJosephineLinkText: "Meet Josephine",
       }),
     });
     expect(props).toEqual({
       reading: { slug: "soul-blueprint" },
-      aboutJosephineLinkText: "Meet Josephine",
       letterContent: {
         letterOpener: "Hi.",
         letterBridge: "Quick.",
@@ -96,7 +94,6 @@ describe("deriveLetterViewProps", () => {
       sanityReading: sanityReading(),
       bookingForm: null,
     });
-    expect(props?.aboutJosephineLinkText).toBe(ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText);
     expect(props?.letterContent).toEqual({
       letterOpener: ENTRY_PAGE_DEFAULTS.letterOpener,
       letterBridge: ENTRY_PAGE_DEFAULTS.letterBridge,

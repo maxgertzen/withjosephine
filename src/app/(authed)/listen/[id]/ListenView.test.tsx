@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
@@ -26,6 +26,38 @@ describe("ListenView delivered surface, audio element", () => {
     // reopens the parallel-request storm that tripped LISTEN_ASSET_LIMITER.
     expect(audio?.getAttribute("preload")).toBe("none");
     expect(audio?.getAttribute("src")).toBe("/api/listen/sub_1/audio");
+  });
+});
+
+describe("ListenView delivered surface, audio download button (xj0z7wah)", () => {
+  it("renders an explicit download button targeting the audio asset", () => {
+    render(<ListenView copy={LISTEN_PAGE_DEFAULTS} state={deliveredState} />);
+    const downloadLink = screen.getByRole("link", {
+      name: LISTEN_PAGE_DEFAULTS.voiceNoteButtonLabel,
+    });
+    expect(downloadLink).toHaveAttribute("href", "/api/listen/sub_1/audio");
+    // Native download attribute forces save cross-browser (Firefox has no
+    // in-player download), mirroring the existing PDF download control.
+    expect(downloadLink).toHaveAttribute("download");
+  });
+});
+
+describe("ListenView delivered surface, welcome ribbon (7qskc340)", () => {
+  it("renders the ribbon with the persisting entrance-animation class when shown", () => {
+    render(
+      <ListenView
+        copy={LISTEN_PAGE_DEFAULTS}
+        state={{ ...deliveredState, showWelcomeRibbon: true }}
+      />,
+    );
+    const ribbon = screen.getByTestId("listen-welcome-ribbon");
+    expect(ribbon).toHaveTextContent(LISTEN_PAGE_DEFAULTS.welcomeRibbon);
+    expect(ribbon).toHaveClass("welcome-ribbon");
+  });
+
+  it("omits the ribbon when showWelcomeRibbon is false", () => {
+    render(<ListenView copy={LISTEN_PAGE_DEFAULTS} state={deliveredState} />);
+    expect(screen.queryByTestId("listen-welcome-ribbon")).toBeNull();
   });
 });
 

@@ -13,7 +13,6 @@ const meta: Meta<typeof LetterView> = {
   args: {
     reading: { slug: "soul-blueprint" },
     letterContent: LETTER_VIEW_BASE_CONTENT,
-    aboutJosephineLinkText: "About Josephine",
   },
 };
 export default meta;

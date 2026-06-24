@@ -444,7 +444,7 @@ describe("IntakeForm — paginated flow", () => {
 });
 
 describe("IntakeForm — localStorage save/resume", () => {
-  it("restores values and currentPage from a saved draft on mount", async () => {
+  it("restores values from a saved draft but always resumes on the first page", async () => {
     window.localStorage.setItem(
       "josephine.intake.draft.soul-blueprint",
       JSON.stringify({
@@ -459,9 +459,10 @@ describe("IntakeForm — localStorage save/resume", () => {
     renderForm(TWO_PAGE_SECTIONS);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
     });
-    expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe("ada@example.com");
+    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
   });
 
   it("preserves email and name when reading slug differs from lastReadingId", async () => {
@@ -659,5 +660,47 @@ describe("IntakeForm — redeem mode draft scoping (GAP-10)", () => {
         "Restored Name",
       );
     });
+  });
+});
+
+describe("IntakeForm — signed-in self-booking email lock", () => {
+  function renderSelfBooking(prefilledEmail: string) {
+    render(
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="Soul Blueprint"
+        sections={SINGLE_PAGE_SECTIONS}
+        nonRefundableNotice="Once Josephine begins, no refunds."
+        prefilledEmail={prefilledEmail}
+      />,
+    );
+  }
+
+  it("locks the email field to the session address (read-only) in create mode", async () => {
+    renderSelfBooking("session@example.com");
+    await waitFor(() => {
+      const email = screen.getByLabelText(/Email/) as HTMLInputElement;
+      expect(email.value).toBe("session@example.com");
+      expect(email.readOnly).toBe(true);
+    });
+  });
+
+  it("keeps the locked email authoritative over a stale local draft", async () => {
+    window.localStorage.setItem(
+      "josephine.intake.draft.soul-blueprint",
+      JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        currentPage: 0,
+        values: { email: "stale-anon@example.com", fullName: "Ada" },
+      }),
+    );
+    renderSelfBooking("session@example.com");
+    await waitFor(() => {
+      expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe(
+        "session@example.com",
+      );
+    });
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada");
   });
 });

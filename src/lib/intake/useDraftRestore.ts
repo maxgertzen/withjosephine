@@ -36,15 +36,6 @@ export function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
   return result;
 }
 
-export function clampRestoredPage(
-  rawPage: number | undefined,
-  totalPages: number,
-): number {
-  if (typeof rawPage !== "number" || Number.isNaN(rawPage)) return 0;
-  const upper = Math.max(totalPages - 1, 0);
-  return Math.min(Math.max(rawPage, 0), upper);
-}
-
 // https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached
 const swapNameCache = new Map<string, string | null>();
 
@@ -72,7 +63,11 @@ export type UseDraftRestoreArgs = {
   readingName: string;
   draftScope: string;
   defaultValues: FieldValues;
-  totalPages: number;
+  // Fields that must survive a localStorage/swap restore unchanged — the locked
+  // email for a signed-in self-booking or a scheduled-gift recipient. Applied
+  // last so a stale draft can't reintroduce a different value into a read-only
+  // field (which the user can't correct).
+  lockedValues?: FieldValues;
 };
 
 export type UseDraftRestoreResult = {
@@ -92,7 +87,7 @@ export function useDraftRestore({
   readingName,
   draftScope,
   defaultValues,
-  totalPages,
+  lockedValues,
 }: UseDraftRestoreArgs): UseDraftRestoreResult {
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [currentPage, setCurrentPage] = useState(0);
@@ -105,11 +100,7 @@ export function useDraftRestore({
     () => readSwapName(readingId, readingName),
     [readingId, readingName],
   );
-  const detectedSwapName = useSyncExternalStore(
-    noopSubscribe,
-    getSwapSnapshot,
-    () => null,
-  );
+  const detectedSwapName = useSyncExternalStore(noopSubscribe, getSwapSnapshot, () => null);
 
   useEffect(() => {
     if (restoredForReadingRef.current === readingId) return;
@@ -126,8 +117,8 @@ export function useDraftRestore({
       ...defaultValues,
       ...(restored?.values ?? {}),
       ...(preservedFromSwap ?? {}),
+      ...(lockedValues ?? {}),
     } as FieldValues;
-    const clampedPage = clampRestoredPage(restored?.currentPage, totalPages);
     const restoredSavedAt: Date | null = (() => {
       if (!restored?.savedAt) return null;
       const parsed = new Date(restored.savedAt);
@@ -137,11 +128,13 @@ export function useDraftRestore({
     restoredForReadingRef.current = readingId;
     queueMicrotask(() => {
       setValues(seeded);
-      setCurrentPage(clampedPage);
+      // Always resume on the first page even when values are prefilled; the
+      // saved page index is intentionally not restored.
+      setCurrentPage(0);
       if (restoredSavedAt) setLastSavedAt(restoredSavedAt);
       setIsRestored(true);
     });
-  }, [readingId, draftScope, readingName, defaultValues, totalPages]);
+  }, [readingId, draftScope, readingName, defaultValues, lockedValues]);
 
   return {
     values,

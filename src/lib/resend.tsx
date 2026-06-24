@@ -40,6 +40,8 @@ export type SubmissionResponse = {
 export type SubmissionContext = {
   id: string;
   email: string;
+  recipientEmail: string | null;
+  isGift: boolean;
   firstName: string;
   readingName: string;
   readingPriceDisplay: string;
@@ -48,6 +50,20 @@ export type SubmissionContext = {
   photoUrl: string | null;
   createdAt: string;
 };
+
+// Customer-facing emails route to the gift recipient when the submission is
+// a gift with a known recipient, otherwise to the purchaser (or self-buyer).
+// Accepts a structural shape so both SubmissionContext (Resend dispatch) and
+// SubmissionRecord (D1 row, admin-resend audit logs) callers share one rule.
+export function resolveDeliveryAddress(submission: {
+  isGift: boolean;
+  recipientEmail: string | null;
+  email: string;
+}): string {
+  return submission.isGift && submission.recipientEmail
+    ? submission.recipientEmail
+    : submission.email;
+}
 
 export type EmailSendResult =
   | { kind: "sent"; resendId: string }
@@ -112,7 +128,7 @@ async function resolveSkipReason(
     const allAllowed = recipients.every(isProductionAllowlistedRecipient);
     if (!allAllowed) {
       console.warn(
-        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or set ALLOWED_PREVIEW_RECIPIENTS for one-off previews.`,
+        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
       );
       return "env_guard";
     }
@@ -136,9 +152,9 @@ export function isProductionAllowlistedRecipient(
 ): boolean {
   if (!addr) return false;
   const lower = addr.toLowerCase().trim();
-  if (PRODUCTION_RECIPIENT_ALLOWLIST.includes(lower)) return true;
   const withoutPlus = lower.replace(/\+[^@]*(?=@)/, "");
-  if (PRODUCTION_RECIPIENT_ALLOWLIST.includes(withoutPlus)) return true;
+  const staticList = PRODUCTION_RECIPIENT_ALLOWLIST;
+  if (staticList.includes(lower) || staticList.includes(withoutPlus)) return true;
   const notif = process.env.NOTIFICATION_EMAIL?.toLowerCase().trim();
   if (notif && notif === lower) return true;
   return false;
@@ -350,7 +366,7 @@ export async function sendOrderConfirmation(
   );
 
   return sendOrSkip({
-    to: submission.email,
+    to: resolveDeliveryAddress(submission),
     subject: copy.subject,
     html,
     subType: "order_confirmation",
@@ -550,7 +566,7 @@ export async function sendDay7Delivery(
     />,
   );
   return sendOrSkip({
-    to: submission.email,
+    to: resolveDeliveryAddress(submission),
     subject,
     html,
     subType: "day_7_delivery",

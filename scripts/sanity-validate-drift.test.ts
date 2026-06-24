@@ -81,6 +81,7 @@ describe("findSchemaDrift", () => {
     expect(SANITY_META_FIELDS.has("_createdAt")).toBe(true);
     expect(SANITY_META_FIELDS.has("_updatedAt")).toBe(true);
     expect(SANITY_META_FIELDS.has("_key")).toBe(true);
+    expect(SANITY_META_FIELDS.has("_system")).toBe(true);
     expect(SANITY_META_FIELDS.has("title")).toBe(false);
   });
 

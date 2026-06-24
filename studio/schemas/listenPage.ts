@@ -59,6 +59,13 @@ export const listenPage = defineType({
       initialValue: "Voice note",
     }),
     defineField({
+      name: "voiceNoteButtonLabel",
+      title: "Voice-note download button label",
+      type: "string",
+      group: "delivered",
+      initialValue: "Download voice note",
+    }),
+    defineField({
       name: "pdfLabel",
       title: "PDF section label",
       type: "string",

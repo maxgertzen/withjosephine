@@ -208,6 +208,7 @@ function buildPaymentUrl(
   reading: SanityReading,
   submissionId: string,
   deliveryMethod: GiftDeliveryMethod,
+  purchaserEmail: string,
 ): string | null {
   if (!reading.stripePaymentLink) return null;
   let url: URL;
@@ -220,6 +221,10 @@ function buildPaymentUrl(
   url.searchParams.set("client_reference_id", submissionId);
   url.searchParams.set("metadata[is_gift]", "true");
   url.searchParams.set("metadata[gift_delivery_method]", deliveryMethod);
+  // Prefill the purchaser's own email on the hosted Stripe page so they don't
+  // retype it (mirrors the self-purchase flow). It is the buyer paying, not the
+  // gift recipient, so no recipient PII enters the URL.
+  url.searchParams.set("prefilled_email", purchaserEmail);
   return url.toString();
 }
 
@@ -370,6 +375,7 @@ export async function POST(request: Request): Promise<Response> {
     reading,
     submissionId,
     parsedBody.deliveryMethod,
+    purchaserEmail,
   );
   if (!paymentUrl) {
     return NextResponse.json(

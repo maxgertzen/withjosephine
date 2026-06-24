@@ -22,6 +22,8 @@ Use **incognito / private windows** for every customer journey. Cached state bre
 
 **Email plus-addressing on your own Gmail.** Gmail treats `yourname+anything@gmail.com` as the same inbox as `yourname@gmail.com`. The site sees each variant as a different user.
 
+> **Base must be the allowlisted address.** On staging, the base (the part before `+`) must be the exact dotless address that appears on the staging `ALLOWED_PREVIEW_RECIPIENTS` / non-prod email allowlist. Use the canonical form with no dots; a dotted variant (`your.name@…`) or any other base is a different key and staging sends fail closed via `env_guard`, so the email silently never arrives. Plus-suffixes are fine; the base is what the allowlist matches.
+
 | Suffix | Role | Used in |
 |---|---|---|
 | `+self` | Self-purchase customer | Cluster A |
@@ -37,6 +39,56 @@ Add a date suffix (e.g. `+self-20260520`) if you want to tell smoke rounds apart
 - **Becky (Josephine):** Sanity Studio editor. The Becky steps happen after a customer submits and require switching to Studio.
 
 **Maintainer force-cron helper:** `bash scripts/force-cron.sh <route> <submissionId>` (defaults to staging, append `--prod` for production). One-time setup: `brew install cloudflared` then `cloudflared access login https://staging.withjosephine.com`.
+
+---
+
+## ▶ v1.11.0 release→main gate smoke (RUN THIS FIRST — next session entry point)
+
+**Status as of 2026-06-18:** all v1.11.0 work is merged to `release/v1.11.0` (HEAD `ff0cb22`) and deployed to staging; PR **#291** (release→main) is green + gate-reviewed **SHIP**. This focused pass is the only thing between here and the production merge. The original 4 smoke-fix PRs (#295–#298) were already smoked OK by Max; the **two new additions (#299 Library link, #300 self-booking email lock) are un-smoked** — they reached staging only via the release pushes. Scope is the v1.11.0 deployed delta (per `feedback_smoke_scope_to_deployed_delta`), with explicit regression checks on the surfaces v1.11.0 touched plus one core happy-path.
+
+Staging is `https://staging.withjosephine.com` (behind CF Access; staging Stripe is **test mode**, so test card `4242 4242 4242 4242` is safe here — do NOT run a paid walk on prod, live links). To get a signed-in session: open the sign-in form on `/my-readings` (or any `/listen/<id>` page), enter your allowlisted base email, click the magic link (staging sends real mail to allowlisted addresses), land authed.
+
+**On completion → the merge sequence is at the bottom of this section.**
+
+### G1 — NEW: self-booking email lock (#300) + Library link (#299)
+1. **Signed-out** incognito → `/book/soul-blueprint/intake`: email field is **editable**; **no** "send it as a gift" nudge. ✅ regression: anonymous booking unchanged.
+2. Sign in (magic link, above).
+3. **Header (signed in):** a **"Library"** link is present → clicking goes to `/my-readings`. ✅ (#299)
+4. **Signed-in** → `/book/soul-blueprint/intake`: email field is **prefilled with your account email and read-only**; nudge reads **"Signed in as <you>… Booking for someone else? Send it as a gift"** → links to `/book/soul-blueprint/gift`. ✅ (#300)
+5. **Locked-email authority regression:** while signed out, start an intake draft with a *different* email + a name, "save for later"; then sign in and reopen the same intake. The email must show your **session** email (locked), not the stale draft email; the **name** should still restore from the draft. ✅ (`lockedValues` merge)
+6. **Gift-flow regression (shared `prefilledEmail` mechanism):** `/book/soul-blueprint/gift` still lets you enter a **different recipient** email (not locked). And a scheduled-gift recipient redeem still pre-fills + locks the recipient's email (covered deeper in Cluster B/C). ✅
+
+### G2 — NEW + regression: listen surface (#295)
+On a delivered `/listen/<id>` (use Cluster A's flow to produce one, or an existing delivered reading):
+1. **NEW:** an explicit **"Download voice note"** button renders beside the native player; clicking downloads the audio. **Test in Firefox** specifically (the reason it exists — Firefox's native player has no download). ✅
+2. **NEW:** the **welcome ribbon persists** — it does NOT auto-vanish after ~6s (wait 10s, still visible). ✅
+3. **NEW:** birth-time picker (intake, `/book/birth-chart/intake`) offers **every minute 00–59**, not just :00/:05/:10. ✅
+4. **Regression:** audio still **plays**; the **PDF download** link still works; `listenedAt` still records (Becky sees it in Studio after a listen).
+
+### G3 — regression: intake submit pending (#296)
+1. On the final intake page, click **Submit**: the button reflects **pending/disabled immediately** (no dead beat before the Turnstile/redirect). ✅
+2. **Regression:** trigger a validation/consent failure on submit → the button **re-enables** (not stuck disabled); a valid submit proceeds to Stripe.
+
+### G4 — regression: reading copy + names (#298)
+1. Reading cards/titles show **bare** names: "Soul Blueprint", "Birth Chart", "Akashic Record" (not "The …"). ✅
+2. Sentence/customer copy reads "…your Soul Blueprint **reading**…" (noun appended in copy, not in the bare name).
+3. Open one email (Order Confirmation or Day-7) — bare name + "reading" renders correctly, no double-noun / leading-article.
+4. **Migration note:** code defaults are bare; **live Sanity overrides need `scripts/migrate-readingname-append-reading-2026-06-16.ts`**. Confirm staging renders correctly (run the migration on staging if any surface still shows old copy); **prod migration is owed at merge** (see sequence below).
+
+### G5 — regression: Studio (#297) — PARTIAL, read the caveat
+- **Submission preview labels:** in Studio (`https://withjosephine.sanity.studio`), a **claimed gift** submission shows **"Purchaser … · Recipient …"** (not the bare purchaser email). ✅
+- **⚠ Send-preview is KNOWN-BROKEN on the hosted Studio** (cross-origin "Failed to fetch", deferred — dex `66mhdxuv`). Do **not** spend time smoking "Send preview to inbox" here; it can't pass on `*.sanity.studio` until that ticket lands. The token-drop code itself is unit-tested.
+
+### G6 — core happy-path regression (critical path #296/#300 touch it)
+Run one full **staging** booking end-to-end (test card `4242…`): `/book/<reading>` → letter → intake → pay → `/thank-you/<id>` → (Becky delivers) → magic link → `/listen/<id>`. Confirms the synchronous-submit (#296) and email-lock (#300) changes didn't regress the paid path. (This overlaps Cluster A — if you run Cluster A, G6 is covered.)
+
+### ✅ When this gate passes → production merge sequence
+1. **Re-confirm `osv-scan` is still green** on #291 (a fresh CVE wave has landed two days running): `gh pr checks 291`. If red, fix deps first (pnpm@10 override + regen, see CHANGELOG "Shared" rows).
+2. **Merge #291** (release→main) → this deploys to **production**.
+3. **Tag `v1.11.0`** + add the v1.11.0 release entry to `CHANGELOG.md`.
+4. **Run the gate migrations staging→prod** (after Day-7 queue drain): `migrate-readingname-append-reading-2026-06-16.ts` (#298), `migrate-strip-title-articles-2026-06-12.ts` (B, prod), `migrate-gift-confirmation-library-copy-2026-06-12.ts` (L2), + privacy-policy `legalPage` Sanity copy (export mention).
+5. **M1 follow-up** (dex `7h6tfse1`): confirm `/api/admin/send-email-preview` is under the WAF rate-limit rule now #297 dropped its token (defense-in-depth; not blocking the merge).
+6. **Branch cleanup:** `release/v1.9.0`, `release/v1.10.0`, `release/v1.11.0`.
 
 ---
 
@@ -92,12 +144,13 @@ Expected response: `{"processed":1,"sent":1,"skipped":0,...}`.
 1. Day-7 delivery email arrives. Subject reads "Your <reading-name> is ready" (verify no leading "The"). Body uses the one-tap copy: "Tap below to open your reading. You will be signed in for the next seven days..." (v1.4.0 J13a). Single CTA, no em-dashes.
 2. Tap the CTA. Land on `/my-readings/welcome?t=<lib-token>` with heading "Welcome to your library." and CTA "Continue to your library."
 3. Tap **Continue**. Land on `/my-readings?welcome=1`. Reading card visible under **Mine** with an **Open your reading** CTA.
-4. Click **Open your reading**. Land on `/listen/<id>`. Audio plays in full. PDF downloads and opens. Filename SHOULD be human-readable (firstname + lastname + reading name), NOT the submission UUID.
-5. Confirm top-bar visible on `/listen/<id>`, `/my-readings`, `/my-readings/welcome`: ✦ Josephine wordmark on left, Home link on right (v1.4.0 J13i).
+4. Click **Open your reading**. Land on `/listen/<id>`. Audio plays in full. PDF downloads and opens. Filename is human-readable: firstname + lastname + reading name, **space-separated, casing echoed verbatim** from the name fields (no hyphens/underscores, no app re-casing), e.g. `Jane Doe Soul Blueprint.pdf` (v1.11.0 K, #285; contract: `buildListenFilename` in `src/app/api/listen/[id]/downloadFilename.ts`). NOT the submission UUID. If the in-page loader hangs you can't reach the download — that's a BLOCK, not a pass.
+5. Confirm top-bar visible on `/listen/<id>`, `/my-readings`, `/my-readings/welcome`: ✦ Josephine wordmark on left; on the authed routes the right side shows the **owner email + Sign out** control. The old standalone "Home" link was removed in v1.11.0 (E) — the wordmark is the sole home affordance.
 6. Hit the browser **back** button after step 3. The interstitial does NOT restore from bfcache with the consumed token in the URL. The URL stays clean: no `?t=...` reappears (v1.7.0 J15a).
 7. Open the same listen URL in a second incognito window (different session). Site shows "This link has rested" form. Submit the email. A fresh email arrives — subject "Open your reading" (separate template from the Day-7 delivery; per F7 the relationship to J13d "Sign in to your library" is a TBD spec question). Tap the CTA. Land on `/listen/<id>?t=<fresh-token>` with heading "Welcome, your reading is here." and CTA "Continue to your reading." Tap, land on `/listen/<id>`.
    - Magic-link body greeting substitutes the user's actual first name, not literal `{firstName}` (v1.5.0 J12b).
 8. In that second window, close the listen tab and reopen `/listen/<id>` directly (within 7 days of step 7). The page renders. It does NOT show "This link has rested" (7-day session persistence promise).
+   - **Rested-bypass (v1.11.0 C, #287):** while signed in (valid session), append `?error=rested` to the listen URL. The reading must render normally — a valid session OUTRANKS the stale `?error=rested`; the "This link has rested" card must NOT show. (Pre-fix, a re-clicked/consumed link wrongly rested an already-signed-in user.) `?error=rested` is the deterministic trigger; the consumed-link path is an ambiguous secondary.
 9. Visit `/listen/<id>` with an obviously consumed token. Confirm the rested page renders with no em-dashes in heading or body (v1.10.0 J17d /listen rested).
 
 **Routing summary (the two welcome interstitial paths):**
@@ -124,13 +177,14 @@ Covers v1.0 baseline (J2, J3, J11 admin), v1.4.0 (J13a one-tap on recipient side
 ### B1: Purchaser buys, self-send mode
 
 **As purchaser (incognito):**
-1. Pick **Birth Chart** ($99). Click **Buy as a gift**.
+1. Pick **Birth Chart** ($89). Click **Buy as a gift**.
 2. Pick **I'll send the link myself** (self-send).
 3. Fill purchaser name + `yourname+gift-selfsend@gmail.com`. Tick the 2 consents (Art. 6 + cooling-off, no Art. 9 on the purchaser side).
-4. Pay with the test card.
+4. Continue to Stripe. **The Payment Link email field is PREFILLED with the purchaser's email** (`+gift-selfsend`) (v1.11.0 F, #288; reverses old B5.15). Pay with the test card.
 
 **Expect:**
 - Thank-you page renders the **gift self-send variant**: "Your gift link is ready in the email I just sent..." No `{placeholder}` literals (v1.10.0 J17c gift self-send).
+- **Gift Purchase Confirmation** refund/footer link text reads **"your library"**, NOT "your gifts page" (v1.11.0 L, #286). If live Sanity still says "your gifts page", that's the pending L2 migration, not a code regression.
 - **Gift Purchase Confirmation** email arrives in `+gift-selfsend`. Body contains the **claim URL**. Copy it.
 - **Josephine notification** at `hello@withjosephine.com`.
 
@@ -205,7 +259,7 @@ Covers v1.0 baseline (J4, J5, J7 privacy export, J11 admin), v1.4.0 unified libr
 **As purchaser (sign in via magic link to /my-readings):**
 1. Open Chrome DevTools console **before** navigating to `/my-readings`. Hard-refresh. **No "Hydration failed" warning** in console (v1.6.0 J14c).
 2. `/my-readings` renders as a single scrollable page with stacked **Mine** + **For others** sections (v1.4.0 J13b).
-3. Top-bar visible: ✦ Josephine + Home link (v1.4.0 J13i).
+3. Top-bar visible: ✦ Josephine wordmark + owner email + Sign out on the right. No standalone "Home" link (removed in v1.11.0 E).
 4. Visit `/my-gifts`. It 308-redirects to `/my-readings`.
 5. Em-dash spot-check on `/my-gifts` (or post-redirect view): `statusSentLabel`, `privacyNote`, edit-recipient self-send indicator (v1.10.0 J17d).
 
@@ -272,7 +326,9 @@ Covers v1.0 baseline (J4, J5, J7 privacy export, J11 admin), v1.4.0 unified libr
 ### C5: Privacy export (GDPR Art. 20)
 
 **As any signed-in customer (continuing from A3 or C2):**
-1. Navigate to `/my-readings`. Click **Export my data**. Confirm.
+1. Navigate to `/my-readings`. Click the self-service **Export my data** button (v1.11.0 D, #290). Confirm.
+   - Happy path: request accepted (202), UI confirms it's processing.
+   - Click it again immediately: the UI surfaces the **429** (already-requested / try-later) state gracefully, no crash. (413 = payload-too-large, only with an oversized export; N/A otherwise.)
 
 **Expect:**
 - **Privacy Export** email arrives with a download link. Subject + body greeting substitute `{firstName}` to the user's actual first name (v1.5.0 J12c).
@@ -282,6 +338,8 @@ Covers v1.0 baseline (J4, J5, J7 privacy export, J11 admin), v1.4.0 unified libr
 - Empty / wrong submission data in export.
 - 404 on download link.
 - Literal `{firstName}` in subject or body (allowlist mismatch in `emailPrivacyExport`).
+- 429 throwing an unhandled error instead of a friendly message.
+- A missing export email may be **env-guard suppression** on the async DO/cron path, not a 404 (see `feedback_resend_dry_run_paths`) — check the worker / D1 before reporting a fail.
 
 ---
 
@@ -406,6 +464,8 @@ Which clusters carry coverage for which release arc. Use this when a release nee
 | v1.7.0 (bfcache + null-filter + fragment defense) | A | A3 (J15a bfcache after one-tap, plus rested-page em-dash overlay) |
 | v1.8.0 (gift recipient personalization) | B | B3 (J16a recipient greeting on listen page) |
 | v1.10.0 (BookingPageShell, LibraryView parity, defaults reconcile) | A, B, C | A1+B1+C1 (J17c thank-you variants), A3 (J17d /listen rested em-dash), B2 (J17d /gift/claim em-dash), C2 (J17b LibraryView preview parity, J17d /my-gifts em-dash) |
+| v1.11.0 (listen rested-bypass, listen filename, library identity+sign-out, export UI, gift Stripe prefill, gift copy, gift Day-7 routing) | A, B, C, D, E | A3.4 (K #285 human-readable filename), A3.5 (E #289 owner-email + Sign out top-bar, no Home link), A3.8 (C #287 rested-bypass with valid session), C5 (D #290 "Export my data" 202/429 UI), B1 (F #288 gift Payment Link email prefill + L #286 "your library" copy), B3 / C4 (A/F14 #279 gift Day-7 delivery routes to RECIPIENT not purchaser — the CRITICAL fix; cross-user-leak check), E5 (#279-unblocked new-device notice), D2 (#279-unblocked send-preview end-of-flow). **To run only the v1.11.0 delta:** walk A3 + C5 + B1 + B3 + C4 + E5 + D2, plus the E top-bar at C2; everything else is regression-glance. |
+| v1.11.0 smoke-fixes + late adds (#295–#300) | gate section (G1–G6) | **Run the "▶ v1.11.0 release→main gate smoke" section at the top of this doc.** Covers #295 listen (audio download / persistent ribbon / all-minute time picker — G2), #296 intake synchronous-submit (G3), #297 Studio Purchaser/Recipient labels + send-preview caveat (G5), #298 bare reading names + "reading" copy + migration (G4), **#299 Library link (G1.3)** and **#300 signed-in self-booking email lock + lockedValues authority (G1)**, plus core happy-path regression (G6). This is the pre-merge gate for #291. |
 
 For the v1.10.0 specific BookingPageShell 5-route render parity check (formerly J17a): walk these in sequence at mobile width, same browser window, compare header height, back-link position, footer behavior, gold inner-border (`inset-2 md:inset-3`):
 1. `/book/soul-blueprint` (control, not wrapped in shell)

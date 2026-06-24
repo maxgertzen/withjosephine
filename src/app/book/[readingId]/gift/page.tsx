@@ -3,21 +3,22 @@ import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { GiftForm } from "@/components/GiftForm";
+import { SignOutForm } from "@/components/SignOutForm";
 import {
   BOOKING_GIFT_FORM_DEFAULTS,
   type BookingGiftFormContent,
-  ENTRY_PAGE_DEFAULTS,
 } from "@/data/defaults";
-import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { getReadingById } from "@/data/readings";
+import { getSignedInUser } from "@/lib/auth/sessionUser";
 import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
 import {
-  fetchBookingForm,
   fetchBookingGiftForm,
   fetchReading,
 } from "@/lib/sanity/fetch";
 import type { SanityBookingGiftForm } from "@/lib/sanity/types";
 
-export { generateReadingStaticParams as generateStaticParams };
+// Dynamic (no generateStaticParams): reads the session cookie to lock the
+// purchaser email to the signed-in account.
 
 type GiftPageProps = {
   params: Promise<{ readingId: string }>;
@@ -102,10 +103,10 @@ function mergeCopy(
 export default async function GiftPage({ params }: GiftPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, bookingForm, giftFormCopy] = await Promise.all([
+  const [sanityReading, giftFormCopy, signedInUser] = await Promise.all([
     fetchReading(readingId),
-    fetchBookingForm(),
     fetchBookingGiftForm(),
+    getSignedInUser(),
   ]);
 
   const reading = sanityReading
@@ -125,21 +126,26 @@ export default async function GiftPage({ params }: GiftPageProps) {
     notFound();
   }
 
-  const aboutLabel =
-    bookingForm?.entryPageContent?.aboutJosephineLinkText ??
-    ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText;
-
   return (
     <BookingPageShell
       backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
-      aboutLinkText={aboutLabel}
       outerBg="ivory"
     >
+      {signedInUser ? (
+        <div className="font-body text-sm text-j-text-muted max-w-[50ch] mx-auto text-center mb-6">
+          Signed in as {signedInUser.email}, so your receipt and gift link go here and
+          the purchase is saved to your library.{" "}
+          <SignOutForm className="inline" buttonClassName="underline hover:text-j-text-heading transition-colors" />{" "}
+          to use a different account.
+        </div>
+      ) : null}
+
       <GiftForm
         readingSlug={reading.slug}
         readingName={reading.name}
         readingPriceDisplay={reading.priceDisplay}
         copy={mergeCopy(giftFormCopy)}
+        prefilledEmail={signedInUser?.email ?? null}
       />
     </BookingPageShell>
   );

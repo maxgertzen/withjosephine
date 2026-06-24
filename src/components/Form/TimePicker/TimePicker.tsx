@@ -35,7 +35,7 @@ function pad(n: number): string {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
-const MINUTES = Array.from({ length: 12 }, (_, i) => pad(i * 5));
+const MINUTES = Array.from({ length: 60 }, (_, i) => pad(i));
 
 const HOUR_OPTIONS: ReadonlyArray<SelectOption> = HOURS.map((h) => ({ value: h, label: h }));
 const MINUTE_OPTIONS: ReadonlyArray<SelectOption> = MINUTES.map((m) => ({ value: m, label: m }));

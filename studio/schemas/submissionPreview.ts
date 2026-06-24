@@ -107,9 +107,27 @@ function buildDates(args: {
   return typeof args.status === "string" && args.status !== "" ? args.status : "pending";
 }
 
+function trimmedStringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+}
+
+// Gift submissions carry two addresses: `email` is the purchaser, `recipientEmail`
+// is who actually receives the reading. Showing the bare purchaser email misled
+// Becky on recipient-claimed gifts, so when a distinct recipient address exists
+// we label both. An unclaimed gift (no recipientEmail yet) keeps the bare email.
+function identityLine(selection: Record<string, unknown>): string | null {
+  const email = trimmedStringOrNull(selection.email);
+  const recipientEmail =
+    selection.isGift === true ? trimmedStringOrNull(selection.recipientEmail) : null;
+  if (!recipientEmail) return email;
+  return email
+    ? `Purchaser ${email} · Recipient ${recipientEmail}`
+    : `Recipient ${recipientEmail}`;
+}
+
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
   const fullName = fullNameOrNull(selection.responses);
-  const email = typeof selection.email === "string" && selection.email !== "" ? selection.email : null;
+  const identity = identityLine(selection);
   const dates = buildDates({
     status: selection.status,
     createdAt: selection.createdAt,
@@ -129,11 +147,11 @@ export function buildPreview(selection: Record<string, unknown>, now: Date) {
   const datesWithClaim = claim ? `${claim} · ${dates}` : dates;
 
   if (fullName) {
-    const subtitleParts = email ? [email, datesWithClaim] : [datesWithClaim];
+    const subtitleParts = identity ? [identity, datesWithClaim] : [datesWithClaim];
     return { title: fullName, subtitle: subtitleParts.join(" · ") };
   }
-  if (email) {
-    return { title: email, subtitle: datesWithClaim };
+  if (identity) {
+    return { title: identity, subtitle: datesWithClaim };
   }
   return { title: "no name", subtitle: datesWithClaim };
 }

@@ -17,7 +17,7 @@ const HEADER_LINES = ["Josephine", "Soul Readings", "Your reading is booked"] as
 
 const BODY_LINES = [
   "Hi Ada,",
-  "Thank you for booking a Soul Blueprint with me",
+  "Thank you for booking a Soul Blueprint reading with me",
   "I’ll begin your reading in the next day or two",
   "If anything comes up before then",
 ] as const;

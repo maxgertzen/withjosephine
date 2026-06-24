@@ -19,17 +19,15 @@ export type LetterReading = {
 export type LetterViewProps = {
   reading: LetterReading;
   letterContent: LetterContent;
-  aboutJosephineLinkText: string;
 };
 
-export function LetterView({ reading, letterContent, aboutJosephineLinkText }: LetterViewProps) {
+export function LetterView({ reading, letterContent }: LetterViewProps) {
   const ctaFirstChar = letterContent.dropCapCta.charAt(0);
   const ctaRest = letterContent.dropCapCta.slice(1);
 
   return (
     <BookingPageShell
       backHref={BOOKING_PAGE_ROUTES.entry(reading.slug)}
-      aboutLinkText={aboutJosephineLinkText}
       variant="letter"
     >
       <div className="relative flex justify-center mb-6">

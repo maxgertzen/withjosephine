@@ -1,67 +1,226 @@
 # Session Boot — Active State
 
-## 🛎️ 2026-06-10 — v1.11.0 arc open; Commit 0 + Sub-PR A (F14) shipped to release branch; awaiting ISC-47 manual gate before Sub-PR G
+## ▶ DONE (2026-06-23 PM): Path A epic `tia2pzk1` COMPLETE — booking funnel static (#312) + R2 time-based ISR (#313) + intake-nav UX (#314), all merged to release/v1.11.5, staging-deployed, Max-verified
 
-### What's the state of the world
-- `main` at `c8f78b5` (bookkeeping commit from 2026-06-08 smoke session — 19 dex tickets + smoke restructure + `scripts/force-cron.sh`).
-- `release/v1.11.0` cut from `c8f78b5` and pushed; current HEAD `e28d29c` carries:
-  - `eebe396` — Commit 0: `ci.yml` extended (4 ref-lists wired for `release/v1.11.0`)
-  - `898a0a2` — Sub-PR A squash merge (#279): F14 gift Day-7 + Order Confirmation routing fix + audit-log redaction fix from `/simplify`
-- Sub-PR A SHIPPED end-to-end on release branch:
-  - 5 sendDay7Delivery tests + 2 sendOrderConfirmation tests + 2 buildSubmissionContext tests + 1 admin-audit-log test (all green)
-  - Local `pnpm test` on `release/v1.11.0`: 233 files / 2328 tests pass
-  - Release-branch `ci.yml`: all 6 jobs SUCCESS (lint, test, storybook, security-audit, deploy-staging, sanity-validate-staging) at 13:34Z–13:41Z UTC
-  - F14 fix LIVE on `staging.withjosephine.com` since 2026-06-08 ~13:40Z
-  - e2e-sandbox manually dispatched on `release/v1.11.0`: PASSED (one Stripe flake on gift-roundtrip, retried green — same pattern as PR #279)
-- PRD: `MEMORY/WORK/20260608-120435_v1110-fix-arc-plan/PRD.md`, 55/55 ISC verified, phase: complete. Plan deliverable for full v1.11.0 arc (13 sub-PRs A–M).
+- **Path A epic `tia2pzk1` CLOSED — all 5 phases shipped.** Public pages static/ISR with instant prefetched nav; Presentation/draft preview on `/preview/*`; booking funnel converted (#312); R2 time-based ISR (#313). PPR/cacheComponents stayed dead. Children all done: g0a3eqiv, ocry192o, 21jupako (#311), ox2clqob (#312), de287l3v (#313).
+- **#313 de287l3v — MERGED (`01e975c`), dex DONE, runtime-VERIFIED by Max 2026-06-23.** R2 **time-based ISR** (`r2IncrementalCache` + `memoryQueue`; no tagCache, no DO, no PPR, no webhook). Confirmed on staging: booking nav fast (cache-served, not per-request re-render) AND published edit reflects within ~60s. `wrangler.jsonc` staging gained `WORKER_SELF_REFERENCE`; `publishedFetch` revalidate 300→60.
+- **#312 `ox2clqob` — MERGED (`eeab1eb`), dex DONE.** Booking pages on `publishedFetch` (3 fetchers). Note: they were already `●` SSG in the build; the runtime SPEED fix was the incremental cache (#313), since a `●` SSG page needs a cache to be served without per-request re-render.
+- **#314 intake-nav UX — MERGED, staging-deployed (transient Sanity-CDN build-timeout re-ran green).** Header `‹ Back` arrow steps back through intake pages (exits to letter only from page 1) via a fallback-safe client `headerBackContext`; draft resume always opens on page 1 with values prefilled (saved page index no longer restored).
+- **`enwvuaxd` (open, low pri):** harden build-time Sanity fetch against transient timeouts — SSG prerender fetches Sanity at build, a CDN blip fails deploy-staging and needs a manual re-run.
+- **🚨 PROD-MERGE LANDMINE (de287l3v):** `open-next.config.ts` is shared by both envs. Prod top-level wrangler has NO `NEXT_INC_CACHE_R2_BUCKET` and NO `WORKER_SELF_REFERENCE`. **Before v1.11.5 -> main reaches a prod deploy:** create R2 bucket `withjosephine-next-cache` + add both bindings to the prod top-level block, or `r2IncrementalCache`/`memoryQueue` error at prod runtime. (Staging-scoped deliberately this release; prod apex still parked under `wdpz1ux4`.)
 
-### 🚨 Max-actions still owed for the arc
-- [ ] **ISC-47 manual smoke on deployed staging (BLOCKING Sub-PR G):** walk B1 → B2 → B3 on `staging.withjosephine.com`, Becky uploads audio + PDF + sets deliveredAt, run `bash scripts/force-cron.sh email-day-7-deliver <id>` from `www/`, confirm Day-7 + Order Confirmation emails land at RECIPIENT address (not purchaser). Per `feedback_real_browser_smoke_before_ship_claim` — unit tests + sandbox e2e prove no regression, but the recipient-inbox assertion is the actual proof F14 is fixed.
-- [ ] **Sub-PR G env_guard decision (blocks Sub-PR G start):** choose between (a) widen static allowlist with the recipient test alias, (b) add `gift && staging` bypass with audit log, (c) move allowlist to a Sanity singleton Becky can edit. F13 (recipient-intake-received email) was blocked by env_guard + F14's misroute; with A shipped, G is the second half of unblocking the gift Day-7 chain.
-- [ ] **Sub-PR M decision (F11 price):** is Birth Chart $89 (staging) or $99 (CLAUDE.md) canonical? Pure docs OR pure Sanity edit.
-- [ ] **Sub-PR L decision (F7 fresh-link subject):** keep "Open your reading" (current single-reading direct flow) or unify to "Sign in to your library" (J13d variant)? Default if deferred: keep current.
-- [ ] **Sub-PR C scope agreement (F3):** time-box diagnostic at 4 hours and defer code change to v1.11.1 if root cause not nailed within budget — agreed in PRD D3 but worth re-confirming when C starts.
-- [ ] **Branch cleanup (still owed from v1.10.0 + v1.9.0):** `git push origin --delete release/v1.10.0 release/v1.9.0` once Max real-browser smokes both releases on prod.
+## ▶ NEXT SESSION (2026-06-23): Phase 3 static cutover SHIPPED + Max-smoked → next = convert the booking funnel ("the rest")
 
-### v1.11.0 sub-PR roster (Plan from 2026-06-08 PRD)
+**Phase 3 done.** Merged to `release/v1.11.5` (PR #311) + deployed to staging + Max-smoked 2026-06-23:
+- **Presentation** works on `/preview/*` for all doc types (drafts + click-to-edit overlay). Studio redeployed with `previewUrl.initial=/preview` so it cold-opens on the draft surface. Navigate to other pages by typing `/preview/book/<slug>`, `/preview/thank-you/<slug>`, `/preview/privacy`, `/preview/404`, `/preview/under-construction` (or via a doc's "Used on" links).
+- **Public static pages** (`/`, `/privacy`, `/terms`, `/refund-policy`) are now instant/prefetched. Per-route CSP (`'unsafe-inline'` on static routes, strict nonce on interactive); consent via `consent-required` cookie; under-construction relocated to middleware → static `/under-construction`.
+- **pnpm overrides + build-allowlist** migrated to `www/pnpm-workspace.yaml` (`i1cd1q5a` done, commit `62f6062`) — plain **pnpm 11** works now, no more `npx pnpm@10` dance.
 
-| Sub-PR | Status | Dex | Surface |
-|---|---|---|---|
-| Commit 0 | ✅ SHIPPED `eebe396` | n/a | `ci.yml` ref-list extension |
-| **A** F14 gift Day-7 + OC routing | ✅ SHIPPED `898a0a2` (PR #279) | `dpdpepfg` | `src/lib/resend.tsx` + `src/lib/booking/submissions.ts` + audit-log fix |
-| **G** env_guard recipient allowlist | ⏸ BLOCKED on decision | `vdg6rdy9` | `src/lib/env-guard.ts` |
-| **B** Article + double-noun cluster | queued | `ifpkcvln` | Sanity service titles + day-7 template + validation rule |
-| **C** Listen 7-day remember-me | queued (diagnostic-first) | `e8y823lu` | listen route + session cookie |
-| **D** GDPR Art.20 customer UI | queued | `z8dk78tn` | new /my-readings export button |
-| **E** Library identity + sign-out (folds F16) | queued | `ia4v3hck` + `87n9qmbj` | top-bar + revoke route |
-| **F** Stripe gift email prefill | queued | `29fuqdga` | Payment Link redirect builder |
-| **H** Sanity orphan fields + detector | queued | `vz3vp14x` | unset 4 orphan fields + extend drift detector |
-| **I** Mobile UI batch | queued | `a46hqmr9`+`t8jgtfym`+`nie5h9li`+`4ybq539f` | DatePicker, PDF loader, intake footer, library card |
-| **J** Studio surface | queued | `9sdtjug4` + `5r2or1ff` | booking preview + send-preview UX |
-| **K** Asset filenames | queued | `lb3dn5t0` | R2 Content-Disposition |
-| **L** Copy nits (post F16 fold into E) | queued | `7azl631f` + `i31g3i01` | fresh-link subject + gifts page copy |
-| **M** Birth Chart price reconcile | queued | `jbc5n109` | $89 vs $99 decision |
+**NEXT (dex `ox2clqob`, child of `tia2pzk1`): convert the public booking funnel.** `/book/[readingId]` + `/book/[readingId]/letter` still use the live draft fetchers → ~4s per-click worker render (Max confirmed on staging). Convert those TWO public pages to `publishedFetch` (same pattern as home/legal); KEEP `/book/[id]/intake` + `/gift` + `/thank-you` dynamic (session/Stripe reads, locked #301). Verify the nav into `/letter` is a prefetching `next/link`; extend `assert-static-routes.mjs`.
 
-### Most likely next session pickup
-1. **Recommended:** Max does ISC-47 manual walk on staging (~10 min), confirms F14 routes correctly, then makes Sub-PR G env_guard decision. Sub-PR G is XS-S (env_guard config change + 1-2 tests).
-2. **Parallel-safe alternate:** open Sub-PR B (Sanity article cluster) — no decision needed, pure Sanity-content + schema validation rule + template rewrite. Ships independently of A.
-3. **Parallel-safe alternate:** open Sub-PR H (Sanity orphan fields + detector) — small Sanity Studio + script update, fully scoped in plan.
+**Also queued (non-blocking):** `tu3kj5py` (CF Web Analytics beacon CSP-blocked — decide allow vs drop), `g28lo073` (FAQ collapse animation), `olus9jet` (Presentation `mainDocuments` resolver UX), `de287l3v` (Phase 4 webhook `revalidateTag` + confirm OpenNext incremental-cache binding for `unstable_cache`).
 
-### Process learnings from this session (carry forward)
-- **`/code-review` and `/simplify` MUST be invoked as actual `Skill` tool calls pre-push, not as self-review against checklist text.** The Sentry `code-review` skill prints reference guidance; running it without then invoking the project-level reviewer leaves the binding rule (`feedback_code_review_and_simplify_pre_push`) un-honored. Caught 2026-06-08 by Max — `/simplify` then surfaced a real audit-log bug in `resendCustomerEmail.ts:75` post-F14 that would have shipped silently.
-- **Premortem item that landed early:** the cumulative-review prediction (item #6: "structural extraction needed when N+1 senders hit the same `to: submission.email` pattern") materialised on a single sub-PR via the cross-impact audit catching `sendOrderConfirmation` alongside `sendDay7Delivery`. Generalising `resolveDeliveryAddress` to a structural shape (instead of `SubmissionContext`-only) closed the same gap on the audit-log path. Pattern: when a fix touches a shared type, audit grep on the broader symbol surface, not just the originally-reported callsite.
-- **Stripe Checkout sandbox-mode flakes are a known pattern.** Both `gift-roundtrip.spec.ts:94` and `v120-smoke-validation-roundtrip.spec.ts:69` time out on Stripe-side interactions intermittently. Retry resolves. Don't investigate as a regression unless it fails on retry #2 too. Comparable behaviour on PR #279 + the manual e2e-sandbox dispatch on `release/v1.11.0`.
-- **Sub-PR A's e2e extension deferred deliberately.** The sandbox-mode gift-roundtrip spec does not assert the recipient inbox; extending it requires mocked Resend in cron context which has DryRun-path complexity per `feedback_resend_dry_run_paths`. ISC-47 manual gate is the actual proof-of-fix. Document this pattern: code-only sub-PRs ship with unit tests + sandbox-e2e regression coverage, and the user-facing observable lands in manual smoke not in CI.
-
-### Things that aren't broken but worth a glance next session
-- **dex audit clean** at session close; 25 ready + several epics. v1.11.0 arc consumes 19 of those.
-- **`scripts/force-cron.sh`** is the new helper for forcing cron routes on staging or prod via cloudflared. Use it for Day-7 verification on ISC-47. One-time setup `brew install cloudflared` + `cloudflared access login https://staging.withjosephine.com` if not already done.
-- **`feat/v1110-gift-day7-recipient-routing` branch deleted** (origin and local) post-merge. Don't recreate.
-- **`release/v1.10.0` and `release/v1.9.0`** still alive on remote per deliberate hold for hotfix optionality. Cleanup pending Max smoke confirmation.
+**Phase 3 is on `release/v1.11.5`, NOT yet merged to `main`** — rides `release → main` with the rest of that line when ready.
 
 ---
 
-## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL [SUPERSEDED by section above]
+## ▶ EARLIER (2026-06-22 EVENING): Path A static-rendering — Phases 1-2 SHIPPED + Presentation SMOKE PASSED → **build Phase 3 (the static cutover)**
+
+**TL;DR:** The nav-latency root cause is now CONFIRMED and a non-PPR fix (Path A) is underway on `release/v1.11.5`. Phases 1-2 are merged + deployed + smoked. Phase 3 is the actual speed win and is the next session's job. PPR/cacheComponents stays dead (see older section). The fix surface and the deploy-free test exist.
+
+### Confirmed root cause (supersedes the old "uncached GROQ" framing)
+Every content route renders **dynamically** (`/`, `/book/*`, `/privacy`, `/terms`, all `ƒ`; only `/robots.txt` static). Two triggers: (a) root layout `layout.tsx:22-23` `draftMode()` + `headers()`; (b) the live `sanityFetch` (next-sanity `defineLive`) reads `draftMode()` internally on EVERY public fetch. Because routes are dynamic AND have no `loading.tsx`, `next/link` can't prefetch them → the full worker render (incl. edge→Sanity GROQ) is paid on every click = the ~1-2s. Middleware is ~4ms (refuted). Local render is ~53ms warm, so prod cost = workerd CPU + edge→Sanity RTT, paid per-click only because the route is dynamic. Memory `project_static_rendering_root_cause` corrected to reflect this.
+
+### Path A (dex epic `tia2pzk1`) — make public pages static/ISR, move draft preview to a dedicated `/preview` surface (reuses existing Views). No PPR.
+- **Phase 1 `g0a3eqiv` — DONE (#309).** `publishedFetch` helper (`src/lib/sanity/publishedFetch.ts`): published perspective, `stega:false`, `revalidate=300` + cache tags, no `draftMode()`. Unused until Phase 3. 4 unit tests.
+- **Phase 2 `ocry192o` — DONE (#309) + SMOKE PASSED.** `src/app/preview/page.tsx` renders `HomePageView` via the live draft-aware path, `robots:noindex`. `studio/presentation.tsx` `landingPage` location repointed `/` → `/preview`. Shared `src/app/homePageViewProps.ts` (`toHomePageViewProps`) so public + preview can't drift. **Max confirmed Presentation works on `/preview` on staging 2026-06-22** (Studio redeployed). Additive; nothing public changed behavior.
+- **Phase 3 `21jupako` — IN PROGRESS on branch `feat/path-a-phase3-static-cutover` (off `release/v1.11.5`). PRD: `MEMORY/WORK/20260622-140253_path-a-phase3-static-cutover/PRD.md` (19/44).**
+  - **Chunk 1 DONE + build-verified, committed `216c078` (NOT pushed) = the additive half of step 1.** Five `/preview/*` twins added (`/preview/book/[slug]`, `/preview/thank-you/[slug]`, `/preview/[legalSlug]`, `/preview/404`, `/preview/under-construction`), each reusing the real View via the live draft fetchers + existing derive helpers (no `publishedFetch`); shared legal/404 bodies extracted so public+preview can't drift (public output byte-identical). All 10 non-email Presentation locations repointed to `/preview/*`. `typecheck`+`build` green; routes still `ƒ` (expected, root layout not yet stripped).
+  - **Chunk 3 (the breaking flip) DONE + verified, commits `3ffbc72`+`dc8ade9`. Chunk 4 DONE. SHIPPED: PR #311 squash-merged to release/v1.11.5 (2026-06-23) + deployed to staging (CI run 28008825505 all green incl deploy-staging + sanity-validate-staging).** Root `layout.tsx` stripped of draftMode/headers (static); live tree moved to `src/app/preview/layout.tsx`; home + legal + not-found switched to `publishedFetch` (ISR 300 + tags via `unstable_cache`); consent via JS-readable `consent-required` cookie set in middleware + read client-side in AnalyticsBootstrap (previewMode now from `usePathname`); under-construction relocated to a middleware rewrite → static `/under-construction`. **CSP outcome (Max-approved, REVISED from the 2026-06-22 pick):** the build-time-hash plan was empirically infeasible (20 inline RSC flight-data scripts vary per CMS edit + per build; `experimental.sri` covers only external files), so static content routes use `script-src 'self' 'unsafe-inline'` and ALL interactive routes keep the strict per-request nonce; JSON-LD nonce dropped (exempt data block). Verified by curl (`/`→unsafe-inline, `/auth/verify`→nonce) + unit tests.
+  - **Gates GREEN:** `assert-static-routes.mjs` PASS (`/ /privacy /terms /refund-policy /under-construction /_not-found` all `○`); `pnpm typecheck` 0; focused vitest 47-54 pass; `next build` 0. `/code-review --effort high` (1 BLOCKER + 1 HIGH + 2 MED + 1 LOW, all fixed) + `/simplify` (1 MED fixed) done. PRD updated 43/44.
+  - **🚨 OWED NOW  STUDIO REDEPLOY (Max): `cd www && pnpm studio:deploy` (needs `sanity login`; env tokens lack deployStudio grant, confirmed). REQUIRED before the Presentation smoke so the repointed `/preview/*` location resolver takes effect. Website is already on staging; only the Studio resolver is stale.** Then **🚨 OWED NOW (ISC-A7, hard gate): Max real-browser smoke on staging** (already deployed) — (a) Presentation on `/preview/*` for ALL doc types (drafts + overlays) now that the layout is stripped; (b) confirm static `/` + legal hydrate fine under `'unsafe-inline'` (nav prefetch instant, no CSP console errors); (c) EU consent banner still shows. THEN push branch → PR → merge. Branch `feat/path-a-phase3-static-cutover` is local-only.
+  - **Phase 4 carry-over (M3 from review):** confirm OpenNext incremental-cache binding is wired so `unstable_cache` revalidate/`revalidateTag` actually work at runtime on CF (pages are static regardless; this is for the webhook tag-revalidation in `de287l3v`).
+  - The 7 ordered steps below were the plan; all are now implemented on the branch.
+- **Phase 3 `21jupako` — original ordered steps (the flip detail).** Semi-atomic (can't be half-done — see gotchas):
+  1. **Expand `/preview` to ALL previewable doc types** (book/reading → `/preview/book/[slug]`, thank-you, legal, 404) reusing each page's View, and repoint ALL remaining `presentationResolve` locations (`reading`, `bookingPage`, `thankYouPage`, `legalPage`, `siteSettings`, `theme`, `testimonial`, `faqItem`, `underConstructionPage`, `notFoundPage`) to `/preview/*`. Until this is complete you CANNOT do step 2.
+  2. **Strip `draftMode()`/`headers()` from the root layout** and MOVE the live tree (`SanityLive`/`VisualEditing`/`DisableDraftMode`) into a new `src/app/preview/layout.tsx` (so only `/preview` carries it; the root layout's current draft block disappears). Root layout becomes static.
+  3. **Switch public pages to `publishedFetch`** (home + legal first, then the rest) so they render static/ISR. Build gate (`node scripts/perf/assert-static-routes.mjs`) flips `/`, `/privacy`, `/terms`, `/refund-policy` from FAIL→PASS = deploy-free proof.
+  4. **Consent decoupling:** root layout's `headers()` reads `CONSENT_HEADER` (region) to gate the consent banner; for a static layout, set a consent COOKIE in middleware and read it client-side (keep the hardcoded legal UI untouched). GDPR-sensitive — smoke EU behavior.
+  5. **Static-safe CSP nonce:** home/FaqSection JSON-LD uses a per-request `x-nonce`; static pages have no per-request nonce. Use a sha256-hash CSP entry or drop the inline-nonce dependency for static routes. Keep the nonce path for still-dynamic routes.
+  6. **Under-construction relocation:** home `page.tsx` currently shows the holding page via `isUnderConstruction(host)` (needs `headers()`). For a static `/`, move that decision into middleware (rewrite apex `/` → a static holding route when under construction) so `/` itself is the static landing.
+  7. **Re-smoke Presentation** (hard gate, Max) after the layout strip — confirm ALL doc types still preview on `/preview` with drafts + overlays. THEN merge.
+- **Phase 4 `de287l3v` — webhook `revalidateTag`** for published content (300s `revalidate` is the fallback; webhook is the real-time path). Also add React `cache()` dedup to published fetchers (Phase-2 simplify watch-item).
+
+### Branch / deploy state
+- `release/v1.11.5` HEAD `53967b6`: harness (`c8c8f99`) + Path A P1-P2 (`5c407a9`) + loading add/revert (`38c515e`/`53967b6`). Deployed to staging.
+- **Loading state (Path B) was added then reverted** — full-screen root loader fired on every nav (too intrusive). Not shipped. Don't re-add a root `loading.tsx`.
+- Phase 3 branches off `release/v1.11.5`. Per convention: feature branch → PR → squash; the Presentation re-smoke is the merge gate.
+
+### Deploy-free test (use it every Phase 3 step)
+`node scripts/perf/assert-static-routes.mjs` (runs `next build`, asserts public routes static — extend `SHOULD_BE_STATIC` as you convert) + `scripts/perf/rsc-nav-probe.mjs <baseUrl>` (RSC-vs-HTML timing on `next start`). Build locally with `pnpm run build` (NOT `CI=true` — it trips a dev-bypass guard; pnpm 11 is fine now that overrides moved to pnpm-workspace.yaml). The build route table (○/ƒ) is the canonical static-vs-dynamic signal — no deploy needed.
+
+### Tracked separately
+- `i1cd1q5a` DONE (2026-06-23, commit `62f6062`): `pnpm.overrides` + build-allowlist moved to `www/pnpm-workspace.yaml` (`overrides:` + `onlyBuiltDependencies:` for pnpm10/CI + `allowBuilds:` for pnpm11). Plain pnpm 11 works; lockfile byte-identical; osv + CI green. The pnpm@10 dance + purge prompt are over.
+- Unrelated `release/v1.11.0` (#291) prod-merge hold is unchanged — see older sections.
+
+---
+
+## ▶ EARLIER 2026-06-22 (LATE): Stage 2 (cacheComponents) SHIPPED TO STAGING → **REVERTED**. Speed issue UNSOLVED. PPR-on-Cloudflare does not work on this stack.
+
+**TL;DR for next session:** The cacheComponents/PPR migration (PR #307) was built, merged to `release/v1.11.5`, deployed to staging, and **reverted** (revert commit `38c1bff`) because it did NOT fix the nav latency and **introduced a runtime PPR failure + likely a regression** (staging measured ~4s on a `?_rsc=` nav vs the old ~1–2s). Site is back to the pre-Stage-2 dynamic-rendering baseline. **The original ~1–2s per-click latency is still unsolved and needs a genuinely different approach.**
+
+### What we proved on staging (hard evidence via `wrangler tail`, not theory)
+- The per-click cost is the **RSC soft-navigation payload** (`?_rsc=…`), not the HTML document and not asset loading. Network tab showed one `?_rsc=` fetch at **4.01s** while CSS/JS were 7–21ms.
+- During that render the Worker made **0 live Sanity GROQ calls** — so `'use cache'` DID cache the data. The Sanity fetch was never the real bottleneck (the original root-cause framing was wrong/incomplete).
+- The 4s came from **two things Stage 2 introduced/relied on**:
+  1. **PPR resume is broken on OpenNext + workerd.** Recurring runtime error: `Failed to parse postponed state RangeError: options.maxOutputLength out of range. Must be <= 134217728. Received 524288000`. "Postponed state" is PPR's static-shell→resume mechanism; when it fails Next falls back to full dynamic re-render, so the static-shell benefit **does not exist at runtime**. This is exactly the risk the plan's **Stage 1.5 one-page spike** was meant to catch — and that spike was skipped.
+  2. **The DO sharded tag cache is a round-trip storm.** `DOShardedTagCache.getTagData` fired **156×** in the click window (every cached read validates each of its tags against a Durable Object; next-sanity stamps each fetch with many syncTags). Plus `waitUntil() tasks … cancelled` warnings (background cache writes not completing).
+- Also a UX regression while it was live: **empty-page blink** on home + sign-in/auth-verify — caused by wrapping still-dynamic pages in `<Suspense fallback={null}>` to force the build green.
+
+### DO-NOT-REPEAT lessons (load-bearing)
+- **PPR / `cacheComponents` is NOT viable on this OpenNext + Cloudflare Workers version** — it throws `postponed state` at runtime. Do not re-attempt without first proving it on ONE page on staging (the skipped Stage 1.5 spike). Memory: `project_ppr_cachecomponents_broken_on_cloudflare`.
+- **The real latency axis is RSC-soft-nav → Worker render**, NOT first-paint/TTFB and NOT uncached GROQ. Any future perf attempt must target the `?_rsc=` Worker render time (measure with `wrangler tail` + network tab first). Candidate levers NOT yet tried: trim `src/middleware.ts` so it doesn't run on every request (it generates a CSP nonce + geo lookup on every nav), tune/disable `next/link` prefetch behavior, reduce per-nav Worker work, or step back and question whether App-Router-RSC-on-Workers is the right stack for this site at all (a static export / lighter SPA would not pay the per-click RSC round-trip).
+- Original root-cause memory `project_static_rendering_root_cause` is now **misleading** (it blames uncached GROQ/dynamic rendering; the tail disproved that). Treat it as superseded by `project_ppr_cachecomponents_broken_on_cloudflare`.
+
+### State of the world
+- `release/v1.11.5` HEAD = revert `38c1bff` (pushed; CI re-running → redeploys the pre-Stage-2 worker to staging). Verify that CI run goes green (esp. `deploy-staging` — if it errors on the removed `DOShardedTagCache` DO binding, add a `deleted_classes` migration).
+- **R2 buckets `withjosephine-next-cache` + `-staging` were created this session and are now UNUSED** — delete them (`wrangler r2 bucket delete …`) or leave empty (harmless, no cost at rest).
+- **⚠️ wrangler.jsonc revert is ASYMMETRIC by necessity (CF migrations are append-only):** the **staging** env block still declares the `NEXT_TAG_CACHE_DO_SHARDED` DO binding + the `NEXT_INC_CACHE_R2_BUCKET` binding + migration `v2` — because the staging worker already had `v2` applied and you can't just delete an applied migration (deploy errors `code 10074`: "Cannot apply new-sqlite-class migration … already depended on"). These are **inert** under the reverted code (open-next.config no longer configures a tagCache, so the DO is never instantiated). **prod top-level is fully clean (`v1` only, no cache bindings) — Stage 2 never deployed to prod.** To fully remove the staging DO later: add a `v3` migration with `"deleted_classes": ["DOShardedTagCache"]` to env.staging (not a plain delete of v2).
+- PR #307 is merged-then-reverted; the cacheComponents code is gone from the branch. `docs/PERF_STATIC_RENDERING_MIGRATION.md` plan doc remains but its Approach A (cacheComponents) is now disproven on CF — annotate it before reusing.
+- Two enforcement mechanisms added this session and KEPT (independent of the revert): a PostToolUse warning hook for added code comments (`~/.claude/hooks/warn-added-comments.mjs`) and memory `feedback_audit_before_adding_resources`.
+- Unrelated `release/v1.11.0` (#291) prod-merge hold is unchanged — see older sections below.
+
+---
+
+## ▶ EARLIER 2026-06-22: PERF MIGRATION arc on `release/v1.11.5` — Stage 1 DONE, awaiting Max's Presentation re-test → then Stage 2 (cacheComponents)
+
+**Big picture this session:** Diagnosed the site-wide **~1–2s navigation latency** (every link click). Root cause (evidence: `.next/prerender-manifest.json` prerenders 0 content pages): the root layout (`src/app/layout.tsx`) calls `draftMode()` + `headers()` unconditionally **and** `sanityFetch` (next-sanity `defineLive`) calls `draftMode()` internally → **every page renders dynamically**, running uncached Sanity GROQ per request. Full plan + Council verdict (evidence-cited): **`docs/PERF_STATIC_RENDERING_MIGRATION.md`**. Memory: `project_static_rendering_root_cause`.
+
+### The migration is staged on a NEW release line `release/v1.11.5`
+- `release/v1.11.5` was cut from `release/v1.11.0` (contains all of v1.11.0) and **wired into ci.yml** (push+PR triggers, deploy-staging + sanity-validate gates). Max's call: v1.11.5 is the perf line; v1.11.0 (#291, still HELD for prod merge — see older section below) merges to main first, then v1.11.5 follows.
+- **Stage 1 — next-sanity v12.4.5 → v13 (DONE, merged + deployed to staging):**
+  - #304 website `next-sanity` 13.1.1 + `@sanity/client` ^7.23.0. We use NONE of v13's removed API (verified vs MIGRATE-v12-to-v13). Lockfile regen'd with **pnpm@10** to keep the security overrides.
+  - #305 Studio `sanity` 5.24 → 5.31.1 (next-sanity 13 peers `^5.29 || ^6`) + `studio/pnpm-workspace.yaml` `allowBuilds: esbuild: true`. **Max deployed the Studio himself** (`pnpm studio:deploy` with his `sanity login` — env tokens lack the `deployStudio` grant). Studio live at withjosephine.sanity.studio on 5.31.
+  - #306 `<SanityLive action="refresh" />` — fixes the v13 Presentation no-live-update (v13 removed default refresh-on-focus; default action only revalidates tags = no-op on our dynamic pages; `"refresh"` forces `router.refresh()`). Only renders in draftMode → no public overage.
+- **Stage 2 — `cacheComponents` (NEXT, the actual speed fix):** enable Next 16 `cacheComponents`, lift `draftMode()`/`headers()` out of the root layout into Suspense/`use cache` islands, `enableCacheInterception:false`. Static shell serves from CF Workers Static Assets (no Worker). See plan doc §4 Stage 2. **Gated on Stage 1 verification below.**
+- **Stage 3 — account-menu redo:** once pages are static, the menu MUST be client-resolved (a static page can't know the user) — client-resolve + an instant **hint cookie** to kill the blink + the **z-index fix** (`UserMenu` popover `z-50` → `z-[110]`, currently renders UNDER the nav).
+
+### Stage 1 status — DONE enough; Stage 2 is UNBLOCKED (start it next session)
+- **Presentation preview works on RELOAD** (drafts + stega + overlay all good under v13). The **live-auto-update-on-edit is still broken** even with `<SanityLive action="refresh" />` (#306) — verified by Max 2026-06-22. Dex **`yqkukzlt`**. **Max accepted reload-only for now (non-blocking).** STRONG hypothesis: **Stage 2 (`cacheComponents`) fixes it for free** — cached+tagged data lets SanityLive's default tag-revalidation work (our dynamic/uncached pages are why neither default nor `refresh` re-renders). **RE-CHECK live-update after Stage 2 before any deeper investigation.**
+- So: **proceed to Stage 2 (`cacheComponents`)** — it's no longer gated on the live-update.
+- Already shipped + on staging (re-check casually): mobile hamburger width-jump (still broken, parked) + nav switches at 900px not 1024 (#303).
+
+### Parked / tracked (do NOT lose)
+- **Scrollbar width-jump on hamburger** — dex `ccvoig0e`. `scrollbar-gutter:stable` + `documentElement` lock (shipped #303) did NOT fix it for Max (classic scrollbars). Headless Chromium can't reproduce. PARKED to after perf + Presentation. Needs forced-classic-scrollbar repro OR JS scrollbar-width compensation on both page + fixed nav.
+- **Account-menu z-index + blink** — Stage 3 (the server-resolve attempt that included these was DISCARDED because it conflicts with making pages static).
+- **Permanent pnpm fix — DONE 2026-06-23 (`i1cd1q5a`, commit `62f6062`):** `pnpm.overrides` + build-allowlist now live in `www/pnpm-workspace.yaml` (`overrides:` + `onlyBuiltDependencies:` for pnpm10/CI + `allowBuilds:` for pnpm11). pnpm 11 reads them, builds native deps, no override-drop. Lockfile byte-identical, osv + CI green. Use plain `pnpm` locally now.
+- **pnpm gotcha — RESOLVED by the above.** One last one-time `node_modules` purge happens the first time pnpm 11 reinstalls (converting the old pnpm@10-built modules); it is now safe (overrides are in pnpm-workspace.yaml, not dropped). After that, smooth. Memory `feedback_pnpm_install_drops_lockfile_overrides` updated to RESOLVED.
+- **Presentation live-update** broken under v13 — dex `yqkukzlt` (re-check after Stage 2; may self-fix).
+- **Sanity Studio 5.x → 6.x** major upgrade — dex `hp8jight` (separate effort, no rush; 5.31 satisfies next-sanity 13's `^5.29||^6` peer so 6.x not needed now).
+- Other dex: `r759m4bm` (reap orphaned `aboutJosephineLinkText` Sanity field), `5ep2j3h4` (hint-cookie perf for AccountMenu — folds into Stage 3), `n02vegpj` (named nav breakpoint token), `ktq5io2l` / `0i9qk3m5` (older quality defers).
+- **Minor:** Studio warns the two workspaces (`production`/`staging`) declare different `auth` configs (only first takes effect) — small consolidation later.
+
+### Session memories saved (read before related work)
+- `project_static_rendering_root_cause` · `feedback_research_online_before_architecture` (research vendor docs, don't guess) · `feedback_attempt_credentialed_ops_from_env` (run deploys with .env yourself; SANITY read/write tokens lack `deployStudio` grant).
+
+### Branch state
+- `release/v1.11.5` @ `e667673` (perf line; Stage 1 merged). `release/v1.11.0` unchanged, #291 (release→main) still HELD (see older section). The account-menu work (#303, #299–#302) is on `release/v1.11.0`.
+
+---
+
+## ▶ NEXT SESSION (2026-06-20): G1 re-smoke fixes merged to release; #291 STILL HELD pending Max's header re-smoke
+
+- **Today's G1 re-smoke surfaced findings → 2 PRs merged to `release/v1.11.0` (CI green, staging redeployed):**
+  - **#301** `13453bc` — gift purchaser email **locked to session** (ties purchase to the buyer's library; gift page now dynamic) + intake polish (3-zone header, "or sign out" nudge, muted read-only fields) + **undici 6.x→6.27.0 real fix** (4 CVEs; extended `pnpm.overrides` to the 6.x line, regen pnpm@10, osv green — NOT an ignore). PRD `MEMORY/WORK/20260620-103320_g1-signed-in-intake-smoke-findings/`.
+  - **#302** `8bacb1f` — **responsive user-menu header** (fixes the mobile overlap bug): `[✦ logo] [user-menu]`; Deep circle + gold-ring trigger, **open-book glyph** (Max's pick), Radix Popover → email (muted) · Library · Sign out; email left the bar so it can't collide. Signed-out = logo only. **Footer "Library" link** → /my-readings (self-gates; unconditional, keeps public pages static). New `UserMenu` component + `ROUTES.library`. PRD `MEMORY/WORK/20260620-113536_authed-header-user-menu-and-library-ia/`.
+- **🚨 OWED FIRST: Max re-smoke the NEW header on staging** (fresh deploy live): open book icon on /listen or /my-readings → menu (email/Library/Sign out); **no overlap at 320/375/390**; footer Library link; re-confirm G1–G6 path. Monitor was stopped at pause — restart with `bash .claude/skills/smoke-monitor/scripts/begin-smoke.sh` from `www/` (it binds to the current deploy).
+- **#291 (release→main) held** pending that re-smoke. Then prod-merge sequence unchanged: re-confirm osv → merge #291 → tag `v1.11.0` → CHANGELOG → staging→prod migrations → M1 WAF. **At the gate, the orchestrated `/code-review` + `/simplify` cumulative pass now must cover #301 + #302 too.**
+- **Follow-ups:** dex `9c9bb7s3` (cache booking pages — the ~1s gift soft-nav; all booking routes render ƒ dynamic). NOT-YET-TICKETED: osv-ignore audit — `osv-scanner.toml` has a now-**stale/unused** ignore `GHSA-gv7w-rqvm-qjhr` (esbuild CORS) to drop, + re-check the "bump tracked" esbuild/vite ones. Max asked "why do we keep ignoring stuff" — preference is FIX over ignore when an upstream fix exists.
+- **Reusable now:** `SignOutForm` (`@/components/SignOutForm`, `AUTH_SIGN_OUT_ROUTE`), `UserMenu` (`@/components/UserMenu`). Use the **smoke-monitor skill** (not raw `wrangler tail`) — run `begin-smoke.sh` from `www/` (cwd matters; `./node_modules` is relative).
+
+---
+
+## ▶ 2026-06-18: #291 (release→main) is GREEN + gate-reviewed SHIP — awaiting Max's production-merge go
+
+- **2026-06-18 (cont.) — #291 release→main is fully green + CLEAN; cumulative gate review = SHIP.** Beyond the 4 smoke PRs, this session also merged **#299** (Library link in the authed header, `ec2ea3d`) and **#300** (lock booking email to the session for signed-in self-booking, `b43d2be`), and applied a second shared osv fix **`278e4d9`** (undici → `^7.28.0`; a fresh advisory wave the day after the first sweep). Cumulative gate review of the session delta `373bca6..release/v1.11.0`: no BLOCKER/HIGH; verdict **SHIP**. Two follow-ups: (M1, dex `7h6tfse1`) confirm `/api/admin/send-email-preview` is under the WAF rate-limit rule now #297 dropped its token — defense-in-depth, not a breach; (L2) run the #298 prod migration. **Owed before merging #291 to PRODUCTION:** (a) Max real-browser smoke — **the executable checklist is `docs/MANUAL_SMOKE_TEST.md` → "▶ v1.11.0 release→main gate smoke" (G1–G6)**: the two un-smoked new features (#299 Library link, #300 self-booking email lock) plus regression checks across the whole v1.11.0 delta + a core happy-path; the post-smoke merge sequence (re-confirm osv → merge #291 → tag → migrations → M1 WAF → branch cleanup) is at the end of that section; (b) the gate migrations are folded into that sequence. Heads-up: osv has flagged a fresh CVE wave on two consecutive days — re-check `osv-scan` is still green immediately before the prod merge.
+- **2026-06-18 — all 4 smoke-fix sub-PRs (#295–#298) MERGED to `release/v1.11.0`, CI green.** A newly-published batch of dependency CVEs had broken `security-audit / osv-scan` on every PR (and surfaced as inline code-scanning annotations — the "comments everywhere"). Fixed once via `pnpm.overrides` + a **pnpm@10** lockfile regen + justified `osv-scanner.toml` ignores (shared commit `bcee849` on release; `osv-scanner` verified exit 0 locally; release code-scanning alerts 14→0). Each sub-PR then merged base in, took its per-PR fix (#298 `mappers.test.ts` bare-name expectation; #295 `listen-roundtrip` deploy-gated assertions, simplify-consolidated), went green, squash-merged. PRD: `MEMORY/WORK/20260618-000000_v1110-ci-green-merge/PRD.md`. **#291 (release→main) osv now passes; remaining #291 checks re-running on the new release HEAD.** Gate work still owed: Max real-browser smoke → cumulative `/code-review`+`/simplify` on the release→main diff → merge #291 → tag → migrations → branch cleanup.
+- **All 9 smoke-findings fixes IMPLEMENTED 2026-06-16** (epic `qtrpoqpq`) as 4 feature-branch sub-PRs against `release/v1.11.0` + 1 doc commit + 1 investigation. Execution model: sequential, grouped (Max's pick). Test bar: unit always + e2e for browser surfaces (Max's pick). PRD: `MEMORY/WORK/20260616-191226_v1110-smoke-fixes-epic/PRD.md` (58/59, ISC-48 build pending CI).
+  - **PR #295** `fix/v1110-ui-batch` — TimePicker all-60-min (`9p65pc41`) + audio Download button (`xj0z7wah`) + welcomeRibbon persists (`7qskc340`, root cause = CSS keyframe auto-dismissed at `visibility:hidden` after 6s; fixed to fade-in-and-stay + reduced-motion visible).
+  - **PR #296** `fix/v1110-submit-pending` — submit pending set synchronously before the turnstile await + reset on validation-fail (`u7usxewf`). Gift send-now was already synchronous (useMutationAction); regression-locked.
+  - **PR #297** `fix/v1110-studio-admin` — drop admin token on send-preview **and** list-preview-recipients (`qn3b5pjy`; allowlist is the boundary, delete-user keeps its token) + Studio submission preview labels Purchaser/Recipient on gifts (`6wdpf3x0`). **Max-confirmed trade-off:** list-preview-recipients GET now returns internal preview emails unauthenticated.
+  - **PR #298** `fix/v1110-reading-copy` — bare reading names + "reading" appended in all email/page sentence copy (`ekesibyy`); standalone card titles stay bare. **Ships a gate-time Sanity migration** `scripts/migrate-readingname-append-reading-2026-06-16.ts` (idempotent, edit-preserving) for live overrides.
+  - **Doc** `645fr4tw` (MANUAL_SMOKE allowlisted-base-email note) on release `a9a3fbf`, dex done. **Investigation** `iz79sxt6` (Studio TypeError, no repro, likely Studio-core) recorded + left open as watch; dex bookkeeping `8c113e0`.
+- **Per-PR `/code-review` + `/simplify` gates: DONE on all 4** (skills invoked + agents run per sub-PR). #295 folded its simplify fix into the PR commit; #296/#297/#298 carry separate `(simplify)` follow-up commits (`c867998` submitEvent hoist, `91e70e9` dead admin-token stub + redundant tests dropped, `89dd94d` plain-object guard on migration walker). Do NOT re-run per-PR; the only review left is the cumulative pass at step (4).
+- **▶ THIS SESSION RESUMES AT: the release→main gate.** The 4 sub-PRs are merged and CI-green on `release/v1.11.0`; #291 (release→main) is open with osv now passing. Confirm the Decisions-locked block below still holds, then proceed through the remaining gate steps.
+- **🚨 Next steps (the gate):** ~~(1) watch CI on #295–#298~~ ✅ done 2026-06-18; ~~(3) merge the 4 sub-PRs on green~~ ✅ done 2026-06-18; (2) **Max real-browser smoke** of the 4 touched surfaces (`feedback_let_user_verify_before_merge`) — STILL OWED; (4) cumulative `/code-review --effort high` + `/simplify` on the full `release/v1.11.0 → main` diff (note #291 was already cumulatively reviewed 2026-06-13 — re-run only on the delta from #295–#298 + the osv commit); (5) merge PR #291 → tag `v1.11.0` → add the v1.11.0 CHANGELOG release entry; (6) **run gate migrations staging-then-prod:** B prod article strip, L2 gift copy, privacy-policy Sanity copy, **+ `migrate-readingname-append-reading-2026-06-16.ts`**; (7) branch cleanup (`release/v1.9.0`, `v1.10.0`, `v1.11.0`).
+- **Decisions locked (Max 2026-06-16):** readingName = append "reading" in template copy, name itself stays bare (no article, no "reading"); send-preview + list-preview-recipients = drop token (allowlist is the boundary); execution = sequential grouped sub-PRs; test bar = unit + e2e where surface allows.
+- **Env note:** local `vitest` D1-integration specs fail (better-sqlite3 native bindings; 161 failures this session were all this) — verify DB-touching tests in CI (`feedback_pnpm_install_drops_lockfile_overrides`).
+- **Smoke process lesson:** `wrangler tail` is **lossy**. NEVER report a fail from tail-absence — ground truth = inbox / downloaded export / D1 / R2 (`feedback_smoke_tail_is_lossy_use_ground_truth`).
+
+---
+
+## 🛎️ 2026-06-13 — v1.11.0 arc COMPLETE on release; `release/v1.11.0 → main` PR open, HOLDING for Max real-browser smoke
+
+### State of the world
+- All 13 v1.11.0 sub-PRs are now on `release/v1.11.0`. This session shipped the last 4 + closed J:
+  - **C** `e8y823lu` (listen 7-day remember-me) — PR #287 `9c570e6`. A valid session now outranks a stale `?error=rested` (re-clicked/consumed magic link). Fix gates error cards behind `state.kind === "signIn"`; 3 regression tests.
+  - **F** `29fuqdga` (gift Stripe prefill) — PR #288 `943e5ad`. Added `prefilled_email` (purchaser's own email) to the gift Payment Link, **reversing locked B5.15** per Max; guard test flipped. Self-purchase already prefilled.
+  - **E** `ia4v3hck` + `87n9qmbj` (library identity + sign-out + nav) — PR #289 `6773c65`. Authed top-bar shows owner email + Sign out (`POST /api/auth/sign-out` revokes current session row + clears cookie + 303). Redundant Home link dropped (wordmark is sole home affordance).
+  - **D** `z8dk78tn` (GDPR Art.20 export UI) — PR #290 `66237e9`. Self-service "Export my data" on /my-readings -> existing `/api/privacy/export` (202/429/413 handled). Privacy policy **fallback** amended; live Sanity legalPage copy update owed (Max-action).
+  - **J** `9sdtjug4` + `5r2or1ff` — **closed confirm-by-existence (no code)**. Per-service preview + recipient picker already shipped. Admin token KEPT (only gate on a public Worker route; env-var auto-fill rejected: would bake the secret into the public Studio bundle).
+- Each sub-PR: own feature branch -> PR -> squash-merge, CI-green, **merged on green** per Max's call.
+- **Cumulative `/code-review` (high) + 4-agent `/simplify` run on the full `origin/main...origin/release/v1.11.0` diff.** No blocking findings. 2 quality deferrals filed: `0i9qk3m5` (extract shared buildPaymentUrl helper) + `ktq5io2l` (dedupe authed-layout session lookup via React cache()). ExportDataButton state-machine tidy considered + skipped (preference).
+- Execution PRD: `MEMORY/WORK/20260612-182422_v1110-remaining-subprs-cfedj/PRD.md`.
+
+### 🚨 Max-actions owed (release→main gate)
+- [ ] **Real-browser smoke on `release/v1.11.0`** (PR open to main): listen revisit (rested bypass), gift checkout email prefilled, /my-readings identity chip + Sign out, "Export my data" flow, privacy-policy link. HOLDING merge on this per `feedback_let_user_verify_before_merge`.
+- [ ] **Merge `release/v1.11.0 → main` + tag `v1.11.0`** after smoke. Then add the v1.11.0 CHANGELOG release entry at tag time.
+- [ ] **Deferred content migrations (run at the gate, after Day-7 queue drain):**
+  - **B prod article strip**: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply`
+  - **L2 gift-confirmation copy**: `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod
+  - **NEW — privacy policy Sanity copy**: the live privacy `legalPage` renders Sanity `doc.body`; update that copy to mention the self-service export (code only amended the fallback).
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0` (+ `release/v1.11.0` after merge).
+
+### ⚠️ Environment note (carry forward)
+- Local `pnpm` v11.6.0 ignores the `pnpm.onlyBuiltDependencies` allowlist, so **better-sqlite3 native bindings don't build locally** — the D1-integration suite (`listenSession.test.ts` etc.) fails locally with "Could not locate the bindings file". Confirmed identical on bare HEAD; CI builds native deps and runs green. Verify DB-integration tests via CI, or approve the build. Companion to `feedback_pnpm_install_drops_lockfile_overrides`.
+
+---
+
+## 🛎️ 2026-06-12 — v1.11.0 arc: 8 of 13 sub-PRs shipped (A,B,I,M,G,H,K,L) + 9joewxu4 resolved; 4 remain (J,F,E,C,D) [SUPERSEDED by section above]
+
+### State of the world
+- `main` unchanged at `a95aba2`. `release/v1.11.0` HEAD `1104671`. NOT merged to main; no v1.11.0 tag yet. (NOTE: this SESSION_BOOT copy lives on `release/v1.11.0`, which was cut before main's 2026-06-10 bookkeeping — the 2026-06-08/2026-06-10 sections below predate the arc.)
+- **Latest session (2026-06-12 eve) shipped 3 more: `9joewxu4` (#284 `1110ccb`, env_guard allowlist — REMOVED Sub-PR G's `NONPROD_EMAIL_ALLOWLIST`, no new secret), K (#285 `becc393`, listen filenames), L (#286 `9af0f08`, gift copy + L1 by-design).** See Max-actions + Remaining sub-PRs sections below for what's next. dex all closed; CHANGELOG current.
+- Shipped to `release/v1.11.0` this session (all CI-green, merged):
+  - **A** (F14 gift Day-7 routing) — prior session, `898a0a2` / PR #279.
+  - **B** article cluster — PR #280 `38fc38f`. Schema guard + idempotent migration. **Article migration RUN on staging** (titles now "Soul Blueprint"/"Birth Chart Reading"/"Akashic Record Reading"). **Prod article migration still DEFERRED** to release→main gate (plan D6).
+  - **I** mobile UI batch — PR #281 `b2a8c07`. DatePicker month-dropdown width+overflow, PDF-loader-stuck (next/link `useLinkStatus`), intake footer, library card. **Live on staging.** 2 new mobile stories need a real-browser eyeball.
+  - **M** price reconcile — dex `jbc5n109` closed. **Prod Birth Chart price patched $99→$89** (verified). CLAUDE.md + memory now $129/$89/$79.
+  - **G** env_guard — PR #282 `62e8ed8`. Config-driven `NONPROD_EMAIL_ALLOWLIST`. **SUPERSEDED: #284 (`1110ccb`) removed this mechanism — see `9joewxu4` resolution; G's `parseEmailList` extraction kept.**
+  - **H** orphan fields + detector — PR #283 `8b76921`. **OC orphan-unset migration RUN on staging + prod** (validator schema-drift 8→4). Detector gap closed (stale contract mirror). New follow-up `bhkknsl6` for the 4 remaining gift-confirmation orphans (non-fatal drift).
+- Execution tracker PRD: `MEMORY/WORK/20260612-104936_v1110-bim-fix-batch/PRD.md` (5/12).
+
+### 🚨 Max-actions owed
+- [x] **env_guard allowlist sprawl RESOLVED (dex `9joewxu4`, PR #284 squash `1110ccb`).** No new secret needed. Sub-PR G's `NONPROD_EMAIL_ALLOWLIST` removed: the production self-gift guard strips `+suffix` (via `ownEmailKey`), so plus-aliases can't be two gift parties, but the two addresses already on the static allowlist (distinct keys) serve as purchaser+recipient for staging gift smoke with zero config. Send path back to 2 sources. `vdg6rdy9` superseded (no `mgertzen2` added). F13 recipient-intake email is unblocked using a static-allowlisted recipient for smoke.
+- [ ] **Real-browser smoke staging**: DatePicker month dropdown, listen PDF download, article-free titles + OC email body. Closes the loop that opened this session.
+- [ ] **Prod article migration (B)** deferred to release→main gate: `pnpm tsx scripts/migrate-strip-title-articles-2026-06-12.ts production --apply` after Day-7 queue drain.
+- [ ] **Gift-confirmation copy migration (L2)**: run `scripts/migrate-gift-confirmation-library-copy-2026-06-12.ts` staging then prod (idempotent; no-op if Sanity unset). Reconciles live "your gifts page" → "your library" overrides on the 2 gift-confirmation singletons.
+- [ ] Branch cleanup still owed: `release/v1.9.0`, `release/v1.10.0`.
+
+### Remaining v1.11.0 sub-PRs (4): J, F, E, C
+- **K** `lb3dn5t0` asset filenames — ✅ SHIPPED PR #285 `becc393`.
+- **L** `i31g3i01`+`7azl631f` — ✅ SHIPPED PR #286 `9af0f08` (L2 "your library" copy + migration script; L1 confirmed by-design, no code). L2 Sanity content migration owed as Max-action above.
+- **J** `9sdtjug4`+`5r2or1ff` Studio surfaces · **F** `29fuqdga` Stripe gift email prefill · **E** `ia4v3hck`+`87n9qmbj` library identity + sign-out + navbar · **C** `e8y823lu` listen 7-day remember-me **FULL fix, no time-box** (Max overrode D3 — riskiest remaining; start fresh-context).
+- **D** `z8dk78tn` GDPR Art.20 export customer UI — order TBD with the above.
+- Then: cumulative `/code-review` + `/simplify` on `release/v1.11.0 → main` diff → merge PR → tag `v1.11.0` → CHANGELOG.
+
+### ⚠️ Process learnings (carry forward)
+- **Worktree-isolated implementer agents LEAK their feat branch into the main checkout** this session (B/I/G/H all did). NEVER run `git reset --hard`/`checkout` in the main checkout while a background agent is live there — it collided with the H agent and required a cherry-pick recovery. New memory: `feedback_no_git_mutations_during_background_agents`. Consider non-worktree agents with explicit `git checkout -b` briefs, or serialize.
+- `dex create`'d tickets die in a `git reset --hard` (lost `n88h1bc0` → re-filed as `bhkknsl6`). Commit dex bookkeeping promptly.
+
+---
+
+## 🛎️ 2026-06-08 — v1.10.0 staging smoke complete; 22 findings, 19 dex tickets, F14 gift-delivery CRITICAL
 
 ### What's the state of the world
 - On `main` at `fb80be4` (unchanged from 2026-06-06 v1.10.0 merge). No new commits this session.

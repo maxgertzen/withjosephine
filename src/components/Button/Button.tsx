@@ -50,25 +50,32 @@ export function Button({
   const classes = mergeClasses(variantStyles[variant], sizeStyles[size], className);
 
   if (href) {
-    // Internal hrefs use next/link for soft navigation — this keeps React
-    // state alive across nav, so client components (e.g. ReadingCard's
-    // AnimatePresence) don't break when the user hits browser back.
-    const isInternal = href.startsWith("/") && !href.startsWith("//");
+    const restAsAnchor = rest as AnchorHTMLAttributes<HTMLAnchorElement>;
+    // next/link is only safe for hrefs that resolve to a real in-app page
+    // route, where useLinkStatus().pending flips back to false once the
+    // client-side navigation completes. Anything that does NOT complete an
+    // in-app navigation leaves the spinner stuck pending forever:
+    //   - download links (file fetch, not a navigation)
+    //   - target="_blank" (opens a new tab, current route never changes)
+    //   - /api/* routes (return data/files, not a page render)
+    //   - protocol-relative // externals
+    const isInAppRoute =
+      href.startsWith("/") &&
+      !href.startsWith("//") &&
+      !href.startsWith("/api/") &&
+      !restAsAnchor.download &&
+      restAsAnchor.target !== "_blank";
 
-    if (isInternal) {
+    if (isInAppRoute) {
       return (
-        <Link
-          href={href}
-          className={classes}
-          {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
-        >
+        <Link href={href} className={classes} {...restAsAnchor}>
           <LinkContent>{children}</LinkContent>
         </Link>
       );
     }
 
     return (
-      <a href={href} className={classes} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>
+      <a href={href} className={classes} {...restAsAnchor}>
         {children}
       </a>
     );

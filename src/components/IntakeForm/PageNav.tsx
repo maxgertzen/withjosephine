@@ -40,9 +40,9 @@ export function PageNav({
   return (
     <nav
       aria-label="Form navigation"
-      className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mt-10"
+      className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center mt-10"
     >
-      <div className="flex justify-start">
+      <div className="flex justify-center md:justify-start order-3 md:order-1">
         {isFirstPage ? (
           <Link
             href={backHref}
@@ -61,7 +61,7 @@ export function PageNav({
         )}
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center order-2">
         <button
           type="button"
           onClick={onSaveLater}
@@ -72,13 +72,13 @@ export function PageNav({
         </button>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-center md:justify-end order-1 md:order-3">
         {isFinalPage ? (
           <Button
             type="submit"
             size="lg"
             data-testid="intake-submit"
-            className="min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50"
+            className="w-full md:w-auto min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50"
             disabled={isSubmitting}
             aria-disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
@@ -92,7 +92,7 @@ export function PageNav({
             data-testid="intake-next"
             onClick={onNext}
             aria-disabled={nextDisabled}
-            className="min-h-11 whitespace-nowrap aria-disabled:opacity-50"
+            className="w-full md:w-auto min-h-11 whitespace-nowrap aria-disabled:opacity-50"
           >
             {nextLabel}
           </Button>
@@ -101,7 +101,7 @@ export function PageNav({
 
       <div
         aria-live="polite"
-        className="md:col-span-3 flex justify-center min-h-6 text-xs text-j-text-muted font-body"
+        className="md:col-span-3 flex justify-center min-h-6 text-xs text-j-text-muted font-body order-4"
       >
         {savedIndicator}
       </div>

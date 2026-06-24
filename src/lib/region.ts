@@ -17,10 +17,14 @@ export function requiresConsent(
   country: string | null,
   region: string | null,
 ): boolean {
-  if (country == null) return false;
+  // Fail closed: when geo is unknown/unresolved/anonymized, require consent so
+  // analytics never fires without a banner. "XX" = CF unknown, "T1" = Tor.
+  if (country == null || country === "XX" || country === "T1") return true;
   if (GDPR_ALIGNED_COUNTRIES.has(country)) return true;
   if (country === "US" && region === "California") return true;
   return false;
 }
 
-export const CONSENT_HEADER = "x-josephine-consent-required";
+// JS-readable cookie carrying the region consent-required flag ("1"/"0"). Set by
+// middleware, read client-side by AnalyticsBootstrap so the layout stays static.
+export const CONSENT_REQUIRED_COOKIE = "consent-required";

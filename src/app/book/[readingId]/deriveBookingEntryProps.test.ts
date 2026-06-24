@@ -67,7 +67,7 @@ describe("resolveReading", () => {
     const reading = resolveReading("soul-blueprint", null);
     expect(reading).not.toBeNull();
     expect(reading?.slug).toBe("soul-blueprint");
-    expect(reading?.name).toBe("The Soul Blueprint");
+    expect(reading?.name).toBe("Soul Blueprint");
   });
 
   it("returns null when both sanity and static lookup miss", () => {
@@ -96,13 +96,11 @@ describe("deriveBookingEntryProps", () => {
       }),
       bookingForm: bookingForm({
         changeReadingLinkText: "Pick a different one",
-        aboutJosephineLinkText: "Meet Josephine",
         giftToggleAsGiftLabel: "Give as a gift",
       }),
     });
     expect(props).toMatchObject({
       reading: { slug: "soul-blueprint" },
-      aboutJosephineLinkText: "Meet Josephine",
       copy: {
         changeReadingLinkText: "Pick a different one",
         deliveryNote: "Within 7 days.",
@@ -121,7 +119,6 @@ describe("deriveBookingEntryProps", () => {
       bookingPage: null,
       bookingForm: null,
     });
-    expect(props?.aboutJosephineLinkText).toBe(ENTRY_PAGE_DEFAULTS.aboutJosephineLinkText);
     expect(props?.copy.changeReadingLinkText).toBe(ENTRY_PAGE_DEFAULTS.changeReadingLinkText);
     expect(props?.copy.giftToggleAsGiftLabel).toBe(ENTRY_PAGE_DEFAULTS.giftToggleAsGiftLabel);
     expect(props?.copy.deliveryNote).toBe(BOOKING_INFO_DEFAULTS.deliveryNote);

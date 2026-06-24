@@ -259,6 +259,12 @@ export interface MyReadingsPageContent extends AuthGatedPageContent {
   welcomeHeading?: string;
   welcomeSubhead?: string;
   welcomeButtonLabel?: string;
+  exportHeading?: string;
+  exportBody?: string;
+  exportButtonLabel?: string;
+  exportPendingLabel?: string;
+  exportSuccessMessage?: string;
+  exportErrorMessage?: string;
 }
 
 export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
@@ -276,6 +282,15 @@ export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
   welcomeSubhead:
     "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
   welcomeButtonLabel: "Continue to your library",
+  exportHeading: "Your data",
+  exportBody:
+    "Request a copy of everything we hold for you. We’ll email a private download link when it’s ready.",
+  exportButtonLabel: "Export my data",
+  exportPendingLabel: "Preparing your export…",
+  exportSuccessMessage:
+    "Your export is on its way. Check your email for a private download link, it expires in seven days.",
+  exportErrorMessage:
+    "Something went wrong preparing your export. Please try again in a few minutes.",
   signInHeading: "Welcome back",
   signInBody:
     "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
@@ -448,7 +463,7 @@ export const GIFT_INTAKE_PAGE_DEFAULTS: GiftIntakePageContent = {
   eyebrow: "✦ Opening your gift",
   heading: "A few things, before we begin.",
   headingWelcome: "Welcome, a few things before we begin.",
-  lede: "Someone sent you a {readingName}. Share your details and Josephine will prepare your reading.",
+  lede: "Someone sent you a {readingName} reading. Share your details and Josephine will prepare your reading.",
 };
 
 export interface MagicLinkVerifyPageContent {
@@ -632,7 +647,7 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   body: [
     ...stringToPortableTextBlocks("Hi {firstName},"),
     ...stringToPortableTextBlocks(
-      "Thank you for booking a {readingName} with me. I have your intake and your payment, and you don’t need to do anything else.",
+      "Thank you for booking a {readingName} reading with me. I have your intake and your payment, and you don’t need to do anything else.",
     ),
     ...stringToPortableTextBlocks(
       "I’ll begin your reading in the next day or two. You’ll hear a short note from me when I do, just so you know it’s underway. Your voice note and PDF will arrive within seven days, to this email address.",
@@ -661,7 +676,7 @@ export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeRecei
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
     ...stringToPortableTextBlocks(
-      "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName}, and I have everything I need now to begin.",
+      "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName} reading, and I have everything I need now to begin.",
     ),
     ...stringToPortableTextBlocks(
       "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
@@ -694,7 +709,7 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurch
   body: [
     ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
     ...stringToPortableTextBlocks(
-      "Thank you for gifting a {readingName}. Below is a private link you can share with {recipientName} whenever the timing feels right; folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
+      "Thank you for gifting a {readingName} reading. Below is a private link you can share with {recipientName} whenever the timing feels right; folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
     ),
   ],
   shareButtonLabel: "Share the link",
@@ -704,7 +719,7 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurch
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine: stringToPortableTextBlocks(
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your library at {myGiftsUrl}.",
   ),
 };
 
@@ -726,13 +741,13 @@ export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurch
   body: [
     ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
     ...stringToPortableTextBlocks(
-      "Thank you for gifting a {readingName}. I’ll let {recipientName} know about it on {sendAtDisplay}, when they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
+      "Thank you for gifting a {readingName} reading. I’ll let {recipientName} know about it on {sendAtDisplay}, when they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
     ),
   ],
   cardLabel: "The gift",
   cardDeliveryLine: "Delivery within 7 days of claim",
   refundLine: stringToPortableTextBlocks(
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your gifts page at {myGiftsUrl}.",
+    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your library at {myGiftsUrl}.",
   ),
 };
 
@@ -755,7 +770,7 @@ export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
     ...stringToPortableTextBlocks(
-      "{purchaserFirstName} has given you a {readingName} with me. When you’re ready, tap the link below to begin. A short welcome opens first, then a form so I know what to read for you: your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
+      "{purchaserFirstName} has given you a {readingName} reading with me. When you’re ready, tap the link below to begin. A short welcome opens first, then a form so I know what to read for you: your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
     ),
   ],
   giftMessageLabel: "A note from {purchaserFirstName}",
@@ -784,7 +799,7 @@ export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent =
   body: [
     ...stringToPortableTextBlocks("Hi {recipientName},"),
     ...stringToPortableTextBlocks(
-      "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one. No rush, the reading is yours whenever you’re ready.",
+      "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} reading they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one. No rush, the reading is yours whenever you’re ready.",
     ),
   ],
   giftMessageLabel: "A note from {purchaserFirstName}",
@@ -835,12 +850,12 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
 };
 
 export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
-  subjectTemplate: "Your {readingName} is ready",
+  subjectTemplate: "Your {readingName} reading is ready",
   preview: "A short note before you press play.",
   heroLine: "Your reading is ready",
   bodyIntro: [
     ...stringToPortableTextBlocks("Hi {firstName},"),
-    ...stringToPortableTextBlocks("Your {readingName} is here."),
+    ...stringToPortableTextBlocks("Your {readingName} reading is here."),
     ...stringToPortableTextBlocks(
       "Open it whenever the timing feels right. It is saved to you, not to a deadline. Headphones if you have them, somewhere quiet if you can.",
     ),
@@ -871,6 +886,7 @@ export interface ListenPageContent {
   deliveredHeading: string;
   deliveredSubheading: string;
   voiceNoteLabel: string;
+  voiceNoteButtonLabel: string;
   pdfLabel: string;
   pdfButtonLabel: string;
   closerLine1: string;
@@ -919,6 +935,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
   deliveredHeading: "Your {readingName} is ready",
   deliveredSubheading: "Best with headphones, somewhere quiet.",
   voiceNoteLabel: "Voice note",
+  voiceNoteButtonLabel: "Download voice note",
   pdfLabel: "Supporting PDF",
   pdfButtonLabel: "Download PDF",
   closerLine1:

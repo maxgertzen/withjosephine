@@ -1,32 +1,19 @@
 import type { Metadata } from "next";
-import { draftMode, headers } from "next/headers";
 
-import { UnderConstruction } from "@/components/UnderConstruction";
-import { NONCE_HEADER } from "@/lib/constants";
-import { isUnderConstruction } from "@/lib/featureFlags";
 import {
-  fetchFaqItems,
-  fetchLandingPage,
-  fetchReadings,
-  fetchSiteSettings,
-  fetchTestimonials,
-  fetchUnderConstructionPage,
+  fetchFaqItemsPublished,
+  fetchLandingPagePublished,
+  fetchReadingsPublished,
+  fetchSiteSettingsPublished,
+  fetchTestimonialsPublished,
 } from "@/lib/sanity/fetch";
-import {
-  mapAbout,
-  mapFaqItems,
-  mapFooterContent,
-  mapNavContent,
-  mapReadings,
-  mapSocialLinks,
-  mapTestimonials,
-} from "@/lib/sanity/mappers";
 import { buildOpenGraph } from "@/lib/seoMetadata";
 
 import { HomePageView } from "./HomePageView";
+import { toHomePageViewProps } from "./homePageViewProps";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const landingPage = await fetchLandingPage();
+  const landingPage = await fetchLandingPagePublished();
   const seo = landingPage?.seo;
 
   return {
@@ -43,39 +30,23 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  const { isEnabled: isDraftMode } = await draftMode();
-  const headersList = await headers();
-  const host = headersList.get("host");
-
-  if (isUnderConstruction(host) && !isDraftMode) {
-    const underConstructionContent = await fetchUnderConstructionPage();
-    return <UnderConstruction content={underConstructionContent} />;
-  }
-
-  const [landingPage, sanityReadings, sanityTestimonials, sanityFaqItems, siteSettings] =
-    await Promise.all([
-      fetchLandingPage(),
-      fetchReadings(),
-      fetchTestimonials(),
-      fetchFaqItems(),
-      fetchSiteSettings(),
-    ]);
+  const [landingPage, readings, testimonials, faqItems, siteSettings] = await Promise.all([
+    fetchLandingPagePublished(),
+    fetchReadingsPublished(),
+    fetchTestimonialsPublished(),
+    fetchFaqItemsPublished(),
+    fetchSiteSettingsPublished(),
+  ]);
 
   return (
     <HomePageView
-      navContent={mapNavContent(siteSettings)}
-      footerContent={mapFooterContent(siteSettings)}
-      socialLinks={mapSocialLinks(siteSettings)}
-      about={mapAbout(landingPage)}
-      readings={mapReadings(sanityReadings)}
-      testimonials={mapTestimonials(sanityTestimonials)}
-      faqItems={mapFaqItems(sanityFaqItems)}
-      faqNonce={headersList.get(NONCE_HEADER) ?? undefined}
-      hero={landingPage?.hero ?? undefined}
-      howItWorks={landingPage?.howItWorks ?? undefined}
-      readingsSection={landingPage?.readingsSection ?? undefined}
-      testimonialsSection={landingPage?.testimonialsSection ?? undefined}
-      contactSection={landingPage?.contactSection ?? undefined}
+      {...toHomePageViewProps({
+        landingPage,
+        readings,
+        testimonials,
+        faqItems,
+        siteSettings,
+      })}
     />
   );
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useHeaderBack } from "@/components/BookingFlowHeader/headerBackContext";
 import { track } from "@/lib/analytics";
 import { EMAIL_FIELD_KEY } from "@/lib/booking/constants";
 import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
@@ -18,10 +19,7 @@ import { useIntakeFormHandlers } from "@/lib/intake/useIntakeFormHandlers";
 import { pageFieldKeys, useIntakeSchema } from "@/lib/intake/useIntakeSchema";
 import { usePageErrors } from "@/lib/intake/usePageErrors";
 import { useTurnstileChallenge } from "@/lib/intake/useTurnstileChallenge";
-import type {
-  SanityFormSection,
-  SanityPagination,
-} from "@/lib/sanity/types";
+import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
 import { IntakeFormBody } from "./IntakeFormBody";
 import type { LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
@@ -43,9 +41,9 @@ type IntakeFormProps = {
   mode?: "create" | "redeem";
   redeemSubmissionId?: string;
   redeemSuccessUrl?: string;
-  // D-12: when the gift was scheduled with a recipient_email, the recipient's
-  // intake form pre-fills + locks the email field. Null = self-send claim where
-  // the recipient supplies their own email here.
+  // Pre-fills + locks the email field, read-only. Set to a scheduled gift's
+  // recipient_email (D-12) or, for a signed-in self-booking, the session
+  // account's email. Null = editable (anonymous booking / self-send claim).
   prefilledEmail?: string | null;
 };
 
@@ -80,12 +78,17 @@ export function IntakeForm({
     defaultValuesSnapshot: rawDefaultValuesSnapshot,
   } = useIntakeSchema({ sections, readingId, pagination });
 
-  // D-12: when redeeming a scheduled gift with a known recipient_email, seed
-  // the email field's default value so draft-restore + read-only render both
-  // start from the canonical normalized form. Self-send claims (prefilledEmail
-  // === null) skip the seed and the field stays editable.
-  const seededEmail =
-    mode === "redeem" && prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
+  // Seed + lock the email whenever a prefilledEmail is supplied: a scheduled
+  // gift's recipient_email (D-12), or — for a signed-in self-booking — the
+  // session account's email so the reading lands in that person's library.
+  // A null prefilledEmail (anonymous booking or a self-send gift claim) skips
+  // the seed and the field stays editable. Seeding the default value keeps
+  // draft-restore + the read-only render starting from the canonical form.
+  const seededEmail = prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
+  const lockedValues = useMemo(
+    () => (seededEmail ? { [EMAIL_FIELD_KEY]: seededEmail } : undefined),
+    [seededEmail],
+  );
   const defaultValues = useMemo(
     () =>
       seededEmail ? { ...rawDefaultValues, [EMAIL_FIELD_KEY]: seededEmail } : rawDefaultValues,
@@ -111,7 +114,7 @@ export function IntakeForm({
     readingName,
     draftScope,
     defaultValues,
-    totalPages,
+    lockedValues,
   });
 
   const [honeypot, setHoneypot] = useState("");
@@ -146,34 +149,27 @@ export function IntakeForm({
   // automatically resets without firing a state-mutating effect.
   const [revealedOnPage, setRevealedOnPage] = useState<number | null>(null);
   const errorsVisible = revealedOnPage === currentPage;
-  const revealErrors = useCallback(
-    () => setRevealedOnPage(currentPage),
-    [currentPage],
-  );
+  const revealErrors = useCallback(() => setRevealedOnPage(currentPage), [currentPage]);
 
-  const {
-    chipTick,
-    valuesUntouched,
-    flushSave,
-    handleSaveLater,
-    handleDiscardDraft,
-  } = useAutosave({
-    values,
-    currentPage,
-    defaultValues,
-    defaultValuesSnapshot,
-    isRestored,
-    draftScope,
-    readingId,
-    setValues,
-    setCurrentPage,
-    setLastSavedAt,
-    lastSavedAt,
-    onAfterDiscard: () => {
-      setErrors({});
-      setSubmitError(null);
+  const { chipTick, valuesUntouched, flushSave, handleSaveLater, handleDiscardDraft } = useAutosave(
+    {
+      values,
+      currentPage,
+      defaultValues,
+      defaultValuesSnapshot,
+      isRestored,
+      draftScope,
+      readingId,
+      setValues,
+      setCurrentPage,
+      setLastSavedAt,
+      lastSavedAt,
+      onAfterDiscard: () => {
+        setErrors({});
+        setSubmitError(null);
+      },
     },
-  });
+  );
 
   const savedIndicator = <SavedIndicator lastSavedAt={lastSavedAt} chipTick={chipTick} />;
 
@@ -184,14 +180,8 @@ export function IntakeForm({
 
   const isFirstPage = currentPage === 0;
   const isFinalPage = currentPage === totalPages - 1 || totalPages === 0;
-  const currentSections = useMemo(
-    () => pages[currentPage] ?? [],
-    [pages, currentPage],
-  );
-  const currentKeys = useMemo(
-    () => pageFieldKeys(currentSections),
-    [currentSections],
-  );
+  const currentSections = useMemo(() => pages[currentPage] ?? [], [pages, currentPage]);
+  const currentKeys = useMemo(() => pageFieldKeys(currentSections), [currentSections]);
 
   useEffect(() => {
     if (!isRestored) return;
@@ -203,8 +193,11 @@ export function IntakeForm({
     });
   }, [isRestored, readingId, currentPage, totalPages]);
 
-  const { pageErrors, firstErrorKey, firstFieldLabel, errorCount } =
-    usePageErrors({ allFields, currentKeys, values });
+  const { pageErrors, firstErrorKey, firstFieldLabel, errorCount } = usePageErrors({
+    allFields,
+    currentKeys,
+    values,
+  });
 
   const jumpToFirstError = useCallback(() => {
     if (!firstErrorKey) return;
@@ -241,6 +234,15 @@ export function IntakeForm({
       flushSave,
     });
 
+  // Let the shell header's back arrow step through form pages: register
+  // handleBack while past the first page, so the top arrow only leaves the
+  // form (to the previous funnel step) once there's no earlier page.
+  const { setOnBack } = useHeaderBack();
+  useEffect(() => {
+    setOnBack(currentPage > 0 ? handleBack : null);
+    return () => setOnBack(null);
+  }, [currentPage, handleBack, setOnBack]);
+
   const mergedErrors = useMemo(
     () => (errorsVisible ? { ...errors, ...pageErrors } : {}),
     [errors, pageErrors, errorsVisible],
@@ -253,8 +255,7 @@ export function IntakeForm({
     () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff }),
     [consentSnapshot, requireCoolingOff],
   );
-  const submitGateInvalid =
-    errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
+  const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
   const handleConsentSnapshotChange = useCallback(
     (next: LegalConsentSnapshot) => {
@@ -295,10 +296,7 @@ export function IntakeForm({
   return (
     <>
       {swappedFromReadingName ? (
-        <SwapToast
-          readingName={swappedFromReadingName}
-          onDismiss={dismissSwapToast}
-        />
+        <SwapToast readingName={swappedFromReadingName} onDismiss={dismissSwapToast} />
       ) : null}
       <IntakeFormBody
         formRef={formRef}
@@ -352,4 +350,3 @@ export function IntakeForm({
     </>
   );
 }
-

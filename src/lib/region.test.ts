@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { CONSENT_HEADER, requiresConsent } from "./region";
+import { requiresConsent } from "./region";
 
 describe("requiresConsent", () => {
-  it("returns false when country is null (no CF header / local dev / tests)", () => {
-    expect(requiresConsent(null, null)).toBe(false);
-    expect(requiresConsent(null, "California")).toBe(false);
+  it("fails closed: requires consent when geo is unknown/unresolved/anonymized", () => {
+    expect(requiresConsent(null, null)).toBe(true);
+    expect(requiresConsent(null, "California")).toBe(true);
+    expect(requiresConsent("XX", null)).toBe(true);
+    expect(requiresConsent("T1", null)).toBe(true);
   });
 
   it("returns true for EU member states", () => {
@@ -39,9 +41,5 @@ describe("requiresConsent", () => {
     for (const code of ["CA", "AU", "JP", "BR", "IN", "ZA"]) {
       expect(requiresConsent(code, null), code).toBe(false);
     }
-  });
-
-  it("CONSENT_HEADER is namespaced so it doesn't collide with anything else", () => {
-    expect(CONSENT_HEADER).toBe("x-josephine-consent-required");
   });
 });

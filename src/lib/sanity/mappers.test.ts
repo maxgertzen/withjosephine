@@ -105,7 +105,7 @@ describe("mapReadings", () => {
 
     expect(result).toHaveLength(3);
     expect(result[0].id).toBe("soul-blueprint");
-    expect(result[0].name).toBe("The Soul Blueprint");
+    expect(result[0].name).toBe("Soul Blueprint");
     expect(result[0].price).toBe("$129");
   });
 

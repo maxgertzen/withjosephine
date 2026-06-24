@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchLandingPage: vi.fn(),
-  fetchReadings: vi.fn(),
-  fetchTestimonials: vi.fn(),
-  fetchFaqItems: vi.fn(),
-  fetchSiteSettings: vi.fn(),
+  fetchLandingPagePublished: vi.fn(),
+  fetchReadingsPublished: vi.fn(),
+  fetchTestimonialsPublished: vi.fn(),
+  fetchFaqItemsPublished: vi.fn(),
+  fetchSiteSettingsPublished: vi.fn(),
 }));
 
-import { fetchLandingPage } from "@/lib/sanity/fetch";
+import { fetchLandingPagePublished } from "@/lib/sanity/fetch";
 import type { SanityLandingPage } from "@/lib/sanity/types";
 
-const mockFetchLandingPage = vi.mocked(fetchLandingPage);
+const mockFetchLandingPage = vi.mocked(fetchLandingPagePublished);
 
 function landingPage(overrides: Partial<SanityLandingPage> = {}): SanityLandingPage {
   return {

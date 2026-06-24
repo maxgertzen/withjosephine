@@ -72,6 +72,10 @@ beforeEach(() => {
   document.body.innerHTML = "";
 });
 
+function submitEvent(): React.FormEvent<HTMLFormElement> {
+  return { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>;
+}
+
 describe("useIntakeFormHandlers — setValue", () => {
   it("sets the value at the given key", () => {
     const { result } = renderHook(() => useTestHarness());
@@ -111,13 +115,82 @@ describe("useIntakeFormHandlers — navigation", () => {
 describe("useIntakeFormHandlers — handleSubmit", () => {
   it("is a no-op when submitIntentRef is false", async () => {
     const { result } = renderHook(() => useTestHarness());
-    const event = {
-      preventDefault: vi.fn(),
-    } as unknown as React.FormEvent<HTMLFormElement>;
+    const event = submitEvent();
     await act(async () => {
       await result.current.handlers.handleSubmit(event);
     });
     expect(event.preventDefault).toHaveBeenCalled();
     expect(result.current.isSubmitting).toBe(false);
+  });
+});
+
+describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
+  it("flips pending true before the first await (continue-payment, create mode)", async () => {
+    const setIsSubmitting = vi.fn();
+    const requestFreshTurnstileToken = vi.fn(async () => "tok");
+    const { result } = renderHook(() =>
+      useTestHarness({
+        isFinalPage: true,
+        submitIntentRef: { current: true },
+        setIsSubmitting,
+        turnstileRequired: true,
+        requestFreshTurnstileToken,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handlers.handleSubmit(submitEvent());
+    });
+
+    // Pending is set synchronously, BEFORE the turnstile token fetch (the
+    // first await) — that is the whole fix: the button can't look dead.
+    expect(setIsSubmitting).toHaveBeenCalledWith(true);
+    expect(setIsSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
+      requestFreshTurnstileToken.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("flips pending true before the first await on the claim/redeem path", async () => {
+    const setIsSubmitting = vi.fn();
+    const requestFreshTurnstileToken = vi.fn(async () => "tok");
+    const { result } = renderHook(() =>
+      useTestHarness({
+        mode: "redeem",
+        isFinalPage: true,
+        submitIntentRef: { current: true },
+        setIsSubmitting,
+        turnstileRequired: true,
+        requestFreshTurnstileToken,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handlers.handleSubmit(submitEvent());
+    });
+
+    expect(setIsSubmitting).toHaveBeenCalledWith(true);
+    expect(setIsSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
+      requestFreshTurnstileToken.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("resets pending when validation fails so the button is not stuck disabled", async () => {
+    const setIsSubmitting = vi.fn();
+    const { result } = renderHook(() =>
+      useTestHarness({
+        isFinalPage: true,
+        submitIntentRef: { current: true },
+        setIsSubmitting,
+        // emptyConsentSnapshot from the harness fails the consent gate, so the
+        // submit takes the validation-fail branch and must reset pending.
+      }),
+    );
+
+    await act(async () => {
+      await result.current.handlers.handleSubmit(submitEvent());
+    });
+
+    expect(setIsSubmitting).toHaveBeenCalledWith(true);
+    expect(setIsSubmitting).toHaveBeenLastCalledWith(false);
   });
 });

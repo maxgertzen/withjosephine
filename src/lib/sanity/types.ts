@@ -366,6 +366,7 @@ export type SanityListenPage = {
   deliveredHeading: string;
   deliveredSubheading: string;
   voiceNoteLabel: string;
+  voiceNoteButtonLabel: string;
   pdfLabel: string;
   pdfButtonLabel: string;
   closerLine1: string;

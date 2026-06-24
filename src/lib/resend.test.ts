@@ -302,6 +302,40 @@ describe("sendOrderConfirmation", () => {
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
+
+  // Regression: F14 (dpdpepfg) cross-impact. Order confirmation took the same
+  // SubmissionContext + dispatched to submission.email, so gift purchasers
+  // would have received the confirmation email even when isGift=true. Audit
+  // grep flagged this as the second at-risk callsite alongside sendDay7Delivery.
+  it("gift submission dispatches to recipientEmail", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc_gift" } });
+    const submission = buildSubmission({
+      isGift: true,
+      email: "purchaser@example.com",
+      recipientEmail: "recipient@example.com",
+    });
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("recipient@example.com");
+  });
+
+  it("self-purchase submission dispatches to the purchaser email", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc_self" } });
+    const submission = buildSubmission({
+      isGift: false,
+      email: "buyer@example.com",
+      recipientEmail: null,
+    });
+    const { sendOrderConfirmation } = await import("./resend");
+
+    await sendOrderConfirmation(submission);
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("buyer@example.com");
+  });
 });
 
 
@@ -316,13 +350,63 @@ describe("sendDay7Delivery", () => {
 
     expect(getResendId(result)).toBe("msg_d7");
     const args = sendMock.mock.calls[0]?.[0];
-    expect(args.subject).toBe(`Your ${submission.readingName} is ready`);
+    expect(args.subject).toBe(`Your ${submission.readingName} reading is ready`);
     expect(args.html).toContain(`href="${url}"`);
     const body = visibleText(args.html);
-    expect(body).toContain(`Your ${submission.readingName} is here.`);
+    expect(body).toContain(`Your ${submission.readingName} reading is here.`);
     expect(body).toContain("Open it whenever the timing feels right");
     expect(body).toContain("signed in for the next seven days");
     expect(body).toContain("Open your reading");
+  });
+
+  // Regression: F14 (dpdpepfg). Gift Day-7 delivery emails were routing to the
+  // purchaser because SubmissionContext lacked recipientEmail + isGift, so
+  // sendDay7Delivery dispatched to submission.email (the purchaser) for both
+  // gift and self flows. The fix wires isGift + recipientEmail onto the context
+  // and routes via resolveDeliveryAddress.
+  it("gift submission dispatches to recipientEmail, not purchaser email", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7_gift" } });
+    const submission = buildSubmission({
+      isGift: true,
+      email: "purchaser@example.com",
+      recipientEmail: "recipient@example.com",
+    });
+    const { sendDay7Delivery } = await import("./resend");
+
+    await sendDay7Delivery(submission, "https://withjosephine.com/listen/abc");
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("recipient@example.com");
+  });
+
+  it("self-purchase submission dispatches to the purchaser email", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7_self" } });
+    const submission = buildSubmission({
+      isGift: false,
+      email: "buyer@example.com",
+      recipientEmail: null,
+    });
+    const { sendDay7Delivery } = await import("./resend");
+
+    await sendDay7Delivery(submission, "https://withjosephine.com/listen/abc");
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("buyer@example.com");
+  });
+
+  it("gift submission with null recipientEmail falls back to purchaser email", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7_fallback" } });
+    const submission = buildSubmission({
+      isGift: true,
+      email: "purchaser@example.com",
+      recipientEmail: null,
+    });
+    const { sendDay7Delivery } = await import("./resend");
+
+    await sendDay7Delivery(submission, "https://withjosephine.com/listen/abc");
+
+    const args = sendMock.mock.calls[0]?.[0];
+    expect(args.to).toBe("purchaser@example.com");
   });
 });
 

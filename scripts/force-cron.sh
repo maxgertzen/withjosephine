@@ -8,8 +8,10 @@
 # <route>: one of the directories under src/app/api/cron/ (e.g. email-day-7-deliver, email-day-7, cleanup, reconcile).
 # <submissionId>: appended as ?force=<id> for routes that support single-record force-mode.
 #
-# Auth: cloudflared access token (clears CF Access) + Bearer CRON_SECRET from .env.<env>.
-# Prereq: `brew install cloudflared` + `cloudflared access login https://staging.withjosephine.com` (one-time per host).
+# Auth: Bearer CRON_SECRET from .env.<env>, plus CF Access. CF Access prefers a service
+# token (CF_ACCESS_CLIENT_ID + CF_ACCESS_CLIENT_SECRET in .env.<env>) and only falls back
+# to an interactive `cloudflared access token` when the service token isn't present.
+# Prereq (fallback path only): `brew install cloudflared` + `cloudflared access login https://staging.withjosephine.com`.
 set -euo pipefail
 
 ROUTE="${1:-}"
@@ -44,21 +46,32 @@ if [ -z "$CRON_SECRET" ]; then
   exit 2
 fi
 
-if ! command -v cloudflared >/dev/null 2>&1; then
-  echo "cloudflared not installed. Run: brew install cloudflared" >&2
-  exit 2
-fi
-
-TOK="$(cloudflared access token --app="https://$HOST")"
-if [ -z "$TOK" ]; then
-  echo "cloudflared access token empty. Run: cloudflared access login https://$HOST" >&2
-  exit 2
-fi
+# CF Access: prefer a service token from the env file (no interactive login needed).
+CF_CLIENT_ID="$(grep -E "^CF_ACCESS_CLIENT_ID=" "$ENV_PATH" | head -1 | sed -E 's/^CF_ACCESS_CLIENT_ID=//; s/^"//; s/"$//')"
+CF_CLIENT_SECRET="$(grep -E "^CF_ACCESS_CLIENT_SECRET=" "$ENV_PATH" | head -1 | sed -E 's/^CF_ACCESS_CLIENT_SECRET=//; s/^"//; s/"$//')"
 
 URL="https://$HOST/api/cron/$ROUTE?force=$ID"
 echo "POST $URL"
-curl -sS -X POST \
-  -H "cf-access-token: $TOK" \
-  -H "Authorization: Bearer $CRON_SECRET" \
-  "$URL"
+
+if [ -n "$CF_CLIENT_ID" ] && [ -n "$CF_CLIENT_SECRET" ]; then
+  curl -sS -X POST \
+    -H "CF-Access-Client-Id: $CF_CLIENT_ID" \
+    -H "CF-Access-Client-Secret: $CF_CLIENT_SECRET" \
+    -H "Authorization: Bearer $CRON_SECRET" \
+    "$URL"
+else
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    echo "no CF_ACCESS_CLIENT_ID/SECRET in $ENV_FILE and cloudflared not installed. Add the service token to $ENV_FILE, or run: brew install cloudflared" >&2
+    exit 2
+  fi
+  TOK="$(cloudflared access token --app="https://$HOST")"
+  if [ -z "$TOK" ]; then
+    echo "cloudflared access token empty. Run: cloudflared access login https://$HOST" >&2
+    exit 2
+  fi
+  curl -sS -X POST \
+    -H "cf-access-token: $TOK" \
+    -H "Authorization: Bearer $CRON_SECRET" \
+    "$URL"
+fi
 echo

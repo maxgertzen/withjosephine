@@ -45,63 +45,192 @@ describe("extractAssetExtension", () => {
 });
 
 describe("buildListenFilename", () => {
-  it("composes slug + kind + submission id + extension", () => {
+  const VOICE_URL = "https://cdn.sanity.io/files/voice.m4a";
+  const PDF_URL = "https://cdn.sanity.io/files/reading.pdf";
+
+  it("produces 'First Last ReadingName.ext' when all fields are present", () => {
     expect(
       buildListenFilename({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        readingName: "Soul Blueprint",
         readingSlug: "soul-blueprint",
         submissionId: "sub_1",
-        sourceUrl: "https://cdn.sanity.io/files/voice.m4a",
+        sourceUrl: VOICE_URL,
         kind: "voice-note",
       }),
-    ).toBe("soul-blueprint-voice-note-sub_1.m4a");
+    ).toBe("Ada Lovelace Soul Blueprint.m4a");
 
     expect(
       buildListenFilename({
-        readingSlug: "akashic-record",
-        submissionId: "sub_42",
-        sourceUrl: "https://cdn.sanity.io/files/reading.pdf",
+        firstName: "Test",
+        lastName: "User",
+        readingName: "Birth Chart Reading",
+        readingSlug: "birth-chart",
+        submissionId: "sub_2",
+        sourceUrl: PDF_URL,
         kind: "reading",
       }),
-    ).toBe("akashic-record-reading-sub_42.pdf");
+    ).toBe("Test User Birth Chart Reading.pdf");
   });
 
-  it("sanitizes unsafe slug input to a fallback rather than embedding raw characters", () => {
+  it("omits missing last name gracefully", () => {
     expect(
       buildListenFilename({
-        readingSlug: 'evil"; DROP TABLE',
-        submissionId: "sub_1",
-        sourceUrl: "https://cdn.sanity.io/files/reading.pdf",
-        kind: "reading",
-      }),
-    ).toBe("reading-reading-sub_1.pdf");
-  });
-
-  it("sanitizes unsafe submission id input", () => {
-    expect(
-      buildListenFilename({
+        firstName: "Ada",
+        lastName: null,
+        readingName: "Soul Blueprint",
         readingSlug: "soul-blueprint",
-        submissionId: 'bad"; rm -rf /',
-        sourceUrl: "https://cdn.sanity.io/files/reading.pdf",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
         kind: "reading",
       }),
-    ).toBe("soul-blueprint-reading-reading.pdf");
+    ).toBe("Ada Soul Blueprint.pdf");
+  });
+
+  it("omits missing first name gracefully", () => {
+    expect(
+      buildListenFilename({
+        firstName: null,
+        lastName: "Lovelace",
+        readingName: "Soul Blueprint",
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("Lovelace Soul Blueprint.pdf");
+  });
+
+  it("omits missing reading name, uses remaining name parts", () => {
+    expect(
+      buildListenFilename({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        readingName: null,
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("Ada Lovelace.pdf");
+  });
+
+  it("falls back to reading slug when all name fields are absent", () => {
+    expect(
+      buildListenFilename({
+        firstName: null,
+        lastName: null,
+        readingName: null,
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("soul-blueprint.pdf");
+  });
+
+  it("falls back to 'reading' when all name fields and slug are absent", () => {
+    expect(
+      buildListenFilename({
+        firstName: null,
+        lastName: null,
+        readingName: null,
+        readingSlug: "",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("reading.pdf");
+  });
+
+  it("falls back to reading slug when firstName/lastName/readingName are empty strings", () => {
+    expect(
+      buildListenFilename({
+        firstName: "",
+        lastName: "",
+        readingName: "",
+        readingSlug: "akashic-record",
+        submissionId: "sub_1",
+        sourceUrl: VOICE_URL,
+        kind: "voice-note",
+      }),
+    ).toBe("akashic-record.m4a");
+  });
+
+  it("strips quote/backslash and replaces control chars with spaces in name parts", () => {
+    expect(
+      buildListenFilename({
+        firstName: 'Ada"',
+        lastName: "Love\rlace",
+        readingName: "Soul\nBlueprint",
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("Ada Love lace Soul Blueprint.pdf");
+  });
+
+  it("preserves non-ASCII (Unicode) characters in name parts", () => {
+    expect(
+      buildListenFilename({
+        firstName: "Zoé",
+        lastName: "Müller",
+        readingName: "Soul Blueprint",
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("Zoé Müller Soul Blueprint.pdf");
+  });
+
+  it("collapses internal whitespace in name parts", () => {
+    expect(
+      buildListenFilename({
+        firstName: "Ada   ",
+        lastName: "  Lovelace",
+        readingName: "Soul  Blueprint",
+        readingSlug: "soul-blueprint",
+        submissionId: "sub_1",
+        sourceUrl: PDF_URL,
+        kind: "reading",
+      }),
+    ).toBe("Ada Lovelace Soul Blueprint.pdf");
   });
 });
 
 describe("buildContentDisposition", () => {
-  it("emits attachment with quoted filename", () => {
-    expect(
-      buildContentDisposition({ type: "attachment", filename: "soul-blueprint-reading-sub_1.pdf" }),
-    ).toBe('attachment; filename="soul-blueprint-reading-sub_1.pdf"');
-  });
-
-  it("emits inline with quoted filename", () => {
+  it("emits inline with ASCII fallback and RFC 6266 filename*", () => {
     expect(
       buildContentDisposition({
         type: "inline",
-        filename: "soul-blueprint-voice-note-sub_1.m4a",
+        filename: "Ada Lovelace Soul Blueprint.m4a",
       }),
-    ).toBe('inline; filename="soul-blueprint-voice-note-sub_1.m4a"');
+    ).toBe(
+      "inline; filename=\"Ada Lovelace Soul Blueprint.m4a\"; filename*=UTF-8''Ada%20Lovelace%20Soul%20Blueprint.m4a",
+    );
+  });
+
+  it("emits attachment with ASCII fallback and RFC 6266 filename*", () => {
+    expect(
+      buildContentDisposition({
+        type: "attachment",
+        filename: "Test User Birth Chart Reading.pdf",
+      }),
+    ).toBe(
+      "attachment; filename=\"Test User Birth Chart Reading.pdf\"; filename*=UTF-8''Test%20User%20Birth%20Chart%20Reading.pdf",
+    );
+  });
+
+  it("replaces non-ASCII in the ASCII fallback but preserves them percent-encoded in filename*", () => {
+    const result = buildContentDisposition({
+      type: "attachment",
+      filename: "Zoé Müller Soul Blueprint.pdf",
+    });
+    expect(result).toContain('filename="Zo_ M_ller Soul Blueprint.pdf"');
+    expect(result).toContain("filename*=UTF-8''Zo%C3%A9%20M%C3%BCller%20Soul%20Blueprint.pdf");
   });
 
   it("throws on header-injection candidates: double quote", () => {
@@ -127,76 +256,14 @@ describe("buildContentDisposition", () => {
       buildContentDisposition({ type: "attachment", filename: "evil\\.pdf" }),
     ).toThrow(/unsafe characters/);
   });
-});
 
-describe("buildListenFilename — coverage gaps", () => {
-  const SAFE_URL = "https://cdn.sanity.io/files/reading.pdf";
-
-  it("falls back when slug contains a path-traversal sequence", () => {
-    expect(
-      buildListenFilename({
-        readingSlug: "../../etc/passwd",
-        submissionId: "sub_1",
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe("reading-reading-sub_1.pdf");
-  });
-
-  it("falls back when slug contains a URL-encoded slash", () => {
-    expect(
-      buildListenFilename({
-        readingSlug: "a%2Fb",
-        submissionId: "sub_1",
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe("reading-reading-sub_1.pdf");
-  });
-
-  it("falls back on a non-ASCII slug", () => {
-    expect(
-      buildListenFilename({
-        readingSlug: "café",
-        submissionId: "sub_1",
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe("reading-reading-sub_1.pdf");
-  });
-
-  it("falls back on an empty-string slug", () => {
-    expect(
-      buildListenFilename({
-        readingSlug: "",
-        submissionId: "sub_1",
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe("reading-reading-sub_1.pdf");
-  });
-
-  it("falls back on a 500-character slug (only the chars matter; length alone is fine, but extreme inputs still resolve)", () => {
-    const longSafeSlug = "a".repeat(500);
-    expect(
-      buildListenFilename({
-        readingSlug: longSafeSlug,
-        submissionId: "sub_1",
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe(`${longSafeSlug}-reading-sub_1.pdf`);
-  });
-
-  it("accepts a real submission id (UUIDv4 from crypto.randomUUID) without falling back", () => {
-    const realUuid = "550e8400-e29b-41d4-a716-446655440000";
-    expect(
-      buildListenFilename({
-        readingSlug: "soul-blueprint",
-        submissionId: realUuid,
-        sourceUrl: SAFE_URL,
-        kind: "reading",
-      }),
-    ).toBe(`soul-blueprint-reading-${realUuid}.pdf`);
+  it("ASCII-only filenames produce identical ASCII fallback and encoded param", () => {
+    const result = buildContentDisposition({
+      type: "inline",
+      filename: "soul-blueprint.pdf",
+    });
+    expect(result).toBe(
+      "inline; filename=\"soul-blueprint.pdf\"; filename*=UTF-8''soul-blueprint.pdf",
+    );
   });
 });
