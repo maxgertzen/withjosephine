@@ -42,7 +42,10 @@ test.describe("/my-readings account controls — mock mode", () => {
 
     await signInViaMagicLink(page, { email, next: "/my-readings" });
 
-    // Identity chip (E / ia4v3hck): the top-bar shows whose library this is.
+    // Account controls live inside the UserMenu popover (#302); open it first.
+    await page.getByRole("button", { name: "Your library and account" }).click();
+
+    // Identity (E / ia4v3hck): the menu shows whose library this is.
     await expect(page.getByText(email, { exact: true })).toBeVisible();
 
     // Sign out control posts to the revoke route.
@@ -64,6 +67,7 @@ test.describe("/my-readings account controls — mock mode", () => {
     const before = await page.context().cookies();
     expect(before.find((c) => c.name === SESSION_COOKIE)).toBeDefined();
 
+    await page.getByRole("button", { name: "Your library and account" }).click();
     await page.locator('form[action="/api/auth/sign-out"] button[type="submit"]').click();
     await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
 

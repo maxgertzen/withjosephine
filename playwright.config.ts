@@ -68,7 +68,15 @@ export default defineConfig({
       ...(isSandbox
         ? { testMatch: sandboxPattern }
         : { testIgnore: [SANDBOX_SPECS_PATTERN, PROD_SMOKE_PATTERN] }),
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Mock mode hits `next dev` directly (no Cloudflare edge), so requests
+        // carry no cf-ipcountry; consent now fails closed on unknown geo, which
+        // would pop the analytics banner over the form on every spec. Pin a
+        // non-GDPR country to mirror prod, where CF always sets this header.
+        // Sandbox goes through the real CF edge, which sets it authoritatively.
+        ...(isSandbox ? {} : { extraHTTPHeaders: { "cf-ipcountry": "US" } }),
+      },
     },
   ],
 
