@@ -17,7 +17,9 @@ export function requiresConsent(
   country: string | null,
   region: string | null,
 ): boolean {
-  if (country == null) return false;
+  // Fail closed: when geo is unknown/unresolved/anonymized, require consent so
+  // analytics never fires without a banner. "XX" = CF unknown, "T1" = Tor.
+  if (country == null || country === "XX" || country === "T1") return true;
   if (GDPR_ALIGNED_COUNTRIES.has(country)) return true;
   if (country === "US" && region === "California") return true;
   return false;
