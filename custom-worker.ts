@@ -45,6 +45,10 @@ function originForEnv(env: CloudflareEnv): string {
     : "https://withjosephine.com";
 }
 
+// Sentry free tier = 1 cron monitor; scoped to the paid-fulfilment path.
+const DAY7_DELIVER_PATH = "/api/cron/email-day-7-deliver";
+const DAY7_DELIVER_MONITOR_SLUG = "email-day-7-deliver";
+
 const composedHandler: ExportedHandler<CloudflareEnv> = {
   fetch: handler.fetch,
   async scheduled(event, env, ctx) {
@@ -55,12 +59,29 @@ const composedHandler: ExportedHandler<CloudflareEnv> = {
     }
     const origin = originForEnv(env);
     const dispatch = paths.map(async (path) => {
-      const req = new Request(`${origin}${path}`, {
-        method: "POST",
-        headers: { "cf-cron": "1" },
-      });
-      const res = await handler.fetch!(req, env, ctx);
-      console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
+      const sendCronRequest = async () => {
+        const req = new Request(`${origin}${path}`, {
+          method: "POST",
+          headers: { "cf-cron": "1" },
+        });
+        const res = await handler.fetch!(req, env, ctx);
+        console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
+        return res;
+      };
+      if (path === DAY7_DELIVER_PATH) {
+        await Sentry.withMonitor(
+          DAY7_DELIVER_MONITOR_SLUG,
+          async () => {
+            const res = await sendCronRequest();
+            if (!res.ok) {
+              throw new Error(`cron ${path} returned ${res.status}`);
+            }
+          },
+          { schedule: { type: "crontab", value: event.cron } },
+        );
+        return;
+      }
+      await sendCronRequest();
     });
     await Promise.allSettled(dispatch);
   },
