@@ -4,12 +4,10 @@ import { pickDefined } from "@/lib/sanity/pickDefined";
 
 import { Day7Delivery } from "./Day7Delivery";
 import { MagicLink } from "./MagicLink";
-import { NewDeviceNotice } from "./NewDeviceNotice";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
 import type { EmailTemplateKey } from "./slots";
-import { StepUpOtp } from "./StepUpOtp";
 
 /**
  * `@react-email/render` injects `<link rel="expect" href="#_R_" blocking="render">`
@@ -27,10 +25,7 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
   "emailDay7Delivery",
   "emailMagicLink",
-  "emailMagicLinkLibrary",
   "emailPrivacyExport",
-  "emailStepUpOtp",
-  "emailNewDeviceNotice",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -78,8 +73,7 @@ async function renderRaw(
           copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
         />,
       );
-    case "emailMagicLink":
-    case "emailMagicLinkLibrary": {
+    case "emailMagicLink": {
       const copy = merged as typeof PREVIEW_DEFAULTS.emailMagicLink;
       return render(
         <MagicLink
@@ -108,23 +102,6 @@ async function renderRaw(
             expiryDays: PREVIEW_FIXTURE.expiryDays,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}
-        />,
-      );
-    case "emailStepUpOtp":
-      return render(
-        <StepUpOtp
-          code={PREVIEW_FIXTURE.stepUpOtpCode}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailStepUpOtp}
-        />,
-      );
-    case "emailNewDeviceNotice":
-      return render(
-        <NewDeviceNotice
-          vars={{
-            firstName: PREVIEW_FIXTURE.firstName,
-            revokeUrl: PREVIEW_FIXTURE.revokeUrl,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailNewDeviceNotice}
         />,
       );
     default: {

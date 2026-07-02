@@ -15,10 +15,8 @@ import { Day7Delivery } from "./emails/Day7Delivery";
 import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
-import { NewDeviceNotice } from "./emails/NewDeviceNotice";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
-import { StepUpOtp } from "./emails/StepUpOtp";
 import { isFlagEnabled } from "./env";
 import { pickDefined } from "./sanity/pickDefined";
 
@@ -346,53 +344,7 @@ export async function sendDay7Delivery(
   });
 }
 
-export async function sendNewDeviceRevokeAdminAlert(args: {
-  submissionId: string;
-  revokedCount: number;
-}): Promise<EmailSendResult> {
-  const notificationEmail = requireNotificationEmail("new_device_revoke_admin");
-  if (typeof notificationEmail !== "string") return notificationEmail;
-  const subject = `Recipient pressed "this was not me": ${args.submissionId}`;
-  const html = `<p>Submission <strong>${args.submissionId}</strong>: recipient pressed the "this was not me" button on a new-device notice. Revoked ${args.revokedCount} active listen session(s).</p><p>Worth a quick follow-up email to confirm they are safe.</p>`;
-  return sendOrSkip({
-    to: notificationEmail,
-    subject,
-    html,
-    subType: "new_device_revoke_admin",
-    submissionId: args.submissionId,
-  });
-}
-
-export async function sendNewDeviceNotice(args: {
-  to: string;
-  firstName: string;
-  submissionId: string;
-  revokeUrl: string;
-}): Promise<EmailSendResult> {
-  const { EMAIL_NEW_DEVICE_NOTICE_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailNewDeviceNotice } = await import("@/lib/sanity/fetch");
-  const [sanity, shell] = await Promise.all([
-    fetchEmailNewDeviceNotice().catch(() => null),
-    fetchSharedShell(),
-  ]);
-  const copy = { ...EMAIL_NEW_DEVICE_NOTICE_DEFAULTS, ...pickDefined(sanity ?? {}) };
-  const html = await render(
-    <NewDeviceNotice
-      vars={{ firstName: args.firstName, revokeUrl: args.revokeUrl }}
-      copy={copy}
-      shell={shell}
-    />,
-  );
-  return sendOrSkip({
-    to: args.to,
-    subject: copy.subject,
-    html,
-    subType: "new_device_notice",
-    submissionId: args.submissionId,
-  });
-}
-
-export type MagicLinkContext = "listen" | "library";
+export type MagicLinkContext = "listen";
 
 export async function sendMagicLink(args: {
   to: string;
@@ -403,25 +355,14 @@ export async function sendMagicLink(args: {
   readingPriceDisplay?: string;
 }): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const { EMAIL_MAGIC_LINK_DEFAULTS, EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS } = await import(
-    "@/data/defaults"
-  );
-  const { fetchEmailMagicLink, fetchEmailMagicLinkLibrary } = await import("@/lib/sanity/fetch");
+  const { EMAIL_MAGIC_LINK_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailMagicLink } = await import("@/lib/sanity/fetch");
 
-  const sources = {
-    listen: { defaults: EMAIL_MAGIC_LINK_DEFAULTS, fetch: fetchEmailMagicLink, subType: "magic_link" as const },
-    library: {
-      defaults: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS,
-      fetch: fetchEmailMagicLinkLibrary,
-      subType: "magic_link_library" as const,
-    },
-  };
-  const source = sources[args.context];
   const [sanity, shell] = await Promise.all([
-    source.fetch().catch(() => null),
+    fetchEmailMagicLink().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...source.defaults, ...pickDefined(sanity ?? {}) };
+  const copy = { ...EMAIL_MAGIC_LINK_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const vars = {
     magicLinkUrl: args.magicLinkUrl,
     firstName: args.firstName ?? FIRST_NAME_FALLBACK,
@@ -445,7 +386,7 @@ export async function sendMagicLink(args: {
     to: args.to,
     subject,
     html,
-    subType: source.subType,
+    subType: "magic_link",
     submissionId: null,
   });
 }
@@ -535,107 +476,4 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     submissionId: submission.id,
     originatorEmail: submission.email,
   });
-}
-
-// Step-up OTP send. Called from the step-up request endpoint with the raw
-// 6-digit code (never persisted: only the HMAC hash is written to D1). The
-// endpoint passes the X-E2E-Resend-DryRun header value explicitly because
-// the next/headers indirection used by other senders does not survive the
-// DO alarm / cron paths that may later issue OTPs out-of-band.
-export type SendStepUpOtpEmailInput = {
-  code: string;
-  toEmail: string;
-  ipHash: string | null;
-  dryRunHeader: string | null;
-};
-
-export type SendStepUpOtpEmailResult =
-  | { kind: "sent"; resendId: string }
-  | { kind: "skipped" }
-  | { kind: "failed"; error: string };
-
-export async function sendStepUpOtpEmail(
-  input: SendStepUpOtpEmailInput,
-): Promise<SendStepUpOtpEmailResult> {
-  // Sandbox-prefix guard: e2e fixture inboxes never receive real OTPs. The
-  // test harness reads the code from the captured-email sidecar or the
-  // request-context dry-run response instead.
-  if (isSandboxEmail(input.toEmail)) {
-    console.warn(
-      `[resend] step_up_otp skipped (sandbox_prefix, to=${redactEmail(input.toEmail)})`,
-    );
-    return { kind: "skipped" };
-  }
-
-  // Explicit dry-run match (caller passes the header value). Fail-closed
-  // when the secret is unset so a runner-only env never bills real Resend.
-  if (input.dryRunHeader) {
-    const secret = process.env.RESEND_E2E_DRY_RUN_SECRET;
-    if (!secret) {
-      console.error(
-        "[resend] step_up_otp DRY_RUN_SECRET_UNSET: request carries dryRunHeader but worker has no RESEND_E2E_DRY_RUN_SECRET configured; skipping the Resend send (fail-closed).",
-      );
-      return { kind: "skipped" };
-    }
-    if (input.dryRunHeader === secret) {
-      console.warn(
-        `[resend] step_up_otp skipped (dry_run_header, to=${redactEmail(input.toEmail)})`,
-      );
-      return { kind: "skipped" };
-    }
-  }
-
-  // Honor the existing zone-wide RESEND_DRY_RUN flag (matches sendOrSkip).
-  if (isFlagEnabled("RESEND_DRY_RUN")) {
-    console.warn(
-      `[resend] step_up_otp skipped (flag, to=${redactEmail(input.toEmail)})`,
-    );
-    return { kind: "skipped" };
-  }
-
-  const [{ STEP_UP_OTP_EMAIL_DEFAULTS }, { fetchEmailStepUpOtp }] = await Promise.all([
-    import("@/data/defaults"),
-    import("@/lib/sanity/fetch"),
-  ]);
-  const [sanity, shell] = await Promise.all([
-    fetchEmailStepUpOtp().catch(() => null),
-    fetchSharedShell(),
-  ]);
-  const copy = { ...STEP_UP_OTP_EMAIL_DEFAULTS, ...pickDefined(sanity ?? {}) };
-
-  const html = await render(<StepUpOtp code={input.code} copy={copy} shell={shell} />);
-
-  const client = getResendClient();
-  if (!client) {
-    console.warn("[resend] RESEND_API_KEY not set, skipping step_up_otp");
-    return { kind: "skipped" };
-  }
-
-  let resendId: string | null;
-  try {
-    const response = await client.emails.send({
-      from: FROM_ADDRESS,
-      to: input.toEmail,
-      subject: copy.subject,
-      html,
-    });
-    resendId = response.data?.id ?? null;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[resend] step_up_otp send failed: ${message}`);
-    return { kind: "failed", error: message };
-  }
-
-  void serverTrack("email_sent", {
-    distinct_id: input.ipHash ?? generateAnonymousDistinctId(),
-    sub_type: "step_up_otp",
-    submission_id: null,
-    recipient_redacted: redactEmail(input.toEmail),
-    resend_id_present: resendId !== null,
-  });
-
-  if (resendId === null) {
-    return { kind: "failed", error: "Resend returned no id" };
-  }
-  return { kind: "sent", resendId };
 }

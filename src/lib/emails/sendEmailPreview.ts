@@ -11,10 +11,7 @@ const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
   emailOrderConfirmation: "Order Confirmation",
   emailDay7Delivery: "Reading Delivery (Day 7)",
   emailMagicLink: "Magic Link (Listen Page)",
-  emailMagicLinkLibrary: "Magic Link (Library)",
   emailPrivacyExport: "Privacy Export (GDPR)",
-  emailStepUpOtp: "Step-up Code",
-  emailNewDeviceNotice: "New Device Notice",
 };
 
 async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> {
@@ -26,14 +23,8 @@ async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> 
       return fetch.fetchEmailDay7Delivery().catch(() => null);
     case "emailMagicLink":
       return fetch.fetchEmailMagicLink().catch(() => null);
-    case "emailMagicLinkLibrary":
-      return fetch.fetchEmailMagicLinkLibrary().catch(() => null);
     case "emailPrivacyExport":
       return fetch.fetchEmailPrivacyExport().catch(() => null);
-    case "emailStepUpOtp":
-      return fetch.fetchEmailStepUpOtp().catch(() => null);
-    case "emailNewDeviceNotice":
-      return fetch.fetchEmailNewDeviceNotice().catch(() => null);
   }
 }
 

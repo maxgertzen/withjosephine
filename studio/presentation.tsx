@@ -74,10 +74,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
     emailDay7Delivery: emailLocation("Email: Reading Delivery (Day 7)"),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
-    emailMagicLinkLibrary: emailLocation("Email: Magic Link (Library)"),
-    emailNewDeviceNotice: emailLocation("Email: New Device Notice"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),
     emailSharedShell: emailLocation("Email: Shared Shell (brand + footer)"),
-    emailStepUpOtp: emailLocation("Email: Step-up Code"),
   },
 };

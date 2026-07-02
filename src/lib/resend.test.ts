@@ -30,7 +30,6 @@ vi.mock("./analytics/server", () => ({
 
 vi.mock("./sanity/fetch", () => ({
   fetchEmailMagicLink: vi.fn().mockResolvedValue(null),
-  fetchEmailMagicLinkLibrary: vi.fn().mockResolvedValue(null),
   fetchEmailDay7Delivery: vi.fn().mockResolvedValue(null),
   fetchEmailOrderConfirmation: vi.fn().mockResolvedValue(null),
   fetchEmailPrivacyExport: vi.fn().mockResolvedValue(null),
@@ -775,22 +774,6 @@ describe("sendMagicLink", () => {
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
     expect(serverTrackMock).not.toHaveBeenCalled();
-  });
-
-  it("uses library copy and sub_type when context is 'library'", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_ml_mr" } });
-    const { sendMagicLink } = await import("./resend");
-
-    await sendMagicLink({
-      to: "ada@example.com",
-      magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=mr",
-      context: "library",
-    });
-
-    const args = sendMock.mock.calls[0]?.[0];
-    expect(args.subject).toBe("Sign in to your library");
-    const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
-    expect(props.sub_type).toBe("magic_link_library");
   });
 
   it("substitutes {firstName}/{readingName}/{readingPriceDisplay} when vars are supplied", async () => {

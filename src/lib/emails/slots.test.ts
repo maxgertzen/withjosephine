@@ -35,11 +35,6 @@ describe("slots — validateSlotsInValue (string fields)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.unknown).toEqual(["totallyWrong"]);
   });
-  it("rejects unknown slots for slot-free templates", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.unknown).toEqual(["firstName"]);
-  });
   it("accepts undefined / null without complaint", () => {
     expect(validateSlotsInValue(undefined, "emailOrderConfirmation")).toEqual({ ok: true });
     expect(validateSlotsInValue(null, "emailOrderConfirmation")).toEqual({ ok: true });
@@ -78,11 +73,6 @@ describe("slots — formatSlotValidationError", () => {
       expect(msg).toContain("{readingName}");
     }
   });
-  it("explains slot-free templates clearly", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(formatSlotValidationError(result)).toContain("no slots");
-  });
 });
 
 describe("slots — EMAIL_ALLOWED_SLOTS", () => {
@@ -91,11 +81,8 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
       [
         "emailDay7Delivery",
         "emailMagicLink",
-        "emailMagicLinkLibrary",
-        "emailNewDeviceNotice",
         "emailOrderConfirmation",
         "emailPrivacyExport",
-        "emailStepUpOtp",
       ].sort(),
     );
   });

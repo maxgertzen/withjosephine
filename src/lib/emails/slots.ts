@@ -2,19 +2,13 @@ export type EmailTemplateKey =
   | "emailOrderConfirmation"
   | "emailDay7Delivery"
   | "emailMagicLink"
-  | "emailMagicLinkLibrary"
-  | "emailPrivacyExport"
-  | "emailStepUpOtp"
-  | "emailNewDeviceNotice";
+  | "emailPrivacyExport";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
   emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
   emailMagicLink: ["magicLinkUrl", "firstName", "readingName", "readingPriceDisplay"],
-  emailMagicLinkLibrary: ["magicLinkUrl", "firstName"],
   emailPrivacyExport: ["firstName", "downloadUrl", "submissionCount", "expiryDays"],
-  emailStepUpOtp: [],
-  emailNewDeviceNotice: ["firstName"],
 } as const;
 
 const SLOT_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;

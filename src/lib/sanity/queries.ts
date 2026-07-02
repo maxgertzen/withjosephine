@@ -175,43 +175,6 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
-export const emailMagicLinkLibraryQuery = groq`
-  *[_type == "emailMagicLinkLibrary"][0] {
-    subject,
-    preview,
-    heroLine,
-    buttonLabel,
-    greeting,
-    body,
-    signOff
-  }
-`;
-
-export const emailStepUpOtpQuery = groq`
-  *[_type == "emailStepUpOtp"][0] {
-    subject,
-    preview,
-    heroLine,
-    intro,
-    codeLabel,
-    expiryLine,
-    closingLine,
-    signoff
-  }
-`;
-
-export const emailNewDeviceNoticeQuery = groq`
-  *[_type == "emailNewDeviceNotice"][0] {
-    subject,
-    preview,
-    heroLine,
-    bodyIntro,
-    wasItYouButtonLabel,
-    bodyPostButton,
-    signOff
-  }
-`;
-
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,

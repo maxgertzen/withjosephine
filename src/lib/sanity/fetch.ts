@@ -7,13 +7,10 @@ import {
   bookingFormQuery,
   bookingPageQuery,
   emailDay7DeliveryQuery,
-  emailMagicLinkLibraryQuery,
   emailMagicLinkQuery,
-  emailNewDeviceNoticeQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
   emailSharedShellQuery,
-  emailStepUpOtpQuery,
   faqItemsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
@@ -34,12 +31,9 @@ import type {
   SanityBookingPage,
   SanityEmailDay7Delivery,
   SanityEmailMagicLink,
-  SanityEmailMagicLinkLibrary,
-  SanityEmailNewDeviceNotice,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailSharedShell,
-  SanityEmailStepUpOtp,
   SanityFaqItem,
   SanityLandingPage,
   SanityLegalPage,
@@ -167,31 +161,6 @@ export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink 
   const { data } = await sanityFetch<SanityEmailMagicLink | null>({ query: emailMagicLinkQuery });
   return data;
 });
-
-export const fetchEmailMagicLinkLibrary = cache(
-  async (): Promise<SanityEmailMagicLinkLibrary | null> => {
-    const { data } = await sanityFetch<SanityEmailMagicLinkLibrary | null>({
-      query: emailMagicLinkLibraryQuery,
-    });
-    return data;
-  },
-);
-
-export const fetchEmailStepUpOtp = cache(async (): Promise<SanityEmailStepUpOtp | null> => {
-  const { data } = await sanityFetch<SanityEmailStepUpOtp | null>({
-    query: emailStepUpOtpQuery,
-  });
-  return data;
-});
-
-export const fetchEmailNewDeviceNotice = cache(
-  async (): Promise<SanityEmailNewDeviceNotice | null> => {
-    const { data } = await sanityFetch<SanityEmailNewDeviceNotice | null>({
-      query: emailNewDeviceNoticeQuery,
-    });
-    return data;
-  },
-);
 
 export const fetchEmailPrivacyExport = cache(
   async (): Promise<SanityEmailPrivacyExport | null> => {

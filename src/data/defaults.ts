@@ -529,22 +529,6 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   signOff: null,
 };
 
-export const EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS: EmailMagicLinkContent = {
-  subject: "Sign in to your library",
-  preview: "A fresh sign-in link for your readings and gifts.",
-  heroLine: "Sign in to your library",
-  buttonLabel: "Sign in",
-  body: [
-    ...stringToPortableTextBlocks(
-      "Here’s a fresh sign-in link for your library. It’ll sign you in for the next seven days so you can come back to your readings (and any gifts you’ve shared) without asking again.",
-    ),
-    ...stringToPortableTextBlocks(
-      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore. Nothing happens until someone clicks.",
-    ),
-  ],
-  signOff: null,
-};
-
 // Brand + footer fields shared across every customer-facing email template.
 // Sourced from the `emailSharedShell` Sanity singleton at render time; this
 // constant is the fallback when the GROQ fetch returns null.
@@ -562,70 +546,6 @@ export const EMAIL_SHARED_SHELL_DEFAULTS: EmailSharedShellContent = {
   signOffLine1: "With love,",
   signOffLine2: "Josephine ✦",
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
-};
-
-// Step-up OTP email. Short transactional code delivered when a purchaser
-// attempts a high-risk gift mutation (edit recipient, send now, claim for
-// yourself). Brand-light shell: header + body + footer, no GoldHero. The
-// 6-digit code is rendered as a slot in body so the modal's verify step
-// reads back what the user sees in their inbox.
-export interface SanityEmailStepUpOtp {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  intro: string;
-  codeLabel: string;
-  expiryLine: string;
-  closingLine: string;
-  signoff: string;
-}
-
-export const STEP_UP_OTP_EMAIL_DEFAULTS: SanityEmailStepUpOtp = {
-  subject: "Your verification code",
-  preview: "Your verification code",
-  heroLine: "Verify it's you",
-  intro:
-    "We will email you a code to confirm. This protects your gifts from being changed by anyone who has access to your inbox or a stale sign-in.",
-  codeLabel: "Your code",
-  expiryLine: "This code expires in 15 minutes.",
-  closingLine: "If you did not request this code, you can ignore this email.",
-  signoff: "Josephine",
-};
-
-// New-device notice email. Fired passively from the listen-page render when
-// a reading is opened from a browser whose UA-hash has not been seen on this
-// submission before. Single primary button revokes the recipient's listen
-// sessions via a short-lived signed token. Skips silently if no baseline.
-export interface EmailNewDeviceNoticeContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  bodyIntro: EmailRichText;
-  wasItYouButtonLabel: string;
-  bodyPostButton: EmailRichText;
-  signOff: string | null;
-}
-
-export const EMAIL_NEW_DEVICE_NOTICE_DEFAULTS: EmailNewDeviceNoticeContent = {
-  subject: "Was this you?",
-  preview: "We noticed your reading was opened from a new device.",
-  heroLine: "Was this you?",
-  bodyIntro: [
-    ...stringToPortableTextBlocks("Hi {firstName},"),
-    ...stringToPortableTextBlocks(
-      "We noticed your reading was opened from a device we had not seen before. If that was you, no action needed. If not, tap the button below and we will lock things down.",
-    ),
-  ],
-  wasItYouButtonLabel: "This was not me",
-  bodyPostButton: [
-    ...stringToPortableTextBlocks(
-      "Tapping the button signs you out of every device on this reading. After that, write to me at hello@withjosephine.com and I will help you sort out what happened.",
-    ),
-    ...stringToPortableTextBlocks(
-      "If everything looks right, you can ignore this email. We send it once per new device, just so you know.",
-    ),
-  ],
-  signOff: null,
 };
 
 export interface EmailOrderConfirmationContent {

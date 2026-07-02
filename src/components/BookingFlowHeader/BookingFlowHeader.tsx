@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 
-import { AccountMenu } from "@/components/AccountMenu";
 import { NavigationButton } from "@/components/NavigationButton";
 
 import { useHeaderBack } from "./headerBackContext";
@@ -43,9 +42,7 @@ export function BookingFlowHeader({ backHref, backLabel = "‹ Back" }: BookingF
       >
         Josephine Soul Readings
       </Link>
-      <div className="flex items-center justify-end shrink-0">
-        <AccountMenu />
-      </div>
+      <div className="flex items-center justify-end shrink-0" aria-hidden="true" />
     </header>
   );
 }

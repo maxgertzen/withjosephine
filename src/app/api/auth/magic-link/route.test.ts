@@ -121,26 +121,13 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     expect(sendMock.mock.calls[0]?.[0].context).toBe("listen");
   });
 
-  it("dispatches context='library' for /my-gifts and /my-gifts/... (unified library)", async () => {
+  it("always passes context='listen' to sendMagicLink regardless of next", async () => {
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
 
-    await POST(jsonRequest({ email: "ada@example.com", next: "/my-gifts" }));
-    await flushFireAndForget();
-    expect(sendMock.mock.calls[0]?.[0].context).toBe("library");
-
-    sendMock.mockClear();
-    await POST(jsonRequest({ email: "ada@example.com", next: "/my-gifts/abc" }));
-    await flushFireAndForget();
-    expect(sendMock.mock.calls[0]?.[0].context).toBe("library");
-  });
-
-  it("passes context='library' to sendMagicLink as the default", async () => {
-    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
-    const { POST } = await import("./route");
     await POST(jsonRequest({ email: "ada@example.com" }));
     await flushFireAndForget();
-    expect(sendMock.mock.calls[0]?.[0].context).toBe("library");
+    expect(sendMock.mock.calls[0]?.[0].context).toBe("listen");
   });
 
   it("forwards firstName/readingName/readingPriceDisplay from lookupMagicLinkVars", async () => {

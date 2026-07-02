@@ -36,7 +36,7 @@ async function callRoute(): Promise<Response> {
 describe("POST /api/auth/sign-out", () => {
   it("revokes the active session, clears the cookie, and 303s home", async () => {
     cookiesGet.mockReturnValue({ value: "tok" });
-    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
 
     const res = await callRoute();
 

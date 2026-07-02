@@ -53,7 +53,6 @@ export const MAGIC_LINK_TTL_MS = 24 * 60 * 60 * 1000;
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const COOKIE_NAME = "__Host-listen_session";
 export const MISMATCH_LIMIT = 5;
-export const ELEVATION_TTL_MS = 10 * 60 * 1000;
 
 export { AUDIT_EVENT_TYPE, type AuditEventType } from "@/lib/audit/eventTypes";
 
@@ -99,7 +98,7 @@ export type RedeemResult =
     };
 
 export type SessionLookup =
-  | { userId: string; sessionId: string; elevatedAt: number | null }
+  | { userId: string; sessionId: string }
   | null;
 
 type MagicLinkRow = {
@@ -115,7 +114,6 @@ type SessionRow = {
   user_id: string;
   expires_at: number;
   revoked_at: number | null;
-  elevated_at: number | null;
 };
 
 type AuditContext = {
@@ -398,7 +396,7 @@ export async function getActiveSession(args: {
   const tokenHash = await sha256Hex(args.cookieValue);
 
   const rows = await dbQuery<SessionRow>(
-    `SELECT id, user_id, expires_at, revoked_at, elevated_at
+    `SELECT id, user_id, expires_at, revoked_at
        FROM listen_session
        WHERE token_hash = ? LIMIT 1`,
     [tokenHash],
@@ -408,21 +406,7 @@ export async function getActiveSession(args: {
   if (row.revoked_at !== null) return null;
   if (row.expires_at < now) return null;
 
-  return { userId: row.user_id, sessionId: row.id, elevatedAt: row.elevated_at };
-}
-
-/**
- * Returns true when `session.elevatedAt` is within the elevation TTL (10 min)
- * relative to the current time. Used by `requireElevation` to gate high-risk
- * gift mutations. Mirror of the `< expires` boundary semantics elsewhere in
- * this module: equality at the boundary counts as still-elevated.
- */
-export function isElevated(
-  session: { elevatedAt: number | null },
-  now: number = Date.now(),
-): boolean {
-  if (session.elevatedAt === null) return false;
-  return session.elevatedAt > now - ELEVATION_TTL_MS;
+  return { userId: row.user_id, sessionId: row.id };
 }
 
 /**
@@ -494,11 +478,8 @@ export async function revokeSession(args: {
   now?: number;
 }): Promise<void> {
   const now = args.now ?? Date.now();
-  // Clear elevated_at alongside revoked_at: if the session ever reactivates
-  // (it cannot today, but the invariant is "revoked sessions carry zero
-  // privilege"), stale elevation must not survive the revoke.
   await dbExec(
-    `UPDATE listen_session SET revoked_at = ?, elevated_at = NULL WHERE id = ?`,
+    `UPDATE listen_session SET revoked_at = ? WHERE id = ?`,
     [now, args.sessionId],
   );
   await writeAudit({

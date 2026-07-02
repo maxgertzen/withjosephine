@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHeaderBack } from "@/components/BookingFlowHeader/headerBackContext";
 import { track } from "@/lib/analytics";
-import { EMAIL_FIELD_KEY } from "@/lib/booking/constants";
-import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import {
   emptyConsentSnapshot,
   isFullyConsented,
@@ -38,9 +36,6 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
-  // Pre-fills + locks the email field, read-only. Set for a signed-in
-  // self-booking to the session account's email. Null = editable (anonymous booking).
-  prefilledEmail?: string | null;
 };
 
 export function IntakeForm({
@@ -54,7 +49,6 @@ export function IntakeForm({
   pageIndicatorTagline,
   pagination,
   loadingStateCopy,
-  prefilledEmail = null,
 }: IntakeFormProps) {
   const draftScope = readingId;
 
@@ -66,30 +60,9 @@ export function IntakeForm({
     timeUnknownPairs,
     timeUnknownLabels,
     pairedUnknownKeys,
-    defaultValues: rawDefaultValues,
-    defaultValuesSnapshot: rawDefaultValuesSnapshot,
+    defaultValues,
+    defaultValuesSnapshot,
   } = useIntakeSchema({ sections, readingId, pagination });
-
-  // Seed + lock the email whenever a prefilledEmail is supplied: a scheduled
-  // gift's recipient_email (D-12), or — for a signed-in self-booking — the
-  // session account's email so the reading lands in that person's library.
-  // A null prefilledEmail (anonymous booking or a self-send gift claim) skips
-  // the seed and the field stays editable. Seeding the default value keeps
-  // draft-restore + the read-only render starting from the canonical form.
-  const seededEmail = prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
-  const lockedValues = useMemo(
-    () => (seededEmail ? { [EMAIL_FIELD_KEY]: seededEmail } : undefined),
-    [seededEmail],
-  );
-  const defaultValues = useMemo(
-    () =>
-      seededEmail ? { ...rawDefaultValues, [EMAIL_FIELD_KEY]: seededEmail } : rawDefaultValues,
-    [rawDefaultValues, seededEmail],
-  );
-  const defaultValuesSnapshot = useMemo(
-    () => (seededEmail ? JSON.stringify(defaultValues) : rawDefaultValuesSnapshot),
-    [defaultValues, rawDefaultValuesSnapshot, seededEmail],
-  );
 
   const {
     values,
@@ -106,7 +79,6 @@ export function IntakeForm({
     readingName,
     draftScope,
     defaultValues,
-    lockedValues,
   });
 
   const [honeypot, setHoneypot] = useState("");
@@ -253,11 +225,6 @@ export function IntakeForm({
     [],
   );
 
-  const readOnlyFieldKeys = useMemo(
-    () => (seededEmail ? new Set([EMAIL_FIELD_KEY]) : undefined),
-    [seededEmail],
-  );
-
   const renderContext = useMemo<RenderContext>(
     () => ({
       values,
@@ -267,14 +234,12 @@ export function IntakeForm({
       timeUnknownPairs,
       timeUnknownLabels,
       requestTurnstileToken: requestFreshTurnstileToken,
-      readOnlyFieldKeys,
     }),
     [
       values,
       setValue,
       mergedErrors,
       isSubmitting,
-      readOnlyFieldKeys,
       timeUnknownPairs,
       timeUnknownLabels,
       requestFreshTurnstileToken,

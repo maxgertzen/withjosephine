@@ -30,10 +30,8 @@ export type JsonPostResult<T> = {
   topError?: string;
   /**
    * Parsed JSON body for non-2xx responses, when available. Used by callers
-   * that need to read structured error payloads (e.g. step-up auth surfaces
-   * an `elevation_required` discriminator + `contactMailto` on 401). The
-   * happy-path body lives on `data`; this field carries the error-path body
-   * without changing existing branches.
+   * that need to read structured error payloads. The happy-path body lives on
+   * `data`; this field carries the error-path body without changing branches.
    */
   errorBody?: unknown;
 };
