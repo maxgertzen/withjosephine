@@ -3,7 +3,6 @@ import { siteOrigin } from "@/lib/env";
 
 import {
   redactEmail,
-  resolveDeliveryAddress,
   sendDay7Delivery,
   sendOrderConfirmation,
 } from "../resend";
@@ -76,7 +75,7 @@ export async function resendCustomerEmail(
   return {
     ok: true,
     emailType,
-    targetEmailRedacted: redactEmail(resolveDeliveryAddress(submission)),
+    targetEmailRedacted: redactEmail(submission.email),
   };
 }
 

@@ -17,7 +17,6 @@ vi.mock("../resend", () => ({
   sendOrderConfirmation: vi.fn(),
   sendDay7Delivery: vi.fn(),
   redactEmail: vi.fn((s: string) => s.replace(/^./, "*")),
-  resolveDeliveryAddress: vi.fn((s: { email: string }) => s.email),
 }));
 
 function buildPaidSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {

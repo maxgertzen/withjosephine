@@ -10,12 +10,8 @@ import {
 
 function context(overrides: Partial<ResolvedThankYouContext> = {}): ResolvedThankYouContext {
   return {
-    mode: "purchase",
     reading: { name: "The Soul Blueprint", price: "$179", cents: 179_00 },
     paidAmount: { cents: 179_00, display: "$179.00" },
-    submission: null,
-    purchaserFirstName: null,
-    recipientName: null,
     ...overrides,
   };
 }
@@ -28,7 +24,6 @@ describe("deriveThankYouViewProps", () => {
       siteSettings: null,
       slugForOverride: "soul-blueprint",
     });
-    expect(props.mode).toBe("purchase");
     expect(props.copy.heading).toBe("Thank you. I’ve got everything I need.");
     expect(props.copy.readingLabel).toBe("Your Reading");
     expect(props.copy.returnButtonText).toBe("Return to Home");

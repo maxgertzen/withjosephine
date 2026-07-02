@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 
 export function PrivacyFallbackBody() {

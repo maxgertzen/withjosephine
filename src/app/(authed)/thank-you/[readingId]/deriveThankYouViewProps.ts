@@ -1,18 +1,13 @@
 import { THANK_YOU_PAGE_DEFAULTS } from "@/data/defaults";
-import type { SubmissionRecord } from "@/lib/booking/submissions";
 import type { ThankYouPaidAmount } from "@/lib/booking/thankYouSession";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SanitySiteSettings, SanityThankYouPage } from "@/lib/sanity/types";
 
-import type { ThankYouMode, ThankYouViewProps } from "./ThankYouView";
+import type { ThankYouViewProps } from "./ThankYouView";
 
 export type ResolvedThankYouContext = {
-  mode: ThankYouMode;
   reading: { name: string; price: string; cents: number | null };
   paidAmount: ThankYouPaidAmount;
-  submission: SubmissionRecord | null;
-  purchaserFirstName: string | null;
-  recipientName: string | null;
 };
 
 export type DeriveThankYouViewPropsInput = {
@@ -24,7 +19,7 @@ export type DeriveThankYouViewPropsInput = {
 
 export function deriveThankYouViewProps(input: DeriveThankYouViewPropsInput): ThankYouViewProps {
   const { context, thankYouPageContent, siteSettings, slugForOverride } = input;
-  const { mode, reading, paidAmount, purchaserFirstName, recipientName } = context;
+  const { reading, paidAmount } = context;
   const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === slugForOverride);
 
   const heading =
@@ -51,11 +46,8 @@ export function deriveThankYouViewProps(input: DeriveThankYouViewPropsInput): Th
     THANK_YOU_PAGE_DEFAULTS.contactBody;
 
   return {
-    mode,
     reading,
     paidAmount,
-    purchaserFirstName,
-    recipientName,
     contactEmail: siteSettings?.contactEmail || CONTACT_EMAIL,
     copy: {
       heading,

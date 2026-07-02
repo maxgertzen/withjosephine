@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";

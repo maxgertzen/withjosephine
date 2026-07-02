@@ -11,11 +11,8 @@ const meta: Meta<typeof ThankYouView> = {
   component: ThankYouView,
   parameters: { layout: "fullscreen" },
   args: {
-    mode: "purchase",
     reading: THANK_YOU_READING,
     paidAmount: { cents: 17900, display: "$179.00" },
-    purchaserFirstName: null,
-    recipientName: null,
     contactEmail: "hello@withjosephine.com",
     copy: THANK_YOU_BASE_COPY,
   },

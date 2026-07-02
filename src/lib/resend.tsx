@@ -43,10 +43,6 @@ export type SubmissionContext = {
   createdAt: string;
 };
 
-export function resolveDeliveryAddress(submission: { email: string }): string {
-  return submission.email;
-}
-
 export type EmailSendResult =
   | { kind: "sent"; resendId: string }
   | { kind: "dry_run" }
@@ -306,7 +302,7 @@ export async function sendOrderConfirmation(
   );
 
   return sendOrSkip({
-    to: resolveDeliveryAddress(submission),
+    to: submission.email,
     subject: copy.subject,
     html,
     subType: "order_confirmation",
@@ -342,7 +338,7 @@ export async function sendDay7Delivery(
     />,
   );
   return sendOrSkip({
-    to: resolveDeliveryAddress(submission),
+    to: submission.email,
     subject,
     html,
     subType: "day_7_delivery",

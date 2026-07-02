@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { UserMenu } from "@/components/UserMenu";
-import { ROUTES } from "@/lib/constants";
 import { mergeClasses } from "@/lib/utils";
 
 type AccountState =

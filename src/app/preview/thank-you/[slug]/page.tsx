@@ -47,12 +47,8 @@ export default async function ThankYouPagePreview({ params }: ThankYouPreviewPro
   const reading = resolvePreviewReading(slug, sanityReading);
 
   const context: ResolvedThankYouContext = {
-    mode: "purchase",
     reading,
     paidAmount: { cents: reading.cents, display: reading.price || null },
-    submission: null,
-    purchaserFirstName: null,
-    recipientName: null,
   };
 
   const viewProps = deriveThankYouViewProps({

@@ -9,8 +9,6 @@ import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 
-export type ThankYouMode = "purchase";
-
 export type ThankYouViewCopy = {
   heading: string;
   subheading: string;
@@ -24,11 +22,8 @@ export type ThankYouViewCopy = {
 };
 
 export type ThankYouViewProps = {
-  mode: ThankYouMode;
   reading: { name: string; price: string; cents: number | null };
   paidAmount: { cents: number | null; display: string | null };
-  purchaserFirstName: string | null;
-  recipientName: string | null;
   contactEmail: string;
   copy: ThankYouViewCopy;
 };
@@ -36,13 +31,9 @@ export type ThankYouViewProps = {
 export function ThankYouView({
   reading,
   paidAmount,
-  purchaserFirstName,
-  recipientName,
   contactEmail,
   copy,
 }: ThankYouViewProps) {
-  const purchaserSlotValue = purchaserFirstName ?? "";
-  const recipientSlotValue = recipientName ?? "";
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
@@ -60,16 +51,10 @@ export function ThankYouView({
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {renderWithSlots(copy.heading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
+          {copy.heading}
         </h1>
         <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {renderWithSlots(copy.subheading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
+          {copy.subheading}
         </p>
 
         <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
@@ -94,18 +79,12 @@ export function ThankYouView({
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p className="whitespace-pre-line">
-            {renderWithSlots(copy.confirmationBody, {
-              purchaserFirstName: purchaserSlotValue,
-              recipientName: recipientSlotValue,
-            })}
-          </p>
+          <p className="whitespace-pre-line">{copy.confirmationBody}</p>
           <p className="whitespace-pre-line">
             {renderWithSlots(copy.timelineBody, {
               deliveryDays: (
                 <span className="font-display italic text-j-accent">{copy.deliveryDaysPhrase}</span>
               ),
-              recipientName: recipientSlotValue,
             })}
           </p>
           <p className="whitespace-pre-line">

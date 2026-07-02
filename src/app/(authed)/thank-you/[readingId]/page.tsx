@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submissions";
 import { fetchThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
-import { firstParamValue } from "@/lib/next/searchParams";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
 
 import {
@@ -17,7 +15,6 @@ export { generateReadingStaticParams as generateStaticParams };
 
 type ThankYouSearchParams = {
   sessionId?: string | string[];
-  submission?: string | string[];
 };
 
 type ThankYouPageProps = {
@@ -30,16 +27,6 @@ const STRIPE_SESSION_PATTERN = /^cs_(test|live)_[A-Za-z0-9]+$/;
 function isValidStripeSession(sessionId: string | string[] | undefined): sessionId is string {
   if (typeof sessionId !== "string") return false;
   return STRIPE_SESSION_PATTERN.test(sessionId);
-}
-
-// Mock-mode Stripe responses don't carry `client_reference_id`, so the page
-// can't recover the submission ID via the Stripe API path. Under E2E=1 only
-// (gated so prod can't be tricked into reading PII via URL tampering), accept
-// the submission ID from a sibling URL param.
-function e2eSubmissionFallback(search: ThankYouSearchParams): string | null {
-  if (process.env.E2E !== "1") return null;
-  const value = firstParamValue(search.submission)?.trim();
-  return value ? value : null;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -61,28 +48,18 @@ async function resolveContext(
   if (!isValidStripeSession(sessionId)) return null;
 
   const snapshot = await fetchThankYouSessionSnapshot(sessionId);
-  const submissionLookup = await findSubmissionById(
-    snapshot.submissionIdFromSession ?? e2eSubmissionFallback(search) ?? segment,
-  );
-  const reading = await resolveReading(segment, submissionLookup);
+  const reading = await resolveReading(segment);
   if (!reading) return null;
   return {
-    mode: "purchase",
     reading,
     paidAmount: snapshot.paidAmount,
-    submission: null,
-    purchaserFirstName: null,
-    recipientName: null,
   };
 }
 
 async function resolveReading(
   segment: string,
-  submission: SubmissionRecord | null,
 ): Promise<ResolvedThankYouContext["reading"] | null> {
-  const submissionReading = submission?.reading ?? null;
-  const slugForLookup = submissionReading?.slug ?? segment;
-  const sanityReading = await fetchReading(slugForLookup);
+  const sanityReading = await fetchReading(segment);
   if (sanityReading) {
     return {
       name: sanityReading.name,
@@ -90,14 +67,7 @@ async function resolveReading(
       cents: sanityReading.price,
     };
   }
-  if (submissionReading) {
-    return {
-      name: submissionReading.name,
-      price: submissionReading.priceDisplay,
-      cents: null,
-    };
-  }
-  const fallback = getReadingById(slugForLookup);
+  const fallback = getReadingById(segment);
   return fallback
     ? { name: fallback.name, price: fallback.price, cents: null }
     : null;
@@ -124,7 +94,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     context,
     thankYouPageContent,
     siteSettings,
-    slugForOverride: context.submission?.reading?.slug ?? readingId,
+    slugForOverride: readingId,
   });
 
   return <ThankYouView {...viewProps} />;

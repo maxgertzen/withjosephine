@@ -239,19 +239,18 @@ export function IntakeForm({
 
   const visibleErrorCount = errorsVisible ? errorCount : 0;
   const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
-  const requireCoolingOff = true;
   const consentsFullySatisfied = useMemo(
-    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff }),
-    [consentSnapshot, requireCoolingOff],
+    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff: true }),
+    [consentSnapshot],
   );
   const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
   const handleConsentSnapshotChange = useCallback(
     (next: LegalConsentSnapshot) => {
       setConsentSnapshot(next);
-      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff })) setSubmitError(null);
+      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true })) setSubmitError(null);
     },
-    [requireCoolingOff],
+    [],
   );
 
   const readOnlyFieldKeys = useMemo(
@@ -323,7 +322,7 @@ export function IntakeForm({
         setConsentSnapshot={handleConsentSnapshotChange}
         consentErrors={consentErrors}
         clearConsentError={clearConsentError}
-        showCoolingOff={requireCoolingOff}
+        showCoolingOff={true}
         turnstileRequired={turnstileRequired}
         turnstileSiteKey={turnstileSiteKey}
         turnstileRef={turnstileRef}

@@ -1,10 +1,8 @@
 "use client";
 
 import * as Popover from "@radix-ui/react-popover";
-import Link from "next/link";
 
 import { SignOutForm } from "@/components/SignOutForm";
-import { ROUTES } from "@/lib/constants";
 
 function BookGlyph() {
   return (
