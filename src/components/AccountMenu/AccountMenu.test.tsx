@@ -37,11 +37,11 @@ describe("AccountMenu", () => {
     await waitFor(() => expect(screen.getByTestId("user-menu")).toHaveTextContent("person@example.com"));
   });
 
-  it("renders a Sign in link to the library when signed out", async () => {
+  it("renders a Sign in link to the home page when signed out", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ signedIn: false }));
     render(<AccountMenu />);
     await waitFor(() =>
-      expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/my-readings"),
+      expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/"),
     );
   });
 

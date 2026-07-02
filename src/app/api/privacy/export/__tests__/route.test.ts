@@ -103,20 +103,7 @@ const SUBMISSION: SubmissionRecord = {
   pdfUrl: "https://cdn.sanity.io/files/abc/reading.pdf",
   deliveredAt: "2026-04-28T10:00:00Z",
   emailsFired: [{ type: "order_confirmation", sentAt: "2026-04-21T10:00:01Z", resendId: "msg_a" }],
-  isGift: false,
-  purchaserUserId: null,
-  purchaserTimeZone: null,
-  recipientEmail: null,
-  giftDeliveryMethod: null,
-  giftSendAt: null,
-  giftMessage: null,
-  giftClaimTokenHash: null,
-  giftClaimEmailFiredAt: null,
-  giftClaimedAt: null,
-  giftCancelledAt: null,
-  giftClaimSentNowAt: null,
-  giftClaimSentNowActor: null,
-  giftClaimPriorAlarmAt: null,};
+  };
 
 beforeEach(() => {
   mockCookies.mockReset();

@@ -18,7 +18,7 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-import { BOOKING_API_GIFT_REDEEM_ROUTE, BOOKING_API_ROUTE } from "@/lib/http/routes";
+import { BOOKING_API_ROUTE } from "@/lib/http/routes";
 import type { SanityFormField } from "@/lib/sanity/types";
 
 import {
@@ -30,14 +30,9 @@ import {
 } from "./intakeValidation";
 import { clear as clearDraft } from "./localStorageDraft";
 
-export type IntakeMode = "create" | "redeem";
-
 export type UseIntakeFormHandlersArgs = {
-  mode: IntakeMode;
   readingId: string;
   draftScope: string;
-  redeemSubmissionId?: string;
-  redeemSuccessUrl?: string;
   formRef: RefObject<HTMLFormElement | null>;
   submitIntentRef: RefObject<boolean>;
   values: FieldValues;
@@ -79,11 +74,8 @@ function blurAndScrollToTop(): void {
 }
 
 export function useIntakeFormHandlers({
-  mode,
   readingId,
   draftScope,
-  redeemSubmissionId,
-  redeemSuccessUrl,
   formRef,
   submitIntentRef,
   values,
@@ -217,7 +209,7 @@ export function useIntakeFormHandlers({
       const validation = validateFullSubmission(submissionSchema, allFields, values);
       const consentRequirements = {
         requireArt9: true,
-        requireCoolingOff: mode !== "redeem",
+        requireCoolingOff: true,
       };
       const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
       setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
@@ -259,8 +251,6 @@ export function useIntakeFormHandlers({
           if (typeof v === "string" && v !== "") companionKeys[companion] = v;
         }
 
-        const endpoint =
-          mode === "redeem" ? BOOKING_API_GIFT_REDEEM_ROUTE : BOOKING_API_ROUTE;
         const requestBody: Record<string, unknown> = {
           readingSlug: readingId,
           values: { ...validation.parsedValues, ...companionKeys },
@@ -271,11 +261,8 @@ export function useIntakeFormHandlers({
           coolingOffConsent: consentSnapshot.coolingOff.acknowledged,
           consentSnapshot,
         };
-        if (mode === "redeem" && redeemSubmissionId) {
-          requestBody.submissionId = redeemSubmissionId;
-        }
 
-        const response = await fetch(endpoint, {
+        const response = await fetch(BOOKING_API_ROUTE, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
@@ -287,25 +274,6 @@ export function useIntakeFormHandlers({
               ? "Some fields didn't pass validation. Please review and try again."
               : "Something went wrong submitting your form. Please try again.";
           failSubmit(`http_${response.status}`, message);
-          return;
-        }
-
-        if (mode === "redeem") {
-          const redeemData = (await response.json()) as {
-            submissionId?: string;
-            redirectUrl?: string;
-          };
-          if (!redeemData.submissionId) {
-            failSubmit(INTAKE_SUBMIT_ERROR.missingRedeemId, "Unexpected response. Please try again.");
-            return;
-          }
-          track("intake_submit_success", { reading_id: readingId });
-          identifySubmission(redeemData.submissionId);
-          clearDraft(draftScope);
-          window.location.href =
-            redeemData.redirectUrl ??
-            redeemSuccessUrl ??
-            `/thank-you/${redeemData.submissionId}?gift=1&redeemed=1`;
           return;
         }
 
@@ -348,11 +316,8 @@ export function useIntakeFormHandlers({
       setErrors,
       formRef,
       setIsSubmitting,
-      mode,
       honeypot,
-      redeemSubmissionId,
       draftScope,
-      redeemSuccessUrl,
     ],
   );
 

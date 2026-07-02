@@ -1,6 +1,5 @@
 import "server-only";
 
-import { tryBuildLibraryUrl } from "../auth/libraryUrl";
 import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
@@ -39,17 +38,12 @@ export async function applyPaidEvent(
     amountPaidCurrency: details.amountPaidCurrency,
   });
 
-  // submission.email is the PURCHASER for gifts; writing that userId to
-  // recipient_user_id breaks listen-page session linkage when purchaser ≠
-  // recipient. Leave NULL; redeemGiftSubmission populates at claim time.
   let recipientUserId: string | null = null;
-  if (!submission.isGift) {
-    try {
-      const { userId } = await getOrCreateUser({ email: submission.email, name: context.firstName });
-      recipientUserId = userId;
-    } catch (error) {
-      console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
-    }
+  try {
+    const { userId } = await getOrCreateUser({ email: submission.email, name: context.firstName });
+    recipientUserId = userId;
+  } catch (error) {
+    console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
   }
 
   // Tax-retention record (6yr HMRC) — separable from reading content (3yr)
@@ -79,38 +73,27 @@ export async function applyPaidEvent(
     }),
   ];
 
-  // Gift purchasers receive `gift_purchase_confirmation` from the webhook
-  // handler; skipping here avoids duplicate sends.
-  if (!submission.isGift) {
-    const libraryUrl = recipientUserId
-      ? await tryBuildLibraryUrl({
-          userId: recipientUserId,
-          mintSource: "order_confirmation",
-          siteContext: `notifyPaid:${submission._id}`,
-        })
-      : undefined;
-    dispatches.push(
-      sendOrderConfirmation(context, libraryUrl)
-        .then(async (result) => {
-          if (result.kind !== "sent") return;
-          try {
-            await appendEmailFired(submission._id, {
-              type: "order_confirmation",
-              sentAt: new Date().toISOString(),
-              resendId: result.resendId,
-            });
-          } catch (error) {
-            console.error(
-              `[notifyPaid] emailsFired write failed for ${submission._id}`,
-              error,
-            );
-          }
-        })
-        .catch((error) => {
-          console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
-        }),
-    );
-  }
+  dispatches.push(
+    sendOrderConfirmation(context)
+      .then(async (result) => {
+        if (result.kind !== "sent") return;
+        try {
+          await appendEmailFired(submission._id, {
+            type: "order_confirmation",
+            sentAt: new Date().toISOString(),
+            resendId: result.resendId,
+          });
+        } catch (error) {
+          console.error(
+            `[notifyPaid] emailsFired write failed for ${submission._id}`,
+            error,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
+      }),
+  );
 
   await Promise.all(dispatches);
 

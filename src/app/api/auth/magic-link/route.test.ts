@@ -224,33 +224,33 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
 });
 
 describe("POST /api/auth/magic-link — form branch", () => {
-  it("redirects 303 to /my-readings?sent=1 on success", async () => {
+  it("redirects 303 to /?sent=1 on success", async () => {
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
     const response = await POST(formRequest({ email: "ada@example.com" }));
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings?sent=1");
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/?sent=1");
     await flushFireAndForget();
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
-  it("redirects to /my-readings?sent=1 even on unknown email (uniform UX)", async () => {
+  it("redirects to /?sent=1 even on unknown email (uniform UX)", async () => {
     findUserMock.mockResolvedValue(null);
     const { POST } = await import("./route");
     const response = await POST(formRequest({ email: "nobody@example.com" }));
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings?sent=1");
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/?sent=1");
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("redirects to /my-readings?error=throttled when rate-limited (State 5c trigger)", async () => {
+  it("redirects to /?error=throttled when rate-limited (State 5c trigger)", async () => {
     rateLimitMock.mockResolvedValue(false);
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
     const response = await POST(formRequest({ email: "ada@example.com" }));
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(
-      "https://withjosephine.com/my-readings?error=throttled",
+      "https://withjosephine.com/?error=throttled",
     );
     expect(findUserMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
@@ -280,13 +280,13 @@ describe("POST /api/auth/magic-link — form branch", () => {
     );
   });
 
-  it("strips an unsafe `next` and falls back to /my-readings", async () => {
+  it("strips an unsafe `next` and falls back to /", async () => {
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { POST } = await import("./route");
     const response = await POST(
       formRequest({ email: "ada@example.com", next: "https://evil.example.com" }),
     );
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings?sent=1");
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/?sent=1");
   });
 });

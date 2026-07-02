@@ -98,12 +98,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
 
         {signedInUser ? (
           <div className="font-body text-sm text-j-text-muted max-w-[50ch] mb-8">
-            Signed in as {signedInUser.email}, so this reading will be saved to your library.
-            Booking for someone else?{" "}
-            <Link href={BOOKING_PAGE_ROUTES.gift(reading.slug)} className="underline">
-              Send it as a gift
-            </Link>{" "}
-            or{" "}
+            Signed in as {signedInUser.email}, so this reading will be saved to your library.{" "}
             <SignOutForm
               className="inline"
               buttonClassName="underline hover:text-j-text-heading transition-colors"

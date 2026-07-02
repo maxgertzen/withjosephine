@@ -5,20 +5,13 @@ export type EmailFiredType =
   | "day7"
   | "day7-overdue-alert"
   | "day14"
-  | "abandonment"
-  | "gift_purchase_confirmation"
-  | "gift_claim"
-  | "gift_resend"
-  | "gift_claim_regenerate"
-  | "recipient_intake_received";
+  | "abandonment";
 
 export type EmailFiredEntry = {
   type: EmailFiredType;
   sentAt: string;
   resendId: string | null;
 };
-
-export type GiftDeliveryMethod = "self_send" | "scheduled";
 
 export type SubmissionRecord = {
   _id: string;
@@ -48,18 +41,4 @@ export type SubmissionRecord = {
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   recipientUserId: string | null;
-  isGift: boolean;
-  purchaserUserId: string | null;
-  purchaserTimeZone: string | null;
-  recipientEmail: string | null;
-  giftDeliveryMethod: GiftDeliveryMethod | null;
-  giftSendAt: string | null;
-  giftMessage: string | null;
-  giftClaimTokenHash: string | null;
-  giftClaimEmailFiredAt: string | null;
-  giftClaimedAt: string | null;
-  giftCancelledAt: string | null;
-  giftClaimSentNowAt: string | null;
-  giftClaimSentNowActor: string | null;
-  giftClaimPriorAlarmAt: string | null;
 };

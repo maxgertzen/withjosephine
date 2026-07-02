@@ -9,10 +9,6 @@ export type EmailSubType =
   | "magic_link"
   | "magic_link_library"
   | "privacy_export"
-  | "gift_purchase_confirmation"
-  | "gift_claim"
-  | "gift_resend"
-  | "recipient_intake_received"
   | "step_up_otp"
   | "new_device_notice"
   | "new_device_revoke_admin"
@@ -27,10 +23,6 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   magic_link: "magic link",
   magic_link_library: "magic link (library)",
   privacy_export: "privacy export",
-  gift_purchase_confirmation: "gift purchase confirmation",
-  gift_claim: "gift claim",
-  gift_resend: "gift resend",
-  recipient_intake_received: "recipient intake received",
   step_up_otp: "step-up OTP",
   new_device_notice: "new device notice",
   new_device_revoke_admin: "new device revoke (admin alert)",
@@ -49,12 +41,6 @@ export type ServerEventMap = {
     submission_id: string;
     reading_id: string;
     stripe_session_id: string;
-  };
-  gift_purchased: {
-    submission_id: string;
-    reading_id: string;
-    delivery_method: "self_send" | "scheduled";
-    send_at: string | null;
   };
   email_sent: {
     sub_type: EmailSubType;

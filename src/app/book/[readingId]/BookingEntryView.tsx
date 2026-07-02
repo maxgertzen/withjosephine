@@ -21,7 +21,6 @@ export type BookingEntryCopy = {
   deliverableNote: string;
   whatsIncludedHeading: string;
   bookReadingCtaText: string;
-  giftToggleAsGiftLabel: string;
 };
 
 export type BookingEntryViewProps = {
@@ -131,20 +130,6 @@ export function BookingEntryView({ reading, copy }: BookingEntryViewProps) {
               className="inline-flex items-center justify-center min-h-14 min-w-[14rem] w-full md:w-auto px-10 py-4 bg-j-deep text-j-cream rounded-[50px] font-display italic font-medium text-base hover:bg-j-midnight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
             >
               {copy.bookReadingCtaText}
-            </TrackedLink>
-            <TrackedLink
-              href={BOOKING_PAGE_ROUTES.gift(reading.slug)}
-              event="gift_toggle_selected"
-              properties={{ reading_id: reading.slug, mode: "as_gift" }}
-              className="inline-flex items-center justify-center min-h-12 min-w-[14rem] w-full md:w-auto px-8 py-3 bg-transparent text-j-deep border border-j-deep/40 rounded-[50px] font-display italic font-medium text-sm hover:border-j-deep hover:bg-j-warm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
-            >
-              <span aria-hidden="true" className="text-j-accent mr-2">
-                ✦
-              </span>
-              {copy.giftToggleAsGiftLabel}
-              <span aria-hidden="true" className="ml-2">
-                →
-              </span>
             </TrackedLink>
           </div>
         </div>

@@ -5,11 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   bookingFormQuery,
-  bookingGiftFormQuery,
   bookingPageQuery,
-  giftClaimPageQuery,
-  giftIntakePageQuery,
-  myGiftsPageQuery,
   readingBySlugQuery,
   readingsQuery,
   siteSettingsQuery,
@@ -63,11 +59,7 @@ type FixtureSpec = {
 function buildSpecs(): FixtureSpec[] {
   return [
     { filename: "bookingForm.json", query: bookingFormQuery },
-    { filename: "bookingGiftForm.json", query: bookingGiftFormQuery },
     { filename: "bookingPage.json", query: bookingPageQuery },
-    { filename: "giftClaimPage.json", query: giftClaimPageQuery },
-    { filename: "giftIntakePage.json", query: giftIntakePageQuery },
-    { filename: "myGiftsPage.json", query: myGiftsPageQuery },
     { filename: "readings.json", query: readingsQuery },
     { filename: "siteSettings.json", query: siteSettingsQuery },
     { filename: "thankYouPage.json", query: thankYouPageQuery },

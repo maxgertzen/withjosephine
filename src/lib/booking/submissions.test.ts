@@ -199,20 +199,7 @@ describe("buildSubmissionContext", () => {
     amountPaidCents: null,
     amountPaidCurrency: null,
     recipientUserId: null,
-    isGift: false,
-    purchaserUserId: null,
-    purchaserTimeZone: null,
-    recipientEmail: null,
-    giftDeliveryMethod: null,
-    giftSendAt: null,
-    giftMessage: null,
-    giftClaimTokenHash: null,
-    giftClaimEmailFiredAt: null,
-    giftClaimedAt: null,
-    giftCancelledAt: null,
-    giftClaimSentNowAt: null,
-    giftClaimSentNowActor: null,
-    giftClaimPriorAlarmAt: null,  };
+  };
 
   it("builds Resend context with photo URL and firstName extracted", () => {
     const ctx = buildSubmissionContext(SUBMISSION);
@@ -250,24 +237,5 @@ describe("buildSubmissionContext", () => {
   it("falls back to default reading copy when reading is null", () => {
     const ctx = buildSubmissionContext({ ...SUBMISSION, reading: null });
     expect(ctx.readingName).toBe("your reading");
-  });
-
-  // Regression: F14 (dpdpepfg). The context must carry isGift + recipientEmail
-  // so downstream senders (sendDay7Delivery, sendOrderConfirmation) can route
-  // gift emails to the recipient instead of the purchaser.
-  it("propagates isGift + recipientEmail for gift submissions", () => {
-    const ctx = buildSubmissionContext({
-      ...SUBMISSION,
-      isGift: true,
-      recipientEmail: "recipient@example.com",
-    });
-    expect(ctx.isGift).toBe(true);
-    expect(ctx.recipientEmail).toBe("recipient@example.com");
-  });
-
-  it("sets isGift=false + recipientEmail=null for self-purchase submissions", () => {
-    const ctx = buildSubmissionContext(SUBMISSION);
-    expect(ctx.isGift).toBe(false);
-    expect(ctx.recipientEmail).toBeNull();
   });
 });

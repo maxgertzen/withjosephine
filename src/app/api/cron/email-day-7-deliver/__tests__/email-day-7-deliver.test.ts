@@ -9,8 +9,6 @@ vi.mock("@/lib/booking/submissions", () => ({
   buildSubmissionContext: vi.fn().mockReturnValue({
     id: "sub_1",
     email: "client@example.com",
-    recipientEmail: null,
-    isGift: false,
     firstName: "Ada",
     readingName: "Soul Blueprint",
     readingPriceDisplay: "$179",
@@ -61,20 +59,7 @@ const PAID_SUBMISSION: SubmissionRecord = {
   amountPaidCents: null,
   amountPaidCurrency: null,
   recipientUserId: "user_recipient_1",
-  isGift: false,
-  purchaserUserId: null,
-  purchaserTimeZone: null,
-  recipientEmail: null,
-  giftDeliveryMethod: null,
-  giftSendAt: null,
-  giftMessage: null,
-  giftClaimTokenHash: null,
-  giftClaimEmailFiredAt: null,
-  giftClaimedAt: null,
-  giftCancelledAt: null,
-  giftClaimSentNowAt: null,
-  giftClaimSentNowActor: null,
-  giftClaimPriorAlarmAt: null,};
+  };
 
 const DELIVERABLE = {
   _id: "sub_1",

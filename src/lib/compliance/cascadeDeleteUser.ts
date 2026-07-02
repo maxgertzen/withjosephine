@@ -3,35 +3,13 @@ import "server-only";
 /**
  * GDPR Art. 17 cascade delete — keyed by user, not submission.
  *
- * Two walks, both keyed by `userId`:
- *  1. **Recipient walk** — `listSubmissionsByRecipientUserId(userId)`.
- *     Full-cascade delete of submissions where the user is the recipient
- *     (self-purchases AND claimed gifts where the recipient is the
- *     erasing party). R2 photo + Sanity doc + Sanity assets + D1 row are
- *     all removed. Vendor surfaces (Stripe / Brevo / Mixpanel) follow.
- *  2. **Purchaser walk** —
- *     `listGiftsByPurchaserUserId(userId)`. Each gift the user purchased
- *     for someone else gets one of two treatments:
- *       a. Recipient already claimed (`recipient_user_id IS NOT NULL`
- *          AND distinct from the erasing purchaser) — pseudonymise the
- *          purchaser side via `pseudonymisePurchaserGift` (NULL
- *          `purchaser_user_id`, scrub top-level `email` and the
- *          `purchaser_first_name` / `purchaser_email` response fields).
- *          The recipient's contract-base Art. 6(1)(b) data survives, so
- *          their claim/listen path remains intact.
- *       b. Recipient hasn't claimed yet (`recipient_user_id IS NULL`) —
- *          full-cascade delete. No third-party contract data has
- *          accumulated yet; the row carries only purchaser PII, which
- *          must go.
- *     A row where `purchaser_user_id === recipient_user_id` (the
- *     self-purchase / claimed-own-gift edge case) has already been
- *     handled by the recipient walk above; we skip it in the purchaser
- *     walk to avoid double-deletion.
+ * Recipient walk — `listSubmissionsByRecipientUserId(userId)`.
+ * Full-cascade delete of submissions where the user is the recipient.
+ * R2 photo + Sanity doc + Sanity assets + D1 row are all removed.
+ * Vendor surfaces (Stripe / Brevo / Mixpanel) follow.
  *
  * Design:
- *  - Predicate is `recipient_user_id = userId` for the recipient walk;
- *    the parallel `purchaser_user_id = userId` walk above closes the
- *    purchaser-PII channel for Art. 17.
+ *  - Predicate is `recipient_user_id = userId` for the recipient walk.
  *  - Vendor surfaces (Stripe Redaction Jobs, Brevo, Mixpanel data-deletions)
  *    are async with tracking IDs. We submit + store the IDs in
  *    `deletion_log`; a reconciliation cron polls vendor status and
@@ -58,9 +36,7 @@ import { findUserById, normalizeEmail } from "../auth/users";
 import { dbExec, dbQuery } from "../booking/persistence/sqlClient";
 import {
   deleteSubmissionAndPhoto,
-  listGiftsByPurchaserUserId,
   listSubmissionsByRecipientUserId,
-  pseudonymisePurchaserGift,
   type SubmissionRecord,
 } from "../booking/submissions";
 import { sha256Hex } from "../hmac";
@@ -285,52 +261,6 @@ export async function cascadeDeleteUser(
     // Steps 2+3: Sanity doc → Sanity assets.
     await deleteSanityAssetsForSubmission(submission._id, partialFailures);
   }
-
-  // Purchaser walk: find every gift this user purchased and apply the
-  // pseudonymise-vs-delete branch documented at the top of this file. Skip
-  // rows already handled by the recipient walk.
-  const recipientWalkIds = new Set(submissionIds);
-  let purchaserGifts: SubmissionRecord[] = [];
-  try {
-    purchaserGifts = await listGiftsByPurchaserUserId(userId);
-  } catch (error) {
-    partialFailures.push(
-      `purchaser-gifts-list: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-  const purchaserSubmissionIds: string[] = [];
-  for (const gift of purchaserGifts) {
-    if (recipientWalkIds.has(gift._id)) continue; // self-purchase edge — already deleted
-    purchaserSubmissionIds.push(gift._id);
-    const recipientIsDistinct =
-      gift.recipientUserId !== null && gift.recipientUserId !== userId;
-    if (recipientIsDistinct) {
-      // Recipient is a distinct user with contract-base data — pseudonymise.
-      try {
-        await pseudonymisePurchaserGift({ _id: gift._id, responses: gift.responses });
-      } catch (error) {
-        partialFailures.push(
-          `purchaser-pseudonymise: ${gift._id} — ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    } else {
-      // Recipient hasn't claimed yet (or shares purchaser identity but
-      // wasn't surfaced by the recipient walk — defensive). Full delete.
-      try {
-        await deleteSubmissionAndPhoto({
-          _id: gift._id,
-          photoR2Key: gift.photoR2Key,
-        });
-      } catch (error) {
-        partialFailures.push(
-          `purchaser-delete: ${gift._id} — ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-      await deleteSanityAssetsForSubmission(gift._id, partialFailures);
-    }
-  }
-  // Track purchaser-walk ids in the audit log alongside the recipient walk.
-  submissionIds.push(...purchaserSubmissionIds);
 
   // User-level vendor cascades — parallel. Each helper captures its own
   // VendorResult; partialFailures are pushed in deterministic order after

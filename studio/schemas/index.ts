@@ -9,29 +9,19 @@ import { siteSettings } from "./siteSettings";
 import { theme } from "./theme";
 import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
-import { myReadingsPage } from "./myReadingsPage";
-import { myGiftsPage } from "./myGiftsPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailMagicLinkLibrary } from "./emailMagicLinkLibrary";
 import { emailDay7Delivery } from "./emailDay7Delivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
-import { emailGiftClaim } from "./emailGiftClaim";
-import { emailGiftClaimReminder } from "./emailGiftClaimReminder";
-import { emailGiftPurchaseConfirmationScheduled } from "./emailGiftPurchaseConfirmationScheduled";
-import { emailGiftPurchaseConfirmationSelfSend } from "./emailGiftPurchaseConfirmationSelfSend";
-import { emailRecipientIntakeReceived } from "./emailRecipientIntakeReceived";
 import { emailNewDeviceNotice } from "./emailNewDeviceNotice";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
 import { emailStepUpOtp } from "./emailStepUpOtp";
-import { giftClaimPage } from "./giftClaimPage";
-import { giftIntakePage } from "./giftIntakePage";
 import { listenPage } from "./listenPage";
 import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
-import { bookingGiftForm } from "./bookingGiftForm";
 import { submission } from "./submission";
 
 export const schemaTypes = [
@@ -46,28 +36,18 @@ export const schemaTypes = [
   theme,
   underConstructionPage,
   notFoundPage,
-  myReadingsPage,
-  myGiftsPage,
   magicLinkVerifyPage,
   emailMagicLink,
   emailMagicLinkLibrary,
   emailDay7Delivery,
   emailOrderConfirmation,
-  emailGiftPurchaseConfirmationSelfSend,
-  emailGiftPurchaseConfirmationScheduled,
-  emailGiftClaim,
-  emailGiftClaimReminder,
-  emailRecipientIntakeReceived,
   emailPrivacyExport,
   emailStepUpOtp,
   emailNewDeviceNotice,
   emailSharedShell,
-  giftClaimPage,
-  giftIntakePage,
   listenPage,
   formField,
   formSection,
   bookingForm,
-  bookingGiftForm,
   submission,
 ];

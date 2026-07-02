@@ -3,16 +3,11 @@ import { render } from "@react-email/render";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
 import { Day7Delivery } from "./Day7Delivery";
-import { GiftClaimEmail } from "./GiftClaimEmail";
-import { GiftClaimReminderEmail } from "./GiftClaimReminderEmail";
-import { GiftPurchaseConfirmationScheduled } from "./GiftPurchaseConfirmationScheduled";
-import { GiftPurchaseConfirmationSelfSend } from "./GiftPurchaseConfirmationSelfSend";
 import { MagicLink } from "./MagicLink";
 import { NewDeviceNotice } from "./NewDeviceNotice";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
-import { RecipientIntakeReceived } from "./RecipientIntakeReceived";
 import type { EmailTemplateKey } from "./slots";
 import { StepUpOtp } from "./StepUpOtp";
 
@@ -31,14 +26,9 @@ function stripRenderBlockers(html: string): string {
 export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
   "emailDay7Delivery",
-  "emailGiftPurchaseConfirmationSelfSend",
-  "emailGiftPurchaseConfirmationScheduled",
-  "emailGiftClaim",
-  "emailGiftClaimReminder",
   "emailMagicLink",
   "emailMagicLinkLibrary",
   "emailPrivacyExport",
-  "emailRecipientIntakeReceived",
   "emailStepUpOtp",
   "emailNewDeviceNotice",
 ] as const;
@@ -88,65 +78,6 @@ async function renderRaw(
           copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
         />,
       );
-    case "emailGiftPurchaseConfirmationSelfSend":
-      return render(
-        <GiftPurchaseConfirmationSelfSend
-          vars={{
-            claimUrl: PREVIEW_FIXTURE.claimUrl,
-            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
-            readingName: PREVIEW_FIXTURE.readingName,
-            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
-            amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
-            recipientName: PREVIEW_FIXTURE.recipientName,
-            giftMessage: PREVIEW_FIXTURE.giftMessage,
-            myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmationSelfSend}
-        />,
-      );
-    case "emailGiftPurchaseConfirmationScheduled":
-      return render(
-        <GiftPurchaseConfirmationScheduled
-          vars={{
-            sendAtDisplay: PREVIEW_FIXTURE.sendAtDisplay,
-            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
-            readingName: PREVIEW_FIXTURE.readingName,
-            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
-            amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
-            recipientName: PREVIEW_FIXTURE.recipientName,
-            giftMessage: PREVIEW_FIXTURE.giftMessage,
-            myGiftsUrl: PREVIEW_FIXTURE.myGiftsUrl,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchaseConfirmationScheduled}
-        />,
-      );
-    case "emailGiftClaim":
-      return render(
-        <GiftClaimEmail
-          vars={{
-            claimUrl: PREVIEW_FIXTURE.claimUrl,
-            recipientName: PREVIEW_FIXTURE.recipientName,
-            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
-            readingName: PREVIEW_FIXTURE.readingName,
-            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
-            giftMessage: PREVIEW_FIXTURE.giftMessage,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaim}
-        />,
-      );
-    case "emailGiftClaimReminder":
-      return render(
-        <GiftClaimReminderEmail
-          vars={{
-            recipientName: PREVIEW_FIXTURE.recipientName,
-            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
-            readingName: PREVIEW_FIXTURE.readingName,
-            readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
-            giftMessage: PREVIEW_FIXTURE.giftMessage,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftClaimReminder}
-        />,
-      );
     case "emailMagicLink":
     case "emailMagicLinkLibrary": {
       const copy = merged as typeof PREVIEW_DEFAULTS.emailMagicLink;
@@ -177,17 +108,6 @@ async function renderRaw(
             expiryDays: PREVIEW_FIXTURE.expiryDays,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}
-        />,
-      );
-    case "emailRecipientIntakeReceived":
-      return render(
-        <RecipientIntakeReceived
-          vars={{
-            recipientName: PREVIEW_FIXTURE.recipientName,
-            purchaserFirstName: PREVIEW_FIXTURE.purchaserFirstName,
-            readingName: PREVIEW_FIXTURE.readingName,
-          }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailRecipientIntakeReceived}
         />,
       );
     case "emailStepUpOtp":

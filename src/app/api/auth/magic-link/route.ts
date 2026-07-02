@@ -44,10 +44,10 @@ export async function POST(request: Request) {
       });
       const verifyUrl = new URL("/auth/verify", siteOrigin());
       verifyUrl.searchParams.set("token", token);
-      // safeNext already collapses anything non-allowlisted to /my-readings;
-      // forward whenever the caller asked for a specific non-default target
-      // (listen page, /my-gifts) so verify lands them back where they came from.
-      if (cleanNext !== "/my-readings") verifyUrl.searchParams.set("next", cleanNext);
+      // safeNext collapses anything non-allowlisted to "/"; forward only when
+      // the caller asked for a specific non-default target (the listen page)
+      // so verify lands them back where they came from.
+      if (cleanNext !== "/") verifyUrl.searchParams.set("next", cleanNext);
       const context = deriveMagicLinkContext(cleanNext);
       const vars = await lookupMagicLinkVars(user.id);
       runMirror(

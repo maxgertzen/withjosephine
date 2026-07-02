@@ -55,7 +55,7 @@ describe("AuthedLayout top-bar", () => {
     expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
   });
 
-  it("opens the menu to reveal email, the library link, and Sign out", async () => {
+  it("opens the menu to reveal email and Sign out", async () => {
     const user = userEvent.setup();
     cookiesGet.mockReturnValue({ value: "tok" });
     sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1", elevatedAt: null });
@@ -65,10 +65,6 @@ describe("AuthedLayout top-bar", () => {
     await user.click(screen.getByRole("button", { name: /your library and account/i }));
 
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /^Library$/ })).toHaveAttribute(
-      "href",
-      "/my-readings",
-    );
     expect(
       document.querySelector('form[action="/api/auth/sign-out"][method="post"]'),
     ).not.toBeNull();

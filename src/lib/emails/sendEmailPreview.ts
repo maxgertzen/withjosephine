@@ -10,14 +10,9 @@ const SUBJECT_PREVIEW_PREFIX = "[PREVIEW] ";
 const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
   emailOrderConfirmation: "Order Confirmation",
   emailDay7Delivery: "Reading Delivery (Day 7)",
-  emailGiftPurchaseConfirmationSelfSend: "Gift Confirmation (Self-Send)",
-  emailGiftPurchaseConfirmationScheduled: "Gift Confirmation (Scheduled)",
-  emailGiftClaim: "Gift Claim (First Send)",
-  emailGiftClaimReminder: "Gift Claim (Reminder)",
   emailMagicLink: "Magic Link (Listen Page)",
   emailMagicLinkLibrary: "Magic Link (Library)",
   emailPrivacyExport: "Privacy Export (GDPR)",
-  emailRecipientIntakeReceived: "Intake Received (Recipient)",
   emailStepUpOtp: "Step-up Code",
   emailNewDeviceNotice: "New Device Notice",
 };
@@ -29,22 +24,12 @@ async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> 
       return fetch.fetchEmailOrderConfirmation().catch(() => null);
     case "emailDay7Delivery":
       return fetch.fetchEmailDay7Delivery().catch(() => null);
-    case "emailGiftPurchaseConfirmationSelfSend":
-      return fetch.fetchEmailGiftPurchaseConfirmationSelfSend().catch(() => null);
-    case "emailGiftPurchaseConfirmationScheduled":
-      return fetch.fetchEmailGiftPurchaseConfirmationScheduled().catch(() => null);
-    case "emailGiftClaim":
-      return fetch.fetchEmailGiftClaim().catch(() => null);
-    case "emailGiftClaimReminder":
-      return fetch.fetchEmailGiftClaimReminder().catch(() => null);
     case "emailMagicLink":
       return fetch.fetchEmailMagicLink().catch(() => null);
     case "emailMagicLinkLibrary":
       return fetch.fetchEmailMagicLinkLibrary().catch(() => null);
     case "emailPrivacyExport":
       return fetch.fetchEmailPrivacyExport().catch(() => null);
-    case "emailRecipientIntakeReceived":
-      return fetch.fetchEmailRecipientIntakeReceived().catch(() => null);
     case "emailStepUpOtp":
       return fetch.fetchEmailStepUpOtp().catch(() => null);
     case "emailNewDeviceNotice":

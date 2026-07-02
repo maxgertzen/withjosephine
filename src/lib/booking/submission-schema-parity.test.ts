@@ -11,10 +11,6 @@ const EXPECTED_EMAIL_FIRED_TYPES: EmailFiredType[] = [
   "day7-overdue-alert",
   "day14",
   "abandonment",
-  "gift_purchase_confirmation",
-  "gift_claim",
-  "gift_resend",
-  "gift_claim_regenerate",
 ];
 
 const SCHEMA_SOURCE = readFileSync(

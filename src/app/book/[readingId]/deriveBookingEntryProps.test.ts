@@ -96,7 +96,6 @@ describe("deriveBookingEntryProps", () => {
       }),
       bookingForm: bookingForm({
         changeReadingLinkText: "Pick a different one",
-        giftToggleAsGiftLabel: "Give as a gift",
       }),
     });
     expect(props).toMatchObject({
@@ -107,7 +106,6 @@ describe("deriveBookingEntryProps", () => {
         deliverableNote: "Voice note + PDF.",
         whatsIncludedHeading: "Inside this reading",
         bookReadingCtaText: "Begin",
-        giftToggleAsGiftLabel: "Give as a gift",
       },
     });
   });
@@ -120,7 +118,6 @@ describe("deriveBookingEntryProps", () => {
       bookingForm: null,
     });
     expect(props?.copy.changeReadingLinkText).toBe(ENTRY_PAGE_DEFAULTS.changeReadingLinkText);
-    expect(props?.copy.giftToggleAsGiftLabel).toBe(ENTRY_PAGE_DEFAULTS.giftToggleAsGiftLabel);
     expect(props?.copy.deliveryNote).toBe(BOOKING_INFO_DEFAULTS.deliveryNote);
     expect(props?.copy.deliverableNote).toBe(BOOKING_INFO_DEFAULTS.deliverableNote);
     expect(props?.copy.whatsIncludedHeading).toBe(BOOKING_INFO_DEFAULTS.whatsIncludedHeading);

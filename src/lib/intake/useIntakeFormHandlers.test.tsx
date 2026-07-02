@@ -30,7 +30,6 @@ function useTestHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
   );
 
   const handlers = useIntakeFormHandlers({
-    mode: "create",
     readingId: "soul-blueprint",
     draftScope: "soul-blueprint",
     formRef,
@@ -144,30 +143,6 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
 
     // Pending is set synchronously, BEFORE the turnstile token fetch (the
     // first await) — that is the whole fix: the button can't look dead.
-    expect(setIsSubmitting).toHaveBeenCalledWith(true);
-    expect(setIsSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
-      requestFreshTurnstileToken.mock.invocationCallOrder[0],
-    );
-  });
-
-  it("flips pending true before the first await on the claim/redeem path", async () => {
-    const setIsSubmitting = vi.fn();
-    const requestFreshTurnstileToken = vi.fn(async () => "tok");
-    const { result } = renderHook(() =>
-      useTestHarness({
-        mode: "redeem",
-        isFinalPage: true,
-        submitIntentRef: { current: true },
-        setIsSubmitting,
-        turnstileRequired: true,
-        requestFreshTurnstileToken,
-      }),
-    );
-
-    await act(async () => {
-      await result.current.handlers.handleSubmit(submitEvent());
-    });
-
     expect(setIsSubmitting).toHaveBeenCalledWith(true);
     expect(setIsSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
       requestFreshTurnstileToken.mock.invocationCallOrder[0],

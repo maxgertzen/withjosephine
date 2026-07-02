@@ -9,7 +9,6 @@ import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
-import { GIFT_DELIVERY } from "./constants";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
@@ -78,40 +77,6 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
   return repo.findSubmissionById(id);
-}
-
-/**
- * Updates the existing gift submission with the recipient's intake responses,
- * marks it claimed, and links the recipient's user id. Mirrors to Sanity.
- * Status stays `paid` — payment landed at purchase, not at claim.
- */
-export async function redeemGiftSubmission(params: {
-  submissionId: string;
-  readingSlug: string;
-  responses: SubmissionRecord["responses"];
-  recipientUserId: string;
-  claimedAtIso: string;
-  art9AcknowledgedAt: string;
-  recipientEmailFromIntake?: string;
-}): Promise<void> {
-  await repo.redeemGiftSubmission(params.submissionId, {
-    responses: params.responses,
-    recipientUserId: params.recipientUserId,
-    claimedAtIso: params.claimedAtIso,
-    recipientEmail: params.recipientEmailFromIntake,
-  });
-  runMirror(
-    mirrorSubmissionPatch(params.submissionId, {
-      giftClaimedAt: params.claimedAtIso,
-      recipientUserId: params.recipientUserId,
-      responses: params.responses,
-      art9AcknowledgedAt: params.art9AcknowledgedAt,
-      readingSlug: params.readingSlug,
-      ...(params.recipientEmailFromIntake !== undefined
-        ? { recipientEmail: params.recipientEmailFromIntake }
-        : {}),
-    }),
-  );
 }
 
 export async function findSubmissionRecipientUserId(
@@ -219,112 +184,6 @@ export async function findMostRecentPaidByRecipientUserId(
   return repo.findMostRecentPaidByRecipientUserId(userId);
 }
 
-export async function listGiftsByPurchaserUserId(
-  userId: string,
-): Promise<SubmissionRecord[]> {
-  return repo.listGiftsByPurchaserUserId(userId);
-}
-
-export async function acquireGiftResendLock(
-  id: string,
-  args: { lockUntilMs: number; nowMs: number },
-): Promise<boolean> {
-  return repo.acquireGiftResendLock(id, args);
-}
-
-export async function releaseGiftResendLock(id: string): Promise<void> {
-  return repo.releaseGiftResendLock(id);
-}
-
-export type EditGiftRecipientPatch = repo.EditGiftRecipientPatch;
-
-/**
- * Apply a purchaser-initiated patch to a gift submission. Caller passes the
- * already-fetched `existing` record so the repo helper doesn't re-issue a
- * SELECT * just to derive the responses array for the recipient_name upsert.
- */
-export async function editGiftRecipient(
-  submissionId: string,
-  patch: EditGiftRecipientPatch,
-  existing: SubmissionRecord,
-): Promise<{ updated: boolean }> {
-  const result = await repo.editGiftRecipient(submissionId, patch, existing.responses);
-  if (result.updated) {
-    runMirror(
-      mirrorSubmissionPatch(submissionId, {
-        ...(patch.recipientEmail !== undefined ? { recipientEmail: patch.recipientEmail } : {}),
-        ...(patch.giftSendAt !== undefined ? { giftSendAt: patch.giftSendAt } : {}),
-        ...(patch.recipientName !== undefined ? { responses: result.responses } : {}),
-      }),
-    );
-  }
-  return { updated: result.updated };
-}
-
-export async function flipGiftToSelfSend(
-  submissionId: string,
-  args: { tokenHash: string; firedAtIso: string },
-): Promise<boolean> {
-  const updated = await repo.flipGiftToSelfSend(submissionId, args);
-  if (updated) {
-    runMirror(
-      mirrorSubmissionPatch(submissionId, {
-        giftDeliveryMethod: GIFT_DELIVERY.selfSend,
-        giftSendAt: null,
-        giftClaimTokenHash: args.tokenHash,
-        giftClaimEmailFiredAt: args.firedAtIso,
-      }),
-    );
-  }
-  return updated;
-}
-
-export async function applyGiftSendNow(
-  submissionId: string,
-  args: {
-    tokenHash: string;
-    sentNowAtIso: string;
-    actor: string;
-    priorAlarmAt: string | null;
-  },
-): Promise<boolean> {
-  const updated = await repo.applyGiftSendNow(submissionId, args);
-  if (updated) {
-    runMirror(
-      mirrorSubmissionPatch(submissionId, {
-        giftClaimTokenHash: args.tokenHash,
-        giftClaimEmailFiredAt: args.sentNowAtIso,
-        giftClaimSentNowAt: args.sentNowAtIso,
-        giftClaimSentNowActor: args.actor,
-        giftClaimPriorAlarmAt: args.priorAlarmAt,
-      }),
-    );
-  }
-  return updated;
-}
-
-export async function flipGiftToScheduled(
-  submissionId: string,
-  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
-): Promise<boolean> {
-  const updated = await repo.flipGiftToScheduled(submissionId, args);
-  if (updated) {
-    runMirror(
-      mirrorSubmissionPatch(submissionId, {
-        giftDeliveryMethod: GIFT_DELIVERY.scheduled,
-        giftSendAt: args.giftSendAt,
-        recipientEmail: args.recipientEmail,
-        giftClaimTokenHash: args.tokenHash,
-        // The self_send purchase set this at purchase time; clearing in D1
-        // lets the DO alarm path treat the row as a fresh scheduled send.
-        // Mirror it so Studio editors don't see a stale firedAt.
-        giftClaimEmailFiredAt: null,
-      }),
-    );
-  }
-  return updated;
-}
-
 /**
  * First-listen signal. Fire-and-forget: caller schedules via runMirror so the
  * audio response never blocks on Sanity. Idempotent via Sanity's setIfMissing.
@@ -347,44 +206,12 @@ export async function setSubmissionRecipientUser(
   await repo.setSubmissionRecipientUser(submissionId, userId);
 }
 
-export async function setSubmissionPurchaserUser(
-  submissionId: string,
-  userId: string,
-): Promise<void> {
-  await repo.setSubmissionPurchaserUser(submissionId, userId);
-}
-
 export async function appendEmailFired(
   submissionId: string,
   entry: EmailFiredEntry,
 ): Promise<void> {
   await repo.appendEmailFired(submissionId, entry);
   runMirror(mirrorAppendEmailFired(submissionId, entry));
-}
-
-export async function markGiftClaimSent(
-  submissionId: string,
-  tokenHash: string,
-  firedAtIso: string,
-): Promise<void> {
-  await repo.markGiftClaimSent(submissionId, tokenHash, firedAtIso);
-}
-
-// GDPR Art. 17 cascade purchaser walk — pseudonymises a purchaser-owned
-// gift submission whose recipient has already claimed.
-export async function pseudonymisePurchaserGift(
-  submission: Pick<SubmissionRecord, "_id" | "responses">,
-): Promise<void> {
-  await repo.pseudonymisePurchaserGift(submission._id, submission.responses);
-  runMirror(
-    mirrorSubmissionPatch(submission._id, {
-      purchaserUserId: null,
-      email: "",
-      responses: submission.responses.filter(
-        (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
-      ),
-    }),
-  );
 }
 
 export async function deleteSubmissionAndPhoto(
@@ -444,8 +271,6 @@ export function buildSubmissionContext(submission: SubmissionRecord): Submission
   return {
     id: submission._id,
     email: submission.email,
-    recipientEmail: submission.recipientEmail,
-    isGift: submission.isGift,
     firstName: extractFirstName(submission.responses),
     readingName: submission.reading?.name ?? "your reading",
     readingPriceDisplay: priceDisplayFor(submission),

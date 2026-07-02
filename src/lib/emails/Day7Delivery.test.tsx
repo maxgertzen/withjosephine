@@ -126,23 +126,7 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
     expect(html).toContain("&lt;x-reading&gt;");
   });
 
-  it("renders BOTH the primary listen button and the secondary library button when libraryUrl is provided", async () => {
-    const libraryUrl =
-      "https://withjosephine.com/my-readings/welcome?t=fakeToken.signedSig";
-    const html = await render(
-      <Day7Delivery
-        vars={{ ...VARS, libraryUrl }}
-        copy={EMAIL_DAY7_DELIVERY_DEFAULTS}
-        shell={EMAIL_SHARED_SHELL_DEFAULTS}
-      />,
-    );
-    const hrefs = linkHrefs(html);
-    expect(hrefs.has(VARS.listenUrl)).toBe(true);
-    expect(hrefs.has(libraryUrl)).toBe(true);
-    expect(visibleText(html)).toContain("See all your readings");
-  });
-
-  it("does NOT render the library button when libraryUrl is absent (primary listen button still present)", async () => {
+  it("renders the primary listen button", async () => {
     const html = await render(
       <Day7Delivery
         vars={VARS}
@@ -151,7 +135,5 @@ describe("Day7Delivery — UX-locked verbatim copy", () => {
       />,
     );
     expect(linkHrefs(html).has(VARS.listenUrl)).toBe(true);
-    expect(visibleText(html)).not.toContain("See all your readings");
-    expect(html).not.toContain("/my-readings/welcome");
   });
 });

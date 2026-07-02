@@ -1,4 +1,3 @@
-import { GIFT_DELIVERY } from "../constants";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
@@ -26,27 +25,7 @@ type Row = {
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
   recipient_user_id: string | null;
-  is_gift: number | null;
-  purchaser_user_id: string | null;
-  purchaser_time_zone: string | null;
-  recipient_email: string | null;
-  gift_delivery_method: string | null;
-  gift_send_at: string | null;
-  gift_message: string | null;
-  gift_claim_token_hash: string | null;
-  gift_claim_email_fired_at: string | null;
-  gift_claimed_at: string | null;
-  gift_cancelled_at: string | null;
-  gift_claim_sent_now_at: string | null;
-  gift_claim_sent_now_actor: string | null;
-  gift_claim_prior_alarm_at: string | null;
 };
-
-export type GiftDeliveryMethod = (typeof GIFT_DELIVERY)[keyof typeof GIFT_DELIVERY];
-
-function parseGiftDeliveryMethod(value: string | null): GiftDeliveryMethod | null {
-  return value === GIFT_DELIVERY.selfSend || value === GIFT_DELIVERY.scheduled ? value : null;
-}
 
 function rowToRecord(row: Row): SubmissionRecord {
   const responses = JSON.parse(row.responses_json) as SubmissionRecord["responses"];
@@ -78,20 +57,6 @@ function rowToRecord(row: Row): SubmissionRecord {
     amountPaidCents: row.amount_paid_cents,
     amountPaidCurrency: row.amount_paid_currency,
     recipientUserId: row.recipient_user_id ?? null,
-    isGift: (row.is_gift ?? 0) === 1,
-    purchaserUserId: row.purchaser_user_id ?? null,
-    purchaserTimeZone: row.purchaser_time_zone ?? null,
-    recipientEmail: row.recipient_email ?? null,
-    giftDeliveryMethod: parseGiftDeliveryMethod(row.gift_delivery_method),
-    giftSendAt: row.gift_send_at ?? null,
-    giftMessage: row.gift_message ?? null,
-    giftClaimTokenHash: row.gift_claim_token_hash ?? null,
-    giftClaimEmailFiredAt: row.gift_claim_email_fired_at ?? null,
-    giftClaimedAt: row.gift_claimed_at ?? null,
-    giftCancelledAt: row.gift_cancelled_at ?? null,
-    giftClaimSentNowAt: row.gift_claim_sent_now_at ?? null,
-    giftClaimSentNowActor: row.gift_claim_sent_now_actor ?? null,
-    giftClaimPriorAlarmAt: row.gift_claim_prior_alarm_at ?? null,
   };
 }
 
@@ -107,13 +72,6 @@ export type CreateSubmissionInput = {
   photoR2Key: string | null;
   createdAt: string;
   coolingOffAcknowledgedAt?: string | null;
-  isGift?: boolean;
-  purchaserUserId?: string | null;
-  purchaserTimeZone?: string | null;
-  recipientEmail?: string | null;
-  giftDeliveryMethod?: GiftDeliveryMethod | null;
-  giftSendAt?: string | null;
-  giftMessage?: string | null;
 };
 
 export async function createSubmission(input: CreateSubmissionInput): Promise<void> {
@@ -121,10 +79,8 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
     `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
-       cooling_off_acknowledged_at,
-       is_gift, purchaser_user_id, purchaser_time_zone, recipient_email,
-       gift_delivery_method, gift_send_at, gift_message
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       cooling_off_acknowledged_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.email,
@@ -137,55 +93,7 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
       input.photoR2Key,
       input.createdAt,
       input.coolingOffAcknowledgedAt ?? null,
-      input.isGift ? 1 : 0,
-      input.purchaserUserId ?? null,
-      input.purchaserTimeZone ?? null,
-      input.recipientEmail ?? null,
-      input.giftDeliveryMethod ?? null,
-      input.giftSendAt ?? null,
-      input.giftMessage ?? null,
     ],
-  );
-}
-
-/**
- * Counts in-flight gifts addressed to this recipient_email (not claimed, not
- * cancelled). Used at both purchase-time gate and claim-time re-check to cover
- * the self_send bypass where recipient_email is NULL at purchase.
- * `excludeSubmissionId` keeps a gift from gating itself.
- */
-export async function countActivePendingGiftsForRecipient(
-  recipientEmail: string,
-  options?: { excludeSubmissionId?: string },
-): Promise<number> {
-  const excludeId = options?.excludeSubmissionId;
-  const baseSql = `SELECT COUNT(*) AS count FROM submissions
-     WHERE is_gift = 1
-       AND recipient_email = ?
-       AND gift_claimed_at IS NULL
-       AND gift_cancelled_at IS NULL`;
-  const rows = excludeId
-    ? await dbQuery<{ count: number }>(`${baseSql} AND id != ?`, [recipientEmail, excludeId])
-    : await dbQuery<{ count: number }>(baseSql, [recipientEmail]);
-  return rows[0]?.count ?? 0;
-}
-
-/**
- * Records that the gift claim URL was generated and emailed. The same column
- * does double duty for self_send (purchaser receives) and scheduled-mode
- * (DO alarm fires it to the recipient at gift_send_at).
- */
-export async function markGiftClaimSent(
-  submissionId: string,
-  tokenHash: string,
-  firedAtIso: string,
-): Promise<void> {
-  await dbExec(
-    `UPDATE submissions
-        SET gift_claim_token_hash = ?,
-            gift_claim_email_fired_at = ?
-      WHERE id = ?`,
-    [tokenHash, firedAtIso, submissionId],
   );
 }
 
@@ -193,63 +101,6 @@ export async function findSubmissionById(id: string): Promise<SubmissionRecord |
   const rows = await dbQuery<Row>(`SELECT * FROM submissions WHERE id = ? LIMIT 1`, [id]);
   const row = rows[0];
   return row ? rowToRecord(row) : null;
-}
-
-/**
- * Looks up a gift submission by the SHA-256 hash of its raw claim token.
- * Returns null when there's no match, when the gift was already claimed,
- * or when it was cancelled — all three resolve to the same dead-link UX.
- */
-export async function findUnclaimedGiftByTokenHash(
-  tokenHash: string,
-): Promise<SubmissionRecord | null> {
-  const rows = await dbQuery<Row>(
-    `SELECT * FROM submissions
-       WHERE gift_claim_token_hash = ?
-         AND is_gift = 1
-         AND gift_claimed_at IS NULL
-         AND gift_cancelled_at IS NULL
-       LIMIT 1`,
-    [tokenHash],
-  );
-  const row = rows[0];
-  return row ? rowToRecord(row) : null;
-}
-
-/**
- * Updates the existing gift submission row in place with the recipient's
- * intake responses, marks claimed, and links their user id. Status stays
- * `paid` — payment landed at purchase, not at claim.
- */
-export async function redeemGiftSubmission(
-  submissionId: string,
-  input: {
-    responses: SubmissionRecord["responses"];
-    recipientUserId: string;
-    claimedAtIso: string;
-    recipientEmail?: string;
-  },
-): Promise<void> {
-  // COALESCE preserves an existing recipient_email (scheduled-gift case
-  // already had it set at purchase) and only fills it in when NULL (self_send
-  // gifts, where the recipient supplies their email at claim time).
-  await dbExec(
-    `UPDATE submissions
-        SET responses_json = ?,
-            recipient_user_id = ?,
-            gift_claimed_at = ?,
-            recipient_email = COALESCE(recipient_email, ?)
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_claimed_at IS NULL`,
-    [
-      JSON.stringify(input.responses),
-      input.recipientUserId,
-      input.claimedAtIso,
-      input.recipientEmail ?? null,
-      submissionId,
-    ],
-  );
 }
 
 /**
@@ -379,37 +230,6 @@ export async function deleteSubmission(id: string): Promise<void> {
   await dbExec(`DELETE FROM submissions WHERE id = ?`, [id]);
 }
 
-/**
- * GDPR Art. 17 cascade purchaser walk.
- *
- * Purchaser-owned gift submissions where the recipient is a distinct user
- * who has already claimed: pseudonymise — the recipient holds contract-base
- * Art. 6(1)(b) data that must survive the purchaser's erasure. We NULL the
- * purchaser identifiers (`purchaser_user_id`, top-level `email`) and scrub
- * `purchaser_first_name` from `responses_json`. We keep the gift fields
- * (`gift_claim_token_hash`, `gift_claimed_at`, `recipient_user_id`, etc.)
- * so the recipient's claim/listen path remains intact.
- *
- * Caller passes the existing `responses` so we don't re-issue a SELECT just
- * to derive the scrubbed array.
- */
-export async function pseudonymisePurchaserGift(
-  id: string,
-  existingResponses: SubmissionRecord["responses"],
-): Promise<void> {
-  const scrubbed = existingResponses.filter(
-    (r) => r.fieldKey !== "purchaser_first_name" && r.fieldKey !== "purchaser_email",
-  );
-  await dbExec(
-    `UPDATE submissions
-        SET purchaser_user_id = NULL,
-            email = '',
-            responses_json = ?
-      WHERE id = ?`,
-    [JSON.stringify(scrubbed), id],
-  );
-}
-
 export type FinancialRecordInput = {
   submissionId: string;
   userId: string | null;
@@ -457,16 +277,6 @@ export async function setSubmissionRecipientUser(
 ): Promise<void> {
   await dbExec(
     `UPDATE submissions SET recipient_user_id = ? WHERE id = ?`,
-    [userId, submissionId],
-  );
-}
-
-export async function setSubmissionPurchaserUser(
-  submissionId: string,
-  userId: string,
-): Promise<void> {
-  await dbExec(
-    `UPDATE submissions SET purchaser_user_id = ? WHERE id = ?`,
     [userId, submissionId],
   );
 }
@@ -536,213 +346,6 @@ export async function findMostRecentPaidByRecipientUserId(
   return rows[0] ? rowToRecord(rows[0]) : null;
 }
 
-export async function listGiftsByPurchaserUserId(
-  userId: string,
-): Promise<SubmissionRecord[]> {
-  const rows = await dbQuery<Row>(
-    `SELECT * FROM submissions
-     WHERE purchaser_user_id = ? AND is_gift = 1
-     ORDER BY created_at DESC
-     LIMIT ${LIST_LIMIT}`,
-    [userId],
-  );
-  return rows.map(rowToRecord);
-}
-
-export type EditGiftRecipientPatch = {
-  recipientEmail?: string;
-  recipientName?: string;
-  giftSendAt?: string | null;
-};
-
-/**
- * Pre-fire edit. UPDATE guards with `gift_claim_email_fired_at IS NULL`
- * so a concurrent alarm fire can't be retroactively un-fired. Returns
- * `false` when the row was either not found, already fired, claimed,
- * or cancelled — callers translate that into a 409.
- *
- * recipient_name lives in `responses_json`; the
- * surrounding submissions wrapper handles that update via the Sanity
- * mirror, not this raw repo helper. Repo-level edits keep to the
- * top-level columns.
- */
-export async function editGiftRecipient(
-  id: string,
-  patch: EditGiftRecipientPatch,
-  existingResponses: SubmissionRecord["responses"],
-): Promise<{ updated: boolean; responses: SubmissionRecord["responses"] }> {
-  const sets: string[] = [];
-  const params: SqlValue[] = [];
-  if (patch.recipientEmail !== undefined) {
-    sets.push("recipient_email = ?");
-    params.push(patch.recipientEmail);
-  }
-  if (patch.giftSendAt !== undefined) {
-    sets.push("gift_send_at = ?");
-    params.push(patch.giftSendAt);
-  }
-  let responses = existingResponses;
-  if (patch.recipientName !== undefined) {
-    responses = upsertResponseField(existingResponses, {
-      fieldKey: "recipient_name",
-      fieldLabelSnapshot: "Recipient name",
-      fieldType: "text",
-      value: patch.recipientName,
-    });
-    sets.push("responses_json = ?");
-    params.push(JSON.stringify(responses));
-  }
-  if (sets.length === 0) return { updated: true, responses };
-  params.push(id);
-  const result = await dbExec(
-    `UPDATE submissions
-        SET ${sets.join(", ")}
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL
-        AND (gift_delivery_method = 'self_send' OR gift_claim_email_fired_at IS NULL)`,
-    params,
-  );
-  return { updated: result.rowsWritten > 0, responses };
-}
-
-function upsertResponseField(
-  existing: SubmissionRecord["responses"],
-  entry: SubmissionRecord["responses"][number],
-): SubmissionRecord["responses"] {
-  const index = existing.findIndex((r) => r.fieldKey === entry.fieldKey);
-  if (index === -1) return [...existing, entry];
-  const next = existing.slice();
-  next[index] = { ...next[index], ...entry };
-  return next;
-}
-
-/**
- * Purchaser flips scheduled→self_send.
- * Writes are pre-fire so the WHERE-guard mirrors `editGiftRecipient`.
- */
-export async function flipGiftToSelfSend(
-  id: string,
-  args: { tokenHash: string; firedAtIso: string },
-): Promise<boolean> {
-  const result = await dbExec(
-    `UPDATE submissions
-        SET gift_delivery_method = 'self_send',
-            gift_send_at = NULL,
-            gift_claim_token_hash = ?,
-            gift_claim_email_fired_at = ?
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_delivery_method = 'scheduled'
-        AND gift_claim_email_fired_at IS NULL
-        AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL`,
-    [args.tokenHash, args.firedAtIso, id],
-  );
-  return result.rowsWritten > 0;
-}
-
-/**
- * Purchaser flips self_send → scheduled.
- *
- * Self_send gifts had `gift_claim_email_fired_at` populated at purchase time
- * (the link went to the purchaser). On flip, clear that marker so the
- * GiftClaimScheduler alarm path treats it as a fresh scheduled send. The new
- * recipient_email is required because scheduled mode delivers to the
- * recipient directly. The previous claim token is also rotated to invalidate
- * any URL the purchaser already shared before flipping.
- */
-export async function flipGiftToScheduled(
-  id: string,
-  args: { recipientEmail: string; giftSendAt: string; tokenHash: string },
-): Promise<boolean> {
-  const result = await dbExec(
-    `UPDATE submissions
-        SET gift_delivery_method = 'scheduled',
-            gift_send_at = ?,
-            recipient_email = ?,
-            gift_claim_token_hash = ?,
-            gift_claim_email_fired_at = NULL
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_delivery_method = 'self_send'
-        AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL`,
-    [args.giftSendAt, args.recipientEmail, args.tokenHash, id],
-  );
-  return result.rowsWritten > 0;
-}
-
-export async function applyGiftSendNow(
-  id: string,
-  args: {
-    tokenHash: string;
-    sentNowAtIso: string;
-    actor: string;
-    priorAlarmAt: string | null;
-  },
-): Promise<boolean> {
-  const result = await dbExec(
-    `UPDATE submissions
-        SET gift_claim_token_hash = ?,
-            gift_claim_email_fired_at = ?,
-            gift_claim_sent_now_at = ?,
-            gift_claim_sent_now_actor = ?,
-            gift_claim_prior_alarm_at = ?
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_delivery_method = 'scheduled'
-        AND gift_claim_email_fired_at IS NULL
-        AND gift_claim_sent_now_at IS NULL
-        AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL`,
-    [
-      args.tokenHash,
-      args.sentNowAtIso,
-      args.sentNowAtIso,
-      args.actor,
-      args.priorAlarmAt,
-      id,
-    ],
-  );
-  return result.rowsWritten > 0;
-}
-
-/**
- * Atomic lock acquire for the resend-link route.
- * Returns true when this caller successfully acquired the lock
- * (first writer wins), false when another caller holds an unexpired lock.
- * The lock TTL is short (60s) — long enough to cover Resend's worst-case
- * latency, short enough that a crashed in-flight resend doesn't perma-
- * block the customer. Callers are expected to release the lock on
- * completion (success or failure) via `releaseGiftResendLock`.
- */
-export async function acquireGiftResendLock(
-  id: string,
-  args: { lockUntilMs: number; nowMs: number },
-): Promise<boolean> {
-  // Lock both self_send and scheduled — both call regenerateGiftClaim.
-  const result = await dbExec(
-    `UPDATE submissions
-        SET gift_resend_lock_until = ?
-      WHERE id = ?
-        AND is_gift = 1
-        AND gift_claimed_at IS NULL
-        AND gift_cancelled_at IS NULL
-        AND (gift_resend_lock_until IS NULL OR gift_resend_lock_until < ?)`,
-    [args.lockUntilMs, id, args.nowMs],
-  );
-  return result.rowsWritten > 0;
-}
-
-export async function releaseGiftResendLock(id: string): Promise<void> {
-  await dbExec(
-    `UPDATE submissions SET gift_resend_lock_until = NULL WHERE id = ?`,
-    [id],
-  );
-}
-
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
   const rows = await dbQuery<{ photo_r2_key: string }>(
     `SELECT photo_r2_key FROM submissions WHERE photo_r2_key IS NOT NULL`,
@@ -754,14 +357,9 @@ export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
   options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
-  // Gift rows are `paid` from the moment Stripe fires, but they're NOT
-  // eligible for Day-2 / Day-7 emails until the recipient has claimed
-  // (responses[] populated, gift_claimed_at set). Self-purchase rows
-  // always pass via the `is_gift = 0` arm.
   const filters = [
     `status = 'paid'`,
     `instr(emails_fired_json, ?) = 0`,
-    `(is_gift = 0 OR gift_claimed_at IS NOT NULL)`,
   ];
   const params: SqlValue[] = [`"type":"${emailType}"`];
   if (options.paidBefore) {

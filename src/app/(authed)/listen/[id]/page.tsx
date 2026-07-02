@@ -14,7 +14,6 @@ import {
   maybeRecordNewDeviceForSubmission,
   mintNewDeviceRevokeToken,
 } from "@/lib/auth/newDeviceNotice";
-import { recipientNameFor } from "@/lib/booking/giftPersonas";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
 import {
   buildSubmissionContext,
@@ -216,19 +215,10 @@ function resolveAuthenticatedState(args: {
     return { kind: "expired", submissionId: args.id };
   }
 
-  // recipientNameFor walks the canonical chain: purchaser-supplied recipient_name,
-  // then recipient-intake first_name, then legal_full_name, then email-local.
-  // The intake overwrites responses at redeem, so the bare recipient_name lookup
-  // would lose the name for the actual recipient leg. Gate on isGift so a
-  // self-purchase doesn't show a greeting at all.
-  const recipientName = args.submission.isGift
-    ? recipientNameFor(args.submission)
-    : null;
-
   return {
     kind: "delivered",
     readingName: (args.submission.reading?.name ?? "your reading").replace(/^The\s+/, ""),
-    recipientName,
+    recipientName: null,
     voiceNoteAudioPath: args.submission.voiceNoteUrl ? `/api/listen/${args.id}/audio` : null,
     pdfDownloadPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf` : null,
     showWelcomeRibbon: args.welcome === "1",

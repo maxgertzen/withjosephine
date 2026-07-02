@@ -57,8 +57,6 @@ export function deriveBookingEntryProps(
     copy: {
       changeReadingLinkText:
         entry.changeReadingLinkText ?? ENTRY_PAGE_DEFAULTS.changeReadingLinkText,
-      giftToggleAsGiftLabel:
-        entry.giftToggleAsGiftLabel ?? ENTRY_PAGE_DEFAULTS.giftToggleAsGiftLabel,
       deliveryNote: input.bookingPage?.deliveryNote ?? BOOKING_INFO_DEFAULTS.deliveryNote,
       deliverableNote:
         input.bookingPage?.formatNote ?? BOOKING_INFO_DEFAULTS.deliverableNote,

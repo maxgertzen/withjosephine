@@ -17,7 +17,7 @@ import {
   COOLING_OFF_CONSENT_LABEL,
 } from "../../compliance/intakeConsent";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
-import type { CreateSubmissionInput, GiftDeliveryMethod } from "./repository";
+import type { CreateSubmissionInput } from "./repository";
 
 type MirrorCreateConsent = {
   consentAcknowledgedAt: string;
@@ -163,15 +163,6 @@ export async function mirrorSubmissionCreate(
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,
-        ...(input.isGift
-          ? {
-              isGift: true,
-              recipientEmail: input.recipientEmail ?? undefined,
-              giftDeliveryMethod: input.giftDeliveryMethod ?? undefined,
-              giftSendAt: input.giftSendAt ?? undefined,
-              giftMessage: input.giftMessage ?? undefined,
-            }
-          : {}),
       },
       { visibility: "async" },
     );
@@ -189,18 +180,7 @@ type MirrorPatchBase = Partial<{
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   responses: SubmissionRecord["responses"];
-  giftClaimedAt: string;
   recipientUserId: string;
-  recipientEmail: string;
-  giftSendAt: string | null;
-  giftDeliveryMethod: GiftDeliveryMethod;
-  giftClaimTokenHash: string;
-  giftClaimEmailFiredAt: string | null;
-  giftClaimSentNowAt: string | null;
-  giftClaimSentNowActor: string | null;
-  giftClaimPriorAlarmAt: string | null;
-  giftCancelledAt: string | null;
-  purchaserUserId: string | null;
   email: string;
 }>;
 

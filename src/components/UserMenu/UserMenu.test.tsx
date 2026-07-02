@@ -13,17 +13,13 @@ describe("UserMenu", () => {
     expect(screen.queryByRole("link", { name: "Library" })).toBeNull();
   });
 
-  it("opens to reveal the email, Library link, and Sign out", async () => {
+  it("opens to reveal the email and Sign out", async () => {
     const user = userEvent.setup();
     render(<UserMenu email="me@example.com" />);
 
     await user.click(screen.getByRole("button", { name: /your library and account/i }));
 
     expect(screen.getByText("me@example.com")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute(
-      "href",
-      "/my-readings",
-    );
     expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
   });
 });

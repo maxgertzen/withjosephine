@@ -15,20 +15,7 @@ function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
     amountPaidCents: null,
     amountPaidCurrency: null,
     recipientUserId: null,
-    isGift: false,
-    purchaserUserId: null,
-    purchaserTimeZone: null,
-    recipientEmail: null,
-    giftDeliveryMethod: null,
-    giftSendAt: null,
-    giftMessage: null,
-    giftClaimTokenHash: null,
-    giftClaimEmailFiredAt: null,
-    giftClaimedAt: null,
-    giftCancelledAt: null,
-    giftClaimSentNowAt: null,
-    giftClaimSentNowActor: null,
-    giftClaimPriorAlarmAt: null,    ...overrides,
+    ...overrides,
   };
 }
 

@@ -1,34 +1,18 @@
 import { renderToString } from "react-dom/server";
 
 import { ListenView } from "@/app/(authed)/listen/[id]/ListenView";
-import { LibraryView } from "@/app/(authed)/my-readings/_shared/LibraryView";
 import { VerifyPageView } from "@/app/auth/verify/VerifyPageView";
-import { MyGiftsView } from "@/app/my-gifts/MyGiftsView";
-import { VellumShell } from "@/components/VellumShell";
 import type {
-  GiftClaimPageContent,
-  GiftIntakePageContent,
   ListenPageContent,
   MagicLinkVerifyPageContent,
-  MyGiftsPageContent,
-  MyReadingsPageContent,
 } from "@/data/defaults";
 import {
-  GIFT_CLAIM_PAGE_DEFAULTS,
-  GIFT_INTAKE_PAGE_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
-  MY_GIFTS_PAGE_DEFAULTS,
-  MY_READINGS_PAGE_DEFAULTS,
 } from "@/data/defaults";
 
-import { GiftIntakePagePreview } from "./GiftIntakePagePreview";
 import {
-  GIFT_INTAKE_FIXTURE_READING_NAME,
-  GIFT_INTAKE_FIXTURES,
   LISTEN_FIXTURES,
-  MY_GIFTS_FIXTURES,
-  MY_READINGS_FIXTURES,
   type PreviewSurface,
   VERIFY_FIXTURES,
 } from "./preview-fixtures-pages";
@@ -63,50 +47,9 @@ function renderSurfaceMarkup(
     const copy = { ...LISTEN_PAGE_DEFAULTS, ...merged } as ListenPageContent;
     return renderToString(<ListenView copy={copy} state={state} />);
   }
-  if (surface === "my-readings") {
-    const state = MY_READINGS_FIXTURES[stateKey] ?? MY_READINGS_FIXTURES["list-populated"];
-    const readingsCopy = { ...MY_READINGS_PAGE_DEFAULTS, ...merged } as MyReadingsPageContent;
-    return renderToString(
-      <LibraryView
-        state={state}
-        readingsCopy={readingsCopy}
-        giftsCopy={MY_GIFTS_PAGE_DEFAULTS}
-      />,
-    );
-  }
-  if (surface === "my-gifts") {
-    const state = MY_GIFTS_FIXTURES[stateKey] ?? MY_GIFTS_FIXTURES["list-populated"];
-    const copy = { ...MY_GIFTS_PAGE_DEFAULTS, ...merged } as MyGiftsPageContent;
-    return renderToString(<MyGiftsView copy={copy} state={state} />);
-  }
-  if (surface === "gift-claim") {
-    const copy = { ...GIFT_CLAIM_PAGE_DEFAULTS, ...merged } as GiftClaimPageContent;
-    return renderToString(renderGiftClaimSurface(stateKey, copy));
-  }
-  if (surface === "magic-link-verify") {
-    const state = VERIFY_FIXTURES[stateKey] ?? VERIFY_FIXTURES.confirm;
-    const copy = { ...MAGIC_LINK_VERIFY_PAGE_DEFAULTS, ...merged } as MagicLinkVerifyPageContent;
-    return renderToString(<VerifyPageView copy={copy} state={state} />);
-  }
-  const state = GIFT_INTAKE_FIXTURES[stateKey] ?? GIFT_INTAKE_FIXTURES.welcome;
-  const copy = { ...GIFT_INTAKE_PAGE_DEFAULTS, ...merged } as GiftIntakePageContent;
-  return renderToString(
-    <GiftIntakePagePreview
-      copy={copy}
-      state={state}
-      fixtureReadingName={GIFT_INTAKE_FIXTURE_READING_NAME}
-    />,
-  );
-}
-
-function renderGiftClaimSurface(stateKey: string, copy: GiftClaimPageContent) {
-  if (stateKey === "invalid") {
-    return <VellumShell heading={copy.alreadyClaimedHeading} body={copy.alreadyClaimedBody} />;
-  }
-  if (stateKey === "expired") {
-    return <VellumShell heading={copy.sessionExpiredHeading} body={copy.sessionExpiredBody} />;
-  }
-  return <VellumShell heading={copy.noTokenHeading} body={copy.noTokenBody} />;
+  const state = VERIFY_FIXTURES[stateKey] ?? VERIFY_FIXTURES.confirm;
+  const copy = { ...MAGIC_LINK_VERIFY_PAGE_DEFAULTS, ...merged } as MagicLinkVerifyPageContent;
+  return renderToString(<VerifyPageView copy={copy} state={state} />);
 }
 
 function wrapHtmlDocument(markup: string, styles: string): string {

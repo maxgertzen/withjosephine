@@ -38,12 +38,8 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
-  mode?: "create" | "redeem";
-  redeemSubmissionId?: string;
-  redeemSuccessUrl?: string;
-  // Pre-fills + locks the email field, read-only. Set to a scheduled gift's
-  // recipient_email (D-12) or, for a signed-in self-booking, the session
-  // account's email. Null = editable (anonymous booking / self-send claim).
+  // Pre-fills + locks the email field, read-only. Set for a signed-in
+  // self-booking to the session account's email. Null = editable (anonymous booking).
   prefilledEmail?: string | null;
 };
 
@@ -58,13 +54,9 @@ export function IntakeForm({
   pageIndicatorTagline,
   pagination,
   loadingStateCopy,
-  mode = "create",
-  redeemSubmissionId,
-  redeemSuccessUrl,
   prefilledEmail = null,
 }: IntakeFormProps) {
-  const draftScope =
-    mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
+  const draftScope = readingId;
 
   const {
     allFields,
@@ -206,11 +198,8 @@ export function IntakeForm({
 
   const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit } =
     useIntakeFormHandlers({
-      mode,
       readingId,
       draftScope,
-      redeemSubmissionId,
-      redeemSuccessUrl,
       formRef,
       submitIntentRef,
       values,
@@ -250,7 +239,7 @@ export function IntakeForm({
 
   const visibleErrorCount = errorsVisible ? errorCount : 0;
   const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
-  const requireCoolingOff = mode !== "redeem";
+  const requireCoolingOff = true;
   const consentsFullySatisfied = useMemo(
     () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff }),
     [consentSnapshot, requireCoolingOff],

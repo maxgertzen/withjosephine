@@ -10,7 +10,6 @@ export const BOOKING_ENTRY_BASE_COPY: BookingEntryCopy = {
     "Detailed voice note recording + a supporting PDF created entirely for you.",
   whatsIncludedHeading: "What's included",
   bookReadingCtaText: "Begin",
-  giftToggleAsGiftLabel: "Gift this reading",
 };
 
 export const BOOKING_ENTRY_SOUL_BLUEPRINT_READING: BookingEntryReading = {

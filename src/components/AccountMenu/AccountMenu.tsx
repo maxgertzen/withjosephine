@@ -51,7 +51,7 @@ export function AccountMenu({ signInClassName }: AccountMenuProps) {
   }
 
   return (
-    <Link href={ROUTES.library} className={mergeClasses(DEFAULT_SIGN_IN_CLASSES, signInClassName)}>
+    <Link href="/" className={mergeClasses(DEFAULT_SIGN_IN_CLASSES, signInClassName)}>
       Sign in
     </Link>
   );

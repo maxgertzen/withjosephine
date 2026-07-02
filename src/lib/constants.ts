@@ -29,5 +29,4 @@ export const ROUTES = {
   privacy: "/privacy",
   terms: "/terms",
   refundPolicy: "/refund-policy",
-  library: "/my-readings",
 } as const;

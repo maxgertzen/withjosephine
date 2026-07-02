@@ -50,11 +50,6 @@ export function UserMenu({ email }: { email: string }) {
             {email}
           </p>
           <div className="border-t border-j-border-subtle" />
-          <Popover.Close asChild>
-            <Link href={ROUTES.library} className={`${rowClasses} text-j-text-heading`}>
-              Library
-            </Link>
-          </Popover.Close>
           <SignOutForm buttonClassName={`${rowClasses} text-j-text-muted hover:text-j-text-heading`} />
         </Popover.Content>
       </Popover.Portal>

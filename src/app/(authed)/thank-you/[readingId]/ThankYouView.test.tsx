@@ -101,37 +101,3 @@ describe("ThankYouView discount-rendering branch", () => {
     expect(container.textContent).toContain("$179");
   });
 });
-
-describe("ThankYouView purchaser-only sections gate", () => {
-  it("hides the price block and confirmation body when mode is giftRecipient", () => {
-    const { container } = render(
-      <ThankYouView
-        mode="giftRecipient"
-        reading={reading}
-        paidAmount={{ cents: null, display: null }}
-        purchaserFirstName={null}
-        recipientName="Mira"
-        contactEmail="hello@withjosephine.com"
-        copy={copy}
-      />,
-    );
-    expect(container.textContent).not.toContain("$179");
-    expect(container.textContent).not.toContain("Confirm.");
-  });
-
-  it("shows the price block when mode is giftPurchaser", () => {
-    const { container } = render(
-      <ThankYouView
-        mode="giftPurchaser"
-        reading={reading}
-        paidAmount={{ cents: 17900, display: "$179.00" }}
-        purchaserFirstName="Sarah"
-        recipientName="Mira"
-        contactEmail="hello@withjosephine.com"
-        copy={copy}
-      />,
-    );
-    expect(container.textContent).toContain("$179.00");
-    expect(container.textContent).toContain("Confirm.");
-  });
-});

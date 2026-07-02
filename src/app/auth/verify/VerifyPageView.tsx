@@ -76,7 +76,7 @@ function RestedLinkCard({ copy }: { copy: MagicLinkVerifyPageContent }) {
         {copy.restedBody}
       </p>
       <div className="mt-8">
-        <Button href="/my-readings" size="lg">
+        <Button href="/" size="lg">
           {copy.restedCtaLabel}
         </Button>
       </div>

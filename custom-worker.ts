@@ -103,4 +103,3 @@ export default Sentry.withSentry(
 // OpenNext exports Durable Object handlers from .open-next/worker.js — wrangler
 // requires them to be re-exported from the configured `main` file.
 export { BucketCachePurge, DOQueueHandler, DOShardedTagCache } from "./.open-next/worker.js";
-export { GiftClaimScheduler } from "./src/lib/durable-objects/GiftClaimScheduler";

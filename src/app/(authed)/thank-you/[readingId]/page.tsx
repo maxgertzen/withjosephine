@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
-import { purchaserFirstNameOrNull, recipientNameFor } from "@/lib/booking/giftPersonas";
 import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submissions";
 import { fetchThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
 import { firstParamValue } from "@/lib/next/searchParams";
@@ -12,15 +11,12 @@ import {
   deriveThankYouViewProps,
   type ResolvedThankYouContext,
 } from "./deriveThankYouViewProps";
-import { type ThankYouMode, ThankYouView } from "./ThankYouView";
+import { ThankYouView } from "./ThankYouView";
 
 export { generateReadingStaticParams as generateStaticParams };
 
 type ThankYouSearchParams = {
   sessionId?: string | string[];
-  gift?: string | string[];
-  purchaserFirstName?: string | string[];
-  redeemed?: string | string[];
   submission?: string | string[];
 };
 
@@ -62,75 +58,22 @@ async function resolveContext(
   search: ThankYouSearchParams,
 ): Promise<ResolvedThankYouContext | null> {
   const sessionId = typeof search.sessionId === "string" ? search.sessionId : undefined;
-  const giftFlag = firstParamValue(search.gift) === "1";
-  const redeemedFlag = firstParamValue(search.redeemed) === "1";
-  const purchaserNameOverride = firstParamValue(search.purchaserFirstName)?.trim() || null;
-  const sessionValid = isValidStripeSession(sessionId);
+  if (!isValidStripeSession(sessionId)) return null;
 
-  if (sessionValid) {
-    const snapshot = await fetchThankYouSessionSnapshot(sessionId);
-    // Stripe Payment Links don't reliably persist URL-supplied `metadata` onto
-    // the resulting Checkout Session, so derive gift-mode from the submission
-    // record (D1 source-of-truth) rather than `session.metadata.is_gift`.
-    const submissionLookup = await findSubmissionById(
-      snapshot.submissionIdFromSession ?? e2eSubmissionFallback(search) ?? segment,
-    );
-    const isSessionGift =
-      giftFlag || snapshot.isGift || submissionLookup?.isGift === true;
-    const reading = await resolveReading(segment, submissionLookup);
-    if (!reading) return null;
-    if (!isSessionGift) {
-      return {
-        mode: "purchase",
-        reading,
-        paidAmount: snapshot.paidAmount,
-        submission: null,
-        purchaserFirstName: null,
-        recipientName: null,
-      };
-    }
-    const purchaserFirstName =
-      purchaserNameOverride ??
-      (submissionLookup ? purchaserFirstNameOrNull(submissionLookup) : null);
-    return {
-      mode: "giftPurchaser",
-      reading,
-      paidAmount: snapshot.paidAmount,
-      submission: submissionLookup,
-      purchaserFirstName,
-      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
-    };
-  }
-
-  if (giftFlag) {
-    const submissionLookup = await findSubmissionById(segment);
-    const reading = await resolveReading(segment, submissionLookup);
-    if (!reading) return null;
-    if (redeemedFlag) {
-      return {
-        mode: "giftRecipient",
-        reading,
-        paidAmount: { cents: null, display: null },
-        submission: submissionLookup,
-        purchaserFirstName: null,
-        recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
-      };
-    }
-    const purchaserFirstName =
-      purchaserNameOverride ??
-      (submissionLookup ? purchaserFirstNameOrNull(submissionLookup) : null);
-    const mode: ThankYouMode = purchaserFirstName ? "giftPurchaser" : "giftRecipient";
-    return {
-      mode,
-      reading,
-      paidAmount: { cents: null, display: null },
-      submission: submissionLookup,
-      purchaserFirstName: mode === "giftPurchaser" ? purchaserFirstName : null,
-      recipientName: submissionLookup ? recipientNameFor(submissionLookup) : null,
-    };
-  }
-
-  return null;
+  const snapshot = await fetchThankYouSessionSnapshot(sessionId);
+  const submissionLookup = await findSubmissionById(
+    snapshot.submissionIdFromSession ?? e2eSubmissionFallback(search) ?? segment,
+  );
+  const reading = await resolveReading(segment, submissionLookup);
+  if (!reading) return null;
+  return {
+    mode: "purchase",
+    reading,
+    paidAmount: snapshot.paidAmount,
+    submission: null,
+    purchaserFirstName: null,
+    recipientName: null,
+  };
 }
 
 async function resolveReading(

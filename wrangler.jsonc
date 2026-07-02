@@ -27,9 +27,8 @@
 	//   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
-	//   - AUTH_TOKEN_SECRET          Master HMAC secret (32-byte hex). Per-purpose subkeys for listen tokens,
-	//                                library tokens, gift-claim sessions, and request audit are HKDF-derived
-	//                                in src/lib/auth/tokenSubkey.ts.
+	//   - AUTH_TOKEN_SECRET          Master HMAC secret (32-byte hex). Per-purpose subkeys for listen tokens
+	//                                and request audit are HKDF-derived in src/lib/auth/tokenSubkey.ts.
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
 	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
 	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked
@@ -39,13 +38,6 @@
 	//                                (which gates /api/sanity-sync) — separate rotation, separate
 	//                                blast-radius if compromised. One value per environment, set
 	//                                identically in the Sanity dashboard webhook config + the worker secret.
-	//   - DO_DISPATCH_SECRET         Shared secret used by the GiftClaimScheduler Durable Object
-	//                                to authenticate its POST to /api/internal/gift-claim-dispatch
-	//                                (and used by scripts/regenerate-gift-claim.ts to hit
-	//                                /api/internal/gift-claim-regenerate). Distinct rotation from
-	//                                CRON_SECRET. Set on the worker secret AND identically on the
-	//                                staging worker. The Stripe-webhook → DO `.fetch(/schedule)` call
-	//                                runs inside the same isolate so it does NOT need the secret.
 	//   - ALLOWED_PREVIEW_RECIPIENTS Comma-separated email allowlist for the Studio
 	//                                "Send preview to inbox..." action (cfor9w5f). Lives as an
 	//                                env var (not Sanity siteSettings) so a Studio compromise
@@ -136,26 +128,9 @@
 			"migrations_dir": "./migrations"
 		}
 	],
-	// Durable Objects: GiftClaimScheduler fires the recipient claim email at
-	// the purchaser's chosen `gift_send_at` for `scheduled`-mode gifts. One DO
-	// per submissionId, alarms reschedule for +7d reminders up to 3 fires /
-	// 30 days. Class is exported from `src/lib/durable-objects/GiftClaimScheduler.ts`
-	// and re-exported from custom-worker.ts so wrangler bundling picks it up.
-	"durable_objects": {
-		"bindings": [
-			{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" }
-		]
-	},
-	"migrations": [
-		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] }
-	],
-	// Self-binding (`env.SELF`) lets the GiftClaimScheduler Durable Object
-	// dispatch to `/api/internal/gift-claim-dispatch` in-isolate instead of
-	// taking a public-edge HTTPS round-trip. Same worker name; wrangler ≥3
-	// supports self-bindings declaratively. Without this, alarm dispatch
-	// pays edge latency + is subject to public WAF rules + Access policies.
+	// WORKER_SELF_REFERENCE is required by OpenNext's memory-queue override
+	// (see open-next.config.ts) for time-based ISR revalidation.
 	"services": [
-		{ "binding": "SELF", "service": "withjosephine" },
 		{ "binding": "WORKER_SELF_REFERENCE", "service": "withjosephine" }
 	],
 	// Workers Rate Limiting bindings. Period is constrained to 10s or 60s by
@@ -242,16 +217,13 @@
 			],
 			"durable_objects": {
 				"bindings": [
-					{ "name": "GIFT_CLAIM_SCHEDULER", "class_name": "GiftClaimScheduler" },
 					{ "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
 				]
 			},
 			"migrations": [
-				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
 				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
 			],
 			"services": [
-				{ "binding": "SELF", "service": "withjosephine-staging" },
 				{ "binding": "WORKER_SELF_REFERENCE", "service": "withjosephine-staging" }
 			],
 			"ratelimits": [

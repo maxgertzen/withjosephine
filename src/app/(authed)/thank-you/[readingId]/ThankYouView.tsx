@@ -9,7 +9,7 @@ import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 
-export type ThankYouMode = "purchase" | "giftPurchaser" | "giftRecipient";
+export type ThankYouMode = "purchase";
 
 export type ThankYouViewCopy = {
   heading: string;
@@ -34,7 +34,6 @@ export type ThankYouViewProps = {
 };
 
 export function ThankYouView({
-  mode,
   reading,
   paidAmount,
   purchaserFirstName,
@@ -44,8 +43,6 @@ export function ThankYouView({
 }: ThankYouViewProps) {
   const purchaserSlotValue = purchaserFirstName ?? "";
   const recipientSlotValue = recipientName ?? "";
-  const isRecipient = mode === "giftRecipient";
-  const showsPurchaserOnlySections = !isRecipient;
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
@@ -82,30 +79,27 @@ export function ThankYouView({
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          {showsPurchaserOnlySections &&
-            (showsDiscountedPrice ? (
-              <span className="font-display text-2xl italic flex items-baseline gap-2">
-                <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-                <span className="text-j-accent">{paidAmount.display}</span>
-              </span>
-            ) : (
-              <span className="font-display text-2xl italic text-j-accent">
-                {paidAmount.display ?? reading.price}
-              </span>
-            ))}
+          {showsDiscountedPrice ? (
+            <span className="font-display text-2xl italic flex items-baseline gap-2">
+              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+              <span className="text-j-accent">{paidAmount.display}</span>
+            </span>
+          ) : (
+            <span className="font-display text-2xl italic text-j-accent">
+              {paidAmount.display ?? reading.price}
+            </span>
+          )}
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          {showsPurchaserOnlySections && (
-            <p className="whitespace-pre-line">
-              {renderWithSlots(copy.confirmationBody, {
-                purchaserFirstName: purchaserSlotValue,
-                recipientName: recipientSlotValue,
-              })}
-            </p>
-          )}
+          <p className="whitespace-pre-line">
+            {renderWithSlots(copy.confirmationBody, {
+              purchaserFirstName: purchaserSlotValue,
+              recipientName: recipientSlotValue,
+            })}
+          </p>
           <p className="whitespace-pre-line">
             {renderWithSlots(copy.timelineBody, {
               deliveryDays: (

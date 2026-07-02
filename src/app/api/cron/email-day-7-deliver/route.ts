@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
 import { mintListenToken } from "@/lib/auth/listenToken";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import {
@@ -50,16 +49,11 @@ async function deliverOne(
     mintSource: "cron_day7",
   });
   const listenUrl = `${siteOrigin()}/listen/${refreshed._id}?t=${token}`;
-  const libraryUrl = await tryBuildLibraryUrl({
-    userId: d1Submission.recipientUserId,
-    mintSource: "day7_delivery",
-    siteContext: `cron-day-7:${refreshed._id}`,
-  });
   const context = buildSubmissionContext(refreshed);
   const sendResult = await sendAndRecord({
     submissionId: refreshed._id,
     type: "day7",
-    send: () => sendDay7Delivery(context, listenUrl, libraryUrl),
+    send: () => sendDay7Delivery(context, listenUrl),
   });
   return sendResult.appended ? "sent" : "skipped";
 }

@@ -36,7 +36,7 @@ function form(values: Record<string, string>): Request {
 }
 
 describe("POST /api/auth/magic-link/verify", () => {
-  it("on success: sets __Host- cookie, 303 redirects to /my-readings", async () => {
+  it("on success: sets __Host- cookie, 303 redirects to /", async () => {
     redeemMock.mockResolvedValue({
       ok: true,
       userId: "user_1",
@@ -46,7 +46,7 @@ describe("POST /api/auth/magic-link/verify", () => {
     const { POST } = await import("./route");
     const response = await POST(form({ token: "abc", email: "ada@example.com" }));
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings");
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/");
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("__Host-listen_session=raw-cookie-value");
     expect(setCookie).toContain("HttpOnly");
@@ -72,7 +72,7 @@ describe("POST /api/auth/magic-link/verify", () => {
     );
   });
 
-  it("clamps unsafe `next` paths to /my-readings", async () => {
+  it("clamps unsafe `next` paths to /", async () => {
     redeemMock.mockResolvedValue({
       ok: true,
       userId: "user_1",
@@ -83,7 +83,7 @@ describe("POST /api/auth/magic-link/verify", () => {
     const response = await POST(
       form({ token: "abc", email: "ada@example.com", next: "https://evil.example.com" }),
     );
-    expect(response.headers.get("location")).toBe("https://withjosephine.com/my-readings");
+    expect(response.headers.get("location")).toBe("https://withjosephine.com/");
   });
 
   it("on email mismatch: 303 redirects to /auth/verify?error=rested, no cookie", async () => {
