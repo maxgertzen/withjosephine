@@ -1,5 +1,12 @@
+import { schedulePdfDownloadedAtMirror } from "@/lib/booking/submissions";
+
 import { buildContentDisposition, buildListenFilename } from "../downloadFilename";
-import { forwardRangeHeader, gateListenAssetRequest, proxySanityAsset } from "../proxySanityAsset";
+import {
+  forwardRangeHeader,
+  gateListenAssetRequest,
+  isFirstByteRequest,
+  proxySanityAsset,
+} from "../proxySanityAsset";
 
 export async function GET(
   request: Request,
@@ -13,6 +20,10 @@ export async function GET(
   const upstream = await fetch(gate.asset.pdfUrl, {
     headers: forwardRangeHeader(request),
   });
+
+  if (upstream.ok && isFirstByteRequest(request)) {
+    schedulePdfDownloadedAtMirror(id, new Date().toISOString());
+  }
 
   const filename = buildListenFilename({
     firstName: gate.asset.firstName,

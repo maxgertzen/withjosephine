@@ -7,10 +7,16 @@ vi.mock("../proxySanityAsset", async () => {
     gateListenAssetRequest: vi.fn(),
   };
 });
+vi.mock("@/lib/booking/submissions", () => ({
+  schedulePdfDownloadedAtMirror: vi.fn(),
+}));
+
+import { schedulePdfDownloadedAtMirror } from "@/lib/booking/submissions";
 
 import { gateListenAssetRequest } from "../proxySanityAsset";
 
 const gateMock = vi.mocked(gateListenAssetRequest);
+const markDownloadedMock = vi.mocked(schedulePdfDownloadedAtMirror);
 
 const ASSET = {
   voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
@@ -27,9 +33,16 @@ const params = Promise.resolve({ id: "sub_1" });
 
 beforeEach(() => {
   gateMock.mockReset().mockResolvedValue({ ok: true, asset: ASSET });
+  markDownloadedMock.mockReset();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
+
+function pdfRequest(opts: { range?: string } = {}): Request {
+  const headers = new Headers();
+  if (opts.range) headers.set("range", opts.range);
+  return new Request("https://withjosephine.com/api/listen/sub_1/pdf", { headers });
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -126,5 +139,33 @@ describe("GET /api/listen/[id]/pdf", () => {
     );
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fires schedulePdfDownloadedAtMirror on opener (no Range header)", async () => {
+    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
+    const { GET } = await import("./route");
+    await GET(pdfRequest(), { params });
+    expect(markDownloadedMock).toHaveBeenCalledOnce();
+  });
+
+  it("fires schedulePdfDownloadedAtMirror on bytes=0- opener", async () => {
+    fetchMock.mockResolvedValue(new Response("ok", { status: 206 }));
+    const { GET } = await import("./route");
+    await GET(pdfRequest({ range: "bytes=0-" }), { params });
+    expect(markDownloadedMock).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT fire schedulePdfDownloadedAtMirror on mid-file Range chunks", async () => {
+    fetchMock.mockResolvedValue(new Response("ok", { status: 206 }));
+    const { GET } = await import("./route");
+    await GET(pdfRequest({ range: "bytes=12345-67890" }), { params });
+    expect(markDownloadedMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire schedulePdfDownloadedAtMirror on upstream non-2xx", async () => {
+    fetchMock.mockResolvedValue(new Response("nope", { status: 502 }));
+    const { GET } = await import("./route");
+    await GET(pdfRequest(), { params });
+    expect(markDownloadedMock).not.toHaveBeenCalled();
   });
 });

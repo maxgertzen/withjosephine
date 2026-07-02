@@ -19,6 +19,7 @@ import { runMirror } from "./persistence/runMirror";
 import {
   mirrorAppendEmailFired,
   mirrorMarkSubmissionListened,
+  mirrorMarkSubmissionPdfDownloaded,
   mirrorSubmissionCreate,
   mirrorSubmissionDelete,
   mirrorSubmissionPatch,
@@ -190,6 +191,17 @@ export async function findMostRecentPaidByRecipientUserId(
  */
 export function scheduleListenedAtMirror(submissionId: string, listenedAt: string): void {
   runMirror(mirrorMarkSubmissionListened(submissionId, listenedAt));
+}
+
+/**
+ * First-PDF-download signal. Fire-and-forget: caller schedules via runMirror so
+ * the PDF response never blocks on Sanity. Idempotent via Sanity's setIfMissing.
+ */
+export function schedulePdfDownloadedAtMirror(
+  submissionId: string,
+  pdfDownloadedAt: string,
+): void {
+  runMirror(mirrorMarkSubmissionPdfDownloaded(submissionId, pdfDownloadedAt));
 }
 
 export async function markSubmissionDelivered(

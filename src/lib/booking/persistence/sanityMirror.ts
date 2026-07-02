@@ -280,6 +280,21 @@ export async function mirrorMarkSubmissionListened(
   }
 }
 
+// First-write-wins via setIfMissing — concurrent PDF downloads both commit
+// but only the earliest write lands.
+export async function mirrorMarkSubmissionPdfDownloaded(
+  id: string,
+  pdfDownloadedAt: string,
+): Promise<void> {
+  const client = await getClient();
+  if (!client) return;
+  try {
+    await client.patch(id).setIfMissing({ pdfDownloadedAt }).commit({ visibility: "async" });
+  } catch (error) {
+    console.error(`[sanityMirror] pdfDownloadedAt write failed for ${id}`, error);
+  }
+}
+
 export async function mirrorUnsetPhotoKey(id: string): Promise<void> {
   const client = await getClient();
   if (!client) return;
