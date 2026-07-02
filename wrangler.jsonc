@@ -128,6 +128,12 @@
 			"migrations_dir": "./migrations"
 		}
 	],
+	// GiftClaimScheduler DO (gift feature) removed in v1.16.0. v1 created it; v2
+	// is the delete-class migration required to tear down the previously-deployed DO.
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
+		{ "tag": "v2", "deleted_classes": ["GiftClaimScheduler"] }
+	],
 	// WORKER_SELF_REFERENCE is required by OpenNext's memory-queue override
 	// (see open-next.config.ts) for time-based ISR revalidation.
 	"services": [
@@ -221,7 +227,9 @@
 				]
 			},
 			"migrations": [
-				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
+				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
+				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] },
+				{ "tag": "v3", "deleted_classes": ["GiftClaimScheduler"] }
 			],
 			"services": [
 				{ "binding": "WORKER_SELF_REFERENCE", "service": "withjosephine-staging" }
