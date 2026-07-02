@@ -344,12 +344,9 @@ export async function sendDay7Delivery(
   });
 }
 
-export type MagicLinkContext = "listen";
-
 export async function sendMagicLink(args: {
   to: string;
   magicLinkUrl: string;
-  context: MagicLinkContext;
   firstName?: string;
   readingName?: string;
   readingPriceDisplay?: string;

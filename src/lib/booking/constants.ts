@@ -8,7 +8,3 @@ export const ACCEPTED_PHOTO_MIME_SET: ReadonlySet<string> = new Set(ACCEPTED_PHO
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 export const MAX_EMAIL_CHARS = 254;
-
-// Canonical Sanity booking-form field key for the recipient's email input.
-// Mirrors `key: "email"` in scripts/seed-booking-form.ts.
-export const EMAIL_FIELD_KEY = "email";

@@ -733,7 +733,6 @@ describe("sendMagicLink", () => {
     const result = await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
-      context: "listen",
     });
 
     expect(getResendId(result)).toBe("msg_ml");
@@ -752,7 +751,6 @@ describe("sendMagicLink", () => {
     await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=abc",
-      context: "listen",
     });
 
     const props = serverTrackMock.mock.calls[0]?.[1] as Record<string, unknown>;
@@ -768,7 +766,6 @@ describe("sendMagicLink", () => {
     const result = await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://example.com/x",
-      context: "listen",
     });
 
     expect(getResendId(result)).toBeNull();
@@ -795,7 +792,6 @@ describe("sendMagicLink", () => {
     await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=tk",
-      context: "listen",
       firstName: "Ada",
       readingName: "Soul Blueprint",
       readingPriceDisplay: "$179",
@@ -827,7 +823,6 @@ describe("sendMagicLink", () => {
     await sendMagicLink({
       to: "ada@example.com",
       magicLinkUrl: "https://example.com/x",
-      context: "listen",
     });
 
     const args = sendMock.mock.calls[0]?.[0];

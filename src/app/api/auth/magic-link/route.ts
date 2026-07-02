@@ -48,7 +48,6 @@ export async function POST(request: Request) {
         sendMagicLink({
           to: user.email,
           magicLinkUrl: verifyUrl.toString(),
-          context: "listen",
           firstName: vars.firstName,
           readingName: vars.readingName,
           readingPriceDisplay: vars.readingPriceDisplay,

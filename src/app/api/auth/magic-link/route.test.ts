@@ -113,23 +113,6 @@ describe("POST /api/auth/magic-link — JSON branch", () => {
     expect(url).toContain("next=%2Flisten%2Fsub_123");
   });
 
-  it("passes context='listen' to sendMagicLink for a /listen/ next", async () => {
-    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
-    const { POST } = await import("./route");
-    await POST(jsonRequest({ email: "ada@example.com", next: "/listen/sub_123" }));
-    await flushFireAndForget();
-    expect(sendMock.mock.calls[0]?.[0].context).toBe("listen");
-  });
-
-  it("always passes context='listen' to sendMagicLink regardless of next", async () => {
-    findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
-    const { POST } = await import("./route");
-
-    await POST(jsonRequest({ email: "ada@example.com" }));
-    await flushFireAndForget();
-    expect(sendMock.mock.calls[0]?.[0].context).toBe("listen");
-  });
-
   it("forwards firstName/readingName/readingPriceDisplay from lookupMagicLinkVars", async () => {
     findUserMock.mockResolvedValue({ id: "user_1", email: "ada@example.com" });
     const { lookupMagicLinkVars } = await import("@/lib/auth/magicLinkVars");
