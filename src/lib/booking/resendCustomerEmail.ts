@@ -1,3 +1,4 @@
+import { mintExportToken } from "@/lib/auth/exportToken";
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
@@ -92,7 +93,14 @@ async function dispatchResend(
   const context = buildSubmissionContext(submission);
   switch (emailType) {
     case "order_confirmation": {
-      return sendOrderConfirmation(context);
+      const dataExportUrl = submission.recipientUserId
+        ? `${siteOrigin()}/privacy/export?t=${await mintExportToken({
+            submissionId: submission._id,
+            recipientUserId: submission.recipientUserId,
+            mintSource: "admin_resend",
+          })}`
+        : undefined;
+      return sendOrderConfirmation(context, { dataExportUrl });
     }
     case "day7": {
       if (!submission.recipientUserId) {

@@ -1,6 +1,8 @@
 import "server-only";
 
+import { mintExportToken } from "../auth/exportToken";
 import { getOrCreateUser } from "../auth/users";
+import { siteOrigin } from "../env";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
 import {
   appendEmailFired,
@@ -67,6 +69,20 @@ export async function applyPaidEvent(
 
   await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
 
+  let dataExportUrl: string | undefined;
+  if (recipientUserId) {
+    try {
+      const exportToken = await mintExportToken({
+        submissionId: submission._id,
+        recipientUserId,
+        mintSource: "order_confirmation",
+      });
+      dataExportUrl = `${siteOrigin()}/privacy/export?t=${exportToken}`;
+    } catch (error) {
+      console.error(`[notifyPaid] export-link mint failed for ${submission._id}`, error);
+    }
+  }
+
   const dispatches: Array<Promise<unknown>> = [
     sendNotificationToJosephine(context).catch((error) => {
       console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
@@ -74,7 +90,7 @@ export async function applyPaidEvent(
   ];
 
   dispatches.push(
-    sendOrderConfirmation(context)
+    sendOrderConfirmation(context, { dataExportUrl })
       .then(async (result) => {
         if (result.kind !== "sent") return;
         try {

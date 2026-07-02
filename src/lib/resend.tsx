@@ -278,6 +278,7 @@ export async function sendNotificationToJosephine(
 
 export async function sendOrderConfirmation(
   submission: SubmissionContext,
+  options?: { dataExportUrl?: string },
 ): Promise<EmailSendResult> {
   const { EMAIL_ORDER_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailOrderConfirmation } = await import("@/lib/sanity/fetch");
@@ -293,6 +294,7 @@ export async function sendOrderConfirmation(
         readingName: submission.readingName,
         readingPriceDisplay: submission.readingPriceDisplay,
         amountPaidDisplay: submission.amountPaidDisplay,
+        dataExportUrl: options?.dataExportUrl ?? null,
       }}
       copy={copy}
       shell={shell}

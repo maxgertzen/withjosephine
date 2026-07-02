@@ -1,4 +1,4 @@
-import { Container, Section } from "@react-email/components";
+import { Button, Container, Section } from "@react-email/components";
 
 import type { EmailOrderConfirmationContent, EmailSharedShellContent } from "@/data/defaults";
 import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
@@ -15,6 +15,7 @@ export type OrderConfirmationVars = {
   readingName: string;
   readingPriceDisplay: string;
   amountPaidDisplay: string | null;
+  dataExportUrl?: string | null;
 };
 
 export type OrderConfirmationProps = {
@@ -68,6 +69,37 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
             </p>
           </Section>
         </div>
+
+        {vars.dataExportUrl ? (
+          <div style={{ padding: "20px 48px 0 48px" }}>
+            <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
+              <p
+                className="font-serif text-ink"
+                style={{ margin: "0 0 8px 0", fontSize: 18 }}
+              >
+                {copy.dataExportHeading}
+              </p>
+              <p
+                className="font-sans text-body"
+                style={{ margin: "0 0 16px 0", fontSize: 14, lineHeight: 1.6 }}
+              >
+                {copy.dataExportBlurb}
+              </p>
+              <Button
+                href={vars.dataExportUrl}
+                className="bg-ink text-cream font-sans no-underline"
+                style={{
+                  padding: "12px 24px",
+                  fontSize: 14,
+                  borderRadius: 50,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {copy.dataExportButtonLabel}
+              </Button>
+            </Section>
+          </div>
+        ) : null}
 
         <EmailFooter shell={shell} />
       </Container>

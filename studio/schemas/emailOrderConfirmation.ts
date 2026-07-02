@@ -16,6 +16,7 @@ export const emailOrderConfirmation = defineType({
     { name: "header", title: "Brand header" },
     { name: "body", title: "Body copy" },
     { name: "card", title: "Reading card" },
+    { name: "dataExport", title: "Data export section" },
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
@@ -82,6 +83,33 @@ export const emailOrderConfirmation = defineType({
       type: "string",
       group: "card",
       initialValue: "Delivery within 7 days",
+    }),
+    defineField({
+      name: "dataExportHeading",
+      title: "Data export — heading",
+      type: "string",
+      group: "dataExport",
+      description:
+        "Small heading for the GDPR data-export section shown beneath the reading card.",
+      initialValue: "Your data, your right",
+    }),
+    defineField({
+      name: "dataExportBlurb",
+      title: "Data export — blurb",
+      type: "text",
+      rows: 3,
+      group: "dataExport",
+      description:
+        "One or two sentences explaining the customer can download the data held for this order.",
+      initialValue:
+        "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
+    }),
+    defineField({
+      name: "dataExportButtonLabel",
+      title: "Data export — button label",
+      type: "string",
+      group: "dataExport",
+      initialValue: "Request my data export",
     }),
     defineField({
       hidden: true,

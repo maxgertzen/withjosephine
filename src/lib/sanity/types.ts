@@ -223,6 +223,9 @@ export type SanityEmailOrderConfirmation = {
   contactLine?: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
+  dataExportHeading?: string;
+  dataExportBlurb?: string;
+  dataExportButtonLabel?: string;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;

@@ -556,6 +556,9 @@ export interface EmailOrderConfirmationContent {
   cardLabel: string;
   cardDeliveryLine: string;
   libraryButtonLabel?: string;
+  dataExportHeading: string;
+  dataExportBlurb: string;
+  dataExportButtonLabel: string;
 }
 
 export const EMAIL_LIBRARY_BUTTON_LABEL_DEFAULT = "See all your readings";
@@ -578,6 +581,10 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   ],
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
+  dataExportHeading: "Your data, your right",
+  dataExportBlurb:
+    "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
+  dataExportButtonLabel: "Request my data export",
 };
 
 export interface EmailRecipientIntakeReceivedContent {

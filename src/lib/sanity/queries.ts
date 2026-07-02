@@ -185,6 +185,9 @@ export const emailOrderConfirmationQuery = groq`
     body,
     cardLabel,
     cardDeliveryLine,
+    dataExportHeading,
+    dataExportBlurb,
+    dataExportButtonLabel,
     signOffLine1,
     signOffLine2,
     footerDisclaimer
