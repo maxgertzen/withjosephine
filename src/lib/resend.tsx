@@ -145,6 +145,8 @@ function isProductionEnv(): boolean {
 const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
   "hello@withjosephine.com",
   "maxgertzen@gmail.com",
+  "beckyridgley1@gmail.com",
+  "beckyridgley@hotmail.co.uk",
 ];
 
 export function isProductionAllowlistedRecipient(
