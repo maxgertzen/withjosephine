@@ -360,6 +360,8 @@ export async function listPaidSubmissionsForEmail(
   const filters = [
     `status = 'paid'`,
     `instr(emails_fired_json, ?) = 0`,
+    // Legacy guard: gift removed in v1.16.0; skip dormant gift rows so day-7 never routes a recipient link to the purchaser.
+    `(is_gift = 0 OR is_gift IS NULL)`,
   ];
   const params: SqlValue[] = [`"type":"${emailType}"`];
   if (options.paidBefore) {
