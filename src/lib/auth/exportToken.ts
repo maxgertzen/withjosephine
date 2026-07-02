@@ -29,7 +29,7 @@ export type VerifyExportTokenArgs = {
   now?: number;
 };
 
-// The recipient is bound as a salted hash inside the signed payload. Unlike the
+// The recipient is bound as a SHA-256 hash inside the signed payload. Unlike the
 // listen token (whose submissionId comes from the request URL, so it can check
 // the recipient in one pass), the export flow learns the submissionId *from* the
 // token, then looks up the order to obtain the current recipient. So verify

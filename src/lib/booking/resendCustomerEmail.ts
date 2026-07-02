@@ -93,13 +93,20 @@ async function dispatchResend(
   const context = buildSubmissionContext(submission);
   switch (emailType) {
     case "order_confirmation": {
-      const dataExportUrl = submission.recipientUserId
-        ? `${siteOrigin()}/privacy/export?t=${await mintExportToken({
+      // A mint failure must never block the resend (mirrors notifyPaid).
+      let dataExportUrl: string | undefined;
+      if (submission.recipientUserId) {
+        try {
+          const token = await mintExportToken({
             submissionId: submission._id,
             recipientUserId: submission.recipientUserId,
             mintSource: "admin_resend",
-          })}`
-        : undefined;
+          });
+          dataExportUrl = `${siteOrigin()}/privacy/export?t=${token}`;
+        } catch (error) {
+          console.error(`[resendCustomerEmail] export token mint failed for ${submission._id}`, error);
+        }
+      }
       return sendOrderConfirmation(context, { dataExportUrl });
     }
     case "day7": {
