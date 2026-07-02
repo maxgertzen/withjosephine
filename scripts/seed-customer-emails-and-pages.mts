@@ -3,19 +3,12 @@ import { createClient } from "@sanity/client";
 
 import {
   EMAIL_DAY7_DELIVERY_DEFAULTS,
-  EMAIL_GIFT_CLAIM_DEFAULTS,
-  EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS,
-  EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS,
-  EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
-  EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS,
   EMAIL_SHARED_SHELL_DEFAULTS,
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
-  MY_GIFTS_PAGE_DEFAULTS,
-  MY_READINGS_PAGE_DEFAULTS,
   NOT_FOUND_PAGE_DEFAULTS,
   UNDER_CONSTRUCTION_PAGE_DEFAULTS,
 } from "../src/data/defaults";
@@ -65,7 +58,6 @@ function omitNullish<T extends object>(record: T): Partial<T> {
 
 const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
   emailOrderConfirmation: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
-  emailRecipientIntakeReceived: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
   emailDay7Delivery: new Set([
     "bodyIntro",
     "bodyPostButton",
@@ -82,10 +74,6 @@ const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
     "expiryLine",
   ]),
   emailMagicLink: new Set(["body"]),
-  emailGiftClaim: new Set(["body", "claimUrlHelper", "bodyFirstSend", "bodyReminder", "reminderContactLine"]),
-  emailGiftClaimReminder: new Set(["body"]),
-  emailGiftPurchaseConfirmationSelfSend: new Set(["body", "shareUrlHelper", "refundLine"]),
-  emailGiftPurchaseConfirmationScheduled: new Set(["body", "refundLine"]),
 };
 
 function isPortableTextArray(value: unknown): boolean {
@@ -119,8 +107,6 @@ function normalizePtFields<T extends Record<string, unknown>>(seed: T): T {
 
 const SEEDS = [
   { _id: "listenPage", _type: "listenPage", ...omitNullish(LISTEN_PAGE_DEFAULTS) },
-  { _id: "myReadingsPage", _type: "myReadingsPage", ...omitNullish(MY_READINGS_PAGE_DEFAULTS) },
-  { _id: "myGiftsPage", _type: "myGiftsPage", ...omitNullish(MY_GIFTS_PAGE_DEFAULTS) },
   {
     _id: "magicLinkVerifyPage",
     _type: "magicLinkVerifyPage",
@@ -137,31 +123,6 @@ const SEEDS = [
     ...omitNullish(EMAIL_DAY7_DELIVERY_DEFAULTS),
   },
   { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
-  {
-    _id: "emailGiftClaim",
-    _type: "emailGiftClaim",
-    ...omitNullish(EMAIL_GIFT_CLAIM_DEFAULTS),
-  },
-  {
-    _id: "emailGiftClaimReminder",
-    _type: "emailGiftClaimReminder",
-    ...omitNullish(EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS),
-  },
-  {
-    _id: "emailGiftPurchaseConfirmationSelfSend",
-    _type: "emailGiftPurchaseConfirmationSelfSend",
-    ...omitNullish(EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS),
-  },
-  {
-    _id: "emailGiftPurchaseConfirmationScheduled",
-    _type: "emailGiftPurchaseConfirmationScheduled",
-    ...omitNullish(EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS),
-  },
-  {
-    _id: "emailRecipientIntakeReceived",
-    _type: "emailRecipientIntakeReceived",
-    ...omitNullish(EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS),
-  },
   {
     _id: "emailPrivacyExport",
     _type: "emailPrivacyExport",

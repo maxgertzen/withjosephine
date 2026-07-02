@@ -7,17 +7,11 @@
 export const SANDBOX_DOMAIN = "@withjosephine.com" as const;
 
 export const SANDBOX_EMAIL_PREFIXES = {
-  giftRoundtripPurchaser: "gift-roundtrip-purchaser+",
-  giftRoundtripRecipient: "gift-roundtrip-recipient+",
-  giftRecipientListenPurchaser: "gift-recipient-listen-purchaser+",
-  giftRecipientListenRecipient: "gift-recipient-listen-recipient+",
   listenRoundtrip: "listen-roundtrip+",
   stripeRoundtrip: "stripe-roundtrip+",
   v120Qa: "v120-qa+",
-  libraryOneTap: "library-one-tap+",
   listenOneTap: "listen-one-tap+",
   prodSmoke: "prod-smoke+",
-  newDeviceNotice: "new-device-notice+",
 } as const;
 
 export type SandboxEmailPrefix = (typeof SANDBOX_EMAIL_PREFIXES)[keyof typeof SANDBOX_EMAIL_PREFIXES];

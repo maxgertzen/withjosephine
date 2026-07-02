@@ -343,7 +343,7 @@ describe("sendDay7Delivery", () => {
 });
 
 describe("sendPrivacyExportEmail", () => {
-  it("renders Sanity-fetched copy with submissionCount + expiryDays interpolated", async () => {
+  it("renders Sanity-fetched copy with expiryDays interpolated", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_priv" } });
     const fetchModule = await import("./sanity/fetch");
     const { stringToPortableTextBlocks } = await import("./emails/portableTextBuild");
@@ -354,14 +354,10 @@ describe("sendPrivacyExportEmail", () => {
       bodyIntro: [
         ...stringToPortableTextBlocks("Greetings,"),
         ...stringToPortableTextBlocks("Your export is queued."),
-        ...stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
+        ...stringToPortableTextBlocks("Contains your export data."),
       ],
       bodyPostButton: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
-      greeting: "Greetings,",
-      introLine: stringToPortableTextBlocks("Your export is queued."),
-      contentsLine: stringToPortableTextBlocks("Contains data for {submissionCount} reading(s)."),
       ctaLabel: "Grab your ZIP",
-      expiryLine: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       signOff: null,
     });
     const { sendPrivacyExportEmail } = await import("./resend");
@@ -370,7 +366,6 @@ describe("sendPrivacyExportEmail", () => {
       to: "ada@example.com",
       firstName: "Ada",
       downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
-      submissionCount: 4,
       expiryDays: 14,
     });
 
@@ -379,7 +374,7 @@ describe("sendPrivacyExportEmail", () => {
     expect(args.to).toBe("ada@example.com");
     expect(args.subject).toBe("Custom export subject");
     const body = visibleText(args.html);
-    expect(body).toContain("Contains data for 4 reading(s).");
+    expect(body).toContain("Contains your export data.");
     expect(body).toContain("Link expires in 14 days.");
     expect(body).toContain("Grab your ZIP");
     expect(args.html).toContain('href="https://r2.withjosephine.com/exports/abc.zip"');
@@ -395,14 +390,13 @@ describe("sendPrivacyExportEmail", () => {
       to: "ada@example.com",
       firstName: "Ada",
       downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
-      submissionCount: 1,
       expiryDays: 7,
     });
 
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.subject).toBe("Your Josephine data export");
     const body = visibleText(args.html);
-    expect(body).toContain("for your 1 reading(s)");
+    expect(body).toContain("for your reading");
     expect(body).toContain("expires in 7 days");
   });
 
@@ -425,7 +419,6 @@ describe("sendPrivacyExportEmail", () => {
       to: "ada@example.com",
       firstName: "Ada",
       downloadUrl: "https://r2.withjosephine.com/exports/abc.zip",
-      submissionCount: 1,
       expiryDays: 7,
     });
 
@@ -456,7 +449,6 @@ describe("sendPrivacyExportEmail", () => {
       to: "ada@example.com",
       firstName: "there",
       downloadUrl: "https://r2.withjosephine.com/exports/xyz.zip",
-      submissionCount: 1,
       expiryDays: 7,
     });
 
@@ -913,18 +905,16 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
 describe("isSandboxEmail", () => {
   it("matches known sandbox spec prefixes on @withjosephine.com", async () => {
     const { isSandboxEmail } = await import("./resend");
-    expect(isSandboxEmail("gift-roundtrip-purchaser+abc123@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("gift-roundtrip-recipient+abc123@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("gift-recipient-listen-purchaser+abc@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("gift-recipient-listen-recipient+abc@withjosephine.com")).toBe(true);
     expect(isSandboxEmail("listen-roundtrip+abc@withjosephine.com")).toBe(true);
     expect(isSandboxEmail("stripe-roundtrip+abc@withjosephine.com")).toBe(true);
     expect(isSandboxEmail("v120-qa+gift-abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("listen-one-tap+abc@withjosephine.com")).toBe(true);
+    expect(isSandboxEmail("prod-smoke+abc@withjosephine.com")).toBe(true);
   });
 
   it("does NOT match sandbox prefixes on other domains (spoofing guard)", async () => {
     const { isSandboxEmail } = await import("./resend");
-    expect(isSandboxEmail("gift-roundtrip-purchaser+abc@evil.example")).toBe(false);
+    expect(isSandboxEmail("stripe-roundtrip+abc@evil.example")).toBe(false);
     expect(isSandboxEmail("listen-roundtrip+abc@gmail.com")).toBe(false);
   });
 
@@ -936,7 +926,7 @@ describe("isSandboxEmail", () => {
 
   it("is case-insensitive on local-part and domain", async () => {
     const { isSandboxEmail } = await import("./resend");
-    expect(isSandboxEmail("GIFT-ROUNDTRIP-PURCHASER+ABC@WITHJOSEPHINE.COM")).toBe(true);
+    expect(isSandboxEmail("LISTEN-ROUNDTRIP+ABC@WITHJOSEPHINE.COM")).toBe(true);
   });
 
   it("returns false for null/undefined/empty input", async () => {
@@ -953,7 +943,7 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
 
     const { sendDay7Delivery } = await import("./resend");
     const result = await sendDay7Delivery(
-      buildSubmission({ email: "gift-roundtrip-recipient+abc123@withjosephine.com" }),
+      buildSubmission({ email: "listen-roundtrip+abc123@withjosephine.com" }),
       "https://withjosephine.com/listen/abc",
     );
 
@@ -967,7 +957,7 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
 
     const { sendNotificationToJosephine } = await import("./resend");
     const result = await sendNotificationToJosephine(
-      buildSubmission({ email: "gift-roundtrip-purchaser+xyz@withjosephine.com" }),
+      buildSubmission({ email: "stripe-roundtrip+xyz@withjosephine.com" }),
     );
 
     expect(getResendId(result)).toBeNull();
@@ -992,7 +982,7 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
 
     const { sendDay7Delivery } = await import("./resend");
     await sendDay7Delivery(
-      buildSubmission({ email: "gift-roundtrip-recipient+abc@withjosephine.com" }),
+      buildSubmission({ email: "listen-roundtrip+abc@withjosephine.com" }),
       "https://withjosephine.com/listen/abc",
     );
 

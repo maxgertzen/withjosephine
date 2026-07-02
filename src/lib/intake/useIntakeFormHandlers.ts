@@ -32,7 +32,6 @@ import { clear as clearDraft } from "./localStorageDraft";
 
 export type UseIntakeFormHandlersArgs = {
   readingId: string;
-  draftScope: string;
   formRef: RefObject<HTMLFormElement | null>;
   submitIntentRef: RefObject<boolean>;
   values: FieldValues;
@@ -75,7 +74,6 @@ function blurAndScrollToTop(): void {
 
 export function useIntakeFormHandlers({
   readingId,
-  draftScope,
   formRef,
   submitIntentRef,
   values,
@@ -293,7 +291,7 @@ export function useIntakeFormHandlers({
           submission_id: data.submissionId,
         });
 
-        clearDraft(draftScope);
+        clearDraft(readingId);
         window.location.href = data.paymentUrl;
       } catch {
         failSubmit(INTAKE_SUBMIT_ERROR.networkError, "Network error. Please check your connection and try again.");
@@ -317,7 +315,6 @@ export function useIntakeFormHandlers({
       formRef,
       setIsSubmitting,
       honeypot,
-      draftScope,
     ],
   );
 

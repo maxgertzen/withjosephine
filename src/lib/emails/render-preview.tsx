@@ -98,7 +98,6 @@ async function renderRaw(
           vars={{
             firstName: PREVIEW_FIXTURE.firstName,
             downloadUrl: PREVIEW_FIXTURE.downloadUrl,
-            submissionCount: PREVIEW_FIXTURE.submissionCount,
             expiryDays: PREVIEW_FIXTURE.expiryDays,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}

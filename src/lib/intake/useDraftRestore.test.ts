@@ -67,8 +67,8 @@ describe("useDraftRestore — fresh mount, no saved draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
     expect(result.current.values).toEqual(DEFAULT_VALUES);
@@ -88,8 +88,8 @@ describe("useDraftRestore — restore existing draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
     expect(result.current.values.email).toBe("ada@example.com");
@@ -107,8 +107,8 @@ describe("useDraftRestore — restore existing draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
     expect(result.current.values.email).toBe("ada@example.com");
@@ -128,8 +128,8 @@ describe("useDraftRestore — swap detection (P2.4e)", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     expect(result.current.swappedFromReadingName).toBe("Soul Blueprint");
     await waitFor(() => expect(result.current.values.email).toBe("ada@example.com"));
@@ -147,8 +147,8 @@ describe("useDraftRestore — swap detection (P2.4e)", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     expect(result.current.swappedFromReadingName).toBe("Soul Blueprint");
     act(() => result.current.dismissSwapToast());
@@ -160,51 +160,10 @@ describe("useDraftRestore — swap detection (P2.4e)", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     expect(result.current.swappedFromReadingName).toBeNull();
-  });
-});
-
-describe("useDraftRestore — lockedValues are authoritative", () => {
-  it("overrides a restored draft email with the locked value", async () => {
-    saveDraft("soul-blueprint", {
-      currentPage: 1,
-      values: { email: "stale-anon@example.com", first_name: "Ada" },
-    });
-    const { result } = renderHook(() =>
-      useDraftRestore({
-        readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,        lockedValues: { email: "session@example.com" },
-      }),
-    );
-    await waitFor(() => expect(result.current.isRestored).toBe(true));
-    expect(result.current.values.email).toBe("session@example.com");
-    // Non-locked fields still restore from the draft.
-    expect(result.current.currentPage).toBe(0);
-    expect(result.current.values.first_name).toBe("Ada");
-  });
-
-  it("overrides a swap-preserved email with the locked value", async () => {
-    saveDraft("akashic-record", {
-      currentPage: 0,
-      values: { email: "stale-anon@example.com", first_name: "Ada" },
-    });
-    window.localStorage.setItem(LAST_READING_ID_KEY, "akashic-record");
-
-    const { result } = renderHook(() =>
-      useDraftRestore({
-        readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,        lockedValues: { email: "session@example.com" },
-      }),
-    );
-    await waitFor(() => expect(result.current.values.email).toBe("session@example.com"));
-    expect(result.current.values.first_name).toBe("Ada");
   });
 });
 
@@ -214,7 +173,6 @@ describe("useDraftRestore — writes lastReadingId on mount", () => {
       useDraftRestore({
         readingId: "birth-chart",
         readingName: "Birth Chart",
-        draftScope: "birth-chart",
         defaultValues: DEFAULT_VALUES,
       }),
     );
@@ -237,8 +195,8 @@ describe("useDraftRestore — corrupted draft is ignored", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         readingName: "Soul Blueprint",
-        draftScope: "soul-blueprint",
-        defaultValues: DEFAULT_VALUES,      }),
+        defaultValues: DEFAULT_VALUES,
+      }),
     );
     expect(result.current.values.email).toBe("");
     expect(result.current.currentPage).toBe(0);

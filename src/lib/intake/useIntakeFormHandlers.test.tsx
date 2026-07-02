@@ -31,7 +31,6 @@ function useTestHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
 
   const handlers = useIntakeFormHandlers({
     readingId: "soul-blueprint",
-    draftScope: "soul-blueprint",
     formRef,
     submitIntentRef,
     values,

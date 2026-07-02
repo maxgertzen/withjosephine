@@ -34,8 +34,7 @@ export const emailPrivacyExport = defineType({
       title: "Body — before button",
       type: "array",
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
-      description:
-        'Body paragraphs shown above the download button. Use "{submissionCount}" to insert how many readings the export contains.',
+      description: "Body paragraphs shown above the download button.",
       validation: slotValidation("emailPrivacyExport"),
     }),
     defineField({

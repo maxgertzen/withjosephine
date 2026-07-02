@@ -15,6 +15,8 @@ export const AUDIT_EVENT_TYPE = {
   library_token_redeemed: "library_token_redeemed",
   export_request: "export_request",
   export_throttled: "export_throttled",
+  export_token_invalid: "export_token_invalid",
+  export_cross_user_denied: "export_cross_user_denied",
   deletion_request: "deletion_request",
   admin_auth_failed: "admin_auth_failed",
   admin_email_preview_sent: "admin_email_preview_sent",

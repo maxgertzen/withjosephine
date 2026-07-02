@@ -185,7 +185,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!verified.valid) {
     await writeAudit({
       userId: null,
-      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
+      eventType: AUDIT_EVENT_TYPE.export_token_invalid,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -210,7 +210,7 @@ export async function POST(request: Request): Promise<Response> {
     await writeAudit({
       userId: recipientUserId,
       submissionId: submission._id,
-      eventType: AUDIT_EVENT_TYPE.listen_cross_user_denied,
+      eventType: AUDIT_EVENT_TYPE.export_cross_user_denied,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -324,7 +324,6 @@ export async function POST(request: Request): Promise<Response> {
     to: submission.email,
     firstName,
     downloadUrl: signedUrl,
-    submissionCount: 1,
     expiryDays: 7,
   }).catch((error) => {
     console.error("[export] Resend send failed", error);
@@ -340,7 +339,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   return NextResponse.json(
-    { submissionCount: 1, expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS },
+    { expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS },
     { status: 202 },
   );
 }

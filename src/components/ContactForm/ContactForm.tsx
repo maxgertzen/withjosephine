@@ -1,11 +1,11 @@
 "use client";
 
-import { Turnstile } from "@marsidev/react-turnstile";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
+import { TurnstileGate } from "@/components/TurnstileGate";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
 import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
 import { CONTACT_API_ROUTE } from "@/lib/http/routes";
@@ -181,16 +181,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
             <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
 
-          {turnstileSiteKey && (
-            <div className="flex justify-center">
-              <Turnstile
-                siteKey={turnstileSiteKey}
-                onSuccess={setTurnstileToken}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-              />
-            </div>
-          )}
+          <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
 
           {errorMessage && (
             <p role="alert" className={`${errorClasses} text-center`}>

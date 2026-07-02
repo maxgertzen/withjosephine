@@ -1,6 +1,5 @@
 "use client";
 
-import { Turnstile } from "@marsidev/react-turnstile";
 import { Download, MailCheck, ShieldAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
@@ -9,6 +8,7 @@ import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { StarField } from "@/components/StarField";
+import { TurnstileGate } from "@/components/TurnstileGate";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { errorClasses } from "@/lib/formStyles";
 import { PRIVACY_EXPORT_API_ROUTE } from "@/lib/http/routes";
@@ -152,16 +152,7 @@ export function PrivacyExportView({ token }: PrivacyExportViewProps) {
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6">
-        {turnstileSiteKey && (
-          <div className="flex justify-center">
-            <Turnstile
-              siteKey={turnstileSiteKey}
-              onSuccess={setTurnstileToken}
-              onExpire={() => setTurnstileToken(null)}
-              onError={() => setTurnstileToken(null)}
-            />
-          </div>
-        )}
+        <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
 
         {errorMessage && (
           <p role="alert" className={`${errorClasses} text-center max-w-md`}>

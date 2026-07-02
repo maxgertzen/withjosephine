@@ -50,8 +50,6 @@ export function IntakeForm({
   pagination,
   loadingStateCopy,
 }: IntakeFormProps) {
-  const draftScope = readingId;
-
   const {
     allFields,
     pages,
@@ -77,7 +75,6 @@ export function IntakeForm({
   } = useDraftRestore({
     readingId,
     readingName,
-    draftScope,
     defaultValues,
   });
 
@@ -122,7 +119,6 @@ export function IntakeForm({
       defaultValues,
       defaultValuesSnapshot,
       isRestored,
-      draftScope,
       readingId,
       setValues,
       setCurrentPage,
@@ -171,7 +167,6 @@ export function IntakeForm({
   const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit } =
     useIntakeFormHandlers({
       readingId,
-      draftScope,
       formRef,
       submitIntentRef,
       values,

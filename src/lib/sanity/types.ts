@@ -90,105 +90,6 @@ export type SanityBookingPage = {
   seo?: SanitySeo;
 };
 
-export type SanityMyReadingsPage = {
-  listHeading: string;
-  listSubheading: string;
-  openButtonLabel: string;
-  emptyHeading: string;
-  emptyCtaLabel: string;
-  expiredRowLabel: string;
-  expiredMailtoLabel: string;
-  expiredMailtoSubject: string;
-  signInHeading: string;
-  signInBody: string;
-  signInButtonLabel: string;
-  signInFootnote: string;
-  checkEmailHeading: string;
-  checkEmailBody: string;
-  checkEmailResendLabel: string;
-  readingsTabLabel?: string;
-  giftsTabLabel?: string;
-  welcomeHeading?: string;
-  welcomeSubhead?: string;
-  welcomeButtonLabel?: string;
-};
-
-export type SanityMyGiftsPage = {
-  listHeading: string;
-  listSubheading: string;
-  emptyHeading: string;
-  emptyBody: string;
-  emptyCtaLabel: string;
-  signInHeading: string;
-  signInBody: string;
-  signInButtonLabel: string;
-  signInFootnote: string;
-  checkEmailHeading: string;
-  checkEmailBody: string;
-  checkEmailResendLabel: string;
-  statusScheduledLabel: string;
-  statusSelfSendReadyLabel: string;
-  statusSentLabel: string;
-  statusPreparingLabel: string;
-  statusDeliveredLabel: string;
-  statusCancelledLabel: string;
-  editRecipientCtaLabel: string;
-  flipToSelfSendCtaLabel: string;
-  resendLinkCtaLabel: string;
-  privacyNote: string;
-  editRecipientFormTitle?: string;
-  editRecipientSelfSendIndicator?: string;
-  editRecipientFormRecipientNameLabel?: string;
-  editRecipientFormRecipientEmailLabel?: string;
-  editRecipientFormSendAtLabel?: string;
-  editRecipientTimezoneLabel?: string;
-  editRecipientTimezonePlaceholder?: string;
-  editRecipientTimezoneFallbackHelp?: string;
-  editRecipientSaveButtonLabel?: string;
-  editRecipientSavingLabel?: string;
-  editRecipientCancelButtonLabel?: string;
-  flipConfirmCtaLabel?: string;
-  flipSwitchingLabel?: string;
-  resendSendingLabel?: string;
-  resendThrottledMessage?: string;
-  actionGenericError?: string;
-  actionNetworkError?: string;
-  actionClosedError?: string;
-  editRecipientSendAtPreviewTemplate?: string;
-  resendRetryAfterHourTemplate?: string;
-  resendRetryAfterDayTemplate?: string;
-  resendRetryFallbackLabel?: string;
-  flipToScheduledCtaLabel?: string;
-  flipToScheduledFormTitle?: string;
-  flipToScheduledSaveButtonLabel?: string;
-  flipToScheduledSavingLabel?: string;
-};
-
-export type SanityGiftClaimPage = {
-  seoTitle: string;
-  seoDescription: string;
-  noTokenHeading: string;
-  noTokenBody: string;
-  alreadyClaimedHeading: string;
-  alreadyClaimedBody: string;
-  sessionExpiredHeading: string;
-  sessionExpiredBody: string;
-  alreadySubmittedHeading: string;
-  alreadySubmittedBody: string;
-  welcomeHeading: string;
-  welcomeBody: string;
-  welcomeCtaLabel: string;
-};
-
-export type SanityGiftIntakePage = {
-  seoTitle: string;
-  seoDescription: string;
-  eyebrow: string;
-  heading: string;
-  headingWelcome: string;
-  lede: string;
-};
-
 export type SanityMagicLinkVerifyPage = {
   confirmHeading: string;
   confirmBody: string;
@@ -226,78 +127,6 @@ export type SanityEmailOrderConfirmation = {
   dataExportHeading?: string;
   dataExportBlurb?: string;
   dataExportButtonLabel?: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
-};
-
-export type SanityEmailRecipientIntakeReceived = SanityEmailOrderConfirmation;
-
-export type SanityEmailGiftPurchaseConfirmationSelfSend = {
-  subject: string;
-  preview: string;
-  brandName: string;
-  brandSubtitle: string;
-  heroLine: string;
-  body?: PortableTextBlock[];
-  greeting?: string;
-  detailLineSelfSend?: PortableTextBlock[];
-  shareButtonLabel: string;
-  shareUrlHelper: PortableTextBlock[];
-  cardLabel: string;
-  cardDeliveryLine: string;
-  refundLine: PortableTextBlock[];
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
-};
-
-export type SanityEmailGiftPurchaseConfirmationScheduled = {
-  subject: string;
-  preview: string;
-  brandName: string;
-  brandSubtitle: string;
-  heroLine: string;
-  body?: PortableTextBlock[];
-  greeting?: string;
-  detailLineScheduled?: PortableTextBlock[];
-  cardLabel: string;
-  cardDeliveryLine: string;
-  refundLine: PortableTextBlock[];
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
-};
-
-export type SanityEmailGiftClaim = {
-  subjectFirstSend: string;
-  previewFirstSend: string;
-  brandName: string;
-  brandSubtitle: string;
-  heroLineFirstSend: string;
-  body?: PortableTextBlock[];
-  greeting?: string;
-  bodyFirstSend?: PortableTextBlock[];
-  giftMessageLabel: string;
-  claimButtonLabel: string;
-  claimUrlHelper: PortableTextBlock[];
-  cardLabel: string;
-  cardDeliveryLine: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
-};
-
-export type SanityEmailGiftClaimReminder = {
-  subject: string;
-  preview: string;
-  brandName: string;
-  brandSubtitle: string;
-  heroLine: string;
-  body?: PortableTextBlock[];
-  giftMessageLabel: string;
-  cardLabel: string;
-  cardDeliveryLine: string;
   signOffLine1: string;
   signOffLine2: string;
   footerDisclaimer: string;
@@ -396,18 +225,6 @@ export type SanityThankYouPage = {
   contactBody?: string;
   closingMessage: string;
   returnButtonText: string;
-  giftPurchaserHeading?: string;
-  giftPurchaserSubheading?: string;
-  giftPurchaserBody?: string;
-  giftPurchaserSelfSendSubheading?: string;
-  giftPurchaserSelfSendBody?: string;
-  giftPurchaserReadingLabel?: string;
-  giftPurchaserTimelineBody?: string;
-  giftPurchaserContactBody?: string;
-  giftRecipientHeading?: string;
-  giftRecipientSubheading?: string;
-  giftRecipientBody?: string;
-  giftRecipientContactBody?: string;
   overrides?: SanityThankYouOverride[];
   seo?: SanitySeo;
 };
@@ -572,53 +389,6 @@ export type SanityEntryPageContent = {
   changeReadingLinkText?: string;
   aboutJosephineLinkText?: string;
   letterTitle?: string;
-  giftToggleForMeLabel?: string;
-  giftToggleAsGiftLabel?: string;
-  giftToggleHelper?: string;
-};
-
-export type SanityBookingGiftForm = {
-  heading?: string;
-  subheading?: string;
-  deliveryMethodLabel?: string;
-  deliveryMethodSelfSendLabel?: string;
-  deliveryMethodSelfSendHelper?: string;
-  deliveryMethodScheduledLabel?: string;
-  deliveryMethodScheduledHelper?: string;
-  purchaserFirstNameLabel?: string;
-  purchaserFirstNameHelper?: string;
-  purchaserEmailLabel?: string;
-  purchaserEmailHelper?: string;
-  recipientNameLabelSelfSend?: string;
-  recipientNamePlaceholderSelfSend?: string;
-  recipientNameLabelScheduled?: string;
-  recipientNameHelperScheduled?: string;
-  recipientEmailLabel?: string;
-  recipientEmailHelper?: string;
-  giftMessageLabel?: string;
-  giftMessagePlaceholder?: string;
-  sendAtSectionLabel?: string;
-  sendAtPresetNow?: string;
-  sendAtPresetWeek?: string;
-  sendAtPresetMonth?: string;
-  sendAtCustomLabel?: string;
-  consentIntro?: string;
-  nonRefundableNotice?: string;
-  submitButtonSelfSend?: string;
-  submitButtonScheduled?: string;
-  loadingStateCopy?: string;
-  antiAbuseCapHeading?: string;
-  antiAbuseCapBody?: string;
-  firstNameRequiredError?: string;
-  emailInvalidError?: string;
-  recipientNameRequiredError?: string;
-  recipientEmailRequiredError?: string;
-  sendAtRequiredError?: string;
-  consentRequiredError?: string;
-  verificationError?: string;
-  genericError?: string;
-  networkError?: string;
-  sendAtTimezoneHint?: string;
 };
 
 export type SanityBookingForm = {

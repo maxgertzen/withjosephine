@@ -394,7 +394,6 @@ export async function sendPrivacyExportEmail(args: {
   to: string;
   firstName: string;
   downloadUrl: string;
-  submissionCount: number;
   expiryDays: number;
 }): Promise<EmailSendResult> {
   const { EMAIL_PRIVACY_EXPORT_DEFAULTS } = await import("@/data/defaults");
@@ -406,7 +405,6 @@ export async function sendPrivacyExportEmail(args: {
   const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const subject = applyTokens(copy.subject, {
     firstName: args.firstName,
-    submissionCount: args.submissionCount,
     expiryDays: args.expiryDays,
   });
   const html = await render(
@@ -414,7 +412,6 @@ export async function sendPrivacyExportEmail(args: {
       vars={{
         firstName: args.firstName,
         downloadUrl: args.downloadUrl,
-        submissionCount: args.submissionCount,
         expiryDays: args.expiryDays,
       }}
       copy={copy}

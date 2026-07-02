@@ -168,7 +168,7 @@ describe("POST /api/privacy/export", () => {
     const res = await callRoute();
     expect(res.status).toBe(403);
     expect(mockWriteAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: "listen_session_invalid", success: false }),
+      expect.objectContaining({ eventType: "export_token_invalid", success: false }),
     );
     expect(mockFindSubmission).not.toHaveBeenCalled();
     expect(mockPutObject).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe("POST /api/privacy/export", () => {
     expect(res.status).toBe(403);
     expect(mockWriteAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: "listen_cross_user_denied",
+        eventType: "export_cross_user_denied",
         submissionId: "sub_1",
         success: false,
       }),
@@ -229,7 +229,6 @@ describe("POST /api/privacy/export", () => {
 
     expect(res.status).toBe(202);
     const body = await res.json();
-    expect(body.submissionCount).toBe(1);
     expect(body.expiresInSeconds).toBe(7 * 24 * 60 * 60);
 
     expect(mockFindSubmission).toHaveBeenCalledWith("sub_1");
@@ -245,7 +244,6 @@ describe("POST /api/privacy/export", () => {
       to: "ada@example.com",
       firstName: expect.any(String),
       downloadUrl: "https://r2.example.com/exports/sub_1/1.zip?sig=abc",
-      submissionCount: 1,
       expiryDays: 7,
     });
     expect(mockWriteAudit).toHaveBeenCalledWith(
