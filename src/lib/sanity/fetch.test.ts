@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchBookingForm,
   fetchBookingPage,
+  fetchEmailDay7Delivery,
+  fetchEmailMagicLink,
+  fetchEmailOrderConfirmation,
+  fetchEmailPrivacyExport,
+  fetchEmailSharedShell,
   fetchFaqItems,
   fetchLandingPage,
   fetchLegalPage,
@@ -24,9 +29,11 @@ vi.mock("./live", () => ({
 
 // `fetchReadingSlugs` skips `sanityFetch` (it runs at build time inside
 // `generateStaticParams`, where `draftMode()` is unavailable) and hits the raw
-// client directly. Mock that too.
+// client directly. Email fetchers use `getSanityFreshReadClient`. Mock both.
+const mockFreshFetch = vi.fn();
 vi.mock("./client", () => ({
   sanityClient: { fetch: vi.fn() },
+  getSanityFreshReadClient: vi.fn(async () => ({ fetch: mockFreshFetch })),
 }));
 
 import { sanityClient } from "./client";
@@ -37,6 +44,7 @@ const mockRawFetch = vi.mocked(sanityClient).fetch as ReturnType<typeof vi.fn>;
 beforeEach(() => {
   mockFetch.mockReset();
   mockRawFetch.mockReset();
+  mockFreshFetch.mockReset();
 });
 
 function mockData<T>(data: T) {
@@ -135,5 +143,26 @@ describe("Sanity fetch layer", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.objectContaining({ params: { slug: "privacy" } }),
     );
+  });
+});
+
+// Regression: email copy is sent from cron/DO/webhook where `sanityFetch`'s
+// live tag revalidation never runs and served a stale template (2026-07-05).
+// These fetchers MUST use the fresh uncached client and never `sanityFetch`.
+describe("email template fetchers use the fresh uncached client", () => {
+  const cases = [
+    ["fetchEmailDay7Delivery", fetchEmailDay7Delivery],
+    ["fetchEmailOrderConfirmation", fetchEmailOrderConfirmation],
+    ["fetchEmailMagicLink", fetchEmailMagicLink],
+    ["fetchEmailPrivacyExport", fetchEmailPrivacyExport],
+    ["fetchEmailSharedShell", fetchEmailSharedShell],
+  ] as const;
+
+  it.each(cases)("%s reads via the fresh client, not sanityFetch", async (_name, fetcher) => {
+    const data = { subjectTemplate: "Your {readingName} is ready" };
+    mockFreshFetch.mockResolvedValue(data);
+    expect(await fetcher()).toEqual(data);
+    expect(mockFreshFetch).toHaveBeenCalledOnce();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
