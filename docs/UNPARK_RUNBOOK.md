@@ -38,6 +38,7 @@ locations. Missing one leaves the apex parked or half-parked.
    - Register the **live-mode** webhook `https://withjosephine.com/api/stripe/webhook`; set its `whsec_…` as prod `STRIPE_WEBHOOK_SECRET`.
    - Recreate the 3 Payment Links in live mode.
    - Update the prod Sanity `stripePaymentLink` URLs (all currently `test_…`).
+   - **Pair each reading to the RIGHT link — do NOT trust the existing Sanity assignment.** Birth Chart and Soul Blueprint were found swapped in both datasets (2026-07-05, dex `xz7luej3`): each `stripePaymentLink` must resolve to a link whose **price AND `after_completion` redirect (`/thank-you/<slug>`) both match that reading's slug**. Verify all three: buying `<slug>` charges the right price and lands on `/thank-you/<slug>`. (Staging was corrected; prod's live links are created fresh here, so re-verify.)
    - The prod read-only smoke's live-link guard (#317) fails if any `test_` link survives — backstop for a missed swap.
 2. **Unpark the apex.** Set `NEXT_PUBLIC_UNDER_CONSTRUCTION=0` in **all three**:
    repo variable, `production` environment variable, and the prod worker secret
