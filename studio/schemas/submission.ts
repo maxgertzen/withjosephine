@@ -1,5 +1,6 @@
 import { defineField, defineType, type CustomValidator } from "sanity";
 
+import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
@@ -31,10 +32,26 @@ export const submission = defineType({
       title: "Reading PDF",
       type: "file",
       description:
-        "Drag the supporting PDF here. Required before you can mark this reading delivered.",
+        "Drag the supporting PDF here. Required before you can mark this reading delivered. A first-page thumbnail is generated automatically.",
       options: { accept: "application/pdf" },
+      components: { input: PdfThumbnailGenerator },
       validation: (rule) =>
         rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
+    }),
+    defineField({
+      name: "pdfThumbnail",
+      title: "Reading PDF — first-page thumbnail",
+      type: "image",
+      readOnly: true,
+      description:
+        "Auto-generated from the Reading PDF's first page on upload. Shown on the customer's listen page; a styled placeholder covers it if absent. Not required for delivery.",
+    }),
+    defineField({
+      name: "pdfThumbnailSourceRef",
+      title: "PDF thumbnail source (internal)",
+      type: "string",
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: "deliveredAt",

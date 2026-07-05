@@ -146,6 +146,7 @@ function resolveAuthenticatedState(args: {
     recipientName: null,
     voiceNoteAudioPath: args.submission.voiceNoteUrl ? `/api/listen/${args.id}/audio` : null,
     pdfDownloadPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf` : null,
+    pdfThumbnailPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf-thumbnail` : null,
     showWelcomeRibbon: args.welcome === "1",
   };
 }
