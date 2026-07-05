@@ -21,6 +21,7 @@ const STUDIO_SRC_ALIASES = [
   { find: /^@\/lib\/page-previews\//, replacement: `${SRC}/lib/page-previews/` },
   { find: /^@\/lib\/celestialPresets$/, replacement: `${SRC}/lib/celestialPresets.ts` },
   { find: /^@\/lib\/constants$/, replacement: `${SRC}/lib/constants.ts` },
+  { find: /^@\/lib\/copy\/templateSlots$/, replacement: `${SRC}/lib/copy/templateSlots.tsx` },
   { find: /^@\/lib\/utils$/, replacement: `${SRC}/lib/utils.ts` },
   { find: /^@\/lib\/formStyles$/, replacement: `${SRC}/lib/formStyles.ts` },
   { find: /^@\/lib\/clarity$/, replacement: `${SRC}/lib/clarity.ts` },
@@ -34,6 +35,7 @@ const STUDIO_SRC_ALIASES = [
   { find: /^@\/lib\/booking\/scheduling\//, replacement: `${SRC}/lib/booking/scheduling/` },
   { find: /^@\/components\//, replacement: `${SRC}/components/` },
   { find: /^@\/app\/\(authed\)\/listen\//, replacement: `${SRC}/app/(authed)/listen/` },
+  { find: /^@\/app\/\(authed\)\/thank-you\//, replacement: `${SRC}/app/(authed)/thank-you/` },
   { find: /^@\/app\/auth\//, replacement: `${SRC}/app/auth/` },
   { find: /^@\/lib\/auth\/safeNext$/, replacement: `${SRC}/lib/auth/safeNext.ts` },
 ];
