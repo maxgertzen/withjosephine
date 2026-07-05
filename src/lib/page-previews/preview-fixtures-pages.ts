@@ -1,4 +1,5 @@
 import type { ListenViewState } from "@/app/(authed)/listen/[id]/ListenView";
+import type { ResolvedThankYouContext } from "@/app/(authed)/thank-you/[readingId]/deriveThankYouViewProps";
 import type { VerifyPageViewState } from "@/app/auth/verify/VerifyPageView";
 
 export const LISTEN_FIXTURES: Record<string, ListenViewState> = {
@@ -23,10 +24,22 @@ export const VERIFY_FIXTURES: Record<string, VerifyPageViewState> = {
   rested: { kind: "rested" },
 };
 
-export const PREVIEW_SURFACES = ["listen", "magic-link-verify"] as const;
+export const THANKYOU_FIXTURES: Record<string, ResolvedThankYouContext> = {
+  "full-price": {
+    reading: { name: "Soul Blueprint", price: "$129", cents: 12900 },
+    paidAmount: { cents: 12900, display: "$129" },
+  },
+  discounted: {
+    reading: { name: "Birth Chart Reading", price: "$89", cents: 8900 },
+    paidAmount: { cents: 4900, display: "$49" },
+  },
+};
+
+export const PREVIEW_SURFACES = ["listen", "magic-link-verify", "thank-you"] as const;
 export type PreviewSurface = (typeof PREVIEW_SURFACES)[number];
 
 export function previewStateKeysFor(surface: PreviewSurface): string[] {
   if (surface === "listen") return Object.keys(LISTEN_FIXTURES);
+  if (surface === "thank-you") return Object.keys(THANKYOU_FIXTURES);
   return Object.keys(VERIFY_FIXTURES);
 }

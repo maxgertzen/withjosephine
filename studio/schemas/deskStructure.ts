@@ -6,6 +6,7 @@ import { EmailPreview } from "../views/EmailPreview";
 import {
   ListenPagePreview,
   MagicLinkVerifyPagePreview,
+  ThankYouPagePreview,
 } from "../views/StudioPagePreview";
 
 // Email singletons that support the send-to-test doc action.
@@ -145,7 +146,7 @@ const bookingFlowGroup = (S: StructureBuilder) =>
         .title("Booking Flow")
         .items([
           singletonListItem(S, "bookingPage", "Booking Page"),
-          singletonListItem(S, "thankYouPage", "Thank You Page"),
+          pagePreviewSingletonListItem(S, "thankYouPage", "Thank You Page", ThankYouPagePreview),
           singletonListItem(S, "bookingForm", "Booking Form"),
         ]),
     );

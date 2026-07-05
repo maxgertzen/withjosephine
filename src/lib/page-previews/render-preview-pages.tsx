@@ -1,6 +1,8 @@
 import { renderToString } from "react-dom/server";
 
 import { ListenView } from "@/app/(authed)/listen/[id]/ListenView";
+import { deriveThankYouViewProps } from "@/app/(authed)/thank-you/[readingId]/deriveThankYouViewProps";
+import { ThankYouView } from "@/app/(authed)/thank-you/[readingId]/ThankYouView";
 import { VerifyPageView } from "@/app/auth/verify/VerifyPageView";
 import type {
   ListenPageContent,
@@ -10,10 +12,12 @@ import {
   LISTEN_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
 } from "@/data/defaults";
+import type { SanityThankYouPage } from "@/lib/sanity/types";
 
 import {
   LISTEN_FIXTURES,
   type PreviewSurface,
+  THANKYOU_FIXTURES,
   VERIFY_FIXTURES,
 } from "./preview-fixtures-pages";
 
@@ -46,6 +50,16 @@ function renderSurfaceMarkup(
     const state = LISTEN_FIXTURES[stateKey] ?? LISTEN_FIXTURES.delivered;
     const copy = { ...LISTEN_PAGE_DEFAULTS, ...merged } as ListenPageContent;
     return renderToString(<ListenView copy={copy} state={state} />);
+  }
+  if (surface === "thank-you") {
+    const context = THANKYOU_FIXTURES[stateKey] ?? THANKYOU_FIXTURES["full-price"];
+    const props = deriveThankYouViewProps({
+      context,
+      thankYouPageContent: (sanityCopy as SanityThankYouPage | null) ?? null,
+      siteSettings: null,
+      slugForOverride: "soul-blueprint",
+    });
+    return renderToString(<ThankYouView {...props} />);
   }
   const state = VERIFY_FIXTURES[stateKey] ?? VERIFY_FIXTURES.confirm;
   const copy = { ...MAGIC_LINK_VERIFY_PAGE_DEFAULTS, ...merged } as MagicLinkVerifyPageContent;

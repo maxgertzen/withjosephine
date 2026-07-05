@@ -11,6 +11,7 @@ import {
   LISTEN_FIXTURES,
   PREVIEW_SURFACES,
   type PreviewSurface,
+  THANKYOU_FIXTURES,
   VERIFY_FIXTURES,
 } from "./preview-fixtures-pages";
 import { renderPagePreview } from "./render-preview-pages";
@@ -18,6 +19,7 @@ import { renderPagePreview } from "./render-preview-pages";
 const FIXTURE_KEYS: Record<PreviewSurface, string[]> = {
   listen: Object.keys(LISTEN_FIXTURES),
   "magic-link-verify": Object.keys(VERIFY_FIXTURES),
+  "thank-you": Object.keys(THANKYOU_FIXTURES),
 };
 
 describe.each(PREVIEW_SURFACES)("renderPagePreview, %s", (surface) => {
