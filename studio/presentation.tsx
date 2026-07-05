@@ -1,5 +1,5 @@
 import { EnvelopeIcon } from "@sanity/icons";
-import { defineLocations, type PresentationPluginOptions } from "sanity/presentation";
+import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
@@ -15,6 +15,23 @@ const emailLocation = (title: string) =>
   });
 
 export const presentationResolve: PresentationPluginOptions["resolve"] = {
+  // Literal two-segment routes MUST precede the /preview/:slug wildcard (it also matches two segments).
+  mainDocuments: defineDocuments([
+    { route: "/preview", type: "landingPage" },
+    {
+      route: "/preview/book/:slug",
+      filter: `_type == "reading" && slug.current == $slug`,
+      params: ({ params }) => ({ slug: params.slug }),
+    },
+    { route: "/preview/thank-you/:slug", type: "thankYouPage" },
+    { route: "/preview/under-construction", type: "underConstructionPage" },
+    { route: "/preview/404", type: "notFoundPage" },
+    {
+      route: "/preview/:slug",
+      filter: `_type == "legalPage" && slug.current == $slug`,
+      params: ({ params }) => ({ slug: params.slug }),
+    },
+  ]),
   locations: {
     landingPage: defineLocations({
       message: "This document impacts the landing page.",
