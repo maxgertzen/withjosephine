@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { sanityClient } from "./client";
+import { getSanityFreshReadClient, sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import { publishedFetch } from "./publishedFetch";
 import {
@@ -157,43 +157,31 @@ export const fetchMagicLinkVerifyPage = cache(
   },
 );
 
-export const fetchEmailMagicLink = cache(async (): Promise<SanityEmailMagicLink | null> => {
-  const { data } = await sanityFetch<SanityEmailMagicLink | null>({ query: emailMagicLinkQuery });
-  return data;
-});
+// Email copy bypasses `sanityFetch` (the live/cached path) so cron/DO/webhook
+// sends always render the latest published template. See `getSanityFreshReadClient`.
+async function fetchEmailCopy<T>(query: string): Promise<T | null> {
+  const client = await getSanityFreshReadClient();
+  return client.fetch<T | null>(query);
+}
 
-export const fetchEmailPrivacyExport = cache(
-  async (): Promise<SanityEmailPrivacyExport | null> => {
-    const { data } = await sanityFetch<SanityEmailPrivacyExport | null>({
-      query: emailPrivacyExportQuery,
-    });
-    return data;
-  },
+export const fetchEmailMagicLink = cache((): Promise<SanityEmailMagicLink | null> =>
+  fetchEmailCopy<SanityEmailMagicLink>(emailMagicLinkQuery),
 );
 
-export const fetchEmailDay7Delivery = cache(async (): Promise<SanityEmailDay7Delivery | null> => {
-  const { data } = await sanityFetch<SanityEmailDay7Delivery | null>({
-    query: emailDay7DeliveryQuery,
-  });
-  return data;
-});
-
-export const fetchEmailOrderConfirmation = cache(
-  async (): Promise<SanityEmailOrderConfirmation | null> => {
-    const { data } = await sanityFetch<SanityEmailOrderConfirmation | null>({
-      query: emailOrderConfirmationQuery,
-    });
-    return data;
-  },
+export const fetchEmailPrivacyExport = cache((): Promise<SanityEmailPrivacyExport | null> =>
+  fetchEmailCopy<SanityEmailPrivacyExport>(emailPrivacyExportQuery),
 );
 
-export const fetchEmailSharedShell = cache(
-  async (): Promise<SanityEmailSharedShell | null> => {
-    const { data } = await sanityFetch<SanityEmailSharedShell | null>({
-      query: emailSharedShellQuery,
-    });
-    return data;
-  },
+export const fetchEmailDay7Delivery = cache((): Promise<SanityEmailDay7Delivery | null> =>
+  fetchEmailCopy<SanityEmailDay7Delivery>(emailDay7DeliveryQuery),
+);
+
+export const fetchEmailOrderConfirmation = cache((): Promise<SanityEmailOrderConfirmation | null> =>
+  fetchEmailCopy<SanityEmailOrderConfirmation>(emailOrderConfirmationQuery),
+);
+
+export const fetchEmailSharedShell = cache((): Promise<SanityEmailSharedShell | null> =>
+  fetchEmailCopy<SanityEmailSharedShell>(emailSharedShellQuery),
 );
 
 export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {

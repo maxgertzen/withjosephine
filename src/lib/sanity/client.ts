@@ -95,3 +95,33 @@ export async function getSanityWriteClient(): Promise<SanityClient> {
   cachedWriteClientsByDataset.set(dataset, client);
   return client;
 }
+
+/**
+ * Read client for transactional email copy. Do NOT route these through
+ * `sanityFetch`: emails send from cron/DO/webhook contexts where the live path's
+ * tag revalidation never runs (`<SanityLive>` only revalidates in a browser
+ * request), so it serves a stale template (2026-07-05: a Studio edit shipped with
+ * pre-edit copy). Direct `.fetch` + `useCdn:false` + `perspective:"published"`
+ * always reflects the latest publish; `stega:false` keeps visual-editing markers
+ * out of the HTML. Read token attached so a private dataset can't 401 the send
+ * into the code defaults.
+ */
+const cachedFreshReadClientsByDataset = new Map<string, SanityClient>();
+
+export async function getSanityFreshReadClient(): Promise<SanityClient> {
+  const dataset = await resolveDataset();
+  const cached = cachedFreshReadClientsByDataset.get(dataset);
+  if (cached) return cached;
+  const client = createClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    perspective: "published",
+    stega: false,
+    token: process.env.SANITY_READ_TOKEN,
+    ...hostOverride,
+  });
+  cachedFreshReadClientsByDataset.set(dataset, client);
+  return client;
+}
