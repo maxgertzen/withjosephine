@@ -2,6 +2,8 @@
 
 ## ▶ IN PROGRESS (2026-07-03): v1.16.0 STRIP — gift + library + user-signin removed → on `release/v1.16.0`, staging-green, NOT merged to main
 
+**2026-07-05 update:** #318 `fix(email)` merged to `release/v1.16.0` (squash `39fc69d`, CI green incl deploy-staging) — transactional email copy now reads uncached so a Studio publish is reflected on the next send (was serving a stale cached template from the cron/DO path). **The apex-unpark procedure is now a standalone runbook: `docs/UNPARK_RUNBOOK.md`** (verified vars + ordered steps; use it instead of reconstructing from the narrative below).
+
 **What & why:** Max decided the near-term site drops everything built on top of core: the gift feature, the readings/gifts library, and user sign-in UI. Built on a new **`release/v1.16.0`** branch. The full-featured code is preserved verbatim on **`release/v2.0.0`** (parked snapshot of the pre-strip main, to resurrect gift/library later). Eventually `release/v1.16.0` → `main`; `2.0.0` stays for the future.
 
 **Branch map:** `release/v2.0.0` = full-featured (parked). `release/v1.16.0` = stripped (near-term; 11 commits `b79dd23`..`c7a9476`). `main` = unchanged until 1.16.0 is smoked + explicitly merged.
