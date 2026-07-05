@@ -1,4 +1,4 @@
-import { Button, Container, Section } from "@react-email/components";
+import { Container, Link, Section } from "@react-email/components";
 
 import type { EmailOrderConfirmationContent, EmailSharedShellContent } from "@/data/defaults";
 import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
@@ -70,38 +70,21 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
           </Section>
         </div>
 
-        {vars.dataExportUrl ? (
-          <div style={{ padding: "20px 48px 0 48px" }}>
-            <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
-              <p
-                className="font-serif text-ink"
-                style={{ margin: "0 0 8px 0", fontSize: 18 }}
-              >
-                {copy.dataExportHeading}
-              </p>
-              <p
-                className="font-sans text-body"
-                style={{ margin: "0 0 16px 0", fontSize: 14, lineHeight: 1.6 }}
-              >
-                {copy.dataExportBlurb}
-              </p>
-              <Button
-                href={vars.dataExportUrl}
-                className="bg-ink text-cream font-sans no-underline"
-                style={{
-                  padding: "12px 24px",
-                  fontSize: 14,
-                  borderRadius: 50,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {copy.dataExportButtonLabel}
-              </Button>
-            </Section>
-          </div>
-        ) : null}
-
         <EmailFooter shell={shell} />
+
+        {vars.dataExportUrl ? (
+          <Section
+            className="font-sans text-muted"
+            style={{ padding: "0 48px 32px 48px", fontSize: 12, lineHeight: 1.7 }}
+          >
+            <p style={{ margin: 0 }}>
+              {copy.dataExportHeading}{" "}
+              <Link href={vars.dataExportUrl} className="text-ink">
+                {copy.dataExportButtonLabel} &rarr;
+              </Link>
+            </p>
+          </Section>
+        ) : null}
       </Container>
     </EmailShell>
   );

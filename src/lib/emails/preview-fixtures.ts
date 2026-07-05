@@ -13,6 +13,7 @@ export const PREVIEW_FIXTURE = {
   listenUrl: "https://withjosephine.com/listen/preview",
   magicLinkUrl: "https://withjosephine.com/api/auth/magic-link/verify?token=preview",
   downloadUrl: "https://images.withjosephine.com/exports/preview.zip",
+  dataExportUrl: "https://withjosephine.com/privacy/export?t=preview",
   expiryDays: 7,
 } as const;
 

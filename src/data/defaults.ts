@@ -248,10 +248,10 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   ],
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
-  dataExportHeading: "Your data, your right",
+  dataExportHeading: "Need a copy of your data?",
   dataExportBlurb:
     "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
-  dataExportButtonLabel: "Request my data export",
+  dataExportButtonLabel: "Request an export",
 };
 
 export interface EmailDay7DeliveryContent {

@@ -58,6 +58,7 @@ async function renderRaw(
             readingName: PREVIEW_FIXTURE.readingName,
             readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
             amountPaidDisplay: PREVIEW_FIXTURE.amountPaidDisplay,
+            dataExportUrl: PREVIEW_FIXTURE.dataExportUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailOrderConfirmation}
         />,
