@@ -1,61 +1,14 @@
 export type EmailTemplateKey =
   | "emailOrderConfirmation"
   | "emailDay7Delivery"
-  | "emailGiftPurchaseConfirmationSelfSend"
-  | "emailGiftPurchaseConfirmationScheduled"
-  | "emailGiftClaim"
-  | "emailGiftClaimReminder"
   | "emailMagicLink"
-  | "emailMagicLinkLibrary"
-  | "emailPrivacyExport"
-  | "emailRecipientIntakeReceived"
-  | "emailStepUpOtp"
-  | "emailNewDeviceNotice";
+  | "emailPrivacyExport";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
   emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
-  emailGiftPurchaseConfirmationSelfSend: [
-    "purchaserFirstName",
-    "recipientName",
-    "readingName",
-    "readingPriceDisplay",
-    "amountPaidDisplay",
-    "giftMessage",
-    "myGiftsUrl",
-    "claimUrl",
-  ],
-  emailGiftPurchaseConfirmationScheduled: [
-    "purchaserFirstName",
-    "recipientName",
-    "readingName",
-    "readingPriceDisplay",
-    "amountPaidDisplay",
-    "giftMessage",
-    "myGiftsUrl",
-    "sendAtDisplay",
-  ],
-  emailGiftClaim: [
-    "purchaserFirstName",
-    "recipientName",
-    "readingName",
-    "readingPriceDisplay",
-    "giftMessage",
-    "claimUrl",
-  ],
-  emailGiftClaimReminder: [
-    "purchaserFirstName",
-    "recipientName",
-    "readingName",
-    "readingPriceDisplay",
-    "giftMessage",
-  ],
   emailMagicLink: ["magicLinkUrl", "firstName", "readingName", "readingPriceDisplay"],
-  emailMagicLinkLibrary: ["magicLinkUrl", "firstName"],
-  emailPrivacyExport: ["firstName", "downloadUrl", "submissionCount", "expiryDays"],
-  emailRecipientIntakeReceived: ["recipientName", "purchaserFirstName", "readingName"],
-  emailStepUpOtp: [],
-  emailNewDeviceNotice: ["firstName"],
+  emailPrivacyExport: ["firstName", "downloadUrl", "expiryDays"],
 } as const;
 
 const SLOT_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;

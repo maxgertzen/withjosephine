@@ -114,8 +114,5 @@ function makeStudioPagePreview(surface: PreviewSurface, label: string) {
 }
 
 export const ListenPagePreview = makeStudioPagePreview("listen", "Listen page");
-export const MyReadingsPagePreview = makeStudioPagePreview("my-readings", "My Readings");
-export const MyGiftsPagePreview = makeStudioPagePreview("my-gifts", "My Gifts");
-export const GiftClaimPagePreview = makeStudioPagePreview("gift-claim", "Gift Claim page");
 export const MagicLinkVerifyPagePreview = makeStudioPagePreview("magic-link-verify", "Magic Link Confirm page");
-export const GiftIntakePagePreview = makeStudioPagePreview("gift-intake", "Gift Intake page");
+export const ThankYouPagePreview = makeStudioPagePreview("thank-you", "Thank You page");

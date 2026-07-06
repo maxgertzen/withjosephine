@@ -1,9 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@/components/AccountMenu", () => ({
-  AccountMenu: () => <div data-testid="account-menu" />,
-}));
+import { describe, expect, it } from "vitest";
 
 import { BookingFlowHeader } from "./BookingFlowHeader";
 
@@ -20,9 +16,10 @@ describe("BookingFlowHeader", () => {
     expect(home).toHaveAttribute("href", "/");
   });
 
-  it("renders the account menu in the right slot", () => {
+  it("no longer renders an account menu", () => {
     render(<BookingFlowHeader backHref="/" />);
-    expect(screen.getByTestId("account-menu")).toBeInTheDocument();
+    expect(screen.queryByTestId("account-menu")).toBeNull();
+    expect(screen.queryByRole("button", { name: /account/i })).toBeNull();
   });
 
   it("no longer renders an About Josephine link", () => {

@@ -19,7 +19,7 @@ export const ConfirmEmail: Story = {
     state: {
       kind: "confirm",
       token: "demo-verification-token",
-      next: "/my-readings",
+      next: "/",
     },
   },
 };

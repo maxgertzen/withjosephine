@@ -35,11 +35,6 @@ describe("slots — validateSlotsInValue (string fields)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.unknown).toEqual(["totallyWrong"]);
   });
-  it("rejects unknown slots for slot-free templates", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.unknown).toEqual(["firstName"]);
-  });
   it("accepts undefined / null without complaint", () => {
     expect(validateSlotsInValue(undefined, "emailOrderConfirmation")).toEqual({ ok: true });
     expect(validateSlotsInValue(null, "emailOrderConfirmation")).toEqual({ ok: true });
@@ -78,11 +73,6 @@ describe("slots — formatSlotValidationError", () => {
       expect(msg).toContain("{readingName}");
     }
   });
-  it("explains slot-free templates clearly", () => {
-    const result = validateSlotsInValue("Hi {firstName}.", "emailStepUpOtp");
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(formatSlotValidationError(result)).toContain("no slots");
-  });
 });
 
 describe("slots — EMAIL_ALLOWED_SLOTS", () => {
@@ -90,49 +80,24 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
     expect(Object.keys(EMAIL_ALLOWED_SLOTS).sort()).toEqual(
       [
         "emailDay7Delivery",
-        "emailGiftClaim",
-        "emailGiftClaimReminder",
-        "emailGiftPurchaseConfirmationScheduled",
-        "emailGiftPurchaseConfirmationSelfSend",
         "emailMagicLink",
-        "emailMagicLinkLibrary",
-        "emailNewDeviceNotice",
         "emailOrderConfirmation",
         "emailPrivacyExport",
-        "emailRecipientIntakeReceived",
-        "emailStepUpOtp",
       ].sort(),
     );
   });
 
-  it("makes readingPriceDisplay available in all customer + gift emails that have purchase context", () => {
+  it("makes readingPriceDisplay available in customer emails that have purchase context", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("readingPriceDisplay");
     expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaimReminder).toContain("readingPriceDisplay");
   });
 
   it("exposes URL tokens where the template's vars carry them", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("listenUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("claimUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("myGiftsUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("myGiftsUrl");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("claimUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("amountPaidDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("amountPaidDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("amountPaidDisplay");
-  });
-
-  it("exposes giftMessage in both gift emails", () => {
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationSelfSend).toContain("giftMessage");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchaseConfirmationScheduled).toContain("giftMessage");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaim).toContain("giftMessage");
-    expect(EMAIL_ALLOWED_SLOTS.emailGiftClaimReminder).toContain("giftMessage");
   });
 });

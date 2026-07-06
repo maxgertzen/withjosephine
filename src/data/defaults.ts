@@ -106,9 +106,6 @@ export interface EntryPageContent {
   dropCapCaption: string;
   changeReadingLinkText: string;
   aboutJosephineLinkText: string;
-  giftToggleForMeLabel: string;
-  giftToggleAsGiftLabel: string;
-  giftToggleHelper: string;
 }
 
 export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
@@ -122,9 +119,6 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
     "The intake form: about five minutes. You\u2019ll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three \u2192",
   aboutJosephineLinkText: "About Josephine",
-  giftToggleForMeLabel: "For myself",
-  giftToggleAsGiftLabel: "Send as a gift",
-  giftToggleHelper: "",
 };
 
 export interface BookingInfoNotes {
@@ -140,330 +134,6 @@ export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
     "A voice note plus a written PDF, made just for you.",
   whatsIncludedHeading: "What\u2019s included",
   bookReadingCtaText: "Book this Reading \u2192",
-};
-
-export interface BookingGiftFormContent {
-  heading: string;
-  subheading: string;
-  deliveryMethodLabel: string;
-  deliveryMethodSelfSendLabel: string;
-  deliveryMethodSelfSendHelper: string;
-  deliveryMethodScheduledLabel: string;
-  deliveryMethodScheduledHelper: string;
-  purchaserFirstNameLabel: string;
-  purchaserFirstNameHelper: string;
-  purchaserEmailLabel: string;
-  purchaserEmailHelper: string;
-  recipientNameLabelSelfSend: string;
-  recipientNamePlaceholderSelfSend: string;
-  recipientNameLabelScheduled: string;
-  recipientNameHelperScheduled: string;
-  recipientEmailLabel: string;
-  recipientEmailHelper: string;
-  giftMessageLabel: string;
-  giftMessagePlaceholder: string;
-  sendAtSectionLabel: string;
-  sendAtPresetNow: string;
-  sendAtPresetWeek: string;
-  sendAtPresetMonth: string;
-  sendAtCustomLabel: string;
-  consentIntro: string;
-  nonRefundableNotice: string;
-  submitButtonSelfSend: string;
-  submitButtonScheduled: string;
-  loadingStateCopy: string;
-  antiAbuseCapHeading: string;
-  antiAbuseCapBody: string;
-  firstNameRequiredError: string;
-  emailInvalidError: string;
-  recipientNameRequiredError: string;
-  recipientEmailRequiredError: string;
-  sendAtRequiredError: string;
-  consentRequiredError: string;
-  verificationError: string;
-  genericError: string;
-  networkError: string;
-  sendAtTimezoneHint: string;
-}
-
-export const BOOKING_GIFT_FORM_DEFAULTS: BookingGiftFormContent = {
-  heading: "A reading, given.",
-  subheading: "",
-  deliveryMethodLabel: "How should it travel?",
-  deliveryMethodSelfSendLabel: "I\u2019ll send the link myself",
-  deliveryMethodSelfSendHelper:
-    "You\u2019ll receive a private link by email. Forward it to them in your own words.",
-  deliveryMethodScheduledLabel: "Schedule the email",
-  deliveryMethodScheduledHelper: "We\u2019ll email them on the date you choose.",
-  purchaserFirstNameLabel: "Your first name",
-  purchaserFirstNameHelper: "So we can tell them who it\u2019s from.",
-  purchaserEmailLabel: "Your email",
-  purchaserEmailHelper: "Your receipt + a copy of the gift link will arrive here.",
-  recipientNameLabelSelfSend: "Who\u2019s this for? (optional)",
-  recipientNamePlaceholderSelfSend:
-    "my sister, Maya, the friend who keeps mentioning her chart\u2026",
-  recipientNameLabelScheduled: "Their first name",
-  recipientNameHelperScheduled: "We\u2019ll address the email to them.",
-  recipientEmailLabel: "Their email",
-  recipientEmailHelper:
-    "Used only to send the claim email at the time you choose.",
-  giftMessageLabel: "A note for them (optional)",
-  giftMessagePlaceholder: "A word for them, if you like\u2026",
-  sendAtSectionLabel: "When should it arrive?",
-  sendAtPresetNow: "Right away",
-  sendAtPresetWeek: "On a chosen morning",
-  sendAtPresetMonth: "At a specific moment",
-  sendAtCustomLabel: "Choose the date and time",
-  consentIntro: "Before this travels onward:",
-  nonRefundableNotice:
-    "Gifts are non-refundable once payment is complete. You can change the recipient (their name, email, or send-at date) any time before we send them the claim email.",
-  submitButtonSelfSend: "Send this gift",
-  submitButtonScheduled: "Prepare this gift",
-  loadingStateCopy: "One moment - taking you to checkout.",
-  antiAbuseCapHeading: "A gentle pause",
-  antiAbuseCapBody:
-    "There\u2019s already a reading waiting for this person. Give them a quiet moment to open it before sending another.",
-  firstNameRequiredError: "Your first name is required.",
-  emailInvalidError: "Enter a valid email address.",
-  recipientNameRequiredError: "Recipient name is required.",
-  recipientEmailRequiredError: "Enter a valid recipient email.",
-  sendAtRequiredError: "Pick when the gift should arrive.",
-  consentRequiredError: "Required to proceed.",
-  verificationError: "Please complete the verification step and try again.",
-  genericError: "Something went wrong. Please try again.",
-  networkError: "Network problem. Please try again.",
-  sendAtTimezoneHint: "This will arrive {date} in your timezone.",
-};
-
-export interface AuthGatedPageContent {
-  signInHeading: string;
-  signInBody: string;
-  signInButtonLabel: string;
-  signInFootnote: string;
-  checkEmailHeading: string;
-  checkEmailBody: string;
-  checkEmailResendLabel: string;
-}
-
-export interface MyReadingsPageContent extends AuthGatedPageContent {
-  listHeading: string;
-  listSubheading: string;
-  openButtonLabel: string;
-  emptyHeading: string;
-  emptyCtaLabel: string;
-  expiredRowLabel: string;
-  expiredMailtoLabel: string;
-  expiredMailtoSubject: string;
-  readingsTabLabel: string;
-  giftsTabLabel: string;
-  welcomeHeading?: string;
-  welcomeSubhead?: string;
-  welcomeButtonLabel?: string;
-  exportHeading?: string;
-  exportBody?: string;
-  exportButtonLabel?: string;
-  exportPendingLabel?: string;
-  exportSuccessMessage?: string;
-  exportErrorMessage?: string;
-}
-
-export const MY_READINGS_PAGE_DEFAULTS: MyReadingsPageContent = {
-  listHeading: "Your readings",
-  listSubheading: "Gathered here, ready when you are.",
-  openButtonLabel: "Open your reading",
-  emptyHeading: "Your readings will appear here once they’re delivered.",
-  emptyCtaLabel: "Explore Readings",
-  expiredRowLabel: "Rested past 90 days",
-  expiredMailtoLabel: "Email for a fresh link",
-  expiredMailtoSubject: "I need a fresh link to my reading",
-  readingsTabLabel: "Mine",
-  giftsTabLabel: "For others",
-  welcomeHeading: "Welcome to your library.",
-  welcomeSubhead:
-    "Tap the button below to sign in and see every reading gathered in one place. This link is private to you, please do not forward.",
-  welcomeButtonLabel: "Continue to your library",
-  exportHeading: "Your data",
-  exportBody:
-    "Request a copy of everything we hold for you. We’ll email a private download link when it’s ready.",
-  exportButtonLabel: "Export my data",
-  exportPendingLabel: "Preparing your export…",
-  exportSuccessMessage:
-    "Your export is on its way. Check your email for a private download link, it expires in seven days.",
-  exportErrorMessage:
-    "Something went wrong preparing your export. Please try again in a few minutes.",
-  signInHeading: "Welcome back",
-  signInBody:
-    "Tell us the email you used to book, and we’ll send a fresh link to open your reading.",
-  signInButtonLabel: "Send me a link",
-  signInFootnote: "Your reading is still here, exactly as it was.",
-  checkEmailHeading: "Check your email",
-  checkEmailBody:
-    "If we have a reading on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
-  checkEmailResendLabel: "Send another",
-};
-
-export interface MyGiftsPageContent extends AuthGatedPageContent {
-  listHeading: string;
-  listSubheading: string;
-  emptyHeading: string;
-  emptyBody: string;
-  emptyCtaLabel: string;
-  statusScheduledLabel: string;
-  statusSelfSendReadyLabel: string;
-  statusSentLabel: string;
-  statusPreparingLabel: string;
-  statusDeliveredLabel: string;
-  statusCancelledLabel: string;
-  editRecipientCtaLabel: string;
-  flipToSelfSendCtaLabel: string;
-  resendLinkCtaLabel: string;
-  privacyNote: string;
-  editRecipientFormTitle: string;
-  editRecipientSelfSendIndicator: string;
-  editRecipientFormRecipientNameLabel: string;
-  editRecipientFormRecipientEmailLabel: string;
-  editRecipientFormSendAtLabel: string;
-  editRecipientTimezoneLabel: string;
-  editRecipientTimezonePlaceholder: string;
-  editRecipientTimezoneFallbackHelp: string;
-  editRecipientSaveButtonLabel: string;
-  editRecipientSavingLabel: string;
-  editRecipientCancelButtonLabel: string;
-  flipConfirmCtaLabel: string;
-  flipSwitchingLabel: string;
-  resendSendingLabel: string;
-  resendThrottledMessage: string;
-  actionGenericError: string;
-  actionNetworkError: string;
-  actionClosedError: string;
-  editRecipientSendAtPreviewTemplate: string;
-  resendRetryAfterHourTemplate: string;
-  resendRetryAfterDayTemplate: string;
-  resendRetryFallbackLabel: string;
-  flipToScheduledCtaLabel: string;
-  flipToScheduledFormTitle: string;
-  flipToScheduledSaveButtonLabel: string;
-  flipToScheduledSavingLabel: string;
-  sendNowCtaLabel: string;
-  sendNowConfirmCtaLabel: string;
-  sendNowSendingLabel: string;
-  sendNowSessionExpiredError: string;
-}
-
-export const MY_GIFTS_PAGE_DEFAULTS: MyGiftsPageContent = {
-  listHeading: "Your gifts",
-  listSubheading: "Every reading you’ve sent, gathered in one quiet place.",
-  emptyHeading: "No gifts here yet.",
-  emptyBody: "When you send a reading to someone, you’ll find its status here.",
-  emptyCtaLabel: "Send a reading",
-  signInHeading: "Welcome back",
-  signInBody:
-    "Tell us the email you used to send a gift, and we’ll send a fresh link to manage it.",
-  signInButtonLabel: "Send me a link",
-  signInFootnote: "Your gifts are still here, exactly as you left them.",
-  checkEmailHeading: "Check your email",
-  checkEmailBody:
-    "If we have a gift on file for that email, a fresh link is on its way. It expires in twenty-four hours.",
-  checkEmailResendLabel: "Send another",
-  statusScheduledLabel: "Scheduled to send",
-  statusSelfSendReadyLabel: "Link ready to share",
-  statusSentLabel: "Sent, resting in their inbox",
-  statusPreparingLabel: "In Josephine’s hands",
-  statusDeliveredLabel: "Delivered",
-  statusCancelledLabel: "Cancelled",
-  editRecipientCtaLabel: "Edit recipient",
-  flipToSelfSendCtaLabel: "Cancel the schedule and send it myself",
-  resendLinkCtaLabel: "Resend the link to me",
-  privacyNote:
-    "We only show you status here. Your recipient’s answers, voice note, and PDF stay private to them.",
-  editRecipientFormTitle: "Edit recipient",
-  editRecipientSelfSendIndicator: "Self-send delivery: you share the link yourself",
-  editRecipientFormRecipientNameLabel: "Recipient name",
-  editRecipientFormRecipientEmailLabel: "Recipient email",
-  editRecipientFormSendAtLabel: "Send at",
-  editRecipientTimezoneLabel: "Time zone",
-  editRecipientTimezonePlaceholder: "Pick your time zone",
-  editRecipientTimezoneFallbackHelp:
-    "We couldn’t detect your time zone. Pick one below so the email arrives at the right moment.",
-  editRecipientSaveButtonLabel: "Save changes",
-  editRecipientSavingLabel: "Saving…",
-  editRecipientCancelButtonLabel: "Cancel",
-  flipConfirmCtaLabel: "Tap again to confirm",
-  flipSwitchingLabel: "Switching…",
-  resendSendingLabel: "Sending…",
-  resendThrottledMessage:
-    "You’ve already resent this recently. Try again in a little while.",
-  actionGenericError: "Something went wrong. Please try again.",
-  actionNetworkError: "Network problem. Please try again.",
-  actionClosedError: "This gift can’t be edited anymore.",
-  editRecipientSendAtPreviewTemplate: "Arrives {date} ({tz}).",
-  resendRetryAfterHourTemplate: "You can resend again at {when}.",
-  resendRetryAfterDayTemplate: "You’ve hit today’s limit. Try again at {when}.",
-  resendRetryFallbackLabel: "shortly",
-  flipToScheduledCtaLabel: "Let Josephine send it for me",
-  flipToScheduledFormTitle: "Have Josephine deliver the link",
-  flipToScheduledSaveButtonLabel: "Schedule it",
-  flipToScheduledSavingLabel: "Scheduling…",
-  sendNowCtaLabel: "Send now",
-  sendNowConfirmCtaLabel: "Tap again to send today",
-  sendNowSendingLabel: "Sending…",
-  sendNowSessionExpiredError:
-    "Your session expired. Please refresh and try again.",
-};
-
-export interface GiftClaimPageContent {
-  seoTitle: string;
-  seoDescription: string;
-  noTokenHeading: string;
-  noTokenBody: string;
-  alreadyClaimedHeading: string;
-  alreadyClaimedBody: string;
-  sessionExpiredHeading: string;
-  sessionExpiredBody: string;
-  alreadySubmittedHeading: string;
-  alreadySubmittedBody: string;
-  welcomeHeading: string;
-  welcomeBody: string;
-  welcomeCtaLabel: string;
-}
-
-export const GIFT_CLAIM_PAGE_DEFAULTS: GiftClaimPageContent = {
-  seoTitle: "Claim your gift, with Josephine",
-  seoDescription: "Open the reading someone sent you.",
-  noTokenHeading: "Open from your email",
-  noTokenBody:
-    "Your gift link came in an email. Open it from there to claim your reading.",
-  alreadyClaimedHeading: "This gift has already been opened",
-  alreadyClaimedBody:
-    "If you think this is a mistake, reply to the email your gift came in and we’ll help.",
-  sessionExpiredHeading: "Your link rested for a moment",
-  sessionExpiredBody:
-    "Your claim session timed out. Open the gift link from your original email again; it's still good, and your reading is waiting.",
-  alreadySubmittedHeading: "We have your answers. Thank you.",
-  alreadySubmittedBody:
-    "Your reading is in my hands now. If something in what you sent needs a correction, just write to me at hello@withjosephine.com and I'll take care of it.",
-  welcomeHeading: "Welcome, {recipientName}.",
-  welcomeBody:
-    "Your reading is waiting. Tap the button below to share a few details so it can begin.",
-  welcomeCtaLabel: "Continue",
-};
-
-export interface GiftIntakePageContent {
-  seoTitle: string;
-  seoDescription: string;
-  eyebrow: string;
-  heading: string;
-  headingWelcome: string;
-  lede: string;
-}
-
-export const GIFT_INTAKE_PAGE_DEFAULTS: GiftIntakePageContent = {
-  seoTitle: "Open your gift, with Josephine",
-  seoDescription: "Share your details so Josephine can prepare your reading.",
-  eyebrow: "✦ Opening your gift",
-  heading: "A few things, before we begin.",
-  headingWelcome: "Welcome, a few things before we begin.",
-  lede: "Someone sent you a {readingName} reading. Share your details and Josephine will prepare your reading.",
 };
 
 export interface MagicLinkVerifyPageContent {
@@ -529,22 +199,6 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   signOff: null,
 };
 
-export const EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS: EmailMagicLinkContent = {
-  subject: "Sign in to your library",
-  preview: "A fresh sign-in link for your readings and gifts.",
-  heroLine: "Sign in to your library",
-  buttonLabel: "Sign in",
-  body: [
-    ...stringToPortableTextBlocks(
-      "Here’s a fresh sign-in link for your library. It’ll sign you in for the next seven days so you can come back to your readings (and any gifts you’ve shared) without asking again.",
-    ),
-    ...stringToPortableTextBlocks(
-      "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore. Nothing happens until someone clicks.",
-    ),
-  ],
-  signOff: null,
-};
-
 // Brand + footer fields shared across every customer-facing email template.
 // Sourced from the `emailSharedShell` Sanity singleton at render time; this
 // constant is the fallback when the GROQ fetch returns null.
@@ -564,70 +218,6 @@ export const EMAIL_SHARED_SHELL_DEFAULTS: EmailSharedShellContent = {
   footerDisclaimer: "Readings are offered for entertainment and personal reflection.",
 };
 
-// Step-up OTP email. Short transactional code delivered when a purchaser
-// attempts a high-risk gift mutation (edit recipient, send now, claim for
-// yourself). Brand-light shell: header + body + footer, no GoldHero. The
-// 6-digit code is rendered as a slot in body so the modal's verify step
-// reads back what the user sees in their inbox.
-export interface SanityEmailStepUpOtp {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  intro: string;
-  codeLabel: string;
-  expiryLine: string;
-  closingLine: string;
-  signoff: string;
-}
-
-export const STEP_UP_OTP_EMAIL_DEFAULTS: SanityEmailStepUpOtp = {
-  subject: "Your verification code",
-  preview: "Your verification code",
-  heroLine: "Verify it's you",
-  intro:
-    "We will email you a code to confirm. This protects your gifts from being changed by anyone who has access to your inbox or a stale sign-in.",
-  codeLabel: "Your code",
-  expiryLine: "This code expires in 15 minutes.",
-  closingLine: "If you did not request this code, you can ignore this email.",
-  signoff: "Josephine",
-};
-
-// New-device notice email. Fired passively from the listen-page render when
-// a reading is opened from a browser whose UA-hash has not been seen on this
-// submission before. Single primary button revokes the recipient's listen
-// sessions via a short-lived signed token. Skips silently if no baseline.
-export interface EmailNewDeviceNoticeContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  bodyIntro: EmailRichText;
-  wasItYouButtonLabel: string;
-  bodyPostButton: EmailRichText;
-  signOff: string | null;
-}
-
-export const EMAIL_NEW_DEVICE_NOTICE_DEFAULTS: EmailNewDeviceNoticeContent = {
-  subject: "Was this you?",
-  preview: "We noticed your reading was opened from a new device.",
-  heroLine: "Was this you?",
-  bodyIntro: [
-    ...stringToPortableTextBlocks("Hi {firstName},"),
-    ...stringToPortableTextBlocks(
-      "We noticed your reading was opened from a device we had not seen before. If that was you, no action needed. If not, tap the button below and we will lock things down.",
-    ),
-  ],
-  wasItYouButtonLabel: "This was not me",
-  bodyPostButton: [
-    ...stringToPortableTextBlocks(
-      "Tapping the button signs you out of every device on this reading. After that, write to me at hello@withjosephine.com and I will help you sort out what happened.",
-    ),
-    ...stringToPortableTextBlocks(
-      "If everything looks right, you can ignore this email. We send it once per new device, just so you know.",
-    ),
-  ],
-  signOff: null,
-};
-
 export interface EmailOrderConfirmationContent {
   subject: string;
   preview: string;
@@ -635,10 +225,10 @@ export interface EmailOrderConfirmationContent {
   body: EmailRichText;
   cardLabel: string;
   cardDeliveryLine: string;
-  libraryButtonLabel?: string;
+  dataExportHeading: string;
+  dataExportBlurb: string;
+  dataExportButtonLabel: string;
 }
-
-export const EMAIL_LIBRARY_BUTTON_LABEL_DEFAULT = "See all your readings";
 
 export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = {
   subject: "Your reading is booked: what happens next",
@@ -658,155 +248,11 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   ],
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
+  dataExportHeading: "Need a copy of your data?",
+  dataExportBlurb:
+    "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
+  dataExportButtonLabel: "Request an export",
 };
-
-export interface EmailRecipientIntakeReceivedContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  body: EmailRichText;
-  cardLabel: string;
-  cardDeliveryLine: string;
-}
-
-export const EMAIL_RECIPIENT_INTAKE_RECEIVED_DEFAULTS: EmailRecipientIntakeReceivedContent = {
-  subject: "Your reading is in my hands now",
-  preview: "Your answers landed safely. Here's what happens next.",
-  heroLine: "Your reading is in my hands",
-  body: [
-    ...stringToPortableTextBlocks("Hi {recipientName},"),
-    ...stringToPortableTextBlocks(
-      "Thank you for sharing what you did. {purchaserFirstName} gifted you a {readingName} reading, and I have everything I need now to begin.",
-    ),
-    ...stringToPortableTextBlocks(
-      "I'll begin your reading in the next day or two. You'll hear a short note from me when I do, just so you know it's underway. Your voice note and PDF will arrive within seven days, to this email address.",
-    ),
-    ...stringToPortableTextBlocks(
-      "If something in what you sent needs a correction. A date, a detail, anything at all. Just reply to this email; it comes straight to me.",
-    ),
-  ],
-  cardLabel: "Your reading",
-  cardDeliveryLine: "Delivery within 7 days",
-};
-
-export interface EmailGiftPurchaseConfirmationSelfSendContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  body: EmailRichText;
-  shareButtonLabel: string;
-  shareUrlHelper: EmailRichText;
-  cardLabel: string;
-  cardDeliveryLine: string;
-  refundLine: EmailRichText;
-  libraryButtonLabel?: string;
-}
-
-export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SELF_SEND_DEFAULTS: EmailGiftPurchaseConfirmationSelfSendContent = {
-  subject: "Your gift is ready to share",
-  preview: "Your shareable link is inside.",
-  heroLine: "A reading, ready for them",
-  body: [
-    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
-    ...stringToPortableTextBlocks(
-      "Thank you for gifting a {readingName} reading. Below is a private link you can share with {recipientName} whenever the timing feels right; folded into a card, sent in a message, however it suits you. They’ll see who it’s from when they open it.",
-    ),
-  ],
-  shareButtonLabel: "Share the link",
-  shareUrlHelper: stringToPortableTextBlocks(
-    "This link is for {recipientName}. Share it the way you’d give them a handwritten card.",
-  ),
-  cardLabel: "The gift",
-  cardDeliveryLine: "Delivery within 7 days of claim",
-  refundLine: stringToPortableTextBlocks(
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your library at {myGiftsUrl}.",
-  ),
-};
-
-export interface EmailGiftPurchaseConfirmationScheduledContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  body: EmailRichText;
-  cardLabel: string;
-  cardDeliveryLine: string;
-  refundLine: EmailRichText;
-  libraryButtonLabel?: string;
-}
-
-export const EMAIL_GIFT_PURCHASE_CONFIRMATION_SCHEDULED_DEFAULTS: EmailGiftPurchaseConfirmationScheduledContent = {
-  subject: "Your gift is scheduled",
-  preview: "We’ll send it to {recipientName} on {sendAtDisplay}.",
-  heroLine: "A reading, on its way",
-  body: [
-    ...stringToPortableTextBlocks("Hi {purchaserFirstName},"),
-    ...stringToPortableTextBlocks(
-      "Thank you for gifting a {readingName} reading. I’ll let {recipientName} know about it on {sendAtDisplay}, when they’ll receive a short note from me with a private link to claim it and share what I need to read for them.",
-    ),
-  ],
-  cardLabel: "The gift",
-  cardDeliveryLine: "Delivery within 7 days of claim",
-  refundLine: stringToPortableTextBlocks(
-    "Gifts are non-refundable once payment is complete. Until {recipientName} opens their link, you can change their name, email, or send date from your library at {myGiftsUrl}.",
-  ),
-};
-
-export interface EmailGiftClaimContent {
-  subjectFirstSend: string;
-  previewFirstSend: string;
-  heroLineFirstSend: string;
-  body: EmailRichText;
-  giftMessageLabel: string;
-  claimButtonLabel: string;
-  claimUrlHelper: EmailRichText;
-  cardLabel: string;
-  cardDeliveryLine: string;
-}
-
-export const EMAIL_GIFT_CLAIM_DEFAULTS: EmailGiftClaimContent = {
-  subjectFirstSend: "A reading, waiting for you",
-  previewFirstSend: "{purchaserFirstName} has sent you a reading.",
-  heroLineFirstSend: "A reading, for you",
-  body: [
-    ...stringToPortableTextBlocks("Hi {recipientName},"),
-    ...stringToPortableTextBlocks(
-      "{purchaserFirstName} has given you a {readingName} reading with me. When you’re ready, tap the link below to begin. A short welcome opens first, then a form so I know what to read for you: your birth details, what you’re sitting with, anything you’d like me to keep in mind. After that, the reading lands in your inbox within seven days.",
-    ),
-  ],
-  giftMessageLabel: "A note from {purchaserFirstName}",
-  claimButtonLabel: "Open your gift",
-  claimUrlHelper: stringToPortableTextBlocks(
-    "This link is for you. Open it from a quiet moment; a short welcome and then a ten-minute form follow.",
-  ),
-  cardLabel: "The gift",
-  cardDeliveryLine: "Delivered within 7 days of your intake",
-};
-
-export interface EmailGiftClaimReminderContent {
-  subject: string;
-  preview: string;
-  heroLine: string;
-  body?: EmailRichText;
-  giftMessageLabel: string;
-  cardLabel: string;
-  cardDeliveryLine: string;
-}
-
-export const EMAIL_GIFT_CLAIM_REMINDER_DEFAULTS: EmailGiftClaimReminderContent = {
-  subject: "A reading is still waiting for you",
-  preview: "A small reminder about the reading {purchaserFirstName} sent you.",
-  heroLine: "Still here, when you’re ready",
-  body: [
-    ...stringToPortableTextBlocks("Hi {recipientName},"),
-    ...stringToPortableTextBlocks(
-      "I sent you a note from {purchaserFirstName} a little while ago about a {readingName} reading they wanted you to have. If you can find that earlier email, the link is inside it. If you can’t, write to hello@withjosephine.com and I’ll send you a fresh one. No rush, the reading is yours whenever you’re ready.",
-    ),
-  ],
-  giftMessageLabel: "A note from {purchaserFirstName}",
-  cardLabel: "The gift",
-  cardDeliveryLine: "Delivered within 7 days of your intake",
-};
-
 
 export interface EmailDay7DeliveryContent {
   subjectTemplate: string;
@@ -815,7 +261,6 @@ export interface EmailDay7DeliveryContent {
   bodyIntro: EmailRichText;
   bodyPostButton: EmailRichText;
   openButtonLabel: string;
-  libraryButtonLabel?: string;
   cardLabel: string;
   cardDeliveryLine: string;
   signOff: string | null;
@@ -839,7 +284,7 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
     ...stringToPortableTextBlocks("Hi,"),
     ...stringToPortableTextBlocks("Your Josephine data export is ready."),
     ...stringToPortableTextBlocks(
-      "It contains the data we hold for your {submissionCount} reading(s): intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
+      "It contains the data we hold for your reading: intake answers, consent records, transactional records, photos, voice notes, and PDFs (where delivered).",
     ),
   ],
   bodyPostButton: stringToPortableTextBlocks(
@@ -987,9 +432,6 @@ export const ABOUT_DEFAULTS: MappedAbout = {
 
 export type ThankYouPageContent = Required<Omit<SanityThankYouPage, "overrides" | "seo">>;
 
-const THANK_YOU_RECIPIENT_TIMELINE_BODY =
-  "I\u2019ll begin your reading within the next two days, and I\u2019ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you used to claim this gift.";
-
 const THANK_YOU_GENERIC_CONTACT_BODY =
   "If anything comes up (a question, a detail you forgot to mention, or anything that doesn\u2019t look right in your confirmation), just reply to that email or write to me at {email}. It comes straight to me.";
 
@@ -1005,22 +447,4 @@ export const THANK_YOU_PAGE_DEFAULTS: ThankYouPageContent = {
   contactBody: THANK_YOU_GENERIC_CONTACT_BODY,
   closingMessage: "With love, Josephine \u2726",
   returnButtonText: "Return to Home",
-  giftPurchaserHeading: "Thank you, {purchaserFirstName}. Your gift is on its way.",
-  giftPurchaserSubheading:
-    "I'll take it from here. The recipient will receive a note from me with their claim link.",
-  giftPurchaserBody:
-    "A confirmation is on its way to your inbox. When the gift is ready to be opened, the recipient will receive their own note with a claim link, and they\u2019ll share their intake details with me from there.",
-  giftPurchaserSelfSendSubheading:
-    "Your gift link is ready in the email I just sent. Share it with them whenever feels right.",
-  giftPurchaserSelfSendBody:
-    "A confirmation is on its way to your inbox with the share link inside. Forward it to the recipient when you're ready, and they'll claim from there.",
-  giftPurchaserReadingLabel: "Your gift",
-  giftPurchaserTimelineBody:
-    "I\u2019ll begin the recipient\u2019s reading within the next two days of them claiming the gift, and I\u2019ll send them a short note when I do. Their voice note and PDF will arrive within {deliveryDays}, sent to the email they use to claim.",
-  giftPurchaserContactBody:
-    "If anything comes up with the gift (a wrong recipient email, a change of plan, anything that doesn\u2019t look right in your confirmation), just reply to that email or write to me at {email}. It comes straight to me.",
-  giftRecipientHeading: "Thank you, {recipientName}. Your reading is in my hands now.",
-  giftRecipientSubheading: "I've received everything I need to begin.",
-  giftRecipientBody: THANK_YOU_RECIPIENT_TIMELINE_BODY,
-  giftRecipientContactBody: THANK_YOU_GENERIC_CONTACT_BODY,
 };

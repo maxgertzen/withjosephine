@@ -1,10 +1,9 @@
-import { tryBuildLibraryUrl } from "@/lib/auth/libraryUrl";
+import { mintExportToken } from "@/lib/auth/exportToken";
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { siteOrigin } from "@/lib/env";
 
 import {
   redactEmail,
-  resolveDeliveryAddress,
   sendDay7Delivery,
   sendOrderConfirmation,
 } from "../resend";
@@ -77,7 +76,7 @@ export async function resendCustomerEmail(
   return {
     ok: true,
     emailType,
-    targetEmailRedacted: redactEmail(resolveDeliveryAddress(submission)),
+    targetEmailRedacted: redactEmail(submission.email),
   };
 }
 
@@ -94,14 +93,21 @@ async function dispatchResend(
   const context = buildSubmissionContext(submission);
   switch (emailType) {
     case "order_confirmation": {
-      const libraryUrl = submission.recipientUserId
-        ? await tryBuildLibraryUrl({
-            userId: submission.recipientUserId,
+      // A mint failure must never block the resend (mirrors notifyPaid).
+      let dataExportUrl: string | undefined;
+      if (submission.recipientUserId) {
+        try {
+          const token = await mintExportToken({
+            submissionId: submission._id,
+            recipientUserId: submission.recipientUserId,
             mintSource: "admin_resend",
-            siteContext: `resendCustomerEmail:oc:${submission._id}`,
-          })
-        : undefined;
-      return sendOrderConfirmation(context, libraryUrl);
+          });
+          dataExportUrl = `${siteOrigin()}/privacy/export?t=${token}`;
+        } catch (error) {
+          console.error(`[resendCustomerEmail] export token mint failed for ${submission._id}`, error);
+        }
+      }
+      return sendOrderConfirmation(context, { dataExportUrl });
     }
     case "day7": {
       if (!submission.recipientUserId) {
@@ -129,12 +135,7 @@ async function dispatchResend(
         ttlMs: cappedTtl,
       });
       const listenUrl = `${siteOrigin()}/listen/${submission._id}?t=${token}`;
-      const libraryUrl = await tryBuildLibraryUrl({
-        userId: submission.recipientUserId,
-        mintSource: "admin_resend",
-        siteContext: `resendCustomerEmail:day7:${submission._id}`,
-      });
-      return sendDay7Delivery(context, listenUrl, libraryUrl);
+      return sendDay7Delivery(context, listenUrl);
     }
   }
 }

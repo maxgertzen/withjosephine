@@ -20,11 +20,7 @@ type GroqResponse = { ms: number; query: string; result: unknown };
 
 const SINGLETON_DOC_TYPES = [
   "bookingForm",
-  "bookingGiftForm",
   "bookingPage",
-  "giftClaimPage",
-  "giftIntakePage",
-  "myGiftsPage",
   "siteSettings",
   "thankYouPage",
   "theme",

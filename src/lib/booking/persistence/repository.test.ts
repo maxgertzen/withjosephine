@@ -1,26 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  acquireGiftResendLock,
   appendEmailFired,
-  countActivePendingGiftsForRecipient,
   createSubmission,
   type CreateSubmissionInput,
   deleteSubmission,
   findSubmissionById,
   findSubmissionListenContext,
-  findUnclaimedGiftByTokenHash,
   insertFinancialRecord,
   listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
   listSubmissionsByRecipientUserId,
   listSubmissionsByStatusOlderThan,
-  markGiftClaimSent,
   markSubmissionDelivered,
   markSubmissionExpired,
   markSubmissionPaid,
-  redeemGiftSubmission,
-  releaseGiftResendLock,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
@@ -296,239 +290,6 @@ describe("repository against in-memory SQLite", () => {
       );
       expect(rows).toHaveLength(1);
       expect(rows[0]?.amount_paid_cents).toBe(7900);
-    });
-  });
-
-  describe("gift claim flow (Phase 5)", () => {
-    const GIFT_INPUT: CreateSubmissionInput = {
-      ...BASE_INPUT,
-      id: "sub_gift",
-      isGift: true,
-      recipientEmail: "bob@example.com",
-      giftDeliveryMethod: "self_send",
-      responses: [],
-    };
-
-    it("findUnclaimedGiftByTokenHash returns the matching gift submission", async () => {
-      await createSubmission(GIFT_INPUT);
-      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
-      const found = await findUnclaimedGiftByTokenHash("deadbeef-hash");
-      expect(found?._id).toBe("sub_gift");
-      expect(found?.isGift).toBe(true);
-    });
-
-    it("findUnclaimedGiftByTokenHash returns null when no match", async () => {
-      await createSubmission(GIFT_INPUT);
-      const found = await findUnclaimedGiftByTokenHash("no-such-hash");
-      expect(found).toBeNull();
-    });
-
-    it("findUnclaimedGiftByTokenHash returns null after the gift is claimed", async () => {
-      await createSubmission(GIFT_INPUT);
-      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
-      await redeemGiftSubmission("sub_gift", {
-        responses: [
-          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
-        ],
-        recipientUserId: "user_bob",
-        claimedAtIso: "2026-05-12T01:00:00Z",
-      });
-      const found = await findUnclaimedGiftByTokenHash("deadbeef-hash");
-      expect(found).toBeNull();
-    });
-
-    it("redeemGiftSubmission updates responses + claimed_at + recipient_user_id", async () => {
-      await createSubmission(GIFT_INPUT);
-      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
-      await redeemGiftSubmission("sub_gift", {
-        responses: [
-          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
-        ],
-        recipientUserId: "user_bob",
-        claimedAtIso: "2026-05-12T01:00:00Z",
-      });
-      const record = await findSubmissionById("sub_gift");
-      expect(record?.responses[0]?.value).toBe("Bob");
-      expect(record?.giftClaimedAt).toBe("2026-05-12T01:00:00Z");
-      expect(record?.recipientUserId).toBe("user_bob");
-    });
-
-    it("listPaidSubmissionsForEmail excludes paid-but-unclaimed gifts", async () => {
-      await createSubmission({
-        ...GIFT_INPUT,
-        id: "gift_unclaimed",
-        recipientEmail: "claire@example.com",
-      });
-      await markSubmissionPaid("gift_unclaimed", {
-        stripeEventId: "evt_g",
-        stripeSessionId: "cs_g",
-        paidAt: "2026-05-01T00:00:00Z",
-        amountPaidCents: 17900,
-        amountPaidCurrency: "usd",
-      });
-
-      const due = await listPaidSubmissionsForEmail("order_confirmation", {});
-      expect(due.map((r) => r._id)).not.toContain("gift_unclaimed");
-    });
-
-    it("listPaidSubmissionsForEmail includes gifts AFTER recipient claims", async () => {
-      await createSubmission({
-        ...GIFT_INPUT,
-        id: "gift_claimed",
-        recipientEmail: "dani@example.com",
-      });
-      await markSubmissionPaid("gift_claimed", {
-        stripeEventId: "evt_g2",
-        stripeSessionId: "cs_g2",
-        paidAt: "2026-05-01T00:00:00Z",
-        amountPaidCents: 17900,
-        amountPaidCurrency: "usd",
-      });
-      await markGiftClaimSent("gift_claimed", "hash-2", "2026-05-01T01:00:00Z");
-      await redeemGiftSubmission("gift_claimed", {
-        responses: [
-          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Dani" },
-        ],
-        recipientUserId: "user_dani",
-        claimedAtIso: "2026-05-02T00:00:00Z",
-      });
-
-      const due = await listPaidSubmissionsForEmail("order_confirmation", {});
-      expect(due.map((r) => r._id)).toContain("gift_claimed");
-    });
-
-    it("redeemGiftSubmission is idempotent — second call after claim does not overwrite", async () => {
-      await createSubmission(GIFT_INPUT);
-      await markGiftClaimSent("sub_gift", "deadbeef-hash", "2026-05-12T00:00:00Z");
-      await redeemGiftSubmission("sub_gift", {
-        responses: [
-          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Bob" },
-        ],
-        recipientUserId: "user_bob",
-        claimedAtIso: "2026-05-12T01:00:00Z",
-      });
-      // Second attempt — should be a no-op because gift_claimed_at is set
-      await redeemGiftSubmission("sub_gift", {
-        responses: [
-          { fieldKey: "first_name", fieldLabelSnapshot: "First", fieldType: "shortText", value: "Evil" },
-        ],
-        recipientUserId: "user_attacker",
-        claimedAtIso: "2026-05-13T00:00:00Z",
-      });
-      const record = await findSubmissionById("sub_gift");
-      expect(record?.responses[0]?.value).toBe("Bob");
-      expect(record?.recipientUserId).toBe("user_bob");
-      expect(record?.giftClaimedAt).toBe("2026-05-12T01:00:00Z");
-    });
-  });
-
-  // Session 4b LB-3: anti-abuse cap re-check at claim time
-  describe("countActivePendingGiftsForRecipient", () => {
-    async function makePendingGiftFor(id: string, recipientEmail: string) {
-      await createSubmission({
-        ...BASE_INPUT,
-        id,
-        isGift: true,
-        recipientEmail,
-        giftDeliveryMethod: "self_send",
-        responses: [],
-      });
-    }
-
-    it("counts in-flight gifts addressed to the recipient", async () => {
-      await makePendingGiftFor("g1", "victim@example.com");
-      await makePendingGiftFor("g2", "victim@example.com");
-      await makePendingGiftFor("g3", "other@example.com");
-      const n = await countActivePendingGiftsForRecipient("victim@example.com");
-      expect(n).toBe(2);
-    });
-
-    it("excludes the current submission when excludeSubmissionId is passed", async () => {
-      await makePendingGiftFor("g1", "victim@example.com");
-      await makePendingGiftFor("g2", "victim@example.com");
-      const nIncluding = await countActivePendingGiftsForRecipient("victim@example.com");
-      const nExcluding = await countActivePendingGiftsForRecipient("victim@example.com", {
-        excludeSubmissionId: "g1",
-      });
-      expect(nIncluding).toBe(2);
-      expect(nExcluding).toBe(1);
-    });
-
-    it("excludes claimed and cancelled gifts from the count", async () => {
-      await makePendingGiftFor("g_pending", "victim@example.com");
-      await makePendingGiftFor("g_claimed", "victim@example.com");
-      await markGiftClaimSent("g_claimed", "hash", "2026-05-01T00:00:00Z");
-      await redeemGiftSubmission("g_claimed", {
-        responses: [],
-        recipientUserId: "u",
-        claimedAtIso: "2026-05-02T00:00:00Z",
-      });
-      const n = await countActivePendingGiftsForRecipient("victim@example.com");
-      expect(n).toBe(1);
-    });
-  });
-
-  // Phase 5 Session 4b — B6.20 atomic resend-link lock.
-  describe("acquireGiftResendLock", () => {
-    async function makeSelfSendGift(id: string): Promise<void> {
-      await createSubmission({
-        ...BASE_INPUT,
-        id,
-        responses: [],
-        consentLabel: null,
-        photoR2Key: null,
-        isGift: true,
-        purchaserUserId: "user_x",
-        purchaserTimeZone: null,
-        giftDeliveryMethod: "self_send",
-      });
-      await markSubmissionPaid(id, {
-        stripeEventId: `evt_${id}`,
-        stripeSessionId: `cs_${id}`,
-        paidAt: "2026-04-21T10:00:00Z",
-        amountPaidCents: 9900,
-        amountPaidCurrency: "usd",
-        recipientUserId: "user_x",
-      });
-    }
-
-    it("first caller acquires the lock, second concurrent caller gets false", async () => {
-      await makeSelfSendGift("g_lock_1");
-      const now = 1_700_000_000_000;
-      const a = await acquireGiftResendLock("g_lock_1", {
-        nowMs: now,
-        lockUntilMs: now + 60_000,
-      });
-      expect(a).toBe(true);
-      const b = await acquireGiftResendLock("g_lock_1", {
-        nowMs: now + 1_000,
-        lockUntilMs: now + 61_000,
-      });
-      expect(b).toBe(false);
-    });
-
-    it("lock auto-expires — caller past TTL acquires fresh lock", async () => {
-      await makeSelfSendGift("g_lock_2");
-      const now = 1_700_000_000_000;
-      await acquireGiftResendLock("g_lock_2", { nowMs: now, lockUntilMs: now + 60_000 });
-      const later = now + 90_000; // past the TTL
-      const next = await acquireGiftResendLock("g_lock_2", {
-        nowMs: later,
-        lockUntilMs: later + 60_000,
-      });
-      expect(next).toBe(true);
-    });
-
-    it("release frees the lock for the next caller", async () => {
-      await makeSelfSendGift("g_lock_3");
-      const now = 1_700_000_000_000;
-      await acquireGiftResendLock("g_lock_3", { nowMs: now, lockUntilMs: now + 60_000 });
-      await releaseGiftResendLock("g_lock_3");
-      const next = await acquireGiftResendLock("g_lock_3", {
-        nowMs: now + 100,
-        lockUntilMs: now + 60_100,
-      });
-      expect(next).toBe(true);
     });
   });
 

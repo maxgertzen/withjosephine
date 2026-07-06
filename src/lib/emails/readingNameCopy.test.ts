@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   EMAIL_DAY7_DELIVERY_DEFAULTS,
-  EMAIL_GIFT_CLAIM_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
-  GIFT_INTAKE_PAGE_DEFAULTS,
 } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 
@@ -31,8 +29,6 @@ describe("email/page copy reads '<name> reading' with no double-noun (ekesibyy)"
       EMAIL_ORDER_CONFIRMATION_DEFAULTS.body,
       EMAIL_DAY7_DELIVERY_DEFAULTS.subjectTemplate,
       EMAIL_DAY7_DELIVERY_DEFAULTS.bodyIntro,
-      EMAIL_GIFT_CLAIM_DEFAULTS.body,
-      GIFT_INTAKE_PAGE_DEFAULTS.lede,
     ]
       .map((field) => JSON.stringify(applyTokens(field, { readingName: name })))
       .join(" ");

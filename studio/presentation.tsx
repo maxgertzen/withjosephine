@@ -1,5 +1,5 @@
 import { EnvelopeIcon } from "@sanity/icons";
-import { defineLocations, type PresentationPluginOptions } from "sanity/presentation";
+import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
@@ -15,6 +15,23 @@ const emailLocation = (title: string) =>
   });
 
 export const presentationResolve: PresentationPluginOptions["resolve"] = {
+  // Literal two-segment routes MUST precede the /preview/:slug wildcard (it also matches two segments).
+  mainDocuments: defineDocuments([
+    { route: "/preview", type: "landingPage" },
+    {
+      route: "/preview/book/:slug",
+      filter: `_type == "reading" && slug.current == $slug`,
+      params: ({ params }) => ({ slug: params.slug }),
+    },
+    { route: "/preview/thank-you/:slug", type: "thankYouPage" },
+    { route: "/preview/under-construction", type: "underConstructionPage" },
+    { route: "/preview/404", type: "notFoundPage" },
+    {
+      route: "/preview/:slug",
+      filter: `_type == "legalPage" && slug.current == $slug`,
+      params: ({ params }) => ({ slug: params.slug }),
+    },
+  ]),
   locations: {
     landingPage: defineLocations({
       message: "This document impacts the landing page.",
@@ -73,20 +90,8 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     }),
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
     emailDay7Delivery: emailLocation("Email: Reading Delivery (Day 7)"),
-    emailGiftClaim: emailLocation("Email: Gift Claim (First Send)"),
-    emailGiftClaimReminder: emailLocation("Email: Gift Claim (Reminder)"),
-    emailGiftPurchaseConfirmationScheduled: emailLocation(
-      "Email: Gift Confirmation (Scheduled)",
-    ),
-    emailGiftPurchaseConfirmationSelfSend: emailLocation(
-      "Email: Gift Confirmation (Self-Send)",
-    ),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
-    emailMagicLinkLibrary: emailLocation("Email: Magic Link (Library)"),
-    emailNewDeviceNotice: emailLocation("Email: New Device Notice"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),
-    emailRecipientIntakeReceived: emailLocation("Email: Intake Received (Recipient)"),
     emailSharedShell: emailLocation("Email: Shared Shell (brand + footer)"),
-    emailStepUpOtp: emailLocation("Email: Step-up Code"),
   },
 };

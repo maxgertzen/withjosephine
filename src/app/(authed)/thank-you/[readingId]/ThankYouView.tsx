@@ -9,8 +9,6 @@ import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
 
-export type ThankYouMode = "purchase" | "giftPurchaser" | "giftRecipient";
-
 export type ThankYouViewCopy = {
   heading: string;
   subheading: string;
@@ -24,28 +22,18 @@ export type ThankYouViewCopy = {
 };
 
 export type ThankYouViewProps = {
-  mode: ThankYouMode;
   reading: { name: string; price: string; cents: number | null };
   paidAmount: { cents: number | null; display: string | null };
-  purchaserFirstName: string | null;
-  recipientName: string | null;
   contactEmail: string;
   copy: ThankYouViewCopy;
 };
 
 export function ThankYouView({
-  mode,
   reading,
   paidAmount,
-  purchaserFirstName,
-  recipientName,
   contactEmail,
   copy,
 }: ThankYouViewProps) {
-  const purchaserSlotValue = purchaserFirstName ?? "";
-  const recipientSlotValue = recipientName ?? "";
-  const isRecipient = mode === "giftRecipient";
-  const showsPurchaserOnlySections = !isRecipient;
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
 
@@ -63,16 +51,10 @@ export function ThankYouView({
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {renderWithSlots(copy.heading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
+          {copy.heading}
         </h1>
         <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {renderWithSlots(copy.subheading, {
-            purchaserFirstName: purchaserSlotValue,
-            recipientName: recipientSlotValue,
-          })}
+          {copy.subheading}
         </p>
 
         <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
@@ -82,36 +64,27 @@ export function ThankYouView({
             </span>
             <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
           </div>
-          {showsPurchaserOnlySections &&
-            (showsDiscountedPrice ? (
-              <span className="font-display text-2xl italic flex items-baseline gap-2">
-                <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-                <span className="text-j-accent">{paidAmount.display}</span>
-              </span>
-            ) : (
-              <span className="font-display text-2xl italic text-j-accent">
-                {paidAmount.display ?? reading.price}
-              </span>
-            ))}
+          {showsDiscountedPrice ? (
+            <span className="font-display text-2xl italic flex items-baseline gap-2">
+              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+              <span className="text-j-accent">{paidAmount.display}</span>
+            </span>
+          ) : (
+            <span className="font-display text-2xl italic text-j-accent">
+              {paidAmount.display ?? reading.price}
+            </span>
+          )}
         </div>
 
         <GoldDivider className="max-w-xs mx-auto my-12" />
 
         <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          {showsPurchaserOnlySections && (
-            <p className="whitespace-pre-line">
-              {renderWithSlots(copy.confirmationBody, {
-                purchaserFirstName: purchaserSlotValue,
-                recipientName: recipientSlotValue,
-              })}
-            </p>
-          )}
+          <p className="whitespace-pre-line">{copy.confirmationBody}</p>
           <p className="whitespace-pre-line">
             {renderWithSlots(copy.timelineBody, {
               deliveryDays: (
                 <span className="font-display italic text-j-accent">{copy.deliveryDaysPhrase}</span>
               ),
-              recipientName: recipientSlotValue,
             })}
           </p>
           <p className="whitespace-pre-line">

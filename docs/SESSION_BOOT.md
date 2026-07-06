@@ -1,5 +1,38 @@
 # Session Boot — Active State
 
+## ▶ IN PROGRESS (2026-07-03): v1.16.0 STRIP — gift + library + user-signin removed → on `release/v1.16.0`, staging-green, NOT merged to main
+
+**2026-07-05 update:** #318 `fix(email)` merged to `release/v1.16.0` (squash `39fc69d`, CI green incl deploy-staging) — transactional email copy now reads uncached so a Studio publish is reflected on the next send (was serving a stale cached template from the cron/DO path). **The apex-unpark procedure is now a standalone runbook: `docs/UNPARK_RUNBOOK.md`** (verified vars + ordered steps; use it instead of reconstructing from the narrative below).
+
+**2026-07-05 update (2):** #319 `feat(listen)` PDF first-page thumbnail + #320 stale-spec cleanup both merged to `release/v1.16.0` (squash `74089bb` / `3fec84d`), release CI green incl deploy-staging (thumbnail now on staging).
+- 🚨 **Launch bug found + partially fixed — birth-chart ↔ Soul Blueprint Stripe Payment Links were SWAPPED in BOTH datasets** (dex `xz7luej3`). A birth-chart buyer would pay $129 (Soul Blueprint) and land on the wrong thank-you. **Staging Sanity FIXED** (each reading now points to the link whose redirect/price matches its slug); **PROD still swapped but test-mode + parked** — the links get recreated at the Stripe live-swap, and `UNPARK_RUNBOOK.md` now carries a hard "pair each reading to the right link" check. Verify prod at unpark.
+- 📋 **`umfh04zz` (open):** the booking payment-link read (`/api/booking` → `fetchReading` → `sanityFetch`) is R2-incremental-cache-stale (same class as the #318 email bug) — reading config changes don't propagate without a cache purge/redeploy. Consider the same fresh-read fix. (Staging cache resolved this session via SWR after the swap fix.)
+- ⏳ **OWED before this rides to main: live Studio smoke of the thumbnail** — upload a real PDF to a staging submission, confirm the thumbnail auto-generates (zero-click) and renders as the A4 card on that reading's `/listen` page. Only path CI can't prove (browser canvas + Sanity CDN CORS). dex epic `lx1j6k8r`.
+
+**What & why:** Max decided the near-term site drops everything built on top of core: the gift feature, the readings/gifts library, and user sign-in UI. Built on a new **`release/v1.16.0`** branch. The full-featured code is preserved verbatim on **`release/v2.0.0`** (parked snapshot of the pre-strip main, to resurrect gift/library later). Eventually `release/v1.16.0` → `main`; `2.0.0` stays for the future.
+
+**Branch map:** `release/v2.0.0` = full-featured (parked). `release/v1.16.0` = stripped (near-term; 11 commits `b79dd23`..`c7a9476`). `main` = unchanged until 1.16.0 is smoked + explicitly merged.
+
+**Done + CI-green on staging (each phase: independent typecheck+test+lint+storybook+bindings, then /simplify + adversarial /code-review):**
+- Gift removal (flow, emails, claim, DO scheduler — needed a `deleted_classes` DO migration to deploy) + library removal (`/my-readings`, `/my-gifts`, library token) + auth-extra removal (step-up OTP, new-device, UserMenu/AccountMenu; intake reverted to anonymous).
+- KEPT: anonymous booking→Stripe→webhook→day-7 deliver→`/listen` (audio+pdf), the invisible listen-session, listen-scoped magic-link re-entry, `user`/`recipient_user_id`.
+- GDPR export re-plumbed: signed per-order `export.v1` token → link in the order-confirmation email → Turnstile-gated `/privacy/export` page → ZIP scoped to that order, emailed to the ORDER's address (security-reviewed; cross-order rejection tested).
+- Added `pdfDownloadedAt` signal (mirrors `listenedAt`); reordered submission Studio fields (audio+pdf+delivered+listened+pdfDownloaded → photo → questions → rest).
+- Tests 2443 → 1803 (all deltas = removed-feature tests). D1 gift/session columns left DORMANT (no drop migration).
+
+**✅ P8 ACCEPTANCE PASSED (2026-07-06) — dex `qnmu32ol` + `lx1j6k8r` CLOSED. Next = main-merge (Max-approved prod-deploy step).**
+1. e2e: 3 `*-roundtrip` specs green on staging (e2e-sandbox run `28767801812`, 11/11).
+2. Manual staging smoke: SUCCESS — full journey incl order-confirmation email w/ export link → Turnstile export → day-7 delivery (fired via `?force=` cron on submission `d6a0415a`) → `/listen` audio + PDF thumbnail/download; zero library/gift/sign-in surfaces. Live Studio zero-click thumbnail smoke also confirmed here (`lx1j6k8r` closed).
+3. Also shipped this session: export-README compliance polish (Art. 15 + Art. 20 citation + JSON data-dictionary), commits `9c55ef5`/`d59fcba`, release CI green incl deploy-staging.
+
+**🚧 NEXT = MAIN-MERGE (separate, explicitly Max-approved — deploys the prod worker; apex stays parked so no customer exposure).** At cutover do dex `vgur1s9o` (strip `{submissionCount}` from PROD `emailPrivacyExport` copy — already done on staging). THEN the apex-unpark runbook (`docs/UNPARK_RUNBOOK.md`) incl the swapped-payment-link check (`xz7luej3`).
+
+**Deferred (dex):** `vgur1s9o` prod export-copy cutover · `h1rb6zsh` exportToken/listenToken factory de-dup · `ojkl12it` export-throttle TOCTOU (bounded).
+
+**Note on apex-unpark plan below:** Becky's staging self-smoke (the apex-unpark gate) is now effectively the P8 smoke of the STRIPPED build — staging runs v1.16.0. If Becky's smoke passes → merge 1.16.0 → main → then the unpark sequence.
+
+---
+
 ## ▶ SHIPPED TO MAIN (2026-06-25): observability hardening (#316) + prod read-only smoke made valid/comprehensive (#317) → apex unpark still the only remaining work
 
 - **#316 `chore(observability)` — MERGED to `main` (`2de588e`) + prod-deployed (run `28148517342` all green incl `deploy-production` + `smoke-production`).** `wrangler.jsonc observability.enabled` false→true (Workers logs were already working in the dashboard; config now coherent; traces stay off). `custom-worker.ts` wraps the `email-day-7-deliver` cron in `Sentry.withMonitor` (missed / timeout / non-2xx alert; free-tier = 1 monitor; schedule derives from `event.cron` so it can't drift from `cron-routes.ts`). **The monitor self-registers in Sentry on the first 6-hourly check-in after deploy — watch for monitor `email-day-7-deliver`.**
@@ -8,6 +41,7 @@
 - **Monitoring posture confirmed (won't be blind at launch):** Sentry captures errors on all request paths AND all crons (`custom-worker.ts` wraps both `fetch` + `scheduled`), tagged `production`, no consent gate; Workers logs persisted; Mixpanel + Clarity wired (consent + prod-host gated → fire post-unpark + consent); Cloudflare zone analytics always-on. No Sentry perf tracing (free-tier, deliberate). No infra "cron-missed" alert beyond the new Day-7 monitor + the existing Day-7 alert email to Josephine.
 
 ### 🚨 REMAINING = APEX UNPARK (Max) — gated on Becky's staging self-smoke
+- **Staging RESET CLEAN 2026-07-02 for Becky's self-smoke.** Wiped all test residue: staging Sanity `submission` docs 151→0 (all Max/e2e-prefix addresses, 0 real customers, 0 `submissionResponse`), and all 12 staging D1 data tables emptied (submissions 151, user 351, financial_records 1405, listen_audit 489, listen_magic_link 212, listen_token_redemptions 183, listen_session 129, library_token_redemptions 124, + smaller). `d1_migrations` preserved (18, schema intact — data wipe, not schema drop). R2 orphans self-reap via the cleanup cron. Safe from cron-resurrection: `reconcile-mirror` create-path is admin-only (warn+skip, never auto-recreates a missing Sanity doc). Becky starts from an empty slate.
 Max's call: **Becky smokes herself on staging → if all well, proceed to unblock.** Then (unchanged sequence):
   1. **Stripe live** — paste `sk_live`, register the live-mode webhook (`withjosephine.com/api/stripe/webhook`) + set its `whsec` as `STRIPE_WEBHOOK_SECRET`, recreate the 3 Payment Links in live mode, update the prod Sanity `stripePaymentLink` URLs (all currently `test_…`). The #317 prod-smoke live-link guard backstops a missed swap.
   2. **Unpark** — flip `NEXT_PUBLIC_UNDER_CONSTRUCTION` to `0` (set `=1` at both repo-level AND production-environment GH var, **plus** the prod worker secret of the same name) → redeploy → curl-verify the apex renders the real site. Also flip `APEX_UNPARKED=true` (production-environment GH var) so the now-comprehensive prod-smoke actually runs.

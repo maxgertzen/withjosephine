@@ -155,7 +155,7 @@ describe("middleware CSP + draft hardening", () => {
   });
 
   it("interactive routes keep the strict nonce and never get 'unsafe-inline'", () => {
-    for (const pathname of ["/book/soul-blueprint/intake", "/my-readings", "/auth/verify"]) {
+    for (const pathname of ["/book/soul-blueprint/intake", "/listen/sub_1", "/auth/verify"]) {
       const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
       const scriptDirective = scriptSrcOf(res);
       expect(scriptDirective, pathname).toContain("'nonce-");
@@ -314,16 +314,5 @@ describe("middleware apex lockdown (under-construction on)", () => {
       makeRequest({ hasDraft: false, pathname: "/under-construction" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
-  });
-
-  it("/my-readings paths get Vary: Cookie so intermediate caches respect per-user state", () => {
-    type Headered = { headers: { get(name: string): string | null } };
-    for (const pathname of ["/my-readings", "/my-readings/welcome", "/my-readings/gifts"]) {
-      const res = middleware(
-        makeRequest({ hasDraft: false, host: "preview.withjosephine.com", pathname }),
-      ) as unknown as Headered;
-      expect(res.headers.get("vary"), `vary on ${pathname}`).toBe("Cookie");
-      expect(res.headers.get("cache-control"), `cache-control on ${pathname}`).toContain("no-store");
-    }
   });
 });

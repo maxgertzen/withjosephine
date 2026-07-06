@@ -1,9 +1,5 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@/components/AccountMenu", () => ({
-  AccountMenu: () => <div data-testid="account-menu" />,
-}));
+import { describe, expect, it } from "vitest";
 
 import { BookingPageShell } from "./BookingPageShell";
 
@@ -71,14 +67,5 @@ describe("BookingPageShell", () => {
     );
     const guard = container.querySelector('[aria-hidden="true"].border-j-border-gold');
     expect(guard).toBeTruthy();
-  });
-
-  it("renders the account menu slot in the header", () => {
-    const { getByTestId } = render(
-      <BookingPageShell backHref="/back">
-        <p>x</p>
-      </BookingPageShell>,
-    );
-    expect(getByTestId("account-menu")).toBeTruthy();
   });
 });

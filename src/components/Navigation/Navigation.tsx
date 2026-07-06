@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
-import { AccountMenu } from "@/components/AccountMenu";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
@@ -103,8 +102,6 @@ export function Navigation({ content, className }: NavigationProps) {
                 {navCtaText}
               </Button>
             </div>
-
-            <AccountMenu signInClassName="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight" />
 
             <button
               type="button"

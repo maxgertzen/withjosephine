@@ -30,7 +30,7 @@
  * Differs from {@link ownEmailKey} which collapses gmail-style aliases for
  * own-email equality; use that when "alice+foo@" should equal "alice@".
  */
-export function normalizeEmailForm(email: string): string {
+function normalizeEmailForm(email: string): string {
   return email.normalize("NFKC").trim().toLowerCase();
 }
 

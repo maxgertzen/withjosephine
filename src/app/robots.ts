@@ -12,11 +12,6 @@ const TRAINING_BOTS = ["GPTBot", "ClaudeBot", "Google-Extended", "CCBot"];
 const PRIVATE_PATHS = [
   "/api/",
   "/auth/",
-  "/my-gifts",
-  "/my-readings",
-  "/gift/claim",
-  "/gift/intake",
-  "/gift/already-submitted",
   "/listen/",
   "/thank-you/",
 ];

@@ -16,7 +16,6 @@ import { createClient } from "@sanity/client";
 
 import {
   EMAIL_MAGIC_LINK_DEFAULTS,
-  EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
 } from "../src/data/defaults";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
@@ -29,13 +28,6 @@ const SEEDS = [
     fields: {
       heroLine: EMAIL_MAGIC_LINK_DEFAULTS.heroLine,
       buttonLabel: EMAIL_MAGIC_LINK_DEFAULTS.buttonLabel,
-    },
-  },
-  {
-    id: "emailMagicLinkLibrary",
-    fields: {
-      heroLine: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS.heroLine,
-      buttonLabel: EMAIL_MAGIC_LINK_LIBRARY_DEFAULTS.buttonLabel,
     },
   },
   {

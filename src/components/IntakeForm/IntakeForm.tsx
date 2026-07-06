@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHeaderBack } from "@/components/BookingFlowHeader/headerBackContext";
 import { track } from "@/lib/analytics";
-import { EMAIL_FIELD_KEY } from "@/lib/booking/constants";
-import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import {
   emptyConsentSnapshot,
   isFullyConsented,
@@ -38,13 +36,6 @@ type IntakeFormProps = {
   pageIndicatorTagline?: string;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
-  mode?: "create" | "redeem";
-  redeemSubmissionId?: string;
-  redeemSuccessUrl?: string;
-  // Pre-fills + locks the email field, read-only. Set to a scheduled gift's
-  // recipient_email (D-12) or, for a signed-in self-booking, the session
-  // account's email. Null = editable (anonymous booking / self-send claim).
-  prefilledEmail?: string | null;
 };
 
 export function IntakeForm({
@@ -58,14 +49,7 @@ export function IntakeForm({
   pageIndicatorTagline,
   pagination,
   loadingStateCopy,
-  mode = "create",
-  redeemSubmissionId,
-  redeemSuccessUrl,
-  prefilledEmail = null,
 }: IntakeFormProps) {
-  const draftScope =
-    mode === "redeem" && redeemSubmissionId ? `gift-redeem.${redeemSubmissionId}` : readingId;
-
   const {
     allFields,
     pages,
@@ -74,30 +58,9 @@ export function IntakeForm({
     timeUnknownPairs,
     timeUnknownLabels,
     pairedUnknownKeys,
-    defaultValues: rawDefaultValues,
-    defaultValuesSnapshot: rawDefaultValuesSnapshot,
+    defaultValues,
+    defaultValuesSnapshot,
   } = useIntakeSchema({ sections, readingId, pagination });
-
-  // Seed + lock the email whenever a prefilledEmail is supplied: a scheduled
-  // gift's recipient_email (D-12), or — for a signed-in self-booking — the
-  // session account's email so the reading lands in that person's library.
-  // A null prefilledEmail (anonymous booking or a self-send gift claim) skips
-  // the seed and the field stays editable. Seeding the default value keeps
-  // draft-restore + the read-only render starting from the canonical form.
-  const seededEmail = prefilledEmail ? normalizeEmailForm(prefilledEmail) : null;
-  const lockedValues = useMemo(
-    () => (seededEmail ? { [EMAIL_FIELD_KEY]: seededEmail } : undefined),
-    [seededEmail],
-  );
-  const defaultValues = useMemo(
-    () =>
-      seededEmail ? { ...rawDefaultValues, [EMAIL_FIELD_KEY]: seededEmail } : rawDefaultValues,
-    [rawDefaultValues, seededEmail],
-  );
-  const defaultValuesSnapshot = useMemo(
-    () => (seededEmail ? JSON.stringify(defaultValues) : rawDefaultValuesSnapshot),
-    [defaultValues, rawDefaultValuesSnapshot, seededEmail],
-  );
 
   const {
     values,
@@ -112,9 +75,7 @@ export function IntakeForm({
   } = useDraftRestore({
     readingId,
     readingName,
-    draftScope,
     defaultValues,
-    lockedValues,
   });
 
   const [honeypot, setHoneypot] = useState("");
@@ -158,7 +119,6 @@ export function IntakeForm({
       defaultValues,
       defaultValuesSnapshot,
       isRestored,
-      draftScope,
       readingId,
       setValues,
       setCurrentPage,
@@ -206,11 +166,7 @@ export function IntakeForm({
 
   const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit } =
     useIntakeFormHandlers({
-      mode,
       readingId,
-      draftScope,
-      redeemSubmissionId,
-      redeemSuccessUrl,
       formRef,
       submitIntentRef,
       values,
@@ -250,24 +206,18 @@ export function IntakeForm({
 
   const visibleErrorCount = errorsVisible ? errorCount : 0;
   const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
-  const requireCoolingOff = mode !== "redeem";
   const consentsFullySatisfied = useMemo(
-    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff }),
-    [consentSnapshot, requireCoolingOff],
+    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff: true }),
+    [consentSnapshot],
   );
   const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
   const handleConsentSnapshotChange = useCallback(
     (next: LegalConsentSnapshot) => {
       setConsentSnapshot(next);
-      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff })) setSubmitError(null);
+      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true })) setSubmitError(null);
     },
-    [requireCoolingOff],
-  );
-
-  const readOnlyFieldKeys = useMemo(
-    () => (seededEmail ? new Set([EMAIL_FIELD_KEY]) : undefined),
-    [seededEmail],
+    [],
   );
 
   const renderContext = useMemo<RenderContext>(
@@ -279,14 +229,12 @@ export function IntakeForm({
       timeUnknownPairs,
       timeUnknownLabels,
       requestTurnstileToken: requestFreshTurnstileToken,
-      readOnlyFieldKeys,
     }),
     [
       values,
       setValue,
       mergedErrors,
       isSubmitting,
-      readOnlyFieldKeys,
       timeUnknownPairs,
       timeUnknownLabels,
       requestFreshTurnstileToken,
@@ -334,7 +282,7 @@ export function IntakeForm({
         setConsentSnapshot={handleConsentSnapshotChange}
         consentErrors={consentErrors}
         clearConsentError={clearConsentError}
-        showCoolingOff={requireCoolingOff}
+        showCoolingOff={true}
         turnstileRequired={turnstileRequired}
         turnstileSiteKey={turnstileSiteKey}
         turnstileRef={turnstileRef}

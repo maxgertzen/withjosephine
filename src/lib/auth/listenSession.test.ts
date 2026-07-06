@@ -5,11 +5,9 @@ import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
 
 import {
   COOKIE_NAME,
-  ELEVATION_TTL_MS,
   getActiveSession,
   hashIp,
   hashUserAgent,
-  isElevated,
   issueMagicLink,
   MAGIC_LINK_TTL_MS,
   MISMATCH_LIMIT,
@@ -575,7 +573,7 @@ describe("listenSession", () => {
       const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
       if (!result.ok) throw new Error("typeguard");
       const session = await getActiveSession({ cookieValue: result.cookieValue });
-      expect(session).toEqual({ userId, sessionId: result.sessionId, elevatedAt: null });
+      expect(session).toEqual({ userId, sessionId: result.sessionId });
     });
 
     it("returns null after the session expires", async () => {
@@ -602,77 +600,6 @@ describe("listenSession", () => {
     it("COOKIE_NAME is __Host- prefixed", () => {
       expect(COOKIE_NAME).toBe("__Host-listen_session");
       expect(COOKIE_NAME.startsWith("__Host-")).toBe(true);
-    });
-
-    it("ELEVATION_TTL_MS is 10 minutes", () => {
-      expect(ELEVATION_TTL_MS).toBe(10 * 60 * 1000);
-    });
-  });
-
-  describe("isElevated", () => {
-    it("returns false when elevatedAt is null", () => {
-      expect(isElevated({ elevatedAt: null })).toBe(false);
-    });
-
-    it("returns true when elevatedAt is within the 10-min TTL", () => {
-      const now = Date.now();
-      expect(isElevated({ elevatedAt: now - 60_000 }, now)).toBe(true);
-    });
-
-    it("returns true at the exact boundary (now - TTL + 1ms)", () => {
-      const now = Date.now();
-      expect(isElevated({ elevatedAt: now - ELEVATION_TTL_MS + 1 }, now)).toBe(true);
-    });
-
-    it("returns false when elevatedAt + TTL <= now", () => {
-      const now = Date.now();
-      expect(isElevated({ elevatedAt: now - ELEVATION_TTL_MS }, now)).toBe(false);
-      expect(isElevated({ elevatedAt: now - ELEVATION_TTL_MS - 1 }, now)).toBe(false);
-    });
-  });
-
-  describe("getActiveSession surfaces elevatedAt", () => {
-    it("returns elevatedAt = null for a fresh session", async () => {
-      const userId = await seedUser();
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const session = await getActiveSession({ cookieValue: result.cookieValue });
-      expect(session?.elevatedAt).toBeNull();
-    });
-
-    it("returns the elevatedAt value after a direct UPDATE", async () => {
-      const userId = await seedUser();
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const elevatedAt = Date.now();
-      await dbExec(`UPDATE listen_session SET elevated_at = ? WHERE id = ?`, [
-        elevatedAt,
-        result.sessionId,
-      ]);
-      const session = await getActiveSession({ cookieValue: result.cookieValue });
-      expect(session?.elevatedAt).toBe(elevatedAt);
-    });
-  });
-
-  describe("revokeSession clears elevation", () => {
-    it("zeroes elevated_at on revoke", async () => {
-      const userId = await seedUser();
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      await dbExec(`UPDATE listen_session SET elevated_at = ? WHERE id = ?`, [
-        Date.now(),
-        result.sessionId,
-      ]);
-      await revokeSession({ sessionId: result.sessionId, userId });
-      const rows = await dbQuery<{ elevated_at: number | null; revoked_at: number | null }>(
-        `SELECT elevated_at, revoked_at FROM listen_session WHERE id = ?`,
-        [result.sessionId],
-      );
-      expect(rows[0]!.elevated_at).toBeNull();
-      expect(rows[0]!.revoked_at).not.toBeNull();
     });
   });
 });

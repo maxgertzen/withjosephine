@@ -1,5 +1,6 @@
 import { defineField, defineType, type CustomValidator } from "sanity";
 
+import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
@@ -17,43 +18,81 @@ export const submission = defineType({
   type: "document",
   fields: [
     defineField({
-      name: "createdAt",
-      title: "Submitted At",
-      type: "datetime",
+      name: "voiceNote",
+      title: "Voice Note",
+      type: "file",
+      description:
+        "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
+      options: { accept: "audio/*" },
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
+    }),
+    defineField({
+      name: "readingPdf",
+      title: "Reading PDF",
+      type: "file",
+      description:
+        "Drag the supporting PDF here. Required before you can mark this reading delivered. A first-page thumbnail is generated automatically.",
+      options: { accept: "application/pdf" },
+      components: { input: PdfThumbnailGenerator },
+      validation: (rule) =>
+        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
+    }),
+    defineField({
+      name: "pdfThumbnail",
+      title: "Reading PDF — first-page thumbnail",
+      type: "image",
       readOnly: true,
-      description: "When the customer submitted the intake form.",
-      initialValue: () => new Date().toISOString(),
+      description:
+        "Auto-generated from the Reading PDF's first page on upload. Shown on the customer's listen page; a styled placeholder covers it if absent. Not required for delivery.",
     }),
     defineField({
-      name: "status",
-      title: "Status",
+      name: "pdfThumbnailSourceRef",
+      title: "PDF thumbnail source (internal)",
       type: "string",
-      description: "Lifecycle state. Pending → Paid (via Stripe webhook) or Expired (via cleanup cron).",
-      options: {
-        list: [
-          { title: "Pending", value: "pending" },
-          { title: "Paid", value: "paid" },
-          { title: "Expired", value: "expired" },
-        ],
-        layout: "radio",
-      },
-      initialValue: "pending",
-      validation: (rule) => rule.required(),
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
-      name: "serviceRef",
-      title: "Service",
-      type: "reference",
-      description: "Reading the user submitted this intake form for.",
-      to: [{ type: "reading" }],
-      validation: (rule) => rule.required(),
+      name: "deliveredAt",
+      title: "Delivered At",
+      type: "datetime",
+      description:
+        "Set this only after BOTH files (Voice Note + Reading PDF) are uploaded. The customer's Day +7 delivery email will fire at the next cron tick after this is set.",
+      validation: (rule) =>
+        rule.custom((value, context) => {
+          if (!value) return true;
+          const parent = context.parent as
+            | { voiceNote?: unknown; readingPdf?: unknown }
+            | undefined;
+          if (!parent?.voiceNote || !parent?.readingPdf) {
+            return "Upload Voice Note and Reading PDF before setting Delivered At.";
+          }
+          return true;
+        }),
     }),
     defineField({
-      name: "email",
-      title: "Email",
+      name: "listenedAt",
+      title: "Listened At",
+      type: "datetime",
+      description:
+        "First time the customer hit play on the audio. Written by the audio proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "pdfDownloadedAt",
+      title: "PDF Downloaded At",
+      type: "datetime",
+      description:
+        "First time the customer downloaded the reading PDF. Written by the PDF proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      readOnly: true,
+    }),
+    defineField({
+      name: "photoR2Key",
+      title: "Photo R2 Key",
       type: "string",
-      description: "Client email captured at form submission.",
-      validation: (rule) => rule.required().email(),
+      description: "R2 object key — not the URL.",
+      components: { input: PhotoR2Preview },
     }),
     defineField({
       name: "responses",
@@ -99,6 +138,45 @@ export const submission = defineType({
           },
         },
       ],
+    }),
+    defineField({
+      name: "createdAt",
+      title: "Submitted At",
+      type: "datetime",
+      readOnly: true,
+      description: "When the customer submitted the intake form.",
+      initialValue: () => new Date().toISOString(),
+    }),
+    defineField({
+      name: "status",
+      title: "Status",
+      type: "string",
+      description: "Lifecycle state. Pending → Paid (via Stripe webhook) or Expired (via cleanup cron).",
+      options: {
+        list: [
+          { title: "Pending", value: "pending" },
+          { title: "Paid", value: "paid" },
+          { title: "Expired", value: "expired" },
+        ],
+        layout: "radio",
+      },
+      initialValue: "pending",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "serviceRef",
+      title: "Service",
+      type: "reference",
+      description: "Reading the user submitted this intake form for.",
+      to: [{ type: "reading" }],
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "email",
+      title: "Email",
+      type: "string",
+      description: "Client email captured at form submission.",
+      validation: (rule) => rule.required().email(),
     }),
     defineField({
       name: "consentSnapshot",
@@ -189,49 +267,6 @@ export const submission = defineType({
       ],
     }),
     defineField({
-      name: "photoR2Key",
-      title: "Photo R2 Key",
-      type: "string",
-      description: "R2 object key — not the URL.",
-      components: { input: PhotoR2Preview },
-    }),
-    defineField({
-      name: "isGift",
-      title: "Is gift?",
-      type: "boolean",
-      description: "True when this submission was purchased as a gift.",
-      readOnly: true,
-    }),
-    defineField({
-      name: "recipientEmail",
-      title: "Recipient email",
-      type: "string",
-      description: "Recipient's email for gift submissions; NULL for self-purchase.",
-      readOnly: true,
-    }),
-    defineField({
-      name: "giftDeliveryMethod",
-      title: "Gift delivery method",
-      type: "string",
-      description: "'self_send' (purchaser forwards link) or 'scheduled' (cron sends).",
-      readOnly: true,
-    }),
-    defineField({
-      name: "giftSendAt",
-      title: "Gift send-at",
-      type: "datetime",
-      description: "Scheduled delivery time for gift; NULL for self-send or self-purchase.",
-      readOnly: true,
-    }),
-    defineField({
-      name: "giftMessage",
-      title: "Gift message",
-      type: "text",
-      rows: 3,
-      description: "Optional message purchaser wrote to recipient (≤280 chars).",
-      readOnly: true,
-    }),
-    defineField({
       name: "stripeEventId",
       title: "Stripe Event ID",
       type: "string",
@@ -269,65 +304,11 @@ export const submission = defineType({
       description: "Set by the cleanup cron when an unpaid submission ages out.",
     }),
     defineField({
-      name: "voiceNote",
-      title: "Voice Note",
-      type: "file",
-      description:
-        "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
-      options: { accept: "audio/*" },
-      validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
-    }),
-    defineField({
-      name: "readingPdf",
-      title: "Reading PDF",
-      type: "file",
-      description:
-        "Drag the supporting PDF here. Required before you can mark this reading delivered.",
-      options: { accept: "application/pdf" },
-      validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
-    }),
-    defineField({
-      name: "deliveredAt",
-      title: "Delivered At",
-      type: "datetime",
-      description:
-        "Set this only after BOTH files (Voice Note + Reading PDF) are uploaded. The customer's Day +7 delivery email will fire at the next cron tick after this is set.",
-      validation: (rule) =>
-        rule.custom((value, context) => {
-          if (!value) return true;
-          const parent = context.parent as
-            | { voiceNote?: unknown; readingPdf?: unknown }
-            | undefined;
-          if (!parent?.voiceNote || !parent?.readingPdf) {
-            return "Upload Voice Note and Reading PDF before setting Delivered At.";
-          }
-          return true;
-        }),
-    }),
-    defineField({
-      name: "listenedAt",
-      title: "Listened At",
-      type: "datetime",
-      description:
-        "First time the customer hit play on the audio. Written by the audio proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
-      readOnly: true,
-    }),
-    defineField({
-      name: "giftClaimedAt",
-      title: "Gift Claimed At",
-      type: "datetime",
-      description:
-        "Set when the gift recipient submits intake. Read-only mirror of D1. Surfaced for Studio actions like 'Regenerate claim link' that gate on whether the gift was claimed.",
-      readOnly: true,
-    }),
-    defineField({
       name: "recipientUserId",
       title: "Recipient User ID",
       type: "string",
       description:
-        "Stable user id for the gift recipient. Load-bearing for listen-page session linkage. Read-only mirror of D1.",
+        "Stable user id for the reading recipient. Load-bearing for listen-page session linkage. Read-only mirror of D1.",
       readOnly: true,
     }),
     defineField({
@@ -353,11 +334,6 @@ export const submission = defineType({
                   { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
-                  { title: "Gift purchase confirmation", value: "gift_purchase_confirmation" },
-                  { title: "Gift claim (to recipient)", value: "gift_claim" },
-                  { title: "Gift claim resend", value: "gift_resend" },
-                  { title: "Gift claim regenerate", value: "gift_claim_regenerate" },
-                  { title: "Recipient intake received", value: "recipient_intake_received" },
                 ],
                 layout: "dropdown",
               },
@@ -398,9 +374,6 @@ export const submission = defineType({
       deliveredAt: "deliveredAt",
       listenedAt: "listenedAt",
       responses: "responses",
-      giftClaimedAt: "giftClaimedAt",
-      isGift: "isGift",
-      recipientEmail: "recipientEmail",
     },
     prepare: prepareSubmissionPreview,
   },

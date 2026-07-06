@@ -121,18 +121,6 @@ export const thankYouPageQuery = groq`
     contactBody,
     closingMessage,
     returnButtonText,
-    giftPurchaserHeading,
-    giftPurchaserSubheading,
-    giftPurchaserBody,
-    giftPurchaserSelfSendSubheading,
-    giftPurchaserSelfSendBody,
-    giftPurchaserReadingLabel,
-    giftPurchaserTimelineBody,
-    giftPurchaserContactBody,
-    giftRecipientHeading,
-    giftRecipientSubheading,
-    giftRecipientBody,
-    giftRecipientContactBody,
     "overrides": overrides[]{
       "readingSlug": reading->slug.current,
       heading,
@@ -143,113 +131,6 @@ export const thankYouPageQuery = groq`
       closingMessage
     },
     seo
-  }
-`;
-
-export const myReadingsPageQuery = groq`
-  *[_type == "myReadingsPage"][0] {
-    listHeading,
-    listSubheading,
-    openButtonLabel,
-    emptyHeading,
-    emptyCtaLabel,
-    expiredRowLabel,
-    expiredMailtoLabel,
-    expiredMailtoSubject,
-    signInHeading,
-    signInBody,
-    signInButtonLabel,
-    signInFootnote,
-    checkEmailHeading,
-    checkEmailBody,
-    checkEmailResendLabel,
-    readingsTabLabel,
-    giftsTabLabel,
-    welcomeHeading,
-    welcomeSubhead,
-    welcomeButtonLabel
-  }
-`;
-
-export const myGiftsPageQuery = groq`
-  *[_type == "myGiftsPage"][0] {
-    listHeading,
-    listSubheading,
-    emptyHeading,
-    emptyBody,
-    emptyCtaLabel,
-    signInHeading,
-    signInBody,
-    signInButtonLabel,
-    signInFootnote,
-    checkEmailHeading,
-    checkEmailBody,
-    checkEmailResendLabel,
-    statusScheduledLabel,
-    statusSelfSendReadyLabel,
-    statusSentLabel,
-    statusPreparingLabel,
-    statusDeliveredLabel,
-    statusCancelledLabel,
-    editRecipientCtaLabel,
-    flipToSelfSendCtaLabel,
-    resendLinkCtaLabel,
-    privacyNote,
-    editRecipientFormTitle,
-    editRecipientSelfSendIndicator,
-    editRecipientFormRecipientNameLabel,
-    editRecipientFormRecipientEmailLabel,
-    editRecipientFormSendAtLabel,
-    editRecipientTimezoneLabel,
-    editRecipientTimezonePlaceholder,
-    editRecipientTimezoneFallbackHelp,
-    editRecipientSaveButtonLabel,
-    editRecipientSavingLabel,
-    editRecipientCancelButtonLabel,
-    flipConfirmCtaLabel,
-    flipSwitchingLabel,
-    resendSendingLabel,
-    resendThrottledMessage,
-    actionGenericError,
-    actionNetworkError,
-    actionClosedError,
-    editRecipientSendAtPreviewTemplate,
-    resendRetryAfterHourTemplate,
-    resendRetryAfterDayTemplate,
-    resendRetryFallbackLabel,
-    flipToScheduledCtaLabel,
-    flipToScheduledFormTitle,
-    flipToScheduledSaveButtonLabel,
-    flipToScheduledSavingLabel
-  }
-`;
-
-export const giftClaimPageQuery = groq`
-  *[_type == "giftClaimPage"][0] {
-    seoTitle,
-    seoDescription,
-    noTokenHeading,
-    noTokenBody,
-    alreadyClaimedHeading,
-    alreadyClaimedBody,
-    sessionExpiredHeading,
-    sessionExpiredBody,
-    alreadySubmittedHeading,
-    alreadySubmittedBody,
-    welcomeHeading,
-    welcomeBody,
-    welcomeCtaLabel
-  }
-`;
-
-export const giftIntakePageQuery = groq`
-  *[_type == "giftIntakePage"][0] {
-    seoTitle,
-    seoDescription,
-    eyebrow,
-    heading,
-    headingWelcome,
-    lede
   }
 `;
 
@@ -294,43 +175,6 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
-export const emailMagicLinkLibraryQuery = groq`
-  *[_type == "emailMagicLinkLibrary"][0] {
-    subject,
-    preview,
-    heroLine,
-    buttonLabel,
-    greeting,
-    body,
-    signOff
-  }
-`;
-
-export const emailStepUpOtpQuery = groq`
-  *[_type == "emailStepUpOtp"][0] {
-    subject,
-    preview,
-    heroLine,
-    intro,
-    codeLabel,
-    expiryLine,
-    closingLine,
-    signoff
-  }
-`;
-
-export const emailNewDeviceNoticeQuery = groq`
-  *[_type == "emailNewDeviceNotice"][0] {
-    subject,
-    preview,
-    heroLine,
-    bodyIntro,
-    wasItYouButtonLabel,
-    bodyPostButton,
-    signOff
-  }
-`;
-
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,
@@ -341,104 +185,9 @@ export const emailOrderConfirmationQuery = groq`
     body,
     cardLabel,
     cardDeliveryLine,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
-  }
-`;
-
-export const emailRecipientIntakeReceivedQuery = groq`
-  *[_type == "emailRecipientIntakeReceived"][0] {
-    subject,
-    preview,
-    brandName,
-    brandSubtitle,
-    heroLine,
-    body,
-    greeting,
-    thanksLine,
-    timelineLine,
-    contactLine,
-    cardLabel,
-    cardDeliveryLine,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
-  }
-`;
-
-export const emailGiftPurchaseConfirmationSelfSendQuery = groq`
-  *[_type == "emailGiftPurchaseConfirmationSelfSend"][0] {
-    subject,
-    preview,
-    brandName,
-    brandSubtitle,
-    heroLine,
-    body,
-    greeting,
-    detailLineSelfSend,
-    shareButtonLabel,
-    shareUrlHelper,
-    cardLabel,
-    cardDeliveryLine,
-    refundLine,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
-  }
-`;
-
-export const emailGiftPurchaseConfirmationScheduledQuery = groq`
-  *[_type == "emailGiftPurchaseConfirmationScheduled"][0] {
-    subject,
-    preview,
-    brandName,
-    brandSubtitle,
-    heroLine,
-    body,
-    greeting,
-    detailLineScheduled,
-    cardLabel,
-    cardDeliveryLine,
-    refundLine,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
-  }
-`;
-
-export const emailGiftClaimQuery = groq`
-  *[_type == "emailGiftClaim"][0] {
-    subjectFirstSend,
-    previewFirstSend,
-    brandName,
-    brandSubtitle,
-    heroLineFirstSend,
-    body,
-    greeting,
-    bodyFirstSend,
-    giftMessageLabel,
-    claimButtonLabel,
-    claimUrlHelper,
-    cardLabel,
-    cardDeliveryLine,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
-  }
-`;
-
-export const emailGiftClaimReminderQuery = groq`
-  *[_type == "emailGiftClaimReminder"][0] {
-    subject,
-    preview,
-    brandName,
-    brandSubtitle,
-    heroLine,
-    body,
-    giftMessageLabel,
-    cardLabel,
-    cardDeliveryLine,
+    dataExportHeading,
+    dataExportBlurb,
+    dataExportButtonLabel,
     signOffLine1,
     signOffLine2,
     footerDisclaimer
@@ -551,10 +300,7 @@ export const bookingFormQuery = groq`
       dropCapCaption,
       changeReadingLinkText,
       aboutJosephineLinkText,
-      letterTitle,
-      giftToggleForMeLabel,
-      giftToggleAsGiftLabel,
-      giftToggleHelper
+      letterTitle
     },
     pagination {
       overrides[] {
@@ -602,52 +348,6 @@ export const bookingFormQuery = groq`
         "appliesToServices": appliesToServices[]->slug.current
       }
     } | order(order asc)
-  }
-`;
-
-export const bookingGiftFormQuery = groq`
-  *[_type == "bookingGiftForm"][0] {
-    heading,
-    subheading,
-    deliveryMethodLabel,
-    deliveryMethodSelfSendLabel,
-    deliveryMethodSelfSendHelper,
-    deliveryMethodScheduledLabel,
-    deliveryMethodScheduledHelper,
-    purchaserFirstNameLabel,
-    purchaserFirstNameHelper,
-    purchaserEmailLabel,
-    purchaserEmailHelper,
-    recipientNameLabelSelfSend,
-    recipientNamePlaceholderSelfSend,
-    recipientNameLabelScheduled,
-    recipientNameHelperScheduled,
-    recipientEmailLabel,
-    recipientEmailHelper,
-    giftMessageLabel,
-    giftMessagePlaceholder,
-    sendAtSectionLabel,
-    sendAtPresetNow,
-    sendAtPresetWeek,
-    sendAtPresetMonth,
-    sendAtCustomLabel,
-    consentIntro,
-    nonRefundableNotice,
-    submitButtonSelfSend,
-    submitButtonScheduled,
-    loadingStateCopy,
-    antiAbuseCapHeading,
-    antiAbuseCapBody,
-    firstNameRequiredError,
-    emailInvalidError,
-    recipientNameRequiredError,
-    recipientEmailRequiredError,
-    sendAtRequiredError,
-    consentRequiredError,
-    verificationError,
-    genericError,
-    networkError,
-    sendAtTimezoneHint
   }
 `;
 

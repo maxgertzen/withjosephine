@@ -37,7 +37,6 @@ function setup(overrides: SetupOverrides = {}) {
     defaultValues: DEFAULT_VALUES,
     defaultValuesSnapshot: DEFAULT_SNAPSHOT,
     isRestored: true,
-    draftScope: "soul-blueprint",
     readingId: "soul-blueprint",
     setValues,
     setCurrentPage,

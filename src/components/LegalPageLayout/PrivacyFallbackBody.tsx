@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 
 export function PrivacyFallbackBody() {
@@ -172,11 +170,7 @@ export function PrivacyFallbackBody() {
         <li>Stop processing it for anything beyond the reading itself.</li>
       </ul>
       <p className="font-body text-base text-j-text leading-[1.9] font-light mt-3">
-        You can export a copy of your data yourself from{" "}
-        <Link href="/my-readings" className="underline hover:text-j-text-heading">
-          your library
-        </Link>
-        , and Josephine will email a private download link. For any other request, email{" "}
+        To request a copy of your data, or for any other request, email{" "}
         <ContactEmailLink />. She responds within 30 days.
       </p>
 

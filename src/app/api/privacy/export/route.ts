@@ -1,22 +1,17 @@
 import "server-only";
 
 import { strToU8, type Zippable,zipSync } from "fflate";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
-import {
-  COOKIE_NAME,
-  getActiveSession,
-  writeAudit,
-} from "@/lib/auth/listenSession";
-import { getRequestAuditContext } from "@/lib/auth/requestAudit";
-import { findUserById } from "@/lib/auth/users";
+import { exportTokenRecipientMatches, verifyExportToken } from "@/lib/auth/exportToken";
+import { writeAudit } from "@/lib/auth/listenSession";
+import { checkRateLimit } from "@/lib/auth/rateLimit";
+import { getClientIpKey, getRequestAuditContext } from "@/lib/auth/requestAudit";
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 import {
   extractFirstName,
-  FIRST_NAME_FALLBACK,
-  listSubmissionsByRecipientUserId,
+  findSubmissionById,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { wasUserDeleted } from "@/lib/compliance/cascadeDeleteUser";
@@ -26,37 +21,30 @@ import {
 } from "@/lib/compliance/retention";
 import { getSignedDownloadUrl, putObject } from "@/lib/r2";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
+import { getClientIp } from "@/lib/request";
 import { sendPrivacyExportEmail } from "@/lib/resend";
 import { getSanityWriteClient } from "@/lib/sanity/client";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 /**
- * GDPR Article 20 — data portability export.
+ * GDPR Article 15 (access) + Article 20 (data portability) — per-order export.
  *
- * Magic-link gated (same `__Host-listen_session` cookie that gates the
- * listen-page proxy routes). Bundles the user's reading content into a
- * single ZIP, uploads to R2, emails a 7-day-expiring pre-signed GET URL.
+ * Structured data is emitted as JSON (a "structured, commonly used and
+ * machine-readable format" per Art. 20) and media in its original common
+ * formats. It also includes controller-generated content (voice note, PDF)
+ * that is beyond the Art. 20 minimum but owed under the Art. 15 right of access.
  *
- * Anti-abuse: throttle to one export per user per 5 minutes (via
- * `listen_audit` lookup); refuse for cascade-deleted users; cap submission
- * count to bound Worker memory/CPU for malformed users.
- *
- * Why ZIP-in-memory rather than streaming: today's bundles are 10–30 MB per
- * submission. One user typically has 1–3 submissions, well under the
- * Worker 128 MiB cap. If real bundles ever approach 50 MB the design flips
- * to streaming via `fflate.AsyncZipDeflate`.
- *
- * Asset fetches parallel via `Promise.all`. Failures degrade individual
- * files to a placeholder text node so the export still ships rather than
- * blocking the whole bundle on a single asset that's slow or 503-ing.
- * The `MAX_BUNDLE_BYTES` cap is enforced post-fetch (avoids a budget
- * race that would otherwise let concurrent fetches all pass a pre-check
- * and collectively exceed the cap).
+ * Gated by a signed `export.v1` token (emailed in the order confirmation) that
+ * binds the submissionId + recipient. The export is scoped to that single order,
+ * and the signed download URL is emailed to the order's registered address (not
+ * returned to the caller) so a leaked link can't exfiltrate data to a third
+ * party. Turnstile + CF rate limit + a per-order D1 throttle guard the endpoint.
+ * GET must never trigger a side-effect; the request comes from /privacy/export.
  */
 
 const EXPORT_KEY_PREFIX = "exports";
 const EXPORT_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60;
 const MAX_BUNDLE_BYTES = 100 * 1024 * 1024;
-const MAX_SUBMISSIONS_PER_EXPORT = 50;
 const EXPORT_THROTTLE_MS = 5 * 60 * 1000;
 
 const REFUSE = (status: number) => new NextResponse(null, { status });
@@ -97,44 +85,41 @@ async function fetchAsset(task: AssetTask): Promise<AssetFetchResult> {
 }
 
 async function recentExportTimestamp(
-  userId: string,
+  submissionId: string,
   withinMs: number,
   now: number,
 ): Promise<number | null> {
   const cutoff = now - withinMs;
   const rows = await dbQuery<{ timestamp: number }>(
     `SELECT timestamp FROM listen_audit
-       WHERE user_id = ? AND event_type = 'export_request' AND timestamp > ?
+       WHERE submission_id = ? AND event_type = 'export_request' AND timestamp > ?
        ORDER BY timestamp DESC LIMIT 1`,
-    [userId, cutoff],
+    [submissionId, cutoff],
   );
   return rows[0]?.timestamp ?? null;
 }
 
-async function fetchConsentSnapshots(
-  ids: string[],
-): Promise<Record<string, unknown>> {
-  if (ids.length === 0) return {};
+async function fetchConsentSnapshot(id: string): Promise<unknown> {
   try {
     const client = await getSanityWriteClient();
     const docs = await client.fetch<Array<{ _id: string; consentSnapshot?: unknown }>>(
       `*[_id in $ids]{ _id, consentSnapshot }`,
-      { ids },
+      { ids: [id] },
     );
-    return Object.fromEntries(docs.map((d) => [d._id, d.consentSnapshot ?? null]));
+    return docs[0]?.consentSnapshot ?? null;
   } catch {
-    return {};
+    return null;
   }
 }
 
-function buildReadme(submissionCount: number): string {
+function buildReadme(): string {
   return [
     "Your Josephine data export",
     "===========================",
     "",
-    `This archive contains the data we hold for your ${submissionCount} reading(s).`,
+    "This archive contains the data we hold for this reading.",
     "",
-    "For each reading, you'll find:",
+    "You'll find:",
     "  intake.json       — every answer you submitted to the intake form",
     "  consent.json      — the consent records you agreed to at booking (Art. 6 + Art. 9)",
     "  transaction.json  — payment record (amount, date, currency, country)",
@@ -142,6 +127,24 @@ function buildReadme(submissionCount: number): string {
     "  photo.*           — the photo you uploaded (if any)",
     "  voice-note.*      — the voice note Josephine recorded for you (if delivered)",
     "  reading.pdf       — the supporting PDF (if delivered)",
+    "",
+    "What the JSON fields mean",
+    "-------------------------",
+    "intake.json",
+    "  responses            — your intake answers, keyed by the question you answered",
+    "consent.json",
+    "  consentSnapshot      — the consent choices recorded at booking (GDPR Art. 6 + Art. 9)",
+    "  paidAt               — when payment completed (ISO 8601)",
+    "transaction.json",
+    "  amountPaidCents      — amount charged, in the currency's minor unit (e.g. cents)",
+    "  amountPaidCurrency   — ISO 4217 currency code (e.g. USD)",
+    "  paidAt               — when payment completed (ISO 8601)",
+    "  stripeSessionId      — Stripe checkout reference for this payment",
+    "  reading              — the reading you booked",
+    "delivery.json",
+    "  deliveredAt          — when your reading was delivered (ISO 8601, null if not yet)",
+    "  emailsFired          — the emails we sent you for this order",
+    "  status               — the order's current state",
     "",
     "Retention",
     "---------",
@@ -174,16 +177,38 @@ function collectAssetTasks(submission: SubmissionRecord): AssetTask[] {
   return tasks;
 }
 
-export async function POST(request: Request): Promise<Response> {
-  const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(COOKIE_NAME)?.value ?? "";
-  const audit = await getRequestAuditContext(request);
-  const session = cookieValue ? await getActiveSession({ cookieValue }) : null;
+type ExportRequestBody = {
+  token: unknown;
+  turnstileToken: unknown;
+};
 
-  if (!session) {
+export async function POST(request: Request): Promise<Response> {
+  const audit = await getRequestAuditContext(request);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return REFUSE(400);
+  }
+  const { token, turnstileToken } = (body ?? {}) as ExportRequestBody;
+  if (typeof token !== "string" || token.length === 0) return REFUSE(400);
+
+  // Rate limit before the Turnstile network round-trip.
+  const allowed = await checkRateLimit("LISTEN_AUTH_SEND_LIMITER", getClientIpKey(request));
+  if (!allowed) return REFUSE(429);
+
+  if (typeof turnstileToken !== "string" || turnstileToken.length === 0) return REFUSE(400);
+  const ip = getClientIp(request);
+  const turnstileOk = await verifyTurnstileToken(turnstileToken, ip ?? undefined);
+  if (!turnstileOk) return REFUSE(400);
+
+  const now = Date.now();
+  const verified = await verifyExportToken({ token, now });
+  if (!verified.valid) {
     await writeAudit({
       userId: null,
-      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
+      eventType: AUDIT_EVENT_TYPE.export_token_invalid,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
       success: false,
@@ -191,21 +216,41 @@ export async function POST(request: Request): Promise<Response> {
     return REFUSE(403);
   }
 
-  const user = await findUserById(session.userId);
-  if (!user) return REFUSE(403);
+  // Scope everything to exactly the order the token was signed for.
+  const submission = await findSubmissionById(verified.submissionId);
+  if (!submission || submission.status !== "paid") {
+    return REFUSE(404);
+  }
 
-  // Idempotency / abuse defense — reject if the cascade has already
-  // anonymised this user (no data to export), or if an export ran within
-  // the throttle window (re-emails the same content; would flood inbox).
-  if (await wasUserDeleted(session.userId)) {
+  const recipientUserId = submission.recipientUserId;
+  if (!recipientUserId) return REFUSE(403);
+
+  const recipientOk = await exportTokenRecipientMatches(
+    verified.recipientUserIdHash,
+    recipientUserId,
+  );
+  if (!recipientOk) {
+    await writeAudit({
+      userId: recipientUserId,
+      submissionId: submission._id,
+      eventType: AUDIT_EVENT_TYPE.export_cross_user_denied,
+      ipHash: audit.ipHash,
+      userAgentHash: audit.userAgentHash,
+      success: false,
+    });
+    return REFUSE(403);
+  }
+
+  // Cascade-deleted user has no data left to export.
+  if (await wasUserDeleted(recipientUserId)) {
     return REFUSE(410);
   }
 
-  const now = Date.now();
-  const recent = await recentExportTimestamp(session.userId, EXPORT_THROTTLE_MS, now);
+  const recent = await recentExportTimestamp(submission._id, EXPORT_THROTTLE_MS, now);
   if (recent !== null) {
     await writeAudit({
-      userId: session.userId,
+      userId: recipientUserId,
+      submissionId: submission._id,
       eventType: AUDIT_EVENT_TYPE.export_throttled,
       ipHash: audit.ipHash,
       userAgentHash: audit.userAgentHash,
@@ -217,72 +262,53 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const submissions = await listSubmissionsByRecipientUserId(session.userId);
-  if (submissions.length > MAX_SUBMISSIONS_PER_EXPORT) {
-    return NextResponse.json(
-      { error: "Too many submissions for a single export. Please email hello@withjosephine.com." },
-      { status: 413 },
-    );
-  }
-
-  const submissionIds = submissions.map((s) => s._id);
-  const [consentSnapshots, assetResults] = await Promise.all([
-    fetchConsentSnapshots(submissionIds),
-    Promise.all(submissions.flatMap(collectAssetTasks).map(fetchAsset)),
+  const [consentSnapshot, assetResults] = await Promise.all([
+    fetchConsentSnapshot(submission._id),
+    Promise.all(collectAssetTasks(submission).map(fetchAsset)),
   ]);
 
-  // Build bundle. Asset cap enforced AFTER all fetches resolve to avoid
-  // a race where concurrent fetches each pass a pre-check and collectively
-  // overshoot. Trim by replacing oversized entries with placeholders, in
-  // insertion order.
   const bundle: Zippable = {};
-  bundle["README.txt"] = strToU8(buildReadme(submissions.length));
+  bundle["README.txt"] = strToU8(buildReadme());
 
-  for (const submission of submissions) {
-    const folder = submission._id;
-    bundle[`${folder}/intake.json`] = strToU8(
-      JSON.stringify({ responses: submission.responses }, null, 2),
-    );
-    bundle[`${folder}/consent.json`] = strToU8(
-      JSON.stringify(
-        {
-          // Verbatim Sanity record (Art. 6 + Art. 9 labels + acknowledgedAt
-          // + ipAddress). Falls back to the legacy D1-derived shape if the
-          // Sanity lookup failed at fetch time — partial portability beats
-          // none.
-          consentSnapshot: consentSnapshots[submission._id] ?? null,
-          consentLabel: "Stored in Sanity per consentSnapshot schema",
-          paidAt: submission.paidAt ?? null,
-        },
-        null,
-        2,
-      ),
-    );
-    bundle[`${folder}/transaction.json`] = strToU8(
-      JSON.stringify(
-        {
-          paidAt: submission.paidAt ?? null,
-          amountPaidCents: submission.amountPaidCents,
-          amountPaidCurrency: submission.amountPaidCurrency,
-          stripeSessionId: submission.stripeSessionId ?? null,
-          reading: submission.reading,
-        },
-        null,
-        2,
-      ),
-    );
-    bundle[`${folder}/delivery.json`] = strToU8(
-      JSON.stringify(
-        {
-          deliveredAt: submission.deliveredAt ?? null,
-          emailsFired: submission.emailsFired ?? [],
-          status: submission.status,
-        },
-        null,
-        2,
-      ),
-    );
-  }
+  const folder = submission._id;
+  bundle[`${folder}/intake.json`] = strToU8(
+    JSON.stringify({ responses: submission.responses }, null, 2),
+  );
+  bundle[`${folder}/consent.json`] = strToU8(
+    JSON.stringify(
+      {
+        consentSnapshot,
+        consentLabel: "Stored in Sanity per consentSnapshot schema",
+        paidAt: submission.paidAt ?? null,
+      },
+      null,
+      2,
+    ),
+  );
+  bundle[`${folder}/transaction.json`] = strToU8(
+    JSON.stringify(
+      {
+        paidAt: submission.paidAt ?? null,
+        amountPaidCents: submission.amountPaidCents,
+        amountPaidCurrency: submission.amountPaidCurrency,
+        stripeSessionId: submission.stripeSessionId ?? null,
+        reading: submission.reading,
+      },
+      null,
+      2,
+    ),
+  );
+  bundle[`${folder}/delivery.json`] = strToU8(
+    JSON.stringify(
+      {
+        deliveredAt: submission.deliveredAt ?? null,
+        emailsFired: submission.emailsFired ?? [],
+        status: submission.status,
+      },
+      null,
+      2,
+    ),
+  );
 
   let totalAssetBytes = 0;
   for (const result of assetResults) {
@@ -304,7 +330,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Failed to build export bundle" }, { status: 500 });
   }
 
-  const exportKey = `${EXPORT_KEY_PREFIX}/${session.userId}/${now}.zip`;
+  const exportKey = `${EXPORT_KEY_PREFIX}/${submission._id}/${now}.zip`;
   try {
     await putObject(exportKey, zipped, "application/zip");
   } catch (error) {
@@ -314,22 +340,21 @@ export async function POST(request: Request): Promise<Response> {
 
   const signedUrl = await getSignedDownloadUrl(exportKey, EXPORT_URL_EXPIRY_SECONDS);
 
-  const firstName = submissions[0]
-    ? extractFirstName(submissions[0].responses)
-    : FIRST_NAME_FALLBACK;
+  const firstName = extractFirstName(submission.responses);
 
+  // Deliver the link to the order's registered address, never the requester's.
   await sendPrivacyExportEmail({
-    to: user.email,
+    to: submission.email,
     firstName,
     downloadUrl: signedUrl,
-    submissionCount: submissions.length,
     expiryDays: 7,
   }).catch((error) => {
     console.error("[export] Resend send failed", error);
   });
 
   await writeAudit({
-    userId: session.userId,
+    userId: recipientUserId,
+    submissionId: submission._id,
     eventType: AUDIT_EVENT_TYPE.export_request,
     ipHash: audit.ipHash,
     userAgentHash: audit.userAgentHash,
@@ -337,7 +362,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   return NextResponse.json(
-    { submissionCount: submissions.length, expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS },
+    { expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS },
     { status: 202 },
   );
 }

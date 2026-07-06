@@ -3,6 +3,7 @@ import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
+import { PdfThumbnail } from "@/components/PdfThumbnail";
 import { StarField } from "@/components/StarField";
 import type { ListenPageContent } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
@@ -22,6 +23,7 @@ export type ListenViewState =
       recipientName: string | null;
       voiceNoteAudioPath: string | null;
       pdfDownloadPath: string | null;
+      pdfThumbnailPath?: string | null;
       showWelcomeRibbon: boolean;
     }
   | { kind: "signIn"; submissionId: string }
@@ -128,13 +130,13 @@ function DeliveredSurface({
       ) : null}
 
       {state.pdfDownloadPath ? (
-        <section className="mt-12 text-center">
-          <h2 className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted mb-4">
-            {copy.pdfLabel}
-          </h2>
-          <Button href={state.pdfDownloadPath} variant="ghost" size="lg" download>
-            {copy.pdfButtonLabel}
-          </Button>
+        <section className="mt-12">
+          <PdfThumbnail
+            downloadHref={state.pdfDownloadPath}
+            downloadLabel={copy.pdfButtonLabel}
+            thumbnailSrc={state.pdfThumbnailPath ?? null}
+            readingName={state.readingName}
+          />
         </section>
       ) : null}
 

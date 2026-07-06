@@ -1,6 +1,6 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
 
-type NextImageProps = ImgHTMLAttributes<HTMLImageElement> & {
+type NextImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string | { src: string } | { default: { src: string } };
   alt: string;
   width?: number | string;

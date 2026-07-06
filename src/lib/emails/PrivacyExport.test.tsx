@@ -10,7 +10,6 @@ import { linkHrefs, visibleText } from "./test-helpers";
 const VARS = {
   firstName: "Ada",
   downloadUrl: "https://r2.withjosephine.com/exports/abc123.zip",
-  submissionCount: 3,
   expiryDays: 7,
 };
 
@@ -19,20 +18,10 @@ describe("PrivacyExport email", () => {
     const text = visibleText(
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );
-    const expected = portableTextToPlainText(EMAIL_PRIVACY_EXPORT_DEFAULTS.bodyIntro).replace(
-      "{submissionCount}",
-      String(VARS.submissionCount),
-    );
+    const expected = portableTextToPlainText(EMAIL_PRIVACY_EXPORT_DEFAULTS.bodyIntro);
     for (const paragraph of expected.split("\n\n")) {
       expect(text).toContain(paragraph);
     }
-  });
-
-  it("interpolates submissionCount into the body intro", async () => {
-    const text = visibleText(
-      await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
-    );
-    expect(text).toContain("for your 3 reading(s)");
   });
 
   it("interpolates expiryDays into the body post-button", async () => {

@@ -25,10 +25,6 @@ export type RenderContext = {
   timeUnknownPairs: Map<string, string>;
   timeUnknownLabels: Map<string, string>;
   requestTurnstileToken: () => Promise<string | null>;
-  // D-12: per-field overrides for pre-filled redeem-mode fields. Email field
-  // arrives readOnly when the gift was scheduled with a recipient_email; the
-  // server-side mismatch gate stays strict either way (Rook hard-stop).
-  readOnlyFieldKeys?: Set<string>;
 };
 
 export function renderField(field: SanityFormField, ctx: RenderContext) {
@@ -40,9 +36,7 @@ export function renderField(field: SanityFormField, ctx: RenderContext) {
     timeUnknownPairs,
     timeUnknownLabels,
     requestTurnstileToken,
-    readOnlyFieldKeys,
   } = ctx;
-  const readOnly = readOnlyFieldKeys?.has(field.key) ?? false;
   const id = fieldDomId(field.key);
   const error = errors[field.key];
   const value = values[field.key];
@@ -69,7 +63,6 @@ export function renderField(field: SanityFormField, ctx: RenderContext) {
           error={error}
           required={field.required}
           disabled={disabled}
-          readOnly={readOnly}
         />
       );
 

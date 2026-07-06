@@ -2,6 +2,7 @@ import {
   LISTEN_VIEW_ASSET_TROUBLE_STATE,
   LISTEN_VIEW_CHECK_EMAIL_STATE,
   LISTEN_VIEW_DELIVERED_GIFT_RECIPIENT_STATE,
+  LISTEN_VIEW_DELIVERED_NO_THUMBNAIL_STATE,
   LISTEN_VIEW_DELIVERED_STATE,
   LISTEN_VIEW_EXPIRED_STATE,
   LISTEN_VIEW_RESTED_STATE,
@@ -64,6 +65,10 @@ export const Delivered: Story = {
 
 export const DeliveredGiftRecipient: Story = {
   args: { ...baseArgs, state: LISTEN_VIEW_DELIVERED_GIFT_RECIPIENT_STATE },
+};
+
+export const DeliveredNoThumbnail: Story = {
+  args: { ...baseArgs, state: LISTEN_VIEW_DELIVERED_NO_THUMBNAIL_STATE },
 };
 
 export const Expired: Story = {

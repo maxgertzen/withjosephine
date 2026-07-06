@@ -10,9 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/data/*": ["../src/data/*"],
-      "@/lib/emails/*": ["../src/lib/emails/*"],
-      "@/lib/theme/*": ["../src/lib/theme/*"]
+      "@/*": ["../src/*"],
+      "react": ["../node_modules/@types/react"],
+      "react/*": ["../node_modules/@types/react/*"],
+      "react-dom": ["../node_modules/@types/react-dom"],
+      "react-dom/*": ["../node_modules/@types/react-dom/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]

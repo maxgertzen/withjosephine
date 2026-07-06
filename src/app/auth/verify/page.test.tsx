@@ -33,10 +33,10 @@ describe("/auth/verify page", () => {
     );
   });
 
-  it("clamps unsafe `next` to /my-readings", async () => {
+  it("clamps unsafe `next` to /", async () => {
     const { container } = await renderPage({ token: "abc", next: "https://evil.example.com" });
     expect((container.querySelector('input[name="next"]') as HTMLInputElement).value).toBe(
-      "/my-readings",
+      "/",
     );
   });
 
@@ -45,7 +45,7 @@ describe("/auth/verify page", () => {
     expect(getByRole("heading", { name: MAGIC_LINK_VERIFY_PAGE_DEFAULTS.restedHeading })).toBeTruthy();
     expect(
       getByRole("link", { name: MAGIC_LINK_VERIFY_PAGE_DEFAULTS.restedCtaLabel }).getAttribute("href"),
-    ).toBe("/my-readings");
+    ).toBe("/");
   });
 
   it("renders rested-link state when token is missing", async () => {

@@ -1,30 +1,17 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import { LISTEN_INTERSTITIAL_DEFAULTS, LISTEN_PAGE_DEFAULTS } from "@/data/defaults";
 import {
   AUDIT_EVENT_TYPE,
   COOKIE_NAME,
   getActiveSession,
-  hashUserAgent,
   writeAudit,
 } from "@/lib/auth/listenSession";
 import { verifyListenToken } from "@/lib/auth/listenToken";
-import {
-  maybeRecordNewDeviceForSubmission,
-  mintNewDeviceRevokeToken,
-} from "@/lib/auth/newDeviceNotice";
-import { recipientNameFor } from "@/lib/booking/giftPersonas";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
-import {
-  buildSubmissionContext,
-  findSubmissionById,
-  SUBMISSION_STATUS,
-} from "@/lib/booking/submissions";
-import { siteOrigin } from "@/lib/env";
-import { USER_AGENT_HEADER } from "@/lib/http/headers";
+import { findSubmissionById, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
-import { sendNewDeviceNotice } from "@/lib/resend";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
@@ -126,75 +113,12 @@ export default async function ListenPage({
     }
   }
 
-  // New-device notice detection. Fires only when the session is valid AND the
-  // submission belongs to the session user AND the current UA-hash differs
-  // from the earliest-recorded redemption baseline for this submission.
-  // Best-effort; swallows DB errors so the page render never blocks on it.
-  if (
-    session &&
-    submission &&
-    state.kind === "delivered" &&
-    submission.recipientUserId === session.userId
-  ) {
-    void detectAndFireNewDeviceNotice({
-      submissionId: id,
-      recipientUserId: session.userId,
-      submission,
-    });
-  }
-
   return <ListenView copy={copy} state={state} />;
-}
-
-async function detectAndFireNewDeviceNotice(args: {
-  submissionId: string;
-  recipientUserId: string;
-  submission: SubmissionRecord;
-}): Promise<void> {
-  try {
-    const requestHeaders = await headers();
-    const ua = requestHeaders.get(USER_AGENT_HEADER) ?? "";
-    if (!ua) return;
-    const currentUaHash = await hashUserAgent(ua);
-    const record = await maybeRecordNewDeviceForSubmission({
-      submissionId: args.submissionId,
-      recipientUserId: args.recipientUserId,
-      currentUaHash,
-    });
-    if (!record.fired) return;
-
-    const ctx = buildSubmissionContext(args.submission);
-    const revokeToken = await mintNewDeviceRevokeToken({
-      recipientUserId: args.recipientUserId,
-      submissionId: args.submissionId,
-    });
-    const revokeUrl = new URL(
-      "/api/auth/revoke-recipient-sessions",
-      siteOrigin(),
-    );
-    revokeUrl.searchParams.set("t", revokeToken);
-
-    await sendNewDeviceNotice({
-      to: ctx.email,
-      firstName: ctx.firstName,
-      submissionId: args.submissionId,
-      revokeUrl: revokeUrl.toString(),
-    });
-
-    await writeAudit({
-      userId: args.recipientUserId,
-      submissionId: args.submissionId,
-      eventType: AUDIT_EVENT_TYPE.new_device_notice_sent,
-      success: true,
-    });
-  } catch (err) {
-    console.error("[new-device-notice] fire failed", err);
-  }
 }
 
 function resolveAuthenticatedState(args: {
   id: string;
-  session: { userId: string; sessionId: string; elevatedAt: number | null } | null;
+  session: { userId: string; sessionId: string } | null;
   submission: SubmissionRecord | null;
   welcome: string | undefined;
 }): ListenViewState {
@@ -216,21 +140,13 @@ function resolveAuthenticatedState(args: {
     return { kind: "expired", submissionId: args.id };
   }
 
-  // recipientNameFor walks the canonical chain: purchaser-supplied recipient_name,
-  // then recipient-intake first_name, then legal_full_name, then email-local.
-  // The intake overwrites responses at redeem, so the bare recipient_name lookup
-  // would lose the name for the actual recipient leg. Gate on isGift so a
-  // self-purchase doesn't show a greeting at all.
-  const recipientName = args.submission.isGift
-    ? recipientNameFor(args.submission)
-    : null;
-
   return {
     kind: "delivered",
     readingName: (args.submission.reading?.name ?? "your reading").replace(/^The\s+/, ""),
-    recipientName,
+    recipientName: null,
     voiceNoteAudioPath: args.submission.voiceNoteUrl ? `/api/listen/${args.id}/audio` : null,
     pdfDownloadPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf` : null,
+    pdfThumbnailPath: args.submission.pdfUrl ? `/api/listen/${args.id}/pdf-thumbnail` : null,
     showWelcomeRibbon: args.welcome === "1",
   };
 }

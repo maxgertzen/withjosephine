@@ -4,11 +4,7 @@
 
 import {
   ENTRY_PAGE_DEFAULTS,
-  GIFT_CLAIM_PAGE_DEFAULTS,
-  GIFT_INTAKE_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
-  MY_GIFTS_PAGE_DEFAULTS,
-  MY_READINGS_PAGE_DEFAULTS,
   NOT_FOUND_PAGE_DEFAULTS,
   UNDER_CONSTRUCTION_PAGE_DEFAULTS,
 } from "../src/data/defaults";
@@ -33,10 +29,6 @@ function asRecord(value: object): Record<string, unknown> {
 
 const AUDIT_TABLE: readonly AuditEntry[] = [
   { docType: "entryPage", defaults: asRecord(ENTRY_PAGE_DEFAULTS) },
-  { docType: "myReadingsPage", defaults: asRecord(MY_READINGS_PAGE_DEFAULTS) },
-  { docType: "myGiftsPage", defaults: asRecord(MY_GIFTS_PAGE_DEFAULTS) },
-  { docType: "giftClaimPage", defaults: asRecord(GIFT_CLAIM_PAGE_DEFAULTS) },
-  { docType: "giftIntakePage", defaults: asRecord(GIFT_INTAKE_PAGE_DEFAULTS) },
   { docType: "magicLinkVerifyPage", defaults: asRecord(MAGIC_LINK_VERIFY_PAGE_DEFAULTS) },
   { docType: "notFoundPage", defaults: asRecord(NOT_FOUND_PAGE_DEFAULTS) },
   { docType: "underConstructionPage", defaults: asRecord(UNDER_CONSTRUCTION_PAGE_DEFAULTS) },

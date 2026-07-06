@@ -29,7 +29,6 @@ export type UseAutosaveArgs = {
   defaultValues: FieldValues;
   defaultValuesSnapshot: string;
   isRestored: boolean;
-  draftScope: string;
   readingId: string;
   setValues: Dispatch<SetStateAction<FieldValues>>;
   setCurrentPage: Dispatch<SetStateAction<number>>;
@@ -52,7 +51,6 @@ export function useAutosave({
   defaultValues,
   defaultValuesSnapshot,
   isRestored,
-  draftScope,
   readingId,
   setValues,
   setCurrentPage,
@@ -70,13 +68,13 @@ export function useAutosave({
 
   const flushSave = useCallback(
     (nextValues: FieldValues, nextPage: number) => {
-      const envelope = saveDraft(draftScope, {
+      const envelope = saveDraft(readingId, {
         currentPage: nextPage,
         values: nextValues as DraftValues,
       });
       if (envelope) setLastSavedAt(new Date(envelope.savedAt));
     },
-    [draftScope, setLastSavedAt],
+    [readingId, setLastSavedAt],
   );
 
   useEffect(() => {
@@ -129,7 +127,7 @@ export function useAutosave({
       page_number: currentPage + 1,
     });
     justDiscardedRef.current = true;
-    clearDraft(draftScope);
+    clearDraft(readingId);
     setValues(defaultValues);
     setCurrentPage(0);
     setLastSavedAt(null);
@@ -137,7 +135,6 @@ export function useAutosave({
   }, [
     readingId,
     currentPage,
-    draftScope,
     setValues,
     defaultValues,
     setCurrentPage,

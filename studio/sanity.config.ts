@@ -5,7 +5,6 @@ import { presentationTool } from "sanity/presentation";
 import { visionTool } from "@sanity/vision";
 import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
-import { regenerateGiftClaimAction } from "./actions/regenerateGiftClaim";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
@@ -46,7 +45,6 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
     return [
       ...prev,
       deleteCustomerDataAction,
-      regenerateGiftClaimAction,
       resendCustomerEmailAction,
     ];
   }

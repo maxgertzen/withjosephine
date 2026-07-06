@@ -61,13 +61,7 @@ const noopSubscribe = () => () => {};
 export type UseDraftRestoreArgs = {
   readingId: string;
   readingName: string;
-  draftScope: string;
   defaultValues: FieldValues;
-  // Fields that must survive a localStorage/swap restore unchanged — the locked
-  // email for a signed-in self-booking or a scheduled-gift recipient. Applied
-  // last so a stale draft can't reintroduce a different value into a read-only
-  // field (which the user can't correct).
-  lockedValues?: FieldValues;
 };
 
 export type UseDraftRestoreResult = {
@@ -85,9 +79,7 @@ export type UseDraftRestoreResult = {
 export function useDraftRestore({
   readingId,
   readingName,
-  draftScope,
   defaultValues,
-  lockedValues,
 }: UseDraftRestoreArgs): UseDraftRestoreResult {
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [currentPage, setCurrentPage] = useState(0);
@@ -112,12 +104,11 @@ export function useDraftRestore({
         preservedFromSwap = pickPreservedFields(previousDraft.values);
       }
     }
-    const restored = restoreDraft(draftScope);
+    const restored = restoreDraft(readingId);
     const seeded = {
       ...defaultValues,
       ...(restored?.values ?? {}),
       ...(preservedFromSwap ?? {}),
-      ...(lockedValues ?? {}),
     } as FieldValues;
     const restoredSavedAt: Date | null = (() => {
       if (!restored?.savedAt) return null;
@@ -134,7 +125,7 @@ export function useDraftRestore({
       if (restoredSavedAt) setLastSavedAt(restoredSavedAt);
       setIsRestored(true);
     });
-  }, [readingId, draftScope, readingName, defaultValues, lockedValues]);
+  }, [readingId, readingName, defaultValues]);
 
   return {
     values,

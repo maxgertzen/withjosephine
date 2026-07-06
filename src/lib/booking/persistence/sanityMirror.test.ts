@@ -17,7 +17,7 @@ vi.mock("@/lib/sanity/client", () => ({
 beforeEach(() => {
   mockCommit.mockReset().mockResolvedValue(undefined);
   mockInsert.mockReset().mockReturnValue({ commit: mockCommit });
-  mockSetIfMissing.mockReset().mockReturnValue({ insert: mockInsert });
+  mockSetIfMissing.mockReset().mockReturnValue({ insert: mockInsert, commit: mockCommit });
   mockSet.mockReset().mockReturnValue({ commit: mockCommit });
   mockPatch.mockReset().mockImplementation(() => ({
     setIfMissing: mockSetIfMissing,
@@ -72,6 +72,19 @@ describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
     });
     const key = mockInsert.mock.calls[0][2][0]._key as string;
     expect(key).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+});
+
+describe("mirrorMarkSubmissionPdfDownloaded — first-write-wins via setIfMissing", () => {
+  it("commits the pdfDownloadedAt through setIfMissing so the earliest download wins", async () => {
+    const { mirrorMarkSubmissionPdfDownloaded } = await import("./sanityMirror");
+    await mirrorMarkSubmissionPdfDownloaded("sub_1", "2026-06-01T10:00:00.000Z");
+    expect(mockPatch).toHaveBeenCalledWith("sub_1");
+    expect(mockSetIfMissing).toHaveBeenCalledWith({
+      pdfDownloadedAt: "2026-06-01T10:00:00.000Z",
+    });
+    expect(mockSet).not.toHaveBeenCalled();
+    expect(mockCommit).toHaveBeenCalledWith({ visibility: "async" });
   });
 });
 
