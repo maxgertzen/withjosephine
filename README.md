@@ -12,13 +12,12 @@ Booking and content website for an astrology and Akashic Record reading practice
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Framework          | Next.js 16 (App Router, React 19)                                                     |
 | Runtime            | Cloudflare Workers via `@opennextjs/cloudflare`                                       |
-| CMS                | Sanity v3 + Presentation Tool (live preview, deployed Studio)                         |
+| CMS                | Sanity Studio v5 + Presentation Tool (live preview, deployed Studio)                  |
 | Styling            | Tailwind CSS v4 with CSS-custom-property design tokens                                |
 | Animation          | Motion (Framer Motion successor)                                                      |
 | Payments           | Stripe Payment Links (hosted) + webhook + reconcile cron                              |
 | Database           | Cloudflare D1 (production); `better-sqlite3` (local dev)                              |
-| Object storage     | Cloudflare R2 (booking photos, dataset backups)                                       |
-| Durable Objects    | `GiftClaimScheduler` — alarms for scheduled gift-claim emails                         |
+| Object storage     | Cloudflare R2 (booking photos, GDPR export bundles, dataset backups)                   |
 | Transactional mail | Resend                                                                                |
 | Spam protection    | Cloudflare Turnstile                                                                  |
 | Observability      | Sentry (server + client), Mixpanel, Microsoft Clarity                                 |
@@ -30,7 +29,7 @@ Booking and content website for an astrology and Akashic Record reading practice
 ## Prerequisites
 
 - Node.js 22+
-- pnpm 9+
+- pnpm 10+
 - A Sanity project (project ID + dataset) — see `.env.local.example`
 - Optional for full local parity: Cloudflare account (R2 + D1), Stripe sandbox, Resend sandbox, Turnstile site keys
 
@@ -98,7 +97,7 @@ pnpm migrate:apply:prod
 ```
 www/
 ├── custom-worker.ts        # Worker entry — wraps OpenNext handler with Sentry
-├── wrangler.jsonc          # Cloudflare bindings: R2, D1, DOs, crons, rate limits
+├── wrangler.jsonc          # Cloudflare bindings: R2, D1, crons, rate limits
 ├── migrations/             # D1 SQL migrations
 ├── public/                 # Static assets
 ├── scripts/                # Token/font generation, Sanity sync, backfill scripts
@@ -106,16 +105,16 @@ www/
 ├── docs/                   # Engineering docs (see Documentation Map)
 ├── src/
 │   ├── app/                # Next.js App Router routes
-│   │   ├── api/            # Booking, webhooks, listen-auth, cron endpoints
-│   │   ├── book/           # Booking flow (dynamic per reading)
-│   │   ├── listen/         # Magic-link-gated delivery surface
-│   │   ├── my-gifts/       # Gift purchaser self-service
-│   │   └── thank-you/      # Post-checkout confirmation
+│   │   ├── api/            # Booking, webhooks, listen-auth, privacy-export, cron endpoints
+│   │   ├── book/           # Booking flow (dynamic per reading): entry, letter, intake
+│   │   ├── (authed)/       # Token-gated surfaces: listen (delivery) + thank-you
+│   │   ├── preview/        # Sanity Presentation draft surface (noindex)
+│   │   └── privacy/        # Legal pages + per-order GDPR data export
 │   ├── components/         # React components with co-located tests + stories
 │   ├── data/               # Static fallbacks (used when CMS is unreachable)
 │   ├── hooks/              # Custom React hooks
 │   ├── lib/                # Sanity client, booking persistence, Stripe, email, auth
-│   ├── middleware.ts       # CSP, holding-page gate, soft-launch allowlist
+│   ├── middleware.ts       # CSP nonce, consent cookie, under-construction gate
 │   └── styles/             # Tailwind tokens
 └── README.md
 ```
@@ -148,9 +147,10 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 | Document                                                                          | Purpose                                                                                       |
 | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`docs/SESSION_BOOT.md`](docs/SESSION_BOOT.md)                                    | Active sprint state, in-flight work, and current focus — the boot doc read first each session. |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md)                                          | Per-PR shipped history with summaries.                                                        |
 | [`docs/ADR-001-persistence.md`](docs/ADR-001-persistence.md)                      | Decision: D1 as source of truth for bookings; Sanity mirrors for editor workflow.             |
-| [`docs/BACKLOG.md`](docs/BACKLOG.md)                      | Deferred items — security follow-ups, infra cleanups, code polish.                            |
+| [`docs/BACKLOG.md`](docs/BACKLOG.md)                      | Historical deferrals (pre-`dex`); current outstanding work lives in the `dex` queue.          |
 | [`docs/MANUAL_SMOKE_TEST.md`](docs/MANUAL_SMOKE_TEST.md)                          | 9-journey customer-flow walkthrough run on staging before any production push.                |
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md)                                        | D1 migrations, Sanity dataset re-seeding, Mixpanel funnels — recurring operational tasks.     |
 | [`docs/runbooks/STAGING_RUNBOOK.md`](docs/runbooks/STAGING_RUNBOOK.md)            | Staging environment provisioning + Cloudflare Access patterns + verification.                 |
@@ -169,4 +169,4 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Project Context
 
-`CLAUDE.md` files exist at the repo root and in `www/` for agent/team context — they are not required reading to contribute. The two files that ARE load-bearing for any non-trivial change are `docs/BACKLOG.md` (deferred work, must be read before planning) and `docs/CHANGELOG.md` (what shipped when).
+`CLAUDE.md` files exist at the repo root and in `www/` for agent/team context — they are not required reading to contribute. For current state and planning, the load-bearing surfaces are `docs/SESSION_BOOT.md` (active sprint state) and the `dex` task queue (`dex list` from `www/`; storage `.dex/tasks.jsonl`), which is the source of truth for outstanding work. `docs/CHANGELOG.md` records what shipped when; `docs/BACKLOG.md` is retained as historical reference for pre-`dex` deferrals.
