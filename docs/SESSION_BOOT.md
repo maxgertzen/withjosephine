@@ -1,6 +1,10 @@
 # Session Boot — Active State
 
-## ▶ IN PROGRESS (2026-07-03): v1.16.0 STRIP — gift + library + user-signin removed → on `release/v1.16.0`, staging-green, NOT merged to main
+## ▶ SHIPPED TO MAIN (2026-07-06): v1.16.0 STRIP merged + tagged `v1.16.0` (#321, squash `e2b736b`) → apex still parked; UNPARK is the only remaining work
+
+**2026-07-06:** `release/v1.16.0` → `main` MERGED (#321, squash `e2b736b`) + tagged `v1.16.0`. P8 acceptance passed (roundtrip e2e 11/11 run `28767801812` + manual staging smoke). `deploy-production` runs on the main push with the apex PARKED (`NEXT_PUBLIC_UNDER_CONSTRUCTION=1`) — no customer exposure. **NEXT = apex unpark** (`docs/UNPARK_RUNBOOK.md`): Stripe live-mode + register live webhook + recreate 3 Payment Links, 🚨 re-pair each reading to its correct link (prod links still SWAPPED, `xz7luej3`), flip `UNDER_CONSTRUCTION=0` + `APEX_UNPARKED=true`, M1 WAF (`7h6tfse1`), then cutover dex `vgur1s9o` (strip `{submissionCount}` from PROD export copy). `release/v2.0.0` keeps the full-featured (gift/library) code for later.
+
+### (historical) v1.16.0 STRIP build — was on `release/v1.16.0`, staging-green
 
 **2026-07-05 update:** #318 `fix(email)` merged to `release/v1.16.0` (squash `39fc69d`, CI green incl deploy-staging) — transactional email copy now reads uncached so a Studio publish is reflected on the next send (was serving a stale cached template from the cron/DO path). **The apex-unpark procedure is now a standalone runbook: `docs/UNPARK_RUNBOOK.md`** (verified vars + ordered steps; use it instead of reconstructing from the narrative below).
 
