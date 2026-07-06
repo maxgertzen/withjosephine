@@ -1,5 +1,25 @@
 # Session Boot — Active State
 
+## ▶ 🚀 LIVE (2026-07-06): apex UNPARKED — `withjosephine.com` is serving real customers
+
+**The site is launched.** `NEXT_PUBLIC_UNDER_CONSTRUCTION` flipped 1→0 (repo var + `production` env var + prod worker secret) and `APEX_UNPARKED=true`. Verified live by read-only prod smoke: home, 3 legal pages, all 3 booking entry + `/letter`, all 3 **intake** pages (deepest, no static fallback) render real content (no holding page); custom 404 → 404; `/api/booking` + `/api/contact` GET → 405 (write-gates intact).
+
+**Stripe is live.** Live webhook `https://withjosephine.com/api/stripe/webhook` registered + `STRIPE_WEBHOOK_SECRET` set; 3 live Payment Links recreated and re-paired to the correct reading — **Max verified by live test** (price + `/thank-you/<slug>` redirect match per slug). Prices: Soul Blueprint $129 · Birth Chart $89 · **Akashic $89** (repriced from $79; CLAUDE.md services table updated). Closed the birth-chart↔Soul-Blueprint swap (`xz7luej3`). Prod Sanity payment links: zero `test_` links remain.
+
+**Unpark mechanics (durable):** the flag is read via **dynamic `process.env[name]`** (`src/lib/featureFlags.ts` → `isFlagEnabled`), NOT a build-inlined `process.env.NEXT_PUBLIC_…` static — so DefinePlugin does not inline it, and setting the **runtime worker secret** to `0` unparked the already-deployed worker with no redeploy. No static reads of the flag exist, so no half-park risk. The GitHub vars (`=0`) bake into the next push-triggered prod deploy.
+
+**Also shipped this arc:** #322 `fix(sanity-sync)` — prod→staging sync now preserves the target dataset's own `reading.stripePaymentLink` (was full-doc `createOrReplace`, which would have crossed a live link onto staging and made a staging test payment a real charge). Cutover `vgur1s9o` — `{submissionCount}` stripped from PROD `emailPrivacyExport` copy. WAF `7h6tfse1` — `rl-josephine-api-write-paths` extended to cover `/api/admin/send-email-preview`.
+
+**Remaining / follow-ups:**
+- **Clean prod redeploy (hygiene, non-urgent):** the live bundle was built with `UNDER_CONSTRUCTION=1` inlined and unparked via the runtime secret; the next `main` push deploy bakes `=0` in AND runs the now-enabled `smoke-production` (gated on `APEX_UNPARKED`) as a CI backstop.
+- **dex `knvw0cf0`** (open, non-blocking): extend `sanity-validate` CI to cover production data — a post-launch CI enhancement, did not gate the unpark.
+- **Prod smoke is READ-ONLY from here** — live `buy.stripe.com` links = real charges; test card 4242 = a real charge (`feedback_prod_smoke_live_payment_links`).
+- Monitoring live: Sentry (errors on fetch+scheduled, `production`-tagged), Day-7 cron monitor, Workers logs, Mixpanel + Clarity (consent + prod-host gated), CF zone analytics.
+
+Hold-gate `wdpz1ux4` effectively lifted at launch (all launch-blocking children closed); it stays open in dex only because its one remaining child `knvw0cf0` — the non-blocking prod `sanity-validate` CI extension — is still open. `ADMIN_API_KEY` + `BREVO_API_KEY` still absent (non-blocking; set when those paths are exercised).
+
+---
+
 ## ▶ SHIPPED TO MAIN (2026-07-06): v1.16.0 STRIP merged + tagged `v1.16.0` (#321, squash `e2b736b`) → apex still parked; UNPARK is the only remaining work
 
 **2026-07-06:** `release/v1.16.0` → `main` MERGED (#321, squash `e2b736b`) + tagged `v1.16.0`. P8 acceptance passed (roundtrip e2e 11/11 run `28767801812` + manual staging smoke). **`deploy-production` GREEN** (run `28772732950`, `smoke-production` passed) — the prod worker is LIVE but **PARKED** (`NEXT_PUBLIC_UNDER_CONSTRUCTION=1`), zero customer exposure. Docs synced: CHANGELOG (#321 row), README (v1.16.0 sync), this file. `release/v2.0.0` keeps the full-featured (gift/library) code for later.
