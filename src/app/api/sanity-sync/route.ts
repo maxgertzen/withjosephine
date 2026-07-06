@@ -162,6 +162,22 @@ export async function POST(request: Request): Promise<Response> {
   const docFields: Record<string, unknown> = { ...payload };
   delete docFields._operation;
 
+  // stripePaymentLink is env-specific (live buy.stripe.com in prod, test-mode
+  // in staging); a synced live link would make a staging test payment a real
+  // charge. Preserve the target dataset's own value. createOrReplace is a
+  // full-doc write, so an absent field must be re-set from the target, not omitted.
+  if (docType === "reading") {
+    const existingLink = await writeClient.fetch<string | null>(
+      `*[_id == $id][0].stripePaymentLink`,
+      { id: docId },
+    );
+    if (existingLink) {
+      docFields.stripePaymentLink = existingLink;
+    } else {
+      delete docFields.stripePaymentLink;
+    }
+  }
+
   await writeClient.createOrReplace({
     ...docFields,
     _id: docId,
