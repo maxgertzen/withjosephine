@@ -20,12 +20,14 @@
 - Added `pdfDownloadedAt` signal (mirrors `listenedAt`); reordered submission Studio fields (audio+pdf+delivered+listened+pdfDownloaded → photo → questions → rest).
 - Tests 2443 → 1803 (all deltas = removed-feature tests). D1 gift/session columns left DORMANT (no drop migration).
 
-**🚧 NEXT SESSION STARTS HERE — P8 acceptance (dex `qnmu32ol`):**
-1. Run the `*-roundtrip` Playwright e2e against staging (stripped set: listen-roundtrip, stripe-roundtrip, listen-one-tap-roundtrip; gift/library/my-* specs were deleted). The `api/internal/issue-magic-link` seam was KEPT for these.
-2. Manual staging smoke (staging = clean slate running the strip; Becky's addresses allowlisted so email arrives): book → Stripe test → thank-you (no gift toggle/account menu) → order-confirmation email **with export-data link** → click → Turnstile → export email to order address → day-7/listen → audio play + **PDF download** → confirm zero `/my-readings`,`/my-gifts`,sign-in surfaces. Use `smoke-monitor`.
-3. If green → main-merge is a SEPARATE approved step (deploys prod). At cutover do dex `vgur1s9o` (strip `{submissionCount}` from PROD `emailPrivacyExport` copy — already done on staging).
+**✅ P8 ACCEPTANCE PASSED (2026-07-06) — dex `qnmu32ol` + `lx1j6k8r` CLOSED. Next = main-merge (Max-approved prod-deploy step).**
+1. e2e: 3 `*-roundtrip` specs green on staging (e2e-sandbox run `28767801812`, 11/11).
+2. Manual staging smoke: SUCCESS — full journey incl order-confirmation email w/ export link → Turnstile export → day-7 delivery (fired via `?force=` cron on submission `d6a0415a`) → `/listen` audio + PDF thumbnail/download; zero library/gift/sign-in surfaces. Live Studio zero-click thumbnail smoke also confirmed here (`lx1j6k8r` closed).
+3. Also shipped this session: export-README compliance polish (Art. 15 + Art. 20 citation + JSON data-dictionary), commits `9c55ef5`/`d59fcba`, release CI green incl deploy-staging.
 
-**Deferred (dex):** `qnmu32ol` P8 smoke · `vgur1s9o` prod export-copy cutover · `h1rb6zsh` exportToken/listenToken factory de-dup · `ojkl12it` export-throttle TOCTOU (bounded).
+**🚧 NEXT = MAIN-MERGE (separate, explicitly Max-approved — deploys the prod worker; apex stays parked so no customer exposure).** At cutover do dex `vgur1s9o` (strip `{submissionCount}` from PROD `emailPrivacyExport` copy — already done on staging). THEN the apex-unpark runbook (`docs/UNPARK_RUNBOOK.md`) incl the swapped-payment-link check (`xz7luej3`).
+
+**Deferred (dex):** `vgur1s9o` prod export-copy cutover · `h1rb6zsh` exportToken/listenToken factory de-dup · `ojkl12it` export-throttle TOCTOU (bounded).
 
 **Note on apex-unpark plan below:** Becky's staging self-smoke (the apex-unpark gate) is now effectively the P8 smoke of the STRIPPED build — staging runs v1.16.0. If Becky's smoke passes → merge 1.16.0 → main → then the unpark sequence.
 
