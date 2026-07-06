@@ -1,5 +1,18 @@
 # Session Boot — Active State
 
+## ▶ NEXT SESSION (2026-07-06 PM): cut `release/v1.18.0` → Wave 1 of the site-quality plan
+
+**Hero blink FIXED (PR #323, squash `8edc3fa`, merged to main).** Entrance moved framer-motion→CSS keyframes at first paint (dex `vcgpmu7n` closed). **deploy-production was WAITING at the env approval gate at session end (run `28785409179`)** — if Max didn't approve it, approve + verify first thing: served HTML must have zero hiding `opacity:0` in the hero (pre-fix baseline = 5), quick real-browser reload check.
+
+**Site quality review DONE (SEO/a11y/perf).** Report: `docs/SITE_REVIEW_2026-07-06.md`. Findings: dex epic `dwiyj3bi` (10 self-contained children with evidence). **Max decisions 2026-07-06: Wave 1 next session; ALL THREE WAVES land on `release/v1.18.0`** (cut off main, wire into ci.yml push+PR triggers like release/v1.11.5 was).
+- Wave 0 DONE: `kqpx4aey` CF www→apex 301 + Always Use HTTPS (Max, curl-verified) · `6m832mxc` prod Sanity metaTitle prices → $89 (patched + re-fetched; **check the live <title> flipped post-deploy** — if still stale after the prod deploy it's the `umfh04zz` R2-cache-staleness class).
+- **Wave 1 (START HERE, one PR to `release/v1.18.0`):** `exkalv00` mixpanel dynamic import (~120KB br off first paint) + `wqwqx0hm` `_headers` immutable caching + `xag4q56p` `<main>`+skip-link + mechanical bits of `qiiqqs0a` (FAQ aria id, reduced-motion keyframe additions).
+- Wave 2: `0be0yeig` OG/Twitter/metadataBase/canonicals/OG-image + `pmeqletx` sitemap + JSON-LD. Wave 3 (design-gated): `gk2etjdy` gold-contrast (needs Max/Designer token call FIRST) + rest of `qiiqqs0a` + `0nge4vbb`.
+
+**⚠️ Robots.ts belongs to a SEPARATE in-flight session** — the main checkout sits on branch `feat/robots-allow-gemini-grounding` with an UNCOMMITTED `src/app/robots.ts` edit (Google-Extended → CITATION_BOTS). Do NOT reset/checkout over it. The Google-Extended allow-vs-deny tradeoff is a pending Max decision (banked in `docs/SITE_REVIEW_2026-07-06.md` + the review PRD); Max will say when to review that branch.
+
+Housekeeping: two stale docs-only main CI runs were cancelled post-merge (they were queued at the prod approval gate and, approved out of order, would have deployed a pre-fix worker). The bookkeeping run for THIS commit can be cancelled at the gate the same way.
+
 ## ▶ 🚀 LIVE (2026-07-06): apex UNPARKED — `withjosephine.com` is serving real customers
 
 **The site is launched.** `NEXT_PUBLIC_UNDER_CONSTRUCTION` flipped 1→0 (repo var + `production` env var + prod worker secret) and `APEX_UNPARKED=true`. Verified live by read-only prod smoke: home, 3 legal pages, all 3 booking entry + `/letter`, all 3 **intake** pages (deepest, no static fallback) render real content (no holding page); custom 404 → 404; `/api/booking` + `/api/contact` GET → 405 (write-gates intact).
