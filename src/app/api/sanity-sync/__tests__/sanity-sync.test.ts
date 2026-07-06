@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const createOrReplace = vi.fn();
 const deleteFn = vi.fn();
+const fetchFn = vi.fn();
 
 vi.mock("@/lib/sanity/client", () => ({
-  getSanityWriteClient: () => ({ createOrReplace, delete: deleteFn }),
+  getSanityWriteClient: () => ({ createOrReplace, delete: deleteFn, fetch: fetchFn }),
 }));
 
 const SECRET = "test-webhook-secret";
@@ -12,6 +13,7 @@ const SECRET = "test-webhook-secret";
 beforeEach(() => {
   createOrReplace.mockReset().mockResolvedValue({});
   deleteFn.mockReset().mockResolvedValue({});
+  fetchFn.mockReset().mockResolvedValue(null);
   vi.unstubAllEnvs();
   vi.stubEnv("SANITY_WEBHOOK_SECRET", SECRET);
 });
@@ -111,6 +113,47 @@ describe("/api/sanity-sync", () => {
     });
     const writtenDoc = createOrReplace.mock.calls[0]?.[0];
     expect(writtenDoc).not.toHaveProperty("_operation");
+  });
+
+  describe("stripePaymentLink is env-specific and never crosses datasets", () => {
+    it("preserves the target dataset's existing link, discarding the incoming one", async () => {
+      fetchFn.mockResolvedValue("https://buy.stripe.com/test_stagingLink");
+      await callWithValidSig({
+        _id: "reading-1",
+        _type: "reading",
+        _operation: "update",
+        name: "Soul Blueprint",
+        stripePaymentLink: "https://buy.stripe.com/live_prodLink",
+      });
+      expect(fetchFn).toHaveBeenCalledWith(expect.stringContaining("stripePaymentLink"), {
+        id: "reading-1",
+      });
+      const writtenDoc = createOrReplace.mock.calls[0]?.[0];
+      expect(writtenDoc.stripePaymentLink).toBe("https://buy.stripe.com/test_stagingLink");
+    });
+
+    it("drops the incoming link when the target has none (avoids leaking prod's link)", async () => {
+      fetchFn.mockResolvedValue(null);
+      await callWithValidSig({
+        _id: "reading-1",
+        _type: "reading",
+        _operation: "update",
+        name: "Soul Blueprint",
+        stripePaymentLink: "https://buy.stripe.com/live_prodLink",
+      });
+      const writtenDoc = createOrReplace.mock.calls[0]?.[0];
+      expect(writtenDoc).not.toHaveProperty("stripePaymentLink");
+    });
+
+    it("does not touch links for non-reading doc types", async () => {
+      await callWithValidSig({
+        _id: "siteSettings-1",
+        _type: "siteSettings",
+        _operation: "update",
+        title: "Site",
+      });
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
   });
 
   it("syncs draft documents (id with 'drafts.' prefix) so Presentation tool sees in-flight edits", async () => {
