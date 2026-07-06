@@ -1,30 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import React from "react";
 import { describe, expect, it, vi } from "vitest";
-
-vi.mock("motion/react", () => {
-  function createMotionComponent(tag: string) {
-    return function MotionComponent({
-      children,
-      initial: _initial,
-      animate: _animate,
-      transition: _transition,
-      ...rest
-    }: Record<string, unknown>) {
-      return React.createElement(tag, rest, children as React.ReactNode);
-    };
-  }
-
-  return {
-    motion: {
-      div: createMotionComponent("div"),
-      p: createMotionComponent("p"),
-      section: createMotionComponent("section"),
-      span: createMotionComponent("span"),
-    },
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
-  };
-});
 
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
