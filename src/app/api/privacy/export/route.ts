@@ -27,7 +27,12 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 /**
- * GDPR Article 20 — per-order data portability export.
+ * GDPR Article 15 (access) + Article 20 (data portability) — per-order export.
+ *
+ * Structured data is emitted as JSON (a "structured, commonly used and
+ * machine-readable format" per Art. 20) and media in its original common
+ * formats. It also includes controller-generated content (voice note, PDF)
+ * that is beyond the Art. 20 minimum but owed under the Art. 15 right of access.
  *
  * Gated by a signed `export.v1` token (emailed in the order confirmation) that
  * binds the submissionId + recipient. The export is scoped to that single order,
@@ -122,6 +127,24 @@ function buildReadme(): string {
     "  photo.*           — the photo you uploaded (if any)",
     "  voice-note.*      — the voice note Josephine recorded for you (if delivered)",
     "  reading.pdf       — the supporting PDF (if delivered)",
+    "",
+    "What the JSON fields mean",
+    "-------------------------",
+    "intake.json",
+    "  responses            — your intake answers, keyed by the question you answered",
+    "consent.json",
+    "  consentSnapshot      — the consent choices recorded at booking (GDPR Art. 6 + Art. 9)",
+    "  paidAt               — when payment completed (ISO 8601)",
+    "transaction.json",
+    "  amountPaidCents      — amount charged, in the currency's minor unit (e.g. cents)",
+    "  amountPaidCurrency   — ISO 4217 currency code (e.g. USD)",
+    "  paidAt               — when payment completed (ISO 8601)",
+    "  stripeSessionId      — Stripe checkout reference for this payment",
+    "  reading              — the reading you booked",
+    "delivery.json",
+    "  deliveredAt          — when your reading was delivered (ISO 8601, null if not yet)",
+    "  emailsFired          — the emails we sent you for this order",
+    "  status               — the order's current state",
     "",
     "Retention",
     "---------",
