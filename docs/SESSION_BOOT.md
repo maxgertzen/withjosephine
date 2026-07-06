@@ -2,7 +2,17 @@
 
 ## ▶ SHIPPED TO MAIN (2026-07-06): v1.16.0 STRIP merged + tagged `v1.16.0` (#321, squash `e2b736b`) → apex still parked; UNPARK is the only remaining work
 
-**2026-07-06:** `release/v1.16.0` → `main` MERGED (#321, squash `e2b736b`) + tagged `v1.16.0`. P8 acceptance passed (roundtrip e2e 11/11 run `28767801812` + manual staging smoke). `deploy-production` runs on the main push with the apex PARKED (`NEXT_PUBLIC_UNDER_CONSTRUCTION=1`) — no customer exposure. **NEXT = apex unpark** (`docs/UNPARK_RUNBOOK.md`): Stripe live-mode + register live webhook + recreate 3 Payment Links, 🚨 re-pair each reading to its correct link (prod links still SWAPPED, `xz7luej3`), flip `UNDER_CONSTRUCTION=0` + `APEX_UNPARKED=true`, M1 WAF (`7h6tfse1`), then cutover dex `vgur1s9o` (strip `{submissionCount}` from PROD export copy). `release/v2.0.0` keeps the full-featured (gift/library) code for later.
+**2026-07-06:** `release/v1.16.0` → `main` MERGED (#321, squash `e2b736b`) + tagged `v1.16.0`. P8 acceptance passed (roundtrip e2e 11/11 run `28767801812` + manual staging smoke). **`deploy-production` GREEN** (run `28772732950`, `smoke-production` passed) — the prod worker is LIVE but **PARKED** (`NEXT_PUBLIC_UNDER_CONSTRUCTION=1`), zero customer exposure. Docs synced: CHANGELOG (#321 row), README (v1.16.0 sync), this file. `release/v2.0.0` keeps the full-featured (gift/library) code for later.
+
+**🚧 NEXT SESSION STARTS HERE = APEX UNPARK.** Walk `docs/UNPARK_RUNBOOK.md` (authoritative ordered steps + verified vars). All Max-actions:
+1. **Stripe live-mode** — paste `sk_live`, register the live webhook (`withjosephine.com/api/stripe/webhook` → set its `whsec` as `STRIPE_WEBHOOK_SECRET`), recreate the 3 Payment Links in live mode, update prod Sanity `stripePaymentLink` URLs.
+2. 🚨 **Re-pair each reading to its correct link** — prod links are still SWAPPED birth-chart ↔ Soul Blueprint (dex `xz7luej3`); the runbook carries the hard check.
+3. **Flip** `NEXT_PUBLIC_UNDER_CONSTRUCTION=0` + `APEX_UNPARKED=true` → redeploy → curl-verify the apex renders the real site (and the now-comprehensive prod read-only smoke runs).
+4. **M1 prod WAF** rate-limit rule (dex `7h6tfse1`).
+5. **Cutover** dex `vgur1s9o` (strip `{submissionCount}` from PROD `emailPrivacyExport` copy — already done on staging).
+6. **Read-only prod smoke only** once live — live links = real charges.
+- Hold-gate parent: dex `wdpz1ux4` (open: `ttys8qku` smoke walkthrough, `knvw0cf0` p2 sanity-validate-prod).
+- Prod secrets present except the Stripe-live swaps; `ADMIN_API_KEY` + `BREVO_API_KEY` absent (non-blocking, set when needed).
 
 ### (historical) v1.16.0 STRIP build — was on `release/v1.16.0`, staging-green
 
