@@ -55,10 +55,10 @@ export function Navigation({ content, className }: NavigationProps) {
     <>
       <nav
         className={mergeClasses(
-          "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out",
+          "fixed top-0 left-0 right-0 z-[100] border-b transition-all duration-300 ease-in-out",
           scrolled
-            ? "bg-j-cream/95 backdrop-blur-[10px] border-b border-j-border-subtle shadow-j-soft"
-            : "bg-transparent",
+            ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
+            : "border-transparent bg-transparent",
           className,
         )}
       >
@@ -70,7 +70,7 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="h-auto w-[140px] min-[900px]:hidden"
+              className="h-auto w-[140px] nav:hidden"
             />
             <Image
               src="/images/logo-horizontal-text.webp"
@@ -78,13 +78,13 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="hidden h-auto w-[clamp(120px,8vw,160px)] min-[900px]:block"
+              className="hidden h-auto w-[clamp(120px,8vw,160px)] nav:block"
             />
           </Link>
 
-          <div className="flex items-center gap-3 min-[900px]:gap-6">
+          <div className="flex items-center gap-3 nav:gap-6">
             <div
-              className="hidden min-[900px]:flex items-center gap-8"
+              className="hidden nav:flex items-center gap-8"
               role="navigation"
               aria-label="Main navigation"
             >
@@ -93,7 +93,7 @@ export function Navigation({ content, className }: NavigationProps) {
                   key={link.sectionId}
                   type="button"
                   onClick={() => scrollToSection(link.sectionId)}
-                  className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
+                  className="relative text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-j-accent after:transition-transform after:duration-300 after:ease-in-out after:content-[''] hover:after:scale-x-100 focus-visible:after:scale-x-100 motion-reduce:after:transition-none"
                 >
                   {link.label}
                 </button>
@@ -105,7 +105,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
             <button
               type="button"
-              className="min-[900px]:hidden text-j-deep"
+              className="nav:hidden text-j-deep"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
@@ -118,7 +118,7 @@ export function Navigation({ content, className }: NavigationProps) {
       <div
         aria-hidden={!menuOpen}
         className={mergeClasses(
-          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out min-[900px]:hidden",
+          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

@@ -53,6 +53,11 @@
   --color-j-border-subtle: var(--j-border-subtle);
   --color-j-border-gold: var(--j-border-gold);
 
+  /* ── Breakpoints ──
+     Nav collapses to the mobile hamburger below this width. Named so the
+     value lives in one place instead of repeated min-[900px] arbitrary values. */
+  --breakpoint-nav: 900px;
+
   /* ── Animations ── */
   --animate-j-twinkle: twinkle 3s ease-in-out infinite;
   --animate-j-float: floatSlow 6s ease-in-out infinite;
