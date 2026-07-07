@@ -55,5 +55,6 @@ export async function buildLegalMetadata(
   return {
     title: doc?.seo?.metaTitle ?? fallback.metaTitle,
     description: doc?.seo?.metaDescription ?? fallback.metaDescription,
+    alternates: { canonical: `/${slug}` },
   };
 }

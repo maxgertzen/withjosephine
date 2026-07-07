@@ -1,13 +1,16 @@
 import type { MetadataRoute } from "next";
 
+import { siteOrigin } from "@/lib/env";
+
 const CITATION_BOTS = [
   "OAI-SearchBot",
   "PerplexityBot",
   "Claude-SearchBot",
   "Claude-User",
+  "Google-Extended",
 ];
 
-const TRAINING_BOTS = ["GPTBot", "ClaudeBot", "Google-Extended", "CCBot"];
+const TRAINING_BOTS = ["GPTBot", "ClaudeBot", "CCBot"];
 
 const PRIVATE_PATHS = [
   "/api/",
@@ -23,5 +26,6 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: TRAINING_BOTS, disallow: "/" },
       { userAgent: "*", allow: "/", disallow: PRIVATE_PATHS },
     ],
+    sitemap: `${siteOrigin()}/sitemap.xml`,
   };
 }

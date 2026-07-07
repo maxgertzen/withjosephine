@@ -1,11 +1,16 @@
 import "@/styles/globals.css";
 
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
 import { styleProviderClassName } from "@/components/StyleProvider";
+import { siteOrigin } from "@/lib/env";
 import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+};
 
 export const viewport: Viewport = {
   width: "device-width",

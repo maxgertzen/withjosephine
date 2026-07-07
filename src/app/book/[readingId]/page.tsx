@@ -39,7 +39,12 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 
   const seo = sanityReading?.seo ?? bookingPage?.seo;
 
-  return { title, description, openGraph: buildOpenGraph(seo) };
+  return {
+    title,
+    description,
+    alternates: { canonical: `/book/${readingId}` },
+    openGraph: buildOpenGraph(seo),
+  };
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {

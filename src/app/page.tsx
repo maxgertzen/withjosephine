@@ -25,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: "/favicon.ico",
       apple: "/apple-touch-icon.png",
     },
+    alternates: { canonical: "/" },
     openGraph: buildOpenGraph(seo),
   };
 }
