@@ -4,20 +4,22 @@ import { LegalPageLayout } from "@/components/LegalPageLayout";
 import { PortableTextContent } from "@/components/PortableTextContent";
 import { buildLegalMetadata, resolveLegalPage } from "@/lib/legalPage";
 import { LEGAL_PAGES } from "@/lib/legalPages";
-import { fetchLegalPagePublished } from "@/lib/sanity/fetch";
+import { fetchLegalPageFresh } from "@/lib/sanity/fetch";
 
 const SLUG = "privacy";
 const { fallback, FallbackBody } = LEGAL_PAGES[SLUG];
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
-  return buildLegalMetadata(SLUG, fallback, fetchLegalPagePublished);
+  return buildLegalMetadata(SLUG, fallback, fetchLegalPageFresh);
 }
 
 export default async function PrivacyPage() {
   const { doc, tag, title, lastUpdated } = await resolveLegalPage(
     SLUG,
     fallback,
-    fetchLegalPagePublished,
+    fetchLegalPageFresh,
   );
 
   return (
