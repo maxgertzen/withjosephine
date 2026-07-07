@@ -48,8 +48,11 @@ export function PrivacyFallbackBody() {
         </li>
         <li>
           <strong className="font-medium">Basic technical data</strong>: IP address, browser,
-          and referrer, logged by Cloudflare for abuse protection. No analytics or advertising
-          cookies are used.
+          and referrer, logged by Cloudflare for abuse protection.
+        </li>
+        <li>
+          <strong className="font-medium">Anonymous usage analytics</strong>: see the
+          &ldquo;Cookies &amp; analytics&rdquo; section below.
         </li>
       </ul>
 
@@ -83,24 +86,33 @@ export function PrivacyFallbackBody() {
           .
         </li>
         <li>
-          <strong className="font-medium">Web3Forms</strong>: relays the contact form to
-          Josephine&rsquo;s inbox.
+          <strong className="font-medium">Cloudflare</strong>: hosting, DNS, email routing,
+          anti-spam, and secure storage of your uploaded photograph.
         </li>
         <li>
-          <strong className="font-medium">Google Forms</strong>: intake form for your reading
-          details after booking.
+          <strong className="font-medium">Sanity</strong>: the content system for the site, and
+          the secure store that holds your reading - your intake answers and your delivered
+          voice note and PDF.
         </li>
         <li>
-          <strong className="font-medium">Gmail (Google Workspace)</strong>: where Josephine
-          receives your messages and delivers your voice note + PDF.
+          <strong className="font-medium">Resend</strong>: sends Josephine&rsquo;s booking and
+          admin emails.
         </li>
         <li>
-          <strong className="font-medium">Sanity</strong>: content management system for the
-          editable parts of the site. No customer data lives in Sanity.
+          <strong className="font-medium">Brevo</strong>: sends customer emails and, if you
+          subscribe, the newsletter (EU-based).
         </li>
         <li>
-          <strong className="font-medium">Cloudflare</strong>: DNS, email routing, and edge
-          hosting (Cloudflare Pages).
+          <strong className="font-medium">Mixpanel</strong>: anonymous funnel analytics. No
+          name, email, photograph, or birth details are ever sent to it.
+        </li>
+        <li>
+          <strong className="font-medium">Microsoft Clarity</strong>: anonymous session
+          analytics; your form entries are masked before anything is recorded.
+        </li>
+        <li>
+          <strong className="font-medium">Sentry</strong>: error monitoring, so faults can be
+          diagnosed.
         </li>
       </ul>
       <p className="font-body text-base text-j-text-muted leading-[1.9] font-light mt-3">
@@ -113,23 +125,32 @@ export function PrivacyFallbackBody() {
       </h2>
       <ul className="flex flex-col gap-3 font-body text-base text-j-text leading-[1.9] font-light list-disc pl-5">
         <li>
-          Reading details (which vary by reading and may include your intake form answers, date
-          of birth, name, and photograph) are kept in Josephine&rsquo;s inbox and private Google
-          Drive until she has completed and delivered the reading, plus up to{" "}
-          <strong className="font-medium">30 days</strong> afterwards in case of follow-up
-          questions. After that they are deleted.
+          Your <strong className="font-medium">reading</strong> (intake answers, voice note,
+          PDF, and - for an Akashic reading - your photograph) is kept for up to{" "}
+          <strong className="font-medium">3 years</strong> from your booking, then permanently
+          deleted, unless you ask for it to be deleted sooner.
         </li>
         <li>
           After delivery, your <strong className="font-medium">voice note and PDF</strong> stay
           reachable from your unique reading link for{" "}
-          <strong className="font-medium">90 days</strong>, so you can come back to them
-          whenever you want. After the 90-day access window the link expires, and the files
-          themselves are removed from secure storage within roughly{" "}
-          <strong className="font-medium">120 days</strong> of delivery (the access window plus
-          a short grace period for late re-issues).
+          <strong className="font-medium">90 days</strong>. After that the link expires; email{" "}
+          <ContactEmailLink /> and Josephine can re-issue it while your reading is still held.
         </li>
-        <li>Payment records are kept for 7 years to meet accounting and tax requirements.</li>
-        <li>Contact-form messages that do not lead to a booking are deleted within 90 days.</li>
+        <li>
+          Your uploaded <strong className="font-medium">photograph</strong> is removed from image
+          storage within <strong className="font-medium">90 days</strong> of payment.
+        </li>
+        <li>
+          <strong className="font-medium">Payment records</strong> are kept for{" "}
+          <strong className="font-medium">6 years</strong> to meet UK tax and accounting
+          requirements. If you ask for deletion, the identifying fields are redacted while the
+          minimal transaction record is retained as legally required.
+        </li>
+        <li>
+          Intake forms that never lead to a payment are deleted within about{" "}
+          <strong className="font-medium">30 days</strong>.
+        </li>
+        <li>Contact-form messages that do not lead to a booking are deleted once resolved.</li>
       </ul>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">
@@ -140,8 +161,9 @@ export function PrivacyFallbackBody() {
         United Kingdom and the European Economic Area, including countries that do not have a UK
         or EU adequacy decision. When that happens, the transfer is necessary for the
         performance of your booking contract with Josephine (UK GDPR / GDPR Article 49(1)(b)).
-        No customer data is stored on local devices long-term: it lives in Gmail, Google Drive,
-        and Stripe, which are operated under their own international-transfer safeguards.
+        Several processors are US-based (Stripe, Sanity, Mixpanel, Microsoft) and operate under
+        the EU-US / UK Data Privacy Framework and Standard Contractual Clauses. Your data is not
+        stored long-term on personal devices.
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">
@@ -175,12 +197,15 @@ export function PrivacyFallbackBody() {
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">
-        Cookies &amp; tracking
+        Cookies &amp; analytics
       </h2>
       <p className="font-body text-base text-j-text leading-[1.9] font-light">
-        The site uses no analytics cookies, no advertising pixels, and no social-media tracking
-        scripts. The only persistent storage set by the site itself is whatever your browser
-        keeps for the Stripe checkout session (which is governed by Stripe&rsquo;s policy).
+        The site uses no advertising cookies, no ad pixels, and no social-media tracking. It does
+        use two privacy-preserving analytics tools - Mixpanel (anonymous funnel metrics) and
+        Microsoft Clarity (anonymous session analytics with your form entries masked). If
+        you&rsquo;re in the EU/EEA, UK, Switzerland, or California, you&rsquo;ll see a consent
+        banner and nothing analytics-related runs until you accept. The only other persistent
+        storage is what Stripe sets for checkout (governed by Stripe&rsquo;s policy).
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">Children</h2>
