@@ -1,11 +1,23 @@
 import "@/styles/globals.css";
 
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
 import { styleProviderClassName } from "@/components/StyleProvider";
+import { siteOrigin } from "@/lib/env";
 import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
+import { DEFAULT_OG_IMAGE, SITE_NAME } from "@/lib/seoMetadata";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image", images: [DEFAULT_OG_IMAGE] },
+};
 
 export const viewport: Viewport = {
   width: "device-width",

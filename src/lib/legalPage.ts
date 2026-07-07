@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { fetchLegalPage } from "@/lib/sanity/fetch";
 import type { SanityLegalPage } from "@/lib/sanity/types";
+import { buildPageMetadata } from "@/lib/seoMetadata";
 
 // Public legal pages pass the published fetcher (static/ISR); the /preview
 // legal route uses the default live fetcher (draft-aware).
@@ -52,8 +53,7 @@ export async function buildLegalMetadata(
   fetcher: LegalFetcher = fetchLegalPage,
 ): Promise<Metadata> {
   const doc = await fetcher(slug);
-  return {
-    title: doc?.seo?.metaTitle ?? fallback.metaTitle,
-    description: doc?.seo?.metaDescription ?? fallback.metaDescription,
-  };
+  const title = doc?.seo?.metaTitle ?? fallback.metaTitle;
+  const description = doc?.seo?.metaDescription ?? fallback.metaDescription;
+  return buildPageMetadata({ title, description, path: `/${slug}`, seo: doc?.seo });
 }
