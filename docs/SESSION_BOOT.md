@@ -1,6 +1,31 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (2026-07-06 PM): cut `release/v1.18.0` → Wave 1 of the site-quality plan
+## ▶ NEXT SESSION (2026-07-07): `release/v1.18.0` bundle built + pushed → watch CI, staging-smoke the delta, then open release → main
+
+**`release/v1.18.0` is built, rebased on `eda06a0` (#326), and pushed (18 commits, force-pushed after rebase).** Cut off main, wired into all 4 ci.yml triggers. First (pre-rebase) CI run `28865253794` passed FULL CI incl `deploy-staging` + `sanity-validate-staging`; the rebased run `28865572952` re-verifies on top of #326. **Nothing merged to main.**
+
+**Plan revision vs the 2026-07-06 wave plan below:** the SEO waves (Wave 0 `kqpx4aey`/`6m832mxc` + Wave 2 `0be0yeig` OG/canonicals + `pmeqletx` sitemap/JSON-LD) had already shipped **straight to main** via #323/#324/#325 before this session. So this session built **the rest**: Wave 1 (perf/a11y) + Wave 3 non-design items + cheap refactors + a compliance fix, all onto `release/v1.18.0`.
+
+**Shipped in the bundle (all verified — real-browser for UI, full suite 1831 tests, build, static-routes gate):**
+- Nav polish (Max-reported): gold hover underline grows L→R; header border fades transparent→gold (no black flash). `n02vegpj` (nav `min-[900px]` → `--breakpoint-nav` token + `nav:` variant).
+- `exkalv00` mixpanel dynamic-import (off first-paint, own async chunk). `wqwqx0hm` `/_next/static` immutable caching in `public/_headers` (Workers Static Assets honors it).
+- `xag4q56p` `<main id="main">` + focus-visible skip-link (home + booking/legal shells). `g28lo073` FAQ collapse now animates (was `hidden` slamming display:none). `qiiqqs0a` **mechanical bits only**: reduced-motion for looping anims + FAQ/ReadingCard height, mobile overlay `inert` when closed + Escape, 44px hamburger, FAQ aria-labelledby fix, ReadingCard aria-controls.
+- `ai3dni9f` PrivacyFallbackBody rewritten to reality (+ `docs/PRIVACY_FACTS_FOR_BECKY.md` plain-language facts sheet for Becky's policy rewrite). `rkqhw2jj` extract `BookingPageHeading`. `h1rb6zsh` shared `createSignedTokenCodec` (listenToken + exportToken now thin wrappers; TTLs/subkey/payload unchanged, token tests green). `vz3vp14x` closed stale (order-confirmation orphans verified ABSENT on both datasets; dropped 4 dead type fields).
+- Rebase reconciliation: dropped legal routes from `assert-static-routes.mjs` (they're `force-dynamic` per #326; the manual gate isn't CI-wired so #326's CI stayed green while the list went stale).
+
+**Pruned 9 stale post-strip tickets** (gift/library dead code): `djw51vtk`, `5ep2j3h4`, `qlhejlwb`, `76nnmb5b`, `0i9qk3m5`, `ipicaebk`, `bhkknsl6`, plus `ccvoig0e` (already fixed by `scrollbar-gutter:stable`) and `vz3vp14x` (already clean).
+
+**NEXT STEPS (in order):**
+1. Confirm rebased CI run `28865572952` is green (incl `deploy-staging`).
+2. **Staging smoke the DEPLOYED DELTA** (not full matrix): nav underline/border, skip-link (Tab), FAQ expand+collapse, reduced-motion; + curl a `/_next/static/*` asset for `immutable` `Cache-Control` (`wqwqx0hm` runtime check). Staging is behind CF Access → use the cloudflared access-token path.
+3. **Open `release/v1.18.0` → `main` PR.** This is the FIRST Playwright/e2e exposure (e2e.yml triggers only on PRs to main). Run the deferred **`/code-review --effort high` + `/simplify --scope diff`** on the cumulative diff here (per release-arc convention; inline self-review was done per commit). Pre-flight env audit before the release→main PR.
+
+**STILL OPEN / DEFERRED (not blocking):**
+- `qiiqqs0a` LEFT OPEN — remainder: full focus-trap on the open mobile overlay, ContactForm shared-error not tied to fields, redundant nested nav landmarks, and input-focus contrast (contrast ties to design-gated `gk2etjdy`).
+- `gk2etjdy` gold-on-light contrast — **needs a Max/Designer token-value decision FIRST**, then implement. `bcy4hze4` per-reading OG images — needs Becky/Josephine Sanity content.
+- Small open question (Max): legal-page "Last updated" is a manual Sanity field — should it derive from the doc's publish/`_updatedAt` date instead? (raised 2026-07-07; low-effort, needs a decision on which timestamp is authoritative for a legal doc).
+
+## ▶ (SUPERSEDED — plan executed above, 2026-07-07) NEXT SESSION (2026-07-06 PM): cut `release/v1.18.0` → Wave 1 of the site-quality plan
 
 **Hero blink FIXED (PR #323, squash `8edc3fa`, merged to main).** Entrance moved framer-motion→CSS keyframes at first paint (dex `vcgpmu7n` closed). **deploy-production was WAITING at the env approval gate at session end (run `28785409179`)** — if Max didn't approve it, approve + verify first thing: served HTML must have zero hiding `opacity:0` in the hero (pre-fix baseline = 5), quick real-browser reload check.
 
