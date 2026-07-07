@@ -42,7 +42,7 @@ export function BookingPageShell({
     <div className={`relative min-h-screen ${OUTER_BG_CLASS[outerBg]} overflow-hidden`}>
       <BookingFlowHeader backHref={backHref} />
 
-      <main className={`relative z-10 ${v.maxW} mx-auto px-6 py-16`}>
+      <main id="main" className={`relative z-10 ${v.maxW} mx-auto px-6 py-16`}>
         <article className={`relative bg-j-ivory border border-j-blush rounded-sm ${v.shadow}`}>
           <div
             aria-hidden="true"

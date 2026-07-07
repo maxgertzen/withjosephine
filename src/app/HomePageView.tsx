@@ -55,7 +55,8 @@ export function HomePageView({
   return (
     <>
       <Navigation content={navContent} />
-      <Hero content={hero ?? undefined} />
+      <main id="main">
+        <Hero content={hero ?? undefined} />
 
       <section id="about" className="relative overflow-hidden py-24 px-6">
         <div
@@ -159,6 +160,7 @@ export function HomePageView({
       {faqItems.length > 0 && <GoldDivider className="max-w-xs mx-auto" />}
 
       <ContactForm content={contactSection ?? undefined} />
+      </main>
 
       <Footer content={footerContent} socialLinks={socialLinks} />
     </>

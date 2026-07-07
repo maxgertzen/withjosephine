@@ -37,6 +37,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         className={`${styleProviderClassName} bg-j-cream text-j-text font-body antialiased`}
         suppressHydrationWarning
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-j-deep focus:px-5 focus:py-2 focus:font-body focus:text-sm focus:text-j-cream focus:shadow-j-soft"
+        >
+          Skip to content
+        </a>
         {children}
         <AnalyticsBootstrap consentBannerContent={consentBannerContent} />
         <DelegatedTracking />
