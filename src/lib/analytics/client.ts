@@ -1,15 +1,20 @@
 "use client";
 
-import mixpanel from "mixpanel-browser";
-
 import { deriveEnvironmentFromHost } from "@/lib/constants";
 import { shouldEnableClientObservability } from "@/lib/observability-gate";
 
 import type { ClientEventMap, ClientEventName } from "./events";
 import { HEADLESS_UA_PATTERN } from "./headless";
 
+// mixpanel-browser (~120KB brotli) is imported dynamically inside
+// initAnalytics so it lands in an async chunk loaded only after consent,
+// off the first-paint critical path. Everything before mixpanelLive queues.
+type Mixpanel = (typeof import("mixpanel-browser"))["default"];
+
 let bootstrapped = false;
 let mixpanelLive = false;
+let mixpanelLoading = false;
+let mp: Mixpanel | null = null;
 
 type QueuedEvent = {
   event: string;
@@ -23,7 +28,7 @@ type QueuedEvent = {
 const MAX_QUEUED_EVENTS = 100;
 const queue: QueuedEvent[] = [];
 
-export function initAnalytics() {
+export async function initAnalytics() {
   if (bootstrapped) return;
   if (typeof window === "undefined") return;
   bootstrapped = true;
@@ -39,6 +44,10 @@ export function initAnalytics() {
     queue.length = 0;
     return;
   }
+
+  mixpanelLoading = true;
+  const mixpanel = (await import("mixpanel-browser")).default;
+  mp = mixpanel;
 
   mixpanel.init(token, {
     debug: false,
@@ -64,6 +73,7 @@ export function initAnalytics() {
   }
 
   mixpanelLive = true;
+  mixpanelLoading = false;
 
   for (const item of queue) {
     mixpanel.track(item.event, item.properties);
@@ -76,11 +86,11 @@ export function track<E extends ClientEventName>(
   properties: ClientEventMap[E],
 ) {
   const props = properties as Record<string, unknown>;
-  if (mixpanelLive) {
-    mixpanel.track(event, props);
+  if (mixpanelLive && mp) {
+    mp.track(event, props);
     return;
   }
-  if (bootstrapped) return;
+  if (bootstrapped && !mixpanelLoading) return;
   if (queue.length >= MAX_QUEUED_EVENTS) return;
   queue.push({ event, properties: props });
 }
@@ -93,11 +103,11 @@ export function track<E extends ClientEventName>(
  * doesn't have to widen the typed map for every surface.
  */
 export function trackUntyped(event: string, properties: Record<string, unknown>) {
-  if (mixpanelLive) {
-    mixpanel.track(event, properties);
+  if (mixpanelLive && mp) {
+    mp.track(event, properties);
     return;
   }
-  if (bootstrapped) return;
+  if (bootstrapped && !mixpanelLoading) return;
   if (queue.length >= MAX_QUEUED_EVENTS) return;
   queue.push({ event, properties });
 }
@@ -117,8 +127,8 @@ export function trackThrottled<E extends ClientEventName>(
 }
 
 export function identifySubmission(submissionId: string) {
-  if (!mixpanelLive) return;
-  mixpanel.identify(submissionId);
+  if (!mixpanelLive || !mp) return;
+  mp.identify(submissionId);
 }
 
 export function isAnalyticsInitialized() {
@@ -128,6 +138,8 @@ export function isAnalyticsInitialized() {
 export function _resetForTests() {
   bootstrapped = false;
   mixpanelLive = false;
+  mixpanelLoading = false;
+  mp = null;
   queue.length = 0;
   lastTrackedAt.clear();
 }
