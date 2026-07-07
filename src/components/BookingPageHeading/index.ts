@@ -1,0 +1,1 @@
+export { BookingPageHeading } from "./BookingPageHeading";
