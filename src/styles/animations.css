@@ -152,7 +152,11 @@
   .welcome-ribbon,
   .j-hero-in-logo,
   .j-hero-in,
-  .j-hero-in-fade {
+  .j-hero-in-fade,
+  .j-animate-twinkle,
+  .j-animate-float,
+  .j-animate-float-med,
+  .j-animate-glow {
     animation: none;
   }
 }

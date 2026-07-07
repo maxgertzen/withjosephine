@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
@@ -50,6 +50,15 @@ export function Navigation({ content, className }: NavigationProps) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   return (
     <>
@@ -105,7 +114,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
             <button
               type="button"
-              className="nav:hidden text-j-deep"
+              className="flex h-11 w-11 items-center justify-center text-j-deep nav:hidden"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
@@ -117,6 +126,7 @@ export function Navigation({ content, className }: NavigationProps) {
 
       <div
         aria-hidden={!menuOpen}
+        inert={!menuOpen}
         className={mergeClasses(
           "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
