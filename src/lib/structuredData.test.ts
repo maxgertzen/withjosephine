@@ -4,21 +4,30 @@ import { organizationJsonLd, readingProductJsonLd, websiteJsonLd } from "@/lib/s
 
 describe("structuredData", () => {
   it("organizationJsonLd includes name, url, logo, and sameAs", () => {
-    const ld = organizationJsonLd(["https://www.tiktok.com/@withjosephine"]);
+    const ld = organizationJsonLd({
+      name: "Josephine",
+      sameAs: ["https://www.tiktok.com/@withjosephine"],
+    });
     expect(ld["@type"]).toBe("Organization");
+    expect(ld.name).toBe("Josephine");
     expect(ld.url).toBe("https://withjosephine.com");
     expect(ld.logo).toBe("https://withjosephine.com/images/logo-horizontal.png");
     expect(ld.sameAs).toEqual(["https://www.tiktok.com/@withjosephine"]);
   });
 
-  it("organizationJsonLd omits sameAs when there are no links", () => {
-    expect(organizationJsonLd()).not.toHaveProperty("sameAs");
+  it("organizationJsonLd falls back to the site name and omits sameAs when unset", () => {
+    const ld = organizationJsonLd();
+    expect(ld.name).toBe("Josephine — Soul Readings");
+    expect(ld).not.toHaveProperty("sameAs");
   });
 
-  it("websiteJsonLd is a WebSite anchored to the origin", () => {
-    const ld = websiteJsonLd();
-    expect(ld["@type"]).toBe("WebSite");
-    expect(ld.url).toBe("https://withjosephine.com");
+  it("websiteJsonLd uses the given name and is anchored to the origin", () => {
+    expect(websiteJsonLd("Josephine")).toMatchObject({
+      "@type": "WebSite",
+      name: "Josephine",
+      url: "https://withjosephine.com",
+    });
+    expect(websiteJsonLd().name).toBe("Josephine — Soul Readings");
   });
 
   it("readingProductJsonLd derives a numeric Offer price from a display string", () => {

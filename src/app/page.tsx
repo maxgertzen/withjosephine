@@ -42,11 +42,12 @@ export default async function LandingPage() {
   ]);
 
   const sameAs = siteSettings?.socialLinks?.map((link) => link.url) ?? [];
+  const brandName = siteSettings?.brandName;
 
   return (
     <>
-      <JsonLd data={organizationJsonLd(sameAs)} />
-      <JsonLd data={websiteJsonLd()} />
+      <JsonLd data={organizationJsonLd({ name: brandName, sameAs })} />
+      <JsonLd data={websiteJsonLd(brandName)} />
       <HomePageView
         {...toHomePageViewProps({
           landingPage,
