@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import Image from "next/image";
 
 import { Button } from "@/components/Button";
@@ -77,12 +76,7 @@ export function Hero({ content, className }: HeroProps) {
 
       <div className="relative z-10 flex max-w-[720px] flex-col items-center text-center">
         <h1 className="sr-only">Josephine Soul Readings</h1>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="mb-6"
-        >
+        <div className="j-hero-in-logo mb-6">
           <Image
             src="/images/logo-main.webp"
             alt="Josephine Soul Readings"
@@ -91,23 +85,13 @@ export function Hero({ content, className }: HeroProps) {
             priority
             className="h-auto w-[clamp(280px,40vw,480px)]"
           />
-        </motion.div>
+        </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.3, ease: "easeOut" }}
-          className="mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-accent"
-        >
+        <p className="j-hero-in j-hero-delay-1 mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-accent">
           {tagline}
-        </motion.p>
+        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.75, ease: "easeOut" }}
-          className="mb-12"
-        >
+        <div className="j-hero-in j-hero-delay-2 mb-12">
           <p className="mb-4 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] font-light italic leading-[1.75] text-j-text">
             {introGreeting}
           </p>
@@ -119,23 +103,16 @@ export function Hero({ content, className }: HeroProps) {
               {bodySecond}
             </p>
           )}
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
-        >
+        <div className="j-hero-in j-hero-delay-3">
           <Button variant="outlined" size="lg" onClick={handleScrollToReadings}>
             {ctaText}
           </Button>
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8 }}
+      <div
         role="button"
         tabIndex={0}
         aria-label="Scroll to readings"
@@ -146,7 +123,7 @@ export function Hero({ content, className }: HeroProps) {
             handleScrollToReadings();
           }
         }}
-        className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        className="j-hero-in-fade j-hero-delay-4 absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
       >
         <div
           className="h-[50px] w-px"
@@ -155,7 +132,7 @@ export function Hero({ content, className }: HeroProps) {
               "linear-gradient(to bottom, transparent, rgba(var(--j-accent-rgb), 0.5) 50%, transparent)",
           }}
         />
-      </motion.div>
+      </div>
     </section>
   );
 }

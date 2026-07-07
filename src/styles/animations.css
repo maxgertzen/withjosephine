@@ -102,10 +102,57 @@
   animation: welcomeRibbon 0.9s ease-out forwards;
 }
 
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.j-hero-in-logo {
+  animation: heroScaleIn 0.5s ease-out both;
+}
+.j-hero-in {
+  animation: heroRise 0.35s ease-out both;
+}
+.j-hero-in-fade {
+  animation: fadeIn 0.3s ease-out both;
+}
+.j-hero-delay-1 {
+  animation-delay: 75ms;
+}
+.j-hero-delay-2 {
+  animation-delay: 150ms;
+}
+.j-hero-delay-3 {
+  animation-delay: 225ms;
+}
+.j-hero-delay-4 {
+  animation-delay: 300ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .j-fade-in,
   .j-fade-in-up,
-  .welcome-ribbon {
+  .welcome-ribbon,
+  .j-hero-in-logo,
+  .j-hero-in,
+  .j-hero-in-fade {
     animation: none;
   }
 }
