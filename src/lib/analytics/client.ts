@@ -81,10 +81,7 @@ export async function initAnalytics() {
   queue.length = 0;
 }
 
-export function track<E extends ClientEventName>(
-  event: E,
-  properties: ClientEventMap[E],
-) {
+export function track<E extends ClientEventName>(event: E, properties: ClientEventMap[E]) {
   const props = properties as Record<string, unknown>;
   if (mixpanelLive && mp) {
     mp.track(event, props);

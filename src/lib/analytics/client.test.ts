@@ -282,16 +282,8 @@ describe("track buffer", () => {
 describe("trackThrottled", () => {
   it("fires the first call and drops subsequent calls within the interval", async () => {
     await initAnalytics();
-    trackThrottled(
-      "intake_save_auto",
-      { reading_id: "soul-blueprint", page_number: 1 },
-      30_000,
-    );
-    trackThrottled(
-      "intake_save_auto",
-      { reading_id: "soul-blueprint", page_number: 1 },
-      30_000,
-    );
+    trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
+    trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
     expect(mixpanel.track).toHaveBeenCalledOnce();
   });
 
@@ -301,24 +293,12 @@ describe("trackThrottled", () => {
     let now = 1_000_000;
     Date.now = () => now;
     try {
-      trackThrottled(
-        "intake_save_auto",
-        { reading_id: "soul-blueprint", page_number: 1 },
-        30_000,
-      );
+      trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
       now += 29_999;
-      trackThrottled(
-        "intake_save_auto",
-        { reading_id: "soul-blueprint", page_number: 1 },
-        30_000,
-      );
+      trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
       expect(mixpanel.track).toHaveBeenCalledOnce();
       now += 1;
-      trackThrottled(
-        "intake_save_auto",
-        { reading_id: "soul-blueprint", page_number: 1 },
-        30_000,
-      );
+      trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
       expect(mixpanel.track).toHaveBeenCalledTimes(2);
     } finally {
       Date.now = realDateNow;
@@ -327,16 +307,8 @@ describe("trackThrottled", () => {
 
   it("throttles per event name independently", async () => {
     await initAnalytics();
-    trackThrottled(
-      "intake_save_auto",
-      { reading_id: "soul-blueprint", page_number: 1 },
-      30_000,
-    );
-    trackThrottled(
-      "intake_save_click",
-      { reading_id: "soul-blueprint", page_number: 1 },
-      30_000,
-    );
+    trackThrottled("intake_save_auto", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
+    trackThrottled("intake_save_click", { reading_id: "soul-blueprint", page_number: 1 }, 30_000);
     expect(mixpanel.track).toHaveBeenCalledTimes(2);
   });
 });
