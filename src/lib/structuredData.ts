@@ -1,5 +1,5 @@
 import { siteOrigin } from "@/lib/env";
-import { SITE_NAME } from "@/lib/seoMetadata";
+import { DEFAULT_OG_IMAGE, SITE_NAME } from "@/lib/seoMetadata";
 
 const BRAND_NAME = "Josephine";
 const LOGO_PATH = "/images/logo-horizontal.png";
@@ -35,14 +35,18 @@ export function readingProductJsonLd(input: {
   description: string;
   price: string;
   path: string;
+  image?: string;
 }): Record<string, unknown> {
-  const url = new URL(input.path, siteOrigin()).toString();
+  const origin = siteOrigin();
+  const url = new URL(input.path, origin).toString();
+  const image = new URL(input.image || DEFAULT_OG_IMAGE, origin).toString();
   const price = input.price.replace(/[^0-9.]/g, "");
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: input.name,
     description: input.description,
+    image,
     brand: { "@type": "Brand", name: BRAND_NAME },
     url,
     offers: {

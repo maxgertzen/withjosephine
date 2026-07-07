@@ -41,6 +41,7 @@ describe("structuredData", () => {
 
     expect(ld["@type"]).toBe("Product");
     expect(ld.url).toBe("https://withjosephine.com/book/soul-blueprint");
+    expect(ld.image).toBe("https://withjosephine.com/og-image.png");
     expect(offers.price).toBe("129");
     expect(offers.priceCurrency).toBe("USD");
     expect(offers.availability).toBe("https://schema.org/InStock");
