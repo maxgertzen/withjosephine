@@ -75,14 +75,12 @@ describe("LandingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.openGraph).toEqual(
-      expect.objectContaining({
-        images: [{ url: "https://cdn.sanity.io/images/og.jpg" }],
-      }),
-    );
+    expect(metadata.openGraph?.images).toEqual([
+      expect.objectContaining({ url: "https://cdn.sanity.io/images/og.jpg", width: 1200, height: 630 }),
+    ]);
   });
 
-  it("omits openGraph.images when no ogImage is set", async () => {
+  it("falls back to the default OG image and sets a summary_large_image card", async () => {
     mockFetchLandingPage.mockResolvedValue(
       landingPage({
         seo: { metaTitle: "Josephine", metaDescription: "Desc" },
@@ -92,6 +90,11 @@ describe("LandingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.openGraph?.images).toBeUndefined();
+    expect(metadata.openGraph?.images).toEqual([
+      expect.objectContaining({ url: "/og-image.png", width: 1200, height: 630 }),
+    ]);
+    expect(metadata.twitter).toEqual(
+      expect.objectContaining({ card: "summary_large_image" }),
+    );
   });
 });

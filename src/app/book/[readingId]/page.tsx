@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import {
   fetchBookingFormPublished,
   fetchBookingPagePublished,
   fetchReadingPublished,
 } from "@/lib/sanity/fetch";
-import { buildOpenGraph } from "@/lib/seoMetadata";
+import { buildPageMetadata } from "@/lib/seoMetadata";
+import { readingProductJsonLd } from "@/lib/structuredData";
 
 import { BookingEntryView } from "./BookingEntryView";
 import { deriveBookingEntryProps } from "./deriveBookingEntryProps";
@@ -39,12 +41,7 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 
   const seo = sanityReading?.seo ?? bookingPage?.seo;
 
-  return {
-    title,
-    description,
-    alternates: { canonical: `/book/${readingId}` },
-    openGraph: buildOpenGraph(seo),
-  };
+  return buildPageMetadata({ title, description, path: `/book/${readingId}`, seo });
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {
@@ -66,5 +63,18 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound();
   }
 
-  return <BookingEntryView {...props} />;
+  const fallbackReading = getReadingById(readingId);
+  const productJsonLd = readingProductJsonLd({
+    name: sanityReading?.name ?? fallbackReading?.name ?? "Soul Reading",
+    description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
+    price: sanityReading?.priceDisplay ?? fallbackReading?.price ?? "",
+    path: `/book/${readingId}`,
+  });
+
+  return (
+    <>
+      <JsonLd data={productJsonLd} />
+      <BookingEntryView {...props} />
+    </>
+  );
 }

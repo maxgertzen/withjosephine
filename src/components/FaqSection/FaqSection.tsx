@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
+import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 
@@ -44,11 +45,7 @@ export function FaqSection({
     <section id="faq" className="py-24 px-6">
       <SectionHeading tag={sectionTag} heading={heading} />
 
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
-      />
+      <JsonLd data={jsonLd} nonce={nonce} />
 
       <div className="mt-14 max-w-[700px] mx-auto flex flex-col gap-4">
         {items.map((item) => {

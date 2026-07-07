@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { JsonLd } from "@/components/JsonLd/JsonLd";
 import {
   fetchFaqItemsPublished,
   fetchLandingPagePublished,
@@ -7,7 +8,8 @@ import {
   fetchSiteSettingsPublished,
   fetchTestimonialsPublished,
 } from "@/lib/sanity/fetch";
-import { buildOpenGraph } from "@/lib/seoMetadata";
+import { buildPageMetadata } from "@/lib/seoMetadata";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/structuredData";
 
 import { HomePageView } from "./HomePageView";
 import { toHomePageViewProps } from "./homePageViewProps";
@@ -16,17 +18,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const landingPage = await fetchLandingPagePublished();
   const seo = landingPage?.seo;
 
+  const title = seo?.metaTitle ?? "Josephine — Soul Readings";
+  const description =
+    seo?.metaDescription ??
+    "Your soul has patterns. Your chart reveals them. Your records explain why.";
+
   return {
-    title: seo?.metaTitle ?? "Josephine — Soul Readings",
-    description:
-      seo?.metaDescription ??
-      "Your soul has patterns. Your chart reveals them. Your records explain why.",
+    ...buildPageMetadata({ title, description, path: "/", seo }),
     icons: {
       icon: "/favicon.ico",
       apple: "/apple-touch-icon.png",
     },
-    alternates: { canonical: "/" },
-    openGraph: buildOpenGraph(seo),
   };
 }
 
@@ -39,15 +41,21 @@ export default async function LandingPage() {
     fetchSiteSettingsPublished(),
   ]);
 
+  const sameAs = siteSettings?.socialLinks?.map((link) => link.url) ?? [];
+
   return (
-    <HomePageView
-      {...toHomePageViewProps({
-        landingPage,
-        readings,
-        testimonials,
-        faqItems,
-        siteSettings,
-      })}
-    />
+    <>
+      <JsonLd data={organizationJsonLd(sameAs)} />
+      <JsonLd data={websiteJsonLd()} />
+      <HomePageView
+        {...toHomePageViewProps({
+          landingPage,
+          readings,
+          testimonials,
+          faqItems,
+          siteSettings,
+        })}
+      />
+    </>
   );
 }
