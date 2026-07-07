@@ -210,14 +210,14 @@ export const fetchFaqItemsPublished = cache(async (): Promise<SanityFaqItem[]> =
 export const fetchSiteSettingsPublished = cache(async (): Promise<SanitySiteSettings | null> =>
   publishedFetch<SanitySiteSettings | null>({ query: siteSettingsQuery, tags: ["siteSettings"] }));
 
-export const fetchLegalPagePublished = cache(
-  async (slug: string): Promise<SanityLegalPage | null> =>
-    publishedFetch<SanityLegalPage | null>({
-      query: legalPageBySlugQuery,
-      params: { slug },
-      tags: ["legalPage", `legalPage:${slug}`],
-    }),
-);
+// Fresh (uncached) published read for the `force-dynamic` legal routes, so an
+// editor's publish is live without a redeploy. On-demand revalidateTag is
+// unavailable on this stack (no tagCache in open-next.config.ts; it caused a
+// read-storm), so freshness comes from per-request rendering, not invalidation.
+export const fetchLegalPageFresh = cache(async (slug: string): Promise<SanityLegalPage | null> => {
+  const client = await getSanityFreshReadClient();
+  return client.fetch<SanityLegalPage | null>(legalPageBySlugQuery, { slug });
+});
 
 export const fetchUnderConstructionPagePublished = cache(
   async (): Promise<SanityUnderConstructionPage | null> =>
