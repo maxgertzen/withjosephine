@@ -69,6 +69,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
     description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
     price: sanityReading?.priceDisplay ?? fallbackReading?.price ?? "",
     path: `/book/${readingId}`,
+    image: sanityReading?.seo?.ogImage?.asset?.url,
   });
 
   return (
