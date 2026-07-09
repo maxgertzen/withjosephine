@@ -55,19 +55,10 @@ export function mintExportToken(args: MintExportTokenArgs): Promise<string> {
   return codec.mint(args);
 }
 
-export async function verifyExportToken(
+export function verifyExportToken(
   args: VerifyExportTokenArgs,
 ): Promise<ExportTokenVerifyResult> {
-  const result = await codec.verify(args.token, args.now);
-  if (!result.valid) return { valid: false, reason: result.reason };
-  return {
-    valid: true,
-    submissionId: result.submissionId,
-    recipientUserIdHash: result.recipientUserIdHash,
-    jti: result.jti,
-    mintSource: result.mintSource,
-    expMs: result.expMs,
-  };
+  return codec.verify(args.token, args.now);
 }
 
 // Constant-time; guards against a token surviving a recipient reassignment.
