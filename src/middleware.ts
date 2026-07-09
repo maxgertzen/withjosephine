@@ -99,7 +99,9 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
   const scriptInline = staticRoute ? "'unsafe-inline'" : `'nonce-${nonce}'`;
   // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
   // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
-  const scriptSrc = `'self' ${scriptInline}${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
+  // static.cloudflareinsights.com: cookieless Web Analytics beacon; on this proxied zone
+  // its metrics POST to same-origin /cdn-cgi/rum (connect-src 'self'), so script-src only.
+  const scriptSrc = `'self' ${scriptInline}${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://static.cloudflareinsights.com`;
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;

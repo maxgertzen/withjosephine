@@ -111,6 +111,10 @@ export function PrivacyFallbackBody() {
           your form entries are masked before anything is recorded.
         </li>
         <li>
+          <strong className="font-medium">Cloudflare Web Analytics</strong>: cookieless traffic
+          counts. It uses no cookies and stores nothing on your device.
+        </li>
+        <li>
           <strong className="font-medium">Sentry</strong>: error monitoring, so faults can be
           diagnosed.
         </li>

@@ -133,6 +133,17 @@ describe("middleware CSP + draft hardening", () => {
     expect(connectDirective).toContain("https://c.bing.com");
   });
 
+  it("CSP allows the cookieless Cloudflare Web Analytics beacon in script-src", () => {
+    const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const csp = apex.headers.get("content-security-policy") ?? "";
+    const scriptDirective = csp.split(";").find((d) => d.trim().startsWith("script-src"));
+    const connectDirective = csp.split(";").find((d) => d.trim().startsWith("connect-src"));
+    expect(scriptDirective).toContain("https://static.cloudflareinsights.com");
+    // Proxied zone reports to same-origin /cdn-cgi/rum, so connect-src needs no new origin.
+    expect(connectDirective).toContain("'self'");
+    expect(connectDirective).not.toContain("cloudflareinsights.com");
+  });
+
   it("CSP img-src allows clarity.ms so the Clarity tracking pixel (c.gif) can load", () => {
     const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
     const csp = apex.headers.get("content-security-policy") ?? "";
