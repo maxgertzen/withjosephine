@@ -262,6 +262,20 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  // Reserve the throttle slot BEFORE the expensive ZIP/R2/email work: a
+  // concurrent request with the same valid token then reads this row and 429s
+  // instead of re-emailing the owner. Shrinks the TOCTOU window from the whole
+  // bundle build to two back-to-back D1 writes (full atomicity would need a jti
+  // replay store, tracked separately).
+  await writeAudit({
+    userId: recipientUserId,
+    submissionId: submission._id,
+    eventType: AUDIT_EVENT_TYPE.export_request,
+    ipHash: audit.ipHash,
+    userAgentHash: audit.userAgentHash,
+    success: true,
+  });
+
   const [consentSnapshot, assetResults] = await Promise.all([
     fetchConsentSnapshot(submission._id),
     Promise.all(collectAssetTasks(submission).map(fetchAsset)),
@@ -350,15 +364,6 @@ export async function POST(request: Request): Promise<Response> {
     expiryDays: 7,
   }).catch((error) => {
     console.error("[export] Resend send failed", error);
-  });
-
-  await writeAudit({
-    userId: recipientUserId,
-    submissionId: submission._id,
-    eventType: AUDIT_EVENT_TYPE.export_request,
-    ipHash: audit.ipHash,
-    userAgentHash: audit.userAgentHash,
-    success: true,
   });
 
   return NextResponse.json(

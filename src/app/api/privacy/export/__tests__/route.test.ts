@@ -256,6 +256,14 @@ describe("POST /api/privacy/export", () => {
     );
   });
 
+  it("reserves the export_request row before the R2 upload and email (TOCTOU guard)", async () => {
+    const res = await callRoute();
+    expect(res.status).toBe(202);
+    const reserveOrder = mockWriteAudit.mock.invocationCallOrder[0];
+    expect(reserveOrder).toBeLessThan(mockPutObject.mock.invocationCallOrder[0]);
+    expect(reserveOrder).toBeLessThan(mockEmail.mock.invocationCallOrder[0]);
+  });
+
   it("scopes the export strictly to the token's submissionId and its order email", async () => {
     // A token minted for a different order resolves ONLY to that order; the
     // download link is emailed to THAT order's registered address.
