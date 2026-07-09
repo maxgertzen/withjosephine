@@ -61,6 +61,7 @@ export function Navigation({ content, className }: NavigationProps) {
   useEffect(() => {
     if (!menuOpen) return;
     const overlay = overlayRef.current;
+    const toggle = toggleRef.current;
     overlay?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -85,7 +86,7 @@ export function Navigation({ content, className }: NavigationProps) {
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      toggleRef.current?.focus();
+      toggle?.focus();
     };
   }, [menuOpen]);
 
