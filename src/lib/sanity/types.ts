@@ -383,7 +383,6 @@ export type SanityEntryPageContent = {
   dropCapCta?: string;
   dropCapCaption?: string;
   changeReadingLinkText?: string;
-  aboutJosephineLinkText?: string;
   letterTitle?: string;
 };
 

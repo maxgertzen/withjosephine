@@ -105,7 +105,6 @@ export interface EntryPageContent {
   dropCapCta: string;
   dropCapCaption: string;
   changeReadingLinkText: string;
-  aboutJosephineLinkText: string;
 }
 
 export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
@@ -118,7 +117,6 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
   dropCapCaption:
     "The intake form: about five minutes. You\u2019ll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three \u2192",
-  aboutJosephineLinkText: "About Josephine",
 };
 
 export interface BookingInfoNotes {

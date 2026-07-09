@@ -31,12 +31,6 @@ export const bookingForm = defineType({
           rows: 2,
         }),
         defineField({
-          name: "aboutJosephineLinkText",
-          title: "About Josephine Link Text",
-          type: "text",
-          rows: 2,
-        }),
-        defineField({
           name: "letterTitle",
           title: "Letter Title (optional)",
           type: "text",
