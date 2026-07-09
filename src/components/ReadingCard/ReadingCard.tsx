@@ -94,7 +94,6 @@ export function ReadingCard({
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
         aria-expanded={isExpanded}
-        aria-controls={`reading-details-${slug}`}
         className="mt-4 font-body text-sm text-j-text-muted hover:text-j-accent tracking-wide transition-colors"
       >
         {isExpanded ? "Show Less \u2191" : "Learn More \u2193"}

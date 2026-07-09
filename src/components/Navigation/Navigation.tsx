@@ -70,7 +70,12 @@ export function Navigation({ content, className }: NavigationProps) {
         return;
       }
       if (event.key !== "Tab" || !overlay) return;
-      const focusable = overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      const overlayFocusables = Array.from(
+        overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      );
+      // The visible close button lives in the <nav>, outside the overlay;
+      // include it so Tab can reach it while the menu is open.
+      const focusable = toggle ? [toggle, ...overlayFocusables] : overlayFocusables;
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

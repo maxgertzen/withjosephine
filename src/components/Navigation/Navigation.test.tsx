@@ -56,19 +56,19 @@ describe("Navigation mobile overlay focus management", () => {
     expect(document.activeElement).toBe(reopened);
   });
 
-  it("traps Tab within the overlay (last wraps to first, shift+Tab first wraps to last)", () => {
+  it("traps Tab through the overlay and the close button (last→close, shift+Tab close→last)", () => {
     render(<Navigation />);
     fireEvent.click(screen.getByLabelText("Open menu"));
+    const closeToggle = screen.getByLabelText("Close menu");
     const buttons = overlayButtons();
-    const first = buttons[0];
-    const last = buttons[buttons.length - 1];
+    const lastOverlay = buttons[buttons.length - 1];
 
-    last.focus();
+    lastOverlay.focus();
     fireEvent.keyDown(document, { key: "Tab" });
-    expect(document.activeElement).toBe(first);
+    expect(document.activeElement).toBe(closeToggle);
 
-    first.focus();
+    closeToggle.focus();
     fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
-    expect(document.activeElement).toBe(last);
+    expect(document.activeElement).toBe(lastOverlay);
   });
 });
