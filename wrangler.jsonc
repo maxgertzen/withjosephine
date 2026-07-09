@@ -221,11 +221,6 @@
 					"migrations_dir": "./migrations"
 				}
 			],
-			"durable_objects": {
-				"bindings": [
-					{ "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
-				]
-			},
 			"migrations": [
 				{ "tag": "v1", "new_sqlite_classes": ["GiftClaimScheduler"] },
 				{ "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] },
