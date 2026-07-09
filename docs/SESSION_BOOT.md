@@ -1,6 +1,17 @@
 # Session Boot — Active State
 
-## ▶ NEXT SESSION (2026-07-07): `release/v1.18.0` bundle built + pushed → watch CI, staging-smoke the delta, then open release → main
+## ▶ NEXT SESSION (2026-07-09): `release/v1.18.0` bundle-additions shipped + staging-smoked GREEN → next = decide `tu3kj5py` (CF beacon CSP), THEN open `release/v1.18.0 → main` PR
+
+**8 more tickets folded into `release/v1.18.0` this session** (direct commits `1ce8b37..348aca7`, pushed; CI green incl `deploy-staging` + `sanity-validate-staging` + osv-scan + storybook). CHANGELOG row added; **9 dex tickets closed** (`r759m4bm`, `ydmbfpep`, `dwe1iu6s`, `5kkf9odi`, `qiiqqs0a`, `ojkl12it`, `t0el2imf`, + already-done `yz3itwoe`/`n02vegpj`). High-effort `/code-review` + 4-agent `/simplify` run on the cumulative diff; 1837 tests / typecheck / lint green.
+- **`dwe1iu6s` fixed a real CSP weakening:** legal pages were `force-dynamic` (#326) but still in `STATIC_CSP_PATHS` → served `unsafe-inline` instead of the nonce. Now on the strict nonce; set moved to `constants.ts` + CI guard test (`staticCspPaths.test.ts`). **Staging-smoked clean (Max, 2026-07-09): `/privacy` + `/terms` render with ZERO CSP violations under the nonce CSP.**
+- `ojkl12it`: export throttle row reserved before ZIP/R2/email (TOCTOU window shrunk). `qiiqqs0a`: mobile-overlay focus trap + restore + `aria-expanded`, nested-landmark fix, ContactForm error binding (**Max-smoked: mobile nav keyboard works**). `5kkf9odi`: esbuild 0.28.1 + both osv ignores dropped. `t0el2imf`: inert `DOShardedTagCache` binding removed from `env.staging` (binding-only; `deleted_classes` NOT viable — OpenNext exports the class unconditionally).
+- 3 review follow-ups filed: `qr0xn0a4` (atomic export dedupe / jti store), `ixv2ybb6` (shared focus-trap hook on 2nd consumer), `50humtoz` (manifest-derived CSP guard).
+
+**⚠️ `release/v1.18.0` is NOT merged to main. Two steps remain, in order:**
+1. **🚩 START HERE — `tu3kj5py`: CF Web Analytics beacon (`static.cloudflareinsights.com/beacon.min.js`) is CSP-blocked on the static home `/`.** Confirmed real by the 2026-07-09 staging smoke; **pre-existing, NOT caused by this bundle** (home's CSP was unchanged — `buildCsp`'s scriptSrc allowlist untouched). Decide: **allow** `static.cloudflareinsights.com` in `buildCsp` scriptSrc (+ update middleware CSP tests) **vs drop** CF Web Analytics entirely (Clarity + Mixpanel already cover analytics).
+2. **Open `release/v1.18.0 → main` PR.** FIRST Playwright/e2e exposure (`e2e.yml` triggers only on PRs to main). The deferred cumulative `/code-review --effort high` + `/simplify` are **already done** this session. Do the pre-flight env audit before merge. NOTE: the 2026-07-07 bundle's own staging-smoke delta (nav underline/border, skip-link Tab, FAQ collapse, reduced-motion, `/_next/static` immutable) was NOT re-smoked this session — fold it into the pre-merge smoke.
+
+## ▶ (SUPERSEDED 2026-07-09 — executed: bundle built, 8 more tickets added, staging-smoked, pushed; see block above) NEXT SESSION (2026-07-07): `release/v1.18.0` bundle built + pushed → watch CI, staging-smoke the delta, then open release → main
 
 **`release/v1.18.0` is built, rebased on `eda06a0` (#326), and pushed (18 commits, force-pushed after rebase).** Cut off main, wired into all 4 ci.yml triggers. First (pre-rebase) CI run `28865253794` passed FULL CI incl `deploy-staging` + `sanity-validate-staging`; the rebased run `28865572952` re-verifies on top of #326. **Nothing merged to main.**
 
