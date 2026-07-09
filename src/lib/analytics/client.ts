@@ -8,11 +8,10 @@ import { HEADLESS_UA_PATTERN } from "./headless";
 
 // mixpanel-browser (~120KB brotli) is imported dynamically inside
 // initAnalytics so it lands in an async chunk loaded only after consent,
-// off the first-paint critical path. Everything before mixpanelLive queues.
+// off the first-paint critical path. Events fired before it loads queue.
 type Mixpanel = (typeof import("mixpanel-browser"))["default"];
 
 let bootstrapped = false;
-let mixpanelLive = false;
 let mixpanelLoading = false;
 let mp: Mixpanel | null = null;
 
@@ -46,8 +45,16 @@ export async function initAnalytics() {
   }
 
   mixpanelLoading = true;
-  const mixpanel = (await import("mixpanel-browser")).default;
-  mp = mixpanel;
+  let mixpanel: Mixpanel;
+  try {
+    mixpanel = (await import("mixpanel-browser")).default;
+  } catch {
+    // A stale async chunk after a deploy rejects the import. Disable
+    // analytics cleanly instead of wedging mixpanelLoading true forever.
+    mixpanelLoading = false;
+    queue.length = 0;
+    return;
+  }
 
   mixpanel.init(token, {
     debug: false,
@@ -72,18 +79,18 @@ export async function initAnalytics() {
     mixpanel.register({ $ignore: true });
   }
 
-  mixpanelLive = true;
+  mp = mixpanel;
   mixpanelLoading = false;
 
   for (const item of queue) {
-    mixpanel.track(item.event, item.properties);
+    mp.track(item.event, item.properties);
   }
   queue.length = 0;
 }
 
 export function track<E extends ClientEventName>(event: E, properties: ClientEventMap[E]) {
   const props = properties as Record<string, unknown>;
-  if (mixpanelLive && mp) {
+  if (mp) {
     mp.track(event, props);
     return;
   }
@@ -100,7 +107,7 @@ export function track<E extends ClientEventName>(event: E, properties: ClientEve
  * doesn't have to widen the typed map for every surface.
  */
 export function trackUntyped(event: string, properties: Record<string, unknown>) {
-  if (mixpanelLive && mp) {
+  if (mp) {
     mp.track(event, properties);
     return;
   }
@@ -124,7 +131,7 @@ export function trackThrottled<E extends ClientEventName>(
 }
 
 export function identifySubmission(submissionId: string) {
-  if (!mixpanelLive || !mp) return;
+  if (!mp) return;
   mp.identify(submissionId);
 }
 
@@ -134,7 +141,6 @@ export function isAnalyticsInitialized() {
 
 export function _resetForTests() {
   bootstrapped = false;
-  mixpanelLive = false;
   mixpanelLoading = false;
   mp = null;
   queue.length = 0;

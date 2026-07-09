@@ -62,6 +62,8 @@ describe("initAnalytics", () => {
         track_pageview: false,
         ip: false,
         persistence: "localStorage",
+        // Consent banner is the gate; DNT must not silently swallow events.
+        ignore_dnt: true,
       }),
     );
     expect(isAnalyticsInitialized()).toBe(true);
