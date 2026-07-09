@@ -166,10 +166,11 @@ export function middleware(request: NextRequest) {
     url.pathname = "/under-construction";
     const holdingResponse = NextResponse.rewrite(url);
     // This path returns early, so set the CSP the shared block below would have.
-    // The holding route is static, so it uses the unsafe-inline script policy.
+    // The holding route is static, so it uses the unsafe-inline script policy
+    // (no nonce needed).
     holdingResponse.headers.set(
       "Content-Security-Policy",
-      buildCsp({ isDraft: false, nonce: generateNonce(), staticRoute: true }),
+      buildCsp({ isDraft: false, nonce: "", staticRoute: true }),
     );
     return holdingResponse;
   }

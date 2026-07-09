@@ -20,7 +20,9 @@ function bootstrapClientObservability(): void {
 
 function consentRequiredFromCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie.split("; ").includes(`${CONSENT_REQUIRED_COOKIE}=1`);
+  return document.cookie
+    .split(";")
+    .some((entry) => entry.trim() === `${CONSENT_REQUIRED_COOKIE}=1`);
 }
 
 interface AnalyticsBootstrapProps {
