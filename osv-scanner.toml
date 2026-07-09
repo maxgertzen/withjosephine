@@ -5,19 +5,6 @@ id = "GHSA-848j-6mx2-7j84"
 reason = "Dev-only transitive dep (Storybook build toolchain). No upstream fix available."
 
 [[IgnoredVulns]]
-id = "GHSA-gv7w-rqvm-qjhr"
-# esbuild <0.28.1 dev-server CORS advisory (CVSS 8.1). esbuild is a build-time-only
-# transitive dep (Vite/Storybook/tsx toolchain); this project never runs an exposed
-# `esbuild --serve` dev server, so the advisory is not exploitable in CI or production.
-# Fixed in 0.28.1; bump tracked in dex (the pnpm.overrides bump is pending a lockfile regen).
-reason = "Build-only transitive dep; esbuild dev-server CORS not exposed. Bump to 0.28.1 tracked."
-
-[[IgnoredVulns]]
-id = "GHSA-g7r4-m6w7-qqqr"
-# esbuild <0.28.1 (CVSS 2.5), same build-only transitive surface as GHSA-gv7w-rqvm-qjhr.
-reason = "Build-only transitive dep. Fixed in 0.28.1; bump tracked in dex."
-
-[[IgnoredVulns]]
 id = "GHSA-fx2h-pf6j-xcff"
 # vite <8.0.16 — `server.fs.deny` bypass on Windows alternate paths. vite is a
 # build/test-only transitive (vitest, @vitejs/plugin-react Storybook, sanity cli);
