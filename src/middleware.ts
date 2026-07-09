@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
+import { NONCE_HEADER, PRODUCTION_HOSTS, STATIC_CSP_PATHS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
@@ -87,17 +87,6 @@ function generateNonce(): string {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
-
-// Prerendered public content routes that must serve the 'unsafe-inline' script
-// CSP (see buildCsp). Interactive/dynamic routes are absent here and keep the
-// strict nonce CSP.
-const STATIC_CSP_PATHS: ReadonlySet<string> = new Set([
-  "/",
-  "/privacy",
-  "/terms",
-  "/refund-policy",
-  "/under-construction",
-]);
 
 function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean }): string {
   const { isDraft, nonce, staticRoute } = opts;
