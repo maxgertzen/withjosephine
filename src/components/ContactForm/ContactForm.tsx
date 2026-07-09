@@ -146,6 +146,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               className={inputClasses}
               disabled={isLoading}
               autoComplete="name"
+              aria-describedby={errorMessage ? "contact-form-error" : undefined}
             />
             <FloatingLabel id="contact-name" label="Your name" />
           </div>
@@ -163,6 +164,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               autoComplete="email"
               inputMode="email"
               autoCapitalize="none"
+              aria-describedby={errorMessage ? "contact-form-error" : undefined}
             />
             <FloatingLabel id="contact-email" label="Your email" />
           </div>
@@ -177,6 +179,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               placeholder=" "
               className={`${inputClasses} min-h-32`}
               disabled={isLoading}
+              aria-describedby={errorMessage ? "contact-form-error" : undefined}
             />
             <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
@@ -184,7 +187,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
 
           {errorMessage && (
-            <p role="alert" className={`${errorClasses} text-center`}>
+            <p id="contact-form-error" role="alert" className={`${errorClasses} text-center`}>
               {errorMessage}
             </p>
           )}

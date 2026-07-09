@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
@@ -32,6 +32,9 @@ const NAV_DEFAULTS: NavigationContent = {
   navCtaText: "Book a Reading",
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
+
 type NavigationProps = {
   content?: NavigationContent;
   className?: string;
@@ -45,24 +48,51 @@ export function Navigation({ content, className }: NavigationProps) {
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const scrollToSection = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   }, []);
 
+  // Move focus into the open overlay, keep Tab trapped inside it, close on
+  // Escape, and restore focus to the toggle when it closes.
   useEffect(() => {
     if (!menuOpen) return;
+    const overlay = overlayRef.current;
+    overlay?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !overlay) return;
+      const focusable = overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      toggleRef.current?.focus();
+    };
   }, [menuOpen]);
 
   return (
     <>
       <nav
+        aria-label="Primary"
         className={mergeClasses(
           "fixed top-0 left-0 right-0 z-[100] border-b transition-all duration-300 ease-in-out",
           scrolled
@@ -92,11 +122,7 @@ export function Navigation({ content, className }: NavigationProps) {
           </Link>
 
           <div className="flex items-center gap-3 nav:gap-6">
-            <div
-              className="hidden nav:flex items-center gap-8"
-              role="navigation"
-              aria-label="Main navigation"
-            >
+            <div className="hidden nav:flex items-center gap-8">
               {navLinks.map((link) => (
                 <button
                   key={link.sectionId}
@@ -113,10 +139,12 @@ export function Navigation({ content, className }: NavigationProps) {
             </div>
 
             <button
+              ref={toggleRef}
               type="button"
               className="flex h-11 w-11 items-center justify-center text-j-deep nav:hidden"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
             >
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -125,6 +153,7 @@ export function Navigation({ content, className }: NavigationProps) {
       </nav>
 
       <div
+        ref={overlayRef}
         aria-hidden={!menuOpen}
         inert={!menuOpen}
         className={mergeClasses(
