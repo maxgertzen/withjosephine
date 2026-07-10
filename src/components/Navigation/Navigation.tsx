@@ -100,7 +100,7 @@ export function Navigation({ content, className }: NavigationProps) {
       <nav
         aria-label="Primary"
         className={mergeClasses(
-          "fixed top-0 left-0 right-0 z-[100] border-b transition-all duration-300 ease-in-out",
+          "fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[100] border-b transition-all duration-300 ease-in-out",
           scrolled
             ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
             : "border-transparent bg-transparent",
@@ -163,7 +163,7 @@ export function Navigation({ content, className }: NavigationProps) {
         aria-hidden={!menuOpen}
         inert={!menuOpen}
         className={mergeClasses(
-          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
+          "fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >
