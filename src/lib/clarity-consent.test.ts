@@ -1,45 +1,41 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@microsoft/clarity", () => ({
+  default: { consentV2: vi.fn() },
+}));
+
+import Clarity from "@microsoft/clarity";
 
 import { clarityConsent } from "./clarity-consent";
 
-afterEach(() => {
-  delete (window as unknown as { clarity?: unknown }).clarity;
+const consentV2 = vi.mocked(Clarity.consentV2);
+
+beforeEach(() => {
+  vi.clearAllMocks();
 });
 
 describe("clarityConsent", () => {
-  it("calls clarity('consentv2', {...}) with analytics_Storage granted when granted=true", () => {
-    const clarityMock = vi.fn();
-    (window as unknown as { clarity: typeof clarityMock }).clarity = clarityMock;
+  it("calls Clarity.consentV2 with analytics_Storage granted when granted=true", () => {
     clarityConsent(true);
-    expect(clarityMock).toHaveBeenCalledWith("consentv2", {
+    expect(consentV2).toHaveBeenCalledWith({
       ad_Storage: "denied",
       analytics_Storage: "granted",
     });
   });
 
-  it("calls clarity('consentv2', {...}) with analytics_Storage denied when granted=false", () => {
-    const clarityMock = vi.fn();
-    (window as unknown as { clarity: typeof clarityMock }).clarity = clarityMock;
+  it("calls Clarity.consentV2 with analytics_Storage denied when granted=false", () => {
     clarityConsent(false);
-    expect(clarityMock).toHaveBeenCalledWith("consentv2", {
+    expect(consentV2).toHaveBeenCalledWith({
       ad_Storage: "denied",
       analytics_Storage: "denied",
     });
   });
 
   it("hardcodes ad_Storage to 'denied' regardless of granted value", () => {
-    const clarityMock = vi.fn();
-    (window as unknown as { clarity: typeof clarityMock }).clarity = clarityMock;
     clarityConsent(true);
     clarityConsent(false);
-    for (const call of clarityMock.mock.calls) {
-      const settings = call[1] as { ad_Storage: string };
-      expect(settings.ad_Storage).toBe("denied");
+    for (const call of consentV2.mock.calls) {
+      expect(call[0]?.ad_Storage).toBe("denied");
     }
-  });
-
-  it("no-ops when window.clarity is not defined", () => {
-    expect(() => clarityConsent(true)).not.toThrow();
-    expect(() => clarityConsent(false)).not.toThrow();
   });
 });
