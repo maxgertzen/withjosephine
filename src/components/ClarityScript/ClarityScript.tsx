@@ -1,24 +1,22 @@
 "use client";
 
-import Script from "next/script";
+import Clarity from "@microsoft/clarity";
+import { useEffect } from "react";
 
+import { clarityConsent } from "@/lib/clarity-consent";
 import { shouldEnableClientObservability } from "@/lib/observability-gate";
 
 export function ClarityScript() {
-  const projectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
-  if (!projectId) return null;
-  if (!shouldEnableClientObservability(window.location.host)) return null;
+  useEffect(() => {
+    const projectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
+    if (!projectId) return;
+    if (!shouldEnableClientObservability(window.location.host)) return;
+    // init() stages the window.clarity queue then injects the tag; consent
+    // must follow init. This component only mounts once consent is granted or
+    // not required (see AnalyticsBootstrap), so signal analytics-granted here.
+    Clarity.init(projectId);
+    clarityConsent(true);
+  }, []);
 
-  // External-src form (NOT the official inline IIFE) so the strict CSP's
-  // `script-src 'self' 'nonce-…'` doesn't block us — inline scripts in
-  // a "use client" subtree don't inherit the per-request nonce. Clarity's
-  // tag URL self-bootstraps recording on load; we don't make any
-  // `clarity()` queue calls ourselves, so the IIFE wrapper is unnecessary.
-  return (
-    <Script
-      id="ms-clarity"
-      src={`https://www.clarity.ms/tag/${projectId}`}
-      strategy="afterInteractive"
-    />
-  );
+  return null;
 }

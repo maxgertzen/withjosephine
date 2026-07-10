@@ -1,30 +1,28 @@
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ClarityScript } from "./ClarityScript";
-
-vi.mock("next/script", () => ({
-  default: function MockScript(props: {
-    id?: string;
-    src?: string;
-    strategy?: string;
-  }) {
-    return (
-      <script
-        data-testid="clarity-mock-script"
-        data-id={props.id}
-        data-strategy={props.strategy}
-        data-src={props.src}
-      />
-    );
-  },
+vi.mock("@microsoft/clarity", () => ({
+  default: { init: vi.fn(), consentV2: vi.fn() },
 }));
 
+vi.mock("@/lib/clarity-consent", () => ({
+  clarityConsent: vi.fn(),
+}));
+
+import Clarity from "@microsoft/clarity";
+
+import { clarityConsent } from "@/lib/clarity-consent";
+
+import { ClarityScript } from "./ClarityScript";
+
+const init = vi.mocked(Clarity.init);
+const mockClarityConsent = vi.mocked(clarityConsent);
+
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.unstubAllEnvs();
-  // Some dev shells export NEXT_PUBLIC_TRACK_NON_PROD=1 which vitest
-  // inherits — explicitly clear so the non-prod-gate tests below run
-  // against the documented default (gate closed unless test stubs "1").
+  // Some dev shells export NEXT_PUBLIC_TRACK_NON_PROD=1 which vitest inherits —
+  // clear so non-prod-gate tests run against the default (gate closed).
   vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "");
   Object.defineProperty(window, "location", {
     value: { host: "withjosephine.com" },
@@ -37,39 +35,42 @@ afterEach(() => {
 });
 
 describe("ClarityScript", () => {
-  it("renders the tag script with the configured project ID on production host", () => {
+  it("initializes Clarity then signals consent on production host", () => {
     vi.stubEnv("NEXT_PUBLIC_CLARITY_PROJECT_ID", "abc123def4");
-    const { getByTestId } = render(<ClarityScript />);
-    const script = getByTestId("clarity-mock-script");
-    expect(script.getAttribute("data-strategy")).toBe("afterInteractive");
-    expect(script.getAttribute("data-src")).toBe("https://www.clarity.ms/tag/abc123def4");
-    expect(script.getAttribute("data-id")).toBe("ms-clarity");
-  });
-
-  it("renders nothing when the project ID env var is unset", () => {
-    vi.stubEnv("NEXT_PUBLIC_CLARITY_PROJECT_ID", "");
     const { container } = render(<ClarityScript />);
+    expect(init).toHaveBeenCalledWith("abc123def4");
+    expect(mockClarityConsent).toHaveBeenCalledWith(true);
+    expect(init.mock.invocationCallOrder[0]).toBeLessThan(
+      mockClarityConsent.mock.invocationCallOrder[0],
+    );
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders nothing on non-production host without TRACK_NON_PROD", () => {
+  it("does not initialize when the project ID env var is unset", () => {
+    vi.stubEnv("NEXT_PUBLIC_CLARITY_PROJECT_ID", "");
+    render(<ClarityScript />);
+    expect(init).not.toHaveBeenCalled();
+    expect(mockClarityConsent).not.toHaveBeenCalled();
+  });
+
+  it("does not initialize on non-production host without TRACK_NON_PROD", () => {
     vi.stubEnv("NEXT_PUBLIC_CLARITY_PROJECT_ID", "abc123def4");
     Object.defineProperty(window, "location", {
       value: { host: "staging.withjosephine.com" },
       configurable: true,
     });
-    const { container } = render(<ClarityScript />);
-    expect(container.firstChild).toBeNull();
+    render(<ClarityScript />);
+    expect(init).not.toHaveBeenCalled();
   });
 
-  it("renders on non-production host when TRACK_NON_PROD=1", () => {
+  it("initializes on non-production host when TRACK_NON_PROD=1", () => {
     vi.stubEnv("NEXT_PUBLIC_CLARITY_PROJECT_ID", "abc123def4");
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
     Object.defineProperty(window, "location", {
       value: { host: "staging.withjosephine.com" },
       configurable: true,
     });
-    const { getByTestId } = render(<ClarityScript />);
-    expect(getByTestId("clarity-mock-script")).toBeInTheDocument();
+    render(<ClarityScript />);
+    expect(init).toHaveBeenCalledWith("abc123def4");
   });
 });

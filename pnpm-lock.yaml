@@ -35,6 +35,9 @@ importers:
       '@marsidev/react-turnstile':
         specifier: ^1.5.2
         version: 1.5.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@microsoft/clarity':
+        specifier: ^1.0.2
+        version: 1.0.2
       '@portabletext/react':
         specifier: ^6.2.0
         version: 6.2.0(react@19.2.3)
@@ -2597,6 +2600,9 @@ packages:
     peerDependenciesMeta:
       markdown-it:
         optional: true
+
+  '@microsoft/clarity@1.0.2':
+    resolution: {integrity: sha512-9EZYROFpJxEGmQpHvUFqvD3ZJ7QQSqnibYSWmS+1xusoZfG1QQ1/Al9yVBBc11DWMbJrs1pe1hLT273it/skJg==}
 
   '@mixpanel/rrdom@2.0.0-alpha.18.4':
     resolution: {integrity: sha512-58sWLQDPRU0VQn8VzB1tx4ujih9X327Vr6xAzbJ4zge9GENm2L696T4TbWvrRGWPW6w99tHIHbv6SvcLhjjmcQ==}
@@ -13568,6 +13574,8 @@ snapshots:
       '@types/markdown-it': 14.1.2
     optionalDependencies:
       markdown-it: 14.2.0
+
+  '@microsoft/clarity@1.0.2': {}
 
   '@mixpanel/rrdom@2.0.0-alpha.18.4':
     dependencies:
