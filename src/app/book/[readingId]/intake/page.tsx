@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";
+import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
@@ -76,12 +77,7 @@ export default async function IntakePage({ params }: IntakePageProps) {
   return (
     <HeaderBackProvider>
       <BookingPageShell backHref={BOOKING_PAGE_ROUTES.letter(reading.slug)}>
-        <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
-          {copy.eyebrow}
-        </p>
-        <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
-          {copy.title}
-        </h1>
+        <BookingPageHeading eyebrow={copy.eyebrow} title={copy.title} />
         <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
           {copy.subtitle}
         </p>

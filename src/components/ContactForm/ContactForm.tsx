@@ -18,6 +18,8 @@ interface ContactFormProps {
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
+const CONTACT_ERROR_ID = "contact-form-error";
+
 export function ContactForm({ content, className }: ContactFormProps) {
   const merged = { ...CONTACT_DEFAULTS, ...content };
   const {
@@ -102,6 +104,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
   }
 
   const isLoading = status === "loading";
+  const errorDescribedBy = errorMessage ? CONTACT_ERROR_ID : undefined;
 
   if (status === "success") {
     return (
@@ -146,6 +149,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               className={inputClasses}
               disabled={isLoading}
               autoComplete="name"
+              aria-describedby={errorDescribedBy}
             />
             <FloatingLabel id="contact-name" label="Your name" />
           </div>
@@ -163,6 +167,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               autoComplete="email"
               inputMode="email"
               autoCapitalize="none"
+              aria-describedby={errorDescribedBy}
             />
             <FloatingLabel id="contact-email" label="Your email" />
           </div>
@@ -177,6 +182,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
               placeholder=" "
               className={`${inputClasses} min-h-32`}
               disabled={isLoading}
+              aria-describedby={errorDescribedBy}
             />
             <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
@@ -184,7 +190,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
           <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
 
           {errorMessage && (
-            <p role="alert" className={`${errorClasses} text-center`}>
+            <p id={CONTACT_ERROR_ID} role="alert" className={`${errorClasses} text-center`}>
               {errorMessage}
             </p>
           )}

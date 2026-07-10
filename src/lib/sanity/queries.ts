@@ -299,7 +299,6 @@ export const bookingFormQuery = groq`
       dropCapCta,
       dropCapCaption,
       changeReadingLinkText,
-      aboutJosephineLinkText,
       letterTitle
     },
     pagination {

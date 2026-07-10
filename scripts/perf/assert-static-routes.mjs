@@ -10,11 +10,11 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+// Legal routes (/privacy, /terms, /refund-policy) are intentionally
+// force-dynamic (#326) — read fresh from Sanity per request so publishes go
+// live without a redeploy — so they are deliberately absent here.
 const SHOULD_BE_STATIC = [
   "/",
-  "/privacy",
-  "/terms",
-  "/refund-policy",
   "/book/[readingId]",
   "/book/[readingId]/letter",
 ];

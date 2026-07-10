@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
+import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 
 interface FaqSectionProps {
@@ -21,6 +22,7 @@ export function FaqSection({
   nonce,
 }: FaqSectionProps) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
 
   if (items.length === 0) return null;
 
@@ -60,10 +62,12 @@ export function FaqSection({
                 type="button"
                 onClick={() => toggle(item.id)}
                 aria-expanded={isOpen}
-                aria-controls={`faq-answer-${item.id}`}
                 className="w-full text-left px-6 py-5 flex items-center justify-between gap-4"
               >
-                <span className="font-display text-lg italic text-j-text-heading leading-snug">
+                <span
+                  id={`faq-question-${item.id}`}
+                  className="font-display text-lg italic text-j-text-heading leading-snug"
+                >
                   {item.question}
                 </span>
                 <span
@@ -75,29 +79,25 @@ export function FaqSection({
                 </span>
               </button>
 
-              <div
-                id={`faq-answer-${item.id}`}
-                role="region"
-                aria-labelledby={`faq-question-${item.id}`}
-                hidden={!isOpen}
-              >
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      key="content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <p className="px-6 pb-5 font-body text-sm text-j-text-muted leading-relaxed">
-                        {item.answer}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    key="content"
+                    id={`faq-answer-${item.id}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${item.id}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-6 pb-5 font-body text-sm text-j-text-muted leading-relaxed">
+                      {item.answer}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}

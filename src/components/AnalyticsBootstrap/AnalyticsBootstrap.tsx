@@ -7,7 +7,6 @@ import { ClarityRouteTracking } from "@/components/ClarityRouteTracking";
 import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
-import { clarityConsent } from "@/lib/clarity-consent";
 import { readConsent, writeConsent } from "@/lib/consent";
 import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
@@ -20,7 +19,9 @@ function bootstrapClientObservability(): void {
 
 function consentRequiredFromCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie.split("; ").includes(`${CONSENT_REQUIRED_COOKIE}=1`);
+  return document.cookie
+    .split(";")
+    .some((entry) => entry.trim() === `${CONSENT_REQUIRED_COOKIE}=1`);
 }
 
 interface AnalyticsBootstrapProps {
@@ -49,14 +50,12 @@ export function AnalyticsBootstrap({ consentBannerContent }: AnalyticsBootstrapP
     }
     if (!consentRequiredFromCookie()) {
       bootstrapClientObservability();
-      clarityConsent(true);
       setObservabilityLive(true);
       return;
     }
     const choice = readConsent();
     if (choice === "granted") {
       bootstrapClientObservability();
-      clarityConsent(true);
       setObservabilityLive(true);
       return;
     }
@@ -72,7 +71,6 @@ export function AnalyticsBootstrap({ consentBannerContent }: AnalyticsBootstrapP
     }
     writeConsent("granted");
     bootstrapClientObservability();
-    clarityConsent(true);
     setObservabilityLive(true);
     setShowBanner(false);
   }

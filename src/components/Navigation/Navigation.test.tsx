@@ -1,7 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { Navigation } from "./Navigation";
+
+function overlayButtons() {
+  const overlay = screen.getByRole("navigation", { name: "Mobile navigation" }).parentElement!;
+  return within(overlay).getAllByRole("button");
+}
 
 describe("Navigation", () => {
   it("renders hardcoded defaults when no content is provided", () => {
@@ -31,5 +36,39 @@ describe("Navigation", () => {
     expect(screen.getAllByText("Info")).toHaveLength(2);
     expect(screen.getAllByText("Get Started")).toHaveLength(2);
     expect(screen.queryByText("Readings")).not.toBeInTheDocument();
+  });
+});
+
+describe("Navigation mobile overlay focus management", () => {
+  it("moves focus into the overlay when opened", () => {
+    render(<Navigation />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    expect(overlayButtons()).toContain(document.activeElement);
+  });
+
+  it("closes on Escape and restores focus to the toggle", () => {
+    render(<Navigation />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    const toggle = screen.getByLabelText("Close menu");
+    fireEvent.keyDown(document, { key: "Escape" });
+    const reopened = screen.getByLabelText("Open menu");
+    expect(reopened).toBe(toggle);
+    expect(document.activeElement).toBe(reopened);
+  });
+
+  it("traps Tab through the overlay and the close button (last→close, shift+Tab close→last)", () => {
+    render(<Navigation />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    const closeToggle = screen.getByLabelText("Close menu");
+    const buttons = overlayButtons();
+    const lastOverlay = buttons[buttons.length - 1];
+
+    lastOverlay.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(closeToggle);
+
+    closeToggle.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(lastOverlay);
   });
 });

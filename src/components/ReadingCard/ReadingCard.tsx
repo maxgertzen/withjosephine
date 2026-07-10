@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ReadingIcon } from "@/components/ReadingIcon";
+import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
@@ -33,6 +34,7 @@ export function ReadingCard({
   className,
 }: ReadingCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div
@@ -65,10 +67,11 @@ export function ReadingCard({
         {isExpanded && (
           <motion.div
             key="details"
+            id={`reading-details-${slug}`}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
             <ul className="mt-4 space-y-3">

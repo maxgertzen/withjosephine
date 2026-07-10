@@ -24,7 +24,7 @@ export function LegalPageLayout({ tag, title, lastUpdated, children }: LegalPage
         </Link>
       </header>
 
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
+      <main id="main" className="relative z-10 max-w-3xl mx-auto px-6 py-16">
         <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
           {tag}
         </span>

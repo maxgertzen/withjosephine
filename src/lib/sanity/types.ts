@@ -118,10 +118,6 @@ export type SanityEmailOrderConfirmation = {
   brandSubtitle: string;
   heroLine: string;
   body?: PortableTextBlock[];
-  greeting?: string;
-  thanksLine?: PortableTextBlock[];
-  timelineLine?: PortableTextBlock[];
-  contactLine?: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
   dataExportHeading?: string;
@@ -387,7 +383,6 @@ export type SanityEntryPageContent = {
   dropCapCta?: string;
   dropCapCaption?: string;
   changeReadingLinkText?: string;
-  aboutJosephineLinkText?: string;
   letterTitle?: string;
 };
 

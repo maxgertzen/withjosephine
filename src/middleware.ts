@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
+import { NONCE_HEADER, PRODUCTION_HOSTS, STATIC_CSP_PATHS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
@@ -88,17 +88,6 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-// Prerendered public content routes that must serve the 'unsafe-inline' script
-// CSP (see buildCsp). Interactive/dynamic routes are absent here and keep the
-// strict nonce CSP.
-const STATIC_CSP_PATHS: ReadonlySet<string> = new Set([
-  "/",
-  "/privacy",
-  "/terms",
-  "/refund-policy",
-  "/under-construction",
-]);
-
 function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean }): string {
   const { isDraft, nonce, staticRoute } = opts;
   // Prerendered (static) routes have no per-request nonce, so Next's first-party
@@ -110,7 +99,9 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
   const scriptInline = staticRoute ? "'unsafe-inline'" : `'nonce-${nonce}'`;
   // Clarity origins per learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-csp:
   // *.clarity.ms (entry tag + collection subdomains), c.bing.com (beacon endpoint).
-  const scriptSrc = `'self' ${scriptInline}${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com`;
+  // static.cloudflareinsights.com: cookieless Web Analytics beacon; on this proxied zone
+  // its metrics POST to same-origin /cdn-cgi/rum (connect-src 'self'), so script-src only.
+  const scriptSrc = `'self' ${scriptInline}${devEval} https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://static.cloudflareinsights.com`;
   const connectSrc = isDraft
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
@@ -129,7 +120,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     // style nonce. Script-src is the load-bearing XSS gate.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms data: blob:; ` +
+    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com data: blob:; ` +
     `connect-src ${connectSrc}; ` +
     "worker-src 'self' blob:; " +
     `frame-ancestors ${frameAncestors}; ` +
@@ -166,10 +157,11 @@ export function middleware(request: NextRequest) {
     url.pathname = "/under-construction";
     const holdingResponse = NextResponse.rewrite(url);
     // This path returns early, so set the CSP the shared block below would have.
-    // The holding route is static, so it uses the unsafe-inline script policy.
+    // The holding route is static, so it uses the unsafe-inline script policy
+    // (no nonce needed).
     holdingResponse.headers.set(
       "Content-Security-Policy",
-      buildCsp({ isDraft: false, nonce: generateNonce(), staticRoute: true }),
+      buildCsp({ isDraft: false, nonce: "", staticRoute: true }),
     );
     return holdingResponse;
   }

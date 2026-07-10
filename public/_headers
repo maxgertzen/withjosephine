@@ -4,3 +4,8 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
+
+# Next.js build output is content-hash fingerprinted, so it can be cached
+# forever and never revalidated.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

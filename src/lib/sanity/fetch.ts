@@ -88,7 +88,13 @@ export const fetchReading = cache(async (slug: string): Promise<SanityReading | 
  * always sourced from published documents anyway.
  */
 export async function fetchReadingSlugs(): Promise<{ slug: string }[]> {
-  return (await sanityClient.fetch<{ slug: string }[] | null>(readingSlugsQuery)) ?? [];
+  return (
+    (await sanityClient.fetch<{ slug: string }[] | null>(
+      readingSlugsQuery,
+      {},
+      { perspective: "published", stega: false },
+    )) ?? []
+  );
 }
 
 export const fetchTestimonials = cache(async (): Promise<SanityTestimonial[]> => {

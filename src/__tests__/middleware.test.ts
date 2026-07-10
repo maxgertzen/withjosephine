@@ -133,6 +133,17 @@ describe("middleware CSP + draft hardening", () => {
     expect(connectDirective).toContain("https://c.bing.com");
   });
 
+  it("CSP allows the cookieless Cloudflare Web Analytics beacon in script-src", () => {
+    const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const csp = apex.headers.get("content-security-policy") ?? "";
+    const scriptDirective = csp.split(";").find((d) => d.trim().startsWith("script-src"));
+    const connectDirective = csp.split(";").find((d) => d.trim().startsWith("connect-src"));
+    expect(scriptDirective).toContain("https://static.cloudflareinsights.com");
+    // Proxied zone reports to same-origin /cdn-cgi/rum, so connect-src needs no new origin.
+    expect(connectDirective).toContain("'self'");
+    expect(connectDirective).not.toContain("cloudflareinsights.com");
+  });
+
   it("CSP img-src allows clarity.ms so the Clarity tracking pixel (c.gif) can load", () => {
     const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
     const csp = apex.headers.get("content-security-policy") ?? "";
@@ -145,8 +156,8 @@ describe("middleware CSP + draft hardening", () => {
     return csp.split(";").find((d) => d.trim().startsWith("script-src")) ?? "";
   }
 
-  it("static content routes get 'unsafe-inline' script-src and no nonce (prerender)", () => {
-    for (const pathname of ["/", "/privacy", "/terms", "/refund-policy", "/under-construction"]) {
+  it("fully-static content routes get 'unsafe-inline' script-src and no nonce (prerender)", () => {
+    for (const pathname of ["/", "/under-construction"]) {
       const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
       const scriptDirective = scriptSrcOf(res);
       expect(scriptDirective, pathname).toContain("'unsafe-inline'");
@@ -154,8 +165,15 @@ describe("middleware CSP + draft hardening", () => {
     }
   });
 
-  it("interactive routes keep the strict nonce and never get 'unsafe-inline'", () => {
-    for (const pathname of ["/book/soul-blueprint/intake", "/listen/sub_1", "/auth/verify"]) {
+  it("dynamic routes (legal force-dynamic + interactive) keep the strict nonce, never unsafe-inline", () => {
+    for (const pathname of [
+      "/privacy",
+      "/terms",
+      "/refund-policy",
+      "/book/soul-blueprint/intake",
+      "/listen/sub_1",
+      "/auth/verify",
+    ]) {
       const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
       const scriptDirective = scriptSrcOf(res);
       expect(scriptDirective, pathname).toContain("'nonce-");

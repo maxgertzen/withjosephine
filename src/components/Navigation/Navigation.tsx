@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
@@ -32,6 +32,9 @@ const NAV_DEFAULTS: NavigationContent = {
   navCtaText: "Book a Reading",
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
+
 type NavigationProps = {
   content?: NavigationContent;
   className?: string;
@@ -45,20 +48,62 @@ export function Navigation({ content, className }: NavigationProps) {
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const scrollToSection = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   }, []);
 
+  // Move focus into the open overlay, keep Tab trapped inside it, close on
+  // Escape, and restore focus to the toggle when it closes.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const overlay = overlayRef.current;
+    const toggle = toggleRef.current;
+    overlay?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !overlay) return;
+      const overlayFocusables = Array.from(
+        overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      );
+      // The visible close button lives in the <nav>, outside the overlay;
+      // include it so Tab can reach it while the menu is open.
+      const focusable = toggle ? [toggle, ...overlayFocusables] : overlayFocusables;
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      toggle?.focus();
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <nav
+        aria-label="Primary"
         className={mergeClasses(
-          "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out",
+          "fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[100] border-b transition-all duration-300 ease-in-out",
           scrolled
-            ? "bg-j-cream/95 backdrop-blur-[10px] border-b border-j-border-subtle shadow-j-soft"
-            : "bg-transparent",
+            ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
+            : "border-transparent bg-transparent",
           className,
         )}
       >
@@ -70,7 +115,7 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="h-auto w-[140px] min-[900px]:hidden"
+              className="h-auto w-[140px] nav:hidden"
             />
             <Image
               src="/images/logo-horizontal-text.webp"
@@ -78,22 +123,18 @@ export function Navigation({ content, className }: NavigationProps) {
               width={480}
               height={160}
               priority
-              className="hidden h-auto w-[clamp(120px,8vw,160px)] min-[900px]:block"
+              className="hidden h-auto w-[clamp(120px,8vw,160px)] nav:block"
             />
           </Link>
 
-          <div className="flex items-center gap-3 min-[900px]:gap-6">
-            <div
-              className="hidden min-[900px]:flex items-center gap-8"
-              role="navigation"
-              aria-label="Main navigation"
-            >
+          <div className="flex items-center gap-3 nav:gap-6">
+            <div className="hidden nav:flex items-center gap-8">
               {navLinks.map((link) => (
                 <button
                   key={link.sectionId}
                   type="button"
                   onClick={() => scrollToSection(link.sectionId)}
-                  className="text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep hover:text-j-midnight hover:underline hover:decoration-j-accent hover:underline-offset-4 transition-colors"
+                  className="relative text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-j-accent after:transition-transform after:duration-300 after:ease-in-out after:content-[''] hover:after:scale-x-100 focus-visible:after:scale-x-100 motion-reduce:after:transition-none"
                 >
                   {link.label}
                 </button>
@@ -104,10 +145,12 @@ export function Navigation({ content, className }: NavigationProps) {
             </div>
 
             <button
+              ref={toggleRef}
               type="button"
-              className="min-[900px]:hidden text-j-deep"
+              className="flex h-11 w-11 items-center justify-center text-j-deep nav:hidden"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
             >
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -116,9 +159,11 @@ export function Navigation({ content, className }: NavigationProps) {
       </nav>
 
       <div
+        ref={overlayRef}
         aria-hidden={!menuOpen}
+        inert={!menuOpen}
         className={mergeClasses(
-          "fixed inset-0 z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out min-[900px]:hidden",
+          "fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

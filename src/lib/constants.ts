@@ -30,3 +30,14 @@ export const ROUTES = {
   terms: "/terms",
   refundPolicy: "/refund-policy",
 } as const;
+
+/**
+ * Fully-static (`○`) content routes: they have no per-request nonce, so their
+ * CSP must admit Next's inline bootstrap via `script-src 'unsafe-inline'`.
+ * Dynamic (`ƒ`) and SSG (`●`) routes carry the per-request nonce instead and
+ * MUST NOT appear here — a force-dynamic route listed here silently drops to the
+ * weaker unsafe-inline policy (which is what happened when #326 flipped the legal
+ * pages to force-dynamic without updating this set). `staticCspPaths.test.ts`
+ * enforces the invariant.
+ */
+export const STATIC_CSP_PATHS: ReadonlySet<string> = new Set(["/", "/under-construction"]);
