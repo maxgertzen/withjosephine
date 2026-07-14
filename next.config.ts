@@ -43,6 +43,11 @@ const nextConfig: NextConfig = {
         destination: "/my-readings",
         permanent: true,
       },
+      {
+        source: "/tt",
+        destination: "/?utm_source=tiktok&utm_medium=bio",
+        permanent: false,
+      },
     ];
   },
   // `outputFileTracingExcludes` deliberately absent. Any non-empty value
