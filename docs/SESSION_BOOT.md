@@ -1,6 +1,16 @@
 # Session Boot — Active State
 
-## ▶ 🚧 IN FLIGHT (2026-08-02) - `release/v1.19.5`: booking funnel collapse IS BUILT, uncommitted - START HERE
+## ▶ 👉 START HERE (next session, 2026-08-02 handover): Max has a comment on the LOOKS
+
+**The funnel collapse is built, pushed, and verified on staging. The next thing is Max's styling feedback, which lands in dex `681ra7bq` (the styling pass, still marked AWAITING MAX'S POINTS).**
+
+- **Ask him for his list first. Do NOT invent items.** `681ra7bq` already carries seven candidates, but they are candidates, not his list. Three of them now have hard measurements attached from this arc: the heading inversion (header name 20px vs the `h1` at 29.6px wrapping to two lines), the preamble length (first input sits **566px** down at 375px), and the header's **16.3px** worst-case clearance from Back (`rti3s5bo`).
+- **✅ Max is now signed in to Cloudflare Access**, so `https://staging.withjosephine.com` is reachable in his Chrome and browser verification works without another login. The `.env.local` CF Access service token is still rejected (`service_token_status: false`), so headless and curl still bounce — drive his browser, or use `workflow_dispatch` on `e2e-sandbox`.
+- **The specimen is still the cheapest review surface for styling:** `MEMORY/WORK/20260729-booking-funnel-collapse/header-variations.html`, self-contained, opens directly with no server. But staging is now live too, so real 375px comparisons can be done against the deployed thing.
+- **Scope reminder (Max's words):** the styling pass is *"part of this epic, will be separate release"* — same epic `4bttw1sh`, its own release branch AFTER this one, not bundled into `release/v1.19.5`.
+- **⚠️ One unpushed commit on `release/v1.19.5`:** `e5d5f1d`, docs only (this file). Deliberately not pushed, since a docs-only push would trigger a redundant CI run and staging redeploy. Push it whenever the next real change goes up.
+
+## ▶ 🚧 IN FLIGHT (2026-08-02) - `release/v1.19.5`: booking funnel collapse SHIPPED TO STAGING
 
 **Branch `release/v1.19.5`, cut off `main` (`b2b3579`). Max's scope call: everything in epic `4bttw1sh` EXCEPT the styling pass. Four of six tickets closed; the two Sanity ones are staging-only by design. ONE commit exists (`b18979f`, the static-route win); everything else is still in the working tree awaiting Max's commit authorization.**
 
@@ -24,6 +34,18 @@
 - **✅ Redirects added + `34gbnb89` fixed.** `/book/:slug/letter` and `/book/:slug/intake` now **308 → `/book/:slug`** (curl-verified). Not needed for SEO (both were `noindex`, never in the sitemap, no email links) but they were live, so a bookmarked `/intake` lands on the form. Same commit removed the stale `/my-gifts → /my-readings` rule — v1.16.0 deleted **both**, so it was a permanent, browser-cached redirect to a 404.
 - **✅ Comment sweep done.** Code comments 26 → 7 lines (plus 12 in the migration script header, which are the run commands). Survivors each prevent a specific wrong change. Also fixed a lint error I introduced myself via import ordering.
 - **🚩 New decisions filed, none blocking:** `5vanz209` the `OPERATIONS.md:222` Mixpanel funnel is broken — `cta_click_intake` can never fire again (both call sites deleted), `TrackedLink` has zero consumers, and `entry_page_view`/`intake_page_view` now fire on the same pageview. `zk4qp0qi` `VellumShell.tsx` is dead code and the sole reason the header props are optional (plus `BookingPageHeading.eyebrow` is now consumer-less, as PRD D4b predicted). `jm0w5arw` the two listen-roundtrip specs are now ~25 identical lines.
+### ✅ STAGING IS LIVE AND VERIFIED (2026-08-02) — `release/v1.19.5`, run `30738819402` fully green
+
+**Deployed and browser-verified on `https://staging.withjosephine.com` after Max signed in to Cloudflare Access. All CI jobs green: lint-and-typecheck, test, storybook, osv-scan, deploy-staging, sanity-validate-staging.**
+
+- **The CSP fix is live and working on real staging:** `script-src 'unsafe-inline'` on all three `/book/{slug}` routes, and in-browser **React attached with validation firing 0 → 8 `aria-invalid`**. This is the assertion that distinguishes a working form from a pixel-perfect inert one.
+- **Page counts landed:** Akashic renders as a **single page** ("One short page"), Soul Blueprint as **Page 1 of 2**, Birth Chart single. Akashic was 2 and Soul Blueprint was 4 before.
+- **Route collapse confirmed on the deployed worker:** all three 200, zero `/letter` or `/intake` hrefs anywhere in the HTML, `/#reading-{slug}` Back anchor present, **not noindex** (so sitemap and robots agree), shared `h1`.
+- **Both 308s work end-to-end:** `/book/soul-blueprint/letter` and `/book/birth-chart/intake` land on the form with a final 200.
+- **Header re-measured on deployed staging at a real 375px:** 0px horizontal / -0.5px vertical on every reading, header 116px, no overlap, no horizontal scroll, exactly 1 link in the header. Worst-case clearance is still Akashic at **16.3px** — see `rti3s5bo`.
+- **⚠️ I cannot reach staging unattended.** Cloudflare Access admits only Max's email; the `CF_ACCESS_CLIENT_ID`/`SECRET` pair in `.env.local` is **rejected** (the Access JWT reports `service_token_status: false`), so curl and headless both bounce to the login. CI's own token works (scheduled `e2e-sandbox` green through 2026-07-31). Either fix the local service token's Access policy or verify via `workflow_dispatch` on `e2e-sandbox`.
+- **🚩 Roundtrip e2e against staging has NOT run for the collapse.** The scheduled runs through 07-31 tested pre-collapse code. `workflow_dispatch` on `e2e-sandbox` for this branch is the first real test of the new funnel end-to-end, and it is still owed.
+
 ### 🔴 LAUNCH BLOCKER FOUND AND FIXED (2026-08-02) — CSP nonce blocked hydration on `/book/[slug]`, and it is LIVE ON PROD RIGHT NOW
 
 **dex `y5x31yiu`. Found by an independent Next.js review, then verified by me in a real browser against both live production and a local production build. This release FIXES a defect that already exists on prod.**
