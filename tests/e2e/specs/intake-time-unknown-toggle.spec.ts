@@ -12,7 +12,7 @@ test.describe("Time-of-birth unknown toggle", () => {
         time_of_birth_unknown: false,
       },
     });
-    await page.goto("/book/birth-chart/intake");
+    await page.goto("/book/birth-chart");
     await waitForDraftRestore(page);
 
     for (let i = 0; i < 10; i += 1) {

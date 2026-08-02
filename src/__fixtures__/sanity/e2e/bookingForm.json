@@ -18,12 +18,16 @@
   "pagination": {
     "overrides": [
       {
-        "pageCount": 2,
+        "pageCount": 1,
         "readingSlug": "akashic-record"
       },
       {
         "pageCount": 1,
         "readingSlug": "birth-chart"
+      },
+      {
+        "pageCount": 2,
+        "readingSlug": "soul-blueprint"
       }
     ]
   },

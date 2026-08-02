@@ -9,8 +9,8 @@ import { interceptStripeCheckout } from "../helpers/stripeCheckout";
 
 test.describe("Intake page renders (smoke)", () => {
   for (const reading of READINGS) {
-    test(`/book/${reading.slug}/intake renders without 500`, async ({ page }) => {
-      const response = await page.goto(`/book/${reading.slug}/intake`);
+    test(`/book/${reading.slug} renders without 500`, async ({ page }) => {
+      const response = await page.goto(`/book/${reading.slug}`);
       expect(response?.status(), `${reading.slug} should not 5xx`).toBeLessThan(500);
       await expect(page.getByRole("heading", { level: 1 })).toContainText(/before we begin/i);
       const firstNameLabel = page
@@ -31,7 +31,7 @@ test.describe("Booking happy-path with submit assertion", () => {
       });
 
       await seedIntakeDraft(page, reading.slug);
-      await page.goto(`/book/${reading.slug}/intake`);
+      await page.goto(`/book/${reading.slug}`);
 
       await clickThroughIntakePages(page, 6);
 
@@ -58,7 +58,7 @@ test.describe("Final-page acknowledgments without Sanity consentField (Issue #2)
     page,
   }) => {
     await seedIntakeDraft(page, "birth-chart");
-    await page.goto("/book/birth-chart/intake");
+    await page.goto("/book/birth-chart");
 
     await clickThroughIntakePages(page, 6);
 
