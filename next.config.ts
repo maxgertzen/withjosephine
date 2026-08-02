@@ -38,9 +38,15 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: true,
   async redirects() {
     return [
+      // The former booking sub-steps; `/book/{slug}` is the form itself now.
       {
-        source: "/my-gifts",
-        destination: "/my-readings",
+        source: "/book/:slug/letter",
+        destination: "/book/:slug",
+        permanent: true,
+      },
+      {
+        source: "/book/:slug/intake",
+        destination: "/book/:slug",
         permanent: true,
       },
     ];
