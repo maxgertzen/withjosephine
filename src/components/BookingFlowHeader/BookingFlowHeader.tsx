@@ -1,26 +1,61 @@
 "use client";
 
-import Link from "next/link";
-
 import { NavigationButton } from "@/components/NavigationButton";
 
 import { useHeaderBack } from "./headerBackContext";
 
 type BookingFlowHeaderProps = {
   backHref: string;
+  readingTag?: string;
+  readingName?: string;
+  readingPrice?: string;
   backLabel?: string;
 };
 
 const BACK_CLASS =
-  "font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2 shrink-0";
+  "relative z-20 font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center gap-1.5 min-h-11 px-2 shrink-0";
 
-export function BookingFlowHeader({ backHref, backLabel = "‹ Back" }: BookingFlowHeaderProps) {
+function BackChevron() {
+  return (
+    <svg
+      width="9"
+      height="14"
+      viewBox="0 0 9 14"
+      fill="none"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      <path
+        d="M7.5 1 1.5 7l6 6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function BookingFlowHeader({
+  backHref,
+  readingTag,
+  readingName,
+  readingPrice,
+  backLabel = "Back",
+}: BookingFlowHeaderProps) {
   // A client descendant (the intake form) can register an in-page back handler;
   // when present the arrow steps back through the form instead of leaving it.
   const { onBack } = useHeaderBack();
+  const back = (
+    <>
+      <BackChevron />
+      {backLabel}
+    </>
+  );
+
   return (
     <header
-      className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 border-b border-j-border-subtle"
+      className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 flex items-center min-h-[116px] md:min-h-[150px] border-b border-j-border-subtle"
       style={{
         paddingTop: "calc(1.5rem + env(safe-area-inset-top, 0px))",
         paddingBottom: "1rem",
@@ -28,21 +63,33 @@ export function BookingFlowHeader({ backHref, backLabel = "‹ Back" }: BookingF
     >
       {onBack ? (
         <button type="button" onClick={onBack} className={BACK_CLASS}>
-          {backLabel}
+          {back}
         </button>
       ) : (
         <NavigationButton href={backHref} className={BACK_CLASS}>
-          {backLabel}
+          {back}
         </NavigationButton>
       )}
-      <Link
-        href="/"
-        aria-label="Josephine Soul Readings — home"
-        className="font-display italic text-base sm:text-lg md:text-xl text-j-text-heading tracking-wide hover:text-j-accent transition-colors whitespace-nowrap"
-      >
-        Josephine Soul Readings
-      </Link>
-      <div className="flex items-center justify-end shrink-0" aria-hidden="true" />
+
+      {/* Absolute centring, not flex/grid: both let Back's width push the block
+          off centre (measured 35px and 7px respectively on the long names). */}
+      {readingName ? (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center text-center pointer-events-none">
+          {readingTag ? (
+            <span className="font-body uppercase text-j-accent text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
+              {readingTag}
+            </span>
+          ) : null}
+          <span className="font-display font-light italic leading-tight text-j-text-heading whitespace-nowrap text-[1.25rem] md:text-[2.4rem] mt-1 md:mt-2">
+            {readingName}
+          </span>
+          {readingPrice ? (
+            <span className="font-display italic text-j-accent text-[1rem] md:text-[1.5rem] mt-0.5 md:mt-2">
+              {readingPrice}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </header>
   );
 }
