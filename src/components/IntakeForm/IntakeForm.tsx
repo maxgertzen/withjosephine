@@ -25,7 +25,7 @@ import type { RenderContext } from "./renderField";
 import { SavedIndicator } from "./SavedIndicator";
 import { SwapToast } from "./SwapToast";
 
-type IntakeFormProps = {
+export type IntakeFormProps = {
   readingId: string;
   readingName: string;
   sections: SanityFormSection[];
