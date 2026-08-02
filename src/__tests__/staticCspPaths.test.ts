@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { STATIC_CSP_PATHS } from "@/lib/constants";
+import { isStaticCspPath, STATIC_CSP_PATHS } from "@/lib/constants";
 
 // Guards the STATIC_CSP_PATHS set (middleware CSP) against drift. A route in
 // this set serves `script-src 'unsafe-inline'` (no per-request nonce); a route
@@ -46,5 +46,27 @@ describe("STATIC_CSP_PATHS integrity", () => {
     const staticRoutes = new Set(pageFiles.filter((p) => !isForceDynamic(p)).map(toRoute));
     const stale = [...STATIC_CSP_PATHS].filter((route) => !staticRoutes.has(route));
     expect(stale).toEqual([]);
+  });
+
+  // Prerendered HTML is replayed from cache, so its baked nonce can never equal
+  // the fresh response nonce. A nonce-only policy here blocks hydration outright:
+  // the booking form renders and takes zero submissions.
+  it("treats the prerendered /book/<slug> route as a static-CSP path", () => {
+    expect(isStaticCspPath("/book/soul-blueprint")).toBe(true);
+    expect(isStaticCspPath("/book/birth-chart")).toBe(true);
+    expect(isStaticCspPath("/book/akashic-record")).toBe(true);
+    expect(isStaticCspPath("/book/a-reading-becky-adds-later")).toBe(true);
+  });
+
+  it("keeps the strict nonce for dynamic routes and non-booking paths", () => {
+    for (const pathname of ["/privacy", "/terms", "/listen/abc", "/thank-you/abc", "/book"]) {
+      expect(isStaticCspPath(pathname)).toBe(false);
+    }
+  });
+
+  it("does not let /book/<slug> become force-dynamic without revisiting the CSP", () => {
+    const bookingPage = pageFiles.find((p) => toRoute(p) === "/book/[readingId]");
+    expect(bookingPage, "the /book/[readingId] route should exist").toBeDefined();
+    expect(isForceDynamic(bookingPage!)).toBe(false);
   });
 });

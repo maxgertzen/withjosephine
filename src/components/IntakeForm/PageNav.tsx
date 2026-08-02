@@ -48,7 +48,7 @@ export function PageNav({
             href={backHref}
             className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2"
           >
-            ← Back to reading details
+            ← Back to all readings
           </Link>
         ) : (
           <button

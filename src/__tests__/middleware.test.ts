@@ -165,12 +165,20 @@ describe("middleware CSP + draft hardening", () => {
     }
   });
 
+  it("serves the prerendered /book/<slug> with unsafe-inline, since a baked nonce can never match", () => {
+    for (const pathname of ["/book/soul-blueprint", "/book/birth-chart", "/book/akashic-record"]) {
+      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
+      const scriptDirective = scriptSrcOf(res);
+      expect(scriptDirective, pathname).toContain("'unsafe-inline'");
+      expect(scriptDirective, pathname).not.toContain("'nonce-");
+    }
+  });
+
   it("dynamic routes (legal force-dynamic + interactive) keep the strict nonce, never unsafe-inline", () => {
     for (const pathname of [
       "/privacy",
       "/terms",
       "/refund-policy",
-      "/book/soul-blueprint/intake",
       "/listen/sub_1",
       "/auth/verify",
     ]) {
@@ -212,7 +220,7 @@ describe("middleware apex lockdown (under-construction on)", () => {
 
   it("rewrites apex booking flow to /under-construction so it serves the holding page", () => {
     const res = middleware(
-      makeRequest({ hasDraft: false, pathname: "/book/soul-blueprint/intake" }),
+      makeRequest({ hasDraft: false, pathname: "/book/soul-blueprint" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBe("/under-construction");
   });
@@ -307,7 +315,7 @@ describe("middleware apex lockdown (under-construction on)", () => {
       makeRequest({
         hasDraft: false,
         host: "preview.withjosephine.com",
-        pathname: "/book/soul-blueprint/intake",
+        pathname: "/book/soul-blueprint",
       }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
@@ -315,7 +323,7 @@ describe("middleware apex lockdown (under-construction on)", () => {
 
   it("does NOT rewrite when draft mode is on (Studio Presentation must reach real routes)", () => {
     const res = middleware(
-      makeRequest({ hasDraft: true, pathname: "/book/soul-blueprint/intake" }),
+      makeRequest({ hasDraft: true, pathname: "/book/soul-blueprint" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
   });

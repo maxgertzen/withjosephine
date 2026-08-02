@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { NONCE_HEADER, PRODUCTION_HOSTS, STATIC_CSP_PATHS } from "@/lib/constants";
+import { isStaticCspPath, NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
@@ -196,7 +196,7 @@ export function middleware(request: NextRequest) {
   const isStrict = isPublicApex && !isDraft;
   response.headers.set(
     "Content-Security-Policy",
-    buildCsp({ isDraft: !isStrict, nonce, staticRoute: STATIC_CSP_PATHS.has(pathname) }),
+    buildCsp({ isDraft: !isStrict, nonce, staticRoute: isStaticCspPath(pathname) }),
   );
 
   const isListen = pathname.startsWith("/listen/");
