@@ -32,7 +32,7 @@ export const withBookingPageShell: Decorator = (Story, context) => {
     >
       <BookingPageHeading eyebrow={eyebrow} title={title} />
       {subtitle ? (
-        <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+        <p className="font-body text-base leading-[1.9] font-light text-j-text max-w-[50ch] mb-10">
           {subtitle}
         </p>
       ) : null}

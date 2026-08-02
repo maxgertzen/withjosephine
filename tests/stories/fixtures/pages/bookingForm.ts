@@ -1,5 +1,6 @@
-import { ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
+import { INTAKE_INTRO_BY_SLUG, INTAKE_TITLE_FALLBACK } from "@/data/defaults";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
+import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
 import bookingFormFixture from "../../../../src/__fixtures__/sanity/e2e/bookingForm.json";
@@ -17,11 +18,7 @@ const BASE_FORM = {
   submitLabel: "Continue to payment",
 };
 
-const BASE_COPY = {
-  title: "A few things, before we begin.",
-  letterOpener: ENTRY_PAGE_DEFAULTS.letterOpener,
-  letterBridge: ENTRY_PAGE_DEFAULTS.letterBridge,
-};
+const BASE_COPY = { title: INTAKE_TITLE_FALLBACK };
 
 export const BOOKING_FORM_SOUL_BLUEPRINT_ARGS = {
   backHref: "/#reading-soul-blueprint",
@@ -31,10 +28,7 @@ export const BOOKING_FORM_SOUL_BLUEPRINT_ARGS = {
     name: "Soul Blueprint",
     priceLabel: "$129",
   },
-  copy: {
-    ...BASE_COPY,
-    subtitle: "Take your time. The more honestly you write, the more your reading can hold.",
-  },
+  copy: { ...BASE_COPY, intro: paragraphBlocks(INTAKE_INTRO_BY_SLUG["soul-blueprint"]) },
   form: { ...BASE_FORM, sections: filterSectionsForReading(sections, "soul-blueprint") },
 };
 
@@ -46,10 +40,7 @@ export const BOOKING_FORM_BIRTH_CHART_ARGS = {
     name: "Birth Chart Reading",
     priceLabel: "$89",
   },
-  copy: {
-    ...BASE_COPY,
-    subtitle: "For a Birth Chart, I only need the moment you arrived here.",
-  },
+  copy: { ...BASE_COPY, intro: paragraphBlocks(INTAKE_INTRO_BY_SLUG["birth-chart"]) },
   form: { ...BASE_FORM, sections: filterSectionsForReading(sections, "birth-chart") },
 };
 
@@ -61,9 +52,6 @@ export const BOOKING_FORM_AKASHIC_RECORD_ARGS = {
     name: "Akashic Records Reading",
     priceLabel: "$89",
   },
-  copy: {
-    ...BASE_COPY,
-    subtitle: "For the records, I’ll need your name, your photo, and three questions.",
-  },
+  copy: { ...BASE_COPY, intro: paragraphBlocks(INTAKE_INTRO_BY_SLUG["akashic-record"]) },
   form: { ...BASE_FORM, sections: filterSectionsForReading(sections, "akashic-record") },
 };

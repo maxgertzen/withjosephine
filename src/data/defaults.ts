@@ -99,8 +99,6 @@ export interface MappedAbout {
 }
 
 export interface EntryPageContent {
-  letterOpener: string;
-  letterBridge: string;
   letterClosing: string;
   dropCapCta: string;
   dropCapCaption: string;
@@ -108,9 +106,6 @@ export interface EntryPageContent {
 }
 
 export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
-  letterOpener:
-    "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.",
-  letterBridge: "Take your time with this. There\u2019s no wrong answer.",
   letterClosing:
     "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726",
   dropCapCta: "Tell me about you \u2192",
@@ -118,6 +113,25 @@ export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
     "The intake form: about five minutes. You\u2019ll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three \u2192",
 };
+
+export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
+
+const INTAKE_OPENER =
+  "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.";
+
+export const INTAKE_INTRO_BY_SLUG: Record<string, string[]> = {
+  "soul-blueprint": [
+    INTAKE_OPENER,
+    "Take your time. The more honestly you write, the more your reading can hold.",
+  ],
+  "birth-chart": [INTAKE_OPENER, "For a Birth Chart, I only need the moment you arrived here."],
+  "akashic-record": [
+    INTAKE_OPENER,
+    "For the records, I\u2019ll need your name, your photo, and three questions.",
+  ],
+};
+
+export const INTAKE_INTRO_FALLBACK = [INTAKE_OPENER, "Take your time. There\u2019s no wrong answer."];
 
 export interface BookingInfoNotes {
   deliveryNote: string;

@@ -19,8 +19,6 @@ export const bookingForm = defineType({
       description:
         "Verbatim copy slots for the /book/[readingId] entry page. Each slot is sourced from SPEC §11.",
       fields: [
-        defineField({ name: "letterOpener", title: "Letter Opener", type: "text", rows: 2 }),
-        defineField({ name: "letterBridge", title: "Letter Bridge", type: "text", rows: 2 }),
         defineField({ name: "letterClosing", title: "Letter Closing", type: "text", rows: 2 }),
         defineField({ name: "dropCapCta", title: "Drop-Cap CTA", type: "text", rows: 2 }),
         defineField({ name: "dropCapCaption", title: "CTA Caption", type: "text", rows: 2 }),

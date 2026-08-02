@@ -1,22 +1,15 @@
-import { ENTRY_PAGE_DEFAULTS } from "@/data/defaults";
+import {
+  INTAKE_INTRO_BY_SLUG,
+  INTAKE_INTRO_FALLBACK,
+  INTAKE_TITLE_FALLBACK,
+} from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
+import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { homeReadingAnchor } from "@/lib/http/routes";
 import type { SanityBookingForm, SanityBookingPage, SanityReading } from "@/lib/sanity/types";
 
 import type { BookingFormViewProps } from "./BookingFormView";
-
-const SHARED_TITLE = "A few things, before we begin.";
-
-const SUBTITLE_BY_SLUG: Record<string, string> = {
-  "soul-blueprint":
-    "Take your time. The more honestly you write, the more your reading can hold.",
-  "birth-chart": "For a Birth Chart, I only need the moment you arrived here.",
-  "akashic-record":
-    "For the records, I’ll need your name, your photo, and three questions.",
-};
-
-const FALLBACK_SUBTITLE = "Take your time. There’s no wrong answer.";
 
 export type DeriveBookingFormViewPropsInput = {
   readingId: string;
@@ -60,10 +53,10 @@ export function deriveBookingFormViewProps(
     backHref: homeReadingAnchor(reading.slug),
     reading,
     copy: {
-      title: SHARED_TITLE,
-      subtitle: SUBTITLE_BY_SLUG[reading.slug] ?? FALLBACK_SUBTITLE,
-      letterOpener: entry.letterOpener ?? ENTRY_PAGE_DEFAULTS.letterOpener,
-      letterBridge: entry.letterBridge ?? ENTRY_PAGE_DEFAULTS.letterBridge,
+      title: entry.letterTitle ?? INTAKE_TITLE_FALLBACK,
+      intro: input.sanityReading?.intakeIntro?.length
+        ? input.sanityReading.intakeIntro
+        : paragraphBlocks(INTAKE_INTRO_BY_SLUG[reading.slug] ?? INTAKE_INTRO_FALLBACK),
     },
     form: {
       sections: filterSectionsForReading(input.bookingForm.sections, reading.slug),
