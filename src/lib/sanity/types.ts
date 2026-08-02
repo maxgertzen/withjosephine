@@ -6,6 +6,7 @@ export type SanityReading = {
   slug: string;
   tag: string;
   subtitle: string;
+  intakeIntro?: SanityPortableTextBlock[];
   price: number;
   priceDisplay: string;
   valueProposition: string;
@@ -377,8 +378,6 @@ export type SanityPagination = {
 };
 
 export type SanityEntryPageContent = {
-  letterOpener?: string;
-  letterBridge?: string;
   letterClosing?: string;
   dropCapCta?: string;
   dropCapCaption?: string;

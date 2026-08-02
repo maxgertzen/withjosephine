@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import {
@@ -11,8 +12,8 @@ import {
 import { buildPageMetadata } from "@/lib/seoMetadata";
 import { readingProductJsonLd } from "@/lib/structuredData";
 
-import { BookingEntryView } from "./BookingEntryView";
-import { deriveBookingEntryProps } from "./deriveBookingEntryProps";
+import { BookingFormView } from "./BookingFormView";
+import { deriveBookingFormViewProps } from "./deriveBookingFormViewProps";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -47,13 +48,13 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, bookingPage, bookingForm] = await Promise.all([
+  const [sanityReading, bookingForm, bookingPage] = await Promise.all([
     fetchReadingPublished(readingId),
-    fetchBookingPagePublished(),
     fetchBookingFormPublished(),
+    fetchBookingPagePublished(),
   ]);
 
-  const props = deriveBookingEntryProps({
+  const props = deriveBookingFormViewProps({
     readingId,
     sanityReading,
     bookingPage,
@@ -65,9 +66,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
 
   const fallbackReading = getReadingById(readingId);
   const productJsonLd = readingProductJsonLd({
-    name: sanityReading?.name ?? fallbackReading?.name ?? "Soul Reading",
+    name: props.reading.name,
     description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
-    price: sanityReading?.priceDisplay ?? fallbackReading?.price ?? "",
+    price: props.reading.priceLabel,
     path: `/book/${readingId}`,
     image: sanityReading?.seo?.ogImage?.asset?.url,
   });
@@ -75,7 +76,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
   return (
     <>
       <JsonLd data={productJsonLd} />
-      <BookingEntryView {...props} />
+      <BookingFormView {...props} />
+      <EntryPageView readingId={props.reading.slug} />
     </>
   );
 }

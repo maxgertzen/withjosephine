@@ -7,8 +7,5 @@ export const CONTACT_API_ROUTE = "/api/contact";
 export const PRIVACY_EXPORT_API_ROUTE = "/api/privacy/export";
 export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 
-export const BOOKING_PAGE_ROUTES = {
-  entry: (slug: string) => `/book/${slug}`,
-  letter: (slug: string) => `/book/${slug}/letter`,
-  intake: (slug: string) => `/book/${slug}/intake`,
-} as const;
+// Pairs with the `id` on HomePageView's reading <li>.
+export const homeReadingAnchor = (slug: string) => `/#reading-${slug}`;

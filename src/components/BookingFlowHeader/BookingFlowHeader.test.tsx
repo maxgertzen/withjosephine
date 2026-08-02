@@ -3,27 +3,58 @@ import { describe, expect, it } from "vitest";
 
 import { BookingFlowHeader } from "./BookingFlowHeader";
 
+const READING = {
+  readingTag: "Signature",
+  readingName: "Soul Blueprint",
+  readingPrice: "$129",
+};
+
 describe("BookingFlowHeader", () => {
   it("renders a Back link with the supplied href and label", () => {
-    render(<BookingFlowHeader backHref="/book/soul-blueprint" backLabel="‹ Back" />);
+    render(<BookingFlowHeader backHref="/#reading-soul-blueprint" backLabel="Back" {...READING} />);
     const back = screen.getByRole("link", { name: /Back/ });
-    expect(back).toHaveAttribute("href", "/book/soul-blueprint");
+    expect(back).toHaveAttribute("href", "/#reading-soul-blueprint");
   });
 
-  it("links the Josephine Soul Readings wordmark to the home page", () => {
-    render(<BookingFlowHeader backHref="/book/soul-blueprint" />);
-    const home = screen.getByRole("link", { name: /Josephine Soul Readings/ });
-    expect(home).toHaveAttribute("href", "/");
+  it("renders the reading's tag, name and price as the centre block", () => {
+    render(<BookingFlowHeader backHref="/" {...READING} />);
+    expect(screen.getByText("Signature")).toBeInTheDocument();
+    expect(screen.getByText("Soul Blueprint")).toBeInTheDocument();
+    expect(screen.getByText("$129")).toBeInTheDocument();
+  });
+
+  it("makes the reading block a label, so Back is the only link", () => {
+    render(<BookingFlowHeader backHref="/" {...READING} />);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: /Soul Blueprint/ })).toBeNull();
+  });
+
+  it("no longer renders the Josephine Soul Readings wordmark", () => {
+    render(<BookingFlowHeader backHref="/" {...READING} />);
+    expect(screen.queryByText(/Josephine Soul Readings/)).toBeNull();
+  });
+
+  it("renders a Back-only header when no reading is supplied", () => {
+    render(<BookingFlowHeader backHref="/" />);
+    expect(screen.getByRole("link", { name: /Back/ })).toBeInTheDocument();
+    expect(screen.queryByText("Signature")).toBeNull();
+  });
+
+  it("omits the tag and price lines when they are empty", () => {
+    render(<BookingFlowHeader backHref="/" readingName="Soul Blueprint" />);
+    expect(screen.getByText("Soul Blueprint")).toBeInTheDocument();
+    expect(screen.queryByText("Signature")).toBeNull();
+    expect(screen.queryByText("$129")).toBeNull();
   });
 
   it("no longer renders an account menu", () => {
-    render(<BookingFlowHeader backHref="/" />);
+    render(<BookingFlowHeader backHref="/" {...READING} />);
     expect(screen.queryByTestId("account-menu")).toBeNull();
     expect(screen.queryByRole("button", { name: /account/i })).toBeNull();
   });
 
   it("no longer renders an About Josephine link", () => {
-    render(<BookingFlowHeader backHref="/" />);
+    render(<BookingFlowHeader backHref="/" {...READING} />);
     expect(screen.queryByRole("link", { name: "About Josephine" })).toBeNull();
   });
 });

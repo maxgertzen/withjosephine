@@ -25,6 +25,7 @@ export const readingsQuery = groq`
     "slug": slug.current,
     tag,
     subtitle,
+    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
@@ -47,6 +48,7 @@ export const readingBySlugQuery = groq`
     "slug": slug.current,
     tag,
     subtitle,
+    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
@@ -293,8 +295,6 @@ export const bookingFormQuery = groq`
   *[_type == "bookingForm"][0] {
     nonRefundableNotice,
     entryPageContent {
-      letterOpener,
-      letterBridge,
       letterClosing,
       dropCapCta,
       dropCapCaption,

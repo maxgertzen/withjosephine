@@ -46,6 +46,27 @@ export const reading = defineType({
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
     }),
     defineField({
+      name: "intakeIntro",
+      title: "Intake Intro",
+      type: "array",
+      of: [
+        {
+          type: "block",
+          styles: [{ title: "Paragraph", value: "normal" }],
+          lists: [],
+          marks: {
+            decorators: [
+              { title: "Bold", value: "strong" },
+              { title: "Italic", value: "em" },
+            ],
+            annotations: [],
+          },
+        },
+      ],
+      description:
+        "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold and italic are available. Leave empty to use the built-in wording.",
+    }),
+    defineField({
       name: "price",
       title: "Price (cents)",
       type: "number",

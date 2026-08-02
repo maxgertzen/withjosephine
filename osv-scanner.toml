@@ -20,11 +20,3 @@ id = "GHSA-v6wh-96g9-6wx3"
 # Windows. Same build/test-only vite surface as GHSA-fx2h-pf6j-xcff; no dev server
 # exposed in CI/prod and the advisory is Windows-only.
 reason = "Build/test-only transitive dep; vite dev-server editor-open not exposed (Windows-only advisory)."
-
-[[IgnoredVulns]]
-id = "GHSA-h67p-54hq-rp68"
-# js-yaml — fixed in 4.2.0. The 4.x line is pinned to ^4.2.0 via pnpm.overrides;
-# the only residual flagged instance is js-yaml@3.14.2, pulled exclusively by
-# @vercel/frameworks (Vercel-only build tooling that is dead code here — this
-# project deploys to Cloudflare Workers). No 3.x upstream fix exists.
-reason = "Residual instance is dev-only @vercel/frameworks (dead Vercel code); 4.x bumped to 4.2.0, no 3.x fix."

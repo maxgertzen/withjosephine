@@ -14,17 +14,25 @@ type BookingPageShellParameters = {
   title?: string;
   subtitle?: string;
   backHref?: string;
+  readingTag?: string;
+  readingName?: string;
+  readingPrice?: string;
 };
 
 export const withBookingPageShell: Decorator = (Story, context) => {
   const params = (context.parameters.bookingPageShell ?? {}) as BookingPageShellParameters;
-  const { eyebrow, title, subtitle, backHref } = params;
+  const { eyebrow, title, subtitle, backHref, readingTag, readingName, readingPrice } = params;
 
   return (
-    <BookingPageShell backHref={backHref ?? "#"}>
+    <BookingPageShell
+      backHref={backHref ?? "#"}
+      readingTag={readingTag ?? "Signature"}
+      readingName={readingName ?? "Soul Blueprint"}
+      readingPrice={readingPrice ?? "$129"}
+    >
       <BookingPageHeading eyebrow={eyebrow} title={title} />
       {subtitle ? (
-        <p className="font-display italic text-[1.05rem] leading-snug text-j-text-muted max-w-[50ch] mb-10">
+        <p className="font-body text-base leading-[1.9] font-light text-j-text max-w-[50ch] mb-10">
           {subtitle}
         </p>
       ) : null}

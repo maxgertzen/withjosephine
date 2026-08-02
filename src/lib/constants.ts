@@ -34,10 +34,19 @@ export const ROUTES = {
 /**
  * Fully-static (`○`) content routes: they have no per-request nonce, so their
  * CSP must admit Next's inline bootstrap via `script-src 'unsafe-inline'`.
- * Dynamic (`ƒ`) and SSG (`●`) routes carry the per-request nonce instead and
+ * Dynamic (`ƒ`) routes carry the per-request nonce instead and
  * MUST NOT appear here — a force-dynamic route listed here silently drops to the
  * weaker unsafe-inline policy (which is what happened when #326 flipped the legal
  * pages to force-dynamic without updating this set). `staticCspPaths.test.ts`
  * enforces the invariant.
  */
 export const STATIC_CSP_PATHS: ReadonlySet<string> = new Set(["/", "/under-construction"]);
+
+// Prerendered slug routes, which an exact-match Set cannot express. `/book/<slug>`
+// HTML is replayed from the R2 cache, so a nonce baked into it never equals the
+// fresh response nonce: a nonce-only policy would block hydration entirely.
+const STATIC_CSP_PATTERNS: readonly RegExp[] = [/^\/book\/[^/]+$/];
+
+export function isStaticCspPath(pathname: string): boolean {
+  return STATIC_CSP_PATHS.has(pathname) || STATIC_CSP_PATTERNS.some((re) => re.test(pathname));
+}

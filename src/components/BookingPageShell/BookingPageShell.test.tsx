@@ -3,10 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import { BookingPageShell } from "./BookingPageShell";
 
+const READING = {
+  readingTag: "Signature",
+  readingName: "Soul Blueprint",
+  readingPrice: "$129",
+};
+
 describe("BookingPageShell", () => {
   it("renders children inside the article content area", () => {
     const { getByText } = render(
-      <BookingPageShell backHref="/back">
+      <BookingPageShell backHref="/back" {...READING}>
         <p>inner content</p>
       </BookingPageShell>,
     );
@@ -15,7 +21,7 @@ describe("BookingPageShell", () => {
 
   it("renders the BookingFlowHeader back link with the supplied href", () => {
     const { container } = render(
-      <BookingPageShell backHref="/specific-back">
+      <BookingPageShell backHref="/specific-back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -23,9 +29,20 @@ describe("BookingPageShell", () => {
     expect(backLink).toBeTruthy();
   });
 
-  it("uses cream outer bg and the standard variant (3xl max-w, card shadow, default padding) by default", () => {
+  it("passes the reading block through to the header", () => {
+    const { getByText } = render(
+      <BookingPageShell backHref="/back" {...READING}>
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(getByText("Signature")).toBeTruthy();
+    expect(getByText("Soul Blueprint")).toBeTruthy();
+    expect(getByText("$129")).toBeTruthy();
+  });
+
+  it("uses cream outer bg, 3xl max-w, card shadow and default padding", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back">
+      <BookingPageShell backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -37,7 +54,7 @@ describe("BookingPageShell", () => {
 
   it("applies ivory outer bg when outerBg='ivory'", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" outerBg="ivory">
+      <BookingPageShell backHref="/back" outerBg="ivory" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -45,23 +62,9 @@ describe("BookingPageShell", () => {
     expect(container.querySelector(".bg-j-cream")).toBeFalsy();
   });
 
-  it("applies the letter variant bundle (2xl max-w + soft shadow + letter padding) when variant='letter'", () => {
-    const { container } = render(
-      <BookingPageShell backHref="/back" variant="letter">
-        <p>x</p>
-      </BookingPageShell>,
-    );
-    expect(container.querySelector(".max-w-2xl")).toBeTruthy();
-    expect(container.querySelector(".max-w-3xl")).toBeFalsy();
-    expect(container.querySelector(".shadow-j-soft")).toBeTruthy();
-    expect(container.querySelector(".shadow-j-card")).toBeFalsy();
-    expect(container.querySelector(".py-12")).toBeTruthy();
-    expect(container.querySelector(".md\\:px-10")).toBeTruthy();
-  });
-
   it("renders an aria-hidden inner gold border guard", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back">
+      <BookingPageShell backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );

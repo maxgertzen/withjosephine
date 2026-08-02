@@ -34,13 +34,8 @@ test.describe("Stripe round-trip — mock mode", () => {
     await seedIntakeDraft(page, READING_SLUG);
 
     await page.goto(`/book/${READING_SLUG}`);
-    await expect(
-      page.getByRole("heading", { level: 1, name: /birth chart/i }),
-    ).toBeVisible();
-    await page.locator(`a[href="/book/${READING_SLUG}/letter"]`).click();
-    await page.waitForURL(/\/letter/);
-    await page.locator(`a[href="/book/${READING_SLUG}/intake"]`).click();
-    await page.waitForURL(/\/intake/);
+    await expect(page.getByRole("heading", { level: 1, name: /before we begin/i })).toBeVisible();
+    await expect(page.getByRole("banner")).toContainText(/birth chart/i);
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);
@@ -95,10 +90,6 @@ test.describe("Stripe round-trip — mock mode", () => {
 
     await seedIntakeDraft(page, READING_SLUG);
     await page.goto(`/book/${READING_SLUG}`);
-    await page.locator(`a[href="/book/${READING_SLUG}/letter"]`).click();
-    await page.waitForURL(/\/letter/);
-    await page.locator(`a[href="/book/${READING_SLUG}/intake"]`).click();
-    await page.waitForURL(/\/intake/);
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);

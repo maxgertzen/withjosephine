@@ -40,18 +40,30 @@ test.describe("Prod read-only public smoke", () => {
   }
 
   for (const { slug, needle } of READINGS) {
-    test(`/book/${slug} renders entry page + letter CTA`, async ({ request }) => {
+    test(`/book/${slug} renders the intake form, not an entry page`, async ({ request }) => {
       const res = await request.get(`/book/${slug}`);
       expect(res.status(), `GET /book/${slug} should return 200`).toBe(200);
       const html = await res.text();
       expect(
         html.toLowerCase(),
-        `entry page should reference the ${slug} reading`,
+        `the form should reference the ${slug} reading`,
       ).toContain(needle);
       expect(
         html,
-        "entry page should carry the /letter CTA href (RSC + Sanity composed)",
-      ).toContain(`/book/${slug}/letter`);
+        "the route IS the form now: no entry page, so no /letter CTA",
+      ).not.toContain(`/book/${slug}/letter`);
+      expect(
+        html,
+        "and no /intake subroute either",
+      ).not.toContain(`/book/${slug}/intake`);
+      expect(
+        html.toLowerCase(),
+        "the form's own heading should be present",
+      ).toContain("before we begin");
+      expect(
+        html,
+        "Back should land on the homepage card the visitor came from",
+      ).toContain(`/#reading-${slug}`);
     });
   }
 

@@ -6,9 +6,7 @@
     "giftToggleAsGiftLabel": null,
     "giftToggleForMeLabel": null,
     "giftToggleHelper": null,
-    "letterBridge": "Take your time with this. There's no wrong answer.",
     "letterClosing": "I can't wait to connect with you through your reading.\nWith love, [E2E-Author] ✦",
-    "letterOpener": "Before I read for you, I want to know a little about you. A few details, a few questions you'd like held.",
     "letterTitle": null
   },
   "loadingStateCopy": "One moment — taking you to checkout.",
@@ -18,12 +16,16 @@
   "pagination": {
     "overrides": [
       {
-        "pageCount": 2,
+        "pageCount": 1,
         "readingSlug": "akashic-record"
       },
       {
         "pageCount": 1,
         "readingSlug": "birth-chart"
+      },
+      {
+        "pageCount": 2,
+        "readingSlug": "soul-blueprint"
       }
     ]
   },

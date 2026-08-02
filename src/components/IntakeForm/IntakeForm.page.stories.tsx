@@ -18,16 +18,14 @@ const meta: Meta<typeof IntakeForm> = {
   parameters: {
     layout: "fullscreen",
     bookingPageShell: {
-      eyebrow: "An invitation",
-      title: "Tell me where to begin",
-      subtitle:
-        "These questions help me hold the energy of your reading. Take your time, no rush.",
-      backHref: "/book/soul-blueprint/letter",
+      title: "A few things, before we begin.",
+      subtitle: "Take your time. The more honestly you write, the more your reading can hold.",
+      backHref: "/#reading-soul-blueprint",
     },
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: "/book/soul-blueprint/intake",
+        pathname: "/book/soul-blueprint",
         segments: [["readingId", "soul-blueprint"]],
         query: {},
       },
@@ -49,7 +47,7 @@ export const AkashicRecord: Story = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: "/book/akashic-record/intake",
+        pathname: "/book/akashic-record",
         segments: [["readingId", "akashic-record"]],
         query: {},
       },
@@ -64,7 +62,7 @@ export const BirthChart: Story = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: "/book/birth-chart/intake",
+        pathname: "/book/birth-chart",
         segments: [["readingId", "birth-chart"]],
         query: {},
       },

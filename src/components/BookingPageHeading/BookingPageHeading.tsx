@@ -12,7 +12,7 @@ export function BookingPageHeading({ eyebrow, title }: BookingPageHeadingProps) 
         </p>
       ) : null}
       {title ? (
-        <h1 className="font-display italic font-medium text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
+        <h1 className="font-display italic font-light text-[clamp(1.85rem,5vw,2.25rem)] leading-tight text-j-text-heading mb-3">
           {title}
         </h1>
       ) : null}

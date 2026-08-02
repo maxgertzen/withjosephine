@@ -4,17 +4,28 @@ import { describe, expect, it, vi } from "vitest";
 import { PageNav } from "./PageNav";
 
 describe("PageNav", () => {
-  it("renders entry-page Back link as anchor on first page", () => {
+  it("renders the first-page Back link as an anchor to the supplied href", () => {
     render(
       <PageNav
         isFirstPage={true}
         isFinalPage={false}
-        backHref="/book/soul-blueprint"
+        backHref="/#reading-soul-blueprint"
       />,
     );
 
-    const backLink = screen.getByRole("link", { name: /Back to reading details/ });
-    expect(backLink).toHaveAttribute("href", "/book/soul-blueprint");
+    const backLink = screen.getByRole("link", { name: /Back to all readings/ });
+    expect(backLink).toHaveAttribute("href", "/#reading-soul-blueprint");
+  });
+
+  it("never points the first-page Back link at the form's own route", () => {
+    render(
+      <PageNav isFirstPage={true} isFinalPage={false} backHref="/#reading-soul-blueprint" />,
+    );
+
+    expect(screen.getByRole("link", { name: /Back to all readings/ })).not.toHaveAttribute(
+      "href",
+      "/book/soul-blueprint",
+    );
   });
 
   it("renders Previous-page button on non-first pages and calls onBack", () => {

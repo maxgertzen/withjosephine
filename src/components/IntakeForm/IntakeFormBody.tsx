@@ -19,6 +19,7 @@ import type { IntakePage } from "@/lib/booking/derivePages";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import type { LegalConsentSnapshot } from "@/lib/compliance/intakeConsent";
 import { errorClasses } from "@/lib/formStyles";
+import { homeReadingAnchor } from "@/lib/http/routes";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
@@ -245,7 +246,7 @@ export function IntakeFormBody({
       <PageNav
         isFirstPage={isFirstPage}
         isFinalPage={isFinalPage}
-        backHref={`/book/${readingId}`}
+        backHref={homeReadingAnchor(readingId)}
         onBack={handleBack}
         onNext={() => {
           onAdvanceAttempt();

@@ -56,11 +56,6 @@ async function createPaidSubmission(page: Page, email: string): Promise<string> 
   await seedIntakeDraft(page, "birth-chart", { values: { email } });
 
   await page.goto("/book/birth-chart");
-  await page.locator('a[href="/book/birth-chart/letter"]').click();
-  await page.waitForURL(/\/book\/birth-chart\/letter/, { timeout: 15_000 });
-
-  await page.locator('a[href="/book/birth-chart/intake"]').click();
-  await page.waitForURL(/\/book\/birth-chart\/intake/, { timeout: 15_000 });
 
   await waitForDraftRestore(page);
   await clickThroughIntakePages(page, 6);

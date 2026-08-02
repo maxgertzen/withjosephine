@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/listenSession", () => ({
   COOKIE_NAME: "__Host-listen_session",
@@ -18,6 +18,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { getActiveSession } from "@/lib/auth/listenSession";
+import { READING_ACCESS_TTL_MS } from "@/lib/booking/readingRetention";
 import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submissions";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 
@@ -43,11 +44,21 @@ const OWNED_DELIVERED: SubmissionRecord = {
   recipientUserId: "user_1",
   };
 
+// Do not remove: a real clock turns every "delivered" case below into "expired"
+// once it drifts past READING_ACCESS_TTL_MS from the fixture's deliveredAt.
+const INSIDE_ACCESS_WINDOW = new Date("2026-05-06T12:00:00Z");
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"], shouldAdvanceTime: true });
+  vi.setSystemTime(INSIDE_ACCESS_WINDOW);
   cookiesGet.mockReset();
   sessionMock.mockReset();
   submissionMock.mockReset();
   fetchCopyMock.mockReset().mockResolvedValue(null);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 async function getPageProps(opts: {
@@ -206,6 +217,32 @@ describe("/listen/[id] page logic", () => {
     if (props.state.kind !== "delivered") throw new Error("type narrowing");
     expect(props.state.voiceNoteAudioPath).toBe("/api/listen/sub_1/audio");
     expect(props.state.pdfDownloadPath).toBeNull();
+  });
+
+  it("renders the expired card once the access window has passed", async () => {
+    vi.setSystemTime(
+      new Date(Date.parse(OWNED_DELIVERED.deliveredAt!) + READING_ACCESS_TTL_MS + 1),
+    );
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    submissionMock.mockResolvedValue(OWNED_DELIVERED);
+
+    const props = await getPageProps();
+
+    expect(props.state.kind).toBe("expired");
+  });
+
+  it("still renders delivered on the last day inside the access window", async () => {
+    vi.setSystemTime(
+      new Date(Date.parse(OWNED_DELIVERED.deliveredAt!) + READING_ACCESS_TTL_MS - 1),
+    );
+    cookiesGet.mockReturnValue({ value: "tok" });
+    sessionMock.mockResolvedValue({ userId: "user_1", sessionId: "sess_1" });
+    submissionMock.mockResolvedValue(OWNED_DELIVERED);
+
+    const props = await getPageProps();
+
+    expect(props.state.kind).toBe("delivered");
   });
 
   it("merges Sanity copy over defaults when present", async () => {
