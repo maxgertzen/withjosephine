@@ -5,9 +5,16 @@ import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackCon
 import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm } from "@/components/IntakeForm";
+import { generateReadingStaticParams } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { BOOKING_PAGE_ROUTES } from "@/lib/http/routes";
-import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import {
+  fetchBookingFormPublished,
+  fetchBookingPagePublished,
+  fetchReadingPublished,
+} from "@/lib/sanity/fetch";
+
+export { generateReadingStaticParams as generateStaticParams };
 
 type IntakePageProps = {
   params: Promise<{ readingId: string }>;
@@ -45,7 +52,7 @@ const FALLBACK_COPY: VariantCopy = {
 
 export async function generateMetadata({ params }: IntakePageProps): Promise<Metadata> {
   const { readingId } = await params;
-  const reading = await fetchReading(readingId);
+  const reading = await fetchReadingPublished(readingId);
   const title = reading ? `Intake — ${reading.name}` : "Intake — Josephine";
   return {
     title,
@@ -58,9 +65,9 @@ export default async function IntakePage({ params }: IntakePageProps) {
   const { readingId } = await params;
 
   const [reading, bookingForm, bookingPage] = await Promise.all([
-    fetchReading(readingId),
-    fetchBookingForm(),
-    fetchBookingPage(),
+    fetchReadingPublished(readingId),
+    fetchBookingFormPublished(),
+    fetchBookingPagePublished(),
   ]);
 
   if (!reading) {
