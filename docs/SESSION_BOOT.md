@@ -1,16 +1,45 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-08-02 handover): Max has a comment on the LOOKS
+## ▶ 👉 START HERE (next session, 2026-09-30 handover): plan search and AI discoverability, starting with `q7swqq89`
 
-**The funnel collapse is built, pushed, and verified on staging. The next thing is Max's styling feedback, which lands in dex `681ra7bq` (the styling pass, still marked AWAITING MAX'S POINTS).**
+**Max's call (2026-09-30): discoverability planning comes before the delivery epic `4s6dkgsf`.** Dex epic `12a4ks3l` holds the evidence and four planning tasks. This is a planning session: present options and a plan, then stop. No code until Max approves.
 
-- **Ask him for his list first. Do NOT invent items.** `681ra7bq` already carries seven candidates, but they are candidates, not his list. Three of them now have hard measurements attached from this arc: the heading inversion (header name 20px vs the `h1` at 29.6px wrapping to two lines), the preamble length (first input sits **566px** down at 375px), and the header's **16.3px** worst-case clearance from Back (`rti3s5bo`).
-- **✅ Max is now signed in to Cloudflare Access**, so `https://staging.withjosephine.com` is reachable in his Chrome and browser verification works without another login. The `.env.local` CF Access service token is still rejected (`service_token_status: false`), so headless and curl still bounce — drive his browser, or use `workflow_dispatch` on `e2e-sandbox`.
-- **The specimen is still the cheapest review surface for styling:** `MEMORY/WORK/20260729-booking-funnel-collapse/header-variations.html`, self-contained, opens directly with no server. But staging is now live too, so real 375px comparisons can be done against the deployed thing.
-- **Scope reminder (Max's words):** the styling pass is *"part of this epic, will be separate release"* — same epic `4bttw1sh`, its own release branch AFTER this one, not bundled into `release/v1.19.5`.
-- **⚠️ One unpushed commit on `release/v1.19.5`:** `e5d5f1d`, docs only (this file). Deliberately not pushed, since a docs-only push would trigger a redundant CI run and staging redeploy. Push it whenever the next real change goes up.
+- **Start with `q7swqq89`: content about each reading on `/book/[slug]`, above the form.** Max said he is not sure we agree on how this works or on best practice, so begin by explaining how search engines treat a page that is mostly a form, then propose the section contents. Evidence: `/book/soul-blueprint` renders 119 words and its H1 is "A few things, before we begin."; practitioners who ranked have one page per service whose URL, title and H1 are the service name. It must keep the locked rule that `/book/[slug]` is the intake form and stays indexable.
+- **`cgnrrz7x` naming is DECIDED (2026-09-30):** public name "Josephine Soul Readings"; "Josephine Rebecca" allowed as the founder name in structured data; her surname appears only on the legal pages. Code for it is committed on **`release/v1.20.0`** (cut off `main` `e2b68b1`, CI-wired in all four `ci.yml` sites, NOT pushed): new Organization/WebSite names + `alternateName` + `founder`, Product brand, `og:site_name`, legal pages `noindex, follow` and out of the sitemap. After deploy, Search Console will list the three legal pages as "Excluded by noindex", which is expected. Still open on the ticket: About copy, training and years, photo, same name on TikTok and listings.
+- **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) and `v7ev58fe` (articles) are planning items after `q7swqq89`.** The site is already linked from the TikTok bio.
+- **Indexing is done, do not redo it.** Google Search Console: all 7 sitemap URLs indexed. Bing Webmaster Tools: set up 2026-09-30, all pages indexed (Max checked). Cloudflare Crawler Hints, AI Crawl Control and Block AI bots: checked by Max, no issues. robots.txt, crawler responses, server HTML, canonicals, sitemap and JSON-LD were verified fine.
+- **Re-run the 10 blind search queries around 2026-10-21** to see whether withjosephine.com starts appearing. The query list is in the investigation of 2026-09-30: online akashic records reading; akashic records and astrology reading online; birth chart and akashic records combined reading; soul blueprint reading astrology akashic records; akashic record reading voice note and PDF; astrology reading delivered as voice note; best online birth chart reading 2026; Josephine akashic records reading; withjosephine; site:withjosephine.com. On 2026-09-30 the site appeared in none of them.
+- **Wrangler is logged in again (2026-09-30)** as maxgertzen@gmail.com; D1, deployments, secrets and R2 all respond. It has `zone:read` only, so it cannot read zone settings such as Crawler Hints.
+- **Interceptor cannot drive a browser on this machine yet:** the preflight exits 8 because `INTERCEPTOR_TEST_CONTEXT_ID` is unset in `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env`.
 
-## ▶ 🚧 IN FLIGHT (2026-08-02) - `release/v1.19.5`: booking funnel collapse SHIPPED TO STAGING
+## ▶ NEXT AFTER DISCOVERABILITY (2026-08-02 handover): v1.19.5 IS LIVE. Then `4s6dkgsf` on a NEW release branch.
+
+**`release/v1.19.5` merged to `main` as squash `e2b68b1` (PR #333) and deployed to production. Browser-verified on `withjosephine.com/book/soul-blueprint`. The Sanity Studio was redeployed post-merge, 2/2 schemas.**
+
+**Max's call for the next session (2026-08-02, verbatim intent): work dex epic `4s6dkgsf` (Delivery observability + failure recovery, 11 subtasks) onto a NEW release branch, and FOLD THE HEADER STYLING INTO THAT SAME RELEASE.** The header styling item is dex `j3a3426u` under `681ra7bq`. So the next release carries the delivery-observability epic plus that one styling ticket, not a styling-only release.
+
+- **`j3a3426u` (mobile intake header too small) is blocked on `rti3s5bo` and must be solved with it.** `BookingFlowHeader.tsx:83` sets the reading name to `text-[1.25rem]` on mobile against `md:text-[2.4rem]`, and the span is `whitespace-nowrap`. `rti3s5bo` measured "Akashic Records Reading" clearing Back by only **16.3px** at 375px. The small mobile size is what keeps the longest name off the Back button, so growing it requires a layout answer: allow two lines, shorten the displayed name, or move Back. Max confirmed he means the tag/name/price strip, NOT the `h1`.
+- **`681ra7bq` is no longer fully unspecified.** It now has one confirmed item from Max (`j3a3426u`). Its other seven entries are still candidates, not his list. Do NOT promote them without asking.
+- **✅ Max is signed in to Cloudflare Access**, so `https://staging.withjosephine.com` is reachable in his Chrome. The `.env.local` CF Access service token is still rejected (`service_token_status: false`), so headless and curl still bounce. Drive his browser, or use `workflow_dispatch` on `e2e-sandbox`.
+- **Mobile screenshots were unreliable this session.** `resize_window` reported success while every capture came back desktop-width. `rti3s5bo` got real numbers via DOM measurement at a true 375px (iframe-framed so media queries saw it); use that technique, not screenshots.
+- **The specimen is still the cheapest styling review surface:** `MEMORY/WORK/20260729-booking-funnel-collapse/header-variations.html`, self-contained, no server needed.
+
+### 🚩 Owed on `main` right now
+
+- **CHANGELOG row for #333.** Repo convention is to add it as a standalone `docs:` commit after the merge, so it is deliberately absent from the release commit.
+- **`smoke-production` on run `30742443695` completed with success** (checked 2026-09-30).
+- **`studio/actions/resendCustomerEmail.tsx` Rules-of-Hooks fix is now committed on `release/v1.20.0`** (2026-09-30). It is already deployed to Studio; it reaches `main` when v1.20.0 merges.
+- **Production Sanity pageCount migration** (`pnpm tsx scripts/migrate-booking-pagecount-2026-08.mts`, idempotent, staging already done).
+
+## ▶ ✅ SHIPPED (2026-08-02) - `release/v1.19.5`: booking funnel collapse + intake intro rework, MERGED TO `main` AND LIVE
+
+**Merged as squash `e2b68b1` via PR #333 and deployed to production. The scope call recorded below ("everything EXCEPT the styling pass") was overridden by Max at merge time: the intake typography and CMS rework (`1dedfd1`) was folded into this same release rather than held for a separate one. `release/v1.20.0` was created for that purpose and then deleted; PR #332 was closed unmerged.**
+
+**What `1dedfd1` added:** the intake intro block now matches the homepage "who i am" typography (cursive Cormorant heading, Inter body), the duplicated "Take your time" closing line is cut, and the two body paragraphs fold into ONE Portable Text field, `reading.intakeIntro`, so Becky edits one box per reading instead of two documents. `letterTitle` now renders (it was a live Studio field bound to nothing). `letterOpener` and `letterBridge` deleted from the schema; Sanity preserves their raw values on existing docs. Both intro paragraphs now share one tone, because emphasis is Becky's call via bold rather than the code muting paragraph two. Fallbacks in `src/data/defaults.ts` carry the absorbed opener, so the page renders the previous exact words until Becky fills the field.
+
+### Historical scope note (superseded)
+
+
 
 **Branch `release/v1.19.5`, cut off `main` (`b2b3579`). Max's scope call: everything in epic `4bttw1sh` EXCEPT the styling pass. Four of six tickets closed; the two Sanity ones are staging-only by design. ONE commit exists (`b18979f`, the static-route win); everything else is still in the working tree awaiting Max's commit authorization.**
 
