@@ -1,10 +1,21 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-09-30 handover): plan search and AI discoverability, starting with `q7swqq89`
+## ▶ 👉 START HERE (next session, 2026-09-30 evening handover): lock the articles page design (`v7ev58fe`), then implement
 
-**Max's call (2026-09-30): discoverability planning comes before the delivery epic `4s6dkgsf`.** Dex epic `12a4ks3l` holds the evidence and four planning tasks. This is a planning session: present options and a plan, then stop. No code until Max approves.
+**Order Max set (2026-09-30):**
 
-- **Start with `q7swqq89`: content about each reading on `/book/[slug]`, above the form.** Max said he is not sure we agree on how this works or on best practice, so begin by explaining how search engines treat a page that is mostly a form, then propose the section contents. Evidence: `/book/soul-blueprint` renders 119 words and its H1 is "A few things, before we begin."; practitioners who ranked have one page per service whose URL, title and H1 are the service name. It must keep the locked rule that `/book/[slug]` is the intake form and stays indexable.
+1. **Lock the design of the new articles page, dex `v7ev58fe`.** Planning only, same method as the reading page: context first, rendered HTML options, Max decides. Its name on the site (blog, journal, notes, or similar) is itself an open question for the session. Evidence on the ticket: for "akashic records and astrology reading online" the results were articles, not practitioners, so the combined topic has no strong owner.
+2. **Then implement on `release/v1.20.0`:** the locked reading-page design plus the SEO work already agreed.
+
+**The reading-page design is LOCKED (2026-09-30).** Full decision list on dex `q7swqq89`. Rendered reference: `www/MEMORY/WORK/20260930-book-service-content/decisions.html` (built by `build-decisions.ts` in the same folder from live HTML/CSS and published Sanity content). Summary: reading block above the form, folded for homepage-card visitors and open for everyone else; header layout A (Back on its own row, name 28px as the H1); accordions styled and animated like the homepage FAQ but with panel text kept in the DOM; per-reading FAQ via a reference array on the reading; portrait from the homepage About image; "Not sure this is the one?" links; testimonial option 2 (labelled line between the answers summary and the consent block); page line "Page N of M · about X minutes"; text gold `#916B2A` (small) and `#B18945` (24px and up). Dropped: reading map, sample PDF, audio clip, real-reading sample, "Leaf" wording.
+
+**Implementation tickets:**
+- `xvcgimrr`: everything on the new block and final page editable from Sanity (field inventory on the ticket, plus the zombie-field cleanup `dk4a06s7`).
+- `3i9lbq9w`: Next/Back scroll to the form, not the page top. Must ship with the block.
+- `9zf0xtcf`: fold-state and referrer on `entry_page_view`, after `5vanz209`. Needs about two weeks of baseline before the block ships, so start it early.
+- `eh6qwjg4` + `k7z0zdcy`: production pageCount (Akashic 1, Soul Blueprint 2), landing with the release.
+- `3gpnqffe`: Akashic testimonial link for Becky, needed because a testimonial ships.
+- The SEO naming change is already committed on this branch (`e225af4`). Still to raise with Becky: the per-reading `seo.metaTitle` values in Sanity say "Josephine —" and should match "Josephine Soul Readings".
 - **`cgnrrz7x` naming is DECIDED (2026-09-30):** public name "Josephine Soul Readings"; "Josephine Rebecca" allowed as the founder name in structured data; her surname appears only on the legal pages. Code for it is committed on **`release/v1.20.0`** (cut off `main` `e2b68b1`, CI-wired in all four `ci.yml` sites, NOT pushed): new Organization/WebSite names + `alternateName` + `founder`, Product brand, `og:site_name`, legal pages `noindex, follow` and out of the sitemap. After deploy, Search Console will list the three legal pages as "Excluded by noindex", which is expected. Still open on the ticket: About copy, training and years, photo, same name on TikTok and listings.
 - **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) and `v7ev58fe` (articles) are planning items after `q7swqq89`.** The site is already linked from the TikTok bio.
 - **Indexing is done, do not redo it.** Google Search Console: all 7 sitemap URLs indexed. Bing Webmaster Tools: set up 2026-09-30, all pages indexed (Max checked). Cloudflare Crawler Hints, AI Crawl Control and Block AI bots: checked by Max, no issues. robots.txt, crawler responses, server HTML, canonicals, sitemap and JSON-LD were verified fine.
