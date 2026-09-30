@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { siteOrigin } from "@/lib/env";
 import type { SanitySeo } from "@/lib/sanity/types";
 
-export const SITE_NAME = "Josephine — Soul Readings";
+export const SITE_NAME = "Josephine Soul Readings";
 export const DEFAULT_OG_IMAGE = "/og-image.png";
 
 export function buildOpenGraph(seo: SanitySeo | undefined): Metadata["openGraph"] {

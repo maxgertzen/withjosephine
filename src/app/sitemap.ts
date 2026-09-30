@@ -4,7 +4,7 @@ import { generateReadingStaticParams } from "@/data/readings";
 import { siteOrigin } from "@/lib/env";
 
 // Public, indexable surfaces only; noindexed and user-scoped routes are excluded.
-const STATIC_PATHS = ["/", "/privacy", "/terms", "/refund-policy"];
+const STATIC_PATHS = ["/"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = siteOrigin();

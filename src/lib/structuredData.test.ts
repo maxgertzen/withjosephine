@@ -3,31 +3,29 @@ import { describe, expect, it } from "vitest";
 import { organizationJsonLd, readingProductJsonLd, websiteJsonLd } from "@/lib/structuredData";
 
 describe("structuredData", () => {
-  it("organizationJsonLd includes name, url, logo, and sameAs", () => {
-    const ld = organizationJsonLd({
-      name: "Josephine",
-      sameAs: ["https://www.tiktok.com/@withjosephine"],
-    });
+  it("organizationJsonLd names the brand, its alternates, the founder, and sameAs", () => {
+    const ld = organizationJsonLd({ sameAs: ["https://www.tiktok.com/@withjosephine"] });
     expect(ld["@type"]).toBe("Organization");
-    expect(ld.name).toBe("Josephine");
+    expect(ld.name).toBe("Josephine Soul Readings");
+    expect(ld.alternateName).toEqual(["Josephine", "withjosephine"]);
+    expect(ld.founder).toEqual({ "@type": "Person", name: "Josephine Rebecca" });
     expect(ld.url).toBe("https://withjosephine.com");
     expect(ld.logo).toBe("https://withjosephine.com/images/logo-horizontal.png");
     expect(ld.sameAs).toEqual(["https://www.tiktok.com/@withjosephine"]);
   });
 
-  it("organizationJsonLd falls back to the site name and omits sameAs when unset", () => {
-    const ld = organizationJsonLd();
-    expect(ld.name).toBe("Josephine — Soul Readings");
-    expect(ld).not.toHaveProperty("sameAs");
+  it("organizationJsonLd omits sameAs when unset", () => {
+    expect(organizationJsonLd()).not.toHaveProperty("sameAs");
   });
 
-  it("websiteJsonLd uses the given name and is anchored to the origin", () => {
-    expect(websiteJsonLd("Josephine")).toMatchObject({
+  it("websiteJsonLd carries the brand name and alternates, anchored to the origin", () => {
+    expect(websiteJsonLd()).toEqual({
+      "@context": "https://schema.org",
       "@type": "WebSite",
-      name: "Josephine",
+      name: "Josephine Soul Readings",
+      alternateName: ["Josephine", "withjosephine"],
       url: "https://withjosephine.com",
     });
-    expect(websiteJsonLd().name).toBe("Josephine — Soul Readings");
   });
 
   it("readingProductJsonLd derives a numeric Offer price from a display string", () => {
@@ -42,6 +40,7 @@ describe("structuredData", () => {
     expect(ld["@type"]).toBe("Product");
     expect(ld.url).toBe("https://withjosephine.com/book/soul-blueprint");
     expect(ld.image).toBe("https://withjosephine.com/og-image.png");
+    expect(ld.brand).toEqual({ "@type": "Brand", name: "Josephine Soul Readings" });
     expect(offers.price).toBe("129");
     expect(offers.priceCurrency).toBe("USD");
     expect(offers.availability).toBe("https://schema.org/InStock");
