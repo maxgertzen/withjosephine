@@ -1,11 +1,29 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-09-30 evening handover): lock the articles page design (`v7ev58fe`), then implement
+## ▶ 👉 START HERE (next session, 2026-09-30 night handover): implement on `release/v1.20.0`. Both designs are LOCKED.
 
-**Order Max set (2026-09-30):**
+**Next, in order:**
 
-1. **Lock the design of the new articles page, dex `v7ev58fe`.** Planning only, same method as the reading page: context first, rendered HTML options, Max decides. Its name on the site (blog, journal, notes, or similar) is itself an open question for the session. Evidence on the ticket: for "akashic records and astrology reading online" the results were articles, not practitioners, so the combined topic has no strong owner.
-2. **Then implement on `release/v1.20.0`:** the locked reading-page design plus the SEO work already agreed.
+1. **Start `9zf0xtcf` first** (fold state and referrer on `entry_page_view`, after `5vanz209`). It needs about two weeks of baseline before the reading block ships.
+2. **Build the reading-page design** (`q7swqq89` decisions, tickets listed below) and **the Notes section** (`v7ev58fe`), both on `release/v1.20.0`. They share one precondition: text-gold tokens `--j-text-gold: #916B2A` and `--j-text-gold-lg: #B18945`, `PortableTextContent` links off `#C4A46B`, body weight 400, and a blockquote restyle (this also closes most of `gk2etjdy`).
+3. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
+4. **Re-run the 10 blind queries around 2026-10-21** (list below).
+5. **Later, own session:** the recording-to-note funnel, dex `yrozce56`.
+
+**Notes design is LOCKED (2026-09-30), dex `v7ev58fe`.** The full decision list is on the ticket. Record: `www/MEMORY/WORK/20260930-articles-page/` (`decisions.html` is the rendered options page from `build-decisions.ts`; `DECISIONS.md` holds every answer; `TRANSCRIPT.md` is the council of 5 over 3 rounds; `CONTEXT.md` is what the council was given). The core:
+- Name "Notes", `/notes/[slug]`, Sanity document `article`.
+- Visible only when a Notes on/off switch in Sanity is on AND at least 1 note is published: index, footer link, FAQ links, sitemap entries.
+- Becky types notes herself. Any topic. The brand word list does not apply to notes.
+- Body blocks: rich text, images (uploaded in Studio, alt text required), and optional Plates (style A "Ledger", layout set per Plate).
+- The first body paragraph doubles as the meta description, with an optional `searchDescription` override.
+- End of each note: an end card with price (card text editable), 2 picked "More notes" plus "See all notes", one inline /book link.
+- Audio field built but empty; it renders on its own row under the author row.
+- FAQ item gets a `relatedArticle` reference. Each note shows its URL with a copy button.
+- Never list: health/medical and pregnancy/fertility only.
+
+**Becky's writing guide:** Claude Doc https://claude.ai/code/artifact/f0967587-5a46-4ff8-b7f0-b2a89c019594 and a Word copy at `www/MEMORY/WORK/20260930-articles-page/Writing-Notes-guide-for-Becky.docx`. Max shares it with her through Google Docs.
+
+**Earlier order (2026-09-30), now done:** step 1 locked the Notes design; step 2 (implement) is the list above.
 
 **The reading-page design is LOCKED (2026-09-30).** Full decision list on dex `q7swqq89`. Rendered reference: `www/MEMORY/WORK/20260930-book-service-content/decisions.html` (built by `build-decisions.ts` in the same folder from live HTML/CSS and published Sanity content). Summary: reading block above the form, folded for homepage-card visitors and open for everyone else; header layout A (Back on its own row, name 28px as the H1); accordions styled and animated like the homepage FAQ but with panel text kept in the DOM; per-reading FAQ via a reference array on the reading; portrait from the homepage About image; "Not sure this is the one?" links; testimonial option 2 (labelled line between the answers summary and the consent block); page line "Page N of M · about X minutes"; text gold `#916B2A` (small) and `#B18945` (24px and up). Dropped: reading map, sample PDF, audio clip, real-reading sample, "Leaf" wording.
 
@@ -17,7 +35,7 @@
 - `3gpnqffe`: Akashic testimonial link for Becky, needed because a testimonial ships.
 - The SEO naming change is already committed on this branch (`e225af4`). `8dlx57qu`: reading page titles are built in code from the reading's subtitle + price + site name, `seo.metaTitle` becomes an optional override, and the stale "Josephine —" values are cleared by script (staging, then production). No Becky action needed.
 - **`cgnrrz7x` naming is DECIDED (2026-09-30):** public name "Josephine Soul Readings"; "Josephine Rebecca" allowed as the founder name in structured data; her surname appears only on the legal pages. Code for it is committed on **`release/v1.20.0`** (cut off `main` `e2b68b1`, CI-wired in all four `ci.yml` sites, NOT pushed): new Organization/WebSite names + `alternateName` + `founder`, Product brand, `og:site_name`, legal pages `noindex, follow` and out of the sitemap. After deploy, Search Console will list the three legal pages as "Excluded by noindex", which is expected. Still open on the ticket: About copy, training and years, photo, same name on TikTok and listings.
-- **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) and `v7ev58fe` (articles) are planning items after `q7swqq89`.** The site is already linked from the TikTok bio.
+- **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) is still a planning item.** `v7ev58fe` (Notes) is designed and locked (see above). The site is already linked from the TikTok bio.
 - **Indexing is done, do not redo it.** Google Search Console: all 7 sitemap URLs indexed. Bing Webmaster Tools: set up 2026-09-30, all pages indexed (Max checked). Cloudflare Crawler Hints, AI Crawl Control and Block AI bots: checked by Max, no issues. robots.txt, crawler responses, server HTML, canonicals, sitemap and JSON-LD were verified fine.
 - **Re-run the 10 blind search queries around 2026-10-21** to see whether withjosephine.com starts appearing. The query list is in the investigation of 2026-09-30: online akashic records reading; akashic records and astrology reading online; birth chart and akashic records combined reading; soul blueprint reading astrology akashic records; akashic record reading voice note and PDF; astrology reading delivered as voice note; best online birth chart reading 2026; Josephine akashic records reading; withjosephine; site:withjosephine.com. On 2026-09-30 the site appeared in none of them.
 - **Wrangler is logged in again (2026-09-30)** as maxgertzen@gmail.com; D1, deployments, secrets and R2 all respond. It has `zone:read` only, so it cannot read zone settings such as Crawler Hints.
