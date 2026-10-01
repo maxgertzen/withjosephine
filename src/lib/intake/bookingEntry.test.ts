@@ -3,18 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blockBrowserStorage } from "@/lib/test-helpers";
 
 import type * as BookingEntryModule from "./bookingEntry";
-import type * as HomepageCardEntryModule from "./homepageCardEntry";
-import { HOMEPAGE_CARD_ENTRY_TTL_MS } from "./homepageCardEntry";
+import type * as EntryMarkerModule from "./entryMarker";
+import { ENTRY_CLICK_TTL_MS } from "./entryMarker";
 import { save as saveDraft } from "./localStorageDraft";
 
 let peekBookingEntry: typeof BookingEntryModule.peekBookingEntry;
 let settleBookingEntry: typeof BookingEntryModule.settleBookingEntry;
-let markHomepageCardEntry: typeof HomepageCardEntryModule.markHomepageCardEntry;
+let markEntryClick: typeof EntryMarkerModule.markEntryClick;
 
 async function loadInNewDocument() {
   vi.resetModules();
   ({ peekBookingEntry, settleBookingEntry } = await import("./bookingEntry"));
-  ({ markHomepageCardEntry } = await import("./homepageCardEntry"));
+  ({ markEntryClick } = await import("./entryMarker"));
 }
 
 const BOOKING_PATH = "/book/soul-blueprint";
@@ -51,7 +51,7 @@ function visitBookingPage(slug: string) {
 
 describe("peekBookingEntry", () => {
   it("reads the card tap without using it up, until the visit settles", () => {
-    markHomepageCardEntry("soul-blueprint");
+    markEntryClick("soul-blueprint", "homepage_card");
     expect(peekBookingEntry("soul-blueprint", BOOKING_PATH)).toBe("homepage_card");
     expect(peekBookingEntry("soul-blueprint", BOOKING_PATH)).toBe("homepage_card");
     settleBookingEntry();
@@ -68,34 +68,34 @@ describe("booking page visit (peek, then settle)", () => {
   });
 
   it("is homepage_card after the card for this reading was tapped", () => {
-    markHomepageCardEntry("soul-blueprint");
+    markEntryClick("soul-blueprint", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");
   });
 
   it("counts the card tap once, so a later visit in the same document is not homepage_card", () => {
-    markHomepageCardEntry("soul-blueprint");
+    markEntryClick("soul-blueprint", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("internal");
   });
 
   it("a reload after the card tap is not homepage_card", async () => {
-    markHomepageCardEntry("soul-blueprint");
+    markEntryClick("soul-blueprint", "homepage_card");
     await loadInNewDocument();
     expect(visitBookingPage("soul-blueprint")).toBe("direct");
   });
 
   it("ignores a card tap older than the TTL, so an abandoned tap cannot label a later visit", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    markHomepageCardEntry("soul-blueprint");
-    vi.setSystemTime(Date.now() + HOMEPAGE_CARD_ENTRY_TTL_MS + 1);
+    markEntryClick("soul-blueprint", "homepage_card");
+    vi.setSystemTime(Date.now() + ENTRY_CLICK_TTL_MS + 1);
     setDocumentLoadPath("/");
     expect(visitBookingPage("soul-blueprint")).toBe("internal");
   });
 
   it("counts a card tap inside the TTL", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    markHomepageCardEntry("soul-blueprint");
-    vi.setSystemTime(Date.now() + HOMEPAGE_CARD_ENTRY_TTL_MS);
+    markEntryClick("soul-blueprint", "homepage_card");
+    vi.setSystemTime(Date.now() + ENTRY_CLICK_TTL_MS);
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");
   });
 
@@ -114,7 +114,7 @@ describe("booking page visit (peek, then settle)", () => {
   });
 
   it("ignores a card tap for a different reading", () => {
-    markHomepageCardEntry("birth-chart");
+    markEntryClick("birth-chart", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("direct");
   });
 
@@ -125,7 +125,7 @@ describe("booking page visit (peek, then settle)", () => {
 
   it("prefers homepage_card over draft", () => {
     saveDraft("soul-blueprint", { currentPage: 1, values: {} });
-    markHomepageCardEntry("soul-blueprint");
+    markEntryClick("soul-blueprint", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");
   });
 

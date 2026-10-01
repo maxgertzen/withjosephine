@@ -171,14 +171,14 @@ describe("deriveBookingFormViewProps reading block", () => {
     ];
 
     expect(derive(sanityReading(), { sanityReadings: readings })?.readingBlock.otherReadings.readings).toEqual([
-      { name: "Birth Chart Reading", price: "$89", line: "Your chart.", href: "/book/birth-chart" },
+      { name: "Birth Chart Reading", price: "$89", line: "Your chart.", slug: "birth-chart" },
     ]);
   });
 
   it("falls back to the built-in readings at the homepage's snapshot prices", () => {
     const others = derive()?.readingBlock.otherReadings.readings;
 
-    expect(others?.map((reading) => reading.href)).toEqual(["/book/birth-chart", "/book/akashic-record"]);
+    expect(others?.map((reading) => reading.slug)).toEqual(["birth-chart", "akashic-record"]);
     expect(others?.[0].price).toBe(SANITY_READING_PRICES["birth-chart"]);
   });
 

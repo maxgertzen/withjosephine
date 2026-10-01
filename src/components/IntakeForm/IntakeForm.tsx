@@ -9,6 +9,7 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { usePickedOnOtherReadingForm } from "@/lib/intake/bookingEntryContext";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
 import { useDraftRestore } from "@/lib/intake/useDraftRestore";
@@ -73,13 +74,12 @@ export function IntakeForm({
     lastSavedAt,
     setLastSavedAt,
     isRestored,
-    swappedFromReadingName,
-    dismissSwapToast,
+    nameOrEmailCarriedOver,
   } = useDraftRestore({
     readingId,
-    readingName,
     defaultValues,
   });
+  const showSwitchNotice = usePickedOnOtherReadingForm() && nameOrEmailCarriedOver;
 
   const [honeypot, setHoneypot] = useState("");
   const {
@@ -246,9 +246,7 @@ export function IntakeForm({
 
   return (
     <>
-      {swappedFromReadingName ? (
-        <SwapToast readingName={swappedFromReadingName} onDismiss={dismissSwapToast} />
-      ) : null}
+      {showSwitchNotice ? <SwapToast readingName={readingName} /> : null}
       <IntakeFormBody
         formRef={formRef}
         submitIntentRef={submitIntentRef}

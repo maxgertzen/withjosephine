@@ -1,7 +1,7 @@
 import type { BookingEntry } from "@/lib/analytics";
 import { isSameOrigin } from "@/lib/utils";
 
-import { clearHomepageCardEntry, peekHomepageCardEntry } from "./homepageCardEntry";
+import { clearEntryClick, peekEntryClick } from "./entryMarker";
 import { restore as restoreDraft } from "./localStorageDraft";
 
 function landedOnAnotherPath(currentPath: string): boolean {
@@ -22,7 +22,7 @@ function entryFromReferrer(referrer: string): BookingEntry {
 }
 
 export function peekBookingEntry(slug: string, currentPath: string): BookingEntry {
-  if (peekHomepageCardEntry(slug)) return "homepage_card";
+  if (peekEntryClick(slug, "homepage_card")) return "homepage_card";
   if (restoreDraft(slug) !== null) return "draft";
   if (classifiedInThisDocument || landedOnAnotherPath(currentPath)) return "internal";
   return entryFromReferrer(document.referrer);
@@ -30,7 +30,7 @@ export function peekBookingEntry(slug: string, currentPath: string): BookingEntr
 
 export function settleBookingEntry(): void {
   classifiedInThisDocument = true;
-  clearHomepageCardEntry();
+  clearEntryClick();
 }
 
 export function isFoldedEntry(entry: BookingEntry | null): boolean {

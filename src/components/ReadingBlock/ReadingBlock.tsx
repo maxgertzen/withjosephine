@@ -1,15 +1,15 @@
 import { Check } from "lucide-react";
 import Image from "next/image";
 
-import { NavigationButton } from "@/components/NavigationButton";
 import type { ReadingFact } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 import { eyebrowClasses, smallCapsClasses } from "@/lib/textStyles";
 
+import { OtherReadingLink } from "./OtherReadingLink";
 import { ReadingAccordion } from "./ReadingAccordion";
 import { ReadingFold } from "./ReadingFold";
 
-export type OtherReading = { name: string; price: string; line: string; href: string };
+export type OtherReading = { name: string; price: string; line: string; slug: string };
 
 export type ReadingBlockProps = {
   slug: string;
@@ -117,18 +117,14 @@ function ReadingContent(props: ReadingBlockProps) {
         >
           <p className={`${smallCapsClasses} text-j-text-muted-warm m-0 mb-1`}>{otherReadings.title}</p>
           {otherReadings.readings.map((reading) => (
-            <NavigationButton
-              key={reading.href}
-              href={reading.href}
-              className="flex flex-col gap-0.5 border-t border-j-border-subtle py-3 first-of-type:border-t-0 no-underline"
-            >
+            <OtherReadingLink key={reading.slug} slug={reading.slug}>
               <span className="font-display italic text-[1.2rem] text-j-text-heading">
                 {reading.name} <em className="text-j-text">{reading.price}</em>
               </span>
               <span className="font-body text-[0.9rem] leading-normal text-j-text-muted-warm">
                 {reading.line}
               </span>
-            </NavigationButton>
+            </OtherReadingLink>
           ))}
         </nav>
       ) : null}

@@ -30,7 +30,7 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
-import { clearHomepageCardEntry, peekHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
+import { clearEntryClick, peekEntryClick } from "@/lib/intake/entryMarker";
 
 import { ReadingCard } from "./ReadingCard";
 
@@ -47,7 +47,7 @@ const defaultProps = {
 
 
 describe("ReadingCard", () => {
-  beforeEach(clearHomepageCardEntry);
+  beforeEach(clearEntryClick);
 
   it("renders card content", () => {
     render(<ReadingCard {...defaultProps} />);
@@ -100,7 +100,7 @@ describe("ReadingCard", () => {
 
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
-    expect(peekHomepageCardEntry("soul-blueprint")).toBe(true);
+    expect(peekEntryClick("soul-blueprint", "homepage_card")).toBe(true);
   });
 
   it("does not mark the entry on a Cmd-click that opens a new tab", async () => {
@@ -110,6 +110,6 @@ describe("ReadingCard", () => {
     await user.keyboard("{Meta>}");
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
-    expect(peekHomepageCardEntry("soul-blueprint")).toBe(false);
+    expect(peekEntryClick("soul-blueprint", "homepage_card")).toBe(false);
   });
 });

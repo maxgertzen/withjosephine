@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { FieldValues } from "@/components/IntakeForm/types";
@@ -8,12 +8,9 @@ import {
   DRAFT_VERSION,
   LAST_READING_ID_KEY,
   save as saveDraft,
+  setLastReadingId,
 } from "./localStorageDraft";
-import {
-  __resetSwapNameCacheForTest,
-  pickPreservedFields,
-  useDraftRestore,
-} from "./useDraftRestore";
+import { pickCarriedOverFields, useDraftRestore } from "./useDraftRestore";
 
 const DEFAULT_VALUES: FieldValues = {
   email: "",
@@ -24,17 +21,15 @@ const DEFAULT_VALUES: FieldValues = {
 
 beforeEach(() => {
   window.localStorage.clear();
-  __resetSwapNameCacheForTest();
 });
 
 afterEach(() => {
   window.localStorage.clear();
-  __resetSwapNameCacheForTest();
 });
 
-describe("pickPreservedFields", () => {
-  it("keeps only SWAP_PRESERVED_KEYS when present", () => {
-    const out = pickPreservedFields({
+describe("pickCarriedOverFields", () => {
+  it("keeps only the carried-over keys when present", () => {
+    const out = pickCarriedOverFields({
       email: "ada@example.com",
       first_name: "Ada",
       middle_name: "Augusta",
@@ -56,8 +51,14 @@ describe("pickPreservedFields", () => {
     expect("signs" in out).toBe(false);
   });
 
+  it("skips blank values so they never overwrite a filled field", () => {
+    expect(pickCarriedOverFields({ email: "", first_name: "  ", last_name: "Lovelace" })).toEqual({
+      last_name: "Lovelace",
+    });
+  });
+
   it("returns an empty object when nothing matches", () => {
-    expect(pickPreservedFields({ birth_chart_focus: "x" })).toEqual({});
+    expect(pickCarriedOverFields({ birth_chart_focus: "x" })).toEqual({});
   });
 });
 
@@ -66,7 +67,6 @@ describe("useDraftRestore — fresh mount, no saved draft", () => {
     const { result } = renderHook(() =>
       useDraftRestore({
         readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
         defaultValues: DEFAULT_VALUES,
       }),
     );
@@ -74,7 +74,7 @@ describe("useDraftRestore — fresh mount, no saved draft", () => {
     expect(result.current.values).toEqual(DEFAULT_VALUES);
     expect(result.current.currentPage).toBe(0);
     expect(result.current.lastSavedAt).toBeNull();
-    expect(result.current.swappedFromReadingName).toBeNull();
+    expect(result.current.nameOrEmailCarriedOver).toBe(false);
   });
 });
 
@@ -87,7 +87,6 @@ describe("useDraftRestore — restore existing draft", () => {
     const { result } = renderHook(() =>
       useDraftRestore({
         readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
         defaultValues: DEFAULT_VALUES,
       }),
     );
@@ -106,7 +105,6 @@ describe("useDraftRestore — restore existing draft", () => {
     const { result } = renderHook(() =>
       useDraftRestore({
         readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
         defaultValues: DEFAULT_VALUES,
       }),
     );
@@ -116,54 +114,58 @@ describe("useDraftRestore — restore existing draft", () => {
   });
 });
 
-describe("useDraftRestore — swap detection (P2.4e)", () => {
-  it("emits previous readingName when lastReadingId differs and a draft exists", async () => {
+describe("useDraftRestore — carry-over from the last reading (P2.4e)", () => {
+  it("carries name and email over from the last reading's draft and reports it", async () => {
     saveDraft("akashic-record", {
       currentPage: 0,
       values: { email: "ada@example.com", first_name: "Ada" },
     });
-    window.localStorage.setItem(LAST_READING_ID_KEY, "akashic-record");
+    setLastReadingId("akashic-record");
 
     const { result } = renderHook(() =>
-      useDraftRestore({
-        readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
-        defaultValues: DEFAULT_VALUES,
-      }),
+      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
     );
-    expect(result.current.swappedFromReadingName).toBe("Soul Blueprint");
-    await waitFor(() => expect(result.current.values.email).toBe("ada@example.com"));
+
+    await waitFor(() => expect(result.current.nameOrEmailCarriedOver).toBe(true));
+    expect(result.current.values.email).toBe("ada@example.com");
     expect(result.current.values.first_name).toBe("Ada");
   });
 
-  it("dismissSwapToast clears swappedFromReadingName", () => {
+  it("reports no name or email carry-over when the last reading's draft has neither filled in", async () => {
     saveDraft("akashic-record", {
       currentPage: 0,
-      values: { email: "ada@example.com" },
+      values: { email: "", first_name: "  ", anything_else: "a note", birth_chart_focus: "career" },
     });
-    window.localStorage.setItem(LAST_READING_ID_KEY, "akashic-record");
+    setLastReadingId("akashic-record");
 
     const { result } = renderHook(() =>
-      useDraftRestore({
-        readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
-        defaultValues: DEFAULT_VALUES,
-      }),
+      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
     );
-    expect(result.current.swappedFromReadingName).toBe("Soul Blueprint");
-    act(() => result.current.dismissSwapToast());
-    expect(result.current.swappedFromReadingName).toBeNull();
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.nameOrEmailCarriedOver).toBe(false);
   });
 
-  it("does not detect swap when no previous reading was tracked", () => {
+  it("keeps this reading's own filled email when the last reading's draft has it blank", async () => {
+    saveDraft("soul-blueprint", { currentPage: 0, values: { email: "ada@example.com" } });
+    saveDraft("akashic-record", { currentPage: 0, values: { email: "", anything_else: "a note" } });
+    setLastReadingId("akashic-record");
+
     const { result } = renderHook(() =>
-      useDraftRestore({
-        readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
-        defaultValues: DEFAULT_VALUES,
-      }),
+      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
     );
-    expect(result.current.swappedFromReadingName).toBeNull();
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.values.email).toBe("ada@example.com");
+  });
+
+  it("reports no carry-over when no previous reading was tracked", async () => {
+    const { result } = renderHook(() =>
+      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
+    );
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.nameOrEmailCarriedOver).toBe(false);
   });
 });
 
@@ -172,7 +174,6 @@ describe("useDraftRestore — writes lastReadingId on mount", () => {
     renderHook(() =>
       useDraftRestore({
         readingId: "birth-chart",
-        readingName: "Birth Chart",
         defaultValues: DEFAULT_VALUES,
       }),
     );
@@ -194,7 +195,6 @@ describe("useDraftRestore — corrupted draft is ignored", () => {
     const { result } = renderHook(() =>
       useDraftRestore({
         readingId: "soul-blueprint",
-        readingName: "Soul Blueprint",
         defaultValues: DEFAULT_VALUES,
       }),
     );

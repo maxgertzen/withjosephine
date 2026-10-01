@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { __resetSwapNameCacheForTest } from "@/lib/intake/useDraftRestore";
+import { PickedOnOtherReadingFormContext } from "@/lib/intake/bookingEntryContext";
+import { save as saveDraft, setLastReadingId } from "@/lib/intake/localStorageDraft";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm } from "./IntakeForm";
@@ -111,7 +112,6 @@ beforeEach(() => {
   // submit assertion below.
   vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
-  __resetSwapNameCacheForTest();
 });
 
 afterEach(() => {
@@ -122,15 +122,18 @@ afterEach(() => {
 function renderForm(
   sections = SINGLE_PAGE_SECTIONS,
   extra: Partial<ComponentProps<typeof IntakeForm>> = {},
+  pickedOnOtherReadingForm = false,
 ) {
   render(
-    <IntakeForm
-      readingId="soul-blueprint"
-      readingName="Soul Blueprint"
-      sections={sections}
-      nonRefundableNotice="Once Josephine begins, no refunds."
-      {...extra}
-    />,
+    <PickedOnOtherReadingFormContext.Provider value={pickedOnOtherReadingForm}>
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="Soul Blueprint"
+        sections={sections}
+        nonRefundableNotice="Once Josephine begins, no refunds."
+        {...extra}
+      />
+    </PickedOnOtherReadingFormContext.Provider>,
   );
 }
 
@@ -486,29 +489,21 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
   });
 
-  it("preserves email and name when reading slug differs from lastReadingId", async () => {
-    window.localStorage.setItem(
-      "josephine.intake.draft.akashic-record",
-      JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        currentPage: 1,
-        values: {
-          email: "ada@example.com",
-          fullName: "Ada Lovelace",
-        },
-      }),
-    );
-    window.localStorage.setItem("josephine.intake.lastReadingId", "akashic-record");
+  it.each([
+    { arrival: "picked on another reading's form", pickedOnForm: true, noticeShown: true },
+    { arrival: "opened any other way", pickedOnForm: false, noticeShown: false },
+  ])("carries email over and shows the switch notice only when $arrival", async ({ pickedOnForm, noticeShown }) => {
+    saveDraft("akashic-record", { currentPage: 1, values: { email: "ada@example.com" } });
+    setLastReadingId("akashic-record");
 
-    renderForm(SINGLE_PAGE_SECTIONS);
+    renderForm(SINGLE_PAGE_SECTIONS, {}, pickedOnForm);
 
     await waitFor(() => {
       expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe(
         "ada@example.com",
       );
     });
-    expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
+    expect(screen.queryByText(/Switched to Soul Blueprint/) !== null).toBe(noticeShown);
   });
 
   it("does not show the Clear form button on first render with no saved draft", () => {

@@ -112,7 +112,7 @@ export function deriveBookingFormViewProps(
           name: other.name,
           price: other.price,
           line: other.valueProposition,
-          href: `/book/${other.id}`,
+          slug: other.id,
         })),
     },
   };
