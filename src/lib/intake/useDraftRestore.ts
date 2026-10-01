@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  type Dispatch,
-  type SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 
 import type { FieldValues } from "@/components/IntakeForm/types";
 
@@ -17,16 +11,15 @@ import {
   setLastReadingId,
 } from "./localStorageDraft";
 
-const CARRIED_OVER_KEYS = [
+const NAME_AND_EMAIL_KEYS = [
   "email",
   "first_name",
   "middle_name",
   "last_name",
   "legal_full_name",
-  "anything_else",
 ] as const;
 
-const NOTICE_NAMED_KEYS = CARRIED_OVER_KEYS.filter((key) => key !== "anything_else");
+const CARRIED_OVER_KEYS = [...NAME_AND_EMAIL_KEYS, "anything_else"] as const;
 
 function isFilled(value: unknown): boolean {
   return typeof value === "string" && value.trim() !== "";
@@ -41,7 +34,7 @@ export function pickCarriedOverFields(values: DraftValues): Partial<FieldValues>
 }
 
 function hasNameOrEmail(fields: Partial<FieldValues>): boolean {
-  return NOTICE_NAMED_KEYS.some((key) => key in fields);
+  return NAME_AND_EMAIL_KEYS.some((key) => key in fields);
 }
 
 function fieldsCarriedOverFrom(readingId: string): Partial<FieldValues> {
