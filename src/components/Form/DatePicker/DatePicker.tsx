@@ -168,7 +168,7 @@ export function DatePicker({
               role="note"
               className="mt-2 font-display italic text-sm text-j-text-muted"
             >
-              <span aria-hidden="true" className="text-j-accent mr-2">
+              <span aria-hidden="true" className="text-j-ornament mr-2">
                 ✦
               </span>
               That puts you under {minAge}. Please double-check the date — if it&rsquo;s

@@ -48,7 +48,7 @@ export function PdfThumbnail({
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center px-6 pt-8 pb-6 text-center">
-          <span aria-hidden className="font-display text-lg text-j-accent">
+          <span aria-hidden className="font-display text-lg text-j-ornament">
             ✦
           </span>
           <p className="mt-3 font-display italic text-base leading-snug text-j-text-heading">

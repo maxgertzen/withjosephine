@@ -80,7 +80,7 @@ export function ReadingCard({
               {expandedDetails.map((detail, index) => (
                 <li key={index} className="flex gap-3">
                   <span className="mt-0.5 flex-shrink-0">
-                    <Check className="w-4 h-4 text-j-accent" strokeWidth={2} />
+                    <Check className="w-4 h-4 text-j-ornament" strokeWidth={2} />
                   </span>
                   <span className="font-body text-sm text-j-text-muted leading-relaxed">
                     {detail}

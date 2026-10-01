@@ -71,7 +71,7 @@ export function FaqSection({
                   {item.question}
                 </span>
                 <span
-                  className="text-j-accent text-xl transition-transform duration-200"
+                  className="text-j-ornament text-xl transition-transform duration-200"
                   style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
                   aria-hidden="true"
                 >

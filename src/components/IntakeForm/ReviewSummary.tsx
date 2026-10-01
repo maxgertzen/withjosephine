@@ -50,7 +50,7 @@ function renderFieldValue(field: SanityFormField, values: FieldValues): ReactNod
     case "multiSelectExact": {
       if (!Array.isArray(raw) || raw.length === 0) return EMPTY_VALUE;
       return (
-        <ul className="list-disc list-inside flex flex-col gap-1 marker:text-j-accent">
+        <ul className="list-disc list-inside flex flex-col gap-1 marker:text-j-ornament">
           {raw.map((v) => (
             <li key={v}>{field.options?.find((o) => o.value === v)?.label ?? v}</li>
           ))}
@@ -173,7 +173,7 @@ export function ReviewSummary({
           <header className="flex items-start justify-between gap-4">
             <div>
               {card.marginaliaLabel ? (
-                <p className="font-display italic text-xs text-j-text-muted mb-1">
+                <p className="font-display italic text-xs text-j-text-muted-warm mb-1">
                   {card.marginaliaLabel}
                 </p>
               ) : null}
@@ -184,7 +184,7 @@ export function ReviewSummary({
             <button
               type="button"
               onClick={() => onEdit(card.pageIndex)}
-              className="font-body text-sm text-j-accent underline-offset-4 hover:underline focus-visible:underline shrink-0"
+              className="font-body text-sm text-j-text-muted-warm underline-offset-4 hover:underline focus-visible:underline shrink-0"
               aria-label={`Edit ${card.sectionTitle}`}
             >
               Edit
@@ -194,10 +194,10 @@ export function ReviewSummary({
           <dl className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-x-5 gap-y-3">
             {card.fields.map((field) => (
               <div key={field._id} className="contents">
-                <dt className="font-body text-xs uppercase tracking-wide text-j-text-muted">
+                <dt className="font-body text-xs uppercase tracking-wide text-j-text-muted-warm">
                   {field.label}
                 </dt>
-                <dd className="font-body text-sm text-j-text-body whitespace-pre-line break-words">
+                <dd className="font-body text-sm text-j-text whitespace-pre-line break-words">
                   {renderFieldValue(field, values)}
                 </dd>
               </div>

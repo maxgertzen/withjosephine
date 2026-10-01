@@ -17,7 +17,7 @@ export function TestimonialCard({ quote, name, detail, className }: TestimonialC
     >
       <span
         aria-hidden="true"
-        className="block font-display text-[5rem] leading-none text-j-gold/20 select-none -mb-6"
+        className="block font-display text-[5rem] leading-none text-j-ornament/20 select-none -mb-6"
       >
         &ldquo;
       </span>
@@ -28,7 +28,7 @@ export function TestimonialCard({ quote, name, detail, className }: TestimonialC
 
       <figcaption className="mt-5">
         <span className="block font-body text-sm text-j-text">{name}</span>
-        <span className="block font-body text-xs text-j-muted mt-0.5">{detail}</span>
+        <span className="block font-body text-xs text-j-text-muted-warm mt-0.5">{detail}</span>
       </figcaption>
     </figure>
   );

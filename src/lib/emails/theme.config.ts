@@ -16,6 +16,7 @@ export const emailTailwindConfig: TailwindConfig = {
         cream: t.cream,
         warm: t.warm,
         gold: t.gold,
+        "muted-warm": t.mutedOnWarm,
       },
       fontFamily: {
         serif: ["'Cormorant Garamond'", "Georgia", "serif"],

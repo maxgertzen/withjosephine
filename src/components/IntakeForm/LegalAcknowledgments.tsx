@@ -35,10 +35,10 @@ export function LegalAcknowledgments({
   return (
     <section className="flex flex-col gap-4 bg-j-warm/40 border border-j-border-subtle rounded-2xl p-6">
       {consentIntro ? (
-        <p className="font-display italic text-base text-j-text-muted">{consentIntro}</p>
+        <p className="font-display italic text-base text-j-text-muted-warm">{consentIntro}</p>
       ) : null}
       {nonRefundableNotice ? (
-        <p className="font-body text-sm text-j-text-muted leading-relaxed whitespace-pre-line">
+        <p className="font-body text-sm text-j-text-muted-warm leading-relaxed whitespace-pre-line">
           {nonRefundableNotice}
         </p>
       ) : null}

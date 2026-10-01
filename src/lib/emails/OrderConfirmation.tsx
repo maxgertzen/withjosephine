@@ -48,7 +48,7 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
         <div style={{ padding: "0 48px" }}>
           <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
             <p
-              className="font-sans text-muted uppercase"
+              className="font-sans text-muted-warm uppercase"
               style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
             >
               {copy.cardLabel}
@@ -63,7 +63,7 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
               className="font-sans text-body"
               style={{ margin: 0, fontSize: 14 }}
             >
-              <span className="text-muted">{copy.cardDeliveryLine}</span>
+              <span className="text-muted-warm">{copy.cardDeliveryLine}</span>
               &nbsp;&middot;&nbsp;
               <span>{price}</span>
             </p>

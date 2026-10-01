@@ -9,7 +9,7 @@ export const DAY_PICKER_LABELS = {
 };
 
 export const DAY_PICKER_BASE_CLASSES = {
-  root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
+  root: "font-body text-sm text-j-text",
   months: "flex flex-col gap-3",
   month: "flex flex-col gap-3",
   month_caption:
@@ -35,7 +35,7 @@ export const DAY_PICKER_BASE_CLASSES = {
   selected:
     "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
   today:
-    "[&>button]:font-semibold [&>button]:text-j-text-heading [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-j-accent",
+    "[&>button]:font-semibold [&>button]:text-j-text-heading [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-j-text-gold",
   disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
   chevron: "fill-j-text-heading w-4 h-4",
 };

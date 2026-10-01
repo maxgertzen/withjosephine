@@ -13,7 +13,7 @@ export function SavedIndicator({ lastSavedAt, chipTick }: SavedIndicatorProps) {
   if (!lastSavedAt) return null;
   return (
     <span className="font-display italic text-xs text-j-text-muted inline-flex items-center gap-1">
-      <span aria-hidden="true" className="text-j-accent">
+      <span aria-hidden="true" className="text-j-ornament">
         ✦
       </span>
       {timeChip(lastSavedAt)}

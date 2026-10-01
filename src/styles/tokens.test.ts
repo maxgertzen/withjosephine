@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { emailTokens } from "@/lib/theme/email-tokens.generated";
+
 const tokensCss = readFileSync(join(__dirname, "tokens.css"), "utf8");
 
 function tokenHex(name: string): string {
@@ -28,13 +30,37 @@ function contrastRatio(foreground: string, background: string): number {
 
 const LIGHT_SURFACES = ["j-bg-primary", "j-ivory"];
 
-describe("text-gold tokens meet WCAG AA on cream and ivory", () => {
+describe("j-text-gold tokens meet WCAG AA on cream and ivory", () => {
   it.each(LIGHT_SURFACES)("j-text-gold reaches 4.5:1 on %s", (surface) => {
     expect(contrastRatio(tokenHex("j-text-gold"), tokenHex(surface))).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(LIGHT_SURFACES)("j-text-gold-lg reaches 3:1 on %s", (surface) => {
     expect(contrastRatio(tokenHex("j-text-gold-lg"), tokenHex(surface))).toBeGreaterThanOrEqual(3);
+  });
+});
+
+const heroSource = readFileSync(join(__dirname, "../components/Hero/Hero.tsx"), "utf8");
+const heroGradientEndStop = heroSource.match(/(#[0-9a-fA-F]{6}) 100%\)/)?.[1] ?? "";
+
+describe("muted-on-warm tokens meet WCAG AA on warm surfaces", () => {
+  it("finds the hero gradient end stop", () => {
+    expect(heroGradientEndStop).toMatch(/^#[0-9a-fA-F]{6}$/);
+  });
+
+  it.each([tokenHex("j-bg-section"), heroGradientEndStop])(
+    "j-text-muted-warm reaches 4.5:1 on %s",
+    (surface) => {
+      expect(contrastRatio(tokenHex("j-text-muted-warm"), surface)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it("email mutedOnWarm reaches 4.5:1 on the email warm background", () => {
+    expect(contrastRatio(emailTokens.mutedOnWarm, emailTokens.warm)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("email mutedOnWarm matches the web j-text-muted-warm token", () => {
+    expect(emailTokens.mutedOnWarm.toLowerCase()).toBe(tokenHex("j-text-muted-warm").toLowerCase());
   });
 });
 

@@ -30,7 +30,7 @@ export function VellumShell({ heading, body, ctaHref, ctaLabel }: VellumShellPro
             className="pointer-events-none absolute inset-2 md:inset-3 border border-j-border-gold rounded-[1px]"
           />
           <div className="relative px-6 py-10 md:px-12 md:py-14 text-center">
-            <span aria-hidden="true" className="block text-j-accent text-xl mb-3">
+            <span aria-hidden="true" className="block text-j-ornament text-xl mb-3">
               ✦
             </span>
             <h1 className="font-display italic font-medium text-[clamp(1.75rem,5vw,2.25rem)] leading-tight text-j-text-heading">

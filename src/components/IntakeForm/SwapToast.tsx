@@ -38,7 +38,7 @@ export function SwapToast({
       aria-live="polite"
       className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md mx-auto px-6 py-3 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card flex items-center gap-3 motion-safe:j-fade-in motion-reduce:animate-none"
     >
-      <span aria-hidden="true" className="text-j-accent shrink-0">
+      <span aria-hidden="true" className="text-j-ornament shrink-0">
         ✦
       </span>
       <p className="font-display italic text-sm text-j-text-heading flex-1">
