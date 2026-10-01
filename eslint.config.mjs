@@ -13,6 +13,7 @@ const OLD_GOLD_TEXT_MESSAGE =
 const OLD_GOLD_TEXT_PATTERNS = [
   "/(?:text|outline|ring|decoration)-j-(?:accent|gold)(?:-light)?(?![\\w-])/",
   "/(?:text|outline|ring|decoration)-\\[[^\\]]*(?:c4a46b|j-accent|j-gold)/i",
+  "/focus(?:-visible|-within)?:border-j-(?:accent|gold)(?![\\w-])/",
   "/(?<![\\w-])text-gold(?![\\w-])/",
   "/color:\\s*['\"]?(?:#c4a46b|var\\(--(?:color-)?j-(?:accent|gold)\\b)/i",
 ];
