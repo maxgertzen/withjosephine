@@ -4,17 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ track }));
 
-import { markHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
+import type * as HomepageCardEntryModule from "@/lib/intake/homepageCardEntry";
 
 import type * as BookingAnalyticsModule from "./BookingAnalytics";
 
 let EntryPageView: typeof BookingAnalyticsModule.EntryPageView;
+let markHomepageCardEntry: typeof HomepageCardEntryModule.markHomepageCardEntry;
 
 beforeEach(async () => {
   vi.resetModules();
   ({ EntryPageView } = await import("./BookingAnalytics"));
+  ({ markHomepageCardEntry } = await import("@/lib/intake/homepageCardEntry"));
   vi.clearAllMocks();
-  window.sessionStorage.clear();
   window.localStorage.clear();
   Object.defineProperty(document, "referrer", {
     value: "https://example.com/source",

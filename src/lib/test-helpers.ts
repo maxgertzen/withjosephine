@@ -14,10 +14,8 @@ const BLOCKED_STORAGE = {
 
 export function blockBrowserStorage() {
   vi.spyOn(window, "localStorage", "get").mockReturnValue(BLOCKED_STORAGE);
-  vi.spyOn(window, "sessionStorage", "get").mockReturnValue(BLOCKED_STORAGE);
 }
 
 export function blockBrowserStorageProperty() {
   vi.spyOn(window, "localStorage", "get").mockImplementation(refuse);
-  vi.spyOn(window, "sessionStorage", "get").mockImplementation(refuse);
 }

@@ -260,7 +260,7 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
 
   | Value | Meaning |
   |---|---|
-  | `homepage_card` | The page load right after a tap on "Book This Reading" on this reading's homepage card, within 60 seconds of the tap. A reload after that is not `homepage_card`. A tap that opens a new tab is not counted. |
+  | `homepage_card` | The page load right after a tap on "Book This Reading" on this reading's homepage card, within 60 seconds of the tap. A reload after that is not `homepage_card`. A tap that opens a new tab is not counted. The tap is held in page memory only; nothing is written to the device. |
   | `draft` | Has a saved draft for this reading, no card tap. |
   | `internal` | Came from another page on the site, including coming back to this page without a reload. |
   | `external` | Referred by another site (search, TikTok, a shared link opened from an app). |

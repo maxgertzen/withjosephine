@@ -3,18 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blockBrowserStorage } from "@/lib/test-helpers";
 
 import type * as BookingEntryModule from "./bookingEntry";
-import {
-  HOMEPAGE_CARD_ENTRY_KEY,
-  HOMEPAGE_CARD_ENTRY_TTL_MS,
-  markHomepageCardEntry,
-} from "./homepageCardEntry";
+import type * as HomepageCardEntryModule from "./homepageCardEntry";
+import { HOMEPAGE_CARD_ENTRY_TTL_MS } from "./homepageCardEntry";
 import { save as saveDraft } from "./localStorageDraft";
 
 let classifyBookingEntry: typeof BookingEntryModule.classifyBookingEntry;
+let markHomepageCardEntry: typeof HomepageCardEntryModule.markHomepageCardEntry;
 
 async function loadInNewDocument() {
   vi.resetModules();
   ({ classifyBookingEntry } = await import("./bookingEntry"));
+  ({ markHomepageCardEntry } = await import("./homepageCardEntry"));
 }
 
 const BOOKING_PATH = "/book/soul-blueprint";
@@ -31,7 +30,6 @@ function setDocumentLoadPath(path: string | null) {
 }
 
 beforeEach(async () => {
-  window.sessionStorage.clear();
   window.localStorage.clear();
   window.history.replaceState(null, "", BOOKING_PATH);
   setReferrer("");
@@ -50,9 +48,14 @@ describe("classifyBookingEntry", () => {
     expect(classifyBookingEntry("soul-blueprint")).toBe("homepage_card");
   });
 
-  it("a reload after the card tap is not homepage_card", async () => {
+  it("counts the card tap once, so a later visit in the same document is not homepage_card", () => {
     markHomepageCardEntry("soul-blueprint");
     expect(classifyBookingEntry("soul-blueprint")).toBe("homepage_card");
+    expect(classifyBookingEntry("soul-blueprint")).toBe("internal");
+  });
+
+  it("a reload after the card tap is not homepage_card", async () => {
+    markHomepageCardEntry("soul-blueprint");
     await loadInNewDocument();
     expect(classifyBookingEntry("soul-blueprint")).toBe("direct");
   });
@@ -61,8 +64,8 @@ describe("classifyBookingEntry", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     markHomepageCardEntry("soul-blueprint");
     vi.setSystemTime(Date.now() + HOMEPAGE_CARD_ENTRY_TTL_MS + 1);
-    setReferrer("https://www.tiktok.com/");
-    expect(classifyBookingEntry("soul-blueprint")).toBe("external");
+    setDocumentLoadPath("/");
+    expect(classifyBookingEntry("soul-blueprint")).toBe("internal");
   });
 
   it("counts a card tap inside the TTL", () => {
@@ -70,11 +73,6 @@ describe("classifyBookingEntry", () => {
     markHomepageCardEntry("soul-blueprint");
     vi.setSystemTime(Date.now() + HOMEPAGE_CARD_ENTRY_TTL_MS);
     expect(classifyBookingEntry("soul-blueprint")).toBe("homepage_card");
-  });
-
-  it("treats an unreadable stored tap as no tap", () => {
-    window.sessionStorage.setItem(HOMEPAGE_CARD_ENTRY_KEY, "{not json");
-    expect(classifyBookingEntry("soul-blueprint")).toBe("direct");
   });
 
   it("is internal when the visitor comes back client-side to the page they landed on", () => {
@@ -107,6 +105,12 @@ describe("classifyBookingEntry", () => {
     expect(classifyBookingEntry("soul-blueprint")).toBe("homepage_card");
   });
 
+  it("classifies from the referrer when storage is blocked, even with a draft saved", () => {
+    saveDraft("soul-blueprint", { currentPage: 1, values: {} });
+    blockBrowserStorage();
+    expect(classifyBookingEntry("soul-blueprint")).toBe("direct");
+  });
+
   it.each([
     ["client-side navigation from another site page", "/", "https://www.tiktok.com/", "internal"],
     ["full load referred by this site", BOOKING_PATH, `${SITE}/notes/a-note`, "internal"],
@@ -117,21 +121,5 @@ describe("classifyBookingEntry", () => {
     setDocumentLoadPath(documentLoadPath);
     setReferrer(referrer);
     expect(classifyBookingEntry("soul-blueprint")).toBe(expected);
-  });
-});
-
-describe("blocked storage", () => {
-  it("classifies from the referrer when reads throw, even with a flag and a draft saved", () => {
-    markHomepageCardEntry("soul-blueprint");
-    saveDraft("soul-blueprint", { currentPage: 1, values: {} });
-    blockBrowserStorage();
-    expect(classifyBookingEntry("soul-blueprint")).toBe("direct");
-  });
-
-  it("marking a card tap does nothing when writes throw", () => {
-    blockBrowserStorage();
-    expect(() => markHomepageCardEntry("soul-blueprint")).not.toThrow();
-    vi.restoreAllMocks();
-    expect(window.sessionStorage.getItem(HOMEPAGE_CARD_ENTRY_KEY)).toBeNull();
   });
 });

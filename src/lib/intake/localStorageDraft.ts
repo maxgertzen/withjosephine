@@ -1,4 +1,4 @@
-import { withStorage } from "@/lib/browserStorage";
+import { withLocalStorage } from "@/lib/browserStorage";
 
 export const DRAFT_KEY_PREFIX = "josephine.intake.draft.";
 export const LAST_READING_ID_KEY = "josephine.intake.lastReadingId";
@@ -31,14 +31,14 @@ export function save(
     currentPage: payload.currentPage,
     values: payload.values,
   };
-  return withStorage("localStorage", (storage) => {
+  return withLocalStorage((storage) => {
     storage.setItem(draftKey(readingId), JSON.stringify(envelope));
     return envelope;
   }, null);
 }
 
 export function restore(readingId: string): DraftEnvelope | null {
-  const raw = withStorage("localStorage", (storage) => storage.getItem(draftKey(readingId)), null);
+  const raw = withLocalStorage((storage) => storage.getItem(draftKey(readingId)), null);
   if (!raw) return null;
 
   let parsed: unknown;
@@ -68,7 +68,7 @@ export function restore(readingId: string): DraftEnvelope | null {
 }
 
 function removeKey(key: string): void {
-  withStorage("localStorage", (storage) => storage.removeItem(key), undefined);
+  withLocalStorage((storage) => storage.removeItem(key), undefined);
 }
 
 export function clear(readingId: string): void {
@@ -76,7 +76,7 @@ export function clear(readingId: string): void {
 }
 
 export function clearAll(): void {
-  const draftKeys = withStorage("localStorage", (storage) => {
+  const draftKeys = withLocalStorage((storage) => {
     const keys: string[] = [];
     for (let i = 0; i < storage.length; i += 1) {
       const key = storage.key(i);
@@ -89,11 +89,11 @@ export function clearAll(): void {
 }
 
 export function getLastReadingId(): string | null {
-  return withStorage("localStorage", (storage) => storage.getItem(LAST_READING_ID_KEY), null);
+  return withLocalStorage((storage) => storage.getItem(LAST_READING_ID_KEY), null);
 }
 
 export function setLastReadingId(readingId: string): void {
-  withStorage("localStorage", (storage) => storage.setItem(LAST_READING_ID_KEY, readingId), undefined);
+  withLocalStorage((storage) => storage.setItem(LAST_READING_ID_KEY, readingId), undefined);
 }
 
 function isEnvelope(value: unknown): value is DraftEnvelope {

@@ -30,7 +30,7 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
-import { HOMEPAGE_CARD_ENTRY_KEY, takeHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
+import { takeHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
 
 import { ReadingCard } from "./ReadingCard";
 
@@ -45,10 +45,10 @@ const defaultProps = {
   href: "/book/soul-blueprint",
 };
 
+const clearPendingTap = () => takeHomepageCardEntry("");
+
 describe("ReadingCard", () => {
-  beforeEach(() => {
-    window.sessionStorage.clear();
-  });
+  beforeEach(clearPendingTap);
 
   it("renders card content", () => {
     render(<ReadingCard {...defaultProps} />);
@@ -111,6 +111,6 @@ describe("ReadingCard", () => {
     await user.keyboard("{Meta>}");
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
-    expect(window.sessionStorage.getItem(HOMEPAGE_CARD_ENTRY_KEY)).toBeNull();
+    expect(takeHomepageCardEntry("soul-blueprint")).toBe(false);
   });
 });

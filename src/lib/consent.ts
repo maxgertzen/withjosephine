@@ -1,14 +1,13 @@
 "use client";
 
-import { withStorage } from "@/lib/browserStorage";
+import { withLocalStorage } from "@/lib/browserStorage";
 
 const STORAGE_KEY = "josephine.consent";
 
 export type ConsentChoice = "granted" | "declined";
 
 export function readConsent() {
-  return withStorage(
-    "localStorage",
+  return withLocalStorage(
     (storage) => {
       const value = storage.getItem(STORAGE_KEY);
       return value === "granted" || value === "declined" ? value : null;
@@ -18,5 +17,5 @@ export function readConsent() {
 }
 
 export function writeConsent(choice: ConsentChoice) {
-  withStorage("localStorage", (storage) => storage.setItem(STORAGE_KEY, choice), undefined);
+  withLocalStorage((storage) => storage.setItem(STORAGE_KEY, choice), undefined);
 }

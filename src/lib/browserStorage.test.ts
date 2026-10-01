@@ -1,18 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { withStorage } from "./browserStorage";
+import { withLocalStorage } from "./browserStorage";
 import { blockBrowserStorage, blockBrowserStorageProperty } from "./test-helpers";
 
 afterEach(() => {
   vi.restoreAllMocks();
   window.localStorage.clear();
-  window.sessionStorage.clear();
 });
 
-describe("withStorage", () => {
-  it.each(["localStorage", "sessionStorage"] as const)("runs against window.%s", (kind) => {
-    window[kind].setItem("k", "v");
-    expect(withStorage(kind, (storage) => storage.getItem("k"), null)).toBe("v");
+describe("withLocalStorage", () => {
+  it("runs against window.localStorage", () => {
+    window.localStorage.setItem("k", "v");
+    expect(withLocalStorage((storage) => storage.getItem("k"), null)).toBe("v");
   });
 
   it.each([
@@ -20,11 +19,6 @@ describe("withStorage", () => {
     ["a storage method throws", blockBrowserStorage],
   ])("returns the fallback when %s", (_case, block) => {
     block();
-    expect(withStorage("localStorage", (storage) => storage.getItem("k"), "fallback")).toBe(
-      "fallback",
-    );
-    expect(withStorage("sessionStorage", (storage) => storage.getItem("k"), "fallback")).toBe(
-      "fallback",
-    );
+    expect(withLocalStorage((storage) => storage.getItem("k"), "fallback")).toBe("fallback");
   });
 });
