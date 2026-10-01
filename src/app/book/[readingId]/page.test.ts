@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./BookingFormView", () => ({ BookingFormView: () => null }));
+
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchReadingPublished: vi.fn(),
   fetchBookingPagePublished: vi.fn(),
   fetchBookingFormPublished: vi.fn(),
+  fetchReadingsPublished: vi.fn(),
+  fetchLandingPagePublished: vi.fn(),
   fetchReadingSlugs: vi.fn(),
 }));
 
@@ -36,7 +40,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
     briefDescription: "My signature offering",
     expandedDetails: [],
     includes: [],
-    bookingSummary: "Most comprehensive reading",
     requiresBirthChart: true,
     requiresAkashic: true,
     requiresQuestions: true,
@@ -48,8 +51,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
 function bookingPage(overrides: Partial<SanityBookingPage> = {}): SanityBookingPage {
   return {
     paymentButtonText: "Continue to payment →",
-    formatNote: "Detailed voice note recording + a supporting PDF created entirely for you.",
-    deliveryNote: "Within 7 days.",
     ...overrides,
   };
 }

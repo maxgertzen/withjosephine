@@ -23,6 +23,12 @@ describe("BookingFlowHeader", () => {
     expect(screen.getByText("$129")).toBeInTheDocument();
   });
 
+  it("marks the reading name up as the page's only h1", () => {
+    render(<BookingFlowHeader backHref="/" {...READING} />);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Soul Blueprint");
+  });
+
   it("makes the reading block a label, so Back is the only link", () => {
     render(<BookingFlowHeader backHref="/" {...READING} />);
     expect(screen.getAllByRole("link")).toHaveLength(1);

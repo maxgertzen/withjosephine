@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetSwapNameCacheForTest } from "@/lib/intake/useDraftRestore";
@@ -118,13 +119,17 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function renderForm(sections = SINGLE_PAGE_SECTIONS) {
+function renderForm(
+  sections = SINGLE_PAGE_SECTIONS,
+  extra: Partial<ComponentProps<typeof IntakeForm>> = {},
+) {
   render(
     <IntakeForm
       readingId="soul-blueprint"
       readingName="Soul Blueprint"
       sections={sections}
       nonRefundableNotice="Once Josephine begins, no refunds."
+      {...extra}
     />,
   );
 }
@@ -144,6 +149,22 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.getByRole("heading", { name: "About You" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Acknowledge" })).toBeInTheDocument();
     expect(screen.getByText(/Once Josephine begins/)).toBeInTheDocument();
+  });
+
+  it("shows the testimonial line on the final page, above the consent block", () => {
+    renderForm(SINGLE_PAGE_SECTIONS, {
+      testimonial: { label: "From a client", quote: "It connected the dots.", name: "Raphi", detail: "Soul Blueprint Reading" },
+    });
+    const quote = screen.getByText(/It connected the dots./);
+    expect(screen.getByText("From a client")).toBeInTheDocument();
+    expect(screen.getByText("Raphi · Soul Blueprint Reading")).toBeInTheDocument();
+    const consent = screen.getByText(/Once Josephine begins/);
+    expect(quote.compareDocumentPosition(consent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows no testimonial line when none is set", () => {
+    renderForm();
+    expect(screen.queryByText("From a client")).toBeNull();
   });
 
   it("renders the Submit button (not Next) when form is single-page", () => {

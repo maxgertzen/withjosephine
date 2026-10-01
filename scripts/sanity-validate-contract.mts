@@ -82,10 +82,6 @@ export const SINGLETONS: SingletonContract[] = [
     type: "bookingPage",
     fields: [
       { name: "paymentButtonText", type: "string" },
-      { name: "formatNote", type: "string" },
-      { name: "deliveryNote", type: "string" },
-      { name: "whatsIncludedHeading", type: "string" },
-      { name: "bookReadingCtaText", type: "string" },
       { name: "seo", type: "object" },
     ],
   },

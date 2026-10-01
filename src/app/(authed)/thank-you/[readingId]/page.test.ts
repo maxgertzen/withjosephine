@@ -54,7 +54,6 @@ function reading(overrides: Partial<SanityReading> = {}): SanityReading {
     briefDescription: "...",
     expandedDetails: [],
     includes: [],
-    bookingSummary: "...",
     requiresBirthChart: true,
     requiresAkashic: true,
     requiresQuestions: true,

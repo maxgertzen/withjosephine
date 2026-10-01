@@ -1,0 +1,1 @@
+export { AnimatedCollapse } from "./AnimatedCollapse";

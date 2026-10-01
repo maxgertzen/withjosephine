@@ -1,7 +1,6 @@
 [
   {
     "_id": "reading-soul-blueprint",
-    "bookingSummary": "My most comprehensive reading. Your birth chart, Akashic Records and card pulls woven together to create the deepest, most complete picture of your soul I can give you.",
     "briefDescription": "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
     "expandedDetails": [
       "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
@@ -40,7 +39,6 @@
   },
   {
     "_id": "reading-birth-chart",
-    "bookingSummary": "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
     "briefDescription": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
     "expandedDetails": [
       "We'll take a look at your natal chart and the specific energies, timing and patterns that shape your experience.",
@@ -78,7 +76,6 @@
   },
   {
     "_id": "reading-akashic-record",
-    "bookingSummary": "You choose three questions, I open your records and pull a card for each. The most direct way to access what your soul already knows.",
     "briefDescription": "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
     "expandedDetails": [
       "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",

@@ -35,7 +35,6 @@ const SANITY_READING: SanityReading = {
   briefDescription: "My signature offering combining your birth chart...",
   expandedDetails: ["Detail one", "Detail two"],
   includes: ["Item one", "Item two"],
-  bookingSummary: "My most comprehensive reading.",
   requiresBirthChart: true,
   requiresAkashic: true,
   requiresQuestions: true,

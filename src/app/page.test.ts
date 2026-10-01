@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./HomePageView", () => ({ HomePageView: () => null }));
+
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchLandingPagePublished: vi.fn(),
   fetchReadingsPublished: vi.fn(),

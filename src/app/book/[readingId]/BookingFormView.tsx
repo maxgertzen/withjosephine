@@ -3,11 +3,13 @@ import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { IntakeForm, type IntakeFormProps } from "@/components/IntakeForm";
 import { PortableTextContent } from "@/components/PortableTextContent";
+import { ReadingBlock, type ReadingBlockProps } from "@/components/ReadingBlock";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 export type BookingFormViewProps = {
   backHref: string;
   reading: { slug: string; tag: string; name: string; priceLabel: string };
+  readingBlock: ReadingBlockProps;
   copy: {
     title: string;
     intro: SanityPortableTextBlock[];
@@ -15,7 +17,7 @@ export type BookingFormViewProps = {
   form: Omit<IntakeFormProps, "readingId" | "readingName">;
 };
 
-export function BookingFormView({ backHref, reading, copy, form }: BookingFormViewProps) {
+export function BookingFormView({ backHref, reading, readingBlock, copy, form }: BookingFormViewProps) {
   return (
     <HeaderBackProvider>
       <BookingPageShell
@@ -24,6 +26,7 @@ export function BookingFormView({ backHref, reading, copy, form }: BookingFormVi
         readingName={reading.name}
         readingPrice={reading.priceLabel}
       >
+        <ReadingBlock {...readingBlock} />
         <BookingPageHeading title={copy.title} />
         <div className="max-w-[50ch] mb-10">
           <PortableTextContent value={copy.intro} />

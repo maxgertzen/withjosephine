@@ -101,6 +101,21 @@ describe("useIntakeFormHandlers — navigation", () => {
     expect(result.current.currentPage).toBe(0);
   });
 
+  it.each([
+    ["handleNext", (handlers: ReturnType<typeof useTestHarness>["handlers"]) => handlers.handleNext()],
+    ["handleReviewEdit", (handlers: ReturnType<typeof useTestHarness>["handlers"]) => handlers.handleReviewEdit(2)],
+  ])("%s scrolls to the form, not the page top", (_name, navigate) => {
+    const form = document.createElement("form");
+    const scrollIntoView = vi.spyOn(form, "scrollIntoView").mockImplementation(() => {});
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const { result } = renderHook(() => useTestHarness({ formRef: { current: form } }));
+    act(() => {
+      navigate(result.current.handlers);
+    });
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   it("handleReviewEdit is a no-op when target page === currentPage", () => {
     const { result } = renderHook(() => useTestHarness());
     act(() => {

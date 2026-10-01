@@ -3,14 +3,15 @@
 import { useEffect, useRef } from "react";
 
 import { type ReadingId, track } from "@/lib/analytics";
-import { classifyBookingEntry, isFoldedEntry } from "@/lib/intake/bookingEntry";
+import { isFoldedEntry } from "@/lib/intake/bookingEntry";
+import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 
 export function EntryPageView({ readingId }: { readingId: ReadingId }) {
+  const entry = useBookingEntry();
   const fired = useRef(false);
   useEffect(() => {
-    if (fired.current) return;
+    if (entry === null || fired.current) return;
     fired.current = true;
-    const entry = classifyBookingEntry(readingId);
     track("entry_page_view", {
       reading_id: readingId,
       referrer: document.referrer,
@@ -18,6 +19,6 @@ export function EntryPageView({ readingId }: { readingId: ReadingId }) {
       entry,
       folded: isFoldedEntry(entry),
     });
-  }, [readingId]);
+  }, [entry, readingId]);
   return null;
 }

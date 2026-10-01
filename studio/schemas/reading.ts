@@ -121,21 +121,45 @@ export const reading = defineType({
       title: "Expanded Details",
       type: "array",
       of: [{ type: "text", rows: 3 }],
-      description: "Paragraphs shown when the reading card is expanded",
+      description:
+        "Paragraphs shown when the homepage card is expanded. On the booking page, the first paragraph is the line under the promise and the rest go under 'How it works'.",
     }),
     defineField({
       name: "includes",
       title: "What's Included",
       type: "array",
       of: [{ type: "string" }],
-      description: "Checklist items shown on the booking page",
+      description: "Checklist items under 'What's included' on the booking page",
     }),
     defineField({
-      name: "bookingSummary",
-      title: "Booking Summary",
-      type: "text",
-      rows: 3,
-      description: "Summary text shown on the booking page",
+      name: "questionsOnPage",
+      title: "Questions on this page",
+      type: "array",
+      of: [{ type: "reference", to: [{ type: "faqItem" }] }],
+      description:
+        "Questions shown under 'Questions' on this reading's booking page. Pick from the FAQ list or create a new one, and drag to set the order. Leave empty to hide the section. The homepage FAQ is not affected.",
+    }),
+    defineField({
+      name: "formTestimonial",
+      title: "Testimonial on the booking form",
+      type: "reference",
+      to: [{ type: "testimonial" }],
+      options: {
+        filter: ({ document }) => ({
+          filter: "readingType._ref == $readingId",
+          params: { readingId: document._id.replace(/^(drafts|versions\.[^.]+)\./, "") },
+        }),
+      },
+      description:
+        "One quote shown on the last page of the form, above the consent checkboxes. Only testimonials linked to this reading are listed. Leave empty to show no quote.",
+    }),
+    defineField({
+      name: "estimatedMinutes",
+      title: "Minutes to fill in the form",
+      type: "number",
+      description:
+        "Shown in the page line, for example 'Page 1 of 2 · about 3 minutes'. Leave empty to leave the minutes out.",
+      validation: (rule) => rule.integer().min(1).max(60),
     }),
     defineField({
       name: "stripePaymentLink",

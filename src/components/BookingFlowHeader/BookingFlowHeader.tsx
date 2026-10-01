@@ -55,36 +55,36 @@ export function BookingFlowHeader({
 
   return (
     <header
-      className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 flex items-center min-h-[116px] md:min-h-[150px] border-b border-j-border-subtle"
+      className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 min-h-[116px] md:min-h-[150px] border-b border-j-border-subtle"
       style={{
         paddingTop: "calc(1.5rem + env(safe-area-inset-top, 0px))",
         paddingBottom: "1rem",
       }}
     >
-      {onBack ? (
-        <button type="button" onClick={onBack} className={BACK_CLASS}>
-          {back}
-        </button>
-      ) : (
-        <NavigationButton href={backHref} className={BACK_CLASS}>
-          {back}
-        </NavigationButton>
-      )}
+      <div className="-mt-3 -ml-2 mb-1">
+        {onBack ? (
+          <button type="button" onClick={onBack} className={BACK_CLASS}>
+            {back}
+          </button>
+        ) : (
+          <NavigationButton href={backHref} className={BACK_CLASS}>
+            {back}
+          </NavigationButton>
+        )}
+      </div>
 
-      {/* Absolute centring, not flex/grid: both let Back's width push the block
-          off centre (measured 35px and 7px respectively on the long names). */}
       {readingName ? (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center text-center pointer-events-none">
+        <div className="flex flex-col items-center text-center">
           {readingTag ? (
             <span className="font-body uppercase text-j-text-gold text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
               {readingTag}
             </span>
           ) : null}
-          <span className="font-display font-light italic leading-tight text-j-text-heading whitespace-nowrap text-[1.25rem] md:text-[2.4rem] mt-1 md:mt-2">
+          <h1 className="m-0 font-display font-light italic leading-[1.1] text-j-text-heading text-balance text-[1.75rem] md:text-[2.4rem] mt-1 md:mt-2">
             {readingName}
-          </span>
+          </h1>
           {readingPrice ? (
-            <span className="font-display italic text-j-text-gold md:text-j-text-gold-lg text-[1rem] md:text-[1.5rem] mt-0.5 md:mt-2">
+            <span className="font-display italic text-j-text-gold md:text-j-text-gold-lg text-[1rem] md:text-[1.5rem] mt-1 md:mt-2">
               {readingPrice}
             </span>
           ) : null}

@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import {
   fetchBookingFormPublished,
   fetchBookingPagePublished,
+  fetchLandingPagePublished,
   fetchReadingPublished,
+  fetchReadingsPublished,
 } from "@/lib/sanity/fetch";
 import { BOOKING_FALLBACK_TITLE, buildPageMetadata, readingPageTitle } from "@/lib/seoMetadata";
 import { readingProductJsonLd } from "@/lib/structuredData";
@@ -47,17 +50,21 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, bookingForm, bookingPage] = await Promise.all([
+  const [sanityReading, sanityReadings, bookingForm, bookingPage, landingPage] = await Promise.all([
     fetchReadingPublished(readingId),
+    fetchReadingsPublished(),
     fetchBookingFormPublished(),
     fetchBookingPagePublished(),
+    fetchLandingPagePublished(),
   ]);
 
   const props = deriveBookingFormViewProps({
     readingId,
     sanityReading,
+    sanityReadings,
     bookingPage,
     bookingForm,
+    landingPage,
   });
   if (!props) {
     notFound();
@@ -73,10 +80,10 @@ export default async function BookingPage({ params }: BookingPageProps) {
   });
 
   return (
-    <>
+    <BookingEntryProvider key={props.reading.slug} readingId={props.reading.slug}>
       <JsonLd data={productJsonLd} />
       <BookingFormView {...props} />
       <EntryPageView readingId={props.reading.slug} />
-    </>
+    </BookingEntryProvider>
   );
 }

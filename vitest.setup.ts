@@ -15,6 +15,9 @@ import { createSqliteClient } from "@/test/persistence/sqliteClient";
 // enters the production bundle (NFT + webpack don't trace test files).
 beforeAll(() => {
   __registerSqliteFactory(() => createSqliteClient());
+  if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
 });
 
 beforeEach(() => {

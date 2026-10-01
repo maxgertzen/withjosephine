@@ -1,12 +1,8 @@
 {
   "entryPageContent": {
-    "changeReadingLinkText": "Looking for a different reading? Go back →",
-    "dropCapCaption": "The intake form takes about five minutes. You'll review before paying.",
-    "dropCapCta": "Tell me about you →",
     "giftToggleAsGiftLabel": null,
     "giftToggleForMeLabel": null,
     "giftToggleHelper": null,
-    "letterClosing": "I can't wait to connect with you through your reading.\nWith love, [E2E-Author] ✦",
     "letterTitle": null
   },
   "loadingStateCopy": "One moment — taking you to checkout.",

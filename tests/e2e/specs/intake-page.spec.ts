@@ -12,7 +12,8 @@ test.describe("Intake page renders (smoke)", () => {
     test(`/book/${reading.slug} renders without 500`, async ({ page }) => {
       const response = await page.goto(`/book/${reading.slug}`);
       expect(response?.status(), `${reading.slug} should not 5xx`).toBeLessThan(500);
-      await expect(page.getByRole("heading", { level: 1 })).toContainText(/before we begin/i);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 2, name: /before we begin/i })).toBeVisible();
       const firstNameLabel = page
         .getByLabel(/first name/i)
         .first();

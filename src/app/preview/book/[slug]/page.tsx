@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 
 import { BookingFormView } from "@/app/book/[readingId]/BookingFormView";
 import { deriveBookingFormViewProps } from "@/app/book/[readingId]/deriveBookingFormViewProps";
-import { fetchBookingForm, fetchBookingPage, fetchReading } from "@/lib/sanity/fetch";
+import {
+  fetchBookingForm,
+  fetchBookingPage,
+  fetchLandingPage,
+  fetchReading,
+  fetchReadings,
+} from "@/lib/sanity/fetch";
 
 export const metadata: Metadata = {
   title: "Preview: Booking Page",
@@ -16,17 +22,21 @@ type BookingPreviewProps = {
 export default async function BookingPagePreview({ params }: BookingPreviewProps) {
   const { slug } = await params;
 
-  const [sanityReading, bookingPage, bookingForm] = await Promise.all([
+  const [sanityReading, sanityReadings, bookingPage, bookingForm, landingPage] = await Promise.all([
     fetchReading(slug),
+    fetchReadings(),
     fetchBookingPage(),
     fetchBookingForm(),
+    fetchLandingPage(),
   ]);
 
   const props = deriveBookingFormViewProps({
     readingId: slug,
     sanityReading,
+    sanityReadings,
     bookingPage,
     bookingForm,
+    landingPage,
   });
 
   if (!props) {

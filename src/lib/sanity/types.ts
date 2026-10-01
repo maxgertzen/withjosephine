@@ -1,5 +1,7 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
+import type { ReadingPageContent } from "@/data/defaults";
+
 export type SanityReading = {
   _id: string;
   name: string;
@@ -13,13 +15,19 @@ export type SanityReading = {
   briefDescription: string;
   expandedDetails: string[];
   includes: string[];
-  bookingSummary: string;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
   stripePaymentLink?: string;
+  estimatedMinutes?: number;
+  questionsOnPage?: SanityReadingQuestion[] | null;
+  formTestimonial?: SanityFormTestimonial | null;
   seo?: SanitySeo;
 };
+
+type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
+
+type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
 
 export type SanityTestimonial = {
   _id: string;
@@ -84,10 +92,6 @@ export type SanityLandingPage = {
 
 export type SanityBookingPage = {
   paymentButtonText?: string;
-  formatNote: string;
-  deliveryNote: string;
-  whatsIncludedHeading?: string;
-  bookReadingCtaText?: string;
   seo?: SanitySeo;
 };
 
@@ -378,16 +382,15 @@ export type SanityPagination = {
 };
 
 export type SanityEntryPageContent = {
-  letterClosing?: string;
-  dropCapCta?: string;
-  dropCapCaption?: string;
-  changeReadingLinkText?: string;
   letterTitle?: string;
 };
+
+export type SanityReadingPageContent = Partial<ReadingPageContent>;
 
 export type SanityBookingForm = {
   nonRefundableNotice: string;
   entryPageContent?: SanityEntryPageContent;
+  readingPageContent?: SanityReadingPageContent;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
   nextButtonText?: string;

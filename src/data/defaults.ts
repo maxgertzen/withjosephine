@@ -98,20 +98,41 @@ export interface MappedAbout {
   signoff: string;
 }
 
-export interface EntryPageContent {
-  letterClosing: string;
-  dropCapCta: string;
-  dropCapCaption: string;
-  changeReadingLinkText: string;
+export interface ReadingFact {
+  label: string;
+  value: string;
 }
 
-export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
-  letterClosing:
-    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726",
-  dropCapCta: "Tell me about you \u2192",
-  dropCapCaption:
-    "The intake form: about five minutes. You\u2019ll review before paying.",
-  changeReadingLinkText: "Reading a different one? See all three \u2192",
+export interface ReadingPageContent {
+  eyebrow: string;
+  foldRowLabel: string;
+  facts: ReadingFact[];
+  readerName: string;
+  readerLine: string;
+  includedTitle: string;
+  howItWorksTitle: string;
+  questionsTitle: string;
+  otherReadingsTitle: string;
+  testimonialLabel: string;
+  minutesTemplate: string;
+}
+
+export const READING_PAGE_DEFAULTS: ReadingPageContent = {
+  eyebrow: "Online reading",
+  foldRowLabel: "About the {reading}",
+  facts: [
+    { label: "Format", value: "Voice + PDF" },
+    { label: "Length", value: "30-40 min" },
+    { label: "Arrives", value: "7 days" },
+  ],
+  readerName: "Read by Josephine",
+  readerLine: "Astrologer and Akashic Records reader",
+  includedTitle: "What\u2019s included",
+  howItWorksTitle: "How it works",
+  questionsTitle: "Questions",
+  otherReadingsTitle: "Not sure this is the one?",
+  testimonialLabel: "From a client",
+  minutesTemplate: "about {minutes} minutes",
 };
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
@@ -132,21 +153,6 @@ export const INTAKE_INTRO_BY_SLUG: Record<string, string[]> = {
 };
 
 export const INTAKE_INTRO_FALLBACK = [INTAKE_OPENER, "Take your time. There\u2019s no wrong answer."];
-
-export interface BookingInfoNotes {
-  deliveryNote: string;
-  deliverableNote: string;
-  whatsIncludedHeading: string;
-  bookReadingCtaText: string;
-}
-
-export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
-  deliveryNote: "Arrives within 7 days of payment.",
-  deliverableNote:
-    "A voice note plus a written PDF, made just for you.",
-  whatsIncludedHeading: "What\u2019s included",
-  bookReadingCtaText: "Book this Reading \u2192",
-};
 
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;

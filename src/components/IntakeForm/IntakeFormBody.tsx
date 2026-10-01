@@ -34,6 +34,7 @@ import { RenderedSection } from "./RenderedSection";
 import type { RenderContext } from "./renderField";
 import { ReviewSummary } from "./ReviewSummary";
 import { SubmitOverlay } from "./SubmitOverlay";
+import { type FormTestimonial, TestimonialLine } from "./TestimonialLine";
 import type { FieldValues } from "./types";
 
 export type IntakeFormBodyProps = {
@@ -45,6 +46,7 @@ export type IntakeFormBodyProps = {
   readingName: string;
   loadingStateCopy?: string;
   pageIndicatorTagline?: string;
+  testimonial?: FormTestimonial;
   submitLabel?: string;
   nextLabel?: string;
   saveLaterLabel?: string;
@@ -111,6 +113,7 @@ export function IntakeFormBody({
   readingName,
   loadingStateCopy,
   pageIndicatorTagline,
+  testimonial,
   submitLabel,
   nextLabel,
   saveLaterLabel,
@@ -158,7 +161,7 @@ export function IntakeFormBody({
       onSubmit={handleSubmit}
       onKeyDown={suppressEnterInNonSubmitFields}
       noValidate
-      className="relative flex flex-col gap-10"
+      className="relative flex flex-col gap-10 scroll-mt-6"
       {...CLARITY_MASK_PROPS}
     >
       {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
@@ -207,15 +210,18 @@ export function IntakeFormBody({
       ) : null}
 
       {isFinalPage ? (
-        <LegalAcknowledgments
-          snapshot={consentSnapshot}
-          setSnapshot={setConsentSnapshot}
-          errors={consentErrors}
-          clearError={clearConsentError}
-          nonRefundableNotice={nonRefundableNotice}
-          isSubmitting={isSubmitting}
-          showCoolingOff={showCoolingOff}
-        />
+        <div className="flex flex-col gap-6">
+          {testimonial ? <TestimonialLine {...testimonial} /> : null}
+          <LegalAcknowledgments
+            snapshot={consentSnapshot}
+            setSnapshot={setConsentSnapshot}
+            errors={consentErrors}
+            clearError={clearConsentError}
+            nonRefundableNotice={nonRefundableNotice}
+            isSubmitting={isSubmitting}
+            showCoolingOff={showCoolingOff}
+          />
+        </div>
       ) : null}
 
       {turnstileRequired && turnstileSiteKey ? (

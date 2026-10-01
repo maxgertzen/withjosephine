@@ -14,26 +14,108 @@ export const bookingForm = defineType({
     }),
     defineField({
       name: "entryPageContent",
-      title: "Entry Page Content",
+      title: "Intake Form",
       type: "object",
-      description:
-        "Verbatim copy slots for the /book/[readingId] entry page. Each slot is sourced from SPEC §11.",
       fields: [
-        defineField({ name: "letterClosing", title: "Letter Closing", type: "text", rows: 2 }),
-        defineField({ name: "dropCapCta", title: "Drop-Cap CTA", type: "text", rows: 2 }),
-        defineField({ name: "dropCapCaption", title: "CTA Caption", type: "text", rows: 2 }),
-        defineField({
-          name: "changeReadingLinkText",
-          title: "Change-Reading Link Text",
-          type: "text",
-          rows: 2,
-        }),
         defineField({
           name: "letterTitle",
-          title: "Letter Title (optional)",
+          title: "Form Heading",
           type: "text",
           rows: 2,
-          description: "Optional headline above the letter copy. Leave blank to omit.",
+          description:
+            "The heading above each reading's intake words and the form, for example 'A few things, before we begin.' Leave blank to use that wording.",
+        }),
+      ],
+      options: { collapsible: true, collapsed: false },
+    }),
+    defineField({
+      name: "readingPageContent",
+      title: "Reading Page",
+      type: "object",
+      description:
+        "Words on the reading block above the form, shared by every reading. Leave a field blank to use the built-in wording.",
+      fields: [
+        defineField({
+          name: "eyebrow",
+          title: "Small Label Above the Promise",
+          type: "string",
+        }),
+        defineField({
+          name: "foldRowLabel",
+          title: "Folded Row Label",
+          type: "string",
+          description:
+            "Shown to visitors who came from a homepage card, as one row that opens the block. {reading} becomes the reading's subtitle, for example 'About the {reading}'.",
+        }),
+        defineField({
+          name: "facts",
+          title: "Facts Row",
+          type: "array",
+          of: [
+            {
+              type: "object",
+              name: "readingFact",
+              fields: [
+                defineField({
+                  name: "label",
+                  title: "Label",
+                  type: "string",
+                  validation: (rule) => rule.required(),
+                }),
+                defineField({
+                  name: "value",
+                  title: "Value",
+                  type: "string",
+                  validation: (rule) => rule.required(),
+                }),
+              ],
+              preview: { select: { title: "label", subtitle: "value" } },
+            },
+          ],
+          validation: (rule) => rule.max(3),
+        }),
+        defineField({
+          name: "readerName",
+          title: "Reader Name",
+          type: "string",
+        }),
+        defineField({
+          name: "readerLine",
+          title: "Line Under the Reader Name",
+          type: "string",
+        }),
+        defineField({
+          name: "includedTitle",
+          title: "What's Included Title",
+          type: "string",
+        }),
+        defineField({
+          name: "howItWorksTitle",
+          title: "How It Works Title",
+          type: "string",
+        }),
+        defineField({
+          name: "questionsTitle",
+          title: "Questions Title",
+          type: "string",
+        }),
+        defineField({
+          name: "otherReadingsTitle",
+          title: "Other Readings Title",
+          type: "string",
+        }),
+        defineField({
+          name: "testimonialLabel",
+          title: "Testimonial Label",
+          type: "string",
+          description: "Small label above the quote on the last page of the form.",
+        }),
+        defineField({
+          name: "minutesTemplate",
+          title: "Minutes Wording",
+          type: "string",
+          description:
+            "Added to the page line when a reading has its minutes set. {minutes} becomes the number.",
         }),
       ],
       options: { collapsible: true, collapsed: false },

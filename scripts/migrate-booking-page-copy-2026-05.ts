@@ -13,7 +13,6 @@
 //     NEXT_PUBLIC_SANITY_DATASET=staging pnpm tsx scripts/migrate-booking-page-copy-2026-05.ts
 //   set -a && source .env.local && set +a && \
 //     pnpm tsx scripts/migrate-booking-page-copy-2026-05.ts
-import { BOOKING_INFO_DEFAULTS } from "../src/data/defaults";
 
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
@@ -50,10 +49,10 @@ async function main(): Promise<void> {
 
   const patch: Record<string, string> = {};
   if (doc.formatNote && LEGACY_FORMAT_NOTES.has(doc.formatNote)) {
-    patch.formatNote = BOOKING_INFO_DEFAULTS.deliverableNote;
+    patch.formatNote = "A voice note plus a written PDF, made just for you.";
   }
   if (doc.deliveryNote && LEGACY_DELIVERY_NOTES.has(doc.deliveryNote)) {
-    patch.deliveryNote = BOOKING_INFO_DEFAULTS.deliveryNote;
+    patch.deliveryNote = "Arrives within 7 days of payment.";
   }
 
   if (Object.keys(patch).length === 0) {

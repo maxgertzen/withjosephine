@@ -24,6 +24,7 @@ import type { LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import type { RenderContext } from "./renderField";
 import { SavedIndicator } from "./SavedIndicator";
 import { SwapToast } from "./SwapToast";
+import type { FormTestimonial } from "./TestimonialLine";
 
 export type IntakeFormProps = {
   readingId: string;
@@ -34,6 +35,7 @@ export type IntakeFormProps = {
   nextLabel?: string;
   saveLaterLabel?: string;
   pageIndicatorTagline?: string;
+  testimonial?: FormTestimonial;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
 };
@@ -47,6 +49,7 @@ export function IntakeForm({
   nextLabel,
   saveLaterLabel,
   pageIndicatorTagline,
+  testimonial,
   pagination,
   loadingStateCopy,
 }: IntakeFormProps) {
@@ -254,6 +257,7 @@ export function IntakeForm({
         readingName={readingName}
         loadingStateCopy={loadingStateCopy}
         pageIndicatorTagline={pageIndicatorTagline}
+        testimonial={testimonial}
         submitLabel={submitLabel}
         nextLabel={nextLabel}
         saveLaterLabel={saveLaterLabel}

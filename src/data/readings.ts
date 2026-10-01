@@ -8,7 +8,6 @@ export type Reading = {
   briefDescription: string;
   expandedDetails: string[];
   includes: string[];
-  bookingSummary: string;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
@@ -37,8 +36,6 @@ export const READINGS: Reading[] = [
       "I'll send you a personalised question menu before your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
       "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
     ],
-    bookingSummary:
-      "My most comprehensive reading. Your birth chart, Akashic Records and card pulls woven together to create the deepest, most complete picture of your soul I can give you.",
     includes: [
       "In-depth birth chart analysis",
       "Akashic Record reading with card pulls",
@@ -66,8 +63,6 @@ export const READINGS: Reading[] = [
       "We'll look at your natal chart and the current transits affecting you, so you understand both who you are and what's unfolding for you now.",
       "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
     ],
-    bookingSummary:
-      "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
     includes: [
       "Full natal chart analysis",
       "Your gifts, wounds and soul patterns",
@@ -94,8 +89,6 @@ export const READINGS: Reading[] = [
       "I'll send you a question menu so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
       "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
     ],
-    bookingSummary:
-      "You choose three questions, I open your records and pull a card for each. The most direct way to access what your soul already knows.",
     includes: [
       "Three questions explored in depth",
       "Akashic Record reading with card pulls",

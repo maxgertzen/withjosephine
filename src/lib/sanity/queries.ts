@@ -32,7 +32,6 @@ export const readingsQuery = groq`
     briefDescription,
     expandedDetails,
     includes,
-    bookingSummary,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
@@ -55,11 +54,22 @@ export const readingBySlugQuery = groq`
     briefDescription,
     expandedDetails,
     includes,
-    bookingSummary,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
     stripePaymentLink,
+    estimatedMinutes,
+    "questionsOnPage": questionsOnPage[]-> {
+      _id,
+      question,
+      answer
+    },
+    "formTestimonial": formTestimonial-> {
+      _id,
+      quote,
+      name,
+      "detail": coalesce(readingType->subtitle, detailOverride)
+    },
     seo
   }
 `;
@@ -104,10 +114,6 @@ export const siteSettingsQuery = groq`
 export const bookingPageQuery = groq`
   *[_type == "bookingPage"][0] {
     paymentButtonText,
-    formatNote,
-    deliveryNote,
-    whatsIncludedHeading,
-    bookReadingCtaText,
     seo
   }
 `;
@@ -295,11 +301,23 @@ export const bookingFormQuery = groq`
   *[_type == "bookingForm"][0] {
     nonRefundableNotice,
     entryPageContent {
-      letterClosing,
-      dropCapCta,
-      dropCapCaption,
-      changeReadingLinkText,
       letterTitle
+    },
+    readingPageContent {
+      eyebrow,
+      foldRowLabel,
+      facts[] {
+        label,
+        value
+      },
+      readerName,
+      readerLine,
+      includedTitle,
+      howItWorksTitle,
+      questionsTitle,
+      otherReadingsTitle,
+      testimonialLabel,
+      minutesTemplate
     },
     pagination {
       overrides[] {

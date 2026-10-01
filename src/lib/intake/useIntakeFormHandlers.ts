@@ -63,13 +63,11 @@ export type UseIntakeFormHandlersResult = {
   handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
 };
 
-function blurAndScrollToTop(): void {
+function blurAndScrollToForm(form: HTMLFormElement | null): void {
   if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
-  if (typeof window !== "undefined") {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  form?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 export function useIntakeFormHandlers({
@@ -123,9 +121,9 @@ export function useIntakeFormHandlers({
       );
       setCurrentPage(targetPageIndex);
       flushSave(values, targetPageIndex);
-      blurAndScrollToTop();
+      blurAndScrollToForm(formRef.current);
     },
-    [setSubmitError, setErrors, readingId, currentPage, setCurrentPage, flushSave, values],
+    [setSubmitError, setErrors, readingId, currentPage, setCurrentPage, flushSave, values, formRef],
   );
 
   const handleNext = useCallback(() => {
@@ -149,7 +147,7 @@ export function useIntakeFormHandlers({
     const nextPage = Math.min(currentPage + 1, totalPages - 1);
     setCurrentPage(nextPage);
     flushSave(values, nextPage);
-    blurAndScrollToTop();
+    blurAndScrollToForm(formRef.current);
   }, [
     setSubmitError,
     allFields,
