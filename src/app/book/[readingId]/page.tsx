@@ -9,7 +9,7 @@ import {
   fetchBookingPagePublished,
   fetchReadingPublished,
 } from "@/lib/sanity/fetch";
-import { buildPageMetadata } from "@/lib/seoMetadata";
+import { BOOKING_FALLBACK_TITLE, buildPageMetadata, readingPageTitle } from "@/lib/seoMetadata";
 import { readingProductJsonLd } from "@/lib/structuredData";
 
 import { BookingFormView } from "./BookingFormView";
@@ -28,12 +28,11 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
     fetchBookingPagePublished(),
   ]);
 
-  const readingName = (sanityReading ?? getReadingById(readingId))?.name;
+  const subtitle = (sanityReading ?? getReadingById(readingId))?.subtitle;
 
   const title =
-    sanityReading?.seo?.metaTitle ??
-    bookingPage?.seo?.metaTitle ??
-    (readingName ? `Book ${readingName} — Josephine` : "Book a Reading — Josephine");
+    sanityReading?.seo?.metaTitle ||
+    (subtitle ? readingPageTitle(subtitle, sanityReading?.priceDisplay) : BOOKING_FALLBACK_TITLE);
 
   const description =
     sanityReading?.seo?.metaDescription ??

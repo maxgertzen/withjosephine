@@ -173,7 +173,13 @@ export const reading = defineType({
       title: "SEO",
       type: "object",
       fields: [
-        defineField({ name: "metaTitle", title: "Meta Title", type: "string" }),
+        defineField({
+          name: "metaTitle",
+          title: "Meta Title (optional)",
+          type: "string",
+          description:
+            "Leave empty. The title is built from the Subtitle and Price, for example 'Soul Blueprint Reading, $129 | Josephine Soul Readings'. Fill this only to replace it.",
+        }),
         defineField({ name: "metaDescription", title: "Meta Description", type: "text", rows: 2 }),
         defineField({ name: "ogImage", title: "OG Image", type: "image" }),
       ],

@@ -5,6 +5,13 @@ import type { SanitySeo } from "@/lib/sanity/types";
 
 export const SITE_NAME = "Josephine Soul Readings";
 export const DEFAULT_OG_IMAGE = "/og-image.png";
+export const BOOKING_FALLBACK_TITLE = `Book a Reading | ${SITE_NAME}`;
+
+export function readingPageTitle(subtitle: string, priceDisplay?: string): string {
+  return priceDisplay
+    ? `${subtitle}, ${priceDisplay} | ${SITE_NAME}`
+    : `${subtitle} | ${SITE_NAME}`;
+}
 
 export function buildOpenGraph(seo: SanitySeo | undefined): Metadata["openGraph"] {
   const ogImageUrl = seo?.ogImage?.asset?.url;
