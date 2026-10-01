@@ -46,7 +46,7 @@ function setup(overrides: SetupOverrides = {}) {
   };
 
   const args = { ...baseArgs, ...overrides };
-  const { result, rerender } = renderHook(
+  const { result, rerender, unmount } = renderHook(
     (hookArgs: UseAutosaveArgs) => useAutosave(hookArgs),
     { initialProps: args },
   );
@@ -54,6 +54,7 @@ function setup(overrides: SetupOverrides = {}) {
   return {
     result,
     rerender,
+    unmount,
     args,
     setValues,
     setCurrentPage,
@@ -115,6 +116,31 @@ describe("useAutosave — debounced flush effect", () => {
       { reading_id: "soul-blueprint", page_number: 1 },
       30_000,
     );
+  });
+
+  it("waits for the debounce before saving", () => {
+    setup({ values: { email: "ada@example.com", first_name: "" } });
+    act(() => {
+      vi.advanceTimersByTime(499);
+    });
+    expect(window.localStorage.getItem(`${DRAFT_KEY_PREFIX}soul-blueprint`)).toBeNull();
+  });
+
+  it.each([
+    { leave: "the form unmounts", leavePage: (unmount: () => void) => unmount() },
+    { leave: "the page is hidden", leavePage: () => window.dispatchEvent(new Event("pagehide")) },
+  ])("saves an edit still inside the debounce when $leave", ({ leavePage }) => {
+    const { unmount } = setup({ values: { email: "ada@example.com", first_name: "" } });
+    leavePage(unmount);
+    const raw = window.localStorage.getItem(`${DRAFT_KEY_PREFIX}soul-blueprint`);
+    expect(JSON.parse(raw!).values).toEqual({ email: "ada@example.com", first_name: "" });
+  });
+
+  it("leaves no draft when an edit is undone inside the debounce", () => {
+    const { rerender, args, unmount } = setup({ values: { email: "a", first_name: "" } });
+    rerender({ ...args, values: DEFAULT_VALUES });
+    unmount();
+    expect(window.localStorage.getItem(`${DRAFT_KEY_PREFIX}soul-blueprint`)).toBeNull();
   });
 
   it("respects justDiscarded one-shot guard after handleDiscardDraft fires", () => {
