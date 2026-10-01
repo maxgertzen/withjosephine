@@ -1,6 +1,6 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-01 handover 2): the gold-token groundwork is DONE. Build the reading block, then Notes, on `release/v1.20.0`.
+## ▶ 👉 START HERE (next session, 2026-10-01 handover 3): the reading block is BUILT (`c8188a4`). Do its browser pass (`2o6bxiqe`), then build Notes, on `release/v1.20.0`.
 
 **Release scope (Max, 2026-10-01, option B): everything ships in ONE release, v1.20.0.** The reading block, Notes and the header layout go in together with what is already on the branch. There is NO separate two-week baseline. The reading block's before/after is read from OPERATIONS.md funnel 3 (`entry_page_view -> intake_submit_success -> stripe_redirect -> payment_success`), which has data since July; the new `entry`/`folded` properties are for the split after ship.
 
@@ -9,7 +9,7 @@
 **Next, in order:**
 
 1. ~~Gold-token groundwork~~ DONE 2026-10-01, see the block below.
-2. **Reading block** (`q7swqq89` decisions, tickets below): `xvcgimrr` (all copy editable in Sanity, with the zombie-field cleanup `dk4a06s7`), `3i9lbq9w` (Next/Back scroll to the form), header layout A (closes `j3a3426u` + `rti3s5bo`), `3gpnqffe` (Akashic testimonial link for Becky). The fold reads the homepage-card tap: see dex `1wu4x9wi` (classify once per page and share the value between the fold and `EntryPageView`, because `takeHomepageCardEntry` consumes the tap).
+2. ~~Reading block~~ BUILT 2026-10-01 in `c8188a4`, see the block below. **Owed first: the browser pass `2o6bxiqe`** (closes `j3a3426u`, `rti3s5bo`, `3i9lbq9w`), then deploy Studio to staging and do the Presentation check on `xvcgimrr`.
 3. **Notes** (`v7ev58fe`, design locked, below).
 4. **Before the PR:** C9 check of the `entry_page_view` payload. Staging sends no Mixpanel events (GitHub var `NEXT_PUBLIC_TRACK_NON_PROD` is unset), so either run `pnpm dev` locally (`.env.local` has tracking on) and read the Network request, or set that GitHub var for staging. Then push, PR, staging deploy and production deploy, each with Max's go.
 5. **🚩 After v1.20.0 is on production, not before:** run `pnpm tsx scripts/migrate-clear-booking-meta-titles-2026-10.mts` against production (staging already done). Production v1.19.5 still reads `reading.seo.metaTitle`; clearing it earlier drops live titles to the old "Book … — Josephine" fallback. Until then the production Studio shows Booking Page `seo.metaTitle` as an unknown field; harmless. Then close `8dlx57qu`.
@@ -17,6 +17,14 @@
 7. **Re-run the 10 blind queries around 2026-10-21** (list below).
 8. **Later, own session:** the recording-to-note funnel `yrozce56`; site-wide page titles on `SITE_NAME` `hnbudgj8`.
 9. **Later, own release branch:** `oo4wxk3e`, a "Send reading now" button in Studio for Becky (marker plus a frequent cron, no admin token). It also fixes the force path, which has no already-sent check today.
+
+**Done 2026-10-01, third part, on `release/v1.20.0` (not pushed): reading block, `c8188a4` + `4341eef`.**
+- **Sanity:** `reading` gets `questionsOnPage` (refs to faqItem; empty hides Questions), `formTestimonial` (one testimonial linked to this reading; empty shows none) and `estimatedMinutes` (adds "about N minutes" to the page line). `bookingForm.readingPageContent` ("Reading Page" group) holds the shared words; defaults in `READING_PAGE_DEFAULTS`. Body line = `expandedDetails[0]`, "How it works" = `expandedDetails[1..]`. Ten dead fields removed (`dk4a06s7` + `reading.bookingSummary`); the old values still sit on the docs as Unknown field, unset script is `and9um5b`. **Studio is not yet deployed with the new schema.**
+- **Page:** `ReadingBlock` (server) inside `ReadingFold` (client). Folded for `homepage_card` and `draft`, open otherwise. `BookingEntryProvider` (`src/lib/intake/bookingEntryContext.tsx`) reads the entry once per page: `peekBookingEntry(slug, usePathname())` in a per-mount `useSyncExternalStore` snapshot, `settleBookingEntry` in an effect. It takes the router pathname because `window.location` still holds the old URL during render on a client navigation. The collapse is CSS grid-rows (`AnimatedCollapse`), so /book has no motion lib; closed panels stay in the HTML as `inert`. Header layout A: Back on its own row, reading name is the h1. Next/Back/review-edit scroll to the form. Testimonial option 2 sits above the consents.
+- **Known:** a hard reload with a saved draft paints the block open, then it snaps shut on hydration. The h1 sits in the header, outside `<main>` (`3bqw2jye`, decide). Becky's per-reading picks: `63bfijpo`.
+- **Gates:** unit 210/210 files, 1915 tests; mock e2e 30/30; typecheck, lint and stories graph clean; two rounds of `/simplify` + `/code-review`. NOT browser-verified: the Chrome extension was not connected and Interceptor exits 8.
+- `4341eef`: deleted `scripts/migrate-booking-page-copy-2026-05.ts` (Max approved) and removed it from `apply-all-sanity-migrations-to-prod.mts`.
+- The book and homepage `page.test.ts` files now mock the view, so their 5s cold-import timeout is gone. Do not `git stash` while new files are `git add -N`: the stash fails and the pop then tries an older stash.
 
 **Done 2026-10-01, second half, on `release/v1.20.0` (not pushed): gold contrast, `gk2etjdy`.**
 - `c6d3b5b`: tokens `--j-text-gold #916B2A` (4.56:1 on cream) and `--j-text-gold-lg #B18945` (3.03:1, 24px and up). `PortableTextContent` links use text gold, body text weight 400, blockquote is a Cormorant italic 26px pull quote. `src/styles/tokens.test.ts` pins the ratios.
@@ -36,7 +44,7 @@
 
 **Done 2026-10-01 on `release/v1.20.0` (not pushed):** `3f227bc` + `4f7b9f9` (`5vanz209` closed; `9zf0xtcf` done except C9): dead CTA funnel removed, `entry_page_view` carries `entry` (homepage_card | draft | internal | external | direct) and `folded`; the card tap is held in page memory for 60s, nothing written to the device, so no consent gate. All browser storage goes through `withLocalStorage` (`src/lib/browserStorage.ts`); the draft store no longer throws when site data is blocked. `ec373f7` (`8dlx57qu`): `/book/[slug]` titles built as `<subtitle>, <price> | Josephine Soul Readings`, `reading.seo.metaTitle` an optional override, `bookingPage.seo.metaTitle` removed. Sanity runs: title cleanup on staging (4 cleared), pageCount on production (Akashic 1, Soul Blueprint 2; `eh6qwjg4` + `k7z0zdcy` closed), Studio redeployed. Full unit suite 1876/1876.
 
-**Known, not fixed, surfaced by code-review 2026-10-01 (earlier commits on this branch, Max to pick):** `/book` CSP is `script-src 'unsafe-inline'` (the deliberate `y5x31yiu` fix); `letterTitle` Studio help text still says "optional headline above the letter copy" though it is now the intake h1; unused letter-page defaults and query fields (`dk4a06s7`); the `reading-${id}` anchor id is written in both `HomePageView.tsx` and `homeReadingAnchor`; a long CMS reading name can overlap Back in `BookingFlowHeader` (fixed by header layout A); `page.test.ts` and `resend.test.ts` can time out at the 5s default under load (also on clean HEAD).
+**Known, not fixed, surfaced by code-review 2026-10-01 (earlier commits on this branch, Max to pick):** `/book` CSP is `script-src 'unsafe-inline'` (the deliberate `y5x31yiu` fix); the `reading-${id}` anchor id is written in both `HomePageView.tsx` and `homeReadingAnchor`; `resend.test.ts` can time out at the 5s default under full-suite load (passes alone). Fixed since in `c8188a4`: the letterTitle help text, the dead letter-page fields, the long-name overlap with Back, and the book page test timeout.
 
 **Notes design is LOCKED (2026-09-30), dex `v7ev58fe`.** The full decision list is on the ticket. Record: `www/MEMORY/WORK/20260930-articles-page/` (`decisions.html` is the rendered options page from `build-decisions.ts`; `DECISIONS.md` holds every answer; `TRANSCRIPT.md` is the council of 5 over 3 rounds; `CONTEXT.md` is what the council was given). The core:
 - Name "Notes", `/notes/[slug]`, Sanity document `article`.
