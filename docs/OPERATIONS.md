@@ -226,7 +226,7 @@ entry_page_view  →  intake_field_first_focus  →  intake_submit_success
 
 Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry` or `folded`, optionally `reading_id`.
 
-This is the funnel for judging the reading block (dex `q7swqq89`). Compare `folded = true` and `folded = false` separately, before and after the block ships.
+After the reading block ships, break this funnel down by `folded` to compare homepage-card visitors with search and shared-link visitors. The before/after comparison for the block uses funnel 3, which has data from before the block.
 
 **2. Mid-funnel: intake completion**
 

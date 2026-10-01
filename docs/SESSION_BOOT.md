@@ -4,7 +4,7 @@
 
 **Next, in order:**
 
-1. **Start `9zf0xtcf` first** (fold state and referrer on `entry_page_view`, after `5vanz209`). It needs about two weeks of baseline before the reading block ships.
+1. **Done 2026-10-01:** `5vanz209` (closed) and `9zf0xtcf` (`3f227bc` + `4f7b9f9`, only the C9 payload check is open). The card tap is held in page memory, nothing written to the device. **Max's call (option B): everything ships in v1.20.0, no separate two-week baseline.** The reading block's before/after is read from OPERATIONS.md funnel 3; the `entry`/`folded` split is used after ship. In progress next: `8dlx57qu`, plus the pageCount migration script's draft read (`*[_type=="bookingForm"][0]` can resolve `drafts.bookingForm`) fixed before the production run.
 2. **Build the reading-page design** (`q7swqq89` decisions, tickets listed below) and **the Notes section** (`v7ev58fe`), both on `release/v1.20.0`. They share one precondition: text-gold tokens `--j-text-gold: #916B2A` and `--j-text-gold-lg: #B18945`, `PortableTextContent` links off `#C4A46B`, body weight 400, and a blockquote restyle (this also closes most of `gk2etjdy`).
 3. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
 4. **Re-run the 10 blind queries around 2026-10-21** (list below).
