@@ -1,6 +1,43 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeHtml, mergeClasses } from "./utils";
+import { escapeHtml, isPlainLeftClick, isSameOrigin, mergeClasses } from "./utils";
+
+describe("isSameOrigin", () => {
+  it.each([
+    [`${window.location.origin}/privacy`, true],
+    ["https://www.google.com/", false],
+    ["", false],
+    ["not a url", false],
+  ])("%s -> %s", (url, expected) => {
+    expect(isSameOrigin(url)).toBe(expected);
+  });
+});
+
+describe("isPlainLeftClick", () => {
+  const plain = {
+    defaultPrevented: false,
+    button: 0,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    altKey: false,
+  };
+
+  it("is true for an unmodified primary-button click", () => {
+    expect(isPlainLeftClick(plain)).toBe(true);
+  });
+
+  it.each([
+    ["defaultPrevented", { defaultPrevented: true }],
+    ["middle button", { button: 1 }],
+    ["meta", { metaKey: true }],
+    ["ctrl", { ctrlKey: true }],
+    ["shift", { shiftKey: true }],
+    ["alt", { altKey: true }],
+  ])("is false with %s", (_case, override) => {
+    expect(isPlainLeftClick({ ...plain, ...override })).toBe(false);
+  });
+});
 
 describe("escapeHtml", () => {
   it("escapes ampersands", () => {

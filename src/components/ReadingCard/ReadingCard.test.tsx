@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("motion/react", () => {
   function createMotionComponent(tag: string) {
@@ -30,6 +30,8 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
+import { HOMEPAGE_CARD_ENTRY_KEY, takeHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
+
 import { ReadingCard } from "./ReadingCard";
 
 const defaultProps = {
@@ -44,6 +46,10 @@ const defaultProps = {
 };
 
 describe("ReadingCard", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
   it("renders card content", () => {
     render(<ReadingCard {...defaultProps} />);
 
@@ -87,5 +93,24 @@ describe("ReadingCard", () => {
 
     const bookingLink = screen.getByRole("link", { name: "Book This Reading" });
     expect(bookingLink).toHaveAttribute("href", "/book/soul-blueprint");
+  });
+
+  it("marks this reading as a homepage card entry when Book This Reading is tapped", async () => {
+    const user = userEvent.setup();
+    render(<ReadingCard {...defaultProps} />);
+
+    await user.click(screen.getByRole("link", { name: "Book This Reading" }));
+
+    expect(takeHomepageCardEntry("soul-blueprint")).toBe(true);
+  });
+
+  it("does not mark the entry on a Cmd-click that opens a new tab", async () => {
+    const user = userEvent.setup();
+    render(<ReadingCard {...defaultProps} />);
+
+    await user.keyboard("{Meta>}");
+    await user.click(screen.getByRole("link", { name: "Book This Reading" }));
+
+    expect(window.sessionStorage.getItem(HOMEPAGE_CARD_ENTRY_KEY)).toBeNull();
   });
 });

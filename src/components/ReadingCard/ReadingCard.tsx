@@ -8,7 +8,8 @@ import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ReadingIcon } from "@/components/ReadingIcon";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
-import { mergeClasses } from "@/lib/utils";
+import { markHomepageCardEntry } from "@/lib/intake/homepageCardEntry";
+import { isPlainLeftClick, mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
   slug: string;
@@ -100,7 +101,14 @@ export function ReadingCard({
       </button>
 
       <div className="mt-6">
-        <Button href={href}>Book This Reading</Button>
+        <Button
+          href={href}
+          onClick={(event) => {
+            if (isPlainLeftClick(event)) markHomepageCardEntry(slug);
+          }}
+        >
+          Book This Reading
+        </Button>
       </div>
     </div>
   );

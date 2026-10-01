@@ -3,7 +3,7 @@
 
 export type ReadingId = string;
 
-export type EntryCtaPosition = "drop-cap" | "verso-cta" | "back-link";
+export type BookingEntry = "homepage_card" | "draft" | "internal" | "external" | "direct";
 
 export type EmailType =
   | "order_confirmation"
@@ -16,13 +16,8 @@ export type ClientEventMap = {
     reading_id: ReadingId;
     referrer: string;
     viewport_width: number;
-  };
-  cta_click_intake: {
-    reading_id: ReadingId;
-    position: EntryCtaPosition;
-  };
-  change_reading_click: {
-    from_reading_id: ReadingId;
+    entry: BookingEntry;
+    folded: boolean;
   };
   intake_page_view: {
     reading_id: ReadingId;

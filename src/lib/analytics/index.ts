@@ -7,9 +7,9 @@ export {
   trackUntyped,
 } from "./client";
 export type {
+  BookingEntry,
   ClientEventMap,
   ClientEventName,
   EmailType,
-  EntryCtaPosition,
   ReadingId,
 } from "./events";

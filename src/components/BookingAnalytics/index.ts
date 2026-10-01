@@ -1,1 +1,1 @@
-export { EntryPageView, TrackedLink } from "./BookingAnalytics";
+export { EntryPageView } from "./BookingAnalytics";
