@@ -1,14 +1,25 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-09-30 night handover): implement on `release/v1.20.0`. Both designs are LOCKED.
+## ▶ 👉 START HERE (next session, 2026-10-01 handover): build the gold-token groundwork, then the reading block, then Notes, all on `release/v1.20.0`.
+
+**Release scope (Max, 2026-10-01, option B): everything ships in ONE release, v1.20.0.** The reading block, Notes and the header layout go in together with what is already on the branch. There is NO separate two-week baseline. The reading block's before/after is read from OPERATIONS.md funnel 3 (`entry_page_view -> intake_submit_success -> stripe_redirect -> payment_success`), which has data since July; the new `entry`/`folded` properties are for the split after ship.
+
+**Process rule (Max, 2026-10-01): before every commit, run `/simplify`, then `/code-review`, apply the fixes, then commit.** Commit path-scoped, never push without his go.
 
 **Next, in order:**
 
-1. **Done 2026-10-01:** `5vanz209` (closed) and `9zf0xtcf` (`3f227bc` + `4f7b9f9`, only the C9 payload check is open). The card tap is held in page memory, nothing written to the device. **Max's call (option B): everything ships in v1.20.0, no separate two-week baseline.** The reading block's before/after is read from OPERATIONS.md funnel 3; the `entry`/`folded` split is used after ship. `8dlx57qu` done (`ec373f7`): reading titles built from subtitle + price. **Run 2026-10-01:** title cleanup on staging (4 cleared, rerun idempotent), pageCount migration on production (Akashic 2 -> 1, Soul Blueprint none -> 2; staging was already at target), Studio redeployed (2/2 schemas). **🚩 OWED AFTER v1.20.0 IS ON PRODUCTION, not before:** `pnpm tsx scripts/migrate-clear-booking-meta-titles-2026-10.mts` against production. Production v1.19.5 still reads `reading.seo.metaTitle`, so clearing it earlier drops live titles to the old "Book … — Josephine" fallback. Until then the production Studio shows Booking Page `seo.metaTitle` as an unknown field; it is harmless.
-2. **Build the reading-page design** (`q7swqq89` decisions, tickets listed below) and **the Notes section** (`v7ev58fe`), both on `release/v1.20.0`. They share one precondition: text-gold tokens `--j-text-gold: #916B2A` and `--j-text-gold-lg: #B18945`, `PortableTextContent` links off `#C4A46B`, body weight 400, and a blockquote restyle (this also closes most of `gk2etjdy`).
-3. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
-4. **Re-run the 10 blind queries around 2026-10-21** (list below).
-5. **Later, own session:** the recording-to-note funnel, dex `yrozce56`.
+1. **Gold-token groundwork** (shared precondition of the block and Notes, closes most of `gk2etjdy`): text-gold tokens `--j-text-gold: #916B2A` (small text on cream/ivory) and `--j-text-gold-lg: #B18945` (24px and up), `PortableTextContent` links off `#C4A46B`, body weight 400, blockquote restyle.
+2. **Reading block** (`q7swqq89` decisions, tickets below): `xvcgimrr` (all copy editable in Sanity, with the zombie-field cleanup `dk4a06s7`), `3i9lbq9w` (Next/Back scroll to the form), header layout A (closes `j3a3426u` + `rti3s5bo`), `3gpnqffe` (Akashic testimonial link for Becky). The fold reads the homepage-card tap: see dex `1wu4x9wi` (classify once per page and share the value between the fold and `EntryPageView`, because `takeHomepageCardEntry` consumes the tap).
+3. **Notes** (`v7ev58fe`, design locked, below).
+4. **Before the PR:** C9 check of the `entry_page_view` payload. Staging sends no Mixpanel events (GitHub var `NEXT_PUBLIC_TRACK_NON_PROD` is unset), so either run `pnpm dev` locally (`.env.local` has tracking on) and read the Network request, or set that GitHub var for staging. Then push, PR, staging deploy and production deploy, each with Max's go.
+5. **🚩 After v1.20.0 is on production, not before:** run `pnpm tsx scripts/migrate-clear-booking-meta-titles-2026-10.mts` against production (staging already done). Production v1.19.5 still reads `reading.seo.metaTitle`; clearing it earlier drops live titles to the old "Book … — Josephine" fallback. Until then the production Studio shows Booking Page `seo.metaTitle` as an unknown field; harmless. Then close `8dlx57qu`.
+6. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
+7. **Re-run the 10 blind queries around 2026-10-21** (list below).
+8. **Later, own session:** the recording-to-note funnel `yrozce56`; site-wide page titles on `SITE_NAME` `hnbudgj8`.
+
+**Done 2026-10-01 on `release/v1.20.0` (not pushed):** `3f227bc` + `4f7b9f9` (`5vanz209` closed; `9zf0xtcf` done except C9): dead CTA funnel removed, `entry_page_view` carries `entry` (homepage_card | draft | internal | external | direct) and `folded`; the card tap is held in page memory for 60s, nothing written to the device, so no consent gate. All browser storage goes through `withLocalStorage` (`src/lib/browserStorage.ts`); the draft store no longer throws when site data is blocked. `ec373f7` (`8dlx57qu`): `/book/[slug]` titles built as `<subtitle>, <price> | Josephine Soul Readings`, `reading.seo.metaTitle` an optional override, `bookingPage.seo.metaTitle` removed. Sanity runs: title cleanup on staging (4 cleared), pageCount on production (Akashic 1, Soul Blueprint 2; `eh6qwjg4` + `k7z0zdcy` closed), Studio redeployed. Full unit suite 1876/1876.
+
+**Known, not fixed, surfaced by code-review 2026-10-01 (earlier commits on this branch, Max to pick):** `/book` CSP is `script-src 'unsafe-inline'` (the deliberate `y5x31yiu` fix); `letterTitle` Studio help text still says "optional headline above the letter copy" though it is now the intake h1; unused letter-page defaults and query fields (`dk4a06s7`); the `reading-${id}` anchor id is written in both `HomePageView.tsx` and `homeReadingAnchor`; a long CMS reading name can overlap Back in `BookingFlowHeader` (fixed by header layout A); `page.test.ts` and `resend.test.ts` can time out at the 5s default under load (also on clean HEAD).
 
 **Notes design is LOCKED (2026-09-30), dex `v7ev58fe`.** The full decision list is on the ticket. Record: `www/MEMORY/WORK/20260930-articles-page/` (`decisions.html` is the rendered options page from `build-decisions.ts`; `DECISIONS.md` holds every answer; `TRANSCRIPT.md` is the council of 5 over 3 rounds; `CONTEXT.md` is what the council was given). The core:
 - Name "Notes", `/notes/[slug]`, Sanity document `article`.
@@ -30,10 +41,10 @@
 **Implementation tickets:**
 - `xvcgimrr`: everything on the new block and final page editable from Sanity (field inventory on the ticket, plus the zombie-field cleanup `dk4a06s7`).
 - `3i9lbq9w`: Next/Back scroll to the form, not the page top. Must ship with the block.
-- `9zf0xtcf`: fold-state and referrer on `entry_page_view`, after `5vanz209`. Needs about two weeks of baseline before the block ships, so start it early.
-- `eh6qwjg4` + `k7z0zdcy`: production pageCount (Akashic 1, Soul Blueprint 2), landing with the release.
+- `9zf0xtcf`: done (`3f227bc` + `4f7b9f9`), only the C9 payload check is open. No baseline wait (option B).
+- `eh6qwjg4` + `k7z0zdcy`: done 2026-10-01, production pageCount is Akashic 1, Soul Blueprint 2.
 - `3gpnqffe`: Akashic testimonial link for Becky, needed because a testimonial ships.
-- The SEO naming change is already committed on this branch (`e225af4`). `8dlx57qu`: reading page titles are built in code from the reading's subtitle + price + site name, `seo.metaTitle` becomes an optional override, and the stale "Josephine —" values are cleared by script (staging, then production). No Becky action needed.
+- The SEO naming change is already committed on this branch (`e225af4`). `8dlx57qu`: done in code (`ec373f7`); staging values cleared; the production clear runs after deploy (step 5). No Becky action needed.
 - **`cgnrrz7x` naming is DECIDED (2026-09-30):** public name "Josephine Soul Readings"; "Josephine Rebecca" allowed as the founder name in structured data; her surname appears only on the legal pages. Code for it is committed on **`release/v1.20.0`** (cut off `main` `e2b68b1`, CI-wired in all four `ci.yml` sites, NOT pushed): new Organization/WebSite names + `alternateName` + `founder`, Product brand, `og:site_name`, legal pages `noindex, follow` and out of the sitemap. After deploy, Search Console will list the three legal pages as "Excluded by noindex", which is expected. Still open on the ticket: About copy, training and years, photo, same name on TikTok and listings.
 - **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) is still a planning item.** `v7ev58fe` (Notes) is designed and locked (see above). The site is already linked from the TikTok bio.
 - **Indexing is done, do not redo it.** Google Search Console: all 7 sitemap URLs indexed. Bing Webmaster Tools: set up 2026-09-30, all pages indexed (Max checked). Cloudflare Crawler Hints, AI Crawl Control and Block AI bots: checked by Max, no issues. robots.txt, crawler responses, server HTML, canonicals, sitemap and JSON-LD were verified fine.
