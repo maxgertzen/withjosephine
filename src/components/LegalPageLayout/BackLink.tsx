@@ -25,7 +25,7 @@ export function BackLink() {
     <Link
       href={ROUTES.home}
       onClick={handleClick}
-      className="flex items-center gap-2 font-body text-sm text-j-text-muted hover:text-j-accent transition-colors"
+      className="flex items-center gap-2 font-body text-sm text-j-text-muted hover:text-j-text-gold transition-colors"
     >
       <ArrowLeft className="w-4 h-4" />
       Back

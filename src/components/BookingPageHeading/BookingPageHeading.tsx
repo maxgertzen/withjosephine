@@ -7,7 +7,7 @@ export function BookingPageHeading({ eyebrow, title }: BookingPageHeadingProps) 
   return (
     <>
       {eyebrow ? (
-        <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-accent mb-3">
+        <p className="font-body text-[0.75rem] font-semibold tracking-[0.22em] uppercase text-j-text-gold mb-3">
           {eyebrow}
         </p>
       ) : null}

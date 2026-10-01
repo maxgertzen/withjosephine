@@ -1,3 +1,4 @@
+import { eyebrowClasses } from "@/lib/textStyles";
 import { mergeClasses } from "@/lib/utils";
 
 interface SectionHeadingProps {
@@ -20,7 +21,7 @@ export function SectionHeading({
   return (
     <div className={mergeClasses(align === "center" ? "text-center" : "text-left", className)}>
       {tag && (
-        <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4">
+        <span className={`${eyebrowClasses} block mb-4`}>
           {tag}
         </span>
       )}

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { Button } from "@/components/Button";
 import { captureException } from "@/lib/sentry-client";
+import { eyebrowClasses } from "@/lib/textStyles";
 
 export default function ErrorPage({
   error,
@@ -20,7 +21,7 @@ export default function ErrorPage({
   return (
     <div className="relative min-h-screen bg-j-cream flex flex-col items-center justify-center px-6 text-center">
       <div className="flex flex-col items-center max-w-md">
-        <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4">
+        <span className={`${eyebrowClasses} block mb-4`}>
           ✦ Something Went Wrong
         </span>
 

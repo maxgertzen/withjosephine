@@ -123,7 +123,7 @@ export function Hero({ content, className }: HeroProps) {
             handleScrollToReadings();
           }
         }}
-        className="j-hero-in-fade j-hero-delay-4 absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        className="j-hero-in-fade j-hero-delay-4 absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep"
       >
         <div
           className="h-[50px] w-px"

@@ -76,7 +76,7 @@ export function BookingFlowHeader({
       {readingName ? (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center text-center pointer-events-none">
           {readingTag ? (
-            <span className="font-body uppercase text-j-accent text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
+            <span className="font-body uppercase text-j-text-gold text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
               {readingTag}
             </span>
           ) : null}
@@ -84,7 +84,7 @@ export function BookingFlowHeader({
             {readingName}
           </span>
           {readingPrice ? (
-            <span className="font-display italic text-j-accent text-[1rem] md:text-[1.5rem] mt-0.5 md:mt-2">
+            <span className="font-display italic text-j-text-gold md:text-j-text-gold-lg text-[1rem] md:text-[1.5rem] mt-0.5 md:mt-2">
               {readingPrice}
             </span>
           ) : null}

@@ -43,7 +43,7 @@ export function ConsentBanner({ onAccept, onDecline, content }: ConsentBannerPro
             {body}{" "}
             <Link
               href={ROUTES.privacy}
-              className="text-j-accent underline-offset-2 hover:underline"
+              className="text-j-text-gold underline-offset-2 hover:underline"
             >
               {privacyLinkText}
             </Link>

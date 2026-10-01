@@ -29,6 +29,9 @@ const LEGAL_LINKS = [
   { label: "Refunds", href: ROUTES.refundPolicy },
 ] as const;
 
+const FOOTER_LINK_CLASSES =
+  "text-j-text-muted hover:text-j-text-gold transition-colors opacity-60 hover:opacity-100";
+
 interface FooterProps {
   content?: FooterContent;
   socialLinks?: MappedSocialLink[];
@@ -68,7 +71,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
                   aria-label={link.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+                  className={FOOTER_LINK_CLASSES}
                 >
                   <TikTokIcon className="w-8 h-8" />
                 </a>
@@ -80,7 +83,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
                 key={link.platform}
                 href={link.url}
                 aria-label={link.label}
-                className="text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+                className={FOOTER_LINK_CLASSES}
                 {...(isEmail ? {} : { target: "_blank", rel: "noopener noreferrer" })}
               >
                 <span className="font-body text-xs tracking-wide">
@@ -97,7 +100,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
           <Link
             key={link.href}
             href={link.href}
-            className="font-body text-xs tracking-wide text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+            className={`font-body text-xs tracking-wide ${FOOTER_LINK_CLASSES}`}
           >
             {link.label}
           </Link>
@@ -113,7 +116,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
           href="https://maxgertzen.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-j-accent transition-colors"
+          className="hover:text-j-text-gold transition-colors"
         >
           Max Gertzen
         </a>

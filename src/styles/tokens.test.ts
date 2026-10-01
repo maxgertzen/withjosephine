@@ -37,3 +37,11 @@ describe("text-gold tokens meet WCAG AA on cream and ivory", () => {
     expect(contrastRatio(tokenHex("j-text-gold-lg"), tokenHex(surface))).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe("global-error inline styles", () => {
+  it("colours the tag with the j-text-gold value", () => {
+    const globalErrorSource = readFileSync(join(__dirname, "../app/global-error.tsx"), "utf8");
+    const tagColor = globalErrorSource.match(/\.tag\s*\{[^}]*color:\s*(#[0-9a-fA-F]{6});/)?.[1];
+    expect(tagColor?.toLowerCase()).toBe(tokenHex("j-text-gold").toLowerCase());
+  });
+});

@@ -324,7 +324,7 @@ export function DateTimePicker({
               <button
                 type="button"
                 onClick={closeAndReturnFocus}
-                className="font-display italic text-sm text-j-text-heading hover:text-j-accent transition-colors px-3 py-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
+                className="font-display italic text-sm text-j-text-heading hover:text-j-text-gold transition-colors px-3 py-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep"
               >
                 Done
               </button>

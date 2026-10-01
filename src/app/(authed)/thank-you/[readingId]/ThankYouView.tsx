@@ -67,10 +67,10 @@ export function ThankYouView({
           {showsDiscountedPrice ? (
             <span className="font-display text-2xl italic flex items-baseline gap-2">
               <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-              <span className="text-j-accent">{paidAmount.display}</span>
+              <span className="text-j-text-gold-lg">{paidAmount.display}</span>
             </span>
           ) : (
-            <span className="font-display text-2xl italic text-j-accent">
+            <span className="font-display text-2xl italic text-j-text-gold-lg">
               {paidAmount.display ?? reading.price}
             </span>
           )}
@@ -83,7 +83,7 @@ export function ThankYouView({
           <p className="whitespace-pre-line">
             {renderWithSlots(copy.timelineBody, {
               deliveryDays: (
-                <span className="font-display italic text-j-accent">{copy.deliveryDaysPhrase}</span>
+                <span className="font-display italic text-j-text-gold">{copy.deliveryDaysPhrase}</span>
               ),
             })}
           </p>

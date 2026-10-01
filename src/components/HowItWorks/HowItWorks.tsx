@@ -24,7 +24,7 @@ export function HowItWorks({ content, className }: HowItWorksProps) {
           <div key={step.title}>
             {index > 0 && <GoldDivider className="my-10" />}
             <div className="flex gap-6 items-start">
-              <span className="font-display text-[clamp(2.4rem,5vw,3.6rem)] font-light italic leading-none text-j-accent shrink-0">
+              <span className="font-display text-[clamp(2.4rem,5vw,3.6rem)] font-light italic leading-none text-j-text-gold-lg shrink-0">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div>

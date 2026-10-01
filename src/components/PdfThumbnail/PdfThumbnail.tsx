@@ -34,7 +34,7 @@ export function PdfThumbnail({
       className={mergeClasses(
         "group relative mx-auto block aspect-[1/1.414] w-60 max-w-full overflow-hidden rounded-md",
         "border border-j-blush bg-j-ivory shadow-[0_12px_34px_-14px_rgba(13,11,26,0.4)]",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep",
         className,
       )}
     >
