@@ -32,7 +32,7 @@ export function ReadingFold({ slug, label, children }: ReadingFoldProps) {
             setToggled(true);
             setOpen((previous) => !previous);
           }}
-          className={`rounded-[16px] border border-j-border-subtle bg-j-ivory shadow-j-soft ${open ? "mb-5" : ""}`}
+          className="rounded-[16px] border border-j-border-subtle bg-j-ivory shadow-j-soft"
         >
           {label}
         </DisclosureButton>
@@ -43,7 +43,7 @@ export function ReadingFold({ slug, label, children }: ReadingFoldProps) {
         labelledBy={folded ? rowId : undefined}
         animated={toggled}
       >
-        {children}
+        <div className={folded ? "pt-5" : ""}>{children}</div>
       </AnimatedCollapse>
     </section>
   );
