@@ -1,6 +1,6 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-01 handover): build the gold-token groundwork, then the reading block, then Notes, all on `release/v1.20.0`.
+## ▶ 👉 START HERE (next session, 2026-10-01 handover 2): the gold-token groundwork is DONE. Build the reading block, then Notes, on `release/v1.20.0`.
 
 **Release scope (Max, 2026-10-01, option B): everything ships in ONE release, v1.20.0.** The reading block, Notes and the header layout go in together with what is already on the branch. There is NO separate two-week baseline. The reading block's before/after is read from OPERATIONS.md funnel 3 (`entry_page_view -> intake_submit_success -> stripe_redirect -> payment_success`), which has data since July; the new `entry`/`folded` properties are for the split after ship.
 
@@ -8,7 +8,7 @@
 
 **Next, in order:**
 
-1. **Gold-token groundwork** (shared precondition of the block and Notes, closes most of `gk2etjdy`): text-gold tokens `--j-text-gold: #916B2A` (small text on cream/ivory) and `--j-text-gold-lg: #B18945` (24px and up), `PortableTextContent` links off `#C4A46B`, body weight 400, blockquote restyle.
+1. ~~Gold-token groundwork~~ DONE 2026-10-01, see the block below.
 2. **Reading block** (`q7swqq89` decisions, tickets below): `xvcgimrr` (all copy editable in Sanity, with the zombie-field cleanup `dk4a06s7`), `3i9lbq9w` (Next/Back scroll to the form), header layout A (closes `j3a3426u` + `rti3s5bo`), `3gpnqffe` (Akashic testimonial link for Becky). The fold reads the homepage-card tap: see dex `1wu4x9wi` (classify once per page and share the value between the fold and `EntryPageView`, because `takeHomepageCardEntry` consumes the tap).
 3. **Notes** (`v7ev58fe`, design locked, below).
 4. **Before the PR:** C9 check of the `entry_page_view` payload. Staging sends no Mixpanel events (GitHub var `NEXT_PUBLIC_TRACK_NON_PROD` is unset), so either run `pnpm dev` locally (`.env.local` has tracking on) and read the Network request, or set that GitHub var for staging. Then push, PR, staging deploy and production deploy, each with Max's go.
@@ -16,6 +16,23 @@
 6. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
 7. **Re-run the 10 blind queries around 2026-10-21** (list below).
 8. **Later, own session:** the recording-to-note funnel `yrozce56`; site-wide page titles on `SITE_NAME` `hnbudgj8`.
+9. **Later, own release branch:** `oo4wxk3e`, a "Send reading now" button in Studio for Becky (marker plus a frequent cron, no admin token). It also fixes the force path, which has no already-sent check today.
+
+**Done 2026-10-01, second half, on `release/v1.20.0` (not pushed): gold contrast, `gk2etjdy`.**
+- `c6d3b5b`: tokens `--j-text-gold #916B2A` (4.56:1 on cream) and `--j-text-gold-lg #B18945` (3.03:1, 24px and up). `PortableTextContent` links use text gold, body text weight 400, blockquote is a Cormorant italic 26px pull quote. `src/styles/tokens.test.ts` pins the ratios.
+- `f58fb68`: gold text on cream and ivory moved to those tokens (eyebrows via `eyebrowClasses` in `src/lib/textStyles.ts`, links, floated labels, hover states, header and card tag and price, thank-you price, HowItWorks numerals, `global-error` tag). Focus rings use `j-deep`.
+- `e876109`: text on warm surfaces uses `--j-text-muted-warm #6F6560`. Hero tagline and body copy: the mobile background measures `#F3EFE7`, where `#916B2A` is 4.22:1. Also ReviewSummary, LegalAcknowledgments, TestimonialCard. Emails get a `mutedOnWarm` token for the warm card and shell text (emails had no gold text). Day-picker today ring is text gold. Decorative icons and glyphs use `j-ornament`. ESLint rejects the old gold: `text-`, `outline-`, `ring-`, `decoration-j-accent|gold`, focus borders, arbitrary values, `var(--j-accent)` colours, the email `text-gold` class and `color: #C4A46B`. `MEMORY/` is no longer linted.
+- `928b7df`: input focus border is text gold (Max picked option A in Storybook). Dead read-only field classes removed; no field sets `readOnly`.
+- Token rule for the reading block and Notes: `text-j-text-gold` (small) or `text-j-text-gold-lg` (24px and up) on cream and ivory, `text-j-text-muted-warm` on warm, `j-ornament` for decorative marks. The lint guard enforces the old-gold half.
+- Still open on `gk2etjdy`: rose `#BF9B8B` text on cream (2.39:1) in `DiscardDraftButton.tsx:63` and `:82`. Needs a colour call.
+
+**Production action 2026-10-01:** the day-7 delivery for `8ed4c854` (Soul Blueprint) was sent by `POST /api/cron/email-day-7-deliver?force=<id>` after Becky uploaded the voice note and PDF. Sanity shows `day7` sent at 08:09:15Z.
+
+**Environment notes 2026-10-01:**
+- `wrangler d1 execute withjosephine-bookings --remote` returned Cloudflare 7403 (not authorized). Run `wrangler whoami` and log in again before relying on D1 reads.
+- After a token edit, `pnpm dev` and Storybook can serve stale Tailwind CSS. Clear `.next/dev` and restart.
+- Stop Storybook with `pkill -f storybook/dist/bin/dispatcher.js`.
+- Browser checks ran through the harness Chrome driver; Interceptor still exits 8.
 
 **Done 2026-10-01 on `release/v1.20.0` (not pushed):** `3f227bc` + `4f7b9f9` (`5vanz209` closed; `9zf0xtcf` done except C9): dead CTA funnel removed, `entry_page_view` carries `entry` (homepage_card | draft | internal | external | direct) and `folded`; the card tap is held in page memory for 60s, nothing written to the device, so no consent gate. All browser storage goes through `withLocalStorage` (`src/lib/browserStorage.ts`); the draft store no longer throws when site data is blocked. `ec373f7` (`8dlx57qu`): `/book/[slug]` titles built as `<subtitle>, <price> | Josephine Soul Readings`, `reading.seo.metaTitle` an optional override, `bookingPage.seo.metaTitle` removed. Sanity runs: title cleanup on staging (4 cleared), pageCount on production (Akashic 1, Soul Blueprint 2; `eh6qwjg4` + `k7z0zdcy` closed), Studio redeployed. Full unit suite 1876/1876.
 
