@@ -1,6 +1,28 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-01 handover 3): the reading block is BUILT (`c8188a4`). Do its browser pass (`2o6bxiqe`), then build Notes, on `release/v1.20.0`.
+## ▶ 👉 START HERE (next session, 2026-10-01 handover 4): build Notes (`v7ev58fe`) on `release/v1.20.0`. The browser pass is done.
+
+**Max, 2026-10-01: next session switches to Notes. Every visitor-facing string, image, link and optional block in Notes is editable in Sanity, with a `src/data/defaults.ts` fallback.** The same rule is now a binding constraint in `CLAUDE.md`.
+
+**Everything left before the PR is filed under dex epic `wjye07gw`** ("v1.20.0 remaining before the PR"). Max agreed to fold all of it into v1.20.0. It lists the existing tickets as blockers (Notes, Studio deploy plus Presentation check, C9, Becky's picks `63bfijpo` and `3gpnqffe`, the h1 decision `3bqw2jye`, the rose colour on `gk2etjdy`, dead `VellumShell` `zk4qp0qi`, retired Sanity fields `and9um5b`, the styling parent `681ra7bq`) and has four new children: Studio deploy to staging `zpivrlex`, the duplicated reading anchor id `n2iibpy1`, the `resend.test.ts` timeout `nfqmp3k8`, and the review-round deferrals `71v23wyo`.
+
+**Done 2026-10-01, fourth part, on `release/v1.20.0` (not pushed):**
+- `2o6bxiqe` browser pass closed, with `j3a3426u`, `rti3s5bo` and `3i9lbq9w`. Checked on `pnpm dev` at a real 375px and at 1280px, all three readings. The "From a client" line was checked on staging with a temporary `formTestimonial` on Soul Blueprint, since unset. Jade's full quote runs about 15 lines at 375px; Becky's pick should be short.
+- `ebc6219`: `publishedFetch` cache key includes apiHost, projectId, dataset and apiVersion. A mock e2e run had left fixture answers in `.next/dev/cache` that plain `pnpm dev` then served ("The Birth Chart Reading, $99").
+- `3cb67d9`: the gap under the folded reading row closes with the panel.
+- `8a6d02e`: the "Switched to" notice shows only after a click on a "Not sure this is the one?" link on a form page (Max's call). A homepage card tap or direct load carries name and email over without it. One click slot in `src/lib/intake/entryMarker.ts` (homepage card and reading switch), read once in `BookingEntryProvider`, passed via `PickedOnOtherReadingFormContext`. `useDraftRestore` only carries fields over and no longer copies blank values, so they cannot overwrite a filled field. This replaces the old note at line ~216 below that homepage to `Book now` fires the notice.
+- `f9beca5`: a pending autosave edit is saved on `pagehide` and on unmount, so Back, the "Not sure" links, a reload or a closed tab inside the 500ms debounce keep it.
+- `e8483cc`: key list and Prettier on two files.
+- Gates: unit 211 files, 1928 tests; `tsc` clean outside `MEMORY/WORK`; lint clean; four rounds of `/simplify` + `/code-review`.
+
+**Process note:** Max asked how many review rounds the commit rule means. Proposed, not adopted: run a follow-up round only on new changes that are more than direct fixes for the previous round's findings.
+
+**Environment notes:**
+- The Chrome extension works on this machine. 375px checks used an iframe of that width on a `localhost:3000` page; the extension's script limit is 45s, so long browser scripts must be split.
+- To test against staging content locally: stop dev, run `NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev`, then restart plain `pnpm dev` after.
+- Background dev servers stop at the background time limit; start them with a long timeout.
+
+## ▶ (SUPERSEDED by handover 4 above) START HERE (2026-10-01 handover 3): the reading block is BUILT (`c8188a4`). Do its browser pass (`2o6bxiqe`), then build Notes, on `release/v1.20.0`.
 
 **Release scope (Max, 2026-10-01, option B): everything ships in ONE release, v1.20.0.** The reading block, Notes and the header layout go in together with what is already on the branch. There is NO separate two-week baseline. The reading block's before/after is read from OPERATIONS.md funnel 3 (`entry_page_view -> intake_submit_success -> stripe_redirect -> payment_success`), which has data since July; the new `entry`/`folded` properties are for the split after ship.
 
