@@ -1,6 +1,22 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
+## ▶ 👉 START HERE (next session, 2026-10-02 handover 8): dev cleanup is on `chore/v1.20.0-dev-cleanup` (6 commits off `release/v1.20.0`), waiting for Max's go to push `release/v1.20.0` (starts the CI staging deploy) and open the PR into it. Nothing is pushed.
+
+**Done 2026-10-02, handover 8, on `chore/v1.20.0-dev-cleanup`:**
+- `7449909`: deleted `scripts/cleanup-orphan-field-values.mts` and `scripts/migrate-unset-orphan-fields-2026-06-12.ts` (+ test), Max's go. `migrate-booking-form-v2.ts` no longer writes `swapToastCopy`.
+- `fa06981`: `VellumShell.tsx` deleted, header reading props required (`zk4qp0qi` closed).
+- `d29dd05`: `readingAnchorId` in `src/lib/http/routes.ts` (`n2iibpy1` closed).
+- `01b1446`: `resend.test.ts` imports `./resend` once, no `resetModules` (`nfqmp3k8` closed).
+- `b587978`: the "Switched to" notice is `bookingForm.readingPageContent.switchNoticeTemplate` in Sanity, `{reading}` filled in derive. Default copy is now "Switched to {reading}. Your details are saved. Start where you left off." (lint bans the old em dash; "details" because name or email can carry over alone). After the push: run `scripts/seed-sanity-defaults-2026-10.mts` on staging so the field has a value for Presentation.
+- `597e3ad`: `useEffectiveTimeZone` and `useIsClient` use `useFirstClientRead`.
+- Gates: typecheck, lint, unit 223 files / 2034 tests, Studio build, stories graph 38. `/simplify` (4 reviewers) and `/code-review` (8 findings) applied. Empty-h1 finding skipped: `reading.name` is required in the schema.
+- Still open on `71v23wyo`: the `reading_switch` decision, two edge cases, and repo-wide Prettier (338 files flagged; only files touched today were formatted).
+
+**Studio deploy (Max, 2026-10-02):** one deployed Studio serves both workspaces, so `zpivrlex` is checked locally (`localhost:3333/staging` against `NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev`), not deployed. Checked so far: `estimatedMinutes` reaches the page ("Page 1 of 4 · about 27 minutes"); test draft deleted. Questions, testimonial and Reading Page words still to check. Proposed, not decided: a second Studio host for staging so Becky can edit staging without touching her Production workspace.
+
+**Still Max's call:** rose colour on `gk2etjdy` (`DiscardDraftButton.tsx:63`, `:82`), h1 placement `3bqw2jye`, `681ra7bq` points or close.
+
+## ▶ (SUPERSEDED by handover 8 above) START HERE (2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
 
 **Done 2026-10-02, handover 7: `and9um5b` on staging.**
 - `8905154`: `scripts/unset-unknown-sanity-fields.mts`. Finds fields each document has but the schema does not declare, from `sanity schema extract` (nested objects and array items too). Dry run by default, `--apply` unsets per document with `ifRevisionId`. Skips `submission` and documents whose `_type` is not in the schema. Refuses production unless HEAD is on `origin/main` with no local `studio/` changes. Unit tests 10/10.
