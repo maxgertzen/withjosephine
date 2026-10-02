@@ -38,7 +38,10 @@ const log = (message: string) => console.log(`[${LOG_PREFIX}] ${message}`);
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export function findUnknownFieldPaths(schema: readonly SchemaEntry[], doc: SanityDoc): string[] | null {
+export function findUnknownFieldPaths(
+  schema: readonly SchemaEntry[],
+  doc: SanityDoc,
+): string[] | null {
   const byName = new Map(schema.map((entry) => [entry.name, entry]));
   if (byName.get(doc._type)?.type !== "document") return null;
 
@@ -46,27 +49,38 @@ export function findUnknownFieldPaths(schema: readonly SchemaEntry[], doc: Sanit
     if (node?.type !== "inline") return node;
     const named = byName.get(node.name);
     if (!named) return undefined;
-    return named.type === "document" ? { type: "object", attributes: named.attributes } : resolve(named.value);
+    return named.type === "document"
+      ? { type: "object", attributes: named.attributes }
+      : resolve(named.value);
   };
 
   const attributesOf = (node: ObjectNode): Attributes => {
     const rest = resolve(node.rest);
-    return rest?.type === "object" ? { ...attributesOf(rest), ...node.attributes } : node.attributes;
+    return rest?.type === "object"
+      ? { ...attributesOf(rest), ...node.attributes }
+      : node.attributes;
   };
 
   const declaresType = (node: ObjectNode, value: Record<string, unknown>): boolean => {
     const typeNode = attributesOf(node)._type?.value;
-    if (typeNode?.type !== "string" || typeNode.value === undefined || value._type === undefined) return true;
+    if (typeNode?.type !== "string" || typeNode.value === undefined || value._type === undefined)
+      return true;
     return typeNode.value === value._type;
   };
 
-  const pickUnionMember = (members: TypeNode[], value: Record<string, unknown>): ObjectNode | undefined =>
+  const pickUnionMember = (
+    members: TypeNode[],
+    value: Record<string, unknown>,
+  ): ObjectNode | undefined =>
     members
       .map(resolve)
-      .find((member): member is ObjectNode => member?.type === "object" && declaresType(member, value));
+      .find(
+        (member): member is ObjectNode => member?.type === "object" && declaresType(member, value),
+      );
 
   const addressable = (segment: string, pattern: RegExp, at: string): string => {
-    if (!pattern.test(segment)) throw new Error(`${doc._id}: cannot build an unset path for "${segment}" at "${at}"`);
+    if (!pattern.test(segment))
+      throw new Error(`${doc._id}: cannot build an unset path for "${segment}" at "${at}"`);
     return segment;
   };
 
@@ -95,7 +109,9 @@ export function findUnknownFieldPaths(schema: readonly SchemaEntry[], doc: Sanit
     const attributes = attributesOf(objectNode);
     for (const [key, child] of Object.entries(value)) {
       if (key.startsWith("_")) continue;
-      const fieldPath = at ? `${at}.${addressable(key, FIELD_NAME, at)}` : addressable(key, FIELD_NAME, at);
+      const fieldPath = at
+        ? `${at}.${addressable(key, FIELD_NAME, at)}`
+        : addressable(key, FIELD_NAME, at);
       if (attributes[key]) walk(attributes[key].value, child, fieldPath);
       else unknown.push(fieldPath);
     }
@@ -111,7 +127,16 @@ function extractSchema(workspace: string): SchemaEntry[] {
   try {
     execFileSync(
       "pnpm",
-      ["exec", "sanity", "schema", "extract", "--workspace", workspace, "--path", path.relative(STUDIO_DIR, schemaFile)],
+      [
+        "exec",
+        "sanity",
+        "schema",
+        "extract",
+        "--workspace",
+        workspace,
+        "--path",
+        path.relative(STUDIO_DIR, schemaFile),
+      ],
       { cwd: STUDIO_DIR, stdio: "pipe" },
     );
     return JSON.parse(fs.readFileSync(schemaFile, "utf-8")) as SchemaEntry[];
@@ -120,7 +145,8 @@ function extractSchema(workspace: string): SchemaEntry[] {
   }
 }
 
-const git = (args: string[]) => execFileSync("git", args, { cwd: STUDIO_DIR, encoding: "utf-8" }).trim();
+const git = (args: string[]) =>
+  execFileSync("git", args, { cwd: STUDIO_DIR, encoding: "utf-8" }).trim();
 
 function headIsOnOriginMain(): boolean {
   try {
@@ -143,7 +169,9 @@ function assertSchemaIsDeployedToProduction(): void {
 function datasetClient(dataset: string, apply: boolean) {
   const client = apply
     ? sanityWriteClient({ dataset })
-    : sanityWriteClient({ dataset, readOnly: true }).withConfig({ token: process.env.SANITY_READ_TOKEN });
+    : sanityWriteClient({ dataset, readOnly: true }).withConfig({
+        token: process.env.SANITY_READ_TOKEN,
+      });
   return client.withConfig({ perspective: "raw" });
 }
 
@@ -174,11 +202,15 @@ async function run(opts: { dataset: string; apply: boolean }): Promise<void> {
       await client.patch(doc._id).ifRevisionId(doc._rev).unset(paths).commit();
     } catch (error) {
       failedCommits += 1;
-      log(`${doc._id}: unset failed, rerun to retry (${error instanceof Error ? error.message : String(error)})`);
+      log(
+        `${doc._id}: unset failed, rerun to retry (${error instanceof Error ? error.message : String(error)})`,
+      );
     }
   }
 
-  log(`${docs.length} documents read, ${docsWithUnknown} with unknown fields, ${failedCommits} failed`);
+  log(
+    `${docs.length} documents read, ${docsWithUnknown} with unknown fields, ${failedCommits} failed`,
+  );
   if (failedCommits > 0) process.exitCode = 1;
 }
 
@@ -186,7 +218,9 @@ async function main(): Promise<void> {
   loadDotenv();
   const [dataset, flag] = process.argv.slice(2);
   if (dataset !== "staging" && dataset !== "production") {
-    console.error("Usage: pnpm tsx scripts/unset-unknown-sanity-fields.mts staging|production [--apply]");
+    console.error(
+      "Usage: pnpm tsx scripts/unset-unknown-sanity-fields.mts staging|production [--apply]",
+    );
     process.exit(2);
   }
   await run({ dataset, apply: flag === "--apply" });
