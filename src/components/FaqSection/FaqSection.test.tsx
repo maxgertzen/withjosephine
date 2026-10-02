@@ -77,3 +77,27 @@ describe("FaqSection", () => {
     );
   });
 });
+
+describe("FaqSection note links", () => {
+  it("shows the note link under an opened answer that has one", async () => {
+    const user = userEvent.setup();
+    render(
+      <FaqSection
+        items={[
+          {
+            ...FAQ_ITEMS[0],
+            noteLink: { label: "Read the note: timing", href: "/notes/timing", slug: "timing" },
+          },
+          FAQ_ITEMS[1],
+        ]}
+      />,
+    );
+    await user.click(screen.getByText(FAQ_ITEMS[0].question));
+    const link = screen.getByRole("link", { name: /Read the note: timing/ });
+    expect(link).toHaveAttribute("href", "/notes/timing");
+    expect(link).toHaveAttribute("data-mp-event", "article_note_click");
+
+    await user.click(screen.getByText(FAQ_ITEMS[1].question));
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+});

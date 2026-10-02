@@ -5,6 +5,7 @@ import { NONCE_HEADER } from "@/lib/constants";
 import {
   fetchFaqItems,
   fetchLandingPage,
+  fetchNotesState,
   fetchReadings,
   fetchSiteSettings,
   fetchTestimonials,
@@ -21,13 +22,15 @@ export const metadata: Metadata = {
 export default async function LandingPagePreview() {
   const headersList = await headers();
 
-  const [landingPage, readings, testimonials, faqItems, siteSettings] = await Promise.all([
-    fetchLandingPage(),
-    fetchReadings(),
-    fetchTestimonials(),
-    fetchFaqItems(),
-    fetchSiteSettings(),
-  ]);
+  const [landingPage, readings, testimonials, faqItems, siteSettings, notesState] =
+    await Promise.all([
+      fetchLandingPage(),
+      fetchReadings(),
+      fetchTestimonials(),
+      fetchFaqItems(),
+      fetchSiteSettings(),
+      fetchNotesState(),
+    ]);
 
   return (
     <HomePageView
@@ -37,6 +40,7 @@ export default async function LandingPagePreview() {
         testimonials,
         faqItems,
         siteSettings,
+        notesState,
         faqNonce: headersList.get(NONCE_HEADER) ?? undefined,
       })}
     />

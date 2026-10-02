@@ -135,6 +135,46 @@ export const READING_PAGE_DEFAULTS: ReadingPageContent = {
   minutesTemplate: "about {minutes} minutes",
 };
 
+export interface NotesContent {
+  indexTitle: string;
+  indexSubtitle: string;
+  readingTimeTemplate: string;
+  backLabel: string;
+  authorName: string;
+  authorLine: string;
+  listenLabel: string;
+  listenLengthTemplate: string;
+  signOff: string;
+  updatedTemplate: string;
+  cardLeadIn: string;
+  cardButton: string;
+  moreNotesLabel: string;
+  seeAllLabel: string;
+  footerLinkLabel: string;
+  faqLinkTemplate: string;
+  readingPageTitle: string;
+}
+
+export const NOTES_DEFAULTS: NotesContent = {
+  indexTitle: "Notes",
+  indexSubtitle: "Answers to the questions people bring to me.",
+  readingTimeTemplate: "{minutes} minute read",
+  backLabel: "Notes",
+  authorName: "Written by Josephine",
+  authorLine: "Josephine Soul Readings",
+  listenLabel: "Listen to this note",
+  listenLengthTemplate: "{minutes} min",
+  signOff: "With love, Josephine",
+  updatedTemplate: "Updated {date}",
+  cardLeadIn: "When you’re ready.",
+  cardButton: "See this reading",
+  moreNotesLabel: "More notes",
+  seeAllLabel: "See all notes",
+  footerLinkLabel: "Notes",
+  faqLinkTemplate: "Read the note: {title}",
+  readingPageTitle: "Notes on this reading",
+};
+
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
 
 const INTAKE_OPENER =

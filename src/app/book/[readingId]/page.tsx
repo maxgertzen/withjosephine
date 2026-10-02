@@ -9,6 +9,8 @@ import {
   fetchBookingFormPublished,
   fetchBookingPagePublished,
   fetchLandingPagePublished,
+  fetchNotesStatePublished,
+  fetchReadingNotesPublished,
   fetchReadingPublished,
   fetchReadingsPublished,
 } from "@/lib/sanity/fetch";
@@ -50,12 +52,22 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, sanityReadings, bookingForm, bookingPage, landingPage] = await Promise.all([
+  const [
+    sanityReading,
+    sanityReadings,
+    bookingForm,
+    bookingPage,
+    landingPage,
+    notesState,
+    readingNotes,
+  ] = await Promise.all([
     fetchReadingPublished(readingId),
     fetchReadingsPublished(),
     fetchBookingFormPublished(),
     fetchBookingPagePublished(),
     fetchLandingPagePublished(),
+    fetchNotesStatePublished(),
+    fetchReadingNotesPublished(readingId),
   ]);
 
   const props = deriveBookingFormViewProps({
@@ -65,6 +77,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
     bookingPage,
     bookingForm,
     landingPage,
+    notesState,
+    readingNotes,
   });
   if (!props) {
     notFound();

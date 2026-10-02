@@ -14,6 +14,7 @@ import {
   EMAIL_PREVIEW_SINGLETON_TYPES,
   SINGLETON_TYPES,
 } from "./schemas/deskStructure";
+import { SITE_ORIGIN_BY_DATASET } from "./lib/siteOrigins";
 import { presentationResolve } from "./presentation";
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!;
@@ -73,7 +74,7 @@ export default defineConfig([
     projectId,
     dataset: "production",
     basePath: "/production",
-    plugins: sharedPlugins("https://withjosephine.com"),
+    plugins: sharedPlugins(SITE_ORIGIN_BY_DATASET.production),
     schema: { types: schemaTypes },
     form: sharedForm,
     document: sharedDocument,
@@ -85,7 +86,7 @@ export default defineConfig([
     projectId,
     dataset: "staging",
     basePath: "/staging",
-    plugins: sharedPlugins("https://staging.withjosephine.com"),
+    plugins: sharedPlugins(SITE_ORIGIN_BY_DATASET.staging),
     schema: { types: schemaTypes },
     form: sharedForm,
     document: sharedDocument,

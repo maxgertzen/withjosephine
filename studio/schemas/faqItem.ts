@@ -19,6 +19,13 @@ export const faqItem = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: "relatedArticle",
+      title: "Note",
+      type: "reference",
+      to: [{ type: "article" }],
+      description: "Optional. Shows a link to this note under the answer.",
+    }),
+    defineField({
       name: "order",
       title: "Display Order",
       type: "number",

@@ -93,7 +93,11 @@ export const faqItemsQuery = groq`
     _id,
     question,
     answer,
-    order
+    order,
+    "relatedArticle": relatedArticle-> {
+      title,
+      "slug": slug.current
+    }
   }
 `;
 
@@ -381,4 +385,74 @@ export const legalPageBySlugQuery = groq`
       metaDescription
     }
   }
+`;
+
+export const notesStateQuery = groq`
+  {
+    "settings": *[_type == "notesSettings"][0] {
+      ...,
+      "authorPhotoUrl": coalesce(
+        authorPhoto.asset->url,
+        *[_type == "landingPage"][0].about.image.asset->url
+      )
+    },
+    "publishedCount": count(*[_type == "article" && defined(slug.current)])
+  }
+`;
+
+const articleBaseFields = `
+  _id,
+  title,
+  "slug": slug.current,
+  subtitle,
+  publishedAt,
+  updatedAt
+`;
+
+export const articlesQuery = groq`
+  *[_type == "article" && defined(slug.current)] | order(publishedAt desc) {
+    ${articleBaseFields},
+    "wordCount": math::sum(body[_type == "block"]{ "n": length(string::split(pt::text(@), " ")) }.n)
+  }
+`;
+
+export const articleBySlugQuery = groq`
+  *[_type == "article" && slug.current == $slug][0] {
+    ${articleBaseFields},
+    searchDescription,
+    body[] {
+      ...,
+      _type == "image" => {
+        "url": asset->url,
+        "width": asset->metadata.dimensions.width,
+        "height": asset->metadata.dimensions.height
+      },
+      markDefs[] {
+        ...,
+        _type == "noteLink" => { "slug": note->slug.current }
+      }
+    },
+    "relatedReading": relatedReading-> {
+      name,
+      "slug": slug.current,
+      priceDisplay,
+      valueProposition
+    },
+    "moreNotes": moreNotes[]-> { title, "slug": slug.current },
+    "audioUrl": audio.asset->url,
+    audioMinutes
+  }
+`;
+
+export const articleSlugsQuery = groq`
+  *[_type == "article" && defined(slug.current)] { "slug": slug.current }
+`;
+
+export const articleDatesQuery = groq`
+  *[_type == "article" && defined(slug.current)] { "slug": slug.current, publishedAt, updatedAt }
+`;
+
+export const readingNotesQuery = groq`
+  *[_type == "article" && relatedReading->slug.current == $slug && defined(slug.current)]
+    | order(publishedAt desc) { title, "slug": slug.current }
 `;

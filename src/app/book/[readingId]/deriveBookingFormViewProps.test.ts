@@ -56,6 +56,8 @@ function derive(
     bookingPage: null,
     bookingForm: bookingForm(),
     landingPage: null,
+    notesState: null,
+    readingNotes: [],
     ...extra,
   });
 }
@@ -218,5 +220,28 @@ describe("deriveBookingFormViewProps form extras", () => {
 
   it("passes no testimonial when none is set", () => {
     expect(derive()?.form.testimonial).toBeUndefined();
+  });
+});
+
+describe("deriveBookingFormViewProps notes list", () => {
+  const notes = [{ title: "Reading your chart without your birth time", slug: "birth-time" }];
+  const visible = { settings: { enabled: true }, publishedCount: 1 };
+
+  it("lists the reading's notes while Notes is visible", () => {
+    expect(
+      derive(sanityReading(), { notesState: visible, readingNotes: notes })?.readingBlock.notes,
+    ).toEqual({
+      title: "Notes on this reading",
+      items: [{ ...notes[0], href: "/notes/birth-time" }],
+    });
+  });
+
+  it("lists nothing while Notes is hidden or the reading has no notes", () => {
+    const hidden = { settings: { enabled: false }, publishedCount: 1 };
+    expect(
+      derive(sanityReading(), { notesState: hidden, readingNotes: notes })?.readingBlock.notes,
+    ).toBeUndefined();
+    expect(derive(sanityReading(), { readingNotes: notes })?.readingBlock.notes).toBeUndefined();
+    expect(derive(sanityReading(), { notesState: visible })?.readingBlock.notes).toBeUndefined();
   });
 });

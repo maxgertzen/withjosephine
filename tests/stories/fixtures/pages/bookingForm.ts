@@ -33,6 +33,8 @@ function argsFor(slug: string, extras: Partial<SanityReading> = {}) {
     bookingPage: { paymentButtonText: "Continue to payment" },
     bookingForm,
     landingPage: null,
+    notesState: null,
+    readingNotes: [],
   });
   if (!props) throw new Error(`no booking form props for ${slug}`);
   return props;

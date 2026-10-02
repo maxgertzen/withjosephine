@@ -71,6 +71,11 @@ export type ClientEventMap = {
     reading_id: ReadingId;
     submission_id: string;
   };
+  article_view: {
+    note: string;
+    referrer: string;
+    viewport_width: number;
+  };
 };
 
 export type ClientEventName = keyof ClientEventMap;

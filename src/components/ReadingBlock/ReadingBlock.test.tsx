@@ -90,3 +90,22 @@ describe.each<BookingEntry>(["homepage_card", "draft"])("ReadingBlock, folded fo
     expect(blockPanel()).not.toHaveAttribute("inert");
   });
 });
+
+describe("ReadingBlock notes list", () => {
+  it("lists the reading's notes under their heading", () => {
+    renderAs("external", {
+      ...SOUL_BLUEPRINT_BLOCK,
+      notes: {
+        title: "Notes on this reading",
+        items: [{ title: "How the two work together", slug: "together", href: "/notes/together" }],
+      },
+    });
+    const nav = screen.getByRole("navigation", { name: "Notes on this reading" });
+    expect(nav.querySelector("a")).toHaveAttribute("href", "/notes/together");
+  });
+
+  it("shows no notes list without notes", () => {
+    renderAs("external");
+    expect(screen.queryByRole("navigation", { name: "Notes on this reading" })).not.toBeInTheDocument();
+  });
+});

@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 import type { ReadingFact } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
@@ -23,12 +24,13 @@ export type ReadingBlockProps = {
   howItWorks: { title: string; paragraphs: string[] };
   questions: { title: string; items: MappedFaqItem[] };
   otherReadings: { title: string; readings: OtherReading[] };
+  notes?: { title: string; items: { title: string; slug: string; href: string }[] };
 };
 
 const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3";
 
 function ReadingContent(props: ReadingBlockProps) {
-  const { slug, eyebrow, lead, body, facts, reader, included, howItWorks, questions, otherReadings } =
+  const { slug, eyebrow, lead, body, facts, reader, included, howItWorks, questions, otherReadings, notes } =
     props;
   return (
     <>
@@ -109,6 +111,25 @@ function ReadingContent(props: ReadingBlockProps) {
           </ReadingAccordion>
         ) : null}
       </div>
+
+      {notes ? (
+        <nav aria-label={notes.title} className="mt-7 flex flex-col">
+          <p className={`${eyebrowClasses} m-0 mb-1`}>{notes.title}</p>
+          {notes.items.map((note) => (
+            <Link
+              key={note.slug}
+              href={note.href}
+              data-mp-event="article_note_click"
+              data-mp-reading-id={slug}
+              data-mp-target={note.slug}
+              data-mp-position="reading_page"
+              className="flex min-h-11 items-center border-t border-j-border-subtle py-3 font-display italic font-medium text-[1.2rem] leading-[1.25] text-j-text-heading hover:text-j-text-gold-lg"
+            >
+              {note.title}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       {otherReadings.readings.length > 0 ? (
         <nav

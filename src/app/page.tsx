@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/JsonLd/JsonLd";
 import {
   fetchFaqItemsPublished,
   fetchLandingPagePublished,
+  fetchNotesStatePublished,
   fetchReadingsPublished,
   fetchSiteSettingsPublished,
   fetchTestimonialsPublished,
@@ -33,13 +34,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  const [landingPage, readings, testimonials, faqItems, siteSettings] = await Promise.all([
-    fetchLandingPagePublished(),
-    fetchReadingsPublished(),
-    fetchTestimonialsPublished(),
-    fetchFaqItemsPublished(),
-    fetchSiteSettingsPublished(),
-  ]);
+  const [landingPage, readings, testimonials, faqItems, siteSettings, notesState] =
+    await Promise.all([
+      fetchLandingPagePublished(),
+      fetchReadingsPublished(),
+      fetchTestimonialsPublished(),
+      fetchFaqItemsPublished(),
+      fetchSiteSettingsPublished(),
+      fetchNotesStatePublished(),
+    ]);
 
   const sameAs = siteSettings?.socialLinks?.map((link) => link.url) ?? [];
 
@@ -54,6 +57,7 @@ export default async function LandingPage() {
           testimonials,
           faqItems,
           siteSettings,
+          notesState,
         })}
       />
     </>

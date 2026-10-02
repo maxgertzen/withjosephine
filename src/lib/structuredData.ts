@@ -30,6 +30,35 @@ export function websiteJsonLd(): Record<string, unknown> {
   };
 }
 
+export function articleJsonLd(input: {
+  headline: string;
+  description: string;
+  path: string;
+  datePublished: string;
+  dateModified: string;
+  image?: string;
+}): Record<string, unknown> {
+  const origin = siteOrigin();
+  const url = new URL(input.path, origin).toString();
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: input.headline,
+    description: input.description,
+    image: new URL(input.image || DEFAULT_OG_IMAGE, origin).toString(),
+    datePublished: input.datePublished,
+    dateModified: input.dateModified,
+    author: { "@type": "Person", name: FOUNDER_NAME },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      logo: { "@type": "ImageObject", url: new URL(LOGO_PATH, origin).toString() },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+  };
+}
+
 export function readingProductJsonLd(input: {
   name: string;
   description: string;

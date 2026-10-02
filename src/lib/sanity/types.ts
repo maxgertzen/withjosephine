@@ -1,6 +1,7 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-import type { ReadingPageContent } from "@/data/defaults";
+import type { NotesContent, ReadingPageContent } from "@/data/defaults";
+import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type SanityReading = {
   _id: string;
@@ -42,6 +43,7 @@ export type SanityFaqItem = {
   question: string;
   answer: string;
   order: number;
+  relatedArticle?: NoteSummary | null;
 };
 
 export type SanityHero = {
@@ -408,3 +410,40 @@ export type SanityLegalPage = {
   body: SanityPortableTextBlock[];
   seo?: Pick<SanitySeo, "metaTitle" | "metaDescription">;
 };
+
+export type SanityNotesSettings = Partial<NotesContent> & {
+  enabled?: boolean;
+  authorPhotoUrl?: string;
+};
+
+export type SanityNotesState = {
+  settings: SanityNotesSettings | null;
+  publishedCount: number;
+};
+
+type SanityArticleBase = {
+  _id: string;
+  title: string;
+  slug: string;
+  subtitle: string;
+  publishedAt: string;
+  updatedAt?: string;
+};
+
+export type SanityArticleSummary = SanityArticleBase & { wordCount?: number };
+
+export type SanityArticle = SanityArticleBase & {
+  searchDescription?: string;
+  body: NoteBodyBlock[];
+  relatedReading?: {
+    name: string;
+    slug: string;
+    priceDisplay?: string;
+    valueProposition?: string;
+  } | null;
+  moreNotes?: (NoteSummary | null)[];
+  audioUrl?: string;
+  audioMinutes?: number;
+};
+
+export type SanityArticleDates = Pick<SanityArticleBase, "slug" | "publishedAt" | "updatedAt">;

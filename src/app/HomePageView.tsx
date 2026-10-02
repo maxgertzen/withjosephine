@@ -10,6 +10,7 @@ import { Navigation } from "@/components/Navigation";
 import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
+import type { NotesLink } from "@/lib/notes/notes";
 import type {
   MappedAbout,
   MappedFaqItem,
@@ -25,6 +26,7 @@ export type HomePageViewProps = {
   navContent?: MappedNavContent;
   footerContent?: MappedFooterContent;
   socialLinks: MappedSocialLink[];
+  notesLink?: NotesLink;
   about: MappedAbout;
   readings: MappedReading[];
   testimonials: MappedTestimonial[];
@@ -41,6 +43,7 @@ export function HomePageView({
   navContent,
   footerContent,
   socialLinks,
+  notesLink,
   about,
   readings,
   testimonials,
@@ -163,7 +166,7 @@ export function HomePageView({
         <ContactForm content={contactSection ?? undefined} />
       </main>
 
-      <Footer content={footerContent} socialLinks={socialLinks} />
+      <Footer content={footerContent} socialLinks={socialLinks} notesLink={notesLink} />
     </>
   );
 }

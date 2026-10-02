@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { organizationJsonLd, readingProductJsonLd, websiteJsonLd } from "@/lib/structuredData";
+import {
+  articleJsonLd,
+  organizationJsonLd,
+  readingProductJsonLd,
+  websiteJsonLd,
+} from "@/lib/structuredData";
 
 describe("structuredData", () => {
   it("organizationJsonLd names the brand, its alternates, the founder, and sameAs", () => {
@@ -44,5 +49,27 @@ describe("structuredData", () => {
     expect(offers.price).toBe("129");
     expect(offers.priceCurrency).toBe("USD");
     expect(offers.availability).toBe("https://schema.org/InStock");
+  });
+});
+
+describe("articleJsonLd", () => {
+  it("names the founder as author, the brand as publisher, and both dates", () => {
+    const data = articleJsonLd({
+      headline: "Reading your birth chart without your birth time",
+      description: "You can still have a reading.",
+      path: "/notes/birth-time",
+      datePublished: "2026-10-01T09:00:00Z",
+      dateModified: "2026-11-02T09:00:00Z",
+    });
+    expect(data).toMatchObject({
+      "@type": "Article",
+      headline: "Reading your birth chart without your birth time",
+      datePublished: "2026-10-01T09:00:00Z",
+      dateModified: "2026-11-02T09:00:00Z",
+      author: { "@type": "Person", name: "Josephine Rebecca" },
+      publisher: { "@type": "Organization", name: "Josephine Soul Readings" },
+    });
+    expect(String(data.url)).toMatch(/\/notes\/birth-time$/);
+    expect(String(data.image)).toMatch(/\/og-image\.png$/);
   });
 });

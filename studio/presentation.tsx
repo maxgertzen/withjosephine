@@ -24,6 +24,12 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       params: ({ params }) => ({ slug: params.slug }),
     },
     { route: "/preview/thank-you/:slug", type: "thankYouPage" },
+    {
+      route: "/preview/notes/:slug",
+      filter: `_type == "article" && slug.current == $slug`,
+      params: ({ params }) => ({ slug: params.slug }),
+    },
+    { route: "/preview/notes", type: "notesSettings" },
     { route: "/preview/under-construction", type: "underConstructionPage" },
     { route: "/preview/404", type: "notFoundPage" },
     {
@@ -79,6 +85,21 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     faqItem: defineLocations({
       message: "Shown in the FAQ section on the landing page.",
       locations: [{ title: "Landing Page", href: "/preview" }],
+    }),
+    article: defineLocations({
+      select: { title: "title", slug: "slug.current" },
+      resolve: (doc) => ({
+        locations: doc?.slug
+          ? [
+              { title: String(doc.title ?? "Note"), href: `/preview/notes/${doc.slug}` },
+              { title: "Notes", href: "/preview/notes" },
+            ]
+          : [],
+      }),
+    }),
+    notesSettings: defineLocations({
+      message: "Affects /notes and every note.",
+      locations: [{ title: "Notes", href: "/preview/notes" }],
     }),
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",

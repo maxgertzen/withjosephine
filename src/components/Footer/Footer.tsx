@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
+import type { NotesLink } from "@/lib/notes/notes";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
@@ -35,10 +36,12 @@ const FOOTER_LINK_CLASSES =
 interface FooterProps {
   content?: FooterContent;
   socialLinks?: MappedSocialLink[];
+  notesLink?: NotesLink;
   className?: string;
 }
 
-export function Footer({ content, socialLinks, className }: FooterProps) {
+export function Footer({ content, socialLinks, notesLink, className }: FooterProps) {
+  const links = notesLink ? [notesLink, ...LEGAL_LINKS] : LEGAL_LINKS;
   const { brandName, logoUrl, copyrightText } = {
     ...FOOTER_DEFAULTS,
     ...pickDefined(content ?? {}),
@@ -95,8 +98,8 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
         </div>
       )}
 
-      <nav aria-label="Legal" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
-        {LEGAL_LINKS.map((link) => (
+      <nav aria-label="Footer" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
+        {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}

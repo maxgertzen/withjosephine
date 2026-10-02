@@ -66,6 +66,6 @@ function renderSurfaceMarkup(
   return renderToString(<VerifyPageView copy={copy} state={state} />);
 }
 
-function wrapHtmlDocument(markup: string, styles: string): string {
+export function wrapHtmlDocument(markup: string, styles: string): string {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="https://withjosephine.com/">${FONT_LINKS}<style>${styles}</style><style>${FONT_VARIABLES}</style></head><body>${markup}</body></html>`;
 }

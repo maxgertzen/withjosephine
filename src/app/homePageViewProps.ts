@@ -1,3 +1,4 @@
+import { faqNoteLink, notesFooterLink } from "@/lib/notes/notes";
 import {
   mapAbout,
   mapFaqItems,
@@ -10,6 +11,7 @@ import {
 import type {
   SanityFaqItem,
   SanityLandingPage,
+  SanityNotesState,
   SanityReading,
   SanitySiteSettings,
   SanityTestimonial,
@@ -28,17 +30,24 @@ export function toHomePageViewProps(input: {
   testimonials: SanityTestimonial[];
   faqItems: SanityFaqItem[];
   siteSettings: SanitySiteSettings | null;
+  notesState: SanityNotesState | null;
   faqNonce?: string;
 }): HomePageViewProps {
-  const { landingPage, readings, testimonials, faqItems, siteSettings, faqNonce } = input;
+  const { landingPage, readings, testimonials, faqItems, siteSettings, notesState, faqNonce } =
+    input;
+  const relatedArticleById = new Map(faqItems.map((item) => [item._id, item.relatedArticle]));
   return {
     navContent: mapNavContent(siteSettings),
     footerContent: mapFooterContent(siteSettings),
     socialLinks: mapSocialLinks(siteSettings),
+    notesLink: notesFooterLink(notesState),
     about: mapAbout(landingPage),
     readings: mapReadings(readings),
     testimonials: mapTestimonials(testimonials),
-    faqItems: mapFaqItems(faqItems),
+    faqItems: mapFaqItems(faqItems).map((item) => ({
+      ...item,
+      noteLink: faqNoteLink(notesState, relatedArticleById.get(item.id)),
+    })),
     faqNonce,
     hero: landingPage?.hero ?? undefined,
     howItWorks: landingPage?.howItWorks ?? undefined,

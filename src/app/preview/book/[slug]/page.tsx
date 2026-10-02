@@ -6,7 +6,9 @@ import {
   fetchBookingForm,
   fetchBookingPage,
   fetchLandingPage,
+  fetchNotesState,
   fetchReading,
+  fetchReadingNotes,
   fetchReadings,
 } from "@/lib/sanity/fetch";
 
@@ -22,12 +24,22 @@ type BookingPreviewProps = {
 export default async function BookingPagePreview({ params }: BookingPreviewProps) {
   const { slug } = await params;
 
-  const [sanityReading, sanityReadings, bookingPage, bookingForm, landingPage] = await Promise.all([
+  const [
+    sanityReading,
+    sanityReadings,
+    bookingPage,
+    bookingForm,
+    landingPage,
+    notesState,
+    readingNotes,
+  ] = await Promise.all([
     fetchReading(slug),
     fetchReadings(),
     fetchBookingPage(),
     fetchBookingForm(),
     fetchLandingPage(),
+    fetchNotesState(),
+    fetchReadingNotes(slug),
   ]);
 
   const props = deriveBookingFormViewProps({
@@ -37,6 +49,8 @@ export default async function BookingPagePreview({ params }: BookingPreviewProps
     bookingPage,
     bookingForm,
     landingPage,
+    notesState,
+    readingNotes,
   });
 
   if (!props) {

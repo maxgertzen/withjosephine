@@ -34,6 +34,7 @@ export const SINGLETON_TYPES = new Set([
   "emailPrivacyExport",
   "emailSharedShell",
   "listenPage",
+  "notesSettings",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -205,6 +206,20 @@ const formBuildingBlocksGroup = (S: StructureBuilder) =>
         ]),
     );
 
+const notesGroup = (S: StructureBuilder) =>
+  S.listItem()
+    .title("📝 Notes")
+    .id("notesGroup")
+    .child(
+      S.list()
+        .title("Notes")
+        .items([
+          singletonListItem(S, "notesSettings", "Notes Settings"),
+          S.divider(),
+          S.documentTypeListItem("article").title("Notes"),
+        ]),
+    );
+
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
@@ -219,6 +234,7 @@ export const deskStructure = (S: StructureBuilder) =>
       S.documentTypeListItem("reading").title("Readings"),
       S.documentTypeListItem("testimonial").title("Testimonials"),
       S.documentTypeListItem("faqItem").title("FAQ Items"),
+      notesGroup(S),
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),

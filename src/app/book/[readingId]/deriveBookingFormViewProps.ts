@@ -10,12 +10,16 @@ import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { homeReadingAnchor } from "@/lib/http/routes";
+import { isNotesVisible, notePath, notesContent } from "@/lib/notes/notes";
+import type { NoteSummary } from "@/lib/notes/types";
+import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import { mapAbout, mapFaqItems, mapReadings } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import type {
   SanityBookingForm,
   SanityBookingPage,
   SanityLandingPage,
+  SanityNotesState,
   SanityReading,
 } from "@/lib/sanity/types";
 
@@ -28,15 +32,19 @@ export type DeriveBookingFormViewPropsInput = {
   bookingPage: SanityBookingPage | null;
   bookingForm: SanityBookingForm | null;
   landingPage: SanityLandingPage | null;
+  notesState: SanityNotesState | null;
+  readingNotes: NoteSummary[];
 };
 
-const PORTRAIT_WIDTH_PX = 112;
-
-function portraitUrl(imageUrl: string): string {
-  return imageUrl.startsWith("https://cdn.sanity.io/")
-    ? `${imageUrl}?w=${PORTRAIT_WIDTH_PX}&auto=format`
-    : imageUrl;
+function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps["notes"] {
+  if (!isNotesVisible(input.notesState) || input.readingNotes.length === 0) return undefined;
+  return {
+    title: notesContent(input.notesState).readingPageTitle,
+    items: input.readingNotes.map((note) => ({ ...note, href: notePath(note.slug) })),
+  };
 }
+
+const PORTRAIT_WIDTH_PX = 112;
 
 function resolveReading(readingId: string, sanityReading: SanityReading | null) {
   if (sanityReading) {
@@ -94,7 +102,7 @@ export function deriveBookingFormViewProps(
     reader: {
       name: content.readerName,
       line: content.readerLine,
-      imageUrl: portraitUrl(mapAbout(input.landingPage).imageUrl),
+      imageUrl: sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
     },
     included: { title: content.includedTitle, items: reading.includes },
     howItWorks: { title: content.howItWorksTitle, paragraphs: howItWorks },
@@ -115,6 +123,7 @@ export function deriveBookingFormViewProps(
           slug: other.id,
         })),
     },
+    notes: readingNotes(input),
   };
 
   return {

@@ -20,6 +20,9 @@ import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
 import { submission } from "./submission";
+import { article } from "./article";
+import { notePlate } from "./notePlate";
+import { notesSettings } from "./notesSettings";
 
 export const schemaTypes = [
   reading,
@@ -44,4 +47,7 @@ export const schemaTypes = [
   formSection,
   bookingForm,
   submission,
+  article,
+  notePlate,
+  notesSettings,
 ];

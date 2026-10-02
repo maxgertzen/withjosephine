@@ -115,3 +115,17 @@ describe("Footer", () => {
     expect(emailLink).not.toHaveAttribute("target");
   });
 });
+
+describe("Footer Notes link", () => {
+  it("shows Notes first in the footer links when given a link", () => {
+    render(<Footer notesLink={{ label: "Notes", href: "/notes" }} />);
+    const links = screen.getAllByRole("link").filter((link) => link.closest("nav"));
+    expect(links.map((link) => link.textContent)).toEqual(["Notes", "Privacy", "Terms", "Refunds"]);
+    expect(links[0]).toHaveAttribute("href", "/notes");
+  });
+
+  it("shows no Notes link without one", () => {
+    render(<Footer />);
+    expect(screen.queryByRole("link", { name: "Notes" })).not.toBeInTheDocument();
+  });
+});

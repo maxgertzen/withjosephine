@@ -121,6 +121,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com data: blob:; ` +
+    "media-src 'self' https://cdn.sanity.io; " +
     `connect-src ${connectSrc}; ` +
     "worker-src 'self' blob:; " +
     `frame-ancestors ${frameAncestors}; ` +

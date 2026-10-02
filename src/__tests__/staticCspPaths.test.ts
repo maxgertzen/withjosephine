@@ -70,3 +70,19 @@ describe("STATIC_CSP_PATHS integrity", () => {
     expect(isForceDynamic(bookingPage!)).toBe(false);
   });
 });
+
+describe("prerendered Notes routes", () => {
+  it("treats /notes and /notes/<slug> as static-CSP paths", () => {
+    expect(isStaticCspPath("/notes")).toBe(true);
+    expect(isStaticCspPath("/notes/a-note-becky-writes-later")).toBe(true);
+    expect(isStaticCspPath("/notes/a/b")).toBe(false);
+  });
+
+  it("does not let the Notes routes become force-dynamic without revisiting the CSP", () => {
+    for (const route of ["/notes", "/notes/[slug]"]) {
+      const page = pageFiles.find((p) => toRoute(p) === route);
+      expect(page, `the ${route} route should exist`).toBeDefined();
+      expect(isForceDynamic(page!), route).toBe(false);
+    }
+  });
+});
