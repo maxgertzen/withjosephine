@@ -1,6 +1,17 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-02 handover 8): dev cleanup is on `chore/v1.20.0-dev-cleanup` (6 commits off `release/v1.20.0`), waiting for Max's go to push `release/v1.20.0` (starts the CI staging deploy) and open the PR into it. Nothing is pushed.
+## ▶ 👉 START HERE (next session, 2026-10-03 handover 9): three PRs into `release/v1.20.0` wait for Max's go to merge: #335 deps (CI green), #334 dev cleanup, and the decisions PR (stacked on #334). After #335 merges, staging deploys; then the Studio deploy (card 6B) and Becky's note.
+
+**Max's decision picks (2026-10-03, decisions page https://claude.ai/artifact/Qb1MnoUriVZWfLzp4u18q4): 1A 2B 3A 4B 5C 6B 7B 8A 9B.**
+- 9B: `next` advisories read: none apply (`images.unoptimized: true`, Workers not Windows, no `next/og`). #335 = next 16.3.6, Storybook 10.6.1 (10.3.6 does not build with next 16.3), vite ^8.0.16 direct, override floors raised in `pnpm-workspace.yaml`, osv ignores with `ignoreUntil`, weekly `security-scan.yml`, osv action pinned by SHA. The `next`-only hotfix to `main` was not built: main has the same Storybook break and the same 76 other advisories; told Max, his call.
+- On `feat/v1.20.0-decisions`: `c403092` 1A rose token, `1c44347` 2B h1 in main, `7071d3f` 3A `showLetterTitle` (off by default) + h2 floor 1.5rem + e2e specs, `3a7a66b` 4B `reading_switch` entry (block open, `PickedOnOtherReadingFormContext` removed), `1b2432f` 5C `EntryClickReset` + `bookingPath`. 5C's tiny-draft half was reverted: it broke A -> B -> C carry-over. Now dex `k1kpjbgh`.
+- 6B: deploy the shared Studio (`pnpm studio:deploy`) after the PRs merge, so it ships `switchNoticeTemplate` and `showLetterTitle`. Becky must not edit the new fields or remove Unknown fields in Production until v1.20.0 ships.
+- 7B: dex `ld9scimy` after v1.20.0 merges. 8A: `7rey27qf` closed.
+- Gates on the decisions branch: typecheck, lint, unit 225 files / 2045 tests, mock e2e 30/30, Studio build, stories graph 38. Browser: header positions identical to baseline at 1512px and 375px; rose `rgb(142, 101, 85)`; switch notice and carry-over checked by hand.
+- New dex: `vni3z6pt` bump bot, `b4gzlwnt` scan studio lockfile, `h1fm8nvp` Storybook on Vite, `tyce8f8e` ThankYouGuard lint warning (eslint-config-next 16.3.6), `k1kpjbgh` carried-over-only drafts.
+- After merges: `scripts/seed-sanity-defaults-2026-10.mts` on staging (fills `switchNoticeTemplate`); `migrate-clear-booking-meta-titles` and the unset script on production after v1.20.0 is live, with Max's go.
+
+## ▶ (SUPERSEDED by handover 9 above) START HERE (2026-10-02 handover 8): dev cleanup is on `chore/v1.20.0-dev-cleanup` (6 commits off `release/v1.20.0`), waiting for Max's go to push `release/v1.20.0` (starts the CI staging deploy) and open the PR into it. Nothing is pushed.
 
 **Done 2026-10-02, handover 8, on `chore/v1.20.0-dev-cleanup`:**
 - `7449909`: deleted `scripts/cleanup-orphan-field-values.mts` and `scripts/migrate-unset-orphan-fields-2026-06-12.ts` (+ test), Max's go. `migrate-booking-form-v2.ts` no longer writes `swapToastCopy`.
