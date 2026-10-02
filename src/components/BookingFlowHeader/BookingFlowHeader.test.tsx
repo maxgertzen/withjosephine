@@ -40,14 +40,10 @@ describe("BookingFlowHeader", () => {
     expect(screen.queryByText(/Josephine Soul Readings/)).toBeNull();
   });
 
-  it("renders a Back-only header when no reading is supplied", () => {
-    render(<BookingFlowHeader backHref="/" />);
-    expect(screen.getByRole("link", { name: /Back/ })).toBeInTheDocument();
-    expect(screen.queryByText("Signature")).toBeNull();
-  });
-
   it("omits the tag and price lines when they are empty", () => {
-    render(<BookingFlowHeader backHref="/" readingName="Soul Blueprint" />);
+    render(
+      <BookingFlowHeader backHref="/" readingTag="" readingName="Soul Blueprint" readingPrice="" />,
+    );
     expect(screen.getByText("Soul Blueprint")).toBeInTheDocument();
     expect(screen.queryByText("Signature")).toBeNull();
     expect(screen.queryByText("$129")).toBeNull();

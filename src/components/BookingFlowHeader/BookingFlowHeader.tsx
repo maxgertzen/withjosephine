@@ -6,9 +6,9 @@ import { useHeaderBack } from "./headerBackContext";
 
 type BookingFlowHeaderProps = {
   backHref: string;
-  readingTag?: string;
-  readingName?: string;
-  readingPrice?: string;
+  readingTag: string;
+  readingName: string;
+  readingPrice: string;
   backLabel?: string;
 };
 
@@ -73,23 +73,21 @@ export function BookingFlowHeader({
         )}
       </div>
 
-      {readingName ? (
-        <div className="flex flex-col items-center text-center">
-          {readingTag ? (
-            <span className="font-body uppercase text-j-text-gold text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
-              {readingTag}
-            </span>
-          ) : null}
-          <h1 className="m-0 font-display font-light italic leading-[1.1] text-j-text-heading text-balance text-[1.75rem] md:text-[2.4rem] mt-1 md:mt-2">
-            {readingName}
-          </h1>
-          {readingPrice ? (
-            <span className="font-display italic text-j-text-gold md:text-j-text-gold-lg text-[1rem] md:text-[1.5rem] mt-1 md:mt-2">
-              {readingPrice}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="flex flex-col items-center text-center">
+        {readingTag ? (
+          <span className="font-body uppercase text-j-text-gold text-[0.6rem] tracking-[0.18em] md:text-[0.68rem] md:tracking-[0.22em]">
+            {readingTag}
+          </span>
+        ) : null}
+        <h1 className="m-0 font-display font-light italic leading-[1.1] text-j-text-heading text-balance text-[1.75rem] md:text-[2.4rem] mt-1 md:mt-2">
+          {readingName}
+        </h1>
+        {readingPrice ? (
+          <span className="font-display italic text-j-text-gold md:text-j-text-gold-lg text-[1rem] md:text-[1.5rem] mt-1 md:mt-2">
+            {readingPrice}
+          </span>
+        ) : null}
+      </div>
     </header>
   );
 }
