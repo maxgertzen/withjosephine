@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import {
   fetchBookingFormPublished,
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 
   const seo = sanityReading?.seo ?? bookingPage?.seo;
 
-  return buildPageMetadata({ title, description, path: `/book/${readingId}`, seo });
+  return buildPageMetadata({ title, description, path: bookingPath(readingId), seo });
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {
@@ -89,7 +90,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
     name: props.reading.name,
     description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
     price: props.reading.priceLabel,
-    path: `/book/${readingId}`,
+    path: bookingPath(readingId),
     image: sanityReading?.seo?.ogImage?.asset?.url,
   });
 

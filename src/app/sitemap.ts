@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { generateReadingStaticParams } from "@/data/readings";
 import { siteOrigin } from "@/lib/env";
+import { bookingPath } from "@/lib/http/routes";
 import { isNotesVisible, noteLastModified, notePath, NOTES_PATH } from "@/lib/notes/notes";
 import { fetchArticleDatesPublished, fetchNotesStatePublished } from "@/lib/sanity/fetch";
 
@@ -32,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     generateReadingStaticParams(),
     notesEntries(origin),
   ]);
-  const bookPaths = readingParams.map(({ readingId }) => `/book/${readingId}`);
+  const bookPaths = readingParams.map(({ readingId }) => bookingPath(readingId));
 
   return [
     ...[...STATIC_PATHS, ...bookPaths].map((path) => ({

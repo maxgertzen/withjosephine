@@ -1,5 +1,6 @@
 import { ABOUT_DEFAULTS } from "@/data/defaults";
 import { applyTokens } from "@/lib/emails/applyTokens";
+import { bookingPath } from "@/lib/http/routes";
 import {
   formatMonthYear,
   nonBlank,
@@ -45,7 +46,7 @@ export function deriveNoteViewProps(input: {
           price: nonBlank(reading.priceDisplay),
           line: nonBlank(reading.valueProposition),
           button: content.cardButton,
-          href: `/book/${reading.slug}`,
+          href: bookingPath(reading.slug),
         }
       : undefined;
   const seeAll = otherNotesCount > picked.length ? content.seeAllLabel : undefined;
