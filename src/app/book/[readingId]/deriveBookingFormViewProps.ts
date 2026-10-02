@@ -49,7 +49,10 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
 
 const PORTRAIT_WIDTH_PX = 112;
 
-function pageFacts(reading: SanityReading | null | undefined, shared: ReadingPageContent): ReadingFact[] {
+function pageFacts(
+  reading: SanityReading | null | undefined,
+  shared: ReadingPageContent,
+): ReadingFact[] {
   if (reading?.hideFacts) return [];
   if (reading?.facts?.length) return reading.facts.slice(0, MAX_READING_FACTS);
   if (shared.hideFacts) return [];
@@ -91,7 +94,10 @@ export function deriveBookingFormViewProps(
   if (!input.bookingForm) return null;
 
   const entry = input.bookingForm.entryPageContent ?? {};
-  const content = { ...READING_PAGE_DEFAULTS, ...pickDefined(input.bookingForm.readingPageContent ?? {}) };
+  const content = {
+    ...READING_PAGE_DEFAULTS,
+    ...pickDefined(input.bookingForm.readingPageContent ?? {}),
+  };
   const [body, ...howItWorks] = reading.expandedDetails;
   const minutes = input.sanityReading?.estimatedMinutes;
   const formTestimonial = input.sanityReading?.formTestimonial;
@@ -122,7 +128,9 @@ export function deriveBookingFormViewProps(
     questions: {
       title: content.questionsTitle,
       items: mapFaqItems(
-        (input.sanityReading?.questionsOnPage ?? []).filter((item) => item?.question && item.answer),
+        (input.sanityReading?.questionsOnPage ?? []).filter(
+          (item) => item?.question && item.answer,
+        ),
       ),
     },
     otherReadings: {
@@ -163,6 +171,7 @@ export function deriveBookingFormViewProps(
       nextLabel: input.bookingForm.nextButtonText,
       saveLaterLabel: input.bookingForm.saveAndContinueLaterText,
       pageIndicatorTagline: pageIndicatorTagline || undefined,
+      switchNotice: applyTokens(content.switchNoticeTemplate, { reading: reading.name }),
       testimonial: formTestimonial?.quote
         ? {
             label: content.testimonialLabel,

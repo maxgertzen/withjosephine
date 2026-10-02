@@ -124,6 +124,7 @@ export interface ReadingPageContent extends ReadingFactsLayout {
   howItWorksTitle: string;
   questionsTitle: string;
   otherReadingsTitle: string;
+  switchNoticeTemplate: string;
   testimonialLabel: string;
   minutesTemplate: string;
 }
@@ -148,6 +149,7 @@ export const READING_PAGE_DEFAULTS: ReadingPageContent = {
   howItWorksTitle: "How it works",
   questionsTitle: "Questions",
   otherReadingsTitle: "Not sure this is the one?",
+  switchNoticeTemplate: "Switched to {reading}. Your details are saved. Start where you left off.",
   testimonialLabel: "From a client",
   minutesTemplate: "about {minutes} minutes",
 };
@@ -215,7 +217,10 @@ export const INTAKE_INTRO_BY_SLUG: Record<string, string[]> = {
   ],
 };
 
-export const INTAKE_INTRO_FALLBACK = [INTAKE_OPENER, "Take your time. There\u2019s no wrong answer."];
+export const INTAKE_INTRO_FALLBACK = [
+  INTAKE_OPENER,
+  "Take your time. There\u2019s no wrong answer.",
+];
 
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
@@ -390,9 +395,7 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
     ...stringToPortableTextBlocks(
       "Tap below to open your reading. You will be signed in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
     ),
-    ...stringToPortableTextBlocks(
-      "This link is just for you; please do not share it.",
-    ),
+    ...stringToPortableTextBlocks("This link is just for you; please do not share it."),
     ...stringToPortableTextBlocks(
       "Your reading stays here for the next ninety days. If a link expires sooner, just email me and I will send you a fresh one.",
     ),

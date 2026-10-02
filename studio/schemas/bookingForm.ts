@@ -125,6 +125,13 @@ export const bookingForm = defineType({
           type: "string",
         }),
         defineField({
+          name: "switchNoticeTemplate",
+          title: "Switched Reading Notice",
+          type: "string",
+          description:
+            "Shown at the top of the form when a visitor picks another reading under Other Readings Title and their name or email carries over. {reading} becomes the reading name.",
+        }),
+        defineField({
           name: "testimonialLabel",
           title: "Testimonial Label",
           type: "string",

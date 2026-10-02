@@ -331,6 +331,7 @@ export const bookingFormQuery = groq`
       howItWorksTitle,
       questionsTitle,
       otherReadingsTitle,
+      switchNoticeTemplate,
       testimonialLabel,
       minutesTemplate
     },

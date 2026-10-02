@@ -71,7 +71,9 @@ function introText(blocks: SanityPortableTextBlock[] | undefined): string[] {
 describe("deriveBookingFormViewProps intake copy", () => {
   it("prefers the Sanity letterTitle over the built-in heading", () => {
     const props = derive(sanityReading(), {
-      bookingForm: bookingForm({ entryPageContent: { letterTitle: "Before you begin, a few things." } }),
+      bookingForm: bookingForm({
+        entryPageContent: { letterTitle: "Before you begin, a few things." },
+      }),
     });
 
     expect(props?.copy.title).toBe("Before you begin, a few things.");
@@ -169,10 +171,17 @@ describe("deriveBookingFormViewProps reading block", () => {
   it("lists the other readings from Sanity, excluding this one", () => {
     const readings = [
       sanityReading(),
-      sanityReading({ slug: "birth-chart", name: "Birth Chart Reading", priceDisplay: "$89", valueProposition: "Your chart." }),
+      sanityReading({
+        slug: "birth-chart",
+        name: "Birth Chart Reading",
+        priceDisplay: "$89",
+        valueProposition: "Your chart.",
+      }),
     ];
 
-    expect(derive(sanityReading(), { sanityReadings: readings })?.readingBlock.otherReadings.readings).toEqual([
+    expect(
+      derive(sanityReading(), { sanityReadings: readings })?.readingBlock.otherReadings.readings,
+    ).toEqual([
       { name: "Birth Chart Reading", price: "$89", line: "Your chart.", slug: "birth-chart" },
     ]);
   });
@@ -185,7 +194,9 @@ describe("deriveBookingFormViewProps reading block", () => {
   });
 
   it("asks Sanity for a small portrait, and keeps the built-in photo as is", () => {
-    const landingPage = { about: { imageUrl: "https://cdn.sanity.io/images/p/d/a.jpg" } } as SanityLandingPage;
+    const landingPage = {
+      about: { imageUrl: "https://cdn.sanity.io/images/p/d/a.jpg" },
+    } as SanityLandingPage;
 
     expect(derive(sanityReading(), { landingPage })?.readingBlock.reader.imageUrl).toBe(
       "https://cdn.sanity.io/images/p/d/a.jpg?w=112&auto=format",
@@ -210,7 +221,9 @@ describe("deriveBookingFormViewProps reading block", () => {
   });
 
   it("passes the facts layout from the Reading Page, with built-in fallbacks", () => {
-    const form = bookingForm({ readingPageContent: { factsPerRowPhone: 2, factsListOnPhones: true } });
+    const form = bookingForm({
+      readingPageContent: { factsPerRowPhone: 2, factsListOnPhones: true },
+    });
     expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.factsLayout).toMatchObject({
       factsPerRowPhone: 2,
       factsPerRowDesktop: READING_PAGE_DEFAULTS.factsPerRowDesktop,
@@ -230,16 +243,26 @@ describe("deriveBookingFormViewProps form extras", () => {
   it("puts the minutes before the Sanity tagline in the page line", () => {
     const form = bookingForm({ pageIndicatorTagline: "almost done" });
 
-    expect(derive(sanityReading({ estimatedMinutes: 3 }), { bookingForm: form })?.form.pageIndicatorTagline).toBe(
-      "about 3 minutes · almost done",
+    expect(
+      derive(sanityReading({ estimatedMinutes: 3 }), { bookingForm: form })?.form
+        .pageIndicatorTagline,
+    ).toBe("about 3 minutes · almost done");
+    expect(derive(sanityReading({ estimatedMinutes: 3 }))?.form.pageIndicatorTagline).toBe(
+      "about 3 minutes",
     );
-    expect(derive(sanityReading({ estimatedMinutes: 3 }))?.form.pageIndicatorTagline).toBe("about 3 minutes");
     expect(derive()?.form.pageIndicatorTagline).toBeUndefined();
   });
 
   it("passes the reading's testimonial with the shared label", () => {
     const form = derive(
-      sanityReading({ formTestimonial: { _id: "t", quote: "It connected the dots.", name: "Raphi", detail: "Soul Blueprint Reading" } }),
+      sanityReading({
+        formTestimonial: {
+          _id: "t",
+          quote: "It connected the dots.",
+          name: "Raphi",
+          detail: "Soul Blueprint Reading",
+        },
+      }),
     )?.form;
 
     expect(form?.testimonial).toEqual({
@@ -252,6 +275,15 @@ describe("deriveBookingFormViewProps form extras", () => {
 
   it("passes no testimonial when none is set", () => {
     expect(derive()?.form.testimonial).toBeUndefined();
+  });
+
+  it("fills the reading name into the switched-reading notice from Sanity, or the default", () => {
+    const form = bookingForm({ readingPageContent: { switchNoticeTemplate: "Now on {reading}." } });
+
+    expect(derive(sanityReading(), { bookingForm: form })?.form.switchNotice).toBe(
+      "Now on The Soul Blueprint.",
+    );
+    expect(derive()?.form.switchNotice).toMatch(/^Switched to The Soul Blueprint\./);
   });
 });
 

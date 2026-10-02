@@ -39,6 +39,7 @@ export type IntakeFormProps = {
   testimonial?: FormTestimonial;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  switchNotice: string;
 };
 
 export function IntakeForm({
@@ -53,6 +54,7 @@ export function IntakeForm({
   testimonial,
   pagination,
   loadingStateCopy,
+  switchNotice,
 }: IntakeFormProps) {
   const {
     allFields,
@@ -215,13 +217,11 @@ export function IntakeForm({
   );
   const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
-  const handleConsentSnapshotChange = useCallback(
-    (next: LegalConsentSnapshot) => {
-      setConsentSnapshot(next);
-      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true })) setSubmitError(null);
-    },
-    [],
-  );
+  const handleConsentSnapshotChange = useCallback((next: LegalConsentSnapshot) => {
+    setConsentSnapshot(next);
+    if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true }))
+      setSubmitError(null);
+  }, []);
 
   const renderContext = useMemo<RenderContext>(
     () => ({
@@ -246,7 +246,7 @@ export function IntakeForm({
 
   return (
     <>
-      {showSwitchNotice ? <SwapToast readingName={readingName} /> : null}
+      {showSwitchNotice ? <SwapToast message={switchNotice} /> : null}
       <IntakeFormBody
         formRef={formRef}
         submitIntentRef={submitIntentRef}
