@@ -1,6 +1,42 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-01 handover 4): build Notes (`v7ev58fe`) on `release/v1.20.0`. The browser pass is done.
+## ▶ 👉 START HERE (next session, 2026-10-02 handover 5): Max walks the Notes flow himself (dex `d7swd1xq`). Notes is built in `84def90` on `release/v1.20.0`, not pushed.
+
+**Max, 2026-10-02: next session he wants to see the flow himself.** Start both servers with a long timeout (background runs stop at 2 hours), then hand him the URLs below.
+
+Start:
+
+```
+cd www && NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev
+pnpm --dir studio dev
+```
+
+Walk:
+- `http://localhost:3000/notes`: index, 2 test notes, "1 minute read".
+- `http://localhost:3000/notes/test-astrology-and-the-akashic-records`: listen button (test tone), opening paragraph, Plate "Read together", inline links, image with caption, pull quote, sign-off, reading box (Soul Blueprint, $129), More notes, footer "Notes".
+- `http://localhost:3000/notes/test-birth-time`: one-column Plate, box for Birth Chart Reading.
+- `http://localhost:3000/`: footer "Notes"; FAQ "What if I don't know my exact birth time?" and "What makes your readings different?" show "Read the note: …".
+- `http://localhost:3000/book/birth-chart`: open the reading block, "Notes on this reading".
+- Studio `http://localhost:3333/staging` (Max logs in): 📝 Notes, Notes Settings switch, a note's "End of the note" tab, the Plate preview in the body, the copy-link field under Web address. Presentation: `/preview/notes/<slug>`.
+- Switch Notes Settings off: `/notes` 404s and every link disappears (60s cache).
+
+**Not yet verified, owed in this walk:** audio playback in a real tab (the automation tab was hidden, so Chrome never started media); the Studio desk, Plate preview and copy link (Sanity login).
+
+**Staging test data (remove after the walk, or keep for the Studio deploy check `zpivrlex`):** `notesSettings` (enabled), `test-note-pillar`, `test-note-birth-time`, `relatedArticle` on `faq-birth-time` and `1b5b873e-73c9-474f-9f6f-99bf35748dfd`, one image and one mp3 asset. Unset the FAQ references before deleting the notes. Seed script: `www/MEMORY/WORK/20261001-notes-build/seed-staging-notes.mts`. Production has no `notesSettings` document, so Notes stays hidden there after deploy until Becky turns it on.
+
+**Decisions this session:**
+- Max removed the per-note reading-box overrides (`cardLeadIn`, `cardLine`, `cardButton`) to prevent drift. This reverses part of decision 4e. The box always shows the reading's name, `priceDisplay` and `valueProposition`; the lead-in and button come from Notes Settings only.
+- Studio labels speak of the "reading box", not the "card".
+- Taken without asking, open to change: the pull quote is the body's Quote style (no `screenshotLine` field); note pages use a plain header (wordmark to home), not the homepage nav; reading time is computed from a per-block word count; the footer "Notes" link shows on the homepage and Notes pages only.
+- Commit rule changed in `CLAUDE.md`: direct fixes for review findings need no further review round.
+
+**Gotcha found:** Studio imports from `@/` need an entry in the `studio/sanity.cli.ts` alias allowlist. `tsc` passes without it; only `sanity build` fails. Run `pnpm --dir studio build` after adding any Studio import from `src/`.
+
+**Gates at `84def90`:** unit 219 files, 1986 tests; `tsc` clean outside `MEMORY/WORK`; Studio `tsc` and `sanity build` pass; eslint clean; stories graph 38 clean; `/simplify` (4 reviewers) and `/code-review` (9 of 10 fixed) applied. ISA: `www/MEMORY/WORK/20261001-notes-build/ISA.md`.
+
+**Still open on epic `wjye07gw` before the PR:** Studio deploy to staging (`zpivrlex`, now also ships the Notes schemas), C9 payload check, Becky's picks `63bfijpo` and `3gpnqffe`, h1 decision `3bqw2jye`, rose colour on `gk2etjdy`, `VellumShell` `zk4qp0qi`, retired fields `and9um5b`, styling `681ra7bq`, and `n2iibpy1`, `nfqmp3k8`, `71v23wyo`.
+
+## ▶ (SUPERSEDED by handover 5 above) START HERE (2026-10-01 handover 4): build Notes (`v7ev58fe`) on `release/v1.20.0`. The browser pass is done.
 
 **Max, 2026-10-01: next session switches to Notes. Every visitor-facing string, image, link and optional block in Notes is editable in Sanity, with a `src/data/defaults.ts` fallback.** The same rule is now a binding constraint in `CLAUDE.md`.
 
