@@ -10,11 +10,6 @@ import { sanityClient } from "./client";
  *     (so Josephine sees unpublished edits inside Studio Presentation).
  *   - Tags responses so `<SanityLive />` can revalidate them when content
  *     changes in Sanity, without a manual refresh.
- *
- * `serverToken` is required for the server to subscribe to Sanity's live
- * EventSource. We deliberately omit `browserToken` so the read token is never
- * shipped in the client bundle — live updates still flow because the server
- * receives them and revalidates the relevant cache tags.
  */
 const live = defineLive({
   client: sanityClient,
