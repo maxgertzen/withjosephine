@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blockBrowserStorage } from "@/lib/test-helpers";
 
 import type * as BookingEntryModule from "./bookingEntry";
+import { isFoldedEntry } from "./bookingEntry";
 import type * as EntryMarkerModule from "./entryMarker";
 import { ENTRY_CLICK_TTL_MS } from "./entryMarker";
 import { save as saveDraft } from "./localStorageDraft";
@@ -70,6 +71,16 @@ describe("booking page visit (peek, then settle)", () => {
   it("is homepage_card after the card for this reading was tapped", () => {
     markEntryClick("soul-blueprint", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");
+  });
+
+  it("is reading_switch after a 'Not sure this is the one?' click to this reading, even with a saved draft", () => {
+    saveDraft("soul-blueprint", { currentPage: 0, values: { email: "ada@example.com" } });
+    markEntryClick("soul-blueprint", "reading_switch");
+    expect(visitBookingPage("soul-blueprint")).toBe("reading_switch");
+  });
+
+  it("does not fold a reading_switch visit", () => {
+    expect(isFoldedEntry("reading_switch")).toBe(false);
   });
 
   it("counts the card tap once, so a later visit in the same document is not homepage_card", () => {

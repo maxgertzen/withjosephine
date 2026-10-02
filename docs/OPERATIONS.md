@@ -260,8 +260,9 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
 
   | Value | Meaning |
   |---|---|
-  | `homepage_card` | The page load right after a tap on "Book This Reading" on this reading's homepage card, within 60 seconds of the tap. A reload after that is not `homepage_card`. A tap that opens a new tab is not counted. The tap is held in page memory only; nothing is written to the device. |
-  | `draft` | Has a saved draft for this reading, no card tap. |
+  | `homepage_card` | The next page load after a tap on "Book This Reading" on this reading's homepage card. Loading any other page first, a reload, or waiting more than 60 seconds drops the tap. A tap that opens a new tab is not counted. The tap is held in page memory only; nothing is written to the device. |
+  | `reading_switch` | The next page load after a click on another reading under "Not sure this is the one?" on a booking form. Same rules as `homepage_card`. Wins over `draft`. |
+  | `draft` | Has a saved draft for this reading, no card tap or reading switch. |
   | `internal` | Came from another page on the site, including coming back to this page without a reload. |
   | `external` | Referred by another site (search, TikTok, a shared link opened from an app). |
   | `direct` | No referrer: typed, bookmarked, or opened from an app that sends none. |
