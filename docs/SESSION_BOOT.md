@@ -1,6 +1,39 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-02 handover 5): Max walks the Notes flow himself (dex `d7swd1xq`). Notes is built in `84def90` on `release/v1.20.0`, not pushed.
+## ▶ 👉 START HERE (next session, 2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
+
+**Done 2026-10-02, handover 7: `and9um5b` on staging.**
+- `8905154`: `scripts/unset-unknown-sanity-fields.mts`. Finds fields each document has but the schema does not declare, from `sanity schema extract` (nested objects and array items too). Dry run by default, `--apply` unsets per document with `ifRevisionId`. Skips `submission` and documents whose `_type` is not in the schema. Refuses production unless HEAD is on `origin/main` with no local `studio/` changes. Unit tests 10/10.
+- Staging: 75 documents read, 8 cleaned (the ticket's fields, plus `emailMagicLink.greeting`, 4 `emailPrivacyExport` fields and 12 `thankYouPage.gift*` fields, none rendered). Rerun reports 0. A diff against a backup shows only those fields removed. Studio's "Unknown field" banner not checked in a browser (Sanity login).
+- Staging still holds 14 whole documents of retired types (gift pages and emails, `myReadingsPage`, `emailMagicLinkLibrary` and others). The script leaves them alone.
+- `and9um5b` no longer blocks `wjye07gw`; its production run is after v1.20.0 is live, with Max's go. Commands are on the ticket.
+- New dex: `3j6lucyd` (point `sanity:validate` at the extracted schema; delete the two hardcoded orphan scripts once Max agrees), `3az29hnd` (dead GROQ projections for the retired email fields).
+- Gotcha: `sanity schema extract --path` joins an absolute path onto `studio/`. Pass a path relative to `studio/`.
+
+## ▶ (SUPERSEDED by handover 7 above) START HERE (2026-10-02 handover 6): write and run the retired-fields unset script on staging (dex `and9um5b`, Max said yes 2026-10-02). Three commits on `release/v1.20.0`, not pushed.
+
+**Committed 2026-10-02 (not pushed):**
+- `59df424`: Notes pages use the homepage menu; a Notes menu item before Contact, gated like the footer link (switch on and 1+ published note), label `navLinkLabel` in Notes Settings. Notes index: no lines, subtitle empty by default, drawing above the footer (`notesSettings.indexIllustration`, default `public/images/notes-illustration.svg`, the D2 quill), `indexSearchDescription`. Per note: `hideCardLeadIn`, `hideReadingBox`, `hideMoreNotes`. `notesSettings.hideAuthorPhoto`, `bookingForm.readingPageContent.hideReaderPhoto`. Facts row: up to 6, shared plus per-reading override (`reading.facts`, `reading.hideFacts`), `hideFacts`, sliders `factsPerRowPhone`/`factsPerRowDesktop`, `factsBalanceRows`, `factsListOnPhones`. Presentation: page list beside the preview (`studio/components/PreviewNavigator.tsx`), clicks inside the preview stay on `/preview/*` (`src/app/preview/PreviewLinkRouter.tsx`), Booking Form shows "Used on". Local Studio previews `localhost:3000` when Studio runs on `localhost:3333` (staging workspace only), plus a dev-only `frame-ancestors` entry.
+- `b879b43`: Presentation preview updates while Becky edits (`src/app/preview/PreviewVisualEditing.tsx`, `router.refresh()` on each refresh event). Closes `yqkukzlt`. New binding constraint in `CLAUDE.md`: no Sanity `browserToken`.
+- `8784fd1`: dex closure.
+
+**Next, in order:**
+1. `and9um5b`: Max said yes to the unset script. Booking Form on staging has 7 unknown fields under `entryPageContent` (`aboutJosephineLinkText`, `letterOpener`, `letterBridge`, `letterClosing`, `dropCapCta`, `dropCapCaption`, `changeReadingLinkText`), plus the retired `reading`/`bookingPage` fields on the ticket. No code reads them. Script finds unknown fields against the schema and unsets them; `/simplify` + `/code-review`, commit, run on staging. Production after v1.20.0 is live, with Max's go.
+2. Studio deploy to staging (`zpivrlex`) now also ships the facts, hide and navigator changes.
+3. The rest of epic `wjye07gw`.
+
+**Staging data changed this session:** `scripts/seed-sanity-defaults-2026-10.mts` filled empty fields (Booking Form `readingPageContent` 15, Notes Settings 18) so Presentation overlays work. Production run after v1.20.0 is live, with Max's go. Test drafts made during checks were deleted. The Notes test data from handover 5 is still on staging.
+
+**Gotchas found:**
+- Headless Chrome will not render narrower than about 500px. For a true 375px check, put an HTML file with 375px iframes in `public/`, load it from `localhost:3000`, then delete it.
+- In zsh, a variable named `path` overwrites `PATH`.
+- A link clicked inside the Presentation preview makes two requests (the public page, then the `/preview` twin). Expected.
+- `resend.test.ts` still times out under full-suite load (`nfqmp3k8`); passes alone.
+- Background dev servers stop after 2 hours.
+
+**Not done:** the efficiency idea of one render per edit instead of two (rejected, adds a second of delay); one shared preview route table for Studio and site (too large); a CMS-editable menu (own task).
+
+## ▶ (SUPERSEDED by handover 6 above) START HERE (next session, 2026-10-02 handover 5): Max walks the Notes flow himself (dex `d7swd1xq`). Notes is built in `84def90` on `release/v1.20.0`, not pushed.
 
 **Max, 2026-10-02: next session he wants to see the flow himself.** Start both servers with a long timeout (background runs stop at 2 hours), then hand him the URLs below.
 
