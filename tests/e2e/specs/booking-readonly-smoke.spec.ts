@@ -58,8 +58,8 @@ test.describe("Prod read-only public smoke", () => {
       ).not.toContain(`/book/${slug}/intake`);
       expect(
         html.toLowerCase(),
-        "the form's own heading should be present",
-      ).toContain("before we begin");
+        "the intake form itself should be present",
+      ).toContain("first name");
       expect(
         html,
         "Back should land on the homepage card the visitor came from",

@@ -11,13 +11,19 @@ export type BookingFormViewProps = {
   reading: { slug: string; tag: string; name: string; priceLabel: string };
   readingBlock: ReadingBlockProps;
   copy: {
-    title: string;
+    title?: string;
     intro: SanityPortableTextBlock[];
   };
   form: Omit<IntakeFormProps, "readingId" | "readingName">;
 };
 
-export function BookingFormView({ backHref, reading, readingBlock, copy, form }: BookingFormViewProps) {
+export function BookingFormView({
+  backHref,
+  reading,
+  readingBlock,
+  copy,
+  form,
+}: BookingFormViewProps) {
   return (
     <HeaderBackProvider>
       <BookingPageShell
@@ -27,7 +33,7 @@ export function BookingFormView({ backHref, reading, readingBlock, copy, form }:
         readingPrice={reading.priceLabel}
       >
         <ReadingBlock {...readingBlock} />
-        <BookingPageHeading title={copy.title} />
+        {copy.title ? <BookingPageHeading title={copy.title} /> : null}
         <div className="max-w-[50ch] mb-10">
           <PortableTextContent value={copy.intro} />
         </div>

@@ -387,6 +387,7 @@ export type SanityPagination = {
 
 export type SanityEntryPageContent = {
   letterTitle?: string;
+  showLetterTitle?: boolean;
 };
 
 export type SanityReadingPageContent = Partial<ReadingPageContent>;
