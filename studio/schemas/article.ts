@@ -140,6 +140,23 @@ export const article = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: "hideCardLeadIn",
+      title: "Hide the line above the reading box",
+      type: "boolean",
+      group: "ending",
+      description: "The line comes from Notes Settings. Turn this on to leave it out of this note.",
+      initialValue: false,
+    }),
+    defineField({
+      name: "hideReadingBox",
+      title: "Hide the reading box",
+      type: "boolean",
+      group: "ending",
+      description:
+        "Leaves out the box and the line above it. The note stays listed on the reading's booking page.",
+      initialValue: false,
+    }),
+    defineField({
       name: "moreNotes",
       title: "Notes to suggest next",
       type: "array",
@@ -159,6 +176,14 @@ export const article = defineType({
         }),
       ],
       validation: (rule) => rule.max(2).unique(),
+    }),
+    defineField({
+      name: "hideMoreNotes",
+      title: "Hide More notes",
+      type: "boolean",
+      group: "ending",
+      description: 'Leaves out "More notes" and "See all notes" at the end of this note.',
+      initialValue: false,
     }),
     defineField({
       name: "publishedAt",

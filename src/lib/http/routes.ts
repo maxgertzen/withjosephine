@@ -9,3 +9,5 @@ export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 
 // Pairs with the `id` on HomePageView's reading <li>.
 export const homeReadingAnchor = (slug: string) => `/#reading-${slug}`;
+
+export const homeSectionAnchor = (sectionId: string) => `/#${sectionId}`;

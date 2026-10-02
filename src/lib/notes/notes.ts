@@ -34,10 +34,16 @@ export function notesContent(state: SanityNotesState | null): NotesContent {
   return merged;
 }
 
-export function notesFooterLink(state: SanityNotesState | null): NotesLink | undefined {
+function notesLink(
+  state: SanityNotesState | null,
+  labelKey: "footerLinkLabel" | "navLinkLabel",
+): NotesLink | undefined {
   if (!isNotesVisible(state)) return undefined;
-  return { label: notesContent(state).footerLinkLabel, href: NOTES_PATH };
+  return { label: notesContent(state)[labelKey], href: NOTES_PATH };
 }
+
+export const notesFooterLink = (state: SanityNotesState | null) => notesLink(state, "footerLinkLabel");
+export const notesNavLink = (state: SanityNotesState | null) => notesLink(state, "navLinkLabel");
 
 export function faqNoteLink(
   state: SanityNotesState | null,

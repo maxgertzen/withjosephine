@@ -4,6 +4,8 @@ import { VisualEditing } from "next-sanity/visual-editing";
 import { DisableDraftMode } from "@/components/DisableDraftMode";
 import { SanityLive } from "@/lib/sanity/live";
 
+import { PreviewLinkRouter } from "./PreviewLinkRouter";
+
 export default async function PreviewLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled: isDraftMode } = await draftMode();
 
@@ -21,6 +23,7 @@ export default async function PreviewLayout({ children }: { children: React.Reac
           <SanityLive action="refresh" />
           <VisualEditing />
           <DisableDraftMode />
+          <PreviewLinkRouter />
         </>
       )}
     </>

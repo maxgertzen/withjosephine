@@ -7,7 +7,7 @@ import {
   notePath,
   notesContent,
 } from "@/lib/notes/notes";
-import { notesFooter } from "@/lib/notes/notesFooter";
+import { notesFooter, notesNav } from "@/lib/notes/notesChrome";
 import type { NoteSummary } from "@/lib/notes/types";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type { SanityArticle, SanityNotesState, SanitySiteSettings } from "@/lib/sanity/types";
@@ -36,17 +36,20 @@ export function deriveNoteViewProps(input: {
   const authorPhoto = notesState?.settings?.authorPhotoUrl || ABOUT_DEFAULTS.imageUrl;
   const lastModified = noteLastModified(article);
 
-  const ending: NoteEnding | undefined = reading?.slug
-    ? {
-        leadIn: content.cardLeadIn,
-        readingName: reading.name,
-        readingSlug: reading.slug,
-        price: nonBlank(reading.priceDisplay),
-        line: nonBlank(reading.valueProposition),
-        button: content.cardButton,
-        href: `/book/${reading.slug}`,
-      }
-    : undefined;
+  const ending: NoteEnding | undefined =
+    reading?.slug && !article.hideReadingBox
+      ? {
+          leadIn: article.hideCardLeadIn ? undefined : content.cardLeadIn,
+          readingName: reading.name,
+          readingSlug: reading.slug,
+          price: nonBlank(reading.priceDisplay),
+          line: nonBlank(reading.valueProposition),
+          button: content.cardButton,
+          href: `/book/${reading.slug}`,
+        }
+      : undefined;
+  const seeAll = otherNotesCount > picked.length ? content.seeAllLabel : undefined;
+  const showMoreNotes = !article.hideMoreNotes && (picked.length > 0 || Boolean(seeAll));
 
   return {
     slug: article.slug,
@@ -56,7 +59,9 @@ export function deriveNoteViewProps(input: {
     author: {
       name: content.authorName,
       line: content.authorLine,
-      photoUrl: sanityImageUrl(authorPhoto, { w: AUTHOR_PHOTO_PX }),
+      photoUrl: notesState?.settings?.hideAuthorPhoto
+        ? undefined
+        : sanityImageUrl(authorPhoto, { w: AUTHOR_PHOTO_PX }),
     },
     listen: article.audioUrl
       ? {
@@ -73,11 +78,14 @@ export function deriveNoteViewProps(input: {
       ? applyTokens(content.updatedTemplate, { date: formatMonthYear(lastModified) })
       : undefined,
     ending,
-    moreNotes: {
-      label: content.moreNotesLabel,
-      notes: picked.map((note) => ({ ...note, href: notePath(note.slug) })),
-      seeAll: otherNotesCount > picked.length ? content.seeAllLabel : undefined,
-    },
+    moreNotes: showMoreNotes
+      ? {
+          label: content.moreNotesLabel,
+          notes: picked.map((note) => ({ ...note, href: notePath(note.slug) })),
+          seeAll,
+        }
+      : undefined,
+    nav: notesNav(siteSettings, notesState),
     footer: notesFooter(siteSettings, notesState),
   };
 }

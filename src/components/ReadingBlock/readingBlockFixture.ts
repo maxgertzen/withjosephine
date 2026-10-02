@@ -9,6 +9,7 @@ export const SOUL_BLUEPRINT_BLOCK: ReadingBlockProps = {
   lead: "The most complete picture of your soul I can give you",
   body: "It brings together your purpose, your past lives, and the patterns you’ve carried down through your family line.",
   facts: READING_PAGE_DEFAULTS.facts,
+  factsLayout: READING_PAGE_DEFAULTS,
   reader: {
     name: READING_PAGE_DEFAULTS.readerName,
     line: READING_PAGE_DEFAULTS.readerLine,

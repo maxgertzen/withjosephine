@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const content = notesContent(await fetchNotesStatePublished());
   return buildPageMetadata({
     title: `${content.indexTitle} | ${SITE_NAME}`,
-    description: content.indexSubtitle,
+    description: content.indexSearchDescription,
     path: NOTES_PATH,
   });
 }

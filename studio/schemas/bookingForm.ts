@@ -1,5 +1,8 @@
 import { defineField, defineType } from "sanity";
 
+import { MAX_READING_FACTS, READING_PAGE_DEFAULTS } from "../../src/data/defaults";
+import { factsPerRowField, hideFactsField, readingFactsField } from "./readingFacts";
+
 export const bookingForm = defineType({
   name: "bookingForm",
   title: "Booking Form",
@@ -34,6 +37,7 @@ export const bookingForm = defineType({
       type: "object",
       description:
         "Words on the reading block above the form, shared by every reading. Leave a field blank to use the built-in wording.",
+      fieldsets: [{ name: "facts", title: "Facts row", options: { collapsible: true, collapsed: false } }],
       fields: [
         defineField({
           name: "eyebrow",
@@ -47,32 +51,41 @@ export const bookingForm = defineType({
           description:
             "Shown to visitors who came from a homepage card, as one row that opens the block. {reading} becomes the reading's subtitle, for example 'About the {reading}'.",
         }),
+        hideFactsField({
+          fieldset: "facts",
+          description: "Leaves out the facts row on every booking page, except readings that have their own facts.",
+        }),
+        readingFactsField({
+          fieldset: "facts",
+          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own. Leave empty to use the built-in three.`,
+        }),
+        factsPerRowField({
+          name: "factsPerRowPhone",
+          title: "Facts per row on phones",
+          fieldset: "facts",
+          initialValue: READING_PAGE_DEFAULTS.factsPerRowPhone,
+        }),
+        factsPerRowField({
+          name: "factsPerRowDesktop",
+          title: "Facts per row on computers",
+          fieldset: "facts",
+          initialValue: READING_PAGE_DEFAULTS.factsPerRowDesktop,
+        }),
         defineField({
-          name: "facts",
-          title: "Facts Row",
-          type: "array",
-          of: [
-            {
-              type: "object",
-              name: "readingFact",
-              fields: [
-                defineField({
-                  name: "label",
-                  title: "Label",
-                  type: "string",
-                  validation: (rule) => rule.required(),
-                }),
-                defineField({
-                  name: "value",
-                  title: "Value",
-                  type: "string",
-                  validation: (rule) => rule.required(),
-                }),
-              ],
-              preview: { select: { title: "label", subtitle: "value" } },
-            },
-          ],
-          validation: (rule) => rule.max(3),
+          name: "factsBalanceRows",
+          title: "Balance the rows",
+          type: "boolean",
+          fieldset: "facts",
+          description: "On: rows share the facts evenly (5 facts at 3 per row show as 3 and 2, 4 show as 2 and 2). Off: rows fill up in order (4 show as 3 and 1).",
+          initialValue: READING_PAGE_DEFAULTS.factsBalanceRows,
+        }),
+        defineField({
+          name: "factsListOnPhones",
+          title: "Show as a list on phones",
+          type: "boolean",
+          fieldset: "facts",
+          description: "On phones, one fact per line with the label on the left and the value on the right. Computers keep the rows.",
+          initialValue: READING_PAGE_DEFAULTS.factsListOnPhones,
         }),
         defineField({
           name: "readerName",
@@ -83,6 +96,13 @@ export const bookingForm = defineType({
           name: "readerLine",
           title: "Line Under the Reader Name",
           type: "string",
+        }),
+        defineField({
+          name: "hideReaderPhoto",
+          title: "Hide the Reader Photo",
+          type: "boolean",
+          description: "Leaves out the round portrait next to the reader name. The name and line stay.",
+          initialValue: false,
         }),
         defineField({
           name: "includedTitle",

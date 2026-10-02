@@ -14,6 +14,11 @@ const emailLocation = (title: string) =>
     locations: [{ title, href: "#", showHref: false, icon: EnvelopeIcon }],
   });
 
+const BOOKING_PAGES = defineLocations({
+  message: "Affects every booking page (/book/*).",
+  locations: [{ title: "Booking", href: "/preview/book/soul-blueprint" }],
+});
+
 export const presentationResolve: PresentationPluginOptions["resolve"] = {
   // Literal two-segment routes MUST precede the /preview/:slug wildcard (it also matches two segments).
   mainDocuments: defineDocuments([
@@ -54,10 +59,8 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
           : [],
       }),
     }),
-    bookingPage: defineLocations({
-      message: "Affects all booking pages (/book/*).",
-      locations: [{ title: "Booking", href: "/preview/book/soul-blueprint" }],
-    }),
+    bookingPage: BOOKING_PAGES,
+    bookingForm: BOOKING_PAGES,
     thankYouPage: defineLocations({
       message: "Affects all thank-you pages (/thank-you/*).",
       locations: [{ title: "Thank You", href: "/preview/thank-you/soul-blueprint" }],

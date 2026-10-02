@@ -192,6 +192,38 @@ describe("deriveBookingFormViewProps reading block", () => {
     );
     expect(derive()?.readingBlock.reader.imageUrl).toBe(ABOUT_DEFAULTS.imageUrl);
   });
+
+  it("uses the shared facts unless the reading has its own, and honours both hide switches", () => {
+    const own = [{ label: "Length", value: "1 hour" }];
+    const shared = [{ label: "Format", value: "Voice" }];
+    const withShared = (extra: Partial<SanityBookingForm["readingPageContent"]> = {}) =>
+      bookingForm({ readingPageContent: { facts: shared, ...extra } });
+    const facts = (readingOverrides: Partial<SanityReading>, form = withShared()) =>
+      derive(sanityReading(readingOverrides), { bookingForm: form })?.readingBlock.facts;
+
+    expect(facts({})).toEqual(shared);
+    expect(facts({ facts: own })).toEqual(own);
+    expect(facts({ facts: own }, withShared({ hideFacts: true }))).toEqual(own);
+    expect(facts({}, withShared({ hideFacts: true }))).toEqual([]);
+    expect(facts({ facts: own, hideFacts: true })).toEqual([]);
+    expect(derive()?.readingBlock.facts).toEqual(READING_PAGE_DEFAULTS.facts);
+  });
+
+  it("passes the facts layout from the Reading Page, with built-in fallbacks", () => {
+    const form = bookingForm({ readingPageContent: { factsPerRowPhone: 2, factsListOnPhones: true } });
+    expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.factsLayout).toMatchObject({
+      factsPerRowPhone: 2,
+      factsPerRowDesktop: READING_PAGE_DEFAULTS.factsPerRowDesktop,
+      factsListOnPhones: true,
+    });
+  });
+
+  it("leaves the reader photo out when the Reading Page hides it", () => {
+    const hidden = bookingForm({ readingPageContent: { hideReaderPhoto: true } });
+    const reader = derive(sanityReading(), { bookingForm: hidden })?.readingBlock.reader;
+    expect(reader?.imageUrl).toBeUndefined();
+    expect(reader?.name).toBe(READING_PAGE_DEFAULTS.readerName);
+  });
 });
 
 describe("deriveBookingFormViewProps form extras", () => {

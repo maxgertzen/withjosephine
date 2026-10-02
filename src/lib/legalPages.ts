@@ -7,8 +7,9 @@ import {
 } from "@/components/LegalPageLayout";
 
 import type { LegalPageFallback } from "./legalPage";
+import type { LegalSlug } from "./legalSlugs";
 
-export type LegalSlug = "privacy" | "terms" | "refund-policy";
+export { isLegalSlug, type LegalSlug } from "./legalSlugs";
 
 // Single source for legal-page fallback metadata + body, shared by the public
 // routes (published) and the /preview/[legalSlug] route (draft) so they cannot
@@ -51,7 +52,3 @@ export const LEGAL_PAGES: Record<
     FallbackBody: RefundPolicyFallbackBody,
   },
 };
-
-export function isLegalSlug(value: string): value is LegalSlug {
-  return value === "privacy" || value === "terms" || value === "refund-policy";
-}

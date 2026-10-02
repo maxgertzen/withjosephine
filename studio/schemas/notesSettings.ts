@@ -8,6 +8,12 @@ const TEXT_FIELDS: NotesTextField[] = [
   { name: "indexTitle", title: "Notes page title", description: "The heading of /notes." },
   { name: "indexSubtitle", title: "Notes page subtitle", description: "The line under the heading of /notes." },
   {
+    name: "indexSearchDescription",
+    title: "Notes page search description",
+    description: "The description Google and link previews show for /notes.",
+  },
+  { name: "navLinkLabel", title: "Menu link", description: "The Notes item in the top menu." },
+  {
     name: "readingTimeTemplate",
     title: "Reading time",
     description: "Shown under each note on /notes. {minutes} becomes the number.",
@@ -81,14 +87,32 @@ export const notesSettings = defineType({
       group: "visibility",
       description: "The portrait next to \"Written by\". Empty uses the About portrait from the Landing Page.",
     }),
+    defineField({
+      name: "hideAuthorPhoto",
+      title: "Hide the author photo",
+      type: "boolean",
+      group: "visibility",
+      description: "Leaves out the portrait next to \"Written by\" on every note. The name and line stay.",
+      initialValue: false,
+    }),
+    defineField({
+      name: "indexIllustration",
+      title: "Notes page drawing",
+      type: "image",
+      group: "visibility",
+      description:
+        "The drawing between the list of notes and the footer on /notes. Empty uses the gold quill and stars.",
+    }),
     ...TEXT_FIELDS.map((field) =>
       defineField({
         name: field.name,
         title: field.title,
         type: "string",
         group: "words",
-        description: `${field.description} Empty shows "${NOTES_DEFAULTS[field.name]}".`,
-        placeholder: NOTES_DEFAULTS[field.name],
+        description: NOTES_DEFAULTS[field.name]
+          ? `${field.description} Empty shows "${NOTES_DEFAULTS[field.name]}".`
+          : `${field.description} Empty shows nothing.`,
+        placeholder: NOTES_DEFAULTS[field.name] || undefined,
       }),
     ),
   ],

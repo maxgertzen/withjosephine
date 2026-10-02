@@ -2,10 +2,11 @@ import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import type { ReadingFact } from "@/data/defaults";
+import type { ReadingFact, ReadingFactsLayout } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 import { eyebrowClasses, smallCapsClasses } from "@/lib/textStyles";
 
+import { FactsRow } from "./FactsRow";
 import { OtherReadingLink } from "./OtherReadingLink";
 import { ReadingAccordion } from "./ReadingAccordion";
 import { ReadingFold } from "./ReadingFold";
@@ -19,7 +20,8 @@ export type ReadingBlockProps = {
   lead: string;
   body?: string;
   facts: ReadingFact[];
-  reader: { name: string; line: string; imageUrl: string };
+  factsLayout: ReadingFactsLayout;
+  reader: { name: string; line: string; imageUrl?: string };
   included: { title: string; items: string[] };
   howItWorks: { title: string; paragraphs: string[] };
   questions: { title: string; items: MappedFaqItem[] };
@@ -30,7 +32,7 @@ export type ReadingBlockProps = {
 const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3";
 
 function ReadingContent(props: ReadingBlockProps) {
-  const { slug, eyebrow, lead, body, facts, reader, included, howItWorks, questions, otherReadings, notes } =
+  const { slug, eyebrow, lead, body, facts, factsLayout, reader, included, howItWorks, questions, otherReadings, notes } =
     props;
   return (
     <>
@@ -38,38 +40,21 @@ function ReadingContent(props: ReadingBlockProps) {
       <p className="font-display italic text-[1.35rem] leading-[1.4] text-j-text mb-3">{lead}</p>
       {body ? <p className="font-body text-base leading-[1.7] text-j-text mb-2">{body}</p> : null}
 
-      {facts.length > 0 ? (
-        <dl
-          className="mt-6 grid border-y border-j-border-subtle"
-          style={{ gridTemplateColumns: `repeat(${facts.length}, minmax(0, 1fr))` }}
-        >
-          {facts.map((fact, index) => (
-            <div
-              key={index}
-              className={`flex flex-col gap-1 px-1 py-3.5 text-center ${index > 0 ? "border-l border-j-border-subtle" : ""}`}
-            >
-              <dt className="font-body uppercase text-[0.68rem] tracking-[0.18em] text-j-text-muted">
-                {fact.label}
-              </dt>
-              <dd className="m-0 font-display italic text-[1.15rem] leading-[1.2] text-j-text">
-                {fact.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      <FactsRow facts={facts} layout={factsLayout} />
 
       <div className="mt-6 flex items-center gap-[0.9rem]">
-        <span className="size-14 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
-          <Image
-            src={reader.imageUrl}
-            alt=""
-            width={56}
-            height={56}
-            sizes="56px"
-            className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
-          />
-        </span>
+        {reader.imageUrl ? (
+          <span className="size-14 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
+            <Image
+              src={reader.imageUrl}
+              alt=""
+              width={56}
+              height={56}
+              sizes="56px"
+              className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
+            />
+          </span>
+        ) : null}
         <p className="m-0 flex flex-col">
           <span className="font-display italic text-[1.2rem] text-j-text-heading">{reader.name}</span>
           <span className="font-body text-sm text-j-text-muted">{reader.line}</span>

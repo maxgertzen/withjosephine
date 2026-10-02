@@ -3,7 +3,10 @@ import {
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
   INTAKE_TITLE_FALLBACK,
+  MAX_READING_FACTS,
   READING_PAGE_DEFAULTS,
+  type ReadingFact,
+  type ReadingPageContent,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
@@ -45,6 +48,13 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
 }
 
 const PORTRAIT_WIDTH_PX = 112;
+
+function pageFacts(reading: SanityReading | null | undefined, shared: ReadingPageContent): ReadingFact[] {
+  if (reading?.hideFacts) return [];
+  if (reading?.facts?.length) return reading.facts.slice(0, MAX_READING_FACTS);
+  if (shared.hideFacts) return [];
+  return shared.facts.slice(0, MAX_READING_FACTS);
+}
 
 function resolveReading(readingId: string, sanityReading: SanityReading | null) {
   if (sanityReading) {
@@ -98,11 +108,14 @@ export function deriveBookingFormViewProps(
     eyebrow: content.eyebrow,
     lead: reading.valueProposition,
     body,
-    facts: content.facts,
+    facts: pageFacts(input.sanityReading, content),
+    factsLayout: content,
     reader: {
       name: content.readerName,
       line: content.readerLine,
-      imageUrl: sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
+      imageUrl: content.hideReaderPhoto
+        ? undefined
+        : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
     },
     included: { title: content.includedTitle, items: reading.includes },
     howItWorks: { title: content.howItWorksTitle, paragraphs: howItWorks },

@@ -3,13 +3,13 @@ import Link from "next/link";
 
 import { ListenButton } from "@/components/Notes/ListenButton";
 import { NoteBody } from "@/components/Notes/NoteBody";
-import { type NotesFooterProps, NotesShell } from "@/components/Notes/NotesShell";
+import { type NotesFooterProps, type NotesNavProps, NotesShell } from "@/components/Notes/NotesShell";
 import { StarMark } from "@/components/Notes/StarMark";
 import { NOTES_PATH } from "@/lib/notes/notes";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type NoteEnding = {
-  leadIn: string;
+  leadIn?: string;
   readingName: string;
   readingSlug: string;
   price?: string;
@@ -18,26 +18,33 @@ export type NoteEnding = {
   href: string;
 };
 
+type MoreNotesProps = { label: string; notes: (NoteSummary & { href: string })[]; seeAll?: string };
+
 export type NoteViewProps = {
   slug: string;
   backLabel: string;
   title: string;
   subtitle: string;
-  author: { name: string; line: string; photoUrl: string };
+  author: { name: string; line: string; photoUrl?: string };
   listen?: { src: string; label: string; length?: string };
   body: NoteBodyBlock[];
   signOff: string;
   updated?: string;
   ending?: NoteEnding;
-  moreNotes: { label: string; notes: (NoteSummary & { href: string })[]; seeAll?: string };
+  moreNotes?: MoreNotesProps;
+  nav: NotesNavProps;
   footer: NotesFooterProps;
 };
 
 function EndCard({ ending, slug }: { ending: NoteEnding; slug: string }) {
   return (
-    <>
-      <p className="m-0 text-center font-display italic text-2xl text-j-text">{ending.leadIn}</p>
-      <div className="mt-4 rounded-[16px] border border-j-border-subtle bg-j-ivory p-6 shadow-j-soft">
+    <div>
+      {ending.leadIn ? (
+        <p className="m-0 mb-4 text-center font-display italic text-2xl text-j-text">
+          {ending.leadIn}
+        </p>
+      ) : null}
+      <div className="rounded-[16px] border border-j-border-subtle bg-j-ivory p-6 shadow-j-soft">
         <p className="m-0 font-display italic font-semibold text-[1.75rem] leading-[1.15] text-j-text-heading">
           {ending.readingName}
         </p>
@@ -60,14 +67,13 @@ function EndCard({ ending, slug }: { ending: NoteEnding; slug: string }) {
           {ending.button}
         </Link>
       </div>
-    </>
+    </div>
   );
 }
 
-function MoreNotes({ moreNotes, slug }: { moreNotes: NoteViewProps["moreNotes"]; slug: string }) {
-  if (moreNotes.notes.length === 0 && !moreNotes.seeAll) return null;
+function MoreNotes({ moreNotes, slug }: { moreNotes: MoreNotesProps; slug: string }) {
   return (
-    <nav aria-label={moreNotes.label} className="mt-10 flex flex-col">
+    <nav aria-label={moreNotes.label} className="flex flex-col">
       <p className="m-0 mb-1 font-body text-[0.8125rem] font-medium uppercase tracking-[0.18em] text-j-text-gold">
         {moreNotes.label}
       </p>
@@ -108,10 +114,11 @@ export function NoteView({
   updated,
   ending,
   moreNotes,
+  nav,
   footer,
 }: NoteViewProps) {
   return (
-    <NotesShell footer={footer}>
+    <NotesShell nav={nav} footer={footer}>
       <article>
         <Link
           href={NOTES_PATH}
@@ -127,16 +134,18 @@ export function NoteView({
         </p>
 
         <div className="mt-6 flex items-center gap-3">
-          <span className="size-10 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
-            <Image
-              src={author.photoUrl}
-              alt=""
-              width={40}
-              height={40}
-              sizes="40px"
-              className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
-            />
-          </span>
+          {author.photoUrl ? (
+            <span className="size-10 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
+              <Image
+                src={author.photoUrl}
+                alt=""
+                width={40}
+                height={40}
+                sizes="40px"
+                className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
+              />
+            </span>
+          ) : null}
           <p className="m-0 flex flex-col">
             <span className="font-body text-[0.9375rem] font-medium text-j-text">
               {author.name}
@@ -156,17 +165,21 @@ export function NoteView({
         ) : null}
       </article>
 
-      <div
-        aria-hidden="true"
-        className="my-12 flex items-center justify-center gap-2.5 text-j-ornament"
-      >
-        <span className="block h-px w-12 bg-j-border-gold" />
-        <StarMark size={12} />
-        <span className="block h-px w-12 bg-j-border-gold" />
-      </div>
-
-      {ending ? <EndCard ending={ending} slug={slug} /> : null}
-      <MoreNotes moreNotes={moreNotes} slug={slug} />
+      {ending || moreNotes ? (
+        <div className="mt-12 flex flex-col gap-10">
+          <div
+            aria-hidden="true"
+            data-testid="note-divider"
+            className="mb-2 flex items-center justify-center gap-2.5 text-j-ornament"
+          >
+            <span className="block h-px w-12 bg-j-border-gold" />
+            <StarMark size={12} />
+            <span className="block h-px w-12 bg-j-border-gold" />
+          </div>
+          {ending ? <EndCard ending={ending} slug={slug} /> : null}
+          {moreNotes ? <MoreNotes moreNotes={moreNotes} slug={slug} /> : null}
+        </div>
+      ) : null}
     </NotesShell>
   );
 }

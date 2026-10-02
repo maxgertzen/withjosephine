@@ -59,6 +59,11 @@ export const readingBySlugQuery = groq`
     requiresQuestions,
     stripePaymentLink,
     estimatedMinutes,
+    facts[] {
+      label,
+      value
+    },
+    hideFacts,
     "questionsOnPage": questionsOnPage[]-> {
       _id,
       question,
@@ -314,8 +319,14 @@ export const bookingFormQuery = groq`
         label,
         value
       },
+      hideFacts,
+      factsPerRowPhone,
+      factsPerRowDesktop,
+      factsBalanceRows,
+      factsListOnPhones,
       readerName,
       readerLine,
+      hideReaderPhoto,
       includedTitle,
       howItWorksTitle,
       questionsTitle,
@@ -394,7 +405,8 @@ export const notesStateQuery = groq`
       "authorPhotoUrl": coalesce(
         authorPhoto.asset->url,
         *[_type == "landingPage"][0].about.image.asset->url
-      )
+      ),
+      "indexIllustrationUrl": indexIllustration.asset->url
     },
     "publishedCount": count(*[_type == "article" && defined(slug.current)])
   }
@@ -439,6 +451,9 @@ export const articleBySlugQuery = groq`
       valueProposition
     },
     "moreNotes": moreNotes[]-> { title, "slug": slug.current },
+    hideReadingBox,
+    hideCardLeadIn,
+    hideMoreNotes,
     "audioUrl": audio.asset->url,
     audioMinutes
   }

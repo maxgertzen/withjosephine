@@ -42,3 +42,30 @@ export const WithoutQuestions: Story = {
   decorators: [visitorFrom("external")],
   args: { questions: { title: "Questions", items: [] } },
 };
+
+export const WithoutReaderPhoto: Story = {
+  decorators: [visitorFrom("external")],
+  args: { reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } },
+};
+
+const SIX_FACTS = [
+  ...SOUL_BLUEPRINT_BLOCK.facts,
+  { label: "Reader", value: "Josephine" },
+  { label: "Language", value: "English" },
+  { label: "Sent by", value: "Email" },
+];
+
+export const SixFactsBalanced: Story = {
+  decorators: [visitorFrom("external")],
+  args: { facts: SIX_FACTS },
+};
+
+export const FiveFactsListOnPhones: Story = {
+  decorators: [visitorFrom("external")],
+  args: {
+    facts: SIX_FACTS.slice(0, 5),
+    factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
+  },
+};
+
+export const FactsHidden: Story = { decorators: [visitorFrom("external")], args: { facts: [] } };

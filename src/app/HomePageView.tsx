@@ -7,6 +7,7 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Navigation } from "@/components/Navigation";
+import type { NotesNavProps } from "@/components/Notes/NotesShell";
 import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
@@ -15,7 +16,6 @@ import type {
   MappedAbout,
   MappedFaqItem,
   MappedFooterContent,
-  MappedNavContent,
   MappedReading,
   MappedSocialLink,
   MappedTestimonial,
@@ -23,7 +23,7 @@ import type {
 import type { SanityLandingPage } from "@/lib/sanity/types";
 
 export type HomePageViewProps = {
-  navContent?: MappedNavContent;
+  nav: NotesNavProps;
   footerContent?: MappedFooterContent;
   socialLinks: MappedSocialLink[];
   notesLink?: NotesLink;
@@ -40,7 +40,7 @@ export type HomePageViewProps = {
 };
 
 export function HomePageView({
-  navContent,
+  nav,
   footerContent,
   socialLinks,
   notesLink,
@@ -57,7 +57,7 @@ export function HomePageView({
 }: HomePageViewProps) {
   return (
     <>
-      <Navigation content={navContent} />
+      <Navigation {...nav} />
       <main id="main">
         <Hero content={hero ?? undefined} />
 

@@ -1,6 +1,8 @@
+import { NOTES_INDEX_ILLUSTRATION_URL } from "@/data/defaults";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { notePath, notesContent, readingMinutes } from "@/lib/notes/notes";
-import { notesFooter } from "@/lib/notes/notesFooter";
+import { notesFooter, notesNav } from "@/lib/notes/notesChrome";
+import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type {
   SanityArticleSummary,
   SanityNotesState,
@@ -8,6 +10,8 @@ import type {
 } from "@/lib/sanity/types";
 
 import type { NotesIndexViewProps } from "./NotesIndexView";
+
+const ILLUSTRATION_PX = 640;
 
 export function deriveNotesIndexViewProps(input: {
   notesState: SanityNotesState | null;
@@ -27,6 +31,11 @@ export function deriveNotesIndexViewProps(input: {
         minutes: readingMinutes(article.wordCount),
       }),
     })),
+    illustrationUrl: sanityImageUrl(
+      notesState?.settings?.indexIllustrationUrl || NOTES_INDEX_ILLUSTRATION_URL,
+      { w: ILLUSTRATION_PX },
+    ),
+    nav: notesNav(siteSettings, notesState),
     footer: notesFooter(siteSettings, notesState),
   };
 }

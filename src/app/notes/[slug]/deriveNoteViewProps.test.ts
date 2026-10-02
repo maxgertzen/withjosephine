@@ -49,14 +49,40 @@ describe("deriveNoteViewProps", () => {
     const { moreNotes } = derive({
       moreNotes: [null, { title: "Self", slug: PILLAR_ARTICLE.slug }, NOTE_SUMMARIES[1]],
     });
-    expect(moreNotes.notes.map((note) => note.href)).toEqual(["/notes/what-to-ask"]);
+    expect(moreNotes?.notes.map((note) => note.href)).toEqual(["/notes/what-to-ask"]);
   });
 
   it("shows See all notes only when more notes exist than the ones listed", () => {
-    expect(derive().moreNotes.seeAll).toBeUndefined();
-    expect(derive({ moreNotes: [NOTE_SUMMARIES[1]] }).moreNotes.seeAll).toBe(
+    expect(derive().moreNotes?.seeAll).toBeUndefined();
+    expect(derive({ moreNotes: [NOTE_SUMMARIES[1]] }).moreNotes?.seeAll).toBe(
       NOTES_DEFAULTS.seeAllLabel,
     );
+  });
+
+  it("hides the reading box, keeping nothing of it, when the note says so", () => {
+    expect(derive({ hideReadingBox: true }).ending).toBeUndefined();
+  });
+
+  it("hides only the line above the reading box when the note says so", () => {
+    const ending = derive({ hideCardLeadIn: true }).ending;
+    expect(ending?.leadIn).toBeUndefined();
+    expect(ending?.readingName).toBeTruthy();
+  });
+
+  it("hides More notes, See all included, when the note says so", () => {
+    expect(derive({ hideMoreNotes: true }).moreNotes).toBeUndefined();
+  });
+
+  it("drops More notes when there is nothing to list", () => {
+    expect(
+      derive({ moreNotes: [] }, { ...VISIBLE_NOTES_STATE, publishedCount: 1 }).moreNotes,
+    ).toBeUndefined();
+  });
+
+  it("leaves the author photo out when Notes Settings hides it", () => {
+    const hidden = { ...VISIBLE_NOTES_STATE, settings: { enabled: true, hideAuthorPhoto: true } };
+    expect(derive({}, hidden).author.photoUrl).toBeUndefined();
+    expect(derive().author.photoUrl).toBeTruthy();
   });
 
   it("shows the listen row only for a note with a recording", () => {

@@ -59,6 +59,24 @@ describe("NoteView", () => {
     ).toEqual(["/notes/what-to-ask", "/notes/birth-time"]);
   });
 
+  it("drops the star divider when every end section is hidden", () => {
+    const { unmount } = render(<NoteView {...props} />);
+    expect(screen.getByTestId("note-divider")).toBeInTheDocument();
+    unmount();
+
+    render(<NoteView {...props} ending={undefined} moreNotes={undefined} />);
+    expect(screen.queryByTestId("note-divider")).not.toBeInTheDocument();
+    expect(screen.queryByText("When you’re ready.")).not.toBeInTheDocument();
+  });
+
+  it("keeps the author name when the photo is hidden", () => {
+    const { container } = render(
+      <NoteView {...props} author={{ ...props.author, photoUrl: undefined }} />,
+    );
+    expect(screen.getByText("Written by Josephine")).toBeInTheDocument();
+    expect(container.querySelector("article img")).toBeNull();
+  });
+
   it("puts the Notes link in the footer", () => {
     render(<NoteView {...props} />);
     const footer = screen.getByRole("navigation", { name: "Footer" });

@@ -103,10 +103,21 @@ export interface ReadingFact {
   value: string;
 }
 
-export interface ReadingPageContent {
+export const MAX_READING_FACTS = 6;
+
+export interface ReadingFactsLayout {
+  factsPerRowPhone: number;
+  factsPerRowDesktop: number;
+  factsBalanceRows: boolean;
+  factsListOnPhones: boolean;
+}
+
+export interface ReadingPageContent extends ReadingFactsLayout {
   eyebrow: string;
   foldRowLabel: string;
   facts: ReadingFact[];
+  hideFacts: boolean;
+  hideReaderPhoto: boolean;
   readerName: string;
   readerLine: string;
   includedTitle: string;
@@ -125,6 +136,12 @@ export const READING_PAGE_DEFAULTS: ReadingPageContent = {
     { label: "Length", value: "30-40 min" },
     { label: "Arrives", value: "7 days" },
   ],
+  hideFacts: false,
+  hideReaderPhoto: false,
+  factsPerRowPhone: 3,
+  factsPerRowDesktop: 4,
+  factsBalanceRows: true,
+  factsListOnPhones: false,
   readerName: "Read by Josephine",
   readerLine: "Astrologer and Akashic Records reader",
   includedTitle: "What\u2019s included",
@@ -138,6 +155,8 @@ export const READING_PAGE_DEFAULTS: ReadingPageContent = {
 export interface NotesContent {
   indexTitle: string;
   indexSubtitle: string;
+  indexSearchDescription: string;
+  navLinkLabel: string;
   readingTimeTemplate: string;
   backLabel: string;
   authorName: string;
@@ -157,7 +176,9 @@ export interface NotesContent {
 
 export const NOTES_DEFAULTS: NotesContent = {
   indexTitle: "Notes",
-  indexSubtitle: "Answers to the questions people bring to me.",
+  indexSubtitle: "",
+  indexSearchDescription: "Notes by Josephine of Josephine Soul Readings.",
+  navLinkLabel: "Notes",
   readingTimeTemplate: "{minutes} minute read",
   backLabel: "Notes",
   authorName: "Written by Josephine",
@@ -174,6 +195,8 @@ export const NOTES_DEFAULTS: NotesContent = {
   faqLinkTemplate: "Read the note: {title}",
   readingPageTitle: "Notes on this reading",
 };
+
+export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
 

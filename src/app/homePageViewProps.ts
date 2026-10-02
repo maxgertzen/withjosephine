@@ -1,9 +1,9 @@
 import { faqNoteLink, notesFooterLink } from "@/lib/notes/notes";
+import { notesNav } from "@/lib/notes/notesChrome";
 import {
   mapAbout,
   mapFaqItems,
   mapFooterContent,
-  mapNavContent,
   mapReadings,
   mapSocialLinks,
   mapTestimonials,
@@ -37,7 +37,7 @@ export function toHomePageViewProps(input: {
     input;
   const relatedArticleById = new Map(faqItems.map((item) => [item._id, item.relatedArticle]));
   return {
-    navContent: mapNavContent(siteSettings),
+    nav: notesNav(siteSettings, notesState),
     footerContent: mapFooterContent(siteSettings),
     socialLinks: mapSocialLinks(siteSettings),
     notesLink: notesFooterLink(notesState),

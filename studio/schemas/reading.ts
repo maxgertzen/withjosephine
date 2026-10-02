@@ -1,6 +1,7 @@
 import { defineField, defineType } from "sanity";
 
 import { parseDisplayToCents } from "../../src/lib/pricing";
+import { hideFactsField, readingFactsField } from "./readingFacts";
 
 export const reading = defineType({
   name: "reading",
@@ -161,6 +162,11 @@ export const reading = defineType({
         "Shown in the page line, for example 'Page 1 of 2 · about 3 minutes'. Leave empty to leave the minutes out.",
       validation: (rule) => rule.integer().min(1).max(60),
     }),
+    readingFactsField({
+      description:
+        "This reading's own facts row on its booking page. Leave empty to use the shared Facts Row from Booking Form.",
+    }),
+    hideFactsField({ description: "Leaves out the facts row on this reading's booking page." }),
     defineField({
       name: "stripePaymentLink",
       title: "Stripe Payment Link",

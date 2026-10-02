@@ -1,6 +1,6 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-import type { NotesContent, ReadingPageContent } from "@/data/defaults";
+import type { NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type SanityReading = {
@@ -21,6 +21,8 @@ export type SanityReading = {
   requiresQuestions: boolean;
   stripePaymentLink?: string;
   estimatedMinutes?: number;
+  facts?: ReadingFact[] | null;
+  hideFacts?: boolean;
   questionsOnPage?: SanityReadingQuestion[] | null;
   formTestimonial?: SanityFormTestimonial | null;
   seo?: SanitySeo;
@@ -414,6 +416,8 @@ export type SanityLegalPage = {
 export type SanityNotesSettings = Partial<NotesContent> & {
   enabled?: boolean;
   authorPhotoUrl?: string;
+  hideAuthorPhoto?: boolean;
+  indexIllustrationUrl?: string;
 };
 
 export type SanityNotesState = {
@@ -442,6 +446,9 @@ export type SanityArticle = SanityArticleBase & {
     valueProposition?: string;
   } | null;
   moreNotes?: (NoteSummary | null)[];
+  hideReadingBox?: boolean;
+  hideCardLeadIn?: boolean;
+  hideMoreNotes?: boolean;
   audioUrl?: string;
   audioMinutes?: number;
 };
