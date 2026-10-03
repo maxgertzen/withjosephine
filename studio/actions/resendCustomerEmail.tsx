@@ -9,7 +9,7 @@ const ADMIN_ROUTE = "/api/admin/resend-customer-email";
 
 const EMAIL_TYPES = [
   { value: "order_confirmation", label: "Order confirmation (booking receipt)" },
-  { value: "day7", label: "Day +7 — Delivery email" },
+  { value: "reading_delivery", label: "Reading delivery email" },
 ] as const;
 
 type SubmissionDoc = {

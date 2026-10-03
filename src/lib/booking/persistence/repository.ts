@@ -1,7 +1,9 @@
+import { emailFiredTypeNeedle, storedEmailFiredTypes } from "../emailFiredType";
 import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
 const LIST_LIMIT = 500;
+const NOT_A_LEGACY_GIFT = `(is_gift = 0 OR is_gift IS NULL)`;
 
 type Row = {
   id: string;
@@ -274,48 +276,56 @@ export async function setSubmissionRecipientUser(
 
 export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string };
 
-export async function markDay7SentIfUnrecorded(
+export async function markReadingDeliverySentIfUnrecorded(
   id: string,
   delivery: SubmissionDelivery,
   entry: EmailFiredEntry,
 ): Promise<{ rowsWritten: number }> {
+  const notFired = notYetFired(entry.type);
   return dbExec(
     `UPDATE submissions
      SET delivered_at = ?, voice_note_url = ?, pdf_url = ?,
          emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
-     WHERE id = ? AND instr(emails_fired_json, ?) = 0`,
+     WHERE id = ? AND ${notFired.sql}`,
     [
       delivery.deliveredAt,
       delivery.voiceNoteUrl,
       delivery.pdfUrl,
       JSON.stringify(entry),
       id,
-      emailFiredTypeNeedle(entry.type),
+      ...notFired.params,
     ],
   );
 }
 
-export type Day7Attempt = { attemptedAt: string; jti: string };
+export type ReadingDeliveryAttempt = { attemptedAt: string; jti: string };
 
-export async function claimDay7Attempt(
+export async function claimReadingDeliveryAttempt(
   id: string,
-  fresh: Day7Attempt,
-): Promise<Day7Attempt | null> {
-  const rows = await dbQuery<{ day7_attempt_at: string; day7_attempt_jti: string }>(
+  fresh: ReadingDeliveryAttempt,
+): Promise<ReadingDeliveryAttempt | null> {
+  const rows = await dbQuery<{
+    reading_delivery_attempt_at: string;
+    reading_delivery_attempt_jti: string;
+  }>(
     `UPDATE submissions
-     SET day7_attempt_at = COALESCE(day7_attempt_at, ?),
-         day7_attempt_jti = COALESCE(day7_attempt_jti, ?)
+     SET reading_delivery_attempt_at = COALESCE(reading_delivery_attempt_at, ?),
+         reading_delivery_attempt_jti = COALESCE(reading_delivery_attempt_jti, ?)
      WHERE id = ?
-     RETURNING day7_attempt_at, day7_attempt_jti`,
+     RETURNING reading_delivery_attempt_at, reading_delivery_attempt_jti`,
     [fresh.attemptedAt, fresh.jti, id],
   );
   const row = rows[0];
-  return row ? { attemptedAt: row.day7_attempt_at, jti: row.day7_attempt_jti } : null;
+  return row
+    ? { attemptedAt: row.reading_delivery_attempt_at, jti: row.reading_delivery_attempt_jti }
+    : null;
 }
 
-export async function clearDay7Attempt(id: string): Promise<void> {
+export async function clearReadingDeliveryAttempt(id: string): Promise<void> {
   await dbExec(
-    `UPDATE submissions SET day7_attempt_at = NULL, day7_attempt_jti = NULL WHERE id = ?`,
+    `UPDATE submissions
+     SET reading_delivery_attempt_at = NULL, reading_delivery_attempt_jti = NULL
+     WHERE id = ?`,
     [id],
   );
 }
@@ -396,13 +406,13 @@ export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
   options: { paidBefore?: string },
 ): Promise<SubmissionRecord[]> {
+  const notFired = notYetFired(emailType);
   const filters = [
     `status = 'paid'`,
-    `instr(emails_fired_json, ?) = 0`,
-    // Legacy guard: gift removed in v1.16.0; skip dormant gift rows so day-7 never routes a recipient link to the purchaser.
-    `(is_gift = 0 OR is_gift IS NULL)`,
+    notFired.sql,
+    NOT_A_LEGACY_GIFT,
   ];
-  const params: SqlValue[] = [emailFiredTypeNeedle(emailType)];
+  const params: SqlValue[] = [...notFired.params];
   if (options.paidBefore) {
     filters.push(`paid_at < ?`);
     params.push(options.paidBefore);
@@ -418,8 +428,12 @@ export async function listPaidSubmissionsForEmail(
   return rows.map(rowToRecord);
 }
 
-function emailFiredTypeNeedle(emailType: EmailFiredType): string {
-  return `"type":"${emailType}"`;
+function notYetFired(emailType: EmailFiredType): { sql: string; params: string[] } {
+  const needles = storedEmailFiredTypes(emailType).map(emailFiredTypeNeedle);
+  return {
+    sql: needles.map(() => "instr(emails_fired_json, ?) = 0").join(" AND "),
+    params: needles,
+  };
 }
 
 export async function appendEmailFired(id: string, entry: EmailFiredEntry): Promise<void> {

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/booking/resendCustomerEmail", () => ({
   resendCustomerEmail: vi.fn(),
-  RESENDABLE_EMAIL_TYPES: ["order_confirmation", "day7"] as const,
+  RESENDABLE_EMAIL_TYPES: ["order_confirmation", "reading_delivery"] as const,
 }));
 
 import { resendCustomerEmail } from "@/lib/booking/resendCustomerEmail";
@@ -75,6 +75,20 @@ describe("POST /api/admin/resend-customer-email", () => {
     expect(body.emailType).toBe("order_confirmation");
     expect(body.to).toBe("a***@example.com");
   });
+
+  it.each(["reading_delivery", "day7"])(
+    "resends the reading delivery email when Studio sends emailType %s",
+    async (emailType) => {
+      mockResend.mockResolvedValue({
+        ok: true,
+        emailType: "reading_delivery",
+        targetEmailRedacted: "a***@example.com",
+      });
+      const res = await callRoute({ submissionId: "sub_1", emailType });
+      expect(res.status).toBe(200);
+      expect(mockResend).toHaveBeenCalledWith("sub_1", "reading_delivery");
+    },
+  );
 
   it("returns 409 with refusal reason when resend is rate-limited", async () => {
     mockResend.mockResolvedValue({ ok: false, reason: "rate_limited" });

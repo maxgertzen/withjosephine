@@ -11,11 +11,11 @@ vi.mock("@/lib/booking/submissions", () => ({
     photoUrl: null,
     createdAt: "2026-04-28T12:00:00Z",
   }),
-  claimDay7Attempt: vi.fn(),
-  clearDay7Attempt: vi.fn(),
+  claimReadingDeliveryAttempt: vi.fn(),
+  clearReadingDeliveryAttempt: vi.fn(),
   findSubmissionById: vi.fn(),
   markSubmissionDeliveredIfUnset: vi.fn(),
-  recordDay7Sent: vi.fn(),
+  recordReadingDeliverySent: vi.fn(),
 }));
 
 vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
@@ -23,35 +23,35 @@ vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
 }));
 
 vi.mock("@/lib/resend", () => ({
-  sendDay7Delivery: vi.fn(),
+  sendReadingDelivery: vi.fn(),
 }));
 
 import { LISTEN_TOKEN_TTL_MS, verifyListenToken } from "@/lib/auth/listenToken";
 import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
-  claimDay7Attempt,
-  clearDay7Attempt,
-  type Day7Attempt,
+  claimReadingDeliveryAttempt,
+  clearReadingDeliveryAttempt,
   type EmailFiredEntry,
   findSubmissionById,
   markSubmissionDeliveredIfUnset,
-  recordDay7Sent,
+  type ReadingDeliveryAttempt,
+  recordReadingDeliverySent,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
-import { sendDay7Delivery } from "@/lib/resend";
+import { sendReadingDelivery } from "@/lib/resend";
 
 import {
-  DAY7_ATTEMPT_RETRY_WINDOW_MS,
-  DAY7_RECORD_TRIES,
+  ATTEMPT_RETRY_WINDOW_MS,
   deliverOne,
   deliverRequested,
-} from "./deliverDay7";
+  RECORD_TRIES,
+} from "./readingDelivery";
 
-const mockSend = vi.mocked(sendDay7Delivery);
-const mockRecordSent = vi.mocked(recordDay7Sent);
+const mockSend = vi.mocked(sendReadingDelivery);
+const mockRecordSent = vi.mocked(recordReadingDeliverySent);
 const mockMarkDelivered = vi.mocked(markSubmissionDeliveredIfUnset);
-const mockClaimAttempt = vi.mocked(claimDay7Attempt);
-const mockClearAttempt = vi.mocked(clearDay7Attempt);
+const mockClaimAttempt = vi.mocked(claimReadingDeliveryAttempt);
+const mockClearAttempt = vi.mocked(clearReadingDeliveryAttempt);
 const mockFindById = vi.mocked(findSubmissionById);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
 
@@ -77,15 +77,17 @@ const DELIVERABLE = {
   pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
 };
 
-const DAY7_ENTRY: EmailFiredEntry = {
-  type: "day7",
+const DELIVERY_ENTRY: EmailFiredEntry = {
+  type: "reading_delivery",
   sentAt: "2026-04-29T12:05:00Z",
   resendId: "msg_d7",
 };
 
-let storedAttempt: Day7Attempt | null;
+const LEGACY_DELIVERY_ENTRY = { ...DELIVERY_ENTRY, type: "day7" } as unknown as EmailFiredEntry;
 
-function sendAtSentTime(result: Awaited<ReturnType<typeof sendDay7Delivery>>) {
+let storedAttempt: ReadingDeliveryAttempt | null;
+
+function sendAtSentTime(result: Awaited<ReturnType<typeof sendReadingDelivery>>) {
   return async () => {
     vi.setSystemTime(SENT_AT);
     return result;
@@ -125,20 +127,26 @@ afterEach(() => {
 });
 
 describe("deliverOne", () => {
-  it("returns alreadySent without an attempt or a send when emailsFired has day7", async () => {
-    const outcome = await deliverOne({ ...PAID_SUBMISSION, emailsFired: [DAY7_ENTRY] }, DELIVERABLE);
+  it.each([
+    ["reading_delivery", DELIVERY_ENTRY],
+    ["legacy day7", LEGACY_DELIVERY_ENTRY],
+  ])(
+    "returns alreadySent without an attempt or a send when emailsFired has %s",
+    async (_label, entry) => {
+      const outcome = await deliverOne({ ...PAID_SUBMISSION, emailsFired: [entry] }, DELIVERABLE);
 
-    expect(outcome).toBe("alreadySent");
-    expect(mockClaimAttempt).not.toHaveBeenCalled();
-    expect(mockSend).not.toHaveBeenCalled();
-    expect(mockRecordSent).not.toHaveBeenCalled();
-  });
+      expect(outcome).toBe("alreadySent");
+      expect(mockClaimAttempt).not.toHaveBeenCalled();
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(mockRecordSent).not.toHaveBeenCalled();
+    },
+  );
 
-  it("sends with the day7/<id> key and records deliveredAt as the attempt time", async () => {
+  it("sends with the reading-delivery/<id> key and records deliveredAt as the attempt time", async () => {
     const outcome = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
 
     expect(outcome).toBe("sent");
-    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "day7/sub_1" });
+    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "reading-delivery/sub_1" });
     expect(mockRecordSent).toHaveBeenCalledWith(
       "sub_1",
       {
@@ -188,7 +196,7 @@ describe("deliverOne", () => {
     mockRecordSent.mockRejectedValue(new Error("D1_ERROR: network lost"));
 
     expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("retryLater");
-    expect(mockRecordSent).toHaveBeenCalledTimes(DAY7_RECORD_TRIES);
+    expect(mockRecordSent).toHaveBeenCalledTimes(RECORD_TRIES);
     expect(storedAttempt).not.toBeNull();
 
     mockRecordSent.mockReset().mockResolvedValue(undefined);
@@ -230,7 +238,7 @@ describe("deliverOne", () => {
 
   it("does not send and reports attemptExpired when the unrecorded attempt is past the retry window", async () => {
     storedAttempt = {
-      attemptedAt: new Date(ATTEMPT_AT.getTime() - DAY7_ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
+      attemptedAt: new Date(ATTEMPT_AT.getTime() - ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
       jti: "old-attempt",
     };
 
@@ -242,7 +250,7 @@ describe("deliverOne", () => {
 
   it("starts a fresh attempt on the next request after an expired one", async () => {
     storedAttempt = {
-      attemptedAt: new Date(ATTEMPT_AT.getTime() - DAY7_ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
+      attemptedAt: new Date(ATTEMPT_AT.getTime() - ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
       jti: "old-attempt",
     };
     await deliverOne(PAID_SUBMISSION, DELIVERABLE);
@@ -319,7 +327,7 @@ describe("deliverOne", () => {
 
     expect([scheduled, requested]).toEqual(["sent", "sent"]);
     expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
-    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "day7/sub_1" });
+    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "reading-delivery/sub_1" });
   });
 });
 

@@ -8,6 +8,7 @@
  * mirror calls.
  */
 
+import { currentEmailFiredType } from "../emailFiredType";
 import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
 
 const COMPARED_FIELDS = [
@@ -44,7 +45,7 @@ function normalizeOptional<T>(value: T | null | undefined): T | null {
 }
 
 function emailFiredKey(entry: EmailFiredEntry): string {
-  return `${entry.type}|${entry.sentAt}`;
+  return `${currentEmailFiredType(entry.type)}|${entry.sentAt}`;
 }
 
 export function diffSubmission(

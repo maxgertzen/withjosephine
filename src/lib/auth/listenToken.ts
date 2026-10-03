@@ -4,7 +4,7 @@ import { sha256Hex, timingSafeStringEqual } from "@/lib/hmac";
 export const LISTEN_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const LISTEN_TOKEN_PAYLOAD_PREFIX = "listen.v1:";
 
-export type ListenTokenMintSource = "cron_day7" | "admin_resend";
+export type ListenTokenMintSource = "reading_delivery" | "admin_resend";
 
 export type MintListenTokenArgs = {
   submissionId: string;
@@ -34,14 +34,28 @@ export type ListenTokenVerifyResult =
       reason: "malformed" | "bad_signature" | "expired" | "recipient_changed";
     };
 
+const LEGACY_READING_DELIVERY_MINT_SOURCE = "cron_day7";
+
+type SignedListenTokenMintSource =
+  | ListenTokenMintSource
+  | typeof LEGACY_READING_DELIVERY_MINT_SOURCE;
+
 export function isValidMintSource(value: string): value is ListenTokenMintSource {
-  return value === "cron_day7" || value === "admin_resend";
+  return value === "reading_delivery" || value === "admin_resend";
 }
 
-const codec = createSignedTokenCodec<ListenTokenMintSource>({
+function isSignedMintSource(value: string): value is SignedListenTokenMintSource {
+  return isValidMintSource(value) || value === LEGACY_READING_DELIVERY_MINT_SOURCE;
+}
+
+function currentMintSource(signed: SignedListenTokenMintSource): ListenTokenMintSource {
+  return signed === LEGACY_READING_DELIVERY_MINT_SOURCE ? "reading_delivery" : signed;
+}
+
+const codec = createSignedTokenCodec<SignedListenTokenMintSource>({
   purpose: "listen.v1",
   defaultTtlMs: LISTEN_TOKEN_TTL_MS,
-  isValidMintSource,
+  isValidMintSource: isSignedMintSource,
 });
 
 export function mintListenToken(args: MintListenTokenArgs): Promise<string> {
@@ -65,7 +79,7 @@ export async function verifyListenToken(
     valid: true,
     submissionId: result.submissionId,
     jti: result.jti,
-    mintSource: result.mintSource,
+    mintSource: currentMintSource(result.mintSource),
     expMs: result.expMs,
   };
 }

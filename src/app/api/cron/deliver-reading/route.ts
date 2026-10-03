@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import { type DeliverOutcome, deliverRequested } from "@/lib/booking/deliverDay7";
+import { type DeliverOutcome, deliverRequested } from "@/lib/booking/readingDelivery";
 
 async function runForce(submissionId: string) {
   const outcome = await deliverRequested(submissionId).catch((error): DeliverOutcome => {
-    console.error(`[cron-email-day-7-deliver:force] Failed for ${submissionId}`, error);
+    console.error(`[cron-deliver-reading] Failed for ${submissionId}`, error);
     return "skipped";
   });
   const sent = outcome === "sent" ? 1 : 0;

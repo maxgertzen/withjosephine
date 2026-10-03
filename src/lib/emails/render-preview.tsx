@@ -2,11 +2,11 @@ import { render } from "@react-email/render";
 
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
-import { Day7Delivery } from "./Day7Delivery";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
+import { ReadingDelivery } from "./ReadingDelivery";
 import type { EmailTemplateKey } from "./slots";
 
 /**
@@ -23,7 +23,7 @@ function stripRenderBlockers(html: string): string {
 
 export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
-  "emailDay7Delivery",
+  "emailReadingDelivery",
   "emailMagicLink",
   "emailPrivacyExport",
 ] as const;
@@ -63,15 +63,15 @@ async function renderRaw(
           copy={merged as typeof PREVIEW_DEFAULTS.emailOrderConfirmation}
         />,
       );
-    case "emailDay7Delivery":
+    case "emailReadingDelivery":
       return render(
-        <Day7Delivery
+        <ReadingDelivery
           vars={{
             firstName: PREVIEW_FIXTURE.firstName,
             readingName: PREVIEW_FIXTURE.readingName,
             listenUrl: PREVIEW_FIXTURE.listenUrl,
           }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailReadingDelivery}
         />,
       );
     case "emailMagicLink": {

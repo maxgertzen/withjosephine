@@ -354,8 +354,8 @@ export const SINGLETONS: SingletonContract[] = [
     ],
   },
   {
-    id: "emailDay7Delivery",
-    type: "emailDay7Delivery",
+    id: "emailReadingDelivery",
+    type: "emailReadingDelivery",
     fields: [
       { name: "subjectTemplate", type: "string" },
       { name: "preview", type: "string" },

@@ -4,9 +4,10 @@ import { siteOrigin } from "@/lib/env";
 
 import {
   redactEmail,
-  sendDay7Delivery,
   sendOrderConfirmation,
+  sendReadingDelivery,
 } from "../resend";
+import { isEmailFiredOfType } from "./emailFiredType";
 import { READING_ACCESS_TTL_MS } from "./readingRetention";
 import {
   appendEmailFired,
@@ -16,11 +17,11 @@ import {
   type SubmissionRecord,
 } from "./submissions";
 
-export type ResendableEmailType = "order_confirmation" | "day7";
+export type ResendableEmailType = "order_confirmation" | "reading_delivery";
 
 export const RESENDABLE_EMAIL_TYPES: readonly ResendableEmailType[] = [
   "order_confirmation",
-  "day7",
+  "reading_delivery",
 ];
 
 export type ResendRefusalReason =
@@ -42,7 +43,7 @@ function countRecentResends(
   nowMs: number,
 ): number {
   return (submission.emailsFired ?? []).filter((entry) => {
-    if (entry.type !== emailType) return false;
+    if (!isEmailFiredOfType(entry.type, emailType)) return false;
     const sentAtMs = Date.parse(entry.sentAt);
     if (Number.isNaN(sentAtMs)) return false;
     return nowMs - sentAtMs < RESEND_WINDOW_MS;
@@ -109,7 +110,7 @@ async function dispatchResend(
       }
       return sendOrderConfirmation(context, { dataExportUrl });
     }
-    case "day7": {
+    case "reading_delivery": {
       if (!submission.recipientUserId) {
         return { kind: "failed", error: "missing recipientUserId" };
       }
@@ -135,7 +136,7 @@ async function dispatchResend(
         ttlMs: cappedTtl,
       });
       const listenUrl = `${siteOrigin()}/listen/${submission._id}?t=${token}`;
-      return sendDay7Delivery(context, listenUrl);
+      return sendReadingDelivery(context, listenUrl);
     }
   }
 }

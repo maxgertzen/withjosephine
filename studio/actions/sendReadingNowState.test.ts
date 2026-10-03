@@ -13,7 +13,7 @@ const WITH_FILES: SendReadingNowDocument = {
   readingPdf: { asset: { _ref: "file-pdf" } },
 };
 
-const DAY7_SENT = [{ type: "day7", sentAt: "2026-10-03T14:02:00.000Z" }];
+const DELIVERY_SENT = [{ type: "reading_delivery", sentAt: "2026-10-03T14:02:00.000Z" }];
 
 describe("sendReadingNowState", () => {
   it("is ready when both files are published and there is no draft", () => {
@@ -55,10 +55,11 @@ describe("sendReadingNowState", () => {
     ).toBe("failed");
   });
 
-  it("is sent when emailsFired has a day7 entry", () => {
-    expect(sendReadingNowState({ published: { ...WITH_FILES, emailsFired: DAY7_SENT } })).toBe(
-      "sent",
-    );
+  it.each([
+    ["a reading_delivery", DELIVERY_SENT],
+    ["a legacy day7", [{ type: "day7", sentAt: "2026-10-03T14:02:00.000Z" }]],
+  ])("is sent when emailsFired has %s entry", (_label, emailsFired) => {
+    expect(sendReadingNowState({ published: { ...WITH_FILES, emailsFired } })).toBe("sent");
   });
 
   it("is sent over failed and requested", () => {
@@ -66,7 +67,7 @@ describe("sendReadingNowState", () => {
       sendReadingNowState({
         published: {
           ...WITH_FILES,
-          emailsFired: DAY7_SENT,
+          emailsFired: DELIVERY_SENT,
           deliveryRequestedAt: "2026-10-03T14:00:00.000Z",
           deliveryFailedAt: "2026-10-03T14:05:00.000Z",
         },
@@ -84,7 +85,7 @@ describe("sendReadingNowState", () => {
     );
   });
 
-  it("ignores emails other than day7", () => {
+  it("ignores emails other than the reading delivery", () => {
     expect(
       sendReadingNowState({
         published: { ...WITH_FILES, emailsFired: [{ type: "order_confirmation" }] },

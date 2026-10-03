@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadDotenv } from "./_lib/loadDotenv.mts";
 import { isMainModule } from "./_lib/main.mts";
-import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
+import { rawPerspectiveClient } from "./_lib/sanity-write-client.mts";
 
 const LOG_PREFIX = "unset-unknown-sanity-fields";
 const STUDIO_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../studio");
@@ -166,19 +166,10 @@ function assertSchemaIsDeployedToProduction(): void {
   }
 }
 
-function datasetClient(dataset: string, apply: boolean) {
-  const client = apply
-    ? sanityWriteClient({ dataset })
-    : sanityWriteClient({ dataset, readOnly: true }).withConfig({
-        token: process.env.SANITY_READ_TOKEN,
-      });
-  return client.withConfig({ perspective: "raw" });
-}
-
 async function run(opts: { dataset: string; apply: boolean }): Promise<void> {
   if (opts.dataset === "production") assertSchemaIsDeployedToProduction();
   const schema = extractSchema(opts.dataset);
-  const client = datasetClient(opts.dataset, opts.apply);
+  const client = rawPerspectiveClient(opts.dataset, opts.apply);
   log(`dataset=${opts.dataset} apply=${opts.apply} schemaTypes=${schema.length}`);
 
   const docs = await client.fetch<SanityDoc[]>(

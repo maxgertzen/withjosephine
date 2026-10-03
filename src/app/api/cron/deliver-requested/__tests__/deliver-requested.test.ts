@@ -4,7 +4,7 @@ vi.mock("@/lib/booking/cron-auth", () => ({
   isCronRequestAuthorized: vi.fn(),
 }));
 
-vi.mock("@/lib/booking/deliverDay7", () => ({
+vi.mock("@/lib/booking/readingDelivery", () => ({
   deliverRequested: vi.fn(),
 }));
 
@@ -15,12 +15,12 @@ vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
 }));
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import { type DeliverOutcome, deliverRequested } from "@/lib/booking/deliverDay7";
 import {
   clearDeliveryRequest,
   fetchDeliveryRequestedIds,
   markDeliveryRequestFailed,
 } from "@/lib/booking/persistence/sanityDelivery";
+import { type DeliverOutcome, deliverRequested } from "@/lib/booking/readingDelivery";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockDeliverRequested = vi.mocked(deliverRequested);

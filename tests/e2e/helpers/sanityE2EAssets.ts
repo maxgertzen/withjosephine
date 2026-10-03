@@ -58,7 +58,7 @@ export async function forceD1Mirror(submissionId: string): Promise<{
   submissionId: string;
 }> {
   const cronSecret = requireStagingEnv("CRON_SECRET");
-  const url = `${STAGING_URL}/api/cron/email-day-7-deliver?force=${encodeURIComponent(submissionId)}`;
+  const url = `${STAGING_URL}/api/cron/deliver-reading?force=${encodeURIComponent(submissionId)}`;
   const response = await fetch(url, {
     method: "GET",
     headers: {

@@ -15,7 +15,7 @@ vi.mock("./submissions", async () => {
 
 vi.mock("../resend", () => ({
   sendOrderConfirmation: vi.fn(),
-  sendDay7Delivery: vi.fn(),
+  sendReadingDelivery: vi.fn(),
   redactEmail: vi.fn((s: string) => s.replace(/^./, "*")),
 }));
 
@@ -85,6 +85,25 @@ describe("resendCustomerEmail", () => {
     expect(result).toEqual({ ok: false, reason: "rate_limited" });
   });
 
+  it("counts legacy day7 entries toward the reading_delivery rate limit", async () => {
+    const { findSubmissionById } = await import("./submissions");
+    const now = new Date("2026-05-18T00:00:00.000Z").getTime();
+    vi.setSystemTime(new Date(now));
+    const sentAt = new Date(now - 1000).toISOString();
+    vi.mocked(findSubmissionById).mockResolvedValue(
+      buildPaidSubmission({
+        emailsFired: [
+          { type: "reading_delivery", sentAt, resendId: "a" },
+          { type: "day7", sentAt, resendId: "b" },
+          { type: "day7", sentAt, resendId: "c" },
+        ] as unknown as SubmissionRecord["emailsFired"],
+      }),
+    );
+    const { resendCustomerEmail } = await import("./resendCustomerEmail");
+    const result = await resendCustomerEmail("sub_1", "reading_delivery");
+    expect(result).toEqual({ ok: false, reason: "rate_limited" });
+  });
+
   it("ignores resends older than 24h for rate-limit counting", async () => {
     const { findSubmissionById, appendEmailFired } = await import("./submissions");
     const { sendOrderConfirmation } = await import("../resend");
@@ -133,7 +152,7 @@ describe("resendCustomerEmail", () => {
     expect(result).toEqual({ ok: false, reason: "send_failed" });
   });
 
-  describe("day7 listen-token wiring (Phase 1 one-tap)", () => {
+  describe("reading delivery listen-token wiring (Phase 1 one-tap)", () => {
     const NOW = new Date("2026-05-26T00:00:00.000Z").getTime();
     const DAY_MS = 24 * 60 * 60 * 1000;
     const DEFAULT_TTL_MS = 30 * DAY_MS;
@@ -143,10 +162,10 @@ describe("resendCustomerEmail", () => {
       return new Date(NOW - days * DAY_MS).toISOString();
     }
 
-    it("dispatches day7 with a /listen/<id>?t=<token> URL, not the raw R2 URL", async () => {
+    it("dispatches reading_delivery with a /listen/<id>?t=<token> URL, not the raw R2 URL", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");
-      const { sendDay7Delivery } = await import("../resend");
+      const { sendReadingDelivery } = await import("../resend");
       vi.mocked(findSubmissionById).mockResolvedValue(
         buildPaidSubmission({
           recipientUserId: "user_recipient_admin",
@@ -155,49 +174,49 @@ describe("resendCustomerEmail", () => {
           pdfUrl: "https://images.withjosephine.com/raw/reading.pdf",
         }),
       );
-      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7_admin" });
+      vi.mocked(sendReadingDelivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7_admin" });
       vi.mocked(appendEmailFired).mockResolvedValue(undefined);
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      const result = await resendCustomerEmail("sub_test_1", "day7");
+      const result = await resendCustomerEmail("sub_test_1", "reading_delivery");
       expect(result.ok).toBe(true);
-      const sendArgs = vi.mocked(sendDay7Delivery).mock.calls[0];
+      const sendArgs = vi.mocked(sendReadingDelivery).mock.calls[0];
       const listenUrl = sendArgs?.[1] as string;
       expect(listenUrl).toMatch(/\/listen\/sub_test_1\?t=[A-Za-z0-9_.-]+$/);
       expect(listenUrl).not.toContain("images.withjosephine.com");
     });
 
-    it("sends the admin day7 resend without a Resend idempotency key", async () => {
+    it("sends the admin reading delivery resend without a Resend idempotency key", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");
-      const { sendDay7Delivery } = await import("../resend");
+      const { sendReadingDelivery } = await import("../resend");
       vi.mocked(findSubmissionById).mockResolvedValue(
         buildPaidSubmission({
           recipientUserId: "user_recipient_admin",
           deliveredAt: isoDaysAgo(7),
         }),
       );
-      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
+      vi.mocked(sendReadingDelivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
       vi.mocked(appendEmailFired).mockResolvedValue(undefined);
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      await resendCustomerEmail("sub_test_1", "day7");
-      expect(vi.mocked(sendDay7Delivery).mock.calls[0]).toHaveLength(2);
+      await resendCustomerEmail("sub_test_1", "reading_delivery");
+      expect(vi.mocked(sendReadingDelivery).mock.calls[0]).toHaveLength(2);
     });
 
     it("uses mintSource=admin_resend in the minted token", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");
-      const { sendDay7Delivery } = await import("../resend");
+      const { sendReadingDelivery } = await import("../resend");
       vi.mocked(findSubmissionById).mockResolvedValue(
         buildPaidSubmission({
           recipientUserId: "user_recipient_admin",
           deliveredAt: isoDaysAgo(7),
         }),
       );
-      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
+      vi.mocked(sendReadingDelivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
       vi.mocked(appendEmailFired).mockResolvedValue(undefined);
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      await resendCustomerEmail("sub_test_1", "day7");
-      const listenUrl = vi.mocked(sendDay7Delivery).mock.calls[0]?.[1] as string;
+      await resendCustomerEmail("sub_test_1", "reading_delivery");
+      const listenUrl = vi.mocked(sendReadingDelivery).mock.calls[0]?.[1] as string;
       const token = new URL(listenUrl).searchParams.get("t") ?? "";
       const verified = await verifyListenToken({
         token,
@@ -213,18 +232,18 @@ describe("resendCustomerEmail", () => {
     it("caps TTL to remaining reading-retention when deliveredAt is 85 days ago", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");
-      const { sendDay7Delivery } = await import("../resend");
+      const { sendReadingDelivery } = await import("../resend");
       vi.mocked(findSubmissionById).mockResolvedValue(
         buildPaidSubmission({
           recipientUserId: "user_recipient_admin",
           deliveredAt: isoDaysAgo(85),
         }),
       );
-      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
+      vi.mocked(sendReadingDelivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
       vi.mocked(appendEmailFired).mockResolvedValue(undefined);
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      await resendCustomerEmail("sub_test_1", "day7");
-      const listenUrl = vi.mocked(sendDay7Delivery).mock.calls[0]?.[1] as string;
+      await resendCustomerEmail("sub_test_1", "reading_delivery");
+      const listenUrl = vi.mocked(sendReadingDelivery).mock.calls[0]?.[1] as string;
       const token = new URL(listenUrl).searchParams.get("t") ?? "";
       const verified = await verifyListenToken({
         token,
@@ -244,18 +263,18 @@ describe("resendCustomerEmail", () => {
     it("uses the full 30d default TTL when delivery is recent (7d ago)", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");
-      const { sendDay7Delivery } = await import("../resend");
+      const { sendReadingDelivery } = await import("../resend");
       vi.mocked(findSubmissionById).mockResolvedValue(
         buildPaidSubmission({
           recipientUserId: "user_recipient_admin",
           deliveredAt: isoDaysAgo(7),
         }),
       );
-      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
+      vi.mocked(sendReadingDelivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
       vi.mocked(appendEmailFired).mockResolvedValue(undefined);
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      await resendCustomerEmail("sub_test_1", "day7");
-      const listenUrl = vi.mocked(sendDay7Delivery).mock.calls[0]?.[1] as string;
+      await resendCustomerEmail("sub_test_1", "reading_delivery");
+      const listenUrl = vi.mocked(sendReadingDelivery).mock.calls[0]?.[1] as string;
       const token = new URL(listenUrl).searchParams.get("t") ?? "";
       const verified = await verifyListenToken({
         token,
@@ -278,7 +297,7 @@ describe("resendCustomerEmail", () => {
         }),
       );
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      const result = await resendCustomerEmail("sub_test_1", "day7");
+      const result = await resendCustomerEmail("sub_test_1", "reading_delivery");
       expect(result).toEqual({ ok: false, reason: "send_failed" });
     });
 
@@ -292,7 +311,7 @@ describe("resendCustomerEmail", () => {
         }),
       );
       const { resendCustomerEmail } = await import("./resendCustomerEmail");
-      const result = await resendCustomerEmail("sub_test_1", "day7");
+      const result = await resendCustomerEmail("sub_test_1", "reading_delivery");
       expect(result).toEqual({ ok: false, reason: "send_failed" });
     });
   });

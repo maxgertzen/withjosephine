@@ -12,8 +12,8 @@ import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
-  Day7Attempt,
   FinancialRecordInput,
+  ReadingDeliveryAttempt,
   SubmissionDelivery,
 } from "./persistence/repository";
 import * as repo from "./persistence/repository";
@@ -37,9 +37,9 @@ export const SUBMISSION_STATUS = {
 } as const;
 
 export type {
-  Day7Attempt,
   EmailFiredEntry,
   EmailFiredType,
+  ReadingDeliveryAttempt,
   SubmissionDelivery,
   SubmissionRecord,
   SubmissionStatus,
@@ -222,26 +222,34 @@ export async function markSubmissionDeliveredIfUnset(
   await repo.markSubmissionDeliveredIfUnset(submissionId, delivery);
 }
 
-export async function recordDay7Sent(
+export async function recordReadingDeliverySent(
   submissionId: string,
   delivery: SubmissionDelivery,
   resendId: string,
 ): Promise<void> {
-  const entry: EmailFiredEntry = { type: "day7", sentAt: delivery.deliveredAt, resendId };
-  const { rowsWritten } = await repo.markDay7SentIfUnrecorded(submissionId, delivery, entry);
+  const entry: EmailFiredEntry = {
+    type: "reading_delivery",
+    sentAt: delivery.deliveredAt,
+    resendId,
+  };
+  const { rowsWritten } = await repo.markReadingDeliverySentIfUnrecorded(
+    submissionId,
+    delivery,
+    entry,
+  );
   if (rowsWritten === 0) return;
   runMirror(mirrorAppendEmailFired(submissionId, entry, { deliveredAt: entry.sentAt }));
 }
 
-export async function claimDay7Attempt(
+export async function claimReadingDeliveryAttempt(
   submissionId: string,
-  fresh: Day7Attempt,
-): Promise<Day7Attempt | null> {
-  return repo.claimDay7Attempt(submissionId, fresh);
+  fresh: ReadingDeliveryAttempt,
+): Promise<ReadingDeliveryAttempt | null> {
+  return repo.claimReadingDeliveryAttempt(submissionId, fresh);
 }
 
-export async function clearDay7Attempt(submissionId: string): Promise<void> {
-  await repo.clearDay7Attempt(submissionId);
+export async function clearReadingDeliveryAttempt(submissionId: string): Promise<void> {
+  await repo.clearReadingDeliveryAttempt(submissionId);
 }
 
 export async function setSubmissionRecipientUser(

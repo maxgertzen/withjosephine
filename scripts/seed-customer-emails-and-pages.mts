@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createClient } from "@sanity/client";
 
 import {
-  EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_READING_DELIVERY_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
@@ -58,7 +58,7 @@ function omitNullish<T extends object>(record: T): Partial<T> {
 
 const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
   emailOrderConfirmation: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
-  emailDay7Delivery: new Set([
+  emailReadingDelivery: new Set([
     "bodyIntro",
     "bodyPostButton",
     "comfortLine",
@@ -118,9 +118,9 @@ const SEEDS = [
     ...omitNullish(EMAIL_ORDER_CONFIRMATION_DEFAULTS),
   },
   {
-    _id: "emailDay7Delivery",
-    _type: "emailDay7Delivery",
-    ...omitNullish(EMAIL_DAY7_DELIVERY_DEFAULTS),
+    _id: "emailReadingDelivery",
+    _type: "emailReadingDelivery",
+    ...omitNullish(EMAIL_READING_DELIVERY_DEFAULTS),
   },
   { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
   {

@@ -211,8 +211,8 @@ export const emailOrderConfirmationQuery = groq`
   }
 `;
 
-export const emailDay7DeliveryQuery = groq`
-  *[_type == "emailDay7Delivery"][0] {
+export const emailReadingDeliveryQuery = groq`
+  coalesce(*[_type == "emailReadingDelivery"][0], *[_type == "emailDay7Delivery"][0]) {
     subjectTemplate,
     preview,
     bodyIntro,

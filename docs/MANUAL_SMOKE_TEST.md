@@ -72,7 +72,7 @@ On a delivered `/listen/<id>` (use Cluster A's flow to produce one, or an existi
 ### G4 — regression: reading copy + names (#298)
 1. Reading cards/titles show **bare** names: "Soul Blueprint", "Birth Chart", "Akashic Record" (not "The …"). ✅
 2. Sentence/customer copy reads "…your Soul Blueprint **reading**…" (noun appended in copy, not in the bare name).
-3. Open one email (Order Confirmation or Day-7) — bare name + "reading" renders correctly, no double-noun / leading-article.
+3. Open one email (Order Confirmation or Reading Delivery) — bare name + "reading" renders correctly, no double-noun / leading-article.
 4. **Migration note:** code defaults are bare; **live Sanity overrides need `scripts/migrate-readingname-append-reading-2026-06-16.ts`**. Confirm staging renders correctly (run the migration on staging if any surface still shows old copy); **prod migration is owed at merge** (see sequence below).
 
 ### G5 — regression: Studio (#297) — PARTIAL, read the caveat
@@ -123,38 +123,38 @@ Covers v1.0 baseline, v1.4.0 one-tap (J13a, J13d, J13e, J13i), v1.6.0 form polis
 - Either email missing after 5 minutes.
 - Studio submission missing the photo or any required field.
 
-### A2: Becky delivers + Studio Day-7 schema audit
+### A2: Becky delivers + Studio reading delivery email schema audit
 
 **As Becky (in Studio):**
 1. Open the submission from A1. The **audit trail** shows consent timestamps + IP-hash + request UA-hash entries. Eyeball that they are present.
 2. Upload a short MP3 in **Voice note** (~30s, under 5MB).
 3. Upload any PDF (~1 page) in **Reading PDF**.
 4. **Publish**. **Delivered at** is read-only and stays empty until the delivery email is sent.
-5. Open **Email > Day 7 Delivery** in the Studio sidebar (v1.4.0 J13e). Confirm visible fields are: `subject`, `preview`, `bodyIntro`, `bodyPostButton`, `buttonLabel`. Legacy fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) should NOT be visible.
+5. Open **Emails > Reading Delivery Email → Customer** in the Studio sidebar (v1.4.0 J13e). Confirm visible fields are: `subject`, `preview`, `bodyIntro`, `bodyPostButton`, `buttonLabel`. Legacy fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) should NOT be visible.
 
-### A3: Day-7 force-fire, one-tap, listen page, remember-me
+### A3: Reading delivery force-send, one-tap, listen page, remember-me
 
-**As maintainer:** force the Day-7 cron for the A1 submission (replace `<id>`):
+**As maintainer:** force the reading delivery for the A1 submission (replace `<id>`):
 ```
-bash scripts/force-cron.sh email-day-7-deliver <id>
+bash scripts/force-cron.sh deliver-reading <id>
 ```
 Expected response: `{"processed":1,"sent":1,"skipped":0,...}`.
 
 **As customer (in `+self`):**
-1. Day-7 delivery email arrives. Subject reads "Your <reading-name> is ready" (verify no leading "The"). Body uses the one-tap copy: "Tap below to open your reading. You will be signed in for the next seven days..." (v1.4.0 J13a). Single CTA, no em-dashes.
+1. Reading delivery email arrives. Subject reads "Your <reading-name> is ready" (verify no leading "The"). Body uses the one-tap copy: "Tap below to open your reading. You will be signed in for the next seven days..." (v1.4.0 J13a). Single CTA, no em-dashes.
 2. Tap the CTA. Land on `/my-readings/welcome?t=<lib-token>` with heading "Welcome to your library." and CTA "Continue to your library."
 3. Tap **Continue**. Land on `/my-readings?welcome=1`. Reading card visible under **Mine** with an **Open your reading** CTA.
 4. Click **Open your reading**. Land on `/listen/<id>`. Audio plays in full. PDF downloads and opens. Filename is human-readable: firstname + lastname + reading name, **space-separated, casing echoed verbatim** from the name fields (no hyphens/underscores, no app re-casing), e.g. `Jane Doe Soul Blueprint.pdf` (v1.11.0 K, #285; contract: `buildListenFilename` in `src/app/api/listen/[id]/downloadFilename.ts`). NOT the submission UUID. If the in-page loader hangs you can't reach the download — that's a BLOCK, not a pass.
 5. Confirm top-bar visible on `/listen/<id>`, `/my-readings`, `/my-readings/welcome`: ✦ Josephine wordmark on left; on the authed routes the right side shows the **owner email + Sign out** control. The old standalone "Home" link was removed in v1.11.0 (E) — the wordmark is the sole home affordance.
 6. Hit the browser **back** button after step 3. The interstitial does NOT restore from bfcache with the consumed token in the URL. The URL stays clean: no `?t=...` reappears (v1.7.0 J15a).
-7. Open the same listen URL in a second incognito window (different session). Site shows "This link has rested" form. Submit the email. A fresh email arrives — subject "Open your reading" (separate template from the Day-7 delivery; per F7 the relationship to J13d "Sign in to your library" is a TBD spec question). Tap the CTA. Land on `/listen/<id>?t=<fresh-token>` with heading "Welcome, your reading is here." and CTA "Continue to your reading." Tap, land on `/listen/<id>`.
+7. Open the same listen URL in a second incognito window (different session). Site shows "This link has rested" form. Submit the email. A fresh email arrives — subject "Open your reading" (separate template from the reading delivery email; per F7 the relationship to J13d "Sign in to your library" is a TBD spec question). Tap the CTA. Land on `/listen/<id>?t=<fresh-token>` with heading "Welcome, your reading is here." and CTA "Continue to your reading." Tap, land on `/listen/<id>`.
    - Magic-link body greeting substitutes the user's actual first name, not literal `{firstName}` (v1.5.0 J12b).
 8. In that second window, close the listen tab and reopen `/listen/<id>` directly (within 7 days of step 7). The page renders. It does NOT show "This link has rested" (7-day session persistence promise).
    - **Rested-bypass (v1.11.0 C, #287):** while signed in (valid session), append `?error=rested` to the listen URL. The reading must render normally — a valid session OUTRANKS the stale `?error=rested`; the "This link has rested" card must NOT show. (Pre-fix, a re-clicked/consumed link wrongly rested an already-signed-in user.) `?error=rested` is the deterministic trigger; the consumed-link path is an ambiguous secondary.
 9. Visit `/listen/<id>` with an obviously consumed token. Confirm the rested page renders with no em-dashes in heading or body (v1.10.0 J17d /listen rested).
 
 **Routing summary (the two welcome interstitial paths):**
-- Original Day-7 delivery email CTA → `/my-readings/welcome?t=...` ("Welcome to your library") → `/my-readings` library → user picks a card → `/listen/<id>`.
+- Original reading delivery email CTA → `/my-readings/welcome?t=...` ("Welcome to your library") → `/my-readings` library → user picks a card → `/listen/<id>`.
 - Fresh-link email after a rested listen token → `/listen/<id>?t=...` ("Welcome, your reading is here") → `/listen/<id>` directly. No library detour.
 
 **Watch for:**
@@ -217,10 +217,10 @@ Covers v1.0 baseline (J2, J3, J11 admin), v1.4.0 (J13a one-tap on recipient side
 
 **As Becky:** mirror A2 on the **recipient's submission** from B2. Upload MP3 + PDF. Publish.
 
-**As maintainer:** `bash scripts/force-cron.sh email-day-7-deliver <recipient-submission-id>`.
+**As maintainer:** `bash scripts/force-cron.sh deliver-reading <recipient-submission-id>`.
 
 **As recipient (in `+recipient-selfsend`):**
-1. Day-7 delivery email arrives. Tap CTA. One-tap interstitial. Land on `/listen/<id>?welcome=1`.
+1. Reading delivery email arrives. Tap CTA. One-tap interstitial. Land on `/listen/<id>?welcome=1`.
 2. Below the welcome ribbon, the greeting line includes the recipient's first name (whatever was typed at intake). It does NOT contain literal `{recipientName}` (v1.8.0 J16a).
 3. Audio + PDF accessible.
 
@@ -373,7 +373,7 @@ Covers v1.0 (J9 Sanity Live edits, J11 admin emails consolidation), v1.5.0 (J12a
 - Action label "Send preview... (publish first)" disabled (unpublished draft exists).
 - `[PREVIEW]` prefix missing.
 
-Repeat on at least 2 other email singletons (e.g. **Day-7 Delivery**, **Gift Claim**).
+Repeat on at least 2 other email singletons (e.g. **Reading Delivery Email**, **Gift Claim**).
 
 ### D3: dex auto-close (observational, no walk)
 
@@ -484,7 +484,7 @@ You ran the test. Cleanup is NOT your job. D1, Sanity, and R2 deletions are infr
 
 Send the maintainer:
 
-1. **A pass/fail per beat**: "A1 ✅ / A2 ✅ / A3 ❌ (screenshot: Day-7 email didn't arrive) / B1 ✅ / B2 ❌ ..."
+1. **A pass/fail per beat**: "A1 ✅ / A2 ✅ / A3 ❌ (screenshot: reading delivery email didn't arrive) / B1 ✅ / B2 ❌ ..."
 2. **Screenshots for any ❌**: that's all the troubleshooting you do.
 3. **The time window you ran in**: so the maintainer can scope the cleanup script ("ran between 14:00 and 15:30 UTC today").
 

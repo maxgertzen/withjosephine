@@ -23,11 +23,11 @@ afterEach(() => {
 });
 
 describe("listen token mint + verify", () => {
-  it("round-trips a valid token with cron_day7 mint source", async () => {
+  it("round-trips a valid token with reading_delivery mint source", async () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const result = await verifyListenToken({
@@ -38,7 +38,7 @@ describe("listen token mint + verify", () => {
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.submissionId).toBe(SUBMISSION_ID);
-      expect(result.mintSource).toBe("cron_day7");
+      expect(result.mintSource).toBe("reading_delivery");
       expect(result.expMs).toBe(NOW + LISTEN_TOKEN_TTL_MS);
       expect(result.jti).toMatch(/^[0-9a-f]{32}$/);
     }
@@ -66,7 +66,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const result = await verifyListenToken({
@@ -105,14 +105,14 @@ describe("listen token mint + verify", () => {
     const tokenA = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
       jti: FIXED_JTI,
     });
     const tokenB = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
       jti: FIXED_JTI,
     });
@@ -142,7 +142,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
       jti: FIXED_JTI,
     });
@@ -164,7 +164,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const [payloadB64] = token.split(".");
@@ -182,7 +182,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const [payloadB64, sigB64] = token.split(".");
@@ -201,7 +201,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const result = await verifyListenToken({
@@ -218,7 +218,7 @@ describe("listen token mint + verify", () => {
       mintListenToken({
         submissionId: SUBMISSION_ID,
         recipientUserId: RECIPIENT_USER_ID,
-        mintSource: "cron_day7",
+        mintSource: "reading_delivery",
         now: NOW,
       }),
     ).rejects.toThrow("AUTH_TOKEN_SECRET is required for auth tokens");
@@ -228,7 +228,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     vi.stubEnv("AUTH_TOKEN_SECRET", "");
@@ -245,7 +245,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     // The encoded base64url payload must not contain the literal id.
@@ -259,7 +259,7 @@ describe("listen token mint + verify", () => {
     const token = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
     });
     const [, sigB64] = token.split(".");
@@ -272,7 +272,7 @@ describe("listen token mint + verify", () => {
   it("rejects a token whose payload has the wrong field count", async () => {
     // Hand-craft a payload that signs cleanly but has 5 segments instead of 6.
     const { signHmacSha256 } = await import("@/lib/hmac");
-    const badPayload = "listen.v1:sub:hash:jti:cron_day7"; // missing expMs
+    const badPayload = "listen.v1:sub:hash:jti:reading_delivery"; // missing expMs
     const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
     const secret = await deriveTokenSubkeyHex("listen.v1");
     const sig = await signHmacSha256(secret, badPayload);
@@ -287,7 +287,7 @@ describe("listen token mint + verify", () => {
 
   it("rejects a token with an unknown payload prefix even if signed", async () => {
     const { signHmacSha256 } = await import("@/lib/hmac");
-    const badPayload = "evil.v1:sub:hash:jti:cron_day7:9999999999999";
+    const badPayload = "evil.v1:sub:hash:jti:reading_delivery:9999999999999";
     const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
     const secret = await deriveTokenSubkeyHex("listen.v1");
     const sig = await signHmacSha256(secret, badPayload);
@@ -298,6 +298,28 @@ describe("listen token mint + verify", () => {
       now: NOW,
     });
     expect(result).toEqual({ valid: false, reason: "malformed" });
+  });
+
+  it("verifies a token minted with the legacy cron_day7 source as reading_delivery", async () => {
+    const { sha256Hex, signHmacSha256 } = await import("@/lib/hmac");
+    const recipientHash = await sha256Hex(RECIPIENT_USER_ID);
+    const legacyPayload = `listen.v1:${SUBMISSION_ID}:${recipientHash}:${FIXED_JTI}:cron_day7:${NOW + 1_000}`;
+    const { deriveTokenSubkeyHex } = await import("@/lib/auth/tokenSubkey");
+    const secret = await deriveTokenSubkeyHex("listen.v1");
+    const sig = await signHmacSha256(secret, legacyPayload);
+    const token = `${base64UrlEncodeBytes(new TextEncoder().encode(legacyPayload))}.${base64UrlEncodeBytes(sig)}`;
+    const result = await verifyListenToken({
+      token,
+      currentRecipientUserId: RECIPIENT_USER_ID,
+      now: NOW,
+    });
+    expect(result).toEqual({
+      valid: true,
+      submissionId: SUBMISSION_ID,
+      jti: FIXED_JTI,
+      mintSource: "reading_delivery",
+      expMs: NOW + 1_000,
+    });
   });
 
   it("rejects a token whose mintSource is not in the allow-list", async () => {

@@ -9,7 +9,7 @@ const SUBJECT_PREVIEW_PREFIX = "[PREVIEW] ";
 
 const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
   emailOrderConfirmation: "Order Confirmation",
-  emailDay7Delivery: "Reading Delivery (Day 7)",
+  emailReadingDelivery: "Reading Delivery Email",
   emailMagicLink: "Magic Link (Listen Page)",
   emailPrivacyExport: "Privacy Export (GDPR)",
 };
@@ -19,8 +19,8 @@ async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> 
   switch (template) {
     case "emailOrderConfirmation":
       return fetch.fetchEmailOrderConfirmation().catch(() => null);
-    case "emailDay7Delivery":
-      return fetch.fetchEmailDay7Delivery().catch(() => null);
+    case "emailReadingDelivery":
+      return fetch.fetchEmailReadingDelivery().catch(() => null);
     case "emailMagicLink":
       return fetch.fetchEmailMagicLink().catch(() => null);
     case "emailPrivacyExport":

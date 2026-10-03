@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import { type DeliverOutcome, deliverRequested } from "@/lib/booking/deliverDay7";
 import {
   clearDeliveryRequest,
   fetchDeliveryRequestedIds,
   markDeliveryRequestFailed,
 } from "@/lib/booking/persistence/sanityDelivery";
+import { type DeliverOutcome, deliverRequested } from "@/lib/booking/readingDelivery";
 
 async function updateRequest(id: string, update: Promise<void>): Promise<void> {
   await update.catch((error) => {

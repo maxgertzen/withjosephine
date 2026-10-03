@@ -11,7 +11,7 @@ import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
-import { emailDay7Delivery } from "./emailDay7Delivery";
+import { emailReadingDelivery } from "./emailReadingDelivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
@@ -38,7 +38,7 @@ export const schemaTypes = [
   notFoundPage,
   magicLinkVerifyPage,
   emailMagicLink,
-  emailDay7Delivery,
+  emailReadingDelivery,
   emailOrderConfirmation,
   emailPrivacyExport,
   emailSharedShell,

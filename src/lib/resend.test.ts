@@ -8,12 +8,12 @@ import {
   getResendId,
   redactEmail,
   sendContactMessage,
-  sendDay7Delivery,
-  sendDay7OverdueAlert,
   sendMagicLink,
   sendNotificationToJosephine,
   sendOrderConfirmation,
   sendPrivacyExportEmail,
+  sendReadingDelivery,
+  sendReadingOverdueAlert,
 } from "./resend";
 
 const { sendMock, resendCtorMock, serverTrackMock, headersGetMock } = vi.hoisted(() => {
@@ -43,7 +43,7 @@ vi.mock("./analytics/server", () => ({
 
 const sanityFetchMocks = vi.hoisted(() => ({
   fetchEmailMagicLink: vi.fn(),
-  fetchEmailDay7Delivery: vi.fn(),
+  fetchEmailReadingDelivery: vi.fn(),
   fetchEmailOrderConfirmation: vi.fn(),
   fetchEmailPrivacyExport: vi.fn(),
   fetchEmailSharedShell: vi.fn(),
@@ -317,23 +317,23 @@ describe("sendOrderConfirmation", () => {
   });
 });
 
-describe("sendDay7Delivery", () => {
+describe("sendReadingDelivery", () => {
   it("forwards the idempotency key to Resend", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
 
-    await sendDay7Delivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
-      idempotencyKey: "day7/sub_1",
+    await sendReadingDelivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
+      idempotencyKey: "reading-delivery/sub_1",
     });
 
-    expect(sendMock.mock.calls[0]?.[1]).toEqual({ idempotencyKey: "day7/sub_1" });
+    expect(sendMock.mock.calls[0]?.[1]).toEqual({ idempotencyKey: "reading-delivery/sub_1" });
   });
 
   it("sends a byte-identical request for the same submission and listen URL", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
     const listenUrl = "https://withjosephine.com/listen/sub_1?t=fixed";
 
-    await sendDay7Delivery(buildSubmission(), listenUrl, { idempotencyKey: "day7/sub_1" });
-    await sendDay7Delivery(buildSubmission(), listenUrl, { idempotencyKey: "day7/sub_1" });
+    await sendReadingDelivery(buildSubmission(), listenUrl, { idempotencyKey: "reading-delivery/sub_1" });
+    await sendReadingDelivery(buildSubmission(), listenUrl, { idempotencyKey: "reading-delivery/sub_1" });
 
     expect(sendMock.mock.calls[1]).toEqual(sendMock.mock.calls[0]);
   });
@@ -345,8 +345,8 @@ describe("sendDay7Delivery", () => {
       error: { name: "concurrent_idempotent_requests", statusCode: 409, message: "in progress" },
     });
 
-    const result = await sendDay7Delivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
-      idempotencyKey: "day7/sub_1",
+    const result = await sendReadingDelivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
+      idempotencyKey: "reading-delivery/sub_1",
     });
 
     expect(result).toEqual({
@@ -361,7 +361,7 @@ describe("sendDay7Delivery", () => {
     const submission = buildSubmission();
     const url = "https://withjosephine.com/listen/abc123";
 
-    const result = await sendDay7Delivery(submission, url);
+    const result = await sendReadingDelivery(submission, url);
 
     expect(getResendId(result)).toBe("msg_d7");
     const args = sendMock.mock.calls[0]?.[0];
@@ -378,7 +378,7 @@ describe("sendDay7Delivery", () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7_self" } });
     const submission = buildSubmission({ email: "buyer@example.com" });
 
-    await sendDay7Delivery(submission, "https://withjosephine.com/listen/abc");
+    await sendReadingDelivery(submission, "https://withjosephine.com/listen/abc");
 
     const args = sendMock.mock.calls[0]?.[0];
     expect(args.to).toBe("buyer@example.com");
@@ -554,12 +554,12 @@ describe("sendContactMessage", () => {
   });
 });
 
-describe("sendDay7OverdueAlert", () => {
+describe("sendReadingOverdueAlert", () => {
   it("sends to NOTIFICATION_EMAIL not the client", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7a" } });
     const submission = buildSubmission();
 
-    const result = await sendDay7OverdueAlert(submission);
+    const result = await sendReadingOverdueAlert(submission);
 
     expect(getResendId(result)).toBe("msg_d7a");
     const args = sendMock.mock.calls[0]?.[0];
@@ -571,7 +571,7 @@ describe("sendDay7OverdueAlert", () => {
 
   it("returns null resendId when NOTIFICATION_EMAIL missing", async () => {
     vi.stubEnv("NOTIFICATION_EMAIL", "");
-    const result = await sendDay7OverdueAlert(buildSubmission());
+    const result = await sendReadingOverdueAlert(buildSubmission());
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
   });
@@ -665,10 +665,10 @@ describe("RESEND_DRY_RUN gate", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("gates sendDay7Delivery when RESEND_DRY_RUN=1 (covers delivery cron path)", async () => {
+  it("gates sendReadingDelivery when RESEND_DRY_RUN=1 (covers delivery cron path)", async () => {
     vi.stubEnv("RESEND_DRY_RUN", "1");
 
-    const result = await sendDay7Delivery(buildSubmission(), "https://example.com/listen/abc");
+    const result = await sendReadingDelivery(buildSubmission(), "https://example.com/listen/abc");
 
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
@@ -928,7 +928,7 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
   it("forces dry-run when the recipient `to` matches a sandbox prefix (cron delivery path)", async () => {
     headersGetMock.mockReturnValue(null);
 
-    const result = await sendDay7Delivery(
+    const result = await sendReadingDelivery(
       buildSubmission({ email: "listen-roundtrip+abc123@withjosephine.com" }),
       "https://withjosephine.com/listen/abc",
     );
@@ -964,7 +964,7 @@ describe("sandbox-prefix dry-run guard (DO alarms + cron + Stripe webhook)", () 
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     headersGetMock.mockReturnValue(null);
 
-    await sendDay7Delivery(
+    await sendReadingDelivery(
       buildSubmission({ email: "listen-roundtrip+abc@withjosephine.com" }),
       "https://withjosephine.com/listen/abc",
     );

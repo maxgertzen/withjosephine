@@ -3,8 +3,8 @@
 export type EmailSubType =
   | "order_confirmation"
   | "josephine_notification"
-  | "day_7_delivery"
-  | "day_7_overdue_alert"
+  | "reading_delivery"
+  | "reading_overdue_alert"
   | "contact_form"
   | "magic_link"
   | "privacy_export"
@@ -13,8 +13,8 @@ export type EmailSubType =
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
   josephine_notification: "Josephine notification",
-  day_7_delivery: "Day +7 delivery",
-  day_7_overdue_alert: "Day +7 overdue alert",
+  reading_delivery: "reading delivery",
+  reading_overdue_alert: "reading overdue alert",
   contact_form: "contact message",
   magic_link: "magic link",
   privacy_export: "privacy export",

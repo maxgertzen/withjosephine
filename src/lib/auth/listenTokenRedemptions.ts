@@ -7,7 +7,7 @@ import { dbQuery } from "@/lib/booking/persistence/sqlClient";
  * Single-use ledger for one-tap listen-token jti's. INSERT OR IGNORE on the
  * jti PK serializes concurrent redemptions; first caller wins, the rest get
  * `already_redeemed` and fall through to the form. mint_source is preserved
- * for forensics (cron_day7 vs admin_resend).
+ * for forensics (reading_delivery vs admin_resend).
  */
 
 export type RecordRedemptionArgs = {

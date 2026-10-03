@@ -11,7 +11,7 @@ export type BookingEntry =
   | "external"
   | "direct";
 
-export type EmailType = "order_confirmation" | "day7" | "day14" | "abandonment";
+export type EmailType = "order_confirmation" | "reading_delivery" | "day14" | "abandonment";
 
 export type ClientEventMap = {
   entry_page_view: {

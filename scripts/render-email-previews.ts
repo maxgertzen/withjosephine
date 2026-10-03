@@ -13,12 +13,12 @@ import React from "react";
 import { render } from "@react-email/render";
 
 import {
-  EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_READING_DELIVERY_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
 } from "../src/data/defaults";
 import { ContactMessage } from "../src/lib/emails/ContactMessage";
-import { Day7Delivery } from "../src/lib/emails/Day7Delivery";
-import { Day7OverdueAlert } from "../src/lib/emails/Day7OverdueAlert";
+import { ReadingDelivery } from "../src/lib/emails/ReadingDelivery";
+import { ReadingOverdueAlert } from "../src/lib/emails/ReadingOverdueAlert";
 import { JosephineNotification } from "../src/lib/emails/JosephineNotification";
 import { OrderConfirmation } from "../src/lib/emails/OrderConfirmation";
 
@@ -47,14 +47,14 @@ const previews = [
     }),
   },
   {
-    name: "03-day-7-delivery",
-    element: React.createElement(Day7Delivery, {
+    name: "03-reading-delivery",
+    element: React.createElement(ReadingDelivery, {
       vars: {
         firstName: "Ada",
         readingName: "Soul Blueprint",
         listenUrl: "https://withjosephine.com/listen/sub_preview",
       },
-      copy: EMAIL_DAY7_DELIVERY_DEFAULTS,
+      copy: EMAIL_READING_DELIVERY_DEFAULTS,
     }),
   },
   {
@@ -71,8 +71,8 @@ const previews = [
     }),
   },
   {
-    name: "05-day-7-overdue-alert",
-    element: React.createElement(Day7OverdueAlert, {
+    name: "05-reading-overdue-alert",
+    element: React.createElement(ReadingOverdueAlert, {
       email: "ada@example.com",
       readingName: "Soul Blueprint",
       submissionId: "sub_preview",

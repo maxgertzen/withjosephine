@@ -93,10 +93,10 @@
 	// Cadences:
 	//   - "0 */6 * * *" : reconcile (Stripe ↔ Sanity drift) + reconcile-mirror (D1 ↔ Sanity drift, ADR-001)
 	//   - "0 3 * * *"   : cleanup (age out abandoned submissions, scrub old photos)
-	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
+	//   - "0 10 * * *"  : reading-overdue-alert (Josephine-only, reading not sent 7 days after payment)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
 	//   - "0 3 * * 1"   : backup-sanity-dataset (weekly NDJSON snapshot + assets → BACKUPS_BUCKET)
-	//   - "*/5 * * * *" : deliver-requested (Studio "Send reading now" requests → day-7 delivery email)
+	//   - "*/5 * * * *" : deliver-requested (Studio "Send reading now" requests → reading delivery email)
 	"triggers": {
 		"crons": [
 			"0 */6 * * *",

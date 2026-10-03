@@ -35,8 +35,8 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `R2_BUCKET_NAME` | R2 bucket name | `withjosephine-booking-photos` |
 | `NOTIFICATION_EMAIL` | Inbox that receives new-booking notifications | `hello@withjosephine.com` (or chosen alias) |
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
-| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
-| `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
+| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, reading-overdue-alert, deliver-requested, deliver-reading). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
+| `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the reading delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
 | `BOOKING_DB_DRIVER` | Set to `d1` on the deployed Worker. Local dev/tests default to `sqlite` (better-sqlite3 against `.local/booking.db` or `:memory:`). | Plain text |
 
 In production, the Worker reaches D1 via the `withjosephine_bookings` binding declared in `wrangler.jsonc`. No `D1_*` secrets are required.

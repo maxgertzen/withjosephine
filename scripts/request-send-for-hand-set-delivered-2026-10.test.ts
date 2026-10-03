@@ -43,13 +43,13 @@ describe("planHandSetDelivered", () => {
 });
 
 describe("HAND_SET_DELIVERED_GROQ", () => {
-  it("selects published paid submissions with deliveredAt, no request and no recorded day7 email", () => {
+  it("selects published paid submissions with deliveredAt, no request and no recorded reading delivery email", () => {
     expect(HAND_SET_DELIVERED_GROQ).toContain('!(_id in path("drafts.**"))');
     expect(HAND_SET_DELIVERED_GROQ).toContain('status == "paid"');
     expect(HAND_SET_DELIVERED_GROQ).toContain("defined(deliveredAt)");
     expect(HAND_SET_DELIVERED_GROQ).toContain("!defined(deliveryRequestedAt)");
     expect(HAND_SET_DELIVERED_GROQ).toContain(
-      'coalesce(count(emailsFired[type == "day7"]), 0) == 0',
+      "coalesce(count(emailsFired[type in $readingDeliveryTypes]), 0) == 0",
     );
   });
 });

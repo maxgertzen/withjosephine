@@ -21,7 +21,7 @@ import {
  * matching it against session.user_id.
  *
  * Flow:
- *   1. Day-7 delivery email links the customer to /listen/[submissionId].
+ *   1. Reading delivery email links the customer to /listen/[submissionId].
  *   2. No cookie → "send fresh link" form → POST /api/auth/magic-link →
  *      issueMagicLink (user looked up by email).
  *   3. Customer clicks emailed link → confirm-email form (Level 1

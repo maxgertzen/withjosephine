@@ -1,12 +1,12 @@
 export type EmailTemplateKey =
   | "emailOrderConfirmation"
-  | "emailDay7Delivery"
+  | "emailReadingDelivery"
   | "emailMagicLink"
   | "emailPrivacyExport";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
-  emailDay7Delivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
+  emailReadingDelivery: ["firstName", "readingName", "readingPriceDisplay", "listenUrl"],
   emailMagicLink: ["magicLinkUrl", "firstName", "readingName", "readingPriceDisplay"],
   emailPrivacyExport: ["firstName", "downloadUrl", "expiryDays"],
 } as const;

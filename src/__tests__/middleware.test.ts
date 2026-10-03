@@ -267,8 +267,8 @@ describe("middleware apex lockdown (under-construction on)", () => {
     const paths = [
       "/api/cron/reconcile",
       "/api/cron/cleanup",
-      "/api/cron/email-day-7",
-      "/api/cron/email-day-7-deliver",
+      "/api/cron/reading-overdue-alert",
+      "/api/cron/deliver-reading",
     ];
     for (const pathname of paths) {
       const res = middleware(

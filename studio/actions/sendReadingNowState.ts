@@ -1,4 +1,4 @@
-import { findDay7Entry } from "../../src/lib/booking/day7Entry";
+import { findReadingDeliveryEntry } from "../../src/lib/booking/emailFiredType";
 
 type FileField = { asset?: unknown };
 
@@ -36,7 +36,7 @@ export function requestBlocker({
 
 export function sendReadingNowState(versions: SubmissionVersions): SendReadingNowState {
   const { published } = versions;
-  if (findDay7Entry(published.emailsFired)) return "sent";
+  if (findReadingDeliveryEntry(published.emailsFired)) return "sent";
   if (published.deliveryRequestedAt) return "requested";
   if (published.deliveryFailedAt) return "failed";
   return requestBlocker(versions) ?? "ready";

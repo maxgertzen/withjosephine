@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  EMAIL_DAY7_DELIVERY_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+  EMAIL_READING_DELIVERY_DEFAULTS,
 } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 
@@ -27,8 +27,8 @@ describe("email/page copy reads '<name> reading' with no double-noun (ekesibyy)"
   const renderedFor = (name: string): string =>
     [
       EMAIL_ORDER_CONFIRMATION_DEFAULTS.body,
-      EMAIL_DAY7_DELIVERY_DEFAULTS.subjectTemplate,
-      EMAIL_DAY7_DELIVERY_DEFAULTS.bodyIntro,
+      EMAIL_READING_DELIVERY_DEFAULTS.subjectTemplate,
+      EMAIL_READING_DELIVERY_DEFAULTS.bodyIntro,
     ]
       .map((field) => JSON.stringify(applyTokens(field, { readingName: name })))
       .join(" ");
@@ -52,8 +52,8 @@ describe("email/page copy reads '<name> reading' with no double-noun (ekesibyy)"
     }
   });
 
-  it("day-7 subject reads 'Your <name> reading is ready'", () => {
-    const subject = applyTokens(EMAIL_DAY7_DELIVERY_DEFAULTS.subjectTemplate, {
+  it("reading delivery subject reads 'Your <name> reading is ready'", () => {
+    const subject = applyTokens(EMAIL_READING_DELIVERY_DEFAULTS.subjectTemplate, {
       readingName: "Birth Chart",
     });
     expect(subject).toBe("Your Birth Chart reading is ready");

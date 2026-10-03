@@ -29,7 +29,7 @@ export const SINGLETON_TYPES = new Set([
   "bookingForm",
   "magicLinkVerifyPage",
   "emailMagicLink",
-  "emailDay7Delivery",
+  "emailReadingDelivery",
   "emailOrderConfirmation",
   "emailPrivacyExport",
   "emailSharedShell",
@@ -185,7 +185,7 @@ const emailsGroup = (S: StructureBuilder) =>
         .title("Emails")
         .items([
           emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation → Self-Purchaser"),
-          emailSingletonListItem(S, "emailDay7Delivery", "Reading Delivery → Customer"),
+          emailSingletonListItem(S, "emailReadingDelivery", "Reading Delivery Email → Customer"),
           emailSingletonListItem(S, "emailMagicLink", "Magic Link → Listen Page"),
           emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export → Requester (GDPR)"),
           S.divider(),

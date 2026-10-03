@@ -1,6 +1,6 @@
 import { Button, Container, Section } from "@react-email/components";
 
-import type { EmailDay7DeliveryContent, EmailSharedShellContent } from "@/data/defaults";
+import type { EmailReadingDeliveryContent, EmailSharedShellContent } from "@/data/defaults";
 import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
@@ -10,19 +10,19 @@ import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
 import { PortableTextBody } from "./PortableTextBody";
 
-export type Day7DeliveryVars = {
+export type ReadingDeliveryVars = {
   firstName: string;
   readingName: string;
   listenUrl: string;
 };
 
-export type Day7DeliveryProps = {
-  vars: Day7DeliveryVars;
-  copy: EmailDay7DeliveryContent;
+export type ReadingDeliveryProps = {
+  vars: ReadingDeliveryVars;
+  copy: EmailReadingDeliveryContent;
   shell?: EmailSharedShellContent;
 };
 
-export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: Day7DeliveryProps) {
+export function ReadingDelivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: ReadingDeliveryProps) {
   const copy = applyTokens(rawCopy, vars);
 
   return (

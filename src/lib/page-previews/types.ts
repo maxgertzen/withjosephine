@@ -2,8 +2,8 @@ export type SubmissionStatus = "pending" | "paid" | "expired";
 
 export type EmailFiredType =
   | "order_confirmation"
-  | "day7"
-  | "day7-overdue-alert"
+  | "reading_delivery"
+  | "reading_overdue_alert"
   | "day14"
   | "abandonment";
 

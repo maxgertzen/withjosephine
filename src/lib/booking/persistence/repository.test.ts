@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { EmailFiredEntry } from "../submissions";
 import {
   appendEmailFired,
-  claimDay7Attempt,
-  clearDay7Attempt,
+  claimReadingDeliveryAttempt,
+  clearReadingDeliveryAttempt,
   createSubmission,
   type CreateSubmissionInput,
   deleteSubmission,
@@ -14,7 +15,7 @@ import {
   listPaidSubmissionsForEmail,
   listSubmissionsByRecipientUserId,
   listSubmissionsByStatusOlderThan,
-  markDay7SentIfUnrecorded,
+  markReadingDeliverySentIfUnrecorded,
   markSubmissionDeliveredIfUnset,
   markSubmissionExpired,
   markSubmissionPaid,
@@ -230,44 +231,98 @@ describe("repository against in-memory SQLite", () => {
     expect(repeated?.voiceNoteUrl).toBe("https://cdn.sanity.io/files/.../voice-v2.m4a");
   });
 
-  it("claimDay7Attempt stores the first attempt and returns it to every later claim", async () => {
+  it("claimReadingDeliveryAttempt stores the first attempt and returns it to every later claim", async () => {
     await createSubmission(BASE_INPUT);
     const first = { attemptedAt: "2026-04-29T12:00:00.000Z", jti: "jti-first" };
 
-    expect(await claimDay7Attempt("sub_1", first)).toEqual(first);
+    expect(await claimReadingDeliveryAttempt("sub_1", first)).toEqual(first);
     expect(
-      await claimDay7Attempt("sub_1", { attemptedAt: "2026-04-29T18:00:00.000Z", jti: "jti-second" }),
+      await claimReadingDeliveryAttempt("sub_1", {
+        attemptedAt: "2026-04-29T18:00:00.000Z",
+        jti: "jti-second",
+      }),
     ).toEqual(first);
-    expect(await claimDay7Attempt("sub_missing", first)).toBeNull();
+    expect(await claimReadingDeliveryAttempt("sub_missing", first)).toBeNull();
   });
 
-  it("clearDay7Attempt lets the next claim start a fresh attempt", async () => {
+  it("clearReadingDeliveryAttempt lets the next claim start a fresh attempt", async () => {
     await createSubmission(BASE_INPUT);
-    await claimDay7Attempt("sub_1", { attemptedAt: "2026-04-29T12:00:00.000Z", jti: "jti-first" });
-    await clearDay7Attempt("sub_1");
+    await claimReadingDeliveryAttempt("sub_1", {
+      attemptedAt: "2026-04-29T12:00:00.000Z",
+      jti: "jti-first",
+    });
+    await clearReadingDeliveryAttempt("sub_1");
     const fresh = { attemptedAt: "2026-04-30T12:00:00.000Z", jti: "jti-fresh" };
 
-    expect(await claimDay7Attempt("sub_1", fresh)).toEqual(fresh);
+    expect(await claimReadingDeliveryAttempt("sub_1", fresh)).toEqual(fresh);
   });
 
-  it("markDay7SentIfUnrecorded writes the day7 entry once", async () => {
-    await createSubmission(BASE_INPUT);
+  describe("markReadingDeliverySentIfUnrecorded", () => {
     const delivery = {
       deliveredAt: "2026-04-29T12:00:00.000Z",
       voiceNoteUrl: "https://cdn.sanity.io/voice.m4a",
       pdfUrl: "https://cdn.sanity.io/reading.pdf",
     };
-    const entry = { type: "day7" as const, sentAt: delivery.deliveredAt, resendId: "msg_d7" };
+    const entry = {
+      type: "reading_delivery" as const,
+      sentAt: delivery.deliveredAt,
+      resendId: "msg_d7",
+    };
 
-    expect(await markDay7SentIfUnrecorded("sub_1", delivery, entry)).toEqual({ rowsWritten: 1 });
-    expect(
-      await markDay7SentIfUnrecorded("sub_1", { ...delivery, deliveredAt: "2026-04-30T00:00:00.000Z" }, entry),
-    ).toEqual({ rowsWritten: 0 });
+    it("writes the reading_delivery entry once", async () => {
+      await createSubmission(BASE_INPUT);
 
-    const record = await findSubmissionById("sub_1");
-    expect(record?.emailsFired).toEqual([entry]);
-    expect(record?.deliveredAt).toBe(delivery.deliveredAt);
+      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toEqual({
+        rowsWritten: 1,
+      });
+      expect(
+        await markReadingDeliverySentIfUnrecorded(
+          "sub_1",
+          { ...delivery, deliveredAt: "2026-04-30T00:00:00.000Z" },
+          entry,
+        ),
+      ).toEqual({ rowsWritten: 0 });
+
+      const record = await findSubmissionById("sub_1");
+      expect(record?.emailsFired).toEqual([entry]);
+      expect(record?.deliveredAt).toBe(delivery.deliveredAt);
+    });
+
+    it("writes nothing when a legacy day7 entry is already recorded", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFired("sub_1", { ...entry, type: "day7" } as unknown as typeof entry);
+
+      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toEqual({
+        rowsWritten: 0,
+      });
+      const record = await findSubmissionById("sub_1");
+      expect(record?.emailsFired?.map((fired) => fired.type)).toEqual(["day7"]);
+    });
   });
+
+  it.each(["reading_overdue_alert", "day7-overdue-alert"])(
+    "listPaidSubmissionsForEmail skips a submission whose overdue alert is stored as %s",
+    async (storedType) => {
+      await createSubmission(BASE_INPUT);
+      await markSubmissionPaid("sub_1", {
+        stripeEventId: "evt_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-04-20T10:00:00Z",
+        amountPaidCents: null,
+        amountPaidCurrency: null,
+      });
+      await appendEmailFired("sub_1", {
+        type: storedType,
+        sentAt: "2026-04-28T10:00:00Z",
+        resendId: "msg_alert",
+      } as unknown as EmailFiredEntry);
+
+      const due = await listPaidSubmissionsForEmail("reading_overdue_alert", {
+        paidBefore: "2026-04-30T00:00:00Z",
+      });
+      expect(due).toEqual([]);
+    },
+  );
 
   it("listAllReferencedPhotoKeys returns the set of non-null keys", async () => {
     await createSubmission(BASE_INPUT);

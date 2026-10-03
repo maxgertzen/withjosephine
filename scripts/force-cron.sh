@@ -5,7 +5,7 @@
 #   bash scripts/force-cron.sh <route> <submissionId>            # staging (default)
 #   bash scripts/force-cron.sh <route> <submissionId> --prod     # production
 #
-# <route>: one of the directories under src/app/api/cron/ (e.g. email-day-7-deliver, email-day-7, cleanup, reconcile).
+# <route>: one of the directories under src/app/api/cron/ (e.g. deliver-reading, reading-overdue-alert, cleanup, reconcile).
 # <submissionId>: appended as ?force=<id> for routes that support single-record force-mode.
 #
 # Auth: Bearer CRON_SECRET from .env.<env>, plus CF Access. CF Access prefers a service

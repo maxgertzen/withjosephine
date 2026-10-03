@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import { storedEmailFiredTypes } from "../src/lib/booking/emailFiredType";
 import { isDeliverable } from "../src/lib/booking/persistence/isDeliverable";
 import { isSandboxEmail } from "../src/lib/booking/sandboxEmails";
 
@@ -14,7 +15,7 @@ export const HAND_SET_DELIVERED_GROQ = `*[_type == "submission"
   && status == "paid"
   && defined(deliveredAt)
   && !defined(deliveryRequestedAt)
-  && coalesce(count(emailsFired[type == "day7"]), 0) == 0
+  && coalesce(count(emailsFired[type in $readingDeliveryTypes]), 0) == 0
 ]{
   _id,
   email,
@@ -51,7 +52,9 @@ const log = (message: string) => console.log(`[${LOG_PREFIX}] ${message}`);
 
 async function run(opts: { dataset: string; apply: boolean }): Promise<void> {
   const client = sanityWriteClient({ dataset: opts.dataset });
-  const docs = await client.fetch<HandSetDeliveredDoc[]>(HAND_SET_DELIVERED_GROQ);
+  const docs = await client.fetch<HandSetDeliveredDoc[]>(HAND_SET_DELIVERED_GROQ, {
+    readingDeliveryTypes: storedEmailFiredTypes("reading_delivery"),
+  });
   const plan = planHandSetDelivered(docs);
   log(`dataset=${opts.dataset} apply=${opts.apply}`);
   for (const doc of plan.toRequest) log(`request ${doc._id} (deliveredAt ${doc.deliveredAt})`);

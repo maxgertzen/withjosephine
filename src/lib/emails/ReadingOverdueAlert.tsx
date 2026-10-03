@@ -4,19 +4,19 @@ import { EmailShell } from "./EmailShell";
 import { LabelValueRow } from "./LabelValueRow";
 import { SerifHeading } from "./SerifHeading";
 
-export type Day7OverdueAlertProps = {
+export type ReadingOverdueAlertProps = {
   email: string;
   readingName: string;
   submissionId: string;
   createdAt: string;
 };
 
-export function Day7OverdueAlert({
+export function ReadingOverdueAlert({
   email,
   readingName,
   submissionId,
   createdAt,
-}: Day7OverdueAlertProps) {
+}: ReadingOverdueAlertProps) {
   return (
     <EmailShell maxWidth={640} preview={`Reading overdue — ${readingName} for ${email}`}>
       <SerifHeading>Reading overdue — past 7 days</SerifHeading>

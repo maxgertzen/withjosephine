@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchBookingForm,
   fetchBookingPage,
-  fetchEmailDay7Delivery,
   fetchEmailMagicLink,
   fetchEmailOrderConfirmation,
   fetchEmailPrivacyExport,
+  fetchEmailReadingDelivery,
   fetchEmailSharedShell,
   fetchFaqItems,
   fetchLandingPage,
@@ -151,7 +151,7 @@ describe("Sanity fetch layer", () => {
 // These fetchers MUST use the fresh uncached client and never `sanityFetch`.
 describe("email template fetchers use the fresh uncached client", () => {
   const cases = [
-    ["fetchEmailDay7Delivery", fetchEmailDay7Delivery],
+    ["fetchEmailReadingDelivery", fetchEmailReadingDelivery],
     ["fetchEmailOrderConfirmation", fetchEmailOrderConfirmation],
     ["fetchEmailMagicLink", fetchEmailMagicLink],
     ["fetchEmailPrivacyExport", fetchEmailPrivacyExport],

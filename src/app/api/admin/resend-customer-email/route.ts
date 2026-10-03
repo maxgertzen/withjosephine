@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { parseStringField } from "@/lib/api/parseBody";
 import { authorizeAdminToken } from "@/lib/auth/adminTokenAuth";
+import { currentEmailFiredType } from "@/lib/booking/emailFiredType";
 import {
   RESENDABLE_EMAIL_TYPES,
   type ResendableEmailType,
@@ -22,8 +23,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const body = await request.json().catch(() => null);
   const submissionId = parseStringField(body, "submissionId");
-  const emailType = parseStringField(body, "emailType");
-  if (!submissionId || !emailType) return REFUSED();
+  const requestedType = parseStringField(body, "emailType");
+  if (!submissionId || !requestedType) return REFUSED();
+  const emailType = currentEmailFiredType(requestedType);
   if (!isResendableEmailType(emailType)) return REFUSED();
 
   const result = await resendCustomerEmail(submissionId, emailType);

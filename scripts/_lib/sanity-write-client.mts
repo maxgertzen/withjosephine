@@ -29,3 +29,12 @@ export function sanityWriteClient(options: SanityClientOptions = {}): SanityClie
 
   return createClient({ projectId, dataset, apiVersion, useCdn: false, token });
 }
+
+export function rawPerspectiveClient(dataset: string, apply: boolean): SanityClient {
+  const client = apply
+    ? sanityWriteClient({ dataset })
+    : sanityWriteClient({ dataset, readOnly: true }).withConfig({
+        token: process.env.SANITY_READ_TOKEN,
+      });
+  return client.withConfig({ perspective: "raw" });
+}

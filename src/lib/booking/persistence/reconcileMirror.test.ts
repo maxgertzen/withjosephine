@@ -79,4 +79,15 @@ describe("diffSubmission", () => {
     const d1 = makeD1({ emailsFired: [e1] });
     expect(diffSubmission(d1, makeMatchingSanity(d1))).toEqual({ kind: "skip" });
   });
+
+  it.each([
+    ["D1 is migrated and Sanity is not", "reading_delivery", "day7"],
+    ["Sanity is migrated and D1 is not", "day7", "reading_delivery"],
+  ])("returns 'skip' when %s", (_label, d1Type, sanityType) => {
+    const sentAt = "2026-05-01T00:00:00.000Z";
+    const asEntry = (type: string) => ({ type, sentAt, resendId: null }) as unknown as EmailFiredEntry;
+    const d1 = makeD1({ emailsFired: [asEntry(d1Type)] });
+    const sanity = { ...makeMatchingSanity(d1), emailsFired: [asEntry(sanityType)] };
+    expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
+  });
 });

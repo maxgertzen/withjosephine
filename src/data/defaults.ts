@@ -340,7 +340,7 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   dataExportButtonLabel: "Request an export",
 };
 
-export interface EmailDay7DeliveryContent {
+export interface EmailReadingDeliveryContent {
   subjectTemplate: string;
   preview: string;
   heroLine: string;
@@ -380,7 +380,7 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   signOff: null,
 };
 
-export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
+export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
   subjectTemplate: "Your {readingName} reading is ready",
   preview: "A short note before you press play.",
   heroLine: "Your reading is ready",

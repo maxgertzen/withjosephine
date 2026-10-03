@@ -3,11 +3,11 @@ import { defineField, defineType } from "sanity";
 import { tokenReferenceField } from "../lib/tokenHelp";
 import { slotValidation } from "../lib/validateSlots";
 
-const validateDay7Slots = slotValidation("emailDay7Delivery");
+const validateReadingDeliverySlots = slotValidation("emailReadingDelivery");
 
-export const emailDay7Delivery = defineType({
-  name: "emailDay7Delivery",
-  title: "Reading Delivery → Customer",
+export const emailReadingDelivery = defineType({
+  name: "emailReadingDelivery",
+  title: "Reading Delivery Email → Customer",
   type: "document",
   description:
     "Sent to the customer (self-purchaser or gift recipient) when their reading is ready, with the voice note and PDF link inside. The customer can sign back in to listen again for 90 days from delivery.",
@@ -19,14 +19,14 @@ export const emailDay7Delivery = defineType({
     { name: "footer", title: "Sign-off & footer" },
   ],
   fields: [
-    tokenReferenceField("emailDay7Delivery"),
+    tokenReferenceField("emailReadingDelivery"),
     defineField({
       name: "subjectTemplate",
       title: "Subject",
       type: "string",
       group: "envelope",
       description: 'Use "{readingName}" to insert the reading name (e.g. "Soul Blueprint").',
-      validation: validateDay7Slots,
+      validation: validateReadingDeliverySlots,
       initialValue: "Your {readingName} is ready",
     }),
     defineField({
@@ -70,7 +70,7 @@ export const emailDay7Delivery = defineType({
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
         'Body paragraphs shown above the open-reading button. Use "{firstName}" + "{readingName}".',
-      validation: validateDay7Slots,
+      validation: validateReadingDeliverySlots,
     }),
     defineField({
       name: "openButtonLabel",
@@ -87,7 +87,7 @@ export const emailDay7Delivery = defineType({
       of: [{ type: "block", styles: [{ title: "Normal", value: "normal" }], lists: [] }],
       description:
         "Body paragraphs shown below the open-reading button — sign-in disclosure, 90-day window, follow-up invitation.",
-      validation: validateDay7Slots,
+      validation: validateReadingDeliverySlots,
     }),
     defineField({
       name: "cardLabel",
@@ -142,7 +142,7 @@ export const emailDay7Delivery = defineType({
   ],
   preview: {
     prepare: () => ({
-      title: "Reading Delivery → Customer",
+      title: "Reading Delivery Email → Customer",
       subtitle:
         "Sent to the customer (self-purchaser or gift recipient) when their reading is ready, with the voice note and PDF link inside. The customer can sign back in to listen again for 90 days from delivery.",
     }),

@@ -151,7 +151,7 @@ export type SanityEmailPrivacyExport = {
   signOff: string | null;
 };
 
-export type SanityEmailDay7Delivery = {
+export type SanityEmailReadingDelivery = {
   subjectTemplate: string;
   preview: string;
   bodyIntro?: PortableTextBlock[];

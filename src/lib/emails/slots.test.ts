@@ -63,7 +63,7 @@ describe("slots — formatSlotValidationError", () => {
   it("names the unknown slot and lists the allowed set", () => {
     const result = validateSlotsInValue(
       "Hi {firstName}, your {wrongSlot}.",
-      "emailDay7Delivery",
+      "emailReadingDelivery",
     );
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -79,7 +79,7 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
   it("covers every template referenced by code-side senders", () => {
     expect(Object.keys(EMAIL_ALLOWED_SLOTS).sort()).toEqual(
       [
-        "emailDay7Delivery",
+        "emailReadingDelivery",
         "emailMagicLink",
         "emailOrderConfirmation",
         "emailPrivacyExport",
@@ -89,11 +89,11 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
 
   it("makes readingPriceDisplay available in customer emails that have purchase context", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailReadingDelivery).toContain("readingPriceDisplay");
   });
 
   it("exposes URL tokens where the template's vars carry them", () => {
-    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("listenUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailReadingDelivery).toContain("listenUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
   });
 

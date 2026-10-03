@@ -8,12 +8,12 @@ import { isSandboxEmail } from "./booking/sandboxEmails";
 import { FIRST_NAME_FALLBACK } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
-import { Day7Delivery } from "./emails/Day7Delivery";
-import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
+import { ReadingDelivery } from "./emails/ReadingDelivery";
+import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
 import { isFlagEnabled } from "./env";
 import { pickDefined } from "./sanity/pickDefined";
 
@@ -310,25 +310,25 @@ export async function sendOrderConfirmation(
   });
 }
 
-export async function sendDay7Delivery(
+export async function sendReadingDelivery(
   submission: SubmissionContext,
   listenUrl: string,
   options?: { idempotencyKey?: string },
 ): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
+  const { EMAIL_READING_DELIVERY_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailReadingDelivery } = await import("@/lib/sanity/fetch");
   const [sanity, shell] = await Promise.all([
-    fetchEmailDay7Delivery().catch(() => null),
+    fetchEmailReadingDelivery().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = { ...EMAIL_READING_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const subject = applyTokens(copy.subjectTemplate, {
     readingName: submission.readingName,
     readingPriceDisplay: submission.readingPriceDisplay,
   });
   const html = await render(
-    <Day7Delivery
+    <ReadingDelivery
       vars={{
         firstName: submission.firstName,
         readingName: submission.readingName,
@@ -342,7 +342,7 @@ export async function sendDay7Delivery(
     to: submission.email,
     subject,
     html,
-    subType: "day_7_delivery",
+    subType: "reading_delivery",
     submissionId: submission.id,
     idempotencyKey: options?.idempotencyKey,
   });
@@ -454,12 +454,12 @@ export async function sendContactMessage(contact: ContactPayload): Promise<Email
   });
 }
 
-export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
-  const notificationEmail = requireNotificationEmail("day_7_overdue_alert");
+export async function sendReadingOverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
+  const notificationEmail = requireNotificationEmail("reading_overdue_alert");
   if (typeof notificationEmail !== "string") return notificationEmail;
 
   const html = await render(
-    <Day7OverdueAlert
+    <ReadingOverdueAlert
       email={submission.email}
       readingName={submission.readingName}
       submissionId={submission.id}
@@ -470,7 +470,7 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     to: notificationEmail,
     subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
     html,
-    subType: "day_7_overdue_alert",
+    subType: "reading_overdue_alert",
     submissionId: submission.id,
     originatorEmail: submission.email,
   });

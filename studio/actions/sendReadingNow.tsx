@@ -9,7 +9,7 @@ import {
   useClient,
 } from "sanity";
 
-import { findDay7Entry } from "../../src/lib/booking/day7Entry";
+import { findReadingDeliveryEntry } from "../../src/lib/booking/emailFiredType";
 import { applyTokens } from "../../src/lib/emails/applyTokens";
 import {
   requestBlocker,
@@ -125,7 +125,7 @@ export const sendReadingNowAction: DocumentActionComponent = (props: DocumentAct
 };
 
 export const sendReadingNowBadge: DocumentBadgeComponent = (props: DocumentBadgeProps) => {
-  const day7Entry = findDay7Entry(paidSubmission(props.published)?.emailsFired);
-  if (!day7Entry) return null;
-  return { label: SENT_BADGE, title: sentTitle(day7Entry.sentAt), color: "success" };
+  const deliveryEntry = findReadingDeliveryEntry(paidSubmission(props.published)?.emailsFired);
+  if (!deliveryEntry) return null;
+  return { label: SENT_BADGE, title: sentTitle(deliveryEntry.sentAt), color: "success" };
 };

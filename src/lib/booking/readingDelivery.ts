@@ -1,25 +1,25 @@
 import { mintListenToken } from "@/lib/auth/listenToken";
-import { findDay7Entry } from "@/lib/booking/day7Entry";
+import { findReadingDeliveryEntry } from "@/lib/booking/emailFiredType";
 import {
   type DeliverableSubmission,
   fetchDeliverableSubmissions,
 } from "@/lib/booking/persistence/sanityDelivery";
 import {
   buildSubmissionContext,
-  claimDay7Attempt,
-  clearDay7Attempt,
+  claimReadingDeliveryAttempt,
+  clearReadingDeliveryAttempt,
   findSubmissionById,
   markSubmissionDeliveredIfUnset,
-  recordDay7Sent,
+  recordReadingDeliverySent,
   type SubmissionDelivery,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { siteOrigin } from "@/lib/env";
-import { type EmailSendResult, sendDay7Delivery } from "@/lib/resend";
+import { type EmailSendResult, sendReadingDelivery } from "@/lib/resend";
 
-export const DAY7_ATTEMPT_RETRY_WINDOW_MS = 20 * 60 * 60 * 1000;
-export const DAY7_RECORD_TRIES = 3;
-const DAY7_RECORD_RETRY_DELAY_MS = 100;
+export const ATTEMPT_RETRY_WINDOW_MS = 20 * 60 * 60 * 1000;
+export const RECORD_TRIES = 3;
+const RECORD_RETRY_DELAY_MS = 100;
 
 type DeliverOneOutcome =
   | "sent"
@@ -42,22 +42,22 @@ function handleUnsent(result: UnsentResult): UnsentHandling {
   return status >= 400 && status < 500 ? "clearAttemptAndFail" : "keepAttemptAndFail";
 }
 
-async function recordDay7SentWithRetries(
+async function recordSentWithRetries(
   submissionId: string,
   delivery: SubmissionDelivery,
   resendId: string,
 ): Promise<boolean> {
-  for (let tryNumber = 1; tryNumber <= DAY7_RECORD_TRIES; tryNumber += 1) {
+  for (let tryNumber = 1; tryNumber <= RECORD_TRIES; tryNumber += 1) {
     try {
-      await recordDay7Sent(submissionId, delivery, resendId);
+      await recordReadingDeliverySent(submissionId, delivery, resendId);
       return true;
     } catch (error) {
       console.error(
-        `[deliver-day7] recording the sent email failed for ${submissionId} (try ${tryNumber} of ${DAY7_RECORD_TRIES})`,
+        `[reading-delivery] recording the sent email failed for ${submissionId} (try ${tryNumber} of ${RECORD_TRIES})`,
         error,
       );
-      if (tryNumber < DAY7_RECORD_TRIES) {
-        await new Promise((resolve) => setTimeout(resolve, DAY7_RECORD_RETRY_DELAY_MS * tryNumber));
+      if (tryNumber < RECORD_TRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RECORD_RETRY_DELAY_MS * tryNumber));
       }
     }
   }
@@ -70,42 +70,42 @@ export async function deliverOne(
 ): Promise<DeliverOneOutcome> {
   const submissionId = d1Submission._id;
   if (d1Submission.status !== "paid" || d1Submission.isLegacyGift) return "skipped";
-  if (findDay7Entry(d1Submission.emailsFired)) return "alreadySent";
+  if (findReadingDeliveryEntry(d1Submission.emailsFired)) return "alreadySent";
 
   if (!d1Submission.recipientUserId) {
-    console.error(`[cron-day-7] missing recipientUserId for ${submissionId}, cannot mint token`);
+    console.error(`[reading-delivery] missing recipientUserId for ${submissionId}, cannot mint token`);
     return "skipped";
   }
 
-  const attempt = await claimDay7Attempt(submissionId, {
+  const attempt = await claimReadingDeliveryAttempt(submissionId, {
     attemptedAt: new Date().toISOString(),
     jti: crypto.randomUUID(),
   });
   if (!attempt) return "skipped";
   const attemptedAtMs = Date.parse(attempt.attemptedAt);
-  if (Date.now() - attemptedAtMs > DAY7_ATTEMPT_RETRY_WINDOW_MS) {
+  if (Date.now() - attemptedAtMs > ATTEMPT_RETRY_WINDOW_MS) {
     console.error(
-      `[deliver-day7] attempt from ${attempt.attemptedAt} for ${submissionId} is past the retry window and unrecorded`,
+      `[reading-delivery] attempt from ${attempt.attemptedAt} for ${submissionId} is past the retry window and unrecorded`,
     );
-    await clearDay7Attempt(submissionId);
+    await clearReadingDeliveryAttempt(submissionId);
     return "attemptExpired";
   }
 
   const token = await mintListenToken({
     submissionId,
     recipientUserId: d1Submission.recipientUserId,
-    mintSource: "cron_day7",
+    mintSource: "reading_delivery",
     now: attemptedAtMs,
     jti: attempt.jti,
   });
   const listenUrl = `${siteOrigin()}/listen/${submissionId}?t=${token}`;
-  const sendResult = await sendDay7Delivery(buildSubmissionContext(d1Submission), listenUrl, {
-    idempotencyKey: `day7/${submissionId}`,
+  const sendResult = await sendReadingDelivery(buildSubmissionContext(d1Submission), listenUrl, {
+    idempotencyKey: `reading-delivery/${submissionId}`,
   });
   const assetUrls = { voiceNoteUrl: resolved.voiceNoteUrl, pdfUrl: resolved.pdfUrl };
 
   if (sendResult.kind === "sent") {
-    const recorded = await recordDay7SentWithRetries(
+    const recorded = await recordSentWithRetries(
       submissionId,
       { deliveredAt: attempt.attemptedAt, ...assetUrls },
       sendResult.resendId,
@@ -113,7 +113,7 @@ export async function deliverOne(
     return recorded ? "sent" : "retryLater";
   }
   if (sendResult.kind === "dry_run") {
-    await clearDay7Attempt(submissionId);
+    await clearReadingDeliveryAttempt(submissionId);
     await markSubmissionDeliveredIfUnset(submissionId, {
       deliveredAt: new Date().toISOString(),
       ...assetUrls,
@@ -122,7 +122,7 @@ export async function deliverOne(
   }
   const handling = handleUnsent(sendResult);
   if (handling === "retryLater") return "retryLater";
-  if (handling === "clearAttemptAndFail") await clearDay7Attempt(submissionId);
+  if (handling === "clearAttemptAndFail") await clearReadingDeliveryAttempt(submissionId);
   return "skipped";
 }
 

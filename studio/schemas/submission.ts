@@ -334,8 +334,8 @@ export const submission = defineType({
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
-                  { title: "Day +7 (delivery)", value: "day7" },
-                  { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
+                  { title: "Reading delivery", value: "reading_delivery" },
+                  { title: "Reading overdue alert (Josephine)", value: "reading_overdue_alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
                 ],

@@ -1,7 +1,7 @@
 import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
 
-import { Day7OverdueAlert } from "./Day7OverdueAlert";
+import { ReadingOverdueAlert } from "./ReadingOverdueAlert";
 import { visibleText } from "./test-helpers";
 
 const PROPS = {
@@ -21,22 +21,22 @@ const LEGACY_BODY_LINES = [
   "Upload and publish the voice note and the PDF in Studio, then press Send reading now.",
 ] as const;
 
-describe("Day7OverdueAlert — visual parity with legacy resend.tsx", () => {
+describe("ReadingOverdueAlert — visual parity with legacy resend.tsx", () => {
   it("renders every body line from the legacy email", async () => {
-    const text = visibleText(await render(<Day7OverdueAlert {...PROPS} />));
+    const text = visibleText(await render(<ReadingOverdueAlert {...PROPS} />));
     for (const line of LEGACY_BODY_LINES) {
       expect(text).toContain(line);
     }
   });
 
   it("uses the serif family for the heading (legacy parity)", async () => {
-    const html = await render(<Day7OverdueAlert {...PROPS} />);
+    const html = await render(<ReadingOverdueAlert {...PROPS} />);
     expect(html).toMatch(/Cormorant Garamond/);
   });
 
   it("escapes HTML in every user-supplied field", async () => {
     const html = await render(
-      <Day7OverdueAlert
+      <ReadingOverdueAlert
         email="<x-email>"
         readingName="<x-reading>"
         submissionId="<x-id>"

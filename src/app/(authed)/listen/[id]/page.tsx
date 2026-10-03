@@ -50,7 +50,7 @@ export default async function ListenPage({
 
   const copy: ListenViewProps["copy"] = { ...LISTEN_PAGE_DEFAULTS, ...pickDefined(sanity ?? {}) };
 
-  // One-tap token branch. The `?t=` arrives via the day-7 delivery email.
+  // One-tap token branch. The `?t=` arrives via the reading delivery email.
   // GET renders the interstitial (no redemption side effect); POST to the
   // companion redeem route is what consumes the single-use ledger row.
   // Token verification needs the submission's recipientUserId so the

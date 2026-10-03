@@ -40,8 +40,7 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //                           scheduled-mode gift claim email.
 //   - /listen/            : Submission-scoped delivery links sent in customer
 //                           emails; auth-gated by magic-link cookie. The
-//                           email bodies hardcode apex URLs (see
-//                           email-day-7-deliver/route.ts SITE_ORIGIN).
+//                           email bodies hardcode apex URLs.
 //   - /privacy /terms /refund-policy : Statutory compliance pages must
 //                           remain reachable on the apex even when the
 //                           holding page is rendered. GDPR + UK consumer
