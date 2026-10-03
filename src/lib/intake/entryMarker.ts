@@ -1,3 +1,4 @@
+import { bookingPath } from "@/lib/http/routes";
 import { isPlainLeftClick } from "@/lib/utils";
 
 export const ENTRY_CLICK_TTL_MS = 60_000;
@@ -16,16 +17,16 @@ export function markEntryClickOnPlainLeftClick(slug: string, click: EntryClick) 
   };
 }
 
-export function peekEntryClick(slug: string, click: EntryClick): boolean {
+export function pendingEntryClick(slug: string): EntryClick | null {
   const pending = pendingClick;
-  return (
-    pending !== null &&
-    pending.slug === slug &&
-    pending.click === click &&
-    Date.now() - pending.markedAt <= ENTRY_CLICK_TTL_MS
-  );
+  if (pending === null || pending.slug !== slug) return null;
+  return Date.now() - pending.markedAt <= ENTRY_CLICK_TTL_MS ? pending.click : null;
 }
 
 export function clearEntryClick(): void {
   pendingClick = null;
+}
+
+export function clearEntryClickAwayFrom(pathname: string): void {
+  if (pendingClick && pathname !== bookingPath(pendingClick.slug)) pendingClick = null;
 }

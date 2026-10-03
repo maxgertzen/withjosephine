@@ -157,7 +157,7 @@ export function deriveBookingFormViewProps(
     },
     readingBlock,
     copy: {
-      title: entry.letterTitle ?? INTAKE_TITLE_FALLBACK,
+      title: entry.showLetterTitle ? (entry.letterTitle ?? INTAKE_TITLE_FALLBACK) : undefined,
       intro: input.sanityReading?.intakeIntro?.length
         ? input.sanityReading.intakeIntro
         : paragraphBlocks(INTAKE_INTRO_BY_SLUG[reading.slug] ?? INTAKE_INTRO_FALLBACK),

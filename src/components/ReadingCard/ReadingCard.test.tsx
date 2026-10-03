@@ -5,7 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("motion/react", () => {
   function createMotionComponent(tag: string) {
-    return function MotionComponent({ children, className, style, onClick }: Record<string, unknown>) {
+    return function MotionComponent({
+      children,
+      className,
+      style,
+      onClick,
+    }: Record<string, unknown>) {
       return React.createElement(tag, { className, style, onClick }, children as React.ReactNode);
     };
   }
@@ -30,7 +35,7 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
-import { clearEntryClick, peekEntryClick } from "@/lib/intake/entryMarker";
+import { clearEntryClick, pendingEntryClick } from "@/lib/intake/entryMarker";
 
 import { ReadingCard } from "./ReadingCard";
 
@@ -44,7 +49,6 @@ const defaultProps = {
   expandedDetails: ["Full birth chart analysis", "Akashic Record insights", "Voice note + PDF"],
   href: "/book/soul-blueprint",
 };
-
 
 describe("ReadingCard", () => {
   beforeEach(clearEntryClick);
@@ -100,7 +104,7 @@ describe("ReadingCard", () => {
 
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
-    expect(peekEntryClick("soul-blueprint", "homepage_card")).toBe(true);
+    expect(pendingEntryClick("soul-blueprint")).toBe("homepage_card");
   });
 
   it("does not mark the entry on a Cmd-click that opens a new tab", async () => {
@@ -110,6 +114,6 @@ describe("ReadingCard", () => {
     await user.keyboard("{Meta>}");
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
-    expect(peekEntryClick("soul-blueprint", "homepage_card")).toBe(false);
+    expect(pendingEntryClick("soul-blueprint")).toBeNull();
   });
 });

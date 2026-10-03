@@ -7,6 +7,7 @@ export const CONTACT_API_ROUTE = "/api/contact";
 export const PRIVACY_EXPORT_API_ROUTE = "/api/privacy/export";
 export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 
+export const bookingPath = (slug: string) => `/book/${slug}`;
 export const readingAnchorId = (slug: string) => `reading-${slug}`;
 export const homeReadingAnchor = (slug: string) => `/#${readingAnchorId(slug)}`;
 

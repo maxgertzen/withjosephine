@@ -69,18 +69,33 @@ function introText(blocks: SanityPortableTextBlock[] | undefined): string[] {
 }
 
 describe("deriveBookingFormViewProps intake copy", () => {
-  it("prefers the Sanity letterTitle over the built-in heading", () => {
+  it("leaves the form heading out unless Sanity switches it on", () => {
     const props = derive(sanityReading(), {
       bookingForm: bookingForm({
         entryPageContent: { letterTitle: "Before you begin, a few things." },
       }),
     });
 
+    expect(props?.copy.title).toBeUndefined();
+    expect(derive()?.copy.title).toBeUndefined();
+  });
+
+  it("shows the Sanity letterTitle when the heading is switched on", () => {
+    const props = derive(sanityReading(), {
+      bookingForm: bookingForm({
+        entryPageContent: { letterTitle: "Before you begin, a few things.", showLetterTitle: true },
+      }),
+    });
+
     expect(props?.copy.title).toBe("Before you begin, a few things.");
   });
 
-  it("falls back to the built-in heading when letterTitle is absent", () => {
-    expect(derive()?.copy.title).toBe(INTAKE_TITLE_FALLBACK);
+  it("falls back to the built-in heading when switched on with no letterTitle", () => {
+    const props = derive(sanityReading(), {
+      bookingForm: bookingForm({ entryPageContent: { showLetterTitle: true } }),
+    });
+
+    expect(props?.copy.title).toBe(INTAKE_TITLE_FALLBACK);
   });
 
   it("uses the reading's intakeIntro verbatim, marks and all", () => {
@@ -105,7 +120,7 @@ describe("deriveBookingFormViewProps intake copy", () => {
   it("keeps the built-in copy when Sanity has no reading at all", () => {
     const props = derive(null);
 
-    expect(props?.copy.title).toBe(INTAKE_TITLE_FALLBACK);
+    expect(props?.copy.title).toBeUndefined();
     expect(introText(props?.copy.intro)).toEqual(INTAKE_INTRO_BY_SLUG["soul-blueprint"]);
   });
 });

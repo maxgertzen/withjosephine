@@ -73,6 +73,16 @@ describe("BookingFormView intake copy", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders no h2 heading when the intake title is left out", () => {
+    const base = props(paragraphBlocks(["Only paragraph."]));
+    render(<BookingFormView {...base} copy={{ ...base.copy, title: undefined }} />);
+
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "A few things, before we begin." }),
+    ).toBeNull();
+    expect(screen.getByText("Only paragraph.")).toBeInTheDocument();
+  });
+
   it("renders the reading block before the intake title", () => {
     render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} />);
 

@@ -11,7 +11,7 @@ import type { NotesNavProps } from "@/components/Notes/NotesShell";
 import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
-import { readingAnchorId } from "@/lib/http/routes";
+import { bookingPath, readingAnchorId } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import type {
   MappedAbout,
@@ -131,7 +131,7 @@ export function HomePageView({
                   valueProposition={reading.valueProposition}
                   briefDescription={reading.briefDescription}
                   expandedDetails={reading.expandedDetails}
-                  href={`/book/${reading.id}`}
+                  href={bookingPath(reading.id)}
                 />
               </li>
             ))}

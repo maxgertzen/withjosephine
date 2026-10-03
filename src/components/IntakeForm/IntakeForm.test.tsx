@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PickedOnOtherReadingFormContext } from "@/lib/intake/bookingEntryContext";
+import type { BookingEntry } from "@/lib/analytics";
+import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
 import { save as saveDraft, setLastReadingId } from "@/lib/intake/localStorageDraft";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
@@ -122,10 +123,10 @@ afterEach(() => {
 function renderForm(
   sections = SINGLE_PAGE_SECTIONS,
   extra: Partial<ComponentProps<typeof IntakeForm>> = {},
-  pickedOnOtherReadingForm = false,
+  entry: BookingEntry | null = null,
 ) {
   render(
-    <PickedOnOtherReadingFormContext.Provider value={pickedOnOtherReadingForm}>
+    <BookingEntryContext.Provider value={entry}>
       <IntakeForm
         readingId="soul-blueprint"
         readingName="Soul Blueprint"
@@ -134,7 +135,7 @@ function renderForm(
         switchNotice="Switched to Soul Blueprint."
         {...extra}
       />
-    </PickedOnOtherReadingFormContext.Provider>,
+    </BookingEntryContext.Provider>,
   );
 }
 
@@ -487,15 +488,16 @@ describe("IntakeForm — localStorage save/resume", () => {
   });
 
   it.each([
-    { arrival: "picked on another reading's form", pickedOnForm: true, noticeShown: true },
-    { arrival: "opened any other way", pickedOnForm: false, noticeShown: false },
+    { entry: "reading_switch" as const, noticeShown: true },
+    { entry: "homepage_card" as const, noticeShown: false },
+    { entry: "internal" as const, noticeShown: false },
   ])(
-    "carries email over and shows the switch notice only when $arrival",
-    async ({ pickedOnForm, noticeShown }) => {
+    "carries email over and shows the switch notice only on $entry entry",
+    async ({ entry, noticeShown }) => {
       saveDraft("akashic-record", { currentPage: 1, values: { email: "ada@example.com" } });
       setLastReadingId("akashic-record");
 
-      renderForm(SINGLE_PAGE_SECTIONS, {}, pickedOnForm);
+      renderForm(SINGLE_PAGE_SECTIONS, {}, entry);
 
       await waitFor(() => {
         expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe("ada@example.com");

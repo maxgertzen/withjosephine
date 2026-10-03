@@ -29,7 +29,7 @@ describe("BookingPageShell", () => {
     expect(backLink).toBeTruthy();
   });
 
-  it("passes the reading block through to the header", () => {
+  it("passes the reading block through to the title block", () => {
     const { getByText } = render(
       <BookingPageShell backHref="/back" {...READING}>
         <p>x</p>
@@ -38,6 +38,17 @@ describe("BookingPageShell", () => {
     expect(getByText("Signature")).toBeTruthy();
     expect(getByText("Soul Blueprint")).toBeTruthy();
     expect(getByText("$129")).toBeTruthy();
+  });
+
+  it("puts the reading name h1 inside main, after the Back header", () => {
+    const { container } = render(
+      <BookingPageShell backHref="/back" {...READING}>
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(container.querySelector("main#main h1")?.textContent).toBe("Soul Blueprint");
+    expect(container.querySelector("header h1")).toBeNull();
+    expect(container.querySelector("header a")?.getAttribute("href")).toBe("/back");
   });
 
   it("uses cream outer bg, 3xl max-w, card shadow and default padding", () => {

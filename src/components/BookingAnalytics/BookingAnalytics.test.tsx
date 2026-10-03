@@ -14,7 +14,6 @@ let EntryPageView: typeof BookingAnalyticsModule.EntryPageView;
 let markEntryClick: typeof EntryMarkerModule.markEntryClick;
 let BookingEntryProvider: typeof BookingEntryContextModule.BookingEntryProvider;
 let useBookingEntry: typeof BookingEntryContextModule.useBookingEntry;
-let usePickedOnOtherReadingForm: typeof BookingEntryContextModule.usePickedOnOtherReadingForm;
 
 function Page({ children }: { children?: ReactNode }) {
   return (
@@ -29,8 +28,7 @@ beforeEach(async () => {
   vi.resetModules();
   ({ EntryPageView } = await import("./BookingAnalytics"));
   ({ markEntryClick } = await import("@/lib/intake/entryMarker"));
-  ({ BookingEntryProvider, useBookingEntry, usePickedOnOtherReadingForm } =
-    await import("@/lib/intake/bookingEntryContext"));
+  ({ BookingEntryProvider, useBookingEntry } = await import("@/lib/intake/bookingEntryContext"));
   vi.clearAllMocks();
   window.localStorage.clear();
   Object.defineProperty(document, "referrer", {
@@ -103,28 +101,16 @@ describe("EntryPageView", () => {
     );
   });
 
-  it.each([
-    { click: "reading_switch" as const, picked: true },
-    { click: "homepage_card" as const, picked: false },
-  ])(
-    "tells the form it was picked on another reading form only after a $click click",
-    async ({ click, picked }) => {
-      const seen: boolean[] = [];
-      function SwitchProbe() {
-        seen.push(usePickedOnOtherReadingForm());
-        return null;
-      }
-      markEntryClick("soul-blueprint", click);
-      await act(async () => {
-        render(
-          <Page>
-            <SwitchProbe />
-          </Page>,
-        );
-      });
-      expect(seen.at(-1)).toBe(picked);
-    },
-  );
+  it("records a reading switch as its own entry, with the block open", async () => {
+    markEntryClick("soul-blueprint", "reading_switch");
+    await act(async () => {
+      render(<Page />);
+    });
+    expect(track).toHaveBeenCalledWith(
+      "entry_page_view",
+      expect.objectContaining({ entry: "reading_switch", folded: false }),
+    );
+  });
 
   it("does not fire outside a BookingEntryProvider", async () => {
     await act(async () => {

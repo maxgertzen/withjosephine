@@ -9,7 +9,7 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-import { usePickedOnOtherReadingForm } from "@/lib/intake/bookingEntryContext";
+import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
 import { useDraftRestore } from "@/lib/intake/useDraftRestore";
@@ -81,7 +81,7 @@ export function IntakeForm({
     readingId,
     defaultValues,
   });
-  const showSwitchNotice = usePickedOnOtherReadingForm() && nameOrEmailCarriedOver;
+  const showSwitchNotice = useBookingEntry() === "reading_switch" && nameOrEmailCarriedOver;
 
   const [honeypot, setHoneypot] = useState("");
   const {
