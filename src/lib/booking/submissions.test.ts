@@ -21,6 +21,7 @@ import {
   createSubmission,
   deleteSubmissionAndPhoto,
   findSubmissionById,
+  markSubmissionExpired,
   markSubmissionPaid,
   scheduleListenedAtMirror,
   scrubSubmissionPhoto,
@@ -107,6 +108,25 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
       "sub_1",
       expect.objectContaining({ status: "paid", paidAt: "2026-04-21T10:00:00Z" }),
     );
+  });
+
+  it("markSubmissionExpired leaves a paid submission and its Sanity mirror untouched", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 12900,
+      amountPaidCurrency: "usd",
+    });
+    await flushFireAndForget();
+    mockMirrorPatch.mockClear();
+
+    await markSubmissionExpired("sub_1", { expiredAt: "2026-04-22T10:00:00Z" });
+    await flushFireAndForget();
+
+    expect((await findSubmissionById("sub_1"))?.status).toBe("paid");
+    expect(mockMirrorPatch).not.toHaveBeenCalled();
   });
 
   it("appendEmailFired writes to D1 and triggers mirror append", async () => {

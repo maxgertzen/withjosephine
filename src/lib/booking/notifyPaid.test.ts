@@ -67,24 +67,96 @@ beforeEach(() => {
 });
 
 describe("applyPaidEvent", () => {
-  it("returns alreadyApplied without side effects when stripeEventId matches", async () => {
+  it("returns alreadyApplied without side effects when the submission is already paid", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const result = await applyPaidEvent(
-      { ...SUBMISSION, stripeEventId: "evt_1" },
+      { ...SUBMISSION, status: "paid", stripeEventId: "evt_1", stripeSessionId: "cs_1" },
       {
-        stripeEventId: "evt_1",
+        stripeEventId: "reconcile:cs_1",
         stripeSessionId: "cs_1",
         paidAt: "2026-04-28T12:00:00Z",
-        amountPaidCents: null,
-        amountPaidCurrency: null,
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
         country: null,
       },
     );
 
     expect(result).toBe("alreadyApplied");
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(mockGetOrCreateUser).not.toHaveBeenCalled();
     expect(mockMarkPaid).not.toHaveBeenCalled();
     expect(mockJosephine).not.toHaveBeenCalled();
     expect(mockOrderConfirmation).not.toHaveBeenCalled();
     expect(mockAppendEmailFired).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("warns when a second paid session arrives for an already-paid submission", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await applyPaidEvent(
+      { ...SUBMISSION, status: "paid", stripeEventId: "evt_1", stripeSessionId: "cs_1" },
+      {
+        stripeEventId: "evt_2",
+        stripeSessionId: "cs_2",
+        paidAt: "2026-04-28T13:00:00Z",
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+        country: null,
+      },
+    );
+
+    expect(result).toBe("alreadyApplied");
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("cs_2"));
+    expect(mockOrderConfirmation).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("sends each email once when reconcile runs after the webhook applied the payment", async () => {
+    const webhookResult = await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: 17900,
+      amountPaidCurrency: "usd",
+      country: null,
+    });
+    const reconcileResult = await applyPaidEvent(
+      { ...SUBMISSION, status: "paid", stripeEventId: "evt_1", stripeSessionId: "cs_1" },
+      {
+        stripeEventId: "reconcile:cs_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-04-28T12:00:00Z",
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+        country: null,
+      },
+    );
+
+    expect(webhookResult).toBe("applied");
+    expect(reconcileResult).toBe("alreadyApplied");
+    expect(mockMarkPaid).toHaveBeenCalledOnce();
+    expect(mockJosephine).toHaveBeenCalledOnce();
+    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+    expect(mockAppendEmailFired).toHaveBeenCalledOnce();
+  });
+
+  it("passes per-submission Resend idempotency keys for both paid emails", async () => {
+    await applyPaidEvent(SUBMISSION, {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-28T12:00:00Z",
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      country: null,
+    });
+
+    expect(mockJosephine).toHaveBeenCalledWith(expect.anything(), {
+      idempotencyKey: "josephine-notification/sub_1",
+    });
+    expect(mockOrderConfirmation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: "order-confirmation/sub_1" }),
+    );
   });
 
   it("marks paid (with recipientUserId folded in), fires both Resend emails, and writes order_confirmation to emailsFired", async () => {

@@ -173,10 +173,6 @@ export type MarkSubmissionPaidInput = {
   recipientUserId?: string | null;
 };
 
-// Fold recipient_user_id into the same UPDATE so callers never observe
-// the half-applied state (status=paid + recipient_user_id=NULL). When
-// omitted, the COALESCE preserves the existing value so this is safe to
-// call from non-payment paths that want to update only the paid columns.
 export function buildMarkSubmissionPaidStatement(
   id: string,
   paid: MarkSubmissionPaidInput,
@@ -186,7 +182,7 @@ export function buildMarkSubmissionPaidStatement(
           SET status = 'paid', paid_at = ?, stripe_event_id = ?, stripe_session_id = ?,
               amount_paid_cents = ?, amount_paid_currency = ?,
               recipient_user_id = COALESCE(?, recipient_user_id)
-          WHERE id = ?`,
+          WHERE id = ? AND status <> 'paid'`,
     params: [
       paid.paidAt,
       paid.stripeEventId,
@@ -210,19 +206,12 @@ export async function markSubmissionPaid(
 export async function markSubmissionExpired(
   id: string,
   expired: { stripeEventId?: string; expiredAt: string },
-): Promise<void> {
-  if (expired.stripeEventId) {
-    await dbExec(
-      `UPDATE submissions
-       SET status = 'expired', expired_at = ?, stripe_event_id = ?
-       WHERE id = ?`,
-      [expired.expiredAt, expired.stripeEventId, id],
-    );
-    return;
-  }
-  await dbExec(
-    `UPDATE submissions SET status = 'expired', expired_at = ? WHERE id = ?`,
-    [expired.expiredAt, id],
+): Promise<{ rowsWritten: number }> {
+  return dbExec(
+    `UPDATE submissions
+     SET status = 'expired', expired_at = ?, stripe_event_id = COALESCE(?, stripe_event_id)
+     WHERE id = ? AND status = 'pending'`,
+    [expired.expiredAt, expired.stripeEventId ?? null, id],
   );
 }
 

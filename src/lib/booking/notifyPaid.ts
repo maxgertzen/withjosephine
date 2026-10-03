@@ -28,7 +28,14 @@ export async function applyPaidEvent(
   submission: SubmissionRecord,
   details: PaidEventDetails,
 ): Promise<ApplyPaidResult> {
-  if (submission.stripeEventId === details.stripeEventId) return "alreadyApplied";
+  if (submission.status === SUBMISSION_STATUS.paid) {
+    if (submission.stripeSessionId !== details.stripeSessionId) {
+      console.warn(
+        `[notifyPaid] submission ${submission._id} already paid by session ${submission.stripeSessionId}, ignoring paid session ${details.stripeSessionId}`,
+      );
+    }
+    return "alreadyApplied";
+  }
 
   const context = buildSubmissionContext({
     ...submission,
@@ -84,13 +91,18 @@ export async function applyPaidEvent(
   }
 
   const dispatches: Array<Promise<unknown>> = [
-    sendNotificationToJosephine(context).catch((error) => {
+    sendNotificationToJosephine(context, {
+      idempotencyKey: `josephine-notification/${submission._id}`,
+    }).catch((error) => {
       console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
     }),
   ];
 
   dispatches.push(
-    sendOrderConfirmation(context, { dataExportUrl })
+    sendOrderConfirmation(context, {
+      dataExportUrl,
+      idempotencyKey: `order-confirmation/${submission._id}`,
+    })
       .then(async (result) => {
         if (result.kind !== "sent") return;
         try {

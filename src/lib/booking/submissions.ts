@@ -144,8 +144,9 @@ export async function markSubmissionPaid(
 export async function markSubmissionExpired(
   submissionId: string,
   expired: { stripeEventId?: string; expiredAt: string },
-): Promise<void> {
-  await repo.markSubmissionExpired(submissionId, expired);
+): Promise<boolean> {
+  const { rowsWritten } = await repo.markSubmissionExpired(submissionId, expired);
+  if (rowsWritten === 0) return false;
   runMirror(
     mirrorSubmissionPatch(submissionId, {
       status: SUBMISSION_STATUS.expired,
@@ -153,6 +154,7 @@ export async function markSubmissionExpired(
       ...(expired.stripeEventId ? { stripeEventId: expired.stripeEventId } : {}),
     }),
   );
+  return true;
 }
 
 export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {

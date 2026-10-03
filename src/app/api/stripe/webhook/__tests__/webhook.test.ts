@@ -4,10 +4,15 @@ vi.mock("@/lib/stripe", () => ({
   constructWebhookEvent: vi.fn(),
 }));
 
-vi.mock("@/lib/booking/submissions", () => ({
-  findSubmissionById: vi.fn(),
-  markSubmissionExpired: vi.fn(),
-}));
+vi.mock("@/lib/booking/submissions", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/booking/submissions")>("@/lib/booking/submissions");
+  return {
+    SUBMISSION_STATUS: actual.SUBMISSION_STATUS,
+    findSubmissionById: vi.fn(),
+    markSubmissionExpired: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/booking/notifyPaid", () => ({
   applyPaidEvent: vi.fn(),
@@ -48,7 +53,7 @@ beforeEach(() => {
   mockConstruct.mockReset();
   mockFind.mockReset();
   mockApply.mockReset().mockResolvedValue("applied");
-  mockMarkExpired.mockReset().mockResolvedValue(undefined);
+  mockMarkExpired.mockReset().mockResolvedValue(true);
   mockServerTrack.mockReset().mockResolvedValue(undefined);
 });
 
@@ -225,6 +230,21 @@ describe("/api/stripe/webhook", () => {
     });
   });
 
+  it("does not fire payment_expired when the submission left pending before the expire write", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_2",
+      type: "checkout.session.expired",
+      created: 1714291200,
+      data: { object: { id: "cs_2", client_reference_id: "sub_1" } },
+    } as never);
+    mockFind.mockResolvedValueOnce(SUBMISSION);
+    mockMarkExpired.mockResolvedValueOnce(false);
+
+    const res = await callRoute("{}");
+    expect(res.status).toBe(200);
+    expect(mockServerTrack).not.toHaveBeenCalled();
+  });
+
   it("ignores unrelated event types (returns 200, no work)", async () => {
     mockConstruct.mockReturnValueOnce({
       id: "evt_3",
@@ -240,19 +260,23 @@ describe("/api/stripe/webhook", () => {
     expect(mockMarkExpired).not.toHaveBeenCalled();
   });
 
-  it("does not double-apply expired event when stripeEventId already matches", async () => {
-    mockConstruct.mockReturnValueOnce({
-      id: "evt_2",
-      type: "checkout.session.expired",
-      created: 1714291200,
-      data: { object: { id: "cs_2", client_reference_id: "sub_1" } },
-    } as never);
-    mockFind.mockResolvedValueOnce({ ...SUBMISSION, stripeEventId: "evt_2" });
+  it.each(["expired", "paid"] as const)(
+    "skips an expired event when the submission is already %s",
+    async (status) => {
+      mockConstruct.mockReturnValueOnce({
+        id: "evt_2",
+        type: "checkout.session.expired",
+        created: 1714291200,
+        data: { object: { id: "cs_2", client_reference_id: "sub_1" } },
+      } as never);
+      mockFind.mockResolvedValueOnce({ ...SUBMISSION, status, stripeEventId: "evt_1" });
 
-    const res = await callRoute("{}");
-    expect(res.status).toBe(200);
-    expect(mockMarkExpired).not.toHaveBeenCalled();
-  });
+      const res = await callRoute("{}");
+      expect(res.status).toBe(200);
+      expect(mockMarkExpired).not.toHaveBeenCalled();
+      expect(mockServerTrack).not.toHaveBeenCalled();
+    },
+  );
 
   describe("analytics", () => {
     it("fires payment_success once on first delivery of completed", async () => {
@@ -321,7 +345,7 @@ describe("/api/stripe/webhook", () => {
         created: 1714291200,
         data: { object: { id: "cs_d", client_reference_id: "sub_1" } },
       } as never);
-      mockFind.mockResolvedValueOnce({ ...SUBMISSION, stripeEventId: "evt_d" });
+      mockFind.mockResolvedValueOnce({ ...SUBMISSION, status: "expired", stripeEventId: "evt_d" });
 
       await callRoute("{}");
 

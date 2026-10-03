@@ -55,7 +55,7 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
 beforeEach(() => {
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
-  mockMarkExpired.mockReset().mockResolvedValue(undefined);
+  mockMarkExpired.mockReset().mockResolvedValue(true);
   mockDelete.mockReset().mockResolvedValue({ photoDeleted: false });
   mockScrub.mockReset().mockResolvedValue(false);
   mockListReferenced.mockReset().mockResolvedValue(new Set());

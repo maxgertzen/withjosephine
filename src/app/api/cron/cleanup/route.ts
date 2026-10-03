@@ -59,8 +59,10 @@ async function cleanup(): Promise<{
   ]);
 
   for (const submission of stalePending) {
-    await markSubmissionExpired(submission._id, { expiredAt: now.toISOString() });
-    summary.expired += 1;
+    const wasExpired = await markSubmissionExpired(submission._id, {
+      expiredAt: now.toISOString(),
+    });
+    if (wasExpired) summary.expired += 1;
   }
 
   for (const submission of staleExpired) {
