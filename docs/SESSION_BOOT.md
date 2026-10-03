@@ -1,6 +1,17 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-03 handover 10): #334, #335, #336 merged into `release/v1.20.0`; staging deployed (CI run 37098539199 green); Studio deployed with the v1.20.0 schema.
+## ▶ 👉 START HERE (next session, 2026-10-03 handover 11): v1.20.0 is live in production (#337, squash `9c27ddb`). Next session: workshop the gift flow (dex `85v0vzq0`).
+
+- Production: Studio deployed from `main`; `migrate-clear-booking-meta-titles-2026-10.mts`, `seed-sanity-defaults-2026-10.mts` and `unset-unknown-sanity-fields.mts production --apply` run. Values removed by the unset are saved in `MEMORY/WORK/20261003-prod-sanity/before-unset.json`, including 12 old gift fields from `thankYouPage`. The 12 old gift and library document types are still in the production dataset (not in the schema, left alone).
+- Notes is off in production until Becky creates Notes Settings, turns the switch on and publishes a note. Preview works with the switch off.
+- Staging keeps two test notes, titled "[Test] ...". `promote-staging-to-production.mts` is deleted; the prod -> staging sync is the only Sanity copy path. Saving Notes Settings in production overwrites the staging switch.
+- Owed: Max tells Becky the new Studio fields are safe to edit in production. Becky's content: `63bfijpo`, `3gpnqffe`.
+- Found, not filed: analytics `environment` is "local" on staging (`deriveEnvironmentFromHost` in `src/lib/constants.ts` has no `staging.` case) and `app_version` is "dev" everywhere (`NEXT_PUBLIC_APP_VERSION` is not set in CI).
+- The Chrome extension cannot click or scroll inside the hosted Studio (cross-origin iframe in the sanity.io dashboard). For Presentation checks, write drafts through the API (`MEMORY/WORK/20261001-notes-build/presentation-check-drafts.mts`) and read the open pane. A draft deleted from outside the Studio stays in the open pane until reload.
+- Interceptor is not installed on this machine; Claude in Chrome was used for browser checks.
+- CHANGELOG is not maintained for #330 to #336 except inside the #337 row.
+
+## ▶ (SUPERSEDED by handover 11 above) START HERE (2026-10-03 handover 10): #334, #335, #336 merged into `release/v1.20.0`; staging deployed (CI run 37098539199 green); Studio deployed with the v1.20.0 schema.
 
 - Owed: Max checks staging in a browser (Cloudflare Access login): `/book/soul-blueprint` h1 at the top, no "A few things" line, form saves. Not yet browser-verified by Claude.
 - Owed: Max sends Becky the note: don't edit the new Studio fields in Production or press Remove on Unknown fields until v1.20.0 ships.
