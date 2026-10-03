@@ -32,6 +32,7 @@ export default defineConfig({
       // GiftClaimScheduler DO compiles in vitest. Mocks via vi.mock(...)
       // override the shim per test as needed.
       "cloudflare:workers": path.resolve(__dirname, "src/test/cloudflare-workers.stub.ts"),
+      "./.open-next/worker.js": path.resolve(__dirname, "src/test/open-next-worker.stub.ts"),
     },
   },
 });
