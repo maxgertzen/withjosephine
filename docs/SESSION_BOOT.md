@@ -1,6 +1,14 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-03 handover 9): three PRs into `release/v1.20.0` wait for Max's go to merge: #335 deps (CI green), #334 dev cleanup, and the decisions PR (stacked on #334). After #335 merges, staging deploys; then the Studio deploy (card 6B) and Becky's note.
+## ▶ 👉 START HERE (next session, 2026-10-03 handover 10): #334, #335, #336 merged into `release/v1.20.0`; staging deployed (CI run 37098539199 green); Studio deployed with the v1.20.0 schema.
+
+- Owed: Max checks staging in a browser (Cloudflare Access login): `/book/soul-blueprint` h1 at the top, no "A few things" line, form saves. Not yet browser-verified by Claude.
+- Owed: Max sends Becky the note: don't edit the new Studio fields in Production or press Remove on Unknown fields until v1.20.0 ships.
+- Done: `seed-sanity-defaults-2026-10.mts` on staging (`switchNoticeTemplate` set).
+- New osv ignore: GHSA-vfj7-8cjw-p6xm (braces 3.0.3, build/CLI tooling only, no fix) until 2026-11-15.
+- Next: release PR `release/v1.20.0` -> `main` (squash: pass the PR body as the merge message, WRITINGSTYLE 11a). After production is live, with Max's go: `migrate-clear-booking-meta-titles-2026-10.mts`, `seed-sanity-defaults-2026-10.mts`, `unset-unknown-sanity-fields.mts production`.
+
+## ▶ (SUPERSEDED by handover 10 above) START HERE (2026-10-03 handover 9): three PRs into `release/v1.20.0` wait for Max's go to merge: #335 deps (CI green), #334 dev cleanup, and the decisions PR (stacked on #334). After #335 merges, staging deploys; then the Studio deploy (card 6B) and Becky's note.
 
 **Max's decision picks (2026-10-03, decisions page https://claude.ai/artifact/Qb1MnoUriVZWfLzp4u18q4): 1A 2B 3A 4B 5C 6B 7B 8A 9B.**
 - 9B: `next` advisories read: none apply (`images.unoptimized: true`, Workers not Windows, no `next/og`). #335 = next 16.3.6, Storybook 10.6.1 (10.3.6 does not build with next 16.3), vite ^8.0.16 direct, override floors raised in `pnpm-workspace.yaml`, osv ignores with `ignoreUntil`, weekly `security-scan.yml`, osv action pinned by SHA. The `next`-only hotfix to `main` was not built: main has the same Storybook break and the same 76 other advisories; told Max, his call.
