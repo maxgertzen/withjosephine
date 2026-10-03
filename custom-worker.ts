@@ -7,6 +7,7 @@
 import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
+import { scheduledCronRequest, withoutCronHeader } from "./src/lib/booking/cron-auth";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
 import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "./src/lib/logging/redactSearchParams";
 
@@ -15,10 +16,6 @@ type CloudflareEnv = {
   ENVIRONMENT?: string;
 };
 
-// Sentry attaches request.url and request.headers to events by default. The
-// listen page carries an HMAC-signed delivery token in the URL path, the cron
-// bearer secret rides in `cf-cron`, and Sanity preview / CF Access cookies are
-// session-equivalent — none of those should be replayable from the issue tracker.
 function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
   const request = event.request;
   if (request?.headers && typeof request.headers === "object") {
@@ -33,12 +30,6 @@ function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
   return event;
 }
 
-// `scheduled` handler dispatches the wrangler cron triggers into internal
-// fetches against /api/cron/* routes. The `cf-cron` header satisfies
-// `isCronRequestAuthorized` without leaking CRON_SECRET into the dispatch
-// path (CF only sets that header on actual scheduled invocations, not on
-// public requests). Origin is per-env so request logs are correctly
-// attributed; pathname is what Next routes on.
 function originForEnv(env: CloudflareEnv): string {
   return env.ENVIRONMENT === "staging"
     ? "https://staging.withjosephine.com"
@@ -50,7 +41,7 @@ const DAY7_DELIVER_PATH = "/api/cron/email-day-7-deliver";
 const DAY7_DELIVER_MONITOR_SLUG = "email-day-7-deliver";
 
 const composedHandler: ExportedHandler<CloudflareEnv> = {
-  fetch: handler.fetch,
+  fetch: (request, env, ctx) => handler.fetch!(withoutCronHeader(request), env, ctx),
   async scheduled(event, env, ctx) {
     const paths = dispatchPathsForCron(event.cron);
     if (paths.length === 0) {
@@ -60,11 +51,7 @@ const composedHandler: ExportedHandler<CloudflareEnv> = {
     const origin = originForEnv(env);
     const dispatch = paths.map(async (path) => {
       const sendCronRequest = async () => {
-        const req = new Request(`${origin}${path}`, {
-          method: "POST",
-          headers: { "cf-cron": "1" },
-        });
-        const res = await handler.fetch!(req, env, ctx);
+        const res = await handler.fetch!(scheduledCronRequest(`${origin}${path}`), env, ctx);
         console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
         return res;
       };

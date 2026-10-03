@@ -6,6 +6,17 @@ import {
   CF_CRON_HEADER,
 } from "../http/headers";
 
+export function scheduledCronRequest(url: string): Request {
+  return new Request(url, { method: "POST", headers: { [CF_CRON_HEADER]: "1" } });
+}
+
+export function withoutCronHeader(request: Request): Request {
+  if (!request.headers.has(CF_CRON_HEADER)) return request;
+  const headers = new Headers(request.headers);
+  headers.delete(CF_CRON_HEADER);
+  return new Request(request, { headers });
+}
+
 export function isCronRequestAuthorized(request: Request) {
   if (request.headers.get(CF_CRON_HEADER)) return true;
 
