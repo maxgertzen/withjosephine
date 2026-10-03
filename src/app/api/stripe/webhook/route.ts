@@ -6,6 +6,7 @@ import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import {
   findSubmissionById,
   markSubmissionExpired,
+  SUBMISSION_STATUS,
 } from "@/lib/booking/submissions";
 import { constructWebhookEvent } from "@/lib/stripe";
 
@@ -64,12 +65,13 @@ async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise
     );
     return;
   }
-  if (submission.stripeEventId === event.id) return;
+  if (submission.status !== SUBMISSION_STATUS.pending) return;
 
-  await markSubmissionExpired(submission._id, {
+  const wasExpired = await markSubmissionExpired(submission._id, {
     stripeEventId: event.id,
     expiredAt: unixToIso(event.created),
   });
+  if (!wasExpired) return;
 
   void serverTrack("payment_expired", {
     distinct_id: submission._id,

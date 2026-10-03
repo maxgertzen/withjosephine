@@ -249,6 +249,7 @@ function requireNotificationEmail(subType: EmailSubType): string | EmailSendResu
 
 export async function sendNotificationToJosephine(
   submission: SubmissionContext,
+  options?: { idempotencyKey?: string },
 ): Promise<EmailSendResult> {
   const notificationEmail = requireNotificationEmail("josephine_notification");
   if (typeof notificationEmail !== "string") return notificationEmail;
@@ -273,12 +274,13 @@ export async function sendNotificationToJosephine(
     subType: "josephine_notification",
     submissionId: submission.id,
     originatorEmail: submission.email,
+    idempotencyKey: options?.idempotencyKey,
   });
 }
 
 export async function sendOrderConfirmation(
   submission: SubmissionContext,
-  options?: { dataExportUrl?: string },
+  options?: { dataExportUrl?: string; idempotencyKey?: string },
 ): Promise<EmailSendResult> {
   const { EMAIL_ORDER_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailOrderConfirmation } = await import("@/lib/sanity/fetch");
@@ -307,6 +309,7 @@ export async function sendOrderConfirmation(
     html,
     subType: "order_confirmation",
     submissionId: submission.id,
+    idempotencyKey: options?.idempotencyKey,
   });
 }
 

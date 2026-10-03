@@ -120,6 +120,7 @@ describe("resendCustomerEmail", () => {
       type: "order_confirmation",
       resendId: "msg_re_1",
     }));
+    expect(vi.mocked(sendOrderConfirmation).mock.lastCall?.[1]?.idempotencyKey).toBeUndefined();
   });
 
   it("returns send_failed when send returns failed kind", async () => {

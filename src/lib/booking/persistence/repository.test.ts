@@ -85,10 +85,59 @@ describe("repository against in-memory SQLite", () => {
     expect(record?.amountPaidCurrency).toBe("usd");
   });
 
+  it("keeps the first paid event when a second paid apply targets the same submission", async () => {
+    await createSubmission(BASE_INPUT);
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+    });
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "reconcile:cs_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T11:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+    });
+    const record = await findSubmissionById("sub_1");
+    expect(record?.stripeEventId).toBe("evt_1");
+    expect(record?.paidAt).toBe("2026-04-21T10:00:00Z");
+  });
+
+  it("does not mark a paid submission expired", async () => {
+    await createSubmission(BASE_INPUT);
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+    });
+    await markSubmissionExpired("sub_1", {
+      stripeEventId: "evt_expired",
+      expiredAt: "2026-04-22T10:00:00Z",
+    });
+    await markSubmissionExpired("sub_1", { expiredAt: "2026-04-22T10:00:00Z" });
+    const record = await findSubmissionById("sub_1");
+    expect(record?.status).toBe("paid");
+    expect(record?.stripeEventId).toBe("evt_1");
+  });
+
   it("marks expired with optional Stripe event id", async () => {
     await createSubmission(BASE_INPUT);
     await markSubmissionExpired("sub_1", { expiredAt: "2026-04-22T10:00:00Z" });
     expect((await findSubmissionById("sub_1"))?.status).toBe("expired");
+
+    await createSubmission({ ...BASE_INPUT, id: "sub_2" });
+    await markSubmissionExpired("sub_2", {
+      stripeEventId: "evt_expired",
+      expiredAt: "2026-04-22T10:00:00Z",
+    });
+    const withEvent = await findSubmissionById("sub_2");
+    expect(withEvent?.status).toBe("expired");
+    expect(withEvent?.stripeEventId).toBe("evt_expired");
   });
 
   it("appends emailsFired entries idempotently per call", async () => {

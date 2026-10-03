@@ -294,6 +294,18 @@ describe("sendOrderConfirmation", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it("forwards the idempotency key to Resend for the order confirmation and Josephine notification", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+
+    await sendOrderConfirmation(buildSubmission(), { idempotencyKey: "order-confirmation/sub_1" });
+    await sendNotificationToJosephine(buildSubmission(), {
+      idempotencyKey: "josephine-notification/sub_1",
+    });
+
+    expect(sendMock.mock.calls[0]?.[1]).toEqual({ idempotencyKey: "order-confirmation/sub_1" });
+    expect(sendMock.mock.calls[1]?.[1]).toEqual({ idempotencyKey: "josephine-notification/sub_1" });
+  });
+
   it("dispatches to the purchaser email", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc_self" } });
     const submission = buildSubmission({ email: "buyer@example.com" });
