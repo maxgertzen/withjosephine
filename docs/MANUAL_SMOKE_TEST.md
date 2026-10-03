@@ -129,7 +129,7 @@ Covers v1.0 baseline, v1.4.0 one-tap (J13a, J13d, J13e, J13i), v1.6.0 form polis
 1. Open the submission from A1. The **audit trail** shows consent timestamps + IP-hash + request UA-hash entries. Eyeball that they are present.
 2. Upload a short MP3 in **Voice note** (~30s, under 5MB).
 3. Upload any PDF (~1 page) in **Reading PDF**.
-4. Set **Delivered at** to now. **Publish**.
+4. **Publish**. **Delivered at** is read-only and stays empty until the delivery email is sent.
 5. Open **Email > Day 7 Delivery** in the Studio sidebar (v1.4.0 J13e). Confirm visible fields are: `subject`, `preview`, `bodyIntro`, `bodyPostButton`, `buttonLabel`. Legacy fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) should NOT be visible.
 
 ### A3: Day-7 force-fire, one-tap, listen page, remember-me
@@ -215,7 +215,7 @@ Covers v1.0 baseline (J2, J3, J11 admin), v1.4.0 (J13a one-tap on recipient side
 
 ### B3: Becky delivers, recipient listens with greeting
 
-**As Becky:** mirror A2 on the **recipient's submission** from B2. Upload MP3 + PDF. Set Delivered at. Publish.
+**As Becky:** mirror A2 on the **recipient's submission** from B2. Upload MP3 + PDF. Publish.
 
 **As maintainer:** `bash scripts/force-cron.sh email-day-7-deliver <recipient-submission-id>`.
 

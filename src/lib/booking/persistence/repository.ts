@@ -274,16 +274,50 @@ export async function setSubmissionRecipientUser(
 
 export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string };
 
-export function buildMarkSubmissionDeliveredStatement(
+export async function markDay7SentIfUnrecorded(
   id: string,
   delivery: SubmissionDelivery,
-): SqlStatement {
-  return {
-    sql: `UPDATE submissions
-          SET delivered_at = ?, voice_note_url = ?, pdf_url = ?
-          WHERE id = ?`,
-    params: [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, id],
-  };
+  entry: EmailFiredEntry,
+): Promise<{ rowsWritten: number }> {
+  return dbExec(
+    `UPDATE submissions
+     SET delivered_at = ?, voice_note_url = ?, pdf_url = ?,
+         emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
+     WHERE id = ? AND instr(emails_fired_json, ?) = 0`,
+    [
+      delivery.deliveredAt,
+      delivery.voiceNoteUrl,
+      delivery.pdfUrl,
+      JSON.stringify(entry),
+      id,
+      emailFiredTypeNeedle(entry.type),
+    ],
+  );
+}
+
+export type Day7Attempt = { attemptedAt: string; jti: string };
+
+export async function claimDay7Attempt(
+  id: string,
+  fresh: Day7Attempt,
+): Promise<Day7Attempt | null> {
+  const rows = await dbQuery<{ day7_attempt_at: string; day7_attempt_jti: string }>(
+    `UPDATE submissions
+     SET day7_attempt_at = COALESCE(day7_attempt_at, ?),
+         day7_attempt_jti = COALESCE(day7_attempt_jti, ?)
+     WHERE id = ?
+     RETURNING day7_attempt_at, day7_attempt_jti`,
+    [fresh.attemptedAt, fresh.jti, id],
+  );
+  const row = rows[0];
+  return row ? { attemptedAt: row.day7_attempt_at, jti: row.day7_attempt_jti } : null;
+}
+
+export async function clearDay7Attempt(id: string): Promise<void> {
+  await dbExec(
+    `UPDATE submissions SET day7_attempt_at = NULL, day7_attempt_jti = NULL WHERE id = ?`,
+    [id],
+  );
 }
 
 export async function markSubmissionDeliveredIfUnset(
@@ -368,7 +402,7 @@ export async function listPaidSubmissionsForEmail(
     // Legacy guard: gift removed in v1.16.0; skip dormant gift rows so day-7 never routes a recipient link to the purchaser.
     `(is_gift = 0 OR is_gift IS NULL)`,
   ];
-  const params: SqlValue[] = [`"type":"${emailType}"`];
+  const params: SqlValue[] = [emailFiredTypeNeedle(emailType)];
   if (options.paidBefore) {
     filters.push(`paid_at < ?`);
     params.push(options.paidBefore);
@@ -384,16 +418,15 @@ export async function listPaidSubmissionsForEmail(
   return rows.map(rowToRecord);
 }
 
-export function buildAppendEmailFiredStatement(id: string, entry: EmailFiredEntry): SqlStatement {
-  return {
-    sql: `UPDATE submissions
-          SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
-          WHERE id = ?`,
-    params: [JSON.stringify(entry), id],
-  };
+function emailFiredTypeNeedle(emailType: EmailFiredType): string {
+  return `"type":"${emailType}"`;
 }
 
 export async function appendEmailFired(id: string, entry: EmailFiredEntry): Promise<void> {
-  const stmt = buildAppendEmailFiredStatement(id, entry);
-  await dbExec(stmt.sql, stmt.params ?? []);
+  await dbExec(
+    `UPDATE submissions
+     SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
+     WHERE id = ?`,
+    [JSON.stringify(entry), id],
+  );
 }

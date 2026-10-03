@@ -13,12 +13,12 @@ const PROPS = {
 
 const LEGACY_BODY_LINES = [
   "Reading overdue — past 7 days",
-  "The following submission is past the 7-day delivery window and has no deliveredAt set:",
+  "The following submission is past the 7-day delivery window and its reading has not been sent:",
   "Client: ada@example.com",
   "Reading: Akashic Record",
   "Submission ID: sub_abc123",
   "Created: 2026-04-20T00:00:00.000Z",
-  "Mark deliveredAt in Studio after uploading the voice note + PDF to fire the client delivery email.",
+  "Upload and publish the voice note and the PDF in Studio, then press Send reading now.",
 ] as const;
 
 describe("Day7OverdueAlert — visual parity with legacy resend.tsx", () => {

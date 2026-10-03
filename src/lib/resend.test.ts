@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSubmission } from "@/test/fixtures/submission";
 
+import { isSandboxEmail } from "./booking/sandboxEmails";
 import { visibleText } from "./emails/test-helpers";
 import {
   getResendId,
-  isSandboxEmail,
   redactEmail,
   sendContactMessage,
   sendDay7Delivery,
@@ -326,6 +326,34 @@ describe("sendDay7Delivery", () => {
     });
 
     expect(sendMock.mock.calls[0]?.[1]).toEqual({ idempotencyKey: "day7/sub_1" });
+  });
+
+  it("sends a byte-identical request for the same submission and listen URL", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
+    const listenUrl = "https://withjosephine.com/listen/sub_1?t=fixed";
+
+    await sendDay7Delivery(buildSubmission(), listenUrl, { idempotencyKey: "day7/sub_1" });
+    await sendDay7Delivery(buildSubmission(), listenUrl, { idempotencyKey: "day7/sub_1" });
+
+    expect(sendMock.mock.calls[1]).toEqual(sendMock.mock.calls[0]);
+  });
+
+  it("returns the Resend error name and status when Resend answers with an error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    sendMock.mockResolvedValue({
+      data: null,
+      error: { name: "concurrent_idempotent_requests", statusCode: 409, message: "in progress" },
+    });
+
+    const result = await sendDay7Delivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
+      idempotencyKey: "day7/sub_1",
+    });
+
+    expect(result).toEqual({
+      kind: "failed",
+      error: "concurrent_idempotent_requests",
+      statusCode: 409,
+    });
   });
 
   it("includes the listening-page URL inside an anchor href", async () => {

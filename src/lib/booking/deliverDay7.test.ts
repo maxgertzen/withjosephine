@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { sendReadingNowState } from "../../../studio/actions/sendReadingNowState";
-
 vi.mock("@/lib/booking/submissions", () => ({
   buildSubmissionContext: vi.fn().mockReturnValue({
     id: "sub_1",
@@ -13,6 +11,8 @@ vi.mock("@/lib/booking/submissions", () => ({
     photoUrl: null,
     createdAt: "2026-04-28T12:00:00Z",
   }),
+  claimDay7Attempt: vi.fn(),
+  clearDay7Attempt: vi.fn(),
   findSubmissionById: vi.fn(),
   markSubmissionDeliveredIfUnset: vi.fn(),
   recordDay7Sent: vi.fn(),
@@ -26,8 +26,12 @@ vi.mock("@/lib/resend", () => ({
   sendDay7Delivery: vi.fn(),
 }));
 
+import { LISTEN_TOKEN_TTL_MS, verifyListenToken } from "@/lib/auth/listenToken";
 import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
+  claimDay7Attempt,
+  clearDay7Attempt,
+  type Day7Attempt,
   type EmailFiredEntry,
   findSubmissionById,
   markSubmissionDeliveredIfUnset,
@@ -36,15 +40,22 @@ import {
 } from "@/lib/booking/submissions";
 import { sendDay7Delivery } from "@/lib/resend";
 
-import { deliverOne, deliverRequested } from "./deliverDay7";
+import {
+  DAY7_ATTEMPT_RETRY_WINDOW_MS,
+  DAY7_RECORD_TRIES,
+  deliverOne,
+  deliverRequested,
+} from "./deliverDay7";
 
 const mockSend = vi.mocked(sendDay7Delivery);
 const mockRecordSent = vi.mocked(recordDay7Sent);
 const mockMarkDelivered = vi.mocked(markSubmissionDeliveredIfUnset);
+const mockClaimAttempt = vi.mocked(claimDay7Attempt);
+const mockClearAttempt = vi.mocked(clearDay7Attempt);
 const mockFindById = vi.mocked(findSubmissionById);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
 
-const BEFORE_SEND = new Date("2026-04-29T12:00:00Z");
+const ATTEMPT_AT = new Date("2026-04-29T12:00:00Z");
 const SENT_AT = new Date("2026-04-29T12:00:07Z");
 
 const PAID_SUBMISSION: SubmissionRecord = {
@@ -72,6 +83,8 @@ const DAY7_ENTRY: EmailFiredEntry = {
   resendId: "msg_d7",
 };
 
+let storedAttempt: Day7Attempt | null;
+
 function sendAtSentTime(result: Awaited<ReturnType<typeof sendDay7Delivery>>) {
   return async () => {
     vi.setSystemTime(SENT_AT);
@@ -79,10 +92,23 @@ function sendAtSentTime(result: Awaited<ReturnType<typeof sendDay7Delivery>>) {
   };
 }
 
+function listenUrlOfSend(callIndex: number): string {
+  return mockSend.mock.calls[callIndex]?.[1] as string;
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(BEFORE_SEND);
+  vi.setSystemTime(ATTEMPT_AT);
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  storedAttempt = null;
+  mockClaimAttempt.mockReset().mockImplementation(async (_id, fresh) => {
+    storedAttempt ??= fresh;
+    return storedAttempt;
+  });
+  mockClearAttempt.mockReset().mockImplementation(async () => {
+    storedAttempt = null;
+  });
   mockSend
     .mockReset()
     .mockImplementation(sendAtSentTime({ kind: "sent", resendId: "msg_d7" }));
@@ -95,19 +121,20 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 describe("deliverOne", () => {
-  it("returns alreadySent without touching D1 or Resend when emailsFired has day7", async () => {
+  it("returns alreadySent without an attempt or a send when emailsFired has day7", async () => {
     const outcome = await deliverOne({ ...PAID_SUBMISSION, emailsFired: [DAY7_ENTRY] }, DELIVERABLE);
 
     expect(outcome).toBe("alreadySent");
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
-    expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(mockClaimAttempt).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
+    expect(mockRecordSent).not.toHaveBeenCalled();
   });
 
-  it("sends with the day7/<id> Resend key, then records deliveredAt as the send time", async () => {
+  it("sends with the day7/<id> key and records deliveredAt as the attempt time", async () => {
     const outcome = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
 
     expect(outcome).toBe("sent");
@@ -115,7 +142,7 @@ describe("deliverOne", () => {
     expect(mockRecordSent).toHaveBeenCalledWith(
       "sub_1",
       {
-        deliveredAt: SENT_AT.toISOString(),
+        deliveredAt: ATTEMPT_AT.toISOString(),
         voiceNoteUrl: DELIVERABLE.voiceNoteUrl,
         pdfUrl: DELIVERABLE.pdfUrl,
       },
@@ -124,12 +151,114 @@ describe("deliverOne", () => {
     expect(mockMarkDelivered).not.toHaveBeenCalled();
   });
 
-  it("writes D1 delivered_at only after a dry run, with no day7 entry", async () => {
+  it("mints the listen token from the stored attempt jti and time", async () => {
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    const token = new URL(listenUrlOfSend(0)).searchParams.get("t") ?? "";
+    const verified = await verifyListenToken({
+      token,
+      currentRecipientUserId: "user_recipient_1",
+    });
+    expect(verified).toMatchObject({
+      valid: true,
+      jti: storedAttempt?.jti,
+      expMs: ATTEMPT_AT.getTime() + LISTEN_TOKEN_TTL_MS,
+    });
+  });
+
+  it("builds the identical email on a retry of the same attempt", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "internal_server_error", statusCode: 500 });
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+    vi.setSystemTime(new Date(ATTEMPT_AT.getTime() + 60 * 60 * 1000));
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    expect(mockSend).toHaveBeenCalledTimes(2);
+    expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
+  });
+
+  it("retries the D1 record inline and reports sent when a later try succeeds", async () => {
+    mockRecordSent.mockRejectedValueOnce(new Error("D1_ERROR: network lost"));
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("sent");
+    expect(mockRecordSent).toHaveBeenCalledTimes(2);
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends once and records once when a retry follows a failed record", async () => {
+    mockRecordSent.mockRejectedValue(new Error("D1_ERROR: network lost"));
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("retryLater");
+    expect(mockRecordSent).toHaveBeenCalledTimes(DAY7_RECORD_TRIES);
+    expect(storedAttempt).not.toBeNull();
+
+    mockRecordSent.mockReset().mockResolvedValue(undefined);
+    vi.setSystemTime(new Date(ATTEMPT_AT.getTime() + 5 * 60 * 1000));
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("sent");
+
+    expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
+    expect(mockRecordSent).toHaveBeenCalledTimes(1);
+    expect(mockRecordSent).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ deliveredAt: ATTEMPT_AT.toISOString() }),
+      "msg_d7",
+    );
+  });
+
+  it("keeps the attempt and asks for a later retry when Resend answers 409", async () => {
+    mockSend.mockResolvedValueOnce({
+      kind: "failed",
+      error: "concurrent_idempotent_requests",
+      statusCode: 409,
+    });
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("retryLater");
+    expect(storedAttempt).not.toBeNull();
+    expect(mockRecordSent).not.toHaveBeenCalled();
+  });
+
+  it("keeps the attempt and reports skipped when Resend says the key was used with another body", async () => {
+    mockSend.mockResolvedValueOnce({
+      kind: "failed",
+      error: "invalid_idempotent_request",
+      statusCode: 409,
+    });
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("skipped");
+    expect(storedAttempt).not.toBeNull();
+    expect(mockRecordSent).not.toHaveBeenCalled();
+  });
+
+  it("does not send and reports attemptExpired when the unrecorded attempt is past the retry window", async () => {
+    storedAttempt = {
+      attemptedAt: new Date(ATTEMPT_AT.getTime() - DAY7_ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
+      jti: "old-attempt",
+    };
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("attemptExpired");
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(storedAttempt).toBeNull();
+  });
+
+  it("starts a fresh attempt on the next request after an expired one", async () => {
+    storedAttempt = {
+      attemptedAt: new Date(ATTEMPT_AT.getTime() - DAY7_ATTEMPT_RETRY_WINDOW_MS - 1).toISOString(),
+      jti: "old-attempt",
+    };
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("sent");
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(storedAttempt).toMatchObject({ attemptedAt: ATTEMPT_AT.toISOString() });
+  });
+
+  it("clears the attempt and writes D1 delivered_at only after a dry run", async () => {
     mockSend.mockImplementationOnce(sendAtSentTime({ kind: "dry_run" }));
 
     const outcome = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
 
     expect(outcome).toBe("dryRun");
+    expect(storedAttempt).toBeNull();
     expect(mockMarkDelivered).toHaveBeenCalledWith(
       "sub_1",
       expect.objectContaining({ deliveredAt: SENT_AT.toISOString() }),
@@ -138,14 +267,27 @@ describe("deliverOne", () => {
   });
 
   it.each([
-    { kind: "failed", error: "Resend 500" },
+    { kind: "failed", error: "validation_error", statusCode: 422 },
     { kind: "skipped", reason: "no_api_key" },
-  ] as const)("leaves deliveredAt unset when the send result is $kind", async (result) => {
+  ] as const)("clears the attempt when Resend refused before sending ($kind)", async (result) => {
     mockSend.mockResolvedValueOnce(result);
 
     expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("skipped");
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
+    expect(storedAttempt).toBeNull();
     expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(mockMarkDelivered).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "failed", error: "internal_server_error", statusCode: 500 },
+    { kind: "failed", error: "application_error", statusCode: null },
+  ] as const)("keeps the attempt when the send outcome is unknown ($statusCode)", async (result) => {
+    mockSend.mockResolvedValueOnce(result);
+
+    expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("skipped");
+    expect(storedAttempt).not.toBeNull();
+    expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(mockMarkDelivered).not.toHaveBeenCalled();
   });
 
   it("leaves deliveredAt unset when the send throws", async () => {
@@ -167,43 +309,17 @@ describe("deliverOne", () => {
     const outcome = await deliverOne({ ...PAID_SUBMISSION, isLegacyGift: true }, DELIVERABLE);
 
     expect(outcome).toBe("skipped");
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
+    expect(mockClaimAttempt).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("sends once when the 6-hourly cron and the 5-minute cron read the same record", async () => {
-    mockSend
-      .mockResolvedValueOnce({ kind: "sent", resendId: "msg_d7" })
-      .mockResolvedValueOnce({ kind: "failed", error: "invalid_idempotent_request" });
-
+  it("sends the same request twice when the 6-hourly and 5-minute runs read the same record", async () => {
     const scheduled = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
     const requested = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
 
-    expect([scheduled, requested]).toEqual(["sent", "skipped"]);
-    expect(mockSend.mock.calls.map((call) => call[2])).toEqual([
-      { idempotencyKey: "day7/sub_1" },
-      { idempotencyKey: "day7/sub_1" },
-    ]);
-    expect(mockRecordSent).toHaveBeenCalledTimes(1);
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
-
-    const recorded = mockRecordSent.mock.calls.map(
-      ([, delivery, resendId]): EmailFiredEntry => ({
-        type: "day7",
-        sentAt: delivery.deliveredAt,
-        resendId,
-      }),
-    );
-    const studioState = sendReadingNowState({
-      published: {
-        status: "paid",
-        voiceNote: { asset: { _ref: "file-voice" } },
-        readingPdf: { asset: { _ref: "file-pdf" } },
-        emailsFired: recorded,
-        deliveryFailedAt: "2026-04-29T12:05:00Z",
-      },
-    });
-    expect(studioState).toBe("sent");
+    expect([scheduled, requested]).toEqual(["sent", "sent"]);
+    expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
+    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "day7/sub_1" });
   });
 });
 
@@ -213,33 +329,23 @@ describe("deliverRequested", () => {
     expect(mockFetchDeliverable).not.toHaveBeenCalled();
   });
 
-  it("returns awaitingAssets when Sanity has no requested document with both files", async () => {
+  it("returns awaitingAssets when Sanity has no published document with both files", async () => {
     mockFindById.mockResolvedValueOnce(PAID_SUBMISSION);
 
     expect(await deliverRequested("sub_1")).toBe("awaitingAssets");
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it("delivers the requested submission and records deliveredAt after the send", async () => {
+  it("delivers the requested submission and records deliveredAt as the attempt time", async () => {
     mockFindById.mockResolvedValueOnce(PAID_SUBMISSION);
     mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
 
     expect(await deliverRequested("sub_1")).toBe("sent");
-    expect(mockFetchDeliverable).toHaveBeenCalledWith(["sub_1"], "deliveryRequestedAt");
+    expect(mockFetchDeliverable).toHaveBeenCalledWith(["sub_1"]);
     expect(mockRecordSent).toHaveBeenCalledWith(
       "sub_1",
-      expect.objectContaining({ deliveredAt: SENT_AT.toISOString() }),
+      expect.objectContaining({ deliveredAt: ATTEMPT_AT.toISOString() }),
       "msg_d7",
     );
-  });
-
-  it("leaves deliveredAt unset when the requested send fails", async () => {
-    mockFindById.mockResolvedValueOnce(PAID_SUBMISSION);
-    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
-    mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500" });
-
-    expect(await deliverRequested("sub_1")).toBe("skipped");
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
-    expect(mockRecordSent).not.toHaveBeenCalled();
   });
 });

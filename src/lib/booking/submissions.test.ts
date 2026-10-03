@@ -163,6 +163,23 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     });
   });
 
+  it("recordDay7Sent a second time for the same submission writes and mirrors nothing", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    const delivery = {
+      deliveredAt: "2026-04-29T12:00:07Z",
+      voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
+      pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
+    };
+    await recordDay7Sent("sub_1", delivery, "msg_d7");
+    await recordDay7Sent("sub_1", { ...delivery, deliveredAt: "2026-04-29T18:00:00Z" }, "msg_d7");
+    await flushFireAndForget();
+
+    const record = await findSubmissionById("sub_1");
+    expect(record?.emailsFired).toHaveLength(1);
+    expect(record?.deliveredAt).toBe(delivery.deliveredAt);
+    expect(mockMirrorAppend).toHaveBeenCalledTimes(1);
+  });
+
   it("deleteSubmissionAndPhoto removes the submission and the R2 photo", async () => {
     await createSubmission(SUBMISSION_INPUT);
     const result = await deleteSubmissionAndPhoto({

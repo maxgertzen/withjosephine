@@ -37,8 +37,8 @@ function originForEnv(env: CloudflareEnv): string {
 }
 
 // Sentry free tier = 1 cron monitor; scoped to the paid-fulfilment path.
-const DAY7_DELIVER_PATH = "/api/cron/email-day-7-deliver";
-const DAY7_DELIVER_MONITOR_SLUG = "email-day-7-deliver";
+const DELIVER_REQUESTED_PATH = "/api/cron/deliver-requested";
+const DELIVERY_MONITOR_SLUG = "email-day-7-deliver";
 
 const composedHandler: ExportedHandler<CloudflareEnv> = {
   fetch: (request, env, ctx) => handler.fetch!(withoutCronHeader(request), env, ctx),
@@ -55,9 +55,9 @@ const composedHandler: ExportedHandler<CloudflareEnv> = {
         console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
         return res;
       };
-      if (path === DAY7_DELIVER_PATH) {
+      if (path === DELIVER_REQUESTED_PATH) {
         await Sentry.withMonitor(
-          DAY7_DELIVER_MONITOR_SLUG,
+          DELIVERY_MONITOR_SLUG,
           async () => {
             const res = await sendCronRequest();
             if (!res.ok) {

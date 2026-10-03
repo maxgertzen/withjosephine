@@ -82,6 +82,7 @@ describe("/api/cron/deliver-requested", () => {
         sent: 0,
         alreadySent: 0,
         dryRun: 0,
+        retryLater: 0,
         failed: 0,
         [outcome]: 1,
       });
@@ -90,7 +91,17 @@ describe("/api/cron/deliver-requested", () => {
     },
   );
 
-  it.each<DeliverOutcome>(["skipped", "awaitingAssets", "notFound"])(
+  it("keeps the request pending without a failure when the outcome is retryLater", async () => {
+    mockDeliverRequested.mockResolvedValueOnce("retryLater");
+
+    const body = await (await callRoute()).json();
+
+    expect(body).toMatchObject({ retryLater: 1, failed: 0 });
+    expect(mockClear).not.toHaveBeenCalled();
+    expect(mockMarkFailed).not.toHaveBeenCalled();
+  });
+
+  it.each<DeliverOutcome>(["skipped", "awaitingAssets", "notFound", "attemptExpired"])(
     "records a failure and clears the request when the outcome is %s",
     async (outcome) => {
       mockDeliverRequested.mockResolvedValueOnce(outcome);
@@ -130,7 +141,14 @@ describe("/api/cron/deliver-requested", () => {
 
     const body = await (await callRoute()).json();
 
-    expect(body).toEqual({ requested: 2, sent: 1, alreadySent: 0, dryRun: 0, failed: 1 });
+    expect(body).toEqual({
+      requested: 2,
+      sent: 1,
+      alreadySent: 0,
+      dryRun: 0,
+      retryLater: 0,
+      failed: 1,
+    });
     expect(mockClear).toHaveBeenCalledWith("sub_1");
     expect(mockMarkFailed).toHaveBeenCalledWith("sub_2", expect.any(String));
   });

@@ -21,14 +21,14 @@ export function Day7OverdueAlert({
     <EmailShell maxWidth={640} preview={`Reading overdue — ${readingName} for ${email}`}>
       <SerifHeading>Reading overdue — past 7 days</SerifHeading>
       <Text>
-        The following submission is past the 7-day delivery window and has no <code>deliveredAt</code> set:
+        The following submission is past the 7-day delivery window and its reading has not been sent:
       </Text>
       <LabelValueRow label="Client">{email}</LabelValueRow>
       <LabelValueRow label="Reading">{readingName}</LabelValueRow>
       <LabelValueRow label="Submission ID">{submissionId}</LabelValueRow>
       <LabelValueRow label="Created">{createdAt}</LabelValueRow>
       <Text className="text-muted-warm text-sm mt-6">
-        Mark <code>deliveredAt</code> in Studio after uploading the voice note + PDF to fire the client delivery email.
+        Upload and publish the voice note and the PDF in Studio, then press Send reading now.
       </Text>
     </EmailShell>
   );

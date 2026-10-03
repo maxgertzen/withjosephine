@@ -1,13 +1,10 @@
 import { render } from "@react-email/render";
 import { headers } from "next/headers";
-import { Resend } from "resend";
+import { type ErrorResponse, Resend } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
-import {
-  SANDBOX_DOMAIN,
-  SANDBOX_EMAIL_PREFIX_LIST,
-} from "./booking/sandboxEmails";
+import { isSandboxEmail } from "./booking/sandboxEmails";
 import { FIRST_NAME_FALLBACK } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
@@ -45,7 +42,7 @@ export type EmailSendResult =
   | { kind: "sent"; resendId: string }
   | { kind: "dry_run" }
   | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" }
-  | { kind: "failed"; error: string };
+  | { kind: "failed"; error: string; statusCode?: number | null };
 
 // Brand + footer copy shared across every branded template. Sanity edit on
 // the `emailSharedShell` singleton propagates to every customer-facing email.
@@ -158,15 +155,6 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   }
 }
 
-// DO alarms, cron sweeps, and the Stripe webhook have no request context,
-// so the X-E2E-Resend-DryRun header can't reach them — match by email instead.
-export function isSandboxEmail(address: string | null | undefined): boolean {
-  if (!address) return false;
-  const lower = address.toLowerCase();
-  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
-  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
-}
-
 export async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
@@ -206,6 +194,7 @@ export async function sendOrSkip(args: {
     return { kind: "skipped", reason: "no_api_key" };
   }
   let resendId: string | null;
+  let resendError: ErrorResponse | null;
   try {
     const response = await client.emails.send(
       {
@@ -218,6 +207,7 @@ export async function sendOrSkip(args: {
       args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
     );
     resendId = response.data?.id ?? null;
+    resendError = response.error;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[resend] send failed for ${label}: ${message}`);
@@ -233,7 +223,14 @@ export async function sendOrSkip(args: {
   });
 
   if (resendId === null) {
-    return { kind: "failed", error: "Resend returned no id" };
+    console.error(
+      `[resend] send failed for ${label}: ${resendError?.name ?? "no id"} (${resendError?.statusCode ?? "no status"})`,
+    );
+    return {
+      kind: "failed",
+      error: resendError?.name ?? "Resend returned no id",
+      statusCode: resendError?.statusCode ?? null,
+    };
   }
   return { kind: "sent", resendId };
 }

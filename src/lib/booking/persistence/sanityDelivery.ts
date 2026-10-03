@@ -10,11 +10,8 @@ import {
 
 export type { DeliverableSubmission } from "./isDeliverable";
 
-export type DeliveryTrigger = "deliveredAt" | "deliveryRequestedAt";
-
-const deliverableGroq = (trigger: DeliveryTrigger) => groq`
+const DELIVERABLE_GROQ = groq`
   *[_type == "submission" && _id in $ids
-    && defined(${trigger})
     && defined(voiceNote.asset)
     && defined(readingPdf.asset)
   ]{
@@ -30,13 +27,10 @@ const UNDELIVERED_GROQ = groq`
 
 export async function fetchDeliverableSubmissions(
   ids: readonly string[],
-  trigger: DeliveryTrigger,
 ): Promise<DeliverableSubmission[]> {
   if (ids.length === 0) return [];
   const client = await getSanityWriteClient();
-  const docs = await client.fetch<SanitySubmissionDeliveryShape[]>(deliverableGroq(trigger), {
-    ids,
-  });
+  const docs = await client.fetch<SanitySubmissionDeliveryShape[]>(DELIVERABLE_GROQ, { ids });
   return docs.filter(isDeliverable);
 }
 

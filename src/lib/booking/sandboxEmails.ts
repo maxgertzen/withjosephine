@@ -1,9 +1,3 @@
-// Source of truth for sandbox-email recognition. resend.tsx uses the prefix
-// list at runtime to fail-closed on cron/webhook/DO send paths that bypass
-// the X-E2E-Resend-DryRun request header; Playwright specs import the same
-// constants so a typo or rename surfaces at TypeScript compile time instead
-// of silently re-opening the Resend quota leak.
-
 export const SANDBOX_DOMAIN = "@withjosephine.com" as const;
 
 export const SANDBOX_EMAIL_PREFIXES = {
@@ -18,3 +12,10 @@ export type SandboxEmailPrefix = (typeof SANDBOX_EMAIL_PREFIXES)[keyof typeof SA
 
 export const SANDBOX_EMAIL_PREFIX_LIST: readonly SandboxEmailPrefix[] =
   Object.values(SANDBOX_EMAIL_PREFIXES);
+
+export function isSandboxEmail(address: string | null | undefined): boolean {
+  if (!address) return false;
+  const lower = address.toLowerCase();
+  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
+  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
+}

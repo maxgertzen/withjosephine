@@ -43,4 +43,8 @@ describe("dispatchPathsForCron", () => {
   it("maps the 5-minute schedule to the deliver-requested route", () => {
     expect(dispatchPathsForCron("*/5 * * * *")).toEqual(["/api/cron/deliver-requested"]);
   });
+
+  it("dispatches no schedule to the force-only email-day-7-deliver route", () => {
+    expect(Object.values(CRON_DISPATCH).flat()).not.toContain("/api/cron/email-day-7-deliver");
+  });
 });

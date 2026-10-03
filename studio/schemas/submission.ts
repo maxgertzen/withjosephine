@@ -4,7 +4,7 @@ import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
-const requireWhenDeliveredAtSet =
+const requireOnceDelivered =
   (errorMessage: string): CustomValidator<unknown> =>
   (value, context) => {
     const parent = context.parent as { deliveredAt?: string } | undefined;
@@ -22,21 +22,21 @@ export const submission = defineType({
       title: "Voice Note",
       type: "file",
       description:
-        "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
+        "Drag the recorded voice note here (mp3 / m4a / wav). Required before the reading can be sent.",
       options: { accept: "audio/*" },
       validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
+        rule.custom(requireOnceDelivered("This reading was sent with a voice note. Upload it again.")),
     }),
     defineField({
       name: "readingPdf",
       title: "Reading PDF",
       type: "file",
       description:
-        "Drag the supporting PDF here. Required before you can mark this reading delivered. A first-page thumbnail is generated automatically.",
+        "Drag the supporting PDF here. Required before the reading can be sent. A first-page thumbnail is generated automatically.",
       options: { accept: "application/pdf" },
       components: { input: PdfThumbnailGenerator },
       validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
+        rule.custom(requireOnceDelivered("This reading was sent with a PDF. Upload it again.")),
     }),
     defineField({
       name: "pdfThumbnail",
@@ -57,19 +57,9 @@ export const submission = defineType({
       name: "deliveredAt",
       title: "Delivered At",
       type: "datetime",
+      readOnly: true,
       description:
-        "Set this only after BOTH files (Voice Note + Reading PDF) are uploaded. The customer's Day +7 delivery email will fire at the next cron tick after this is set.",
-      validation: (rule) =>
-        rule.custom((value, context) => {
-          if (!value) return true;
-          const parent = context.parent as
-            | { voiceNote?: unknown; readingPdf?: unknown }
-            | undefined;
-          if (!parent?.voiceNote || !parent?.readingPdf) {
-            return "Upload Voice Note and Reading PDF before setting Delivered At.";
-          }
-          return true;
-        }),
+        "Filled in automatically when the delivery email is sent. To send it, publish both files and press Send reading now.",
     }),
     defineField({
       name: "deliveryRequestedAt",

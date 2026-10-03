@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isCronRequestAuthorized } from "./cron-auth";
 
 const openNextFetch = vi.hoisted(() => vi.fn(async () => new Response("ok")));
+const withMonitor = vi.hoisted(() =>
+  vi.fn((_slug: string, callback: () => Promise<unknown>) => callback()),
+);
 
 vi.mock("@/test/open-next-worker.stub", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -11,7 +14,7 @@ vi.mock("@/test/open-next-worker.stub", async (importOriginal) => ({
 
 vi.mock("@sentry/cloudflare", () => ({
   withSentry: (_options: unknown, handler: unknown) => handler,
-  withMonitor: (_slug: string, callback: () => Promise<unknown>) => callback(),
+  withMonitor,
 }));
 
 type WorkerEntry = {
@@ -32,6 +35,7 @@ function forwardedRequest(): Request {
 
 beforeEach(() => {
   openNextFetch.mockClear();
+  withMonitor.mockClear();
   vi.stubEnv("CRON_SECRET", "shhh");
 });
 
@@ -59,5 +63,16 @@ describe("custom worker cron auth wiring", () => {
 
     expect(forwardedRequest().url).toBe("https://withjosephine.com/api/cron/cleanup");
     expect(isCronRequestAuthorized(forwardedRequest())).toBe(true);
+  });
+
+  it("wraps the deliver-requested dispatch in the Sentry cron monitor", async () => {
+    await worker.scheduled({ cron: "*/5 * * * *" }, env, ctx);
+
+    expect(forwardedRequest().url).toBe("https://withjosephine.com/api/cron/deliver-requested");
+    expect(withMonitor).toHaveBeenCalledWith(
+      "email-day-7-deliver",
+      expect.any(Function),
+      { schedule: { type: "crontab", value: "*/5 * * * *" } },
+    );
   });
 });

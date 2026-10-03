@@ -30,6 +30,10 @@ describe("submission schema parity", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveryFailedAt"/);
   });
 
+  it("declares deliveredAt read-only so only the send writes it", () => {
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveredAt",[^}]*readOnly:\s*true/);
+  });
+
   it("consentSnapshot schema declares coolingOffConsent", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"coolingOffConsent"/);
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"art6Consent"/);

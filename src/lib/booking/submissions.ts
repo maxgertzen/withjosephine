@@ -12,6 +12,7 @@ import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
+  Day7Attempt,
   FinancialRecordInput,
   SubmissionDelivery,
 } from "./persistence/repository";
@@ -35,7 +36,14 @@ export const SUBMISSION_STATUS = {
   expired: "expired",
 } as const;
 
-export type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus };
+export type {
+  Day7Attempt,
+  EmailFiredEntry,
+  EmailFiredType,
+  SubmissionDelivery,
+  SubmissionRecord,
+  SubmissionStatus,
+};
 
 /**
  * D1 (or local SQLite for dev/tests) is the sole source of truth for
@@ -220,11 +228,20 @@ export async function recordDay7Sent(
   resendId: string,
 ): Promise<void> {
   const entry: EmailFiredEntry = { type: "day7", sentAt: delivery.deliveredAt, resendId };
-  await dbBatch([
-    repo.buildMarkSubmissionDeliveredStatement(submissionId, delivery),
-    repo.buildAppendEmailFiredStatement(submissionId, entry),
-  ]);
+  const { rowsWritten } = await repo.markDay7SentIfUnrecorded(submissionId, delivery, entry);
+  if (rowsWritten === 0) return;
   runMirror(mirrorAppendEmailFired(submissionId, entry, { deliveredAt: entry.sentAt }));
+}
+
+export async function claimDay7Attempt(
+  submissionId: string,
+  fresh: Day7Attempt,
+): Promise<Day7Attempt | null> {
+  return repo.claimDay7Attempt(submissionId, fresh);
+}
+
+export async function clearDay7Attempt(submissionId: string): Promise<void> {
+  await repo.clearDay7Attempt(submissionId);
 }
 
 export async function setSubmissionRecipientUser(
