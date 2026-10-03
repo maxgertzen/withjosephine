@@ -219,6 +219,8 @@ describe("non-production opt-in gate", () => {
       reading_id: "soul-blueprint",
       referrer: "",
       viewport_width: 1024,
+      entry: "direct",
+      folded: false,
     });
     await initAnalytics();
     // After skipped init, isInitialized = true, queue cleared.
@@ -238,10 +240,13 @@ describe("track buffer", () => {
       reading_id: "soul-blueprint",
       referrer: "",
       viewport_width: 1024,
+      entry: "direct",
+      folded: false,
     });
-    track("cta_click_intake", {
+    track("intake_page_view", {
       reading_id: "soul-blueprint",
-      position: "verso-cta",
+      page_number: 1,
+      total_pages: 2,
     });
     expect(mixpanel.track).not.toHaveBeenCalled();
 
@@ -255,8 +260,8 @@ describe("track buffer", () => {
     );
     expect(mixpanel.track).toHaveBeenNthCalledWith(
       2,
-      "cta_click_intake",
-      expect.objectContaining({ position: "verso-cta" }),
+      "intake_page_view",
+      expect.objectContaining({ page_number: 1 }),
     );
   });
 
@@ -275,6 +280,8 @@ describe("track buffer", () => {
       reading_id: "soul-blueprint",
       referrer: "",
       viewport_width: 1024,
+      entry: "direct",
+      folded: false,
     });
     await initAnalytics();
     expect(mixpanel.track).not.toHaveBeenCalled();

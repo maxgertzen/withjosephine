@@ -7,6 +7,7 @@ export const emailTokens = {
   cream: "#FAF8F4",
   warm: "#F5F0E8",
   gold: "#C4A46B",
+  mutedOnWarm: "#6F6560",
   serifFamily: "'Cormorant Garamond', Georgia, serif",
   sansFamily: "Inter, -apple-system, Helvetica, Arial, sans-serif",
 } as const;

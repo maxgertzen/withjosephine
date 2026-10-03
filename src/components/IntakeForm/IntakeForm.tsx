@@ -9,6 +9,7 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
+import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
 import { useDraftRestore } from "@/lib/intake/useDraftRestore";
@@ -24,6 +25,7 @@ import type { LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import type { RenderContext } from "./renderField";
 import { SavedIndicator } from "./SavedIndicator";
 import { SwapToast } from "./SwapToast";
+import type { FormTestimonial } from "./TestimonialLine";
 
 export type IntakeFormProps = {
   readingId: string;
@@ -34,8 +36,10 @@ export type IntakeFormProps = {
   nextLabel?: string;
   saveLaterLabel?: string;
   pageIndicatorTagline?: string;
+  testimonial?: FormTestimonial;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  switchNotice: string;
 };
 
 export function IntakeForm({
@@ -47,8 +51,10 @@ export function IntakeForm({
   nextLabel,
   saveLaterLabel,
   pageIndicatorTagline,
+  testimonial,
   pagination,
   loadingStateCopy,
+  switchNotice,
 }: IntakeFormProps) {
   const {
     allFields,
@@ -70,13 +76,12 @@ export function IntakeForm({
     lastSavedAt,
     setLastSavedAt,
     isRestored,
-    swappedFromReadingName,
-    dismissSwapToast,
+    nameOrEmailCarriedOver,
   } = useDraftRestore({
     readingId,
-    readingName,
     defaultValues,
   });
+  const showSwitchNotice = useBookingEntry() === "reading_switch" && nameOrEmailCarriedOver;
 
   const [honeypot, setHoneypot] = useState("");
   const {
@@ -212,13 +217,11 @@ export function IntakeForm({
   );
   const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
-  const handleConsentSnapshotChange = useCallback(
-    (next: LegalConsentSnapshot) => {
-      setConsentSnapshot(next);
-      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true })) setSubmitError(null);
-    },
-    [],
-  );
+  const handleConsentSnapshotChange = useCallback((next: LegalConsentSnapshot) => {
+    setConsentSnapshot(next);
+    if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true }))
+      setSubmitError(null);
+  }, []);
 
   const renderContext = useMemo<RenderContext>(
     () => ({
@@ -243,9 +246,7 @@ export function IntakeForm({
 
   return (
     <>
-      {swappedFromReadingName ? (
-        <SwapToast readingName={swappedFromReadingName} onDismiss={dismissSwapToast} />
-      ) : null}
+      {showSwitchNotice ? <SwapToast message={switchNotice} /> : null}
       <IntakeFormBody
         formRef={formRef}
         submitIntentRef={submitIntentRef}
@@ -254,6 +255,7 @@ export function IntakeForm({
         readingName={readingName}
         loadingStateCopy={loadingStateCopy}
         pageIndicatorTagline={pageIndicatorTagline}
+        testimonial={testimonial}
         submitLabel={submitLabel}
         nextLabel={nextLabel}
         saveLaterLabel={saveLaterLabel}

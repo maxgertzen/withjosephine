@@ -27,7 +27,7 @@ export function TimezoneFallbackPicker({
         id={id}
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-sm border border-j-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-accent"
+        className="rounded-sm border border-j-blush bg-j-ivory px-2 py-1.5 font-body text-sm text-j-text focus:outline-none focus:border-j-text-gold"
       >
         <option value="" disabled>
           {placeholder}

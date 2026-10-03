@@ -46,7 +46,7 @@ export function PrivacyExportView({ token }: PrivacyExportViewProps) {
     return (
       <Shell>
         <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <ShieldAlert className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
+          <ShieldAlert className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
         </div>
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
           This link isn&rsquo;t valid
@@ -70,7 +70,7 @@ export function PrivacyExportView({ token }: PrivacyExportViewProps) {
     return (
       <Shell>
         <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <MailCheck className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
+          <MailCheck className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
         </div>
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
           Your export is on its way
@@ -133,7 +133,7 @@ export function PrivacyExportView({ token }: PrivacyExportViewProps) {
   return (
     <Shell>
       <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-        <Download className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
+        <Download className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
       </div>
 
       <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">

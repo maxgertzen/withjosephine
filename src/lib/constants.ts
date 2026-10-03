@@ -29,6 +29,7 @@ export const ROUTES = {
   privacy: "/privacy",
   terms: "/terms",
   refundPolicy: "/refund-policy",
+  notes: "/notes",
 } as const;
 
 /**
@@ -40,12 +41,16 @@ export const ROUTES = {
  * pages to force-dynamic without updating this set). `staticCspPaths.test.ts`
  * enforces the invariant.
  */
-export const STATIC_CSP_PATHS: ReadonlySet<string> = new Set(["/", "/under-construction"]);
+export const STATIC_CSP_PATHS: ReadonlySet<string> = new Set([
+  "/",
+  "/under-construction",
+  ROUTES.notes,
+]);
 
 // Prerendered slug routes, which an exact-match Set cannot express. `/book/<slug>`
 // HTML is replayed from the R2 cache, so a nonce baked into it never equals the
 // fresh response nonce: a nonce-only policy would block hydration entirely.
-const STATIC_CSP_PATTERNS: readonly RegExp[] = [/^\/book\/[^/]+$/];
+const STATIC_CSP_PATTERNS: readonly RegExp[] = [/^\/book\/[^/]+$/, /^\/notes\/[^/]+$/];
 
 export function isStaticCspPath(pathname: string): boolean {
   return STATIC_CSP_PATHS.has(pathname) || STATIC_CSP_PATTERNS.some((re) => re.test(pathname));

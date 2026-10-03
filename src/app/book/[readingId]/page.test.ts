@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./BookingFormView", () => ({ BookingFormView: () => null }));
+
 vi.mock("@/lib/sanity/fetch", () => ({
   fetchReadingPublished: vi.fn(),
   fetchBookingPagePublished: vi.fn(),
   fetchBookingFormPublished: vi.fn(),
+  fetchReadingsPublished: vi.fn(),
+  fetchLandingPagePublished: vi.fn(),
   fetchReadingSlugs: vi.fn(),
 }));
 
@@ -36,7 +40,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
     briefDescription: "My signature offering",
     expandedDetails: [],
     includes: [],
-    bookingSummary: "Most comprehensive reading",
     requiresBirthChart: true,
     requiresAkashic: true,
     requiresQuestions: true,
@@ -48,8 +51,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
 function bookingPage(overrides: Partial<SanityBookingPage> = {}): SanityBookingPage {
   return {
     paymentButtonText: "Continue to payment →",
-    formatNote: "Detailed voice note recording + a supporting PDF created entirely for you.",
-    deliveryNote: "Within 7 days.",
     ...overrides,
   };
 }
@@ -80,28 +81,15 @@ describe("BookingPage generateMetadata", () => {
     expect(metadata.description).toBe(SOUL_BLUEPRINT_SEO.metaDescription);
   });
 
-  it("falls back to bookingPage.seo when reading has no seo", async () => {
+  it("builds the title from the reading when the reading has no seo title, ignoring the booking page title", async () => {
     mockFetchReading.mockResolvedValue(sanityReading());
     mockFetchBookingPage.mockResolvedValue(bookingPage({ seo: BOOKING_PAGE_SEO }));
 
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("soul-blueprint"));
 
-    expect(metadata.title).toBe(BOOKING_PAGE_SEO.metaTitle);
+    expect(metadata.title).toBe("Soul Blueprint Reading, $179 | Josephine Soul Readings");
     expect(metadata.description).toBe(BOOKING_PAGE_SEO.metaDescription);
-  });
-
-  it("falls back to name-interpolated default when neither has seo", async () => {
-    mockFetchReading.mockResolvedValue(sanityReading());
-    mockFetchBookingPage.mockResolvedValue(bookingPage());
-
-    const generateMetadata = await loadGenerateMetadata();
-    const metadata = await generateMetadata(params("soul-blueprint"));
-
-    expect(metadata.title).toBe("Book The Soul Blueprint — Josephine");
-    expect(metadata.description).toBe(
-      "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.",
-    );
   });
 
   it("falls back to hardcoded defaults when sanity reading has no seo and booking page is null", async () => {
@@ -111,20 +99,30 @@ describe("BookingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("soul-blueprint"));
 
-    expect(metadata.title).toBe("Book The Soul Blueprint — Josephine");
+    expect(metadata.title).toBe("Soul Blueprint Reading, $179 | Josephine Soul Readings");
     expect(metadata.description).toBe(
       "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.",
     );
   });
 
-  it("falls back to static reading name when sanity returns null", async () => {
+  it("builds the title without a price from the static reading when sanity returns null", async () => {
     mockFetchReading.mockResolvedValue(null);
     mockFetchBookingPage.mockResolvedValue(null);
 
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("soul-blueprint"));
 
-    expect(metadata.title).toBe("Book Soul Blueprint — Josephine");
+    expect(metadata.title).toBe("Soul Blueprint Reading | Josephine Soul Readings");
+  });
+
+  it("treats an empty seo title as no override", async () => {
+    mockFetchReading.mockResolvedValue(sanityReading({ seo: { metaTitle: "" } }));
+    mockFetchBookingPage.mockResolvedValue(bookingPage());
+
+    const generateMetadata = await loadGenerateMetadata();
+    const metadata = await generateMetadata(params("soul-blueprint"));
+
+    expect(metadata.title).toBe("Soul Blueprint Reading, $179 | Josephine Soul Readings");
   });
 
   it("uses generic title when reading slug is unknown and sanity returns null", async () => {
@@ -134,7 +132,7 @@ describe("BookingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata(params("nonexistent-reading"));
 
-    expect(metadata.title).toBe("Book a Reading — Josephine");
+    expect(metadata.title).toBe("Book a Reading | Josephine Soul Readings");
   });
 
   it("calls both fetch functions", async () => {

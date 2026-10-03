@@ -3,7 +3,6 @@
 // Sanity document for each registered singleton. Does NOT mutate Sanity.
 
 import {
-  ENTRY_PAGE_DEFAULTS,
   MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
   NOT_FOUND_PAGE_DEFAULTS,
   UNDER_CONSTRUCTION_PAGE_DEFAULTS,
@@ -28,7 +27,6 @@ function asRecord(value: object): Record<string, unknown> {
 }
 
 const AUDIT_TABLE: readonly AuditEntry[] = [
-  { docType: "entryPage", defaults: asRecord(ENTRY_PAGE_DEFAULTS) },
   { docType: "magicLinkVerifyPage", defaults: asRecord(MAGIC_LINK_VERIFY_PAGE_DEFAULTS) },
   { docType: "notFoundPage", defaults: asRecord(NOT_FOUND_PAGE_DEFAULTS) },
   { docType: "underConstructionPage", defaults: asRecord(UNDER_CONSTRUCTION_PAGE_DEFAULTS) },

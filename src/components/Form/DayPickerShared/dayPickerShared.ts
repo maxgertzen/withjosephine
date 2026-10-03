@@ -9,7 +9,7 @@ export const DAY_PICKER_LABELS = {
 };
 
 export const DAY_PICKER_BASE_CLASSES = {
-  root: "font-body text-sm text-j-text [--rdp-accent-color:var(--j-accent)] [--rdp-accent-background-color:var(--j-blush)]",
+  root: "font-body text-sm text-j-text",
   months: "flex flex-col gap-3",
   month: "flex flex-col gap-3",
   month_caption:
@@ -33,9 +33,9 @@ export const DAY_PICKER_BASE_CLASSES = {
     "w-10 h-10 inline-flex items-center justify-center font-body text-sm rounded-sm transition-colors hover:bg-j-blush/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-j-deep",
   outside: "[&>button]:text-j-text-muted",
   selected:
-    "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep [&>button]:focus-visible:outline-j-accent",
+    "[&>button]:bg-j-deep [&>button]:text-j-cream [&>button]:hover:bg-j-deep",
   today:
-    "[&>button]:font-semibold [&>button]:text-j-text-heading [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-j-accent",
+    "[&>button]:font-semibold [&>button]:text-j-text-heading [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-j-text-gold",
   disabled: "[&>button]:opacity-40 [&>button]:cursor-not-allowed",
   chevron: "fill-j-text-heading w-4 h-4",
 };

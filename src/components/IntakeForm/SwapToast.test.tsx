@@ -3,26 +3,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SwapToast } from "./SwapToast";
 
+const MESSAGE = "Switched to Birth Chart Reading. Your details are saved.";
+
 describe("SwapToast", () => {
-  it("interpolates the reading name into the default template", () => {
-    render(<SwapToast readingName="Birth Chart Reading" />);
-    expect(
-      screen.getByText(/Switched to Birth Chart Reading\./),
-    ).toBeInTheDocument();
+  it("shows the message", () => {
+    render(<SwapToast message={MESSAGE} />);
+    expect(screen.getByText(/Switched to Birth Chart Reading\./)).toBeInTheDocument();
   });
 
   it("declares role=status and aria-live=polite", () => {
-    render(<SwapToast readingName="Soul Blueprint" />);
+    render(<SwapToast message={MESSAGE} />);
     const status = screen.getByRole("status");
     expect(status).toHaveAttribute("aria-live", "polite");
   });
 
-  it("renders a dismiss button that hides the toast and calls onDismiss", () => {
-    const onDismiss = vi.fn();
-    render(<SwapToast readingName="Soul Blueprint" onDismiss={onDismiss} />);
+  it("renders a dismiss button that hides the toast", () => {
+    render(<SwapToast message={MESSAGE} />);
     fireEvent.click(screen.getByRole("button", { name: /Dismiss/ }));
     expect(screen.queryByRole("status")).toBeNull();
-    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   describe("with fake timers", () => {
@@ -34,20 +32,11 @@ describe("SwapToast", () => {
       vi.useRealTimers();
     });
 
-    it("auto-dismisses after the default 4-second window", () => {
-      render(<SwapToast readingName="Soul Blueprint" />);
+    it("auto-dismisses after 4 seconds", () => {
+      render(<SwapToast message={MESSAGE} />);
       expect(screen.getByRole("status")).toBeInTheDocument();
       act(() => {
         vi.advanceTimersByTime(4001);
-      });
-      expect(screen.queryByRole("status")).toBeNull();
-    });
-
-    it("auto-dismisses after a custom duration", () => {
-      render(<SwapToast readingName="Soul Blueprint" durationMs={1500} />);
-      expect(screen.getByRole("status")).toBeInTheDocument();
-      act(() => {
-        vi.advanceTimersByTime(1501);
       });
       expect(screen.queryByRole("status")).toBeNull();
     });

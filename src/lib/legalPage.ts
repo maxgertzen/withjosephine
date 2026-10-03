@@ -55,5 +55,8 @@ export async function buildLegalMetadata(
   const doc = await fetcher(slug);
   const title = doc?.seo?.metaTitle ?? fallback.metaTitle;
   const description = doc?.seo?.metaDescription ?? fallback.metaDescription;
-  return buildPageMetadata({ title, description, path: `/${slug}`, seo: doc?.seo });
+  return {
+    ...buildPageMetadata({ title, description, path: `/${slug}`, seo: doc?.seo }),
+    robots: { index: false, follow: true },
+  };
 }

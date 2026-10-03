@@ -79,6 +79,7 @@ const isDev = process.env.NODE_ENV === "development";
 // React requires eval() in development for callstack reconstruction.
 // Never allow it in production.
 const devEval = isDev ? " 'unsafe-eval'" : "";
+const localStudioFrameAncestor = isDev ? " http://localhost:3333" : "";
 
 function generateNonce(): string {
   const bytes = new Uint8Array(16);
@@ -106,7 +107,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     ? `'self' https://*.sanity.io wss://*.sanity.io https://*.sanity.studio https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`
     : `'self' https://challenges.cloudflare.com https://*.ingest.de.sentry.io https://*.r2.cloudflarestorage.com ${R2_PUBLIC_ORIGIN} https://api-js.mixpanel.com https://api.mixpanel.com https://*.clarity.ms https://c.bing.com`;
   const frameAncestors = isDraft
-    ? `'self' https://*.sanity.studio https://*.sanity.io`
+    ? `'self' https://*.sanity.studio https://*.sanity.io${localStudioFrameAncestor}`
     : `'none'`;
   const frameSrc = isDraft
     ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
@@ -121,6 +122,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com data: blob:; ` +
+    "media-src 'self' https://cdn.sanity.io; " +
     `connect-src ${connectSrc}; ` +
     "worker-src 'self' blob:; " +
     `frame-ancestors ${frameAncestors}; ` +

@@ -7,14 +7,16 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Navigation } from "@/components/Navigation";
+import type { NotesNavProps } from "@/components/Notes/NotesShell";
 import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
+import { bookingPath, readingAnchorId } from "@/lib/http/routes";
+import type { NotesLink } from "@/lib/notes/notes";
 import type {
   MappedAbout,
   MappedFaqItem,
   MappedFooterContent,
-  MappedNavContent,
   MappedReading,
   MappedSocialLink,
   MappedTestimonial,
@@ -22,9 +24,10 @@ import type {
 import type { SanityLandingPage } from "@/lib/sanity/types";
 
 export type HomePageViewProps = {
-  navContent?: MappedNavContent;
+  nav: NotesNavProps;
   footerContent?: MappedFooterContent;
   socialLinks: MappedSocialLink[];
+  notesLink?: NotesLink;
   about: MappedAbout;
   readings: MappedReading[];
   testimonials: MappedTestimonial[];
@@ -38,9 +41,10 @@ export type HomePageViewProps = {
 };
 
 export function HomePageView({
-  navContent,
+  nav,
   footerContent,
   socialLinks,
+  notesLink,
   about,
   readings,
   testimonials,
@@ -54,7 +58,7 @@ export function HomePageView({
 }: HomePageViewProps) {
   return (
     <>
-      <Navigation content={navContent} />
+      <Navigation {...nav} />
       <main id="main">
         <Hero content={hero ?? undefined} />
 
@@ -118,7 +122,7 @@ export function HomePageView({
           <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
             {readings.map((reading) => (
               // scroll-mt must clear Navigation.tsx's 72px fixed nav.
-              <li key={reading.id} id={`reading-${reading.id}`} className="scroll-mt-[96px]">
+              <li key={reading.id} id={readingAnchorId(reading.id)} className="scroll-mt-[96px]">
                 <ReadingCard
                   slug={reading.id}
                   tag={reading.tag}
@@ -127,7 +131,7 @@ export function HomePageView({
                   valueProposition={reading.valueProposition}
                   briefDescription={reading.briefDescription}
                   expandedDetails={reading.expandedDetails}
-                  href={`/book/${reading.id}`}
+                  href={bookingPath(reading.id)}
                 />
               </li>
             ))}
@@ -163,7 +167,7 @@ export function HomePageView({
         <ContactForm content={contactSection ?? undefined} />
       </main>
 
-      <Footer content={footerContent} socialLinks={socialLinks} />
+      <Footer content={footerContent} socialLinks={socialLinks} notesLink={notesLink} />
     </>
   );
 }

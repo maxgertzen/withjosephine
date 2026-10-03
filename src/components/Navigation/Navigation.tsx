@@ -9,6 +9,8 @@ import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useScrolled } from "@/hooks/useScrolled";
+import { homeSectionAnchor } from "@/lib/http/routes";
+import type { NotesLink } from "@/lib/notes/notes";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
@@ -32,25 +34,114 @@ const NAV_DEFAULTS: NavigationContent = {
   navCtaText: "Book a Reading",
 };
 
+const READINGS_SECTION_ID = "readings";
+const CONTACT_SECTION_ID = "contact";
+
+type NavItem = { key: string; label: string; href?: string; current?: boolean };
+
+type NavPage = "home" | "notes";
+
+function buildNavItems(navLinks: NavLink[], page: NavPage, notesLink: NotesLink | undefined): NavItem[] {
+  const items: NavItem[] = navLinks.map(({ label, sectionId }) =>
+    page === "home"
+      ? { key: sectionId, label }
+      : { key: sectionId, label, href: homeSectionAnchor(sectionId) },
+  );
+  if (!notesLink) return items;
+  const notesItem: NavItem = { key: "notes", ...notesLink, current: page === "notes" };
+  const contactIndex = items.findIndex((item) => item.key === CONTACT_SECTION_ID);
+  items.splice(contactIndex === -1 ? items.length : contactIndex, 0, notesItem);
+  return items;
+}
+
+const DESKTOP_ITEM_CLASSES =
+  "relative text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-j-accent after:transition-transform after:duration-300 after:ease-in-out after:content-[''] hover:after:scale-x-100 focus-visible:after:scale-x-100 motion-reduce:after:transition-none";
+const DESKTOP_CURRENT_CLASSES = "after:scale-x-100";
+const MOBILE_ITEM_CLASSES =
+  "font-display text-[2.2rem] font-light italic text-j-deep transition-colors hover:text-j-midnight";
+const MOBILE_CURRENT_CLASSES = "text-j-text-gold-lg hover:text-j-text-gold-lg";
+
+function NavItemControl({
+  item,
+  className,
+  onScroll,
+  onNavigate,
+}: {
+  item: NavItem;
+  className: string;
+  onScroll: (sectionId: string) => void;
+  onNavigate: () => void;
+}) {
+  if (item.href) {
+    return (
+      <Link
+        href={item.href}
+        aria-current={item.current ? "page" : undefined}
+        onClick={onNavigate}
+        className={className}
+      >
+        {item.label}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={() => onScroll(item.key)} className={className}>
+      {item.label}
+    </button>
+  );
+}
+
+function NavCta({
+  href,
+  size,
+  label,
+  onScroll,
+  onNavigate,
+}: {
+  href: string | undefined;
+  size: "sm" | "default";
+  label: string;
+  onScroll: (sectionId: string) => void;
+  onNavigate: () => void;
+}) {
+  if (href) {
+    return (
+      <Button variant="outlined" size={size} href={href} onClick={onNavigate}>
+        {label}
+      </Button>
+    );
+  }
+  return (
+    <Button variant="outlined" size={size} onClick={() => onScroll(READINGS_SECTION_ID)}>
+      {label}
+    </Button>
+  );
+}
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
 
 type NavigationProps = {
   content?: NavigationContent;
+  notesLink?: NotesLink;
+  page?: NavPage;
   className?: string;
 };
 
-export function Navigation({ content, className }: NavigationProps) {
+export function Navigation({ content, notesLink, page = "home", className }: NavigationProps) {
   const { navLinks, navCtaText } = {
     ...NAV_DEFAULTS,
     ...pickDefined(content ?? {}),
   };
+  const items = buildNavItems(navLinks, page, notesLink);
+  const ctaHref = page === "home" ? undefined : homeSectionAnchor(READINGS_SECTION_ID);
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
   useLockBodyScroll(menuOpen);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
   const scrollToSection = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
@@ -129,19 +220,25 @@ export function Navigation({ content, className }: NavigationProps) {
 
           <div className="flex items-center gap-3 nav:gap-6">
             <div className="hidden nav:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <button
-                  key={link.sectionId}
-                  type="button"
-                  onClick={() => scrollToSection(link.sectionId)}
-                  className="relative text-[0.78rem] tracking-[0.12em] uppercase font-body font-medium text-j-deep after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-j-accent after:transition-transform after:duration-300 after:ease-in-out after:content-[''] hover:after:scale-x-100 focus-visible:after:scale-x-100 motion-reduce:after:transition-none"
-                >
-                  {link.label}
-                </button>
+              {items.map((item) => (
+                <NavItemControl
+                  key={item.key}
+                  item={item}
+                  onScroll={scrollToSection}
+                  onNavigate={closeMenu}
+                  className={mergeClasses(
+                    DESKTOP_ITEM_CLASSES,
+                    item.current && DESKTOP_CURRENT_CLASSES,
+                  )}
+                />
               ))}
-              <Button variant="outlined" size="sm" onClick={() => scrollToSection("readings")}>
-                {navCtaText}
-              </Button>
+              <NavCta
+                href={ctaHref}
+                size="sm"
+                label={navCtaText}
+                onScroll={scrollToSection}
+                onNavigate={closeMenu}
+              />
             </div>
 
             <button
@@ -168,23 +265,26 @@ export function Navigation({ content, className }: NavigationProps) {
         )}
       >
         <nav className="flex flex-col items-center gap-6" aria-label="Mobile navigation">
-          {navLinks.map((link) => (
-            <button
-              key={link.sectionId}
-              type="button"
-              onClick={() => scrollToSection(link.sectionId)}
-              className="font-display text-[2.2rem] font-light italic text-j-deep transition-colors hover:text-j-midnight"
-            >
-              {link.label}
-            </button>
+          {items.map((item) => (
+            <NavItemControl
+              key={item.key}
+              item={item}
+              onScroll={scrollToSection}
+              onNavigate={closeMenu}
+              className={mergeClasses(MOBILE_ITEM_CLASSES, item.current && MOBILE_CURRENT_CLASSES)}
+            />
           ))}
         </nav>
 
         <GoldDivider className="w-24" />
 
-        <Button variant="outlined" size="default" onClick={() => scrollToSection("readings")}>
-          {navCtaText}
-        </Button>
+        <NavCta
+          href={ctaHref}
+          size="default"
+          label={navCtaText}
+          onScroll={scrollToSection}
+          onNavigate={closeMenu}
+        />
       </div>
     </>
   );

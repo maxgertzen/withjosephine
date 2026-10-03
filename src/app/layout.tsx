@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
+import { EntryClickReset } from "@/components/EntryClickReset";
 import { styleProviderClassName } from "@/components/StyleProvider";
 import { siteOrigin } from "@/lib/env";
 import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
@@ -46,6 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <AnalyticsBootstrap consentBannerContent={consentBannerContent} />
         <DelegatedTracking />
+        <EntryClickReset />
       </body>
     </html>
   );

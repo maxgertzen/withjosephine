@@ -1,8 +1,9 @@
 import Image from "next/image";
 
+import { ContactEmailLink } from "@/components/ContactEmailLink";
 import { UNDER_CONSTRUCTION_PAGE_DEFAULTS } from "@/data/defaults";
-import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SanityUnderConstructionPage } from "@/lib/sanity/types";
+import { eyebrowClasses } from "@/lib/textStyles";
 
 interface UnderConstructionProps {
   content?: SanityUnderConstructionPage | null;
@@ -14,7 +15,7 @@ export function UnderConstruction({ content }: UnderConstructionProps) {
 
   return (
     <div className="min-h-screen bg-j-cream flex flex-col items-center justify-center px-6 py-16 text-center">
-      <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4">
+      <span className={`${eyebrowClasses} block mb-4`}>
         {tag}
       </span>
 
@@ -35,12 +36,7 @@ export function UnderConstruction({ content }: UnderConstructionProps) {
 
       <p className="font-body text-sm text-j-text-muted mt-8">
         {contactText}{" "}
-        <a
-          href={`mailto:${CONTACT_EMAIL}`}
-          className="text-j-accent hover:underline transition-colors"
-        >
-          {CONTACT_EMAIL}
-        </a>
+        <ContactEmailLink />
       </p>
     </div>
   );

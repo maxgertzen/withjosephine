@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "@/components/Button";
 import { Portal } from "@/components/Portal";
 import { NOT_FOUND_PAGE_DEFAULTS } from "@/data/defaults";
+import { eyebrowClasses } from "@/lib/textStyles";
 
 interface NotFoundRenderProps {
   tag: string;
@@ -18,7 +19,7 @@ function NotFoundRender({ tag, heading, description, buttonText }: NotFoundRende
       <div className="relative z-10 flex flex-col items-center">
         <Portal />
 
-        <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4 mt-8">
+        <span className={`${eyebrowClasses} block mb-4 mt-8`}>
           {tag}
         </span>
 

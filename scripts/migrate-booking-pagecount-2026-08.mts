@@ -22,8 +22,10 @@ type Override = { _key: string; readingSlug: string; pageCount?: number };
 const client = sanityWriteClient();
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET ?? "production";
 
+const PUBLISHED_BOOKING_FORM = `*[_type == "bookingForm" && !(_id in path("drafts.**"))][0]`;
+
 const doc = await client.fetch<{ _id: string; overrides: Override[] | null } | null>(
-  `*[_type == "bookingForm"][0]{ _id, "overrides": pagination.overrides }`,
+  `${PUBLISHED_BOOKING_FORM}{ _id, "overrides": pagination.overrides }`,
 );
 
 if (!doc) {
@@ -56,6 +58,6 @@ if (changes.length === 0) {
 }
 
 const verify = await client.fetch<Override[] | null>(
-  `*[_type == "bookingForm"][0].pagination.overrides`,
+  `${PUBLISHED_BOOKING_FORM}.pagination.overrides`,
 );
 console.log(`[${dataset}] now:`, JSON.stringify(verify));

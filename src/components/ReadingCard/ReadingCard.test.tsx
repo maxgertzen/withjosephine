@@ -1,11 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("motion/react", () => {
   function createMotionComponent(tag: string) {
-    return function MotionComponent({ children, className, style, onClick }: Record<string, unknown>) {
+    return function MotionComponent({
+      children,
+      className,
+      style,
+      onClick,
+    }: Record<string, unknown>) {
       return React.createElement(tag, { className, style, onClick }, children as React.ReactNode);
     };
   }
@@ -30,6 +35,8 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
+import { clearEntryClick, pendingEntryClick } from "@/lib/intake/entryMarker";
+
 import { ReadingCard } from "./ReadingCard";
 
 const defaultProps = {
@@ -44,6 +51,8 @@ const defaultProps = {
 };
 
 describe("ReadingCard", () => {
+  beforeEach(clearEntryClick);
+
   it("renders card content", () => {
     render(<ReadingCard {...defaultProps} />);
 
@@ -87,5 +96,24 @@ describe("ReadingCard", () => {
 
     const bookingLink = screen.getByRole("link", { name: "Book This Reading" });
     expect(bookingLink).toHaveAttribute("href", "/book/soul-blueprint");
+  });
+
+  it("marks this reading as a homepage card entry when Book This Reading is tapped", async () => {
+    const user = userEvent.setup();
+    render(<ReadingCard {...defaultProps} />);
+
+    await user.click(screen.getByRole("link", { name: "Book This Reading" }));
+
+    expect(pendingEntryClick("soul-blueprint")).toBe("homepage_card");
+  });
+
+  it("does not mark the entry on a Cmd-click that opens a new tab", async () => {
+    const user = userEvent.setup();
+    render(<ReadingCard {...defaultProps} />);
+
+    await user.keyboard("{Meta>}");
+    await user.click(screen.getByRole("link", { name: "Book This Reading" }));
+
+    expect(pendingEntryClick("soul-blueprint")).toBeNull();
   });
 });

@@ -1,5 +1,8 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
+import type { NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
+import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
+
 export type SanityReading = {
   _id: string;
   name: string;
@@ -13,13 +16,21 @@ export type SanityReading = {
   briefDescription: string;
   expandedDetails: string[];
   includes: string[];
-  bookingSummary: string;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
   stripePaymentLink?: string;
+  estimatedMinutes?: number;
+  facts?: ReadingFact[] | null;
+  hideFacts?: boolean;
+  questionsOnPage?: SanityReadingQuestion[] | null;
+  formTestimonial?: SanityFormTestimonial | null;
   seo?: SanitySeo;
 };
+
+type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
+
+type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
 
 export type SanityTestimonial = {
   _id: string;
@@ -34,6 +45,7 @@ export type SanityFaqItem = {
   question: string;
   answer: string;
   order: number;
+  relatedArticle?: NoteSummary | null;
 };
 
 export type SanityHero = {
@@ -84,10 +96,6 @@ export type SanityLandingPage = {
 
 export type SanityBookingPage = {
   paymentButtonText?: string;
-  formatNote: string;
-  deliveryNote: string;
-  whatsIncludedHeading?: string;
-  bookReadingCtaText?: string;
   seo?: SanitySeo;
 };
 
@@ -378,16 +386,16 @@ export type SanityPagination = {
 };
 
 export type SanityEntryPageContent = {
-  letterClosing?: string;
-  dropCapCta?: string;
-  dropCapCaption?: string;
-  changeReadingLinkText?: string;
   letterTitle?: string;
+  showLetterTitle?: boolean;
 };
+
+export type SanityReadingPageContent = Partial<ReadingPageContent>;
 
 export type SanityBookingForm = {
   nonRefundableNotice: string;
   entryPageContent?: SanityEntryPageContent;
+  readingPageContent?: SanityReadingPageContent;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
   nextButtonText?: string;
@@ -405,3 +413,45 @@ export type SanityLegalPage = {
   body: SanityPortableTextBlock[];
   seo?: Pick<SanitySeo, "metaTitle" | "metaDescription">;
 };
+
+export type SanityNotesSettings = Partial<NotesContent> & {
+  enabled?: boolean;
+  authorPhotoUrl?: string;
+  hideAuthorPhoto?: boolean;
+  indexIllustrationUrl?: string;
+};
+
+export type SanityNotesState = {
+  settings: SanityNotesSettings | null;
+  publishedCount: number;
+};
+
+type SanityArticleBase = {
+  _id: string;
+  title: string;
+  slug: string;
+  subtitle: string;
+  publishedAt: string;
+  updatedAt?: string;
+};
+
+export type SanityArticleSummary = SanityArticleBase & { wordCount?: number };
+
+export type SanityArticle = SanityArticleBase & {
+  searchDescription?: string;
+  body: NoteBodyBlock[];
+  relatedReading?: {
+    name: string;
+    slug: string;
+    priceDisplay?: string;
+    valueProposition?: string;
+  } | null;
+  moreNotes?: (NoteSummary | null)[];
+  hideReadingBox?: boolean;
+  hideCardLeadIn?: boolean;
+  hideMoreNotes?: boolean;
+  audioUrl?: string;
+  audioMinutes?: number;
+};
+
+export type SanityArticleDates = Pick<SanityArticleBase, "slug" | "publishedAt" | "updatedAt">;

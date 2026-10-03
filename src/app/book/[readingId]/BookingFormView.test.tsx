@@ -5,6 +5,7 @@ vi.mock("@/components/IntakeForm", () => ({
   IntakeForm: () => null,
 }));
 
+import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
@@ -19,8 +20,13 @@ function props(intro: SanityPortableTextBlock[]): BookingFormViewProps {
       name: "Birth Chart Reading",
       priceLabel: "$89",
     },
+    readingBlock: SOUL_BLUEPRINT_BLOCK,
     copy: { title: "A few things, before we begin.", intro },
-    form: { sections: [], nonRefundableNotice: "Non-refundable." },
+    form: {
+      sections: [],
+      nonRefundableNotice: "Non-refundable.",
+      switchNotice: "Switched to Birth Chart Reading.",
+    },
   };
 }
 
@@ -40,7 +46,9 @@ const BOLD_INTRO: SanityPortableTextBlock[] = [
 
 describe("BookingFormView intake copy", () => {
   it("renders every intro paragraph", () => {
-    render(<BookingFormView {...props(paragraphBlocks(["First paragraph.", "Second paragraph."]))} />);
+    render(
+      <BookingFormView {...props(paragraphBlocks(["First paragraph.", "Second paragraph."]))} />,
+    );
 
     expect(screen.getByText("First paragraph.")).toBeInTheDocument();
     expect(screen.getByText("Second paragraph.")).toBeInTheDocument();
@@ -53,11 +61,33 @@ describe("BookingFormView intake copy", () => {
     expect(bold.tagName).toBe("STRONG");
   });
 
-  it("renders the heading", () => {
+  it("makes the reading name the only h1 and the intake title an h2", () => {
     render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} />);
 
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(
-      screen.getByRole("heading", { level: 1, name: "A few things, before we begin." }),
+      screen.getByRole("heading", { level: 1, name: "Birth Chart Reading" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "A few things, before we begin." }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders no h2 heading when the intake title is left out", () => {
+    const base = props(paragraphBlocks(["Only paragraph."]));
+    render(<BookingFormView {...base} copy={{ ...base.copy, title: undefined }} />);
+
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "A few things, before we begin." }),
+    ).toBeNull();
+    expect(screen.getByText("Only paragraph.")).toBeInTheDocument();
+  });
+
+  it("renders the reading block before the intake title", () => {
+    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} />);
+
+    const lead = screen.getByText(SOUL_BLUEPRINT_BLOCK.lead);
+    const title = screen.getByRole("heading", { level: 2, name: "A few things, before we begin." });
+    expect(lead.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

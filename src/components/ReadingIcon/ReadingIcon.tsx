@@ -6,7 +6,7 @@ interface ReadingIconProps {
 }
 
 export function ReadingIcon({ slug, className }: ReadingIconProps) {
-  const classes = mergeClasses("text-j-accent", className);
+  const classes = mergeClasses("text-j-ornament", className);
 
   switch (slug) {
     case "soul-blueprint":

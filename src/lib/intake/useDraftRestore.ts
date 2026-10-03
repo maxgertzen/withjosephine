@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 
 import type { FieldValues } from "@/components/IntakeForm/types";
 
@@ -19,48 +11,41 @@ import {
   setLastReadingId,
 } from "./localStorageDraft";
 
-const SWAP_PRESERVED_KEYS = [
+const NAME_AND_EMAIL_KEYS = [
   "email",
   "first_name",
   "middle_name",
   "last_name",
   "legal_full_name",
-  "anything_else",
 ] as const;
 
-export function pickPreservedFields(values: DraftValues): Partial<FieldValues> {
+const CARRIED_OVER_KEYS = [...NAME_AND_EMAIL_KEYS, "anything_else"] as const;
+
+function isFilled(value: unknown): boolean {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+export function pickCarriedOverFields(values: DraftValues): Partial<FieldValues> {
   const result: Partial<FieldValues> = {};
-  for (const key of SWAP_PRESERVED_KEYS) {
-    if (key in values) result[key] = values[key];
+  for (const key of CARRIED_OVER_KEYS) {
+    if (isFilled(values[key])) result[key] = values[key];
   }
   return result;
 }
 
-// https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached
-const swapNameCache = new Map<string, string | null>();
-
-export function __resetSwapNameCacheForTest(): void {
-  swapNameCache.clear();
+function hasNameOrEmail(fields: Partial<FieldValues>): boolean {
+  return NAME_AND_EMAIL_KEYS.some((key) => key in fields);
 }
 
-function readSwapName(readingId: string, readingName: string): string | null {
-  if (typeof window === "undefined") return null;
-  if (swapNameCache.has(readingId)) return swapNameCache.get(readingId) ?? null;
+function fieldsCarriedOverFrom(readingId: string): Partial<FieldValues> {
   const previousReadingId = getLastReadingId();
-  let result: string | null = null;
-  if (previousReadingId && previousReadingId !== readingId) {
-    const previousDraft = restoreDraft(previousReadingId);
-    if (previousDraft) result = readingName;
-  }
-  swapNameCache.set(readingId, result);
-  return result;
+  if (!previousReadingId || previousReadingId === readingId) return {};
+  const previousDraft = restoreDraft(previousReadingId);
+  return previousDraft ? pickCarriedOverFields(previousDraft.values) : {};
 }
-
-const noopSubscribe = () => () => {};
 
 export type UseDraftRestoreArgs = {
   readingId: string;
-  readingName: string;
   defaultValues: FieldValues;
 };
 
@@ -72,43 +57,28 @@ export type UseDraftRestoreResult = {
   lastSavedAt: Date | null;
   setLastSavedAt: Dispatch<SetStateAction<Date | null>>;
   isRestored: boolean;
-  swappedFromReadingName: string | null;
-  dismissSwapToast: () => void;
+  nameOrEmailCarriedOver: boolean;
 };
 
 export function useDraftRestore({
   readingId,
-  readingName,
   defaultValues,
 }: UseDraftRestoreArgs): UseDraftRestoreResult {
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [currentPage, setCurrentPage] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isRestored, setIsRestored] = useState(false);
-  const [swapDismissed, setSwapDismissed] = useState(false);
+  const [nameOrEmailCarriedOver, setNameOrEmailCarriedOver] = useState(false);
   const restoredForReadingRef = useRef<string | null>(null);
-
-  const getSwapSnapshot = useCallback(
-    () => readSwapName(readingId, readingName),
-    [readingId, readingName],
-  );
-  const detectedSwapName = useSyncExternalStore(noopSubscribe, getSwapSnapshot, () => null);
 
   useEffect(() => {
     if (restoredForReadingRef.current === readingId) return;
-    const previousReadingId = getLastReadingId();
-    let preservedFromSwap: Partial<FieldValues> | null = null;
-    if (previousReadingId && previousReadingId !== readingId) {
-      const previousDraft = restoreDraft(previousReadingId);
-      if (previousDraft) {
-        preservedFromSwap = pickPreservedFields(previousDraft.values);
-      }
-    }
+    const carriedOverFields = fieldsCarriedOverFrom(readingId);
     const restored = restoreDraft(readingId);
     const seeded = {
       ...defaultValues,
-      ...(restored?.values ?? {}),
-      ...(preservedFromSwap ?? {}),
+      ...restored?.values,
+      ...carriedOverFields,
     } as FieldValues;
     const restoredSavedAt: Date | null = (() => {
       if (!restored?.savedAt) return null;
@@ -119,13 +89,14 @@ export function useDraftRestore({
     restoredForReadingRef.current = readingId;
     queueMicrotask(() => {
       setValues(seeded);
+      setNameOrEmailCarriedOver(hasNameOrEmail(carriedOverFields));
       // Always resume on the first page even when values are prefilled; the
       // saved page index is intentionally not restored.
       setCurrentPage(0);
       if (restoredSavedAt) setLastSavedAt(restoredSavedAt);
       setIsRestored(true);
     });
-  }, [readingId, readingName, defaultValues]);
+  }, [readingId, defaultValues]);
 
   return {
     values,
@@ -135,7 +106,6 @@ export function useDraftRestore({
     lastSavedAt,
     setLastSavedAt,
     isRestored,
-    swappedFromReadingName: swapDismissed ? null : detectedSwapName,
-    dismissSwapToast: () => setSwapDismissed(true),
+    nameOrEmailCarriedOver,
   };
 }

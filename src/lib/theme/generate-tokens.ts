@@ -99,9 +99,10 @@ const EMAIL_TOKEN_DEFAULTS = {
   cream: "#FAF8F4",
   warm: "#F5F0E8",
   gold: "#C4A46B",
+  mutedOnWarm: "#6F6560",
 } as const;
 
-const EMAIL_COLOR_SOURCES: Record<keyof typeof EMAIL_TOKEN_DEFAULTS, SemanticColorKey> = {
+const EMAIL_COLOR_SOURCES: Partial<Record<keyof typeof EMAIL_TOKEN_DEFAULTS, SemanticColorKey>> = {
   ink: "bgInteractive",
   body: "textPrimary",
   muted: "textMuted",
@@ -115,7 +116,7 @@ export function generateEmailTokensModule(theme: SanityTheme | null): string {
   const colors = (Object.keys(EMAIL_TOKEN_DEFAULTS) as Array<keyof typeof EMAIL_TOKEN_DEFAULTS>)
     .map((tokenKey) => {
       const sanityKey = EMAIL_COLOR_SOURCES[tokenKey];
-      const overrideHex = extractHex(theme?.colors?.[sanityKey]?.hex);
+      const overrideHex = sanityKey ? extractHex(theme?.colors?.[sanityKey]?.hex) : undefined;
       const value = overrideHex ?? EMAIL_TOKEN_DEFAULTS[tokenKey];
       return `  ${tokenKey}: "${value}",`;
     })

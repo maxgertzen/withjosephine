@@ -1,5 +1,8 @@
 import { defineField, defineType } from "sanity";
 
+import { MAX_READING_FACTS, READING_PAGE_DEFAULTS } from "../../src/data/defaults";
+import { factsPerRowField, hideFactsField, readingFactsField } from "./readingFacts";
+
 export const bookingForm = defineType({
   name: "bookingForm",
   title: "Booking Form",
@@ -14,26 +17,140 @@ export const bookingForm = defineType({
     }),
     defineField({
       name: "entryPageContent",
-      title: "Entry Page Content",
+      title: "Intake Form",
       type: "object",
-      description:
-        "Verbatim copy slots for the /book/[readingId] entry page. Each slot is sourced from SPEC §11.",
       fields: [
-        defineField({ name: "letterClosing", title: "Letter Closing", type: "text", rows: 2 }),
-        defineField({ name: "dropCapCta", title: "Drop-Cap CTA", type: "text", rows: 2 }),
-        defineField({ name: "dropCapCaption", title: "CTA Caption", type: "text", rows: 2 }),
         defineField({
-          name: "changeReadingLinkText",
-          title: "Change-Reading Link Text",
-          type: "text",
-          rows: 2,
+          name: "showLetterTitle",
+          title: "Show the Form Heading",
+          type: "boolean",
+          description: "Off by default: the reading name at the top already heads the page.",
+          initialValue: false,
         }),
         defineField({
           name: "letterTitle",
-          title: "Letter Title (optional)",
+          title: "Form Heading",
           type: "text",
           rows: 2,
-          description: "Optional headline above the letter copy. Leave blank to omit.",
+          hidden: ({ parent }) => !parent?.showLetterTitle,
+          description:
+            "The heading above each reading's intake words and the form, for example 'A few things, before we begin.' Leave blank to use that wording.",
+        }),
+      ],
+      options: { collapsible: true, collapsed: false },
+    }),
+    defineField({
+      name: "readingPageContent",
+      title: "Reading Page",
+      type: "object",
+      description:
+        "Words on the reading block above the form, shared by every reading. Leave a field blank to use the built-in wording.",
+      fieldsets: [{ name: "facts", title: "Facts row", options: { collapsible: true, collapsed: false } }],
+      fields: [
+        defineField({
+          name: "eyebrow",
+          title: "Small Label Above the Promise",
+          type: "string",
+        }),
+        defineField({
+          name: "foldRowLabel",
+          title: "Folded Row Label",
+          type: "string",
+          description:
+            "Shown to visitors who came from a homepage card, as one row that opens the block. {reading} becomes the reading's subtitle, for example 'About the {reading}'.",
+        }),
+        hideFactsField({
+          fieldset: "facts",
+          description: "Leaves out the facts row on every booking page, except readings that have their own facts.",
+        }),
+        readingFactsField({
+          fieldset: "facts",
+          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own. Leave empty to use the built-in three.`,
+        }),
+        factsPerRowField({
+          name: "factsPerRowPhone",
+          title: "Facts per row on phones",
+          fieldset: "facts",
+          initialValue: READING_PAGE_DEFAULTS.factsPerRowPhone,
+        }),
+        factsPerRowField({
+          name: "factsPerRowDesktop",
+          title: "Facts per row on computers",
+          fieldset: "facts",
+          initialValue: READING_PAGE_DEFAULTS.factsPerRowDesktop,
+        }),
+        defineField({
+          name: "factsBalanceRows",
+          title: "Balance the rows",
+          type: "boolean",
+          fieldset: "facts",
+          description: "On: rows share the facts evenly (5 facts at 3 per row show as 3 and 2, 4 show as 2 and 2). Off: rows fill up in order (4 show as 3 and 1).",
+          initialValue: READING_PAGE_DEFAULTS.factsBalanceRows,
+        }),
+        defineField({
+          name: "factsListOnPhones",
+          title: "Show as a list on phones",
+          type: "boolean",
+          fieldset: "facts",
+          description: "On phones, one fact per line with the label on the left and the value on the right. Computers keep the rows.",
+          initialValue: READING_PAGE_DEFAULTS.factsListOnPhones,
+        }),
+        defineField({
+          name: "readerName",
+          title: "Reader Name",
+          type: "string",
+        }),
+        defineField({
+          name: "readerLine",
+          title: "Line Under the Reader Name",
+          type: "string",
+        }),
+        defineField({
+          name: "hideReaderPhoto",
+          title: "Hide the Reader Photo",
+          type: "boolean",
+          description: "Leaves out the round portrait next to the reader name. The name and line stay.",
+          initialValue: false,
+        }),
+        defineField({
+          name: "includedTitle",
+          title: "What's Included Title",
+          type: "string",
+        }),
+        defineField({
+          name: "howItWorksTitle",
+          title: "How It Works Title",
+          type: "string",
+        }),
+        defineField({
+          name: "questionsTitle",
+          title: "Questions Title",
+          type: "string",
+        }),
+        defineField({
+          name: "otherReadingsTitle",
+          title: "Other Readings Title",
+          type: "string",
+        }),
+        defineField({
+          name: "switchNoticeTemplate",
+          title: "Switched Reading Notice",
+          type: "string",
+          description:
+            "Shown at the top of the form when a visitor picks another reading under Other Readings Title and their name or email carries over. {reading} becomes the reading name.",
+        }),
+        defineField({
+          name: "testimonialLabel",
+          title: "Testimonial Label",
+          type: "string",
+          description: "Small label above the quote on the last page of the form.",
+        }),
+        defineField({
+          name: "minutesTemplate",
+          title: "Minutes Wording",
+          type: "string",
+          description:
+            "Added to the page line when a reading has its minutes set. {minutes} becomes the number.",
         }),
       ],
       options: { collapsible: true, collapsed: false },

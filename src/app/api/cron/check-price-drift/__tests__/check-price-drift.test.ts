@@ -35,7 +35,6 @@ function makeReading(over: Partial<SanityReading>): SanityReading {
     briefDescription: "bd",
     expandedDetails: [],
     includes: [],
-    bookingSummary: "bs",
     requiresBirthChart: false,
     requiresAkashic: false,
     requiresQuestions: false,

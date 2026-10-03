@@ -1,12 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
+import { goldLinkClasses } from "@/lib/textStyles";
 
 interface FaqSectionProps {
   items: MappedFaqItem[];
@@ -71,7 +73,7 @@ export function FaqSection({
                   {item.question}
                 </span>
                 <span
-                  className="text-j-accent text-xl transition-transform duration-200"
+                  className="text-j-ornament text-xl transition-transform duration-200"
                   style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
                   aria-hidden="true"
                 >
@@ -95,6 +97,19 @@ export function FaqSection({
                     <p className="px-6 pb-5 font-body text-sm text-j-text-muted leading-relaxed">
                       {item.answer}
                     </p>
+                    {item.noteLink ? (
+                      <p className="-mt-2 px-6 pb-5">
+                        <Link
+                          href={item.noteLink.href}
+                          data-mp-event="article_note_click"
+                          data-mp-position="faq"
+                          data-mp-target={item.noteLink.slug}
+                          className={`font-body text-[0.9375rem] font-medium ${goldLinkClasses}`}
+                        >
+                          {item.noteLink.label}&nbsp;&#8250;
+                        </Link>
+                      </p>
+                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>

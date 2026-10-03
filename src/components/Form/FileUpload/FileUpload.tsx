@@ -218,7 +218,7 @@ export function FileUpload({
             type="button"
             onClick={handleRemove}
             disabled={disabled}
-            className="font-body text-xs uppercase tracking-wide text-j-accent hover:underline disabled:opacity-50 flex-none"
+            className="font-body text-xs uppercase tracking-wide text-j-text-gold hover:underline disabled:opacity-50 flex-none"
           >
             Remove
           </button>

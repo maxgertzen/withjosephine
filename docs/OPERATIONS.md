@@ -211,24 +211,22 @@ A funnel is an ordered sequence of events Mixpanel watches per visitor. For each
 
 Two key behaviors that matter for our flow:
 
-- **Order matters.** Funnels are ordered. `cta_click_intake` AFTER `intake_page_view` doesn't count for a funnel that defines them in the opposite order.
+- **Order matters.** Funnels are ordered. `intake_submit_click` AFTER `intake_submit_success` doesn't count for a funnel that defines them in the opposite order.
 - **Time window matters.** Default conversion window is 30 days, but for our booking flow (designed to complete in one session), set it to 1 hour or even 30 minutes — that's the realistic completion window. Longer windows include returning visitors which inflates conversion artificially.
 
 ### The three funnels worth setting up
 
-**1. Top-of-funnel: discovery → intake start**
+**1. Top-of-funnel: reading page → form start → submit**
 
 ```
-entry_page_view  →  cta_click_intake  →  intake_page_view
+entry_page_view  →  intake_field_first_focus  →  intake_submit_success
 ```
 
-Tells you how many visitors who land on a reading entry page click "Book this Reading", and how many of those reach the intake form. Healthy ratios:
+`/book/[slug]` is the form, so `entry_page_view` and `intake_page_view` fire on the same page load. Step 2 is the first field the visitor focuses.
 
-- ~30–60% click-through from entry page to letter page (verso-cta)
-- ~70–95% click-through from letter page to intake (drop-cap)
-- A drop below ~20% on either step means the entry/letter copy isn't selling, or the CTA placement is wrong, or there's a UI bug.
+Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry` or `folded`, optionally `reading_id`.
 
-Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `cta_click_intake`, `intake_page_view`; conversion window **1 hour**; filter `environment = production`; optionally segment by `reading_id`.
+After the reading block ships, break this funnel down by `folded` to compare homepage-card visitors with search and shared-link visitors. The before/after comparison for the block uses funnel 3, which has data from before the block.
 
 **2. Mid-funnel: intake completion**
 
@@ -258,7 +256,18 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
 
 - `environment = production` — exclude dev/preview/workers-dev/local events.
 - `reading_id = <slug>` — slice by which reading the visitor was pursuing. Reading-specific UX (form fields, pricing, copy) varies meaningfully.
-- `position` (on `cta_click_intake`) — `verso-cta` (entry page) vs `drop-cap` (letter page) — tells you which CTA earns the click.
+- `entry` (on `entry_page_view`): how the visitor reached the reading page.
+
+  | Value | Meaning |
+  |---|---|
+  | `homepage_card` | The next page load after a tap on "Book This Reading" on this reading's homepage card. Loading any other page first, a reload, or waiting more than 60 seconds drops the tap. A tap that opens a new tab is not counted. The tap is held in page memory only; nothing is written to the device. |
+  | `reading_switch` | The next page load after a click on another reading under "Not sure this is the one?" on a booking form. Same rules as `homepage_card`. Wins over `draft`. |
+  | `draft` | Has a saved draft for this reading, no card tap or reading switch. |
+  | `internal` | Came from another page on the site, including coming back to this page without a reload. |
+  | `external` | Referred by another site (search, TikTok, a shared link opened from an app). |
+  | `direct` | No referrer: typed, bookmarked, or opened from an app that sends none. |
+
+- `folded` (on `entry_page_view`): `true` for `homepage_card` and `draft`. These visitors get the folded reading block once it ships; before that, the flag only marks the group.
 
 ### Useful cohorts
 

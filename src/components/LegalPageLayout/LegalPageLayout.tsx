@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ROUTES } from "@/lib/constants";
+import { eyebrowClasses } from "@/lib/textStyles";
 
 import { BackLink } from "./BackLink";
 
@@ -25,7 +26,7 @@ export function LegalPageLayout({ tag, title, lastUpdated, children }: LegalPage
       </header>
 
       <main id="main" className="relative z-10 max-w-3xl mx-auto px-6 py-16">
-        <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
+        <span className={eyebrowClasses}>
           {tag}
         </span>
         <h1 className="font-display text-[clamp(2rem,5vw,3rem)] font-light italic text-j-text-heading leading-tight mt-2">

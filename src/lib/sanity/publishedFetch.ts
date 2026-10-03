@@ -20,9 +20,10 @@ export async function publishedFetch<T>(options: {
   tags?: string[];
 }): Promise<T> {
   const { query, params = {}, tags = [] } = options;
+  const { apiHost = "", projectId = "", dataset = "", apiVersion = "" } = sanityClient.config();
   const load = unstable_cache(
     () => sanityClient.fetch<T>(query, params, { perspective: "published", stega: false }),
-    ["published-fetch", query, JSON.stringify(params)],
+    ["published-fetch", apiHost, projectId, dataset, apiVersion, query, JSON.stringify(params)],
     { revalidate: PUBLISHED_REVALIDATE_SECONDS, tags },
   );
   return load();

@@ -78,7 +78,7 @@ export function PrivacyFallbackBody() {
             href="https://stripe.com/privacy"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-j-accent hover:underline"
+            className="text-j-text-gold hover:underline"
           >
             Stripe&rsquo;s privacy policy
             <span className="sr-only"> (opens in a new tab)</span>

@@ -165,6 +165,21 @@ describe("middleware CSP + draft hardening", () => {
     }
   });
 
+  it("CSP media-src allows note recordings from the Sanity CDN", () => {
+    const apex = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const csp = apex.headers.get("content-security-policy") ?? "";
+    const mediaDirective = csp.split(";").find((d) => d.trim().startsWith("media-src"));
+    expect(mediaDirective).toBe(" media-src 'self' https://cdn.sanity.io");
+  });
+
+  it("serves the prerendered /notes pages with unsafe-inline, like /book/<slug>", () => {
+    for (const pathname of ["/notes", "/notes/birth-time"]) {
+      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
+      expect(scriptSrcOf(res), pathname).toContain("'unsafe-inline'");
+      expect(scriptSrcOf(res), pathname).not.toContain("'nonce-");
+    }
+  });
+
   it("serves the prerendered /book/<slug> with unsafe-inline, since a baked nonce can never match", () => {
     for (const pathname of ["/book/soul-blueprint", "/book/birth-chart", "/book/akashic-record"]) {
       const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));

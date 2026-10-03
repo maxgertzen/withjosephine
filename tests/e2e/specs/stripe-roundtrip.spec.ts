@@ -42,8 +42,9 @@ test.describe("Stripe sandbox round-trip — staging", () => {
     await seedIntakeDraft(page, "birth-chart", { values: { email } });
 
     await page.goto("/book/birth-chart");
-    await expect(page.getByRole("heading", { level: 1, name: /before we begin/i })).toBeVisible();
-    await expect(page.getByRole("banner")).toContainText(/birth chart/i);
+    await expect(
+      page.getByRole("main").getByRole("heading", { level: 1, name: /birth chart/i }),
+    ).toBeVisible();
 
     await waitForDraftRestore(page);
     await clickThroughIntakePages(page, 6);

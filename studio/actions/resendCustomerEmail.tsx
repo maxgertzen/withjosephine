@@ -32,9 +32,6 @@ export const resendCustomerEmailAction: DocumentActionComponent = (
     }
   }, [isOpen]);
 
-  const doc = (props.published ?? props.draft) as SubmissionDoc | null;
-  if (!doc || doc.status !== "paid") return null;
-
   const submissionId = props.id;
 
   const handleConfirm = useCallback(async () => {
@@ -94,6 +91,9 @@ export const resendCustomerEmailAction: DocumentActionComponent = (
       setIsPending(false);
     }
   }, [adminToken, emailType, props, submissionId, toast]);
+
+  const doc = (props.published ?? props.draft) as SubmissionDoc | null;
+  if (!doc || doc.status !== "paid") return null;
 
   const isReadyToFire = adminToken.length > 0 && !isPending;
 

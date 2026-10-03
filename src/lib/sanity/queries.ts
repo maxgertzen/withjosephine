@@ -32,7 +32,6 @@ export const readingsQuery = groq`
     briefDescription,
     expandedDetails,
     includes,
-    bookingSummary,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
@@ -55,11 +54,27 @@ export const readingBySlugQuery = groq`
     briefDescription,
     expandedDetails,
     includes,
-    bookingSummary,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
     stripePaymentLink,
+    estimatedMinutes,
+    facts[] {
+      label,
+      value
+    },
+    hideFacts,
+    "questionsOnPage": questionsOnPage[]-> {
+      _id,
+      question,
+      answer
+    },
+    "formTestimonial": formTestimonial-> {
+      _id,
+      quote,
+      name,
+      "detail": coalesce(readingType->subtitle, detailOverride)
+    },
     seo
   }
 `;
@@ -83,7 +98,11 @@ export const faqItemsQuery = groq`
     _id,
     question,
     answer,
-    order
+    order,
+    "relatedArticle": relatedArticle-> {
+      title,
+      "slug": slug.current
+    }
   }
 `;
 
@@ -104,10 +123,6 @@ export const siteSettingsQuery = groq`
 export const bookingPageQuery = groq`
   *[_type == "bookingPage"][0] {
     paymentButtonText,
-    formatNote,
-    deliveryNote,
-    whatsIncludedHeading,
-    bookReadingCtaText,
     seo
   }
 `;
@@ -295,11 +310,31 @@ export const bookingFormQuery = groq`
   *[_type == "bookingForm"][0] {
     nonRefundableNotice,
     entryPageContent {
-      letterClosing,
-      dropCapCta,
-      dropCapCaption,
-      changeReadingLinkText,
-      letterTitle
+      letterTitle,
+      showLetterTitle
+    },
+    readingPageContent {
+      eyebrow,
+      foldRowLabel,
+      facts[] {
+        label,
+        value
+      },
+      hideFacts,
+      factsPerRowPhone,
+      factsPerRowDesktop,
+      factsBalanceRows,
+      factsListOnPhones,
+      readerName,
+      readerLine,
+      hideReaderPhoto,
+      includedTitle,
+      howItWorksTitle,
+      questionsTitle,
+      otherReadingsTitle,
+      switchNoticeTemplate,
+      testimonialLabel,
+      minutesTemplate
     },
     pagination {
       overrides[] {
@@ -363,4 +398,78 @@ export const legalPageBySlugQuery = groq`
       metaDescription
     }
   }
+`;
+
+export const notesStateQuery = groq`
+  {
+    "settings": *[_type == "notesSettings"][0] {
+      ...,
+      "authorPhotoUrl": coalesce(
+        authorPhoto.asset->url,
+        *[_type == "landingPage"][0].about.image.asset->url
+      ),
+      "indexIllustrationUrl": indexIllustration.asset->url
+    },
+    "publishedCount": count(*[_type == "article" && defined(slug.current)])
+  }
+`;
+
+const articleBaseFields = `
+  _id,
+  title,
+  "slug": slug.current,
+  subtitle,
+  publishedAt,
+  updatedAt
+`;
+
+export const articlesQuery = groq`
+  *[_type == "article" && defined(slug.current)] | order(publishedAt desc) {
+    ${articleBaseFields},
+    "wordCount": math::sum(body[_type == "block"]{ "n": length(string::split(pt::text(@), " ")) }.n)
+  }
+`;
+
+export const articleBySlugQuery = groq`
+  *[_type == "article" && slug.current == $slug][0] {
+    ${articleBaseFields},
+    searchDescription,
+    body[] {
+      ...,
+      _type == "image" => {
+        "url": asset->url,
+        "width": asset->metadata.dimensions.width,
+        "height": asset->metadata.dimensions.height
+      },
+      markDefs[] {
+        ...,
+        _type == "noteLink" => { "slug": note->slug.current }
+      }
+    },
+    "relatedReading": relatedReading-> {
+      name,
+      "slug": slug.current,
+      priceDisplay,
+      valueProposition
+    },
+    "moreNotes": moreNotes[]-> { title, "slug": slug.current },
+    hideReadingBox,
+    hideCardLeadIn,
+    hideMoreNotes,
+    "audioUrl": audio.asset->url,
+    audioMinutes
+  }
+`;
+
+export const articleSlugsQuery = groq`
+  *[_type == "article" && defined(slug.current)] { "slug": slug.current }
+`;
+
+export const articleDatesQuery = groq`
+  *[_type == "article" && defined(slug.current)] { "slug": slug.current, publishedAt, updatedAt }
+`;
+
+export const readingNotesQuery = groq`
+  *[_type == "article" && relatedReading->slug.current == $slug && defined(slug.current)]
+    | order(publishedAt desc) { title, "slug": slug.current }
 `;

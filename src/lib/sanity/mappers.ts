@@ -1,6 +1,7 @@
 import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
+import type { NotesLink } from "@/lib/notes/notes";
 
 import type {
   SanityFaqItem,
@@ -45,6 +46,7 @@ export type MappedFaqItem = {
   id: string;
   question: string;
   answer: string;
+  noteLink?: NotesLink & { slug: string };
 };
 
 export type MappedSocialLink = {
@@ -132,7 +134,9 @@ export function mapFooterContent(
   };
 }
 
-export function mapFaqItems(sanityFaqItems: SanityFaqItem[]): MappedFaqItem[] {
+export function mapFaqItems(
+  sanityFaqItems: Pick<SanityFaqItem, "_id" | "question" | "answer">[],
+): MappedFaqItem[] {
   return sanityFaqItems.map((item) => ({
     id: item._id,
     question: item.question,

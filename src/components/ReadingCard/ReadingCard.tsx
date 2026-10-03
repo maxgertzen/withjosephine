@@ -8,6 +8,8 @@ import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { ReadingIcon } from "@/components/ReadingIcon";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
+import { markEntryClickOnPlainLeftClick } from "@/lib/intake/entryMarker";
+import { eyebrowClasses } from "@/lib/textStyles";
 import { mergeClasses } from "@/lib/utils";
 
 export interface ReadingCardProps {
@@ -47,7 +49,7 @@ export function ReadingCard({
 
       <ReadingIcon slug={slug} className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24" />
 
-      <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body">
+      <span className={eyebrowClasses}>
         {tag}
       </span>
 
@@ -55,7 +57,7 @@ export function ReadingCard({
         {name}
       </h3>
 
-      <p className="font-display text-2xl italic text-j-accent mt-2">{price}</p>
+      <p className="font-display text-2xl italic text-j-text-gold-lg mt-2">{price}</p>
 
       <p className="font-display text-lg italic text-j-text-primary leading-relaxed mt-4">
         {valueProposition}
@@ -78,7 +80,7 @@ export function ReadingCard({
               {expandedDetails.map((detail, index) => (
                 <li key={index} className="flex gap-3">
                   <span className="mt-0.5 flex-shrink-0">
-                    <Check className="w-4 h-4 text-j-accent" strokeWidth={2} />
+                    <Check className="w-4 h-4 text-j-ornament" strokeWidth={2} />
                   </span>
                   <span className="font-body text-sm text-j-text-muted leading-relaxed">
                     {detail}
@@ -94,13 +96,18 @@ export function ReadingCard({
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
         aria-expanded={isExpanded}
-        className="mt-4 font-body text-sm text-j-text-muted hover:text-j-accent tracking-wide transition-colors"
+        className="mt-4 font-body text-sm text-j-text-muted hover:text-j-text-gold tracking-wide transition-colors"
       >
         {isExpanded ? "Show Less \u2191" : "Learn More \u2193"}
       </button>
 
       <div className="mt-6">
-        <Button href={href}>Book This Reading</Button>
+        <Button
+          href={href}
+          onClick={markEntryClickOnPlainLeftClick(slug, "homepage_card")}
+        >
+          Book This Reading
+        </Button>
       </div>
     </div>
   );

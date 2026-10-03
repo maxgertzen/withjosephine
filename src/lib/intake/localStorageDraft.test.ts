@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { blockBrowserStorage, blockBrowserStorageProperty } from "@/lib/test-helpers";
+
 import {
   clear,
   clearAll,
@@ -135,5 +137,26 @@ describe("localStorageDraft.lastReadingId", () => {
   it("round-trips through setLastReadingId", () => {
     setLastReadingId("birth-chart");
     expect(getLastReadingId()).toBe("birth-chart");
+  });
+});
+
+describe("localStorageDraft with site data blocked", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    ["the localStorage property", blockBrowserStorageProperty],
+    ["every storage method", blockBrowserStorage],
+  ])("never throws when %s throws", (_case, block) => {
+    save(READING, { currentPage: 1, values: {} });
+    block();
+
+    expect(restore(READING)).toBeNull();
+    expect(save(READING, { currentPage: 1, values: {} })).toBeNull();
+    expect(getLastReadingId()).toBeNull();
+    expect(() => setLastReadingId(READING)).not.toThrow();
+    expect(() => clear(READING)).not.toThrow();
+    expect(() => clearAll()).not.toThrow();
   });
 });

@@ -45,7 +45,7 @@ const HOME_STORY_FAQ_FIXTURES: MappedFaqItem[] = [
 ];
 
 export const HOME_STORY_PROPS: HomePageViewProps = {
-  navContent: NAV,
+  nav: { content: NAV },
   footerContent: FOOTER,
   socialLinks: [],
   about: ABOUT_DEFAULTS,

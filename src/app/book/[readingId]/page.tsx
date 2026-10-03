@@ -4,12 +4,18 @@ import { notFound } from "next/navigation";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { bookingPath } from "@/lib/http/routes";
+import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import {
   fetchBookingFormPublished,
   fetchBookingPagePublished,
+  fetchLandingPagePublished,
+  fetchNotesStatePublished,
+  fetchReadingNotesPublished,
   fetchReadingPublished,
+  fetchReadingsPublished,
 } from "@/lib/sanity/fetch";
-import { buildPageMetadata } from "@/lib/seoMetadata";
+import { BOOKING_FALLBACK_TITLE, buildPageMetadata, readingPageTitle } from "@/lib/seoMetadata";
 import { readingProductJsonLd } from "@/lib/structuredData";
 
 import { BookingFormView } from "./BookingFormView";
@@ -28,12 +34,11 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
     fetchBookingPagePublished(),
   ]);
 
-  const readingName = (sanityReading ?? getReadingById(readingId))?.name;
+  const subtitle = (sanityReading ?? getReadingById(readingId))?.subtitle;
 
   const title =
-    sanityReading?.seo?.metaTitle ??
-    bookingPage?.seo?.metaTitle ??
-    (readingName ? `Book ${readingName} — Josephine` : "Book a Reading — Josephine");
+    sanityReading?.seo?.metaTitle ||
+    (subtitle ? readingPageTitle(subtitle, sanityReading?.priceDisplay) : BOOKING_FALLBACK_TITLE);
 
   const description =
     sanityReading?.seo?.metaDescription ??
@@ -42,23 +47,39 @@ export async function generateMetadata({ params }: BookingPageProps): Promise<Me
 
   const seo = sanityReading?.seo ?? bookingPage?.seo;
 
-  return buildPageMetadata({ title, description, path: `/book/${readingId}`, seo });
+  return buildPageMetadata({ title, description, path: bookingPath(readingId), seo });
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [sanityReading, bookingForm, bookingPage] = await Promise.all([
+  const [
+    sanityReading,
+    sanityReadings,
+    bookingForm,
+    bookingPage,
+    landingPage,
+    notesState,
+    readingNotes,
+  ] = await Promise.all([
     fetchReadingPublished(readingId),
+    fetchReadingsPublished(),
     fetchBookingFormPublished(),
     fetchBookingPagePublished(),
+    fetchLandingPagePublished(),
+    fetchNotesStatePublished(),
+    fetchReadingNotesPublished(readingId),
   ]);
 
   const props = deriveBookingFormViewProps({
     readingId,
     sanityReading,
+    sanityReadings,
     bookingPage,
     bookingForm,
+    landingPage,
+    notesState,
+    readingNotes,
   });
   if (!props) {
     notFound();
@@ -69,15 +90,15 @@ export default async function BookingPage({ params }: BookingPageProps) {
     name: props.reading.name,
     description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
     price: props.reading.priceLabel,
-    path: `/book/${readingId}`,
+    path: bookingPath(readingId),
     image: sanityReading?.seo?.ogImage?.asset?.url,
   });
 
   return (
-    <>
+    <BookingEntryProvider key={props.reading.slug} readingId={props.reading.slug}>
       <JsonLd data={productJsonLd} />
       <BookingFormView {...props} />
       <EntryPageView readingId={props.reading.slug} />
-    </>
+    </BookingEntryProvider>
   );
 }

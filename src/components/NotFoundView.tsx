@@ -1,6 +1,7 @@
 import { Button } from "@/components/Button";
 import { Portal } from "@/components/Portal";
 import type { SanityNotFoundPage } from "@/lib/sanity/types";
+import { eyebrowClasses } from "@/lib/textStyles";
 
 type NotFoundViewProps = {
   content: SanityNotFoundPage;
@@ -14,7 +15,7 @@ export function NotFoundView({ content }: NotFoundViewProps) {
       <div className="relative z-10 flex flex-col items-center">
         <Portal />
 
-        <span className="text-[0.68rem] tracking-[0.22em] uppercase text-j-accent font-body block mb-4 mt-8">
+        <span className={`${eyebrowClasses} block mb-4 mt-8`}>
           {tag}
         </span>
 

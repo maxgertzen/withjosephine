@@ -2,3 +2,4 @@
 
 @source "../src/app/listen/[id]/ListenView.tsx";
 @source "../src/components/**/*.tsx";
+@source "./components/NotePlatePreview.tsx";

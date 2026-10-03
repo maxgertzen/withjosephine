@@ -114,7 +114,7 @@ describe("Sanity fetch layer", () => {
   });
 
   it("fetchBookingPage returns singleton or null", async () => {
-    const data = { paymentButtonText: "Pay", deliveryNote: "Within 7 days." };
+    const data = { paymentButtonText: "Pay" };
     mockData(data);
     expect(await fetchBookingPage()).toEqual(data);
   });

@@ -1,16 +1,236 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-08-02 handover): Max has a comment on the LOOKS
+## ▶ 👉 START HERE (next session, 2026-10-03 handover 10): #334, #335, #336 merged into `release/v1.20.0`; staging deployed (CI run 37098539199 green); Studio deployed with the v1.20.0 schema.
 
-**The funnel collapse is built, pushed, and verified on staging. The next thing is Max's styling feedback, which lands in dex `681ra7bq` (the styling pass, still marked AWAITING MAX'S POINTS).**
+- Owed: Max checks staging in a browser (Cloudflare Access login): `/book/soul-blueprint` h1 at the top, no "A few things" line, form saves. Not yet browser-verified by Claude.
+- Owed: Max sends Becky the note: don't edit the new Studio fields in Production or press Remove on Unknown fields until v1.20.0 ships.
+- Done: `seed-sanity-defaults-2026-10.mts` on staging (`switchNoticeTemplate` set).
+- New osv ignore: GHSA-vfj7-8cjw-p6xm (braces 3.0.3, build/CLI tooling only, no fix) until 2026-11-15.
+- Next: release PR `release/v1.20.0` -> `main` (squash: pass the PR body as the merge message, WRITINGSTYLE 11a). After production is live, with Max's go: `migrate-clear-booking-meta-titles-2026-10.mts`, `seed-sanity-defaults-2026-10.mts`, `unset-unknown-sanity-fields.mts production`.
 
-- **Ask him for his list first. Do NOT invent items.** `681ra7bq` already carries seven candidates, but they are candidates, not his list. Three of them now have hard measurements attached from this arc: the heading inversion (header name 20px vs the `h1` at 29.6px wrapping to two lines), the preamble length (first input sits **566px** down at 375px), and the header's **16.3px** worst-case clearance from Back (`rti3s5bo`).
-- **✅ Max is now signed in to Cloudflare Access**, so `https://staging.withjosephine.com` is reachable in his Chrome and browser verification works without another login. The `.env.local` CF Access service token is still rejected (`service_token_status: false`), so headless and curl still bounce — drive his browser, or use `workflow_dispatch` on `e2e-sandbox`.
-- **The specimen is still the cheapest review surface for styling:** `MEMORY/WORK/20260729-booking-funnel-collapse/header-variations.html`, self-contained, opens directly with no server. But staging is now live too, so real 375px comparisons can be done against the deployed thing.
-- **Scope reminder (Max's words):** the styling pass is *"part of this epic, will be separate release"* — same epic `4bttw1sh`, its own release branch AFTER this one, not bundled into `release/v1.19.5`.
-- **⚠️ One unpushed commit on `release/v1.19.5`:** `e5d5f1d`, docs only (this file). Deliberately not pushed, since a docs-only push would trigger a redundant CI run and staging redeploy. Push it whenever the next real change goes up.
+## ▶ (SUPERSEDED by handover 10 above) START HERE (2026-10-03 handover 9): three PRs into `release/v1.20.0` wait for Max's go to merge: #335 deps (CI green), #334 dev cleanup, and the decisions PR (stacked on #334). After #335 merges, staging deploys; then the Studio deploy (card 6B) and Becky's note.
 
-## ▶ 🚧 IN FLIGHT (2026-08-02) - `release/v1.19.5`: booking funnel collapse SHIPPED TO STAGING
+**Max's decision picks (2026-10-03, decisions page https://claude.ai/artifact/Qb1MnoUriVZWfLzp4u18q4): 1A 2B 3A 4B 5C 6B 7B 8A 9B.**
+- 9B: `next` advisories read: none apply (`images.unoptimized: true`, Workers not Windows, no `next/og`). #335 = next 16.3.6, Storybook 10.6.1 (10.3.6 does not build with next 16.3), vite ^8.0.16 direct, override floors raised in `pnpm-workspace.yaml`, osv ignores with `ignoreUntil`, weekly `security-scan.yml`, osv action pinned by SHA. The `next`-only hotfix to `main` was not built: main has the same Storybook break and the same 76 other advisories; told Max, his call.
+- On `feat/v1.20.0-decisions`: `c403092` 1A rose token, `1c44347` 2B h1 in main, `7071d3f` 3A `showLetterTitle` (off by default) + h2 floor 1.5rem + e2e specs, `3a7a66b` 4B `reading_switch` entry (block open, `PickedOnOtherReadingFormContext` removed), `1b2432f` 5C `EntryClickReset` + `bookingPath`. 5C's tiny-draft half was reverted: it broke A -> B -> C carry-over. Now dex `k1kpjbgh`.
+- 6B: deploy the shared Studio (`pnpm studio:deploy`) after the PRs merge, so it ships `switchNoticeTemplate` and `showLetterTitle`. Becky must not edit the new fields or remove Unknown fields in Production until v1.20.0 ships.
+- 7B: dex `ld9scimy` after v1.20.0 merges. 8A: `7rey27qf` closed.
+- Gates on the decisions branch: typecheck, lint, unit 225 files / 2045 tests, mock e2e 30/30, Studio build, stories graph 38. Browser: header positions identical to baseline at 1512px and 375px; rose `rgb(142, 101, 85)`; switch notice and carry-over checked by hand.
+- New dex: `vni3z6pt` bump bot, `b4gzlwnt` scan studio lockfile, `h1fm8nvp` Storybook on Vite, `tyce8f8e` ThankYouGuard lint warning (eslint-config-next 16.3.6), `k1kpjbgh` carried-over-only drafts.
+- After merges: `scripts/seed-sanity-defaults-2026-10.mts` on staging (fills `switchNoticeTemplate`); `migrate-clear-booking-meta-titles` and the unset script on production after v1.20.0 is live, with Max's go.
+
+## ▶ (SUPERSEDED by handover 9 above) START HERE (2026-10-02 handover 8): dev cleanup is on `chore/v1.20.0-dev-cleanup` (6 commits off `release/v1.20.0`), waiting for Max's go to push `release/v1.20.0` (starts the CI staging deploy) and open the PR into it. Nothing is pushed.
+
+**Done 2026-10-02, handover 8, on `chore/v1.20.0-dev-cleanup`:**
+- `7449909`: deleted `scripts/cleanup-orphan-field-values.mts` and `scripts/migrate-unset-orphan-fields-2026-06-12.ts` (+ test), Max's go. `migrate-booking-form-v2.ts` no longer writes `swapToastCopy`.
+- `fa06981`: `VellumShell.tsx` deleted, header reading props required (`zk4qp0qi` closed).
+- `d29dd05`: `readingAnchorId` in `src/lib/http/routes.ts` (`n2iibpy1` closed).
+- `01b1446`: `resend.test.ts` imports `./resend` once, no `resetModules` (`nfqmp3k8` closed).
+- `b587978`: the "Switched to" notice is `bookingForm.readingPageContent.switchNoticeTemplate` in Sanity, `{reading}` filled in derive. Default copy is now "Switched to {reading}. Your details are saved. Start where you left off." (lint bans the old em dash; "details" because name or email can carry over alone). After the push: run `scripts/seed-sanity-defaults-2026-10.mts` on staging so the field has a value for Presentation.
+- `597e3ad`: `useEffectiveTimeZone` and `useIsClient` use `useFirstClientRead`.
+- Gates: typecheck, lint, unit 223 files / 2034 tests, Studio build, stories graph 38. `/simplify` (4 reviewers) and `/code-review` (8 findings) applied. Empty-h1 finding skipped: `reading.name` is required in the schema.
+- Still open on `71v23wyo`: the `reading_switch` decision, two edge cases, and repo-wide Prettier (338 files flagged; only files touched today were formatted).
+
+**Studio deploy (Max, 2026-10-02):** one deployed Studio serves both workspaces, so `zpivrlex` is checked locally (`localhost:3333/staging` against `NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev`), not deployed. Checked so far: `estimatedMinutes` reaches the page ("Page 1 of 4 · about 27 minutes"); test draft deleted. Questions, testimonial and Reading Page words still to check. Proposed, not decided: a second Studio host for staging so Becky can edit staging without touching her Production workspace.
+
+**Still Max's call:** rose colour on `gk2etjdy` (`DiscardDraftButton.tsx:63`, `:82`), h1 placement `3bqw2jye`, `681ra7bq` points or close.
+
+## ▶ (SUPERSEDED by handover 8 above) START HERE (2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
+
+**Done 2026-10-02, handover 7: `and9um5b` on staging.**
+- `8905154`: `scripts/unset-unknown-sanity-fields.mts`. Finds fields each document has but the schema does not declare, from `sanity schema extract` (nested objects and array items too). Dry run by default, `--apply` unsets per document with `ifRevisionId`. Skips `submission` and documents whose `_type` is not in the schema. Refuses production unless HEAD is on `origin/main` with no local `studio/` changes. Unit tests 10/10.
+- Staging: 75 documents read, 8 cleaned (the ticket's fields, plus `emailMagicLink.greeting`, 4 `emailPrivacyExport` fields and 12 `thankYouPage.gift*` fields, none rendered). Rerun reports 0. A diff against a backup shows only those fields removed. Studio's "Unknown field" banner not checked in a browser (Sanity login).
+- Staging still holds 14 whole documents of retired types (gift pages and emails, `myReadingsPage`, `emailMagicLinkLibrary` and others). The script leaves them alone.
+- `and9um5b` no longer blocks `wjye07gw`; its production run is after v1.20.0 is live, with Max's go. Commands are on the ticket.
+- New dex: `3j6lucyd` (point `sanity:validate` at the extracted schema; delete the two hardcoded orphan scripts once Max agrees), `3az29hnd` (dead GROQ projections for the retired email fields).
+- Gotcha: `sanity schema extract --path` joins an absolute path onto `studio/`. Pass a path relative to `studio/`.
+
+## ▶ (SUPERSEDED by handover 7 above) START HERE (2026-10-02 handover 6): write and run the retired-fields unset script on staging (dex `and9um5b`, Max said yes 2026-10-02). Three commits on `release/v1.20.0`, not pushed.
+
+**Committed 2026-10-02 (not pushed):**
+- `59df424`: Notes pages use the homepage menu; a Notes menu item before Contact, gated like the footer link (switch on and 1+ published note), label `navLinkLabel` in Notes Settings. Notes index: no lines, subtitle empty by default, drawing above the footer (`notesSettings.indexIllustration`, default `public/images/notes-illustration.svg`, the D2 quill), `indexSearchDescription`. Per note: `hideCardLeadIn`, `hideReadingBox`, `hideMoreNotes`. `notesSettings.hideAuthorPhoto`, `bookingForm.readingPageContent.hideReaderPhoto`. Facts row: up to 6, shared plus per-reading override (`reading.facts`, `reading.hideFacts`), `hideFacts`, sliders `factsPerRowPhone`/`factsPerRowDesktop`, `factsBalanceRows`, `factsListOnPhones`. Presentation: page list beside the preview (`studio/components/PreviewNavigator.tsx`), clicks inside the preview stay on `/preview/*` (`src/app/preview/PreviewLinkRouter.tsx`), Booking Form shows "Used on". Local Studio previews `localhost:3000` when Studio runs on `localhost:3333` (staging workspace only), plus a dev-only `frame-ancestors` entry.
+- `b879b43`: Presentation preview updates while Becky edits (`src/app/preview/PreviewVisualEditing.tsx`, `router.refresh()` on each refresh event). Closes `yqkukzlt`. New binding constraint in `CLAUDE.md`: no Sanity `browserToken`.
+- `8784fd1`: dex closure.
+
+**Next, in order:**
+1. `and9um5b`: Max said yes to the unset script. Booking Form on staging has 7 unknown fields under `entryPageContent` (`aboutJosephineLinkText`, `letterOpener`, `letterBridge`, `letterClosing`, `dropCapCta`, `dropCapCaption`, `changeReadingLinkText`), plus the retired `reading`/`bookingPage` fields on the ticket. No code reads them. Script finds unknown fields against the schema and unsets them; `/simplify` + `/code-review`, commit, run on staging. Production after v1.20.0 is live, with Max's go.
+2. Studio deploy to staging (`zpivrlex`) now also ships the facts, hide and navigator changes.
+3. The rest of epic `wjye07gw`.
+
+**Staging data changed this session:** `scripts/seed-sanity-defaults-2026-10.mts` filled empty fields (Booking Form `readingPageContent` 15, Notes Settings 18) so Presentation overlays work. Production run after v1.20.0 is live, with Max's go. Test drafts made during checks were deleted. The Notes test data from handover 5 is still on staging.
+
+**Gotchas found:**
+- Headless Chrome will not render narrower than about 500px. For a true 375px check, put an HTML file with 375px iframes in `public/`, load it from `localhost:3000`, then delete it.
+- In zsh, a variable named `path` overwrites `PATH`.
+- A link clicked inside the Presentation preview makes two requests (the public page, then the `/preview` twin). Expected.
+- `resend.test.ts` still times out under full-suite load (`nfqmp3k8`); passes alone.
+- Background dev servers stop after 2 hours.
+
+**Not done:** the efficiency idea of one render per edit instead of two (rejected, adds a second of delay); one shared preview route table for Studio and site (too large); a CMS-editable menu (own task).
+
+## ▶ (SUPERSEDED by handover 6 above) START HERE (next session, 2026-10-02 handover 5): Max walks the Notes flow himself (dex `d7swd1xq`). Notes is built in `84def90` on `release/v1.20.0`, not pushed.
+
+**Max, 2026-10-02: next session he wants to see the flow himself.** Start both servers with a long timeout (background runs stop at 2 hours), then hand him the URLs below.
+
+Start:
+
+```
+cd www && NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev
+pnpm --dir studio dev
+```
+
+Walk:
+- `http://localhost:3000/notes`: index, 2 test notes, "1 minute read".
+- `http://localhost:3000/notes/test-astrology-and-the-akashic-records`: listen button (test tone), opening paragraph, Plate "Read together", inline links, image with caption, pull quote, sign-off, reading box (Soul Blueprint, $129), More notes, footer "Notes".
+- `http://localhost:3000/notes/test-birth-time`: one-column Plate, box for Birth Chart Reading.
+- `http://localhost:3000/`: footer "Notes"; FAQ "What if I don't know my exact birth time?" and "What makes your readings different?" show "Read the note: …".
+- `http://localhost:3000/book/birth-chart`: open the reading block, "Notes on this reading".
+- Studio `http://localhost:3333/staging` (Max logs in): 📝 Notes, Notes Settings switch, a note's "End of the note" tab, the Plate preview in the body, the copy-link field under Web address. Presentation: `/preview/notes/<slug>`.
+- Switch Notes Settings off: `/notes` 404s and every link disappears (60s cache).
+
+**Not yet verified, owed in this walk:** audio playback in a real tab (the automation tab was hidden, so Chrome never started media); the Studio desk, Plate preview and copy link (Sanity login).
+
+**Staging test data (remove after the walk, or keep for the Studio deploy check `zpivrlex`):** `notesSettings` (enabled), `test-note-pillar`, `test-note-birth-time`, `relatedArticle` on `faq-birth-time` and `1b5b873e-73c9-474f-9f6f-99bf35748dfd`, one image and one mp3 asset. Unset the FAQ references before deleting the notes. Seed script: `www/MEMORY/WORK/20261001-notes-build/seed-staging-notes.mts`. Production has no `notesSettings` document, so Notes stays hidden there after deploy until Becky turns it on.
+
+**Decisions this session:**
+- Max removed the per-note reading-box overrides (`cardLeadIn`, `cardLine`, `cardButton`) to prevent drift. This reverses part of decision 4e. The box always shows the reading's name, `priceDisplay` and `valueProposition`; the lead-in and button come from Notes Settings only.
+- Studio labels speak of the "reading box", not the "card".
+- Taken without asking, open to change: the pull quote is the body's Quote style (no `screenshotLine` field); note pages use a plain header (wordmark to home), not the homepage nav; reading time is computed from a per-block word count; the footer "Notes" link shows on the homepage and Notes pages only.
+- Commit rule changed in `CLAUDE.md`: direct fixes for review findings need no further review round.
+
+**Gotcha found:** Studio imports from `@/` need an entry in the `studio/sanity.cli.ts` alias allowlist. `tsc` passes without it; only `sanity build` fails. Run `pnpm --dir studio build` after adding any Studio import from `src/`.
+
+**Gates at `84def90`:** unit 219 files, 1986 tests; `tsc` clean outside `MEMORY/WORK`; Studio `tsc` and `sanity build` pass; eslint clean; stories graph 38 clean; `/simplify` (4 reviewers) and `/code-review` (9 of 10 fixed) applied. ISA: `www/MEMORY/WORK/20261001-notes-build/ISA.md`.
+
+**Still open on epic `wjye07gw` before the PR:** Studio deploy to staging (`zpivrlex`, now also ships the Notes schemas), C9 payload check, Becky's picks `63bfijpo` and `3gpnqffe`, h1 decision `3bqw2jye`, rose colour on `gk2etjdy`, `VellumShell` `zk4qp0qi`, retired fields `and9um5b`, styling `681ra7bq`, and `n2iibpy1`, `nfqmp3k8`, `71v23wyo`.
+
+## ▶ (SUPERSEDED by handover 5 above) START HERE (2026-10-01 handover 4): build Notes (`v7ev58fe`) on `release/v1.20.0`. The browser pass is done.
+
+**Max, 2026-10-01: next session switches to Notes. Every visitor-facing string, image, link and optional block in Notes is editable in Sanity, with a `src/data/defaults.ts` fallback.** The same rule is now a binding constraint in `CLAUDE.md`.
+
+**Everything left before the PR is filed under dex epic `wjye07gw`** ("v1.20.0 remaining before the PR"). Max agreed to fold all of it into v1.20.0. It lists the existing tickets as blockers (Notes, Studio deploy plus Presentation check, C9, Becky's picks `63bfijpo` and `3gpnqffe`, the h1 decision `3bqw2jye`, the rose colour on `gk2etjdy`, dead `VellumShell` `zk4qp0qi`, retired Sanity fields `and9um5b`, the styling parent `681ra7bq`) and has four new children: Studio deploy to staging `zpivrlex`, the duplicated reading anchor id `n2iibpy1`, the `resend.test.ts` timeout `nfqmp3k8`, and the review-round deferrals `71v23wyo`.
+
+**Done 2026-10-01, fourth part, on `release/v1.20.0` (not pushed):**
+- `2o6bxiqe` browser pass closed, with `j3a3426u`, `rti3s5bo` and `3i9lbq9w`. Checked on `pnpm dev` at a real 375px and at 1280px, all three readings. The "From a client" line was checked on staging with a temporary `formTestimonial` on Soul Blueprint, since unset. Jade's full quote runs about 15 lines at 375px; Becky's pick should be short.
+- `ebc6219`: `publishedFetch` cache key includes apiHost, projectId, dataset and apiVersion. A mock e2e run had left fixture answers in `.next/dev/cache` that plain `pnpm dev` then served ("The Birth Chart Reading, $99").
+- `3cb67d9`: the gap under the folded reading row closes with the panel.
+- `8a6d02e`: the "Switched to" notice shows only after a click on a "Not sure this is the one?" link on a form page (Max's call). A homepage card tap or direct load carries name and email over without it. One click slot in `src/lib/intake/entryMarker.ts` (homepage card and reading switch), read once in `BookingEntryProvider`, passed via `PickedOnOtherReadingFormContext`. `useDraftRestore` only carries fields over and no longer copies blank values, so they cannot overwrite a filled field. This replaces the old note at line ~216 below that homepage to `Book now` fires the notice.
+- `f9beca5`: a pending autosave edit is saved on `pagehide` and on unmount, so Back, the "Not sure" links, a reload or a closed tab inside the 500ms debounce keep it.
+- `e8483cc`: key list and Prettier on two files.
+- Gates: unit 211 files, 1928 tests; `tsc` clean outside `MEMORY/WORK`; lint clean; four rounds of `/simplify` + `/code-review`.
+
+**Process note:** Max asked how many review rounds the commit rule means. Proposed, not adopted: run a follow-up round only on new changes that are more than direct fixes for the previous round's findings.
+
+**Environment notes:**
+- The Chrome extension works on this machine. 375px checks used an iframe of that width on a `localhost:3000` page; the extension's script limit is 45s, so long browser scripts must be split.
+- To test against staging content locally: stop dev, run `NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev`, then restart plain `pnpm dev` after.
+- Background dev servers stop at the background time limit; start them with a long timeout.
+
+## ▶ (SUPERSEDED by handover 4 above) START HERE (2026-10-01 handover 3): the reading block is BUILT (`c8188a4`). Do its browser pass (`2o6bxiqe`), then build Notes, on `release/v1.20.0`.
+
+**Release scope (Max, 2026-10-01, option B): everything ships in ONE release, v1.20.0.** The reading block, Notes and the header layout go in together with what is already on the branch. There is NO separate two-week baseline. The reading block's before/after is read from OPERATIONS.md funnel 3 (`entry_page_view -> intake_submit_success -> stripe_redirect -> payment_success`), which has data since July; the new `entry`/`folded` properties are for the split after ship.
+
+**Process rule (Max, 2026-10-01): before every commit, run `/simplify`, then `/code-review`, apply the fixes, then commit.** Commit path-scoped, never push without his go.
+
+**Next, in order:**
+
+1. ~~Gold-token groundwork~~ DONE 2026-10-01, see the block below.
+2. ~~Reading block~~ BUILT 2026-10-01 in `c8188a4`, see the block below. **Owed first: the browser pass `2o6bxiqe`** (closes `j3a3426u`, `rti3s5bo`, `3i9lbq9w`), then deploy Studio to staging and do the Presentation check on `xvcgimrr`.
+3. **Notes** (`v7ev58fe`, design locked, below).
+4. **Before the PR:** C9 check of the `entry_page_view` payload. Staging sends no Mixpanel events (GitHub var `NEXT_PUBLIC_TRACK_NON_PROD` is unset), so either run `pnpm dev` locally (`.env.local` has tracking on) and read the Network request, or set that GitHub var for staging. Then push, PR, staging deploy and production deploy, each with Max's go.
+5. **🚩 After v1.20.0 is on production, not before:** run `pnpm tsx scripts/migrate-clear-booking-meta-titles-2026-10.mts` against production (staging already done). Production v1.19.5 still reads `reading.seo.metaTitle`; clearing it earlier drops live titles to the old "Book … — Josephine" fallback. Until then the production Studio shows Booking Page `seo.metaTitle` as an unknown field; harmless. Then close `8dlx57qu`.
+6. **Demand check for Notes topics.** Claude pulls Google Trends plus "People also ask". Max adds Google Keyword Planner ranges.
+7. **Re-run the 10 blind queries around 2026-10-21** (list below).
+8. **Later, own session:** the recording-to-note funnel `yrozce56`; site-wide page titles on `SITE_NAME` `hnbudgj8`.
+9. **Later, own release branch:** `oo4wxk3e`, a "Send reading now" button in Studio for Becky (marker plus a frequent cron, no admin token). It also fixes the force path, which has no already-sent check today.
+
+**Done 2026-10-01, third part, on `release/v1.20.0` (not pushed): reading block, `c8188a4` + `4341eef`.**
+- **Sanity:** `reading` gets `questionsOnPage` (refs to faqItem; empty hides Questions), `formTestimonial` (one testimonial linked to this reading; empty shows none) and `estimatedMinutes` (adds "about N minutes" to the page line). `bookingForm.readingPageContent` ("Reading Page" group) holds the shared words; defaults in `READING_PAGE_DEFAULTS`. Body line = `expandedDetails[0]`, "How it works" = `expandedDetails[1..]`. Ten dead fields removed (`dk4a06s7` + `reading.bookingSummary`); the old values still sit on the docs as Unknown field, unset script is `and9um5b`. **Studio is not yet deployed with the new schema.**
+- **Page:** `ReadingBlock` (server) inside `ReadingFold` (client). Folded for `homepage_card` and `draft`, open otherwise. `BookingEntryProvider` (`src/lib/intake/bookingEntryContext.tsx`) reads the entry once per page: `peekBookingEntry(slug, usePathname())` in a per-mount `useSyncExternalStore` snapshot, `settleBookingEntry` in an effect. It takes the router pathname because `window.location` still holds the old URL during render on a client navigation. The collapse is CSS grid-rows (`AnimatedCollapse`), so /book has no motion lib; closed panels stay in the HTML as `inert`. Header layout A: Back on its own row, reading name is the h1. Next/Back/review-edit scroll to the form. Testimonial option 2 sits above the consents.
+- **Known:** a hard reload with a saved draft paints the block open, then it snaps shut on hydration. The h1 sits in the header, outside `<main>` (`3bqw2jye`, decide). Becky's per-reading picks: `63bfijpo`.
+- **Gates:** unit 210/210 files, 1915 tests; mock e2e 30/30; typecheck, lint and stories graph clean; two rounds of `/simplify` + `/code-review`. NOT browser-verified: the Chrome extension was not connected and Interceptor exits 8.
+- `4341eef`: deleted `scripts/migrate-booking-page-copy-2026-05.ts` (Max approved) and removed it from `apply-all-sanity-migrations-to-prod.mts`.
+- The book and homepage `page.test.ts` files now mock the view, so their 5s cold-import timeout is gone. Do not `git stash` while new files are `git add -N`: the stash fails and the pop then tries an older stash.
+
+**Done 2026-10-01, second half, on `release/v1.20.0` (not pushed): gold contrast, `gk2etjdy`.**
+- `c6d3b5b`: tokens `--j-text-gold #916B2A` (4.56:1 on cream) and `--j-text-gold-lg #B18945` (3.03:1, 24px and up). `PortableTextContent` links use text gold, body text weight 400, blockquote is a Cormorant italic 26px pull quote. `src/styles/tokens.test.ts` pins the ratios.
+- `f58fb68`: gold text on cream and ivory moved to those tokens (eyebrows via `eyebrowClasses` in `src/lib/textStyles.ts`, links, floated labels, hover states, header and card tag and price, thank-you price, HowItWorks numerals, `global-error` tag). Focus rings use `j-deep`.
+- `e876109`: text on warm surfaces uses `--j-text-muted-warm #6F6560`. Hero tagline and body copy: the mobile background measures `#F3EFE7`, where `#916B2A` is 4.22:1. Also ReviewSummary, LegalAcknowledgments, TestimonialCard. Emails get a `mutedOnWarm` token for the warm card and shell text (emails had no gold text). Day-picker today ring is text gold. Decorative icons and glyphs use `j-ornament`. ESLint rejects the old gold: `text-`, `outline-`, `ring-`, `decoration-j-accent|gold`, focus borders, arbitrary values, `var(--j-accent)` colours, the email `text-gold` class and `color: #C4A46B`. `MEMORY/` is no longer linted.
+- `928b7df`: input focus border is text gold (Max picked option A in Storybook). Dead read-only field classes removed; no field sets `readOnly`.
+- Token rule for the reading block and Notes: `text-j-text-gold` (small) or `text-j-text-gold-lg` (24px and up) on cream and ivory, `text-j-text-muted-warm` on warm, `j-ornament` for decorative marks. The lint guard enforces the old-gold half.
+- Still open on `gk2etjdy`: rose `#BF9B8B` text on cream (2.39:1) in `DiscardDraftButton.tsx:63` and `:82`. Needs a colour call.
+
+**Production action 2026-10-01:** the day-7 delivery for `8ed4c854` (Soul Blueprint) was sent by `POST /api/cron/email-day-7-deliver?force=<id>` after Becky uploaded the voice note and PDF. Sanity shows `day7` sent at 08:09:15Z.
+
+**Environment notes 2026-10-01:**
+- `wrangler d1 execute withjosephine-bookings --remote` returned Cloudflare 7403 (not authorized). Run `wrangler whoami` and log in again before relying on D1 reads.
+- After a token edit, `pnpm dev` and Storybook can serve stale Tailwind CSS. Clear `.next/dev` and restart.
+- Stop Storybook with `pkill -f storybook/dist/bin/dispatcher.js`.
+- Browser checks ran through the harness Chrome driver; Interceptor still exits 8.
+
+**Done 2026-10-01 on `release/v1.20.0` (not pushed):** `3f227bc` + `4f7b9f9` (`5vanz209` closed; `9zf0xtcf` done except C9): dead CTA funnel removed, `entry_page_view` carries `entry` (homepage_card | draft | internal | external | direct) and `folded`; the card tap is held in page memory for 60s, nothing written to the device, so no consent gate. All browser storage goes through `withLocalStorage` (`src/lib/browserStorage.ts`); the draft store no longer throws when site data is blocked. `ec373f7` (`8dlx57qu`): `/book/[slug]` titles built as `<subtitle>, <price> | Josephine Soul Readings`, `reading.seo.metaTitle` an optional override, `bookingPage.seo.metaTitle` removed. Sanity runs: title cleanup on staging (4 cleared), pageCount on production (Akashic 1, Soul Blueprint 2; `eh6qwjg4` + `k7z0zdcy` closed), Studio redeployed. Full unit suite 1876/1876.
+
+**Known, not fixed, surfaced by code-review 2026-10-01 (earlier commits on this branch, Max to pick):** `/book` CSP is `script-src 'unsafe-inline'` (the deliberate `y5x31yiu` fix); the `reading-${id}` anchor id is written in both `HomePageView.tsx` and `homeReadingAnchor`; `resend.test.ts` can time out at the 5s default under full-suite load (passes alone). Fixed since in `c8188a4`: the letterTitle help text, the dead letter-page fields, the long-name overlap with Back, and the book page test timeout.
+
+**Notes design is LOCKED (2026-09-30), dex `v7ev58fe`.** The full decision list is on the ticket. Record: `www/MEMORY/WORK/20260930-articles-page/` (`decisions.html` is the rendered options page from `build-decisions.ts`; `DECISIONS.md` holds every answer; `TRANSCRIPT.md` is the council of 5 over 3 rounds; `CONTEXT.md` is what the council was given). The core:
+- Name "Notes", `/notes/[slug]`, Sanity document `article`.
+- Visible only when a Notes on/off switch in Sanity is on AND at least 1 note is published: index, footer link, FAQ links, sitemap entries.
+- Becky types notes herself. Any topic. The brand word list does not apply to notes.
+- Body blocks: rich text, images (uploaded in Studio, alt text required), and optional Plates (style A "Ledger", layout set per Plate).
+- The first body paragraph doubles as the meta description, with an optional `searchDescription` override.
+- End of each note: an end card with price (card text editable), 2 picked "More notes" plus "See all notes", one inline /book link.
+- Audio field built but empty; it renders on its own row under the author row.
+- FAQ item gets a `relatedArticle` reference. Each note shows its URL with a copy button.
+- Never list: health/medical and pregnancy/fertility only.
+
+**Becky's writing guide:** Claude Doc https://claude.ai/code/artifact/f0967587-5a46-4ff8-b7f0-b2a89c019594 and a Word copy at `www/MEMORY/WORK/20260930-articles-page/Writing-Notes-guide-for-Becky.docx`. Max shares it with her through Google Docs.
+
+**Earlier order (2026-09-30), now done:** step 1 locked the Notes design; step 2 (implement) is the list above.
+
+**The reading-page design is LOCKED (2026-09-30).** Full decision list on dex `q7swqq89`. Rendered reference: `www/MEMORY/WORK/20260930-book-service-content/decisions.html` (built by `build-decisions.ts` in the same folder from live HTML/CSS and published Sanity content). Summary: reading block above the form, folded for homepage-card visitors and open for everyone else; header layout A (Back on its own row, name 28px as the H1); accordions styled and animated like the homepage FAQ but with panel text kept in the DOM; per-reading FAQ via a reference array on the reading; portrait from the homepage About image; "Not sure this is the one?" links; testimonial option 2 (labelled line between the answers summary and the consent block); page line "Page N of M · about X minutes"; text gold `#916B2A` (small) and `#B18945` (24px and up). Dropped: reading map, sample PDF, audio clip, real-reading sample, "Leaf" wording.
+
+**Implementation tickets:**
+- `xvcgimrr`: everything on the new block and final page editable from Sanity (field inventory on the ticket, plus the zombie-field cleanup `dk4a06s7`).
+- `3i9lbq9w`: Next/Back scroll to the form, not the page top. Must ship with the block.
+- `9zf0xtcf`: done (`3f227bc` + `4f7b9f9`), only the C9 payload check is open. No baseline wait (option B).
+- `eh6qwjg4` + `k7z0zdcy`: done 2026-10-01, production pageCount is Akashic 1, Soul Blueprint 2.
+- `3gpnqffe`: Akashic testimonial link for Becky, needed because a testimonial ships.
+- The SEO naming change is already committed on this branch (`e225af4`). `8dlx57qu`: done in code (`ec373f7`); staging values cleared; the production clear runs after deploy (step 5). No Becky action needed.
+- **`cgnrrz7x` naming is DECIDED (2026-09-30):** public name "Josephine Soul Readings"; "Josephine Rebecca" allowed as the founder name in structured data; her surname appears only on the legal pages. Code for it is committed on **`release/v1.20.0`** (cut off `main` `e2b68b1`, CI-wired in all four `ci.yml` sites, NOT pushed): new Organization/WebSite names + `alternateName` + `founder`, Product brand, `og:site_name`, legal pages `noindex, follow` and out of the sitemap. After deploy, Search Console will list the three legal pages as "Excluded by noindex", which is expected. Still open on the ticket: About copy, training and years, photo, same name on TikTok and listings.
+- **`jp8hzfcu` (Reddit, Etsy, podcasts, directories) is still a planning item.** `v7ev58fe` (Notes) is designed and locked (see above). The site is already linked from the TikTok bio.
+- **Indexing is done, do not redo it.** Google Search Console: all 7 sitemap URLs indexed. Bing Webmaster Tools: set up 2026-09-30, all pages indexed (Max checked). Cloudflare Crawler Hints, AI Crawl Control and Block AI bots: checked by Max, no issues. robots.txt, crawler responses, server HTML, canonicals, sitemap and JSON-LD were verified fine.
+- **Re-run the 10 blind search queries around 2026-10-21** to see whether withjosephine.com starts appearing. The query list is in the investigation of 2026-09-30: online akashic records reading; akashic records and astrology reading online; birth chart and akashic records combined reading; soul blueprint reading astrology akashic records; akashic record reading voice note and PDF; astrology reading delivered as voice note; best online birth chart reading 2026; Josephine akashic records reading; withjosephine; site:withjosephine.com. On 2026-09-30 the site appeared in none of them.
+- **Wrangler is logged in again (2026-09-30)** as maxgertzen@gmail.com; D1, deployments, secrets and R2 all respond. It has `zone:read` only, so it cannot read zone settings such as Crawler Hints.
+- **Interceptor cannot drive a browser on this machine yet:** the preflight exits 8 because `INTERCEPTOR_TEST_CONTEXT_ID` is unset in `~/.claude/LIFEOS/USER/CUSTOMIZATIONS/SKILLS/Interceptor/preferences.env`.
+
+## ▶ NEXT AFTER DISCOVERABILITY (2026-08-02 handover): v1.19.5 IS LIVE. Then `4s6dkgsf` on a NEW release branch.
+
+**`release/v1.19.5` merged to `main` as squash `e2b68b1` (PR #333) and deployed to production. Browser-verified on `withjosephine.com/book/soul-blueprint`. The Sanity Studio was redeployed post-merge, 2/2 schemas.**
+
+**Max's call for the next session (2026-08-02, verbatim intent): work dex epic `4s6dkgsf` (Delivery observability + failure recovery, 11 subtasks) onto a NEW release branch, and FOLD THE HEADER STYLING INTO THAT SAME RELEASE.** The header styling item is dex `j3a3426u` under `681ra7bq`. So the next release carries the delivery-observability epic plus that one styling ticket, not a styling-only release.
+
+- **`j3a3426u` (mobile intake header too small) is blocked on `rti3s5bo` and must be solved with it.** `BookingFlowHeader.tsx:83` sets the reading name to `text-[1.25rem]` on mobile against `md:text-[2.4rem]`, and the span is `whitespace-nowrap`. `rti3s5bo` measured "Akashic Records Reading" clearing Back by only **16.3px** at 375px. The small mobile size is what keeps the longest name off the Back button, so growing it requires a layout answer: allow two lines, shorten the displayed name, or move Back. Max confirmed he means the tag/name/price strip, NOT the `h1`.
+- **`681ra7bq` is no longer fully unspecified.** It now has one confirmed item from Max (`j3a3426u`). Its other seven entries are still candidates, not his list. Do NOT promote them without asking.
+- **✅ Max is signed in to Cloudflare Access**, so `https://staging.withjosephine.com` is reachable in his Chrome. The `.env.local` CF Access service token is still rejected (`service_token_status: false`), so headless and curl still bounce. Drive his browser, or use `workflow_dispatch` on `e2e-sandbox`.
+- **Mobile screenshots were unreliable this session.** `resize_window` reported success while every capture came back desktop-width. `rti3s5bo` got real numbers via DOM measurement at a true 375px (iframe-framed so media queries saw it); use that technique, not screenshots.
+- **The specimen is still the cheapest styling review surface:** `MEMORY/WORK/20260729-booking-funnel-collapse/header-variations.html`, self-contained, no server needed.
+
+### 🚩 Owed on `main` right now
+
+- **CHANGELOG row for #333.** Repo convention is to add it as a standalone `docs:` commit after the merge, so it is deliberately absent from the release commit.
+- **`smoke-production` on run `30742443695` completed with success** (checked 2026-09-30).
+- **`studio/actions/resendCustomerEmail.tsx` Rules-of-Hooks fix is now committed on `release/v1.20.0`** (2026-09-30). It is already deployed to Studio; it reaches `main` when v1.20.0 merges.
+- **Production Sanity pageCount migration** (`pnpm tsx scripts/migrate-booking-pagecount-2026-08.mts`, idempotent, staging already done).
+
+## ▶ ✅ SHIPPED (2026-08-02) - `release/v1.19.5`: booking funnel collapse + intake intro rework, MERGED TO `main` AND LIVE
+
+**Merged as squash `e2b68b1` via PR #333 and deployed to production. The scope call recorded below ("everything EXCEPT the styling pass") was overridden by Max at merge time: the intake typography and CMS rework (`1dedfd1`) was folded into this same release rather than held for a separate one. `release/v1.20.0` was created for that purpose and then deleted; PR #332 was closed unmerged.**
+
+**What `1dedfd1` added:** the intake intro block now matches the homepage "who i am" typography (cursive Cormorant heading, Inter body), the duplicated "Take your time" closing line is cut, and the two body paragraphs fold into ONE Portable Text field, `reading.intakeIntro`, so Becky edits one box per reading instead of two documents. `letterTitle` now renders (it was a live Studio field bound to nothing). `letterOpener` and `letterBridge` deleted from the schema; Sanity preserves their raw values on existing docs. Both intro paragraphs now share one tone, because emphasis is Becky's call via bold rather than the code muting paragraph two. Fallbacks in `src/data/defaults.ts` carry the absorbed opener, so the page renders the previous exact words until Becky fills the field.
+
+### Historical scope note (superseded)
+
+
 
 **Branch `release/v1.19.5`, cut off `main` (`b2b3579`). Max's scope call: everything in epic `4bttw1sh` EXCEPT the styling pass. Four of six tickets closed; the two Sanity ones are staging-only by design. ONE commit exists (`b18979f`, the static-route win); everything else is still in the working tree awaiting Max's commit authorization.**
 

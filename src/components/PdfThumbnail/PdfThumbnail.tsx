@@ -34,7 +34,7 @@ export function PdfThumbnail({
       className={mergeClasses(
         "group relative mx-auto block aspect-[1/1.414] w-60 max-w-full overflow-hidden rounded-md",
         "border border-j-blush bg-j-ivory shadow-[0_12px_34px_-14px_rgba(13,11,26,0.4)]",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep",
         className,
       )}
     >
@@ -48,7 +48,7 @@ export function PdfThumbnail({
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center px-6 pt-8 pb-6 text-center">
-          <span aria-hidden className="font-display text-lg text-j-accent">
+          <span aria-hidden className="font-display text-lg text-j-ornament">
             ✦
           </span>
           <p className="mt-3 font-display italic text-base leading-snug text-j-text-heading">

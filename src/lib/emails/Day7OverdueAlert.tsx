@@ -27,7 +27,7 @@ export function Day7OverdueAlert({
       <LabelValueRow label="Reading">{readingName}</LabelValueRow>
       <LabelValueRow label="Submission ID">{submissionId}</LabelValueRow>
       <LabelValueRow label="Created">{createdAt}</LabelValueRow>
-      <Text className="text-muted text-sm mt-6">
+      <Text className="text-muted-warm text-sm mt-6">
         Mark <code>deliveredAt</code> in Studio after uploading the voice note + PDF to fire the client delivery email.
       </Text>
     </EmailShell>

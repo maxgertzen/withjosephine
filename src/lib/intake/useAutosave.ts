@@ -60,6 +60,7 @@ export function useAutosave({
 }: UseAutosaveArgs): UseAutosaveResult {
   const [chipTick, setChipTick] = useState(0);
   const justDiscardedRef = useRef(false);
+  const pendingSaveRef = useRef<(() => void) | null>(null);
 
   const valuesUntouched = useMemo(
     () => JSON.stringify(values) === defaultValuesSnapshot,
@@ -78,14 +79,20 @@ export function useAutosave({
   );
 
   useEffect(() => {
+    pendingSaveRef.current = null;
     if (!isRestored) return;
     if (justDiscardedRef.current) {
       justDiscardedRef.current = false;
       return;
     }
     if (valuesUntouched) return;
-    const handle = setTimeout(() => {
+    const save = () => {
+      pendingSaveRef.current = null;
       flushSave(values, currentPage);
+    };
+    pendingSaveRef.current = save;
+    const handle = setTimeout(() => {
+      save();
       trackThrottled(
         "intake_save_auto",
         { reading_id: readingId, page_number: currentPage + 1 },
@@ -101,6 +108,15 @@ export function useAutosave({
     valuesUntouched,
     flushSave,
   ]);
+
+  useEffect(() => {
+    const savePendingEdit = () => pendingSaveRef.current?.();
+    window.addEventListener("pagehide", savePendingEdit);
+    return () => {
+      window.removeEventListener("pagehide", savePendingEdit);
+      savePendingEdit();
+    };
+  }, []);
 
   useEffect(() => {
     if (!lastSavedAt) return;

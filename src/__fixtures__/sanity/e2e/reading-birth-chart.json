@@ -1,6 +1,5 @@
 {
   "_id": "reading-birth-chart",
-  "bookingSummary": "A deep dive into your chart. Your core themes, gifts, patterns, and what the current stars are saying about where you are right now.",
   "briefDescription": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
   "expandedDetails": [
     "We'll take a look at your natal chart and the specific energies, timing and patterns that shape your experience.",
@@ -22,7 +21,6 @@
   "requiresQuestions": false,
   "seo": {
     "metaDescription": "What the stars already said about you. Core themes, natural gifts, and current patterns — written and spoken just for you. Delivered in 7 days.",
-    "metaTitle": "Birth Chart Reading | [E2E-Author] — $99",
     "ogImage": {
       "_type": "image",
       "asset": {

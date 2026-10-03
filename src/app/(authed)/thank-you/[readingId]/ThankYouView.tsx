@@ -47,7 +47,7 @@ export function ThankYouView({
 
       <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center">
         <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <Mail className="w-9 h-9 text-j-accent" strokeWidth={1.5} />
+          <Mail className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
         </div>
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
@@ -67,10 +67,10 @@ export function ThankYouView({
           {showsDiscountedPrice ? (
             <span className="font-display text-2xl italic flex items-baseline gap-2">
               <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-              <span className="text-j-accent">{paidAmount.display}</span>
+              <span className="text-j-text-gold-lg">{paidAmount.display}</span>
             </span>
           ) : (
-            <span className="font-display text-2xl italic text-j-accent">
+            <span className="font-display text-2xl italic text-j-text-gold-lg">
               {paidAmount.display ?? reading.price}
             </span>
           )}
@@ -83,7 +83,7 @@ export function ThankYouView({
           <p className="whitespace-pre-line">
             {renderWithSlots(copy.timelineBody, {
               deliveryDays: (
-                <span className="font-display italic text-j-accent">{copy.deliveryDaysPhrase}</span>
+                <span className="font-display italic text-j-text-gold">{copy.deliveryDaysPhrase}</span>
               ),
             })}
           </p>

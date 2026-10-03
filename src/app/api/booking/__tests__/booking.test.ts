@@ -37,7 +37,6 @@ const READING: SanityReading = {
   briefDescription: "",
   expandedDetails: [],
   includes: [],
-  bookingSummary: "",
   requiresBirthChart: false,
   requiresAkashic: false,
   requiresQuestions: false,

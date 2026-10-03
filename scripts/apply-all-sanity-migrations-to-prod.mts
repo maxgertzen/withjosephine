@@ -21,7 +21,6 @@ const MIGRATION_ORDER = [
   "migrate-privacy-mixpanel.ts",
   "migrate-privacy-retention.ts",
   "migrate-consent-banner-clarity.ts",
-  "migrate-booking-page-copy-2026-05.ts",
   "migrate-gift-copy-2026-05.ts",
   "migrate-gift-pages-2026-05.ts",
   "migrate-gift-form-validation-2026-05.ts",

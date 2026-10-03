@@ -1,9 +1,15 @@
 import { cache } from "react";
 
+import type { NoteSummary } from "@/lib/notes/types";
+
 import { getSanityFreshReadClient, sanityClient } from "./client";
 import { sanityFetch } from "./live";
 import { publishedFetch } from "./publishedFetch";
 import {
+  articleBySlugQuery,
+  articleDatesQuery,
+  articleSlugsQuery,
+  articlesQuery,
   bookingFormQuery,
   bookingPageQuery,
   emailDay7DeliveryQuery,
@@ -16,8 +22,10 @@ import {
   legalPageBySlugQuery,
   listenPageQuery,
   magicLinkVerifyPageQuery,
+  notesStateQuery,
   notFoundPageQuery,
   readingBySlugQuery,
+  readingNotesQuery,
   readingSlugsQuery,
   readingsQuery,
   siteSettingsQuery,
@@ -27,6 +35,9 @@ import {
   underConstructionPageQuery,
 } from "./queries";
 import type {
+  SanityArticle,
+  SanityArticleDates,
+  SanityArticleSummary,
   SanityBookingForm,
   SanityBookingPage,
   SanityEmailDay7Delivery,
@@ -39,6 +50,7 @@ import type {
   SanityLegalPage,
   SanityListenPage,
   SanityMagicLinkVerifyPage,
+  SanityNotesState,
   SanityNotFoundPage,
   SanityReading,
   SanitySiteSettings,
@@ -87,15 +99,19 @@ export const fetchReading = cache(async (slug: string): Promise<SanityReading | 
  * scope — `sanityFetch`/`draftMode()` would throw there. Static params are
  * always sourced from published documents anyway.
  */
-export async function fetchReadingSlugs(): Promise<{ slug: string }[]> {
+async function fetchPublishedSlugs(query: string): Promise<{ slug: string }[]> {
   return (
     (await sanityClient.fetch<{ slug: string }[] | null>(
-      readingSlugsQuery,
+      query,
       {},
       { perspective: "published", stega: false },
     )) ?? []
   );
 }
+
+export const fetchReadingSlugs = () => fetchPublishedSlugs(readingSlugsQuery);
+
+export const fetchArticleSlugs = () => fetchPublishedSlugs(articleSlugsQuery);
 
 export const fetchTestimonials = cache(async (): Promise<SanityTestimonial[]> => {
   const { data } = await sanityFetch<SanityTestimonial[] | null>({ query: testimonialsQuery });
@@ -250,3 +266,64 @@ export const fetchBookingPagePublished = cache(async (): Promise<SanityBookingPa
 
 export const fetchBookingFormPublished = cache(async (): Promise<SanityBookingForm | null> =>
   publishedFetch<SanityBookingForm | null>({ query: bookingFormQuery, tags: ["bookingForm"] }));
+
+export const fetchNotesStatePublished = cache(
+  async (): Promise<SanityNotesState | null> =>
+    publishedFetch<SanityNotesState | null>({
+      query: notesStateQuery,
+      tags: ["notesSettings", "article", "landingPage"],
+    }),
+);
+
+export const fetchArticlesPublished = cache(
+  async (): Promise<SanityArticleSummary[]> =>
+    (await publishedFetch<SanityArticleSummary[] | null>({
+      query: articlesQuery,
+      tags: ["article"],
+    })) ?? [],
+);
+
+export const fetchArticlePublished = cache(
+  async (slug: string): Promise<SanityArticle | null> =>
+    publishedFetch<SanityArticle | null>({
+      query: articleBySlugQuery,
+      params: { slug },
+      tags: ["article", `article:${slug}`],
+    }),
+);
+
+export const fetchNotesState = cache(async (): Promise<SanityNotesState | null> => {
+  const { data } = await sanityFetch<SanityNotesState | null>({ query: notesStateQuery });
+  return data;
+});
+
+export const fetchArticles = cache(async (): Promise<SanityArticleSummary[]> => {
+  const { data } = await sanityFetch<SanityArticleSummary[] | null>({ query: articlesQuery });
+  return data ?? [];
+});
+
+export const fetchArticle = cache(async (slug: string): Promise<SanityArticle | null> => {
+  const { data } = await sanityFetch<SanityArticle | null>({
+    query: articleBySlugQuery,
+    params: { slug },
+  });
+  return data;
+});
+
+export const fetchArticleDatesPublished = cache(async (): Promise<SanityArticleDates[]> =>
+  (await publishedFetch<SanityArticleDates[] | null>({
+    query: articleDatesQuery,
+    tags: ["article"],
+  })) ?? []);
+
+export const fetchReadingNotesPublished = cache(async (slug: string): Promise<NoteSummary[]> =>
+  (await publishedFetch<NoteSummary[] | null>({
+    query: readingNotesQuery,
+    params: { slug },
+    tags: ["article"],
+  })) ?? []);
+
+export const fetchReadingNotes = cache(async (slug: string): Promise<NoteSummary[]> => {
+  const { data } = await sanityFetch<NoteSummary[] | null>({ query: readingNotesQuery, params: { slug } });
+  return data ?? [];
+});

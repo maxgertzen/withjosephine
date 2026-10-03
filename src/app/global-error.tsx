@@ -80,7 +80,7 @@ export default function GlobalError({
                 font-size: 0.68rem;
                 letter-spacing: 0.22em;
                 text-transform: uppercase;
-                color: #C4A46B;
+                color: #916B2A;
                 margin-bottom: 1rem;
               }
             `,

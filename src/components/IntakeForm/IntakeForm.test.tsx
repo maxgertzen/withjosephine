@@ -1,8 +1,11 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { __resetSwapNameCacheForTest } from "@/lib/intake/useDraftRestore";
+import type { BookingEntry } from "@/lib/analytics";
+import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
+import { save as saveDraft, setLastReadingId } from "@/lib/intake/localStorageDraft";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm } from "./IntakeForm";
@@ -110,7 +113,6 @@ beforeEach(() => {
   // submit assertion below.
   vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
-  __resetSwapNameCacheForTest();
 });
 
 afterEach(() => {
@@ -118,14 +120,22 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function renderForm(sections = SINGLE_PAGE_SECTIONS) {
+function renderForm(
+  sections = SINGLE_PAGE_SECTIONS,
+  extra: Partial<ComponentProps<typeof IntakeForm>> = {},
+  entry: BookingEntry | null = null,
+) {
   render(
-    <IntakeForm
-      readingId="soul-blueprint"
-      readingName="Soul Blueprint"
-      sections={sections}
-      nonRefundableNotice="Once Josephine begins, no refunds."
-    />,
+    <BookingEntryContext.Provider value={entry}>
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="Soul Blueprint"
+        sections={sections}
+        nonRefundableNotice="Once Josephine begins, no refunds."
+        switchNotice="Switched to Soul Blueprint."
+        {...extra}
+      />
+    </BookingEntryContext.Provider>,
   );
 }
 
@@ -146,11 +156,30 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.getByText(/Once Josephine begins/)).toBeInTheDocument();
   });
 
+  it("shows the testimonial line on the final page, above the consent block", () => {
+    renderForm(SINGLE_PAGE_SECTIONS, {
+      testimonial: {
+        label: "From a client",
+        quote: "It connected the dots.",
+        name: "Raphi",
+        detail: "Soul Blueprint Reading",
+      },
+    });
+    const quote = screen.getByText(/It connected the dots./);
+    expect(screen.getByText("From a client")).toBeInTheDocument();
+    expect(screen.getByText("Raphi · Soul Blueprint Reading")).toBeInTheDocument();
+    const consent = screen.getByText(/Once Josephine begins/);
+    expect(quote.compareDocumentPosition(consent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows no testimonial line when none is set", () => {
+    renderForm();
+    expect(screen.queryByText("From a client")).toBeNull();
+  });
+
   it("renders the Submit button (not Next) when form is single-page", () => {
     renderForm();
-    expect(
-      screen.getByRole("button", { name: /Continue to payment/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
@@ -170,9 +199,12 @@ describe("IntakeForm — single-page flow", () => {
   it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
+        {
+          status: 200,
+        },
+      ),
     );
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
@@ -206,9 +238,12 @@ describe("IntakeForm — single-page flow", () => {
   it("includes art6Consent and art9Consent flags in the booking POST body", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
+        {
+          status: 200,
+        },
+      ),
     );
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -233,9 +268,12 @@ describe("IntakeForm — single-page flow", () => {
   it("submits and redirects to the payment URL on success", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
+        {
+          status: 200,
+        },
+      ),
     );
 
     const originalLocation = window.location;
@@ -316,16 +354,14 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
         readingName="The Soul Blueprint"
         sections={PROD_SHAPE}
         nonRefundableNotice="..."
+        switchNotice="Switched to Soul Blueprint."
       />,
     );
   }
 
   it("disables Next when both required fields are empty (bug #3)", () => {
     renderProdShape();
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByText(/still need/)).toBeNull();
   });
 
@@ -333,20 +369,14 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("keeps Next disabled when only the name is filled (bug #3)", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("keeps Next disabled when the email format is invalid (bug #3)", async () => {
@@ -354,10 +384,7 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "not-an-email");
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("clears the validation summary once both required fields are valid", async () => {
@@ -390,10 +417,7 @@ describe("IntakeForm — paginated flow", () => {
 
   it("disables Next while current-page validation is failing (bug #3)", () => {
     renderForm(TWO_PAGE_SECTIONS);
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByText(/still need/)).toBeNull();
   });
 
@@ -421,9 +445,7 @@ describe("IntakeForm — paginated flow", () => {
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.click(screen.getByRole("button", { name: /Next/ }));
     expect(screen.getByTestId("review-summary")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Your details" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your details" })).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
   });
 
@@ -465,30 +487,24 @@ describe("IntakeForm — localStorage save/resume", () => {
     expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
   });
 
-  it("preserves email and name when reading slug differs from lastReadingId", async () => {
-    window.localStorage.setItem(
-      "josephine.intake.draft.akashic-record",
-      JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        currentPage: 1,
-        values: {
-          email: "ada@example.com",
-          fullName: "Ada Lovelace",
-        },
-      }),
-    );
-    window.localStorage.setItem("josephine.intake.lastReadingId", "akashic-record");
+  it.each([
+    { entry: "reading_switch" as const, noticeShown: true },
+    { entry: "homepage_card" as const, noticeShown: false },
+    { entry: "internal" as const, noticeShown: false },
+  ])(
+    "carries email over and shows the switch notice only on $entry entry",
+    async ({ entry, noticeShown }) => {
+      saveDraft("akashic-record", { currentPage: 1, values: { email: "ada@example.com" } });
+      setLastReadingId("akashic-record");
 
-    renderForm(SINGLE_PAGE_SECTIONS);
+      renderForm(SINGLE_PAGE_SECTIONS, {}, entry);
 
-    await waitFor(() => {
-      expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe(
-        "ada@example.com",
-      );
-    });
-    expect(screen.getByText(/Switched to Soul Blueprint/)).toBeInTheDocument();
-  });
+      await waitFor(() => {
+        expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe("ada@example.com");
+      });
+      expect(screen.queryByText(/Switched to Soul Blueprint/) !== null).toBe(noticeShown);
+    },
+  );
 
   it("does not show the Clear form button on first render with no saved draft", () => {
     renderForm();
@@ -497,18 +513,14 @@ describe("IntakeForm — localStorage save/resume", () => {
 
   it("disables Save and continue later when no fields have been touched", () => {
     renderForm();
-    expect(
-      screen.getByRole("button", { name: /Save and continue later/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Save and continue later/ })).toBeDisabled();
   });
 
   it("enables Save and continue later once any field has a value", async () => {
     const user = userEvent.setup();
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "A");
-    expect(
-      screen.getByRole("button", { name: /Save and continue later/ }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Save and continue later/ })).toBeEnabled();
   });
 
   it("does not autosave an empty-defaults draft on mount", async () => {
@@ -516,9 +528,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     try {
       renderForm();
       await vi.advanceTimersByTimeAsync(600);
-      expect(
-        window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
-      ).toBeNull();
+      expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -529,9 +539,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada");
     await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
-    expect(
-      await screen.findByTestId("discard-draft-button"),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId("discard-draft-button")).toBeInTheDocument();
   });
 
   it("clears localStorage and resets values when Yes, clear it is confirmed", async () => {
@@ -539,9 +547,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
     await user.click(screen.getByRole("button", { name: /Save and continue later/ }));
-    expect(
-      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
-    ).not.toBeNull();
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).not.toBeNull();
 
     await user.click(await screen.findByTestId("discard-draft-button"));
     await user.click(await screen.findByTestId("discard-draft-confirm-yes"));
@@ -549,9 +555,7 @@ describe("IntakeForm — localStorage save/resume", () => {
     await waitFor(() => {
       expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("");
     });
-    expect(
-      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
     expect(screen.queryByTestId("discard-draft-button")).toBeNull();
   });
 
@@ -566,20 +570,19 @@ describe("IntakeForm — localStorage save/resume", () => {
     await user.click(await screen.findByTestId("discard-draft-button"));
     await user.click(await screen.findByTestId("discard-draft-cancel"));
 
-    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe(
-      "Ada Lovelace",
-    );
-    expect(
-      window.localStorage.getItem("josephine.intake.draft.soul-blueprint"),
-    ).toBe(before);
+    expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBe(before);
   });
 
   it("clears the saved draft when /api/booking returns 2xx", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
+        {
+          status: 200,
+        },
+      ),
     );
     const originalLocation = window.location;
     Object.defineProperty(window, "location", {

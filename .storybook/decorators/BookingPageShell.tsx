@@ -10,7 +10,6 @@ import { BookingPageShell } from "@/components/BookingPageShell";
 // parameters.bookingPageShell.
 
 type BookingPageShellParameters = {
-  eyebrow?: string;
   title?: string;
   subtitle?: string;
   backHref?: string;
@@ -21,7 +20,7 @@ type BookingPageShellParameters = {
 
 export const withBookingPageShell: Decorator = (Story, context) => {
   const params = (context.parameters.bookingPageShell ?? {}) as BookingPageShellParameters;
-  const { eyebrow, title, subtitle, backHref, readingTag, readingName, readingPrice } = params;
+  const { title, subtitle, backHref, readingTag, readingName, readingPrice } = params;
 
   return (
     <BookingPageShell
@@ -30,7 +29,7 @@ export const withBookingPageShell: Decorator = (Story, context) => {
       readingName={readingName ?? "Soul Blueprint"}
       readingPrice={readingPrice ?? "$129"}
     >
-      <BookingPageHeading eyebrow={eyebrow} title={title} />
+      {title ? <BookingPageHeading title={title} /> : null}
       {subtitle ? (
         <p className="font-body text-base leading-[1.9] font-light text-j-text max-w-[50ch] mb-10">
           {subtitle}

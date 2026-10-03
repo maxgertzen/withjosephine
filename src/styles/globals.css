@@ -26,6 +26,11 @@
   --color-j-text-heading: var(--j-text-heading);
   --color-j-text-muted: var(--j-text-muted);
   --color-j-text-on-dark: var(--j-text-on-dark);
+  --color-j-text-gold: var(--j-text-gold);
+  --color-j-text-gold-lg: var(--j-text-gold-lg);
+  --color-j-text-muted-warm: var(--j-text-muted-warm);
+  --color-j-text-rose: var(--j-text-rose);
+  --color-j-ornament: var(--j-accent);
   --color-j-accent: var(--j-accent);
   --color-j-accent-light: var(--j-accent-light);
 

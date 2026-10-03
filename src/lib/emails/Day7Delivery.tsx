@@ -67,7 +67,7 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
         <div style={{ padding: "0 48px" }}>
           <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
             <p
-              className="font-sans text-muted uppercase"
+              className="font-sans text-muted-warm uppercase"
               style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
             >
               {copy.cardLabel}
@@ -79,7 +79,7 @@ export function Day7Delivery({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
               {vars.readingName}
             </p>
             <p
-              className="font-sans text-muted"
+              className="font-sans text-muted-warm"
               style={{ margin: 0, fontSize: 14 }}
             >
               {copy.cardDeliveryLine}

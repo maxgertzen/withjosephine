@@ -28,7 +28,7 @@ export function PageIndicator({
       aria-live="polite"
       tabIndex={-1}
     >
-      <span aria-hidden="true" className="text-j-accent mr-2">
+      <span aria-hidden="true" className="text-j-ornament mr-2">
         ✦
       </span>
       <em>{body}</em>

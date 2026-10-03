@@ -73,7 +73,6 @@ type ExistingBookingForm = {
   consentBlock?: ConsentBlock;
   pagination?: { overrides?: unknown[] };
   loadingStateCopy?: string;
-  swapToastCopy?: string;
 };
 
 type ExistingFormSection = {
@@ -102,11 +101,9 @@ const ENTRY_PAGE_VERBATIM: Required<EntryPageContent> = {
   letterOpener:
     "Before I read for you, I want to know a little about you. A few details, a few questions you'd like held.",
   letterBridge: "Take your time with this. There's no wrong answer.",
-  letterClosing:
-    "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
+  letterClosing: "I can't wait to connect with you through your reading.\nWith love, Josephine ✦",
   dropCapCta: "Tell me about you →",
-  dropCapCaption:
-    "The intake form — about five minutes. You'll review before paying.",
+  dropCapCaption: "The intake form — about five minutes. You'll review before paying.",
   changeReadingLinkText: "Reading a different one? See all three →",
   aboutJosephineLinkText: "About Josephine",
 };
@@ -121,8 +118,6 @@ const CONSENT_NEWSLETTER_TEXT =
   "I'd love to hear from Josephine about new readings and writings. You can unsubscribe anytime.";
 
 const LOADING_STATE_COPY = "One moment — taking you to checkout.";
-const SWAP_TOAST_COPY =
-  "Switched to {readingName}. Your name and email are saved — start where you left off.";
 
 function plainPortableTextBlock(blockKey: string, text: string): PortableTextBlock {
   return {
@@ -130,9 +125,7 @@ function plainPortableTextBlock(blockKey: string, text: string): PortableTextBlo
     _key: blockKey,
     style: "normal",
     markDefs: [],
-    children: [
-      { _type: "span", _key: `${blockKey}_s0`, text, marks: [] },
-    ],
+    children: [{ _type: "span", _key: `${blockKey}_s0`, text, marks: [] }],
   };
 }
 
@@ -214,9 +207,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function planEntryPageFields(
-  existing: EntryPageContent | undefined,
-): Record<string, unknown> {
+function planEntryPageFields(existing: EntryPageContent | undefined): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   for (const [field, verbatim] of Object.entries(ENTRY_PAGE_VERBATIM) as Array<
     [keyof EntryPageContent, string]
@@ -229,9 +220,7 @@ function planEntryPageFields(
   return patch;
 }
 
-function planConsentBlockMutations(
-  existing: ExistingBookingForm,
-): PlannedMutation[] {
+function planConsentBlockMutations(existing: ExistingBookingForm): PlannedMutation[] {
   const coolingOffText =
     existing.nonRefundableNotice && existing.nonRefundableNotice.trim().length > 0
       ? existing.nonRefundableNotice.trim()
@@ -246,9 +235,7 @@ function planConsentBlockMutations(
     return [{ docId: BOOKING_FORM_ID, patch: { consentBlock } }];
   }
 
-  const coolingOffRow = existing.consentBlock.rows?.find(
-    (row) => row.key === "cooling_off",
-  );
+  const coolingOffRow = existing.consentBlock.rows?.find((row) => row.key === "cooling_off");
   const coolingOffMissing =
     coolingOffRow !== undefined &&
     (!coolingOffRow.labelRichText || coolingOffRow.labelRichText.length === 0);
@@ -280,9 +267,6 @@ function planSimpleFields(existing: ExistingBookingForm): Record<string, unknown
   if (isAbsent(existing.loadingStateCopy)) {
     patch.loadingStateCopy = LOADING_STATE_COPY;
   }
-  if (isAbsent(existing.swapToastCopy)) {
-    patch.swapToastCopy = SWAP_TOAST_COPY;
-  }
 
   return patch;
 }
@@ -300,9 +284,7 @@ function planBookingFormMutations(existing: ExistingBookingForm): PlannedMutatio
   return result;
 }
 
-function planFormSectionMutations(
-  sections: ExistingFormSection[],
-): PlannedMutation[] {
+function planFormSectionMutations(sections: ExistingFormSection[]): PlannedMutation[] {
   const planned: PlannedMutation[] = [];
   for (const section of sections) {
     const patch: Record<string, unknown> = {};
@@ -322,10 +304,7 @@ function planFormSectionMutations(
   return planned;
 }
 
-async function applyMutations(
-  client: SanityClient,
-  mutations: PlannedMutation[],
-): Promise<number> {
+async function applyMutations(client: SanityClient, mutations: PlannedMutation[]): Promise<number> {
   if (mutations.length === 0) return 0;
   const transaction = client.transaction();
   for (const mutation of mutations) {
@@ -359,8 +338,7 @@ async function main(): Promise<void> {
       entryPageContent,
       consentBlock,
       pagination,
-      loadingStateCopy,
-      swapToastCopy
+      loadingStateCopy
     }`,
     { id: BOOKING_FORM_ID },
   );
@@ -369,7 +347,9 @@ async function main(): Promise<void> {
       `bookingForm doc with _id "${BOOKING_FORM_ID}" not found. Run seed-booking-form.ts first.`,
     );
   }
-  console.log(`  found bookingForm (nonRefundableNotice: ${existingForm.nonRefundableNotice ? "present" : "empty"})`);
+  console.log(
+    `  found bookingForm (nonRefundableNotice: ${existingForm.nonRefundableNotice ? "present" : "empty"})`,
+  );
 
   console.log("\n[2/4] Fetching all formSection docs...");
   const existingSections = await readClient.fetch<ExistingFormSection[]>(

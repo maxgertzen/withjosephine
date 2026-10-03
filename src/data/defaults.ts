@@ -98,21 +98,107 @@ export interface MappedAbout {
   signoff: string;
 }
 
-export interface EntryPageContent {
-  letterClosing: string;
-  dropCapCta: string;
-  dropCapCaption: string;
-  changeReadingLinkText: string;
+export interface ReadingFact {
+  label: string;
+  value: string;
 }
 
-export const ENTRY_PAGE_DEFAULTS: EntryPageContent = {
-  letterClosing:
-    "I can\u2019t wait to connect with you through your reading.\nWith love, Josephine \u2726",
-  dropCapCta: "Tell me about you \u2192",
-  dropCapCaption:
-    "The intake form: about five minutes. You\u2019ll review before paying.",
-  changeReadingLinkText: "Reading a different one? See all three \u2192",
+export const MAX_READING_FACTS = 6;
+
+export interface ReadingFactsLayout {
+  factsPerRowPhone: number;
+  factsPerRowDesktop: number;
+  factsBalanceRows: boolean;
+  factsListOnPhones: boolean;
+}
+
+export interface ReadingPageContent extends ReadingFactsLayout {
+  eyebrow: string;
+  foldRowLabel: string;
+  facts: ReadingFact[];
+  hideFacts: boolean;
+  hideReaderPhoto: boolean;
+  readerName: string;
+  readerLine: string;
+  includedTitle: string;
+  howItWorksTitle: string;
+  questionsTitle: string;
+  otherReadingsTitle: string;
+  switchNoticeTemplate: string;
+  testimonialLabel: string;
+  minutesTemplate: string;
+}
+
+export const READING_PAGE_DEFAULTS: ReadingPageContent = {
+  eyebrow: "Online reading",
+  foldRowLabel: "About the {reading}",
+  facts: [
+    { label: "Format", value: "Voice + PDF" },
+    { label: "Length", value: "30-40 min" },
+    { label: "Arrives", value: "7 days" },
+  ],
+  hideFacts: false,
+  hideReaderPhoto: false,
+  factsPerRowPhone: 3,
+  factsPerRowDesktop: 4,
+  factsBalanceRows: true,
+  factsListOnPhones: false,
+  readerName: "Read by Josephine",
+  readerLine: "Astrologer and Akashic Records reader",
+  includedTitle: "What\u2019s included",
+  howItWorksTitle: "How it works",
+  questionsTitle: "Questions",
+  otherReadingsTitle: "Not sure this is the one?",
+  switchNoticeTemplate: "Switched to {reading}. Your details are saved. Start where you left off.",
+  testimonialLabel: "From a client",
+  minutesTemplate: "about {minutes} minutes",
 };
+
+export interface NotesContent {
+  indexTitle: string;
+  indexSubtitle: string;
+  indexSearchDescription: string;
+  navLinkLabel: string;
+  readingTimeTemplate: string;
+  backLabel: string;
+  authorName: string;
+  authorLine: string;
+  listenLabel: string;
+  listenLengthTemplate: string;
+  signOff: string;
+  updatedTemplate: string;
+  cardLeadIn: string;
+  cardButton: string;
+  moreNotesLabel: string;
+  seeAllLabel: string;
+  footerLinkLabel: string;
+  faqLinkTemplate: string;
+  readingPageTitle: string;
+}
+
+export const NOTES_DEFAULTS: NotesContent = {
+  indexTitle: "Notes",
+  indexSubtitle: "",
+  indexSearchDescription: "Notes by Josephine of Josephine Soul Readings.",
+  navLinkLabel: "Notes",
+  readingTimeTemplate: "{minutes} minute read",
+  backLabel: "Notes",
+  authorName: "Written by Josephine",
+  authorLine: "Josephine Soul Readings",
+  listenLabel: "Listen to this note",
+  listenLengthTemplate: "{minutes} min",
+  signOff: "With love, Josephine",
+  updatedTemplate: "Updated {date}",
+  cardLeadIn: "When you’re ready.",
+  cardButton: "See this reading",
+  moreNotesLabel: "More notes",
+  seeAllLabel: "See all notes",
+  footerLinkLabel: "Notes",
+  faqLinkTemplate: "Read the note: {title}",
+  readingPageTitle: "Notes on this reading",
+};
+
+export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
 
@@ -131,22 +217,10 @@ export const INTAKE_INTRO_BY_SLUG: Record<string, string[]> = {
   ],
 };
 
-export const INTAKE_INTRO_FALLBACK = [INTAKE_OPENER, "Take your time. There\u2019s no wrong answer."];
-
-export interface BookingInfoNotes {
-  deliveryNote: string;
-  deliverableNote: string;
-  whatsIncludedHeading: string;
-  bookReadingCtaText: string;
-}
-
-export const BOOKING_INFO_DEFAULTS: BookingInfoNotes = {
-  deliveryNote: "Arrives within 7 days of payment.",
-  deliverableNote:
-    "A voice note plus a written PDF, made just for you.",
-  whatsIncludedHeading: "What\u2019s included",
-  bookReadingCtaText: "Book this Reading \u2192",
-};
+export const INTAKE_INTRO_FALLBACK = [
+  INTAKE_OPENER,
+  "Take your time. There\u2019s no wrong answer.",
+];
 
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
@@ -321,9 +395,7 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
     ...stringToPortableTextBlocks(
       "Tap below to open your reading. You will be signed in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
     ),
-    ...stringToPortableTextBlocks(
-      "This link is just for you; please do not share it.",
-    ),
+    ...stringToPortableTextBlocks("This link is just for you; please do not share it."),
     ...stringToPortableTextBlocks(
       "Your reading stays here for the next ninety days. If a link expires sooner, just email me and I will send you a fresh one.",
     ),

@@ -8,22 +8,28 @@ import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
+import { PreviewNavigator } from "./components/PreviewNavigator";
 import { schemaTypes } from "./schemas";
 import {
   deskStructure,
   EMAIL_PREVIEW_SINGLETON_TYPES,
   SINGLETON_TYPES,
 } from "./schemas/deskStructure";
+import { previewOriginFor, SITE_ORIGIN_BY_DATASET } from "./lib/siteOrigins";
 import { presentationResolve } from "./presentation";
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!;
 
-const sharedPlugins = (previewOrigin: string) => [
+const sharedPlugins = (siteOrigin: string, previewLocally = false) => [
   presentationTool({
     resolve: presentationResolve,
     previewUrl: {
-      initial: `${previewOrigin}/preview`,
+      initial: ({ origin }: { origin: string }) =>
+        `${previewLocally ? previewOriginFor(origin, siteOrigin) : siteOrigin}/preview`,
       previewMode: { enable: "/api/draft/enable" },
+    },
+    components: {
+      unstable_navigator: { component: PreviewNavigator, minWidth: 220, maxWidth: 320 },
     },
   }),
   structureTool({ structure: deskStructure }),
@@ -73,7 +79,7 @@ export default defineConfig([
     projectId,
     dataset: "production",
     basePath: "/production",
-    plugins: sharedPlugins("https://withjosephine.com"),
+    plugins: sharedPlugins(SITE_ORIGIN_BY_DATASET.production),
     schema: { types: schemaTypes },
     form: sharedForm,
     document: sharedDocument,
@@ -85,7 +91,7 @@ export default defineConfig([
     projectId,
     dataset: "staging",
     basePath: "/staging",
-    plugins: sharedPlugins("https://staging.withjosephine.com"),
+    plugins: sharedPlugins(SITE_ORIGIN_BY_DATASET.staging, true),
     schema: { types: schemaTypes },
     form: sharedForm,
     document: sharedDocument,

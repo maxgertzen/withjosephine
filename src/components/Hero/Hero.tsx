@@ -71,8 +71,8 @@ export function Hero({ content, className }: HeroProps) {
         blur={60}
       />
 
-      <MoonCrescent className="absolute bottom-[8%] right-[6%] z-[1] w-40 text-j-gold/[0.12]" />
-      <MoonCrescent className="absolute top-[14%] left-[4%] z-[1] w-[90px] text-j-gold/10" />
+      <MoonCrescent className="absolute bottom-[8%] right-[6%] z-[1] w-40 text-j-ornament/[0.12]" />
+      <MoonCrescent className="absolute top-[14%] left-[4%] z-[1] w-[90px] text-j-ornament/10" />
 
       <div className="relative z-10 flex max-w-[720px] flex-col items-center text-center">
         <h1 className="sr-only">Josephine Soul Readings</h1>
@@ -87,7 +87,7 @@ export function Hero({ content, className }: HeroProps) {
           />
         </div>
 
-        <p className="j-hero-in j-hero-delay-1 mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-accent">
+        <p className="j-hero-in j-hero-delay-1 mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-text-muted-warm">
           {tagline}
         </p>
 
@@ -95,11 +95,11 @@ export function Hero({ content, className }: HeroProps) {
           <p className="mb-4 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] font-light italic leading-[1.75] text-j-text">
             {introGreeting}
           </p>
-          <p className="mb-3 font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
+          <p className="mb-3 font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted-warm">
             {bodyFirst}
           </p>
           {bodySecond && (
-            <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted">
+            <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted-warm">
               {bodySecond}
             </p>
           )}
@@ -123,7 +123,7 @@ export function Hero({ content, className }: HeroProps) {
             handleScrollToReadings();
           }
         }}
-        className="j-hero-in-fade j-hero-delay-4 absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-accent"
+        className="j-hero-in-fade j-hero-delay-4 absolute bottom-6 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep"
       >
         <div
           className="h-[50px] w-px"

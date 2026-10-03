@@ -3,26 +3,23 @@
 
 export type ReadingId = string;
 
-export type EntryCtaPosition = "drop-cap" | "verso-cta" | "back-link";
+export type BookingEntry =
+  | "homepage_card"
+  | "reading_switch"
+  | "draft"
+  | "internal"
+  | "external"
+  | "direct";
 
-export type EmailType =
-  | "order_confirmation"
-  | "day7"
-  | "day14"
-  | "abandonment";
+export type EmailType = "order_confirmation" | "day7" | "day14" | "abandonment";
 
 export type ClientEventMap = {
   entry_page_view: {
     reading_id: ReadingId;
     referrer: string;
     viewport_width: number;
-  };
-  cta_click_intake: {
-    reading_id: ReadingId;
-    position: EntryCtaPosition;
-  };
-  change_reading_click: {
-    from_reading_id: ReadingId;
+    entry: BookingEntry;
+    folded: boolean;
   };
   intake_page_view: {
     reading_id: ReadingId;
@@ -75,6 +72,11 @@ export type ClientEventMap = {
   stripe_redirect: {
     reading_id: ReadingId;
     submission_id: string;
+  };
+  article_view: {
+    note: string;
+    referrer: string;
+    viewport_width: number;
   };
 };
 

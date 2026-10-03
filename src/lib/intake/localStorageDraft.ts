@@ -1,3 +1,5 @@
+import { withLocalStorage } from "@/lib/browserStorage";
+
 export const DRAFT_KEY_PREFIX = "josephine.intake.draft.";
 export const LAST_READING_ID_KEY = "josephine.intake.lastReadingId";
 export const DRAFT_VERSION = 1;
@@ -15,10 +17,6 @@ export type DraftEnvelope = {
   values: DraftValues;
 };
 
-function isBrowser(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
 function draftKey(readingId: string): string {
   return `${DRAFT_KEY_PREFIX}${readingId}`;
 }
@@ -27,24 +25,20 @@ export function save(
   readingId: string,
   payload: { currentPage: number; values: DraftValues },
 ): DraftEnvelope | null {
-  if (!isBrowser()) return null;
   const envelope: DraftEnvelope = {
     version: DRAFT_VERSION,
     savedAt: new Date().toISOString(),
     currentPage: payload.currentPage,
     values: payload.values,
   };
-  try {
-    window.localStorage.setItem(draftKey(readingId), JSON.stringify(envelope));
+  return withLocalStorage((storage) => {
+    storage.setItem(draftKey(readingId), JSON.stringify(envelope));
     return envelope;
-  } catch {
-    return null;
-  }
+  }, null);
 }
 
 export function restore(readingId: string): DraftEnvelope | null {
-  if (!isBrowser()) return null;
-  const raw = window.localStorage.getItem(draftKey(readingId));
+  const raw = withLocalStorage((storage) => storage.getItem(draftKey(readingId)), null);
   if (!raw) return null;
 
   let parsed: unknown;
@@ -73,48 +67,33 @@ export function restore(readingId: string): DraftEnvelope | null {
   return parsed;
 }
 
+function removeKey(key: string): void {
+  withLocalStorage((storage) => storage.removeItem(key), undefined);
+}
+
 export function clear(readingId: string): void {
-  if (!isBrowser()) return;
-  try {
-    window.localStorage.removeItem(draftKey(readingId));
-  } catch {
-    // localStorage write failures are non-fatal here.
-  }
+  removeKey(draftKey(readingId));
 }
 
 export function clearAll(): void {
-  if (!isBrowser()) return;
-  const keys: string[] = [];
-  for (let i = 0; i < window.localStorage.length; i += 1) {
-    const key = window.localStorage.key(i);
-    if (key && key.startsWith(DRAFT_KEY_PREFIX)) keys.push(key);
-  }
-  for (const key of keys) {
-    try {
-      window.localStorage.removeItem(key);
-    } catch {
-      // ignore
+  const draftKeys = withLocalStorage((storage) => {
+    const keys: string[] = [];
+    for (let i = 0; i < storage.length; i += 1) {
+      const key = storage.key(i);
+      if (key?.startsWith(DRAFT_KEY_PREFIX)) keys.push(key);
     }
-  }
-  try {
-    window.localStorage.removeItem(LAST_READING_ID_KEY);
-  } catch {
-    // ignore
-  }
+    return keys;
+  }, []);
+  draftKeys.forEach(removeKey);
+  removeKey(LAST_READING_ID_KEY);
 }
 
 export function getLastReadingId(): string | null {
-  if (!isBrowser()) return null;
-  return window.localStorage.getItem(LAST_READING_ID_KEY);
+  return withLocalStorage((storage) => storage.getItem(LAST_READING_ID_KEY), null);
 }
 
 export function setLastReadingId(readingId: string): void {
-  if (!isBrowser()) return;
-  try {
-    window.localStorage.setItem(LAST_READING_ID_KEY, readingId);
-  } catch {
-    // ignore
-  }
+  withLocalStorage((storage) => storage.setItem(LAST_READING_ID_KEY, readingId), undefined);
 }
 
 function isEnvelope(value: unknown): value is DraftEnvelope {

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
+import type { NotesLink } from "@/lib/notes/notes";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
@@ -29,13 +30,18 @@ const LEGAL_LINKS = [
   { label: "Refunds", href: ROUTES.refundPolicy },
 ] as const;
 
+const FOOTER_LINK_CLASSES =
+  "text-j-text-muted hover:text-j-text-gold transition-colors opacity-60 hover:opacity-100";
+
 interface FooterProps {
   content?: FooterContent;
   socialLinks?: MappedSocialLink[];
+  notesLink?: NotesLink;
   className?: string;
 }
 
-export function Footer({ content, socialLinks, className }: FooterProps) {
+export function Footer({ content, socialLinks, notesLink, className }: FooterProps) {
+  const links = notesLink ? [notesLink, ...LEGAL_LINKS] : LEGAL_LINKS;
   const { brandName, logoUrl, copyrightText } = {
     ...FOOTER_DEFAULTS,
     ...pickDefined(content ?? {}),
@@ -68,7 +74,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
                   aria-label={link.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+                  className={FOOTER_LINK_CLASSES}
                 >
                   <TikTokIcon className="w-8 h-8" />
                 </a>
@@ -80,7 +86,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
                 key={link.platform}
                 href={link.url}
                 aria-label={link.label}
-                className="text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+                className={FOOTER_LINK_CLASSES}
                 {...(isEmail ? {} : { target: "_blank", rel: "noopener noreferrer" })}
               >
                 <span className="font-body text-xs tracking-wide">
@@ -92,12 +98,12 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
         </div>
       )}
 
-      <nav aria-label="Legal" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
-        {LEGAL_LINKS.map((link) => (
+      <nav aria-label="Footer" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
+        {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className="font-body text-xs tracking-wide text-j-text-muted hover:text-j-accent transition-colors opacity-60 hover:opacity-100"
+            className={`font-body text-xs tracking-wide ${FOOTER_LINK_CLASSES}`}
           >
             {link.label}
           </Link>
@@ -113,7 +119,7 @@ export function Footer({ content, socialLinks, className }: FooterProps) {
           href="https://maxgertzen.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-j-accent transition-colors"
+          className="hover:text-j-text-gold transition-colors"
         >
           Max Gertzen
         </a>
