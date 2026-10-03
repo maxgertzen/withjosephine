@@ -23,6 +23,7 @@ import {
   findSubmissionById,
   markSubmissionExpired,
   markSubmissionPaid,
+  recordDay7Sent,
   scheduleListenedAtMirror,
   scrubSubmissionPhoto,
   type SubmissionRecord,
@@ -142,6 +143,24 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     const record = await findSubmissionById("sub_1");
     expect(record?.emailsFired).toEqual([entry]);
     expect(mockMirrorAppend).toHaveBeenCalledWith("sub_1", entry);
+  });
+
+  it("recordDay7Sent writes delivered_at and the day7 entry with one timestamp and mirrors them together", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    const delivery = {
+      deliveredAt: "2026-04-29T12:00:07Z",
+      voiceNoteUrl: "https://cdn.sanity.io/files/voice.m4a",
+      pdfUrl: "https://cdn.sanity.io/files/reading.pdf",
+    };
+    await recordDay7Sent("sub_1", delivery, "msg_d7");
+    await flushFireAndForget();
+
+    const day7Entry = { type: "day7", sentAt: delivery.deliveredAt, resendId: "msg_d7" };
+    const record = await findSubmissionById("sub_1");
+    expect(record).toMatchObject({ ...delivery, emailsFired: [day7Entry] });
+    expect(mockMirrorAppend).toHaveBeenCalledWith("sub_1", day7Entry, {
+      deliveredAt: delivery.deliveredAt,
+    });
   });
 
   it("deleteSubmissionAndPhoto removes the submission and the R2 photo", async () => {

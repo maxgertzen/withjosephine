@@ -4,11 +4,11 @@ import {
   type DeliverableSubmission,
   fetchDeliverableSubmissions,
 } from "@/lib/booking/persistence/sanityDelivery";
-import { sendAndRecord } from "@/lib/booking/sendAndRecord";
 import {
   buildSubmissionContext,
   findSubmissionById,
-  markSubmissionDelivered,
+  markSubmissionDeliveredIfUnset,
+  recordDay7Sent,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { siteOrigin } from "@/lib/env";
@@ -32,35 +32,33 @@ export async function deliverOne(
     return "skipped";
   }
 
-  const delivery = {
-    deliveredAt: resolved.deliveredAt,
-    voiceNoteUrl: resolved.voiceNoteUrl,
-    pdfUrl: resolved.pdfUrl,
-  };
-  await markSubmissionDelivered(d1Submission._id, delivery);
-  const refreshed: SubmissionRecord = { ...d1Submission, ...delivery };
-
   const token = await mintListenToken({
-    submissionId: refreshed._id,
+    submissionId: d1Submission._id,
     recipientUserId: d1Submission.recipientUserId,
     mintSource: "cron_day7",
   });
-  const listenUrl = `${siteOrigin()}/listen/${refreshed._id}?t=${token}`;
-  const context = buildSubmissionContext(refreshed);
-  const sendResult = await sendAndRecord({
-    submissionId: refreshed._id,
-    type: "day7",
-    send: () =>
-      sendDay7Delivery(context, listenUrl, { idempotencyKey: `day7/${refreshed._id}` }),
+  const listenUrl = `${siteOrigin()}/listen/${d1Submission._id}?t=${token}`;
+  const sendResult = await sendDay7Delivery(buildSubmissionContext(d1Submission), listenUrl, {
+    idempotencyKey: `day7/${d1Submission._id}`,
   });
-  if (sendResult.appended) return "sent";
-  return sendResult.kind === "dry_run" ? "dryRun" : "skipped";
+  const delivery = {
+    deliveredAt: new Date().toISOString(),
+    voiceNoteUrl: resolved.voiceNoteUrl,
+    pdfUrl: resolved.pdfUrl,
+  };
+  if (sendResult.kind === "dry_run") {
+    await markSubmissionDeliveredIfUnset(d1Submission._id, delivery);
+    return "dryRun";
+  }
+  if (sendResult.kind !== "sent") return "skipped";
+  await recordDay7Sent(d1Submission._id, delivery, sendResult.resendId);
+  return "sent";
 }
 
-export async function deliverById(submissionId: string): Promise<DeliverOutcome> {
+export async function deliverRequested(submissionId: string): Promise<DeliverOutcome> {
   const submission = await findSubmissionById(submissionId);
   if (!submission) return "notFound";
-  const [resolved] = await fetchDeliverableSubmissions([submissionId]);
+  const [resolved] = await fetchDeliverableSubmissions([submissionId], "deliveryRequestedAt");
   if (!resolved) return "awaitingAssets";
   return deliverOne(submission, resolved);
 }

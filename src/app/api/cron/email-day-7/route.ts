@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
+import { findDay7Entry } from "@/lib/booking/day7Entry";
 import { fetchUndeliveredSubmissionIds } from "@/lib/booking/persistence/sanityDelivery";
 import {
   appendEmailFired,
@@ -43,7 +44,7 @@ async function runCron(): Promise<{ processed: number; alerted: number; skipped:
   let alerted = 0;
   let skipped = 0;
   for (const submission of candidates) {
-    if (!undelivered.has(submission._id)) {
+    if (!undelivered.has(submission._id) || findDay7Entry(submission.emailsFired)) {
       skipped += 1;
       continue;
     }

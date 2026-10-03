@@ -16,7 +16,10 @@ async function runCron(): Promise<{
     return { processed: 0, sent: 0, skipped: 0, awaitingAssets: 0 };
   }
 
-  const deliverable = await fetchDeliverableSubmissions(candidates.map((c) => c._id));
+  const deliverable = await fetchDeliverableSubmissions(
+    candidates.map((c) => c._id),
+    "deliveredAt",
+  );
   const deliverableById = new Map(deliverable.map((d) => [d._id, d]));
 
   let sent = 0;
@@ -57,7 +60,7 @@ async function runForce(submissionId: string): Promise<{
     return { processed: 0, sent: 0, skipped: 1, awaitingAssets: 0, submissionId };
   }
 
-  const [resolved] = await fetchDeliverableSubmissions([submissionId]);
+  const [resolved] = await fetchDeliverableSubmissions([submissionId], "deliveredAt");
   if (!resolved) {
     return { processed: 1, sent: 0, skipped: 1, awaitingAssets: 1, submissionId };
   }

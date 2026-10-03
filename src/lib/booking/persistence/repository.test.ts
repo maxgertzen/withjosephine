@@ -12,7 +12,7 @@ import {
   listPaidSubmissionsForEmail,
   listSubmissionsByRecipientUserId,
   listSubmissionsByStatusOlderThan,
-  markSubmissionDelivered,
+  markSubmissionDeliveredIfUnset,
   markSubmissionExpired,
   markSubmissionPaid,
   setSubmissionRecipientUser,
@@ -197,7 +197,7 @@ describe("repository against in-memory SQLite", () => {
     expect(due).toEqual([]);
   });
 
-  it("markSubmissionDelivered writes deliveredAt + URL strings to D1", async () => {
+  it("markSubmissionDeliveredIfUnset writes deliveredAt + URL strings to D1", async () => {
     await createSubmission(BASE_INPUT);
     await markSubmissionPaid("sub_1", {
       stripeEventId: "evt_1",
@@ -206,8 +206,8 @@ describe("repository against in-memory SQLite", () => {
       amountPaidCents: null,
       amountPaidCurrency: null,
     });
-    const { markSubmissionDelivered } = await import("./repository");
-    await markSubmissionDelivered("sub_1", {
+    const { markSubmissionDeliveredIfUnset } = await import("./repository");
+    await markSubmissionDeliveredIfUnset("sub_1", {
       deliveredAt: "2026-04-27T10:00:00Z",
       voiceNoteUrl: "https://cdn.sanity.io/files/.../voice.m4a",
       pdfUrl: "https://cdn.sanity.io/files/.../reading.pdf",
@@ -216,6 +216,15 @@ describe("repository against in-memory SQLite", () => {
     expect(record?.deliveredAt).toBe("2026-04-27T10:00:00Z");
     expect(record?.voiceNoteUrl).toBe("https://cdn.sanity.io/files/.../voice.m4a");
     expect(record?.pdfUrl).toBe("https://cdn.sanity.io/files/.../reading.pdf");
+
+    await markSubmissionDeliveredIfUnset("sub_1", {
+      deliveredAt: "2026-05-03T10:00:00Z",
+      voiceNoteUrl: "https://cdn.sanity.io/files/.../voice-v2.m4a",
+      pdfUrl: "https://cdn.sanity.io/files/.../reading-v2.pdf",
+    });
+    const repeated = await findSubmissionById("sub_1");
+    expect(repeated?.deliveredAt).toBe("2026-04-27T10:00:00Z");
+    expect(repeated?.voiceNoteUrl).toBe("https://cdn.sanity.io/files/.../voice-v2.m4a");
   });
 
   it("listAllReferencedPhotoKeys returns the set of non-null keys", async () => {
@@ -250,7 +259,7 @@ describe("repository against in-memory SQLite", () => {
         amountPaidCurrency: null,
         recipientUserId: userId,
       });
-      await markSubmissionDelivered(id, {
+      await markSubmissionDeliveredIfUnset(id, {
         deliveredAt: createdAt,
         voiceNoteUrl: `https://cdn.sanity.io/${id}.m4a`,
         pdfUrl: `https://cdn.sanity.io/${id}.pdf`,

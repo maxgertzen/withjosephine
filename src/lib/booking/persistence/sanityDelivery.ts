@@ -1,11 +1,3 @@
-/**
- * Sanity-side delivery state queries for the Day-7 crons. The eligibility
- * GROQ filters to docs with both asset references and `deliveredAt` set; the
- * post-fetch `isDeliverable` filter is the empty-string defense (Sanity won't
- * resolve `asset->url` to an empty string in practice, but the type system
- * doesn't know that and we'd rather skip than send broken URLs).
- */
-
 import { groq } from "next-sanity";
 
 import { getSanityWriteClient } from "@/lib/sanity/client";
@@ -18,14 +10,15 @@ import {
 
 export type { DeliverableSubmission } from "./isDeliverable";
 
-const DELIVERABLE_GROQ = groq`
+export type DeliveryTrigger = "deliveredAt" | "deliveryRequestedAt";
+
+const deliverableGroq = (trigger: DeliveryTrigger) => groq`
   *[_type == "submission" && _id in $ids
-    && defined(deliveredAt)
+    && defined(${trigger})
     && defined(voiceNote.asset)
     && defined(readingPdf.asset)
   ]{
     _id,
-    deliveredAt,
     "voiceNoteUrl": voiceNote.asset->url,
     "pdfUrl": readingPdf.asset->url
   }
@@ -37,10 +30,13 @@ const UNDELIVERED_GROQ = groq`
 
 export async function fetchDeliverableSubmissions(
   ids: readonly string[],
+  trigger: DeliveryTrigger,
 ): Promise<DeliverableSubmission[]> {
   if (ids.length === 0) return [];
   const client = await getSanityWriteClient();
-  const docs = await client.fetch<SanitySubmissionDeliveryShape[]>(DELIVERABLE_GROQ, { ids });
+  const docs = await client.fetch<SanitySubmissionDeliveryShape[]>(deliverableGroq(trigger), {
+    ids,
+  });
   return docs.filter(isDeliverable);
 }
 
@@ -60,11 +56,6 @@ const DELIVERY_REQUESTED_GROQ = groq`
 export async function fetchDeliveryRequestedIds(): Promise<string[]> {
   const client = await getSanityWriteClient();
   return client.fetch<string[]>(DELIVERY_REQUESTED_GROQ);
-}
-
-export async function setDeliveredAtIfMissing(id: string, deliveredAt: string): Promise<void> {
-  const client = await getSanityWriteClient();
-  await client.patch(id).setIfMissing({ deliveredAt }).commit({ visibility: "sync" });
 }
 
 export async function clearDeliveryRequest(id: string): Promise<void> {

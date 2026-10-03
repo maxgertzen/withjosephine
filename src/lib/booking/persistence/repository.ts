@@ -272,13 +272,27 @@ export async function setSubmissionRecipientUser(
   );
 }
 
-export async function markSubmissionDelivered(
+export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string };
+
+export function buildMarkSubmissionDeliveredStatement(
   id: string,
-  delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
+  delivery: SubmissionDelivery,
+): SqlStatement {
+  return {
+    sql: `UPDATE submissions
+          SET delivered_at = ?, voice_note_url = ?, pdf_url = ?
+          WHERE id = ?`,
+    params: [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, id],
+  };
+}
+
+export async function markSubmissionDeliveredIfUnset(
+  id: string,
+  delivery: SubmissionDelivery,
 ): Promise<void> {
   await dbExec(
     `UPDATE submissions
-     SET delivered_at = ?, voice_note_url = ?, pdf_url = ?
+     SET delivered_at = COALESCE(delivered_at, ?), voice_note_url = ?, pdf_url = ?
      WHERE id = ?`,
     [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, id],
   );
@@ -370,11 +384,16 @@ export async function listPaidSubmissionsForEmail(
   return rows.map(rowToRecord);
 }
 
+export function buildAppendEmailFiredStatement(id: string, entry: EmailFiredEntry): SqlStatement {
+  return {
+    sql: `UPDATE submissions
+          SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
+          WHERE id = ?`,
+    params: [JSON.stringify(entry), id],
+  };
+}
+
 export async function appendEmailFired(id: string, entry: EmailFiredEntry): Promise<void> {
-  await dbExec(
-    `UPDATE submissions
-     SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
-     WHERE id = ?`,
-    [JSON.stringify(entry), id],
-  );
+  const stmt = buildAppendEmailFiredStatement(id, entry);
+  await dbExec(stmt.sql, stmt.params ?? []);
 }

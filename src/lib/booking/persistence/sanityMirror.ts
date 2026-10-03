@@ -251,12 +251,13 @@ function sanityKeyForEmailFired(entry: EmailFiredEntry): string {
 export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
+  fieldsToSet?: { deliveredAt: string },
 ): Promise<void> {
   const client = await getClient();
   if (!client) return;
   try {
-    await client
-      .patch(id)
+    const patch = fieldsToSet ? client.patch(id).set(fieldsToSet) : client.patch(id);
+    await patch
       .setIfMissing({ emailsFired: [] })
       .insert("after", "emailsFired[-1]", [{ ...entry, _key: sanityKeyForEmailFired(entry) }])
       .commit({ visibility: "async" });

@@ -13,6 +13,7 @@ import { formatAmountPaid } from "./formatAmount";
 import type {
   CreateSubmissionInput,
   FinancialRecordInput,
+  SubmissionDelivery,
 } from "./persistence/repository";
 import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
@@ -206,11 +207,24 @@ export function schedulePdfDownloadedAtMirror(
   runMirror(mirrorMarkSubmissionPdfDownloaded(submissionId, pdfDownloadedAt));
 }
 
-export async function markSubmissionDelivered(
+export async function markSubmissionDeliveredIfUnset(
   submissionId: string,
-  delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
+  delivery: SubmissionDelivery,
 ): Promise<void> {
-  await repo.markSubmissionDelivered(submissionId, delivery);
+  await repo.markSubmissionDeliveredIfUnset(submissionId, delivery);
+}
+
+export async function recordDay7Sent(
+  submissionId: string,
+  delivery: SubmissionDelivery,
+  resendId: string,
+): Promise<void> {
+  const entry: EmailFiredEntry = { type: "day7", sentAt: delivery.deliveredAt, resendId };
+  await dbBatch([
+    repo.buildMarkSubmissionDeliveredStatement(submissionId, delivery),
+    repo.buildAppendEmailFiredStatement(submissionId, entry),
+  ]);
+  runMirror(mirrorAppendEmailFired(submissionId, entry, { deliveredAt: entry.sentAt }));
 }
 
 export async function setSubmissionRecipientUser(

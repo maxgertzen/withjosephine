@@ -53,7 +53,7 @@ const OVERDUE_SUBMISSION: SubmissionRecord = {
   amountPaidCents: null,
   amountPaidCurrency: null,
   recipientUserId: null,
-  };
+};
 
 beforeEach(() => {
   mockAuth.mockReset();
@@ -111,6 +111,20 @@ describe("/api/cron/email-day-7", () => {
     mockFetchUndelivered.mockResolvedValueOnce(new Set());
     const res = await callRoute();
     const body = await res.json();
+    expect(body).toEqual({ processed: 1, alerted: 0, skipped: 1 });
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("skips a submission whose day7 email is recorded in D1 while Sanity has no deliveredAt", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([
+      {
+        ...OVERDUE_SUBMISSION,
+        emailsFired: [{ type: "day7", sentAt: "2026-04-28T12:00:00Z", resendId: "msg_d7" }],
+      },
+    ]);
+    mockFetchUndelivered.mockResolvedValueOnce(new Set(["sub_1"]));
+    const body = await (await callRoute()).json();
     expect(body).toEqual({ processed: 1, alerted: 0, skipped: 1 });
     expect(mockSend).not.toHaveBeenCalled();
   });

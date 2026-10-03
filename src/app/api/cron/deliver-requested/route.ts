@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import { deliverById } from "@/lib/booking/deliverDay7";
+import { deliverRequested } from "@/lib/booking/deliverDay7";
 import {
   clearDeliveryRequest,
   fetchDeliveryRequestedIds,
   markDeliveryRequestFailed,
-  setDeliveredAtIfMissing,
 } from "@/lib/booking/persistence/sanityDelivery";
 
 async function handle(request: Request): Promise<Response> {
@@ -19,21 +18,19 @@ async function handle(request: Request): Promise<Response> {
   const ids = await fetchDeliveryRequestedIds();
   const summary = { requested: ids.length, sent: 0, alreadySent: 0, dryRun: 0, failed: 0 };
   for (const id of ids) {
-    const nowIso = new Date().toISOString();
-    const outcome = await setDeliveredAtIfMissing(id, nowIso)
-      .then(() => deliverById(id))
-      .catch((error) => {
-        console.error(`[cron-deliver-requested] Failed for ${id}`, error);
-        return "skipped" as const;
-      });
+    const outcome = await deliverRequested(id).catch((error) => {
+      console.error(`[cron-deliver-requested] Failed for ${id}`, error);
+      return "skipped" as const;
+    });
     const delivered = outcome === "sent" || outcome === "alreadySent" || outcome === "dryRun";
     if (delivered) summary[outcome] += 1;
     else summary.failed += 1;
-    await (delivered ? clearDeliveryRequest(id) : markDeliveryRequestFailed(id, nowIso)).catch(
-      (error) => {
-        console.error(`[cron-deliver-requested] Request update failed for ${id}`, error);
-      },
-    );
+    const requestUpdate = delivered
+      ? clearDeliveryRequest(id)
+      : markDeliveryRequestFailed(id, new Date().toISOString());
+    await requestUpdate.catch((error) => {
+      console.error(`[cron-deliver-requested] Request update failed for ${id}`, error);
+    });
   }
   return NextResponse.json(summary);
 }

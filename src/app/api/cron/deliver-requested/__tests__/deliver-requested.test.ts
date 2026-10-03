@@ -5,40 +5,36 @@ vi.mock("@/lib/booking/cron-auth", () => ({
 }));
 
 vi.mock("@/lib/booking/deliverDay7", () => ({
-  deliverById: vi.fn(),
+  deliverRequested: vi.fn(),
 }));
 
 vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
   clearDeliveryRequest: vi.fn(),
   fetchDeliveryRequestedIds: vi.fn(),
   markDeliveryRequestFailed: vi.fn(),
-  setDeliveredAtIfMissing: vi.fn(),
 }));
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import { deliverById, type DeliverOutcome } from "@/lib/booking/deliverDay7";
+import { type DeliverOutcome, deliverRequested } from "@/lib/booking/deliverDay7";
 import {
   clearDeliveryRequest,
   fetchDeliveryRequestedIds,
   markDeliveryRequestFailed,
-  setDeliveredAtIfMissing,
 } from "@/lib/booking/persistence/sanityDelivery";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
-const mockDeliverById = vi.mocked(deliverById);
+const mockDeliverRequested = vi.mocked(deliverRequested);
 const mockFetchRequested = vi.mocked(fetchDeliveryRequestedIds);
 const mockClear = vi.mocked(clearDeliveryRequest);
 const mockMarkFailed = vi.mocked(markDeliveryRequestFailed);
-const mockSetDeliveredAt = vi.mocked(setDeliveredAtIfMissing);
 
 beforeEach(() => {
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
   mockAuth.mockReset().mockReturnValue(true);
-  mockDeliverById.mockReset().mockResolvedValue("sent");
+  mockDeliverRequested.mockReset().mockResolvedValue("sent");
   mockFetchRequested.mockReset().mockResolvedValue(["sub_1"]);
   mockClear.mockReset().mockResolvedValue(undefined);
   mockMarkFailed.mockReset().mockResolvedValue(undefined);
-  mockSetDeliveredAt.mockReset().mockResolvedValue(undefined);
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
@@ -77,7 +73,7 @@ describe("/api/cron/deliver-requested", () => {
   it.each(["sent", "alreadySent", "dryRun"] as const)(
     "clears the request and records no failure when the outcome is %s",
     async (outcome) => {
-      mockDeliverById.mockResolvedValueOnce(outcome);
+      mockDeliverRequested.mockResolvedValueOnce(outcome);
 
       const body = await (await callRoute()).json();
 
@@ -97,7 +93,7 @@ describe("/api/cron/deliver-requested", () => {
   it.each<DeliverOutcome>(["skipped", "awaitingAssets", "notFound"])(
     "records a failure and clears the request when the outcome is %s",
     async (outcome) => {
-      mockDeliverById.mockResolvedValueOnce(outcome);
+      mockDeliverRequested.mockResolvedValueOnce(outcome);
 
       const body = await (await callRoute()).json();
 
@@ -108,30 +104,12 @@ describe("/api/cron/deliver-requested", () => {
   );
 
   it("records a failure when delivery throws", async () => {
-    mockDeliverById.mockRejectedValueOnce(new Error("D1 down"));
+    mockDeliverRequested.mockRejectedValueOnce(new Error("D1 down"));
 
     const body = await (await callRoute()).json();
 
     expect(body).toMatchObject({ failed: 1 });
     expect(mockMarkFailed).toHaveBeenCalledWith("sub_1", expect.any(String));
-  });
-
-  it("records a failure when setting deliveredAt throws, without delivering", async () => {
-    mockSetDeliveredAt.mockRejectedValueOnce(new Error("Sanity down"));
-
-    const body = await (await callRoute()).json();
-
-    expect(body).toMatchObject({ failed: 1 });
-    expect(mockDeliverById).not.toHaveBeenCalled();
-  });
-
-  it("sets deliveredAt before delivering", async () => {
-    await callRoute();
-
-    expect(mockSetDeliveredAt).toHaveBeenCalledWith("sub_1", expect.any(String));
-    expect(mockSetDeliveredAt.mock.invocationCallOrder[0]).toBeLessThan(
-      mockDeliverById.mock.invocationCallOrder[0] ?? 0,
-    );
   });
 
   it("keeps processing the next submission when a request update fails", async () => {
@@ -142,13 +120,13 @@ describe("/api/cron/deliver-requested", () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ requested: 2, sent: 2 });
-    expect(mockDeliverById).toHaveBeenCalledWith("sub_2");
+    expect(mockDeliverRequested).toHaveBeenCalledWith("sub_2");
     expect(mockClear).toHaveBeenCalledWith("sub_2");
   });
 
   it("processes every requested submission", async () => {
     mockFetchRequested.mockResolvedValueOnce(["sub_1", "sub_2"]);
-    mockDeliverById.mockResolvedValueOnce("sent").mockResolvedValueOnce("awaitingAssets");
+    mockDeliverRequested.mockResolvedValueOnce("sent").mockResolvedValueOnce("awaitingAssets");
 
     const body = await (await callRoute()).json();
 

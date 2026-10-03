@@ -5,7 +5,6 @@ vi.mock("@/lib/booking/cron-auth", () => ({
 }));
 
 vi.mock("@/lib/booking/submissions", () => ({
-  appendEmailFired: vi.fn(),
   buildSubmissionContext: vi.fn().mockReturnValue({
     id: "sub_1",
     email: "client@example.com",
@@ -18,7 +17,8 @@ vi.mock("@/lib/booking/submissions", () => ({
   }),
   findSubmissionById: vi.fn(),
   listPaidSubmissionsForEmail: vi.fn(),
-  markSubmissionDelivered: vi.fn(),
+  markSubmissionDeliveredIfUnset: vi.fn(),
+  recordDay7Sent: vi.fn(),
 }));
 
 vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
@@ -32,10 +32,10 @@ vi.mock("@/lib/resend", () => ({
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
-  appendEmailFired,
   findSubmissionById,
   listPaidSubmissionsForEmail,
-  markSubmissionDelivered,
+  markSubmissionDeliveredIfUnset,
+  recordDay7Sent,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { sendDay7Delivery } from "@/lib/resend";
@@ -43,9 +43,9 @@ import { sendDay7Delivery } from "@/lib/resend";
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockList = vi.mocked(listPaidSubmissionsForEmail);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
-const mockMarkDelivered = vi.mocked(markSubmissionDelivered);
+const mockMarkDelivered = vi.mocked(markSubmissionDeliveredIfUnset);
 const mockSend = vi.mocked(sendDay7Delivery);
-const mockAppend = vi.mocked(appendEmailFired);
+const mockRecordSent = vi.mocked(recordDay7Sent);
 const mockFindById = vi.mocked(findSubmissionById);
 
 const PAID_SUBMISSION: SubmissionRecord = {
@@ -59,27 +59,38 @@ const PAID_SUBMISSION: SubmissionRecord = {
   amountPaidCents: null,
   amountPaidCurrency: null,
   recipientUserId: "user_recipient_1",
+};
+
+const SENT_AT = new Date("2026-04-29T12:00:07Z");
+
+function sendAtSentTime(result: Awaited<ReturnType<typeof sendDay7Delivery>>) {
+  return async () => {
+    vi.setSystemTime(SENT_AT);
+    return result;
   };
+}
 
 const DELIVERABLE = {
   _id: "sub_1",
-  deliveredAt: "2026-04-29T12:00:00Z",
   voiceNoteUrl: "https://cdn.sanity.io/files/.../voice.m4a",
   pdfUrl: "https://cdn.sanity.io/files/.../reading.pdf",
 };
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-04-29T12:00:00Z"));
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
   mockAuth.mockReset();
   mockList.mockReset().mockResolvedValue([]);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
   mockMarkDelivered.mockReset().mockResolvedValue(undefined);
-  mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
-  mockAppend.mockReset().mockResolvedValue(undefined);
+  mockSend.mockReset().mockImplementation(sendAtSentTime({ kind: "sent", resendId: "msg_d7" }));
+  mockRecordSent.mockReset().mockResolvedValue(undefined);
   mockFindById.mockReset().mockResolvedValue(null);
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
 });
 
@@ -119,19 +130,20 @@ describe("/api/cron/email-day-7-deliver", () => {
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, sent: 1, skipped: 0, awaitingAssets: 0 });
-    expect(mockMarkDelivered).toHaveBeenCalledWith("sub_1", {
-      deliveredAt: DELIVERABLE.deliveredAt,
-      voiceNoteUrl: DELIVERABLE.voiceNoteUrl,
-      pdfUrl: DELIVERABLE.pdfUrl,
-    });
     const sendArgs = mockSend.mock.calls[0];
     const listenUrl = sendArgs?.[1] as string;
     expect(listenUrl).toMatch(TOKEN_URL_PATTERN);
     expect(listenUrl).toContain("/listen/sub_1?t=");
-    expect(mockAppend).toHaveBeenCalledWith(
+    expect(mockRecordSent).toHaveBeenCalledWith(
       "sub_1",
-      expect.objectContaining({ type: "day7", resendId: "msg_d7" }),
+      {
+        deliveredAt: SENT_AT.toISOString(),
+        voiceNoteUrl: DELIVERABLE.voiceNoteUrl,
+        pdfUrl: DELIVERABLE.pdfUrl,
+      },
+      "msg_d7",
     );
+    expect(mockMarkDelivered).not.toHaveBeenCalled();
   });
 
   it("counts candidates Sanity reports as awaiting assets and does not deliver them", async () => {
@@ -143,10 +155,10 @@ describe("/api/cron/email-day-7-deliver", () => {
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 1 });
     expect(mockMarkDelivered).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
-    expect(mockAppend).not.toHaveBeenCalled();
+    expect(mockRecordSent).not.toHaveBeenCalled();
   });
 
-  it("skips when Resend returns no resendId (does not append emailsFired)", async () => {
+  it("leaves deliveredAt unset and records no day7 entry when the send fails", async () => {
     mockAuth.mockReturnValueOnce(true);
     mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
     mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
@@ -154,8 +166,22 @@ describe("/api/cron/email-day-7-deliver", () => {
     const res = await callRoute();
     const body = await res.json();
     expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });
-    expect(mockMarkDelivered).toHaveBeenCalled();
-    expect(mockAppend).not.toHaveBeenCalled();
+    expect(mockMarkDelivered).not.toHaveBeenCalled();
+    expect(mockRecordSent).not.toHaveBeenCalled();
+  });
+
+  it("writes D1 delivered_at after a dry run and counts it as skipped", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([PAID_SUBMISSION]);
+    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+    mockSend.mockImplementationOnce(sendAtSentTime({ kind: "dry_run" }));
+    const body = await (await callRoute()).json();
+    expect(body).toEqual({ processed: 1, sent: 0, skipped: 1, awaitingAssets: 0 });
+    expect(mockMarkDelivered).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ deliveredAt: SENT_AT.toISOString() }),
+    );
+    expect(mockRecordSent).not.toHaveBeenCalled();
   });
 
   describe("?force=<submissionId> single-submission mode", () => {
@@ -184,10 +210,11 @@ describe("/api/cron/email-day-7-deliver", () => {
       });
       expect(mockList).not.toHaveBeenCalled();
       expect(mockFindById).toHaveBeenCalledWith("sub_force");
-      expect(mockFetchDeliverable).toHaveBeenCalledWith(["sub_force"]);
-      expect(mockMarkDelivered).toHaveBeenCalledWith(
+      expect(mockFetchDeliverable).toHaveBeenCalledWith(["sub_force"], "deliveredAt");
+      expect(mockRecordSent).toHaveBeenCalledWith(
         "sub_force",
-        expect.objectContaining({ deliveredAt: DELIVERABLE.deliveredAt }),
+        expect.objectContaining({ deliveredAt: SENT_AT.toISOString() }),
+        "msg_d7",
       );
     });
 
@@ -205,12 +232,24 @@ describe("/api/cron/email-day-7-deliver", () => {
         submissionId: "sub_force",
       });
       expect(mockMarkDelivered).not.toHaveBeenCalled();
+      expect(mockRecordSent).not.toHaveBeenCalled();
+    });
+
+    it("leaves deliveredAt unset when the forced send fails", async () => {
+      mockAuth.mockReturnValueOnce(true);
+      mockFindById.mockResolvedValueOnce({ ...PAID_SUBMISSION, _id: "sub_force" });
+      mockFetchDeliverable.mockResolvedValueOnce([{ ...DELIVERABLE, _id: "sub_force" }]);
+      mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500" });
+      const body = await (await callRoute(FORCE_URL)).json();
+      expect(body).toMatchObject({ processed: 1, sent: 0, skipped: 1 });
+      expect(mockMarkDelivered).not.toHaveBeenCalled();
+      expect(mockRecordSent).not.toHaveBeenCalled();
     });
 
     it("sends once across two force calls when the first records day7", async () => {
-      const recorded: SubmissionRecord["emailsFired"] = [];
-      mockAppend.mockImplementation(async (_id, entry) => {
-        recorded.push(entry);
+      const recorded: NonNullable<SubmissionRecord["emailsFired"]> = [];
+      mockRecordSent.mockImplementation(async (_id, delivery, resendId) => {
+        recorded.push({ type: "day7", sentAt: delivery.deliveredAt, resendId });
       });
       mockFindById.mockImplementation(async () => ({
         ...PAID_SUBMISSION,
@@ -232,7 +271,7 @@ describe("/api/cron/email-day-7-deliver", () => {
         submissionId: "sub_force",
       });
       expect(mockSend).toHaveBeenCalledTimes(1);
-      expect(mockMarkDelivered).toHaveBeenCalledTimes(1);
+      expect(mockRecordSent).toHaveBeenCalledTimes(1);
       expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "day7/sub_force" });
     });
 

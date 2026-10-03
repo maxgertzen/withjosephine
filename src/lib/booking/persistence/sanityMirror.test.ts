@@ -88,6 +88,30 @@ describe("mirrorMarkSubmissionPdfDownloaded — first-write-wins via setIfMissin
   });
 });
 
+describe("mirrorAppendEmailFired with fields to set", () => {
+  it("sets deliveredAt and appends the day7 entry in one patch", async () => {
+    mockSet.mockReturnValueOnce({ setIfMissing: mockSetIfMissing });
+    const { mirrorAppendEmailFired } = await import("./sanityMirror");
+    await mirrorAppendEmailFired(
+      "sub_1",
+      { type: "day7", sentAt: "2026-04-29T12:00:07.000Z", resendId: "msg_d7" },
+      { deliveredAt: "2026-04-29T12:00:07.000Z" },
+    );
+
+    expect(mockPatch).toHaveBeenCalledOnce();
+    expect(mockSet).toHaveBeenCalledWith({ deliveredAt: "2026-04-29T12:00:07.000Z" });
+    expect(mockInsert.mock.calls[0]?.[2]).toEqual([
+      {
+        _key: "day7-2026-04-29T12-00-07-000Z",
+        type: "day7",
+        sentAt: "2026-04-29T12:00:07.000Z",
+        resendId: "msg_d7",
+      },
+    ]);
+    expect(mockCommit).toHaveBeenCalledOnce();
+  });
+});
+
 describe("mirrorSubmissionPatch — art9 requires readingSlug (d5y8qzl5)", () => {
   it("writes the art9 label derived from the provided readingSlug", async () => {
     const { mirrorSubmissionPatch } = await import("./sanityMirror");
