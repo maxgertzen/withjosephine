@@ -52,3 +52,31 @@ export async function fetchUndeliveredSubmissionIds(
   const result = await client.fetch<string[]>(UNDELIVERED_GROQ, { ids });
   return new Set(result);
 }
+
+const DELIVERY_REQUESTED_GROQ = groq`
+  *[_type == "submission" && defined(deliveryRequestedAt) && !(_id in path("drafts.**"))]._id
+`;
+
+export async function fetchDeliveryRequestedIds(): Promise<string[]> {
+  const client = await getSanityWriteClient();
+  return client.fetch<string[]>(DELIVERY_REQUESTED_GROQ);
+}
+
+export async function setDeliveredAtIfMissing(id: string, deliveredAt: string): Promise<void> {
+  const client = await getSanityWriteClient();
+  await client.patch(id).setIfMissing({ deliveredAt }).commit({ visibility: "sync" });
+}
+
+export async function clearDeliveryRequest(id: string): Promise<void> {
+  const client = await getSanityWriteClient();
+  await client.patch(id).unset(["deliveryRequestedAt"]).commit();
+}
+
+export async function markDeliveryRequestFailed(id: string, failedAt: string): Promise<void> {
+  const client = await getSanityWriteClient();
+  await client
+    .patch(id)
+    .set({ deliveryFailedAt: failedAt })
+    .unset(["deliveryRequestedAt"])
+    .commit();
+}

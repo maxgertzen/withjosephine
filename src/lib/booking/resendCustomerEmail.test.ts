@@ -166,6 +166,23 @@ describe("resendCustomerEmail", () => {
       expect(listenUrl).not.toContain("images.withjosephine.com");
     });
 
+    it("sends the admin day7 resend without a Resend idempotency key", async () => {
+      vi.setSystemTime(new Date(NOW));
+      const { findSubmissionById, appendEmailFired } = await import("./submissions");
+      const { sendDay7Delivery } = await import("../resend");
+      vi.mocked(findSubmissionById).mockResolvedValue(
+        buildPaidSubmission({
+          recipientUserId: "user_recipient_admin",
+          deliveredAt: isoDaysAgo(7),
+        }),
+      );
+      vi.mocked(sendDay7Delivery).mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
+      vi.mocked(appendEmailFired).mockResolvedValue(undefined);
+      const { resendCustomerEmail } = await import("./resendCustomerEmail");
+      await resendCustomerEmail("sub_test_1", "day7");
+      expect(vi.mocked(sendDay7Delivery).mock.calls[0]).toHaveLength(2);
+    });
+
     it("uses mintSource=admin_resend in the minted token", async () => {
       vi.setSystemTime(new Date(NOW));
       const { findSubmissionById, appendEmailFired } = await import("./submissions");

@@ -207,6 +207,35 @@ describe("/api/cron/email-day-7-deliver", () => {
       expect(mockMarkDelivered).not.toHaveBeenCalled();
     });
 
+    it("sends once across two force calls when the first records day7", async () => {
+      const recorded: SubmissionRecord["emailsFired"] = [];
+      mockAppend.mockImplementation(async (_id, entry) => {
+        recorded.push(entry);
+      });
+      mockFindById.mockImplementation(async () => ({
+        ...PAID_SUBMISSION,
+        _id: "sub_force",
+        emailsFired: [...recorded],
+      }));
+      mockFetchDeliverable.mockResolvedValue([{ ...DELIVERABLE, _id: "sub_force" }]);
+      mockAuth.mockReturnValue(true);
+
+      const first = await (await callRoute(FORCE_URL)).json();
+      const second = await (await callRoute(FORCE_URL)).json();
+
+      expect(first).toMatchObject({ processed: 1, sent: 1, skipped: 0 });
+      expect(second).toEqual({
+        processed: 1,
+        sent: 0,
+        skipped: 1,
+        awaitingAssets: 0,
+        submissionId: "sub_force",
+      });
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(mockMarkDelivered).toHaveBeenCalledTimes(1);
+      expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "day7/sub_force" });
+    });
+
     it("returns processed=0 when the submission does not exist in D1", async () => {
       mockAuth.mockReturnValueOnce(true);
       mockFindById.mockResolvedValueOnce(null);

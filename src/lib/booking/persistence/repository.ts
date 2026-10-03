@@ -25,6 +25,7 @@ type Row = {
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
   recipient_user_id: string | null;
+  is_gift?: number | null;
 };
 
 function rowToRecord(row: Row): SubmissionRecord {
@@ -57,6 +58,7 @@ function rowToRecord(row: Row): SubmissionRecord {
     amountPaidCents: row.amount_paid_cents,
     amountPaidCurrency: row.amount_paid_currency,
     recipientUserId: row.recipient_user_id ?? null,
+    ...(row.is_gift === 1 ? { isLegacyGift: true } : {}),
   };
 }
 

@@ -1,62 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { mintListenToken } from "@/lib/auth/listenToken";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import {
-  type DeliverableSubmission,
-  fetchDeliverableSubmissions,
-} from "@/lib/booking/persistence/sanityDelivery";
-import { sendAndRecord } from "@/lib/booking/sendAndRecord";
-import {
-  buildSubmissionContext,
-  findSubmissionById,
-  listPaidSubmissionsForEmail,
-  markSubmissionDelivered,
-  type SubmissionRecord,
-} from "@/lib/booking/submissions";
-import { siteOrigin } from "@/lib/env";
-import { sendDay7Delivery } from "@/lib/resend";
-
-// Asset existence is the readiness flag (no separate boolean) to avoid TOCTOU.
-async function deliverOne(
-  d1Submission: SubmissionRecord,
-  resolved: DeliverableSubmission,
-): Promise<"sent" | "skipped"> {
-  if (d1Submission.status !== "paid") return "skipped";
-
-  if (!d1Submission.recipientUserId) {
-    console.error(
-      `[cron-day-7] missing recipientUserId for ${d1Submission._id}, cannot mint token`,
-    );
-    return "skipped";
-  }
-
-  await markSubmissionDelivered(d1Submission._id, {
-    deliveredAt: resolved.deliveredAt,
-    voiceNoteUrl: resolved.voiceNoteUrl,
-    pdfUrl: resolved.pdfUrl,
-  });
-  const refreshed: SubmissionRecord = {
-    ...d1Submission,
-    deliveredAt: resolved.deliveredAt,
-    voiceNoteUrl: resolved.voiceNoteUrl,
-    pdfUrl: resolved.pdfUrl,
-  };
-
-  const token = await mintListenToken({
-    submissionId: refreshed._id,
-    recipientUserId: d1Submission.recipientUserId,
-    mintSource: "cron_day7",
-  });
-  const listenUrl = `${siteOrigin()}/listen/${refreshed._id}?t=${token}`;
-  const context = buildSubmissionContext(refreshed);
-  const sendResult = await sendAndRecord({
-    submissionId: refreshed._id,
-    type: "day7",
-    send: () => sendDay7Delivery(context, listenUrl),
-  });
-  return sendResult.appended ? "sent" : "skipped";
-}
+import { deliverOne } from "@/lib/booking/deliverDay7";
+import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
+import { findSubmissionById, listPaidSubmissionsForEmail } from "@/lib/booking/submissions";
 
 async function runCron(): Promise<{
   processed: number;
@@ -98,8 +45,6 @@ async function runCron(): Promise<{
   };
 }
 
-// Process exactly one submission by id, bypassing the paidAt>=7d candidate
-// filter. Auth is the same `CRON_SECRET` Bearer; no new auth primitive.
 async function runForce(submissionId: string): Promise<{
   processed: number;
   sent: number;
@@ -114,24 +59,12 @@ async function runForce(submissionId: string): Promise<{
 
   const [resolved] = await fetchDeliverableSubmissions([submissionId]);
   if (!resolved) {
-    return {
-      processed: 1,
-      sent: 0,
-      skipped: 1,
-      awaitingAssets: 1,
-      submissionId,
-    };
+    return { processed: 1, sent: 0, skipped: 1, awaitingAssets: 1, submissionId };
   }
 
   try {
-    const outcome = await deliverOne(submission, resolved);
-    return {
-      processed: 1,
-      sent: outcome === "sent" ? 1 : 0,
-      skipped: outcome === "skipped" ? 1 : 0,
-      awaitingAssets: 0,
-      submissionId,
-    };
+    const sent = (await deliverOne(submission, resolved)) === "sent" ? 1 : 0;
+    return { processed: 1, sent, skipped: 1 - sent, awaitingAssets: 0, submissionId };
   } catch (error) {
     console.error(`[cron-email-day-7-deliver:force] Failed for ${submissionId}`, error);
     return { processed: 1, sent: 0, skipped: 1, awaitingAssets: 0, submissionId };

@@ -96,13 +96,15 @@
 	//   - "0 10 * * *"  : email-day-7 (Josephine-only overdue alert)
 	//   - "0 12 * * 1"  : check-price-drift (Sanity priceDisplay ↔ price drift → Mixpanel; production only)
 	//   - "0 3 * * 1"   : backup-sanity-dataset (weekly NDJSON snapshot + assets → BACKUPS_BUCKET)
+	//   - "*/5 * * * *" : deliver-requested (Studio "Send reading now" requests → day-7 delivery email)
 	"triggers": {
 		"crons": [
 			"0 */6 * * *",
 			"0 3 * * *",
 			"0 10 * * *",
 			"0 12 * * 1",
-			"0 3 * * 1"
+			"0 3 * * 1",
+			"*/5 * * * *"
 		],
 	},
 	"observability": {
@@ -252,7 +254,8 @@
 					"0 */6 * * *",
 					"0 3 * * *",
 					"0 10 * * *",
-					"0 3 * * 1"
+					"0 3 * * 1",
+					"*/5 * * * *"
 				]
 			},
 			"vars": {

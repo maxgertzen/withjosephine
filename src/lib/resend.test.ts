@@ -318,6 +318,16 @@ describe("sendOrderConfirmation", () => {
 });
 
 describe("sendDay7Delivery", () => {
+  it("forwards the idempotency key to Resend", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
+
+    await sendDay7Delivery(buildSubmission(), "https://withjosephine.com/listen/sub_1", {
+      idempotencyKey: "day7/sub_1",
+    });
+
+    expect(sendMock.mock.calls[0]?.[1]).toEqual({ idempotencyKey: "day7/sub_1" });
+  });
+
   it("includes the listening-page URL inside an anchor href", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_d7" } });
     const submission = buildSubmission();

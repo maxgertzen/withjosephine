@@ -39,4 +39,8 @@ describe("dispatchPathsForCron", () => {
   it("maps the weekly backup schedule to the backup route", () => {
     expect(dispatchPathsForCron("0 3 * * 1")).toEqual(["/api/cron/backup-sanity-dataset"]);
   });
+
+  it("maps the 5-minute schedule to the deliver-requested route", () => {
+    expect(dispatchPathsForCron("*/5 * * * *")).toEqual(["/api/cron/deliver-requested"]);
+  });
 });

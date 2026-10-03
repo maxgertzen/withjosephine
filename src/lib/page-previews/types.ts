@@ -41,4 +41,5 @@ export type SubmissionRecord = {
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   recipientUserId: string | null;
+  isLegacyGift?: boolean;
 };

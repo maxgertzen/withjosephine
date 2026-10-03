@@ -24,19 +24,26 @@ type WranglerR2Binding = {
   bucket_name: string;
 };
 
+type WranglerTriggers = {
+  crons?: string[];
+};
+
 type WranglerEnv = {
   name?: string;
   d1_databases?: WranglerD1Binding[];
   r2_buckets?: WranglerR2Binding[];
   vars?: Record<string, string>;
+  triggers?: WranglerTriggers;
 };
 
 type WranglerConfig = {
   vars?: Record<string, string>;
   env?: Record<string, WranglerEnv>;
+  triggers?: WranglerTriggers;
 };
 
 const STAGING_SUFFIX = "-staging";
+const DELIVER_REQUESTED_CRON = "*/5 * * * *";
 
 function stripJsonc(source: string): string {
   return source
@@ -112,6 +119,15 @@ if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
   fail(
     `env.staging vars.NEXT_PUBLIC_SANITY_DATASET expected "staging", got "${vars.NEXT_PUBLIC_SANITY_DATASET ?? "(missing)"}"`,
   );
+}
+
+for (const [blockName, block] of [
+  ["production", config],
+  ["env.staging", staging],
+] as const) {
+  if (!block.triggers?.crons?.includes(DELIVER_REQUESTED_CRON)) {
+    fail(`${blockName} triggers.crons must contain "${DELIVER_REQUESTED_CRON}" (deliver-requested)`);
+  }
 }
 
 console.log("assert-staging-bindings: OK");

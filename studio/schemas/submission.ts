@@ -72,6 +72,20 @@ export const submission = defineType({
         }),
     }),
     defineField({
+      name: "deliveryRequestedAt",
+      title: "Delivery requested at (internal)",
+      type: "datetime",
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
+      name: "deliveryFailedAt",
+      title: "Delivery failed at (internal)",
+      type: "datetime",
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
       name: "listenedAt",
       title: "Listened At",
       type: "datetime",

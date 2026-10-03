@@ -1,4 +1,8 @@
-import type { DocumentActionsResolver, NewDocumentOptionsResolver } from "sanity";
+import type {
+  DocumentActionsResolver,
+  DocumentBadgesResolver,
+  NewDocumentOptionsResolver,
+} from "sanity";
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 import { presentationTool } from "sanity/presentation";
@@ -7,6 +11,7 @@ import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
+import { sendReadingNowAction, sendReadingNowBadge } from "./actions/sendReadingNow";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { PreviewNavigator } from "./components/PreviewNavigator";
 import { schemaTypes } from "./schemas";
@@ -50,6 +55,7 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
   if (schemaType === "submission") {
     return [
       ...prev,
+      sendReadingNowAction,
       deleteCustomerDataAction,
       resendCustomerEmailAction,
     ];
@@ -57,11 +63,15 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
   return prev;
 };
 
+const sharedBadges: DocumentBadgesResolver = (prev, { schemaType }) =>
+  schemaType === "submission" ? [...prev, sendReadingNowBadge] : prev;
+
 const sharedNewDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter((item) => !SINGLETON_TYPES.has(item.templateId));
 
 const sharedDocument = {
   actions: sharedActions,
+  badges: sharedBadges,
   newDocumentOptions: sharedNewDocumentOptions,
 };
 

@@ -18,7 +18,7 @@ import {
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
-import { dbQuery } from "./sqlClient";
+import { dbExec, dbQuery } from "./sqlClient";
 
 const BASE_INPUT: CreateSubmissionInput = {
   id: "sub_1",
@@ -61,6 +61,15 @@ describe("repository against in-memory SQLite", () => {
     expect(record?.responses).toHaveLength(1);
     expect(record?.responses[0]?.fieldKey).toBe("first_name");
     expect(record?.emailsFired).toEqual([]);
+  });
+
+  it("flags legacy gift rows as isLegacyGift and leaves other rows unflagged", async () => {
+    await createSubmission(BASE_INPUT);
+    await createSubmission({ ...BASE_INPUT, id: "sub_gift" });
+    await dbExec(`UPDATE submissions SET is_gift = 1 WHERE id = ?`, ["sub_gift"]);
+
+    expect((await findSubmissionById("sub_gift"))?.isLegacyGift).toBe(true);
+    expect((await findSubmissionById("sub_1"))?.isLegacyGift).toBeUndefined();
   });
 
   it("returns null when submission missing", async () => {

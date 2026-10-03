@@ -25,6 +25,11 @@ describe("submission schema parity", () => {
     }
   });
 
+  it("declares the Send reading now request and failure fields", () => {
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveryRequestedAt"/);
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveryFailedAt"/);
+  });
+
   it("consentSnapshot schema declares coolingOffConsent", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"coolingOffConsent"/);
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"art6Consent"/);

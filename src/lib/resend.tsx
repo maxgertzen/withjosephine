@@ -316,6 +316,7 @@ export async function sendOrderConfirmation(
 export async function sendDay7Delivery(
   submission: SubmissionContext,
   listenUrl: string,
+  options?: { idempotencyKey?: string },
 ): Promise<EmailSendResult> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
@@ -346,6 +347,7 @@ export async function sendDay7Delivery(
     html,
     subType: "day_7_delivery",
     submissionId: submission.id,
+    idempotencyKey: options?.idempotencyKey,
   });
 }
 
