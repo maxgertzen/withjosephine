@@ -1,16 +1,21 @@
+import { READING_PAGE_DEFAULTS } from "@/data/defaults";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
+import { applyTokens } from "@/lib/emails/applyTokens";
 import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
 import bookingFormFixture from "../../../../src/__fixtures__/sanity/e2e/bookingForm.json";
 
 const sections = bookingFormFixture.sections as unknown as SanityFormSection[];
 const pagination = bookingFormFixture.pagination as SanityPagination;
+const switchNoticeFor = (reading: string) =>
+  applyTokens(READING_PAGE_DEFAULTS.switchNoticeTemplate, { reading });
 
 export const INTAKE_FORM_STORY_BASE_ARGS = {
   sections,
   pagination,
   readingId: "soul-blueprint",
   readingName: "Soul Blueprint",
+  switchNotice: switchNoticeFor("Soul Blueprint"),
   nonRefundableNotice: bookingFormFixture.nonRefundableNotice ?? "",
   loadingStateCopy: bookingFormFixture.loadingStateCopy ?? "",
   pageIndicatorTagline: bookingFormFixture.pageIndicatorTagline ?? "",
@@ -31,6 +36,7 @@ export const INTAKE_FORM_AKASHIC_RECORD_ARGS = {
   sections: filterSectionsForReading(sections, "akashic-record"),
   readingId: "akashic-record",
   readingName: "Akashic Record Reading",
+  switchNotice: switchNoticeFor("Akashic Record Reading"),
 };
 
 export const INTAKE_FORM_BIRTH_CHART_ARGS = {
@@ -38,6 +44,7 @@ export const INTAKE_FORM_BIRTH_CHART_ARGS = {
   sections: filterSectionsForReading(sections, "birth-chart"),
   readingId: "birth-chart",
   readingName: "Birth Chart Reading",
+  switchNotice: switchNoticeFor("Birth Chart Reading"),
 };
 
 export const INTAKE_FORM_REDEEM_MODE_ARGS = {

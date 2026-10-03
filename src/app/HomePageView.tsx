@@ -11,6 +11,7 @@ import type { NotesNavProps } from "@/components/Notes/NotesShell";
 import { ReadingCard } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
+import { bookingPath, readingAnchorId } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import type {
   MappedAbout,
@@ -121,7 +122,7 @@ export function HomePageView({
           <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
             {readings.map((reading) => (
               // scroll-mt must clear Navigation.tsx's 72px fixed nav.
-              <li key={reading.id} id={`reading-${reading.id}`} className="scroll-mt-[96px]">
+              <li key={reading.id} id={readingAnchorId(reading.id)} className="scroll-mt-[96px]">
                 <ReadingCard
                   slug={reading.id}
                   tag={reading.tag}
@@ -130,7 +131,7 @@ export function HomePageView({
                   valueProposition={reading.valueProposition}
                   briefDescription={reading.briefDescription}
                   expandedDetails={reading.expandedDetails}
-                  href={`/book/${reading.id}`}
+                  href={bookingPath(reading.id)}
                 />
               </li>
             ))}

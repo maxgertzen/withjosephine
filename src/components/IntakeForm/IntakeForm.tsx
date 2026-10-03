@@ -9,7 +9,7 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-import { usePickedOnOtherReadingForm } from "@/lib/intake/bookingEntryContext";
+import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
 import { useDraftRestore } from "@/lib/intake/useDraftRestore";
@@ -39,6 +39,7 @@ export type IntakeFormProps = {
   testimonial?: FormTestimonial;
   pagination?: SanityPagination;
   loadingStateCopy?: string;
+  switchNotice: string;
 };
 
 export function IntakeForm({
@@ -53,6 +54,7 @@ export function IntakeForm({
   testimonial,
   pagination,
   loadingStateCopy,
+  switchNotice,
 }: IntakeFormProps) {
   const {
     allFields,
@@ -79,7 +81,7 @@ export function IntakeForm({
     readingId,
     defaultValues,
   });
-  const showSwitchNotice = usePickedOnOtherReadingForm() && nameOrEmailCarriedOver;
+  const showSwitchNotice = useBookingEntry() === "reading_switch" && nameOrEmailCarriedOver;
 
   const [honeypot, setHoneypot] = useState("");
   const {
@@ -215,13 +217,11 @@ export function IntakeForm({
   );
   const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
-  const handleConsentSnapshotChange = useCallback(
-    (next: LegalConsentSnapshot) => {
-      setConsentSnapshot(next);
-      if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true })) setSubmitError(null);
-    },
-    [],
-  );
+  const handleConsentSnapshotChange = useCallback((next: LegalConsentSnapshot) => {
+    setConsentSnapshot(next);
+    if (isFullyConsented(next, { requireArt9: true, requireCoolingOff: true }))
+      setSubmitError(null);
+  }, []);
 
   const renderContext = useMemo<RenderContext>(
     () => ({
@@ -246,7 +246,7 @@ export function IntakeForm({
 
   return (
     <>
-      {showSwitchNotice ? <SwapToast readingName={readingName} /> : null}
+      {showSwitchNotice ? <SwapToast message={switchNotice} /> : null}
       <IntakeFormBody
         formRef={formRef}
         submitIntentRef={submitIntentRef}

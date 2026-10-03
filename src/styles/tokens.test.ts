@@ -43,6 +43,12 @@ describe("j-text-gold tokens meet WCAG AA on cream and ivory", () => {
 const heroSource = readFileSync(join(__dirname, "../components/Hero/Hero.tsx"), "utf8");
 const heroGradientEndStop = heroSource.match(/(#[0-9a-fA-F]{6}) 100%\)/)?.[1] ?? "";
 
+describe("j-text-rose meets WCAG AA on cream and ivory", () => {
+  it.each(LIGHT_SURFACES)("j-text-rose reaches 4.5:1 on %s", (surface) => {
+    expect(contrastRatio(tokenHex("j-text-rose"), tokenHex(surface))).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe("muted-on-warm tokens meet WCAG AA on warm surfaces", () => {
   it("finds the hero gradient end stop", () => {
     expect(heroGradientEndStop).toMatch(/^#[0-9a-fA-F]{6}$/);

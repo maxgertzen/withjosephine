@@ -26,19 +26,32 @@ const SCHEMA: SchemaEntry[] = [
         of: {
           type: "union",
           of: [
-            { type: "object", attributes: { _type: attr({ type: "string", value: "quote" }), text: attr(STRING) } },
-            { type: "object", attributes: { _type: attr({ type: "string", value: "image" }), alt: attr(STRING) } },
+            {
+              type: "object",
+              attributes: { _type: attr({ type: "string", value: "quote" }), text: attr(STRING) },
+            },
+            {
+              type: "object",
+              attributes: { _type: attr({ type: "string", value: "image" }), alt: attr(STRING) },
+            },
           ],
         },
       }),
       related: attr({ type: "inline", name: "page.reference" }),
       relatedList: attr({
         type: "array",
-        of: { type: "object", attributes: { _key: attr(STRING) }, rest: { type: "inline", name: "page.reference" } },
+        of: {
+          type: "object",
+          attributes: { _key: attr(STRING) },
+          rest: { type: "inline", name: "page.reference" },
+        },
       }),
       quotes: attr({
         type: "array",
-        of: { type: "object", attributes: { _type: attr({ type: "string", value: "quote" }), text: attr(STRING) } },
+        of: {
+          type: "object",
+          attributes: { _type: attr({ type: "string", value: "quote" }), text: attr(STRING) },
+        },
       }),
       tags: attr({ type: "array", of: STRING }),
     },
@@ -50,7 +63,12 @@ const SCHEMA: SchemaEntry[] = [
   },
 ];
 
-const page = (fields: Record<string, unknown>) => ({ _id: "page", _type: "page", _rev: "r1", ...fields });
+const page = (fields: Record<string, unknown>) => ({
+  _id: "page",
+  _type: "page",
+  _rev: "r1",
+  ...fields,
+});
 
 describe("findUnknownFieldPaths", () => {
   it("returns no paths for a document that matches the schema", () => {
@@ -71,7 +89,12 @@ describe("findUnknownFieldPaths", () => {
   });
 
   it("addresses array items by _key, and by index when an item has no _key", () => {
-    const doc = page({ facts: [{ _key: "a", label: "L", icon: "x" }, { label: "M", icon: "y" }] });
+    const doc = page({
+      facts: [
+        { _key: "a", label: "L", icon: "x" },
+        { label: "M", icon: "y" },
+      ],
+    });
     expect(findUnknownFieldPaths(SCHEMA, doc)).toEqual(['facts[_key=="a"].icon', "facts[1].icon"]);
   });
 
@@ -86,7 +109,9 @@ describe("findUnknownFieldPaths", () => {
   });
 
   it("leaves union items alone when no member matches their _type", () => {
-    expect(findUnknownFieldPaths(SCHEMA, page({ blocks: [{ _key: "v", _type: "video", url: "u" }] }))).toEqual([]);
+    expect(
+      findUnknownFieldPaths(SCHEMA, page({ blocks: [{ _key: "v", _type: "video", url: "u" }] })),
+    ).toEqual([]);
   });
 
   it("resolves an inline rest, so keyed references report only their unknown fields", () => {
@@ -100,8 +125,12 @@ describe("findUnknownFieldPaths", () => {
   });
 
   it("throws rather than build an unset path for a key that is not a plain field name", () => {
-    expect(() => findUnknownFieldPaths(SCHEMA, page({ content: { "cta-text": "x" } }))).toThrow(/cta-text/);
-    expect(() => findUnknownFieldPaths(SCHEMA, page({ facts: [{ _key: 'a"b', icon: "x" }] }))).toThrow(/a"b/);
+    expect(() => findUnknownFieldPaths(SCHEMA, page({ content: { "cta-text": "x" } }))).toThrow(
+      /cta-text/,
+    );
+    expect(() =>
+      findUnknownFieldPaths(SCHEMA, page({ facts: [{ _key: 'a"b', icon: "x" }] })),
+    ).toThrow(/a"b/);
   });
 
   it("never reports underscore keys", () => {
@@ -109,6 +138,8 @@ describe("findUnknownFieldPaths", () => {
   });
 
   it("returns null for a document type the schema does not declare", () => {
-    expect(findUnknownFieldPaths(SCHEMA, { _id: "g", _type: "giftClaimPage", _rev: "r1" })).toBeNull();
+    expect(
+      findUnknownFieldPaths(SCHEMA, { _id: "g", _type: "giftClaimPage", _rev: "r1" }),
+    ).toBeNull();
   });
 });

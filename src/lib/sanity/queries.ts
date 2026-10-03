@@ -310,7 +310,8 @@ export const bookingFormQuery = groq`
   *[_type == "bookingForm"][0] {
     nonRefundableNotice,
     entryPageContent {
-      letterTitle
+      letterTitle,
+      showLetterTitle
     },
     readingPageContent {
       eyebrow,
@@ -331,6 +332,7 @@ export const bookingFormQuery = groq`
       howItWorksTitle,
       questionsTitle,
       otherReadingsTitle,
+      switchNoticeTemplate,
       testimonialLabel,
       minutesTemplate
     },

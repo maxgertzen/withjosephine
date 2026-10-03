@@ -21,10 +21,18 @@ export const bookingForm = defineType({
       type: "object",
       fields: [
         defineField({
+          name: "showLetterTitle",
+          title: "Show the Form Heading",
+          type: "boolean",
+          description: "Off by default: the reading name at the top already heads the page.",
+          initialValue: false,
+        }),
+        defineField({
           name: "letterTitle",
           title: "Form Heading",
           type: "text",
           rows: 2,
+          hidden: ({ parent }) => !parent?.showLetterTitle,
           description:
             "The heading above each reading's intake words and the form, for example 'A few things, before we begin.' Leave blank to use that wording.",
         }),
@@ -123,6 +131,13 @@ export const bookingForm = defineType({
           name: "otherReadingsTitle",
           title: "Other Readings Title",
           type: "string",
+        }),
+        defineField({
+          name: "switchNoticeTemplate",
+          title: "Switched Reading Notice",
+          type: "string",
+          description:
+            "Shown at the top of the form when a visitor picks another reading under Other Readings Title and their name or email carries over. {reading} becomes the reading name.",
         }),
         defineField({
           name: "testimonialLabel",

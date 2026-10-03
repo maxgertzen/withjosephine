@@ -9,3 +9,8 @@ reason = "Dev-only transitive dep (Storybook build toolchain). No upstream fix a
 id = "GHSA-g84c-rxfj-3j2c"
 ignoreUntil = 2027-01-01
 reason = "Dev-only transitive dep (Storybook dev server via @storybook/builder-webpack5). Fix needs webpack-dev-middleware 7."
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-11-15
+reason = "braces 3.0.3 comes only from build and CLI tooling (@sanity/codegen, Storybook, eslint-config-next globbing), never from site code. No fixed version yet."

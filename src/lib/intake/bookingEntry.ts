@@ -1,7 +1,7 @@
 import type { BookingEntry } from "@/lib/analytics";
 import { isSameOrigin } from "@/lib/utils";
 
-import { clearEntryClick, peekEntryClick } from "./entryMarker";
+import { clearEntryClick, pendingEntryClick } from "./entryMarker";
 import { restore as restoreDraft } from "./localStorageDraft";
 
 function landedOnAnotherPath(currentPath: string): boolean {
@@ -22,7 +22,8 @@ function entryFromReferrer(referrer: string): BookingEntry {
 }
 
 export function peekBookingEntry(slug: string, currentPath: string): BookingEntry {
-  if (peekEntryClick(slug, "homepage_card")) return "homepage_card";
+  const click = pendingEntryClick(slug);
+  if (click) return click;
   if (restoreDraft(slug) !== null) return "draft";
   if (classifiedInThisDocument || landedOnAnotherPath(currentPath)) return "internal";
   return entryFromReferrer(document.referrer);

@@ -1,6 +1,33 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
+## ▶ 👉 START HERE (next session, 2026-10-03 handover 9): three PRs into `release/v1.20.0` wait for Max's go to merge: #335 deps (CI green), #334 dev cleanup, and the decisions PR (stacked on #334). After #335 merges, staging deploys; then the Studio deploy (card 6B) and Becky's note.
+
+**Max's decision picks (2026-10-03, decisions page https://claude.ai/artifact/Qb1MnoUriVZWfLzp4u18q4): 1A 2B 3A 4B 5C 6B 7B 8A 9B.**
+- 9B: `next` advisories read: none apply (`images.unoptimized: true`, Workers not Windows, no `next/og`). #335 = next 16.3.6, Storybook 10.6.1 (10.3.6 does not build with next 16.3), vite ^8.0.16 direct, override floors raised in `pnpm-workspace.yaml`, osv ignores with `ignoreUntil`, weekly `security-scan.yml`, osv action pinned by SHA. The `next`-only hotfix to `main` was not built: main has the same Storybook break and the same 76 other advisories; told Max, his call.
+- On `feat/v1.20.0-decisions`: `c403092` 1A rose token, `1c44347` 2B h1 in main, `7071d3f` 3A `showLetterTitle` (off by default) + h2 floor 1.5rem + e2e specs, `3a7a66b` 4B `reading_switch` entry (block open, `PickedOnOtherReadingFormContext` removed), `1b2432f` 5C `EntryClickReset` + `bookingPath`. 5C's tiny-draft half was reverted: it broke A -> B -> C carry-over. Now dex `k1kpjbgh`.
+- 6B: deploy the shared Studio (`pnpm studio:deploy`) after the PRs merge, so it ships `switchNoticeTemplate` and `showLetterTitle`. Becky must not edit the new fields or remove Unknown fields in Production until v1.20.0 ships.
+- 7B: dex `ld9scimy` after v1.20.0 merges. 8A: `7rey27qf` closed.
+- Gates on the decisions branch: typecheck, lint, unit 225 files / 2045 tests, mock e2e 30/30, Studio build, stories graph 38. Browser: header positions identical to baseline at 1512px and 375px; rose `rgb(142, 101, 85)`; switch notice and carry-over checked by hand.
+- New dex: `vni3z6pt` bump bot, `b4gzlwnt` scan studio lockfile, `h1fm8nvp` Storybook on Vite, `tyce8f8e` ThankYouGuard lint warning (eslint-config-next 16.3.6), `k1kpjbgh` carried-over-only drafts.
+- After merges: `scripts/seed-sanity-defaults-2026-10.mts` on staging (fills `switchNoticeTemplate`); `migrate-clear-booking-meta-titles` and the unset script on production after v1.20.0 is live, with Max's go.
+
+## ▶ (SUPERSEDED by handover 9 above) START HERE (2026-10-02 handover 8): dev cleanup is on `chore/v1.20.0-dev-cleanup` (6 commits off `release/v1.20.0`), waiting for Max's go to push `release/v1.20.0` (starts the CI staging deploy) and open the PR into it. Nothing is pushed.
+
+**Done 2026-10-02, handover 8, on `chore/v1.20.0-dev-cleanup`:**
+- `7449909`: deleted `scripts/cleanup-orphan-field-values.mts` and `scripts/migrate-unset-orphan-fields-2026-06-12.ts` (+ test), Max's go. `migrate-booking-form-v2.ts` no longer writes `swapToastCopy`.
+- `fa06981`: `VellumShell.tsx` deleted, header reading props required (`zk4qp0qi` closed).
+- `d29dd05`: `readingAnchorId` in `src/lib/http/routes.ts` (`n2iibpy1` closed).
+- `01b1446`: `resend.test.ts` imports `./resend` once, no `resetModules` (`nfqmp3k8` closed).
+- `b587978`: the "Switched to" notice is `bookingForm.readingPageContent.switchNoticeTemplate` in Sanity, `{reading}` filled in derive. Default copy is now "Switched to {reading}. Your details are saved. Start where you left off." (lint bans the old em dash; "details" because name or email can carry over alone). After the push: run `scripts/seed-sanity-defaults-2026-10.mts` on staging so the field has a value for Presentation.
+- `597e3ad`: `useEffectiveTimeZone` and `useIsClient` use `useFirstClientRead`.
+- Gates: typecheck, lint, unit 223 files / 2034 tests, Studio build, stories graph 38. `/simplify` (4 reviewers) and `/code-review` (8 findings) applied. Empty-h1 finding skipped: `reading.name` is required in the schema.
+- Still open on `71v23wyo`: the `reading_switch` decision, two edge cases, and repo-wide Prettier (338 files flagged; only files touched today were formatted).
+
+**Studio deploy (Max, 2026-10-02):** one deployed Studio serves both workspaces, so `zpivrlex` is checked locally (`localhost:3333/staging` against `NEXT_PUBLIC_SANITY_DATASET=staging pnpm dev`), not deployed. Checked so far: `estimatedMinutes` reaches the page ("Page 1 of 4 · about 27 minutes"); test draft deleted. Questions, testimonial and Reading Page words still to check. Proposed, not decided: a second Studio host for staging so Becky can edit staging without touching her Production workspace.
+
+**Still Max's call:** rose colour on `gk2etjdy` (`DiscardDraftButton.tsx:63`, `:82`), h1 placement `3bqw2jye`, `681ra7bq` points or close.
+
+## ▶ (SUPERSEDED by handover 8 above) START HERE (2026-10-02 handover 7): Studio deploy to staging (`zpivrlex`), then the rest of epic `wjye07gw`. Four commits on `release/v1.20.0`, not pushed.
 
 **Done 2026-10-02, handover 7: `and9um5b` on staging.**
 - `8905154`: `scripts/unset-unknown-sanity-fields.mts`. Finds fields each document has but the schema does not declare, from `sanity schema extract` (nested objects and array items too). Dry run by default, `--apply` unsets per document with `ifRevisionId`. Skips `submission` and documents whose `_type` is not in the schema. Refuses production unless HEAD is on `origin/main` with no local `studio/` changes. Unit tests 10/10.
