@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { isFlagEnabled } from "@/lib/env";
 import { parseGiftNoteRequest, validateGiftSheet } from "@/lib/gift/giftInput";
 import { updateGiftNote } from "@/lib/gift/gifts";
 import { authorizeGiftSendToken, type GiftSendRejection } from "@/lib/gift/giftSendRequest";
@@ -9,10 +8,6 @@ const rejectQuietly: GiftSendRejection = async (withinRateLimit) =>
   new NextResponse(null, { status: (await withinRateLimit()) ? 404 : 429 });
 
 export async function POST(request: Request): Promise<Response> {
-  if (!isFlagEnabled("GIFTS_ENABLED")) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
-
   const authorized = await authorizeGiftSendToken(request, parseGiftNoteRequest, {
     onBadBody: rejectQuietly,
     onInvalidLink: rejectQuietly,

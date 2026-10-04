@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +30,7 @@ vi.mock("@/components/IntakeForm", () => ({
   IntakeForm: (props: Record<string, unknown>) => intakeFormMock(props),
 }));
 
-import { GIFT_DEFAULTS } from "@/data/defaults";
+import { GIFT_DEFAULTS, PAYMENT_BUTTON_TEXT_FALLBACK } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
 import { normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
@@ -102,6 +102,39 @@ describe("/preview/gift/[state]", () => {
     expect(screen.getByText("Given with love.")).toBeTruthy();
   });
 
+  it.each(["buy-sheet", "redeem-sheet"] as const)(
+    "%s shows the gift row open behind the sheet",
+    async (state) => {
+      await renderPreview(state);
+
+      expect(screen.getByTestId("gift-fold")).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel }).getAttribute("aria-expanded"),
+      ).toBe("true");
+      expect(screen.getByText(GIFT_DEFAULTS.buyLead)).toBeTruthy();
+    },
+  );
+
+  it.each(["opened", "last-page"] as const)("%s renders no gift row", async (state) => {
+    await renderPreview(state);
+
+    expect(screen.queryByTestId("gift-fold")).toBeNull();
+  });
+
+  it("buy-sheet posts nothing on a filled gift sheet", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const user = userEvent.setup();
+    await renderPreview("buy-sheet");
+
+    const sheet = screen.getByRole("dialog");
+    await user.type(within(sheet).getByLabelText(new RegExp(GIFT_DEFAULTS.buyerNameLabel)), "Dana");
+    await user.click(within(sheet).getByRole("checkbox"));
+    await user.click(within(sheet).getByRole("button", { name: PAYMENT_BUTTON_TEXT_FALLBACK }));
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   it("buyer-thank-you shows the sample note from Dana with Save note disabled", async () => {
     const user = userEvent.setup();
     await renderPreview("buyer-thank-you");
@@ -120,9 +153,9 @@ describe("/preview/gift/[state]", () => {
     const user = userEvent.setup();
     await renderPreview("redeem-sheet");
 
-    expect(screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading })).toBeTruthy();
-    await user.type(screen.getByLabelText(GIFT_DEFAULTS.codeFieldLabel), "K7M2 QX9P H4TR");
-    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel }));
+    const sheet = screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading });
+    await user.type(within(sheet).getByLabelText(GIFT_DEFAULTS.codeFieldLabel), "K7M2 QX9P H4TR");
+    await user.click(within(sheet).getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel }));
 
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();

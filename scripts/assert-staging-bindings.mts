@@ -127,9 +127,6 @@ if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
     `env.staging vars.NEXT_PUBLIC_SANITY_DATASET expected "staging", got "${vars.NEXT_PUBLIC_SANITY_DATASET ?? "(missing)"}"`,
   );
 }
-if (vars.GIFTS_ENABLED !== "1") {
-  fail(`env.staging vars.GIFTS_ENABLED expected "1", got "${vars.GIFTS_ENABLED ?? "(missing)"}"`);
-}
 
 for (const [blockName, blockVars] of [
   ["production", prodVars],
@@ -167,6 +164,6 @@ console.log(`  worker name: ${staging.name}`);
 console.log(`  d1 database: ${d1.database_name} (${d1.database_id})`);
 console.log(`  r2 bucket:   ${r2.bucket_name}`);
 console.log(
-  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}, GIFTS_ENABLED=${vars.GIFTS_ENABLED}`,
+  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}`,
 );
 console.log(`  prod vars:   no E2E* keys (${Object.keys(prodVars).length} total)`);

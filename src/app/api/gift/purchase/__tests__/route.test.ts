@@ -69,7 +69,6 @@ async function callRoute(body: unknown, headers: Record<string, string> = {}): P
 let capturedConsole: ReturnType<typeof captureConsole>;
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
   mockVerify.mockReset().mockResolvedValue(true);
   mockReading.mockReset().mockResolvedValue(READING);
@@ -83,14 +82,6 @@ afterEach(() => {
 });
 
 describe("POST /api/gift/purchase guards", () => {
-  it.each([undefined, "0"])("returns 404 when GIFTS_ENABLED is %s", async (flag) => {
-    vi.stubEnv("GIFTS_ENABLED", flag);
-    const res = await callRoute(VALID_BODY);
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockCreatePendingGift).not.toHaveBeenCalled();
-  });
-
   it("returns 503 without GIFT_CODE_SECRET and writes no row", async () => {
     vi.stubEnv("GIFT_CODE_SECRET", "");
     const res = await callRoute(VALID_BODY);

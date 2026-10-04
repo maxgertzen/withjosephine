@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { BookingFormViewProps } from "@/app/book/[readingId]/BookingFormView";
+import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
 import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
 import { GIFT_DEFAULTS } from "@/data/defaults";
+import { pick } from "@/lib/pick";
 
 import { deriveGiftBookingFormViewProps } from "./deriveGiftBookingFormViewProps";
 
@@ -35,6 +37,17 @@ const BASE: BookingFormViewProps = {
   },
 };
 
+const GIFT_FOLD: NonNullable<BookingFormViewProps["giftFold"]> = {
+  readingSlug: "birth-chart",
+  copy: pick(GIFT_DEFAULTS, GIFT_FOLD_COPY_KEYS),
+  giftSheet: {
+    reading: { slug: "birth-chart", name: "Birth Chart Reading", price: "$89" },
+    content: GIFT_DEFAULTS,
+    endpoint: null,
+  },
+  redeemSheet: { readingSlug: "birth-chart", content: GIFT_DEFAULTS, endpoint: null },
+};
+
 function derive(gift: Partial<{ buyerFirstName: string; note: string | null }> = {}) {
   return deriveGiftBookingFormViewProps(
     BASE,
@@ -53,6 +66,16 @@ describe("deriveGiftBookingFormViewProps", () => {
 
   it("empties the other readings so the box is hidden", () => {
     expect(derive().readingBlock.otherReadings.readings).toEqual([]);
+  });
+
+  it("drops the gift row of the booking page", () => {
+    const props = deriveGiftBookingFormViewProps(
+      { ...BASE, giftFold: GIFT_FOLD },
+      { code: CODE, buyerFirstName: "Dana", note: null },
+      GIFT_DEFAULTS,
+    );
+
+    expect(props.giftFold).toBeUndefined();
   });
 
   it("ends the gift page line with the buyer's name", () => {

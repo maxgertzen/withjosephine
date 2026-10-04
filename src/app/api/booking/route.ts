@@ -11,7 +11,6 @@ import {
   isFullyConsented,
   serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
-import { isFlagEnabled } from "@/lib/env";
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { redeemGiftSubmission, type RedeemGiftSubmissionResult } from "@/lib/gift/redeemGift";
 import { getClientIp } from "@/lib/request";
@@ -121,9 +120,6 @@ export async function POST(request: Request) {
   }
 
   const { giftCode } = parsedBody;
-  if (giftCode !== undefined && !isFlagEnabled("GIFTS_ENABLED")) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
 
   // Honeypot first — cheap local check rejects bots before we hit Cloudflare.
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
@@ -136,8 +132,7 @@ export async function POST(request: Request) {
   if (!isFullyConsented(consentSnapshot, { requireArt9: true })) {
     return NextResponse.json(
       {
-        error:
-          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
+        error: "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
       },
       { status: 400 },
     );

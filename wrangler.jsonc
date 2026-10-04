@@ -181,7 +181,6 @@
 	"vars": {
 		"BOOKING_DB_DRIVER": "d1",
 		"ENVIRONMENT": "production",
-		"GIFTS_ENABLED": "0",
 		"NEXT_PUBLIC_SANITY_DATASET": "production",
 		"SANITY_BACKUP_ENABLED": "1"
 	},
@@ -276,7 +275,6 @@
 			"vars": {
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
-				"GIFTS_ENABLED": "1",
 				"NEXT_PUBLIC_SANITY_DATASET": "staging",
 				"SANITY_BACKUP_ENABLED": "1"
 			}

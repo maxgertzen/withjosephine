@@ -525,6 +525,31 @@ const TEXT_FIELDS: Record<keyof GiftContent, GiftTextField> = {
     group: "thankYou",
     description: "The error under the send button when the email did not send.",
   },
+  giftRowLabel: {
+    title: "Gift row",
+    group: "bookingPage",
+    description: "The fold row on the booking form, after the reading block.",
+  },
+  buyLead: {
+    title: "Gift row: buy line",
+    group: "bookingPage",
+    description: "The small line above the gift sheet link when the gift row is open.",
+  },
+  buyLinkLabel: {
+    title: "Gift row: gift sheet link",
+    group: "bookingPage",
+    description: "The link in the open gift row that opens the gift sheet.",
+  },
+  redeemLead: {
+    title: "Gift row: redeem line",
+    group: "bookingPage",
+    description: "The small line above the redeem sheet link when the gift row is open.",
+  },
+  redeemLinkLabel: {
+    title: "Gift row: redeem sheet link",
+    group: "bookingPage",
+    description: "The link in the open gift row that opens the redeem sheet.",
+  },
 };
 
 export const giftSettings = defineType({

@@ -5,8 +5,11 @@ vi.mock("@/components/IntakeForm", () => ({
   IntakeForm: () => null,
 }));
 
+import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
 import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
+import { GIFT_DEFAULTS } from "@/data/defaults";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
+import { pick } from "@/lib/pick";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 import { BookingFormView, type BookingFormViewProps } from "./BookingFormView";
@@ -89,5 +92,39 @@ describe("BookingFormView intake copy", () => {
     const lead = screen.getByText(SOUL_BLUEPRINT_BLOCK.lead);
     const title = screen.getByRole("heading", { level: 2, name: "A few things, before we begin." });
     expect(lead.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+const GIFT_FOLD: NonNullable<BookingFormViewProps["giftFold"]> = {
+  readingSlug: "birth-chart",
+  copy: pick(GIFT_DEFAULTS, GIFT_FOLD_COPY_KEYS),
+  giftSheet: {
+    reading: { slug: "birth-chart", name: "Birth Chart Reading", price: "$89" },
+    content: GIFT_DEFAULTS,
+    endpoint: null,
+  },
+  redeemSheet: { readingSlug: "birth-chart", content: GIFT_DEFAULTS, endpoint: null },
+};
+
+describe("BookingFormView gift row", () => {
+  it("sits after the reading block and before the intake title and intro", () => {
+    render(
+      <BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} giftFold={GIFT_FOLD} />,
+    );
+
+    const lead = screen.getByText(SOUL_BLUEPRINT_BLOCK.lead);
+    const giftRow = screen.getByTestId("gift-fold");
+    const title = screen.getByRole("heading", { level: 2, name: "A few things, before we begin." });
+    const intro = screen.getByText("Only paragraph.");
+    expect(lead.compareDocumentPosition(giftRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(giftRow.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(giftRow.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel })).toBeInTheDocument();
+  });
+
+  it("renders no gift row without giftFold", () => {
+    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} />);
+
+    expect(screen.queryByTestId("gift-fold")).toBeNull();
   });
 });

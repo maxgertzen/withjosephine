@@ -145,7 +145,6 @@ function sqliteFailingExec(sqlFragment: string): () => SqlClient {
 }
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
   mockRateLimit.mockReset().mockResolvedValue(true);
   mockTurnstile.mockReset().mockResolvedValue(true);
@@ -167,16 +166,6 @@ afterEach(async () => {
 });
 
 describe("POST /api/gift/send guards", () => {
-  it.each([undefined, "0"])("returns 404 Not Found when GIFTS_ENABLED is %s", async (flag) => {
-    vi.stubEnv("GIFTS_ENABLED", flag);
-    const { token } = await activeGift();
-    const res = await callRoute(sendBody(token));
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockRateLimit).not.toHaveBeenCalled();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
   it("returns 400 for an expectedSendCount of 2 without a limiter call", async () => {
     const res = await callRoute(sendBody("t", { expectedSendCount: 2 }));
     expect(res.status).toBe(400);

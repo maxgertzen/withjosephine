@@ -1,13 +1,15 @@
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 
+import { REFUND_POLICY_GIFT_LINE } from "./legalLines";
+
 export function RefundPolicyFallbackBody() {
   return (
     <>
       <section className="flex flex-col gap-5">
         <p className="font-body text-base text-j-text leading-[1.9] font-light">
-          Readings are <strong className="font-medium">non-refundable</strong>. Each one is
-          prepared personally by Josephine - not generated, not templated - and the work begins
-          the moment your purchase is complete.
+          Readings are <strong className="font-medium">non-refundable</strong>.{" "}
+          {REFUND_POLICY_GIFT_LINE} Each one is prepared personally by Josephine - not generated,
+          not templated - and the work begins the moment your purchase is complete.
         </p>
         <p className="font-body text-base text-j-text-muted leading-[1.9] font-light">
           When you book, you tick a checkbox waiving your 14-day cooling-off right under EU

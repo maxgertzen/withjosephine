@@ -90,5 +90,6 @@ export function deriveGiftBookingFormViewProps(
       noteCard: giftNoteCard(gift, copy),
       priceLine: copy.priceLine,
     },
+    giftFold: undefined,
   };
 }

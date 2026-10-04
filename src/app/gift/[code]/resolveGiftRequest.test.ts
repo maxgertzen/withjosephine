@@ -56,7 +56,6 @@ function giftWith(status: GiftStatus, readingSlug = "birth-chart") {
 
 beforeEach(() => {
   requestScope.results.clear();
-  vi.stubEnv("GIFTS_ENABLED", "1");
   mockRateLimit.mockReset().mockResolvedValue(true);
   mockFindGift.mockReset().mockResolvedValue(null);
   mockVerifiedCode.mockReset().mockResolvedValue(CODE);
@@ -64,13 +63,6 @@ beforeEach(() => {
 });
 
 describe("resolveGiftRequest", () => {
-  it("calls notFound when gifts are off", async () => {
-    vi.stubEnv("GIFTS_ENABLED", "0");
-
-    await expect(resolveGiftRequest(CODE)).rejects.toThrow("__notfound__");
-    expect(mockRateLimit).not.toHaveBeenCalled();
-  });
-
   it("gives rate_limited and makes no lookup when the limiter refuses", async () => {
     mockRateLimit.mockResolvedValue(false);
 

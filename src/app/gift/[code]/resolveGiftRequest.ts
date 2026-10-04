@@ -1,8 +1,6 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
 import { cache } from "react";
 
-import { isFlagEnabled } from "@/lib/env";
 import { deriveVerifiedGiftCode } from "@/lib/gift/giftCode";
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { findGiftByCode, resolveGiftState } from "@/lib/gift/gifts";
@@ -29,7 +27,6 @@ function giftMessage(message: GiftPageMessage, readingSlug: string | null = null
 }
 
 export const resolveGiftRequest = cache(async (code: string): Promise<GiftPageState> => {
-  if (!isFlagEnabled("GIFTS_ENABLED")) notFound();
   if (!(await checkGiftRateLimit(await headers()))) return giftMessage("rate_limited");
 
   const gift = await findGiftByCode(code);

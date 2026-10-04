@@ -4,7 +4,8 @@ import { join } from "node:path";
 
 const LIMITER_CALLS_PER_PERIOD = 5;
 const LIMITER_PERIOD_MS = 60_000;
-const SLIDING_WINDOW_MS = 61_000;
+const CALL_TO_SERVER_LAG_MS = 5_000;
+const SLIDING_WINDOW_MS = LIMITER_PERIOD_MS + CALL_TO_SERVER_LAG_MS;
 const CALL_LOG_PATH = join(tmpdir(), "withjosephine-e2e-gift-limiter-calls.json");
 
 function readCallLog(): number[] {

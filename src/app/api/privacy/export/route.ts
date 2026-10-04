@@ -1,6 +1,6 @@
 import "server-only";
 
-import { strToU8, type Zippable,zipSync } from "fflate";
+import { strToU8, type Zippable, zipSync } from "fflate";
 import { NextResponse } from "next/server";
 
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
@@ -15,10 +15,7 @@ import {
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
 import { wasUserDeleted } from "@/lib/compliance/cascadeDeleteUser";
-import {
-  READING_CONTENT_RETENTION_YEARS,
-  TAX_RETENTION_YEARS,
-} from "@/lib/compliance/retention";
+import { READING_CONTENT_RETENTION_YEARS, TAX_RETENTION_YEARS } from "@/lib/compliance/retention";
 import { getSignedDownloadUrl, putObject } from "@/lib/r2";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { getClientIp } from "@/lib/request";
@@ -54,7 +51,12 @@ function extFromUrl(url: string, fallback: string): string {
     const path = new URL(url).pathname;
     const dot = path.lastIndexOf(".");
     if (dot === -1) return fallback;
-    return path.slice(dot + 1).toLowerCase().slice(0, 8) || fallback;
+    return (
+      path
+        .slice(dot + 1)
+        .toLowerCase()
+        .slice(0, 8) || fallback
+    );
   } catch {
     return fallback;
   }
@@ -140,6 +142,7 @@ function buildReadme(): string {
     "  amountPaidCurrency   — ISO 4217 currency code (e.g. USD)",
     "  paidAt               — when payment completed (ISO 8601)",
     "  stripeSessionId      — Stripe checkout reference for this payment",
+    "  paidByGift           - true when a gift paid for this reading",
     "  reading              — the reading you booked",
     "delivery.json",
     "  deliveredAt          — when your reading was delivered (ISO 8601, null if not yet)",
@@ -307,6 +310,7 @@ export async function POST(request: Request): Promise<Response> {
         amountPaidCents: submission.amountPaidCents,
         amountPaidCurrency: submission.amountPaidCurrency,
         stripeSessionId: submission.stripeSessionId ?? null,
+        paidByGift: Boolean(submission.giftCodeId),
         reading: submission.reading,
       },
       null,
@@ -368,8 +372,5 @@ export async function POST(request: Request): Promise<Response> {
     console.error("[export] Resend send failed", error);
   });
 
-  return NextResponse.json(
-    { expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS },
-    { status: 202 },
-  );
+  return NextResponse.json({ expiresInSeconds: EXPORT_URL_EXPIRY_SECONDS }, { status: 202 });
 }

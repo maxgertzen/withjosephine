@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
-import { isFlagEnabled } from "@/lib/env";
 import { auditGiftSent } from "@/lib/gift/giftAudit";
 import { deriveVerifiedGiftCode, giftUrl } from "@/lib/gift/giftCode";
 import {
@@ -51,10 +50,6 @@ function statusConflict(gift: GiftRecord | null): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!isFlagEnabled("GIFTS_ENABLED")) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
-
   assertEnvironmentBindings();
 
   const authorized = await authorizeGiftSendToken(request, parseGiftSendRequest, {

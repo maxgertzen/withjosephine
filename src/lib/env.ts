@@ -36,7 +36,6 @@ export function optionalEnv(name: EnvVar, missingWarning?: string) {
 }
 
 export type FeatureFlag =
-  | "GIFTS_ENABLED"
   | "RESEND_DRY_RUN"
   | "SANITY_BACKUP_ENABLED"
   | "NEXT_PUBLIC_UNDER_CONSTRUCTION";

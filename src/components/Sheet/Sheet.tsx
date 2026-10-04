@@ -1,9 +1,11 @@
 "use client";
 
 import { type ReactNode, useRef } from "react";
+import { createPortal } from "react-dom";
 
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
+import { useIsClient } from "@/lib/hooks/useIsClient";
 
 type SheetProps = {
   open: boolean;
@@ -14,12 +16,14 @@ type SheetProps = {
 
 export function Sheet({ open, onClose, labelledBy, children }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useLockBodyScroll(open);
-  useFocusTrap({ active: open, containerRef: panelRef, onEscape: onClose });
+  const isClient = useIsClient();
+  const visible = open && isClient;
+  useLockBodyScroll(visible);
+  useFocusTrap({ active: visible, containerRef: panelRef, onEscape: onClose });
 
-  if (!open) return null;
+  if (!visible) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[110] flex items-end justify-center">
       <div
         aria-hidden="true"
@@ -38,6 +42,7 @@ export function Sheet({ open, onClose, labelledBy, children }: SheetProps) {
         <div aria-hidden="true" className="h-1 w-10 shrink-0 self-center rounded bg-j-blush" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

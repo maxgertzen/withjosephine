@@ -36,7 +36,6 @@ async function giftRow(giftId: string): Promise<Record<string, SqlValue>> {
 }
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
   mockRateLimit.mockReset().mockResolvedValue(true);
   capturedConsole = captureConsole();
@@ -49,15 +48,6 @@ afterEach(() => {
 });
 
 describe("POST /api/gift/send/status guards", () => {
-  it.each([undefined, "0"])("returns 404 Not Found when GIFTS_ENABLED is %s", async (flag) => {
-    vi.stubEnv("GIFTS_ENABLED", flag);
-    ({ token } = await giftWithSendToken("active"));
-    const res = await callRoute({ token });
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockRateLimit).not.toHaveBeenCalled();
-  });
-
   it("returns 400 for a body without a token without a limiter call", async () => {
     const res = await callRoute({});
     expect(res.status).toBe(400);

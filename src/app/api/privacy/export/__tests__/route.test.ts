@@ -77,7 +77,12 @@ const SUBMISSION: SubmissionRecord = {
   status: "paid",
   email: "ada@example.com",
   responses: [
-    { fieldKey: "first_name", fieldLabelSnapshot: "First name", fieldType: "shortText", value: "Ada" },
+    {
+      fieldKey: "first_name",
+      fieldLabelSnapshot: "First name",
+      fieldType: "shortText",
+      value: "Ada",
+    },
   ],
   createdAt: "2026-04-20T10:00:00Z",
   reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
@@ -112,11 +117,11 @@ beforeEach(() => {
   mockWasDeleted.mockReset().mockResolvedValue(false);
   mockDbQuery.mockReset().mockResolvedValue([]);
   mockPutObject.mockReset().mockResolvedValue(undefined);
-  mockSignedUrl
-    .mockReset()
-    .mockResolvedValue("https://r2.example.com/exports/sub_1/1.zip?sig=abc");
+  mockSignedUrl.mockReset().mockResolvedValue("https://r2.example.com/exports/sub_1/1.zip?sig=abc");
   mockEmail.mockReset().mockResolvedValue({ kind: "sent", resendId: "resend_xyz" });
-  fetchMock.mockReset().mockResolvedValue(new Response(new Uint8Array([1, 2, 3, 4]), { status: 200 }));
+  fetchMock
+    .mockReset()
+    .mockResolvedValue(new Response(new Uint8Array([1, 2, 3, 4]), { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -124,7 +129,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function callRoute(body: unknown = { token: "tok", turnstileToken: "ts" }): Promise<Response> {
+async function callRoute(
+  body: unknown = { token: "tok", turnstileToken: "ts" },
+): Promise<Response> {
   const { POST } = await import("../route");
   return POST(
     new Request("http://localhost/api/privacy/export", {
@@ -133,6 +140,12 @@ async function callRoute(body: unknown = { token: "tok", turnstileToken: "ts" })
       body: JSON.stringify(body),
     }),
   );
+}
+
+function readBundleJson(fileName: string) {
+  const files = unzipSync(mockPutObject.mock.calls[0]![1] as Uint8Array);
+  const path = Object.keys(files).find((candidate) => candidate.endsWith(`/${fileName}`));
+  return JSON.parse(strFromU8(files[path!]!));
 }
 
 describe("POST /api/privacy/export", () => {
@@ -276,10 +289,36 @@ describe("POST /api/privacy/export", () => {
 
     await callRoute();
 
+    expect(readBundleJson("delivery.json").emailFailures).toEqual([failure]);
+  });
+
+  it("marks a gift submission as paidByGift in transaction.json", async () => {
+    mockFindSubmission.mockResolvedValueOnce({
+      ...SUBMISSION,
+      amountPaidCents: null,
+      amountPaidCurrency: null,
+      stripeSessionId: undefined,
+      giftCodeId: "00000000-0000-4000-8000-000000000001",
+    });
+
+    await callRoute();
+
+    const transaction = readBundleJson("transaction.json");
+    expect(transaction.paidByGift).toBe(true);
+    expect(transaction.stripeSessionId).toBeNull();
+  });
+
+  it("marks a paid booking as not paidByGift in transaction.json", async () => {
+    await callRoute();
+
+    expect(readBundleJson("transaction.json").paidByGift).toBe(false);
+  });
+
+  it("documents paidByGift in the README data dictionary", async () => {
+    await callRoute();
+
     const files = unzipSync(mockPutObject.mock.calls[0]![1] as Uint8Array);
-    const deliveryPath = Object.keys(files).find((path) => path.endsWith("/delivery.json"));
-    const delivery = JSON.parse(strFromU8(files[deliveryPath!]!));
-    expect(delivery.emailFailures).toEqual([failure]);
+    expect(strFromU8(files["README.txt"]!)).toMatch(/^ {2}paidByGift {11}- /m);
   });
 
   it("reserves the export_request row before the R2 upload and email (TOCTOU guard)", async () => {

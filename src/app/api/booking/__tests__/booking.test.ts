@@ -315,21 +315,6 @@ describe("/api/booking with a gift code", () => {
     mockForm.mockResolvedValueOnce(FORM);
   }
 
-  beforeEach(() => {
-    vi.stubEnv("GIFTS_ENABLED", "1");
-  });
-
-  it("answers 404 Not Found with the gifts flag off, before any other check", async () => {
-    vi.stubEnv("GIFTS_ENABLED", "0");
-
-    const res = await callRoute(GIFT_BODY);
-
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockVerify).not.toHaveBeenCalled();
-    expect(mockRedeem).not.toHaveBeenCalled();
-  });
-
   it("rejects a non-string gift code as an invalid body", async () => {
     const res = await callRoute({ ...VALID_BODY, giftCode: 42 });
 

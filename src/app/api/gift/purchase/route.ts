@@ -4,7 +4,7 @@ import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { buildPaymentUrl, isStripePaymentLink } from "@/lib/booking/paymentUrl";
 import { COOLING_OFF_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
-import { isFlagEnabled, optionalEnv } from "@/lib/env";
+import { optionalEnv } from "@/lib/env";
 import { giftClientReferenceId } from "@/lib/gift/clientReference";
 import { parseGiftPurchaseBody, validateGiftSheet } from "@/lib/gift/giftInput";
 import { createPendingGift } from "@/lib/gift/gifts";
@@ -13,17 +13,10 @@ import { fetchReading } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
-  if (!isFlagEnabled("GIFTS_ENABLED")) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
-
   assertEnvironmentBindings();
 
   if (!optionalEnv("GIFT_CODE_SECRET")) {
-    return NextResponse.json(
-      { error: "Gifts are not available right now." },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "Gifts are not available right now." }, { status: 503 });
   }
 
   let parsedBody: unknown;

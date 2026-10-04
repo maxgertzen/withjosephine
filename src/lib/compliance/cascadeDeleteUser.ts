@@ -39,6 +39,14 @@ import {
   listSubmissionsByRecipientUserId,
   type SubmissionRecord,
 } from "../booking/submissions";
+import { giftClientReferenceId } from "../gift/clientReference";
+import { scheduleGiftRecordMirror } from "../gift/gifts";
+import {
+  clearGiftRecipientsOfUserSubmissions,
+  eraseGiftBuyer,
+  type GiftBoughtRow,
+  listGiftsBoughtBy,
+} from "../gift/persistence/repository";
 import { sha256Hex } from "../hmac";
 import { getSanityWriteClient } from "../sanity/client";
 import { retrieveCheckoutSession } from "../stripe";
@@ -82,9 +90,7 @@ async function deleteSanityAssetsForSubmission(
       { id: submissionId },
     );
   } catch (error) {
-    partialFailures.push(
-      `sanity-fetch: ${submissionId} — ${error instanceof Error ? error.message : String(error)}`,
-    );
+    partialFailures.push(`sanity-fetch: ${submissionId} — ${errorMessage(error)}`);
     return;
   }
 
@@ -93,9 +99,7 @@ async function deleteSanityAssetsForSubmission(
   try {
     await client.delete(submissionId);
   } catch (error) {
-    partialFailures.push(
-      `sanity-doc-delete: ${submissionId} — ${error instanceof Error ? error.message : String(error)}`,
-    );
+    partialFailures.push(`sanity-doc-delete: ${submissionId} — ${errorMessage(error)}`);
     // Don't return — still try the asset deletes; if doc-delete failed
     // because the doc is already gone, asset-delete will succeed cleanly.
   }
@@ -107,9 +111,7 @@ async function deleteSanityAssetsForSubmission(
     try {
       await client.delete(ref);
     } catch (error) {
-      partialFailures.push(
-        `sanity-asset-delete: ${ref} — ${error instanceof Error ? error.message : String(error)}`,
-      );
+      partialFailures.push(`sanity-asset-delete: ${ref} — ${errorMessage(error)}`);
     }
   }
 }
@@ -126,30 +128,61 @@ async function resolveStripeCustomerId(
     if (customer && typeof customer === "object" && "id" in customer) return customer.id;
     return null;
   } catch (error) {
-    partialFailures.push(
-      `stripe-session-lookup: ${stripeSessionId} — ${error instanceof Error ? error.message : String(error)}`,
-    );
+    partialFailures.push(`stripe-session-lookup: ${stripeSessionId} — ${errorMessage(error)}`);
     return null;
   }
 }
 
-async function writeDeletionLog(
-  args: {
-    id: string;
-    userId: string;
-    emailHash: string;
-    performedBy: string;
-    action: "started" | "completed" | "failed";
-    startedAt: number;
-    completedAt: number | null;
-    submissionIds: string[];
-    partialFailures: string[];
-    stripeRedactionJobId: string | null;
-    brevoSmtpProcessId: string | null;
-    mixpanelTaskId: string | null;
-    ipHash: string | null;
-  },
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function unsetGiftBuyerNameOnSubmission(
+  submissionId: string,
+  partialFailures: string[],
 ): Promise<void> {
+  try {
+    const client = await getSanityWriteClient();
+    await client.patch(submissionId).unset(["gift.buyerFirstName"]).commit();
+  } catch (error) {
+    partialFailures.push(`sanity-gift-buyer-unset: ${submissionId} - ${errorMessage(error)}`);
+  }
+}
+
+async function eraseGiftsBought(
+  gifts: GiftBoughtRow[],
+  deletedSubmissionIds: ReadonlySet<string>,
+  erasedAt: string,
+  partialFailures: string[],
+): Promise<void> {
+  for (const gift of gifts) {
+    try {
+      await eraseGiftBuyer(gift.id, erasedAt);
+      scheduleGiftRecordMirror(gift.id);
+    } catch (error) {
+      partialFailures.push(`d1-gift-buyer: ${gift.id} - ${errorMessage(error)}`);
+    }
+    if (gift.redeemedSubmissionId && !deletedSubmissionIds.has(gift.redeemedSubmissionId)) {
+      await unsetGiftBuyerNameOnSubmission(gift.redeemedSubmissionId, partialFailures);
+    }
+  }
+}
+
+async function writeDeletionLog(args: {
+  id: string;
+  userId: string;
+  emailHash: string;
+  performedBy: string;
+  action: "started" | "completed" | "failed";
+  startedAt: number;
+  completedAt: number | null;
+  submissionIds: string[];
+  partialFailures: string[];
+  stripeRedactionJobId: string | null;
+  brevoSmtpProcessId: string | null;
+  mixpanelTaskId: string | null;
+  ipHash: string | null;
+}): Promise<void> {
   // started_at carries the cascade-start timestamp on BOTH rows so the
   // schema's NOT NULL holds and queries can group "this cascade" via a
   // (user_id, started_at) tuple. completed_at is the durable signal that
@@ -213,6 +246,8 @@ export async function cascadeDeleteUser(
 
   const submissions: SubmissionRecord[] = await listSubmissionsByRecipientUserId(userId);
   const submissionIds = submissions.map((s) => s._id);
+  const giftsBought = await listGiftsBoughtBy(email);
+  const deletedIds = [...submissionIds, ...giftsBought.map((g) => giftClientReferenceId(g.id))];
 
   await writeDeletionLog({
     id: crypto.randomUUID(),
@@ -222,7 +257,7 @@ export async function cascadeDeleteUser(
     action: "started",
     startedAt,
     completedAt: null,
-    submissionIds,
+    submissionIds: deletedIds,
     partialFailures: [],
     stripeRedactionJobId: null,
     brevoSmtpProcessId: null,
@@ -232,15 +267,23 @@ export async function cascadeDeleteUser(
 
   // Resolve Stripe customer_ids in parallel (independent reads, ≤ 1-3 sessions
   // per user at this scale — no rate-limit risk).
+  const checkoutSessionIds = [
+    ...submissions.map((s) => s.stripeSessionId),
+    ...giftsBought.map((g) => g.stripeSessionId),
+  ].filter((id): id is string => Boolean(id));
   const customerIdResults = await Promise.all(
-    submissions.map((s) => resolveStripeCustomerId(s.stripeSessionId, partialFailures)),
+    checkoutSessionIds.map((id) => resolveStripeCustomerId(id, partialFailures)),
   );
   const customerIds = Array.from(
     new Set(customerIdResults.filter((id): id is string => Boolean(id))),
   );
-  const checkoutSessionIds = submissions
-    .map((s) => s.stripeSessionId)
-    .filter((id): id is string => Boolean(id));
+
+  const erasedAt = new Date(startedAt).toISOString();
+  try {
+    await clearGiftRecipientsOfUserSubmissions(userId, erasedAt);
+  } catch (error) {
+    partialFailures.push(`d1-gift-recipient: ${errorMessage(error)}`);
+  }
 
   // Per-submission cleanup. Sequential within a submission (R2 → Sanity doc
   // → Sanity assets → D1) but submissions themselves could parallelize.
@@ -254,13 +297,13 @@ export async function cascadeDeleteUser(
         photoR2Key: submission.photoR2Key,
       });
     } catch (error) {
-      partialFailures.push(
-        `d1+r2-delete: ${submission._id} — ${error instanceof Error ? error.message : String(error)}`,
-      );
+      partialFailures.push(`d1+r2-delete: ${submission._id} — ${errorMessage(error)}`);
     }
     // Steps 2+3: Sanity doc → Sanity assets.
     await deleteSanityAssetsForSubmission(submission._id, partialFailures);
   }
+
+  await eraseGiftsBought(giftsBought, new Set(submissionIds), erasedAt, partialFailures);
 
   // User-level vendor cascades — parallel. Each helper captures its own
   // VendorResult; partialFailures are pushed in deterministic order after
@@ -270,7 +313,7 @@ export async function cascadeDeleteUser(
     createStripeRedactionJob({ customerIds, checkoutSessionIds }),
     deleteBrevoContact(email),
     deleteBrevoSmtpLog(email),
-    createMixpanelDataDeletion(submissionIds),
+    createMixpanelDataDeletion(deletedIds),
   ]);
   const stripeRedactionJobId = stripeResult.ok ? stripeResult.trackingId : null;
   const brevoSmtpProcessId = brevoSmtpResult.ok ? brevoSmtpResult.trackingId : null;
@@ -287,9 +330,7 @@ export async function cascadeDeleteUser(
     await dbExec(`DELETE FROM listen_magic_link WHERE user_id = ?`, [userId]);
     await dbExec(`DELETE FROM user WHERE id = ?`, [userId]);
   } catch (error) {
-    partialFailures.push(
-      `d1-user-rows: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    partialFailures.push(`d1-user-rows: ${errorMessage(error)}`);
   }
 
   const completedAt = options.now ?? Date.now();
@@ -302,7 +343,7 @@ export async function cascadeDeleteUser(
     action: "completed",
     startedAt,
     completedAt,
-    submissionIds,
+    submissionIds: deletedIds,
     partialFailures,
     stripeRedactionJobId,
     brevoSmtpProcessId,

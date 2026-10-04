@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 
 import { loadGiftContent } from "@/app/gift/[code]/loadGiftPageProps";
-import { isFlagEnabled } from "@/lib/env";
 import { pick } from "@/lib/pick";
 import { SITE_NAME } from "@/lib/seoMetadata";
 
@@ -17,7 +15,6 @@ export const metadata: Metadata = {
 };
 
 export default async function GiftSendPage() {
-  if (!isFlagEnabled("GIFTS_ENABLED")) notFound();
   const content = await loadGiftContent("published");
   return <GiftSendLinkPage copy={pick(content, GIFT_SEND_PAGE_COPY_KEYS)} />;
 }

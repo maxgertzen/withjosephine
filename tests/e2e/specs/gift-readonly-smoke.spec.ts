@@ -3,7 +3,6 @@ import { expect, type Page, test } from "@playwright/test";
 import { giftPath } from "@/lib/gift/giftCodeFormat";
 
 const APEX_UNPARKED = process.env.APEX_UNPARKED === "true";
-const PROD_GIFTS_ENABLED = process.env.PROD_GIFTS_ENABLED === "true";
 
 const UNKNOWN_GIFT_PATH = giftPath("AAAAAAAAAAAA");
 const MALFORMED_GIFT_PATH = giftPath("x");
@@ -18,7 +17,6 @@ async function visibleMainText(page: Page, path: string): Promise<string> {
 
 test.describe("Prod read-only gift smoke", () => {
   test.skip(!APEX_UNPARKED, "Apex parked: smoke specs gated behind APEX_UNPARKED=true");
-  test.skip(!PROD_GIFTS_ENABLED, "Gifts off in production: gated behind PROD_GIFTS_ENABLED=true");
 
   test("an unknown code and a malformed code show the same page", async ({ page }) => {
     const unknown = await visibleMainText(page, UNKNOWN_GIFT_PATH);

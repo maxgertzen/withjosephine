@@ -108,8 +108,12 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       locations: [{ title: "Notes", href: "/preview/notes" }],
     }),
     giftSettings: defineLocations({
-      message: "Affects the gift sheet and the gift pages.",
-      locations: GIFT_PREVIEW_LINKS,
+      message:
+        "Affects the gift row on every booking page (/book/*), the gift sheets and the gift pages.",
+      locations: [
+        { title: "Booking", href: "/preview/book/soul-blueprint" },
+        ...GIFT_PREVIEW_LINKS,
+      ],
     }),
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ABOUT_DEFAULTS,
+  GIFT_DEFAULTS,
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
   INTAKE_TITLE_FALLBACK,
@@ -58,6 +59,7 @@ function derive(
     landingPage: null,
     notesState: null,
     readingNotes: [],
+    giftSettings: null,
     ...extra,
   });
 }
@@ -322,5 +324,50 @@ describe("deriveBookingFormViewProps notes list", () => {
     ).toBeUndefined();
     expect(derive(sanityReading(), { readingNotes: notes })?.readingBlock.notes).toBeUndefined();
     expect(derive(sanityReading(), { notesState: visible })?.readingBlock.notes).toBeUndefined();
+  });
+});
+
+describe("deriveBookingFormViewProps gift row", () => {
+  it("takes the gift row words from Gift Settings and fills blanks from the defaults", () => {
+    const props = derive(sanityReading(), {
+      giftSettings: { giftRowLabel: "A gift?", buyLinkLabel: "  ", redeemLead: "" },
+    });
+
+    expect(props?.giftFold?.copy).toEqual({
+      giftRowLabel: "A gift?",
+      buyLead: GIFT_DEFAULTS.buyLead,
+      buyLinkLabel: GIFT_DEFAULTS.buyLinkLabel,
+      redeemLead: GIFT_DEFAULTS.redeemLead,
+      redeemLinkLabel: GIFT_DEFAULTS.redeemLinkLabel,
+    });
+  });
+
+  it("uses the defaults when Gift Settings is missing", () => {
+    expect(derive()?.giftFold?.copy.giftRowLabel).toBe(GIFT_DEFAULTS.giftRowLabel);
+    expect(derive()?.giftFold?.giftSheet.content).toEqual(GIFT_DEFAULTS);
+  });
+
+  it("gives the gift sheet the payment button text and the loading text of the booking form", () => {
+    const props = derive(sanityReading(), {
+      bookingPage: { paymentButtonText: "Pay now →" },
+      bookingForm: bookingForm({ loadingStateCopy: "One moment." }),
+    });
+
+    expect(props?.giftFold?.giftSheet).toMatchObject({
+      reading: { slug: "soul-blueprint", name: "The Soul Blueprint", price: "$179" },
+      paymentButtonText: "Pay now →",
+      loadingStateCopy: "One moment.",
+      endpoint: "/api/gift/purchase",
+    });
+    expect(props?.giftFold?.redeemSheet).toMatchObject({
+      readingSlug: "soul-blueprint",
+      endpoint: "/api/gift/check",
+    });
+  });
+
+  it("turns on the gift code field of the last page", () => {
+    const props = derive(sanityReading(), { giftSettings: { codeFieldOptionalLabel: "Code?" } });
+
+    expect(props?.form.giftCodeField?.copy.codeFieldOptionalLabel).toBe("Code?");
   });
 });

@@ -39,7 +39,6 @@ async function activeGiftToken(): Promise<{ giftId: string; token: string }> {
 }
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
   mockRateLimit.mockReset().mockResolvedValue(true);
   capturedConsole = captureConsole();
@@ -56,15 +55,6 @@ afterEach(() => {
 });
 
 describe("POST /api/gift/note guards", () => {
-  it.each([undefined, "0"])("returns 404 Not Found when GIFTS_ENABLED is %s", async (flag) => {
-    vi.stubEnv("GIFTS_ENABLED", flag);
-    ({ token } = await activeGiftToken());
-    const res = await callRoute({ token, buyerFirstName: NEW_NAME, note: NEW_NOTE });
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockRateLimit).not.toHaveBeenCalled();
-  });
-
   it("returns 404 with an empty body and one limiter call for a bad token", async () => {
     const res = await callRoute({ token: "not-a-token", buyerFirstName: NEW_NAME, note: NEW_NOTE });
     expect(res.status).toBe(404);

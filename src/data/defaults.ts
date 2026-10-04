@@ -298,6 +298,11 @@ export interface GiftContent {
   sendLinkInvalidHeading: string;
   sendLinkInvalidBody: string;
   sendFailedNotice: string;
+  giftRowLabel: string;
+  buyLead: string;
+  buyLinkLabel: string;
+  redeemLead: string;
+  redeemLinkLabel: string;
 }
 
 export const GIFT_DEFAULTS: GiftContent = {
@@ -406,6 +411,11 @@ export const GIFT_DEFAULTS: GiftContent = {
   sendLinkInvalidHeading: "This link doesn’t work any more",
   sendLinkInvalidBody: "Write to hello@withjosephine.com and Josephine will help.",
   sendFailedNotice: "The email didn’t send. Try again.",
+  giftRowLabel: "Giving or redeeming a gift",
+  buyLead: "Buying it for someone?",
+  buyLinkLabel: "Send it as a gift",
+  redeemLead: "Have a code?",
+  redeemLinkLabel: "Redeem gift",
 };
 
 export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";

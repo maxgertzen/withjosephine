@@ -48,7 +48,6 @@ async function invalidAuditCount(): Promise<number> {
 let capturedConsole: ReturnType<typeof captureConsole>;
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
   mockRateLimit.mockReset().mockResolvedValue(true);
   mockReading.mockReset().mockResolvedValue({ name: "Birth Chart Reading" } as SanityReading);
@@ -60,16 +59,6 @@ afterEach(() => {
 });
 
 describe("POST /api/gift/check", () => {
-  it("answers 404 Not Found with the gifts flag off", async () => {
-    vi.stubEnv("GIFTS_ENABLED", "0");
-
-    const res = await check({ code: "AAAAAAAAAAAA", readingSlug: "birth-chart" });
-
-    expect(res.status).toBe(404);
-    expect(await res.text()).toBe("Not Found");
-    expect(mockRateLimit).not.toHaveBeenCalled();
-  });
-
   it("answers 400 for a body without a code", async () => {
     const res = await check({ readingSlug: "birth-chart" });
 

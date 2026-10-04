@@ -4,6 +4,8 @@ import {
   fetchBookingFormPublished,
   fetchBookingPage,
   fetchBookingPagePublished,
+  fetchGiftSettings,
+  fetchGiftSettingsPublished,
   fetchLandingPage,
   fetchLandingPagePublished,
   fetchNotesState,
@@ -18,6 +20,7 @@ import {
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
   SanityReading,
@@ -36,6 +39,7 @@ type BookingFormSources = {
   landingPage: () => Promise<SanityLandingPage | null>;
   notesState: () => Promise<SanityNotesState | null>;
   readingNotes: (slug: string) => Promise<NoteSummary[]>;
+  giftSettings: () => Promise<SanityGiftSettings | null>;
 };
 
 function sourcesFor(perspective: BookingFormPerspective): BookingFormSources {
@@ -48,6 +52,7 @@ function sourcesFor(perspective: BookingFormPerspective): BookingFormSources {
       landingPage: fetchLandingPage,
       notesState: fetchNotesState,
       readingNotes: fetchReadingNotes,
+      giftSettings: fetchGiftSettings,
     };
   }
   return {
@@ -58,6 +63,7 @@ function sourcesFor(perspective: BookingFormPerspective): BookingFormSources {
     landingPage: fetchLandingPagePublished,
     notesState: fetchNotesStatePublished,
     readingNotes: fetchReadingNotesPublished,
+    giftSettings: fetchGiftSettingsPublished,
   };
 }
 
@@ -74,6 +80,7 @@ export async function loadBookingFormViewProps(
     landingPage,
     notesState,
     readingNotes,
+    giftSettings,
   ] = await Promise.all([
     sources.reading(readingId),
     sources.readings(),
@@ -82,6 +89,7 @@ export async function loadBookingFormViewProps(
     sources.landingPage(),
     sources.notesState(),
     sources.readingNotes(readingId),
+    sources.giftSettings(),
   ]);
 
   return deriveBookingFormViewProps({
@@ -93,5 +101,6 @@ export async function loadBookingFormViewProps(
     landingPage,
     notesState,
     readingNotes,
+    giftSettings,
   });
 }

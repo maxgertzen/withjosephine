@@ -77,7 +77,6 @@ async function renderPage(code = CODE) {
 }
 
 beforeEach(() => {
-  vi.stubEnv("GIFTS_ENABLED", "1");
   vi.stubEnv("ENVIRONMENT", "development");
   mockContext.mockReset().mockRejectedValue(new Error("no workerd context"));
   mockFindGift.mockReset().mockResolvedValue(null);
@@ -173,12 +172,6 @@ describe("/gift/[code]", () => {
     expect(dbExec).not.toHaveBeenCalled();
     expect(dbBatch).not.toHaveBeenCalled();
     expect(writeAudit).not.toHaveBeenCalled();
-  });
-
-  it("calls notFound when gifts are off", async () => {
-    vi.stubEnv("GIFTS_ENABLED", "0");
-
-    await expect(renderPage()).rejects.toThrow("__notfound__");
   });
 
   it("renders rate_limited and looks nothing up when the limiter fails closed in production", async () => {

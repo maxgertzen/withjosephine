@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
-import { isFlagEnabled } from "@/lib/env";
 import { auditInvalidGiftLink } from "@/lib/gift/giftAudit";
 import type { GiftCheckRequest, GiftCheckResponse } from "@/lib/gift/giftCheck";
 import { giftPath, normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
@@ -21,10 +20,6 @@ function respond(body: GiftCheckResponse, status = 200): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!isFlagEnabled("GIFTS_ENABLED")) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
-
   let parsedBody: unknown;
   try {
     parsedBody = await request.json();

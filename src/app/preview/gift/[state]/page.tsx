@@ -6,7 +6,7 @@ import { deriveGiftThankYouViewProps } from "@/app/(authed)/thank-you/[readingId
 import { GiftThankYouView } from "@/app/(authed)/thank-you/[readingId]/GiftThankYouView";
 import { loadRecipientThankYouViewProps } from "@/app/(authed)/thank-you/[readingId]/loadRecipientThankYouViewProps";
 import { ThankYouView } from "@/app/(authed)/thank-you/[readingId]/ThankYouView";
-import { BookingFormView, type BookingFormViewProps } from "@/app/book/[readingId]/BookingFormView";
+import { BookingFormView } from "@/app/book/[readingId]/BookingFormView";
 import { deriveGiftMessageViewProps } from "@/app/gift/[code]/deriveGiftMessageViewProps";
 import { GiftMessageView } from "@/app/gift/[code]/GiftMessageView";
 import {
@@ -18,9 +18,7 @@ import type { GiftPageMessage } from "@/app/gift/[code]/resolveGiftRequest";
 import { GIFT_SEND_PAGE_COPY_KEYS, GiftSendPageView } from "@/app/gift/send/GiftSendPageView";
 import { BookingPreviewUnavailable } from "@/app/preview/book/[slug]/BookingPreviewUnavailable";
 import { loadPreviewBookingFormProps } from "@/app/preview/book/[slug]/loadPreviewBookingFormProps";
-import { GiftSheet } from "@/components/GiftSheet";
-import { RedeemSheet } from "@/components/RedeemSheet";
-import type { GiftContent } from "@/data/defaults";
+import type { GiftFoldSheet } from "@/components/GiftFold";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import type { InitialPage } from "@/lib/intake/useDraftRestore";
@@ -30,8 +28,6 @@ import {
 } from "@/lib/page-previews/preview-fixtures-pages";
 import { pick } from "@/lib/pick";
 import { fetchGiftSettings, fetchReading } from "@/lib/sanity/fetch";
-
-import { OpenSheetPreview } from "./OpenSheetPreview";
 
 export const metadata: Metadata = {
   title: "Preview: Gift Pages",
@@ -45,49 +41,10 @@ type GiftPreviewProps = {
   params: Promise<{ state: string }>;
 };
 
-async function renderBookingFormWithSheet(
-  renderSheet: (props: BookingFormViewProps, copy: GiftContent) => ReactElement,
-): Promise<ReactElement> {
-  const [props, copy] = await Promise.all([
-    loadPreviewBookingFormProps(SLUG),
-    loadGiftContent("preview"),
-  ]);
+async function renderBookingFormWithSheet(initialSheet: GiftFoldSheet): Promise<ReactElement> {
+  const props = await loadPreviewBookingFormProps(SLUG, initialSheet);
   if (!props) return <BookingPreviewUnavailable slug={SLUG} />;
-
-  return (
-    <>
-      <BookingFormView {...props} />
-      {renderSheet(props, copy)}
-    </>
-  );
-}
-
-function renderBuySheet(): Promise<ReactElement> {
-  return renderBookingFormWithSheet((props, copy) => (
-    <OpenSheetPreview
-      sheet={GiftSheet}
-      props={{
-        reading: {
-          slug: props.reading.slug,
-          name: props.reading.name,
-          price: props.reading.priceLabel,
-        },
-        content: copy,
-        paymentButtonText: props.form.submitLabel,
-        loadingStateCopy: props.form.loadingStateCopy,
-        endpoint: null,
-      }}
-    />
-  ));
-}
-
-function renderRedeemSheet(): Promise<ReactElement> {
-  return renderBookingFormWithSheet((_props, copy) => (
-    <OpenSheetPreview
-      sheet={RedeemSheet}
-      props={{ readingSlug: SLUG, content: copy, endpoint: null }}
-    />
-  ));
+  return <BookingFormView {...props} />;
 }
 
 async function renderBuyerThankYou(): Promise<ReactElement> {
@@ -183,9 +140,9 @@ async function renderSendPage(): Promise<ReactElement> {
 }
 
 const GIFT_PREVIEWS: Record<GiftPreviewState, () => Promise<ReactElement>> = {
-  "buy-sheet": renderBuySheet,
+  "buy-sheet": () => renderBookingFormWithSheet("gift"),
   "buyer-thank-you": renderBuyerThankYou,
-  "redeem-sheet": renderRedeemSheet,
+  "redeem-sheet": () => renderBookingFormWithSheet("redeem"),
   opened: () => renderGiftForm({ note: PREVIEW_GIFT.note }),
   "opened-no-note": () => renderGiftForm({ note: null }),
   "already-opened": () => renderGiftMessage("already_opened", true),

@@ -22,7 +22,7 @@ export const LEGAL_PAGES: Record<
     fallback: {
       tag: "✦ Privacy",
       title: "Privacy Policy",
-      lastUpdated: "2026-04-15",
+      lastUpdated: "2026-10-04",
       metaTitle: "Privacy Policy · Josephine",
       metaDescription:
         "How Josephine collects, uses, and protects the information you share when booking a soul reading.",
@@ -33,7 +33,7 @@ export const LEGAL_PAGES: Record<
     fallback: {
       tag: "✦ Terms",
       title: "Terms of Service",
-      lastUpdated: "2026-04-15",
+      lastUpdated: "2026-10-04",
       metaTitle: "Terms of Service · Josephine",
       metaDescription:
         "The agreement between you and Josephine when you book a soul reading: what's delivered, how, and the limits of it.",
@@ -44,7 +44,7 @@ export const LEGAL_PAGES: Record<
     fallback: {
       tag: "✦ Refunds",
       title: "Refund Policy",
-      lastUpdated: "2026-05-19",
+      lastUpdated: "2026-10-04",
       metaTitle: "Refund Policy · Josephine",
       metaDescription:
         "Readings are non-refundable. How the cooling-off waiver works, and how duplicate-charge and delivery-issue cases are handled.",

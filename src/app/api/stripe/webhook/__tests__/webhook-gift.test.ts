@@ -68,7 +68,6 @@ function loadThankYou(giftId: string) {
 
 beforeEach(() => {
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
-  vi.stubEnv("GIFTS_ENABLED", "1");
   mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_1" });
   mockTrack.mockReset().mockResolvedValue(undefined);
   vi.mocked(findSubmissionById).mockReset();
@@ -124,14 +123,6 @@ describe("Stripe webhook, gift completed", () => {
     await completed(giftId, "unpaid");
     expect((await findGiftById(giftId))?.status).toBe("pending");
     expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it("still activates with GIFTS_ENABLED unset", async () => {
-    vi.stubEnv("GIFTS_ENABLED", undefined);
-    const giftId = await createTestGift();
-    await completed(giftId);
-    expect((await findGiftById(giftId))?.status).toBe("active");
-    expect(mockSend).toHaveBeenCalledTimes(1);
   });
 });
 

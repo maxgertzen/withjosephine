@@ -309,6 +309,48 @@ export async function listGiftsUpdatedAfter(cutoffIso: string): Promise<GiftReco
   return rows.map(rowToRecord);
 }
 
+export async function clearGiftRecipientsOfUserSubmissions(
+  userId: string,
+  updatedAt: string,
+): Promise<void> {
+  await dbExec(
+    `UPDATE gift_codes
+     SET recipient_name = NULL, recipient_email = NULL, updated_at = ?
+     WHERE redeemed_submission_id IN (SELECT id FROM submissions WHERE recipient_user_id = ?)`,
+    [updatedAt, userId],
+  );
+}
+
+export type GiftBoughtRow = {
+  id: string;
+  stripeSessionId: string | null;
+  redeemedSubmissionId: string | null;
+};
+
+export async function listGiftsBoughtBy(buyerEmail: string): Promise<GiftBoughtRow[]> {
+  const rows = await dbQuery<{
+    id: string;
+    stripe_session_id: string | null;
+    redeemed_submission_id: string | null;
+  }>(`SELECT id, stripe_session_id, redeemed_submission_id FROM gift_codes WHERE buyer_email = ?`, [
+    normalizeEmail(buyerEmail),
+  ]);
+  return rows.map((row) => ({
+    id: row.id,
+    stripeSessionId: row.stripe_session_id,
+    redeemedSubmissionId: row.redeemed_submission_id,
+  }));
+}
+
+export async function eraseGiftBuyer(giftId: string, updatedAt: string): Promise<void> {
+  await dbExec(
+    `UPDATE gift_codes
+     SET buyer_email = NULL, note = NULL, buyer_first_name = '', consent_ip_address = NULL, updated_at = ?
+     WHERE id = ?`,
+    [updatedAt, giftId],
+  );
+}
+
 export function buildAppendGiftEmailFiredStatement(
   giftId: string,
   entry: GiftEmailFiredEntry,

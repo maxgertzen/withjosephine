@@ -31,12 +31,16 @@ vi.mock("./vendors/mixpanelDelete", () => ({
   createMixpanelDataDeletion: vi.fn(),
 }));
 
+vi.mock("../gift/giftRecordMirror", () => ({
+  mirrorGiftRecord: vi.fn(async () => {}),
+}));
+
+import { createTestGift } from "@/test/fixtures/gift";
+
 import { findUserById } from "../auth/users";
-import { dbQuery } from "../booking/persistence/sqlClient";
-import {
-  deleteSubmissionAndPhoto,
-  listSubmissionsByRecipientUserId,
-} from "../booking/submissions";
+import { dbExec, dbQuery } from "../booking/persistence/sqlClient";
+import { deleteSubmissionAndPhoto, listSubmissionsByRecipientUserId } from "../booking/submissions";
+import { mirrorGiftRecord } from "../gift/giftRecordMirror";
 import { getSanityWriteClient } from "../sanity/client";
 import { retrieveCheckoutSession } from "../stripe";
 import { cascadeDeleteUser, wasUserDeleted } from "./cascadeDeleteUser";
@@ -53,15 +57,24 @@ const mockStripeRedact = vi.mocked(createStripeRedactionJob);
 const mockBrevoContact = vi.mocked(deleteBrevoContact);
 const mockBrevoSmtp = vi.mocked(deleteBrevoSmtpLog);
 const mockMixpanel = vi.mocked(createMixpanelDataDeletion);
+const mockMirrorGiftRecord = vi.mocked(mirrorGiftRecord);
 
+const sanityCommit = vi.fn();
+const sanityUnset = vi.fn(() => ({ commit: sanityCommit }));
 const sanityClientStub = {
   fetch: vi.fn(),
   delete: vi.fn(),
+  patch: vi.fn(() => ({ unset: sanityUnset })),
 };
 
 beforeEach(() => {
   vi.stubEnv("BOOKING_DB_DRIVER", "sqlite");
   vi.stubEnv("BOOKING_DB_PATH", ":memory:");
+  vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
+  mockMirrorGiftRecord.mockClear();
+  sanityClientStub.patch.mockClear();
+  sanityUnset.mockClear();
+  sanityCommit.mockReset().mockResolvedValue(undefined);
 
   mockFindUser.mockReset();
   mockListSubs.mockReset();
@@ -196,10 +209,7 @@ describe("cascadeDeleteUser — partial-failure branches", () => {
     });
     expect(result.success).toBe(true);
     expect(result.partialFailures).toEqual(
-      expect.arrayContaining([
-        "brevo-contact: not configured",
-        "brevo-smtp-log: not configured",
-      ]),
+      expect.arrayContaining(["brevo-contact: not configured", "brevo-smtp-log: not configured"]),
     );
     expect(mockMixpanel).toHaveBeenCalled();
   });
@@ -212,9 +222,7 @@ describe("cascadeDeleteUser — partial-failure branches", () => {
       performedBy: "admin@withjosephine.com",
     });
     expect(result.success).toBe(true);
-    expect(
-      result.partialFailures.some((f) => f.startsWith("sanity-doc-delete: sub_1")),
-    ).toBe(true);
+    expect(result.partialFailures.some((f) => f.startsWith("sanity-doc-delete: sub_1"))).toBe(true);
     expect(mockStripeRedact).toHaveBeenCalled();
   });
 
@@ -239,9 +247,7 @@ describe("cascadeDeleteUser — idempotent re-run", () => {
     });
     expect(result.success).toBe(true);
     expect(result.submissionIds).toEqual([]);
-    expect(result.partialFailures).toContain(
-      "user: not found (already deleted or never existed)",
-    );
+    expect(result.partialFailures).toContain("user: not found (already deleted or never existed)");
     expect(mockStripeRedact).not.toHaveBeenCalled();
     expect(mockBrevoContact).not.toHaveBeenCalled();
   });
@@ -262,6 +268,242 @@ describe("cascadeDeleteUser — idempotent re-run", () => {
     expect(result.success).toBe(true);
     expect(result.submissionIds).toEqual([]);
     expect(result.partialFailures.length).toBeGreaterThan(0);
+  });
+});
+
+type GiftRowSnapshot = {
+  status: string;
+  buyer_email: string | null;
+  buyer_first_name: string;
+  note: string | null;
+  consent_ip_address: string | null;
+  recipient_name: string | null;
+  recipient_email: string | null;
+};
+
+async function insertSubmissionRow(id: string, recipientUserId: string): Promise<void> {
+  await dbExec(
+    `INSERT INTO submissions (id, email, status, reading_slug, responses_json, created_at, recipient_user_id)
+     VALUES (?, ?, 'paid', 'birth-chart', '[]', ?, ?)`,
+    [id, "grace@example.com", "2026-10-01T10:00:00.000Z", recipientUserId],
+  );
+}
+
+async function giftWithRow(row: {
+  buyerEmail: string | null;
+  stripeSessionId?: string | null;
+  redeemedSubmissionId?: string | null;
+}): Promise<string> {
+  const giftId = await createTestGift();
+  await dbExec(
+    `UPDATE gift_codes
+     SET status = ?, buyer_email = ?, stripe_session_id = ?, redeemed_submission_id = ?,
+         recipient_name = 'Grace', recipient_email = 'grace@example.com'
+     WHERE id = ?`,
+    [
+      row.redeemedSubmissionId ? "redeemed" : "active",
+      row.buyerEmail,
+      row.stripeSessionId ?? null,
+      row.redeemedSubmissionId ?? null,
+      giftId,
+    ],
+  );
+  return giftId;
+}
+
+async function readGiftRow(giftId: string): Promise<GiftRowSnapshot> {
+  const rows = await dbQuery<GiftRowSnapshot>(
+    `SELECT status, buyer_email, buyer_first_name, note, consent_ip_address, recipient_name, recipient_email
+     FROM gift_codes WHERE id = ?`,
+    [giftId],
+  );
+  return rows[0]!;
+}
+
+describe("cascadeDeleteUser: gift recipient walk", () => {
+  it("nulls the recipient fields of gifts redeemed into the user's submissions, delivered or not", async () => {
+    happyPathMocks();
+    await insertSubmissionRow("sub_1", "user_a");
+    await insertSubmissionRow("sub_undelivered", "user_a");
+    await insertSubmissionRow("sub_other_user", "user_b");
+    const deliveredGift = await giftWithRow({
+      buyerEmail: "buyer@example.com",
+      redeemedSubmissionId: "sub_1",
+    });
+    const undeliveredGift = await giftWithRow({
+      buyerEmail: "buyer@example.com",
+      redeemedSubmissionId: "sub_undelivered",
+    });
+    const otherUsersGift = await giftWithRow({
+      buyerEmail: "buyer@example.com",
+      redeemedSubmissionId: "sub_other_user",
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    for (const giftId of [deliveredGift, undeliveredGift]) {
+      expect(await readGiftRow(giftId)).toMatchObject({
+        recipient_name: null,
+        recipient_email: null,
+      });
+    }
+    expect(await readGiftRow(otherUsersGift)).toMatchObject({
+      recipient_name: "Grace",
+      recipient_email: "grace@example.com",
+    });
+  });
+
+  it("clears the recipient fields while the submission rows still exist", async () => {
+    happyPathMocks();
+    await insertSubmissionRow("sub_1", "user_a");
+    const giftId = await giftWithRow({
+      buyerEmail: "buyer@example.com",
+      redeemedSubmissionId: "sub_1",
+    });
+    const recipientNameAtSubmissionDelete: Array<string | null> = [];
+    mockDeleteR2.mockImplementation(async () => {
+      recipientNameAtSubmissionDelete.push((await readGiftRow(giftId)).recipient_name);
+      await dbExec(`DELETE FROM submissions WHERE id = ?`, ["sub_1"]);
+      return { photoDeleted: true };
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(recipientNameAtSubmissionDelete).toEqual([null]);
+  });
+});
+
+describe("cascadeDeleteUser: gift buyer walk", () => {
+  it("clears the buyer fields and consent IP on every gift row of the normalised email", async () => {
+    happyPathMocks();
+    mockFindUser.mockResolvedValue({ id: "user_a", email: " Ada@Example.COM" });
+    const firstGift = await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+    });
+    const secondGift = await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_2",
+    });
+    const otherBuyersGift = await giftWithRow({
+      buyerEmail: "someone@example.com",
+      stripeSessionId: "cs_gift_3",
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    for (const giftId of [firstGift, secondGift]) {
+      expect(await readGiftRow(giftId)).toMatchObject({
+        status: "active",
+        buyer_email: null,
+        buyer_first_name: "",
+        note: null,
+        consent_ip_address: null,
+      });
+    }
+    expect(await readGiftRow(otherBuyersGift)).toMatchObject({
+      buyer_email: "someone@example.com",
+      buyer_first_name: "Marguerite",
+      note: "For the long winter ahead",
+      consent_ip_address: "203.0.113.7",
+    });
+  });
+
+  it("sends the gift sessions and their customers to the Stripe redaction job", async () => {
+    happyPathMocks();
+    await giftWithRow({ buyerEmail: "ada@example.com", stripeSessionId: "cs_gift_1" });
+    mockStripeSession
+      .mockResolvedValueOnce({ id: "cs_test_1", customer: "cus_1" } as never)
+      .mockResolvedValueOnce({ id: "cs_gift_1", customer: "cus_gift" } as never);
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(mockStripeSession).toHaveBeenCalledWith("cs_gift_1");
+    expect(mockStripeRedact).toHaveBeenCalledWith({
+      customerIds: ["cus_1", "cus_gift"],
+      checkoutSessionIds: ["cs_test_1", "cs_gift_1"],
+    });
+  });
+
+  it("adds gift_<id> to the Mixpanel deletion and the deletion_log ids", async () => {
+    happyPathMocks();
+    const giftId = await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+    });
+
+    const result = await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(mockMixpanel).toHaveBeenCalledWith(["sub_1", `gift_${giftId}`]);
+    const rows = await dbQuery<{ action: string; submission_ids_json: string }>(
+      `SELECT action, submission_ids_json FROM deletion_log WHERE user_id = ?`,
+      ["user_a"],
+    );
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(JSON.parse(row.submission_ids_json)).toEqual(["sub_1", `gift_${giftId}`]);
+    }
+    expect(result.submissionIds).toEqual(["sub_1"]);
+  });
+
+  it("schedules the gift record mirror after the buyer fields are cleared", async () => {
+    happyPathMocks();
+    const giftId = await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+    });
+    const buyerEmailAtMirror: Array<string | null> = [];
+    mockMirrorGiftRecord.mockImplementationOnce(async (id) => {
+      buyerEmailAtMirror.push((await readGiftRow(id)).buyer_email);
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(mockMirrorGiftRecord).toHaveBeenCalledWith(giftId);
+    await vi.waitFor(() => expect(buyerEmailAtMirror).toEqual([null]));
+  });
+
+  it("unsets gift.buyerFirstName on the submission the gift was redeemed into", async () => {
+    happyPathMocks();
+    await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+      redeemedSubmissionId: "sub_recipient",
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(sanityClientStub.patch).toHaveBeenCalledWith("sub_recipient");
+    expect(sanityUnset).toHaveBeenCalledWith(["gift.buyerFirstName"]);
+    expect(sanityCommit).toHaveBeenCalledOnce();
+  });
+
+  it("skips the unset when the redeemed submission is deleted by the same cascade", async () => {
+    happyPathMocks();
+    await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+      redeemedSubmissionId: "sub_1",
+    });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(sanityClientStub.patch).not.toHaveBeenCalled();
+  });
+
+  it("records a failed unset as a partial failure and finishes the cascade", async () => {
+    happyPathMocks();
+    await giftWithRow({
+      buyerEmail: "ada@example.com",
+      stripeSessionId: "cs_gift_1",
+      redeemedSubmissionId: "sub_recipient",
+    });
+    sanityCommit.mockRejectedValueOnce(new Error("sanity 503"));
+
+    const result = await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(result.partialFailures).toContain("sanity-gift-buyer-unset: sub_recipient - sanity 503");
+    expect(mockStripeRedact).toHaveBeenCalled();
   });
 });
 

@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import { type APIRequestContext, expect, type Page, type Response, test } from "@playwright/test";
+import { expect, type Page, type Response, test } from "@playwright/test";
 
 import { GIFT_DEFAULTS } from "@/data/defaults";
 import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 import { giftPath, normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
+import { bookingPath, GIFT_PURCHASE_API_ROUTE } from "@/lib/http/routes";
 
-import { GIFT_DISPLAY_CODE, purchaseGift } from "../helpers/giftSeed";
+import { GIFT_DISPLAY_CODE } from "../helpers/giftSeed";
 import {
   acceptFinalPageConsents,
   clickThroughIntakePages,
@@ -14,12 +15,13 @@ import {
   seedIntakeDraft,
 } from "../helpers/intakeDraft";
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
+import { forceD1Mirror, uploadDummyVoiceAndPdf } from "../helpers/sanityE2EAssets";
 import { escapeSqliteLiteral, queryStagingD1, sandboxRequestHeaders } from "../helpers/stagingApi";
 import { fillStripeCheckout } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
 const READING_SLUG = "birth-chart";
-const DUMMY_TURNSTILE_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
+const BUYER_FIRST_NAME = "Dana";
 const RECIPIENT_FIRST_NAME = "Anna";
 const RECIPIENT_THANK_YOU_URL = /\/thank-you\/birth-chart\?submissionId=/;
 const D1_POLL = { timeout: 60_000, intervals: [2_000, 5_000] };
@@ -27,27 +29,36 @@ const D1_POLL = { timeout: 60_000, intervals: [2_000, 5_000] };
 type GiftRow = { status: string; buyer_email_claimed_at: string | null };
 type SubmissionRow = { status: string; gift_code_id: string | null };
 type CountRow = { n: number };
+type DeliveredRow = { delivered_at: string | null };
 type BoughtGift = { giftId: string; code: string };
 
 function sandboxEmail(runId: string, role: string): string {
   return `${SANDBOX_EMAIL_PREFIXES.giftRoundtrip}${runId}-${role}${SANDBOX_DOMAIN}`;
 }
 
-async function buyGiftThroughStripe(
-  page: Page,
-  request: APIRequestContext,
-  buyerEmail: string,
-): Promise<BoughtGift> {
-  const { paymentUrl, giftId } = await purchaseGift(request, READING_SLUG, {
-    turnstileToken: DUMMY_TURNSTILE_TOKEN,
-  });
+async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<BoughtGift> {
+  await stubTurnstile(page);
+  await page.goto(bookingPath(READING_SLUG));
+  await page.getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel }).click();
+  await page.getByRole("button", { name: GIFT_DEFAULTS.buyLinkLabel }).click();
+  const sheet = page.getByRole("dialog").filter({ hasText: GIFT_DEFAULTS.sheetEyebrow });
+  await sheet.getByLabel(new RegExp(GIFT_DEFAULTS.buyerNameLabel)).fill(BUYER_FIRST_NAME);
+  await sheet.getByRole("checkbox").check();
 
+  const purchase = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(GIFT_PURCHASE_API_ROUTE) && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
   const thankYouDocument = page.waitForResponse(
     (response) =>
       response.url().includes("/thank-you/") && response.request().resourceType() === "document",
     { timeout: 90_000 },
   );
-  await page.goto(paymentUrl);
+  await sheet.locator('button[type="submit"]').click();
+  const purchaseResponse = await purchase;
+  expect(purchaseResponse.status(), await purchaseResponse.text()).toBe(200);
+  const { giftId } = (await purchaseResponse.json()) as { giftId: string };
   await fillStripeCheckout(page, buyerEmail);
 
   const firstPaint = await (await thankYouDocument).text();
@@ -97,6 +108,7 @@ test.describe("Gift sandbox round-trip, staging", () => {
   test.describe.configure({ mode: "serial" });
 
   let boughtGift: BoughtGift | null = null;
+  let redeemedSubmissionId = "";
   let runId = "";
 
   test.beforeAll(async () => {
@@ -109,10 +121,10 @@ test.describe("Gift sandbox round-trip, staging", () => {
     );
   });
 
-  test("birth-chart: purchase route → Stripe → thank-you shows the code", async ({ page, request }) => {
+  test("birth-chart: gift row → gift sheet → Stripe → thank-you shows the code", async ({ page }) => {
     test.setTimeout(4 * 60 * 1000);
 
-    boughtGift = await buyGiftThroughStripe(page, request, sandboxEmail(runId, "buyer"));
+    boughtGift = await buyGiftThroughGiftRow(page, sandboxEmail(runId, "buyer"));
   });
 
   test("redeem by link → recipient thank-you → paid submission", async ({ page }) => {
@@ -140,15 +152,39 @@ test.describe("Gift sandbox round-trip, staging", () => {
         D1_POLL,
       )
       .toMatchObject({ status: "paid", gift_code_id: giftId });
+    redeemedSubmissionId = submissionId;
+  });
+
+  test("deliver the gift reading: assets in Sanity, forced mirror, D1 delivered_at set", async () => {
+    test.setTimeout(2 * 60 * 1000);
+    if (!redeemedSubmissionId) {
+      throw new Error("[gift-roundtrip] the redeem test must pass first");
+    }
+
+    await uploadDummyVoiceAndPdf(redeemedSubmissionId);
+    const mirror = await forceD1Mirror(redeemedSubmissionId);
+    expect(mirror.submissionId).toBe(redeemedSubmissionId);
+    expect(mirror.awaitingAssets, "force-mode should see Sanity assets").toBe(0);
+
+    await expect
+      .poll(
+        async () =>
+          (
+            await queryStagingD1<DeliveredRow>(
+              `SELECT delivered_at FROM submissions WHERE id = '${escapeSqliteLiteral(redeemedSubmissionId)}'`,
+            )
+          )[0]?.delivered_at ?? null,
+        D1_POLL,
+      )
+      .not.toBeNull();
   });
 
   test("two browsers submit one gift: one thank-you, one 409 with answers kept", async ({
     browser,
     page,
-    request,
   }) => {
     test.setTimeout(5 * 60 * 1000);
-    const { giftId, code } = await buyGiftThroughStripe(page, request, sandboxEmail(runId, "race-buyer"));
+    const { giftId, code } = await buyGiftThroughGiftRow(page, sandboxEmail(runId, "race-buyer"));
 
     const otherContext = await browser.newContext({ extraHTTPHeaders: sandboxRequestHeaders() });
     const otherPage = await otherContext.newPage();

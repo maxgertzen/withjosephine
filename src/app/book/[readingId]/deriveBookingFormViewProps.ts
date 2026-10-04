@@ -1,3 +1,4 @@
+import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
 import type { ReadingBlockProps } from "@/components/ReadingBlock";
 import {
   INTAKE_INTRO_BY_SLUG,
@@ -12,15 +13,22 @@ import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
-import { homeReadingAnchor } from "@/lib/http/routes";
+import { giftContent } from "@/lib/gift/giftContent";
+import {
+  GIFT_CHECK_API_ROUTE,
+  GIFT_PURCHASE_API_ROUTE,
+  homeReadingAnchor,
+} from "@/lib/http/routes";
 import { isNotesVisible, notePath, notesContent } from "@/lib/notes/notes";
 import type { NoteSummary } from "@/lib/notes/types";
+import { pick } from "@/lib/pick";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import { mapAbout, mapFaqItems, mapReadings } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
   SanityReading,
@@ -37,6 +45,7 @@ export type DeriveBookingFormViewPropsInput = {
   landingPage: SanityLandingPage | null;
   notesState: SanityNotesState | null;
   readingNotes: NoteSummary[];
+  giftSettings: SanityGiftSettings | null;
 };
 
 function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps["notes"] {
@@ -147,6 +156,10 @@ export function deriveBookingFormViewProps(
     notes: readingNotes(input),
   };
 
+  const gift = giftContent(input.giftSettings);
+  const submitLabel = input.bookingPage?.paymentButtonText;
+  const loadingStateCopy = input.bookingForm.loadingStateCopy;
+
   return {
     backHref: homeReadingAnchor(reading.slug),
     reading: {
@@ -166,8 +179,8 @@ export function deriveBookingFormViewProps(
       sections: filterSectionsForReading(input.bookingForm.sections, reading.slug),
       nonRefundableNotice: input.bookingForm.nonRefundableNotice,
       pagination: input.bookingForm.pagination,
-      loadingStateCopy: input.bookingForm.loadingStateCopy,
-      submitLabel: input.bookingPage?.paymentButtonText,
+      loadingStateCopy,
+      submitLabel,
       nextLabel: input.bookingForm.nextButtonText,
       saveLaterLabel: input.bookingForm.saveAndContinueLaterText,
       pageIndicatorTagline: pageIndicatorTagline || undefined,
@@ -180,6 +193,19 @@ export function deriveBookingFormViewProps(
             detail: formTestimonial.detail,
           }
         : undefined,
+      giftCodeField: { copy: gift },
+    },
+    giftFold: {
+      readingSlug: reading.slug,
+      copy: pick(gift, GIFT_FOLD_COPY_KEYS),
+      giftSheet: {
+        reading: { slug: reading.slug, name: reading.name, price: reading.priceLabel },
+        content: gift,
+        paymentButtonText: submitLabel,
+        loadingStateCopy,
+        endpoint: GIFT_PURCHASE_API_ROUTE,
+      },
+      redeemSheet: { readingSlug: reading.slug, content: gift, endpoint: GIFT_CHECK_API_ROUTE },
     },
   };
 }

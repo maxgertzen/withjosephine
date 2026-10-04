@@ -1,6 +1,7 @@
 import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";
 import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
+import { GiftFold, type GiftFoldProps } from "@/components/GiftFold";
 import { GiftModeProvider } from "@/components/GiftMode/GiftModeContext";
 import { GiftModeNote, type GiftModeNoteProps } from "@/components/GiftMode/GiftModeNote";
 import { GiftPriceLine } from "@/components/GiftMode/GiftPriceLine";
@@ -22,6 +23,7 @@ export type BookingFormViewProps = {
     noteCard: GiftModeNoteProps;
     priceLine: string;
   };
+  giftFold?: GiftFoldProps;
 };
 
 export function BookingFormView({
@@ -31,6 +33,7 @@ export function BookingFormView({
   copy,
   form,
   gift,
+  giftFold,
 }: BookingFormViewProps) {
   const view = (
     <HeaderBackProvider>
@@ -47,6 +50,7 @@ export function BookingFormView({
       >
         {gift ? <GiftModeNote {...gift.noteCard} /> : null}
         <ReadingBlock {...readingBlock} />
+        {giftFold ? <GiftFold {...giftFold} /> : null}
         {copy.title ? <BookingPageHeading title={copy.title} /> : null}
         <div className="max-w-[50ch] mb-10">
           <PortableTextContent value={copy.intro} />
