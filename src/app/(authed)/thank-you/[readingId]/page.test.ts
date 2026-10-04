@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { GiftThankYouViewProps } from "./GiftThankYouView";
 import type { ThankYouViewProps } from "./ThankYouView";
 
 type ThankYouRendered = { props: ThankYouViewProps };
 
 vi.mock("@/lib/sanity/fetch", () => ({
+  fetchGiftSettings: vi.fn(),
   fetchThankYouPage: vi.fn(),
   fetchReading: vi.fn(),
   fetchReadingSlugs: vi.fn(),
@@ -31,15 +33,33 @@ vi.mock("@/lib/booking/submissions", () => ({
   findSubmissionById: vi.fn(),
 }));
 
+vi.mock("@/lib/gift/giftThankYou", () => ({
+  resolveGiftThankYou: vi.fn(),
+}));
+
 import { findSubmissionById } from "@/lib/booking/submissions";
-import { fetchReading, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { deriveGiftCode } from "@/lib/gift/giftCode";
+import { formatGiftCode } from "@/lib/gift/giftCodeFormat";
+import { markGiftActive } from "@/lib/gift/gifts";
+import { type GiftThankYouResult, resolveGiftThankYou } from "@/lib/gift/giftThankYou";
+import {
+  fetchGiftSettings,
+  fetchReading,
+  fetchSiteSettings,
+  fetchThankYouPage,
+} from "@/lib/sanity/fetch";
 import type { SanityReading, SanityThankYouPage } from "@/lib/sanity/types";
 import { retrieveCheckoutSession } from "@/lib/stripe";
+import { captureConsole } from "@/test/captureConsole";
+import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 
 const mockFetchThankYouPage = vi.mocked(fetchThankYouPage);
 const mockFetchReading = vi.mocked(fetchReading);
+const mockFetchSiteSettings = vi.mocked(fetchSiteSettings);
 const mockRetrieveSession = vi.mocked(retrieveCheckoutSession);
 const mockFindSubmission = vi.mocked(findSubmissionById);
+const mockFetchGiftSettings = vi.mocked(fetchGiftSettings);
+const mockResolveGift = vi.mocked(resolveGiftThankYou);
 
 function reading(overrides: Partial<SanityReading> = {}): SanityReading {
   return {
@@ -79,10 +99,13 @@ async function loadGenerateMetadata() {
 beforeEach(() => {
   mockFetchThankYouPage.mockReset();
   mockFetchReading.mockReset();
+  mockFetchSiteSettings.mockReset();
   mockRetrieveSession.mockReset();
   mockFindSubmission.mockReset();
   mockRetrieveSession.mockResolvedValue({ amount_total: null, currency: null } as never);
   mockFindSubmission.mockResolvedValue(null);
+  mockFetchGiftSettings.mockReset().mockResolvedValue(null);
+  mockResolveGift.mockReset().mockResolvedValue(null);
   redirectMock.mockClear();
   notFoundMock.mockClear();
 });
@@ -219,6 +242,22 @@ describe("ThankYouPage sessionId guard", () => {
     mockFetchThankYouPage.mockResolvedValue(thankYouPage());
     await expect(callPage({ sessionId: "cs_live_xyz789" })).resolves.toBeTruthy();
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("ThankYouPage unknown reading", () => {
+  it("returns not found before fetching the page copy", async () => {
+    mockFetchReading.mockResolvedValue(null);
+    const Page = await loadDefault();
+
+    await expect(
+      Page({
+        params: Promise.resolve({ readingId: "no-such-reading" }),
+        searchParams: Promise.resolve({ sessionId: "cs_test_abc123" }),
+      }),
+    ).rejects.toThrow("__notfound__");
+    expect(mockFetchThankYouPage).not.toHaveBeenCalled();
+    expect(mockFetchSiteSettings).not.toHaveBeenCalled();
   });
 });
 
@@ -423,4 +462,150 @@ describe("ThankYouPage per-reading overrides", () => {
     expect(html).toContain("Default heading");
     expect(html).not.toContain("Birth Chart heading");
   });
+});
+
+describe("ThankYouPage gift branch", () => {
+  const SESSION_ID = "cs_test_giftsession1";
+  const SHOWN = {
+    giftId: "11111111-2222-4333-8444-555555555555",
+    readingSlug: "birth-chart",
+    buyerFirstName: "Dana",
+    displayCode: "K7M2-QX9P-H4TR",
+    giftUrl: "https://withjosephine.com/gift/K7M2QX9PH4TR",
+  };
+  const ACTIVE: GiftThankYouResult = {
+    kind: "active",
+    ...SHOWN,
+    note: "Happy birthday",
+    sendToken: "send-token",
+  };
+
+  type Rendered = { type: unknown; props: GiftThankYouViewProps };
+
+  let capturedConsole: ReturnType<typeof captureConsole>;
+
+  async function realResolveGiftThankYou() {
+    const actual = await vi.importActual<typeof import("@/lib/gift/giftThankYou")>(
+      "@/lib/gift/giftThankYou",
+    );
+    mockResolveGift.mockImplementationOnce(actual.resolveGiftThankYou);
+  }
+
+  async function createGiftPaidBy(sessionId: string): Promise<string> {
+    const giftId = await createTestGift();
+    await markGiftActive(giftId, {
+      buyerEmail: "buyer@example.com",
+      stripeSessionId: sessionId,
+      activatedAt: "2026-10-01T10:05:00.000Z",
+    });
+    return giftId;
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
+    mockFetchReading.mockResolvedValue(reading({ name: "Birth Chart Reading", slug: "birth-chart" }));
+    mockFetchThankYouPage.mockResolvedValue(thankYouPage());
+    mockRetrieveSession.mockResolvedValue({ amount_total: 8900, currency: "usd" } as never);
+    capturedConsole = captureConsole();
+  });
+
+  afterEach(() => {
+    expect(capturedConsole.text()).not.toMatch(/cs_/);
+    vi.restoreAllMocks();
+  });
+
+  it("renders the active gift view with the note token, read from the gift's reading", async () => {
+    mockResolveGift.mockResolvedValueOnce(ACTIVE);
+    const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
+
+    expect(result.type).toBe((await import("./GiftThankYouView")).GiftThankYouView);
+    expect(result.props).toMatchObject({
+      state: "active",
+      displayCode: SHOWN.displayCode,
+      giftUrl: SHOWN.giftUrl,
+      note: { buyerFirstName: "Dana", text: "Happy birthday" },
+      noteEdit: { token: "send-token" },
+    });
+    expect(result.props.copy.codeHelp).toBe("For the Birth Chart Reading. It does not expire.");
+    expect(mockResolveGift).toHaveBeenCalledWith(SESSION_ID, expect.objectContaining({ kind: "ok" }));
+    expect(mockFetchReading).toHaveBeenCalledWith("birth-chart");
+    expect(mockFetchThankYouPage).not.toHaveBeenCalled();
+  });
+
+  it("reuses the route reading when the gift is for the same reading", async () => {
+    mockResolveGift.mockResolvedValueOnce({ ...ACTIVE, readingSlug: "soul-blueprint" });
+    await callPage({ sessionId: SESSION_ID });
+
+    expect(mockFetchReading).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a redeemed gift without note editing", async () => {
+    mockResolveGift.mockResolvedValueOnce({ kind: "redeemed", ...SHOWN });
+    const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
+
+    expect(result.props.state).toBe("redeemed");
+    expect(result.props).not.toHaveProperty("noteEdit");
+  });
+
+  it("renders the pending card for an unpaid gift session", async () => {
+    mockResolveGift.mockResolvedValueOnce({
+      kind: "not_paid",
+      readingSlug: "birth-chart",
+      buyerFirstName: "Dana",
+    });
+    const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
+
+    expect(result.props).toMatchObject({ state: "pending_payment" });
+    expect(result.props).not.toHaveProperty("displayCode");
+  });
+
+  it("keeps the reading view when the session is not a gift", async () => {
+    const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
+    expect(result.type).toBe((await import("./ThankYouView")).ThankYouView);
+    expect(mockFetchGiftSettings).not.toHaveBeenCalled();
+  });
+
+  it("renders the gift view from D1 when Stripe is unavailable", async () => {
+    mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
+    const giftId = await createGiftPaidBy(SESSION_ID);
+    await realResolveGiftThankYou();
+
+    const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
+
+    expect(result.props).toMatchObject({
+      state: "active",
+      displayCode: formatGiftCode(await deriveGiftCode(giftId)),
+    });
+  });
+
+  it("throws without the session id when Stripe is unavailable and no gift matches", async () => {
+    mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
+    await realResolveGiftThankYou();
+
+    const error = await callPage({ sessionId: SESSION_ID }).catch((caught: Error) => caught);
+
+    expect((error as Error).message).toBe("Stripe session unavailable");
+  });
+
+  it("reaches the error boundary for a cancelled gift and renders no gift view", async () => {
+    mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
+    const giftId = await createGiftPaidBy(SESSION_ID);
+    await forceGiftStatus(giftId, "cancelled");
+    await realResolveGiftThankYou();
+
+    await expect(callPage({ sessionId: SESSION_ID })).rejects.toThrow("is cancelled");
+    expect(mockFetchGiftSettings).not.toHaveBeenCalled();
+    expect(notFoundMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["not found for its thank-you page", "has no verifiable code"])(
+    "reaches the error boundary when the loader throws (%s)",
+    async (reason) => {
+      mockResolveGift.mockRejectedValueOnce(new Error(`Gift ${SHOWN.giftId} ${reason}`));
+
+      await expect(callPage({ sessionId: SESSION_ID })).rejects.toThrow(reason);
+      expect(mockFetchGiftSettings).not.toHaveBeenCalled();
+      expect(mockFetchThankYouPage).not.toHaveBeenCalled();
+    },
+  );
 });

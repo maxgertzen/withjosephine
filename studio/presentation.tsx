@@ -1,6 +1,8 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
+import { GIFT_PREVIEW_LINKS } from "@/lib/page-previews/preview-fixtures-pages";
+
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
  * website is responsible for reading `draftMode()` and switching to the
@@ -29,6 +31,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       params: ({ params }) => ({ slug: params.slug }),
     },
     { route: "/preview/thank-you/:slug", type: "thankYouPage" },
+    { route: "/preview/gift/:state", type: "giftSettings" },
     {
       route: "/preview/notes/:slug",
       filter: `_type == "article" && slug.current == $slug`,
@@ -103,6 +106,10 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     notesSettings: defineLocations({
       message: "Affects /notes and every note.",
       locations: [{ title: "Notes", href: "/preview/notes" }],
+    }),
+    giftSettings: defineLocations({
+      message: "Affects the gift sheet and the gift pages.",
+      locations: GIFT_PREVIEW_LINKS,
     }),
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",

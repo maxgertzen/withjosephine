@@ -202,17 +202,84 @@ export interface GiftContent {
   sheetEyebrow: string;
   sheetCancelLabel: string;
   shareMessageTemplate: string;
+  sheetTitleTemplate: string;
+  sheetStepPay: string;
+  sheetStepSend: string;
+  sheetStepRecipient: string;
+  buyerNameLabel: string;
+  buyerNameHelp: string;
+  buyerNameRequired: string;
+  noteLabel: string;
+  noteHelpBeforePayment: string;
+  noteCounterTemplate: string;
+  sheetSubmitFailed: string;
+  sheetNetworkFailed: string;
+  thankYouHeadingTemplate: string;
+  thankYouSubheading: string;
+  codeCardLabel: string;
+  copyLinkLabel: string;
+  linkCopiedLabel: string;
+  shareLabel: string;
+  codeHelpTemplate: string;
+  savedNoteLabelTemplate: string;
+  editNoteLabel: string;
+  noteFootnote: string;
+  addNoteLabel: string;
+  editNoteHeading: string;
+  fromLabel: string;
+  saveNoteLabel: string;
+  noteSavedNotice: string;
+  noteLockedNotice: string;
+  thankYouOpenedNotice: string;
+  pendingHeadingTemplate: string;
+  pendingSubheading: string;
+  pendingBody: string;
 }
 
 export const GIFT_DEFAULTS: GiftContent = {
   sheetEyebrow: "A reading, given.",
   sheetCancelLabel: "Not now",
   shareMessageTemplate: "A reading for you, from {buyerName} ✨",
+  sheetTitleTemplate: "{reading} · {price}",
+  sheetStepPay: "You pay now and get a gift code and a link.",
+  sheetStepSend: "Send it your way, or have Josephine email it.",
+  sheetStepRecipient: "They fill in their own details when they're ready.",
+  buyerNameLabel: "Your first name",
+  buyerNameHelp: "So they know who it's from.",
+  buyerNameRequired: "Your first name is required.",
+  noteLabel: "A note for them (optional)",
+  noteHelpBeforePayment: "You can add or change it after paying.",
+  noteCounterTemplate: "{remaining} left",
+  sheetSubmitFailed: "Something went wrong submitting your form. Please try again.",
+  sheetNetworkFailed: "Network error. Please check your connection and try again.",
+  thankYouHeadingTemplate: "Thank you, {buyerName}. Your gift is ready.",
+  thankYouSubheading: "Send it whenever the timing feels right.",
+  codeCardLabel: "Their gift code",
+  copyLinkLabel: "Copy link",
+  linkCopiedLabel: "Link copied ✓",
+  shareLabel: "Share",
+  codeHelpTemplate: "For the {reading}. It does not expire.",
+  savedNoteLabelTemplate: "Your note, from {buyerName}",
+  editNoteLabel: "Edit note",
+  noteFootnote: "They see it when they open the gift. You can change it until then.",
+  addNoteLabel: "Add a note",
+  editNoteHeading: "Your note",
+  fromLabel: "From",
+  saveNoteLabel: "Save note",
+  noteSavedNotice: "Your note is saved. They see it when they open the gift.",
+  noteLockedNotice: "This gift has been opened, so the note can't be changed now.",
+  thankYouOpenedNotice: "The gift has been opened. There's nothing more to send.",
+  pendingHeadingTemplate: "Thank you, {buyerName}.",
+  pendingSubheading: "Your gift is almost ready.",
+  pendingBody:
+    "Your bank is still confirming the payment. The code comes by email as soon as it clears.",
 };
 
 export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
+
+export const PAYMENT_BUTTON_TEXT_FALLBACK = "Continue to payment →";
 
 const INTAKE_OPENER =
   "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.";

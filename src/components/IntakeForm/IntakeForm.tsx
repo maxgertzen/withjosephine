@@ -84,15 +84,12 @@ export function IntakeForm({
   const showSwitchNotice = useBookingEntry() === "reading_switch" && nameOrEmailCarriedOver;
 
   const [honeypot, setHoneypot] = useState("");
+  const turnstile = useTurnstileChallenge();
   const {
     turnstileRequired,
-    turnstileSiteKey,
     turnstileToken,
-    turnstileRef,
-    handleSuccess: handleTurnstileSuccess,
-    handleFailure: handleTurnstileFailure,
     requestFreshToken: requestFreshTurnstileToken,
-  } = useTurnstileChallenge();
+  } = turnstile;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [consentSnapshot, setConsentSnapshot] = useState<LegalConsentSnapshot>(() =>
     emptyConsentSnapshot({ readingSlug: readingId }),
@@ -285,11 +282,7 @@ export function IntakeForm({
         consentErrors={consentErrors}
         clearConsentError={clearConsentError}
         showCoolingOff={true}
-        turnstileRequired={turnstileRequired}
-        turnstileSiteKey={turnstileSiteKey}
-        turnstileRef={turnstileRef}
-        handleTurnstileSuccess={handleTurnstileSuccess}
-        handleTurnstileFailure={handleTurnstileFailure}
+        turnstile={turnstile}
         submitError={submitError}
         handleNext={handleNext}
         handleBack={handleBack}

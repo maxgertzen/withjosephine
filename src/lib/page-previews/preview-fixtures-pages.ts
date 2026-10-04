@@ -35,6 +35,22 @@ export const THANKYOU_FIXTURES: Record<string, ResolvedThankYouContext> = {
   },
 };
 
+export const GIFT_PREVIEW_STATES = [
+  { state: "buy-sheet", title: "Gift row and sheets" },
+  { state: "buyer-thank-you", title: "Gift thank-you (buyer)" },
+] as const;
+
+export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];
+
+export function giftPreviewPath(state: GiftPreviewState): string {
+  return `/preview/gift/${state}`;
+}
+
+export const GIFT_PREVIEW_LINKS = GIFT_PREVIEW_STATES.map(({ state, title }) => ({
+  title,
+  href: giftPreviewPath(state),
+}));
+
 export const PREVIEW_SURFACES = ["listen", "magic-link-verify", "thank-you"] as const;
 export type PreviewSurface = (typeof PREVIEW_SURFACES)[number];
 

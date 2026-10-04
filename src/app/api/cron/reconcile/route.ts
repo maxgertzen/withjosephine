@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/cloudflare";
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
@@ -19,9 +20,12 @@ async function reconcile(): Promise<{ checked: number; reconciled: number }> {
     const paidAt = unixToIso(session.created);
     const giftActivation = giftActivationFromSession(session, paidAt);
     if (giftActivation) {
-      await activateGift(giftActivation).catch(() => {
+      const { giftId } = giftActivation;
+      await activateGift(giftActivation).catch((error: unknown) => {
+        Sentry.captureException(error, { extra: { giftId } });
+        const errorName = error instanceof Error ? error.name : typeof error;
         console.error(
-          `[cron-reconcile] gift ${giftActivation.giftId} activation failed, next run retries`,
+          `[cron-reconcile] gift ${giftId} activation failed (${errorName}), next run retries`,
         );
       });
       continue;

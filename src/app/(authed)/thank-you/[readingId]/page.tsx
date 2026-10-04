@@ -3,12 +3,20 @@ import { notFound, redirect } from "next/navigation";
 
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { fetchThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
-import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
+import { type GiftThankYouResult, resolveGiftThankYou } from "@/lib/gift/giftThankYou";
+import {
+  fetchGiftSettings,
+  fetchReading,
+  fetchSiteSettings,
+  fetchThankYouPage,
+} from "@/lib/sanity/fetch";
 
+import { deriveGiftThankYouViewProps } from "./deriveGiftThankYouViewProps";
 import {
   deriveThankYouViewProps,
   type ResolvedThankYouContext,
 } from "./deriveThankYouViewProps";
+import { GiftThankYouView } from "./GiftThankYouView";
 import { ThankYouView } from "./ThankYouView";
 
 export { generateReadingStaticParams as generateStaticParams };
@@ -40,23 +48,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-async function resolveContext(
-  segment: string,
-  search: ThankYouSearchParams,
-): Promise<ResolvedThankYouContext | null> {
-  const sessionId = typeof search.sessionId === "string" ? search.sessionId : undefined;
-  if (!isValidStripeSession(sessionId)) return null;
-
-  const snapshot = await fetchThankYouSessionSnapshot(sessionId);
-  if (snapshot.kind === "unavailable") throw new Error("Stripe session unavailable");
-  const reading = await resolveReading(segment);
-  if (!reading) return null;
-  return {
-    reading,
-    paidAmount: snapshot.paidAmount,
-  };
-}
-
 async function resolveReading(
   segment: string,
 ): Promise<ResolvedThankYouContext["reading"] | null> {
@@ -74,17 +65,32 @@ async function resolveReading(
     : null;
 }
 
-export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
-  const [{ readingId }, search] = await Promise.all([params, searchParams]);
+async function renderGiftThankYou(
+  gift: GiftThankYouResult,
+  routeSlug: string,
+  routeReading: ResolvedThankYouContext["reading"] | null,
+) {
+  const [giftSettings, reading] = await Promise.all([
+    fetchGiftSettings(),
+    gift.readingSlug === routeSlug ? routeReading : resolveReading(gift.readingSlug),
+  ]);
+  if (!reading) notFound();
+  const viewProps = deriveGiftThankYouViewProps({ gift, readingName: reading.name, giftSettings });
+  return <GiftThankYouView {...viewProps} />;
+}
 
-  const context = await resolveContext(readingId, search);
-  if (!context) {
-    const sessionIdParam = typeof search.sessionId === "string" ? search.sessionId : undefined;
-    if (!isValidStripeSession(sessionIdParam)) {
-      redirect("/");
-    }
-    notFound();
-  }
+export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
+  const [{ readingId }, { sessionId }] = await Promise.all([params, searchParams]);
+  if (!isValidStripeSession(sessionId)) redirect("/");
+
+  const [snapshot, reading] = await Promise.all([
+    fetchThankYouSessionSnapshot(sessionId),
+    resolveReading(readingId),
+  ]);
+  const gift = await resolveGiftThankYou(sessionId, snapshot);
+  if (gift) return renderGiftThankYou(gift, readingId, reading);
+  if (snapshot.kind === "unavailable") throw new Error("Stripe session unavailable");
+  if (!reading) notFound();
 
   const [thankYouPageContent, siteSettings] = await Promise.all([
     fetchThankYouPage(),
@@ -92,7 +98,7 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
   ]);
 
   const viewProps = deriveThankYouViewProps({
-    context,
+    context: { reading, paidAmount: snapshot.paidAmount },
     thankYouPageContent,
     siteSettings,
     slugForOverride: readingId,

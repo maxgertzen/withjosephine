@@ -21,6 +21,7 @@ type InputProps = {
   autoCapitalize?: string;
   spellCheck?: boolean;
   enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+  maxLength?: number;
 };
 
 export function Input({
@@ -42,6 +43,7 @@ export function Input({
   autoCapitalize,
   spellCheck,
   enterKeyHint,
+  maxLength,
 }: InputProps) {
   const helpId = helpText ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -70,6 +72,7 @@ export function Input({
         autoCapitalize={autoCapitalize ?? (type === "email" ? "none" : undefined)}
         spellCheck={spellCheck}
         enterKeyHint={enterKeyHint}
+        maxLength={maxLength}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={inputClasses}

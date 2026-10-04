@@ -54,4 +54,9 @@ describe("Input", () => {
     renderInput({ required: true });
     expect(screen.getByLabelText(/Full name/)).toBeRequired();
   });
+
+  it("passes maxLength to the input", () => {
+    renderInput({ maxLength: 80 });
+    expect(screen.getByLabelText(/Full name/)).toHaveAttribute("maxlength", "80");
+  });
 });

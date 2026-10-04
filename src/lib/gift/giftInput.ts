@@ -6,14 +6,16 @@ import {
 
 const BRACE_TAG = /\{[^{}]*\}/g;
 
-export type GiftPurchaseRequestBody = {
+type GiftSheetInput = { buyerFirstName: string; note: string };
+
+export type GiftPurchaseRequestBody = GiftSheetInput & {
   readingSlug: string;
-  buyerFirstName: string;
-  note: string;
   coolingOffConsent: boolean;
   turnstileToken: string;
   [HONEYPOT_FIELD]?: string;
 };
+
+export type GiftNoteRequest = GiftSheetInput & { token: string };
 
 export type GiftSheetField = "buyerFirstName" | "note" | "coolingOff";
 export type GiftSheetFieldError = "required" | "too_long";
@@ -25,22 +27,29 @@ export function stripBraceTags(text: string): string {
   return text.replace(BRACE_TAG, "");
 }
 
-export function parseGiftPurchaseBody(body: unknown): GiftPurchaseRequestBody | null {
-  if (typeof body !== "object" || body === null) return null;
+function hasGiftSheetInput(body: unknown): body is Record<string, unknown> & GiftSheetInput {
+  if (typeof body !== "object" || body === null) return false;
   const candidate = body as Record<string, unknown>;
-  const honeypot = candidate[HONEYPOT_FIELD];
+  return typeof candidate.buyerFirstName === "string" && typeof candidate.note === "string";
+}
+
+export function parseGiftPurchaseBody(body: unknown): GiftPurchaseRequestBody | null {
+  if (!hasGiftSheetInput(body)) return null;
+  const honeypot = body[HONEYPOT_FIELD];
   const isGiftPurchaseBody =
-    typeof candidate.readingSlug === "string" &&
-    typeof candidate.buyerFirstName === "string" &&
-    typeof candidate.note === "string" &&
-    typeof candidate.coolingOffConsent === "boolean" &&
-    typeof candidate.turnstileToken === "string" &&
+    typeof body.readingSlug === "string" &&
+    typeof body.coolingOffConsent === "boolean" &&
+    typeof body.turnstileToken === "string" &&
     (honeypot === undefined || typeof honeypot === "string");
-  return isGiftPurchaseBody ? (candidate as GiftPurchaseRequestBody) : null;
+  return isGiftPurchaseBody ? (body as GiftPurchaseRequestBody) : null;
+}
+
+export function parseGiftNoteRequest(body: unknown): GiftNoteRequest | null {
+  return hasGiftSheetInput(body) && typeof body.token === "string" ? (body as GiftNoteRequest) : null;
 }
 
 export function validateGiftSheet(
-  body: Pick<GiftPurchaseRequestBody, "buyerFirstName" | "note">,
+  body: GiftSheetInput,
 ): { values: GiftSheetValues } | { fieldErrors: GiftSheetFieldErrors } {
   const buyerFirstName = stripBraceTags(body.buyerFirstName).trim();
   const note = stripBraceTags(body.note).trim();

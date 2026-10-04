@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/Button";
+import { PAYMENT_BUTTON_TEXT_FALLBACK } from "@/data/defaults";
 
 type PageNavProps = {
   isFirstPage: boolean;
@@ -32,7 +33,7 @@ export function PageNav({
   nextDisabled = false,
   submitDisabled = false,
   saveLaterDisabled = false,
-  submitLabel = "Continue to payment →",
+  submitLabel = PAYMENT_BUTTON_TEXT_FALLBACK,
   nextLabel = "Next →",
   saveLaterLabel = "Save and continue later",
   savedIndicator,

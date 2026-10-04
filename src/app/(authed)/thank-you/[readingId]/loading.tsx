@@ -1,6 +1,7 @@
 import { Mail } from "lucide-react";
 
 import { CelestialOrb } from "@/components/CelestialOrb";
+import { IconDisc } from "@/components/IconDisc";
 import { StarField } from "@/components/StarField";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
@@ -17,9 +18,7 @@ export default function ThankYouLoading() {
         aria-label="Loading your confirmation"
         className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center"
       >
-        <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <Mail className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
-        </div>
+        <IconDisc icon={Mail} />
         <p className="font-display italic text-[clamp(1.5rem,3.5vw,2rem)] font-medium text-j-text-heading leading-tight">
           One moment — pulling your confirmation together.
         </p>

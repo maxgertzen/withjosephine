@@ -3,10 +3,11 @@
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useScrolled } from "@/hooks/useScrolled";
 import { homeSectionAnchor } from "@/lib/http/routes";
@@ -118,9 +119,6 @@ function NavCta({
   );
 }
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
-
 type NavigationProps = {
   content?: NavigationContent;
   notesLink?: NotesLink;
@@ -147,44 +145,14 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
     setMenuOpen(false);
   }, []);
 
-  // Move focus into the open overlay, keep Tab trapped inside it, close on
-  // Escape, and restore focus to the toggle when it closes.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const overlay = overlayRef.current;
-    const toggle = toggleRef.current;
-    overlay?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !overlay) return;
-      const overlayFocusables = Array.from(
-        overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      );
-      // The visible close button lives in the <nav>, outside the overlay;
-      // include it so Tab can reach it while the menu is open.
-      const focusable = toggle ? [toggle, ...overlayFocusables] : overlayFocusables;
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      toggle?.focus();
-    };
-  }, [menuOpen]);
+  useFocusTrap({
+    active: menuOpen,
+    containerRef: overlayRef,
+    onEscape: closeMenu,
+    extraFocusables: [toggleRef],
+    initialFocus: "firstFocusable",
+    returnFocusRef: toggleRef,
+  });
 
   return (
     <>

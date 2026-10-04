@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@sentry/cloudflare", () => ({ captureException: vi.fn() }));
+
 vi.mock("@/lib/booking/cron-auth", () => ({
   isCronRequestAuthorized: vi.fn(),
 }));
@@ -37,6 +39,8 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchEmailGiftSettings: vi.fn(),
   fetchReadingPublished: vi.fn(),
 }));
+
+import * as Sentry from "@sentry/cloudflare";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
@@ -110,7 +114,7 @@ describe("/api/cron/reconcile with gifts", () => {
     const giftId = await createTestGift();
     vi.mocked(findSubmissionById).mockResolvedValueOnce({ _id: "sub_1" } as SubmissionRecord);
     vi.mocked(applyPaidEvent).mockResolvedValueOnce("applied");
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const summary = await runReconcile([
       giftCheckoutSession(giftId),
@@ -119,5 +123,12 @@ describe("/api/cron/reconcile with gifts", () => {
 
     expect(summary).toEqual({ checked: 2, reconciled: 1 });
     expect((await findGiftById(giftId))?.buyerEmailClaimedAt).toBeNull();
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "resend down" }),
+      { extra: { giftId } },
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      `[cron-reconcile] gift ${giftId} activation failed (Error), next run retries`,
+    );
   });
 });
