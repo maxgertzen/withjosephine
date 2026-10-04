@@ -2,9 +2,10 @@ import { render } from "@react-email/render";
 
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
+import { GiftPurchase } from "./GiftPurchase";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
-import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
+import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE, PREVIEW_GIFT } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
 import { ReadingDelivery } from "./ReadingDelivery";
 import type { EmailTemplateKey } from "./slots";
@@ -26,6 +27,7 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailReadingDelivery",
   "emailMagicLink",
   "emailPrivacyExport",
+  "emailGiftPurchase",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -102,6 +104,21 @@ async function renderRaw(
             expiryDays: PREVIEW_FIXTURE.expiryDays,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}
+        />,
+      );
+    case "emailGiftPurchase":
+      return render(
+        <GiftPurchase
+          vars={{
+            firstName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            hasNote: true,
+            displayCode: PREVIEW_GIFT.code,
+            giftUrl: PREVIEW_GIFT.giftUrl,
+            whatsappUrl: PREVIEW_GIFT.whatsappUrl,
+            sendUrl: PREVIEW_GIFT.sendUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchase}
         />,
       );
     default: {

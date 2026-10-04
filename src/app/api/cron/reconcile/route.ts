@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import { findSubmissionById } from "@/lib/booking/submissions";
+import { activateGift, giftActivationFromSession } from "@/lib/gift/activateGift";
 import { listRecentCompletedCheckoutSessions } from "@/lib/stripe";
+import { paidFieldsFromSession, unixToIso } from "@/lib/stripeSession";
 
 const LOOKBACK_HOURS = 24;
 const SECONDS_PER_HOUR = 60 * 60;
@@ -14,6 +16,17 @@ async function reconcile(): Promise<{ checked: number; reconciled: number }> {
 
   let reconciled = 0;
   for (const session of sessions) {
+    const paidAt = unixToIso(session.created);
+    const giftActivation = giftActivationFromSession(session, paidAt);
+    if (giftActivation) {
+      await activateGift(giftActivation).catch(() => {
+        console.error(
+          `[cron-reconcile] gift ${giftActivation.giftId} activation failed, next run retries`,
+        );
+      });
+      continue;
+    }
+
     const submissionId = session.client_reference_id;
     if (!submissionId) continue;
 
@@ -25,11 +38,7 @@ async function reconcile(): Promise<{ checked: number; reconciled: number }> {
 
     const result = await applyPaidEvent(submission, {
       stripeEventId: `reconcile:${session.id}`,
-      stripeSessionId: session.id,
-      paidAt: new Date(session.created * 1000).toISOString(),
-      amountPaidCents: session.amount_total ?? null,
-      amountPaidCurrency: session.currency ?? null,
-      country: session.customer_details?.address?.country ?? null,
+      ...paidFieldsFromSession(session, paidAt),
     });
 
     if (result === "applied") reconciled += 1;

@@ -8,6 +8,7 @@ import {
   getResendId,
   redactEmail,
   sendContactMessage,
+  sendGiftPurchase,
   sendMagicLink,
   sendNotificationToJosephine,
   sendOrderConfirmation,
@@ -42,6 +43,7 @@ vi.mock("./analytics/server", () => ({
 }));
 
 const sanityFetchMocks = vi.hoisted(() => ({
+  fetchEmailGiftPurchase: vi.fn(),
   fetchEmailMagicLink: vi.fn(),
   fetchEmailReadingDelivery: vi.fn(),
   fetchEmailOrderConfirmation: vi.fn(),
@@ -746,6 +748,63 @@ describe("email_sent server analytics", () => {
     await sendOrderConfirmation(submission);
 
     expect(serverTrackMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendGiftPurchase", () => {
+  const giftVars = {
+    to: "dana@example.com",
+    firstName: "Dana",
+    readingName: "Birth Chart Reading",
+    hasNote: false,
+    displayCode: "K7M2-QX9P-H4TR",
+    giftUrl: "https://withjosephine.com/gift/K7M2QX9PH4TR",
+    whatsappUrl: "https://wa.me/?text=hi",
+    sendUrl: "https://withjosephine.com/gift/send#token",
+  };
+  const giftOptions = { giftId: "g_1", idempotencyKey: "gift-confirmation/g_1" };
+
+  it("sends the buyer email with the idempotency key and no submission tags", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gift" } });
+
+    const result = await sendGiftPurchase(giftVars, giftOptions);
+
+    expect(result).toEqual({ kind: "sent", resendId: "msg_gift" });
+    const [payload, options] = sendMock.mock.calls[0] ?? [];
+    expect(options).toEqual({ idempotencyKey: "gift-confirmation/g_1" });
+    expect(payload.to).toBe("dana@example.com");
+    expect(payload.subject).toBe("Your gift is ready to send");
+    expect(payload.tags).toBeUndefined();
+    expect(visibleText(payload.html)).toContain("K7M2-QX9P-H4TR");
+  });
+
+  it("fires email_sent with gift_id and a gift_ distinct id", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gift" } });
+
+    await sendGiftPurchase(giftVars, giftOptions);
+
+    expect(serverTrackMock).toHaveBeenCalledWith("email_sent", {
+      distinct_id: "gift_g_1",
+      sub_type: "gift_confirmation",
+      submission_id: null,
+      gift_id: "g_1",
+      recipient_redacted: "d***@example.com",
+      resend_id_present: true,
+    });
+  });
+
+  it("uses Sanity copy over the defaults", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gift" } });
+    vi.mocked(sanityFetchMocks.fetchEmailGiftPurchase).mockResolvedValue({
+      subject: "A gift for {readingName}",
+      heroLine: "Edited hero",
+    });
+
+    await sendGiftPurchase(giftVars, giftOptions);
+
+    const [payload] = sendMock.mock.calls[0] ?? [];
+    expect(payload.subject).toBe("A gift for Birth Chart Reading");
+    expect(visibleText(payload.html)).toContain("Edited hero");
   });
 });
 

@@ -131,6 +131,17 @@ if (vars.GIFTS_ENABLED !== "1") {
   fail(`env.staging vars.GIFTS_ENABLED expected "1", got "${vars.GIFTS_ENABLED ?? "(missing)"}"`);
 }
 
+for (const [blockName, blockVars] of [
+  ["production", prodVars],
+  ["env.staging", vars],
+] as const) {
+  if (blockVars.STRIPE_API_HOST !== undefined) {
+    fail(
+      `${blockName} vars.STRIPE_API_HOST must NOT be set (got "${blockVars.STRIPE_API_HOST}"). It points the Stripe client, and the secret key it sends, at the mock e2e sidecar. Set it in playwright.config.ts only.`,
+    );
+  }
+}
+
 for (const [blockName, block] of [
   ["production", config],
   ["env.staging", staging],

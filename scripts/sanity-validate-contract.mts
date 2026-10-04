@@ -397,6 +397,31 @@ export const SINGLETONS: SingletonContract[] = [
     ],
   },
   {
+    id: "emailGiftPurchase",
+    type: "emailGiftPurchase",
+    fields: [
+      { name: "subject", type: "string" },
+      { name: "preview", type: "string" },
+      { name: "heroLine", type: "string" },
+      { name: "body", type: "array<block>" },
+      { name: "noteLine", type: "string" },
+      { name: "bodyPostButton", type: "array<block>" },
+      { name: "cardLabel", type: "string" },
+      { name: "cardLineTemplate", type: "string" },
+      { name: "shareButtonLabel", type: "string" },
+      { name: "sendButtonLabel", type: "string" },
+    ],
+  },
+  {
+    id: "giftSettings",
+    type: "giftSettings",
+    fields: [
+      { name: "sheetEyebrow", type: "string" },
+      { name: "sheetCancelLabel", type: "string" },
+      { name: "shareMessageTemplate", type: "string" },
+    ],
+  },
+  {
     id: "emailGiftClaim",
     type: "emailGiftClaim",
     // Note: `bodyFirstSend`, `bodyReminder`, `reminderContactLine`,

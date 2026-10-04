@@ -83,6 +83,7 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailMagicLink",
         "emailOrderConfirmation",
         "emailPrivacyExport",
+        "emailGiftPurchase",
       ].sort(),
     );
   });
@@ -95,6 +96,15 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
   it("exposes URL tokens where the template's vars carry them", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailReadingDelivery).toContain("listenUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
+  });
+
+  it("limits the gift purchase email to the buyer's first name and the reading name", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchase).toEqual(["firstName", "readingName"]);
+    expect(validateSlotsInValue("Your code is {code}", "emailGiftPurchase")).toEqual({
+      ok: false,
+      unknown: ["code"],
+      allowed: ["firstName", "readingName"],
+    });
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {

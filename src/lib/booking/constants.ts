@@ -8,3 +8,5 @@ export const ACCEPTED_PHOTO_MIME_SET: ReadonlySet<string> = new Set(ACCEPTED_PHO
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 export const MAX_EMAIL_CHARS = 254;
+export const GIFT_BUYER_NAME_MAX_CHARS = 80;
+export const GIFT_NOTE_MAX_CHARS = 280;

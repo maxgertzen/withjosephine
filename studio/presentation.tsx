@@ -113,6 +113,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       locations: [{ title: "404 Page", href: "/preview/404" }],
     }),
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
+    emailGiftPurchase: emailLocation("Email: Gift Buyer Confirmation"),
     emailReadingDelivery: emailLocation("Email: Reading Delivery Email"),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),

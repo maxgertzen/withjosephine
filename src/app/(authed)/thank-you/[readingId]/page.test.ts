@@ -270,12 +270,22 @@ describe("ThankYouPage paid amount", () => {
     expect(result.props.reading.price).toBe("$179");
   });
 
-  it("passes null paid amount when the Stripe API throws (fail-safe)", async () => {
+  it("throws when the Stripe session is unavailable, so the error boundary renders", async () => {
     mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
-    expect(result.props.paidAmount.cents).toBeNull();
-    expect(result.props.reading.price).toBe("$179");
+    await expect(callPage({ sessionId: "cs_test_abc123" })).rejects.toThrow(
+      "Stripe session unavailable",
+    );
+    expect(mockFetchThankYouPage).not.toHaveBeenCalled();
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(notFoundMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session id out of the thrown error", async () => {
+    mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = await callPage({ sessionId: "cs_test_abc123" }).catch((caught: Error) => caught);
+    expect(String((error as Error).message)).not.toContain("cs_test_abc123");
   });
 });
 

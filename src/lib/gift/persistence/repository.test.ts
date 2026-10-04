@@ -3,11 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __registerSqliteFactory,
   dbBatch,
-  dbExec,
   dbQuery,
   type SqlClient,
   type SqlValue,
 } from "@/lib/booking/persistence/sqlClient";
+import {
+  createTestGift,
+  forceGiftStatus,
+  TEST_GIFT_CREATED_AT,
+  TEST_GIFT_INPUT,
+} from "@/test/fixtures/gift";
 import { createSqliteClient } from "@/test/persistence/sqliteClient";
 
 import { deriveGiftCode, giftLookupHash } from "../giftCode";
@@ -18,8 +23,6 @@ import {
   claimGiftBuyerEmail,
   claimGiftSend,
   completeGiftSend,
-  createPendingGift,
-  type CreatePendingGiftInput,
   deleteExpiredGift,
   findGiftByCode,
   findGiftById,
@@ -34,19 +37,8 @@ import {
 } from "../gifts";
 import type { GiftStatus } from "../types";
 
-const CREATED_AT = "2026-10-01T10:00:00.000Z";
 const PAID_AT = "2026-10-01T10:05:00.000Z";
 const LATER = "2026-10-02T10:00:00.000Z";
-
-const PENDING_INPUT: CreatePendingGiftInput = {
-  readingSlug: "birth-chart",
-  buyerFirstName: "Ada",
-  note: "Happy birthday",
-  consentLabel: "I agree to the cooling-off waiver",
-  consentIpAddress: "203.0.113.7",
-  coolingOffAcknowledgedAt: CREATED_AT,
-  createdAt: CREATED_AT,
-};
 
 const PAID = {
   buyerEmail: "ada@example.com",
@@ -62,19 +54,10 @@ function redeemStatement(giftId: string, submissionId: string, readingSlug = "bi
   return buildRedeemGiftStatement({ giftId, readingSlug, submissionId, redeemedAt: LATER });
 }
 
-async function createGift(overrides: Partial<CreatePendingGiftInput> = {}): Promise<string> {
-  const { giftId } = await createPendingGift({ ...PENDING_INPUT, ...overrides });
-  return giftId;
-}
-
 async function createActiveGift(stripeSessionId = "cs_test_1"): Promise<string> {
-  const giftId = await createGift();
+  const giftId = await createTestGift();
   await markGiftActive(giftId, { ...PAID, stripeSessionId });
   return giftId;
-}
-
-async function forceStatus(giftId: string, status: GiftStatus): Promise<void> {
-  await dbExec(`UPDATE gift_codes SET status = ? WHERE id = ?`, [status, giftId]);
 }
 
 async function readColumn(giftId: string, column: string): Promise<SqlValue | undefined> {
@@ -117,7 +100,7 @@ afterEach(() => {
 
 describe("gift repository against in-memory SQLite", () => {
   it("creates a pending gift that findGiftByCode finds by its display form", async () => {
-    const giftId = await createGift();
+    const giftId = await createTestGift();
     const code = await deriveGiftCode(giftId);
 
     const found = await findGiftByCode(formatGiftCode(code).toLowerCase());
@@ -133,7 +116,7 @@ describe("gift repository against in-memory SQLite", () => {
   it("returns null for malformed and unknown codes with one query each", async () => {
     const queries: string[] = [];
     __registerSqliteFactory(recordQueries(queries));
-    await createGift();
+    await createTestGift();
 
     queries.length = 0;
     expect(await findGiftByCode("PREVIEW-GIFT")).toBeNull();
@@ -145,7 +128,7 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("activates a pending gift, stores the email lower-cased and finds it by session", async () => {
-    const giftId = await createGift();
+    const giftId = await createTestGift();
 
     const activated = await markGiftActive(giftId, { ...PAID, buyerEmail: "  Ada@Example.COM " });
 
@@ -158,14 +141,14 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("activates an expired gift", async () => {
-    const giftId = await createGift();
-    await forceStatus(giftId, "expired");
+    const giftId = await createTestGift();
+    await forceGiftStatus(giftId, "expired");
 
     expect(await markGiftActive(giftId, PAID)).toBe(true);
   });
 
   it("writes the financial record in the same batch", async () => {
-    const giftId = await createGift();
+    const giftId = await createTestGift();
 
     await markGiftActive(giftId, PAID, {
       submissionId: giftId,
@@ -186,8 +169,8 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it.each<GiftStatus>(["redeemed", "cancelled"])("does not activate a %s gift", async (status) => {
-    const giftId = await createGift();
-    await forceStatus(giftId, status);
+    const giftId = await createTestGift();
+    await forceGiftStatus(giftId, status);
 
     expect(await markGiftActive(giftId, PAID)).toBe(false);
     expect((await findGiftById(giftId))?.stripeSessionId).toBeNull();
@@ -195,9 +178,9 @@ describe("gift repository against in-memory SQLite", () => {
 
   it("claims the buyer email on a redeemed gift but not on a cancelled one", async () => {
     const redeemedId = await createActiveGift("cs_test_1");
-    await forceStatus(redeemedId, "redeemed");
+    await forceGiftStatus(redeemedId, "redeemed");
     const cancelledId = await createActiveGift("cs_test_2");
-    await forceStatus(cancelledId, "cancelled");
+    await forceGiftStatus(cancelledId, "cancelled");
 
     expect((await claimGiftBuyerEmail(redeemedId, LATER))?.buyerEmailClaimedAt).toBe(LATER);
     expect(await claimGiftBuyerEmail(cancelledId, LATER)).toBeNull();
@@ -239,7 +222,7 @@ describe("gift repository against in-memory SQLite", () => {
 
   it("does not send a cancelled gift", async () => {
     const giftId = await createActiveGift();
-    await forceStatus(giftId, "cancelled");
+    await forceGiftStatus(giftId, "cancelled");
 
     expect(await claimGiftSend(giftId, sendClaim(0))).toBeNull();
   });
@@ -262,9 +245,9 @@ describe("gift repository against in-memory SQLite", () => {
   it("updates the note on an active gift only", async () => {
     const activeId = await createActiveGift("cs_test_1");
     const redeemedId = await createActiveGift("cs_test_2");
-    await forceStatus(redeemedId, "redeemed");
+    await forceGiftStatus(redeemedId, "redeemed");
     const cancelledId = await createActiveGift("cs_test_3");
-    await forceStatus(cancelledId, "cancelled");
+    await forceGiftStatus(cancelledId, "cancelled");
     const edit = { buyerFirstName: "Ada L.", note: "With love", updatedAt: LATER };
 
     expect(await updateGiftNote(activeId, edit)).toBe(true);
@@ -274,12 +257,12 @@ describe("gift repository against in-memory SQLite", () => {
     const active = await findGiftById(activeId);
     expect(active?.buyerFirstName).toBe("Ada L.");
     expect(active?.note).toBe("With love");
-    expect((await findGiftById(redeemedId))?.note).toBe("Happy birthday");
+    expect((await findGiftById(redeemedId))?.note).toBe(TEST_GIFT_INPUT.note);
   });
 
   it("does not redeem a cancelled gift or a gift for another reading", async () => {
     const cancelledId = await createActiveGift("cs_test_1");
-    await forceStatus(cancelledId, "cancelled");
+    await forceGiftStatus(cancelledId, "cancelled");
     const activeId = await createActiveGift("cs_test_2");
 
     await dbBatch([
@@ -292,7 +275,7 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("expires only pending gifts", async () => {
-    const pendingId = await createGift();
+    const pendingId = await createTestGift();
     const activeId = await createActiveGift();
 
     expect(await markGiftExpired(pendingId, { expiredAt: LATER })).toBe(true);
@@ -306,7 +289,7 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("deletes expired gifts and refuses active ones", async () => {
-    const expiredId = await createGift();
+    const expiredId = await createTestGift();
     await markGiftExpired(expiredId, { expiredAt: LATER });
     const activeId = await createActiveGift();
 
@@ -317,8 +300,8 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("lists gifts by status older than the cutoff", async () => {
-    const oldId = await createGift({ createdAt: "2026-09-01T10:00:00.000Z" });
-    await createGift({ createdAt: "2026-10-01T10:00:00.000Z" });
+    const oldId = await createTestGift({ createdAt: "2026-09-01T10:00:00.000Z" });
+    await createTestGift({ createdAt: "2026-10-01T10:00:00.000Z" });
 
     const listed = await listGiftsByStatusOlderThan("pending", "2026-09-15T00:00:00.000Z");
 
@@ -326,16 +309,16 @@ describe("gift repository against in-memory SQLite", () => {
   });
 
   it("lists active, redeemed and cancelled gifts updated after the cutoff", async () => {
-    await createGift();
-    const expiredId = await createGift();
+    await createTestGift();
+    const expiredId = await createTestGift();
     await markGiftExpired(expiredId, { expiredAt: LATER });
     const activeId = await createActiveGift("cs_test_1");
     const redeemedId = await createActiveGift("cs_test_2");
-    await forceStatus(redeemedId, "redeemed");
+    await forceGiftStatus(redeemedId, "redeemed");
     const cancelledId = await createActiveGift("cs_test_3");
-    await forceStatus(cancelledId, "cancelled");
+    await forceGiftStatus(cancelledId, "cancelled");
 
-    const listed = await listGiftsUpdatedAfter(CREATED_AT);
+    const listed = await listGiftsUpdatedAfter(TEST_GIFT_CREATED_AT);
 
     expect(listed.map((gift) => gift.id).sort()).toEqual(
       [activeId, redeemedId, cancelledId].sort(),
@@ -419,7 +402,7 @@ describe.each([
   });
 
   it("expires and deletes once", async () => {
-    const giftId = await createGift();
+    const giftId = await createTestGift();
 
     const expired = await Promise.all([
       markGiftExpired(giftId, { expiredAt: LATER }),

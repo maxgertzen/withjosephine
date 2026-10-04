@@ -12,6 +12,7 @@ import {
   articlesQuery,
   bookingFormQuery,
   bookingPageQuery,
+  emailGiftPurchaseQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
@@ -41,6 +42,7 @@ import type {
   SanityArticleSummary,
   SanityBookingForm,
   SanityBookingPage,
+  SanityEmailGiftPurchase,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
@@ -206,6 +208,14 @@ export const fetchEmailOrderConfirmation = cache((): Promise<SanityEmailOrderCon
 
 export const fetchEmailSharedShell = cache((): Promise<SanityEmailSharedShell | null> =>
   fetchEmailCopy<SanityEmailSharedShell>(emailSharedShellQuery),
+);
+
+export const fetchEmailGiftPurchase = cache((): Promise<SanityEmailGiftPurchase | null> =>
+  fetchEmailCopy<SanityEmailGiftPurchase>(emailGiftPurchaseQuery),
+);
+
+export const fetchEmailGiftSettings = cache((): Promise<SanityGiftSettings | null> =>
+  fetchEmailCopy<SanityGiftSettings>(giftSettingsQuery),
 );
 
 export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {

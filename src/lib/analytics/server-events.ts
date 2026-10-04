@@ -8,7 +8,8 @@ export type EmailSubType =
   | "contact_form"
   | "magic_link"
   | "privacy_export"
-  | "admin_email_preview";
+  | "admin_email_preview"
+  | "gift_confirmation";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
@@ -19,24 +20,28 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   magic_link: "magic link",
   privacy_export: "privacy export",
   admin_email_preview: "admin email preview (Studio send-to-test)",
+  gift_confirmation: "gift confirmation",
 };
 
 export type ServerEventMap = {
   payment_success: {
-    submission_id: string;
+    submission_id: string | null;
+    gift_id?: string;
     reading_id: string;
     amount_paid_cents: number | null;
     currency: string | null;
-    stripe_session_id: string;
+    stripe_session_id: string | null;
   };
   payment_expired: {
-    submission_id: string;
+    submission_id: string | null;
+    gift_id?: string;
     reading_id: string;
-    stripe_session_id: string;
+    stripe_session_id: string | null;
   };
   email_sent: {
     sub_type: EmailSubType;
     submission_id: string | null;
+    gift_id?: string;
     recipient_redacted: string;
     resend_id_present: boolean;
   };

@@ -1,5 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
+import { newStripeSessionId, registerStripeSession } from "./stripeStub";
+
 const SANDBOX_CARD = "4242 4242 4242 4242";
 const SANDBOX_EXPIRY = "12 / 34";
 const SANDBOX_CVC = "123";
@@ -55,7 +57,11 @@ export async function interceptStripeCheckout(
   const handler = async (route: Route) => {
     const url = new URL(route.request().url());
     const submissionId = url.searchParams.get("client_reference_id") ?? "";
-    const sessionId = `cs_test_${crypto.randomUUID().slice(0, 8)}`;
+    const sessionId = newStripeSessionId();
+    await registerStripeSession(page.request, {
+      id: sessionId,
+      client_reference_id: submissionId,
+    });
     const query = new URLSearchParams();
     if (gift) query.set("gift", "1");
     query.set("sessionId", sessionId);

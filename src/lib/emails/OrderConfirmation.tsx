@@ -9,6 +9,7 @@ import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
 import { PortableTextBody } from "./PortableTextBody";
+import { ReadingCard } from "./ReadingCard";
 
 export type OrderConfirmationVars = {
   firstName: string;
@@ -45,30 +46,13 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
           <PortableTextBody value={copy.body} />
         </Section>
 
-        <div style={{ padding: "0 48px" }}>
-          <Section className="bg-warm rounded" style={{ padding: "20px 24px" }}>
-            <p
-              className="font-sans text-muted-warm uppercase"
-              style={{ margin: "0 0 4px 0", fontSize: 11, letterSpacing: "0.18em" }}
-            >
-              {copy.cardLabel}
-            </p>
-            <p
-              className="font-serif text-ink"
-              style={{ margin: "0 0 12px 0", fontSize: 22 }}
-            >
-              {vars.readingName}
-            </p>
-            <p
-              className="font-sans text-body"
-              style={{ margin: 0, fontSize: 14 }}
-            >
-              <span className="text-muted-warm">{copy.cardDeliveryLine}</span>
-              &nbsp;&middot;&nbsp;
-              <span>{price}</span>
-            </p>
-          </Section>
-        </div>
+        <ReadingCard label={copy.cardLabel} readingName={vars.readingName}>
+          <p className="font-sans text-body" style={{ margin: 0, fontSize: 14 }}>
+            <span className="text-muted-warm">{copy.cardDeliveryLine}</span>
+            &nbsp;&middot;&nbsp;
+            <span>{price}</span>
+          </p>
+        </ReadingCard>
 
         <EmailFooter shell={shell} />
 

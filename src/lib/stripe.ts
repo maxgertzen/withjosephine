@@ -3,7 +3,23 @@ import Stripe from "stripe";
 import { requireEnv } from "./env";
 import { taintServerObject } from "./taint";
 
+type StripeApiHostOptions = Pick<
+  NonNullable<ConstructorParameters<typeof Stripe>[1]>,
+  "host" | "port" | "protocol"
+>;
+
 let cachedClient: Stripe | null = null;
+
+function e2eApiHostOverride(): StripeApiHostOptions {
+  const apiHost = process.env.E2E === "1" ? process.env.STRIPE_API_HOST : undefined;
+  if (!apiHost) return {};
+  const url = new URL(apiHost);
+  return {
+    host: url.hostname,
+    port: url.port,
+    protocol: url.protocol === "http:" ? "http" : "https",
+  };
+}
 
 function getStripeClient(): Stripe {
   if (cachedClient) return cachedClient;
@@ -13,6 +29,7 @@ function getStripeClient(): Stripe {
   cachedClient = new Stripe(requireEnv("STRIPE_SECRET_KEY"), {
     httpClient: Stripe.createFetchHttpClient(),
     timeout: 5000,
+    ...e2eApiHostOverride(),
   });
   taintServerObject(
     "Stripe client carries STRIPE_SECRET_KEY; do not pass to client components.",

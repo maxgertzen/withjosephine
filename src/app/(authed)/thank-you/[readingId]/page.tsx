@@ -48,6 +48,7 @@ async function resolveContext(
   if (!isValidStripeSession(sessionId)) return null;
 
   const snapshot = await fetchThankYouSessionSnapshot(sessionId);
+  if (snapshot.kind === "unavailable") throw new Error("Stripe session unavailable");
   const reading = await resolveReading(segment);
   if (!reading) return null;
   return {

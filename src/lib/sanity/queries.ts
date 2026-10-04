@@ -228,6 +228,21 @@ export const emailReadingDeliveryQuery = groq`
   }
 `;
 
+export const emailGiftPurchaseQuery = groq`
+  *[_type == "emailGiftPurchase"][0] {
+    subject,
+    preview,
+    heroLine,
+    body,
+    noteLine,
+    cardLabel,
+    cardLineTemplate,
+    shareButtonLabel,
+    sendButtonLabel,
+    bodyPostButton
+  }
+`;
+
 export const emailSharedShellQuery = groq`
   *[_id == "emailSharedShell"][0] {
     brandName,

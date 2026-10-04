@@ -1,6 +1,12 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-import type { GiftContent, NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
+import type {
+  EmailGiftPurchaseContent,
+  GiftContent,
+  NotesContent,
+  ReadingFact,
+  ReadingPageContent,
+} from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type SanityReading = {
@@ -165,6 +171,8 @@ export type SanityEmailReadingDelivery = {
   comfortFollowUp?: PortableTextBlock[];
   signOff: string | null;
 };
+
+export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
 
 export type SanityEmailSharedShell = {
   brandName: string;

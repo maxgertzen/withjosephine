@@ -212,6 +212,13 @@ describe("scrubSentryRequest", () => {
 });
 
 describe("redactSensitiveUrl without sensitive params", () => {
+  it.each(["/api/gift/purchase", "/api/gift/check", "/api/gift/send/status"])(
+    "leaves the gift API route %s readable",
+    (path) => {
+      expect(redactSensitiveUrl(path)).toBe(path);
+    },
+  );
+
   it("returns a long query URL unchanged", () => {
     const sanityUrl = "https://x.api.sanity.io/v1/data/query/production?query=*%5B_type%3D%3D%22reading%22%5D&limit=10";
     expect(redactSensitiveUrl(sanityUrl)).toBe(sanityUrl);

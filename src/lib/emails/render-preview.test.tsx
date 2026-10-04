@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
+
+import { PREVIEW_GIFT } from "./preview-fixtures";
 import {
   isPreviewTemplateKey,
   PREVIEW_TEMPLATE_KEYS,
@@ -46,6 +49,13 @@ describe("render-preview", () => {
     it("falls back to defaults when sanityCopy is null", async () => {
       const html = await renderEmailPreview("emailOrderConfirmation", null);
       expect(html).toContain("Ada");
+    });
+
+    it("renders emailGiftPurchase from the sample gift, whose code is not a valid gift code", async () => {
+      const html = await renderEmailPreview("emailGiftPurchase", null);
+      expect(html).toContain(PREVIEW_GIFT.code);
+      expect(html).toContain(PREVIEW_GIFT.buyerFirstName);
+      expect(normalizeGiftCode(PREVIEW_GIFT.code)).toBeNull();
     });
 
     it.each(PREVIEW_TEMPLATE_KEYS.map((key) => [key]))(

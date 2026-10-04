@@ -6,6 +6,7 @@ export const AUTH_MAGIC_LINK_VERIFY_ROUTE = "/api/auth/magic-link/verify";
 export const CONTACT_API_ROUTE = "/api/contact";
 export const PRIVACY_EXPORT_API_ROUTE = "/api/privacy/export";
 export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
+export const GIFT_PURCHASE_API_ROUTE = "/api/gift/purchase";
 
 export const bookingPath = (slug: string) => `/book/${slug}`;
 export const readingAnchorId = (slug: string) => `reading-${slug}`;

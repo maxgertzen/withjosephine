@@ -3,7 +3,7 @@ const RELATIVE_URL_SENTINEL = "https://redact.local";
 export const SENSITIVE_QUERY_PARAMS = ["t", "sessionId", "submissionId"] as const;
 
 const LISTEN_PATH = /\/listen\/[^/?#]+/;
-const GIFT_CODE_PATH = /\/gift\/(?!send(?:[/?#]|$))[^/?#]+/;
+const GIFT_CODE_PATH = /(\/api)?\/gift\/(?!send(?:[/?#]|$))[^/?#]+/;
 const GIFT_PATH_WITH_FRAGMENT = /(\/gift\/[^#]*)#.*$/;
 
 /** Mutates `params` in place. Returns true if any redaction was applied. */
@@ -96,7 +96,7 @@ const SENSITIVE_REQUEST_HEADERS = new Set(["cookie", "authorization", "referer",
 export function redactSensitiveUrl(url: string): string {
   const pathRedacted = url
     .replace(LISTEN_PATH, "/listen/[REDACTED]")
-    .replace(GIFT_CODE_PATH, "/gift/[REDACTED]")
+    .replace(GIFT_CODE_PATH, (match, apiPrefix) => (apiPrefix ? match : "/gift/[REDACTED]"))
     .replace(GIFT_PATH_WITH_FRAGMENT, "$1#[REDACTED]");
   if (!SENSITIVE_PARAM_PRESENT.test(pathRedacted)) return pathRedacted;
   return redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);

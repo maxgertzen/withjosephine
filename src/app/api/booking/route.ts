@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
+import { buildPaymentUrl } from "@/lib/booking/paymentUrl";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
@@ -12,7 +13,7 @@ import {
 } from "@/lib/compliance/intakeConsent";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
-import type { SanityFormField, SanityFormFieldType, SanityReading } from "@/lib/sanity/types";
+import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 type BookingRequestBody = {
@@ -73,24 +74,6 @@ function buildResponses(
       fieldType: field.type,
       value: stringifyValue(values[field.key], field),
     }));
-}
-
-function buildPaymentUrl(
-  reading: SanityReading,
-  submissionId: string,
-  email: string,
-): string | null {
-  if (!reading.stripePaymentLink) return null;
-  let url: URL;
-  try {
-    url = new URL(reading.stripePaymentLink);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" || !url.hostname.endsWith(".stripe.com")) return null;
-  url.searchParams.set("client_reference_id", submissionId);
-  url.searchParams.set("prefilled_email", email);
-  return url.toString();
 }
 
 export async function POST(request: Request) {

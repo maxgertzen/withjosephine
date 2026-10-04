@@ -13,6 +13,7 @@ import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
 import { emailReadingDelivery } from "./emailReadingDelivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
+import { emailGiftPurchase } from "./emailGiftPurchase";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
 import { listenPage } from "./listenPage";
@@ -42,6 +43,7 @@ export const schemaTypes = [
   emailMagicLink,
   emailReadingDelivery,
   emailOrderConfirmation,
+  emailGiftPurchase,
   emailPrivacyExport,
   emailSharedShell,
   listenPage,

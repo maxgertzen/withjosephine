@@ -8,16 +8,23 @@ import {
   markSubmissionExpired,
   SUBMISSION_STATUS,
 } from "@/lib/booking/submissions";
+import { activateGift, giftActivationFromSession } from "@/lib/gift/activateGift";
+import { giftIdFromClientReferenceId } from "@/lib/gift/clientReference";
+import { expireGift } from "@/lib/gift/expireGift";
 import { constructWebhookEvent } from "@/lib/stripe";
+import { paidFieldsFromSession, unixToIso } from "@/lib/stripeSession";
 
 const SIGNATURE_HEADER = "stripe-signature";
 
-function unixToIso(seconds: number): string {
-  return new Date(seconds * 1000).toISOString();
-}
-
 async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Promise<void> {
   const session = event.data.object;
+  const paidAt = unixToIso(event.created);
+  const giftActivation = giftActivationFromSession(session, paidAt);
+  if (giftActivation) {
+    await activateGift(giftActivation);
+    return;
+  }
+
   const submissionId = session.client_reference_id;
   if (!submissionId) {
     console.warn(`[stripe-webhook] event ${event.id} has no client_reference_id`);
@@ -32,22 +39,16 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
     return;
   }
 
-  const result = await applyPaidEvent(submission, {
-    stripeEventId: event.id,
-    stripeSessionId: session.id,
-    paidAt: unixToIso(event.created),
-    amountPaidCents: session.amount_total ?? null,
-    amountPaidCurrency: session.currency ?? null,
-    country: session.customer_details?.address?.country ?? null,
-  });
+  const paid = paidFieldsFromSession(session, paidAt);
+  const result = await applyPaidEvent(submission, { stripeEventId: event.id, ...paid });
 
   if (result === "applied") {
     void serverTrack("payment_success", {
       distinct_id: submission._id,
       submission_id: submission._id,
       reading_id: submission.reading?.slug ?? "",
-      amount_paid_cents: session.amount_total ?? null,
-      currency: session.currency ?? null,
+      amount_paid_cents: paid.amountPaidCents,
+      currency: paid.amountPaidCurrency,
       stripe_session_id: session.id,
     });
   }
@@ -55,13 +56,19 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
 
 async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise<void> {
   const session = event.data.object;
-  const submissionId = session.client_reference_id;
-  if (!submissionId) return;
+  const clientReferenceId = session.client_reference_id;
+  if (!clientReferenceId) return;
 
-  const submission = await findSubmissionById(submissionId);
+  const giftId = giftIdFromClientReferenceId(clientReferenceId);
+  if (giftId) {
+    await expireGift(giftId, unixToIso(event.created));
+    return;
+  }
+
+  const submission = await findSubmissionById(clientReferenceId);
   if (!submission) {
     console.warn(
-      `[stripe-webhook] submission ${submissionId} not found for expired event ${event.id}`,
+      `[stripe-webhook] submission ${clientReferenceId} not found for expired event ${event.id}`,
     );
     return;
   }

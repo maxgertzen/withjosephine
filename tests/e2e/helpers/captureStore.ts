@@ -1,10 +1,11 @@
-import type { APIRequestContext } from "@playwright/test";
+import { type APIRequestContext, expect } from "@playwright/test";
 
+import { TIMEOUTS } from "../constants";
 import type { CapturedEmail, CapturedMutation, CapturedMutationOp } from "../fixtures-server";
 
 export type { CapturedEmail, CapturedMutation, CapturedMutationOp };
 
-function sidecarUrl(): string {
+export function sidecarUrl(): string {
   const url = process.env.E2E_CAPTURE_URL;
   if (!url) {
     throw new Error(
@@ -34,6 +35,30 @@ export async function getCapturedEmails(request: APIRequestContext): Promise<Cap
   const res = await request.get(`${sidecarUrl()}/_e2e/captured-emails`);
   if (!res.ok()) throw new Error(`Failed to fetch captured emails: ${res.status()}`);
   return ((await res.json()) as { emails: CapturedEmail[] }).emails;
+}
+
+function isAddressedTo(email: CapturedEmail, address: string): boolean {
+  return [email.to].flat().includes(address);
+}
+
+export async function capturedEmailsTo(
+  request: APIRequestContext,
+  address: string,
+): Promise<CapturedEmail[]> {
+  return (await getCapturedEmails(request)).filter((email) => isAddressedTo(email, address));
+}
+
+export async function waitForEmailTo(
+  request: APIRequestContext,
+  address: string,
+): Promise<CapturedEmail> {
+  await expect
+    .poll(async () => (await capturedEmailsTo(request, address)).length, {
+      timeout: TIMEOUTS.capture,
+    })
+    .toBeGreaterThan(0);
+  const [email] = await capturedEmailsTo(request, address);
+  return email;
 }
 
 export function flattenOps(mutations: CapturedMutation[]): CapturedMutationOp[] {

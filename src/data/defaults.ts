@@ -421,6 +421,42 @@ export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
   signOff: null,
 };
 
+export interface EmailGiftPurchaseContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body: EmailRichText;
+  noteLine: string;
+  cardLabel: string;
+  cardLineTemplate: string;
+  shareButtonLabel: string;
+  sendButtonLabel: string;
+  bodyPostButton: EmailRichText;
+}
+
+export const EMAIL_GIFT_PURCHASE_DEFAULTS: EmailGiftPurchaseContent = {
+  subject: "Your gift is ready to send",
+  preview: "The code and link are inside.",
+  heroLine: "A reading, ready for them",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. Below is the code and a link you can send whenever the timing feels right.",
+    ),
+  ],
+  noteLine: "They'll see your note when they open it.",
+  cardLabel: "The gift",
+  cardLineTemplate: "For the {readingName} · does not expire",
+  shareButtonLabel: "Share on WhatsApp",
+  sendButtonLabel: "Send it by email from Josephine",
+  bodyPostButton: [
+    ...stringToPortableTextBlocks("Gifts are non-refundable once payment is complete."),
+    ...stringToPortableTextBlocks(
+      "If anything comes up with the gift, just reply to this email. It comes straight to me.",
+    ),
+  ],
+};
+
 export interface ListenPageContent {
   welcomeRibbon: string;
   recipientGreeting: string;

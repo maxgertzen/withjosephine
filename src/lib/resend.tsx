@@ -12,6 +12,7 @@ import {
 } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
+import { GiftPurchase, type GiftPurchaseVars } from "./emails/GiftPurchase";
 import { JosephineNotification } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
@@ -19,6 +20,7 @@ import { PrivacyExport } from "./emails/PrivacyExport";
 import { ReadingDelivery } from "./emails/ReadingDelivery";
 import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
 import { isFlagEnabled } from "./env";
+import { giftClientReferenceId } from "./gift/clientReference";
 import { pickDefined } from "./sanity/pickDefined";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -203,6 +205,7 @@ export async function sendOrSkip(args: {
   html: string;
   subType: EmailSubType;
   submissionId: string | null;
+  giftId?: string;
   replyTo?: string;
   idempotencyKey?: string;
   tags?: Record<string, string>;
@@ -261,9 +264,12 @@ export async function sendOrSkip(args: {
   }
 
   void serverTrack("email_sent", {
-    distinct_id: args.submissionId ?? generateAnonymousDistinctId(),
+    distinct_id:
+      args.submissionId ??
+      (args.giftId ? giftClientReferenceId(args.giftId) : generateAnonymousDistinctId()),
     sub_type: args.subType,
     submission_id: args.submissionId,
+    ...(args.giftId ? { gift_id: args.giftId } : {}),
     recipient_redacted: redactRecipient(args.to),
     resend_id_present: resendId !== null,
   });
@@ -410,6 +416,29 @@ export async function renderReadingDelivery(
     />,
   );
   return { subject, html };
+}
+
+export async function sendGiftPurchase(
+  { to, ...vars }: GiftPurchaseVars & { to: string },
+  options: { giftId: string; idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_PURCHASE_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftPurchase } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftPurchase().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_PURCHASE_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const html = await render(<GiftPurchase vars={vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to,
+    subject: applyTokens(copy.subject, { firstName: vars.firstName, readingName: vars.readingName }),
+    html,
+    subType: "gift_confirmation",
+    submissionId: null,
+    giftId: options.giftId,
+    idempotencyKey: options.idempotencyKey,
+  });
 }
 
 export async function sendMagicLink(args: {

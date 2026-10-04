@@ -49,6 +49,37 @@ describe("constructWebhookEvent", () => {
     });
   });
 
+  it("points the client at STRIPE_API_HOST when E2E is 1", async () => {
+    vi.stubEnv("E2E", "1");
+    vi.stubEnv("STRIPE_API_HOST", "http://127.0.0.1:47391");
+    constructEventMock.mockReturnValue({});
+
+    const { constructWebhookEvent } = await import("./stripe");
+    constructWebhookEvent("body", "sig");
+
+    expect(stripeCtorMock).toHaveBeenCalledWith("sk_test_123", {
+      httpClient: fetchHttpClient,
+      timeout: 5000,
+      host: "127.0.0.1",
+      port: "47391",
+      protocol: "http",
+    });
+  });
+
+  it.each([undefined, "0"])("ignores STRIPE_API_HOST when E2E is %s", async (e2e) => {
+    vi.stubEnv("E2E", e2e);
+    vi.stubEnv("STRIPE_API_HOST", "http://127.0.0.1:47391");
+    constructEventMock.mockReturnValue({});
+
+    const { constructWebhookEvent } = await import("./stripe");
+    constructWebhookEvent("body", "sig");
+
+    expect(stripeCtorMock).toHaveBeenCalledWith("sk_test_123", {
+      httpClient: fetchHttpClient,
+      timeout: 5000,
+    });
+  });
+
   it("throws when STRIPE_SECRET_KEY is missing", async () => {
     vi.stubEnv("STRIPE_SECRET_KEY", "");
     const { constructWebhookEvent } = await import("./stripe");

@@ -6,6 +6,7 @@ export const SANDBOX_EMAIL_PREFIXES = {
   v120Qa: "v120-qa+",
   listenOneTap: "listen-one-tap+",
   prodSmoke: "prod-smoke+",
+  giftRoundtrip: "gift-roundtrip+",
 } as const;
 
 export type SandboxEmailPrefix = (typeof SANDBOX_EMAIL_PREFIXES)[keyof typeof SANDBOX_EMAIL_PREFIXES];
