@@ -243,3 +243,31 @@ describe("prepareSubmissionPreview — subtitle when title falls back to email (
     expect(result.subtitle).toBe("Submitted 8 May 2026");
   });
 });
+
+describe("buildPreview — gift desk line", () => {
+  const NOW = new Date("2026-10-04T12:00:00.000Z");
+  const PAID = {
+    email: "anna@email.com",
+    status: "paid",
+    paidAt: "2026-10-03T08:00:00.000Z",
+  };
+
+  it("puts Gift from <buyer> between the email and the dates", () => {
+    expect(buildPreview({ ...NAME_FIELDS, ...PAID, giftBuyerFirstName: "Dana" }, NOW).subtitle).toBe(
+      "anna@email.com · Gift from Dana · Paid 3 Oct 2026 · Day 2 of 7",
+    );
+  });
+
+  it("leaves the line unchanged without a gift", () => {
+    expect(buildPreview({ ...NAME_FIELDS, ...PAID }, NOW).subtitle).toBe(
+      "anna@email.com · Paid 3 Oct 2026 · Day 2 of 7",
+    );
+  });
+
+  it("keeps the gift segment when the title falls back to the email", () => {
+    expect(buildPreview({ ...PAID, giftBuyerFirstName: "Dana" }, NOW)).toEqual({
+      title: "anna@email.com",
+      subtitle: "Gift from Dana · Paid 3 Oct 2026 · Day 2 of 7",
+    });
+  });
+});

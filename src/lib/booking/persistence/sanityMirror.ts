@@ -37,7 +37,7 @@ function ackBlock(
   return ackAt ? { labelText: label, acknowledgedAt: ackAt } : undefined;
 }
 
-async function getClient(): Promise<SanityClient | null> {
+export async function getMirrorClient(): Promise<SanityClient | null> {
   try {
     return await getSanityWriteClient();
   } catch (error) {
@@ -70,7 +70,7 @@ async function getClient(): Promise<SanityClient | null> {
  */
 const READING_REF_TTL_MS = 5 * 60 * 1000;
 
-type ReadingRef = { _type: "reference"; _ref: string };
+export type ReadingRef = { _type: "reference"; _ref: string };
 
 type ReadingRefEntry = {
   promise: Promise<ReadingRef | null>;
@@ -83,10 +83,7 @@ export function clearReadingRefCache(): void {
   readingRefCache.clear();
 }
 
-async function fetchReadingRef(
-  client: SanityClient,
-  slug: string,
-): Promise<ReadingRef | null> {
+async function fetchReadingRef(client: SanityClient, slug: string): Promise<ReadingRef | null> {
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
@@ -122,14 +119,20 @@ export async function findReadingRef(
   return promise;
 }
 
-export type MirrorCreateOptions = { gift?: { buyerFirstName: string } };
+export type WeakReference = ReadingRef & { _weak: true };
+
+export function weakReference(id: string): WeakReference {
+  return { _type: "reference", _ref: id, _weak: true };
+}
+
+export type MirrorCreateOptions = { gift?: { buyerFirstName: string; giftId: string } };
 
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
   consent: MirrorCreateConsent,
   options: MirrorCreateOptions = {},
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
 
   try {
@@ -155,25 +158,27 @@ export async function mirrorSubmissionCreate(
           acknowledgedAt: consent.consentAcknowledgedAt,
           ipAddress: consent.ipAddress ?? undefined,
           art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
-          art9Consent: ackBlock(
-            art9ConsentLabel(input.readingSlug),
-            consent.art9AcknowledgedAt,
-          ),
-          coolingOffConsent: ackBlock(
-            COOLING_OFF_CONSENT_LABEL,
-            consent.coolingOffAcknowledgedAt,
-          ),
+          art9Consent: ackBlock(art9ConsentLabel(input.readingSlug), consent.art9AcknowledgedAt),
+          coolingOffConsent: ackBlock(COOLING_OFF_CONSENT_LABEL, consent.coolingOffAcknowledgedAt),
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,
         paidAt: input.paidAt ?? undefined,
         recipientUserId: input.recipientUserId ?? undefined,
-        gift: options.gift ? { buyerFirstName: options.gift.buyerFirstName } : undefined,
+        gift: options.gift
+          ? {
+              buyerFirstName: options.gift.buyerFirstName,
+              giftRecord: weakReference(options.gift.giftId),
+            }
+          : undefined,
       },
       { visibility: "async" },
     );
   } catch (error) {
-    console.error(`[sanityMirror] create failed for ${input.id} (drift; reconcile cron will retry)`, error);
+    console.error(
+      `[sanityMirror] create failed for ${input.id} (drift; reconcile cron will retry)`,
+      error,
+    );
   }
 }
 
@@ -211,7 +216,7 @@ export async function mirrorSubmissionPatch(
   id: string,
   patch: MirrorSubmissionPatchInput,
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
 
   // Sanity requires `_key` on each array item. Inject keys for responses
@@ -246,12 +251,15 @@ export async function mirrorSubmissionPatch(
   try {
     await client.patch(id).set(sanitized).commit({ visibility: "async" });
   } catch (error) {
-    console.error(`[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`, error);
+    console.error(
+      `[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`,
+      error,
+    );
   }
 }
 
 export async function mirrorSubmissionDelete(id: string): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.delete(id);
@@ -272,7 +280,7 @@ export async function mirrorAppendEmailFired(
   entry: EmailFiredEntry,
   fieldsToSet?: { deliveredAt?: string; emailFailures?: readonly EmailFailureEntry[] },
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   const { emailFailures, ...plainFields } = fieldsToSet ?? {};
   const toSet = emailFailures
@@ -291,11 +299,8 @@ export async function mirrorAppendEmailFired(
 
 // First-write-wins via setIfMissing — concurrent listens both commit
 // but only the earliest write lands.
-export async function mirrorMarkSubmissionListened(
-  id: string,
-  listenedAt: string,
-): Promise<void> {
-  const client = await getClient();
+export async function mirrorMarkSubmissionListened(id: string, listenedAt: string): Promise<void> {
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).setIfMissing({ listenedAt }).commit({ visibility: "async" });
@@ -310,7 +315,7 @@ export async function mirrorMarkSubmissionPdfDownloaded(
   id: string,
   pdfDownloadedAt: string,
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).setIfMissing({ pdfDownloadedAt }).commit({ visibility: "async" });
@@ -320,7 +325,7 @@ export async function mirrorMarkSubmissionPdfDownloaded(
 }
 
 export async function mirrorUnsetPhotoKey(id: string): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).unset(["photoR2Key"]).commit({ visibility: "async" });

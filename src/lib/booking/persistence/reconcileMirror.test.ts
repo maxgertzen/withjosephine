@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { projectGiftRecord } from "@/lib/gift/giftRecordMirror";
+import { makeGiftRecord } from "@/test/fixtures/gift";
+
 import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
-import { diffSubmission, type SanityMirrorSnapshot } from "./reconcileMirror";
+import { diffSubmission, giftRecordDiffers, type SanityMirrorSnapshot } from "./reconcileMirror";
 
 function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
   return {
@@ -85,7 +88,8 @@ describe("diffSubmission", () => {
     ["Sanity is migrated and D1 is not", "day7", "reading_delivery"],
   ])("returns 'skip' when %s", (_label, d1Type, sanityType) => {
     const sentAt = "2026-05-01T00:00:00.000Z";
-    const asEntry = (type: string) => ({ type, sentAt, resendId: null }) as unknown as EmailFiredEntry;
+    const asEntry = (type: string) =>
+      ({ type, sentAt, resendId: null }) as unknown as EmailFiredEntry;
     const d1 = makeD1({ emailsFired: [asEntry(d1Type)] });
     const sanity = { ...makeMatchingSanity(d1), emailsFired: [asEntry(sanityType)] };
     expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
@@ -130,5 +134,38 @@ describe("diffSubmission", () => {
         patch: { emailFailures: [resolved] },
       });
     });
+  });
+});
+
+describe("giftRecordDiffers", () => {
+  const READING_REF = { _type: "reference" as const, _ref: "reading-birth-chart" };
+  const PROJECTED = projectGiftRecord(
+    makeGiftRecord({ status: "active", activatedAt: "2026-10-03T08:05:00.000Z", note: "n" }),
+    READING_REF,
+  )!;
+
+  it("is false for an equal document", () => {
+    expect(giftRecordDiffers(PROJECTED, { ...PROJECTED })).toBe(false);
+  });
+
+  it("is true for a missing document", () => {
+    expect(giftRecordDiffers(PROJECTED, null)).toBe(true);
+  });
+
+  it.each([
+    ["status", { status: "cancelled" as const }],
+    ["sentAt", { sentAt: "2026-10-03T09:00:00.000Z" }],
+    ["reading", { reading: undefined }],
+    [
+      "submission",
+      { submission: { _type: "reference" as const, _ref: "sub_1", _weak: true as const } },
+    ],
+  ])("is true when %s changed", (_field, change) => {
+    expect(giftRecordDiffers({ ...PROJECTED, ...change }, PROJECTED)).toBe(true);
+  });
+
+  it("is true for a stored document whose gift no longer projects, false when neither exists", () => {
+    expect(giftRecordDiffers(null, PROJECTED)).toBe(true);
+    expect(giftRecordDiffers(null, null)).toBe(false);
   });
 });

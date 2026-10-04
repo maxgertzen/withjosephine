@@ -21,7 +21,13 @@ import {
 } from "@/lib/booking/submissions";
 
 import { auditGiftRedeemed, auditInvalidGiftLink } from "./giftAudit";
-import { buildRedeemGiftStatement, findGiftByCode, findGiftById, resolveGiftState } from "./gifts";
+import {
+  buildRedeemGiftStatement,
+  findGiftByCode,
+  findGiftById,
+  resolveGiftState,
+  scheduleGiftRecordMirror,
+} from "./gifts";
 import type { GiftRecord } from "./types";
 
 type NewGiftSubmission = Omit<CreateSubmissionParams, "id" | "status">;
@@ -54,7 +60,10 @@ async function completeGiftRedemption(
   gift: GiftRecord,
 ): Promise<void> {
   try {
-    await mirrorNewSubmission(submission, { gift: { buyerFirstName: gift.buyerFirstName } });
+    scheduleGiftRecordMirror(gift.id);
+    await mirrorNewSubmission(submission, {
+      gift: { buyerFirstName: gift.buyerFirstName, giftId: gift.id },
+    });
     const [storedSubmission, storedGift] = await Promise.all([
       findSubmissionById(submission.id),
       findGiftById(gift.id),

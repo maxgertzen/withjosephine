@@ -1,7 +1,17 @@
 import { normalizeEmail } from "@/lib/auth/users";
-import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "@/lib/booking/persistence/sqlClient";
+import {
+  dbExec,
+  dbQuery,
+  type SqlStatement,
+  type SqlValue,
+} from "@/lib/booking/persistence/sqlClient";
 
-import type { GiftEmailFiredEntry, GiftRecord, GiftStatus } from "../types";
+import {
+  GIFT_SEND_LIMIT,
+  type GiftEmailFiredEntry,
+  type GiftRecord,
+  type GiftStatus,
+} from "../types";
 
 const LIST_LIMIT = 500;
 
@@ -201,7 +211,7 @@ export async function claimGiftSend(
   const rows = await dbQuery<{ send_count: number }>(
     `UPDATE gift_codes
      SET send_count = send_count + 1, recipient_name = ?, recipient_email = ?, updated_at = ?
-     WHERE id = ? AND status = 'active' AND send_count = ? AND send_count < 2
+     WHERE id = ? AND status = 'active' AND send_count = ? AND send_count < ${GIFT_SEND_LIMIT}
      RETURNING send_count`,
     [args.recipientName, args.recipientEmail, args.updatedAt, giftId, args.expectedSendCount],
   );
@@ -228,10 +238,7 @@ export type ReleaseGiftSendInput = {
   updatedAt: string;
 };
 
-export async function releaseGiftSend(
-  giftId: string,
-  args: ReleaseGiftSendInput,
-): Promise<void> {
+export async function releaseGiftSend(giftId: string, args: ReleaseGiftSendInput): Promise<void> {
   await dbExec(
     `UPDATE gift_codes
      SET send_count = send_count - 1, recipient_name = ?, recipient_email = NULL, updated_at = ?
@@ -240,12 +247,13 @@ export async function releaseGiftSend(
   );
 }
 
-export type UpdateGiftNoteInput = { buyerFirstName: string; note: string | null; updatedAt: string };
+export type UpdateGiftNoteInput = {
+  buyerFirstName: string;
+  note: string | null;
+  updatedAt: string;
+};
 
-export async function updateGiftNote(
-  giftId: string,
-  args: UpdateGiftNoteInput,
-): Promise<boolean> {
+export async function updateGiftNote(giftId: string, args: UpdateGiftNoteInput): Promise<boolean> {
   return hasRows(
     `UPDATE gift_codes
      SET buyer_first_name = ?, note = ?, updated_at = ?

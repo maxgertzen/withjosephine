@@ -8,6 +8,8 @@ export const GIFT_STATUS = {
 
 export type GiftStatus = (typeof GIFT_STATUS)[keyof typeof GIFT_STATUS];
 
+export const GIFT_SEND_LIMIT = 2;
+
 export type GiftEmailFiredType = "gift_confirmation" | "gift_send" | "gift_opened";
 
 export type GiftEmailFiredEntry = {

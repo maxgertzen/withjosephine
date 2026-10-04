@@ -1,8 +1,10 @@
 import { buildFinancialMirrorStatement, type FinancialMirror } from "@/lib/booking/financialMirror";
+import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { dbBatch, type SqlStatement } from "@/lib/booking/persistence/sqlClient";
 
 import { deriveGiftCode, giftLookupHash } from "./giftCode";
 import { normalizeGiftCode } from "./giftCodeFormat";
+import { mirrorGiftRecord } from "./giftRecordMirror";
 import type {
   ClaimGiftSendInput,
   CompleteGiftSendInput,
@@ -27,6 +29,10 @@ export async function createPendingGift(input: CreatePendingGiftInput): Promise<
   const lookupHash = await giftLookupHash(await deriveGiftCode(giftId));
   await repo.insertGiftRow({ ...input, id: giftId, lookupHash });
   return { giftId };
+}
+
+export function scheduleGiftRecordMirror(giftId: string): void {
+  runMirror(mirrorGiftRecord(giftId));
 }
 
 export async function findGiftById(giftId: string): Promise<GiftRecord | null> {
@@ -60,7 +66,9 @@ export async function markGiftActive(
     statements.push(buildFinancialMirrorStatement(financial));
   }
   await dbBatch(statements);
-  return repo.isGiftActiveForSession(giftId, paid.stripeSessionId);
+  const active = await repo.isGiftActiveForSession(giftId, paid.stripeSessionId);
+  if (active) scheduleGiftRecordMirror(giftId);
+  return active;
 }
 
 export async function claimGiftBuyerEmail(
@@ -95,6 +103,7 @@ export async function completeGiftSend(
     statements.push(repo.buildAppendGiftEmailFiredStatement(giftId, emailFired));
   }
   await dbBatch(statements);
+  scheduleGiftRecordMirror(giftId);
 }
 
 export async function releaseGiftSend(
@@ -102,13 +111,16 @@ export async function releaseGiftSend(
   args: ReleaseGiftSendInput,
 ): Promise<void> {
   await repo.releaseGiftSend(giftId, args);
+  scheduleGiftRecordMirror(giftId);
 }
 
 export async function updateGiftNote(
   giftId: string,
   args: UpdateGiftNoteInput,
 ): Promise<boolean> {
-  return repo.updateGiftNote(giftId, args);
+  const updated = await repo.updateGiftNote(giftId, args);
+  if (updated) scheduleGiftRecordMirror(giftId);
+  return updated;
 }
 
 export async function markGiftExpired(

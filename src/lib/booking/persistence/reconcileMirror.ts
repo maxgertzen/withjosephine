@@ -8,6 +8,8 @@
  * mirror calls.
  */
 
+import type { GiftRecordDocument } from "@/lib/gift/giftRecordMirror";
+
 import { currentEmailFiredType } from "../emailFiredType";
 import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 
@@ -90,4 +92,31 @@ export function diffSubmission(
     return { kind: "skip" };
   }
   return { kind: "patch", patch, missingEmails };
+}
+
+const GIFT_RECORD_COMPARED_FIELDS = [
+  "status",
+  "buyerFirstName",
+  "createdAt",
+  "paidAt",
+  "sentAt",
+  "resendUsed",
+  "openedAt",
+  "hasNote",
+] as const satisfies ReadonlyArray<keyof GiftRecordDocument>;
+
+export type GiftRecordSnapshot = Partial<Omit<GiftRecordDocument, "_type">> & { _id: string };
+
+export function giftRecordDiffers(
+  projected: GiftRecordDocument | null,
+  sanity: GiftRecordSnapshot | null,
+): boolean {
+  if (projected === null || sanity === null) return projected !== sanity;
+  return (
+    GIFT_RECORD_COMPARED_FIELDS.some(
+      (field) => normalizeOptional(projected[field]) !== normalizeOptional(sanity[field]),
+    ) ||
+    projected.reading?._ref !== sanity.reading?._ref ||
+    projected.submission?._ref !== sanity.submission?._ref
+  );
 }

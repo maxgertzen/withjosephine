@@ -3,6 +3,9 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { projectGiftRecord } from "@/lib/gift/giftRecordMirror";
+import { makeGiftRecord } from "@/test/fixtures/gift";
+
 import type { EmailFiredType } from "./submissions";
 
 const EXPECTED_EMAIL_FIRED_TYPES: EmailFiredType[] = [
@@ -46,8 +49,11 @@ describe("submission schema parity", () => {
     }
   });
 
-  it("declares the read-only gift block with the buyer's first name only", () => {
+  it("declares the read-only gift block with the buyer's first name and a weak gift record link", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"gift",[^]*?readOnly:\s*true[^]*?name:\s*"buyerFirstName"/);
+    expect(SCHEMA_SOURCE).toMatch(
+      /name:\s*"gift",[^]*?name:\s*"giftRecord",[^}]*?to:\s*\[\{\s*type:\s*"giftRecord"\s*\}\],\s*weak:\s*true/,
+    );
   });
 
   it("declares deliveredAt read-only so only the send writes it", () => {
@@ -58,5 +64,37 @@ describe("submission schema parity", () => {
     for (const consent of ["coolingOffConsent", "art6Consent", "art9Consent"]) {
       expect(SCHEMA_SOURCE).toMatch(new RegExp(`consentRecord\\(\\s*"${consent}"`));
     }
+  });
+});
+
+const GIFT_RECORD_SCHEMA_SOURCE = readFileSync(
+  resolve(__dirname, "../../../studio/schemas/giftRecord.ts"),
+  "utf-8",
+);
+
+describe("giftRecord schema parity", () => {
+  it("declares every field the mirror writes", () => {
+    const projected = projectGiftRecord(
+      makeGiftRecord({
+        status: "redeemed",
+        activatedAt: "2026-10-03T08:05:00.000Z",
+        lastSentAt: "2026-10-03T09:00:00.000Z",
+        redeemedAt: "2026-10-04T08:00:00.000Z",
+        redeemedSubmissionId: "sub_1",
+      }),
+      { _type: "reference", _ref: "reading-birth-chart" },
+    );
+    const writtenFields = Object.keys(projected!).filter((key) => !key.startsWith("_"));
+
+    for (const field of writtenFields) {
+      expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"${field}"`));
+    }
+  });
+
+  it("is read-only and links the booking weakly", () => {
+    expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(/type:\s*"document",\s*readOnly:\s*true/);
+    expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(
+      /name:\s*"submission",[^}]*?to:\s*\[\{\s*type:\s*"submission"\s*\}\],\s*weak:\s*true/,
+    );
   });
 });

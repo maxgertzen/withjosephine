@@ -316,6 +316,13 @@ export const submission = defineType({
       description: "Paid by a gift code. Set by the site.",
       fields: [
         defineField({ name: "buyerFirstName", title: "Given by", type: "string" }),
+        defineField({
+          name: "giftRecord",
+          title: "Gift record",
+          type: "reference",
+          to: [{ type: "giftRecord" }],
+          weak: true,
+        }),
       ],
     }),
     defineField({
@@ -421,6 +428,7 @@ export const submission = defineType({
       deliveredAt: "deliveredAt",
       listenedAt: "listenedAt",
       responses: "responses",
+      giftBuyerFirstName: "gift.buyerFirstName",
     },
     prepare: prepareSubmissionPreview,
   },

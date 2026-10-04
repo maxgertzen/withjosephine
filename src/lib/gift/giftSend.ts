@@ -10,7 +10,7 @@ import {
   type GiftSendStatus,
   type GiftSendSummary,
 } from "./giftSendContract";
-import type { GiftRecord } from "./types";
+import { GIFT_SEND_LIMIT, type GiftRecord } from "./types";
 
 const BRACES = /[{}]/g;
 const RECIPIENT_DIGEST_HEX_CHARS = 16;
@@ -21,7 +21,7 @@ export function giftSendStatus(gift: GiftRecord | null): GiftSendStatus {
   const state = resolveGiftState(gift);
   if (state === "redeemed") return { state: "opened" };
   if (state !== "active" || !gift) return { state: "invalid" };
-  if (gift.sendCount >= 2) return { state: "used" };
+  if (gift.sendCount >= GIFT_SEND_LIMIT) return { state: "used" };
 
   const summary: GiftSendSummary = {
     buyerName: gift.buyerFirstName,

@@ -12,6 +12,7 @@ import { giftPath } from "@/lib/gift/giftCodeFormat";
 import {
   capturedEmailsTo,
   findCreateByType,
+  flattenOps,
   getCapturedEmails,
   getCapturedMutations,
   resetCapturedState,
@@ -70,6 +71,14 @@ async function capturedSubmissionCreate(
   return op && "doc" in op ? op.doc : null;
 }
 
+async function capturedGiftRecordWrites(
+  request: APIRequestContext,
+): Promise<Array<Record<string, unknown>>> {
+  return flattenOps(await getCapturedMutations(request)).flatMap((op) =>
+    op.kind === "createOrReplace" && op.doc._type === "giftRecord" ? [op.doc] : [],
+  );
+}
+
 async function openGiftPage(page: Page, path: string): Promise<void> {
   const response = await spendGiftLimiterCall(() => page.goto(path));
   expect(response?.status()).toBe(200);
@@ -125,8 +134,18 @@ test.describe("Gift redeem, mock mode", () => {
       .toMatchObject({
         status: "paid",
         paidAt: expect.any(String),
-        gift: { buyerFirstName: SEEDED_BUYER_FIRST_NAME },
+        gift: { buyerFirstName: SEEDED_BUYER_FIRST_NAME, giftRecord: { _ref: gift.giftId } },
       });
+    await expect
+      .poll(
+        async () => (await capturedGiftRecordWrites(request)).map((doc) => doc.status),
+        { timeout: CAPTURE_TIMEOUT_MS },
+      )
+      .toContain("redeemed");
+    const giftRecordWrites = JSON.stringify(await capturedGiftRecordWrites(request));
+    expect(giftRecordWrites).not.toContain(gift.code.replaceAll("-", ""));
+    expect(giftRecordWrites).not.toContain(NOTE);
+    expect(giftRecordWrites).not.toContain(BUYER_EMAIL);
 
     await expect
       .poll(() => subjectsTo(request, RECIPIENT_EMAIL), { timeout: CAPTURE_TIMEOUT_MS })

@@ -24,6 +24,10 @@ vi.mock("@/lib/booking/persistence/sanityMirror", () => ({
   mirrorSubmissionPatch: vi.fn(async () => undefined),
 }));
 
+vi.mock("./giftRecordMirror", () => ({
+  mirrorGiftRecord: vi.fn(async () => undefined),
+}));
+
 vi.mock("@/lib/booking/dataExportUrl", () => ({
   mintDataExportUrl: vi.fn(async () => undefined),
 }));
@@ -48,19 +52,25 @@ import {
   dbQuery,
   type SqlClient,
 } from "@/lib/booking/persistence/sqlClient";
-import { sendCustomerConfirmation, sendGiftOpened, sendNotificationToJosephine } from "@/lib/resend";
+import {
+  sendCustomerConfirmation,
+  sendGiftOpened,
+  sendNotificationToJosephine,
+} from "@/lib/resend";
 import { captureConsole } from "@/test/captureConsole";
 import { auditRows, createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 import { createSqliteClient } from "@/test/persistence/sqliteClient";
 
 import { deriveGiftCode } from "./giftCode";
 import { formatGiftCode } from "./giftCodeFormat";
+import { mirrorGiftRecord } from "./giftRecordMirror";
 import { findGiftById, resolveGiftState } from "./gifts";
 import { redeemGiftSubmission, type RedeemGiftSubmissionInput } from "./redeemGift";
 
 const mockGetOrCreateUser = vi.mocked(getOrCreateUser);
 const mockAfterPaid = vi.mocked(afterSubmissionPaid);
 const mockMirrorCreate = vi.mocked(mirrorSubmissionCreate);
+const mockMirrorGiftRecord = vi.mocked(mirrorGiftRecord);
 const mockResolveGiftState = vi.mocked(resolveGiftState);
 const mockJosephine = vi.mocked(sendNotificationToJosephine);
 const mockCustomerConfirmation = vi.mocked(sendCustomerConfirmation);
@@ -72,7 +82,12 @@ async function runScheduled(): Promise<void> {
 
 const ACKNOWLEDGED_AT = "2026-10-04T09:30:00.000Z";
 const RESPONSES = [
-  { fieldKey: "first_name", fieldLabelSnapshot: "First name", fieldType: "shortText", value: "Anna" },
+  {
+    fieldKey: "first_name",
+    fieldLabelSnapshot: "First name",
+    fieldType: "shortText",
+    value: "Anna",
+  },
   { fieldKey: "email", fieldLabelSnapshot: "Email", fieldType: "email", value: "anna@example.com" },
 ];
 
@@ -150,6 +165,7 @@ beforeEach(() => {
   mockGetOrCreateUser.mockReset().mockResolvedValue({ userId: "user_anna", isNew: true });
   mockAfterPaid.mockClear();
   mockMirrorCreate.mockReset().mockResolvedValue(undefined);
+  mockMirrorGiftRecord.mockReset().mockResolvedValue(undefined);
   mockJosephine.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_j" });
   mockCustomerConfirmation.mockReset().mockResolvedValue({
     firedType: "gift_recipient_confirmation",
@@ -216,19 +232,18 @@ async function expectOneOfTwoParallelRedeemsToWin() {
     redeemGiftSubmission(redeemInput(code)),
   ]);
 
-  expect(mockResolveGiftState.mock.results.map((call) => call.value)).toEqual([
-    "active",
-    "active",
-  ]);
+  expect(mockResolveGiftState.mock.results.map((call) => call.value)).toEqual(["active", "active"]);
   expect(results.map((result) => result.kind).sort()).toEqual(["already_redeemed", "redeemed"]);
   expect(await submissionsForGift(giftId)).toHaveLength(1);
   await runScheduled();
   expect(mockAfterPaid).toHaveBeenCalledOnce();
   expect(mockMirrorCreate).toHaveBeenCalledOnce();
+  expect(mockMirrorGiftRecord.mock.calls).toEqual([[giftId]]);
 }
 
 const HAPPY_PATH = "marks the gift redeemed and inserts one paid submission in the same batch";
-const PARALLEL_RACE = "gives one of two parallel redeems the submission and the other already_redeemed";
+const PARALLEL_RACE =
+  "gives one of two parallel redeems the submission and the other already_redeemed";
 
 describe("redeemGiftSubmission", () => {
   it(HAPPY_PATH, expectOnePaidSubmissionInTheRedeemBatch);
@@ -260,12 +275,15 @@ describe("redeemGiftSubmission", () => {
     expect(mockGetOrCreateUser).not.toHaveBeenCalled();
   });
 
-  it.each(["AAAAAAAAAAAA", "x"])("answers not_found for %s and writes an invalid code audit row", async (code) => {
-    expect(await redeemGiftSubmission(redeemInput(code))).toEqual({ kind: "not_found" });
-    expect(await auditRows()).toEqual([
-      { event_type: "gift_code_invalid", success: 0, submission_id: null },
-    ]);
-  });
+  it.each(["AAAAAAAAAAAA", "x"])(
+    "answers not_found for %s and writes an invalid code audit row",
+    async (code) => {
+      expect(await redeemGiftSubmission(redeemInput(code))).toEqual({ kind: "not_found" });
+      expect(await auditRows()).toEqual([
+        { event_type: "gift_code_invalid", success: 0, submission_id: null },
+      ]);
+    },
+  );
 
   it("answers not_found for a pending gift", async () => {
     const giftId = await createTestGift();
@@ -307,7 +325,7 @@ describe("redeemGiftSubmission", () => {
       art9AcknowledgedAt: ACKNOWLEDGED_AT,
       coolingOffAcknowledgedAt: ACKNOWLEDGED_AT,
     });
-    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite" } });
+    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite", giftId } });
     expect(JSON.stringify(mockMirrorCreate.mock.calls[0])).not.toContain(code);
     expect(JSON.stringify(mockMirrorCreate.mock.calls[0])).not.toContain("marguerite@example.com");
     expect(mockAfterPaid).toHaveBeenCalledWith({
@@ -345,7 +363,9 @@ async function submissionEmailsFired(submissionId: string): Promise<string[]> {
     `SELECT emails_fired_json FROM submissions WHERE id = ?`,
     [submissionId],
   );
-  return (JSON.parse(row!.emails_fired_json) as Array<{ type: string }>).map((entry) => entry.type).sort();
+  return (JSON.parse(row!.emails_fired_json) as Array<{ type: string }>)
+    .map((entry) => entry.type)
+    .sort();
 }
 
 async function giftEmailsFired(giftId: string): Promise<string[]> {
@@ -414,10 +434,14 @@ describe("redeemGiftSubmission for a gift that is already redeemed", () => {
     await redeemGiftSubmission(redeemInput(code));
     await runScheduled();
 
-    expect(await redeemGiftSubmission(redeemInput(code, { email: "someone@example.com" }))).toEqual({
-      kind: "already_redeemed",
-    });
-    expect(await redeemGiftSubmission(redeemInput(code, { readingSlug: "soul-blueprint" }))).toEqual({
+    expect(await redeemGiftSubmission(redeemInput(code, { email: "someone@example.com" }))).toEqual(
+      {
+        kind: "already_redeemed",
+      },
+    );
+    expect(
+      await redeemGiftSubmission(redeemInput(code, { readingSlug: "soul-blueprint" })),
+    ).toEqual({
       kind: "already_redeemed",
     });
     expect(scheduled).toHaveLength(0);
@@ -472,7 +496,7 @@ describe("redeemGiftSubmission for a gift that is already redeemed", () => {
       art9AcknowledgedAt: ACKNOWLEDGED_AT,
       coolingOffAcknowledgedAt: ACKNOWLEDGED_AT,
     });
-    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite" } });
+    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite", giftId } });
     expect(mockGiftOpened).toHaveBeenCalledOnce();
     expect(mockCustomerConfirmation).toHaveBeenCalledTimes(2);
     expect(await submissionEmailsFired(submissionId)).toEqual(["gift_recipient_confirmation"]);

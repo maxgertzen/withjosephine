@@ -18,6 +18,8 @@ export const EMAIL_PREVIEW_SINGLETON_TYPES: ReadonlySet<string> = new Set(
   Object.keys(EMAIL_ALLOWED_SLOTS),
 );
 
+export const SITE_WRITTEN_TYPES: ReadonlySet<string> = new Set(["giftRecord"]);
+
 export const SINGLETON_TYPES = new Set([
   "landingPage",
   "bookingPage",
@@ -255,7 +257,21 @@ const giftsGroup = (S: StructureBuilder) =>
     .child(
       S.list()
         .title("Gifts")
-        .items([singletonListItem(S, "giftSettings", "Gift Settings")]),
+        .items([
+          singletonListItem(S, "giftSettings", "Gift Settings"),
+          S.divider(),
+          S.listItem()
+            .title("Gifts")
+            .id("giftRecords")
+            .child(
+              S.documentList()
+                .title("Gifts")
+                .schemaType("giftRecord")
+                .filter('_type == "giftRecord"')
+                .defaultOrdering([{ field: "paidAt", direction: "desc" }])
+                .initialValueTemplates([]),
+            ),
+        ]),
     );
 
 export const deskStructure = (S: StructureBuilder) =>

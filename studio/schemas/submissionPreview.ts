@@ -1,18 +1,7 @@
-const longDateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
+import { formatDate, formatLongDate, parseIso, trimmedStringOrNull } from "../lib/previewText";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERY_WINDOW_DAYS = 7;
-
-function parseIso(value: unknown): Date | null {
-  if (typeof value !== "string" || value === "") return null;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? null : new Date(parsed);
-}
-
-function formatLong(value: unknown): string | null {
-  const date = parseIso(value);
-  return date ? longDateFormatter.format(date) : null;
-}
 
 function responseValue(responses: unknown, key: string): string | null {
   if (!Array.isArray(responses)) return null;
@@ -48,26 +37,22 @@ function buildDates(args: {
 }): string {
   const deliveredDate = parseIso(args.deliveredAt);
   if (deliveredDate) {
-    const deliveredLabel = `Delivered ${longDateFormatter.format(deliveredDate)}`;
-    const listenedLabel = formatLong(args.listenedAt);
+    const deliveredLabel = `Delivered ${formatDate(deliveredDate)}`;
+    const listenedLabel = formatLongDate(args.listenedAt);
     return listenedLabel ? `${deliveredLabel} · Listened ${listenedLabel}` : deliveredLabel;
   }
 
   const paidDate = parseIso(args.paidAt);
   if (args.status === "paid" && paidDate) {
-    return `Paid ${longDateFormatter.format(paidDate)} · ${dayCounter(paidDate, args.now)}`;
+    return `Paid ${formatDate(paidDate)} · ${dayCounter(paidDate, args.now)}`;
   }
 
-  const createdLabel = formatLong(args.createdAt);
+  const createdLabel = formatLongDate(args.createdAt);
   if (createdLabel && args.status !== "expired") {
     return `Submitted ${createdLabel}`;
   }
 
   return typeof args.status === "string" && args.status !== "" ? args.status : "pending";
-}
-
-function trimmedStringOrNull(value: unknown): string | null {
-  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
 function identityLine(selection: Record<string, unknown>): string | null {
@@ -77,23 +62,29 @@ function identityLine(selection: Record<string, unknown>): string | null {
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
   const fullName = fullNameOrNull(selection.responses);
   const identity = identityLine(selection);
-  const dates = buildDates({
-    status: selection.status,
-    createdAt: selection.createdAt,
-    paidAt: selection.paidAt,
-    deliveredAt: selection.deliveredAt,
-    listenedAt: selection.listenedAt,
-    now,
-  });
+  const giftBuyer = trimmedStringOrNull(selection.giftBuyerFirstName);
+  const statusLine = [
+    giftBuyer ? `Gift from ${giftBuyer}` : null,
+    buildDates({
+      status: selection.status,
+      createdAt: selection.createdAt,
+      paidAt: selection.paidAt,
+      deliveredAt: selection.deliveredAt,
+      listenedAt: selection.listenedAt,
+      now,
+    }),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   if (fullName) {
-    const subtitleParts = identity ? [identity, dates] : [dates];
+    const subtitleParts = identity ? [identity, statusLine] : [statusLine];
     return { title: fullName, subtitle: subtitleParts.join(" · ") };
   }
   if (identity) {
-    return { title: identity, subtitle: dates };
+    return { title: identity, subtitle: statusLine };
   }
-  return { title: "no name", subtitle: dates };
+  return { title: "no name", subtitle: statusLine };
 }
 
 export function prepareSubmissionPreview(selection: Record<string, unknown>) {

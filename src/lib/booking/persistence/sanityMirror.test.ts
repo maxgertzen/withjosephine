@@ -56,10 +56,10 @@ describe("mirrorSubmissionCreate", () => {
     giftCodeId: "gift_1",
   };
 
-  it("writes paidAt, the recipient user and the buyer's first name for a gift", async () => {
+  it("writes paidAt, the recipient user, the buyer's first name and a weak gift record reference for a gift", async () => {
     const { mirrorSubmissionCreate } = await import("./sanityMirror");
     await mirrorSubmissionCreate(GIFT_SUBMISSION, CONSENT, {
-      gift: { buyerFirstName: "Dana" },
+      gift: { buyerFirstName: "Dana", giftId: "gift_1" },
     });
 
     const [doc] = mockCreateIfNotExists.mock.calls[0]!;
@@ -68,10 +68,12 @@ describe("mirrorSubmissionCreate", () => {
       status: "paid",
       paidAt: PAID_AT,
       recipientUserId: "user_anna",
-      gift: { buyerFirstName: "Dana" },
+    });
+    expect(doc.gift).toEqual({
+      buyerFirstName: "Dana",
+      giftRecord: { _type: "reference", _ref: "gift_1", _weak: true },
     });
     expect(doc).not.toHaveProperty("giftCodeId");
-    expect(JSON.stringify(doc)).not.toContain("gift_1");
   });
 
   it("leaves paidAt and gift unset for a booking", async () => {
