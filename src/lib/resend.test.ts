@@ -1017,6 +1017,19 @@ describe("env_guard (layer-3 defense in non-production envs)", () => {
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
+  it.each(["bounced@resend.dev", "complained+walk@resend.dev", "suppressed@resend.dev"])(
+    "sends to Resend's test address %s in staging env",
+    async (email) => {
+      vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+      sendMock.mockResolvedValue({ data: { id: "msg_resend_test" } });
+      headersGetMock.mockReturnValue(null);
+
+      const result = await sendOrderConfirmation(buildSubmission({ email }));
+
+      expect(getResendId(result)).toBe("msg_resend_test");
+    },
+  );
+
   it("strips +addressing when matching the production allowlist", async () => {
     vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
     sendMock.mockResolvedValue({ data: { id: "msg_plussed" } });

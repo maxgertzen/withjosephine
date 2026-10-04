@@ -158,6 +158,10 @@ const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
   "maxgertzen@gmail.com",
   "beckyridgley1@gmail.com",
   "beckyridgley@hotmail.co.uk",
+  "delivered@resend.dev",
+  "bounced@resend.dev",
+  "complained@resend.dev",
+  "suppressed@resend.dev",
 ];
 
 export function isProductionAllowlistedRecipient(
