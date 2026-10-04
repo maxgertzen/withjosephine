@@ -15,26 +15,37 @@ export type DraftEnvelope = {
   savedAt: string;
   currentPage: number;
   values: DraftValues;
+  giftCode?: string;
 };
 
 function draftKey(readingId: string): string {
   return `${DRAFT_KEY_PREFIX}${readingId}`;
 }
 
-export function save(
-  readingId: string,
-  payload: { currentPage: number; values: DraftValues },
-): DraftEnvelope | null {
-  const envelope: DraftEnvelope = {
-    version: DRAFT_VERSION,
-    savedAt: new Date().toISOString(),
-    currentPage: payload.currentPage,
-    values: payload.values,
-  };
+function writeEnvelope(readingId: string, envelope: DraftEnvelope): DraftEnvelope | null {
   return withLocalStorage((storage) => {
     storage.setItem(draftKey(readingId), JSON.stringify(envelope));
     return envelope;
   }, null);
+}
+
+export function save(
+  readingId: string,
+  payload: { currentPage: number; values: DraftValues; giftCode?: string },
+): DraftEnvelope | null {
+  return writeEnvelope(readingId, {
+    version: DRAFT_VERSION,
+    savedAt: new Date().toISOString(),
+    currentPage: payload.currentPage,
+    values: payload.values,
+    giftCode: payload.giftCode,
+  });
+}
+
+export function clearGiftCode(readingId: string): void {
+  const draft = restore(readingId);
+  if (draft?.giftCode === undefined) return;
+  writeEnvelope(readingId, { ...draft, giftCode: undefined });
 }
 
 export function restore(readingId: string): DraftEnvelope | null {

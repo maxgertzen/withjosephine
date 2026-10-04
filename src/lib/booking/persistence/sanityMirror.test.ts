@@ -7,10 +7,14 @@ const mockSetIfMissing = vi.fn();
 const mockSet = vi.fn();
 const mockCommit = vi.fn();
 const mockPatch = vi.fn();
+const mockCreateIfNotExists = vi.fn();
+const mockFetch = vi.fn();
 
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: vi.fn(() => ({
     patch: mockPatch,
+    createIfNotExists: mockCreateIfNotExists,
+    fetch: mockFetch,
   })),
 }));
 
@@ -23,6 +27,64 @@ beforeEach(() => {
     setIfMissing: mockSetIfMissing,
     set: mockSet,
   }));
+  mockCreateIfNotExists.mockReset().mockResolvedValue(undefined);
+  mockFetch.mockReset().mockResolvedValue({ _id: "reading-birth-chart" });
+});
+
+describe("mirrorSubmissionCreate", () => {
+  const PAID_AT = "2026-10-04T09:30:00.000Z";
+  const CONSENT = {
+    consentAcknowledgedAt: PAID_AT,
+    ipAddress: "203.0.113.9",
+    art6AcknowledgedAt: PAID_AT,
+    art9AcknowledgedAt: PAID_AT,
+    coolingOffAcknowledgedAt: PAID_AT,
+  };
+  const GIFT_SUBMISSION = {
+    id: "sub_gift",
+    email: "anna@example.com",
+    status: "paid" as const,
+    readingSlug: "birth-chart",
+    readingName: "Birth Chart Reading",
+    readingPriceDisplay: "$89",
+    responses: [],
+    consentLabel: "art6 | art9 | cooling-off",
+    photoR2Key: null,
+    createdAt: PAID_AT,
+    paidAt: PAID_AT,
+    recipientUserId: "user_anna",
+    giftCodeId: "gift_1",
+  };
+
+  it("writes paidAt, the recipient user and the buyer's first name for a gift", async () => {
+    const { mirrorSubmissionCreate } = await import("./sanityMirror");
+    await mirrorSubmissionCreate(GIFT_SUBMISSION, CONSENT, {
+      gift: { buyerFirstName: "Dana" },
+    });
+
+    const [doc] = mockCreateIfNotExists.mock.calls[0]!;
+    expect(doc).toMatchObject({
+      _id: "sub_gift",
+      status: "paid",
+      paidAt: PAID_AT,
+      recipientUserId: "user_anna",
+      gift: { buyerFirstName: "Dana" },
+    });
+    expect(doc).not.toHaveProperty("giftCodeId");
+    expect(JSON.stringify(doc)).not.toContain("gift_1");
+  });
+
+  it("leaves paidAt and gift unset for a booking", async () => {
+    const { mirrorSubmissionCreate } = await import("./sanityMirror");
+    await mirrorSubmissionCreate(
+      { ...GIFT_SUBMISSION, status: "pending", paidAt: null, recipientUserId: null, giftCodeId: null },
+      CONSENT,
+    );
+
+    const [doc] = mockCreateIfNotExists.mock.calls[0]!;
+    expect(doc.paidAt).toBeUndefined();
+    expect(doc.gift).toBeUndefined();
+  });
 });
 
 describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {

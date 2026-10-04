@@ -260,3 +260,19 @@ describe("useAutosave — flushSave passthrough", () => {
     expect(setLastSavedAt).toHaveBeenCalledWith(expect.any(Date));
   });
 });
+
+describe("useAutosave - preview", () => {
+  it("saves no draft on an edit, a flush or Save for later", () => {
+    const dirtyValues = { email: "ada@example.com", first_name: "" };
+    const { result, setLastSavedAt } = setup({ values: dirtyValues, preview: true });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+      result.current.flushSave(dirtyValues, 1);
+      result.current.handleSaveLater();
+    });
+
+    expect(window.localStorage.getItem(`${DRAFT_KEY_PREFIX}soul-blueprint`)).toBeNull();
+    expect(setLastSavedAt).not.toHaveBeenCalled();
+  });
+});

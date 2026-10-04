@@ -1,8 +1,9 @@
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { normalizeEmail } from "@/lib/auth/users";
 import { isValidEmail } from "@/lib/formStyles";
+import { findGiftById } from "@/lib/gift/gifts";
 
-import { type EmailSendResult, sendOrderConfirmation, sendReadingDelivery } from "../resend";
+import { type EmailSendResult, sendCustomerConfirmation, sendReadingDelivery } from "../resend";
 import { mintDataExportUrl } from "./dataExportUrl";
 import { correctCustomerEmail } from "./emailCorrection";
 import {
@@ -19,6 +20,7 @@ import {
   appendEmailFired,
   buildSubmissionContext,
   type CustomerEmailType,
+  type EmailFiredType,
   findSubmissionById,
   type SubmissionRecord,
 } from "./submissions";
@@ -87,20 +89,35 @@ function listenTokenTtl(submission: SubmissionRecord, restartsAccessWindow: bool
   return Math.max(0, Math.min(LISTEN_TOKEN_TTL_MS, msUntilReadingExpires));
 }
 
+type CustomerEmailSend = { firedType: EmailFiredType; result: EmailSendResult };
+
+async function sendConfirmationAgain(
+  submission: SubmissionRecord,
+  idempotencyKey: string,
+): Promise<CustomerEmailSend> {
+  const [dataExportUrl, gift] = await Promise.all([
+    mintDataExportUrl({
+      submissionId: submission._id,
+      recipientUserId: submission.recipientUserId,
+      mintSource: "admin_resend",
+    }),
+    submission.giftCodeId ? findGiftById(submission.giftCodeId) : null,
+  ]);
+  return sendCustomerConfirmation(buildSubmissionContext(submission), {
+    dataExportUrl,
+    idempotencyKey,
+    giftBuyerFirstName: submission.giftCodeId ? (gift?.buyerFirstName ?? "") : undefined,
+  });
+}
+
 async function sendAgain(
   request: ResendRequest,
   submission: SubmissionRecord,
   restartsAccessWindow: boolean,
-): Promise<EmailSendResult | RefusedReason> {
-  const context = buildSubmissionContext(submission);
+): Promise<CustomerEmailSend | RefusedReason> {
   const idempotencyKey = `${IDEMPOTENCY_KEY_PREFIX[request.emailType]}/${request.submissionId}/resend/${Date.parse(request.requestedAt)}`;
   if (request.emailType === "order_confirmation") {
-    const dataExportUrl = await mintDataExportUrl({
-      submissionId: submission._id,
-      recipientUserId: submission.recipientUserId,
-      mintSource: "admin_resend",
-    });
-    return sendOrderConfirmation(context, { dataExportUrl, idempotencyKey });
+    return sendConfirmationAgain(submission, idempotencyKey);
   }
   if (!submission.recipientUserId) return "missing_recipient_user";
   const ttlMs = listenTokenTtl(submission, restartsAccessWindow);
@@ -111,7 +128,14 @@ async function sendAgain(
     mintSource: "admin_resend",
     ttlMs,
   });
-  return sendReadingDelivery(context, listenUrlFor(submission._id, token), { idempotencyKey });
+  return {
+    firedType: "reading_delivery",
+    result: await sendReadingDelivery(
+      buildSubmissionContext(submission),
+      listenUrlFor(submission._id, token),
+      { idempotencyKey },
+    ),
+  };
 }
 
 async function resendRecordedEmail(
@@ -124,8 +148,9 @@ async function resendRecordedEmail(
   const restartsAccessWindow =
     request.emailType === "reading_delivery" &&
     hasOpenUndeliveredFailure(submission.emailFailures, "reading_delivery");
-  const result = await sendAgain(request, submission, restartsAccessWindow);
-  if (typeof result === "string") return refuse(request, submission.email, result);
+  const sent = await sendAgain(request, submission, restartsAccessWindow);
+  if (typeof sent === "string") return refuse(request, submission.email, sent);
+  const { firedType, result } = sent;
   if (result.kind === "failed" && result.error === "concurrent_idempotent_requests") {
     return "retryLater";
   }
@@ -137,7 +162,7 @@ async function resendRecordedEmail(
   await appendEmailFired(
     submission._id,
     {
-      type: request.emailType,
+      type: firedType,
       sentAt,
       resendId: result.kind === "sent" ? result.resendId : null,
     },

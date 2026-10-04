@@ -6,20 +6,12 @@ import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { generateReadingStaticParams, getReadingById } from "@/data/readings";
 import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
-import {
-  fetchBookingFormPublished,
-  fetchBookingPagePublished,
-  fetchLandingPagePublished,
-  fetchNotesStatePublished,
-  fetchReadingNotesPublished,
-  fetchReadingPublished,
-  fetchReadingsPublished,
-} from "@/lib/sanity/fetch";
-import { BOOKING_FALLBACK_TITLE, buildPageMetadata, readingPageTitle } from "@/lib/seoMetadata";
+import { fetchReadingPublished } from "@/lib/sanity/fetch";
 import { readingProductJsonLd } from "@/lib/structuredData";
 
 import { BookingFormView } from "./BookingFormView";
-import { deriveBookingFormViewProps } from "./deriveBookingFormViewProps";
+import { loadBookingFormViewProps } from "./loadBookingFormViewProps";
+import { loadReadingPageMetadata } from "./readingPageMetadata";
 
 export { generateReadingStaticParams as generateStaticParams };
 
@@ -29,58 +21,16 @@ type BookingPageProps = {
 
 export async function generateMetadata({ params }: BookingPageProps): Promise<Metadata> {
   const { readingId } = await params;
-  const [sanityReading, bookingPage] = await Promise.all([
-    fetchReadingPublished(readingId),
-    fetchBookingPagePublished(),
-  ]);
-
-  const subtitle = (sanityReading ?? getReadingById(readingId))?.subtitle;
-
-  const title =
-    sanityReading?.seo?.metaTitle ||
-    (subtitle ? readingPageTitle(subtitle, sanityReading?.priceDisplay) : BOOKING_FALLBACK_TITLE);
-
-  const description =
-    sanityReading?.seo?.metaDescription ??
-    bookingPage?.seo?.metaDescription ??
-    "Choose your reading and share your details. Your voice note and PDF will be with you within 7 days.";
-
-  const seo = sanityReading?.seo ?? bookingPage?.seo;
-
-  return buildPageMetadata({ title, description, path: bookingPath(readingId), seo });
+  return loadReadingPageMetadata(readingId);
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {
   const { readingId } = await params;
 
-  const [
-    sanityReading,
-    sanityReadings,
-    bookingForm,
-    bookingPage,
-    landingPage,
-    notesState,
-    readingNotes,
-  ] = await Promise.all([
+  const [props, sanityReading] = await Promise.all([
+    loadBookingFormViewProps(readingId, "published"),
     fetchReadingPublished(readingId),
-    fetchReadingsPublished(),
-    fetchBookingFormPublished(),
-    fetchBookingPagePublished(),
-    fetchLandingPagePublished(),
-    fetchNotesStatePublished(),
-    fetchReadingNotesPublished(readingId),
   ]);
-
-  const props = deriveBookingFormViewProps({
-    readingId,
-    sanityReading,
-    sanityReadings,
-    bookingPage,
-    bookingForm,
-    landingPage,
-    notesState,
-    readingNotes,
-  });
   if (!props) {
     notFound();
   }

@@ -108,6 +108,7 @@ export default defineConfig({
             SANITY_API_HOST: sidecarUrl,
             STRIPE_API_HOST: sidecarUrl,
             RESEND_DRY_RUN: "1",
+            NOTIFICATION_EMAIL: "hello@withjosephine.com",
             SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
             STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
             STRIPE_WEBHOOK_SECRET: e2eWebhookSecret,

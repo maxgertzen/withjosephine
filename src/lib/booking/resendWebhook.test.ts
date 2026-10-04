@@ -107,6 +107,42 @@ describe("handleResendWebhookEvent", () => {
     expect(mockRecord).toHaveBeenCalledWith("sub_1", expect.objectContaining({ emailType: "reading_delivery" }));
   });
 
+  it("files an untagged gift confirmation bounce under the order confirmation", async () => {
+    const untagged = { ...BASE_DATA, tags: undefined } as unknown as typeof BASE_DATA;
+    mockFindByResendId.mockResolvedValueOnce({
+      ...SUBMISSION,
+      emailsFired: [
+        { type: "gift_recipient_confirmation", sentAt: "2026-10-04T12:00:00.000Z", resendId: "msg_1" },
+      ],
+    });
+
+    await handleResendWebhookEvent(
+      event("email.bounced", { bounce: { type: "Permanent", subType: "General", message: "x" } }, untagged),
+    );
+
+    expect(mockRecord).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ emailType: "order_confirmation" }),
+    );
+  });
+
+  it("treats a gift confirmation bounce as stale after a later gift confirmation resend", async () => {
+    const giftBounce = { ...BASE_DATA, tags: { submission_id: "sub_1", email_type: "order_confirmation" } };
+    mockFindById.mockResolvedValueOnce({
+      ...SUBMISSION,
+      emailsFired: [
+        { type: "gift_recipient_confirmation", sentAt: "2026-10-04T12:00:00.000Z", resendId: "msg_1" },
+        { type: "gift_recipient_confirmation", sentAt: "2026-10-04T13:00:00.000Z", resendId: "msg_2" },
+      ],
+    });
+
+    expect(
+      await handleResendWebhookEvent(
+        event("email.bounced", { bounce: { type: "Permanent", subType: "General", message: "x" } }, giftBounce),
+      ),
+    ).toBe("stale");
+  });
+
   it("ignores events about emails that are not customer emails", async () => {
     const notCustomer = { ...BASE_DATA, tags: { submission_id: "sub_1", email_type: "magic_link" } };
     mockFindByResendId.mockResolvedValueOnce(null);

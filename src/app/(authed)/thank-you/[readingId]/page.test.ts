@@ -29,7 +29,8 @@ vi.mock("@/lib/stripe", () => ({
   retrieveCheckoutSession: vi.fn(),
 }));
 
-vi.mock("@/lib/booking/submissions", () => ({
+vi.mock("@/lib/booking/submissions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/booking/submissions")>()),
   findSubmissionById: vi.fn(),
 }));
 
@@ -37,6 +38,9 @@ vi.mock("@/lib/gift/giftThankYou", () => ({
   resolveGiftThankYou: vi.fn(),
 }));
 
+import { GIFT_DEFAULTS } from "@/data/defaults";
+import { createSubmission } from "@/lib/booking/persistence/repository";
+import { dbExec } from "@/lib/booking/persistence/sqlClient";
 import { findSubmissionById } from "@/lib/booking/submissions";
 import { deriveGiftCode } from "@/lib/gift/giftCode";
 import { formatGiftCode } from "@/lib/gift/giftCodeFormat";
@@ -197,6 +201,7 @@ async function callPage(
     gift?: string | string[];
     redeemed?: string | string[];
     purchaserFirstName?: string | string[];
+    submissionId?: string | string[];
   } = {},
 ) {
   const Page = await loadDefault();
@@ -608,4 +613,115 @@ describe("ThankYouPage gift branch", () => {
       expect(mockFetchThankYouPage).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("ThankYouPage recipient gift branch", () => {
+  const GIFT_SUBMISSION_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const BOOKING_SUBMISSION_ID = "aaaaaaaa-bbbb-4ccc-8ddd-ffffffffffff";
+
+  type Rendered = { type: unknown; props: ThankYouViewProps };
+
+  async function createSubmissionRow(
+    id: string,
+    readingName: string | null = "Birth Chart Reading",
+  ) {
+    await createSubmission({
+      id,
+      email: "anna@example.com",
+      status: "paid",
+      readingSlug: "birth-chart",
+      readingName,
+      readingPriceDisplay: null,
+      responses: [
+        {
+          fieldKey: "first_name",
+          fieldLabelSnapshot: "First name",
+          fieldType: "shortText",
+          value: "Anna",
+        },
+      ],
+      consentLabel: "I agree",
+      photoR2Key: null,
+      createdAt: "2026-10-02T10:00:00.000Z",
+      paidAt: "2026-10-02T10:00:00.000Z",
+    });
+  }
+
+  async function createGiftSubmission(
+    buyerFirstName = "Dana",
+    readingName: string | null = "Birth Chart Reading",
+  ) {
+    const giftId = await createTestGift({ buyerFirstName });
+    await createSubmissionRow(GIFT_SUBMISSION_ID, readingName);
+    await dbExec(`UPDATE submissions SET gift_code_id = ? WHERE id = ?`, [
+      giftId,
+      GIFT_SUBMISSION_ID,
+    ]);
+  }
+
+  beforeEach(() => {
+    mockFetchThankYouPage.mockResolvedValue(
+      thankYouPage({ closingMessage: "With love, Josephine" }),
+    );
+    mockFetchReading.mockResolvedValue(
+      reading({ name: "Birth Chart Reading", slug: "birth-chart" }),
+    );
+  });
+
+  it("renders ThankYouView with the gift icon, no price and the gift copy", async () => {
+    await createGiftSubmission();
+
+    const result = (await callPage({ submissionId: GIFT_SUBMISSION_ID })) as Rendered;
+
+    expect(result.type).toBe((await import("./ThankYouView")).ThankYouView);
+    expect(result.props.icon).toBe("gift");
+    expect(result.props.reading).toEqual({ name: "Birth Chart Reading", price: null, cents: null });
+    expect(result.props.paidAmount).toEqual({ cents: null, display: null });
+    expect(result.props.copy).toMatchObject({
+      heading: "Thank you, Anna. Your reading is in my hands now.",
+      subheading: GIFT_DEFAULTS.recipientThankYouSubheading,
+      readingLabel: "Your gift, from Dana",
+      timelineBody: GIFT_DEFAULTS.recipientThankYouTimelineTemplate,
+      closingMessage: "With love, Josephine",
+    });
+    expect(mockRetrieveSession).not.toHaveBeenCalled();
+    expect(mockResolveGift).not.toHaveBeenCalled();
+  });
+
+  it("uses the no-buyer card label after the buyer name was erased", async () => {
+    await createGiftSubmission("");
+
+    const result = (await callPage({ submissionId: GIFT_SUBMISSION_ID })) as Rendered;
+
+    expect(result.props.copy.readingLabel).toBe(GIFT_DEFAULTS.recipientThankYouCardLabelNoBuyer);
+  });
+
+  it("takes the reading name from Sanity when the row has none", async () => {
+    await createGiftSubmission("Dana", null);
+
+    const result = (await callPage({ submissionId: GIFT_SUBMISSION_ID })) as Rendered;
+
+    expect(result.props.reading.name).toBe("Birth Chart Reading");
+    expect(mockFetchReading).toHaveBeenCalledWith("birth-chart");
+  });
+
+  it("redirects a booking submission id to '/'", async () => {
+    await createSubmissionRow(BOOKING_SUBMISSION_ID);
+
+    await expect(callPage({ submissionId: BOOKING_SUBMISSION_ID })).rejects.toThrow("__redirect__");
+    expect(redirectMock).toHaveBeenCalledWith("/");
+  });
+
+  it("redirects an unknown submission id to '/'", async () => {
+    await expect(callPage({ submissionId: "no-such-submission" })).rejects.toThrow("__redirect__");
+    expect(redirectMock).toHaveBeenCalledWith("/");
+    expect(mockFetchThankYouPage).not.toHaveBeenCalled();
+  });
+
+  it("redirects a submissionId given twice to '/'", async () => {
+    await expect(
+      callPage({ submissionId: [GIFT_SUBMISSION_ID, GIFT_SUBMISSION_ID] }),
+    ).rejects.toThrow("__redirect__");
+    expect(redirectMock).toHaveBeenCalledWith("/");
+  });
 });

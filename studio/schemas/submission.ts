@@ -283,6 +283,7 @@ export const submission = defineType({
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
+                  { title: "Gift confirmation (recipient)", value: "gift_recipient_confirmation" },
                   { title: "Reading delivery", value: "reading_delivery" },
                   { title: "Reading overdue alert (Josephine)", value: "reading_overdue_alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
@@ -304,6 +305,18 @@ export const submission = defineType({
         },
       ],
       initialValue: [],
+    }),
+    defineField({
+      name: "gift",
+      title: "Gift",
+      type: "object",
+      readOnly: true,
+      group: "payment",
+      hidden: ({ document }) => !document?.gift,
+      description: "Paid by a gift code. Set by the site.",
+      fields: [
+        defineField({ name: "buyerFirstName", title: "Given by", type: "string" }),
+      ],
     }),
     defineField({
       name: "amountPaidCents",

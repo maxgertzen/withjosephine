@@ -1,10 +1,11 @@
-import { Container, Link, Section } from "@react-email/components";
+import { Container, Section } from "@react-email/components";
 
 import type { EmailOrderConfirmationContent, EmailSharedShellContent } from "@/data/defaults";
 import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { BrandHeader } from "./BrandHeader";
+import { DataExportLine } from "./DataExportLine";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
@@ -56,19 +57,11 @@ export function OrderConfirmation({ vars, copy: rawCopy, shell = EMAIL_SHARED_SH
 
         <EmailFooter shell={shell} />
 
-        {vars.dataExportUrl ? (
-          <Section
-            className="font-sans text-muted"
-            style={{ padding: "0 48px 32px 48px", fontSize: 12, lineHeight: 1.7 }}
-          >
-            <p style={{ margin: 0 }}>
-              {copy.dataExportHeading}{" "}
-              <Link href={vars.dataExportUrl} className="text-ink">
-                {copy.dataExportButtonLabel} &rarr;
-              </Link>
-            </p>
-          </Section>
-        ) : null}
+        <DataExportLine
+          url={vars.dataExportUrl}
+          heading={copy.dataExportHeading}
+          buttonLabel={copy.dataExportButtonLabel}
+        />
       </Container>
     </EmailShell>
   );

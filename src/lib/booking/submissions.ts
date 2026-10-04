@@ -24,6 +24,7 @@ import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import {
   mirrorAppendEmailFired,
+  type MirrorCreateOptions,
   mirrorMarkSubmissionListened,
   mirrorMarkSubmissionPdfDownloaded,
   mirrorSubmissionCreate,
@@ -31,7 +32,7 @@ import {
   mirrorSubmissionPatch,
   mirrorUnsetPhotoKey,
 } from "./persistence/sanityMirror";
-import { dbBatch } from "./persistence/sqlClient";
+import { dbBatch, type SqlStatement } from "./persistence/sqlClient";
 import { priceDisplayFor } from "./priceDisplayFor";
 
 export const SUBMISSION_STATUS = {
@@ -42,6 +43,7 @@ export const SUBMISSION_STATUS = {
 
 export type {
   ClaimedReadingDeliveryAttempt,
+  CreateSubmissionInput,
   CustomerEmailType,
   EmailFailureEntry,
   EmailFailureKind,
@@ -71,6 +73,17 @@ export type CreateSubmissionParams = CreateSubmissionInput & {
 };
 
 export async function createSubmission(params: CreateSubmissionParams): Promise<void> {
+  await repo.createSubmission({
+    ...params,
+    coolingOffAcknowledgedAt: params.coolingOffAcknowledgedAt ?? null,
+  });
+  runMirror(mirrorNewSubmission(params));
+}
+
+export function mirrorNewSubmission(
+  params: CreateSubmissionParams,
+  options: MirrorCreateOptions = {},
+): Promise<void> {
   const {
     consentAcknowledgedAt,
     ipAddress,
@@ -79,19 +92,52 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
     coolingOffAcknowledgedAt,
     ...input
   } = params;
-  await repo.createSubmission({
-    ...input,
-    coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
-  });
-  runMirror(
-    mirrorSubmissionCreate(input, {
+  return mirrorSubmissionCreate(
+    input,
+    {
       consentAcknowledgedAt,
       ipAddress,
       art6AcknowledgedAt: art6AcknowledgedAt ?? null,
       art9AcknowledgedAt: art9AcknowledgedAt ?? null,
       coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
-    }),
+    },
+    options,
   );
+}
+
+export function buildCreateSubmissionStatement(input: CreateSubmissionInput): SqlStatement {
+  return repo.buildCreateSubmissionStatement(input);
+}
+
+export function recordFromCreateInput(input: CreateSubmissionInput): SubmissionRecord {
+  return repo.recordFromCreateInput(input);
+}
+
+export async function hasGiftSubmission(submissionId: string, giftCodeId: string): Promise<boolean> {
+  return repo.hasGiftSubmission(submissionId, giftCodeId);
+}
+
+export async function findGiftSubmissionInput(
+  submissionId: string,
+  giftCodeId: string,
+): Promise<CreateSubmissionInput | null> {
+  return repo.findGiftSubmissionInput(submissionId, giftCodeId);
+}
+
+export type GiftRecipientThankYou = {
+  readingSlug: string;
+  readingName: string | null;
+  recipientFirstName: string;
+  buyerFirstName: string;
+};
+
+export async function findGiftRecipientThankYou(
+  submissionId: string,
+): Promise<GiftRecipientThankYou | null> {
+  const found = await repo.findGiftRecipientThankYou(submissionId);
+  if (!found) return null;
+  const { responses, ...rest } = found;
+  return { ...rest, recipientFirstName: extractFirstName(responses) };
 }
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {

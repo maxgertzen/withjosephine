@@ -11,6 +11,8 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchReading: vi.fn(),
   fetchReadingNotes: vi.fn(),
   fetchReadings: vi.fn(),
+  fetchSiteSettings: vi.fn(),
+  fetchThankYouPage: vi.fn(),
 }));
 
 const notFoundMock = vi.fn(() => {
@@ -22,8 +24,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/preview/gift",
 }));
 
+const intakeFormMock = vi.fn<(props: Record<string, unknown>) => null>(() => null);
+
 vi.mock("@/components/IntakeForm", () => ({
-  IntakeForm: () => null,
+  IntakeForm: (props: Record<string, unknown>) => intakeFormMock(props),
 }));
 
 import { GIFT_DEFAULTS } from "@/data/defaults";
@@ -39,11 +43,21 @@ import {
   fetchGiftSettings,
   fetchReadingNotes,
   fetchReadings,
+  fetchSiteSettings,
+  fetchThankYouPage,
 } from "@/lib/sanity/fetch";
 
 const EXPECTED_TEXT: Record<GiftPreviewState, string> = {
   "buy-sheet": GIFT_DEFAULTS.sheetEyebrow,
   "buyer-thank-you": PREVIEW_GIFT.code,
+  "redeem-sheet": GIFT_DEFAULTS.redeemHeading,
+  opened: GIFT_DEFAULTS.priceLine,
+  "opened-no-note": GIFT_DEFAULTS.priceLine,
+  "already-opened": GIFT_DEFAULTS.alreadyOpenedHeading,
+  "no-longer-active": GIFT_DEFAULTS.noLongerActiveHeading,
+  "not-found": GIFT_DEFAULTS.notFoundHeading,
+  "last-page": GIFT_DEFAULTS.priceLine,
+  "recipient-thank-you": "Thank you, Anna. Your reading is in my hands now.",
 };
 
 beforeEach(() => {
@@ -51,7 +65,10 @@ beforeEach(() => {
   vi.mocked(fetchReadings).mockResolvedValue([]);
   vi.mocked(fetchReadingNotes).mockResolvedValue([]);
   vi.mocked(fetchGiftSettings).mockResolvedValue(null);
+  vi.mocked(fetchThankYouPage).mockResolvedValue(null);
+  vi.mocked(fetchSiteSettings).mockResolvedValue(null);
   notFoundMock.mockClear();
+  intakeFormMock.mockClear();
 });
 
 async function renderPreview(state: string) {
@@ -95,6 +112,99 @@ describe("/preview/gift/[state]", () => {
       "disabled",
       true,
     );
+  });
+
+  it("redeem-sheet opens the redeem sheet and posts nothing on Redeem", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const user = userEvent.setup();
+    await renderPreview("redeem-sheet");
+
+    expect(screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading })).toBeTruthy();
+    await user.type(screen.getByLabelText(GIFT_DEFAULTS.codeFieldLabel), "K7M2 QX9P H4TR");
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel }));
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("recipient-thank-you shows the gift card label and no price", async () => {
+    await renderPreview("recipient-thank-you");
+
+    expect(screen.getByText(`Your gift, from ${PREVIEW_GIFT.buyerFirstName}`)).toBeTruthy();
+    expect(screen.queryByText("$89")).toBeNull();
+  });
+
+  it.each(["opened", "last-page"] as const)(
+    "%s shows the note from Dana, the gift page line and no other readings",
+    async (state) => {
+      await renderPreview(state);
+
+      expect(screen.getByText(PREVIEW_GIFT.note)).toBeTruthy();
+      expect(screen.getByText(`A note from ${PREVIEW_GIFT.buyerFirstName}`)).toBeTruthy();
+      expect(intakeFormMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gift: expect.objectContaining({
+            overrides: expect.objectContaining({
+              pageIndicatorTagline: expect.stringContaining(
+                `a gift from ${PREVIEW_GIFT.buyerFirstName}`,
+              ),
+            }),
+          }),
+        }),
+      );
+    },
+  );
+
+  it("opened-no-note shows the note card without a note", async () => {
+    await renderPreview("opened-no-note");
+
+    expect(screen.getByText(GIFT_DEFAULTS.noteCardFoot)).toBeTruthy();
+    expect(screen.queryByText(PREVIEW_GIFT.note)).toBeNull();
+  });
+
+  it("last-page opens the form on its final page, and opened does not", async () => {
+    await renderPreview("last-page");
+    expect(intakeFormMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ initialPage: "last" }),
+    );
+
+    intakeFormMock.mockClear();
+    await renderPreview("opened");
+    expect(intakeFormMock).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ initialPage: "last" }),
+    );
+  });
+
+  it.each(["opened", "opened-no-note", "last-page"] as const)(
+    "%s renders the form in preview mode",
+    async (state) => {
+      await renderPreview(state);
+
+      expect(intakeFormMock).toHaveBeenLastCalledWith(expect.objectContaining({ preview: true }));
+    },
+  );
+
+  it("the gift form previews use a code that can never redeem", async () => {
+    await renderPreview("opened");
+
+    const gift = intakeFormMock.mock.lastCall?.[0].gift as { code: string };
+    expect(normalizeGiftCode(gift.code)).toBeNull();
+  });
+
+  it.each(["already-opened", "no-longer-active"] as const)(
+    "%s offers to book the reading",
+    async (state) => {
+      const readingName = getReadingById(PREVIEW_GIFT.readingSlug)?.name;
+      await renderPreview(state);
+
+      expect(screen.getByText(`Book the ${readingName} yourself`)).toBeTruthy();
+    },
+  );
+
+  it("not-found shows no reading and no booking button", async () => {
+    await renderPreview("not-found");
+
+    expect(screen.queryByText(/yourself$/)).toBeNull();
   });
 
   it("an unknown state calls notFound", async () => {

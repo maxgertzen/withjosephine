@@ -2,7 +2,9 @@ import { render } from "@react-email/render";
 
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
+import { GiftOpened } from "./GiftOpened";
 import { GiftPurchase } from "./GiftPurchase";
+import { GiftRecipientConfirmation } from "./GiftRecipientConfirmation";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE, PREVIEW_GIFT } from "./preview-fixtures";
@@ -28,6 +30,8 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailMagicLink",
   "emailPrivacyExport",
   "emailGiftPurchase",
+  "emailGiftOpened",
+  "emailGiftRecipientConfirmation",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -119,6 +123,29 @@ async function renderRaw(
             sendUrl: PREVIEW_GIFT.sendUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchase}
+        />,
+      );
+    case "emailGiftOpened":
+      return render(
+        <GiftOpened
+          vars={{
+            firstName: PREVIEW_GIFT.buyerFirstName,
+            recipientName: PREVIEW_GIFT.recipientFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftOpened}
+        />,
+      );
+    case "emailGiftRecipientConfirmation":
+      return render(
+        <GiftRecipientConfirmation
+          vars={{
+            firstName: PREVIEW_GIFT.recipientFirstName,
+            buyerFirstName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            dataExportUrl: PREVIEW_FIXTURE.dataExportUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftRecipientConfirmation}
         />,
       );
     default: {

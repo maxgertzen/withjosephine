@@ -84,6 +84,8 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailOrderConfirmation",
         "emailPrivacyExport",
         "emailGiftPurchase",
+        "emailGiftOpened",
+        "emailGiftRecipientConfirmation",
       ].sort(),
     );
   });
@@ -105,6 +107,21 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
       unknown: ["code"],
       allowed: ["firstName", "readingName"],
     });
+  });
+
+  it("limits the gift emails to first names and the reading name, never the code or the note", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftOpened).toEqual(["firstName", "recipientName", "readingName"]);
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftRecipientConfirmation).toEqual([
+      "firstName",
+      "buyerName",
+      "readingName",
+    ]);
+    for (const template of ["emailGiftOpened", "emailGiftRecipientConfirmation"] as const) {
+      expect(validateSlotsInValue("{code} {note} {buyerEmail}", template)).toMatchObject({
+        ok: false,
+        unknown: ["buyerEmail", "code", "note"],
+      });
+    }
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {

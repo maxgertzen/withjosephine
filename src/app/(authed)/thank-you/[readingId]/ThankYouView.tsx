@@ -1,4 +1,4 @@
-import { Mail } from "lucide-react";
+import { Gift, Mail } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
@@ -19,14 +19,18 @@ export type ThankYouViewCopy = {
   deliveryDaysPhrase: string;
 };
 
+const ICONS = { mail: Mail, gift: Gift } as const;
+
 export type ThankYouViewProps = {
-  reading: { name: string; price: string; cents: number | null };
+  icon?: keyof typeof ICONS;
+  reading: { name: string; price: string | null; cents: number | null };
   paidAmount: { cents: number | null; display: string | null };
   contactEmail: string;
   copy: ThankYouViewCopy;
 };
 
 export function ThankYouView({
+  icon = "mail",
   reading,
   paidAmount,
   contactEmail,
@@ -34,9 +38,10 @@ export function ThankYouView({
 }: ThankYouViewProps) {
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
+  const shownPrice = paidAmount.display ?? reading.price;
 
   return (
-    <ThankYouShell icon={Mail} heading={copy.heading} subheading={copy.subheading}>
+    <ThankYouShell icon={ICONS[icon]} heading={copy.heading} subheading={copy.subheading}>
       <div className={`mt-10 ${cardSurfaceClasses} inline-flex items-center gap-6`}>
         <div className="text-left">
           <span className={cardLabelClasses}>{copy.readingLabel}</span>
@@ -47,11 +52,9 @@ export function ThankYouView({
             <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
             <span className="text-j-text-gold-lg">{paidAmount.display}</span>
           </span>
-        ) : (
-          <span className="font-display text-2xl italic text-j-text-gold-lg">
-            {paidAmount.display ?? reading.price}
-          </span>
-        )}
+        ) : shownPrice ? (
+          <span className="font-display text-2xl italic text-j-text-gold-lg">{shownPrice}</span>
+        ) : null}
       </div>
 
       <GoldDivider className="max-w-xs mx-auto my-12" />

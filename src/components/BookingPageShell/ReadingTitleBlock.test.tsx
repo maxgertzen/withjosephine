@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { ReadingTitleBlock } from "./ReadingTitleBlock";
+import { ReadingPrice, ReadingTitleBlock } from "./ReadingTitleBlock";
 
 const READING = {
   readingTag: "Signature",
@@ -33,5 +33,10 @@ describe("ReadingTitleBlock", () => {
     expect(screen.getByText("Soul Blueprint")).toBeInTheDocument();
     expect(screen.queryByText("Signature")).toBeNull();
     expect(screen.queryByText("$129")).toBeNull();
+  });
+
+  it("sets a gift price in the smaller gift size", () => {
+    render(<ReadingPrice label="A gift, already paid" tone="gift" />);
+    expect(screen.getByText("A gift, already paid").className).toContain("text-[0.95rem]");
   });
 });

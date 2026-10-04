@@ -1,18 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildRedeemGiftStatement } from "@/lib/gift/gifts";
+import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
+
 import type { EmailFiredEntry } from "../submissions";
 import {
   appendEmailFailure,
   appendEmailFired,
+  buildCreateSubmissionStatement,
   claimReadingDeliveryAttempt,
   claimReadingDeliveryAttemptBody,
   clearReadingDeliveryAttempt,
   createSubmission,
   type CreateSubmissionInput,
   deleteSubmission,
+  findGiftRecipientThankYou,
   findSubmissionById,
   findSubmissionByResendId,
   findSubmissionListenContext,
+  hasGiftSubmission,
   insertFinancialRecord,
   listAllReferencedPhotoKeys,
   listPaidSubmissionsForEmail,
@@ -27,7 +33,7 @@ import {
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
-import { dbExec, dbQuery } from "./sqlClient";
+import { dbBatch, dbExec, dbQuery } from "./sqlClient";
 
 const BASE_INPUT: CreateSubmissionInput = {
   id: "sub_1",
@@ -658,6 +664,19 @@ describe("repository against in-memory SQLite", () => {
 
       expect(list?.at(-1)?.attemptNumber).toBe(1);
     });
+
+    it("resolves an open order confirmation failure when the gift confirmation is recorded", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFailure("sub_1", failure({ emailType: "order_confirmation" }));
+
+      const list = await appendEmailFired("sub_1", {
+        type: "gift_recipient_confirmation",
+        sentAt: "2026-04-29T13:00:00.000Z",
+        resendId: "msg_gift",
+      });
+
+      expect(list?.[0]?.resolvedAt).toBe("2026-04-29T13:00:00.000Z");
+    });
   });
 
   describe("listPaidSubmissionsForEmail with a paid window and no failure", () => {
@@ -690,6 +709,12 @@ describe("repository against in-memory SQLite", () => {
       await appendEmailFailure("sub_flagged", failure({ emailType: "order_confirmation" }));
       await paidAt("sub_other_failure", "2026-04-28T10:00:00.000Z");
       await appendEmailFailure("sub_other_failure", failure());
+      await paidAt("sub_gift_sent", "2026-04-28T10:00:00.000Z");
+      await appendEmailFired("sub_gift_sent", {
+        type: "gift_recipient_confirmation",
+        sentAt: "2026-04-28T10:00:05.000Z",
+        resendId: "msg_gift",
+      });
       await paidAt("sub_too_recent", "2026-04-29T11:30:00.000Z");
       await paidAt("sub_too_old", "2026-04-10T10:00:00.000Z");
       await createSubmission({ ...BASE_INPUT, id: "sub_pending" });
@@ -730,5 +755,113 @@ describe("repository against in-memory SQLite", () => {
     expect(record?.email).toBe("ada@example.org");
     expect(record?.recipientUserId).toBe("user_new");
     expect(await claimReadingDeliveryAttempt("sub_1", fresh)).toEqual({ ...fresh, body: null });
+  });
+
+  describe("gift submissions", () => {
+    const REDEEMED_AT = "2026-10-04T09:30:00.000Z";
+
+    beforeEach(() => {
+      vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
+    });
+
+    function giftInput(giftCodeId: string, id = "sub_gift"): CreateSubmissionInput {
+      return {
+        ...BASE_INPUT,
+        id,
+        status: "paid",
+        readingSlug: "birth-chart",
+        paidAt: REDEEMED_AT,
+        coolingOffAcknowledgedAt: REDEEMED_AT,
+        recipientUserId: "user_anna",
+        giftCodeId,
+      };
+    }
+
+    async function activeGift(): Promise<string> {
+      const giftId = await createTestGift();
+      await forceGiftStatus(giftId, "active");
+      return giftId;
+    }
+
+    it("builds the plain insert with every new column empty when there is no gift", async () => {
+      const statement = buildCreateSubmissionStatement(BASE_INPUT);
+
+      expect(statement.sql).toMatch(/VALUES \(/);
+      expect(statement.sql).not.toMatch(/gift_codes/);
+      expect(statement.params?.slice(-3)).toEqual([null, null, null]);
+      await createSubmission(BASE_INPUT);
+      expect((await findSubmissionById("sub_1"))?.giftCodeId).toBeNull();
+    });
+
+    it("inserts nothing unless the gift row names the submission", async () => {
+      const giftId = await activeGift();
+
+      await dbBatch([buildCreateSubmissionStatement(giftInput(giftId))]);
+
+      expect(await hasGiftSubmission("sub_gift", giftId)).toBe(false);
+    });
+
+    it("inserts the paid gift submission in the same batch that redeems the gift", async () => {
+      const giftId = await activeGift();
+
+      await dbBatch([
+        buildRedeemGiftStatement({
+          giftId,
+          readingSlug: "birth-chart",
+          submissionId: "sub_gift",
+          redeemedAt: REDEEMED_AT,
+        }),
+        buildCreateSubmissionStatement(giftInput(giftId)),
+      ]);
+
+      expect(await hasGiftSubmission("sub_gift", giftId)).toBe(true);
+      expect(await findSubmissionById("sub_gift")).toMatchObject({
+        status: "paid",
+        paidAt: REDEEMED_AT,
+        recipientUserId: "user_anna",
+        giftCodeId: giftId,
+      });
+      expect(await hasGiftSubmission("sub_gift", "another-gift")).toBe(false);
+    });
+
+    it("lists a paid gift submission with its recipient user for reading delivery", async () => {
+      const giftId = await activeGift();
+      await dbBatch([
+        buildRedeemGiftStatement({
+          giftId,
+          readingSlug: "birth-chart",
+          submissionId: "sub_gift",
+          redeemedAt: REDEEMED_AT,
+        }),
+        buildCreateSubmissionStatement(giftInput(giftId)),
+      ]);
+
+      const due = await listPaidSubmissionsForEmail("reading_delivery", {});
+
+      expect(due.map((row) => [row._id, row.recipientUserId])).toEqual([["sub_gift", "user_anna"]]);
+    });
+
+    it("finds the recipient thank-you for a paid gift submission only", async () => {
+      const giftId = await activeGift();
+      await dbBatch([
+        buildRedeemGiftStatement({
+          giftId,
+          readingSlug: "birth-chart",
+          submissionId: "sub_gift",
+          redeemedAt: REDEEMED_AT,
+        }),
+        buildCreateSubmissionStatement(giftInput(giftId)),
+      ]);
+      await createSubmission({ ...BASE_INPUT, status: "paid" });
+
+      expect(await findGiftRecipientThankYou("sub_gift")).toEqual({
+        readingSlug: "birth-chart",
+        readingName: "Soul Blueprint",
+        responses: BASE_INPUT.responses,
+        buyerFirstName: "Marguerite",
+      });
+      expect(await findGiftRecipientThankYou("sub_1")).toBeNull();
+      expect(await findGiftRecipientThankYou("sub_unknown")).toBeNull();
+    });
   });
 });

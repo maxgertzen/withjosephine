@@ -38,6 +38,14 @@ export const THANKYOU_FIXTURES: Record<string, ResolvedThankYouContext> = {
 export const GIFT_PREVIEW_STATES = [
   { state: "buy-sheet", title: "Gift row and sheets" },
   { state: "buyer-thank-you", title: "Gift thank-you (buyer)" },
+  { state: "redeem-sheet", title: "Gift: redeem sheet" },
+  { state: "opened", title: "Gift: opened, with note" },
+  { state: "opened-no-note", title: "Gift: no note" },
+  { state: "already-opened", title: "Gift: already opened" },
+  { state: "no-longer-active", title: "Gift: no longer active" },
+  { state: "not-found", title: "Gift: not found" },
+  { state: "last-page", title: "Gift: last page" },
+  { state: "recipient-thank-you", title: "Gift thank-you (recipient)" },
 ] as const;
 
 export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];

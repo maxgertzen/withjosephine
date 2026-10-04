@@ -1,6 +1,9 @@
 import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";
 import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
+import { GiftModeProvider } from "@/components/GiftMode/GiftModeContext";
+import { GiftModeNote, type GiftModeNoteProps } from "@/components/GiftMode/GiftModeNote";
+import { GiftPriceLine } from "@/components/GiftMode/GiftPriceLine";
 import { IntakeForm, type IntakeFormProps } from "@/components/IntakeForm";
 import { PortableTextContent } from "@/components/PortableTextContent";
 import { ReadingBlock, type ReadingBlockProps } from "@/components/ReadingBlock";
@@ -15,6 +18,10 @@ export type BookingFormViewProps = {
     intro: SanityPortableTextBlock[];
   };
   form: Omit<IntakeFormProps, "readingId" | "readingName">;
+  gift?: {
+    noteCard: GiftModeNoteProps;
+    priceLine: string;
+  };
 };
 
 export function BookingFormView({
@@ -23,15 +30,22 @@ export function BookingFormView({
   readingBlock,
   copy,
   form,
+  gift,
 }: BookingFormViewProps) {
-  return (
+  const view = (
     <HeaderBackProvider>
       <BookingPageShell
         backHref={backHref}
         readingTag={reading.tag}
         readingName={reading.name}
         readingPrice={reading.priceLabel}
+        priceLine={
+          gift ? (
+            <GiftPriceLine giftLabel={gift.priceLine} readingPrice={reading.priceLabel} />
+          ) : undefined
+        }
       >
+        {gift ? <GiftModeNote {...gift.noteCard} /> : null}
         <ReadingBlock {...readingBlock} />
         {copy.title ? <BookingPageHeading title={copy.title} /> : null}
         <div className="max-w-[50ch] mb-10">
@@ -42,4 +56,6 @@ export function BookingFormView({
       </BookingPageShell>
     </HeaderBackProvider>
   );
+
+  return gift ? <GiftModeProvider>{view}</GiftModeProvider> : view;
 }

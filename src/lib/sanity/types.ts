@@ -1,7 +1,9 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
 import type {
+  EmailGiftOpenedContent,
   EmailGiftPurchaseContent,
+  EmailGiftRecipientConfirmationContent,
   GiftContent,
   NotesContent,
   ReadingFact,
@@ -173,6 +175,10 @@ export type SanityEmailReadingDelivery = {
 };
 
 export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
+
+export type SanityEmailGiftOpened = Partial<EmailGiftOpenedContent>;
+
+export type SanityEmailGiftRecipientConfirmation = Partial<EmailGiftRecipientConfirmationContent>;
 
 export type SanityEmailSharedShell = {
   brandName: string;

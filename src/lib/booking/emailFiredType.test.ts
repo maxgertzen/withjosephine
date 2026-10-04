@@ -14,6 +14,7 @@ describe("currentEmailFiredType", () => {
     ["day7-overdue-alert", "reading_overdue_alert"],
     ["reading_delivery", "reading_delivery"],
     ["order_confirmation", "order_confirmation"],
+    ["gift_recipient_confirmation", "order_confirmation"],
     ["constructor", "constructor"],
   ])("maps %s to %s", (stored, current) => {
     expect(currentEmailFiredType(stored)).toBe(current);
@@ -29,8 +30,18 @@ describe("storedEmailFiredTypes", () => {
     ]);
   });
 
-  it("lists only the current value when there is no legacy value", () => {
-    expect(storedEmailFiredTypes("order_confirmation")).toEqual(["order_confirmation"]);
+  it("lists the gift recipient confirmation under the order confirmation", () => {
+    expect(storedEmailFiredTypes("order_confirmation")).toEqual([
+      "order_confirmation",
+      "gift_recipient_confirmation",
+    ]);
+  });
+
+  it("lists only the current value when there is no other value", () => {
+    expect(storedEmailFiredTypes("day14")).toEqual(["day14"]);
+    expect(storedEmailFiredTypes("gift_recipient_confirmation")).toEqual([
+      "gift_recipient_confirmation",
+    ]);
   });
 });
 
@@ -40,6 +51,14 @@ describe("isEmailFiredOfType", () => {
     expect(isEmailFiredOfType("day7", "reading_delivery")).toBe(true);
     expect(isEmailFiredOfType("day7-overdue-alert", "reading_delivery")).toBe(false);
     expect(isEmailFiredOfType(undefined, "reading_delivery")).toBe(false);
+  });
+
+  it("counts a gift recipient confirmation as an order confirmation and as itself", () => {
+    expect(isEmailFiredOfType("gift_recipient_confirmation", "order_confirmation")).toBe(true);
+    expect(isEmailFiredOfType("gift_recipient_confirmation", "gift_recipient_confirmation")).toBe(
+      true,
+    );
+    expect(isEmailFiredOfType("order_confirmation", "gift_recipient_confirmation")).toBe(false);
   });
 });
 
@@ -60,6 +79,7 @@ describe("asCustomerEmailType", () => {
     ["order_confirmation", "order_confirmation"],
     ["reading_delivery", "reading_delivery"],
     ["day7", "reading_delivery"],
+    ["gift_recipient_confirmation", "order_confirmation"],
     ["reading_overdue_alert", null],
     ["magic_link", null],
     [undefined, null],

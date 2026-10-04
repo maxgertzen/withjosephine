@@ -1,41 +1,5 @@
-import { deriveBookingFormViewProps } from "@/app/book/[readingId]/deriveBookingFormViewProps";
-import {
-  fetchBookingForm,
-  fetchBookingPage,
-  fetchLandingPage,
-  fetchNotesState,
-  fetchReading,
-  fetchReadingNotes,
-  fetchReadings,
-} from "@/lib/sanity/fetch";
+import { loadBookingFormViewProps } from "@/app/book/[readingId]/loadBookingFormViewProps";
 
-export async function loadPreviewBookingFormProps(slug: string) {
-  const [
-    sanityReading,
-    sanityReadings,
-    bookingPage,
-    bookingForm,
-    landingPage,
-    notesState,
-    readingNotes,
-  ] = await Promise.all([
-    fetchReading(slug),
-    fetchReadings(),
-    fetchBookingPage(),
-    fetchBookingForm(),
-    fetchLandingPage(),
-    fetchNotesState(),
-    fetchReadingNotes(slug),
-  ]);
-
-  return deriveBookingFormViewProps({
-    readingId: slug,
-    sanityReading,
-    sanityReadings,
-    bookingPage,
-    bookingForm,
-    landingPage,
-    notesState,
-    readingNotes,
-  });
+export function loadPreviewBookingFormProps(slug: string) {
+  return loadBookingFormViewProps(slug, "preview");
 }

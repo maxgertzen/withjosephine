@@ -1,7 +1,14 @@
 import "server-only";
 
 import { getOrCreateUser } from "../auth/users";
-import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
+import { appendGiftEmailFired } from "../gift/gifts";
+import type { GiftEmailFiredEntry } from "../gift/types";
+import {
+  sendCustomerConfirmation,
+  sendGiftOpened,
+  sendNotificationToJosephine,
+  type SubmissionContext,
+} from "../resend";
 import { mintDataExportUrl } from "./dataExportUrl";
 import {
   type EmailFailureFields,
@@ -9,10 +16,12 @@ import {
   failureFromUnsentResult,
   recordEmailFailure,
 } from "./emailFailures";
+import { isEmailFiredOfType } from "./emailFiredType";
 import { buildFinancialMirror } from "./financialMirror";
 import {
   appendEmailFired,
   buildSubmissionContext,
+  type EmailFiredEntry,
   markSubmissionPaid,
   SUBMISSION_STATUS,
   type SubmissionRecord,
@@ -67,62 +76,121 @@ export async function applyPaidEvent(
 
   await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
 
+  await afterSubmissionPaid({ submissionId: submission._id, context, recipientUserId });
+
+  return "applied";
+}
+
+export type PaidGift = {
+  id: string;
+  buyerFirstName: string;
+  buyerEmail: string | null;
+  emailsFired?: readonly GiftEmailFiredEntry[];
+};
+
+export type AfterSubmissionPaidInput = {
+  submissionId: string;
+  context: SubmissionContext;
+  recipientUserId: string | null;
+  gift?: PaidGift;
+  emailsFired?: readonly EmailFiredEntry[];
+};
+
+async function confirmToCustomer({
+  submissionId,
+  context,
+  recipientUserId,
+  gift,
+}: AfterSubmissionPaidInput): Promise<void> {
   const dataExportUrl = await mintDataExportUrl({
-    submissionId: submission._id,
+    submissionId,
     recipientUserId,
     mintSource: "order_confirmation",
   });
-
-  const dispatches: Array<Promise<unknown>> = [
-    sendNotificationToJosephine(context, {
-      idempotencyKey: `josephine-notification/${submission._id}`,
-    }).catch((error) => {
-      console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
-    }),
-  ];
-
   const attemptedAt = new Date().toISOString();
-  const recordOrderConfirmationFailure = (
+  const recordConfirmationFailure = (
     failure: Omit<EmailFailureFields, "emailType" | "recipient">,
   ) =>
-    recordEmailFailure(submission._id, {
+    recordEmailFailure(submissionId, {
       emailType: "order_confirmation",
-      recipient: submission.email,
+      recipient: context.email,
       attemptedAt,
       ...failure,
     });
 
-  dispatches.push(
-    sendOrderConfirmation(context, {
+  try {
+    const { firedType, result } = await sendCustomerConfirmation(context, {
       dataExportUrl,
-      idempotencyKey: `order-confirmation/${submission._id}`,
-    })
-      .then(async (result) => {
-        if (result.kind === "dry_run") return;
-        if (result.kind !== "sent") {
-          await recordOrderConfirmationFailure(failureFromUnsentResult(result));
-          return;
-        }
-        try {
-          await appendEmailFired(submission._id, {
-            type: "order_confirmation",
-            sentAt: new Date().toISOString(),
-            resendId: result.resendId,
-          });
-        } catch (error) {
-          console.error(
-            `[notifyPaid] emailsFired write failed for ${submission._id}`,
-            error,
-          );
-        }
-      })
-      .catch(async (error) => {
-        console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
-        await recordOrderConfirmationFailure(failureFromError(error));
-      }),
+      idempotencyKey: gift
+        ? `gift-recipient-confirmation/${submissionId}`
+        : `order-confirmation/${submissionId}`,
+      giftBuyerFirstName: gift?.buyerFirstName,
+    });
+    if (result.kind === "dry_run") return;
+    if (result.kind !== "sent") {
+      await recordConfirmationFailure(failureFromUnsentResult(result));
+      return;
+    }
+    try {
+      await appendEmailFired(submissionId, {
+        type: firedType,
+        sentAt: new Date().toISOString(),
+        resendId: result.resendId,
+      });
+    } catch (error) {
+      console.error(`[notifyPaid] emailsFired write failed for ${submissionId}`, error);
+    }
+  } catch (error) {
+    console.error(`[notifyPaid] customer confirmation failed for ${submissionId}`, error);
+    await recordConfirmationFailure(failureFromError(error));
+  }
+}
+
+async function tellBuyerGiftOpened(
+  context: SubmissionContext,
+  gift: PaidGift,
+  buyerEmail: string,
+): Promise<void> {
+  try {
+    const result = await sendGiftOpened(
+      {
+        to: buyerEmail,
+        firstName: gift.buyerFirstName,
+        recipientName: context.firstName,
+        readingName: context.readingName,
+      },
+      { giftId: gift.id, idempotencyKey: `gift-opened/${gift.id}` },
+    );
+    if (result.kind !== "sent") return;
+    await appendGiftEmailFired(gift.id, {
+      type: "gift_opened",
+      sentAt: new Date().toISOString(),
+      resendId: result.resendId,
+    });
+  } catch (error) {
+    console.error(`[notifyPaid] gift opened email failed for gift ${gift.id}`, error);
+  }
+}
+
+export async function afterSubmissionPaid(input: AfterSubmissionPaidInput): Promise<void> {
+  const { submissionId, context, gift, emailsFired = [] } = input;
+  const confirmationAlreadySent = emailsFired.some((entry) =>
+    isEmailFiredOfType(entry.type, "order_confirmation"),
   );
+  const giftOpenedAlreadySent = gift?.emailsFired?.some((entry) => entry.type === "gift_opened");
+
+  const dispatches: Array<Promise<unknown>> = [
+    sendNotificationToJosephine(context, {
+      idempotencyKey: `josephine-notification/${submissionId}`,
+      ...(gift && { giftBuyerFirstName: gift.buyerFirstName }),
+    }).catch((error) => {
+      console.error(`[notifyPaid] Josephine email failed for ${submissionId}`, error);
+    }),
+  ];
+  if (!confirmationAlreadySent) dispatches.push(confirmToCustomer(input));
+  if (gift?.buyerEmail && !giftOpenedAlreadySent) {
+    dispatches.push(tellBuyerGiftOpened(context, gift, gift.buyerEmail));
+  }
 
   await Promise.all(dispatches);
-
-  return "applied";
 }

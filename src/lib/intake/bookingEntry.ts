@@ -35,5 +35,5 @@ export function settleBookingEntry(): void {
 }
 
 export function isFoldedEntry(entry: BookingEntry | null): boolean {
-  return entry === "homepage_card" || entry === "draft";
+  return entry === "homepage_card" || entry === "draft" || entry === "gift";
 }

@@ -89,3 +89,46 @@ describe("ThankYouView discount-rendering branch", () => {
     expect(container.textContent).toContain("$179");
   });
 });
+
+describe("ThankYouView gift recipient", () => {
+  it("hides the card price when the reading has no price and nothing was paid", () => {
+    const { container } = render(
+      <ThankYouView
+        icon="gift"
+        reading={{ name: "Birth Chart Reading", price: null, cents: null }}
+        paidAmount={{ cents: null, display: null }}
+        contactEmail="hello@withjosephine.com"
+        copy={{ ...copy, readingLabel: "Your gift, from Dana" }}
+      />,
+    );
+    expect(container.querySelector(".text-j-text-gold-lg")).toBeNull();
+    expect(container.textContent).toContain("Your gift, from Dana");
+    expect(container.textContent).toContain("Birth Chart Reading");
+  });
+
+  it("draws the gift icon instead of the mail icon", () => {
+    const { container } = render(
+      <ThankYouView
+        icon="gift"
+        reading={{ name: "Birth Chart Reading", price: null, cents: null }}
+        paidAmount={{ cents: null, display: null }}
+        contactEmail="hello@withjosephine.com"
+        copy={copy}
+      />,
+    );
+    expect(container.querySelector("svg.lucide-gift")).not.toBeNull();
+    expect(container.querySelector("svg.lucide-mail")).toBeNull();
+  });
+
+  it("keeps the mail icon by default", () => {
+    const { container } = render(
+      <ThankYouView
+        reading={reading}
+        paidAmount={{ cents: null, display: null }}
+        contactEmail="hello@withjosephine.com"
+        copy={copy}
+      />,
+    );
+    expect(container.querySelector("svg.lucide-mail")).not.toBeNull();
+  });
+});

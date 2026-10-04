@@ -3,12 +3,12 @@ import "server-only";
 import * as Sentry from "@sentry/cloudflare";
 import type Stripe from "stripe";
 
-import { getReadingById } from "@/data/readings";
 import { serverTrack } from "@/lib/analytics/server";
 import { normalizeEmail } from "@/lib/auth/users";
 import { buildFinancialMirror } from "@/lib/booking/financialMirror";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { siteOrigin } from "@/lib/env";
+import { resolveReadingSummary } from "@/lib/readingSummary";
 import { sendGiftPurchase } from "@/lib/resend";
 import { paidFieldsFromSession, type PaidSessionFields } from "@/lib/stripeSession";
 
@@ -54,8 +54,10 @@ export function giftActivationFromSession(
 
 async function readingName(readingSlug: string): Promise<string> {
   const { fetchReadingPublished } = await import("@/lib/sanity/fetch");
-  const reading = await fetchReadingPublished(readingSlug).catch(() => null);
-  return reading?.name ?? getReadingById(readingSlug)?.name ?? readingSlug;
+  const reading = await resolveReadingSummary(readingSlug, (slug) =>
+    fetchReadingPublished(slug).catch(() => null),
+  );
+  return reading?.name ?? readingSlug;
 }
 
 async function sendBuyerConfirmation(

@@ -48,8 +48,8 @@ describe("GiftPurchase", () => {
   it("shows the note line only when the gift has a note", async () => {
     const withNote = visibleText(await renderGift());
     const withoutNote = visibleText(await renderGift({ ...VARS, hasNote: false }));
-    expect(withNote).toContain("They'll see your note when they open it.");
-    expect(withoutNote).not.toContain("They'll see your note when they open it.");
+    expect(withNote).toContain("They’ll see your note when they open it.");
+    expect(withoutNote).not.toContain("They’ll see your note when they open it.");
   });
 
   it("leaves a {code} token in Sanity copy unexpanded", async () => {

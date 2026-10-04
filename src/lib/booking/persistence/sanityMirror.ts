@@ -122,9 +122,12 @@ export async function findReadingRef(
   return promise;
 }
 
+export type MirrorCreateOptions = { gift?: { buyerFirstName: string } };
+
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
   consent: MirrorCreateConsent,
+  options: MirrorCreateOptions = {},
 ): Promise<void> {
   const client = await getClient();
   if (!client) return;
@@ -136,7 +139,7 @@ export async function mirrorSubmissionCreate(
       _type: "submissionResponse" as const,
       ...response,
     }));
-    await client.create(
+    await client.createIfNotExists(
       {
         _id: input.id,
         _type: "submission",
@@ -163,6 +166,9 @@ export async function mirrorSubmissionCreate(
         },
         photoR2Key: input.photoR2Key ?? undefined,
         createdAt: input.createdAt,
+        paidAt: input.paidAt ?? undefined,
+        recipientUserId: input.recipientUserId ?? undefined,
+        gift: options.gift ? { buyerFirstName: options.gift.buyerFirstName } : undefined,
       },
       { visibility: "async" },
     );

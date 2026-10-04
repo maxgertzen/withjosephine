@@ -5,6 +5,7 @@ import { blockBrowserStorage, blockBrowserStorageProperty } from "@/lib/test-hel
 import {
   clear,
   clearAll,
+  clearGiftCode,
   DRAFT_KEY_PREFIX,
   DRAFT_TTL_MS,
   DRAFT_VERSION,
@@ -106,6 +107,41 @@ describe("localStorageDraft.restore", () => {
   it("returns null and clears the key when JSON is malformed", () => {
     window.localStorage.setItem(KEY, "{not-json");
     expect(restore(READING)).toBeNull();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+});
+
+describe("localStorageDraft giftCode", () => {
+  const GIFT_CODE = "K7M2QX9PH4TR";
+
+  it("saves and restores the gift code with the draft", () => {
+    save(READING, { currentPage: 1, values: { email: "anna@example.com" }, giftCode: GIFT_CODE });
+
+    expect(restore(READING)?.giftCode).toBe(GIFT_CODE);
+  });
+
+  it("restores a draft saved without a gift code", () => {
+    save(READING, { currentPage: 0, values: { email: "anna@example.com" } });
+
+    const restored = restore(READING);
+    expect(restored?.values).toEqual({ email: "anna@example.com" });
+    expect(restored?.giftCode).toBeUndefined();
+  });
+
+  it("clearGiftCode removes the code and keeps the answers and page", () => {
+    save(READING, { currentPage: 2, values: { email: "anna@example.com" }, giftCode: GIFT_CODE });
+
+    clearGiftCode(READING);
+
+    const restored = restore(READING);
+    expect(restored?.giftCode).toBeUndefined();
+    expect(restored?.values).toEqual({ email: "anna@example.com" });
+    expect(restored?.currentPage).toBe(2);
+  });
+
+  it("clearGiftCode leaves no draft behind when there was none", () => {
+    clearGiftCode(READING);
+
     expect(window.localStorage.getItem(KEY)).toBeNull();
   });
 });

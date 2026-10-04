@@ -22,10 +22,10 @@ describe("GiftNoteCard", () => {
 
   it("renders only the label and foot when there is no note", () => {
     const { container } = render(
-      <GiftNoteCard label="A reading, given" note={null} foot="It's already paid for." />,
+      <GiftNoteCard label="A reading, given" note={null} foot="It’s already paid for." />,
     );
     expect(screen.getByText("A reading, given")).toBeInTheDocument();
-    expect(screen.getByText("It's already paid for.")).toBeInTheDocument();
+    expect(screen.getByText("It’s already paid for.")).toBeInTheDocument();
     expect(container.firstElementChild?.children).toHaveLength(2);
   });
 });

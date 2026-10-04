@@ -9,7 +9,8 @@ export type BookingEntry =
   | "draft"
   | "internal"
   | "external"
-  | "direct";
+  | "direct"
+  | "gift";
 
 export type EmailType = "order_confirmation" | "reading_delivery" | "day14" | "abandonment";
 

@@ -16,7 +16,14 @@ export type JosephineNotificationProps = {
   submissionId: string;
   photoUrl: string | null;
   responses: SubmissionResponse[];
+  giftBuyerFirstName?: string;
 };
+
+export function josephineNotificationTitle(readingName: string, giftBuyerFirstName?: string) {
+  const booking = `New ${readingName} booking`;
+  if (giftBuyerFirstName === undefined) return booking;
+  return giftBuyerFirstName ? `${booking}, gift from ${giftBuyerFirstName}` : `${booking}, gift`;
+}
 
 export function JosephineNotification({
   readingName,
@@ -27,12 +34,16 @@ export function JosephineNotification({
   submissionId,
   photoUrl,
   responses,
+  giftBuyerFirstName,
 }: JosephineNotificationProps) {
   const visible = responses.filter(isVisibleIntakeAnswer);
+  const title = josephineNotificationTitle(readingName, giftBuyerFirstName);
   return (
-    <EmailShell maxWidth={640} preview={`New ${readingName} booking — ${email}`}>
-      <SerifHeading>New {readingName} booking</SerifHeading>
-      <LabelValueRow label="Status">Paid</LabelValueRow>
+    <EmailShell maxWidth={640} preview={`${title} — ${email}`}>
+      <SerifHeading>{title}</SerifHeading>
+      <LabelValueRow label="Status">
+        {giftBuyerFirstName === undefined ? "Paid" : "Paid by gift"}
+      </LabelValueRow>
       <LabelValueRow label="Price">{readingPriceDisplay}</LabelValueRow>
       {amountPaidDisplay ? (
         <LabelValueRow label="Amount paid">{amountPaidDisplay}</LabelValueRow>

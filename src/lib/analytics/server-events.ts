@@ -9,7 +9,9 @@ export type EmailSubType =
   | "magic_link"
   | "privacy_export"
   | "admin_email_preview"
-  | "gift_confirmation";
+  | "gift_confirmation"
+  | "gift_opened"
+  | "gift_recipient_confirmation";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
@@ -21,6 +23,8 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   privacy_export: "privacy export",
   admin_email_preview: "admin email preview (Studio send-to-test)",
   gift_confirmation: "gift confirmation",
+  gift_opened: "gift opened",
+  gift_recipient_confirmation: "gift recipient confirmation",
 };
 
 export type ServerEventMap = {

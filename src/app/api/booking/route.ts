@@ -11,6 +11,9 @@ import {
   isFullyConsented,
   serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
+import { isFlagEnabled } from "@/lib/env";
+import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
+import { redeemGiftSubmission, type RedeemGiftSubmissionResult } from "@/lib/gift/redeemGift";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
@@ -23,6 +26,7 @@ type BookingRequestBody = {
   art6Consent: boolean;
   art9Consent: boolean;
   coolingOffConsent: boolean;
+  giftCode?: string;
   [HONEYPOT_FIELD]?: string;
 };
 
@@ -36,8 +40,34 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
     candidate.values !== null &&
     typeof candidate.art6Consent === "boolean" &&
     typeof candidate.art9Consent === "boolean" &&
-    typeof candidate.coolingOffConsent === "boolean"
+    typeof candidate.coolingOffConsent === "boolean" &&
+    (candidate.giftCode === undefined || typeof candidate.giftCode === "string")
   );
+}
+
+function giftThankYouUrl(readingSlug: string, submissionId: string): string {
+  return `/thank-you/${readingSlug}?submissionId=${encodeURIComponent(submissionId)}`;
+}
+
+function giftRedeemResponse(readingSlug: string, result: RedeemGiftSubmissionResult): Response {
+  switch (result.kind) {
+    case "redeemed":
+      return NextResponse.json({
+        thankYouUrl: giftThankYouUrl(readingSlug, result.submissionId),
+        submissionId: result.submissionId,
+      });
+    case "not_found":
+      return NextResponse.json({ error: "gift_not_found" }, { status: 404 });
+    case "not_active":
+      return NextResponse.json({ error: "gift_not_active" }, { status: 409 });
+    case "other_reading":
+      return NextResponse.json(
+        { error: "gift_other_reading", readingSlug: result.readingSlug },
+        { status: 400 },
+      );
+    case "already_redeemed":
+      return NextResponse.json({ error: "gift_already_redeemed" }, { status: 409 });
+  }
 }
 
 function lookupLabel(field: SanityFormField, value: string): string {
@@ -88,6 +118,11 @@ export async function POST(request: Request) {
 
   if (!isBookingBody(parsedBody)) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { giftCode } = parsedBody;
+  if (giftCode !== undefined && !isFlagEnabled("GIFTS_ENABLED")) {
+    return new NextResponse("Not Found", { status: 404 });
   }
 
   // Honeypot first — cheap local check rejects bots before we hit Cloudflare.
@@ -166,28 +201,40 @@ export async function POST(request: Request) {
       ? validatedValues.photo
       : undefined;
 
-  const responses = buildResponses(fields, validatedValues);
   const acknowledgedAt = new Date().toISOString();
+  const submission = {
+    email,
+    readingSlug: parsedBody.readingSlug,
+    readingName: reading.name,
+    readingPriceDisplay: reading.priceDisplay,
+    responses: buildResponses(fields, validatedValues),
+    consentLabel: serializeAcknowledgedLabels(consentSnapshot),
+    photoR2Key: photoR2Key ?? null,
+    createdAt: acknowledgedAt,
+    consentAcknowledgedAt: acknowledgedAt,
+    ipAddress: ip ?? null,
+    art6AcknowledgedAt: acknowledgedAt,
+    art9AcknowledgedAt: acknowledgedAt,
+    coolingOffAcknowledgedAt: acknowledgedAt,
+  };
+
+  if (giftCode !== undefined) {
+    if (!(await checkGiftRateLimit(request.headers))) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+    try {
+      const result = await redeemGiftSubmission({ request, code: giftCode, submission });
+      return giftRedeemResponse(parsedBody.readingSlug, result);
+    } catch (error) {
+      console.error("[booking] Failed to redeem gift", error);
+      return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
+    }
+  }
+
   const submissionId = crypto.randomUUID();
 
   try {
-    await createSubmission({
-      id: submissionId,
-      email,
-      status: SUBMISSION_STATUS.pending,
-      readingSlug: parsedBody.readingSlug,
-      readingName: reading.name,
-      readingPriceDisplay: reading.priceDisplay,
-      responses,
-      consentLabel: serializeAcknowledgedLabels(consentSnapshot),
-      photoR2Key: photoR2Key ?? null,
-      createdAt: acknowledgedAt,
-      consentAcknowledgedAt: acknowledgedAt,
-      ipAddress: ip ?? null,
-      art6AcknowledgedAt: acknowledgedAt,
-      art9AcknowledgedAt: acknowledgedAt,
-      coolingOffAcknowledgedAt: acknowledgedAt,
-    });
+    await createSubmission({ ...submission, id: submissionId, status: SUBMISSION_STATUS.pending });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);
     return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });

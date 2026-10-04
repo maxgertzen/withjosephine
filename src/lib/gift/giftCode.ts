@@ -8,6 +8,7 @@ import {
   signHmacSha256,
   verifyHmacSha256,
 } from "@/lib/hmac";
+import { isUuid } from "@/lib/uuid";
 
 import { GIFT_CODE_ALPHABET, GIFT_CODE_LENGTH } from "./giftCodeFormat";
 import type { GiftRecord } from "./types";
@@ -20,8 +21,6 @@ const MAC_PREFIX_BITS = 64;
 const BITS_PER_CHARACTER = 5;
 const CODE_BITS = GIFT_CODE_LENGTH * BITS_PER_CHARACTER;
 const CHARACTER_MASK = BigInt(GIFT_CODE_ALPHABET.length - 1);
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function giftPayload(purpose: string, value: string): string {
   return `${purpose}:${value}`;
@@ -53,7 +52,7 @@ export async function verifyGiftSendToken(token: string): Promise<string | null>
   const parts = token.split(".");
   if (parts.length !== 2) return null;
   const [giftId, encodedMac] = parts;
-  if (!UUID_PATTERN.test(giftId)) return null;
+  if (!isUuid(giftId)) return null;
   const mac = base64UrlDecodeToBytes(encodedMac);
   if (!mac) return null;
   const valid = await verifyHmacSha256(

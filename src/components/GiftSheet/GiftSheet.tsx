@@ -10,7 +10,7 @@ import { GiftNoteField } from "@/components/GiftNoteField";
 import { HoneypotField } from "@/components/HoneypotField";
 import { SubmitOverlay } from "@/components/IntakeForm/SubmitOverlay";
 import { InvisibleTurnstile } from "@/components/InvisibleTurnstile";
-import { Sheet } from "@/components/Sheet";
+import { Sheet, sheetSubmitClasses, sheetTitleClasses } from "@/components/Sheet";
 import { type GiftContent, PAYMENT_BUTTON_TEXT_FALLBACK } from "@/data/defaults";
 import { GIFT_BUYER_NAME_MAX_CHARS } from "@/lib/booking/constants";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
@@ -64,10 +64,7 @@ export function GiftSheet({
   return (
     <Sheet open={open} onClose={close} labelledBy={TITLE_ID}>
       <p className={`${eyebrowClasses} m-0`}>{content.sheetEyebrow}</p>
-      <h2
-        id={TITLE_ID}
-        className="m-0 font-display text-[1.6rem] font-light italic leading-[1.1] text-j-text-heading"
-      >
+      <h2 id={TITLE_ID} className={sheetTitleClasses}>
         {applyTokens(content.sheetTitleTemplate, { reading: reading.name, price: reading.price })}
       </h2>
       <ul className="m-0 flex list-none flex-col gap-2 p-0 font-body text-sm leading-[1.55] text-j-text">
@@ -135,12 +132,7 @@ export function GiftSheet({
 
         <InlineError message={errors.form} className={errorClasses} />
 
-        <Button
-          type="submit"
-          size="lg"
-          disabled={isSubmitting}
-          className="min-h-14 w-full !font-display !text-base !font-medium !normal-case !italic !tracking-normal"
-        >
+        <Button type="submit" size="lg" disabled={isSubmitting} className={sheetSubmitClasses}>
           {paymentButtonText ?? PAYMENT_BUTTON_TEXT_FALLBACK}
         </Button>
         <button

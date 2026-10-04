@@ -14,8 +14,12 @@ vi.mock("./submissions", async () => {
 });
 
 vi.mock("../resend", () => ({
-  sendOrderConfirmation: vi.fn(),
+  sendCustomerConfirmation: vi.fn(),
   sendReadingDelivery: vi.fn(),
+}));
+
+vi.mock("@/lib/gift/gifts", () => ({
+  findGiftById: vi.fn(),
 }));
 
 vi.mock("./emailFailures", async () => {
@@ -33,7 +37,10 @@ vi.mock("./readingDelivery", async () => {
   return { ...actual, deliverRequested: vi.fn() };
 });
 
-import { sendOrderConfirmation, sendReadingDelivery } from "../resend";
+import { findGiftById } from "@/lib/gift/gifts";
+import { makeGiftRecord } from "@/test/fixtures/gift";
+
+import { type EmailSendResult, sendCustomerConfirmation, sendReadingDelivery } from "../resend";
 import { correctCustomerEmail } from "./emailCorrection";
 import { recordEmailFailure } from "./emailFailures";
 import { deliverRequested } from "./readingDelivery";
@@ -43,11 +50,20 @@ import { appendEmailFired, findSubmissionById } from "./submissions";
 
 const mockFind = vi.mocked(findSubmissionById);
 const mockAppend = vi.mocked(appendEmailFired);
-const mockSendOrder = vi.mocked(sendOrderConfirmation);
+const mockSendConfirmation = vi.mocked(sendCustomerConfirmation);
+const mockFindGift = vi.mocked(findGiftById);
 const mockSendReading = vi.mocked(sendReadingDelivery);
 const mockRecordFailure = vi.mocked(recordEmailFailure);
 const mockCorrect = vi.mocked(correctCustomerEmail);
 const mockDeliverRequested = vi.mocked(deliverRequested);
+
+function orderConfirmation(result: EmailSendResult) {
+  return { firedType: "order_confirmation", result } as const;
+}
+
+function giftRecipientConfirmation(result: EmailSendResult) {
+  return { firedType: "gift_recipient_confirmation", result } as const;
+}
 
 const NOW = new Date("2026-10-04T12:00:00.000Z");
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -118,7 +134,14 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   mockFind.mockReset().mockResolvedValue(paidSubmission());
   mockAppend.mockReset().mockResolvedValue(undefined);
-  mockSendOrder.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_resent" });
+  mockSendConfirmation
+    .mockReset()
+    .mockImplementation(async (_context, { giftBuyerFirstName }) =>
+      giftBuyerFirstName === undefined
+        ? orderConfirmation({ kind: "sent", resendId: "msg_resent" })
+        : giftRecipientConfirmation({ kind: "sent", resendId: "msg_gift" }),
+    );
+  mockFindGift.mockReset().mockResolvedValue(makeGiftRecord({ id: "gift_1", buyerFirstName: "Dana" }));
   mockSendReading.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_resent" });
   mockRecordFailure.mockReset().mockResolvedValue(undefined);
   mockCorrect.mockReset().mockImplementation(async (submission, email) => ({
@@ -140,21 +163,21 @@ describe("processResendRequest", () => {
     mockFind.mockResolvedValueOnce(null);
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("notFound");
-    expect(mockSendOrder).not.toHaveBeenCalled();
+    expect(mockSendConfirmation).not.toHaveBeenCalled();
   });
 
   it("refuses an unpaid submission without recording a failed send", async () => {
     mockFind.mockResolvedValueOnce(paidSubmission({ status: "pending" }));
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("refused");
-    expect(mockSendOrder).not.toHaveBeenCalled();
+    expect(mockSendConfirmation).not.toHaveBeenCalled();
     expect(mockRecordFailure).not.toHaveBeenCalled();
   });
 
   it("resends the order confirmation under a per-request key and records it", async () => {
     expect(await processResendRequest(ORDER_REQUEST)).toBe("sent");
 
-    expect(mockSendOrder.mock.calls[0]?.[1]).toMatchObject({
+    expect(mockSendConfirmation.mock.calls[0]?.[1]).toMatchObject({
       idempotencyKey: `order-confirmation/sub_1/resend/${Date.parse(ORDER_REQUEST.requestedAt)}`,
     });
     expect(mockAppend).toHaveBeenCalledWith(
@@ -165,7 +188,7 @@ describe("processResendRequest", () => {
   });
 
   it("records a dry run with no Resend id", async () => {
-    mockSendOrder.mockResolvedValueOnce({ kind: "dry_run" });
+    mockSendConfirmation.mockResolvedValueOnce(orderConfirmation({ kind: "dry_run" }));
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("dryRun");
     expect(mockAppend).toHaveBeenCalledWith(
@@ -176,7 +199,9 @@ describe("processResendRequest", () => {
   });
 
   it("records send_error and appends nothing when Resend refuses", async () => {
-    mockSendOrder.mockResolvedValueOnce({ kind: "failed", error: "validation_error", statusCode: 422 });
+    mockSendConfirmation.mockResolvedValueOnce(
+      orderConfirmation({ kind: "failed", error: "validation_error", statusCode: 422 }),
+    );
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("failed");
     expect(recordedFailure()).toMatchObject({
@@ -190,18 +215,16 @@ describe("processResendRequest", () => {
   });
 
   it("asks for a later retry without a failure when Resend reports a concurrent request", async () => {
-    mockSendOrder.mockResolvedValueOnce({
-      kind: "failed",
-      error: "concurrent_idempotent_requests",
-      statusCode: 409,
-    });
+    mockSendConfirmation.mockResolvedValueOnce(
+      orderConfirmation({ kind: "failed", error: "concurrent_idempotent_requests", statusCode: 409 }),
+    );
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("retryLater");
     expect(mockRecordFailure).not.toHaveBeenCalled();
   });
 
   it("records the thrown error as a failure", async () => {
-    mockSendOrder.mockRejectedValueOnce(new Error("Resend unreachable"));
+    mockSendConfirmation.mockRejectedValueOnce(new Error("Resend unreachable"));
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("failed");
     expect(recordedFailure()).toMatchObject({ kind: "send_error", errorMessage: "Resend unreachable" });
@@ -216,7 +239,7 @@ describe("processResendRequest", () => {
     mockFind.mockResolvedValueOnce(paidSubmission({ emailsFired: [recent(1), recent(2), recent(3)] }));
 
     expect(await processResendRequest(ORDER_REQUEST)).toBe("refused");
-    expect(mockSendOrder).not.toHaveBeenCalled();
+    expect(mockSendConfirmation).not.toHaveBeenCalled();
     expect(recordedFailure()).toMatchObject({ kind: "refused", errorCode: "rate_limited" });
   });
 
@@ -235,7 +258,7 @@ describe("processResendRequest", () => {
       ).toBe("sent");
 
       expect(mockCorrect).toHaveBeenCalledWith(paidSubmission(), "ada@example.org");
-      expect(mockSendOrder.mock.calls[0]?.[0]).toMatchObject({ email: "ada@example.org" });
+      expect(mockSendConfirmation.mock.calls[0]?.[0]).toMatchObject({ email: "ada@example.org" });
     });
 
     it("does not correct when the typed address is the same one", async () => {
@@ -250,7 +273,7 @@ describe("processResendRequest", () => {
       );
 
       expect(mockCorrect).not.toHaveBeenCalled();
-      expect(mockSendOrder).not.toHaveBeenCalled();
+      expect(mockSendConfirmation).not.toHaveBeenCalled();
       expect(recordedFailure()).toMatchObject({
         kind: "refused",
         errorCode: "invalid_address",
@@ -360,5 +383,70 @@ describe("processResendRequest", () => {
       expect(await processResendRequest(READING_REQUEST)).toBe("refused");
       expect(recordedFailure()).toMatchObject({ kind: "refused", errorCode: "files_missing" });
     });
+  });
+});
+
+describe("processResendRequest on a gift submission", () => {
+  const GIFT_SUBMISSION = paidSubmission({
+    giftCodeId: "gift_1",
+    amountPaidCents: null,
+    amountPaidCurrency: null,
+  });
+
+  beforeEach(() => {
+    mockFind.mockResolvedValue(GIFT_SUBMISSION);
+  });
+
+  it("resends the gift confirmation with the buyer's name and records it as the gift confirmation", async () => {
+    expect(await processResendRequest(ORDER_REQUEST)).toBe("sent");
+
+    expect(mockFindGift).toHaveBeenCalledWith("gift_1");
+    expect(mockSendConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "sub_1", email: "ada@example.com" }),
+      expect.objectContaining({
+        giftBuyerFirstName: "Dana",
+        idempotencyKey: `order-confirmation/sub_1/resend/${Date.parse(ORDER_REQUEST.requestedAt)}`,
+      }),
+    );
+    expect(mockAppend).toHaveBeenCalledWith(
+      "sub_1",
+      { type: "gift_recipient_confirmation", sentAt: NOW.toISOString(), resendId: "msg_gift" },
+      undefined,
+    );
+  });
+
+  it("falls back to an empty buyer name when the gift row is gone", async () => {
+    mockFindGift.mockResolvedValueOnce(null);
+
+    await processResendRequest(ORDER_REQUEST);
+
+    expect(mockSendConfirmation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ giftBuyerFirstName: "" }),
+    );
+  });
+
+  it("counts earlier gift confirmations toward the resend limit", async () => {
+    const sentAt = new Date(NOW.getTime() - 60_000).toISOString();
+    mockFind.mockResolvedValueOnce({
+      ...GIFT_SUBMISSION,
+      emailsFired: Array.from({ length: 3 }, (_, index) => ({
+        type: "gift_recipient_confirmation" as const,
+        sentAt,
+        resendId: `msg_${index}`,
+      })),
+    });
+
+    expect(await processResendRequest(ORDER_REQUEST)).toBe("refused");
+    expect(mockSendConfirmation).not.toHaveBeenCalled();
+  });
+
+  it("records a failed gift confirmation resend as an order confirmation failure", async () => {
+    mockSendConfirmation.mockResolvedValueOnce(
+      giftRecipientConfirmation({ kind: "failed", error: "validation_error", statusCode: 422 }),
+    );
+
+    expect(await processResendRequest(ORDER_REQUEST)).toBe("failed");
+    expect(recordedFailure()).toMatchObject({ emailType: "order_confirmation", kind: "send_error" });
   });
 });

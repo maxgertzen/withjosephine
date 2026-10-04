@@ -9,6 +9,7 @@ import type {
   SetStateAction,
 } from "react";
 
+import { GiftCodeField, type GiftCodeFieldProps } from "@/components/GiftCodeField";
 import { HoneypotField } from "@/components/HoneypotField";
 import { InvisibleTurnstile } from "@/components/InvisibleTurnstile";
 import type { IntakePage } from "@/lib/booking/derivePages";
@@ -20,6 +21,7 @@ import type { UseTurnstileChallengeResult } from "@/lib/intake/useTurnstileChall
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
+import { type GiftFinalPageCopy, GiftFinalPageLines } from "./GiftFinalPageLines";
 import {
   LegalAcknowledgments,
   type LegalAcknowledgmentsErrors,
@@ -87,6 +89,10 @@ export type IntakeFormBodyProps = {
   handleReviewEdit: (targetPageIndex: number) => void;
   handleSaveLater: () => void;
   handleDiscardDraft: () => void;
+
+  giftFinalPage?: GiftFinalPageCopy;
+  onRemoveGiftCode: () => void;
+  giftCodeField?: GiftCodeFieldProps;
 };
 
 function suppressEnterInNonSubmitFields(event: KeyboardEvent<HTMLFormElement>) {
@@ -143,6 +149,9 @@ export function IntakeFormBody({
   handleReviewEdit,
   handleSaveLater,
   handleDiscardDraft,
+  giftFinalPage,
+  onRemoveGiftCode,
+  giftCodeField,
 }: IntakeFormBodyProps) {
   return (
     <form
@@ -199,6 +208,10 @@ export function IntakeFormBody({
             isSubmitting={isSubmitting}
             showCoolingOff={showCoolingOff}
           />
+          {giftFinalPage ? (
+            <GiftFinalPageLines {...giftFinalPage} onRemove={onRemoveGiftCode} />
+          ) : null}
+          {giftCodeField ? <GiftCodeField {...giftCodeField} /> : null}
         </div>
       ) : null}
 

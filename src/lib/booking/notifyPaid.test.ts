@@ -2,7 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../resend", () => ({
   sendNotificationToJosephine: vi.fn(),
-  sendOrderConfirmation: vi.fn(),
+  sendCustomerConfirmation: vi.fn(),
+  sendGiftOpened: vi.fn(),
+}));
+
+vi.mock("../gift/gifts", () => ({
+  appendGiftEmailFired: vi.fn(),
+}));
+
+vi.mock("./dataExportUrl", () => ({
+  mintDataExportUrl: vi.fn(async () => "https://withjosephine.com/privacy/export?t=tok"),
 }));
 
 vi.mock("./submissions", () => ({
@@ -34,10 +43,19 @@ vi.mock("./emailFailures", async () => {
   return { ...actual, recordEmailFailure: vi.fn() };
 });
 
+import { buildSubmission } from "@/test/fixtures/submission";
+
 import { getOrCreateUser } from "../auth/users";
-import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
+import { appendGiftEmailFired } from "../gift/gifts";
+import {
+  type EmailSendResult,
+  sendCustomerConfirmation,
+  sendGiftOpened,
+  sendNotificationToJosephine,
+} from "../resend";
+import { mintDataExportUrl } from "./dataExportUrl";
 import { recordEmailFailure } from "./emailFailures";
-import { applyPaidEvent } from "./notifyPaid";
+import { afterSubmissionPaid, applyPaidEvent, type PaidGift } from "./notifyPaid";
 import {
   appendEmailFired,
   markSubmissionPaid,
@@ -46,10 +64,12 @@ import {
 
 const mockMarkPaid = vi.mocked(markSubmissionPaid);
 const mockJosephine = vi.mocked(sendNotificationToJosephine);
-const mockOrderConfirmation = vi.mocked(sendOrderConfirmation);
+const mockCustomerConfirmation = vi.mocked(sendCustomerConfirmation);
 const mockAppendEmailFired = vi.mocked(appendEmailFired);
 const mockGetOrCreateUser = vi.mocked(getOrCreateUser);
 const mockRecordFailure = vi.mocked(recordEmailFailure);
+const mockGiftOpened = vi.mocked(sendGiftOpened);
+const mockAppendGiftEmailFired = vi.mocked(appendGiftEmailFired);
 
 const PAID_DETAILS = {
   stripeEventId: "evt_1",
@@ -59,6 +79,14 @@ const PAID_DETAILS = {
   amountPaidCurrency: "usd",
   country: null,
 };
+
+function orderConfirmation(result: EmailSendResult) {
+  return { firedType: "order_confirmation", result } as const;
+}
+
+function giftRecipientConfirmation(result: EmailSendResult) {
+  return { firedType: "gift_recipient_confirmation", result } as const;
+}
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -75,12 +103,20 @@ const SUBMISSION: SubmissionRecord = {
 beforeEach(() => {
   mockMarkPaid.mockReset().mockResolvedValue(undefined);
   mockJosephine.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_j" });
-  mockOrderConfirmation.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_oc" });
+  mockCustomerConfirmation
+    .mockReset()
+    .mockImplementation(async (_context, { giftBuyerFirstName }) =>
+      giftBuyerFirstName === undefined
+        ? orderConfirmation({ kind: "sent", resendId: "msg_oc" })
+        : giftRecipientConfirmation({ kind: "sent", resendId: "msg_grc" }),
+    );
   mockAppendEmailFired.mockReset().mockResolvedValue(undefined);
   mockGetOrCreateUser
     .mockReset()
     .mockResolvedValue({ userId: "user_test_1", isNew: true });
   mockRecordFailure.mockReset().mockResolvedValue(undefined);
+  mockGiftOpened.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_go" });
+  mockAppendGiftEmailFired.mockReset().mockResolvedValue(undefined);
 });
 
 describe("applyPaidEvent", () => {
@@ -103,7 +139,7 @@ describe("applyPaidEvent", () => {
     expect(mockGetOrCreateUser).not.toHaveBeenCalled();
     expect(mockMarkPaid).not.toHaveBeenCalled();
     expect(mockJosephine).not.toHaveBeenCalled();
-    expect(mockOrderConfirmation).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
     expect(mockAppendEmailFired).not.toHaveBeenCalled();
     warnSpy.mockRestore();
   });
@@ -124,7 +160,7 @@ describe("applyPaidEvent", () => {
 
     expect(result).toBe("alreadyApplied");
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("cs_2"));
-    expect(mockOrderConfirmation).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
     warnSpy.mockRestore();
   });
 
@@ -153,7 +189,7 @@ describe("applyPaidEvent", () => {
     expect(reconcileResult).toBe("alreadyApplied");
     expect(mockMarkPaid).toHaveBeenCalledOnce();
     expect(mockJosephine).toHaveBeenCalledOnce();
-    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
     expect(mockAppendEmailFired).toHaveBeenCalledOnce();
   });
 
@@ -170,7 +206,7 @@ describe("applyPaidEvent", () => {
     expect(mockJosephine).toHaveBeenCalledWith(expect.anything(), {
       idempotencyKey: "josephine-notification/sub_1",
     });
-    expect(mockOrderConfirmation).toHaveBeenCalledWith(
+    expect(mockCustomerConfirmation).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ idempotencyKey: "order-confirmation/sub_1" }),
     );
@@ -201,7 +237,7 @@ describe("applyPaidEvent", () => {
       undefined,
     );
     expect(mockJosephine).toHaveBeenCalledOnce();
-    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
     expect(mockAppendEmailFired).toHaveBeenCalledOnce();
     const entry = mockAppendEmailFired.mock.calls[0]?.[1];
     expect(entry?.type).toBe("order_confirmation");
@@ -209,7 +245,9 @@ describe("applyPaidEvent", () => {
   });
 
   it("does not append emailsFired when order confirmation returns null resendId", async () => {
-    mockOrderConfirmation.mockResolvedValueOnce({ kind: "failed", error: "test stub failure" });
+    mockCustomerConfirmation.mockResolvedValueOnce(
+      orderConfirmation({ kind: "failed", error: "test stub failure" }),
+    );
     await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
       stripeSessionId: "cs_1",
@@ -223,7 +261,7 @@ describe("applyPaidEvent", () => {
 
   it("does not propagate Resend failures", async () => {
     mockJosephine.mockRejectedValueOnce(new Error("Resend down"));
-    mockOrderConfirmation.mockRejectedValueOnce(new Error("Resend down"));
+    mockCustomerConfirmation.mockRejectedValueOnce(new Error("Resend down"));
 
     const result = await applyPaidEvent(SUBMISSION, {
       stripeEventId: "evt_1",
@@ -338,7 +376,7 @@ describe("applyPaidEvent", () => {
       country: null,
     });
 
-    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
   });
 
   it("still applies the paid state with recipientUserId=null when user-create throws", async () => {
@@ -359,16 +397,14 @@ describe("applyPaidEvent", () => {
     );
     // Email fan-out still happens.
     expect(mockJosephine).toHaveBeenCalledOnce();
-    expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
   });
 
   it("records a failed order confirmation with the Resend error", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    mockOrderConfirmation.mockResolvedValueOnce({
-      kind: "failed",
-      error: "validation_error",
-      statusCode: 422,
-    });
+    mockCustomerConfirmation.mockResolvedValueOnce(
+      orderConfirmation({ kind: "failed", error: "validation_error", statusCode: 422 }),
+    );
 
     await applyPaidEvent(SUBMISSION, PAID_DETAILS);
 
@@ -386,7 +422,7 @@ describe("applyPaidEvent", () => {
 
   it("records a thrown order confirmation as a failure", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    mockOrderConfirmation.mockRejectedValueOnce(new Error("Resend unreachable"));
+    mockCustomerConfirmation.mockRejectedValueOnce(new Error("Resend unreachable"));
 
     await applyPaidEvent(SUBMISSION, PAID_DETAILS);
 
@@ -400,10 +436,163 @@ describe("applyPaidEvent", () => {
     { kind: "sent", resendId: "msg_oc" },
     { kind: "dry_run" },
   ] as const)("records no failure when the order confirmation result is $kind", async (result) => {
-    mockOrderConfirmation.mockResolvedValueOnce(result);
+    mockCustomerConfirmation.mockResolvedValueOnce(orderConfirmation(result));
 
     await applyPaidEvent(SUBMISSION, PAID_DETAILS);
 
     expect(mockRecordFailure).not.toHaveBeenCalled();
+  });
+});
+
+describe("afterSubmissionPaid for a gift", () => {
+  const CONTEXT = buildSubmission({
+    id: "sub_gift",
+    email: "anna@example.com",
+    firstName: "Anna",
+  });
+  const GIFT: PaidGift = { id: "gift_1", buyerFirstName: "Dana", buyerEmail: "dana@example.com" };
+
+  function runGift(gift: PaidGift = GIFT) {
+    return afterSubmissionPaid({
+      submissionId: "sub_gift",
+      context: CONTEXT,
+      recipientUserId: "user_anna",
+      gift,
+    });
+  }
+
+  it("sends the gift confirmation instead of the order confirmation and records it", async () => {
+    await runGift();
+
+    expect(mockCustomerConfirmation).toHaveBeenCalledWith(CONTEXT, {
+      giftBuyerFirstName: "Dana",
+      dataExportUrl: "https://withjosephine.com/privacy/export?t=tok",
+      idempotencyKey: "gift-recipient-confirmation/sub_gift",
+    });
+    expect(mockAppendEmailFired).toHaveBeenCalledWith("sub_gift", {
+      type: "gift_recipient_confirmation",
+      sentAt: expect.any(String),
+      resendId: "msg_grc",
+    });
+  });
+
+  it("sends Josephine and the buyer their emails before the data export URL is minted", async () => {
+    let mintUrl: (url: string | undefined) => void = () => {};
+    vi.mocked(mintDataExportUrl).mockReturnValueOnce(
+      new Promise((resolve) => {
+        mintUrl = resolve;
+      }),
+    );
+
+    const run = runGift();
+
+    expect(mockJosephine).toHaveBeenCalledOnce();
+    expect(mockGiftOpened).toHaveBeenCalledOnce();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+    mintUrl(undefined);
+    await run;
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
+  });
+
+  it("tells Josephine who gave the reading under the same notification key", async () => {
+    await runGift();
+
+    expect(mockJosephine).toHaveBeenCalledWith(CONTEXT, {
+      idempotencyKey: "josephine-notification/sub_gift",
+      giftBuyerFirstName: "Dana",
+    });
+  });
+
+  it("sends the buyer the opened email once per gift and records it on the gift", async () => {
+    await runGift();
+
+    expect(mockGiftOpened).toHaveBeenCalledWith(
+      {
+        to: "dana@example.com",
+        firstName: "Dana",
+        recipientName: "Anna",
+        readingName: "Soul Blueprint",
+      },
+      { giftId: "gift_1", idempotencyKey: "gift-opened/gift_1" },
+    );
+    expect(mockAppendGiftEmailFired).toHaveBeenCalledWith("gift_1", {
+      type: "gift_opened",
+      sentAt: expect.any(String),
+      resendId: "msg_go",
+    });
+  });
+
+  it("skips the opened email when the buyer email is gone", async () => {
+    await runGift({ ...GIFT, buyerEmail: null });
+
+    expect(mockGiftOpened).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
+  });
+
+  it("records a failed gift confirmation as the submission's order confirmation", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockCustomerConfirmation.mockResolvedValueOnce(
+      giftRecipientConfirmation({ kind: "failed", error: "validation_error", statusCode: 422 }),
+    );
+
+    await runGift();
+
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      "sub_gift",
+      expect.objectContaining({
+        emailType: "order_confirmation",
+        kind: "send_error",
+        recipient: "anna@example.com",
+      }),
+    );
+    expect(mockAppendEmailFired).not.toHaveBeenCalled();
+  });
+
+  it("skips the recorded confirmation and opened emails and still sends Josephine under her key", async () => {
+    await afterSubmissionPaid({
+      submissionId: "sub_gift",
+      context: CONTEXT,
+      recipientUserId: "user_anna",
+      gift: {
+        ...GIFT,
+        emailsFired: [{ type: "gift_opened", sentAt: "2026-10-04T09:31:00.000Z", resendId: "msg_go" }],
+      },
+      emailsFired: [
+        { type: "gift_recipient_confirmation", sentAt: "2026-10-04T09:31:00.000Z", resendId: "msg_grc" },
+      ],
+    });
+
+    expect(mockJosephine).toHaveBeenCalledWith(CONTEXT, {
+      idempotencyKey: "josephine-notification/sub_gift",
+      giftBuyerFirstName: "Dana",
+    });
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+    expect(mockGiftOpened).not.toHaveBeenCalled();
+  });
+
+  it("sends only the emails missing from the records", async () => {
+    await afterSubmissionPaid({
+      submissionId: "sub_gift",
+      context: CONTEXT,
+      recipientUserId: "user_anna",
+      gift: {
+        ...GIFT,
+        emailsFired: [{ type: "gift_send", sentAt: "2026-10-04T09:00:00.000Z", resendId: "msg_gs" }],
+      },
+      emailsFired: [
+        { type: "reading_overdue_alert", sentAt: "2026-10-04T09:31:00.000Z", resendId: "msg_oa" },
+      ],
+    });
+
+    expect(mockCustomerConfirmation).toHaveBeenCalledOnce();
+    expect(mockGiftOpened).toHaveBeenCalledOnce();
+  });
+
+  it("does not throw when the opened email fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGiftOpened.mockRejectedValueOnce(new Error("Resend unreachable"));
+
+    await expect(runGift()).resolves.toBeUndefined();
+    expect(mockAppendGiftEmailFired).not.toHaveBeenCalled();
   });
 });

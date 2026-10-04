@@ -5,15 +5,24 @@ export const LEGACY_EMAIL_FIRED_TYPES: ReadonlyMap<string, EmailFiredType> = new
   ["day7-overdue-alert", "reading_overdue_alert"],
 ]);
 
+const GIFT_EMAIL_FIRED_TYPES: ReadonlyMap<string, EmailFiredType> = new Map([
+  ["gift_recipient_confirmation", "order_confirmation"],
+]);
+
+const EMAIL_FIRED_TYPE_ALIASES: ReadonlyMap<string, EmailFiredType> = new Map([
+  ...LEGACY_EMAIL_FIRED_TYPES,
+  ...GIFT_EMAIL_FIRED_TYPES,
+]);
+
 export function currentEmailFiredType(stored: string): string {
-  return LEGACY_EMAIL_FIRED_TYPES.get(stored) ?? stored;
+  return EMAIL_FIRED_TYPE_ALIASES.get(stored) ?? stored;
 }
 
 export function storedEmailFiredTypes(type: EmailFiredType): string[] {
-  const legacy = [...LEGACY_EMAIL_FIRED_TYPES]
+  const aliases = [...EMAIL_FIRED_TYPE_ALIASES]
     .filter(([, current]) => current === type)
     .map(([stored]) => stored);
-  return [type, ...legacy];
+  return [type, ...aliases];
 }
 
 export function emailFiredTypeNeedle(stored: string): string {
@@ -26,7 +35,7 @@ export function asCustomerEmailType(stored: string | undefined): CustomerEmailTy
 }
 
 export function isEmailFiredOfType(stored: string | undefined, type: EmailFiredType): boolean {
-  return stored !== undefined && currentEmailFiredType(stored) === type;
+  return stored !== undefined && storedEmailFiredTypes(type).includes(stored);
 }
 
 export function findReadingDeliveryEntry<TEntry extends { type?: string }>(

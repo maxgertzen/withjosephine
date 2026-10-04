@@ -7,6 +7,7 @@ import type { EmailFiredType } from "./submissions";
 
 const EXPECTED_EMAIL_FIRED_TYPES: EmailFiredType[] = [
   "order_confirmation",
+  "gift_recipient_confirmation",
   "reading_delivery",
   "reading_overdue_alert",
   "day14",
@@ -43,6 +44,10 @@ describe("submission schema parity", () => {
     for (const field of ["status", "responses", "photoR2Key", "paidAt", "amountPaidCents", "consentSnapshot", "emailsFired"]) {
       expect(SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"${field}",[^}]*?readOnly:\\s*true`));
     }
+  });
+
+  it("declares the read-only gift block with the buyer's first name only", () => {
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"gift",[^]*?readOnly:\s*true[^]*?name:\s*"buyerFirstName"/);
   });
 
   it("declares deliveredAt read-only so only the send writes it", () => {

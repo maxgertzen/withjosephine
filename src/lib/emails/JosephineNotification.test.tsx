@@ -92,6 +92,26 @@ describe("JosephineNotification — visual parity with legacy resend.tsx", () =>
     expect(text).not.toContain("Amount paid:");
   });
 
+  it("names the gift buyer in the heading, reads Paid by gift and shows no amount paid", async () => {
+    const text = visibleText(
+      await render(
+        <JosephineNotification {...PROPS} amountPaidDisplay={null} giftBuyerFirstName="Dana" />,
+      ),
+    );
+    expect(text).toContain("New Soul Blueprint booking, gift from Dana");
+    expect(text).toContain("Status: Paid by gift");
+    expect(text).not.toContain("Amount paid:");
+  });
+
+  it("reads gift without a name when the buyer name is empty", async () => {
+    const text = visibleText(
+      await render(<JosephineNotification {...PROPS} amountPaidDisplay={null} giftBuyerFirstName="" />),
+    );
+    expect(text).toContain("New Soul Blueprint booking, gift");
+    expect(text).not.toContain("gift from");
+    expect(text).toContain("Status: Paid by gift");
+  });
+
   it("escapes HTML in every user-controlled field", async () => {
     const html = await render(
       <JosephineNotification

@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { generateReadingStaticParams } from "@/data/readings";
+import { findGiftRecipientThankYou } from "@/lib/booking/submissions";
 import { fetchThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
 import { type GiftThankYouResult, resolveGiftThankYou } from "@/lib/gift/giftThankYou";
+import { resolveReadingSummary } from "@/lib/readingSummary";
 import {
   fetchGiftSettings,
   fetchReading,
   fetchSiteSettings,
   fetchThankYouPage,
 } from "@/lib/sanity/fetch";
+import { isUuid } from "@/lib/uuid";
 
 import { deriveGiftThankYouViewProps } from "./deriveGiftThankYouViewProps";
 import {
@@ -17,12 +20,14 @@ import {
   type ResolvedThankYouContext,
 } from "./deriveThankYouViewProps";
 import { GiftThankYouView } from "./GiftThankYouView";
+import { loadRecipientThankYouViewProps } from "./loadRecipientThankYouViewProps";
 import { ThankYouView } from "./ThankYouView";
 
 export { generateReadingStaticParams as generateStaticParams };
 
 type ThankYouSearchParams = {
   sessionId?: string | string[];
+  submissionId?: string | string[];
 };
 
 type ThankYouPageProps = {
@@ -51,18 +56,8 @@ export async function generateMetadata(): Promise<Metadata> {
 async function resolveReading(
   segment: string,
 ): Promise<ResolvedThankYouContext["reading"] | null> {
-  const sanityReading = await fetchReading(segment);
-  if (sanityReading) {
-    return {
-      name: sanityReading.name,
-      price: sanityReading.priceDisplay,
-      cents: sanityReading.price,
-    };
-  }
-  const fallback = getReadingById(segment);
-  return fallback
-    ? { name: fallback.name, price: fallback.price, cents: null }
-    : null;
+  const reading = await resolveReadingSummary(segment, fetchReading);
+  return reading && { name: reading.name, price: reading.priceLabel, cents: reading.priceCents };
 }
 
 async function renderGiftThankYou(
@@ -79,8 +74,17 @@ async function renderGiftThankYou(
   return <GiftThankYouView {...viewProps} />;
 }
 
+async function renderRecipientThankYou(submissionId: string) {
+  if (!isUuid(submissionId)) redirect("/");
+  const viewProps = await loadRecipientThankYouViewProps(findGiftRecipientThankYou(submissionId));
+  return <ThankYouView {...viewProps} />;
+}
+
 export default async function ThankYouPage({ params, searchParams }: ThankYouPageProps) {
-  const [{ readingId }, { sessionId }] = await Promise.all([params, searchParams]);
+  const [{ readingId }, { sessionId, submissionId }] = await Promise.all([params, searchParams]);
+  if (sessionId === undefined && typeof submissionId === "string") {
+    return renderRecipientThankYou(submissionId);
+  }
   if (!isValidStripeSession(sessionId)) redirect("/");
 
   const [snapshot, reading] = await Promise.all([

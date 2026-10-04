@@ -7,13 +7,22 @@ import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { isSandboxEmail } from "./booking/sandboxEmails";
 import {
   type CustomerEmailType,
+  type EmailFiredType,
   FIRST_NAME_FALLBACK,
   type RenderedEmail,
 } from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
+import { GiftOpened, type GiftOpenedVars } from "./emails/GiftOpened";
 import { GiftPurchase, type GiftPurchaseVars } from "./emails/GiftPurchase";
-import { JosephineNotification } from "./emails/JosephineNotification";
+import {
+  GiftRecipientConfirmation,
+  giftRecipientConfirmationTokens,
+} from "./emails/GiftRecipientConfirmation";
+import {
+  JosephineNotification,
+  josephineNotificationTitle,
+} from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
@@ -298,7 +307,7 @@ function requireNotificationEmail(subType: EmailSubType): string | EmailSendResu
 
 export async function sendNotificationToJosephine(
   submission: SubmissionContext,
-  options?: { idempotencyKey?: string },
+  options?: { idempotencyKey?: string; giftBuyerFirstName?: string },
 ): Promise<EmailSendResult> {
   const notificationEmail = requireNotificationEmail("josephine_notification");
   if (typeof notificationEmail !== "string") return notificationEmail;
@@ -313,12 +322,13 @@ export async function sendNotificationToJosephine(
       submissionId={submission.id}
       photoUrl={submission.photoUrl}
       responses={submission.responses}
+      giftBuyerFirstName={options?.giftBuyerFirstName}
     />,
   );
 
   return sendOrSkip({
     to: notificationEmail,
-    subject: `New ${submission.readingName} booking — ${submission.email}`,
+    subject: `${josephineNotificationTitle(submission.readingName, options?.giftBuyerFirstName)} — ${submission.email}`,
     html,
     subType: "josephine_notification",
     submissionId: submission.id,
@@ -361,6 +371,62 @@ export async function sendOrderConfirmation(
     idempotencyKey: options?.idempotencyKey,
     tags: customerEmailTags(submission.id, "order_confirmation"),
   });
+}
+
+export async function sendGiftRecipientConfirmation(
+  submission: SubmissionContext,
+  options: { buyerFirstName: string; dataExportUrl?: string; idempotencyKey?: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftRecipientConfirmation } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftRecipientConfirmation().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const vars = {
+    firstName: submission.firstName,
+    buyerFirstName: options.buyerFirstName,
+    readingName: submission.readingName,
+    dataExportUrl: options.dataExportUrl ?? null,
+  };
+  const html = await render(<GiftRecipientConfirmation vars={vars} copy={copy} shell={shell} />);
+
+  return sendOrSkip({
+    to: submission.email,
+    subject: applyTokens(copy.subject, giftRecipientConfirmationTokens(vars, copy)),
+    html,
+    subType: "gift_recipient_confirmation",
+    submissionId: submission.id,
+    idempotencyKey: options.idempotencyKey,
+    tags: customerEmailTags(submission.id, "order_confirmation"),
+  });
+}
+
+export type CustomerConfirmationSend = {
+  firedType: Extract<EmailFiredType, "order_confirmation" | "gift_recipient_confirmation">;
+  result: EmailSendResult;
+};
+
+export async function sendCustomerConfirmation(
+  submission: SubmissionContext,
+  options: { dataExportUrl?: string; idempotencyKey: string; giftBuyerFirstName?: string },
+): Promise<CustomerConfirmationSend> {
+  const { dataExportUrl, idempotencyKey, giftBuyerFirstName } = options;
+  if (giftBuyerFirstName === undefined) {
+    return {
+      firedType: "order_confirmation",
+      result: await sendOrderConfirmation(submission, { dataExportUrl, idempotencyKey }),
+    };
+  }
+  return {
+    firedType: "gift_recipient_confirmation",
+    result: await sendGiftRecipientConfirmation(submission, {
+      buyerFirstName: giftBuyerFirstName,
+      dataExportUrl,
+      idempotencyKey,
+    }),
+  };
 }
 
 export async function sendReadingDelivery(
@@ -435,6 +501,29 @@ export async function sendGiftPurchase(
     subject: applyTokens(copy.subject, { firstName: vars.firstName, readingName: vars.readingName }),
     html,
     subType: "gift_confirmation",
+    submissionId: null,
+    giftId: options.giftId,
+    idempotencyKey: options.idempotencyKey,
+  });
+}
+
+export async function sendGiftOpened(
+  { to, ...vars }: GiftOpenedVars & { to: string },
+  options: { giftId: string; idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_OPENED_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftOpened } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftOpened().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_OPENED_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const html = await render(<GiftOpened vars={vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to,
+    subject: applyTokens(copy.subjectTemplate, vars),
+    html,
+    subType: "gift_opened",
     submissionId: null,
     giftId: options.giftId,
     idempotencyKey: options.idempotencyKey,

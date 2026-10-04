@@ -3,12 +3,14 @@ import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { GiftModeProvider, useGiftMode } from "@/components/GiftMode/GiftModeContext";
+import { GIFT_DEFAULTS } from "@/data/defaults";
 import type { BookingEntry } from "@/lib/analytics";
 import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
 import { save as saveDraft, setLastReadingId } from "@/lib/intake/localStorageDraft";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
-import { IntakeForm } from "./IntakeForm";
+import { IntakeForm, type IntakeGift } from "./IntakeForm";
 
 vi.mock("@marsidev/react-turnstile", async () => {
   const React = await import("react");
@@ -607,5 +609,220 @@ describe("IntakeForm — localStorage save/resume", () => {
       configurable: true,
       value: originalLocation,
     });
+  });
+});
+
+const GIFT: IntakeGift = {
+  code: "K7M2QX9PH4TR",
+  overrides: {
+    submitLabel: GIFT_DEFAULTS.sendDetailsLabel,
+    loadingStateCopy: GIFT_DEFAULTS.sendingDetailsOverlay,
+    pageIndicatorTagline: "a gift from Dana",
+  },
+  finalPage: {
+    displayCode: "K7M2-QX9P-H4TR",
+    codeAppliedTemplate: GIFT_DEFAULTS.codeAppliedTemplate,
+    removeCodeLabel: GIFT_DEFAULTS.removeCodeLabel,
+    giftFoot: "Nothing to pay. This reading is a gift from Dana.",
+    openedNotice: "When you send your details, Dana gets a short email saying you opened the gift.",
+  },
+  errors: {
+    ending: {
+      gift_already_redeemed: GIFT_DEFAULTS.openedRaceError,
+      gift_not_found: GIFT_DEFAULTS.notFoundHeading,
+      gift_not_active: GIFT_DEFAULTS.noLongerActiveHeading,
+    },
+    tooManyTries: GIFT_DEFAULTS.codeTooManyTries,
+  },
+};
+
+function DraftRestoredProbe() {
+  return <p>{useGiftMode().draftRestored ? "draft restored" : "fresh form"}</p>;
+}
+
+function renderGiftForm(extra: Partial<ComponentProps<typeof IntakeForm>> = {}) {
+  render(
+    <GiftModeProvider>
+      <DraftRestoredProbe />
+      <IntakeForm
+        readingId="soul-blueprint"
+        readingName="Soul Blueprint"
+        sections={SINGLE_PAGE_SECTIONS}
+        nonRefundableNotice="Once Josephine begins, no refunds."
+        switchNotice="Switched to Soul Blueprint."
+        submitLabel="Continue to payment →"
+        gift={GIFT}
+        {...extra}
+      />
+    </GiftModeProvider>,
+  );
+}
+
+async function fillSinglePage(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText(/Full name/), "Anna Example");
+  await user.type(screen.getByLabelText(/^Email/), "anna@example.com");
+  await user.click(screen.getByLabelText(/processing my booking details/));
+  await user.click(screen.getByLabelText(/explicitly consent/));
+  await user.click(screen.getByLabelText(/non-refundable/));
+}
+
+describe("IntakeForm — gift mode final page", () => {
+  it("masks the applied code row for Clarity", () => {
+    renderGiftForm();
+
+    const appliedRow = screen.getByText("K7M2-QX9P-H4TR").closest("p");
+    expect(appliedRow?.getAttribute("data-clarity-mask")).toBe("True");
+    expect(appliedRow?.textContent).toContain("Gift code K7M2-QX9P-H4TR applied");
+  });
+
+  it("shows the gift line and the opened notice above the Send my details button", () => {
+    renderGiftForm();
+
+    const notice = screen.getByText(/Dana gets a short email saying you opened the gift/);
+    const button = screen.getByRole("button", { name: GIFT_DEFAULTS.sendDetailsLabel });
+    expect(
+      screen.getByText("Nothing to pay. This reading is a gift from Dana."),
+    ).toBeInTheDocument();
+    expect(notice.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Continue to payment/ })).toBeNull();
+  });
+
+  it("drops the opened notice when there is none", () => {
+    renderGiftForm({
+      gift: {
+        ...GIFT,
+        finalPage: {
+          ...GIFT.finalPage,
+          giftFoot: GIFT_DEFAULTS.giftFootNoBuyer,
+          openedNotice: null,
+        },
+      },
+    });
+
+    expect(screen.getByText(GIFT_DEFAULTS.giftFootNoBuyer)).toBeInTheDocument();
+    expect(screen.queryByText(/gets a short email/)).toBeNull();
+  });
+
+  it("marks the gift mode draft restored when a saved draft comes back", async () => {
+    saveDraft("soul-blueprint", { currentPage: 0, values: { fullName: "Anna" } });
+
+    renderGiftForm();
+
+    expect(await screen.findByText("draft restored")).toBeInTheDocument();
+  });
+
+  it("leaves gift mode after a lost race: the applied row goes and the payment button comes back", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "gift_already_redeemed" }), { status: 409 }),
+    );
+    renderGiftForm();
+    await fillSinglePage(user);
+
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendDetailsLabel }));
+
+    expect(await screen.findByText(GIFT_DEFAULTS.openedRaceError)).toBeInTheDocument();
+    expect(screen.queryByText("K7M2-QX9P-H4TR")).toBeNull();
+    expect(screen.getByRole("button", { name: /Continue to payment/ })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Full name/)).toHaveValue("Anna Example");
+  });
+});
+
+describe("IntakeForm - gift draft restore", () => {
+  it("opens on the last page when the draft was left there with this gift's code", async () => {
+    saveDraft("soul-blueprint", {
+      currentPage: 1,
+      values: { fullName: "Anna" },
+      giftCode: GIFT.code,
+    });
+
+    renderGiftForm({ sections: TWO_PAGE_SECTIONS });
+
+    expect(
+      await screen.findByRole("button", { name: GIFT_DEFAULTS.sendDetailsLabel }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens on the first page when the draft was left on an earlier page", async () => {
+    saveDraft("soul-blueprint", {
+      currentPage: 0,
+      values: { fullName: "Anna" },
+      giftCode: GIFT.code,
+    });
+
+    renderGiftForm({ sections: TWO_PAGE_SECTIONS });
+
+    expect(await screen.findByLabelText(/Full name/)).toHaveValue("Anna");
+    expect(screen.queryByRole("button", { name: GIFT_DEFAULTS.sendDetailsLabel })).toBeNull();
+  });
+});
+
+describe("IntakeForm - gift preview", () => {
+  const originalLocation = window.location;
+  const assignMock = vi.fn();
+
+  beforeEach(() => {
+    assignMock.mockReset();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "", assign: assignMock },
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "location", { configurable: true, value: originalLocation });
+  });
+
+  it("posts nothing on Send my details and stays on the page on Remove", async () => {
+    const user = userEvent.setup();
+    renderGiftForm({ preview: true });
+    await fillSinglePage(user);
+
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendDetailsLabel }));
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.removeCodeLabel }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assignMock).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
+  });
+});
+
+describe("IntakeForm — initialPage", () => {
+  it("opens on the last page once the draft restore settles", async () => {
+    renderForm(TWO_PAGE_SECTIONS, { initialPage: "last" });
+
+    expect(await screen.findByRole("button", { name: /Continue to payment/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email/)).toBeInTheDocument();
+  });
+});
+
+describe("IntakeForm — gift code field", () => {
+  it("sends zero requests after the code is typed and focus moves on", async () => {
+    const user = userEvent.setup();
+    renderForm(SINGLE_PAGE_SECTIONS, { giftCodeField: { copy: GIFT_DEFAULTS } });
+
+    await user.type(screen.getByLabelText(GIFT_DEFAULTS.codeFieldOptionalLabel), "K7M2QX9PH4TR");
+    await user.tab();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("posts the code check on the press and not the booking", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ result: "not_found" }), { status: 200 }),
+    );
+    renderForm(SINGLE_PAGE_SECTIONS, { giftCodeField: { copy: GIFT_DEFAULTS } });
+    await fillSinglePage(user);
+    await user.type(screen.getByLabelText(GIFT_DEFAULTS.codeFieldOptionalLabel), "K7M2QX9PH4TA");
+
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
+    expect(await screen.findByText(GIFT_DEFAULTS.codeNotFound)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/gift/check",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });

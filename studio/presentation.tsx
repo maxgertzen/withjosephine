@@ -121,6 +121,8 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     }),
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
     emailGiftPurchase: emailLocation("Email: Gift Buyer Confirmation"),
+    emailGiftOpened: emailLocation("Email: Gift Opened (Buyer)"),
+    emailGiftRecipientConfirmation: emailLocation("Email: Gift Confirmation (Recipient)"),
     emailReadingDelivery: emailLocation("Email: Reading Delivery Email"),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),

@@ -22,7 +22,10 @@ type InputProps = {
   spellCheck?: boolean;
   enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   maxLength?: number;
+  variant?: "code";
 };
+
+const CODE_INPUT_CLASSES = "tracking-[0.14em] tabular-nums";
 
 export function Input({
   id,
@@ -44,6 +47,7 @@ export function Input({
   spellCheck,
   enterKeyHint,
   maxLength,
+  variant,
 }: InputProps) {
   const helpId = helpText ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -75,7 +79,7 @@ export function Input({
         maxLength={maxLength}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={inputClasses}
+        className={variant === "code" ? `${inputClasses} ${CODE_INPUT_CLASSES}` : inputClasses}
       />
     </FieldShell>
   );

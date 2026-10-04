@@ -413,6 +413,31 @@ export const SINGLETONS: SingletonContract[] = [
     ],
   },
   {
+    id: "emailGiftOpened",
+    type: "emailGiftOpened",
+    fields: [
+      { name: "subjectTemplate", type: "string" },
+      { name: "preview", type: "string" },
+      { name: "heroLine", type: "string" },
+      { name: "body", type: "array<block>" },
+    ],
+  },
+  {
+    id: "emailGiftRecipientConfirmation",
+    type: "emailGiftRecipientConfirmation",
+    fields: [
+      { name: "subject", type: "string" },
+      { name: "preview", type: "string" },
+      { name: "heroLine", type: "string" },
+      { name: "body", type: "array<block>" },
+      { name: "buyerNameFallback", type: "string" },
+      { name: "cardLabel", type: "string" },
+      { name: "cardDeliveryLine", type: "string" },
+      { name: "dataExportHeading", type: "string" },
+      { name: "dataExportButtonLabel", type: "string" },
+    ],
+  },
+  {
     id: "giftSettings",
     type: "giftSettings",
     fields: [

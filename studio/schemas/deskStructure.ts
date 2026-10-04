@@ -32,6 +32,8 @@ export const SINGLETON_TYPES = new Set([
   "emailReadingDelivery",
   "emailOrderConfirmation",
   "emailGiftPurchase",
+  "emailGiftOpened",
+  "emailGiftRecipientConfirmation",
   "emailPrivacyExport",
   "emailSharedShell",
   "listenPage",
@@ -203,6 +205,12 @@ const emailsGroup = (S: StructureBuilder) =>
         .items([
           emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation → Self-Purchaser"),
           emailSingletonListItem(S, "emailGiftPurchase", "Gift Purchase → Buyer"),
+          emailSingletonListItem(S, "emailGiftOpened", "Gift Opened → Buyer"),
+          emailSingletonListItem(
+            S,
+            "emailGiftRecipientConfirmation",
+            "Gift Confirmation → Recipient",
+          ),
           emailSingletonListItem(S, "emailReadingDelivery", "Reading Delivery Email → Customer"),
           emailSingletonListItem(S, "emailMagicLink", "Magic Link → Listen Page"),
           emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export → Requester (GDPR)"),

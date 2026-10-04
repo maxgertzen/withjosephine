@@ -10,6 +10,7 @@ export type BookingPageShellProps = {
   readingTag: string;
   readingName: string;
   readingPrice: string;
+  priceLine?: ReactNode;
   outerBg?: "cream" | "ivory";
   children: ReactNode;
 };
@@ -24,6 +25,7 @@ export function BookingPageShell({
   readingTag,
   readingName,
   readingPrice,
+  priceLine,
   outerBg = "cream",
   children,
 }: BookingPageShellProps) {
@@ -32,11 +34,14 @@ export function BookingPageShell({
       <BookingFlowHeader backHref={backHref} />
 
       <main id="main" className="relative z-10">
-        <ReadingTitleBlock
-          readingTag={readingTag}
-          readingName={readingName}
-          readingPrice={readingPrice}
-        />
+        {readingName ? (
+          <ReadingTitleBlock
+            readingTag={readingTag}
+            readingName={readingName}
+            readingPrice={readingPrice}
+            priceLine={priceLine}
+          />
+        ) : null}
         <div className="max-w-3xl mx-auto px-6 py-16">
           <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
             <div

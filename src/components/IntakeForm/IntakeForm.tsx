@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useHeaderBack } from "@/components/BookingFlowHeader/headerBackContext";
+import { useGiftCodeField } from "@/components/GiftCodeField";
+import { useGiftMode } from "@/components/GiftMode/GiftModeContext";
+import type { GiftContent } from "@/data/defaults";
 import { track } from "@/lib/analytics";
 import {
   emptyConsentSnapshot,
@@ -12,20 +15,32 @@ import {
 import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 import { focusFirstError } from "@/lib/intake/intakeValidation";
 import { useAutosave } from "@/lib/intake/useAutosave";
-import { useDraftRestore } from "@/lib/intake/useDraftRestore";
+import { type InitialPage, useDraftRestore } from "@/lib/intake/useDraftRestore";
 import { useFieldFocusTelemetry } from "@/lib/intake/useFieldFocusTelemetry";
-import { useIntakeFormHandlers } from "@/lib/intake/useIntakeFormHandlers";
+import { type IntakeGiftErrors, useIntakeFormHandlers } from "@/lib/intake/useIntakeFormHandlers";
 import { pageFieldKeys, useIntakeSchema } from "@/lib/intake/useIntakeSchema";
 import { usePageErrors } from "@/lib/intake/usePageErrors";
 import { useTurnstileChallenge } from "@/lib/intake/useTurnstileChallenge";
 import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
+import type { GiftFinalPageCopy } from "./GiftFinalPageLines";
 import { IntakeFormBody } from "./IntakeFormBody";
 import type { LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import type { RenderContext } from "./renderField";
 import { SavedIndicator } from "./SavedIndicator";
 import { SwapToast } from "./SwapToast";
 import type { FormTestimonial } from "./TestimonialLine";
+
+export type IntakeGift = {
+  code: string;
+  overrides: Pick<IntakeFormProps, "submitLabel" | "loadingStateCopy" | "pageIndicatorTagline">;
+  finalPage: GiftFinalPageCopy;
+  errors: IntakeGiftErrors;
+};
+
+export type IntakeGiftCodeField = {
+  copy: GiftContent;
+};
 
 export type IntakeFormProps = {
   readingId: string;
@@ -40,22 +55,34 @@ export type IntakeFormProps = {
   pagination?: SanityPagination;
   loadingStateCopy?: string;
   switchNotice: string;
+  gift?: IntakeGift;
+  giftCodeField?: IntakeGiftCodeField;
+  initialPage?: InitialPage;
+  preview?: boolean;
 };
 
-export function IntakeForm({
-  readingId,
-  readingName,
-  sections,
-  nonRefundableNotice,
-  submitLabel,
-  nextLabel,
-  saveLaterLabel,
-  pageIndicatorTagline,
-  testimonial,
-  pagination,
-  loadingStateCopy,
-  switchNotice,
-}: IntakeFormProps) {
+export function IntakeForm(props: IntakeFormProps) {
+  const { active: giftModeActive, endGiftMode, setDraftRestored } = useGiftMode();
+  const activeGift = giftModeActive ? props.gift : undefined;
+  const {
+    readingId,
+    readingName,
+    sections,
+    nonRefundableNotice,
+    submitLabel,
+    nextLabel,
+    saveLaterLabel,
+    pageIndicatorTagline,
+    testimonial,
+    pagination,
+    loadingStateCopy,
+    switchNotice,
+    giftCodeField,
+    initialPage,
+    preview,
+  } = activeGift ? { ...props, ...activeGift.overrides } : props;
+  const activeGiftCodeField = activeGift ? undefined : giftCodeField;
+
   const {
     allFields,
     pages,
@@ -76,12 +103,20 @@ export function IntakeForm({
     lastSavedAt,
     setLastSavedAt,
     isRestored,
+    restoredFromDraft,
     nameOrEmailCarriedOver,
   } = useDraftRestore({
     readingId,
     defaultValues,
+    totalPages,
+    initialPage,
+    giftCode: activeGift?.code,
   });
   const showSwitchNotice = useBookingEntry() === "reading_switch" && nameOrEmailCarriedOver;
+
+  useEffect(() => {
+    if (restoredFromDraft) setDraftRestored(true);
+  }, [restoredFromDraft, setDraftRestored]);
 
   const [honeypot, setHoneypot] = useState("");
   const turnstile = useTurnstileChallenge();
@@ -122,6 +157,8 @@ export function IntakeForm({
       defaultValuesSnapshot,
       isRestored,
       readingId,
+      giftCode: activeGift?.code,
+      preview,
       setValues,
       setCurrentPage,
       setLastSavedAt,
@@ -132,6 +169,8 @@ export function IntakeForm({
       },
     },
   );
+
+  const giftCodeFieldState = useGiftCodeField(readingId, activeGiftCodeField?.copy);
 
   const savedIndicator = <SavedIndicator lastSavedAt={lastSavedAt} chipTick={chipTick} />;
 
@@ -166,7 +205,7 @@ export function IntakeForm({
     focusFirstError(formRef.current, firstErrorKey, { scroll: true });
   }, [firstErrorKey]);
 
-  const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit } =
+  const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit, handleRemoveGiftCode } =
     useIntakeFormHandlers({
       readingId,
       formRef,
@@ -190,6 +229,11 @@ export function IntakeForm({
       turnstileToken,
       requestFreshTurnstileToken,
       flushSave,
+      gift: activeGift
+        ? { code: activeGift.code, errors: activeGift.errors, endGiftMode }
+        : undefined,
+      giftCodeField: activeGiftCodeField ? giftCodeFieldState : undefined,
+      preview,
     });
 
   // Let the shell header's back arrow step through form pages: register
@@ -289,6 +333,21 @@ export function IntakeForm({
         handleReviewEdit={handleReviewEdit}
         handleSaveLater={handleSaveLater}
         handleDiscardDraft={handleDiscardDraft}
+        giftFinalPage={activeGift?.finalPage}
+        onRemoveGiftCode={handleRemoveGiftCode}
+        giftCodeField={
+          activeGiftCodeField
+            ? {
+                id: "intake-gift-code",
+                label: activeGiftCodeField.copy.codeFieldOptionalLabel,
+                checkingLabel: activeGiftCodeField.copy.codeChecking,
+                value: giftCodeFieldState.value,
+                onChange: giftCodeFieldState.onChange,
+                checking: giftCodeFieldState.checking,
+                error: giftCodeFieldState.error,
+              }
+            : undefined
+        }
       />
     </>
   );

@@ -190,6 +190,219 @@ const TEXT_FIELDS: Record<keyof GiftContent, GiftTextField> = {
     group: "thankYou",
     description: "The card text while the payment is still confirming.",
   },
+  priceLine: {
+    title: "Price line",
+    group: "recipient",
+    description: "The price line on the gift booking form.",
+  },
+  noteCardLabelTemplate: {
+    title: "Note card label",
+    group: "recipient",
+    description:
+      "The label of the note card on the gift booking form. {buyerName} becomes the buyer's first name.",
+  },
+  noteCardFoot: {
+    title: "Note card foot",
+    group: "recipient",
+    description: "The line at the foot of the note card.",
+  },
+  noteCardLabelNoBuyer: {
+    title: "Note card label, no buyer name",
+    group: "recipient",
+    description: "The note card label when the buyer's name was erased.",
+  },
+  noteCardNoBuyerBody: {
+    title: "Note card text, no buyer name",
+    group: "recipient",
+    description: "The note card text when the buyer's name was erased.",
+  },
+  noteCardFootNoBuyer: {
+    title: "Note card foot, no buyer name",
+    group: "recipient",
+    description: "The note card foot when the buyer's name was erased.",
+  },
+  pageLineGiftTemplate: {
+    title: "Page line suffix",
+    group: "recipient",
+    description:
+      "Added to the end of the page line on the gift booking form. {buyerName} becomes the buyer's first name.",
+  },
+  draftRestoredNotice: {
+    title: "Answers restored",
+    group: "recipient",
+    description: "The line under the note card when saved answers are restored.",
+  },
+  codeAppliedTemplate: {
+    title: "Code applied",
+    group: "recipient",
+    description: "The applied code line on the last page. {code} becomes the gift code.",
+  },
+  removeCodeLabel: {
+    title: "Remove code link",
+    group: "recipient",
+    description: "The link beside the applied code on the last page.",
+  },
+  giftFootTemplate: {
+    title: "Nothing to pay line",
+    group: "recipient",
+    description: "The line on the last page. {buyerName} becomes the buyer's first name.",
+  },
+  giftFootNoBuyer: {
+    title: "Nothing to pay line, no buyer name",
+    group: "recipient",
+    description: "The line on the last page when the buyer's name was erased.",
+  },
+  openedNoticeTemplate: {
+    title: "Opened email notice",
+    group: "recipient",
+    description:
+      "The line above the send button on the last page. {buyerName} becomes the buyer's first name.",
+  },
+  sendDetailsLabel: {
+    title: "Send button",
+    group: "recipient",
+    description: "The button on the last page of the gift booking form.",
+  },
+  sendingDetailsOverlay: {
+    title: "Sending overlay",
+    group: "recipient",
+    description: "The text over the form while the details are sending.",
+  },
+  openedRaceError: {
+    title: "Opened elsewhere error",
+    group: "recipient",
+    description: "The error when the gift was opened on another device first.",
+  },
+  alreadyOpenedHeading: {
+    title: "Already opened heading",
+    group: "recipient",
+    description: "The gift link page heading when the gift was already opened.",
+  },
+  alreadyOpenedBody: {
+    title: "Already opened text",
+    group: "recipient",
+    description: "The gift link page text when the gift was already opened.",
+  },
+  noLongerActiveHeading: {
+    title: "No longer active heading",
+    group: "recipient",
+    description: "The gift link page heading when the gift was cancelled or the reading removed.",
+  },
+  noLongerActiveBody: {
+    title: "No longer active text",
+    group: "recipient",
+    description: "The gift link page text when the gift was cancelled or the reading removed.",
+  },
+  notFoundHeading: {
+    title: "Not found heading",
+    group: "recipient",
+    description: "The gift link page heading when the code does not exist.",
+  },
+  notFoundBody: {
+    title: "Not found text",
+    group: "recipient",
+    description: "The gift link page text when the code does not exist.",
+  },
+  rateLimitedHeading: {
+    title: "Too many tries heading",
+    group: "recipient",
+    description: "The gift link page heading after too many tries.",
+  },
+  rateLimitedBody: {
+    title: "Too many tries text",
+    group: "recipient",
+    description: "The gift link page text after too many tries.",
+  },
+  bookYourselfTemplate: {
+    title: "Book it yourself button",
+    group: "recipient",
+    description: "The button on every gift link message page. {reading} becomes the reading name.",
+  },
+  redeemHeading: {
+    title: "Redeem sheet heading",
+    group: "bookingPage",
+    description: "The heading of the redeem sheet.",
+  },
+  redeemBody: {
+    title: "Redeem sheet help",
+    group: "bookingPage",
+    description: "The line under the redeem sheet heading.",
+  },
+  codeFieldLabel: {
+    title: "Code field label",
+    group: "bookingPage",
+    description: "The code field label on the redeem sheet.",
+  },
+  redeemSheetEmpty: {
+    title: "Empty code error",
+    group: "bookingPage",
+    description: "The error when Redeem is pressed with an empty code field.",
+  },
+  codeChecking: {
+    title: "Checking label",
+    group: "bookingPage",
+    description: "The button text while a gift code is being checked.",
+  },
+  redeemButtonLabel: {
+    title: "Redeem button",
+    group: "bookingPage",
+    description: "The button on the redeem sheet.",
+  },
+  codeNotFound: {
+    title: "Code not found error",
+    group: "bookingPage",
+    description: "The error on the redeem sheet and the code field when the code does not exist.",
+  },
+  codeOtherReadingTemplate: {
+    title: "Other reading error",
+    group: "bookingPage",
+    description:
+      "The error when the code is for another reading. {reading} becomes that reading's name.",
+  },
+  goToReadingTemplate: {
+    title: "Go to reading button",
+    group: "bookingPage",
+    description:
+      "The redeem sheet button when the code is for another reading. {reading} becomes that reading's name.",
+  },
+  codeTooManyTries: {
+    title: "Too many tries error",
+    group: "bookingPage",
+    description: "The error on the redeem sheet, the code field and the send button after too many tries.",
+  },
+  codeFieldOptionalLabel: {
+    title: "Last page code field label",
+    group: "bookingPage",
+    description: "The code field label on the last page of the booking form.",
+  },
+  recipientThankYouHeadingTemplate: {
+    title: "Thank-you heading",
+    group: "recipient",
+    description:
+      "The recipient thank-you heading. {recipientName} becomes the recipient's first name.",
+  },
+  recipientThankYouSubheading: {
+    title: "Thank-you subheading",
+    group: "recipient",
+    description: "The line under the recipient thank-you heading.",
+  },
+  recipientThankYouCardLabelTemplate: {
+    title: "Thank-you card label",
+    group: "recipient",
+    description:
+      "The card label on the recipient thank-you page. {buyerName} becomes the buyer's first name.",
+  },
+  recipientThankYouCardLabelNoBuyer: {
+    title: "Thank-you card label, no buyer name",
+    group: "recipient",
+    description: "The card label on the recipient thank-you page when the buyer's name was erased.",
+  },
+  recipientThankYouTimelineTemplate: {
+    title: "Thank-you timeline",
+    group: "recipient",
+    description:
+      "The text on the recipient thank-you page. {deliveryDays} becomes the delivery phrase from the Thank-you page document.",
+  },
 };
 
 export const giftSettings = defineType({

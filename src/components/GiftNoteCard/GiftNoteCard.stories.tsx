@@ -57,6 +57,6 @@ export const NoBuyer: Story = {
   args: {
     label: "A reading, given",
     note: "Someone sent you this reading.",
-    foot: "It's already paid for.",
+    foot: "It’s already paid for.",
   },
 };

@@ -82,4 +82,23 @@ describe("BookingPageShell", () => {
     const guard = container.querySelector('[aria-hidden="true"].border-j-border-gold');
     expect(guard).toBeTruthy();
   });
+
+  it("renders a supplied price line in place of the reading price", () => {
+    const { getByText, queryByText } = render(
+      <BookingPageShell backHref="/back" {...READING} priceLine={<span>A gift, already paid</span>}>
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(getByText("A gift, already paid")).toBeTruthy();
+    expect(queryByText("$129")).toBeNull();
+  });
+
+  it("leaves out the title block when there is no reading name", () => {
+    const { container } = render(
+      <BookingPageShell backHref="/" readingTag="" readingName="" readingPrice="">
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(container.querySelector("h1")).toBeNull();
+  });
 });

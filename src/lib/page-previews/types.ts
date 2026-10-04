@@ -2,6 +2,7 @@ export type SubmissionStatus = "pending" | "paid" | "expired";
 
 export type EmailFiredType =
   | "order_confirmation"
+  | "gift_recipient_confirmation"
   | "reading_delivery"
   | "reading_overdue_alert"
   | "day14"
@@ -70,5 +71,6 @@ export type SubmissionRecord = {
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   recipientUserId: string | null;
+  giftCodeId?: string | null;
   isLegacyGift?: boolean;
 };
