@@ -1,6 +1,7 @@
 import { defineField, defineType, type CustomValidator } from "sanity";
 
 import { DeliveryPanel } from "../components/DeliveryPanel/DeliveryPanel";
+import { IntakeAnswersInput } from "../components/IntakeAnswers/IntakeAnswersInput";
 import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { emailFailure } from "./emailFailure";
@@ -109,6 +110,7 @@ export const submission = defineType({
       readOnly: true,
       group: "reading",
       description: "The customer's answers, as they submitted them.",
+      components: { input: IntakeAnswersInput },
       of: [
         {
           type: "object",
