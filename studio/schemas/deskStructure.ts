@@ -239,8 +239,6 @@ export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
     .items([
-      failedSends(S),
-      S.divider(),
       singletonListItem(S, "siteSettings", "Site Settings"),
       singletonListItem(S, "theme", "Theme"),
       S.divider(),
@@ -255,5 +253,6 @@ export const deskStructure = (S: StructureBuilder) =>
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),
+      failedSends(S),
       submissionsRoot(S),
     ]);

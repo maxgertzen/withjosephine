@@ -27,7 +27,7 @@ const REFUSED_REASON_LABELS: Record<string, string> = {
   no_notification_email: "the notification address is not set up",
 };
 
-type EmailFailurePreviewInput = {
+export type EmailFailurePreviewInput = {
   emailType?: string;
   kind?: string;
   errorCode?: string;

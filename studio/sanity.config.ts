@@ -9,9 +9,8 @@ import { presentationTool } from "sanity/presentation";
 import { visionTool } from "@sanity/vision";
 import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
-import { resendCustomerEmailAction } from "./actions/resendCustomerEmail";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
-import { sendReadingNowAction, sendReadingNowBadge } from "./actions/sendReadingNow";
+import { deliverySentBadge } from "./components/DeliveryPanel/deliverySentBadge";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { PreviewNavigator } from "./components/PreviewNavigator";
 import { schemaTypes } from "./schemas";
@@ -53,18 +52,13 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
     return base;
   }
   if (schemaType === "submission") {
-    return [
-      ...prev,
-      sendReadingNowAction,
-      deleteCustomerDataAction,
-      resendCustomerEmailAction,
-    ];
+    return [...prev, deleteCustomerDataAction];
   }
   return prev;
 };
 
 const sharedBadges: DocumentBadgesResolver = (prev, { schemaType }) =>
-  schemaType === "submission" ? [...prev, sendReadingNowBadge] : prev;
+  schemaType === "submission" ? [...prev, deliverySentBadge] : prev;
 
 const sharedNewDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter((item) => !SINGLETON_TYPES.has(item.templateId));

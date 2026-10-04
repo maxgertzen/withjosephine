@@ -39,13 +39,19 @@ describe("submission schema parity", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"email",\s*title:\s*"Email",\s*type:\s*"string",\s*readOnly:\s*true/);
   });
 
+  it("declares status, intake answers, payment and consent read-only, written by the site only", () => {
+    for (const field of ["status", "responses", "photoR2Key", "paidAt", "amountPaidCents", "consentSnapshot", "emailsFired"]) {
+      expect(SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"${field}",[^}]*?readOnly:\\s*true`));
+    }
+  });
+
   it("declares deliveredAt read-only so only the send writes it", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveredAt",[^}]*readOnly:\s*true/);
   });
 
   it("consentSnapshot schema declares coolingOffConsent", () => {
-    expect(SCHEMA_SOURCE).toMatch(/name:\s*"coolingOffConsent"/);
-    expect(SCHEMA_SOURCE).toMatch(/name:\s*"art6Consent"/);
-    expect(SCHEMA_SOURCE).toMatch(/name:\s*"art9Consent"/);
+    for (const consent of ["coolingOffConsent", "art6Consent", "art9Consent"]) {
+      expect(SCHEMA_SOURCE).toMatch(new RegExp(`consentRecord\\(\\s*"${consent}"`));
+    }
   });
 });
