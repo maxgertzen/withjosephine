@@ -306,6 +306,25 @@ describe("sendOrderConfirmation", () => {
     expect(sendMock.mock.calls[1]?.[1]).toEqual({ idempotencyKey: "josephine-notification/sub_1" });
   });
 
+  it("tags customer emails with the submission id and email type", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+    const submission = buildSubmission();
+
+    await sendOrderConfirmation(submission);
+    await sendReadingDelivery(submission, "https://withjosephine.com/listen/sub_1");
+    await sendNotificationToJosephine(submission);
+
+    expect(sendMock.mock.calls[0]?.[0].tags).toEqual([
+      { name: "submission_id", value: submission.id },
+      { name: "email_type", value: "order_confirmation" },
+    ]);
+    expect(sendMock.mock.calls[1]?.[0].tags).toEqual([
+      { name: "submission_id", value: submission.id },
+      { name: "email_type", value: "reading_delivery" },
+    ]);
+    expect(sendMock.mock.calls[2]?.[0].tags).toBeUndefined();
+  });
+
   it("dispatches to the purchaser email", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc_self" } });
     const submission = buildSubmission({ email: "buyer@example.com" });

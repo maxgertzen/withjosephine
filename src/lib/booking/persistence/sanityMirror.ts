@@ -16,7 +16,7 @@ import {
   art9ConsentLabel,
   COOLING_OFF_CONSENT_LABEL,
 } from "../../compliance/intakeConsent";
-import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
+import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 import type { CreateSubmissionInput } from "./repository";
 
 type MirrorCreateConsent = {
@@ -182,7 +182,17 @@ type MirrorPatchBase = Partial<{
   responses: SubmissionRecord["responses"];
   recipientUserId: string;
   email: string;
+  deliveredAt: string;
+  emailFailures: readonly EmailFailureEntry[];
 }>;
+
+function keyedEmailFailures(failures: readonly EmailFailureEntry[]) {
+  return failures.map((failure, index) => ({
+    ...failure,
+    _key: `${failure.emailType}-${index}`,
+    _type: "emailFailure" as const,
+  }));
+}
 
 // Art9 label text is derived from readingSlug. A patch that sets art9 without
 // also providing readingSlug would write the wrong label for non-soul-blueprint
@@ -211,6 +221,9 @@ export async function mirrorSubmissionPatch(
       _type: "submissionResponse" as const,
       ...response,
     }));
+  }
+  if (rest.emailFailures) {
+    sanitized.emailFailures = keyedEmailFailures(rest.emailFailures);
   }
   if (art9AcknowledgedAt) {
     if (!readingSlug) {
@@ -251,12 +264,16 @@ function sanityKeyForEmailFired(entry: EmailFiredEntry): string {
 export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
-  fieldsToSet?: { deliveredAt: string },
+  fieldsToSet?: { deliveredAt?: string; emailFailures?: readonly EmailFailureEntry[] },
 ): Promise<void> {
   const client = await getClient();
   if (!client) return;
+  const { emailFailures, ...plainFields } = fieldsToSet ?? {};
+  const toSet = emailFailures
+    ? { ...plainFields, emailFailures: keyedEmailFailures(emailFailures) }
+    : plainFields;
   try {
-    const patch = fieldsToSet ? client.patch(id).set(fieldsToSet) : client.patch(id);
+    const patch = Object.keys(toSet).length > 0 ? client.patch(id).set(toSet) : client.patch(id);
     await patch
       .setIfMissing({ emailsFired: [] })
       .insert("after", "emailsFired[-1]", [{ ...entry, _key: sanityKeyForEmailFired(entry) }])

@@ -30,6 +30,15 @@ describe("submission schema parity", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveryFailedAt"/);
   });
 
+  it("declares the resend request and the read-only failed sends list", () => {
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"emailResendRequest",[^]*?hidden:\s*true/);
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"emailFailures",[^]*?readOnly:\s*true/);
+  });
+
+  it("declares email read-only so a correction goes through the resend action", () => {
+    expect(SCHEMA_SOURCE).toMatch(/name:\s*"email",\s*title:\s*"Email",\s*type:\s*"string",\s*readOnly:\s*true/);
+  });
+
   it("declares deliveredAt read-only so only the send writes it", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"deliveredAt",[^}]*readOnly:\s*true/);
   });

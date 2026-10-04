@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
+import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 import { diffSubmission, type SanityMirrorSnapshot } from "./reconcileMirror";
 
 function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
@@ -89,5 +89,46 @@ describe("diffSubmission", () => {
     const d1 = makeD1({ emailsFired: [asEntry(d1Type)] });
     const sanity = { ...makeMatchingSanity(d1), emailsFired: [asEntry(sanityType)] };
     expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
+  });
+
+  describe("email failures", () => {
+    const FAILURE: EmailFailureEntry = {
+      emailType: "reading_delivery",
+      kind: "bounced",
+      recipient: "test@example.com",
+      attemptNumber: 1,
+      attemptedAt: null,
+      failedAt: "2026-05-02T00:00:00.000Z",
+      statusCode: null,
+      errorCode: null,
+      errorMessage: "Mailbox does not exist",
+      bounceType: "Permanent / General",
+      resendId: "msg_1",
+      resolvedAt: null,
+    };
+
+    it("skips when Sanity holds the same failures with keys and without null fields", () => {
+      const d1 = makeD1({ emailFailures: [FAILURE] });
+      const sanityCopy = Object.fromEntries(
+        Object.entries(FAILURE).filter(([, value]) => value !== null),
+      ) as EmailFailureEntry;
+      const sanity = {
+        ...makeMatchingSanity(d1),
+        emailFailures: [{ ...sanityCopy, _key: "reading_delivery-0", _type: "emailFailure" }],
+      };
+
+      expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
+    });
+
+    it("patches the full list when Sanity kept a failure that D1 resolved", () => {
+      const resolved = { ...FAILURE, resolvedAt: "2026-05-03T00:00:00.000Z" };
+      const d1 = makeD1({ emailFailures: [resolved] });
+      const sanity = { ...makeMatchingSanity(d1), emailFailures: [FAILURE] };
+
+      expect(diffSubmission(d1, sanity)).toMatchObject({
+        kind: "patch",
+        patch: { emailFailures: [resolved] },
+      });
+    });
   });
 });

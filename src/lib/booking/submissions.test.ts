@@ -142,7 +142,7 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
 
     const record = await findSubmissionById("sub_1");
     expect(record?.emailsFired).toEqual([entry]);
-    expect(mockMirrorAppend).toHaveBeenCalledWith("sub_1", entry);
+    expect(mockMirrorAppend).toHaveBeenCalledWith("sub_1", entry, {});
   });
 
   it("recordReadingDeliverySent writes delivered_at and the reading_delivery entry with one timestamp and mirrors them together", async () => {

@@ -43,15 +43,6 @@ export async function fetchUndeliveredSubmissionIds(
   return new Set(result);
 }
 
-const DELIVERY_REQUESTED_GROQ = groq`
-  *[_type == "submission" && defined(deliveryRequestedAt) && !(_id in path("drafts.**"))]._id
-`;
-
-export async function fetchDeliveryRequestedIds(): Promise<string[]> {
-  const client = await getSanityWriteClient();
-  return client.fetch<string[]>(DELIVERY_REQUESTED_GROQ);
-}
-
 export async function clearDeliveryRequest(id: string): Promise<void> {
   const client = await getSanityWriteClient();
   await client.patch(id).unset(["deliveryRequestedAt"]).commit();

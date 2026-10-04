@@ -1,9 +1,14 @@
 import "server-only";
 
-import { mintExportToken } from "../auth/exportToken";
 import { getOrCreateUser } from "../auth/users";
-import { siteOrigin } from "../env";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
+import { mintDataExportUrl } from "./dataExportUrl";
+import {
+  type EmailFailureFields,
+  failureFromError,
+  failureFromUnsentResult,
+  recordEmailFailure,
+} from "./emailFailures";
 import {
   appendEmailFired,
   buildSubmissionContext,
@@ -76,19 +81,11 @@ export async function applyPaidEvent(
 
   await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
 
-  let dataExportUrl: string | undefined;
-  if (recipientUserId) {
-    try {
-      const exportToken = await mintExportToken({
-        submissionId: submission._id,
-        recipientUserId,
-        mintSource: "order_confirmation",
-      });
-      dataExportUrl = `${siteOrigin()}/privacy/export?t=${exportToken}`;
-    } catch (error) {
-      console.error(`[notifyPaid] export-link mint failed for ${submission._id}`, error);
-    }
-  }
+  const dataExportUrl = await mintDataExportUrl({
+    submissionId: submission._id,
+    recipientUserId,
+    mintSource: "order_confirmation",
+  });
 
   const dispatches: Array<Promise<unknown>> = [
     sendNotificationToJosephine(context, {
@@ -98,13 +95,28 @@ export async function applyPaidEvent(
     }),
   ];
 
+  const attemptedAt = new Date().toISOString();
+  const recordOrderConfirmationFailure = (
+    failure: Omit<EmailFailureFields, "emailType" | "recipient">,
+  ) =>
+    recordEmailFailure(submission._id, {
+      emailType: "order_confirmation",
+      recipient: submission.email,
+      attemptedAt,
+      ...failure,
+    });
+
   dispatches.push(
     sendOrderConfirmation(context, {
       dataExportUrl,
       idempotencyKey: `order-confirmation/${submission._id}`,
     })
       .then(async (result) => {
-        if (result.kind !== "sent") return;
+        if (result.kind === "dry_run") return;
+        if (result.kind !== "sent") {
+          await recordOrderConfirmationFailure(failureFromUnsentResult(result));
+          return;
+        }
         try {
           await appendEmailFired(submission._id, {
             type: "order_confirmation",
@@ -118,8 +130,9 @@ export async function applyPaidEvent(
           );
         }
       })
-      .catch((error) => {
+      .catch(async (error) => {
         console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
+        await recordOrderConfirmationFailure(failureFromError(error));
       }),
   );
 

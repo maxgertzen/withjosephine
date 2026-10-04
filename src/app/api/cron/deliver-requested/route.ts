@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
-import {
-  clearDeliveryRequest,
-  fetchDeliveryRequestedIds,
-  markDeliveryRequestFailed,
-} from "@/lib/booking/persistence/sanityDelivery";
-import { type DeliverOutcome, deliverRequested } from "@/lib/booking/readingDelivery";
+import { flagMissingOrderConfirmations } from "@/lib/booking/orderConfirmationSweep";
+import { fetchStudioRequests } from "@/lib/booking/persistence/sanityStudioRequests";
+import { type DeliverOutcome, isDelivered } from "@/lib/booking/readingDelivery";
+import { handleDeliveryRequest, handleResendRequest } from "@/lib/booking/studioRequests";
 
-async function updateRequest(id: string, update: Promise<void>): Promise<void> {
-  await update.catch((error) => {
-    console.error(`[cron-deliver-requested] Request update failed for ${id}`, error);
-  });
+type DeliverySummary = Record<"sent" | "alreadySent" | "dryRun" | "retryLater" | "failed", number>;
+
+function countDelivery(summary: DeliverySummary, outcome: DeliverOutcome): void {
+  summary[isDelivered(outcome) || outcome === "retryLater" ? outcome : "failed"] += 1;
 }
 
 async function handle(request: Request): Promise<Response> {
@@ -21,31 +19,26 @@ async function handle(request: Request): Promise<Response> {
   if (!process.env.AUTH_TOKEN_SECRET) {
     return NextResponse.json({ error: "AUTH_TOKEN_SECRET missing" }, { status: 500 });
   }
-  const ids = await fetchDeliveryRequestedIds();
-  const summary = {
-    requested: ids.length,
-    sent: 0,
-    alreadySent: 0,
-    dryRun: 0,
-    retryLater: 0,
-    failed: 0,
-  };
-  for (const id of ids) {
-    const outcome = await deliverRequested(id).catch((error): DeliverOutcome => {
-      console.error(`[cron-deliver-requested] Failed for ${id}`, error);
-      return "skipped";
-    });
-    if (outcome === "retryLater") {
-      summary.retryLater += 1;
-    } else if (outcome === "sent" || outcome === "alreadySent" || outcome === "dryRun") {
-      summary[outcome] += 1;
-      await updateRequest(id, clearDeliveryRequest(id));
-    } else {
-      summary.failed += 1;
-      await updateRequest(id, markDeliveryRequestFailed(id, new Date().toISOString()));
-    }
+  const { deliveryIds, resendRequests } = await fetchStudioRequests();
+
+  const resends: Record<string, number> = {};
+  for (const resendRequest of resendRequests) {
+    const outcome = await handleResendRequest(resendRequest);
+    resends[outcome] = (resends[outcome] ?? 0) + 1;
   }
-  return NextResponse.json(summary);
+
+  const summary: DeliverySummary = { sent: 0, alreadySent: 0, dryRun: 0, retryLater: 0, failed: 0 };
+  for (const id of deliveryIds) {
+    countDelivery(summary, await handleDeliveryRequest(id));
+  }
+
+  const missingOrderConfirmations = await flagMissingOrderConfirmations();
+  return NextResponse.json({
+    requested: deliveryIds.length,
+    ...summary,
+    resends,
+    missingOrderConfirmations,
+  });
 }
 
 export const POST = handle;

@@ -11,18 +11,16 @@ import {
 
 import { findReadingDeliveryEntry } from "../../src/lib/booking/emailFiredType";
 import { applyTokens } from "../../src/lib/emails/applyTokens";
+import { dateTimeFormatter, REQUESTED_TOAST, STUDIO_API_VERSION } from "../lib/studioRequests";
 import {
   requestBlocker,
   type SendReadingNowDocument,
   sendReadingNowState,
 } from "./sendReadingNowState";
 
-const API_VERSION = "2025-01-01";
-
 const SEND_LABEL = "Send reading now";
 const FILES_MISSING_TITLE = "Upload the voice note and the PDF first.";
 const READY_MESSAGE = "Sends the delivery email to {email}.";
-const REQUESTED_TOAST = "Sending within 5 minutes. You can close this.";
 const SENT_BADGE = "Sent";
 const SENT_TITLE = "Delivery email sent {date}.";
 const TRY_AGAIN_LABEL = "Try again";
@@ -34,11 +32,6 @@ const BLOCKER_TITLES = {
   unpublishedChanges: UNPUBLISHED_TITLE,
 } as const;
 
-const sentDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 function paidSubmission(published: unknown): SendReadingNowDocument | null {
   const document = published as SendReadingNowDocument | null;
   return document?.status === "paid" ? document : null;
@@ -47,11 +40,11 @@ function paidSubmission(published: unknown): SendReadingNowDocument | null {
 function sentTitle(sentAt: string | undefined): string | undefined {
   const sentMs = sentAt ? Date.parse(sentAt) : Number.NaN;
   if (Number.isNaN(sentMs)) return undefined;
-  return applyTokens(SENT_TITLE, { date: sentDateFormatter.format(sentMs) });
+  return applyTokens(SENT_TITLE, { date: dateTimeFormatter.format(sentMs) });
 }
 
 export const sendReadingNowAction: DocumentActionComponent = (props: DocumentActionProps) => {
-  const client = useClient({ apiVersion: API_VERSION });
+  const client = useClient({ apiVersion: STUDIO_API_VERSION });
   const toast = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);

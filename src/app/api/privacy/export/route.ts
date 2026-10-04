@@ -144,6 +144,7 @@ function buildReadme(): string {
     "delivery.json",
     "  deliveredAt          — when your reading was delivered (ISO 8601, null if not yet)",
     "  emailsFired          — the emails we sent you for this order",
+    "  emailFailures        - emails for this order that did not reach you, and why",
     "  status               — the order's current state",
     "",
     "Retention",
@@ -317,6 +318,7 @@ export async function POST(request: Request): Promise<Response> {
       {
         deliveredAt: submission.deliveredAt ?? null,
         emailsFired: submission.emailsFired ?? [],
+        emailFailures: submission.emailFailures ?? [],
         status: submission.status,
       },
       null,

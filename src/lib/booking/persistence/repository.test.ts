@@ -2,13 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { EmailFiredEntry } from "../submissions";
 import {
+  appendEmailFailure,
   appendEmailFired,
   claimReadingDeliveryAttempt,
+  claimReadingDeliveryAttemptBody,
   clearReadingDeliveryAttempt,
   createSubmission,
   type CreateSubmissionInput,
   deleteSubmission,
   findSubmissionById,
+  findSubmissionByResendId,
   findSubmissionListenContext,
   insertFinancialRecord,
   listAllReferencedPhotoKeys,
@@ -19,6 +22,8 @@ import {
   markSubmissionDeliveredIfUnset,
   markSubmissionExpired,
   markSubmissionPaid,
+  type NewEmailFailure,
+  setSubmissionEmailAndRecipient,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
@@ -235,13 +240,13 @@ describe("repository against in-memory SQLite", () => {
     await createSubmission(BASE_INPUT);
     const first = { attemptedAt: "2026-04-29T12:00:00.000Z", jti: "jti-first" };
 
-    expect(await claimReadingDeliveryAttempt("sub_1", first)).toEqual(first);
+    expect(await claimReadingDeliveryAttempt("sub_1", first)).toEqual({ ...first, body: null });
     expect(
       await claimReadingDeliveryAttempt("sub_1", {
         attemptedAt: "2026-04-29T18:00:00.000Z",
         jti: "jti-second",
       }),
-    ).toEqual(first);
+    ).toEqual({ ...first, body: null });
     expect(await claimReadingDeliveryAttempt("sub_missing", first)).toBeNull();
   });
 
@@ -254,7 +259,7 @@ describe("repository against in-memory SQLite", () => {
     await clearReadingDeliveryAttempt("sub_1");
     const fresh = { attemptedAt: "2026-04-30T12:00:00.000Z", jti: "jti-fresh" };
 
-    expect(await claimReadingDeliveryAttempt("sub_1", fresh)).toEqual(fresh);
+    expect(await claimReadingDeliveryAttempt("sub_1", fresh)).toEqual({ ...fresh, body: null });
   });
 
   describe("markReadingDeliverySentIfUnrecorded", () => {
@@ -272,16 +277,14 @@ describe("repository against in-memory SQLite", () => {
     it("writes the reading_delivery entry once", async () => {
       await createSubmission(BASE_INPUT);
 
-      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toEqual({
-        rowsWritten: 1,
-      });
+      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toEqual([]);
       expect(
         await markReadingDeliverySentIfUnrecorded(
           "sub_1",
           { ...delivery, deliveredAt: "2026-04-30T00:00:00.000Z" },
           entry,
         ),
-      ).toEqual({ rowsWritten: 0 });
+      ).toBeNull();
 
       const record = await findSubmissionById("sub_1");
       expect(record?.emailsFired).toEqual([entry]);
@@ -292,9 +295,7 @@ describe("repository against in-memory SQLite", () => {
       await createSubmission(BASE_INPUT);
       await appendEmailFired("sub_1", { ...entry, type: "day7" } as unknown as typeof entry);
 
-      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toEqual({
-        rowsWritten: 0,
-      });
+      expect(await markReadingDeliverySentIfUnrecorded("sub_1", delivery, entry)).toBeNull();
       const record = await findSubmissionById("sub_1");
       expect(record?.emailsFired?.map((fired) => fired.type)).toEqual(["day7"]);
     });
@@ -508,5 +509,226 @@ describe("repository against in-memory SQLite", () => {
     it("returns null when submission does not exist", async () => {
       expect(await findSubmissionListenContext("does-not-exist")).toBeNull();
     });
+  });
+
+  const failure = (overrides: Partial<NewEmailFailure> = {}): NewEmailFailure => ({
+    emailType: "reading_delivery",
+    kind: "send_error",
+    recipient: "ada@example.com",
+    attemptedAt: "2026-04-29T12:00:00.000Z",
+    failedAt: "2026-04-29T12:00:01.000Z",
+    statusCode: 422,
+    errorCode: "validation_error",
+    errorMessage: null,
+    bounceType: null,
+    resendId: null,
+    ...overrides,
+  });
+
+  describe("reading delivery attempt body", () => {
+    const attempt = { attemptedAt: "2026-04-29T12:00:00.000Z", jti: "jti-first" };
+    const body = { subject: "Your reading", html: "<p>first</p>" };
+
+    it("returns no body with a fresh attempt and the stored body with every later claim", async () => {
+      await createSubmission(BASE_INPUT);
+
+      expect(await claimReadingDeliveryAttempt("sub_1", attempt)).toEqual({ ...attempt, body: null });
+      expect(await claimReadingDeliveryAttemptBody("sub_1", "jti-first", body)).toEqual(body);
+      expect(
+        await claimReadingDeliveryAttemptBody("sub_1", "jti-first", { subject: "x", html: "y" }),
+      ).toEqual(body);
+      expect(await claimReadingDeliveryAttempt("sub_1", attempt)).toEqual({ ...attempt, body });
+    });
+
+    it("stores nothing for a different attempt", async () => {
+      await createSubmission(BASE_INPUT);
+      await claimReadingDeliveryAttempt("sub_1", attempt);
+
+      expect(await claimReadingDeliveryAttemptBody("sub_1", "jti-other", body)).toBeNull();
+      expect((await claimReadingDeliveryAttempt("sub_1", attempt))?.body).toBeNull();
+    });
+
+    it("clears the body with the attempt", async () => {
+      await createSubmission(BASE_INPUT);
+      await claimReadingDeliveryAttempt("sub_1", attempt);
+      await claimReadingDeliveryAttemptBody("sub_1", "jti-first", body);
+      await clearReadingDeliveryAttempt("sub_1");
+
+      expect((await claimReadingDeliveryAttempt("sub_1", attempt))?.body).toBeNull();
+    });
+
+    it("drops the body and keeps the attempt once the send is recorded", async () => {
+      await createSubmission(BASE_INPUT);
+      await claimReadingDeliveryAttempt("sub_1", attempt);
+      await claimReadingDeliveryAttemptBody("sub_1", "jti-first", body);
+      await markReadingDeliverySentIfUnrecorded(
+        "sub_1",
+        { deliveredAt: attempt.attemptedAt, voiceNoteUrl: "v", pdfUrl: "p" },
+        { type: "reading_delivery", sentAt: attempt.attemptedAt, resendId: "msg_1" },
+      );
+
+      expect(await claimReadingDeliveryAttempt("sub_1", attempt)).toEqual({ ...attempt, body: null });
+    });
+  });
+
+  describe("email failures", () => {
+    it("starts every submission with no failures", async () => {
+      await createSubmission(BASE_INPUT);
+
+      expect((await findSubmissionById("sub_1"))?.emailFailures).toEqual([]);
+    });
+
+    it("numbers open failures per email type and returns the full list", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFailure("sub_1", failure());
+      await appendEmailFailure("sub_1", failure({ emailType: "order_confirmation" }));
+      const list = await appendEmailFailure("sub_1", failure({ kind: "bounced" }));
+
+      expect(list?.map((entry) => [entry.emailType, entry.kind, entry.attemptNumber])).toEqual([
+        ["reading_delivery", "send_error", 1],
+        ["order_confirmation", "send_error", 1],
+        ["reading_delivery", "bounced", 2],
+      ]);
+      expect(list?.[0]).toEqual({ ...failure(), attemptNumber: 1, resolvedAt: null });
+      expect((await findSubmissionById("sub_1"))?.emailFailures).toEqual(list);
+    });
+
+    it("returns null for a missing submission", async () => {
+      expect(await appendEmailFailure("sub_missing", failure())).toBeNull();
+    });
+
+    it("a recorded send resolves only that type's open failures and keeps their order", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFailure("sub_1", failure());
+      await appendEmailFailure("sub_1", failure({ emailType: "order_confirmation" }));
+      await appendEmailFailure("sub_1", failure({ kind: "bounced" }));
+
+      const list = await appendEmailFired("sub_1", {
+        type: "reading_delivery",
+        sentAt: "2026-04-30T09:00:00.000Z",
+        resendId: "msg_2",
+      });
+
+      expect(list?.map((entry) => [entry.emailType, entry.kind, entry.resolvedAt])).toEqual([
+        ["reading_delivery", "send_error", "2026-04-30T09:00:00.000Z"],
+        ["order_confirmation", "send_error", null],
+        ["reading_delivery", "bounced", "2026-04-30T09:00:00.000Z"],
+      ]);
+      expect(list?.[0]?.attemptNumber).toBe(1);
+    });
+
+    it("appendEmailFired sets delivered_at when asked", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFired(
+        "sub_1",
+        { type: "reading_delivery", sentAt: "2026-04-30T09:00:00.000Z", resendId: "msg_2" },
+        { deliveredAt: "2026-04-30T09:00:00.000Z" },
+      );
+
+      expect((await findSubmissionById("sub_1"))?.deliveredAt).toBe("2026-04-30T09:00:00.000Z");
+    });
+
+    it("the recorded reading delivery and the dry-run delivery resolve reading delivery failures", async () => {
+      const delivery = { deliveredAt: "2026-04-30T09:00:00.000Z", voiceNoteUrl: "v", pdfUrl: "p" };
+      await createSubmission(BASE_INPUT);
+      await createSubmission({ ...BASE_INPUT, id: "sub_2" });
+      await appendEmailFailure("sub_1", failure());
+      await appendEmailFailure("sub_2", failure());
+
+      const sent = await markReadingDeliverySentIfUnrecorded("sub_1", delivery, {
+        type: "reading_delivery",
+        sentAt: delivery.deliveredAt,
+        resendId: "msg_1",
+      });
+      const dryRun = await markSubmissionDeliveredIfUnset("sub_2", delivery);
+
+      expect(sent?.[0]?.resolvedAt).toBe(delivery.deliveredAt);
+      expect(dryRun?.[0]?.resolvedAt).toBe(delivery.deliveredAt);
+    });
+
+    it("restarts the attempt number after a resolution", async () => {
+      await createSubmission(BASE_INPUT);
+      await appendEmailFailure("sub_1", failure());
+      await appendEmailFired("sub_1", {
+        type: "reading_delivery",
+        sentAt: "2026-04-30T09:00:00.000Z",
+        resendId: "msg_2",
+      });
+      const list = await appendEmailFailure("sub_1", failure({ kind: "bounced" }));
+
+      expect(list?.at(-1)?.attemptNumber).toBe(1);
+    });
+  });
+
+  describe("listPaidSubmissionsForEmail with a paid window and no failure", () => {
+    const options = {
+      paidAfter: "2026-04-20T00:00:00.000Z",
+      paidBefore: "2026-04-29T11:00:00.000Z",
+      withoutFailureOf: "order_confirmation",
+    } as const;
+
+    async function paidAt(id: string, paidAtIso: string) {
+      await createSubmission({ ...BASE_INPUT, id });
+      await markSubmissionPaid(id, {
+        stripeEventId: `evt_${id}`,
+        stripeSessionId: `cs_${id}`,
+        paidAt: paidAtIso,
+        amountPaidCents: 17900,
+        amountPaidCurrency: "usd",
+      });
+    }
+
+    it("lists paid submissions in the window with no confirmation and no confirmation failure", async () => {
+      await paidAt("sub_missing", "2026-04-28T10:00:00.000Z");
+      await paidAt("sub_sent", "2026-04-28T10:00:00.000Z");
+      await appendEmailFired("sub_sent", {
+        type: "order_confirmation",
+        sentAt: "2026-04-28T10:00:05.000Z",
+        resendId: "msg_1",
+      });
+      await paidAt("sub_flagged", "2026-04-28T10:00:00.000Z");
+      await appendEmailFailure("sub_flagged", failure({ emailType: "order_confirmation" }));
+      await paidAt("sub_other_failure", "2026-04-28T10:00:00.000Z");
+      await appendEmailFailure("sub_other_failure", failure());
+      await paidAt("sub_too_recent", "2026-04-29T11:30:00.000Z");
+      await paidAt("sub_too_old", "2026-04-10T10:00:00.000Z");
+      await createSubmission({ ...BASE_INPUT, id: "sub_pending" });
+
+      const ids = (await listPaidSubmissionsForEmail("order_confirmation", options)).map(
+        (row) => row._id,
+      );
+
+      expect(ids.sort()).toEqual(["sub_missing", "sub_other_failure"]);
+    });
+  });
+
+  it("findSubmissionByResendId finds the submission whose emailsFired holds the id", async () => {
+    await createSubmission(BASE_INPUT);
+    await appendEmailFired("sub_1", {
+      type: "reading_delivery",
+      sentAt: "2026-04-29T12:00:00.000Z",
+      resendId: "msg_abc",
+    });
+
+    expect((await findSubmissionByResendId("msg_abc"))?._id).toBe("sub_1");
+    expect(await findSubmissionByResendId("msg_ab")).toBeNull();
+  });
+
+  it("setSubmissionEmailAndRecipient changes the address and user and clears the delivery attempt", async () => {
+    await createSubmission(BASE_INPUT);
+    await claimReadingDeliveryAttempt("sub_1", {
+      attemptedAt: "2026-04-29T12:00:00.000Z",
+      jti: "jti-first",
+    });
+    await setSubmissionEmailAndRecipient("sub_1", {
+      email: "ada@example.org",
+      recipientUserId: "user_new",
+    });
+    const fresh = { attemptedAt: "2026-04-30T12:00:00.000Z", jti: "jti-fresh" };
+
+    const record = await findSubmissionById("sub_1");
+    expect(record?.email).toBe("ada@example.org");
+    expect(record?.recipientUserId).toBe("user_new");
+    expect(await claimReadingDeliveryAttempt("sub_1", fresh)).toEqual({ ...fresh, body: null });
   });
 });

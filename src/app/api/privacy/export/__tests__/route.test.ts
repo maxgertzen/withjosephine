@@ -1,3 +1,4 @@
+import { strFromU8, unzipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/exportToken", () => ({
@@ -254,6 +255,31 @@ describe("POST /api/privacy/export", () => {
         success: true,
       }),
     );
+  });
+
+  it("includes the order's failed sends in delivery.json", async () => {
+    const failure = {
+      emailType: "reading_delivery",
+      kind: "bounced",
+      recipient: "ada@exmaple.com",
+      attemptNumber: 1,
+      attemptedAt: "2026-04-28T10:00:00Z",
+      failedAt: "2026-04-28T10:00:05Z",
+      statusCode: null,
+      errorCode: null,
+      errorMessage: "Mailbox does not exist",
+      bounceType: "Permanent / General",
+      resendId: "msg_b",
+      resolvedAt: null,
+    } as const;
+    mockFindSubmission.mockResolvedValueOnce({ ...SUBMISSION, emailFailures: [failure] });
+
+    await callRoute();
+
+    const files = unzipSync(mockPutObject.mock.calls[0]![1] as Uint8Array);
+    const deliveryPath = Object.keys(files).find((path) => path.endsWith("/delivery.json"));
+    const delivery = JSON.parse(strFromU8(files[deliveryPath!]!));
+    expect(delivery.emailFailures).toEqual([failure]);
   });
 
   it("reserves the export_request row before the R2 upload and email (TOCTOU guard)", async () => {

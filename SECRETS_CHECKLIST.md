@@ -28,6 +28,7 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the booking webhook endpoint | Stripe dashboard → Developers → Webhooks → endpoint → Signing secret |
 | `STRIPE_SECRET_KEY` | Stripe API key (only used to call `webhooks.constructEvent`) | Stripe dashboard → Developers → API keys |
 | `RESEND_API_KEY` | Resend API key with sending permission | Resend dashboard → API Keys → Create |
+| `RESEND_WEBHOOK_SECRET` | Signing secret of the webhook at `/api/webhooks/resend` (events: bounced, complained, suppressed, failed). Unset: the route returns 404 | Resend dashboard → Webhooks → Add endpoint → Signing secret |
 | `TURNSTILE_SECRET_KEY` | Server-side Turnstile secret for the booking + contact forms | Cloudflare dashboard → Turnstile → widget → Secret key |
 | `R2_ACCOUNT_ID` | Cloudflare account ID that owns the R2 bucket | CF dashboard → R2 → Manage R2 API tokens, or account home page |
 | `R2_ACCESS_KEY_ID` | R2 S3-API access key ID | CF dashboard → R2 → Manage R2 API tokens → Create |
@@ -47,6 +48,7 @@ Example:
 pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET
 pnpm exec wrangler secret put STRIPE_SECRET_KEY
 pnpm exec wrangler secret put RESEND_API_KEY
+pnpm exec wrangler secret put RESEND_WEBHOOK_SECRET
 pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
 pnpm exec wrangler secret put R2_ACCOUNT_ID
 pnpm exec wrangler secret put R2_ACCESS_KEY_ID

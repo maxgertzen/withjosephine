@@ -49,6 +49,7 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //                           a soft-launch posture, not a legal waiver.
 const APEX_ALLOWLIST_PREFIXES = [
   "/api/stripe/webhook",
+  "/api/webhooks/resend",
   "/api/cron/",
   "/api/internal/",
   "/api/admin/",

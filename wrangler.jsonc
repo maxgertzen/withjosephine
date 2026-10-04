@@ -19,6 +19,8 @@
 	//   - STRIPE_WEBHOOK_SECRET      Stripe webhook signing secret (whsec_...)
 	//   - STRIPE_SECRET_KEY          Stripe secret key (sk_live_... or sk_test_...)
 	//   - RESEND_API_KEY             Resend API key with sending permission
+	//   - RESEND_WEBHOOK_SECRET      Signing secret (whsec_...) of the Resend webhook at
+	//                                /api/webhooks/resend (bounced, complained, suppressed, failed)
 	//   - TURNSTILE_SECRET_KEY       Cloudflare Turnstile secret for the widget
 	//   - R2_ACCOUNT_ID              Cloudflare account ID hosting the R2 bucket
 	//   - R2_ACCESS_KEY_ID           R2 S3-API access key id

@@ -16,6 +16,7 @@ vi.mock("@/lib/booking/submissions", () => ({
     createdAt: "2026-04-28T12:00:00Z",
   }),
   claimReadingDeliveryAttempt: vi.fn(),
+  claimReadingDeliveryAttemptBody: vi.fn(async (_id: string, _jti: string, fresh: unknown) => fresh),
   clearReadingDeliveryAttempt: vi.fn(),
   findSubmissionById: vi.fn(),
   markSubmissionDeliveredIfUnset: vi.fn(),
@@ -27,8 +28,19 @@ vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
 }));
 
 vi.mock("@/lib/resend", () => ({
-  sendReadingDelivery: vi.fn(),
+  renderReadingDelivery: vi.fn(async (_context: unknown, listenUrl: string) => ({
+    subject: "Your reading",
+    html: listenUrl,
+  })),
+  sendRenderedReadingDelivery: vi.fn(),
 }));
+
+vi.mock("@/lib/booking/emailFailures", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/booking/emailFailures")>(
+    "@/lib/booking/emailFailures",
+  );
+  return { ...actual, recordEmailFailure: vi.fn() };
+});
 
 import { verifyListenToken } from "@/lib/auth/listenToken";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
@@ -39,12 +51,12 @@ import {
   recordReadingDeliverySent,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
-import { sendReadingDelivery } from "@/lib/resend";
+import { sendRenderedReadingDelivery } from "@/lib/resend";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
 const mockClaimAttempt = vi.mocked(claimReadingDeliveryAttempt);
-const mockSend = vi.mocked(sendReadingDelivery);
+const mockSend = vi.mocked(sendRenderedReadingDelivery);
 const mockRecordSent = vi.mocked(recordReadingDeliverySent);
 const mockFindById = vi.mocked(findSubmissionById);
 
@@ -77,7 +89,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   mockAuth.mockReset().mockReturnValue(true);
   mockFetchDeliverable.mockReset().mockResolvedValue([]);
-  mockClaimAttempt.mockReset().mockImplementation(async (_id, fresh) => fresh);
+  mockClaimAttempt.mockReset().mockImplementation(async (_id, fresh) => ({ ...fresh, body: null }));
   mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_d7" });
   mockRecordSent.mockReset().mockResolvedValue(undefined);
   mockFindById.mockReset().mockResolvedValue(null);
@@ -152,7 +164,7 @@ describe("/api/cron/deliver-reading?force=<submissionId>", () => {
 
     await callRoute();
 
-    const listenUrl = mockSend.mock.calls[0]?.[1] as string;
+    const listenUrl = (mockSend.mock.calls[0]?.[1] as { html: string }).html;
     expect(listenUrl).toContain("/listen/sub_force?t=");
     const verified = await verifyListenToken({
       token: new URL(listenUrl).searchParams.get("t") ?? "",
@@ -202,7 +214,7 @@ describe("/api/cron/deliver-reading?force=<submissionId>", () => {
     expect(first).toMatchObject({ sent: 1 });
     expect(second).toMatchObject({ sent: 0, skipped: 1, outcome: "alreadySent" });
     expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "reading-delivery/sub_force" });
+    expect(mockSend.mock.calls[0]?.[2]?.idempotencyKey).toMatch(/^reading-delivery\/sub_force\/[0-9a-f-]{36}$/);
   });
 
   it("returns processed=0 when the submission does not exist in D1", async () => {

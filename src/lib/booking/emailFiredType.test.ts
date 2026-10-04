@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  asCustomerEmailType,
   currentEmailFiredType,
   findReadingDeliveryEntry,
   isEmailFiredOfType,
@@ -51,5 +52,18 @@ describe("findReadingDeliveryEntry", () => {
   it("returns undefined without a reading delivery entry", () => {
     expect(findReadingDeliveryEntry([{ type: "day7-overdue-alert" }])).toBeUndefined();
     expect(findReadingDeliveryEntry(undefined)).toBeUndefined();
+  });
+});
+
+describe("asCustomerEmailType", () => {
+  it.each([
+    ["order_confirmation", "order_confirmation"],
+    ["reading_delivery", "reading_delivery"],
+    ["day7", "reading_delivery"],
+    ["reading_overdue_alert", null],
+    ["magic_link", null],
+    [undefined, null],
+  ] as const)("maps %s to %s", (stored, expected) => {
+    expect(asCustomerEmailType(stored)).toBe(expected);
   });
 });

@@ -1,147 +1,138 @@
 import { EnvelopeIcon } from "@sanity/icons";
-import { Box, Button, Select, Stack, Text, useToast } from "@sanity/ui";
-import { useCallback, useEffect, useState } from "react";
-import type { DocumentActionComponent, DocumentActionProps } from "sanity";
+import { Box, Button, Select, Stack, Text, TextInput, useToast } from "@sanity/ui";
+import { useState } from "react";
+import { type DocumentActionComponent, type DocumentActionProps, useClient } from "sanity";
 
-import { AdminTokenInput } from "../components/AdminTokenInput";
+import { asCustomerEmailType } from "../../src/lib/booking/emailFiredType";
+import { isValidEmail } from "../../src/lib/formStyles";
+import type { CustomerEmailType } from "../../src/lib/page-previews/types";
+import { REQUESTED_TOAST, STUDIO_API_VERSION } from "../lib/studioRequests";
+import { EMAIL_TYPE_LABELS } from "../schemas/emailFailurePreview";
 
-const ADMIN_ROUTE = "/api/admin/resend-customer-email";
+const ACTION_LABEL = "Resend customer email…";
+const REQUESTED_LABEL = "Resend requested";
+const REQUESTED_TITLE = "Sending within 5 minutes.";
+const UNPUBLISHED_TITLE = "Publish your changes first.";
+const DIALOG_HEADER = "Resend customer email";
+const DIALOG_INTRO =
+  "Sends the email again. If the address was wrong, type the right one: it replaces the address on the order and for future sign-in links. Up to 3 resends per email in 24 hours.";
+const EMAIL_TYPE_LABEL = "Email to resend";
+const SEND_TO_LABEL = "Send to";
+const INVALID_ADDRESS = "This is not a valid email address.";
+const SUBMIT_LABEL = "Resend";
 
-const EMAIL_TYPES = [
-  { value: "order_confirmation", label: "Order confirmation (booking receipt)" },
-  { value: "reading_delivery", label: "Reading delivery email" },
-] as const;
-
-type SubmissionDoc = {
+type ResendSubmissionDocument = {
   status?: string;
+  email?: string;
+  emailResendRequest?: { requestedAt?: string };
+  emailFailures?: Array<{ emailType?: string; resolvedAt?: string }>;
 };
+
+function defaultEmailType(document: ResendSubmissionDocument): CustomerEmailType {
+  const openFailure = document.emailFailures?.find((failure) => !failure.resolvedAt);
+  return openFailure?.emailType === "reading_delivery" ? "reading_delivery" : "order_confirmation";
+}
 
 export const resendCustomerEmailAction: DocumentActionComponent = (
   props: DocumentActionProps,
 ) => {
+  const client = useClient({ apiVersion: STUDIO_API_VERSION });
   const toast = useToast();
+  const document = props.published as ResendSubmissionDocument | null;
   const [isOpen, setIsOpen] = useState(false);
-  const [adminToken, setAdminToken] = useState("");
-  const [emailType, setEmailType] = useState<string>(EMAIL_TYPES[0].value);
   const [isPending, setIsPending] = useState(false);
+  const [emailType, setEmailType] = useState<CustomerEmailType>("order_confirmation");
+  const [sendTo, setSendTo] = useState("");
 
-  useEffect(() => {
-    if (!isOpen) {
-      setAdminToken("");
-      setEmailType(EMAIL_TYPES[0].value);
-    }
-  }, [isOpen]);
+  if (!document || document.status !== "paid") return null;
 
-  const submissionId = props.id;
+  if (document.emailResendRequest?.requestedAt) {
+    return { label: REQUESTED_LABEL, icon: EnvelopeIcon, disabled: true, title: REQUESTED_TITLE };
+  }
+  if (props.draft) {
+    return { label: ACTION_LABEL, icon: EnvelopeIcon, disabled: true, title: UNPUBLISHED_TITLE };
+  }
 
-  const handleConfirm = useCallback(async () => {
-    if (!adminToken) return;
+  const addressIsValid = isValidEmail(sendTo);
+
+  function open() {
+    setEmailType(defaultEmailType(document ?? {}));
+    setSendTo(document?.email ?? "");
+    setIsOpen(true);
+  }
+
+  async function requestResend() {
     setIsPending(true);
     try {
-      const response = await fetch(ADMIN_ROUTE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Token": adminToken,
-        },
-        body: JSON.stringify({ submissionId, emailType }),
-      });
-
-      if (!response.ok) {
-        const detail = await response.text().catch(() => "");
-        const parsed = detail
-          ? (() => {
-              try {
-                return JSON.parse(detail) as { reason?: string };
-              } catch {
-                return null;
-              }
-            })()
-          : null;
-        toast.push({
-          status: "error",
-          title: "Resend failed",
-          description: parsed?.reason
-            ? `Reason: ${parsed.reason}.`
-            : `HTTP ${response.status}${detail ? ` — ${detail.slice(0, 160)}` : ""}`,
-        });
-        setIsPending(false);
-        return;
-      }
-
-      const result = (await response.json()) as {
-        outcome: string;
-        to?: string;
-        emailType?: string;
-      };
-      toast.push({
-        status: "success",
-        title: "Email resent",
-        description: `${result.emailType ?? emailType} sent to ${result.to ?? "the customer"}.`,
-      });
+      await client
+        .patch(props.id)
+        .set({
+          emailResendRequest: {
+            emailType,
+            correctedEmail: sendTo.trim(),
+            requestedAt: new Date().toISOString(),
+          },
+        })
+        .commit();
+      toast.push({ status: "info", title: REQUESTED_TOAST });
       setIsOpen(false);
-      setIsPending(false);
       props.onComplete();
     } catch (error) {
       toast.push({
         status: "error",
-        title: "Resend failed",
-        description: error instanceof Error ? error.message : String(error),
+        title: error instanceof Error ? error.message : String(error),
       });
+    } finally {
       setIsPending(false);
     }
-  }, [adminToken, emailType, props, submissionId, toast]);
-
-  const doc = (props.published ?? props.draft) as SubmissionDoc | null;
-  if (!doc || doc.status !== "paid") return null;
-
-  const isReadyToFire = adminToken.length > 0 && !isPending;
+  }
 
   return {
-    label: "Resend customer email…",
+    label: ACTION_LABEL,
     icon: EnvelopeIcon,
-    onHandle: () => setIsOpen(true),
+    onHandle: open,
     dialog: isOpen && {
       type: "dialog",
-      header: "Resend customer email",
+      header: DIALOG_HEADER,
       onClose: isPending ? () => undefined : () => setIsOpen(false),
       content: (
         <Stack space={4}>
-          <Text size={1}>
-            Use this when a customer writes in saying they didn&apos;t receive a
-            transactional email. The resend is rate-limited to 3 per email type per
-            24 hours and is recorded in the emailsFired audit log.
-          </Text>
-          <Box>
-            <Text size={1} weight="semibold">Email to resend:</Text>
-            <Box marginTop={2}>
-              <Select
-                value={emailType}
-                onChange={(e) => setEmailType(e.currentTarget.value)}
-                disabled={isPending}
-              >
-                {EMAIL_TYPES.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </Box>
-          </Box>
-          <AdminTokenInput
-            value={adminToken}
-            onChange={setAdminToken}
-            disabled={isPending}
-          />
+          <Text size={1}>{DIALOG_INTRO}</Text>
+          <Stack space={2}>
+            <Text size={1} weight="semibold">{EMAIL_TYPE_LABEL}</Text>
+            <Select
+              value={emailType}
+              onChange={(event) => setEmailType(asCustomerEmailType(event.currentTarget.value) ?? "order_confirmation")}
+              disabled={isPending}
+            >
+              {Object.entries(EMAIL_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </Select>
+          </Stack>
+          <Stack space={2}>
+            <Text size={1} weight="semibold">{SEND_TO_LABEL}</Text>
+            <TextInput
+              type="email"
+              value={sendTo}
+              onChange={(event) => setSendTo(event.currentTarget.value)}
+              disabled={isPending}
+            />
+            {!addressIsValid && (
+              <Box>
+                <Text size={1} muted>{INVALID_ADDRESS}</Text>
+              </Box>
+            )}
+          </Stack>
         </Stack>
       ),
       footer: (
-        <Stack space={2}>
-          <Button
-            text={isPending ? "Sending…" : "Resend"}
-            tone="primary"
-            disabled={!isReadyToFire}
-            onClick={handleConfirm}
-          />
-        </Stack>
+        <Button
+          text={SUBMIT_LABEL}
+          tone="primary"
+          disabled={isPending || !addressIsValid}
+          onClick={() => void requestResend()}
+        />
       ),
     },
   };

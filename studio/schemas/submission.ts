@@ -2,6 +2,7 @@ import { defineField, defineType, type CustomValidator } from "sanity";
 
 import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
+import { emailFailure } from "./emailFailure";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
 const requireOnceDelivered =
@@ -74,6 +75,28 @@ export const submission = defineType({
       type: "datetime",
       hidden: true,
       readOnly: true,
+    }),
+    defineField({
+      name: "emailResendRequest",
+      title: "Email resend request (internal)",
+      type: "object",
+      hidden: true,
+      readOnly: true,
+      fields: [
+        defineField({ name: "emailType", title: "Email", type: "string" }),
+        defineField({ name: "correctedEmail", title: "Send to", type: "string" }),
+        defineField({ name: "requestedAt", title: "Requested at", type: "datetime" }),
+      ],
+    }),
+    defineField({
+      name: "emailFailures",
+      title: "Failed sends",
+      type: "array",
+      readOnly: true,
+      hidden: ({ value }) => !Array.isArray(value) || value.length === 0,
+      description:
+        "Customer emails that did not go out. To send again, correct the address if needed and press Resend customer email.",
+      of: [{ type: emailFailure.name }],
     }),
     defineField({
       name: "listenedAt",
@@ -179,7 +202,9 @@ export const submission = defineType({
       name: "email",
       title: "Email",
       type: "string",
-      description: "Client email captured at form submission.",
+      readOnly: true,
+      description:
+        "Client email captured at form submission. To change it, use Resend customer email and fill in the new address.",
       validation: (rule) => rule.required().email(),
     }),
     defineField({

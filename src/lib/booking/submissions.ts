@@ -1,4 +1,7 @@
 import type {
+  CustomerEmailType,
+  EmailFailureEntry,
+  EmailFailureKind,
   EmailFiredEntry,
   EmailFiredType,
   SubmissionRecord,
@@ -11,9 +14,11 @@ import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
 import { formatAmountPaid } from "./formatAmount";
 import type {
+  ClaimedReadingDeliveryAttempt,
   CreateSubmissionInput,
   FinancialRecordInput,
   ReadingDeliveryAttempt,
+  RenderedEmail,
   SubmissionDelivery,
 } from "./persistence/repository";
 import * as repo from "./persistence/repository";
@@ -37,9 +42,14 @@ export const SUBMISSION_STATUS = {
 } as const;
 
 export type {
+  ClaimedReadingDeliveryAttempt,
+  CustomerEmailType,
+  EmailFailureEntry,
+  EmailFailureKind,
   EmailFiredEntry,
   EmailFiredType,
   ReadingDeliveryAttempt,
+  RenderedEmail,
   SubmissionDelivery,
   SubmissionRecord,
   SubmissionStatus,
@@ -87,6 +97,10 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
   return repo.findSubmissionById(id);
+}
+
+export async function findSubmissionByResendId(resendId: string): Promise<SubmissionRecord | null> {
+  return repo.findSubmissionByResendId(resendId);
 }
 
 export async function findSubmissionRecipientUserId(
@@ -179,7 +193,7 @@ export async function listSubmissionsByStatusOlderThan(
 
 export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
-  options: { paidBefore?: string },
+  options: Parameters<typeof repo.listPaidSubmissionsForEmail>[1],
 ): Promise<SubmissionRecord[]> {
   return repo.listPaidSubmissionsForEmail(emailType, options);
 }
@@ -215,11 +229,20 @@ export function schedulePdfDownloadedAtMirror(
   runMirror(mirrorMarkSubmissionPdfDownloaded(submissionId, pdfDownloadedAt));
 }
 
+function failuresResolvedAt(
+  failures: readonly EmailFailureEntry[] | null,
+  resolvedAt: string,
+): readonly EmailFailureEntry[] | undefined {
+  return failures?.some((failure) => failure.resolvedAt === resolvedAt) ? failures : undefined;
+}
+
 export async function markSubmissionDeliveredIfUnset(
   submissionId: string,
   delivery: SubmissionDelivery,
 ): Promise<void> {
-  await repo.markSubmissionDeliveredIfUnset(submissionId, delivery);
+  const failures = await repo.markSubmissionDeliveredIfUnset(submissionId, delivery);
+  const emailFailures = failuresResolvedAt(failures, delivery.deliveredAt);
+  if (emailFailures) runMirror(mirrorSubmissionPatch(submissionId, { emailFailures }));
 }
 
 export async function recordReadingDeliverySent(
@@ -232,24 +255,34 @@ export async function recordReadingDeliverySent(
     sentAt: delivery.deliveredAt,
     resendId,
   };
-  const { rowsWritten } = await repo.markReadingDeliverySentIfUnrecorded(
-    submissionId,
-    delivery,
-    entry,
+  const failures = await repo.markReadingDeliverySentIfUnrecorded(submissionId, delivery, entry);
+  if (!failures) return;
+  const resolved = failuresResolvedAt(failures, entry.sentAt);
+  runMirror(
+    mirrorAppendEmailFired(submissionId, entry, {
+      deliveredAt: entry.sentAt,
+      ...(resolved && { emailFailures: resolved }),
+    }),
   );
-  if (rowsWritten === 0) return;
-  runMirror(mirrorAppendEmailFired(submissionId, entry, { deliveredAt: entry.sentAt }));
 }
 
 export async function claimReadingDeliveryAttempt(
   submissionId: string,
   fresh: ReadingDeliveryAttempt,
-): Promise<ReadingDeliveryAttempt | null> {
+): Promise<ClaimedReadingDeliveryAttempt | null> {
   return repo.claimReadingDeliveryAttempt(submissionId, fresh);
 }
 
 export async function clearReadingDeliveryAttempt(submissionId: string): Promise<void> {
   await repo.clearReadingDeliveryAttempt(submissionId);
+}
+
+export async function claimReadingDeliveryAttemptBody(
+  submissionId: string,
+  jti: string,
+  fresh: RenderedEmail,
+): Promise<RenderedEmail | null> {
+  return repo.claimReadingDeliveryAttemptBody(submissionId, jti, fresh);
 }
 
 export async function setSubmissionRecipientUser(
@@ -259,12 +292,28 @@ export async function setSubmissionRecipientUser(
   await repo.setSubmissionRecipientUser(submissionId, userId);
 }
 
+export async function correctSubmissionEmail(
+  submissionId: string,
+  correction: { email: string; recipientUserId: string },
+): Promise<void> {
+  await repo.setSubmissionEmailAndRecipient(submissionId, correction);
+  runMirror(mirrorSubmissionPatch(submissionId, correction));
+}
+
+export async function countSubmissionsByRecipientUserId(userId: string): Promise<number> {
+  return repo.countSubmissionsByRecipientUserId(userId);
+}
+
 export async function appendEmailFired(
   submissionId: string,
   entry: EmailFiredEntry,
+  options?: { deliveredAt?: string },
 ): Promise<void> {
-  await repo.appendEmailFired(submissionId, entry);
-  runMirror(mirrorAppendEmailFired(submissionId, entry));
+  const failures = await repo.appendEmailFired(submissionId, entry, options);
+  const emailFailures = failuresResolvedAt(failures, entry.sentAt);
+  runMirror(
+    mirrorAppendEmailFired(submissionId, entry, { ...options, ...(emailFailures && { emailFailures }) }),
+  );
 }
 
 export async function deleteSubmissionAndPhoto(

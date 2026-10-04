@@ -263,6 +263,13 @@ describe("middleware apex lockdown (under-construction on)", () => {
     expect(res.rewriteTo).toBeNull();
   });
 
+  it("does NOT rewrite the Resend webhook on apex", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/api/webhooks/resend" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
   it("does NOT rewrite cron endpoints on apex (CF cron triggers must work)", () => {
     const paths = [
       "/api/cron/reconcile",

@@ -13,6 +13,34 @@ export type EmailFiredEntry = {
   resendId: string | null;
 };
 
+export const CUSTOMER_EMAIL_TYPES = ["order_confirmation", "reading_delivery"] as const;
+
+export type CustomerEmailType = (typeof CUSTOMER_EMAIL_TYPES)[number];
+
+export type EmailFailureKind =
+  | "send_error"
+  | "maybe_sent"
+  | "unrecorded"
+  | "bounced"
+  | "complained"
+  | "suppressed"
+  | "refused";
+
+export type EmailFailureEntry = {
+  emailType: CustomerEmailType;
+  kind: EmailFailureKind;
+  recipient: string;
+  attemptNumber: number;
+  attemptedAt: string | null;
+  failedAt: string;
+  statusCode: number | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  bounceType: string | null;
+  resendId: string | null;
+  resolvedAt: string | null;
+};
+
 export type SubmissionRecord = {
   _id: string;
   status: SubmissionStatus;
@@ -33,6 +61,7 @@ export type SubmissionRecord = {
   voiceNoteUrl?: string;
   pdfUrl?: string;
   emailsFired?: EmailFiredEntry[];
+  emailFailures?: EmailFailureEntry[];
   reading: {
     slug: string;
     name: string;

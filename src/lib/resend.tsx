@@ -1,11 +1,15 @@
 import { render } from "@react-email/render";
 import { headers } from "next/headers";
-import { type ErrorResponse, Resend } from "resend";
+import { type ErrorResponse, Resend, type WebhookEventPayload } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { isSandboxEmail } from "./booking/sandboxEmails";
-import { FIRST_NAME_FALLBACK } from "./booking/submissions";
+import {
+  type CustomerEmailType,
+  FIRST_NAME_FALLBACK,
+  type RenderedEmail,
+} from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { JosephineNotification } from "./emails/JosephineNotification";
@@ -67,6 +71,16 @@ function getResendClient(): Resend | null {
   return cachedClient;
 }
 
+export function verifyResendWebhook(args: {
+  payload: string;
+  headers: { id: string; timestamp: string; signature: string };
+  webhookSecret: string;
+}): WebhookEventPayload {
+  const client = getResendClient();
+  if (!client) throw new Error("RESEND_API_KEY missing");
+  return client.webhooks.verify(args);
+}
+
 /**
  * Redact the local-part of an email address for logs: "ada@example.com" →
  * "a***@example.com". Worker logs aren't a long-term store, but there's no
@@ -90,29 +104,53 @@ function redactRecipient(to: string | string[]) {
 
 type SkipReason = "sandbox_prefix" | "env_guard" | "flag" | "header";
 
+function configuredSkipReason(
+  recipients: readonly string[],
+  originatorEmail: string | null,
+): Exclude<SkipReason, "header"> | null {
+  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
+    return "sandbox_prefix";
+  }
+  if (!isProductionEnv() && !recipients.every(isProductionAllowlistedRecipient)) {
+    return "env_guard";
+  }
+  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  return null;
+}
+
 async function resolveSkipReason(
   recipients: readonly string[],
   originatorEmail: string | null,
 ): Promise<SkipReason | null> {
-  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
-    return "sandbox_prefix";
+  const configured = configuredSkipReason(recipients, originatorEmail);
+  if (configured === "env_guard") {
+    console.warn(
+      `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
+    );
   }
-  if (!isProductionEnv()) {
-    const allAllowed = recipients.every(isProductionAllowlistedRecipient);
-    if (!allAllowed) {
-      console.warn(
-        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
-      );
-      return "env_guard";
-    }
-  }
-  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  if (configured) return configured;
   if (await shouldDryRunFromRequestHeader()) return "header";
   return null;
 }
 
 function isProductionEnv(): boolean {
   return process.env.NEXT_PUBLIC_SANITY_DATASET === "production";
+}
+
+export function isDryRunRecipient(recipient: string): boolean {
+  return configuredSkipReason([recipient], null) !== null;
+}
+
+export const CUSTOMER_EMAIL_TAG = {
+  submissionId: "submission_id",
+  emailType: "email_type",
+} as const;
+
+function customerEmailTags(submissionId: string, emailType: CustomerEmailType) {
+  return {
+    [CUSTOMER_EMAIL_TAG.submissionId]: submissionId,
+    [CUSTOMER_EMAIL_TAG.emailType]: emailType,
+  };
 }
 
 const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
@@ -163,6 +201,7 @@ export async function sendOrSkip(args: {
   submissionId: string | null;
   replyTo?: string;
   idempotencyKey?: string;
+  tags?: Record<string, string>;
   // Admin notifications: `to` is always hello@, so check the submission email too.
   originatorEmail?: string | null;
 }): Promise<EmailSendResult> {
@@ -203,6 +242,9 @@ export async function sendOrSkip(args: {
         subject: args.subject,
         html: args.html,
         ...(args.replyTo ? { replyTo: args.replyTo } : {}),
+        ...(args.tags
+          ? { tags: Object.entries(args.tags).map(([name, value]) => ({ name, value })) }
+          : {}),
       },
       args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
     );
@@ -307,6 +349,7 @@ export async function sendOrderConfirmation(
     subType: "order_confirmation",
     submissionId: submission.id,
     idempotencyKey: options?.idempotencyKey,
+    tags: customerEmailTags(submission.id, "order_confirmation"),
   });
 }
 
@@ -315,6 +358,30 @@ export async function sendReadingDelivery(
   listenUrl: string,
   options?: { idempotencyKey?: string },
 ): Promise<EmailSendResult> {
+  const rendered = await renderReadingDelivery(submission, listenUrl);
+  return sendRenderedReadingDelivery(submission, rendered, options);
+}
+
+export async function sendRenderedReadingDelivery(
+  submission: Pick<SubmissionContext, "id" | "email">,
+  rendered: RenderedEmail,
+  options?: { idempotencyKey?: string },
+): Promise<EmailSendResult> {
+  return sendOrSkip({
+    to: submission.email,
+    subject: rendered.subject,
+    html: rendered.html,
+    subType: "reading_delivery",
+    submissionId: submission.id,
+    idempotencyKey: options?.idempotencyKey,
+    tags: customerEmailTags(submission.id, "reading_delivery"),
+  });
+}
+
+export async function renderReadingDelivery(
+  submission: SubmissionContext,
+  listenUrl: string,
+): Promise<RenderedEmail> {
   // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_READING_DELIVERY_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailReadingDelivery } = await import("@/lib/sanity/fetch");
@@ -338,14 +405,7 @@ export async function sendReadingDelivery(
       shell={shell}
     />,
   );
-  return sendOrSkip({
-    to: submission.email,
-    subject,
-    html,
-    subType: "reading_delivery",
-    submissionId: submission.id,
-    idempotencyKey: options?.idempotencyKey,
-  });
+  return { subject, html };
 }
 
 export async function sendMagicLink(args: {

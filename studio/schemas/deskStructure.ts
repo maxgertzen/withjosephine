@@ -94,6 +94,21 @@ const paidAwaitingDelivery = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
+const FAILED_SENDS_FILTER =
+  '_type == "submission" && count(emailFailures[!defined(resolvedAt)]) > 0';
+
+const failedSends = (S: StructureBuilder) =>
+  S.listItem()
+    .title("⚠️ Failed sends")
+    .id("submissionsFailedSends")
+    .child(
+      S.documentList()
+        .title("Failed sends")
+        .schemaType("submission")
+        .filter(FAILED_SENDS_FILTER)
+        .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
+    );
+
 const deliveredListened = (S: StructureBuilder) =>
   S.listItem()
     .title("✓ Listened")
@@ -224,6 +239,8 @@ export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
     .items([
+      failedSends(S),
+      S.divider(),
       singletonListItem(S, "siteSettings", "Site Settings"),
       singletonListItem(S, "theme", "Theme"),
       S.divider(),

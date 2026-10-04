@@ -12,6 +12,7 @@ vi.mock("@/lib/booking/submissions", () => ({
     createdAt: "2026-04-28T12:00:00Z",
   }),
   claimReadingDeliveryAttempt: vi.fn(),
+  claimReadingDeliveryAttemptBody: vi.fn(),
   clearReadingDeliveryAttempt: vi.fn(),
   findSubmissionById: vi.fn(),
   markSubmissionDeliveredIfUnset: vi.fn(),
@@ -23,22 +24,33 @@ vi.mock("@/lib/booking/persistence/sanityDelivery", () => ({
 }));
 
 vi.mock("@/lib/resend", () => ({
-  sendReadingDelivery: vi.fn(),
+  renderReadingDelivery: vi.fn(),
+  sendRenderedReadingDelivery: vi.fn(),
 }));
 
+vi.mock("@/lib/booking/emailFailures", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/booking/emailFailures")>(
+    "@/lib/booking/emailFailures",
+  );
+  return { ...actual, recordEmailFailure: vi.fn() };
+});
+
 import { LISTEN_TOKEN_TTL_MS, verifyListenToken } from "@/lib/auth/listenToken";
+import { recordEmailFailure } from "@/lib/booking/emailFailures";
 import { fetchDeliverableSubmissions } from "@/lib/booking/persistence/sanityDelivery";
 import {
   claimReadingDeliveryAttempt,
+  claimReadingDeliveryAttemptBody,
   clearReadingDeliveryAttempt,
   type EmailFiredEntry,
   findSubmissionById,
   markSubmissionDeliveredIfUnset,
   type ReadingDeliveryAttempt,
   recordReadingDeliverySent,
+  type RenderedEmail,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
-import { sendReadingDelivery } from "@/lib/resend";
+import { renderReadingDelivery, sendRenderedReadingDelivery } from "@/lib/resend";
 
 import {
   ATTEMPT_RETRY_WINDOW_MS,
@@ -47,13 +59,16 @@ import {
   RECORD_TRIES,
 } from "./readingDelivery";
 
-const mockSend = vi.mocked(sendReadingDelivery);
+const mockSend = vi.mocked(sendRenderedReadingDelivery);
+const mockRender = vi.mocked(renderReadingDelivery);
 const mockRecordSent = vi.mocked(recordReadingDeliverySent);
 const mockMarkDelivered = vi.mocked(markSubmissionDeliveredIfUnset);
 const mockClaimAttempt = vi.mocked(claimReadingDeliveryAttempt);
+const mockClaimBody = vi.mocked(claimReadingDeliveryAttemptBody);
 const mockClearAttempt = vi.mocked(clearReadingDeliveryAttempt);
 const mockFindById = vi.mocked(findSubmissionById);
 const mockFetchDeliverable = vi.mocked(fetchDeliverableSubmissions);
+const mockRecordFailure = vi.mocked(recordEmailFailure);
 
 const ATTEMPT_AT = new Date("2026-04-29T12:00:00Z");
 const SENT_AT = new Date("2026-04-29T12:00:07Z");
@@ -86,8 +101,9 @@ const DELIVERY_ENTRY: EmailFiredEntry = {
 const LEGACY_DELIVERY_ENTRY = { ...DELIVERY_ENTRY, type: "day7" } as unknown as EmailFiredEntry;
 
 let storedAttempt: ReadingDeliveryAttempt | null;
+let storedBody: RenderedEmail | null;
 
-function sendAtSentTime(result: Awaited<ReturnType<typeof sendReadingDelivery>>) {
+function sendAtSentTime(result: Awaited<ReturnType<typeof sendRenderedReadingDelivery>>) {
   return async () => {
     vi.setSystemTime(SENT_AT);
     return result;
@@ -95,7 +111,15 @@ function sendAtSentTime(result: Awaited<ReturnType<typeof sendReadingDelivery>>)
 }
 
 function listenUrlOfSend(callIndex: number): string {
-  return mockSend.mock.calls[callIndex]?.[1] as string;
+  return (mockSend.mock.calls[callIndex]?.[1] as RenderedEmail).html;
+}
+
+function keyOfSend(callIndex: number): string | undefined {
+  return mockSend.mock.calls[callIndex]?.[2]?.idempotencyKey;
+}
+
+function recordedFailure(callIndex = 0) {
+  return mockRecordFailure.mock.calls[callIndex]?.[1];
 }
 
 beforeEach(() => {
@@ -104,13 +128,24 @@ beforeEach(() => {
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   storedAttempt = null;
+  storedBody = null;
   mockClaimAttempt.mockReset().mockImplementation(async (_id, fresh) => {
     storedAttempt ??= fresh;
-    return storedAttempt;
+    return { ...storedAttempt, body: storedBody };
   });
   mockClearAttempt.mockReset().mockImplementation(async () => {
     storedAttempt = null;
+    storedBody = null;
   });
+  mockClaimBody.mockReset().mockImplementation(async (_id, jti, fresh) => {
+    if (storedAttempt?.jti !== jti) return null;
+    storedBody ??= fresh;
+    return storedBody;
+  });
+  mockRender
+    .mockReset()
+    .mockImplementation(async (_context, listenUrl) => ({ subject: "Your reading", html: listenUrl }));
+  mockRecordFailure.mockReset().mockResolvedValue(undefined);
   mockSend
     .mockReset()
     .mockImplementation(sendAtSentTime({ kind: "sent", resendId: "msg_d7" }));
@@ -142,11 +177,13 @@ describe("deliverOne", () => {
     },
   );
 
-  it("sends with the reading-delivery/<id> key and records deliveredAt as the attempt time", async () => {
+  it("sends with the reading-delivery/<id>/<attempt jti> key and records deliveredAt as the attempt time", async () => {
     const outcome = await deliverOne(PAID_SUBMISSION, DELIVERABLE);
 
     expect(outcome).toBe("sent");
-    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "reading-delivery/sub_1" });
+    expect(keyOfSend(0)).toBe(`reading-delivery/sub_1/${storedAttempt?.jti}`);
+    expect(mockSend.mock.calls[0]?.[0]).toEqual({ id: "sub_1", email: "client@example.com" });
+    expect(mockRecordFailure).not.toHaveBeenCalled();
     expect(mockRecordSent).toHaveBeenCalledWith(
       "sub_1",
       {
@@ -182,6 +219,26 @@ describe("deliverOne", () => {
 
     expect(mockSend).toHaveBeenCalledTimes(2);
     expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
+  });
+
+  it("renders the email once per attempt and resends the stored body on a retry", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "internal_server_error", statusCode: 500 });
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+    mockRender.mockResolvedValue({ subject: "Edited in Sanity", html: "<p>edited</p>" });
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    expect(mockRender).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls[1]?.[1]).toEqual(storedBody);
+    expect(mockSend.mock.calls[1]?.[1]).not.toMatchObject({ subject: "Edited in Sanity" });
+  });
+
+  it("renders a new body for a new attempt after the old one is cleared", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "validation_error", statusCode: 422 });
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    expect(mockRender).toHaveBeenCalledTimes(2);
+    expect(keyOfSend(1)).not.toBe(keyOfSend(0));
   });
 
   it("retries the D1 record inline and reports sent when a later try succeeds", async () => {
@@ -222,9 +279,10 @@ describe("deliverOne", () => {
     expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("retryLater");
     expect(storedAttempt).not.toBeNull();
     expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(mockRecordFailure).not.toHaveBeenCalled();
   });
 
-  it("keeps the attempt and reports skipped when Resend says the key was used with another body", async () => {
+  it("keeps the attempt and records maybe_sent when Resend says the key was used with another body", async () => {
     mockSend.mockResolvedValueOnce({
       kind: "failed",
       error: "invalid_idempotent_request",
@@ -234,6 +292,33 @@ describe("deliverOne", () => {
     expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("skipped");
     expect(storedAttempt).not.toBeNull();
     expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(recordedFailure()).toMatchObject({
+      emailType: "reading_delivery",
+      kind: "maybe_sent",
+      recipient: "client@example.com",
+      statusCode: 409,
+      errorCode: "invalid_idempotent_request",
+      attemptedAt: ATTEMPT_AT.toISOString(),
+    });
+  });
+
+  it("records send_error with the Resend status and code when Resend refuses", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "validation_error", statusCode: 422 });
+
+    await deliverOne(PAID_SUBMISSION, DELIVERABLE);
+
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ kind: "send_error", statusCode: 422, errorCode: "validation_error" }),
+    );
+  });
+
+  it("records refused without sending when the submission has no recipient user", async () => {
+    const outcome = await deliverOne({ ...PAID_SUBMISSION, recipientUserId: null }, DELIVERABLE);
+
+    expect(outcome).toBe("skipped");
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(recordedFailure()).toMatchObject({ kind: "refused", errorCode: "missing_recipient_user" });
   });
 
   it("does not send and reports attemptExpired when the unrecorded attempt is past the retry window", async () => {
@@ -242,10 +327,13 @@ describe("deliverOne", () => {
       jti: "old-attempt",
     };
 
+    const attemptedAt = storedAttempt.attemptedAt;
+
     expect(await deliverOne(PAID_SUBMISSION, DELIVERABLE)).toBe("attemptExpired");
     expect(mockSend).not.toHaveBeenCalled();
     expect(mockRecordSent).not.toHaveBeenCalled();
     expect(storedAttempt).toBeNull();
+    expect(recordedFailure()).toMatchObject({ kind: "unrecorded", attemptedAt });
   });
 
   it("starts a fresh attempt on the next request after an expired one", async () => {
@@ -272,6 +360,7 @@ describe("deliverOne", () => {
       expect.objectContaining({ deliveredAt: SENT_AT.toISOString() }),
     );
     expect(mockRecordSent).not.toHaveBeenCalled();
+    expect(mockRecordFailure).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -327,7 +416,6 @@ describe("deliverOne", () => {
 
     expect([scheduled, requested]).toEqual(["sent", "sent"]);
     expect(mockSend.mock.calls[1]).toEqual(mockSend.mock.calls[0]);
-    expect(mockSend.mock.calls[0]?.[2]).toEqual({ idempotencyKey: "reading-delivery/sub_1" });
   });
 });
 
@@ -355,5 +443,14 @@ describe("deliverRequested", () => {
       expect.objectContaining({ deliveredAt: ATTEMPT_AT.toISOString() }),
       "msg_d7",
     );
+  });
+
+  it("records the thrown error as a failure and reports skipped", async () => {
+    mockFindById.mockResolvedValueOnce(PAID_SUBMISSION);
+    mockFetchDeliverable.mockResolvedValueOnce([DELIVERABLE]);
+    mockSend.mockRejectedValueOnce(new Error("network down"));
+
+    expect(await deliverRequested("sub_1")).toBe("skipped");
+    expect(recordedFailure()).toMatchObject({ kind: "send_error", errorMessage: "network down" });
   });
 });

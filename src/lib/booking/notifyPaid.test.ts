@@ -29,8 +29,14 @@ vi.mock("../auth/users", () => ({
   getOrCreateUser: vi.fn(),
 }));
 
+vi.mock("./emailFailures", async () => {
+  const actual = await vi.importActual<typeof import("./emailFailures")>("./emailFailures");
+  return { ...actual, recordEmailFailure: vi.fn() };
+});
+
 import { getOrCreateUser } from "../auth/users";
 import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
+import { recordEmailFailure } from "./emailFailures";
 import { applyPaidEvent } from "./notifyPaid";
 import {
   appendEmailFired,
@@ -43,6 +49,16 @@ const mockJosephine = vi.mocked(sendNotificationToJosephine);
 const mockOrderConfirmation = vi.mocked(sendOrderConfirmation);
 const mockAppendEmailFired = vi.mocked(appendEmailFired);
 const mockGetOrCreateUser = vi.mocked(getOrCreateUser);
+const mockRecordFailure = vi.mocked(recordEmailFailure);
+
+const PAID_DETAILS = {
+  stripeEventId: "evt_1",
+  stripeSessionId: "cs_1",
+  paidAt: "2026-04-28T12:00:00Z",
+  amountPaidCents: 17900,
+  amountPaidCurrency: "usd",
+  country: null,
+};
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -64,6 +80,7 @@ beforeEach(() => {
   mockGetOrCreateUser
     .mockReset()
     .mockResolvedValue({ userId: "user_test_1", isNew: true });
+  mockRecordFailure.mockReset().mockResolvedValue(undefined);
 });
 
 describe("applyPaidEvent", () => {
@@ -343,5 +360,50 @@ describe("applyPaidEvent", () => {
     // Email fan-out still happens.
     expect(mockJosephine).toHaveBeenCalledOnce();
     expect(mockOrderConfirmation).toHaveBeenCalledOnce();
+  });
+
+  it("records a failed order confirmation with the Resend error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockOrderConfirmation.mockResolvedValueOnce({
+      kind: "failed",
+      error: "validation_error",
+      statusCode: 422,
+    });
+
+    await applyPaidEvent(SUBMISSION, PAID_DETAILS);
+
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({
+        emailType: "order_confirmation",
+        kind: "send_error",
+        recipient: "client@example.com",
+        statusCode: 422,
+        errorCode: "validation_error",
+      }),
+    );
+  });
+
+  it("records a thrown order confirmation as a failure", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockOrderConfirmation.mockRejectedValueOnce(new Error("Resend unreachable"));
+
+    await applyPaidEvent(SUBMISSION, PAID_DETAILS);
+
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ kind: "send_error", errorMessage: "Resend unreachable" }),
+    );
+  });
+
+  it.each([
+    { kind: "sent", resendId: "msg_oc" },
+    { kind: "dry_run" },
+  ] as const)("records no failure when the order confirmation result is $kind", async (result) => {
+    mockOrderConfirmation.mockResolvedValueOnce(result);
+
+    await applyPaidEvent(SUBMISSION, PAID_DETAILS);
+
+    expect(mockRecordFailure).not.toHaveBeenCalled();
   });
 });

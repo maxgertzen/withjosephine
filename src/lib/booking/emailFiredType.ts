@@ -1,4 +1,4 @@
-import type { EmailFiredType } from "../page-previews/types";
+import { CUSTOMER_EMAIL_TYPES, type CustomerEmailType, type EmailFiredType } from "../page-previews/types";
 
 export const LEGACY_EMAIL_FIRED_TYPES: ReadonlyMap<string, EmailFiredType> = new Map([
   ["day7", "reading_delivery"],
@@ -18,6 +18,11 @@ export function storedEmailFiredTypes(type: EmailFiredType): string[] {
 
 export function emailFiredTypeNeedle(stored: string): string {
   return `"type":"${stored}"`;
+}
+
+export function asCustomerEmailType(stored: string | undefined): CustomerEmailType | null {
+  const current = stored === undefined ? undefined : currentEmailFiredType(stored);
+  return CUSTOMER_EMAIL_TYPES.find((type) => type === current) ?? null;
 }
 
 export function isEmailFiredOfType(stored: string | undefined, type: EmailFiredType): boolean {
