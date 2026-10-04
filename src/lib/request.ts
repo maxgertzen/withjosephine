@@ -3,7 +3,7 @@ import {
   X_FORWARDED_FOR_HEADER,
 } from "@/lib/http/headers";
 
-export function getClientIp(request: Request) {
+export function getClientIp(request: Pick<Request, "headers">) {
   const cfIp = request.headers.get(CF_CONNECTING_IP_HEADER);
   if (cfIp) return cfIp;
   const xff = request.headers.get(X_FORWARDED_FOR_HEADER);

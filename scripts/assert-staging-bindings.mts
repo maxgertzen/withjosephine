@@ -28,22 +28,29 @@ type WranglerTriggers = {
   crons?: string[];
 };
 
+type WranglerRateLimit = {
+  name: string;
+};
+
 type WranglerEnv = {
   name?: string;
   d1_databases?: WranglerD1Binding[];
   r2_buckets?: WranglerR2Binding[];
   vars?: Record<string, string>;
   triggers?: WranglerTriggers;
+  ratelimits?: WranglerRateLimit[];
 };
 
 type WranglerConfig = {
   vars?: Record<string, string>;
   env?: Record<string, WranglerEnv>;
   triggers?: WranglerTriggers;
+  ratelimits?: WranglerRateLimit[];
 };
 
 const STAGING_SUFFIX = "-staging";
 const DELIVER_REQUESTED_CRON = "*/5 * * * *";
+const GIFT_CODE_LIMITER = "GIFT_CODE_LIMITER";
 
 function stripJsonc(source: string): string {
   return source
@@ -120,6 +127,9 @@ if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
     `env.staging vars.NEXT_PUBLIC_SANITY_DATASET expected "staging", got "${vars.NEXT_PUBLIC_SANITY_DATASET ?? "(missing)"}"`,
   );
 }
+if (vars.GIFTS_ENABLED !== "1") {
+  fail(`env.staging vars.GIFTS_ENABLED expected "1", got "${vars.GIFTS_ENABLED ?? "(missing)"}"`);
+}
 
 for (const [blockName, block] of [
   ["production", config],
@@ -128,6 +138,17 @@ for (const [blockName, block] of [
   if (!block.triggers?.crons?.includes(DELIVER_REQUESTED_CRON)) {
     fail(`${blockName} triggers.crons must contain "${DELIVER_REQUESTED_CRON}" (deliver-requested)`);
   }
+  if (!block.ratelimits?.some((limiter) => limiter.name === GIFT_CODE_LIMITER)) {
+    fail(`${blockName} ratelimits must contain "${GIFT_CODE_LIMITER}"`);
+  }
+}
+
+const limiterNames = (block: { ratelimits?: WranglerRateLimit[] }) =>
+  (block.ratelimits ?? []).map((limiter) => limiter.name).sort().join(", ");
+if (limiterNames(config) !== limiterNames(staging)) {
+  fail(
+    `ratelimits differ between production [${limiterNames(config)}] and env.staging [${limiterNames(staging)}]`,
+  );
 }
 
 console.log("assert-staging-bindings: OK");
@@ -135,6 +156,6 @@ console.log(`  worker name: ${staging.name}`);
 console.log(`  d1 database: ${d1.database_name} (${d1.database_id})`);
 console.log(`  r2 bucket:   ${r2.bucket_name}`);
 console.log(
-  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}`,
+  `  vars:        ENVIRONMENT=${vars.ENVIRONMENT}, BOOKING_DB_DRIVER=${vars.BOOKING_DB_DRIVER}, NEXT_PUBLIC_SANITY_DATASET=${vars.NEXT_PUBLIC_SANITY_DATASET}, GIFTS_ENABLED=${vars.GIFTS_ENABLED}`,
 );
 console.log(`  prod vars:   no E2E* keys (${Object.keys(prodVars).length} total)`);

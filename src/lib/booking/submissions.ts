@@ -9,14 +9,13 @@ import type {
 } from "@/lib/page-previews/types";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 
-import { computeFinancialRetainedUntil } from "../compliance/retention";
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
+import { buildFinancialMirrorStatement, type FinancialMirror } from "./financialMirror";
 import { formatAmountPaid } from "./formatAmount";
 import type {
   ClaimedReadingDeliveryAttempt,
   CreateSubmissionInput,
-  FinancialRecordInput,
   ReadingDeliveryAttempt,
   RenderedEmail,
   SubmissionDelivery,
@@ -124,8 +123,6 @@ export async function findSubmissionListenContext(
   return repo.findSubmissionListenContext(id);
 }
 
-export type FinancialMirror = Omit<FinancialRecordInput, "retainedUntil">;
-
 export async function markSubmissionPaid(
   submissionId: string,
   paid: {
@@ -144,10 +141,7 @@ export async function markSubmissionPaid(
   if (financial) {
     await dbBatch([
       repo.buildMarkSubmissionPaidStatement(submissionId, paid),
-      repo.buildInsertFinancialRecordStatement({
-        ...financial,
-        retainedUntil: computeFinancialRetainedUntil(financial.paidAt),
-      }),
+      buildFinancialMirrorStatement(financial),
     ]);
   } else {
     await repo.markSubmissionPaid(submissionId, paid);

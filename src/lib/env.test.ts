@@ -75,6 +75,16 @@ describe("isFlagEnabled", () => {
     vi.stubEnv("RESEND_DRY_RUN", "yes");
     expect(isFlagEnabled("RESEND_DRY_RUN")).toBe(false);
   });
+
+  it.each([
+    ["1", true],
+    ["true", true],
+    ["0", false],
+    ["", false],
+  ])("returns GIFTS_ENABLED=%s as %s", (value, expected) => {
+    vi.stubEnv("GIFTS_ENABLED", value);
+    expect(isFlagEnabled("GIFTS_ENABLED")).toBe(expected);
+  });
 });
 
 describe("siteOrigin", () => {

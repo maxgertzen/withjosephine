@@ -1,6 +1,6 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-import type { NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
+import type { GiftContent, NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type SanityReading = {
@@ -413,6 +413,8 @@ export type SanityLegalPage = {
   body: SanityPortableTextBlock[];
   seo?: Pick<SanitySeo, "metaTitle" | "metaDescription">;
 };
+
+export type SanityGiftSettings = Partial<GiftContent>;
 
 export type SanityNotesSettings = Partial<NotesContent> & {
   enabled?: boolean;

@@ -9,7 +9,7 @@ import * as Sentry from "@sentry/cloudflare";
 import handler from "./.open-next/worker.js";
 import { scheduledCronRequest, withoutCronHeader } from "./src/lib/booking/cron-auth";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
-import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "./src/lib/logging/redactSearchParams";
+import { scrubBreadcrumb, scrubSentryRequest } from "./src/lib/logging/redactSearchParams";
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
@@ -17,16 +17,7 @@ type CloudflareEnv = {
 };
 
 function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
-  const request = event.request;
-  if (request?.headers && typeof request.headers === "object") {
-    delete (request.headers as Record<string, unknown>).cookie;
-    delete (request.headers as Record<string, unknown>)["cf-cron"];
-    delete (request.headers as Record<string, unknown>).authorization;
-  }
-  if (request?.url) {
-    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
-    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
-  }
+  scrubSentryRequest(event.request);
   return event;
 }
 
@@ -83,6 +74,7 @@ export default Sentry.withSentry(
     tracesSampleRate: 0,
     sendDefaultPii: false,
     beforeSend: scrubSensitiveRequestData,
+    beforeBreadcrumb: scrubBreadcrumb,
   }),
   composedHandler,
 );

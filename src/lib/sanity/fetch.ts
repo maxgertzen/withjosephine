@@ -18,6 +18,7 @@ import {
   emailReadingDeliveryQuery,
   emailSharedShellQuery,
   faqItemsQuery,
+  giftSettingsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
   listenPageQuery,
@@ -46,6 +47,7 @@ import type {
   SanityEmailReadingDelivery,
   SanityEmailSharedShell,
   SanityFaqItem,
+  SanityGiftSettings,
   SanityLandingPage,
   SanityLegalPage,
   SanityListenPage,
@@ -275,6 +277,11 @@ export const fetchNotesStatePublished = cache(
     }),
 );
 
+export const fetchGiftSettingsPublished = cache(
+  async (): Promise<SanityGiftSettings | null> =>
+    publishedFetch<SanityGiftSettings | null>({ query: giftSettingsQuery, tags: ["giftSettings"] }),
+);
+
 export const fetchArticlesPublished = cache(
   async (): Promise<SanityArticleSummary[]> =>
     (await publishedFetch<SanityArticleSummary[] | null>({
@@ -294,6 +301,11 @@ export const fetchArticlePublished = cache(
 
 export const fetchNotesState = cache(async (): Promise<SanityNotesState | null> => {
   const { data } = await sanityFetch<SanityNotesState | null>({ query: notesStateQuery });
+  return data;
+});
+
+export const fetchGiftSettings = cache(async (): Promise<SanityGiftSettings | null> => {
+  const { data } = await sanityFetch<SanityGiftSettings | null>({ query: giftSettingsQuery });
   return data;
 });
 

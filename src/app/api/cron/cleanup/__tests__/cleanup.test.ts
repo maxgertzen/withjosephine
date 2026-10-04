@@ -12,6 +12,12 @@ vi.mock("@/lib/booking/submissions", () => ({
   scrubSubmissionPhoto: vi.fn(),
 }));
 
+vi.mock("@/lib/gift/gifts", () => ({
+  listGiftsByStatusOlderThan: vi.fn(),
+  markGiftExpired: vi.fn(),
+  deleteExpiredGift: vi.fn(),
+}));
+
 vi.mock("@/lib/r2", () => ({
   listObjectsByPrefix: vi.fn(),
   deleteObject: vi.fn(),
@@ -26,7 +32,9 @@ import {
   scrubSubmissionPhoto,
   type SubmissionRecord,
 } from "@/lib/booking/submissions";
+import { deleteExpiredGift, listGiftsByStatusOlderThan, markGiftExpired } from "@/lib/gift/gifts";
 import { deleteObject, listObjectsByPrefix } from "@/lib/r2";
+import { makeGiftRecord } from "@/test/fixtures/gift";
 
 const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockList = vi.mocked(listSubmissionsByStatusOlderThan);
@@ -36,6 +44,9 @@ const mockScrub = vi.mocked(scrubSubmissionPhoto);
 const mockListReferenced = vi.mocked(listAllReferencedPhotoKeys);
 const mockListR2 = vi.mocked(listObjectsByPrefix);
 const mockDeleteR2 = vi.mocked(deleteObject);
+const mockListGifts = vi.mocked(listGiftsByStatusOlderThan);
+const mockMarkGiftExpired = vi.mocked(markGiftExpired);
+const mockDeleteExpiredGift = vi.mocked(deleteExpiredGift);
 
 function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
   return {
@@ -54,6 +65,9 @@ function makeSubmission(overrides: Partial<SubmissionRecord> = {}): SubmissionRe
 
 beforeEach(() => {
   mockAuth.mockReset();
+  mockListGifts.mockReset().mockResolvedValue([]);
+  mockMarkGiftExpired.mockReset().mockResolvedValue(true);
+  mockDeleteExpiredGift.mockReset().mockResolvedValue(true);
   mockList.mockReset().mockResolvedValue([]);
   mockMarkExpired.mockReset().mockResolvedValue(true);
   mockDelete.mockReset().mockResolvedValue({ photoDeleted: false });
@@ -127,6 +141,48 @@ describe("/api/cron/cleanup", () => {
     expect(expiredMs).toBeLessThan(31 * day);
     expect(paidMs).toBeGreaterThan(89 * day);
     expect(paidMs).toBeLessThan(91 * day);
+  });
+});
+
+describe("/api/cron/cleanup gifts", () => {
+  it("lists pending and expired gifts with the submission cutoffs", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    await callRoute();
+
+    expect(mockListGifts).toHaveBeenCalledTimes(2);
+    expect(mockListGifts).toHaveBeenNthCalledWith(1, "pending", mockList.mock.calls[0][1]);
+    expect(mockListGifts).toHaveBeenNthCalledWith(2, "expired", mockList.mock.calls[1][1]);
+  });
+
+  it("expires stale pending gifts and deletes stale expired gifts into the same counters", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockList.mockResolvedValueOnce([makeSubmission({ _id: "p1" })]);
+    mockListGifts
+      .mockResolvedValueOnce([makeGiftRecord({ id: "gp1" })])
+      .mockResolvedValueOnce([makeGiftRecord({ id: "ge1", status: "expired" })]);
+
+    const res = await callRoute();
+    const body = await res.json();
+
+    expect(body).toEqual({ expired: 2, deleted: 1, photosDeleted: 0, orphansReaped: 0 });
+    expect(mockMarkGiftExpired).toHaveBeenCalledWith("gp1", { expiredAt: expect.any(String) });
+    expect(mockDeleteExpiredGift).toHaveBeenCalledWith("ge1");
+  });
+
+  it("does not count a gift the guarded writes did not change", async () => {
+    mockAuth.mockReturnValueOnce(true);
+    mockListGifts
+      .mockResolvedValueOnce([makeGiftRecord({ id: "gp1" })])
+      .mockResolvedValueOnce([makeGiftRecord({ id: "ge1", status: "expired" })]);
+    mockMarkGiftExpired.mockResolvedValueOnce(false);
+    mockDeleteExpiredGift.mockResolvedValueOnce(false);
+
+    const res = await callRoute();
+    const body = await res.json();
+
+    expect(body).toEqual({ expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0 });
+    expect(mockMarkGiftExpired).toHaveBeenCalledOnce();
+    expect(mockDeleteExpiredGift).toHaveBeenCalledOnce();
   });
 });
 

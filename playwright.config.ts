@@ -111,6 +111,8 @@ export default defineConfig({
             STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
             STRIPE_WEBHOOK_SECRET: e2eWebhookSecret,
             AUTH_TOKEN_SECRET: "e2e_auth_token_secret_dummy",
+            GIFT_CODE_SECRET: "e2e_gift_code_secret_dummy",
+            GIFTS_ENABLED: "1",
             ADMIN_API_KEY: "e2e_admin_api_key_dummy",
           },
         },

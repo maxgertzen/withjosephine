@@ -23,6 +23,7 @@ function buildD1Statements(likePattern: string): string[] {
     `DELETE FROM listen_session    WHERE user_id IN (${userIds});`,
     `DELETE FROM listen_magic_link WHERE user_id IN (${userIds});`,
     `DELETE FROM listen_audit      WHERE user_id IN (${userIds});`,
+    `DELETE FROM gift_codes        WHERE buyer_email LIKE '${likePattern}';`,
     `DELETE FROM submissions       WHERE email LIKE '${likePattern}';`,
     `DELETE FROM user              WHERE email LIKE '${likePattern}';`,
   ];

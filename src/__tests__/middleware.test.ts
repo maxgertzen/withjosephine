@@ -226,6 +226,36 @@ describe("middleware CSP + draft hardening", () => {
   });
 });
 
+describe("middleware gift and thank-you hardening", () => {
+  it.each(["/gift/K7M2QX9PH4TR", "/thank-you/birth-chart"])(
+    "%s gets no-referrer and a private no-store cache",
+    (pathname) => {
+      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
+      expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+      expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
+    },
+  );
+
+  it("/book/birth-chart gets neither header", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", pathname: "/book/birth-chart" }),
+    );
+    expect(res.headers.has("referrer-policy")).toBe(false);
+    expect(res.headers.has("cache-control")).toBe(false);
+  });
+
+  it("writes the gift path redacted in the request log", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", pathname: "/gift/K7M2QX9PH4TR" }),
+    );
+    const line = String(log.mock.calls.at(-1)?.[0]);
+    log.mockRestore();
+    expect(line).toContain("/gift/[REDACTED]");
+    expect(line).not.toContain("K7M2QX9PH4TR");
+  });
+});
+
 type RewriteResponse = { rewriteTo: string | null };
 
 describe("middleware apex lockdown (under-construction on)", () => {

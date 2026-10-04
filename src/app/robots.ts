@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { PRIVATE_LINK_PREFIXES } from "@/lib/constants";
 import { siteOrigin } from "@/lib/env";
 
 const CITATION_BOTS = [
@@ -12,12 +13,7 @@ const CITATION_BOTS = [
 
 const TRAINING_BOTS = ["GPTBot", "ClaudeBot", "CCBot"];
 
-const PRIVATE_PATHS = [
-  "/api/",
-  "/auth/",
-  "/listen/",
-  "/thank-you/",
-];
+const PRIVATE_PATHS = ["/api/", "/auth/", "/listen/", ...PRIVATE_LINK_PREFIXES];
 
 export default function robots(): MetadataRoute.Robots {
   return {

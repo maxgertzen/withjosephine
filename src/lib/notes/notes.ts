@@ -3,6 +3,7 @@ import type { PortableTextBlock } from "@portabletext/types";
 
 import { NOTES_DEFAULTS, type NotesContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
+import { nonBlank, withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import type { SanityNotesState } from "@/lib/sanity/types";
 
@@ -18,20 +19,12 @@ export function notePath(slug: string): string {
   return `${NOTES_PATH}/${slug}`;
 }
 
-export function nonBlank(value: string | null | undefined): string | undefined {
-  return value?.trim() || undefined;
-}
-
 export function isNotesVisible(state: SanityNotesState | null): boolean {
   return state?.settings?.enabled === true && state.publishedCount > 0;
 }
 
 export function notesContent(state: SanityNotesState | null): NotesContent {
-  const merged = { ...NOTES_DEFAULTS };
-  for (const key of Object.keys(NOTES_DEFAULTS) as (keyof NotesContent)[]) {
-    merged[key] = nonBlank(state?.settings?.[key]) ?? NOTES_DEFAULTS[key];
-  }
-  return merged;
+  return withNonBlankOverrides(NOTES_DEFAULTS, state?.settings);
 }
 
 function notesLink(

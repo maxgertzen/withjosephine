@@ -228,7 +228,7 @@ describe("/api/sanity-sync", () => {
     expect(createOrReplace).not.toHaveBeenCalled();
   });
 
-  it.each(["submission", "magicLinkRequest"])(
+  it.each(["submission", "magicLinkRequest", "giftRecord"])(
     "refuses to mirror PII doc type %s — each dataset owns its own submissions",
     async (piiType) => {
       const res = await callWithValidSig({

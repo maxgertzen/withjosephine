@@ -1,9 +1,9 @@
 import { ABOUT_DEFAULTS } from "@/data/defaults";
+import { nonBlank } from "@/lib/content/nonBlank";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { bookingPath } from "@/lib/http/routes";
 import {
   formatMonthYear,
-  nonBlank,
   noteLastModified,
   notePath,
   notesContent,

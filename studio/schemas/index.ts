@@ -24,6 +24,7 @@ import { emailFailure } from "./emailFailure";
 import { article } from "./article";
 import { notePlate } from "./notePlate";
 import { notesSettings } from "./notesSettings";
+import { giftSettings } from "./giftSettings";
 
 export const schemaTypes = [
   reading,
@@ -52,4 +53,5 @@ export const schemaTypes = [
   article,
   notePlate,
   notesSettings,
+  giftSettings,
 ];

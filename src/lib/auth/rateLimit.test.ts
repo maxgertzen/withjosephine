@@ -13,6 +13,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 describe("checkRateLimit", () => {
@@ -47,5 +48,30 @@ describe("checkRateLimit", () => {
     });
     const { checkRateLimit } = await import("./rateLimit");
     expect(await checkRateLimit("LISTEN_ASSET_LIMITER", "abc")).toBe(false);
+  });
+
+  it.each([
+    ["production", undefined, true],
+    ["production", { failClosed: true }, false],
+    ["staging", { failClosed: true }, true],
+  ] as const)(
+    "on %s with options %o returns %s when context is unavailable",
+    async (environment, options, expected) => {
+      vi.stubEnv("ENVIRONMENT", environment);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      getCloudflareContextMock.mockRejectedValue(new Error("not in Workers"));
+      const { checkRateLimit } = await import("./rateLimit");
+      expect(await checkRateLimit("GIFT_CODE_LIMITER", "1.2.3.4", options)).toBe(expected);
+    },
+  );
+
+  it("delegates GIFT_CODE_LIMITER to its binding with the key", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    getCloudflareContextMock.mockResolvedValue({
+      env: { GIFT_CODE_LIMITER: { limit } },
+    });
+    const { checkRateLimit } = await import("./rateLimit");
+    expect(await checkRateLimit("GIFT_CODE_LIMITER", "203.0.113.7", { failClosed: true })).toBe(true);
+    expect(limit).toHaveBeenCalledWith({ key: "203.0.113.7" });
   });
 });

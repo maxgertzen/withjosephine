@@ -31,6 +31,8 @@
 	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
 	//   - AUTH_TOKEN_SECRET          Master HMAC secret (32-byte hex). Per-purpose subkeys for listen tokens
 	//                                and request audit are HKDF-derived in src/lib/auth/tokenSubkey.ts.
+	//   - GIFT_CODE_SECRET           HMAC secret (32-byte hex) for gift codes, lookup hashes and send links.
+	//                                Never rotated: paid gift codes are derived from it.
 	//   - SENTRY_DSN                 (optional) Sentry project DSN. Unset = error capture disabled (kill switch).
 	//   - SANITY_EXPORT_TOKEN        Read-only (Viewer-role) Sanity API token used by the weekly
 	//                                dataset backup cron. Distinct from SANITY_WRITE_TOKEN — a leaked
@@ -162,6 +164,11 @@
 			"name": "LISTEN_ASSET_LIMITER",
 			"namespace_id": "1003",
 			"simple": { "limit": 60, "period": 60 }
+		},
+		{
+			"name": "GIFT_CODE_LIMITER",
+			"namespace_id": "1004",
+			"simple": { "limit": 5, "period": 60 }
 		}
 	],
 	// Top-level (production) plain vars. Mirror in dashboard for visibility.
@@ -174,6 +181,7 @@
 	"vars": {
 		"BOOKING_DB_DRIVER": "d1",
 		"ENVIRONMENT": "production",
+		"GIFTS_ENABLED": "0",
 		"NEXT_PUBLIC_SANITY_DATASET": "production",
 		"SANITY_BACKUP_ENABLED": "1"
 	},
@@ -249,6 +257,11 @@
 					"name": "LISTEN_ASSET_LIMITER",
 					"namespace_id": "2003",
 					"simple": { "limit": 60, "period": 60 }
+				},
+				{
+					"name": "GIFT_CODE_LIMITER",
+					"namespace_id": "2004",
+					"simple": { "limit": 5, "period": 60 }
 				}
 			],
 			"triggers": {
@@ -263,6 +276,7 @@
 			"vars": {
 				"BOOKING_DB_DRIVER": "d1",
 				"ENVIRONMENT": "staging",
+				"GIFTS_ENABLED": "1",
 				"NEXT_PUBLIC_SANITY_DATASET": "staging",
 				"SANITY_BACKUP_ENABLED": "1"
 			}

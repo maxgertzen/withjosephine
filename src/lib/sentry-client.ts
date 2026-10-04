@@ -3,21 +3,13 @@
 import * as Sentry from "@sentry/browser";
 
 import { deriveEnvironmentFromHost } from "@/lib/constants";
-import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "@/lib/logging/redactSearchParams";
+import { scrubBreadcrumb, scrubSentryRequest } from "@/lib/logging/redactSearchParams";
 
 let bootstrapped = false;
 let live = false;
 
 function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
-  const request = event.request;
-  if (request?.headers && typeof request.headers === "object") {
-    delete (request.headers as Record<string, unknown>).cookie;
-    delete (request.headers as Record<string, unknown>).authorization;
-  }
-  if (request?.url) {
-    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
-    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
-  }
+  scrubSentryRequest(event.request);
   return event;
 }
 
@@ -40,6 +32,7 @@ export function initSentryClient() {
       tracesSampleRate: 0,
       sendDefaultPii: false,
       beforeSend: scrubSensitiveData,
+      beforeBreadcrumb: scrubBreadcrumb,
       integrations: [],
     });
     live = true;

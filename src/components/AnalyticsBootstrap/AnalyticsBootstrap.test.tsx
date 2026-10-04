@@ -9,7 +9,7 @@ vi.mock("@/lib/analytics", () => ({
 // Clarity init + consent now live inside ClarityScript's effect; stub it out so
 // these tests stay focused on the consent-banner / initAnalytics orchestration.
 vi.mock("@/components/ClarityScript", () => ({
-  ClarityScript: () => null,
+  ClarityScript: () => <div data-testid="clarity-script" />,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -132,5 +132,25 @@ describe("AnalyticsBootstrap", () => {
       });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
+  });
+
+  describe("Clarity gate", () => {
+    it.each([
+      ["/gift/x", false],
+      ["/thank-you/x", false],
+      ["/book/x", true],
+    ])(
+      "on %s with consent granted inits analytics and mounts Clarity: %s",
+      async (pathname, clarityMounts) => {
+        mockUsePathname.mockReturnValue(pathname);
+        setConsentRequired(true);
+        window.localStorage.setItem(STORAGE_KEY, "granted");
+        await act(async () => {
+          render(<AnalyticsBootstrap />);
+        });
+        expect(initAnalytics).toHaveBeenCalledOnce();
+        expect(screen.queryByTestId("clarity-script") !== null).toBe(clarityMounts);
+      },
+    );
   });
 });

@@ -156,3 +156,47 @@ describe("scrubSensitiveData (via beforeSend)", () => {
     );
   });
 });
+
+describe("Sentry gift and thank-you scrubbing", () => {
+  type InitOptions = {
+    beforeSend: (event: unknown) => unknown;
+    beforeBreadcrumb: (breadcrumb: unknown) => unknown;
+  };
+
+  function initOptions(): InitOptions {
+    initSentryClient();
+    return vi.mocked(Sentry.init).mock.calls[0]?.[0] as unknown as InitOptions;
+  }
+
+  it("passes beforeBreadcrumb to Sentry.init", () => {
+    expect(initOptions().beforeBreadcrumb).toBeTypeOf("function");
+  });
+
+  it("redacts a navigation breadcrumb from /gift/send#<token>", () => {
+    const { beforeBreadcrumb } = initOptions();
+    const out = beforeBreadcrumb({
+      category: "navigation",
+      data: {
+        from: "/gift/send#00000000-0000-4000-8000-000000000001.mac",
+        to: "/book/birth-chart",
+      },
+    }) as { data: { from: string; to: string } };
+    expect(out.data).toEqual({ from: "/gift/send#[REDACTED]", to: "/book/birth-chart" });
+  });
+
+  it("removes Referer and redacts /gift/<code> in request.url", () => {
+    const { beforeSend } = initOptions();
+    const out = beforeSend({
+      request: {
+        url: "https://withjosephine.com/gift/K7M2QX9PH4TR",
+        headers: {
+          Referer: "https://withjosephine.com/gift/K7M2QX9PH4TR",
+          referer: "https://withjosephine.com/gift/K7M2QX9PH4TR",
+          "user-agent": "Mozilla/5.0",
+        },
+      },
+    }) as { request: { url: string; headers: Record<string, string> } };
+    expect(out.request.url).toBe("https://withjosephine.com/gift/[REDACTED]");
+    expect(out.request.headers).toEqual({ "user-agent": "Mozilla/5.0" });
+  });
+});

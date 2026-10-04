@@ -37,7 +37,7 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  *   - HTTP method: POST
  *   - Drafts: enabled (Advanced settings → "Trigger webhook when drafts are modified")
  *   - Filter: _type != "sanity.imageAsset" && _type != "sanity.fileAsset"
- *             && _type != "submission" && _type != "magicLinkRequest"
+ *             && _type != "submission" && _type != "magicLinkRequest" && _type != "giftRecord"
  *     (PII-bearing types must never cross datasets — the worker also
  *     refuses them server-side if the filter is reverted, but the webhook
  *     filter saves the round trip.)
@@ -61,7 +61,7 @@ const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
 // Sanity webhook GROQ filter is the first line of defense; this set is the
 // belt-and-braces refusal if the webhook filter is ever reverted or a new
 // PII type is added without updating the filter.
-const PII_TYPES = new Set(["submission", "magicLinkRequest"]);
+const PII_TYPES = new Set(["submission", "magicLinkRequest", "giftRecord"]);
 const REPLAY_WINDOW_MS = 5 * 60 * 1000;
 // Pre-HMAC body-size pre-check. Sanity webhook payloads are well under 100 KB
 // even for fat docs; 1 MB leaves headroom without giving unauthenticated

@@ -1,4 +1,4 @@
-import { nonBlank } from "@/lib/notes/notes";
+import { nonBlank } from "@/lib/content/nonBlank";
 import type { NotePlateValue } from "@/lib/notes/types";
 
 import { StarMark } from "./StarMark";

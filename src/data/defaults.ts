@@ -198,6 +198,18 @@ export const NOTES_DEFAULTS: NotesContent = {
   readingPageTitle: "Notes on this reading",
 };
 
+export interface GiftContent {
+  sheetEyebrow: string;
+  sheetCancelLabel: string;
+  shareMessageTemplate: string;
+}
+
+export const GIFT_DEFAULTS: GiftContent = {
+  sheetEyebrow: "A reading, given.",
+  sheetCancelLabel: "Not now",
+  shareMessageTemplate: "A reading for you, from {buyerName} ✨",
+};
+
 export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";

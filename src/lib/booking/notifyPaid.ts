@@ -9,10 +9,10 @@ import {
   failureFromUnsentResult,
   recordEmailFailure,
 } from "./emailFailures";
+import type { FinancialMirror } from "./financialMirror";
 import {
   appendEmailFired,
   buildSubmissionContext,
-  type FinancialMirror,
   markSubmissionPaid,
   SUBMISSION_STATUS,
   type SubmissionRecord,

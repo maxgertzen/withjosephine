@@ -35,6 +35,7 @@ export const SINGLETON_TYPES = new Set([
   "emailSharedShell",
   "listenPage",
   "notesSettings",
+  "giftSettings",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -235,6 +236,16 @@ const notesGroup = (S: StructureBuilder) =>
         ]),
     );
 
+const giftsGroup = (S: StructureBuilder) =>
+  S.listItem()
+    .title("🎁 Gifts")
+    .id("giftsGroup")
+    .child(
+      S.list()
+        .title("Gifts")
+        .items([singletonListItem(S, "giftSettings", "Gift Settings")]),
+    );
+
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
@@ -250,6 +261,7 @@ export const deskStructure = (S: StructureBuilder) =>
       S.documentTypeListItem("testimonial").title("Testimonials"),
       S.documentTypeListItem("faqItem").title("FAQ Items"),
       notesGroup(S),
+      giftsGroup(S),
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),

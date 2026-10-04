@@ -414,6 +414,10 @@ export const notesStateQuery = groq`
   }
 `;
 
+export const giftSettingsQuery = groq`
+  *[_type == "giftSettings"][0] { ... }
+`;
+
 const articleBaseFields = `
   _id,
   title,

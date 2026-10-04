@@ -7,6 +7,7 @@ import { ClarityRouteTracking } from "@/components/ClarityRouteTracking";
 import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
+import { isClarityBlockedPath } from "@/lib/clarityGate";
 import { readConsent, writeConsent } from "@/lib/consent";
 import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
@@ -34,6 +35,7 @@ export function AnalyticsBootstrap({ consentBannerContent }: AnalyticsBootstrapP
   // middleware sets per request.
   const pathname = usePathname();
   const previewMode = pathname?.startsWith("/preview") ?? false;
+  const clarityBlocked = isClarityBlockedPath(pathname ?? "");
   const [showBanner, setShowBanner] = useState(false);
   const [observabilityLive, setObservabilityLive] = useState(false);
   const consentEffectRanRef = useRef(false);
@@ -86,7 +88,7 @@ export function AnalyticsBootstrap({ consentBannerContent }: AnalyticsBootstrapP
 
   return (
     <>
-      {observabilityLive ? (
+      {observabilityLive && !clarityBlocked ? (
         <>
           <ClarityScript />
           <ClarityRouteTracking />

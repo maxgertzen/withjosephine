@@ -3,6 +3,7 @@ export type EnvVar =
   | "BREVO_API_KEY"
   | "CRON_SECRET"
   | "ENVIRONMENT"
+  | "GIFT_CODE_SECRET"
   | "MIXPANEL_SERVICE_ACCOUNT_SECRET"
   | "MIXPANEL_SERVICE_ACCOUNT_USERNAME"
   | "R2_ACCESS_KEY_ID"
@@ -35,6 +36,7 @@ export function optionalEnv(name: EnvVar, missingWarning?: string) {
 }
 
 export type FeatureFlag =
+  | "GIFTS_ENABLED"
   | "RESEND_DRY_RUN"
   | "SANITY_BACKUP_ENABLED"
   | "NEXT_PUBLIC_UNDER_CONSTRUCTION";

@@ -12,7 +12,7 @@ export type RequestAuditContext = {
 
 // Production trusts cf-connecting-ip only — XFF is client-controllable
 // on any non-CF path and would let an attacker spoof the rate-limit key.
-function getTrustedClientIp(request: Request): string | null {
+function getTrustedClientIp(request: Pick<Request, "headers">): string | null {
   if (process.env.ENVIRONMENT === "production") {
     return request.headers.get(CF_CONNECTING_IP_HEADER);
   }
@@ -29,6 +29,6 @@ export async function getRequestAuditContext(request: Request): Promise<RequestA
   };
 }
 
-export function getClientIpKey(request: Request): string {
+export function getClientIpKey(request: Pick<Request, "headers">): string {
   return getTrustedClientIp(request) ?? "unknown";
 }
