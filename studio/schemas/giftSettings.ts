@@ -403,6 +403,128 @@ const TEXT_FIELDS: Record<keyof GiftContent, GiftTextField> = {
     description:
       "The text on the recipient thank-you page. {deliveryDays} becomes the delivery phrase from the Thank-you page document.",
   },
+  sendOpenLabel: {
+    title: "Send by email button",
+    group: "thankYou",
+    description: "The button on the buyer thank-you page that opens the send form.",
+  },
+  sendHeading: {
+    title: "Send form heading",
+    group: "thankYou",
+    description: "The heading of the send form, on the thank-you page and the send page.",
+  },
+  recipientNameLabel: {
+    title: "Recipient name label",
+    group: "thankYou",
+    description: "The name field label on the send form.",
+  },
+  recipientEmailLabel: {
+    title: "Recipient email label",
+    group: "thankYou",
+    description: "The email field label on the send form.",
+  },
+  recipientEmailInvalid: {
+    title: "Invalid email error",
+    group: "thankYou",
+    description: "The error under the email field when the address is not valid.",
+  },
+  recipientEmailIsBuyer: {
+    title: "Own email error",
+    group: "thankYou",
+    description: "The error under the email field when the address is the buyer's own.",
+  },
+  sendHelpTemplate: {
+    title: "Send help, with a note",
+    group: "thankYou",
+    description:
+      "The line above the send button when the gift has a note. {buyerName} becomes the buyer's first name.",
+  },
+  sendHelpNoNoteTemplate: {
+    title: "Send help, no note",
+    group: "thankYou",
+    description:
+      "The line above the send button when the gift has no note. {buyerName} becomes the buyer's first name.",
+  },
+  sendButtonLabel: {
+    title: "Send button",
+    group: "thankYou",
+    description: "The button on the send form.",
+  },
+  sendingLabel: {
+    title: "Sending label",
+    group: "thankYou",
+    description: "The send button text while the email is sending.",
+  },
+  sentHeadingTemplate: {
+    title: "Sent heading",
+    group: "thankYou",
+    description:
+      "The card heading right after a send. {recipientName} becomes the recipient's name.",
+  },
+  sentBodyTemplate: {
+    title: "Sent text",
+    group: "thankYou",
+    description:
+      "The card text right after a send. {recipientEmail} becomes the address the buyer typed.",
+  },
+  resendLinkTemplate: {
+    title: "Send again link",
+    group: "thankYou",
+    description:
+      "The link on the card after the first send that opens the form again. {count} becomes the sends left.",
+  },
+  resendUsedHeading: {
+    title: "Sent twice heading",
+    group: "thankYou",
+    description: "The card heading after both sends are used.",
+  },
+  resendUsedBody: {
+    title: "Sent twice text",
+    group: "thankYou",
+    description: "The card text after both sends are used.",
+  },
+  sendPageHeadingTemplate: {
+    title: "Send page heading",
+    group: "thankYou",
+    description:
+      "The send page heading when a recipient name is saved from an earlier try. {recipientName} becomes that name.",
+  },
+  alreadySentHeading: {
+    title: "Already sent heading",
+    group: "thankYou",
+    description: "The card heading when the gift was sent earlier.",
+  },
+  alreadySentBodyTemplate: {
+    title: "Already sent text",
+    group: "thankYou",
+    description:
+      "The card text when the gift was sent earlier. {recipientName} becomes the recipient's name, {date} the send date.",
+  },
+  sendPageOpenedHeadingTemplate: {
+    title: "Opened heading",
+    group: "thankYou",
+    description: "The send page heading once the recipient has opened the gift.",
+  },
+  sendPageOpenedBody: {
+    title: "Opened text",
+    group: "thankYou",
+    description: "The send page text once the recipient has opened the gift.",
+  },
+  sendLinkInvalidHeading: {
+    title: "Link not valid heading",
+    group: "thankYou",
+    description: "The send page heading when the link is not valid or the gift was cancelled.",
+  },
+  sendLinkInvalidBody: {
+    title: "Link not valid text",
+    group: "thankYou",
+    description: "The send page text when the link is not valid or the gift was cancelled.",
+  },
+  sendFailedNotice: {
+    title: "Send failed error",
+    group: "thankYou",
+    description: "The error under the send button when the email did not send.",
+  },
 };
 
 export const giftSettings = defineType({

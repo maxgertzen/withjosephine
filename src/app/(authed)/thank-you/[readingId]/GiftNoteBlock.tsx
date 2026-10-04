@@ -36,12 +36,13 @@ export type GiftNoteCopy = Pick<
   | "sheetCancelLabel"
 >;
 
-type GiftNote = { buyerFirstName: string; text: string | null };
+export type GiftNote = { buyerFirstName: string; text: string | null };
 
 type GiftNoteBlockProps = {
   copy: GiftNoteCopy;
   note: GiftNote;
   noteEdit: { token: string } | null;
+  onSaved?: (note: GiftNote) => void;
 };
 
 type NoteDraft = Omit<GiftNoteRequest, "token">;
@@ -56,7 +57,7 @@ async function postGiftNote(body: GiftNoteRequest): Promise<SaveOutcome> {
   return result.status === 409 ? "locked" : "failed";
 }
 
-export function GiftNoteBlock({ copy, note, noteEdit }: GiftNoteBlockProps) {
+export function GiftNoteBlock({ copy, note, noteEdit, onSaved }: GiftNoteBlockProps) {
   const [savedNote, setSavedNote] = useState(note);
   const [draft, setDraft] = useState<NoteDraft | null>(null);
   const [showsNameError, setShowsNameError] = useState(false);
@@ -88,11 +89,10 @@ export function GiftNoteBlock({ copy, note, noteEdit }: GiftNoteBlockProps) {
     const outcome = await postGiftNote({ token: noteEdit.token, ...draft });
     setStatus(outcome);
     if (outcome === "saved") {
-      setSavedNote({
-        buyerFirstName: validation.values.buyerFirstName,
-        text: validation.values.note,
-      });
+      const saved = { buyerFirstName: validation.values.buyerFirstName, text: validation.values.note };
+      setSavedNote(saved);
       setDraft(null);
+      onSaved?.(saved);
     }
   }
 

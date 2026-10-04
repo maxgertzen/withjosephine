@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 
-import { dbExec } from "@/lib/booking/persistence/sqlClient";
+import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
+import { deriveGiftSendToken } from "@/lib/gift/giftCode";
 import { createPendingGift, type CreatePendingGiftInput } from "@/lib/gift/gifts";
 import type { GiftRecord, GiftStatus } from "@/lib/gift/types";
 
@@ -55,6 +56,41 @@ export async function createTestGift(
 
 export async function forceGiftStatus(giftId: string, status: GiftStatus): Promise<void> {
   await dbExec(`UPDATE gift_codes SET status = ? WHERE id = ?`, [status, giftId]);
+}
+
+export type GiftSendRow = {
+  sendCount?: number;
+  recipientName?: string | null;
+  lastSentAt?: string | null;
+  buyerEmail?: string | null;
+};
+
+export async function giftWithSendToken(
+  status: GiftStatus,
+  row: GiftSendRow = {},
+  input: Partial<CreatePendingGiftInput> = {},
+): Promise<{ giftId: string; token: string }> {
+  const giftId = await createTestGift(input);
+  if (status !== "pending") await forceGiftStatus(giftId, status);
+  await dbExec(
+    `UPDATE gift_codes
+     SET send_count = ?, recipient_name = ?, last_sent_at = ?, buyer_email = ?
+     WHERE id = ?`,
+    [
+      row.sendCount ?? 0,
+      row.recipientName ?? null,
+      row.lastSentAt ?? null,
+      row.buyerEmail ?? null,
+      giftId,
+    ],
+  );
+  return { giftId, token: await deriveGiftSendToken(giftId) };
+}
+
+export type AuditRow = { event_type: string; success: number; submission_id: string | null };
+
+export async function auditRows(): Promise<AuditRow[]> {
+  return dbQuery(`SELECT event_type, success, submission_id FROM listen_audit ORDER BY timestamp`);
 }
 
 export const GIFT_SESSION_ID = "cs_test_gift_session";

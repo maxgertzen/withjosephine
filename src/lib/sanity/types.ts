@@ -4,6 +4,7 @@ import type {
   EmailGiftOpenedContent,
   EmailGiftPurchaseContent,
   EmailGiftRecipientConfirmationContent,
+  EmailGiftToRecipientContent,
   GiftContent,
   NotesContent,
   ReadingFact,
@@ -179,6 +180,8 @@ export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
 export type SanityEmailGiftOpened = Partial<EmailGiftOpenedContent>;
 
 export type SanityEmailGiftRecipientConfirmation = Partial<EmailGiftRecipientConfirmationContent>;
+
+export type SanityEmailGiftToRecipient = Partial<EmailGiftToRecipientContent>;
 
 export type SanityEmailSharedShell = {
   brandName: string;

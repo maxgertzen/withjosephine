@@ -275,6 +275,29 @@ export interface GiftContent {
   recipientThankYouCardLabelTemplate: string;
   recipientThankYouCardLabelNoBuyer: string;
   recipientThankYouTimelineTemplate: string;
+  sendOpenLabel: string;
+  sendHeading: string;
+  recipientNameLabel: string;
+  recipientEmailLabel: string;
+  recipientEmailInvalid: string;
+  recipientEmailIsBuyer: string;
+  sendHelpTemplate: string;
+  sendHelpNoNoteTemplate: string;
+  sendButtonLabel: string;
+  sendingLabel: string;
+  sentHeadingTemplate: string;
+  sentBodyTemplate: string;
+  resendLinkTemplate: string;
+  resendUsedHeading: string;
+  resendUsedBody: string;
+  sendPageHeadingTemplate: string;
+  alreadySentHeading: string;
+  alreadySentBodyTemplate: string;
+  sendPageOpenedHeadingTemplate: string;
+  sendPageOpenedBody: string;
+  sendLinkInvalidHeading: string;
+  sendLinkInvalidBody: string;
+  sendFailedNotice: string;
 }
 
 export const GIFT_DEFAULTS: GiftContent = {
@@ -359,6 +382,30 @@ export const GIFT_DEFAULTS: GiftContent = {
   recipientThankYouCardLabelNoBuyer: "Your gift",
   recipientThankYouTimelineTemplate:
     "I’ll begin your reading within the next two days, and I’ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you gave me.",
+  sendOpenLabel: "Send it by email from Josephine",
+  sendHeading: "Send it from Josephine",
+  recipientNameLabel: "Their name",
+  recipientEmailLabel: "Their email",
+  recipientEmailInvalid: "Enter a valid recipient email.",
+  recipientEmailIsBuyer: "The recipient must be someone other than you.",
+  sendHelpTemplate: "From {buyerName}, with your note. Sent now, from hello@withjosephine.com.",
+  sendHelpNoNoteTemplate: "From {buyerName}. Sent now, from hello@withjosephine.com.",
+  sendButtonLabel: "Send now",
+  sendingLabel: "Sending…",
+  sentHeadingTemplate: "Sent to {recipientName}",
+  sentBodyTemplate: "{recipientEmail} · just now.",
+  resendLinkTemplate: "Wrong address? Fix it and send again ({count} left)",
+  resendUsedHeading: "Sent twice already",
+  resendUsedBody:
+    "If something isn’t right, write to hello@withjosephine.com and Josephine will sort it out.",
+  sendPageHeadingTemplate: "Send {recipientName}’s gift",
+  alreadySentHeading: "Already sent",
+  alreadySentBodyTemplate: "Sent to {recipientName} on {date}.",
+  sendPageOpenedHeadingTemplate: "The gift has been opened",
+  sendPageOpenedBody: "The reading is with Josephine now. There’s nothing more to send.",
+  sendLinkInvalidHeading: "This link doesn’t work any more",
+  sendLinkInvalidBody: "Write to hello@withjosephine.com and Josephine will help.",
+  sendFailedNotice: "The email didn’t send. Try again.",
 };
 
 export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
@@ -659,6 +706,38 @@ export const EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS: EmailGiftRecipientConfi
   cardDeliveryLine: "Delivery within 7 days",
   dataExportHeading: "Need a copy of your data?",
   dataExportButtonLabel: "Request an export",
+};
+
+export interface EmailGiftToRecipientContent {
+  subject: string;
+  previewTemplate: string;
+  heroLine: string;
+  body: EmailRichText;
+  noteLabelTemplate: string;
+  openButtonLabel: string;
+  codeFallbackTemplate: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  privacyLineTemplate: string;
+}
+
+export const EMAIL_GIFT_TO_RECIPIENT_DEFAULTS: EmailGiftToRecipientContent = {
+  subject: "A reading, waiting for you",
+  previewTemplate: "{buyerName} has sent you a reading.",
+  heroLine: "A reading, for you",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "{buyerName} has given you a {readingName} with me. When you’re ready, tap below. A short form follows, so I know what to read for you, and the reading lands in your inbox within seven days.",
+    ),
+  ],
+  noteLabelTemplate: "A note from {buyerName}",
+  openButtonLabel: "Open your gift",
+  codeFallbackTemplate: "The code is {code}, if the button doesn’t work.",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivered within 7 days of your intake",
+  privacyLineTemplate:
+    "{buyerName} gave me your name and email address to send you this gift. Your email address is used for this email only and deleted once it is sent.",
 };
 
 export interface ListenPageContent {

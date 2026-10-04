@@ -86,6 +86,7 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailGiftPurchase",
         "emailGiftOpened",
         "emailGiftRecipientConfirmation",
+        "emailGiftToRecipient",
       ].sort(),
     );
   });
@@ -122,6 +123,19 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         unknown: ["buyerEmail", "code", "note"],
       });
     }
+  });
+
+  it("limits the gift-to-recipient email to the names, the reading name and the code, never the note", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftToRecipient).toEqual([
+      "firstName",
+      "buyerName",
+      "readingName",
+      "code",
+    ]);
+    expect(validateSlotsInValue("{note} {buyerEmail} {recipientEmail}", "emailGiftToRecipient")).toMatchObject({
+      ok: false,
+      unknown: ["buyerEmail", "note", "recipientEmail"],
+    });
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {

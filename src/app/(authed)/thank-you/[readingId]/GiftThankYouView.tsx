@@ -4,7 +4,9 @@ import { ThankYouShell } from "@/components/ThankYouShell";
 
 import { GiftCardSurface } from "./CardSurface";
 import { GiftCodeCard, type GiftCodeCardCopy } from "./GiftCodeCard";
-import { GiftNoteBlock, type GiftNoteCopy } from "./GiftNoteBlock";
+import { GiftNoteAndSendBlocks } from "./GiftNoteAndSendBlocks";
+import type { GiftNote, GiftNoteCopy } from "./GiftNoteBlock";
+import type { GiftSendBlockCopy, GiftThankYouSendProps } from "./GiftSendBlock";
 
 export type GiftThankYouCopy = GiftCodeCardCopy & {
   heading: string;
@@ -12,6 +14,7 @@ export type GiftThankYouCopy = GiftCodeCardCopy & {
   thankYouOpenedNotice: string;
   pendingBody: string;
   note: GiftNoteCopy;
+  send: GiftSendBlockCopy;
 };
 
 export type GiftThankYouViewProps =
@@ -21,8 +24,9 @@ export type GiftThankYouViewProps =
       displayCode: string;
       giftUrl: string;
       shareText: string;
-      note: { buyerFirstName: string; text: string | null };
+      note: GiftNote;
       noteEdit: { token: string } | null;
+      send: GiftThankYouSendProps | null;
     }
   | {
       state: "redeemed";
@@ -53,7 +57,13 @@ function GiftThankYouBody(props: GiftThankYouViewProps) {
         shareText={props.shareText}
       />
       {props.state === "active" ? (
-        <GiftNoteBlock copy={copy.note} note={props.note} noteEdit={props.noteEdit} />
+        <GiftNoteAndSendBlocks
+          noteCopy={copy.note}
+          sendCopy={copy.send}
+          note={props.note}
+          noteEdit={props.noteEdit}
+          send={props.send}
+        />
       ) : (
         <p className="font-display italic text-base text-j-text-muted">
           {copy.thankYouOpenedNotice}

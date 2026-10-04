@@ -1,6 +1,6 @@
 import "server-only";
 
-import { requireEnv } from "@/lib/env";
+import { requireEnv, siteOrigin } from "@/lib/env";
 import {
   base64UrlDecodeToBytes,
   base64UrlEncodeBytes,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/hmac";
 import { isUuid } from "@/lib/uuid";
 
-import { GIFT_CODE_ALPHABET, GIFT_CODE_LENGTH } from "./giftCodeFormat";
+import { GIFT_CODE_ALPHABET, GIFT_CODE_LENGTH, giftPath } from "./giftCodeFormat";
 import type { GiftRecord } from "./types";
 
 const CODE_PURPOSE = "gift.code.v1";
@@ -37,6 +37,10 @@ export async function deriveGiftCode(giftId: string): Promise<string> {
     const shift = BigInt((GIFT_CODE_LENGTH - 1 - position) * BITS_PER_CHARACTER);
     return GIFT_CODE_ALPHABET[Number((codeBits >> shift) & CHARACTER_MASK)];
   }).join("");
+}
+
+export function giftUrl(code: string): string {
+  return siteOrigin() + giftPath(code);
 }
 
 export async function giftLookupHash(normalizedCode: string): Promise<string> {

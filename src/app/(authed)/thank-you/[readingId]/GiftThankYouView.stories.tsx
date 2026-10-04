@@ -66,8 +66,19 @@ export const NoteSaved: Story = {
   },
 };
 
+export const SendFormOpen: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }));
+  },
+};
+
 export const NoNote: Story = {
-  args: giftThankYouViewProps({ ...ACTIVE_GIFT, note: null }),
+  args: giftThankYouViewProps({
+    ...ACTIVE_GIFT,
+    note: null,
+    sendStatus: { ...ACTIVE_GIFT.sendStatus, hasNote: false },
+  }),
 };
 
 export const Redeemed: Story = {

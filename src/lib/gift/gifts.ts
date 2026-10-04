@@ -16,6 +16,8 @@ import type {
 import * as repo from "./persistence/repository";
 import type { GiftEmailFiredEntry, GiftRecord, GiftState } from "./types";
 
+export type { CompleteGiftSendInput };
+
 const PLACEHOLDER_LOOKUP_HASH = "0".repeat(64);
 
 export type CreatePendingGiftInput = Omit<InsertGiftRowInput, "id" | "lookupHash">;
@@ -86,8 +88,13 @@ export async function claimGiftSend(
 export async function completeGiftSend(
   giftId: string,
   args: CompleteGiftSendInput,
+  emailFired?: GiftEmailFiredEntry,
 ): Promise<void> {
-  await repo.completeGiftSend(giftId, args);
+  const statements = [repo.buildCompleteGiftSendStatement(giftId, args)];
+  if (emailFired) {
+    statements.push(repo.buildAppendGiftEmailFiredStatement(giftId, emailFired));
+  }
+  await dbBatch(statements);
 }
 
 export async function releaseGiftSend(
@@ -130,7 +137,7 @@ export async function appendGiftEmailFired(
   giftId: string,
   entry: GiftEmailFiredEntry,
 ): Promise<void> {
-  await repo.appendGiftEmailFired(giftId, entry);
+  await dbBatch([repo.buildAppendGiftEmailFiredStatement(giftId, entry)]);
 }
 
 export function resolveGiftState(gift: GiftRecord | null): GiftState {

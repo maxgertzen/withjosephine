@@ -210,19 +210,23 @@ export async function claimGiftSend(
 
 export type CompleteGiftSendInput = { sendNumber: 1 | 2; sentAt: string };
 
-export async function completeGiftSend(
+export function buildCompleteGiftSendStatement(
   giftId: string,
   args: CompleteGiftSendInput,
-): Promise<void> {
-  await dbExec(
-    `UPDATE gift_codes
-     SET recipient_email = NULL, last_sent_at = ?, updated_at = ?
-     WHERE id = ? AND send_count = ?`,
-    [args.sentAt, args.sentAt, giftId, args.sendNumber],
-  );
+): SqlStatement {
+  return {
+    sql: `UPDATE gift_codes
+          SET recipient_email = NULL, last_sent_at = ?, updated_at = ?
+          WHERE id = ? AND send_count = ?`,
+    params: [args.sentAt, args.sentAt, giftId, args.sendNumber],
+  };
 }
 
-export type ReleaseGiftSendInput = { sendNumber: 1 | 2; updatedAt: string };
+export type ReleaseGiftSendInput = {
+  sendNumber: 1 | 2;
+  keptRecipientName: string | null;
+  updatedAt: string;
+};
 
 export async function releaseGiftSend(
   giftId: string,
@@ -230,9 +234,9 @@ export async function releaseGiftSend(
 ): Promise<void> {
   await dbExec(
     `UPDATE gift_codes
-     SET send_count = send_count - 1, recipient_email = NULL, updated_at = ?
+     SET send_count = send_count - 1, recipient_name = ?, recipient_email = NULL, updated_at = ?
      WHERE id = ? AND send_count = ?`,
-    [args.updatedAt, giftId, args.sendNumber],
+    [args.keptRecipientName, args.updatedAt, giftId, args.sendNumber],
   );
 }
 
@@ -297,14 +301,14 @@ export async function listGiftsUpdatedAfter(cutoffIso: string): Promise<GiftReco
   return rows.map(rowToRecord);
 }
 
-export async function appendGiftEmailFired(
+export function buildAppendGiftEmailFiredStatement(
   giftId: string,
   entry: GiftEmailFiredEntry,
-): Promise<void> {
-  await dbExec(
-    `UPDATE gift_codes
-     SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)), updated_at = ?
-     WHERE id = ?`,
-    [JSON.stringify(entry), entry.sentAt, giftId],
-  );
+): SqlStatement {
+  return {
+    sql: `UPDATE gift_codes
+          SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)), updated_at = ?
+          WHERE id = ?`,
+    params: [JSON.stringify(entry), entry.sentAt, giftId],
+  };
 }

@@ -84,12 +84,40 @@ describe("resolveGiftThankYou", () => {
       displayCode: formatGiftCode(code),
       giftUrl: `${ORIGIN}/gift/${code}`,
       sendToken: await deriveGiftSendToken(giftId),
+      sendStatus: {
+        state: "ready",
+        buyerName: "Marguerite",
+        hasNote: true,
+        recipientName: null,
+      },
     });
     expect(result && "displayCode" in result && result.displayCode).toMatch(
       /^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/,
     );
     expect((await findGiftById(giftId))?.status).toBe("active");
     expect(sendGiftPurchase).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries the send status of an active gift after one send", async () => {
+    const giftId = await createTestGift();
+    await resolveFromStripe(giftCheckoutSession(giftId));
+    await dbExec(
+      `UPDATE gift_codes SET send_count = 1, recipient_name = ?, last_sent_at = ? WHERE id = ?`,
+      ["Anna", "2026-10-03T09:00:00.000Z", giftId],
+    );
+
+    const result = await resolveGiftThankYou(SESSION_ID, { kind: "unavailable" });
+
+    expect(result).toMatchObject({
+      kind: "active",
+      sendStatus: {
+        state: "sent",
+        buyerName: "Marguerite",
+        hasNote: true,
+        recipientName: "Anna",
+        lastSentAt: "2026-10-03T09:00:00.000Z",
+      },
+    });
   });
 
   it("uses the session creation time as the activation time", async () => {

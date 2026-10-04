@@ -15,6 +15,7 @@ import {
   loadMessageReading,
 } from "@/app/gift/[code]/loadGiftPageProps";
 import type { GiftPageMessage } from "@/app/gift/[code]/resolveGiftRequest";
+import { GIFT_SEND_PAGE_COPY_KEYS, GiftSendPageView } from "@/app/gift/send/GiftSendPageView";
 import { BookingPreviewUnavailable } from "@/app/preview/book/[slug]/BookingPreviewUnavailable";
 import { loadPreviewBookingFormProps } from "@/app/preview/book/[slug]/loadPreviewBookingFormProps";
 import { GiftSheet } from "@/components/GiftSheet";
@@ -27,6 +28,7 @@ import {
   GIFT_PREVIEW_STATES,
   type GiftPreviewState,
 } from "@/lib/page-previews/preview-fixtures-pages";
+import { pick } from "@/lib/pick";
 import { fetchGiftSettings, fetchReading } from "@/lib/sanity/fetch";
 
 import { OpenSheetPreview } from "./OpenSheetPreview";
@@ -102,6 +104,12 @@ async function renderBuyerThankYou(): Promise<ReactElement> {
       displayCode: PREVIEW_GIFT.code,
       giftUrl: PREVIEW_GIFT.giftUrl,
       sendToken: null,
+      sendStatus: {
+        state: "ready",
+        buyerName: PREVIEW_GIFT.buyerFirstName,
+        hasNote: true,
+        recipientName: null,
+      },
     },
     readingName: sanityReading?.name ?? PREVIEW_GIFT.readingName,
     giftSettings,
@@ -158,6 +166,22 @@ async function renderGiftMessage(
   return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy)} />;
 }
 
+async function renderSendPage(): Promise<ReactElement> {
+  return (
+    <GiftSendPageView
+      copy={pick(await loadGiftContent("preview"), GIFT_SEND_PAGE_COPY_KEYS)}
+      status={{
+        state: "ready",
+        buyerName: PREVIEW_GIFT.buyerFirstName,
+        hasNote: true,
+        recipientName: null,
+      }}
+      token=""
+      disabled
+    />
+  );
+}
+
 const GIFT_PREVIEWS: Record<GiftPreviewState, () => Promise<ReactElement>> = {
   "buy-sheet": renderBuySheet,
   "buyer-thank-you": renderBuyerThankYou,
@@ -169,6 +193,7 @@ const GIFT_PREVIEWS: Record<GiftPreviewState, () => Promise<ReactElement>> = {
   "not-found": () => renderGiftMessage("not_found", false),
   "last-page": () => renderGiftForm({ note: PREVIEW_GIFT.note, initialPage: "last" }),
   "recipient-thank-you": renderRecipientThankYou,
+  "send-link": renderSendPage,
 };
 
 function isGiftPreviewState(state: string): state is GiftPreviewState {

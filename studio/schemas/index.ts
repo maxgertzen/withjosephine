@@ -16,6 +16,7 @@ import { emailOrderConfirmation } from "./emailOrderConfirmation";
 import { emailGiftPurchase } from "./emailGiftPurchase";
 import { emailGiftOpened } from "./emailGiftOpened";
 import { emailGiftRecipientConfirmation } from "./emailGiftRecipientConfirmation";
+import { emailGiftToRecipient } from "./emailGiftToRecipient";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
 import { listenPage } from "./listenPage";
@@ -48,6 +49,7 @@ export const schemaTypes = [
   emailGiftPurchase,
   emailGiftOpened,
   emailGiftRecipientConfirmation,
+  emailGiftToRecipient,
   emailPrivacyExport,
   emailSharedShell,
   listenPage,

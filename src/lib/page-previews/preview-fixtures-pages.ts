@@ -46,6 +46,7 @@ export const GIFT_PREVIEW_STATES = [
   { state: "not-found", title: "Gift: not found" },
   { state: "last-page", title: "Gift: last page" },
   { state: "recipient-thank-you", title: "Gift thank-you (recipient)" },
+  { state: "send-link", title: "Gift: send page" },
 ] as const;
 
 export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];

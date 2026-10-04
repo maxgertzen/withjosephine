@@ -1,8 +1,12 @@
+import { GIFT_SEND_COPY_KEYS } from "@/components/GiftSendForm";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { giftContent } from "@/lib/gift/giftContent";
+import type { GiftSendStatus } from "@/lib/gift/giftSendContract";
+import { pick } from "@/lib/pick";
 import type { SanityGiftSettings } from "@/lib/sanity/types";
 
 import type { GiftNoteCopy } from "./GiftNoteBlock";
+import type { GiftSendBlockCopy } from "./GiftSendBlock";
 import type { GiftThankYouCopy, GiftThankYouViewProps } from "./GiftThankYouView";
 
 const NOTE_COPY_KEYS = [
@@ -23,9 +27,10 @@ const NOTE_COPY_KEYS = [
   "sheetCancelLabel",
 ] as const satisfies readonly (keyof GiftNoteCopy)[];
 
-function pick<T, K extends keyof T>(source: T, keys: readonly K[]): Pick<T, K> {
-  return Object.fromEntries(keys.map((key) => [key, source[key]])) as Pick<T, K>;
-}
+const SEND_COPY_KEYS = [
+  ...GIFT_SEND_COPY_KEYS,
+  "sendOpenLabel",
+] as const satisfies readonly (keyof GiftSendBlockCopy)[];
 
 export type GiftThankYouSource =
   | {
@@ -35,6 +40,7 @@ export type GiftThankYouSource =
       displayCode: string;
       giftUrl: string;
       sendToken: string | null;
+      sendStatus: GiftSendStatus;
     }
   | { kind: "redeemed"; buyerFirstName: string; displayCode: string; giftUrl: string }
   | { kind: "not_paid"; buyerFirstName: string };
@@ -68,6 +74,7 @@ export function deriveGiftThankYouViewProps({
     thankYouOpenedNotice: content.thankYouOpenedNotice,
     pendingBody: content.pendingBody,
     note: pick(content, NOTE_COPY_KEYS),
+    send: pick(content, SEND_COPY_KEYS),
   };
 
   if (gift.kind === "not_paid") return { state: "pending_payment", copy };
@@ -85,5 +92,6 @@ export function deriveGiftThankYouViewProps({
     ...shown,
     note: { buyerFirstName: gift.buyerFirstName, text: gift.note },
     noteEdit: gift.sendToken ? { token: gift.sendToken } : null,
+    send: gift.sendToken ? { token: gift.sendToken, status: gift.sendStatus } : null,
   };
 }

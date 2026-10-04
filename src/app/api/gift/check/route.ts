@@ -1,25 +1,19 @@
 import { NextResponse } from "next/server";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { isFlagEnabled } from "@/lib/env";
-import { auditInvalidGiftCode } from "@/lib/gift/giftAudit";
+import { auditInvalidGiftLink } from "@/lib/gift/giftAudit";
 import type { GiftCheckRequest, GiftCheckResponse } from "@/lib/gift/giftCheck";
 import { giftPath, normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { findGiftByCode, resolveGiftState } from "@/lib/gift/gifts";
-import { resolveReadingSummary } from "@/lib/readingSummary";
+import { resolveReadingName } from "@/lib/readingSummary";
 import { fetchReading } from "@/lib/sanity/fetch";
 
 function isGiftCheckRequest(body: unknown): body is GiftCheckRequest {
   if (typeof body !== "object" || body === null) return false;
   const candidate = body as Record<string, unknown>;
   return typeof candidate.code === "string" && typeof candidate.readingSlug === "string";
-}
-
-async function readingName(slug: string): Promise<string> {
-  const reading = await resolveReadingSummary(slug, (sanitySlug) =>
-    fetchReading(sanitySlug).catch(() => null),
-  );
-  return reading?.name ?? slug;
 }
 
 function respond(body: GiftCheckResponse, status = 200): Response {
@@ -49,7 +43,7 @@ export async function POST(request: Request): Promise<Response> {
   const state = resolveGiftState(gift);
   const code = normalizeGiftCode(parsedBody.code);
   if (!gift || !code || (state !== "active" && state !== "redeemed")) {
-    await auditInvalidGiftCode(request);
+    await auditInvalidGiftLink(request, AUDIT_EVENT_TYPE.gift_code_invalid);
     return respond({ result: "not_found" });
   }
 
@@ -58,7 +52,7 @@ export async function POST(request: Request): Promise<Response> {
   return respond({
     result: "other_reading",
     readingSlug: gift.readingSlug,
-    readingName: await readingName(gift.readingSlug),
+    readingName: await resolveReadingName(gift.readingSlug, fetchReading),
     path,
   });
 }

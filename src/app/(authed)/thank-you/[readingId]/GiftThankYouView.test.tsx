@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GIFT_DEFAULTS } from "@/data/defaults";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
@@ -140,11 +140,102 @@ describe("GiftThankYouView active", () => {
     expect(share).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the saved note with Edit note and no send button", () => {
+  it("shows the saved note with Edit note", () => {
     renderView(ACTIVE_GIFT);
     expect(screen.getByText(PREVIEW_GIFT.note)).toHaveAttribute("data-clarity-mask", "True");
     expect(screen.getByRole("button", { name: GIFT_DEFAULTS.editNoteLabel })).toBeVisible();
-    expect(screen.queryByRole("button", { name: /send/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the send form in place from the send button", async () => {
+    const user = userEvent.setup();
+    renderView(ACTIVE_GIFT);
+
+    expect(screen.queryByLabelText(GIFT_DEFAULTS.recipientEmailLabel)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }));
+
+    expect(screen.getByRole("heading", { name: GIFT_DEFAULTS.sendHeading })).toBeVisible();
+    expect(screen.getByLabelText(/Their email/)).toHaveValue("");
+    expect(
+      screen.queryByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens on the already sent card after one send", async () => {
+    const user = userEvent.setup();
+    renderView({
+      ...ACTIVE_GIFT,
+      sendStatus: {
+        ...ACTIVE_GIFT.sendStatus,
+        state: "sent",
+        recipientName: "Anna",
+        lastSentAt: "2026-10-03T09:00:00.000Z",
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }));
+
+    expect(screen.getByRole("heading", { name: GIFT_DEFAULTS.alreadySentHeading })).toBeVisible();
+    expect(screen.getByText("Sent to Anna on 3 October 2026.")).toBeVisible();
+  });
+
+  describe("after a note is saved", () => {
+    const giftWithoutNote = {
+      ...ACTIVE_GIFT,
+      note: null,
+      sendStatus: { ...ACTIVE_GIFT.sendStatus, hasNote: false },
+    };
+
+    beforeEach(() => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    async function addNote(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.addNoteLabel }));
+      const fromField = screen.getByLabelText(new RegExp(`^${GIFT_DEFAULTS.fromLabel}`));
+      await user.clear(fromField);
+      await user.type(fromField, "Dee");
+      await user.type(screen.getByLabelText(GIFT_DEFAULTS.noteLabel), "See you soon");
+      await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.saveNoteLabel }));
+      await screen.findByText(GIFT_DEFAULTS.noteSavedNotice);
+    }
+
+    it("opens the send form with the saved name and the with-note help line", async () => {
+      const user = userEvent.setup();
+      renderView(giftWithoutNote);
+
+      await addNote(user);
+      await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }));
+
+      expect(
+        screen.getByText("From Dee, with your note. Sent now, from hello@withjosephine.com."),
+      ).toBeVisible();
+    });
+
+    it("updates the help line of a send form that is already open", async () => {
+      const user = userEvent.setup();
+      renderView(giftWithoutNote);
+      await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }));
+      expect(screen.getByText("From Dana. Sent now, from hello@withjosephine.com.")).toBeVisible();
+
+      await addNote(user);
+
+      expect(
+        screen.getByText("From Dee, with your note. Sent now, from hello@withjosephine.com."),
+      ).toBeVisible();
+    });
+  });
+
+  it("renders no send button without a send token", () => {
+    renderView({ ...ACTIVE_GIFT, sendToken: null });
+    expect(
+      screen.queryByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }),
+    ).not.toBeInTheDocument();
   });
 
   it("disables Save note when there is no note token", async () => {
@@ -160,6 +251,9 @@ describe("GiftThankYouView active", () => {
 describe("GiftThankYouView pending payment", () => {
   it("shows the bank line and no code", () => {
     renderView({ kind: "not_paid", buyerFirstName: "Dana" });
+    expect(
+      screen.queryByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Thank you, Dana.");
     expect(screen.getByText(GIFT_DEFAULTS.pendingBody)).toBeVisible();
     expect(screen.queryByTestId("gift-code")).not.toBeInTheDocument();
@@ -179,6 +273,9 @@ describe("GiftThankYouView redeemed", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: GIFT_DEFAULTS.addNoteLabel }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: GIFT_DEFAULTS.sendOpenLabel }),
     ).not.toBeInTheDocument();
   });
 });

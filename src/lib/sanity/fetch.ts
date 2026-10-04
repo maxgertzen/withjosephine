@@ -15,6 +15,7 @@ import {
   emailGiftOpenedQuery,
   emailGiftPurchaseQuery,
   emailGiftRecipientConfirmationQuery,
+  emailGiftToRecipientQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
@@ -47,6 +48,7 @@ import type {
   SanityEmailGiftOpened,
   SanityEmailGiftPurchase,
   SanityEmailGiftRecipientConfirmation,
+  SanityEmailGiftToRecipient,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
@@ -225,6 +227,10 @@ export const fetchEmailGiftOpened = cache((): Promise<SanityEmailGiftOpened | nu
 export const fetchEmailGiftRecipientConfirmation = cache(
   (): Promise<SanityEmailGiftRecipientConfirmation | null> =>
     fetchEmailCopy<SanityEmailGiftRecipientConfirmation>(emailGiftRecipientConfirmationQuery),
+);
+
+export const fetchEmailGiftToRecipient = cache((): Promise<SanityEmailGiftToRecipient | null> =>
+  fetchEmailCopy<SanityEmailGiftToRecipient>(emailGiftToRecipientQuery),
 );
 
 export const fetchEmailGiftSettings = cache((): Promise<SanityGiftSettings | null> =>

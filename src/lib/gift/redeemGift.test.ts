@@ -50,7 +50,7 @@ import {
 } from "@/lib/booking/persistence/sqlClient";
 import { sendCustomerConfirmation, sendGiftOpened, sendNotificationToJosephine } from "@/lib/resend";
 import { captureConsole } from "@/test/captureConsole";
-import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
+import { auditRows, createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 import { createSqliteClient } from "@/test/persistence/sqliteClient";
 
 import { deriveGiftCode } from "./giftCode";
@@ -139,10 +139,6 @@ async function submissionsForGift(giftId: string) {
        FROM submissions WHERE gift_code_id = ?`,
     [giftId],
   );
-}
-
-async function auditEvents(): Promise<Array<{ event_type: string; success: number; submission_id: string | null }>> {
-  return dbQuery(`SELECT event_type, success, submission_id FROM listen_audit ORDER BY timestamp`);
 }
 
 let capturedConsole: ReturnType<typeof captureConsole>;
@@ -266,7 +262,7 @@ describe("redeemGiftSubmission", () => {
 
   it.each(["AAAAAAAAAAAA", "x"])("answers not_found for %s and writes an invalid code audit row", async (code) => {
     expect(await redeemGiftSubmission(redeemInput(code))).toEqual({ kind: "not_found" });
-    expect(await auditEvents()).toEqual([
+    expect(await auditRows()).toEqual([
       { event_type: "gift_code_invalid", success: 0, submission_id: null },
     ]);
   });
@@ -285,7 +281,7 @@ describe("redeemGiftSubmission", () => {
 
     const result = await redeemGiftSubmission(redeemInput(code));
 
-    expect(await auditEvents()).toEqual([
+    expect(await auditRows()).toEqual([
       {
         event_type: "gift_redeemed",
         success: 1,
@@ -409,7 +405,7 @@ describe("redeemGiftSubmission for a gift that is already redeemed", () => {
 
     expect(retry).toEqual(first);
     expect(await submissionsForGift(giftId)).toHaveLength(1);
-    expect(await auditEvents()).toHaveLength(1);
+    expect(await auditRows()).toHaveLength(1);
   });
 
   it("answers already_redeemed to a repeat with another email or another reading", async () => {

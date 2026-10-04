@@ -11,7 +11,8 @@ export type EmailSubType =
   | "admin_email_preview"
   | "gift_confirmation"
   | "gift_opened"
-  | "gift_recipient_confirmation";
+  | "gift_recipient_confirmation"
+  | "gift_send";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
@@ -25,6 +26,7 @@ export const EMAIL_LABELS: Record<EmailSubType, string> = {
   gift_confirmation: "gift confirmation",
   gift_opened: "gift opened",
   gift_recipient_confirmation: "gift recipient confirmation",
+  gift_send: "gift to recipient",
 };
 
 export type ServerEventMap = {

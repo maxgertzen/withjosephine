@@ -8,14 +8,14 @@ import { normalizeEmail } from "@/lib/auth/users";
 import { buildFinancialMirror } from "@/lib/booking/financialMirror";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { siteOrigin } from "@/lib/env";
-import { resolveReadingSummary } from "@/lib/readingSummary";
+import { resolveReadingName } from "@/lib/readingSummary";
 import { sendGiftPurchase } from "@/lib/resend";
 import { paidFieldsFromSession, type PaidSessionFields } from "@/lib/stripeSession";
 
 import { giftClientReferenceId, giftIdFromClientReferenceId } from "./clientReference";
 import { giftPaymentEventFields } from "./giftAnalytics";
-import { deriveGiftSendToken, deriveVerifiedGiftCode } from "./giftCode";
-import { formatGiftCode, giftPath, giftSendPath } from "./giftCodeFormat";
+import { deriveGiftSendToken, deriveVerifiedGiftCode, giftUrl } from "./giftCode";
+import { formatGiftCode, giftSendPath } from "./giftCodeFormat";
 import { giftContent } from "./giftContent";
 import {
   appendGiftEmailFired,
@@ -52,26 +52,18 @@ export function giftActivationFromSession(
   };
 }
 
-async function readingName(readingSlug: string): Promise<string> {
-  const { fetchReadingPublished } = await import("@/lib/sanity/fetch");
-  const reading = await resolveReadingSummary(readingSlug, (slug) =>
-    fetchReadingPublished(slug).catch(() => null),
-  );
-  return reading?.name ?? readingSlug;
-}
-
 async function sendBuyerConfirmation(
   gift: GiftRecord,
   code: string,
   buyerEmail: string,
 ): ReturnType<typeof sendGiftPurchase> {
-  const { fetchEmailGiftSettings } = await import("@/lib/sanity/fetch");
+  const { fetchEmailGiftSettings, fetchReadingPublished } = await import("@/lib/sanity/fetch");
   const [settings, name, sendToken] = await Promise.all([
     fetchEmailGiftSettings().catch(() => null),
-    readingName(gift.readingSlug),
+    resolveReadingName(gift.readingSlug, fetchReadingPublished),
     deriveGiftSendToken(gift.id),
   ]);
-  const giftUrl = siteOrigin() + giftPath(code);
+  const url = giftUrl(code);
   const shareMessage = applyTokens(giftContent(settings).shareMessageTemplate, {
     buyerName: gift.buyerFirstName,
   });
@@ -82,8 +74,8 @@ async function sendBuyerConfirmation(
       readingName: name,
       hasNote: gift.note !== null,
       displayCode: formatGiftCode(code),
-      giftUrl,
-      whatsappUrl: WHATSAPP_SHARE_URL + encodeURIComponent(`${shareMessage} ${giftUrl}`),
+      giftUrl: url,
+      whatsappUrl: WHATSAPP_SHARE_URL + encodeURIComponent(`${shareMessage} ${url}`),
       sendUrl: siteOrigin() + giftSendPath(sendToken),
     },
     { giftId: gift.id, idempotencyKey: `gift-confirmation/${gift.id}` },

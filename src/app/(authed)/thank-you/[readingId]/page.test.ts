@@ -483,6 +483,7 @@ describe("ThankYouPage gift branch", () => {
     ...SHOWN,
     note: "Happy birthday",
     sendToken: "send-token",
+    sendStatus: { state: "ready", buyerName: "Dana", hasNote: true, recipientName: null },
   };
 
   type Rendered = { type: unknown; props: GiftThankYouViewProps };
@@ -519,7 +520,7 @@ describe("ThankYouPage gift branch", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the active gift view with the note token, read from the gift's reading", async () => {
+  it("renders the active gift view with the note and send token, read from the gift's reading", async () => {
     mockResolveGift.mockResolvedValueOnce(ACTIVE);
     const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
 
@@ -530,6 +531,10 @@ describe("ThankYouPage gift branch", () => {
       giftUrl: SHOWN.giftUrl,
       note: { buyerFirstName: "Dana", text: "Happy birthday" },
       noteEdit: { token: "send-token" },
+      send: {
+        token: "send-token",
+        status: { state: "ready", buyerName: "Dana", hasNote: true, recipientName: null },
+      },
     });
     expect(result.props.copy.codeHelp).toBe("For the Birth Chart Reading. It does not expire.");
     expect(mockResolveGift).toHaveBeenCalledWith(SESSION_ID, expect.objectContaining({ kind: "ok" }));
@@ -544,12 +549,13 @@ describe("ThankYouPage gift branch", () => {
     expect(mockFetchReading).toHaveBeenCalledTimes(1);
   });
 
-  it("renders a redeemed gift without note editing", async () => {
+  it("renders a redeemed gift without note editing or sending", async () => {
     mockResolveGift.mockResolvedValueOnce({ kind: "redeemed", ...SHOWN });
     const result = (await callPage({ sessionId: SESSION_ID })) as Rendered;
 
     expect(result.props.state).toBe("redeemed");
     expect(result.props).not.toHaveProperty("noteEdit");
+    expect(result.props).not.toHaveProperty("send");
   });
 
   it("renders the pending card for an unpaid gift session", async () => {

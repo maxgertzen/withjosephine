@@ -19,6 +19,7 @@ import {
   GiftRecipientConfirmation,
   giftRecipientConfirmationTokens,
 } from "./emails/GiftRecipientConfirmation";
+import { GiftToRecipient, giftToRecipientTokens } from "./emails/GiftToRecipient";
 import {
   JosephineNotification,
   josephineNotificationTitle,
@@ -30,6 +31,7 @@ import { ReadingDelivery } from "./emails/ReadingDelivery";
 import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
 import { isFlagEnabled } from "./env";
 import { giftClientReferenceId } from "./gift/clientReference";
+import { formatGiftCode } from "./gift/giftCodeFormat";
 import { pickDefined } from "./sanity/pickDefined";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -527,6 +529,48 @@ export async function sendGiftOpened(
     submissionId: null,
     giftId: options.giftId,
     idempotencyKey: options.idempotencyKey,
+  });
+}
+
+export async function sendGiftToRecipient(
+  gift: {
+    giftId: string;
+    recipientName: string;
+    recipientEmail: string;
+    buyerName: string;
+    buyerEmail: string;
+    note: string | null;
+    readingName: string;
+    code: string;
+    giftUrl: string;
+  },
+  options: { idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_TO_RECIPIENT_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftToRecipient } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftToRecipient().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_TO_RECIPIENT_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const vars = {
+    firstName: gift.recipientName,
+    buyerName: gift.buyerName,
+    readingName: gift.readingName,
+    displayCode: formatGiftCode(gift.code),
+    giftUrl: gift.giftUrl,
+    note: gift.note,
+  };
+  const html = await render(<GiftToRecipient vars={vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to: gift.recipientEmail,
+    subject: applyTokens(copy.subject, giftToRecipientTokens(vars)),
+    html,
+    subType: "gift_send",
+    submissionId: null,
+    giftId: gift.giftId,
+    idempotencyKey: options.idempotencyKey,
+    originatorEmail: gift.buyerEmail,
   });
 }
 

@@ -40,8 +40,8 @@ describe("deriveGiftThankYouViewProps copy", () => {
     expect(note.noteCounterTemplate).toBe(GIFT_DEFAULTS.noteCounterTemplate);
   });
 
-  it("passes only the strings the view and its note block render", () => {
-    const { note, ...viewCopy } = derive(ACTIVE_GIFT).copy;
+  it("passes only the strings the view, its note block and its send block render", () => {
+    const { note, send, ...viewCopy } = derive(ACTIVE_GIFT).copy;
     expect(Object.keys(viewCopy).sort()).toEqual(
       [
         "heading",
@@ -74,6 +74,32 @@ describe("deriveGiftThankYouViewProps copy", () => {
         "sheetCancelLabel",
       ].sort(),
     );
+    expect(Object.keys(send).sort()).toEqual(
+      [
+        "sendOpenLabel",
+        "sendHeading",
+        "recipientNameLabel",
+        "recipientEmailLabel",
+        "recipientEmailInvalid",
+        "recipientEmailIsBuyer",
+        "sendHelpTemplate",
+        "sendHelpNoNoteTemplate",
+        "sendButtonLabel",
+        "sendingLabel",
+        "sentHeadingTemplate",
+        "sentBodyTemplate",
+        "resendLinkTemplate",
+        "resendUsedHeading",
+        "resendUsedBody",
+        "alreadySentHeading",
+        "alreadySentBodyTemplate",
+        "sendPageOpenedHeadingTemplate",
+        "sendPageOpenedBody",
+        "sendLinkInvalidHeading",
+        "sendLinkInvalidBody",
+        "sendFailedNotice",
+      ].sort(),
+    );
   });
 
   it("uses the pending heading and subheading for an unpaid gift", () => {
@@ -98,8 +124,23 @@ describe("deriveGiftThankYouViewProps state", () => {
     expect(derive(ACTIVE_GIFT)).toMatchObject({ noteEdit: { token: "send-token" } });
   });
 
-  it("sets noteEdit to null without a send token", () => {
-    expect(derive({ ...ACTIVE_GIFT, sendToken: null })).toMatchObject({ noteEdit: null });
+  it("sets noteEdit and send to null without a send token", () => {
+    expect(derive({ ...ACTIVE_GIFT, sendToken: null })).toMatchObject({
+      noteEdit: null,
+      send: null,
+    });
+  });
+
+  it("carries the send token and the send status of an active gift as send", () => {
+    const sendStatus = {
+      ...ACTIVE_GIFT.sendStatus,
+      state: "sent",
+      recipientName: "Anna",
+      lastSentAt: "2026-10-03T09:00:00.000Z",
+    } as const;
+    expect(derive({ ...ACTIVE_GIFT, sendStatus })).toMatchObject({
+      send: { token: "send-token", status: sendStatus },
+    });
   });
 
   it("shows the code without note editing for a redeemed gift", () => {
@@ -107,5 +148,6 @@ describe("deriveGiftThankYouViewProps state", () => {
     expect(props).toMatchObject({ state: "redeemed", displayCode: SHOWN_GIFT.displayCode });
     expect(props).not.toHaveProperty("noteEdit");
     expect(props).not.toHaveProperty("note");
+    expect(props).not.toHaveProperty("send");
   });
 });

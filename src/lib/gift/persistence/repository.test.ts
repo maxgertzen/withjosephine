@@ -233,13 +233,28 @@ describe("gift repository against in-memory SQLite", () => {
     await completeGiftSend(giftId, { sendNumber: 1, sentAt: LATER });
     await claimGiftSend(giftId, sendClaim(1, "grace@example.org"));
 
-    await releaseGiftSend(giftId, { sendNumber: 1, updatedAt: LATER });
+    await releaseGiftSend(giftId, { sendNumber: 1, keptRecipientName: "Ada", updatedAt: LATER });
     expect(await readColumn(giftId, "send_count")).toBe(2);
     expect(await readColumn(giftId, "recipient_email")).toBe("grace@example.org");
+    expect(await readColumn(giftId, "recipient_name")).toBe("Grace");
 
-    await releaseGiftSend(giftId, { sendNumber: 2, updatedAt: LATER });
+    await releaseGiftSend(giftId, { sendNumber: 2, keptRecipientName: "Grace", updatedAt: LATER });
     expect(await readColumn(giftId, "send_count")).toBe(1);
     expect(await readColumn(giftId, "recipient_email")).toBeNull();
+  });
+
+  it("puts back the kept recipient name when a second send is released", async () => {
+    const giftId = await createActiveGift();
+    await claimGiftSend(giftId, { ...sendClaim(0), recipientName: "Anna" });
+    await completeGiftSend(giftId, { sendNumber: 1, sentAt: LATER });
+    await claimGiftSend(giftId, { ...sendClaim(1, "ben@example.org"), recipientName: "Ben" });
+
+    await releaseGiftSend(giftId, { sendNumber: 2, keptRecipientName: "Anna", updatedAt: LATER });
+
+    const gift = await findGiftById(giftId);
+    expect(gift?.recipientName).toBe("Anna");
+    expect(gift?.lastSentAt).toBe(LATER);
+    expect(gift?.sendCount).toBe(1);
   });
 
   it("updates the note on an active gift only", async () => {

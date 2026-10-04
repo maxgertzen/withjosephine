@@ -31,6 +31,16 @@ export async function resolveReadingSummary(
     : null;
 }
 
+export async function resolveReadingName(
+  slug: string,
+  fetchReading: SanityReadingFetcher,
+): Promise<string> {
+  const reading = await resolveReadingSummary(slug, (sanitySlug) =>
+    fetchReading(sanitySlug).catch(() => null),
+  );
+  return reading?.name ?? slug;
+}
+
 export async function readingExists(slug: string, fetchReading: SanityReadingFetcher): Promise<boolean> {
   return getReadingById(slug) !== undefined || (await fetchReading(slug)) !== null;
 }

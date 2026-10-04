@@ -58,6 +58,7 @@ const EXPECTED_TEXT: Record<GiftPreviewState, string> = {
   "not-found": GIFT_DEFAULTS.notFoundHeading,
   "last-page": GIFT_DEFAULTS.priceLine,
   "recipient-thank-you": "Thank you, Anna. Your reading is in my hands now.",
+  "send-link": GIFT_DEFAULTS.sendHeading,
 };
 
 beforeEach(() => {
@@ -123,6 +124,23 @@ describe("/preview/gift/[state]", () => {
     await user.type(screen.getByLabelText(GIFT_DEFAULTS.codeFieldLabel), "K7M2 QX9P H4TR");
     await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel }));
 
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("send-link shows the send form from Dana with sending disabled and posts nothing", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    await renderPreview("send-link");
+
+    expect(
+      screen.getByText(
+        `From ${PREVIEW_GIFT.buyerFirstName}, with your note. Sent now, from hello@withjosephine.com.`,
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: GIFT_DEFAULTS.sendButtonLabel })).toHaveProperty(
+      "disabled",
+      true,
+    );
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });

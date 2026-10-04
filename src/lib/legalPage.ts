@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { formatLongDate } from "@/lib/formatDate";
 import { fetchLegalPage } from "@/lib/sanity/fetch";
 import type { SanityLegalPage } from "@/lib/sanity/types";
 import { buildPageMetadata } from "@/lib/seoMetadata";
@@ -23,16 +24,6 @@ export type ResolvedLegalPage = {
   lastUpdated: string;
 };
 
-export function formatLegalDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export async function resolveLegalPage(
   slug: string,
   fallback: LegalPageFallback,
@@ -43,7 +34,7 @@ export async function resolveLegalPage(
     doc,
     tag: doc?.tag ?? fallback.tag,
     title: doc?.title ?? fallback.title,
-    lastUpdated: formatLegalDate(doc?.lastUpdated ?? fallback.lastUpdated),
+    lastUpdated: formatLongDate(doc?.lastUpdated ?? fallback.lastUpdated),
   };
 }
 

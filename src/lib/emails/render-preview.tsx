@@ -5,6 +5,7 @@ import { pickDefined } from "@/lib/sanity/pickDefined";
 import { GiftOpened } from "./GiftOpened";
 import { GiftPurchase } from "./GiftPurchase";
 import { GiftRecipientConfirmation } from "./GiftRecipientConfirmation";
+import { GiftToRecipient } from "./GiftToRecipient";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE, PREVIEW_GIFT } from "./preview-fixtures";
@@ -32,6 +33,7 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailGiftPurchase",
   "emailGiftOpened",
   "emailGiftRecipientConfirmation",
+  "emailGiftToRecipient",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -146,6 +148,20 @@ async function renderRaw(
             dataExportUrl: PREVIEW_FIXTURE.dataExportUrl,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftRecipientConfirmation}
+        />,
+      );
+    case "emailGiftToRecipient":
+      return render(
+        <GiftToRecipient
+          vars={{
+            firstName: PREVIEW_GIFT.recipientFirstName,
+            buyerName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            displayCode: PREVIEW_GIFT.code,
+            giftUrl: PREVIEW_GIFT.giftUrl,
+            note: PREVIEW_GIFT.note,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftToRecipient}
         />,
       );
     default: {

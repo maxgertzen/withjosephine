@@ -1,5 +1,6 @@
 import "server-only";
 
+import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { getOrCreateUser } from "@/lib/auth/users";
 import { normalizeEmailForm } from "@/lib/booking/emailNormalize";
 import { afterSubmissionPaid } from "@/lib/booking/notifyPaid";
@@ -19,7 +20,7 @@ import {
   SUBMISSION_STATUS,
 } from "@/lib/booking/submissions";
 
-import { auditGiftRedeemed, auditInvalidGiftCode } from "./giftAudit";
+import { auditGiftRedeemed, auditInvalidGiftLink } from "./giftAudit";
 import { buildRedeemGiftStatement, findGiftByCode, findGiftById, resolveGiftState } from "./gifts";
 import type { GiftRecord } from "./types";
 
@@ -116,7 +117,7 @@ export async function redeemGiftSubmission({
   const gift = await findGiftByCode(code);
   const state = resolveGiftState(gift);
   if (!gift || state === "not_found") {
-    await auditInvalidGiftCode(request);
+    await auditInvalidGiftLink(request, AUDIT_EVENT_TYPE.gift_code_invalid);
     return { kind: "not_found" };
   }
   if (state === "redeemed") return resumeRedemption(gift, newSubmission);

@@ -74,6 +74,15 @@ describe("render-preview", () => {
       expect(html).not.toContain(PREVIEW_GIFT.note);
     });
 
+    it("renders emailGiftToRecipient with the sample gift, its note and its code", async () => {
+      const html = await renderEmailPreview("emailGiftToRecipient", null);
+      expect(html).toContain(`Hi ${PREVIEW_GIFT.recipientFirstName},`);
+      expect(html).toContain(PREVIEW_GIFT.buyerFirstName);
+      expect(html).toContain(PREVIEW_GIFT.code);
+      expect(html).toContain(PREVIEW_GIFT.giftUrl);
+      expect(html).toContain(PREVIEW_GIFT.note);
+    });
+
     it.each(PREVIEW_TEMPLATE_KEYS.map((key) => [key]))(
       "strips render-blocking <link> from %s output (iframe srcDoc compatibility)",
       async (key: EmailTemplateKey) => {

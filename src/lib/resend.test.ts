@@ -11,6 +11,7 @@ import {
   sendGiftOpened,
   sendGiftPurchase,
   sendGiftRecipientConfirmation,
+  sendGiftToRecipient,
   sendMagicLink,
   sendNotificationToJosephine,
   sendOrderConfirmation,
@@ -48,6 +49,7 @@ const sanityFetchMocks = vi.hoisted(() => ({
   fetchEmailGiftOpened: vi.fn(),
   fetchEmailGiftPurchase: vi.fn(),
   fetchEmailGiftRecipientConfirmation: vi.fn(),
+  fetchEmailGiftToRecipient: vi.fn(),
   fetchEmailMagicLink: vi.fn(),
   fetchEmailReadingDelivery: vi.fn(),
   fetchEmailOrderConfirmation: vi.fn(),
@@ -955,6 +957,77 @@ describe("sendGiftOpened", () => {
     await sendGiftOpened(openedVars, openedOptions);
 
     expect(sendMock.mock.calls[0]?.[0].subject).toBe("Anna has the Birth Chart Reading");
+  });
+});
+
+describe("sendGiftToRecipient", () => {
+  const gift = {
+    giftId: "g_1",
+    recipientName: "Anna",
+    recipientEmail: "anna@example.com",
+    buyerName: "Dana",
+    buyerEmail: "dana@example.com",
+    note: "Happy birthday, {code}",
+    readingName: "Birth Chart Reading",
+    code: "7KQ2M9XW4HBT",
+    giftUrl: "https://withjosephine.com/gift/7KQ2M9XW4HBT",
+  };
+  const sendOptions = { idempotencyKey: "gift-send/g_1/1" };
+
+  it("sends to the recipient with the key, no reply-to and no submission tags", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gs" } });
+
+    const result = await sendGiftToRecipient(gift, sendOptions);
+
+    expect(result).toEqual({ kind: "sent", resendId: "msg_gs" });
+    const [payload, options] = sendMock.mock.calls[0] ?? [];
+    expect(options).toEqual({ idempotencyKey: "gift-send/g_1/1" });
+    expect(payload.to).toBe("anna@example.com");
+    expect(payload.from).toBe("Josephine <hello@withjosephine.com>");
+    expect(payload.subject).toBe("A reading, waiting for you");
+    expect(payload).not.toHaveProperty("replyTo");
+    expect(payload.tags).toBeUndefined();
+    const body = visibleText(payload.html);
+    expect(body).toContain("Hi Anna,");
+    expect(body).toContain("The code is 7KQ2-M9XW-4HBT, if the button doesn’t work.");
+    expect(body).toContain("Happy birthday, {code}");
+    expect(payload.html).toContain(gift.giftUrl);
+  });
+
+  it("fires email_sent with the gift_send sub type and a gift_ distinct id", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gs" } });
+
+    await sendGiftToRecipient(gift, sendOptions);
+
+    expect(serverTrackMock).toHaveBeenCalledWith("email_sent", {
+      distinct_id: "gift_g_1",
+      sub_type: "gift_send",
+      submission_id: null,
+      gift_id: "g_1",
+      recipient_redacted: "a***@example.com",
+      resend_id_present: true,
+    });
+  });
+
+  it("dry-runs when the buyer is a sandbox address", async () => {
+    const result = await sendGiftToRecipient(
+      { ...gift, buyerEmail: "gift-roundtrip+buyer@withjosephine.com" },
+      sendOptions,
+    );
+
+    expect(result).toEqual({ kind: "dry_run" });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("fills the subject slots from Sanity copy", async () => {
+    sendMock.mockResolvedValue({ data: { id: "msg_gs" } });
+    vi.mocked(sanityFetchMocks.fetchEmailGiftToRecipient).mockResolvedValue({
+      subject: "{firstName}, {buyerName} sent you a {readingName}",
+    });
+
+    await sendGiftToRecipient(gift, sendOptions);
+
+    expect(sendMock.mock.calls[0]?.[0].subject).toBe("Anna, Dana sent you a Birth Chart Reading");
   });
 });
 

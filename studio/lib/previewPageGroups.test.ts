@@ -19,6 +19,7 @@ describe("pageGroups", () => {
       { title: "Gift: not found", href: "/preview/gift/not-found" },
       { title: "Gift: last page", href: "/preview/gift/last-page" },
       { title: "Gift thank-you (recipient)", href: "/preview/gift/recipient-thank-you" },
+      { title: "Gift: send page", href: "/preview/gift/send-link" },
     ]);
   });
 

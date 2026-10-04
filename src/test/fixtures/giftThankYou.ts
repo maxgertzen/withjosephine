@@ -16,6 +16,12 @@ export const ACTIVE_GIFT = {
   ...SHOWN_GIFT,
   note: PREVIEW_GIFT.note,
   sendToken: "send-token",
+  sendStatus: {
+    state: "ready",
+    buyerName: PREVIEW_GIFT.buyerFirstName,
+    hasNote: true,
+    recipientName: null,
+  },
 } satisfies GiftThankYouSource;
 
 export function giftThankYouViewProps(

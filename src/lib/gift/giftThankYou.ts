@@ -1,13 +1,14 @@
 import "server-only";
 
 import type { ThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
-import { siteOrigin } from "@/lib/env";
 import { unixToIso } from "@/lib/stripeSession";
 
 import { activateGift, giftActivationFromSession } from "./activateGift";
-import { deriveGiftSendToken, deriveVerifiedGiftCode } from "./giftCode";
-import { formatGiftCode, giftPath } from "./giftCodeFormat";
+import { deriveGiftSendToken, deriveVerifiedGiftCode, giftUrl } from "./giftCode";
+import { formatGiftCode } from "./giftCodeFormat";
 import { findGiftById, findGiftByStripeSessionId } from "./gifts";
+import { giftSendStatus } from "./giftSend";
+import type { GiftSendStatus } from "./giftSendContract";
 import type { GiftRecord } from "./types";
 
 export type GiftThankYouResult =
@@ -20,6 +21,7 @@ export type GiftThankYouResult =
       displayCode: string;
       giftUrl: string;
       sendToken: string;
+      sendStatus: GiftSendStatus;
     }
   | {
       kind: "redeemed";
@@ -68,7 +70,7 @@ export async function resolveGiftThankYou(
     readingSlug,
     buyerFirstName,
     displayCode: formatGiftCode(code),
-    giftUrl: siteOrigin() + giftPath(code),
+    giftUrl: giftUrl(code),
   };
   if (gift.status === "redeemed") return { kind: "redeemed", ...shown };
   return {
@@ -76,5 +78,6 @@ export async function resolveGiftThankYou(
     ...shown,
     note: gift.note,
     sendToken: await deriveGiftSendToken(giftId),
+    sendStatus: giftSendStatus(gift),
   };
 }

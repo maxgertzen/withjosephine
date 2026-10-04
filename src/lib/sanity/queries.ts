@@ -266,6 +266,21 @@ export const emailGiftRecipientConfirmationQuery = groq`
   }
 `;
 
+export const emailGiftToRecipientQuery = groq`
+  *[_type == "emailGiftToRecipient"][0] {
+    subject,
+    previewTemplate,
+    heroLine,
+    body,
+    noteLabelTemplate,
+    openButtonLabel,
+    codeFallbackTemplate,
+    cardLabel,
+    cardDeliveryLine,
+    privacyLineTemplate
+  }
+`;
+
 export const emailSharedShellQuery = groq`
   *[_id == "emailSharedShell"][0] {
     brandName,
