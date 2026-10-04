@@ -1,6 +1,6 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-04 handover 16): run `/session-start` from the project root. `www` is on `release/v1.21.0`. Every gift step is committed. Next: the staging walk and the release PR into `main`.
+## ▶ 👉 START HERE (next session, 2026-10-05 handover 16): run `/session-start` from the project root. `www` is on `release/v1.21.0`. Steps 1 to 7 are committed. Step 7 is NOT pushed and NOT on staging (2 commits ahead of origin). Next: push with Max's go, then build the rest of the release scope below, then one staging walk, then the release PR.
 
 - Commits on `release/v1.21.0` since handover 15:
   - `5a95949` Step 2 groundwork (migration `0021_gift_codes.sql`)
@@ -8,43 +8,68 @@
   - `92fa69e` Step 3b gift sheet and buyer thank-you
   - `89c60f6` Step 4 redeeming
   - `b6cb010` Step 5 sending
-  - `fcc31c2` Step 6 Gifts list in Studio
-  - the Step 7 commit (switch on)
-- Build ISAs: `MEMORY/WORK/20261004-gift-step2/` to `-step7/`.
-- Step 7:
-  - "Giving or redeeming a gift" fold row on `/book/[slug]`, and the gift code field on the last page.
+  - `fcc31c2` Step 6 Gifts list
+  - `88e8636` Step 7 switch on
+  - `6e208e3` dex
+- ISAs: `MEMORY/WORK/20261004-gift-step2/` to `-step7/`.
+- Staging has Steps 1 to 6. CI run 37213674885 was green, deploy-staging included.
+- Step 7 contents:
+  - The "Giving or redeeming a gift" fold row on `/book/[slug]`, and the gift code field on the last page.
   - Gift lines on Terms, Refund Policy and Privacy.
   - Erasure covers gifts. `delete-user` accepts `{ email }`. The export has `paidByGift`.
-  - `MANUAL_SMOKE_TEST.md` Cluster B is B1 to B9, plus D4. New runbook `docs/runbooks/GIFT_DISPUTE.md`.
+  - `MANUAL_SMOKE_TEST.md` Cluster B is B1 to B9, plus D4.
+  - `docs/runbooks/GIFT_DISPUTE.md`.
+  - `Sheet` now renders through a portal on `document.body`. `<main className="relative z-10">` had kept it under the consent banner.
 - Max's calls 2026-10-04:
   - Legal lines: Terms "A gift is one reading. A gift code does not expire. Gifts are non-refundable."; Refund Policy "Gifts are non-refundable, before and after the gift is opened."; Privacy adds Resend to the US-based processors.
-  - `GIFTS_ENABLED` removed everywhere. Gift routes are always on. This reverses the 2026-10-03 call: one release branch never ships half-built gift code to production.
-- Found in Step 7 and fixed: `Sheet` renders through a portal on `document.body`. `<main className="relative z-10">` had kept it under the consent banner.
-- Staging, after the Step 7 push, before the release PR:
-  - `pnpm tsx scripts/migrate-legal-gift-lines-2026-10.ts staging --apply`
-  - Run `e2e-sandbox.yml` by hand on `release/v1.21.0` (`gift-roundtrip.spec.ts`).
-  - Walk Cluster B and D4 at 375px and on desktop, Firefox desktop included.
-  - Studio, local, staging workspace: a paid test gift shows in 🎁 Gifts as Waiting, with no Create button and no document actions.
-  - Real send: a gift bought through the row by `maxgertzen@gmail.com`, sent from its `/gift/send` link to `hello@withjosephine.com`. It arrives with the dashed code and a working link. `SELECT recipient_email, send_count FROM gift_codes WHERE id = ?` returns `NULL, 1`.
-  - Not yet walked from Step 1b: the draft guard, and the refusal after 3 resends in 24 hours.
-- Release, before the PR merges:
-  - `pnpm migrate:apply:prod` (0019, 0020, 0021).
-  - Click and open tracking off for `withjosephine.com` in Resend.
-  - CHANGELOG row (this commit). Squash with the PR body as the merge message.
-- Release, after the production deploy:
-  - Production Resend webhook `https://withjosephine.com/api/webhooks/resend` (bounced, complained, suppressed, failed).
-  - `wrangler secret put RESEND_WEBHOOK_SECRET`
-  - Staging, then production: `pnpm tsx scripts/migrate-reading-delivery-names-2026-10.mts`, dry run, then with `--apply`.
-  - Staging, then production: `pnpm tsx scripts/request-send-for-hand-set-delivered-2026-10.mts`, dry run, then with `--apply`.
-  - `pnpm tsx scripts/migrate-legal-gift-lines-2026-10.ts production --apply`. Run it directly: `apply-all-sanity-migrations-to-prod.mts` fails on order drift and passes no arguments.
-  - `pnpm studio:deploy` from `main`.
-  - Becky fills Gift Settings and the four gift emails. The code defaults show until then.
-- Open:
-  - `6ok0psvi`: erasure keeps a paid but undelivered submission. Max's call.
-  - `cjmube2k`: lazy-load the gift sheets and narrow the gift copy on `/book`.
-  - `xhhr3son`: `SubmitOverlay` and `SwapToast` sit under the consent banner.
-  - `esd1oud0`, `vmbk83nm`, `g5e1age5`, `od0jv6op`, `9gju4rvg`, `tl6kchsk`, `5moajbvx`.
-  - No production backup mirror webhook in Sanity (SANITY_BACKUP_RUNBOOK §8b).
+  - `GIFTS_ENABLED` is removed everywhere, so gift routes are always on. This reverses the 2026-10-03 call: one release branch never ships half-built gift code to production.
+
+**Still planned for this release (v1.21.0), not built:**
+- `h5mu2wey` Thank-you pages use the homepage nav bar (Max, staging walk 2026-10-04).
+- `i2pp0i89` Listen intro page: the card sits on the footer rule. Max's open question: should listen pages also use the homepage nav?
+- `xwb7bhto` Notes Plate: points line up across the two columns. Planned after gift Step 7.
+- `y187ch3d` Staging emails get `[Staging]` at the start of the subject.
+- Gift epic, needs Max's decision first:
+  - `esd1oud0` A gift paid twice: the second charge has no financial row. Refund runbook only, or a second financial key.
+  - `vmbk83nm` Should gift email bounces be recorded?
+  - `6ok0psvi` Erasure keeps a paid but undelivered submission. This predates the gift work and applies to every booking.
+- Gift epic, likely closable: `g5e1age5` (Clarity on a client navigation into `/gift` or `/thank-you`). Every entry built in Steps 3b to 7 is a full page load (`RedeemSheet` and `useIntakeFormHandlers.ts:262` use `window.location.assign`, checkout uses `location.href`). No `Link` or `router.push` points into those paths. Confirm, then close.
+- To confirm with Max whether they belong in this release:
+  - `lvztxaci` Wake production deliver-requested from the sanity-sync webhook. Max 2026-10-04: keep the 5-minute cron for now; this comes after Step 1b.
+  - `cjmube2k` Lazy-load the gift sheets and narrow the gift copy on `/book`.
+  - `xhhr3son` `SubmitOverlay` and `SwapToast` sit under the consent banner.
+- Dex housekeeping: `oo4wxk3e` (Step 1, Send reading now) and `q54iqwdl` (Step 1c, the day7 rename) are built (`385e654` to `6743daf`) but still open. `jrvtgl56` was replaced by the day7 retirement. Close each with its commit.
+
+**Order:**
+1. Push `release/v1.21.0` with Max's go. CI deploys staging. Check that `deploy-staging` is green.
+2. Staging data:
+   - Legal lines: done 2026-10-05. Max ran `--apply` on staging. A dry run afterwards reports all three pages "already-applied", 0 to patch.
+   - Staging, `pnpm tsx scripts/migrate-reading-delivery-names-2026-10.mts`, dry run, then with `--apply`.
+   - Staging, `pnpm tsx scripts/request-send-for-hand-set-delivered-2026-10.mts`, dry run, then with `--apply`.
+   - Run the two delivery scripts before `seed-customer-emails-and-pages.mts`.
+3. Build the release items above, one commit each, each after `/simplify` and `/code-review`. Push.
+4. Run `e2e-sandbox.yml` by hand on `release/v1.21.0` (`gift-roundtrip.spec.ts`).
+5. One staging walk, at 375px and on desktop, Firefox desktop included:
+   - Cluster B and D4.
+   - The new release items.
+   - Studio, local, staging workspace: 🎁 Gifts shows a paid test gift as Waiting, with no Create button and no document actions.
+   - Real send: a gift bought through the row by `maxgertzen@gmail.com`, sent from its `/gift/send` link to `hello@withjosephine.com`. It arrives with the dashed code and a working link. `SELECT recipient_email, send_count FROM gift_codes WHERE id = ?` returns `NULL, 1`.
+   - Step 1b leftovers: the draft guard, and the refusal after 3 resends in 24 hours.
+6. Before the release PR merges:
+   - `pnpm migrate:apply:prod` (0019, 0020, 0021).
+   - Click and open tracking off for `withjosephine.com` in Resend.
+   - Update the CHANGELOG row.
+   - Squash with the PR body as the merge message.
+7. After the production deploy:
+   - Production Resend webhook `https://withjosephine.com/api/webhooks/resend` (bounced, complained, suppressed, failed).
+   - `wrangler secret put RESEND_WEBHOOK_SECRET`
+   - Production, `pnpm tsx scripts/migrate-reading-delivery-names-2026-10.mts`, dry run, then with `--apply`.
+   - Production, `pnpm tsx scripts/request-send-for-hand-set-delivered-2026-10.mts`, dry run, then with `--apply`.
+   - `pnpm tsx scripts/migrate-legal-gift-lines-2026-10.ts production --apply`. Run it directly: `apply-all-sanity-migrations-to-prod.mts` fails on order drift and passes no arguments.
+   - `pnpm studio:deploy` from `main`.
+   - Becky fills Gift Settings and the four gift emails.
+   - Then `8121k59q` (remove the day7 legacy readers).
+- Also open: `od0jv6op`, `5moajbvx`, `9gju4rvg`, `tl6kchsk`. There is no production backup mirror webhook in Sanity (SANITY_BACKUP_RUNBOOK §8b).
 
 ## ▶ (SUPERSEDED by handover 16 above) START HERE (2026-10-04 handover 15): run `/session-start` from the project root. `www` is on `release/v1.21.0`, pushed and deployed to staging. Next: Step 2 (`6uw1rf2c`), the gift table, now migration `0021`.
 
