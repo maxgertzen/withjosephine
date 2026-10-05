@@ -11,7 +11,7 @@
   1. Done 2026-10-05: `pnpm migrate:apply:staging` (`0022` on staging).
   1b. Before the push: `pnpm tsx scripts/seed-how-it-works-2026-10.mts staging`, then with `--apply` (fills `howItWorks` on readings and drafts; the booking page hides How it works while the field is empty).
   2. Go to push `release/v1.21.0`. The head commit must not carry `[skip ci]`.
-  3. After the push: CF Access bypass on staging for `/api/delivery/wake` (STAGING_RUNBOOK section 9b).
+  3. After the push: CF Access bypass on staging for `/api/delivery/wake`, `/api/admin/list-preview-recipients`, `/api/admin/send-email-preview` and `/api/admin/delete-user` (STAGING_RUNBOOK section 9b).
 - Staging steps after `deploy-staging` is green:
   - `pnpm tsx scripts/migrate-gift-records-to-submissions-2026-10.mts staging`, then with `--apply`, then `bash scripts/force-cron.sh reconcile-mirror -`.
   - Handover 16 staging data scripts (`migrate-reading-delivery-names-2026-10.mts`, `request-send-for-hand-set-delivered-2026-10.mts`), then `e2e-sandbox.yml` on `release/v1.21.0`.
