@@ -180,16 +180,22 @@ describe("applyPaidEvent", () => {
     warnSpy.mockRestore();
   });
 
-  it("returns duplicate and sends nothing when another session marked the submission paid first", async () => {
-    mockMarkPaid.mockResolvedValueOnce("paid_by_another_session");
+  it.each([
+    ["another event for the same session", "already_marked", "cs_1", "alreadyApplied"],
+    ["another session", "paid_by_another_session", "cs_2", "duplicate"],
+  ] as const)(
+    "sends nothing when %s marked the submission paid first",
+    async (_case, marked, stripeSessionId, expected) => {
+      mockMarkPaid.mockResolvedValueOnce(marked);
 
-    const result = await applyPaidEvent(SUBMISSION, { ...PAID_DETAILS, stripeSessionId: "cs_2" });
+      const result = await applyPaidEvent(SUBMISSION, { ...PAID_DETAILS, stripeSessionId });
 
-    expect(result).toBe("duplicate");
-    expect(mockJosephine).not.toHaveBeenCalled();
-    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
-    expect(mockAppendEmailFired).not.toHaveBeenCalled();
-  });
+      expect(result).toBe(expected);
+      expect(mockJosephine).not.toHaveBeenCalled();
+      expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+      expect(mockAppendEmailFired).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns notApplied, warns and sends nothing when the submission could not be marked paid", async () => {
     mockMarkPaid.mockResolvedValueOnce("not_marked");

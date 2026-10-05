@@ -104,6 +104,7 @@ export async function applyPaidEvent(
     financial,
   );
   if (marked === "paid_by_another_session") return "duplicate";
+  if (marked === "already_marked") return "alreadyApplied";
   if (marked === "not_marked") {
     reportSubmissionNotMarkedPaid(submission._id);
     return "notApplied";

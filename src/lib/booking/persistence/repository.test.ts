@@ -16,7 +16,7 @@ import {
   type CreateSubmissionInput,
   deleteSubmission,
   findGiftRecipientThankYou,
-  findPaidStripeSessionId,
+  findPaidMarker,
   findSubmissionById,
   findSubmissionByResendId,
   findSubmissionListenContext,
@@ -137,9 +137,9 @@ describe("repository against in-memory SQLite", () => {
     expect(record?.paidAt).toBe("2026-04-21T10:00:00Z");
   });
 
-  it("finds the session a submission is paid by", async () => {
+  it("finds the session and event a submission is paid by", async () => {
     await createSubmission(BASE_INPUT);
-    expect(await findPaidStripeSessionId("sub_1")).toBeNull();
+    expect(await findPaidMarker("sub_1")).toBeNull();
 
     await markSubmissionPaid("sub_1", {
       stripeEventId: "evt_1",
@@ -156,8 +156,11 @@ describe("repository against in-memory SQLite", () => {
       amountPaidCurrency: "usd",
     });
 
-    expect(await findPaidStripeSessionId("sub_1")).toBe("cs_1");
-    expect(await findPaidStripeSessionId("sub_missing")).toBeNull();
+    expect(await findPaidMarker("sub_1")).toEqual({
+      stripeSessionId: "cs_1",
+      stripeEventId: "evt_1",
+    });
+    expect(await findPaidMarker("sub_missing")).toBeNull();
   });
 
   it("does not mark a paid submission expired", async () => {

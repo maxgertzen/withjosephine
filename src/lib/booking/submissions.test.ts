@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./persistence/sqlClient", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./persistence/sqlClient")>();
+  return { ...actual, dbBatch: vi.fn(actual.dbBatch) };
+});
+
 vi.mock("../r2", () => ({
   deleteObject: vi.fn(),
 }));
@@ -15,6 +20,7 @@ vi.mock("./persistence/sanityMirror", () => ({
 
 import { deleteObject } from "../r2";
 import * as mirror from "./persistence/sanityMirror";
+import { dbBatch } from "./persistence/sqlClient";
 import {
   appendEmailFired,
   buildSubmissionContext,
@@ -59,7 +65,16 @@ const SUBMISSION_INPUT = {
   ipAddress: "1.2.3.4",
 };
 
+const PAID = {
+  stripeEventId: "evt_1",
+  stripeSessionId: "cs_1",
+  paidAt: "2026-04-21T10:00:00Z",
+  amountPaidCents: 12900,
+  amountPaidCurrency: "usd",
+};
+
 beforeEach(() => {
+  vi.mocked(dbBatch).mockReset();
   mockDeleteObject.mockReset().mockResolvedValue(undefined);
   mockMirrorCreate.mockReset().mockResolvedValue(undefined);
   mockMirrorPatch.mockReset().mockResolvedValue(undefined);
@@ -94,13 +109,7 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
 
   it("markSubmissionPaid updates D1 and triggers mirror patch", async () => {
     await createSubmission(SUBMISSION_INPUT);
-    await markSubmissionPaid("sub_1", {
-      stripeEventId: "evt_1",
-      stripeSessionId: "cs_1",
-      paidAt: "2026-04-21T10:00:00Z",
-      amountPaidCents: 12900,
-      amountPaidCurrency: "usd",
-    });
+    await markSubmissionPaid("sub_1", PAID);
     await flushFireAndForget();
 
     const record = await findSubmissionById("sub_1");
@@ -116,13 +125,7 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     const paidBy = (stripeSessionId: string) =>
       markSubmissionPaid(
         "sub_1",
-        {
-          stripeEventId: `evt_${stripeSessionId}`,
-          stripeSessionId,
-          paidAt: "2026-04-21T10:00:00Z",
-          amountPaidCents: 12900,
-          amountPaidCurrency: "usd",
-        },
+        { ...PAID, stripeEventId: `evt_${stripeSessionId}`, stripeSessionId },
         {
           submissionId: "sub_1",
           userId: null,
@@ -150,13 +153,7 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
 
   it("markSubmissionPaid reports not_marked when the submission row is gone", async () => {
     expect(
-      await markSubmissionPaid("sub_missing", {
-        stripeEventId: "evt_1",
-        stripeSessionId: "cs_1",
-        paidAt: "2026-04-21T10:00:00Z",
-        amountPaidCents: 12900,
-        amountPaidCurrency: "usd",
-      }),
+      await markSubmissionPaid("sub_missing", PAID),
     ).toBe("not_marked");
     await flushFireAndForget();
     expect(mockMirrorPatch).not.toHaveBeenCalled();
@@ -164,27 +161,50 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
 
   it("markSubmissionPaid reports marked again when the same session is applied twice", async () => {
     await createSubmission(SUBMISSION_INPUT);
-    const paid = {
-      stripeEventId: "evt_1",
-      stripeSessionId: "cs_1",
-      paidAt: "2026-04-21T10:00:00Z",
-      amountPaidCents: 12900,
-      amountPaidCurrency: "usd",
-    };
 
-    expect(await markSubmissionPaid("sub_1", paid)).toBe("marked");
-    expect(await markSubmissionPaid("sub_1", paid)).toBe("marked");
+    expect(await markSubmissionPaid("sub_1", PAID)).toBe("marked");
+    expect(await markSubmissionPaid("sub_1", PAID)).toBe("marked");
+  });
+
+  it.each([
+    ["the webhook", "evt_1", "reconcile:cs_1"],
+    ["reconcile", "reconcile:cs_1", "evt_1"],
+  ])(
+    "markSubmissionPaid: when %s marks the session paid first, the other event gets already_marked and the mirror is patched once",
+    async (_first, winnerEventId, loserEventId) => {
+      await createSubmission(SUBMISSION_INPUT);
+
+      expect(await markSubmissionPaid("sub_1", { ...PAID, stripeEventId: winnerEventId })).toBe(
+        "marked",
+      );
+      expect(await markSubmissionPaid("sub_1", { ...PAID, stripeEventId: loserEventId })).toBe(
+        "already_marked",
+      );
+      await flushFireAndForget();
+
+      expect((await findSubmissionById("sub_1"))?.stripeEventId).toBe(winnerEventId);
+      expect(mockMirrorPatch).toHaveBeenCalledExactlyOnceWith(
+        "sub_1",
+        expect.objectContaining({ stripeEventId: winnerEventId }),
+      );
+    },
+  );
+
+  it("markSubmissionPaid trusts the row it reads back when the batch reports no rows written", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    const actualDbBatch = vi.mocked(dbBatch).getMockImplementation()!;
+    vi.mocked(dbBatch).mockImplementationOnce(async (statements) =>
+      (await actualDbBatch(statements)).map(() => ({ rowsWritten: 0 })),
+    );
+
+    expect(await markSubmissionPaid("sub_1", PAID)).toBe("marked");
+    await flushFireAndForget();
+    expect(mockMirrorPatch).toHaveBeenCalledOnce();
   });
 
   it("markSubmissionExpired leaves a paid submission and its Sanity mirror untouched", async () => {
     await createSubmission(SUBMISSION_INPUT);
-    await markSubmissionPaid("sub_1", {
-      stripeEventId: "evt_1",
-      stripeSessionId: "cs_1",
-      paidAt: "2026-04-21T10:00:00Z",
-      amountPaidCents: 12900,
-      amountPaidCurrency: "usd",
-    });
+    await markSubmissionPaid("sub_1", PAID);
     await flushFireAndForget();
     mockMirrorPatch.mockClear();
 

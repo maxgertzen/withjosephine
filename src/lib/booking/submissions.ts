@@ -171,10 +171,14 @@ export async function findSubmissionListenContext(
 }
 
 export async function findPaidStripeSessionId(submissionId: string): Promise<string | null> {
-  return repo.findPaidStripeSessionId(submissionId);
+  return (await repo.findPaidMarker(submissionId))?.stripeSessionId ?? null;
 }
 
-export type MarkSubmissionPaidOutcome = "marked" | "paid_by_another_session" | "not_marked";
+export type MarkSubmissionPaidOutcome =
+  | "marked"
+  | "already_marked"
+  | "paid_by_another_session"
+  | "not_marked";
 
 export async function markSubmissionPaid(
   submissionId: string,
@@ -195,11 +199,12 @@ export async function markSubmissionPaid(
   if (financial) statements.push(buildFinancialMirrorStatement(financial));
   const [paidUpdate] = await dbBatch(statements);
   if (paidUpdate.rowsWritten === 0) {
-    const paidSessionId = await findPaidStripeSessionId(submissionId);
-    if (isPaidByAnotherSession(paidSessionId, paid.stripeSessionId)) {
+    const marker = await repo.findPaidMarker(submissionId);
+    if (!marker?.stripeSessionId) return "not_marked";
+    if (isPaidByAnotherSession(marker.stripeSessionId, paid.stripeSessionId)) {
       return "paid_by_another_session";
     }
-    if (!paidSessionId) return "not_marked";
+    if (marker.stripeEventId !== paid.stripeEventId) return "already_marked";
   }
   runMirror(
     mirrorSubmissionPatch(submissionId, {

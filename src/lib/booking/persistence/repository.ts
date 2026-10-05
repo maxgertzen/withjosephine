@@ -347,12 +347,16 @@ export function buildMarkSubmissionPaidStatement(
   };
 }
 
-export async function findPaidStripeSessionId(id: string): Promise<string | null> {
-  const rows = await dbQuery<{ stripe_session_id: string | null }>(
-    `SELECT stripe_session_id FROM submissions WHERE id = ? AND status = 'paid' LIMIT 1`,
+type PaidMarker = { stripeSessionId: string | null; stripeEventId: string | null };
+
+export async function findPaidMarker(id: string): Promise<PaidMarker | null> {
+  const rows = await dbQuery<{ stripe_session_id: string | null; stripe_event_id: string | null }>(
+    `SELECT stripe_session_id, stripe_event_id FROM submissions WHERE id = ? AND status = 'paid' LIMIT 1`,
     [id],
   );
-  return rows[0]?.stripe_session_id ?? null;
+  const row = rows[0];
+  if (!row) return null;
+  return { stripeSessionId: row.stripe_session_id, stripeEventId: row.stripe_event_id };
 }
 
 export async function markSubmissionExpired(
