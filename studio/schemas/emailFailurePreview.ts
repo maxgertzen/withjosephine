@@ -43,14 +43,16 @@ function whatHappened(kind: string | undefined, errorCode: string | undefined): 
   return reason ? `${label}: ${reason}` : label;
 }
 
-export function prepareEmailFailurePreview(failure: EmailFailurePreviewInput) {
-  const emailType = asCustomerEmailType(failure.emailType);
-  const emailLabel = emailType ? EMAIL_TYPE_LABELS[emailType] : "Email";
+export function buildFailurePreview(
+  emailLabel: string,
+  sentTo: string | undefined,
+  failure: EmailFailurePreviewInput,
+) {
   const failedAtMs = failure.failedAt ? Date.parse(failure.failedAt) : Number.NaN;
   const subtitle = [
     failure.resolvedAt ? "Sent since" : `Attempt ${failure.attemptNumber ?? 1}`,
     Number.isNaN(failedAtMs) ? null : dateTimeFormatter.format(failedAtMs),
-    failure.recipient ? `to ${failure.recipient}` : null,
+    sentTo ? `to ${sentTo}` : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -58,4 +60,10 @@ export function prepareEmailFailurePreview(failure: EmailFailurePreviewInput) {
     title: `${emailLabel}: ${whatHappened(failure.kind, failure.errorCode)}`,
     subtitle,
   };
+}
+
+export function prepareEmailFailurePreview(failure: EmailFailurePreviewInput) {
+  const emailType = asCustomerEmailType(failure.emailType);
+  const emailLabel = emailType ? EMAIL_TYPE_LABELS[emailType] : "Email";
+  return buildFailurePreview(emailLabel, failure.recipient, failure);
 }

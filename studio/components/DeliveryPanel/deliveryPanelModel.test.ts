@@ -165,6 +165,30 @@ describe("deliveryPanelModel resend section", () => {
   });
 });
 
+describe("deliveryPanelModel on a gift not opened yet", () => {
+  const GIFT_WAITING: DeliveryPanelDocument = { status: "gift_waiting" };
+
+  it("says it is waiting for the recipient, with no send button and nothing to resend", () => {
+    expect(deliveryPanelModel({ published: GIFT_WAITING })).toEqual({
+      statusLine: DELIVERY_COPY.giftWaiting,
+      button: null,
+      failedSends: [],
+      resendTypes: [],
+      defaultResendType: "order_confirmation",
+      resendLine: null,
+    });
+  });
+
+  it("stays waiting even with files uploaded and a draft open", () => {
+    expect(
+      deliveryPanelModel({
+        published: { ...GIFT_WAITING, voiceNote: READY.voiceNote, readingPdf: READY.readingPdf },
+        draft: DRAFT,
+      }),
+    ).toMatchObject({ statusLine: DELIVERY_COPY.giftWaiting, button: null, resendTypes: [] });
+  });
+});
+
 describe("sentLine", () => {
   it("says sent without a date when the time is missing", () => {
     expect(sentLine(undefined)).toBe(DELIVERY_COPY.sentNoDate);

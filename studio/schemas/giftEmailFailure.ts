@@ -1,17 +1,16 @@
 import { defineField, defineType } from "sanity";
 
+import { asOptions } from "./emailFailure";
+import { FAILURE_KIND_LABELS } from "./emailFailurePreview";
 import {
-  EMAIL_TYPE_LABELS,
-  FAILURE_KIND_LABELS,
-  prepareEmailFailurePreview,
-} from "./emailFailurePreview";
+  GIFT_EMAIL_TYPE_LABELS,
+  GIFT_RECIPIENT_LABELS,
+  prepareGiftEmailFailurePreview,
+} from "./giftEmailFailurePreview";
 
-export const asOptions = (labels: Record<string, string>) =>
-  Object.entries(labels).map(([value, title]) => ({ title, value }));
-
-export const emailFailure = defineType({
-  name: "emailFailure",
-  title: "Failed send",
+export const giftEmailFailure = defineType({
+  name: "giftEmailFailure",
+  title: "Failed gift email",
   type: "object",
   readOnly: true,
   fields: [
@@ -19,7 +18,7 @@ export const emailFailure = defineType({
       name: "emailType",
       title: "Email",
       type: "string",
-      options: { list: asOptions(EMAIL_TYPE_LABELS) },
+      options: { list: asOptions(GIFT_EMAIL_TYPE_LABELS) },
     }),
     defineField({
       name: "kind",
@@ -27,7 +26,12 @@ export const emailFailure = defineType({
       type: "string",
       options: { list: asOptions(FAILURE_KIND_LABELS) },
     }),
-    defineField({ name: "recipient", title: "Sent to", type: "string" }),
+    defineField({
+      name: "recipient",
+      title: "Sent to",
+      type: "string",
+      options: { list: asOptions(GIFT_RECIPIENT_LABELS) },
+    }),
     defineField({ name: "attemptNumber", title: "Attempt", type: "number" }),
     defineField({ name: "attemptedAt", title: "Attempted at", type: "datetime" }),
     defineField({ name: "failedAt", title: "Failed at", type: "datetime" }),
@@ -48,6 +52,6 @@ export const emailFailure = defineType({
       failedAt: "failedAt",
       resolvedAt: "resolvedAt",
     },
-    prepare: prepareEmailFailurePreview,
+    prepare: prepareGiftEmailFailurePreview,
   },
 });

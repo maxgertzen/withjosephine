@@ -115,19 +115,21 @@ export function DeliveryPanel(props: StringInputProps) {
         </Card>
       )}
 
-      <Flex align="center" gap={3} wrap="wrap">
-        <Button
-          text={RESEND_ANY_LABEL}
-          mode="ghost"
-          disabled={resendDisabled}
-          onClick={() => setResendType(model.defaultResendType)}
-        />
-        {model.resendLine && (
-          <Text size={1} muted>
-            {model.resendLine}
-          </Text>
-        )}
-      </Flex>
+      {model.resendTypes.length > 0 && (
+        <Flex align="center" gap={3} wrap="wrap">
+          <Button
+            text={RESEND_ANY_LABEL}
+            mode="ghost"
+            disabled={resendDisabled}
+            onClick={() => setResendType(model.defaultResendType)}
+          />
+          {model.resendLine && (
+            <Text size={1} muted>
+              {model.resendLine}
+            </Text>
+          )}
+        </Flex>
+      )}
 
       {isConfirmOpen && (
         <Dialog

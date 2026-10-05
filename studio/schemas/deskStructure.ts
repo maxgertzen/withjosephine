@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { StructureBuilder } from "sanity/structure";
 
 import { EMAIL_ALLOWED_SLOTS } from "../../src/lib/emails/slots";
+import { GIFT_SUBMISSION_STATUS } from "../../src/lib/gift/giftSubmissionStatus";
 import { EmailPreview } from "../views/EmailPreview";
 import {
   ListenPagePreview,
@@ -116,6 +117,18 @@ const failedSends = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
+const giftsNotOpenedYet = (S: StructureBuilder) =>
+  S.listItem()
+    .title("🎁 Gifts not opened yet")
+    .id("submissionsGiftsNotOpenedYet")
+    .child(
+      S.documentList()
+        .title("Gifts not opened yet")
+        .schemaType("submission")
+        .filter(`_type == "submission" && status == "${GIFT_SUBMISSION_STATUS.waiting}"`)
+        .defaultOrdering([{ field: "createdAt", direction: "desc" }]),
+    );
+
 const deliveredListened = (S: StructureBuilder) =>
   S.listItem()
     .title("✓ Listened")
@@ -157,7 +170,12 @@ const submissionsRoot = (S: StructureBuilder) =>
     .child(
       S.list()
         .title("Submissions")
-        .items([awaitingPayment(S), paidAwaitingDelivery(S), deliveredGroup(S)]),
+        .items([
+          awaitingPayment(S),
+          paidAwaitingDelivery(S),
+          giftsNotOpenedYet(S),
+          deliveredGroup(S),
+        ]),
     );
 
 const bookingFlowGroup = (S: StructureBuilder) =>
@@ -171,6 +189,16 @@ const bookingFlowGroup = (S: StructureBuilder) =>
           singletonListItem(S, "bookingPage", "Booking Page"),
           pagePreviewSingletonListItem(S, "thankYouPage", "Thank You Page", ThankYouPagePreview),
           singletonListItem(S, "bookingForm", "Booking Form"),
+          S.divider(),
+          singletonListItem(S, "giftSettings", "Gift Settings"),
+          emailSingletonListItem(S, "emailGiftPurchase", "Gift Purchase → Buyer"),
+          emailSingletonListItem(S, "emailGiftToRecipient", "Gift → Recipient"),
+          emailSingletonListItem(S, "emailGiftOpened", "Gift Opened → Buyer"),
+          emailSingletonListItem(
+            S,
+            "emailGiftRecipientConfirmation",
+            "Gift Confirmation → Recipient",
+          ),
         ]),
     );
 
@@ -207,14 +235,6 @@ const emailsGroup = (S: StructureBuilder) =>
         .title("Emails")
         .items([
           emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation → Self-Purchaser"),
-          emailSingletonListItem(S, "emailGiftToRecipient", "Gift → Recipient"),
-          emailSingletonListItem(S, "emailGiftPurchase", "Gift Purchase → Buyer"),
-          emailSingletonListItem(S, "emailGiftOpened", "Gift Opened → Buyer"),
-          emailSingletonListItem(
-            S,
-            "emailGiftRecipientConfirmation",
-            "Gift Confirmation → Recipient",
-          ),
           emailSingletonListItem(S, "emailReadingDelivery", "Reading Delivery Email → Customer"),
           emailSingletonListItem(S, "emailMagicLink", "Magic Link → Listen Page"),
           emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export → Requester (GDPR)"),
@@ -258,8 +278,6 @@ const giftsGroup = (S: StructureBuilder) =>
       S.list()
         .title("Gifts")
         .items([
-          singletonListItem(S, "giftSettings", "Gift Settings"),
-          S.divider(),
           S.listItem()
             .title("Gifts")
             .id("giftRecords")

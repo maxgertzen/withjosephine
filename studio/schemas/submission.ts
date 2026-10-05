@@ -1,10 +1,16 @@
 import { defineField, defineType, type CustomValidator } from "sanity";
 
+import {
+  GIFT_SUBMISSION_STATUS,
+  isGiftSubmissionStatus,
+} from "../../src/lib/gift/giftSubmissionStatus";
 import { DeliveryPanel } from "../components/DeliveryPanel/DeliveryPanel";
+import { showsDeliveryBox } from "../components/DeliveryPanel/deliveryPanelModel";
 import { IntakeAnswersInput } from "../components/IntakeAnswers/IntakeAnswersInput";
 import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
 import { emailFailure } from "./emailFailure";
+import { giftEmailFailure } from "./giftEmailFailure";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
 const requireOnceDelivered =
@@ -14,6 +20,14 @@ const requireOnceDelivered =
     if (parent?.deliveredAt && !value) return errorMessage;
     return true;
   };
+
+export const requireEmailUnlessGift: CustomValidator<string | undefined> = (value, context) => {
+  if (value || isGiftSubmissionStatus(context.document?.status)) return true;
+  return "Required";
+};
+
+const hiddenWhenEmpty = ({ value }: { value?: unknown }) =>
+  !Array.isArray(value) || value.length === 0;
 
 const consentRecord = (name: string, title: string, description: string) =>
   defineField({
@@ -66,7 +80,7 @@ export const submission = defineType({
       group: "reading",
       fieldset: "order",
       description: "To change it, use Resend an email in the Delivery box and type the new address.",
-      validation: (rule) => rule.required().email(),
+      validation: (rule) => rule.email().custom(requireEmailUnlessGift),
     }),
     defineField({
       name: "status",
@@ -80,6 +94,8 @@ export const submission = defineType({
           { title: "Pending", value: "pending" },
           { title: "Paid", value: "paid" },
           { title: "Expired", value: "expired" },
+          { title: "Gift, not opened yet", value: GIFT_SUBMISSION_STATUS.waiting },
+          { title: "Gift cancelled", value: GIFT_SUBMISSION_STATUS.cancelled },
         ],
         layout: "radio",
       },
@@ -190,7 +206,7 @@ export const submission = defineType({
       type: "string",
       readOnly: true,
       group: "reading",
-      hidden: ({ document }) => document?.status !== "paid",
+      hidden: ({ document }) => !showsDeliveryBox(document?.status),
       components: { input: DeliveryPanel },
     }),
     defineField({
@@ -259,7 +275,7 @@ export const submission = defineType({
       type: "array",
       readOnly: true,
       group: "emails",
-      hidden: ({ value }) => !Array.isArray(value) || value.length === 0,
+      hidden: hiddenWhenEmpty,
       description:
         "Customer emails that did not go out, including ones sent since. To resend, use the Delivery box on the Reading tab.",
       of: [{ type: emailFailure.name }],
@@ -313,9 +329,27 @@ export const submission = defineType({
       readOnly: true,
       group: "payment",
       hidden: ({ document }) => !document?.gift,
-      description: "Paid by a gift code. Set by the site.",
+      description: "Bought as a gift. Set by the site.",
       fields: [
-        defineField({ name: "buyerFirstName", title: "Given by", type: "string" }),
+        defineField({ name: "buyerFirstName", title: "From", type: "string" }),
+        defineField({ name: "boughtAt", title: "Bought", type: "datetime" }),
+        defineField({ name: "sentAt", title: "Sent by email", type: "datetime" }),
+        defineField({ name: "resendUsed", title: "Second email used", type: "boolean" }),
+        defineField({ name: "openedAt", title: "Opened", type: "datetime" }),
+        defineField({
+          name: "hasNote",
+          title: "Note waiting",
+          type: "boolean",
+          description: "The buyer's note is deleted when the gift is opened.",
+        }),
+        defineField({
+          name: "emailFailures",
+          title: "Failed gift emails",
+          type: "array",
+          hidden: hiddenWhenEmpty,
+          description: "Gift emails to the buyer or the recipient that did not go out.",
+          of: [{ type: giftEmailFailure.name }],
+        }),
         defineField({
           name: "giftRecord",
           title: "Gift record",
@@ -429,6 +463,8 @@ export const submission = defineType({
       listenedAt: "listenedAt",
       responses: "responses",
       giftBuyerFirstName: "gift.buyerFirstName",
+      giftBoughtAt: "gift.boughtAt",
+      readingName: "serviceRef.name",
     },
     prepare: prepareSubmissionPreview,
   },

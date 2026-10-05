@@ -271,3 +271,35 @@ describe("buildPreview — gift desk line", () => {
     });
   });
 });
+
+describe("buildPreview — gift rows", () => {
+  const NOW = new Date("2026-10-05T12:00:00.000Z");
+  const WAITING = {
+    status: "gift_waiting",
+    giftBuyerFirstName: "Dana",
+    giftBoughtAt: "2026-10-03T08:00:00.000Z",
+    readingName: "Birth Chart Reading",
+    createdAt: "2026-10-03T08:00:00.000Z",
+  };
+
+  it("titles a gift not opened yet by the buyer and shows the reading and bought date", () => {
+    expect(buildPreview(WAITING, NOW)).toEqual({
+      title: "Gift from Dana",
+      subtitle: "Birth Chart Reading · Not opened yet · Bought 3 Oct 2026",
+    });
+  });
+
+  it("shows a cancelled gift as Gift cancelled", () => {
+    expect(buildPreview({ ...WAITING, status: "gift_cancelled" }, NOW)).toEqual({
+      title: "Gift from Dana",
+      subtitle: "Birth Chart Reading · Gift cancelled",
+    });
+  });
+
+  it("falls back to Gift with no buyer name, reading or bought date", () => {
+    expect(buildPreview({ status: "gift_waiting" }, NOW)).toEqual({
+      title: "Gift",
+      subtitle: "Not opened yet",
+    });
+  });
+});

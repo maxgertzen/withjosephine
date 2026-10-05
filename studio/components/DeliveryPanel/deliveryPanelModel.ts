@@ -3,6 +3,7 @@ import {
   findReadingDeliveryEntry,
 } from "../../../src/lib/booking/emailFiredType";
 import { applyTokens } from "../../../src/lib/emails/applyTokens";
+import { GIFT_SUBMISSION_STATUS } from "../../../src/lib/gift/giftSubmissionStatus";
 import type { CustomerEmailType } from "../../../src/lib/page-previews/types";
 import { dateTimeFormatter } from "../../lib/studioRequests";
 import {
@@ -19,6 +20,7 @@ export const DELIVERY_COPY = {
   sentNoDate: "Delivery email sent.",
   failed: "The email didn't send. Try again, or tell Max.",
   resendRequested: "Resend requested. Sending.",
+  giftWaiting: "Waiting for the recipient.",
 } as const;
 
 type FileField = { asset?: unknown };
@@ -50,6 +52,9 @@ type DeliveryPanelModel = {
   defaultResendType: CustomerEmailType;
   resendLine: string | null;
 };
+
+export const showsDeliveryBox = (status: unknown) =>
+  status === "paid" || status === GIFT_SUBMISSION_STATUS.waiting;
 
 export function sentLine(sentAt: string | undefined): string {
   const sentMs = sentAt ? Date.parse(sentAt) : Number.NaN;
@@ -95,11 +100,21 @@ function openFailedSends(published: DeliveryPanelDocument): FailedSendRow[] {
   });
 }
 
+const GIFT_WAITING_MODEL: DeliveryPanelModel = {
+  statusLine: DELIVERY_COPY.giftWaiting,
+  button: null,
+  failedSends: [],
+  resendTypes: [],
+  defaultResendType: "order_confirmation",
+  resendLine: null,
+};
+
 export function deliveryPanelModel(versions: {
   published: DeliveryPanelDocument;
   draft?: unknown;
 }): DeliveryPanelModel {
   const { published } = versions;
+  if (published.status === GIFT_SUBMISSION_STATUS.waiting) return GIFT_WAITING_MODEL;
   const hasDraft = Boolean(versions.draft);
   const resendTypes: CustomerEmailType[] = hasBothFiles(published)
     ? ["order_confirmation", "reading_delivery"]

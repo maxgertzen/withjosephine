@@ -25,6 +25,7 @@ import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
 import { submission } from "./submission";
 import { emailFailure } from "./emailFailure";
+import { giftEmailFailure } from "./giftEmailFailure";
 import { article } from "./article";
 import { notePlate } from "./notePlate";
 import { notesSettings } from "./notesSettings";
@@ -59,6 +60,7 @@ export const schemaTypes = [
   bookingForm,
   submission,
   emailFailure,
+  giftEmailFailure,
   article,
   notePlate,
   notesSettings,

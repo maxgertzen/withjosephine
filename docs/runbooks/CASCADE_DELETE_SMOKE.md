@@ -103,6 +103,6 @@ The admin endpoint takes `{ email }` when `submissionId` is absent. A gift buyer
 - The user query returns no row.
 - Both `deletion_log` rows list `gift_<gift id>` in `submission_ids_json`.
 - The gift in Studio's Gifts list shows no "From" name.
-- If the gift was opened, the recipient's submission in Studio has no "Given by" value.
+- If the gift was opened, the recipient's submission in Studio has no "From" value under Gift.
 - The Stripe redaction job lists the gift Checkout Session.
 - Step 4 returns 404 with an empty body.

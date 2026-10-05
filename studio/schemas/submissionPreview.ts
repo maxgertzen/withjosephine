@@ -1,3 +1,8 @@
+import {
+  GIFT_SUBMISSION_STATUS,
+  type GiftSubmissionStatus,
+  isGiftSubmissionStatus,
+} from "../../src/lib/gift/giftSubmissionStatus";
 import { formatDate, formatLongDate, parseIso, trimmedStringOrNull } from "../lib/previewText";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -59,7 +64,25 @@ function identityLine(selection: Record<string, unknown>): string | null {
   return trimmedStringOrNull(selection.email);
 }
 
+function giftStateParts(status: GiftSubmissionStatus, boughtAt: unknown): Array<string | null> {
+  if (status === GIFT_SUBMISSION_STATUS.cancelled) return ["Gift cancelled"];
+  const bought = formatLongDate(boughtAt);
+  return ["Not opened yet", bought ? `Bought ${bought}` : null];
+}
+
+function buildGiftPreview(selection: Record<string, unknown>, status: GiftSubmissionStatus) {
+  const buyer = trimmedStringOrNull(selection.giftBuyerFirstName);
+  const subtitle = [
+    trimmedStringOrNull(selection.readingName),
+    ...giftStateParts(status, selection.giftBoughtAt),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return { title: buyer ? `Gift from ${buyer}` : "Gift", subtitle };
+}
+
 export function buildPreview(selection: Record<string, unknown>, now: Date) {
+  if (isGiftSubmissionStatus(selection.status)) return buildGiftPreview(selection, selection.status);
   const fullName = fullNameOrNull(selection.responses);
   const identity = identityLine(selection);
   const giftBuyer = trimmedStringOrNull(selection.giftBuyerFirstName);

@@ -3,6 +3,8 @@ import { Box, Button, Stack, Text, TextInput, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
 import type { DocumentActionComponent, DocumentActionProps } from "sanity";
 
+import { isGiftSubmissionStatus } from "../../src/lib/gift/giftSubmissionStatus";
+
 /**
  * GDPR Art. 17 cascade delete trigger. Registered for the `submission` doc
  * type. Two-step typed-DELETE confirmation (no `window.confirm` / native
@@ -92,6 +94,8 @@ export const deleteCustomerDataAction: DocumentActionComponent = (props: Documen
   }, [adminToken, confirmText, props, submissionId, toast]);
 
   const isReadyToFire = confirmText === CONFIRMATION_PHRASE && adminToken.length > 0 && !isPending;
+
+  if (isGiftSubmissionStatus((props.published ?? props.draft)?.status)) return null;
 
   return {
     label: "Delete customer data",
