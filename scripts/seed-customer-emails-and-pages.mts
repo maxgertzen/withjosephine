@@ -141,8 +141,11 @@ const existing = new Set(await client.fetch<string[]>(`*[_id in $ids]._id`, { id
 
 const transaction = client.transaction();
 for (const type of types) {
-  const fields = normalizePtFields({ _type: type, ...omitNullish(DEFAULTS_BY_TYPE[type]) });
-  delete fields._type;
+  const fields = Object.fromEntries(
+    Object.entries(normalizePtFields({ _type: type, ...omitNullish(DEFAULTS_BY_TYPE[type]) })).filter(
+      ([key]) => key !== "_type",
+    ),
+  );
   transaction.createIfNotExists({ _id: type, _type: type, ...(NEW_IN_V1_21.has(type) ? {} : fields) });
   if (NEW_IN_V1_21.has(type)) fillMissing(transaction, { _id: type, fields });
   const outcome = !existing.has(type)
