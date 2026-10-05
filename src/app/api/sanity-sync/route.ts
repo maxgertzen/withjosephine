@@ -1,6 +1,8 @@
 import { decodeSignatureHeader, isValidSignature, SIGNATURE_HEADER_NAME } from "@sanity/webhook";
 import { NextResponse } from "next/server";
 
+import { wakeProductionDelivery } from "@/lib/booking/deliveryWake";
+import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { optionalEnv } from "@/lib/env";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
@@ -29,26 +31,6 @@ import { getSanityWriteClient } from "@/lib/sanity/client";
  * `Date.now()` are rejected before the HMAC check. The toolkit doesn't do
  * this on its own — it only validates the math. Without it, a captured
  * (timestamp, signature, body) triplet could be replayed indefinitely.
- *
- * Required Sanity webhook config (UI):
- *   - URL: https://staging.withjosephine.com/api/sanity-sync
- *   - Dataset: production
- *   - Trigger on: Create, Update, Delete (all 3)
- *   - HTTP method: POST
- *   - Drafts: enabled (Advanced settings → "Trigger webhook when drafts are modified")
- *   - Filter: _type != "sanity.imageAsset" && _type != "sanity.fileAsset"
- *             && _type != "submission" && _type != "magicLinkRequest" && _type != "giftRecord"
- *     (PII-bearing types must never cross datasets — the worker also
- *     refuses them server-side if the filter is reverted, but the webhook
- *     filter saves the round trip.)
- *   - Projection (required — must set this exactly):
- *       {
- *         _id,
- *         _type,
- *         ...,
- *         "_operation": delta::operation()
- *       }
- *   - Secret: <SANITY_WEBHOOK_SECRET> value (must match the worker secret)
  */
 
 const ASSET_TYPES = new Set(["sanity.imageAsset", "sanity.fileAsset"]);
@@ -72,6 +54,10 @@ type SanityOperation = "create" | "update" | "delete";
 
 function isSanityOperation(value: unknown): value is SanityOperation {
   return value === "create" || value === "update" || value === "delete";
+}
+
+function requestsDeliveryWake(payload: Record<string, unknown>, operation: SanityOperation): boolean {
+  return payload._type === "submission" && operation !== "delete" && payload.wakeDelivery === true;
 }
 
 function isTimestampFresh(timestampMs: number, now: number = Date.now()): boolean {
@@ -142,6 +128,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (payload._type && PII_TYPES.has(payload._type)) {
+    if (requestsDeliveryWake(payload, operation)) runMirror(wakeProductionDelivery());
     return NextResponse.json({ skipped: "pii type" }, { status: 200 });
   }
 

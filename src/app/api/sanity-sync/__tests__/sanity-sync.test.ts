@@ -8,10 +8,16 @@ vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: () => ({ createOrReplace, delete: deleteFn, fetch: fetchFn }),
 }));
 
+const wakeProductionDelivery = vi.fn();
+vi.mock("@/lib/booking/deliveryWake", () => ({
+  wakeProductionDelivery: () => wakeProductionDelivery(),
+}));
+
 const SECRET = "test-webhook-secret";
 
 beforeEach(() => {
   createOrReplace.mockReset().mockResolvedValue({});
+  wakeProductionDelivery.mockReset().mockResolvedValue(undefined);
   deleteFn.mockReset().mockResolvedValue({});
   fetchFn.mockReset().mockResolvedValue(null);
   vi.unstubAllEnvs();
@@ -242,6 +248,40 @@ describe("/api/sanity-sync", () => {
       expect(createOrReplace).not.toHaveBeenCalled();
     },
   );
+
+  it("wakes production delivery for a production submission and writes nothing", async () => {
+    const res = await callWithValidSig({
+      _id: "sub-1",
+      _type: "submission",
+      _operation: "update",
+      wakeDelivery: true,
+    });
+
+    expect(res.status).toBe(200);
+    expect(wakeProductionDelivery).toHaveBeenCalledTimes(1);
+    expect(createOrReplace).not.toHaveBeenCalled();
+    expect(deleteFn).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["update", false],
+    ["delete", true],
+  ] as const)(
+    "does not wake delivery for a submission %s with wakeDelivery %s",
+    async (operation, wakeDelivery) => {
+      await callWithValidSig({ _id: "sub-1", _type: "submission", _operation: operation, wakeDelivery });
+
+      expect(wakeProductionDelivery).not.toHaveBeenCalled();
+      expect(createOrReplace).not.toHaveBeenCalled();
+      expect(deleteFn).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["magicLinkRequest", "giftRecord"])("does not wake delivery for %s", async (piiType) => {
+    await callWithValidSig({ _id: "pii-1", _type: piiType, _operation: "create" });
+
+    expect(wakeProductionDelivery).not.toHaveBeenCalled();
+  });
 
   it("rejects payload missing _type for create/update (only delete allows missing _type)", async () => {
     const res = await callWithValidSig({

@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
 import { scheduledCronRequest, withoutCronHeader } from "./src/lib/booking/cron-auth";
-import { dispatchPathsForCron } from "./src/lib/cron-routes";
+import { DELIVER_REQUESTED_PATH, dispatchPathsForCron } from "./src/lib/cron-routes";
 import { scrubBreadcrumb, scrubSentryRequest } from "./src/lib/logging/redactSearchParams";
 
 type CloudflareEnv = {
@@ -28,7 +28,6 @@ function originForEnv(env: CloudflareEnv): string {
 }
 
 // Sentry free tier = 1 cron monitor; scoped to the paid-fulfilment path.
-const DELIVER_REQUESTED_PATH = "/api/cron/deliver-requested";
 const DELIVERY_MONITOR_SLUG = "email-day-7-deliver";
 
 const composedHandler: ExportedHandler<CloudflareEnv> = {
