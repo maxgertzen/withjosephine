@@ -71,12 +71,17 @@ export function GiftFold({
   const [toggled, setToggled] = useState(false);
   const [sheet, setSheet] = useState<GiftFoldSheet | null>(initialSheet ?? null);
   const [giftSheetLoaded, setGiftSheetLoaded] = useState(sheet === "gift");
+  const [redeemKey, setRedeemKey] = useState(sheet === "redeem" ? 1 : 0);
   const panelId = `${readingSlug}-gift-fold`;
   const rowId = `${readingSlug}-gift-fold-row`;
   const closeSheet = () => setSheet(null);
   const openGiftSheet = () => {
     setGiftSheetLoaded(true);
     setSheet("gift");
+  };
+  const openRedeemSheet = () => {
+    setRedeemKey((count) => count + 1);
+    setSheet("redeem");
   };
 
   return (
@@ -111,14 +116,21 @@ export function GiftFold({
           <GiftFoldAction
             lead={copy.redeemLead}
             label={copy.redeemLinkLabel}
-            onClick={() => setSheet("redeem")}
+            onClick={openRedeemSheet}
           />
         </div>
       </AnimatedCollapse>
       {giftSheetLoaded ? (
         <GiftSheet {...giftSheet} open={sheet === "gift"} onClose={closeSheet} />
       ) : null}
-      {sheet === "redeem" ? <RedeemSheet {...redeemSheet} open onClose={closeSheet} /> : null}
+      {redeemKey > 0 ? (
+        <RedeemSheet
+          key={redeemKey}
+          {...redeemSheet}
+          open={sheet === "redeem"}
+          onClose={closeSheet}
+        />
+      ) : null}
     </section>
   );
 }

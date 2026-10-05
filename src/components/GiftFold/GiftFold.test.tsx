@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -77,7 +77,7 @@ describe("GiftFold", () => {
     expect(await screen.findByRole("dialog", { name: GIFT_SHEET_NAME })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sheetCancelLabel }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(action).toHaveFocus();
   });
 
@@ -92,7 +92,7 @@ describe("GiftFold", () => {
     ).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(action).toHaveFocus();
   });
 
