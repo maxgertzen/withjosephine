@@ -12,6 +12,7 @@
   1b. Done 2026-10-05 on staging: `pnpm tsx scripts/seed-reading-defaults-2026-10.mts staging --apply` (How it works, Intake Intro, card button labels) and `pnpm tsx scripts/seed-customer-emails-and-pages.mts staging` (Gift Settings and the four gift emails). Every field that renders a default is filled in Sanity, so Presentation can click it.
   2. Go to push `release/v1.21.0`. The head commit must not carry `[skip ci]`.
   3. After the push: CF Access bypass on staging for `/api/delivery/wake`, `/api/admin/list-preview-recipients`, `/api/admin/send-email-preview` and `/api/admin/delete-user` (STAGING_RUNBOOK section 9b).
+- State 2026-10-05 evening: `release/v1.21.0` pushed to `169381e`, CI green, staging deployed, hosted Studio deployed with the v1.21.0 schema (both workspaces; Becky leaves production edits until the release). `e2e-sandbox` 37328046927: 15/15 passed, gift round-trip included. Staging data steps below are done (gift records, mirror cron, delivery names, hand-set requests, `expandedDetails` unset, reading and singleton seeds). Next: Max's staging walk, `docs/runbooks/V1_21_STAGING_WALK.md`; then close the dex ids it lists; then the release PR.
 - Staging steps after `deploy-staging` is green:
   - `pnpm tsx scripts/migrate-gift-records-to-submissions-2026-10.mts staging`, then with `--apply`, then `bash scripts/force-cron.sh reconcile-mirror -`.
   - Handover 16 staging data scripts (`migrate-reading-delivery-names-2026-10.mts`, `request-send-for-hand-set-delivered-2026-10.mts`), then `e2e-sandbox.yml` on `release/v1.21.0`.
