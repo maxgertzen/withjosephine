@@ -3,6 +3,10 @@ import type Stripe from "stripe";
 import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
 import { deriveGiftSendToken } from "@/lib/gift/giftCode";
 import { createPendingGift, type CreatePendingGiftInput } from "@/lib/gift/gifts";
+import type {
+  GiftSubmissionProjection,
+  GiftSubmissionSnapshot,
+} from "@/lib/gift/giftSubmissionMirror";
 import type { GiftRecord, GiftStatus } from "@/lib/gift/types";
 
 const BASE_GIFT: GiftRecord = {
@@ -33,6 +37,18 @@ const BASE_GIFT: GiftRecord = {
 
 export function makeGiftRecord(overrides: Partial<GiftRecord> = {}): GiftRecord {
   return { ...BASE_GIFT, ...overrides };
+}
+
+export function storedGiftSubmissionDoc(
+  projection: GiftSubmissionProjection,
+  overrides: Partial<GiftSubmissionSnapshot> = {},
+): GiftSubmissionSnapshot {
+  return {
+    _id: projection.docId,
+    ...projection.unopened,
+    gift: { ...projection.gift },
+    ...overrides,
+  };
 }
 
 export const TEST_GIFT_CREATED_AT = "2026-10-01T10:00:00.000Z";

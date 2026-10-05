@@ -118,13 +118,13 @@ export type CreateSubmissionInput = {
   paidAt?: string | null;
   recipientUserId?: string | null;
   giftCodeId?: string | null;
+  giftRedeemEventId?: string;
 };
 
 const SUBMISSION_INSERT_COLUMNS = `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
-       cooling_off_acknowledged_at, paid_at, recipient_user_id, gift_code_id
-     )`;
+       cooling_off_acknowledged_at, paid_at, recipient_user_id, gift_code_id`;
 
 export function buildCreateSubmissionStatement(input: CreateSubmissionInput): SqlStatement {
   const values: SqlValue[] = [
@@ -145,15 +145,17 @@ export function buildCreateSubmissionStatement(input: CreateSubmissionInput): Sq
   ];
   if (!input.giftCodeId) {
     return {
-      sql: `${SUBMISSION_INSERT_COLUMNS} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `${SUBMISSION_INSERT_COLUMNS}
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       params: values,
     };
   }
   return {
-    sql: `${SUBMISSION_INSERT_COLUMNS}
-     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-     WHERE EXISTS (SELECT 1 FROM gift_codes WHERE id = ? AND redeemed_submission_id = ?)`,
-    params: [...values, input.giftCodeId, input.id],
+    sql: `${SUBMISSION_INSERT_COLUMNS}, stripe_event_id
+     ) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+     WHERE EXISTS (SELECT 1 FROM gift_codes WHERE id = ? AND redeemed_submission_id = ?)
+     ON CONFLICT DO NOTHING`,
+    params: [...values, input.giftRedeemEventId ?? null, input.giftCodeId, input.id],
   };
 }
 
@@ -162,10 +164,14 @@ export async function createSubmission(input: CreateSubmissionInput): Promise<vo
   await dbExec(stmt.sql, stmt.params ?? []);
 }
 
-export async function hasGiftSubmission(id: string, giftCodeId: string): Promise<boolean> {
+export async function hasGiftSubmission(
+  id: string,
+  giftCodeId: string,
+  giftRedeemEventId: string,
+): Promise<boolean> {
   const rows = await dbQuery<{ id: string }>(
-    `SELECT id FROM submissions WHERE id = ? AND gift_code_id = ? LIMIT 1`,
-    [id, giftCodeId],
+    `SELECT id FROM submissions WHERE id = ? AND gift_code_id = ? AND stripe_event_id = ? LIMIT 1`,
+    [id, giftCodeId, giftRedeemEventId],
   );
   return rows.length > 0;
 }

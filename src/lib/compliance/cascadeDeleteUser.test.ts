@@ -31,16 +31,12 @@ vi.mock("./vendors/mixpanelDelete", () => ({
   createMixpanelDataDeletion: vi.fn(),
 }));
 
-vi.mock("../gift/giftRecordMirror", () => ({
-  mirrorGiftRecord: vi.fn(async () => {}),
-}));
-
+import type { GiftStatus } from "@/lib/gift/types";
 import { createTestGift } from "@/test/fixtures/gift";
 
 import { findUserById } from "../auth/users";
 import { dbExec, dbQuery } from "../booking/persistence/sqlClient";
 import { deleteSubmissionAndPhoto, listSubmissionsByRecipientUserId } from "../booking/submissions";
-import { mirrorGiftRecord } from "../gift/giftRecordMirror";
 import { getSanityWriteClient } from "../sanity/client";
 import { retrieveCheckoutSession } from "../stripe";
 import { cascadeDeleteUser, wasUserDeleted } from "./cascadeDeleteUser";
@@ -57,23 +53,23 @@ const mockStripeRedact = vi.mocked(createStripeRedactionJob);
 const mockBrevoContact = vi.mocked(deleteBrevoContact);
 const mockBrevoSmtp = vi.mocked(deleteBrevoSmtpLog);
 const mockMixpanel = vi.mocked(createMixpanelDataDeletion);
-const mockMirrorGiftRecord = vi.mocked(mirrorGiftRecord);
 
 const sanityCommit = vi.fn();
 const sanityUnset = vi.fn(() => ({ commit: sanityCommit }));
+const sanitySet = vi.fn(() => ({ unset: sanityUnset }));
 const sanityClientStub = {
   fetch: vi.fn(),
   delete: vi.fn(),
-  patch: vi.fn(() => ({ unset: sanityUnset })),
+  patch: vi.fn(() => ({ set: sanitySet })),
 };
 
 beforeEach(() => {
   vi.stubEnv("BOOKING_DB_DRIVER", "sqlite");
   vi.stubEnv("BOOKING_DB_PATH", ":memory:");
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
-  mockMirrorGiftRecord.mockClear();
   sanityClientStub.patch.mockClear();
   sanityUnset.mockClear();
+  sanitySet.mockClear();
   sanityCommit.mockReset().mockResolvedValue(undefined);
 
   mockFindUser.mockReset();
@@ -293,6 +289,7 @@ async function giftWithRow(row: {
   buyerEmail: string | null;
   stripeSessionId?: string | null;
   redeemedSubmissionId?: string | null;
+  status?: GiftStatus;
 }): Promise<string> {
   const giftId = await createTestGift();
   await dbExec(
@@ -301,7 +298,7 @@ async function giftWithRow(row: {
          recipient_name = 'Grace', recipient_email = 'grace@example.com'
      WHERE id = ?`,
     [
-      row.redeemedSubmissionId ? "redeemed" : "active",
+      row.status ?? (row.redeemedSubmissionId ? "redeemed" : "active"),
       row.buyerEmail,
       row.stripeSessionId ?? null,
       row.redeemedSubmissionId ?? null,
@@ -446,21 +443,44 @@ describe("cascadeDeleteUser: gift buyer walk", () => {
     expect(result.submissionIds).toEqual(["sub_1"]);
   });
 
-  it("schedules the gift record mirror after the buyer fields are cleared", async () => {
+  it.each(["active", "cancelled"] as const)(
+    "unsets gift.buyerFirstName and clears gift.hasNote on the %s gift's own submission doc",
+    async (status) => {
+      happyPathMocks();
+      const giftId = await giftWithRow({
+        buyerEmail: "ada@example.com",
+        stripeSessionId: "cs_gift_1",
+        status,
+      });
+
+      await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+      expect(sanityClientStub.patch).toHaveBeenCalledWith({
+        query: "*[_id == $id]",
+        params: { id: giftId },
+      });
+      expect(sanitySet).toHaveBeenCalledWith({ "gift.hasNote": false });
+      expect(sanityUnset).toHaveBeenCalledWith(["gift.buyerFirstName"]);
+    },
+  );
+
+  it("deletes a redeemed gift's submission doc, keyed by the gift id, when the recipient is erased", async () => {
     happyPathMocks();
-    const giftId = await giftWithRow({
-      buyerEmail: "ada@example.com",
-      stripeSessionId: "cs_gift_1",
-    });
-    const buyerEmailAtMirror: Array<string | null> = [];
-    mockMirrorGiftRecord.mockImplementationOnce(async (id) => {
-      buyerEmailAtMirror.push((await readGiftRow(id)).buyer_email);
-    });
+    const giftId = await giftWithRow({ buyerEmail: "someone-else@example.com" });
+    mockListSubs.mockResolvedValue([{ ...SUBMISSION_BASE, _id: giftId, giftCodeId: giftId }]);
 
     await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
 
-    expect(mockMirrorGiftRecord).toHaveBeenCalledWith(giftId);
-    await vi.waitFor(() => expect(buyerEmailAtMirror).toEqual([null]));
+    expect(sanityClientStub.delete).toHaveBeenNthCalledWith(1, giftId);
+  });
+
+  it.each(["pending", "expired"] as const)("leaves Sanity alone for a %s gift", async (status) => {
+    happyPathMocks();
+    await giftWithRow({ buyerEmail: "ada@example.com", status });
+
+    await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(sanityClientStub.patch).not.toHaveBeenCalled();
   });
 
   it("unsets gift.buyerFirstName on the submission the gift was redeemed into", async () => {
@@ -473,7 +493,10 @@ describe("cascadeDeleteUser: gift buyer walk", () => {
 
     await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
 
-    expect(sanityClientStub.patch).toHaveBeenCalledWith("sub_recipient");
+    expect(sanityClientStub.patch).toHaveBeenCalledWith({
+      query: "*[_id == $id]",
+      params: { id: "sub_recipient" },
+    });
     expect(sanityUnset).toHaveBeenCalledWith(["gift.buyerFirstName"]);
     expect(sanityCommit).toHaveBeenCalledOnce();
   });

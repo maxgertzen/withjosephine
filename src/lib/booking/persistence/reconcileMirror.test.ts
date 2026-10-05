@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { projectGiftRecord } from "@/lib/gift/giftRecordMirror";
-import { makeGiftRecord } from "@/test/fixtures/gift";
-
 import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
-import { diffSubmission, giftRecordDiffers, type SanityMirrorSnapshot } from "./reconcileMirror";
+import { diffSubmission, type SanityMirrorSnapshot } from "./reconcileMirror";
 
 function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
   return {
@@ -137,35 +134,24 @@ describe("diffSubmission", () => {
   });
 });
 
-describe("giftRecordDiffers", () => {
-  const READING_REF = { _type: "reference" as const, _ref: "reading-birth-chart" };
-  const PROJECTED = projectGiftRecord(
-    makeGiftRecord({ status: "active", activatedAt: "2026-10-03T08:05:00.000Z", note: "n" }),
-    READING_REF,
-  )!;
+describe("diffSubmission for a redeemed gift", () => {
+  const GIFT_ROW = makeD1({ _id: "gift_1", status: "paid", giftCodeId: "gift_1" });
 
-  it("is false for an equal document", () => {
-    expect(giftRecordDiffers(PROJECTED, { ...PROJECTED })).toBe(false);
+  it("recreates a gift submission whose Sanity doc has no email yet", () => {
+    expect(diffSubmission(GIFT_ROW, makeMatchingSanity(GIFT_ROW))).toEqual({ kind: "create" });
   });
 
-  it("is true for a missing document", () => {
-    expect(giftRecordDiffers(PROJECTED, null)).toBe(true);
+  it("patches a gift submission that has its email", () => {
+    const sanity = { ...makeMatchingSanity(GIFT_ROW), hasEmail: true };
+    expect(diffSubmission(GIFT_ROW, sanity)).toEqual({ kind: "skip" });
+    expect(diffSubmission(GIFT_ROW, { ...sanity, status: undefined })).toMatchObject({
+      kind: "patch",
+      patch: { status: "paid" },
+    });
   });
 
-  it.each([
-    ["status", { status: "cancelled" as const }],
-    ["sentAt", { sentAt: "2026-10-03T09:00:00.000Z" }],
-    ["reading", { reading: undefined }],
-    [
-      "submission",
-      { submission: { _type: "reference" as const, _ref: "sub_1", _weak: true as const } },
-    ],
-  ])("is true when %s changed", (_field, change) => {
-    expect(giftRecordDiffers({ ...PROJECTED, ...change }, PROJECTED)).toBe(true);
-  });
-
-  it("is true for a stored document whose gift no longer projects, false when neither exists", () => {
-    expect(giftRecordDiffers(null, PROJECTED)).toBe(true);
-    expect(giftRecordDiffers(null, null)).toBe(false);
+  it("does not ask a booking for its email", () => {
+    const booking = makeD1();
+    expect(diffSubmission(booking, makeMatchingSanity(booking))).toEqual({ kind: "skip" });
   });
 });

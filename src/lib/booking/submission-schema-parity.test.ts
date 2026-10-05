@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { projectGiftRecord } from "@/lib/gift/giftRecordMirror";
+import { projectGiftSubmission } from "@/lib/gift/giftSubmissionMirror";
 import { makeGiftRecord } from "@/test/fixtures/gift";
 
 import type { EmailFiredType } from "./submissions";
@@ -67,34 +67,18 @@ describe("submission schema parity", () => {
   });
 });
 
-const GIFT_RECORD_SCHEMA_SOURCE = readFileSync(
-  resolve(__dirname, "../../../studio/schemas/giftRecord.ts"),
-  "utf-8",
-);
-
-describe("giftRecord schema parity", () => {
-  it("declares every field the mirror writes", () => {
-    const projected = projectGiftRecord(
-      makeGiftRecord({
-        status: "redeemed",
-        activatedAt: "2026-10-03T08:05:00.000Z",
-        lastSentAt: "2026-10-03T09:00:00.000Z",
-        redeemedAt: "2026-10-04T08:00:00.000Z",
-        redeemedSubmissionId: "sub_1",
-      }),
+describe("gift submission mirror parity", () => {
+  it("declares every top-level and gift block field the gift mirror writes", () => {
+    const projected = projectGiftSubmission(
+      makeGiftRecord({ status: "active" }),
       { _type: "reference", _ref: "reading-birth-chart" },
     );
-    const writtenFields = Object.keys(projected!).filter((key) => !key.startsWith("_"));
 
-    for (const field of writtenFields) {
-      expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"${field}"`));
+    for (const field of Object.keys(projected!.unopened!)) {
+      expect(SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"${field}"`));
     }
-  });
-
-  it("is read-only and links the booking weakly", () => {
-    expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(/type:\s*"document",\s*readOnly:\s*true/);
-    expect(GIFT_RECORD_SCHEMA_SOURCE).toMatch(
-      /name:\s*"submission",[^}]*?to:\s*\[\{\s*type:\s*"submission"\s*\}\],\s*weak:\s*true/,
-    );
+    for (const field of Object.keys(projected!.gift)) {
+      expect(SCHEMA_SOURCE).toMatch(new RegExp(`name:\\s*"gift",[^]*?name:\\s*"${field}"`));
+    }
   });
 });

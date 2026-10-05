@@ -19,7 +19,7 @@ import {
 import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 import type { CreateSubmissionInput } from "./repository";
 
-type MirrorCreateConsent = {
+export type MirrorCreateConsent = {
   consentAcknowledgedAt: string;
   ipAddress: string | null;
   art6AcknowledgedAt: string | null;
@@ -119,59 +119,59 @@ export async function findReadingRef(
   return promise;
 }
 
-export type WeakReference = ReadingRef & { _weak: true };
-
-export function weakReference(id: string): WeakReference {
-  return { _type: "reference", _ref: id, _weak: true };
+export function existingDocSelection(docId: string) {
+  return { query: "*[_id == $id]", params: { id: docId } };
 }
 
-export type MirrorCreateOptions = { gift?: { buyerFirstName: string; giftId: string } };
+export async function submissionMirrorFields(
+  client: SanityClient,
+  input: CreateSubmissionInput,
+  consent: MirrorCreateConsent,
+) {
+  const readingRef = await findReadingRef(client, input.readingSlug);
+  const responsesWithKeys = input.responses.map((response, index) => ({
+    _key: `${response.fieldKey}-${index}`,
+    _type: "submissionResponse" as const,
+    ...response,
+  }));
+  return {
+    paidFields: {
+      status: input.status,
+      createdAt: input.createdAt,
+      paidAt: input.paidAt ?? undefined,
+    },
+    firstWriteWins: {
+      ...(readingRef ? { serviceRef: readingRef } : {}),
+      email: input.email,
+      responses: responsesWithKeys,
+      consentSnapshot: {
+        // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
+        // the UI and the audit record cannot diverge.
+        // Legacy labelText/acknowledgedAt remain populated for read-back.
+        labelText: input.consentLabel ?? "",
+        acknowledgedAt: consent.consentAcknowledgedAt,
+        ipAddress: consent.ipAddress ?? undefined,
+        art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
+        art9Consent: ackBlock(art9ConsentLabel(input.readingSlug), consent.art9AcknowledgedAt),
+        coolingOffConsent: ackBlock(COOLING_OFF_CONSENT_LABEL, consent.coolingOffAcknowledgedAt),
+      },
+      photoR2Key: input.photoR2Key ?? undefined,
+      recipientUserId: input.recipientUserId ?? undefined,
+    },
+  };
+}
 
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
   consent: MirrorCreateConsent,
-  options: MirrorCreateOptions = {},
 ): Promise<void> {
   const client = await getMirrorClient();
   if (!client) return;
 
   try {
-    const readingRef = await findReadingRef(client, input.readingSlug);
-    const responsesWithKeys = input.responses.map((response, index) => ({
-      _key: `${response.fieldKey}-${index}`,
-      _type: "submissionResponse" as const,
-      ...response,
-    }));
+    const { paidFields, firstWriteWins } = await submissionMirrorFields(client, input, consent);
     await client.createIfNotExists(
-      {
-        _id: input.id,
-        _type: "submission",
-        status: input.status,
-        ...(readingRef ? { serviceRef: readingRef } : {}),
-        email: input.email,
-        responses: responsesWithKeys,
-        consentSnapshot: {
-          // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
-          // the UI and the audit record cannot diverge.
-          // Legacy labelText/acknowledgedAt remain populated for read-back.
-          labelText: input.consentLabel ?? "",
-          acknowledgedAt: consent.consentAcknowledgedAt,
-          ipAddress: consent.ipAddress ?? undefined,
-          art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
-          art9Consent: ackBlock(art9ConsentLabel(input.readingSlug), consent.art9AcknowledgedAt),
-          coolingOffConsent: ackBlock(COOLING_OFF_CONSENT_LABEL, consent.coolingOffAcknowledgedAt),
-        },
-        photoR2Key: input.photoR2Key ?? undefined,
-        createdAt: input.createdAt,
-        paidAt: input.paidAt ?? undefined,
-        recipientUserId: input.recipientUserId ?? undefined,
-        gift: options.gift
-          ? {
-              buyerFirstName: options.gift.buyerFirstName,
-              giftRecord: weakReference(options.gift.giftId),
-            }
-          : undefined,
-      },
+      { _id: input.id, _type: "submission", ...paidFields, ...firstWriteWins },
       { visibility: "async" },
     );
   } catch (error) {
@@ -197,7 +197,7 @@ type MirrorPatchBase = Partial<{
   emailFailures: readonly EmailFailureEntry[];
 }>;
 
-function keyedEmailFailures(failures: readonly EmailFailureEntry[]) {
+export function keyedEmailFailures(failures: readonly EmailFailureEntry[]) {
   return failures.map((failure, index) => ({
     ...failure,
     _key: `${failure.emailType}-${index}`,

@@ -25,7 +25,7 @@ import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import {
   mirrorAppendEmailFired,
-  type MirrorCreateOptions,
+  type MirrorCreateConsent,
   mirrorMarkSubmissionListened,
   mirrorMarkSubmissionPdfDownloaded,
   mirrorSubmissionCreate,
@@ -81,10 +81,10 @@ export async function createSubmission(params: CreateSubmissionParams): Promise<
   runMirror(mirrorNewSubmission(params));
 }
 
-export function mirrorNewSubmission(
-  params: CreateSubmissionParams,
-  options: MirrorCreateOptions = {},
-): Promise<void> {
+export function splitMirrorConsent(params: CreateSubmissionParams): {
+  input: CreateSubmissionInput;
+  consent: MirrorCreateConsent;
+} {
   const {
     consentAcknowledgedAt,
     ipAddress,
@@ -93,17 +93,21 @@ export function mirrorNewSubmission(
     coolingOffAcknowledgedAt,
     ...input
   } = params;
-  return mirrorSubmissionCreate(
+  return {
     input,
-    {
+    consent: {
       consentAcknowledgedAt,
       ipAddress,
       art6AcknowledgedAt: art6AcknowledgedAt ?? null,
       art9AcknowledgedAt: art9AcknowledgedAt ?? null,
       coolingOffAcknowledgedAt: coolingOffAcknowledgedAt ?? null,
     },
-    options,
-  );
+  };
+}
+
+function mirrorNewSubmission(params: CreateSubmissionParams): Promise<void> {
+  const { input, consent } = splitMirrorConsent(params);
+  return mirrorSubmissionCreate(input, consent);
 }
 
 export function buildCreateSubmissionStatement(input: CreateSubmissionInput): SqlStatement {
@@ -114,8 +118,12 @@ export function recordFromCreateInput(input: CreateSubmissionInput): SubmissionR
   return repo.recordFromCreateInput(input);
 }
 
-export async function hasGiftSubmission(submissionId: string, giftCodeId: string): Promise<boolean> {
-  return repo.hasGiftSubmission(submissionId, giftCodeId);
+export async function hasGiftSubmission(
+  submissionId: string,
+  giftCodeId: string,
+  giftRedeemEventId: string,
+): Promise<boolean> {
+  return repo.hasGiftSubmission(submissionId, giftCodeId, giftRedeemEventId);
 }
 
 export async function findGiftSubmissionInput(

@@ -37,11 +37,11 @@ import {
 } from "../gifts";
 import type { GiftStatus } from "../types";
 
-const mockMirrorGiftRecord = vi.hoisted(() =>
+const mockMirrorGiftSubmission = vi.hoisted(() =>
   vi.fn<(giftId: string) => Promise<void>>(async () => {}),
 );
 
-vi.mock("../giftRecordMirror", () => ({ mirrorGiftRecord: mockMirrorGiftRecord }));
+vi.mock("../giftSubmissionMirror", () => ({ mirrorGiftSubmission: mockMirrorGiftSubmission }));
 
 const PAID_AT = "2026-10-01T10:05:00.000Z";
 const LATER = "2026-10-02T10:00:00.000Z";
@@ -97,7 +97,7 @@ function recordQueries(sink: string[]): () => SqlClient {
 
 beforeEach(() => {
   vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
-  mockMirrorGiftRecord.mockClear();
+  mockMirrorGiftSubmission.mockClear();
 });
 
 afterEach(() => {
@@ -437,9 +437,9 @@ describe.each([
   });
 });
 
-describe("gift record mirror after each write", () => {
+describe("gift submission mirror after each write", () => {
   function mirroredIds(): string[] {
-    return mockMirrorGiftRecord.mock.calls.map(([giftId]) => giftId);
+    return mockMirrorGiftSubmission.mock.calls.map(([giftId]) => giftId);
   }
 
   it("mirrors an activation and not a pending gift", async () => {
@@ -460,14 +460,14 @@ describe("gift record mirror after each write", () => {
 
   it("mirrors a note edit on an active gift and not on a redeemed one", async () => {
     const activeId = await createActiveGift("cs_test_note");
-    mockMirrorGiftRecord.mockClear();
+    mockMirrorGiftSubmission.mockClear();
     const edit = { buyerFirstName: "Ada", note: "New note", updatedAt: LATER };
 
     expect(await updateGiftNote(activeId, edit)).toBe(true);
     expect(mirroredIds()).toEqual([activeId]);
 
     await forceGiftStatus(activeId, "redeemed");
-    mockMirrorGiftRecord.mockClear();
+    mockMirrorGiftSubmission.mockClear();
     expect(await updateGiftNote(activeId, edit)).toBe(false);
     expect(mirroredIds()).toEqual([]);
   });
@@ -475,7 +475,7 @@ describe("gift record mirror after each write", () => {
   it("mirrors a completed send and a released send", async () => {
     const activeId = await createActiveGift("cs_test_send");
     await claimGiftSend(activeId, sendClaim(0));
-    mockMirrorGiftRecord.mockClear();
+    mockMirrorGiftSubmission.mockClear();
 
     await completeGiftSend(activeId, { sendNumber: 1, sentAt: LATER });
     await claimGiftSend(activeId, sendClaim(1));

@@ -323,6 +323,7 @@ export async function clearGiftRecipientsOfUserSubmissions(
 
 export type GiftBoughtRow = {
   id: string;
+  status: GiftStatus;
   stripeSessionId: string | null;
   redeemedSubmissionId: string | null;
 };
@@ -330,13 +331,16 @@ export type GiftBoughtRow = {
 export async function listGiftsBoughtBy(buyerEmail: string): Promise<GiftBoughtRow[]> {
   const rows = await dbQuery<{
     id: string;
+    status: GiftStatus;
     stripe_session_id: string | null;
     redeemed_submission_id: string | null;
-  }>(`SELECT id, stripe_session_id, redeemed_submission_id FROM gift_codes WHERE buyer_email = ?`, [
-    normalizeEmail(buyerEmail),
-  ]);
+  }>(
+    `SELECT id, status, stripe_session_id, redeemed_submission_id FROM gift_codes WHERE buyer_email = ?`,
+    [normalizeEmail(buyerEmail)],
+  );
   return rows.map((row) => ({
     id: row.id,
+    status: row.status,
     stripeSessionId: row.stripe_session_id,
     redeemedSubmissionId: row.redeemed_submission_id,
   }));

@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import {
   diffSubmission,
-  giftRecordDiffers,
-  type GiftRecordSnapshot,
+  type ReconcileAction,
   type SanityMirrorSnapshot,
 } from "@/lib/booking/persistence/reconcileMirror";
 import { listSubmissionsCreatedAfter } from "@/lib/booking/persistence/repository";
@@ -12,8 +11,16 @@ import {
   mirrorAppendEmailFired,
   mirrorSubmissionPatch,
 } from "@/lib/booking/persistence/sanityMirror";
-import { mirrorGiftRecord, projectGiftRecordWithReading } from "@/lib/gift/giftRecordMirror";
+import { findGiftSubmissionInput } from "@/lib/booking/submissions";
 import { listGiftsUpdatedAfter } from "@/lib/gift/gifts";
+import {
+  giftSubmissionDiffers,
+  giftSubmissionDocId,
+  type GiftSubmissionSnapshot,
+  projectGiftSubmissionWithReading,
+  writeGiftSubmission,
+} from "@/lib/gift/giftSubmissionMirror";
+import { remirrorRedeemedGift } from "@/lib/gift/redeemGift";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 const LOOKBACK_DAYS = 7;
@@ -23,6 +30,7 @@ type SubmissionSummary = {
   checked: number;
   skipped: number;
   patched: number;
+  recreated: number;
   missing: number;
 };
 
@@ -34,14 +42,14 @@ type GiftSummary = {
 async function reconcileSubmissions(cutoff: string): Promise<SubmissionSummary> {
   const d1Rows = await listSubmissionsCreatedAfter(cutoff);
   if (d1Rows.length === 0) {
-    return { checked: 0, skipped: 0, patched: 0, missing: 0 };
+    return { checked: 0, skipped: 0, patched: 0, recreated: 0, missing: 0 };
   }
 
   const ids = d1Rows.map((row) => row._id);
   const sanity = await getSanityWriteClient();
   const sanityDocs = await sanity.fetch<SanityMirrorSnapshot[]>(
     `*[_type == "submission" && _id in $ids]{
-      _id, status, paidAt, expiredAt,
+      _id, "hasEmail": defined(email), status, paidAt, expiredAt,
       amountPaidCents, amountPaidCurrency, emailsFired, emailFailures
     }`,
     { ids },
@@ -50,12 +58,24 @@ async function reconcileSubmissions(cutoff: string): Promise<SubmissionSummary> 
 
   let skipped = 0;
   let patched = 0;
+  let recreated = 0;
   let missing = 0;
 
   for (const row of d1Rows) {
-    const action = diffSubmission(row, sanityById.get(row._id) ?? null);
+    const stored = sanityById.get(row._id) ?? null;
+    const action = diffSubmission(row, stored);
     if (action.kind === "skip") {
       skipped += 1;
+      continue;
+    }
+    if (action.kind === "create" && row.giftCodeId) {
+      if (!(await recreateGiftSubmission(row._id, row.giftCodeId))) {
+        missing += 1;
+        continue;
+      }
+      recreated += 1;
+      const recreatedDoc = { ...(stored ?? { _id: row._id }), hasEmail: true };
+      await applyPatch(row._id, diffSubmission(row, recreatedDoc));
       continue;
     }
     if (action.kind === "create") {
@@ -68,37 +88,48 @@ async function reconcileSubmissions(cutoff: string): Promise<SubmissionSummary> 
       missing += 1;
       continue;
     }
-    if (Object.keys(action.patch).length > 0) {
-      await mirrorSubmissionPatch(row._id, action.patch);
-    }
-    for (const entry of action.missingEmails) {
-      await mirrorAppendEmailFired(row._id, entry);
-    }
+    await applyPatch(row._id, action);
     patched += 1;
   }
 
-  return { checked: d1Rows.length, skipped, patched, missing };
+  return { checked: d1Rows.length, skipped, patched, recreated, missing };
 }
 
-async function reconcileGiftRecords(cutoff: string): Promise<GiftSummary> {
+async function applyPatch(submissionId: string, action: ReconcileAction): Promise<void> {
+  if (action.kind !== "patch") return;
+  if (Object.keys(action.patch).length > 0) {
+    await mirrorSubmissionPatch(submissionId, action.patch);
+  }
+  for (const entry of action.missingEmails) {
+    await mirrorAppendEmailFired(submissionId, entry);
+  }
+}
+
+async function recreateGiftSubmission(submissionId: string, giftId: string): Promise<boolean> {
+  const redeemed = await findGiftSubmissionInput(submissionId, giftId);
+  return redeemed ? remirrorRedeemedGift(redeemed, giftId, null) : false;
+}
+
+async function reconcileGiftSubmissions(cutoff: string): Promise<GiftSummary> {
   const giftRows = await listGiftsUpdatedAfter(cutoff);
   if (giftRows.length === 0) return { giftsChecked: 0, giftsWritten: 0 };
 
   const sanity = await getSanityWriteClient();
-  const giftDocs = await sanity.fetch<GiftRecordSnapshot[]>(
-    `*[_type == "giftRecord" && _id in $ids]{
-      _id, reading, status, buyerFirstName, createdAt, paidAt, sentAt,
-      resendUsed, openedAt, hasNote, submission
+  const giftDocs = await sanity.fetch<GiftSubmissionSnapshot[]>(
+    `*[_type == "submission" && _id in $ids]{
+      _id, status, createdAt, serviceRef,
+      gift{ buyerFirstName, boughtAt, sentAt, resendUsed, openedAt, hasNote }
     }`,
-    { ids: giftRows.map((row) => row.id) },
+    { ids: giftRows.map(giftSubmissionDocId) },
   );
   const docById = new Map(giftDocs.map((doc) => [doc._id, doc]));
 
   let giftsWritten = 0;
   for (const row of giftRows) {
-    const projected = await projectGiftRecordWithReading(sanity, row);
-    if (!giftRecordDiffers(projected, docById.get(row.id) ?? null)) continue;
-    await mirrorGiftRecord(row.id);
+    const projected = await projectGiftSubmissionWithReading(sanity, row);
+    const stored = docById.get(giftSubmissionDocId(row)) ?? null;
+    if (!projected || !giftSubmissionDiffers(projected, stored)) continue;
+    await writeGiftSubmission(sanity, projected);
     giftsWritten += 1;
   }
   return { giftsChecked: giftRows.length, giftsWritten };
@@ -107,7 +138,7 @@ async function reconcileGiftRecords(cutoff: string): Promise<GiftSummary> {
 async function reconcileMirror(): Promise<SubmissionSummary & GiftSummary> {
   const cutoff = new Date(Date.now() - LOOKBACK_DAYS * MS_PER_DAY).toISOString();
   const submissions = await reconcileSubmissions(cutoff);
-  const gifts = await reconcileGiftRecords(cutoff);
+  const gifts = await reconcileGiftSubmissions(cutoff);
   return { ...submissions, ...gifts };
 }
 

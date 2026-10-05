@@ -4,7 +4,7 @@ import { dbBatch, type SqlStatement } from "@/lib/booking/persistence/sqlClient"
 
 import { deriveGiftCode, giftLookupHash } from "./giftCode";
 import { normalizeGiftCode } from "./giftCodeFormat";
-import { mirrorGiftRecord } from "./giftRecordMirror";
+import { mirrorGiftSubmission } from "./giftSubmissionMirror";
 import type {
   ClaimGiftSendInput,
   CompleteGiftSendInput,
@@ -31,8 +31,8 @@ export async function createPendingGift(input: CreatePendingGiftInput): Promise<
   return { giftId };
 }
 
-export function scheduleGiftRecordMirror(giftId: string): void {
-  runMirror(mirrorGiftRecord(giftId));
+function scheduleGiftSubmissionMirror(giftId: string): void {
+  runMirror(mirrorGiftSubmission(giftId));
 }
 
 export async function findGiftById(giftId: string): Promise<GiftRecord | null> {
@@ -67,7 +67,7 @@ export async function markGiftActive(
   }
   await dbBatch(statements);
   const active = await repo.isGiftActiveForSession(giftId, paid.stripeSessionId);
-  if (active) scheduleGiftRecordMirror(giftId);
+  if (active) scheduleGiftSubmissionMirror(giftId);
   return active;
 }
 
@@ -103,7 +103,7 @@ export async function completeGiftSend(
     statements.push(repo.buildAppendGiftEmailFiredStatement(giftId, emailFired));
   }
   await dbBatch(statements);
-  scheduleGiftRecordMirror(giftId);
+  scheduleGiftSubmissionMirror(giftId);
 }
 
 export async function releaseGiftSend(
@@ -111,7 +111,7 @@ export async function releaseGiftSend(
   args: ReleaseGiftSendInput,
 ): Promise<void> {
   await repo.releaseGiftSend(giftId, args);
-  scheduleGiftRecordMirror(giftId);
+  scheduleGiftSubmissionMirror(giftId);
 }
 
 export async function updateGiftNote(
@@ -119,7 +119,7 @@ export async function updateGiftNote(
   args: UpdateGiftNoteInput,
 ): Promise<boolean> {
   const updated = await repo.updateGiftNote(giftId, args);
-  if (updated) scheduleGiftRecordMirror(giftId);
+  if (updated) scheduleGiftSubmissionMirror(giftId);
   return updated;
 }
 

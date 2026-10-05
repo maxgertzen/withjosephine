@@ -64,18 +64,3 @@ export async function waitForEmailTo(
 export function flattenOps(mutations: CapturedMutation[]): CapturedMutationOp[] {
   return mutations.flatMap((m) => m.ops);
 }
-
-export function findCreateByType(
-  mutations: CapturedMutation[],
-  type: string,
-): CapturedMutationOp | null {
-  for (const op of flattenOps(mutations)) {
-    if (
-      (op.kind === "create" || op.kind === "createOrReplace" || op.kind === "createIfNotExists") &&
-      op.doc._type === type
-    ) {
-      return op;
-    }
-  }
-  return null;
-}

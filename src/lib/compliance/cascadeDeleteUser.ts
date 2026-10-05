@@ -33,6 +33,7 @@ import "server-only";
  *    9. D1 listen_session + listen_magic_link + user row
  */
 import { findUserById, normalizeEmail } from "../auth/users";
+import { existingDocSelection } from "../booking/persistence/sanityMirror";
 import { dbExec, dbQuery } from "../booking/persistence/sqlClient";
 import {
   deleteSubmissionAndPhoto,
@@ -40,7 +41,7 @@ import {
   type SubmissionRecord,
 } from "../booking/submissions";
 import { giftClientReferenceId } from "../gift/clientReference";
-import { scheduleGiftRecordMirror } from "../gift/gifts";
+import { giftSubmissionDocId, hasGiftSubmissionDoc } from "../gift/giftSubmissionMirror";
 import {
   clearGiftRecipientsOfUserSubmissions,
   eraseGiftBuyer,
@@ -137,13 +138,17 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function unsetGiftBuyerNameOnSubmission(
+async function eraseGiftBuyerOnSubmission(
   submissionId: string,
   partialFailures: string[],
 ): Promise<void> {
   try {
     const client = await getSanityWriteClient();
-    await client.patch(submissionId).unset(["gift.buyerFirstName"]).commit();
+    await client
+      .patch(existingDocSelection(submissionId))
+      .set({ "gift.hasNote": false })
+      .unset(["gift.buyerFirstName"])
+      .commit();
   } catch (error) {
     partialFailures.push(`sanity-gift-buyer-unset: ${submissionId} - ${errorMessage(error)}`);
   }
@@ -158,12 +163,12 @@ async function eraseGiftsBought(
   for (const gift of gifts) {
     try {
       await eraseGiftBuyer(gift.id, erasedAt);
-      scheduleGiftRecordMirror(gift.id);
     } catch (error) {
       partialFailures.push(`d1-gift-buyer: ${gift.id} - ${errorMessage(error)}`);
     }
-    if (gift.redeemedSubmissionId && !deletedSubmissionIds.has(gift.redeemedSubmissionId)) {
-      await unsetGiftBuyerNameOnSubmission(gift.redeemedSubmissionId, partialFailures);
+    const docId = giftSubmissionDocId(gift);
+    if (hasGiftSubmissionDoc(gift.status) && !deletedSubmissionIds.has(docId)) {
+      await eraseGiftBuyerOnSubmission(docId, partialFailures);
     }
   }
 }

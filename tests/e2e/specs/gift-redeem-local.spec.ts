@@ -11,7 +11,7 @@ import { giftPath } from "@/lib/gift/giftCodeFormat";
 
 import {
   capturedEmailsTo,
-  findCreateByType,
+  type CapturedMutationOp,
   flattenOps,
   getCapturedEmails,
   getCapturedMutations,
@@ -64,19 +64,33 @@ async function josephineGiftNotificationCount(request: APIRequestContext): Promi
   ).length;
 }
 
-async function capturedSubmissionCreate(
-  request: APIRequestContext,
-): Promise<Record<string, unknown> | null> {
-  const op = findCreateByType(await getCapturedMutations(request), "submission");
-  return op && "doc" in op ? op.doc : null;
+function targetsDoc(op: CapturedMutationOp, docId: string): boolean {
+  if (op.kind !== "patch") return op.kind !== "delete" && op.doc._id === docId;
+  const params = op.patch.params as { id?: string } | undefined;
+  return op.id === docId || params?.id === docId;
 }
 
-async function capturedGiftRecordWrites(
+async function capturedGiftDocWrites(
   request: APIRequestContext,
+  giftId: string,
+): Promise<CapturedMutationOp[]> {
+  return flattenOps(await getCapturedMutations(request)).filter((op) => targetsDoc(op, giftId));
+}
+
+async function capturedGiftDocSets(
+  request: APIRequestContext,
+  giftId: string,
 ): Promise<Array<Record<string, unknown>>> {
-  return flattenOps(await getCapturedMutations(request)).flatMap((op) =>
-    op.kind === "createOrReplace" && op.doc._type === "giftRecord" ? [op.doc] : [],
+  return (await capturedGiftDocWrites(request, giftId)).flatMap((op) =>
+    op.kind === "patch" && op.patch.set ? [op.patch.set as Record<string, unknown>] : [],
   );
+}
+
+async function capturedPaidSet(
+  request: APIRequestContext,
+  giftId: string,
+): Promise<Record<string, unknown> | null> {
+  return (await capturedGiftDocSets(request, giftId)).find((set) => set.status === "paid") ?? null;
 }
 
 async function openGiftPage(page: Page, path: string): Promise<void> {
@@ -130,22 +144,19 @@ test.describe("Gift redeem, mock mode", () => {
     await expect(page.getByText(RECIPIENT_THANK_YOU_CARD_LABEL)).toBeVisible();
 
     await expect
-      .poll(() => capturedSubmissionCreate(request), { timeout: CAPTURE_TIMEOUT_MS })
+      .poll(() => capturedPaidSet(request, gift.giftId), { timeout: CAPTURE_TIMEOUT_MS })
       .toMatchObject({
         status: "paid",
         paidAt: expect.any(String),
-        gift: { buyerFirstName: SEEDED_BUYER_FIRST_NAME, giftRecord: { _ref: gift.giftId } },
+        gift: { buyerFirstName: SEEDED_BUYER_FIRST_NAME, openedAt: expect.any(String) },
       });
-    await expect
-      .poll(
-        async () => (await capturedGiftRecordWrites(request)).map((doc) => doc.status),
-        { timeout: CAPTURE_TIMEOUT_MS },
-      )
-      .toContain("redeemed");
-    const giftRecordWrites = JSON.stringify(await capturedGiftRecordWrites(request));
-    expect(giftRecordWrites).not.toContain(gift.code.replaceAll("-", ""));
-    expect(giftRecordWrites).not.toContain(NOTE);
-    expect(giftRecordWrites).not.toContain(BUYER_EMAIL);
+    expect(
+      (await capturedGiftDocSets(request, gift.giftId)).map((set) => set.status),
+    ).toEqual(expect.arrayContaining(["gift_waiting", "paid"]));
+    const giftDocWrites = JSON.stringify(await capturedGiftDocWrites(request, gift.giftId));
+    expect(giftDocWrites).not.toContain(gift.code.replaceAll("-", ""));
+    expect(giftDocWrites).not.toContain(NOTE);
+    expect(giftDocWrites).not.toContain(BUYER_EMAIL);
 
     await expect
       .poll(() => subjectsTo(request, RECIPIENT_EMAIL), { timeout: CAPTURE_TIMEOUT_MS })

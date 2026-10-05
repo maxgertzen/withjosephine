@@ -19,13 +19,13 @@ vi.mock("@/lib/booking/notifyPaid", async (importOriginal) => {
 });
 
 vi.mock("@/lib/booking/persistence/sanityMirror", () => ({
-  mirrorSubmissionCreate: vi.fn(async () => undefined),
   mirrorAppendEmailFired: vi.fn(async () => undefined),
   mirrorSubmissionPatch: vi.fn(async () => undefined),
 }));
 
-vi.mock("./giftRecordMirror", () => ({
-  mirrorGiftRecord: vi.fn(async () => undefined),
+vi.mock("./giftSubmissionMirror", () => ({
+  mirrorGiftSubmission: vi.fn(async () => undefined),
+  writeGiftRedemption: vi.fn(async () => true),
 }));
 
 vi.mock("@/lib/booking/dataExportUrl", () => ({
@@ -45,7 +45,6 @@ vi.mock("./gifts", async (importOriginal) => {
 
 import { getOrCreateUser } from "@/lib/auth/users";
 import { afterSubmissionPaid } from "@/lib/booking/notifyPaid";
-import { mirrorSubmissionCreate } from "@/lib/booking/persistence/sanityMirror";
 import {
   __registerSqliteFactory,
   dbExec,
@@ -63,14 +62,14 @@ import { createSqliteClient } from "@/test/persistence/sqliteClient";
 
 import { deriveGiftCode } from "./giftCode";
 import { formatGiftCode } from "./giftCodeFormat";
-import { mirrorGiftRecord } from "./giftRecordMirror";
 import { findGiftById, resolveGiftState } from "./gifts";
+import { mirrorGiftSubmission, writeGiftRedemption } from "./giftSubmissionMirror";
 import { redeemGiftSubmission, type RedeemGiftSubmissionInput } from "./redeemGift";
 
 const mockGetOrCreateUser = vi.mocked(getOrCreateUser);
 const mockAfterPaid = vi.mocked(afterSubmissionPaid);
-const mockMirrorCreate = vi.mocked(mirrorSubmissionCreate);
-const mockMirrorGiftRecord = vi.mocked(mirrorGiftRecord);
+const mockWriteRedemption = vi.mocked(writeGiftRedemption);
+const mockMirrorGiftSubmission = vi.mocked(mirrorGiftSubmission);
 const mockResolveGiftState = vi.mocked(resolveGiftState);
 const mockJosephine = vi.mocked(sendNotificationToJosephine);
 const mockCustomerConfirmation = vi.mocked(sendCustomerConfirmation);
@@ -149,8 +148,10 @@ async function submissionsForGift(giftId: string) {
     cooling_off_acknowledged_at: string | null;
     recipient_user_id: string | null;
     is_gift: number;
+    stripe_event_id: string | null;
   }>(
-    `SELECT id, status, paid_at, cooling_off_acknowledged_at, recipient_user_id, is_gift
+    `SELECT id, status, paid_at, cooling_off_acknowledged_at, recipient_user_id, is_gift,
+            stripe_event_id
        FROM submissions WHERE gift_code_id = ?`,
     [giftId],
   );
@@ -164,8 +165,8 @@ beforeEach(() => {
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
   mockGetOrCreateUser.mockReset().mockResolvedValue({ userId: "user_anna", isNew: true });
   mockAfterPaid.mockClear();
-  mockMirrorCreate.mockReset().mockResolvedValue(undefined);
-  mockMirrorGiftRecord.mockReset().mockResolvedValue(undefined);
+  mockWriteRedemption.mockReset().mockResolvedValue(true);
+  mockMirrorGiftSubmission.mockReset().mockResolvedValue(undefined);
   mockJosephine.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_j" });
   mockCustomerConfirmation.mockReset().mockResolvedValue({
     firedType: "gift_recipient_confirmation",
@@ -193,8 +194,8 @@ async function expectOnePaidSubmissionInTheRedeemBatch() {
 
   const result = await redeemGiftSubmission(redeemInput(code));
 
-  expect(result).toEqual({ kind: "redeemed", submissionId: expect.any(String) });
-  const submissionId = (result as { submissionId: string }).submissionId;
+  expect(result).toEqual({ kind: "redeemed", submissionId: giftId });
+  const submissionId = giftId;
   expect(await submissionsForGift(giftId)).toEqual([
     {
       id: submissionId,
@@ -203,6 +204,7 @@ async function expectOnePaidSubmissionInTheRedeemBatch() {
       cooling_off_acknowledged_at: ACKNOWLEDGED_AT,
       recipient_user_id: "user_anna",
       is_gift: 0,
+      stripe_event_id: expect.stringMatching(/^gift-redeem:[0-9a-f-]{36}$/),
     },
   ]);
   expect(await findGiftById(giftId)).toMatchObject({
@@ -234,11 +236,12 @@ async function expectOneOfTwoParallelRedeemsToWin() {
 
   expect(mockResolveGiftState.mock.results.map((call) => call.value)).toEqual(["active", "active"]);
   expect(results.map((result) => result.kind).sort()).toEqual(["already_redeemed", "redeemed"]);
+  expect(results).toContainEqual({ kind: "redeemed", submissionId: giftId });
   expect(await submissionsForGift(giftId)).toHaveLength(1);
   await runScheduled();
   expect(mockAfterPaid).toHaveBeenCalledOnce();
-  expect(mockMirrorCreate).toHaveBeenCalledOnce();
-  expect(mockMirrorGiftRecord.mock.calls).toEqual([[giftId]]);
+  expect(mockWriteRedemption).toHaveBeenCalledOnce();
+  expect(mockMirrorGiftSubmission).not.toHaveBeenCalled();
 }
 
 const HAPPY_PATH = "marks the gift redeemed and inserts one paid submission in the same batch";
@@ -316,18 +319,23 @@ describe("redeemGiftSubmission", () => {
     const submissionId = (result as { submissionId: string }).submissionId;
     await runScheduled();
 
-    const [input, consent, options] = mockMirrorCreate.mock.calls[0]!;
-    expect(input).toMatchObject({ id: submissionId, status: "paid", paidAt: ACKNOWLEDGED_AT });
-    expect(consent).toEqual({
+    const [submission, storedGift] = mockWriteRedemption.mock.calls[0]!;
+    expect(submission).toMatchObject({
+      id: submissionId,
+      status: "paid",
+      paidAt: ACKNOWLEDGED_AT,
       consentAcknowledgedAt: ACKNOWLEDGED_AT,
       ipAddress: "203.0.113.9",
       art6AcknowledgedAt: ACKNOWLEDGED_AT,
       art9AcknowledgedAt: ACKNOWLEDGED_AT,
       coolingOffAcknowledgedAt: ACKNOWLEDGED_AT,
     });
-    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite", giftId } });
-    expect(JSON.stringify(mockMirrorCreate.mock.calls[0])).not.toContain(code);
-    expect(JSON.stringify(mockMirrorCreate.mock.calls[0])).not.toContain("marguerite@example.com");
+    expect(storedGift).toMatchObject({
+      id: giftId,
+      status: "redeemed",
+      redeemedAt: ACKNOWLEDGED_AT,
+      buyerFirstName: "Marguerite",
+    });
     expect(mockAfterPaid).toHaveBeenCalledWith({
       submissionId,
       context: expect.objectContaining({
@@ -377,17 +385,17 @@ describe("redeemGiftSubmission completion after the commit", () => {
     const { code } = await createActiveGift();
     codesInPlay.push(code);
     let finishMirror: () => void = () => {};
-    mockMirrorCreate.mockImplementationOnce(
+    mockWriteRedemption.mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
-          finishMirror = resolve;
+        new Promise<boolean>((resolve) => {
+          finishMirror = () => resolve(true);
         }),
     );
 
     const result = await redeemGiftSubmission(redeemInput(code));
 
     expect(result.kind).toBe("redeemed");
-    expect(mockMirrorCreate).toHaveBeenCalledOnce();
+    expect(mockWriteRedemption).toHaveBeenCalledOnce();
     expect(mockAfterPaid).not.toHaveBeenCalled();
     expect(mockJosephine).not.toHaveBeenCalled();
     finishMirror();
@@ -477,9 +485,9 @@ describe("redeemGiftSubmission for a gift that is already redeemed", () => {
     );
     await runScheduled();
 
-    expect(mockMirrorCreate).toHaveBeenCalledTimes(2);
-    const [input, consent, options] = mockMirrorCreate.mock.calls[1]!;
-    expect(input).toMatchObject({
+    expect(mockWriteRedemption).toHaveBeenCalledTimes(2);
+    const [submission, storedGift] = mockWriteRedemption.mock.calls[1]!;
+    expect(submission).toMatchObject({
       id: submissionId,
       email: "anna@example.com",
       status: "paid",
@@ -488,15 +496,13 @@ describe("redeemGiftSubmission for a gift that is already redeemed", () => {
       createdAt: ACKNOWLEDGED_AT,
       paidAt: ACKNOWLEDGED_AT,
       recipientUserId: "user_anna",
-    });
-    expect(consent).toEqual({
       consentAcknowledgedAt: ACKNOWLEDGED_AT,
       ipAddress: "198.51.100.4",
       art6AcknowledgedAt: ACKNOWLEDGED_AT,
       art9AcknowledgedAt: ACKNOWLEDGED_AT,
       coolingOffAcknowledgedAt: ACKNOWLEDGED_AT,
     });
-    expect(options).toEqual({ gift: { buyerFirstName: "Marguerite", giftId } });
+    expect(storedGift).toMatchObject({ id: giftId, status: "redeemed" });
     expect(mockGiftOpened).toHaveBeenCalledOnce();
     expect(mockCustomerConfirmation).toHaveBeenCalledTimes(2);
     expect(await submissionEmailsFired(submissionId)).toEqual(["gift_recipient_confirmation"]);

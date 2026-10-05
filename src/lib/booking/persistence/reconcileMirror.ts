@@ -8,8 +8,6 @@
  * mirror calls.
  */
 
-import type { GiftRecordDocument } from "@/lib/gift/giftRecordMirror";
-
 import { currentEmailFiredType } from "../emailFiredType";
 import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 
@@ -25,6 +23,7 @@ type ComparedField = (typeof COMPARED_FIELDS)[number];
 
 export type SanityMirrorSnapshot = {
   _id: string;
+  hasEmail?: boolean;
   status?: SubmissionRecord["status"];
   paidAt?: string;
   expiredAt?: string;
@@ -45,7 +44,7 @@ export type ReconcileAction =
       missingEmails: EmailFiredEntry[];
     };
 
-function normalizeOptional<T>(value: T | null | undefined): T | null {
+export function normalizeOptional<T>(value: T | null | undefined): T | null {
   return value ?? null;
 }
 
@@ -53,7 +52,7 @@ function emailFiredKey(entry: EmailFiredEntry): string {
   return `${currentEmailFiredType(entry.type)}|${entry.sentAt}`;
 }
 
-function failuresKey(failures: ReadonlyArray<Record<string, unknown>>): string {
+export function failuresKey(failures: ReadonlyArray<Record<string, unknown>>): string {
   return JSON.stringify(
     failures.map((failure) =>
       Object.entries(failure)
@@ -68,6 +67,7 @@ export function diffSubmission(
   sanity: SanityMirrorSnapshot | null,
 ): ReconcileAction {
   if (sanity === null) return { kind: "create" };
+  if (d1.giftCodeId && !sanity.hasEmail) return { kind: "create" };
 
   const patch: ReconcilePatch = {};
   for (const field of COMPARED_FIELDS) {
@@ -92,31 +92,4 @@ export function diffSubmission(
     return { kind: "skip" };
   }
   return { kind: "patch", patch, missingEmails };
-}
-
-const GIFT_RECORD_COMPARED_FIELDS = [
-  "status",
-  "buyerFirstName",
-  "createdAt",
-  "paidAt",
-  "sentAt",
-  "resendUsed",
-  "openedAt",
-  "hasNote",
-] as const satisfies ReadonlyArray<keyof GiftRecordDocument>;
-
-export type GiftRecordSnapshot = Partial<Omit<GiftRecordDocument, "_type">> & { _id: string };
-
-export function giftRecordDiffers(
-  projected: GiftRecordDocument | null,
-  sanity: GiftRecordSnapshot | null,
-): boolean {
-  if (projected === null || sanity === null) return projected !== sanity;
-  return (
-    GIFT_RECORD_COMPARED_FIELDS.some(
-      (field) => normalizeOptional(projected[field]) !== normalizeOptional(sanity[field]),
-    ) ||
-    projected.reading?._ref !== sanity.reading?._ref ||
-    projected.submission?._ref !== sanity.submission?._ref
-  );
 }

@@ -24,9 +24,6 @@ vi.mock("@/lib/stripe", () => ({
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: vi.fn().mockRejectedValue(new Error("sanity not configured")),
 }));
-vi.mock("@/lib/gift/giftRecordMirror", () => ({
-  mirrorGiftRecord: vi.fn(async () => {}),
-}));
 vi.mock("@/lib/auth/listenSession", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/lib/auth/listenSession");
   return { ...actual, writeAudit: vi.fn() };

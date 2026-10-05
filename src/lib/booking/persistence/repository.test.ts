@@ -792,6 +792,7 @@ describe("repository against in-memory SQLite", () => {
 
   describe("gift submissions", () => {
     const REDEEMED_AT = "2026-10-04T09:30:00.000Z";
+    const REDEEM_EVENT = "gift-redeem:nonce-1";
 
     beforeEach(() => {
       vi.stubEnv("GIFT_CODE_SECRET", "test-gift-code-secret");
@@ -807,6 +808,7 @@ describe("repository against in-memory SQLite", () => {
         coolingOffAcknowledgedAt: REDEEMED_AT,
         recipientUserId: "user_anna",
         giftCodeId,
+        giftRedeemEventId: REDEEM_EVENT,
       };
     }
 
@@ -831,7 +833,7 @@ describe("repository against in-memory SQLite", () => {
 
       await dbBatch([buildCreateSubmissionStatement(giftInput(giftId))]);
 
-      expect(await hasGiftSubmission("sub_gift", giftId)).toBe(false);
+      expect(await hasGiftSubmission("sub_gift", giftId, REDEEM_EVENT)).toBe(false);
     });
 
     it("inserts the paid gift submission in the same batch that redeems the gift", async () => {
@@ -847,14 +849,40 @@ describe("repository against in-memory SQLite", () => {
         buildCreateSubmissionStatement(giftInput(giftId)),
       ]);
 
-      expect(await hasGiftSubmission("sub_gift", giftId)).toBe(true);
+      expect(await hasGiftSubmission("sub_gift", giftId, REDEEM_EVENT)).toBe(true);
       expect(await findSubmissionById("sub_gift")).toMatchObject({
         status: "paid",
         paidAt: REDEEMED_AT,
         recipientUserId: "user_anna",
         giftCodeId: giftId,
       });
-      expect(await hasGiftSubmission("sub_gift", "another-gift")).toBe(false);
+      expect(await hasGiftSubmission("sub_gift", "another-gift", REDEEM_EVENT)).toBe(false);
+    });
+
+    it("keeps the first insert when a second redeem of the same gift inserts the same id", async () => {
+      const giftId = await activeGift();
+      const redeem = buildRedeemGiftStatement({
+        giftId,
+        readingSlug: "birth-chart",
+        submissionId: giftId,
+        redeemedAt: REDEEMED_AT,
+      });
+      await dbBatch([redeem, buildCreateSubmissionStatement(giftInput(giftId, giftId))]);
+
+      await expect(
+        dbBatch([
+          redeem,
+          buildCreateSubmissionStatement({
+            ...giftInput(giftId, giftId),
+            email: "second@example.com",
+            giftRedeemEventId: "gift-redeem:nonce-2",
+          }),
+        ]),
+      ).resolves.not.toThrow();
+
+      expect(await hasGiftSubmission(giftId, giftId, REDEEM_EVENT)).toBe(true);
+      expect(await hasGiftSubmission(giftId, giftId, "gift-redeem:nonce-2")).toBe(false);
+      expect((await findSubmissionById(giftId))?.email).toBe(BASE_INPUT.email);
     });
 
     it("lists a paid gift submission with its recipient user for reading delivery", async () => {

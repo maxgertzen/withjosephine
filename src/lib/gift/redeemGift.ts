@@ -15,20 +15,16 @@ import {
   findGiftSubmissionInput,
   findSubmissionById,
   hasGiftSubmission,
-  mirrorNewSubmission,
   recordFromCreateInput,
   SUBMISSION_STATUS,
 } from "@/lib/booking/submissions";
 
 import { auditGiftRedeemed, auditInvalidGiftLink } from "./giftAudit";
-import {
-  buildRedeemGiftStatement,
-  findGiftByCode,
-  findGiftById,
-  resolveGiftState,
-  scheduleGiftRecordMirror,
-} from "./gifts";
+import { buildRedeemGiftStatement, findGiftByCode, findGiftById, resolveGiftState } from "./gifts";
+import { writeGiftRedemption } from "./giftSubmissionMirror";
 import type { GiftRecord } from "./types";
+
+const GIFT_REDEEM_EVENT_PREFIX = "gift-redeem:";
 
 type NewGiftSubmission = Omit<CreateSubmissionParams, "id" | "status">;
 
@@ -55,19 +51,48 @@ async function findRecipientUserId(email: string, firstName: string, giftId: str
   }
 }
 
+type MirroredRedemption = { storedGift: GiftRecord | null; written: boolean };
+
+async function mirrorRedemption(
+  submission: CreateSubmissionParams,
+  giftId: string,
+): Promise<MirroredRedemption> {
+  const storedGift = await findGiftById(giftId);
+  const written = storedGift ? await writeGiftRedemption(submission, storedGift) : false;
+  return { storedGift, written };
+}
+
+function withGiftConsent(
+  redeemed: CreateSubmissionInput,
+  ipAddress: string | null,
+): CreateSubmissionParams {
+  const acknowledgedAt = redeemed.coolingOffAcknowledgedAt ?? redeemed.createdAt;
+  return {
+    ...redeemed,
+    consentAcknowledgedAt: acknowledgedAt,
+    art6AcknowledgedAt: acknowledgedAt,
+    art9AcknowledgedAt: acknowledgedAt,
+    coolingOffAcknowledgedAt: acknowledgedAt,
+    ipAddress,
+  };
+}
+
+export async function remirrorRedeemedGift(
+  redeemed: CreateSubmissionInput,
+  giftId: string,
+  ipAddress: string | null,
+): Promise<boolean> {
+  const { written } = await mirrorRedemption(withGiftConsent(redeemed, ipAddress), giftId);
+  return written;
+}
+
 async function completeGiftRedemption(
   submission: CreateSubmissionParams,
   gift: GiftRecord,
 ): Promise<void> {
   try {
-    scheduleGiftRecordMirror(gift.id);
-    await mirrorNewSubmission(submission, {
-      gift: { buyerFirstName: gift.buyerFirstName, giftId: gift.id },
-    });
-    const [storedSubmission, storedGift] = await Promise.all([
-      findSubmissionById(submission.id),
-      findGiftById(gift.id),
-    ]);
+    const { storedGift } = await mirrorRedemption(submission, gift.id);
+    const storedSubmission = await findSubmissionById(submission.id);
     await afterSubmissionPaid({
       submissionId: submission.id,
       context: buildSubmissionContext(recordFromCreateInput(submission)),
@@ -101,20 +126,7 @@ async function resumeRedemption(
     : null;
   if (!redeemed || !isSameRedeemer(redeemed, retry)) return { kind: "already_redeemed" };
 
-  const acknowledgedAt = redeemed.coolingOffAcknowledgedAt ?? redeemed.createdAt;
-  runMirror(
-    completeGiftRedemption(
-      {
-        ...redeemed,
-        consentAcknowledgedAt: acknowledgedAt,
-        art6AcknowledgedAt: acknowledgedAt,
-        art9AcknowledgedAt: acknowledgedAt,
-        coolingOffAcknowledgedAt: acknowledgedAt,
-        ipAddress: retry.ipAddress,
-      },
-      gift,
-    ),
-  );
+  runMirror(completeGiftRedemption(withGiftConsent(redeemed, retry.ipAddress), gift));
   return { kind: "redeemed", submissionId: redeemed.id };
 }
 
@@ -140,7 +152,8 @@ export async function redeemGiftSubmission({
     extractFirstName(newSubmission.responses),
     gift.id,
   );
-  const submissionId = crypto.randomUUID();
+  const submissionId = gift.id;
+  const giftRedeemEventId = `${GIFT_REDEEM_EVENT_PREFIX}${crypto.randomUUID()}`;
   const redeemedAt = newSubmission.createdAt;
   const submission: CreateSubmissionParams = {
     ...newSubmission,
@@ -149,6 +162,7 @@ export async function redeemGiftSubmission({
     paidAt: redeemedAt,
     recipientUserId,
     giftCodeId: gift.id,
+    giftRedeemEventId,
   };
   await dbBatch([
     buildRedeemGiftStatement({
@@ -159,7 +173,9 @@ export async function redeemGiftSubmission({
     }),
     buildCreateSubmissionStatement(submission),
   ]);
-  if (!(await hasGiftSubmission(submissionId, gift.id))) return { kind: "already_redeemed" };
+  if (!(await hasGiftSubmission(submissionId, gift.id, giftRedeemEventId))) {
+    return { kind: "already_redeemed" };
+  }
 
   runMirror(completeGiftRedemption(submission, gift));
   await auditGiftRedeemed(request, { submissionId, userId: recipientUserId }).catch((error) => {

@@ -9,7 +9,6 @@ const mockCommit = vi.fn();
 const mockPatch = vi.fn();
 const mockCreateIfNotExists = vi.fn();
 const mockFetch = vi.fn();
-
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: vi.fn(() => ({
     patch: mockPatch,
@@ -56,22 +55,18 @@ describe("mirrorSubmissionCreate", () => {
     giftCodeId: "gift_1",
   };
 
-  it("writes paidAt, the recipient user, the buyer's first name and a weak gift record reference for a gift", async () => {
+  it("writes paidAt and the recipient user in one create, never the gift code id", async () => {
     const { mirrorSubmissionCreate } = await import("./sanityMirror");
-    await mirrorSubmissionCreate(GIFT_SUBMISSION, CONSENT, {
-      gift: { buyerFirstName: "Dana", giftId: "gift_1" },
-    });
+    await mirrorSubmissionCreate(GIFT_SUBMISSION, CONSENT);
 
     const [doc] = mockCreateIfNotExists.mock.calls[0]!;
     expect(doc).toMatchObject({
       _id: "sub_gift",
+      _type: "submission",
       status: "paid",
       paidAt: PAID_AT,
       recipientUserId: "user_anna",
-    });
-    expect(doc.gift).toEqual({
-      buyerFirstName: "Dana",
-      giftRecord: { _type: "reference", _ref: "gift_1", _weak: true },
+      consentSnapshot: expect.objectContaining({ ipAddress: "203.0.113.9" }),
     });
     expect(doc).not.toHaveProperty("giftCodeId");
   });
