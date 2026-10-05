@@ -74,7 +74,7 @@ describe("GiftFold", () => {
     const action = screen.getByRole("button", { name: GIFT_DEFAULTS.buyLinkLabel });
 
     await user.click(action);
-    expect(screen.getByRole("dialog", { name: GIFT_SHEET_NAME })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: GIFT_SHEET_NAME })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: GIFT_DEFAULTS.sheetCancelLabel }));
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -87,7 +87,9 @@ describe("GiftFold", () => {
     const action = screen.getByRole("button", { name: GIFT_DEFAULTS.redeemLinkLabel });
 
     await user.click(action);
-    expect(screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading }),
+    ).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -101,13 +103,15 @@ describe("GiftFold", () => {
 
     await user.click(action);
     await user.type(
-      screen.getByLabelText(GIFT_DEFAULTS.codeFieldLabel, { exact: true }),
+      await screen.findByLabelText(GIFT_DEFAULTS.codeFieldLabel, { exact: true }),
       "WRONGCODE",
     );
     await user.keyboard("{Escape}");
     await user.click(action);
 
-    expect(screen.getByLabelText(GIFT_DEFAULTS.codeFieldLabel, { exact: true })).toHaveValue("");
+    expect(await screen.findByLabelText(GIFT_DEFAULTS.codeFieldLabel, { exact: true })).toHaveValue(
+      "",
+    );
   });
 
   it("shows Sanity copy in the row and the open lines", async () => {
@@ -129,10 +133,12 @@ describe("GiftFold", () => {
     expect(screen.getByRole("button", { name: "Use it" })).toBeInTheDocument();
   });
 
-  it("opens with the requested sheet showing", () => {
+  it("opens with the requested sheet showing", async () => {
     renderFold({ initialSheet: "redeem" });
 
     expect(row()).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading }),
+    ).toBeInTheDocument();
   });
 });

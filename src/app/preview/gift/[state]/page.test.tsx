@@ -62,7 +62,10 @@ const EXPECTED_TEXT: Record<GiftPreviewState, string> = {
 };
 
 beforeEach(() => {
-  vi.mocked(fetchBookingForm).mockResolvedValue({ nonRefundableNotice: "Non-refundable.", sections: [] });
+  vi.mocked(fetchBookingForm).mockResolvedValue({
+    nonRefundableNotice: "Non-refundable.",
+    sections: [],
+  });
   vi.mocked(fetchReadings).mockResolvedValue([]);
   vi.mocked(fetchReadingNotes).mockResolvedValue([]);
   vi.mocked(fetchGiftSettings).mockResolvedValue(null);
@@ -81,7 +84,7 @@ describe("/preview/gift/[state]", () => {
   it.each(GIFT_PREVIEW_STATES)("renders $state", async ({ state }) => {
     await renderPreview(state);
 
-    expect(screen.getByText(EXPECTED_TEXT[state])).toBeTruthy();
+    expect(await screen.findByText(EXPECTED_TEXT[state])).toBeTruthy();
   });
 
   it("buy-sheet opens the gift sheet for the Birth Chart reading", async () => {
@@ -90,7 +93,7 @@ describe("/preview/gift/[state]", () => {
     await renderPreview("buy-sheet");
 
     expect(
-      screen.getByRole("dialog", { name: `${birthChart?.name} · ${birthChart?.price}` }),
+      await screen.findByRole("dialog", { name: `${birthChart?.name} · ${birthChart?.price}` }),
     ).toBeTruthy();
   });
 
@@ -109,7 +112,9 @@ describe("/preview/gift/[state]", () => {
 
       expect(screen.getByTestId("gift-fold")).toBeTruthy();
       expect(
-        screen.getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel }).getAttribute("aria-expanded"),
+        screen
+          .getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel })
+          .getAttribute("aria-expanded"),
       ).toBe("true");
       expect(screen.getByText(GIFT_DEFAULTS.buyLead)).toBeTruthy();
     },
@@ -126,7 +131,7 @@ describe("/preview/gift/[state]", () => {
     const user = userEvent.setup();
     await renderPreview("buy-sheet");
 
-    const sheet = screen.getByRole("dialog");
+    const sheet = await screen.findByRole("dialog");
     await user.type(within(sheet).getByLabelText(new RegExp(GIFT_DEFAULTS.buyerNameLabel)), "Dana");
     await user.click(within(sheet).getByRole("checkbox"));
     await user.click(within(sheet).getByRole("button", { name: PAYMENT_BUTTON_TEXT_FALLBACK }));
@@ -153,7 +158,7 @@ describe("/preview/gift/[state]", () => {
     const user = userEvent.setup();
     await renderPreview("redeem-sheet");
 
-    const sheet = screen.getByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading });
+    const sheet = await screen.findByRole("dialog", { name: GIFT_DEFAULTS.redeemHeading });
     await user.type(within(sheet).getByLabelText(GIFT_DEFAULTS.codeFieldLabel), "K7M2 QX9P H4TR");
     await user.click(within(sheet).getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel }));
 

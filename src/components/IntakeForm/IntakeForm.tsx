@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHeaderBack } from "@/components/BookingFlowHeader/headerBackContext";
 import { useGiftCodeField } from "@/components/GiftCodeField";
 import { useGiftMode } from "@/components/GiftMode/GiftModeContext";
-import type { GiftContent } from "@/data/defaults";
 import { track } from "@/lib/analytics";
 import {
   emptyConsentSnapshot,
@@ -25,6 +24,7 @@ import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
 import type { GiftFinalPageCopy } from "./GiftFinalPageLines";
 import { IntakeFormBody } from "./IntakeFormBody";
+import type { IntakeGiftCodeCopy } from "./intakeGiftCodeCopy";
 import type { LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import type { RenderContext } from "./renderField";
 import { SavedIndicator } from "./SavedIndicator";
@@ -39,7 +39,7 @@ export type IntakeGift = {
 };
 
 export type IntakeGiftCodeField = {
-  copy: GiftContent;
+  copy: IntakeGiftCodeCopy;
 };
 
 export type IntakeFormProps = {

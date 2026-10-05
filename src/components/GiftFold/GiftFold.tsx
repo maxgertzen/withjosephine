@@ -1,15 +1,33 @@
 "use client";
 
 import { Gift } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { AnimatedCollapse } from "@/components/AnimatedCollapse";
-import { GiftSheet, type GiftSheetProps } from "@/components/GiftSheet";
+import type { GiftSheetProps } from "@/components/GiftSheet";
 import { DisclosureButton } from "@/components/ReadingBlock/DisclosureButton";
-import { RedeemSheet, type RedeemSheetProps } from "@/components/RedeemSheet";
+import type { RedeemSheetProps } from "@/components/RedeemSheet";
 import { goldLinkClasses } from "@/lib/textStyles";
 
 import type { GiftFoldCopy } from "./giftFoldCopy";
+
+const loadGiftSheet = () => import("@/components/GiftSheet").then((module) => module.GiftSheet);
+const loadRedeemSheet = () =>
+  import("@/components/RedeemSheet").then((module) => module.RedeemSheet);
+
+function reloadForNewBuild(): Promise<never> {
+  window.location.reload();
+  return new Promise(() => {});
+}
+
+const GiftSheet = dynamic(() => loadGiftSheet().catch(reloadForNewBuild));
+const RedeemSheet = dynamic(() => loadRedeemSheet().catch(reloadForNewBuild));
+
+function preloadSheets() {
+  void loadGiftSheet().catch(() => undefined);
+  void loadRedeemSheet().catch(() => undefined);
+}
 
 export type GiftFoldSheet = "gift" | "redeem";
 
@@ -52,9 +70,14 @@ export function GiftFold({
   const [open, setOpen] = useState(Boolean(initialSheet));
   const [toggled, setToggled] = useState(false);
   const [sheet, setSheet] = useState<GiftFoldSheet | null>(initialSheet ?? null);
+  const [giftSheetLoaded, setGiftSheetLoaded] = useState(sheet === "gift");
   const panelId = `${readingSlug}-gift-fold`;
   const rowId = `${readingSlug}-gift-fold-row`;
   const closeSheet = () => setSheet(null);
+  const openGiftSheet = () => {
+    setGiftSheetLoaded(true);
+    setSheet("gift");
+  };
 
   return (
     <section
@@ -66,6 +89,7 @@ export function GiftFold({
         controls={panelId}
         open={open}
         onToggle={() => {
+          preloadSheets();
           setToggled(true);
           setOpen((previous) => !previous);
         }}
@@ -83,11 +107,7 @@ export function GiftFold({
       </DisclosureButton>
       <AnimatedCollapse id={panelId} open={open} labelledBy={rowId} animated={toggled}>
         <div className="divide-y divide-j-border-subtle border-t border-j-border-subtle bg-j-cream">
-          <GiftFoldAction
-            lead={copy.buyLead}
-            label={copy.buyLinkLabel}
-            onClick={() => setSheet("gift")}
-          />
+          <GiftFoldAction lead={copy.buyLead} label={copy.buyLinkLabel} onClick={openGiftSheet} />
           <GiftFoldAction
             lead={copy.redeemLead}
             label={copy.redeemLinkLabel}
@@ -95,7 +115,9 @@ export function GiftFold({
           />
         </div>
       </AnimatedCollapse>
-      <GiftSheet {...giftSheet} open={sheet === "gift"} onClose={closeSheet} />
+      {giftSheetLoaded ? (
+        <GiftSheet {...giftSheet} open={sheet === "gift"} onClose={closeSheet} />
+      ) : null}
       {sheet === "redeem" ? <RedeemSheet {...redeemSheet} open onClose={closeSheet} /> : null}
     </section>
   );

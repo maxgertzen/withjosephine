@@ -2,21 +2,11 @@
 
 import { useState } from "react";
 
-import type { GiftContent } from "@/data/defaults";
 import { applyTokens } from "@/lib/emails/applyTokens";
 
 import type { GiftCheckRequest, GiftCheckResponse } from "./giftCheck";
 import { normalizeGiftCode } from "./giftCodeFormat";
-
-export type GiftCodeCheckMessages = Pick<
-  GiftContent,
-  | "redeemSheetEmpty"
-  | "codeNotFound"
-  | "codeOtherReadingTemplate"
-  | "codeTooManyTries"
-  | "sheetSubmitFailed"
-  | "sheetNetworkFailed"
->;
+import type { GiftCodeCheckMessages } from "./giftCopyKeys";
 
 export type GiftCodeCheckOutcome =
   | { kind: "valid"; path: string }

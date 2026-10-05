@@ -5,10 +5,11 @@ import { type FormEvent, useState } from "react";
 import { Button } from "@/components/Button";
 import { GiftCodeField, useGiftCodeField } from "@/components/GiftCodeField";
 import { Sheet, sheetSubmitClasses, sheetTitleClasses } from "@/components/Sheet";
-import type { GiftContent } from "@/data/defaults";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import type { GiftCodeCheckOutcome } from "@/lib/gift/useGiftCodeCheck";
 import { eyebrowClasses, quietButtonClasses } from "@/lib/textStyles";
+
+import type { RedeemSheetContent } from "./redeemSheetCopy";
 
 const TITLE_ID = "redeem-sheet-title";
 
@@ -16,7 +17,7 @@ export type RedeemSheetProps = {
   open: boolean;
   onClose: () => void;
   readingSlug: string;
-  content: GiftContent;
+  content: RedeemSheetContent;
   endpoint: string | null;
 };
 

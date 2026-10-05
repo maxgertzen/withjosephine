@@ -2,11 +2,8 @@
 
 import { useCallback, useState } from "react";
 
-import {
-  type GiftCodeCheckMessages,
-  type GiftCodeCheckOutcome,
-  useGiftCodeCheck,
-} from "@/lib/gift/useGiftCodeCheck";
+import type { GiftCodeCheckMessages } from "@/lib/gift/giftCopyKeys";
+import { type GiftCodeCheckOutcome, useGiftCodeCheck } from "@/lib/gift/useGiftCodeCheck";
 import { GIFT_CHECK_API_ROUTE } from "@/lib/http/routes";
 
 export type GiftCodeFieldState = {

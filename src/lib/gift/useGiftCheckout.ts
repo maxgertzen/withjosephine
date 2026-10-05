@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-import type { GiftContent } from "@/data/defaults";
 import { identifySubmission, track } from "@/lib/analytics";
 import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { CONSENT_ACK_MESSAGE } from "@/lib/compliance/intakeConsent";
 import { useTurnstileChallenge } from "@/lib/intake/useTurnstileChallenge";
 
 import { giftClientReferenceId } from "./clientReference";
+import type { GiftCheckoutMessages } from "./giftCopyKeys";
 import {
   type GiftPurchaseRequestBody,
   type GiftSheetFieldErrors,
@@ -24,11 +24,6 @@ export type GiftCheckoutValues = {
 
 export type GiftCheckoutErrorField = "buyerFirstName" | "coolingOff" | "form";
 export type GiftCheckoutErrors = Partial<Record<GiftCheckoutErrorField, string>>;
-
-export type GiftCheckoutMessages = Pick<
-  GiftContent,
-  "buyerNameRequired" | "sheetSubmitFailed" | "sheetNetworkFailed"
->;
 
 type UseGiftCheckoutArgs = {
   readingSlug: string;

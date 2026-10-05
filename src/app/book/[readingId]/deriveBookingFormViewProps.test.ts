@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
 import {
   ABOUT_DEFAULTS,
   GIFT_DEFAULTS,
@@ -10,6 +11,7 @@ import {
 } from "@/data/defaults";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
+import { pick } from "@/lib/pick";
 import type {
   SanityBookingForm,
   SanityLandingPage,
@@ -344,7 +346,9 @@ describe("deriveBookingFormViewProps gift row", () => {
 
   it("uses the defaults when Gift Settings is missing", () => {
     expect(derive()?.giftFold?.copy.giftRowLabel).toBe(GIFT_DEFAULTS.giftRowLabel);
-    expect(derive()?.giftFold?.giftSheet.content).toEqual(GIFT_DEFAULTS);
+    expect(derive()?.giftFold?.giftSheet.content).toEqual(
+      pick(GIFT_DEFAULTS, GIFT_SHEET_CONTENT_KEYS),
+    );
   });
 
   it("gives the gift sheet the payment button text and the loading text of the booking form", () => {

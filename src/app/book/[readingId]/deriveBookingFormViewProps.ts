@@ -1,5 +1,8 @@
 import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
+import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
+import { INTAKE_GIFT_CODE_COPY_KEYS } from "@/components/IntakeForm/intakeGiftCodeCopy";
 import type { ReadingBlockProps } from "@/components/ReadingBlock";
+import { REDEEM_SHEET_CONTENT_KEYS } from "@/components/RedeemSheet/redeemSheetCopy";
 import {
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
@@ -193,19 +196,23 @@ export function deriveBookingFormViewProps(
             detail: formTestimonial.detail,
           }
         : undefined,
-      giftCodeField: { copy: gift },
+      giftCodeField: { copy: pick(gift, INTAKE_GIFT_CODE_COPY_KEYS) },
     },
     giftFold: {
       readingSlug: reading.slug,
       copy: pick(gift, GIFT_FOLD_COPY_KEYS),
       giftSheet: {
         reading: { slug: reading.slug, name: reading.name, price: reading.priceLabel },
-        content: gift,
+        content: pick(gift, GIFT_SHEET_CONTENT_KEYS),
         paymentButtonText: submitLabel,
         loadingStateCopy,
         endpoint: GIFT_PURCHASE_API_ROUTE,
       },
-      redeemSheet: { readingSlug: reading.slug, content: gift, endpoint: GIFT_CHECK_API_ROUTE },
+      redeemSheet: {
+        readingSlug: reading.slug,
+        content: pick(gift, REDEEM_SHEET_CONTENT_KEYS),
+        endpoint: GIFT_CHECK_API_ROUTE,
+      },
     },
   };
 }
