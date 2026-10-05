@@ -3,13 +3,14 @@ import { defineField } from "sanity";
 import { MAX_READING_FACTS } from "../../src/data/defaults";
 import { FactsPerRowSlider } from "../components/FactsPerRowSlider";
 
-export function readingFactsField(options: { description: string; fieldset?: string }) {
+type FieldPlacement = { description: string; fieldset?: string; group?: string };
+
+export function readingFactsField(placement: FieldPlacement) {
   return defineField({
     name: "facts",
     title: "Facts Row",
     type: "array",
-    fieldset: options.fieldset,
-    description: options.description,
+    ...placement,
     of: [
       {
         type: "object",
@@ -25,13 +26,12 @@ export function readingFactsField(options: { description: string; fieldset?: str
   });
 }
 
-export function hideFactsField(options: { description: string; fieldset?: string }) {
+export function hideFactsField(placement: FieldPlacement) {
   return defineField({
     name: "hideFacts",
     title: "Hide the Facts Row",
     type: "boolean",
-    fieldset: options.fieldset,
-    description: options.description,
+    ...placement,
     initialValue: false,
   });
 }

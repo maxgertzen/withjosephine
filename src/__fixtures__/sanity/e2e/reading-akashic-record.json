@@ -1,17 +1,56 @@
 {
   "_id": "reading-akashic-record",
   "briefDescription": "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
-  "expandedDetails": [
-    "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",
-    "You'll comeplete a question menu when booking so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
-    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
-  ],
   "includes": [
     "Three questions explored in depth",
     "Akashic Record reading with card pulls",
     "Personalised questions chosen by you",
     "Detailed voice note recording",
     "Supporting PDF"
+  ],
+  "howItWorks": [
+    {
+      "_type": "block",
+      "_key": "fallback-0",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "fallback-0-0",
+          "text": "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "_key": "fallback-1",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "fallback-1-0",
+          "text": "I begin your reading within the next two days and send you a short note when I do.",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "_key": "fallback-2",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "fallback-2-0",
+          "text": "Within seven days you receive a voice note and a PDF, sent to the email you gave me.",
+          "marks": []
+        }
+      ]
+    }
   ],
   "name": "The Akashic Record Reading",
   "price": 7900,

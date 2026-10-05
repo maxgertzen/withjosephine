@@ -76,7 +76,6 @@ function reading(overrides: Partial<SanityReading> = {}): SanityReading {
     priceDisplay: "$179",
     valueProposition: "...",
     briefDescription: "...",
-    expandedDetails: [],
     includes: [],
     requiresBirthChart: true,
     requiresAkashic: true,

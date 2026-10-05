@@ -1,9 +1,11 @@
-import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { IncludedList } from "@/components/IncludedList";
+import { PortableTextContent } from "@/components/PortableTextContent";
 import type { ReadingFact, ReadingFactsLayout } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
+import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 import { eyebrowClasses, smallCapsClasses } from "@/lib/textStyles";
 
 import { FactsRow } from "./FactsRow";
@@ -18,12 +20,12 @@ export type ReadingBlockProps = {
   foldRowLabel: string;
   eyebrow: string;
   lead: string;
-  body?: string;
+  description: string;
   facts: ReadingFact[];
   factsLayout: ReadingFactsLayout;
   reader: { name: string; line: string; imageUrl?: string };
   included: { title: string; items: string[] };
-  howItWorks: { title: string; paragraphs: string[] };
+  howItWorks: { title: string; content: SanityPortableTextBlock[] };
   questions: { title: string; items: MappedFaqItem[] };
   otherReadings: { title: string; readings: OtherReading[] };
   notes?: { title: string; items: { title: string; slug: string; href: string }[] };
@@ -32,13 +34,13 @@ export type ReadingBlockProps = {
 const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3";
 
 function ReadingContent(props: ReadingBlockProps) {
-  const { slug, eyebrow, lead, body, facts, factsLayout, reader, included, howItWorks, questions, otherReadings, notes } =
+  const { slug, eyebrow, lead, description, facts, factsLayout, reader, included, howItWorks, questions, otherReadings, notes } =
     props;
   return (
     <>
       <p className={`${eyebrowClasses} mb-3`}>{eyebrow}</p>
       <p className="font-display italic text-[1.35rem] leading-[1.4] text-j-text mb-3">{lead}</p>
-      {body ? <p className="font-body text-base leading-[1.7] text-j-text mb-2">{body}</p> : null}
+      {description ? <p className="font-body text-base leading-[1.7] text-j-text mb-2">{description}</p> : null}
 
       <FactsRow facts={facts} layout={factsLayout} />
 
@@ -64,23 +66,12 @@ function ReadingContent(props: ReadingBlockProps) {
       <div className="mt-6 flex flex-col gap-4">
         {included.items.length > 0 ? (
           <ReadingAccordion id={`${slug}-included`} title={included.title}>
-            <ul className="m-0 mb-3 flex list-none flex-col gap-3 p-0">
-              {included.items.map((item, index) => (
-                <li key={index} className="flex gap-3 font-body text-base leading-[1.6] text-j-text-muted">
-                  <Check aria-hidden="true" className="mt-[0.3rem] size-4 shrink-0 text-j-ornament" strokeWidth={2} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <IncludedList items={included.items} size="page" className="mb-3" />
           </ReadingAccordion>
         ) : null}
-        {howItWorks.paragraphs.length > 0 ? (
+        {howItWorks.content.length > 0 ? (
           <ReadingAccordion id={`${slug}-how`} title={howItWorks.title}>
-            {howItWorks.paragraphs.map((paragraph, index) => (
-              <p key={index} className={ANSWER_CLASS}>
-                {paragraph}
-              </p>
-            ))}
+            <PortableTextContent value={howItWorks.content} paragraphClassName={ANSWER_CLASS} />
           </ReadingAccordion>
         ) : null}
         {questions.items.length > 0 ? (

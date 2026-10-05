@@ -14,7 +14,7 @@ import {
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
-import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
+import { hasText, paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { giftContent } from "@/lib/gift/giftContent";
 import {
@@ -34,6 +34,7 @@ import type {
   SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
+  SanityPortableTextBlock,
   SanityReading,
 } from "@/lib/sanity/types";
 
@@ -72,6 +73,10 @@ function pageFacts(
   return shared.facts.slice(0, MAX_READING_FACTS);
 }
 
+function blocksWithText(blocks: SanityPortableTextBlock[] | null | undefined): SanityPortableTextBlock[] {
+  return blocks && hasText(blocks) ? blocks : [];
+}
+
 function resolveReading(readingId: string, sanityReading: SanityReading | null) {
   if (sanityReading) {
     return {
@@ -81,8 +86,9 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
       subtitle: sanityReading.subtitle,
       priceLabel: sanityReading.priceDisplay,
       valueProposition: sanityReading.valueProposition,
-      expandedDetails: sanityReading.expandedDetails ?? [],
-      includes: sanityReading.includes ?? [],
+      description: sanityReading.briefDescription,
+      includes: sanityReading.includes,
+      howItWorks: blocksWithText(sanityReading.howItWorks),
     };
   }
   const fallback = getReadingById(readingId);
@@ -94,8 +100,9 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
     subtitle: fallback.subtitle,
     priceLabel: fallback.price,
     valueProposition: fallback.valueProposition,
-    expandedDetails: fallback.expandedDetails,
+    description: fallback.briefDescription,
     includes: fallback.includes,
+    howItWorks: paragraphBlocks(fallback.howItWorks),
   };
 }
 
@@ -111,7 +118,6 @@ export function deriveBookingFormViewProps(
     ...READING_PAGE_DEFAULTS,
     ...pickDefined(input.bookingForm.readingPageContent ?? {}),
   };
-  const [body, ...howItWorks] = reading.expandedDetails;
   const minutes = input.sanityReading?.estimatedMinutes;
   const formTestimonial = input.sanityReading?.formTestimonial;
   const pageIndicatorTagline = [
@@ -126,7 +132,7 @@ export function deriveBookingFormViewProps(
     foldRowLabel: applyTokens(content.foldRowLabel, { reading: reading.subtitle || reading.name }),
     eyebrow: content.eyebrow,
     lead: reading.valueProposition,
-    body,
+    description: reading.description,
     facts: pageFacts(input.sanityReading, content),
     factsLayout: content,
     reader: {
@@ -137,7 +143,7 @@ export function deriveBookingFormViewProps(
         : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
     },
     included: { title: content.includedTitle, items: reading.includes },
-    howItWorks: { title: content.howItWorksTitle, paragraphs: howItWorks },
+    howItWorks: { title: content.howItWorksTitle, content: reading.howItWorks },
     questions: {
       title: content.questionsTitle,
       items: mapFaqItems(

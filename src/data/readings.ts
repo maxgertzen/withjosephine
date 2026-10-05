@@ -6,8 +6,8 @@ export type Reading = {
   price: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
   includes: string[];
+  howItWorks: string[];
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
@@ -21,28 +21,32 @@ export type Testimonial = {
   detail: string;
 };
 
+const HOW_IT_WORKS_AFTER_FORM = [
+  "I begin your reading within the next two days and send you a short note when I do.",
+  "Within seven days you receive a voice note and a PDF, sent to the email you gave me.",
+];
+
 export const READINGS: Reading[] = [
   {
     id: "soul-blueprint",
     tag: "Signature",
     name: "Soul Blueprint",
     subtitle: "Soul Blueprint Reading",
-    price: "$179",
+    price: "$129",
     valueProposition: "The most complete picture of your soul I can give you",
     briefDescription:
-      "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
-    expandedDetails: [
-      "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
-      "I'll send you a personalised question menu before your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
-      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-    ],
+      "This is the reading for when you want the whole picture of who you are and what you’re here to do. You choose the three questions that matter most to you right now, and I answer each one through your Akashic Records, your birth chart and the Thoth tarot. It’s my longest and most detailed reading.",
     includes: [
-      "In-depth birth chart analysis",
-      "Akashic Record reading with card pulls",
-      "Your purpose, past lives & ancestral patterns",
-      "Personalised question menu sent in advance",
-      "Detailed voice note recording",
-      "Supporting PDF - entirely bespoke",
+      "Your birth chart, and how its big themes connect to your questions",
+      "Your Akashic Records, read for three questions you choose",
+      "A card for each question, mostly from the Thoth tarot",
+      "Your soul’s purpose, past lives and ancestral patterns, where they come through",
+      "Big transits, when they bear on what you’ve asked",
+      "Something practical to take away from each question",
+    ],
+    howItWorks: [
+      "You fill in the form below with your birth details, your full name, a recent photo and the three questions you most want answered, then pay.",
+      ...HOW_IT_WORKS_AFTER_FORM,
     ],
     requiresBirthChart: true,
     requiresAkashic: true,
@@ -54,21 +58,20 @@ export const READINGS: Reading[] = [
     tag: "Astrology",
     name: "Birth Chart",
     subtitle: "Birth Chart Reading",
-    price: "$99",
-    valueProposition: "Understand yourself in a way that makes sense of your life",
+    price: "$89",
+    valueProposition: "Your birth chart already explains the things you've never been able to explain about yourself.",
     briefDescription:
-      "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
-    expandedDetails: [
-      "Astrology at this level isn't about your sun sign. It's about the specific energies, timing and patterns that shape your experience.",
-      "We'll look at your natal chart and the current transits affecting you, so you understand both who you are and what's unfolding for you now.",
-      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-    ],
+      "Your birth chart is a map of the sky at the exact moment and place you were born, and it says a lot about why you are the way you are. I’ll take you through the big themes in plain language, then look at your transits, the planets moving through your chart right now, and what they’re asking of you. If you already know some astrology, tell me when you book and I’ll go deeper.",
     includes: [
-      "Full natal chart analysis",
-      "Your gifts, wounds and soul patterns",
-      "Current transits and what they mean for you",
-      "Detailed voice note recording",
-      "Supporting PDF - entirely bespoke",
+      "Who you are at your core, what you need to feel safe, and how you love",
+      "Your natural gifts and where they show up",
+      "The lessons you keep running into and the wounds you’re here to heal",
+      "The direction your soul is growing in",
+      "The big transits happening for you now, and how they’re likely to feel",
+    ],
+    howItWorks: [
+      "You fill in the form below with your date, time and place of birth, then pay.",
+      ...HOW_IT_WORKS_AFTER_FORM,
     ],
     requiresBirthChart: true,
     requiresAkashic: false,
@@ -79,22 +82,21 @@ export const READINGS: Reading[] = [
     id: "akashic-record",
     tag: "Soul Records",
     name: "Akashic Record",
-    subtitle: "Akashic Record Reading",
-    price: "$79",
-    valueProposition: "Direct answers from your soul's infinite records",
+    subtitle: "Akashic Records Reading",
+    price: "$89",
+    valueProposition: "Direct answers from your soul's records",
     briefDescription:
-      "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
-    expandedDetails: [
-      "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",
-      "I'll send you a question menu so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
-      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-    ],
+      "The Akashic Records are often described as a library of everything your soul has experienced, in this life and in others. Bring the three questions you most want answered, about your purpose, your relationships, money or past lives. For each one, I’ll tell you what I saw in your records, what it means for you now, and what you can do with it.",
     includes: [
-      "Three questions explored in depth",
-      "Akashic Record reading with card pulls",
-      "Personalised question menu sent in advance",
-      "Detailed voice note recording",
-      "Supporting PDF - entirely bespoke",
+      "Three questions of your choosing, explored in depth",
+      "A card for each question, mostly from the Thoth tarot",
+      "Past life patterns, ancestral themes or soul contracts explored where relevant",
+      "Guidance on what your soul is ready to move toward",
+      "Something practical to take away from each question",
+    ],
+    howItWorks: [
+      "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
+      ...HOW_IT_WORKS_AFTER_FORM,
     ],
     requiresBirthChart: false,
     requiresAkashic: true,

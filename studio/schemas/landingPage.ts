@@ -1,5 +1,13 @@
 import { defineField, defineType } from "sanity";
 
+import { type ReadingCardLabels, READINGS_SECTION_DEFAULTS } from "../../src/data/defaults";
+
+const READING_CARD_LABEL_FIELDS: { name: keyof ReadingCardLabels; title: string; description: string }[] = [
+  { name: "learnMoreLabel", title: "Learn More button", description: "On each reading card. Opens the 'What's included' list." },
+  { name: "showLessLabel", title: "Show Less button", description: "On each reading card once the list is open." },
+  { name: "bookButtonText", title: "Book button", description: "On each reading card. Opens the reading's booking page." },
+];
+
 export const landingPage = defineType({
   name: "landingPage",
   title: "Landing Page",
@@ -65,6 +73,15 @@ export const landingPage = defineType({
         defineField({ name: "sectionTag", title: "Section Tag", type: "string", initialValue: "✦ Offerings" }),
         defineField({ name: "heading", title: "Heading", type: "string", initialValue: "readings" }),
         defineField({ name: "subheading", title: "Subheading", type: "string" }),
+        ...READING_CARD_LABEL_FIELDS.map(({ name, title, description }) =>
+          defineField({
+            name,
+            title,
+            type: "string",
+            description: `${description} Empty shows "${READINGS_SECTION_DEFAULTS[name]}".`,
+            placeholder: READINGS_SECTION_DEFAULTS[name],
+          }),
+        ),
       ],
     }),
     defineField({

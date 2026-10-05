@@ -9,6 +9,7 @@ import {
   INTAKE_TITLE_FALLBACK,
   READING_PAGE_DEFAULTS,
 } from "@/data/defaults";
+import { getReadingById } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { pick } from "@/lib/pick";
@@ -35,7 +36,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
     priceDisplay: "$179",
     valueProposition: "The most complete picture",
     briefDescription: "My signature offering",
-    expandedDetails: [],
     includes: [],
     requiresBirthChart: true,
     requiresAkashic: true,
@@ -161,13 +161,37 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.facts).toEqual([]);
   });
 
-  it("uses the first expanded detail as the body and the rest as How it works", () => {
+  it("puts the description under the promise and the checklist under What's included", () => {
     const block = derive(
-      sanityReading({ expandedDetails: ["What it is.", "How you book.", "When it arrives."] }),
+      sanityReading({ briefDescription: "What it is.", includes: ["One thing.", "Another thing."] }),
     )?.readingBlock;
 
-    expect(block?.body).toBe("What it is.");
-    expect(block?.howItWorks.paragraphs).toEqual(["How you book.", "When it arrives."]);
+    expect(block?.lead).toBe("The most complete picture");
+    expect(block?.description).toBe("What it is.");
+    expect(block?.included.items).toEqual(["One thing.", "Another thing."]);
+  });
+
+  it("shows How it works from the reading's own field", () => {
+    const content = paragraphBlocks(["How you book.", "When it arrives."]);
+
+    expect(derive(sanityReading({ howItWorks: content }))?.readingBlock.howItWorks.content).toEqual(
+      content,
+    );
+  });
+
+  it.each([
+    ["unset", undefined],
+    ["null, as GROQ returns a missing field", null],
+    ["an empty list", []],
+    ["blank paragraphs", paragraphBlocks(["", "   "])],
+  ])("hides How it works when Becky leaves the field %s", (_label, howItWorks) => {
+    expect(derive(sanityReading({ howItWorks }))?.readingBlock.howItWorks.content).toEqual([]);
+  });
+
+  it("uses the built-in How it works when the reading is missing from Sanity", () => {
+    expect(derive(null)?.readingBlock.howItWorks.content).toEqual(
+      paragraphBlocks(getReadingById("soul-blueprint")!.howItWorks),
+    );
   });
 
   it("maps the picked questions in order and drops broken references", () => {

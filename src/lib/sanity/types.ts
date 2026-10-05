@@ -9,6 +9,7 @@ import type {
   NotesContent,
   ReadingFact,
   ReadingPageContent,
+  ReadingsSectionContent,
 } from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
@@ -25,8 +26,8 @@ export type SanityReading = {
   priceDisplay: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
   includes: string[];
+  howItWorks?: SanityPortableTextBlock[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
@@ -84,11 +85,7 @@ export type SanityLandingPage = {
   hero: SanityHero;
   about: SanityAbout;
   howItWorks: SanityHowItWorks;
-  readingsSection: {
-    sectionTag: string;
-    heading: string;
-    subheading: string;
-  };
+  readingsSection: Partial<ReadingsSectionContent>;
   testimonialsSection: {
     sectionTag: string;
     heading: string;

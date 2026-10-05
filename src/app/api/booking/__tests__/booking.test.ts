@@ -47,7 +47,6 @@ const READING: SanityReading = {
   priceDisplay: "$179",
   valueProposition: "",
   briefDescription: "",
-  expandedDetails: [],
   includes: [],
   requiresBirthChart: false,
   requiresAkashic: false,

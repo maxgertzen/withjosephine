@@ -1,5 +1,5 @@
 import type { HomePageViewProps } from "@/app/HomePageView";
-import { ABOUT_DEFAULTS, CONTACT_DEFAULTS, HERO_DEFAULTS } from "@/data/defaults";
+import { ABOUT_DEFAULTS, CONTACT_DEFAULTS, HERO_DEFAULTS, READINGS_SECTION_DEFAULTS } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import type {
   MappedFaqItem,
@@ -56,8 +56,9 @@ export const HOME_STORY_PROPS: HomePageViewProps = {
     price: reading.price,
     valueProposition: reading.valueProposition,
     briefDescription: reading.briefDescription,
-    expandedDetails: reading.expandedDetails,
+    includes: reading.includes,
   })),
+  readingsSection: READINGS_SECTION_DEFAULTS,
   testimonials: TESTIMONIALS.map((testimonial) => ({
     id: testimonial.id,
     quote: testimonial.quote,

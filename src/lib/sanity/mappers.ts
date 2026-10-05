@@ -18,7 +18,7 @@ export type MappedReading = {
   price: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
+  includes: string[];
 };
 
 export type MappedTestimonial = {
@@ -64,7 +64,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
       price: SANITY_READING_PRICES[r.id] ?? r.price,
       valueProposition: r.valueProposition,
       briefDescription: r.briefDescription,
-      expandedDetails: r.expandedDetails,
+      includes: r.includes,
     }));
   }
 
@@ -75,7 +75,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
     price: r.priceDisplay,
     valueProposition: r.valueProposition,
     briefDescription: r.briefDescription,
-    expandedDetails: r.expandedDetails,
+    includes: r.includes,
   }));
 }
 

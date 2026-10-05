@@ -1,12 +1,13 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
+import { IncludedList } from "@/components/IncludedList";
 import { ReadingIcon } from "@/components/ReadingIcon";
+import type { ReadingCardLabels } from "@/data/defaults";
 import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { markEntryClickOnPlainLeftClick } from "@/lib/intake/entryMarker";
 import { eyebrowClasses } from "@/lib/textStyles";
@@ -19,7 +20,8 @@ export interface ReadingCardProps {
   price: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
+  includes: string[];
+  labels: ReadingCardLabels;
   href: string;
   className?: string;
 }
@@ -31,7 +33,8 @@ export function ReadingCard({
   price,
   valueProposition,
   briefDescription,
-  expandedDetails,
+  includes,
+  labels,
   href,
   className,
 }: ReadingCardProps) {
@@ -49,9 +52,7 @@ export function ReadingCard({
 
       <ReadingIcon slug={slug} className="absolute top-6 right-6 w-20 h-20 md:w-24 md:h-24" />
 
-      <span className={eyebrowClasses}>
-        {tag}
-      </span>
+      <span className={eyebrowClasses}>{tag}</span>
 
       <h3 className="font-display text-[clamp(1.8rem,4vw,2.4rem)] font-light italic text-j-text-heading leading-tight mt-2">
         {name}
@@ -65,48 +66,38 @@ export function ReadingCard({
 
       <p className="font-body text-sm text-j-text-muted leading-relaxed mt-3">{briefDescription}</p>
 
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <motion.div
-            key="details"
-            id={`reading-details-${slug}`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <ul className="mt-4 space-y-3">
-              {expandedDetails.map((detail, index) => (
-                <li key={index} className="flex gap-3">
-                  <span className="mt-0.5 flex-shrink-0">
-                    <Check className="w-4 h-4 text-j-ornament" strokeWidth={2} />
-                  </span>
-                  <span className="font-body text-sm text-j-text-muted leading-relaxed">
-                    {detail}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {includes.length > 0 ? (
+        <>
+          <AnimatePresence initial={false}>
+            {isExpanded && (
+              <motion.div
+                key="details"
+                id={`reading-details-${slug}`}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <IncludedList items={includes} size="card" className="mt-4" />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      <button
-        type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
-        aria-expanded={isExpanded}
-        className="mt-4 font-body text-sm text-j-text-muted hover:text-j-text-gold tracking-wide transition-colors"
-      >
-        {isExpanded ? "Show Less \u2191" : "Learn More \u2193"}
-      </button>
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            aria-expanded={isExpanded}
+            className="mt-4 font-body text-sm text-j-text-muted hover:text-j-text-gold tracking-wide transition-colors"
+          >
+            {isExpanded ? labels.showLessLabel : labels.learnMoreLabel}
+          </button>
+        </>
+      ) : null}
 
       <div className="mt-6">
-        <Button
-          href={href}
-          onClick={markEntryClickOnPlainLeftClick(slug, "homepage_card")}
-        >
-          Book This Reading
+        <Button href={href} onClick={markEntryClickOnPlainLeftClick(slug, "homepage_card")}>
+          {labels.bookButtonText}
         </Button>
       </div>
     </div>

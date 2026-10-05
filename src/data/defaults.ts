@@ -444,6 +444,29 @@ export const INTAKE_INTRO_FALLBACK = [
   "Take your time. There\u2019s no wrong answer.",
 ];
 
+export interface ReadingCardLabels {
+  learnMoreLabel: string;
+  showLessLabel: string;
+  bookButtonText: string;
+}
+
+export const READING_CARD_LABEL_KEYS = ["learnMoreLabel", "showLessLabel", "bookButtonText"] as const;
+
+export interface ReadingsSectionContent extends ReadingCardLabels {
+  sectionTag: string;
+  heading: string;
+  subheading: string;
+}
+
+export const READINGS_SECTION_DEFAULTS: ReadingsSectionContent = {
+  sectionTag: "\u2726 Offerings",
+  heading: "readings",
+  subheading: "Each reading is created with care, entirely for you. Nothing is templated or generic.",
+  learnMoreLabel: "Learn More \u2193",
+  showLessLabel: "Show Less \u2191",
+  bookButtonText: "Book This Reading",
+};
+
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
   confirmBody: string;
