@@ -1,6 +1,34 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-05 handover 16): run `/session-start` from the project root. `www` is on `release/v1.21.0`. Steps 1 to 7 are committed. Step 7 is NOT pushed and NOT on staging (2 commits ahead of origin). Next: push with Max's go, then build the rest of the release scope below, then one staging walk, then the release PR.
+## ▶ 👉 START HERE (next session, 2026-10-05 handover 17): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992` (Step 7, on staging, CI run 37265449219 green). Ten local commits after it are not pushed. Two pieces of work are uncommitted: booking nav plus Back in `www`, and the duplicate refund in the worktree `../www-refund`.
+
+- Local commits after `9cb0992`, not pushed:
+  - `1ad43fb` homepage nav bar on thank-you, listen and gift send pages (`h5mu2wey`, `i2pp0i89`)
+  - `9a26b36` staging email subjects start with `[Staging]` (`y187ch3d`, closed)
+  - `9bd2dc6` Notes Plate rows line up (`xwb7bhto`)
+  - `548241a` gift sheets lazy-load, `/book` sends only the gift copy each component reads (`cjmube2k`, closed)
+  - `805b7fc` dex
+  - `1cf6abd` gift sheets slide up and down, swipe down to close on touch
+  - `36e82cd` reading block no longer opens then folds on a returning visit (inline pre-paint script)
+  - `0094c44` and `b86faea`: a staging-webhook wake design, reverted (Max: no new secret, send on click)
+  - `f7e065f` Send reading now and Resend send on click: Studio posts `/api/delivery/wake?submission=<id>`, 202 and a background run; `deliver-requested` every 15 minutes as backstop, skipping requests under 2 minutes old (`lvztxaci`, closed)
+- Uncommitted in `www` (2919 tests pass, tsc and eslint clean):
+  - `/book` and the gift pages show the homepage nav bar with the Back row under it. Back links to the page behind it on this site (Navigation API, `src/lib/navigation/previousPage.ts`) and a plain click runs `history.back()`; with nothing on this site behind it, Back links to `/#reading-{slug}`. The legal pages' `BackLink` uses the same rule. (C17, C18, dex `renku01k`)
+  - `xhhr3son`: `BodyPortal` and the `LAYER` z-index scale (`src/styles/layers.ts`); `SubmitOverlay` and `SwapToast` render on `document.body`; the toast sits under the nav; the form's scroll margin clears the nav.
+  - Next: `/simplify` and `/code-review` on this diff (the last review was of an earlier sessionStorage design, now replaced), then two commits: nav plus Back, and overlays. Then close `renku01k`, `xhhr3son`, `h5mu2wey`, `i2pp0i89`, `xwb7bhto` once the staging walk confirms the pixels.
+- Duplicate refund (`esd1oud0`), worktree `../www-refund`, branch `wip/duplicate-refund` off `805b7fc`, uncommitted: three review rounds applied; the agent reports 2854 tests pass. Next: run the checks yourself, one more `/code-review`, then bring the change onto `release/v1.21.0`, and remove the worktree (`git worktree remove ../www-refund`).
+- Max's calls 2026-10-05:
+  - A second payment for the same gift or booking is refunded automatically (CLAUDE.md Payments and Gift flow lines updated). Payment Links are cards and wallets only.
+  - Gifts have no section of their own in Studio. A paid gift is a submission doc; gift email failures show in Failed sends with the existing resend; a bounced send to the recipient offers a resend of the buyer confirmation; unopened gifts list as "🎁 Gifts not opened yet" under Submissions; Gift Settings moves to Booking Flow. In this release. Design: `MEMORY/WORK/20261005-v121-rest/DESIGN.md` Design 1. Build it after the refund lands (both touch `activateGift.ts` and `notifyPaid.ts`). Needs migration `0022`, which Max runs on staging before that push.
+  - `6ok0psvi` keep as is (closed).
+  - Back returns to the last visited page on this site and never to Google; `/book` shows the homepage nav with Back underneath.
+  - Delivery backstop every 15 minutes.
+- Max actions when this is pushed: CF Access bypass on staging for `/api/delivery/wake` (STAGING_RUNBOOK section 9b).
+- Before pushing: the head commit must not carry `[skip ci]`, or CI does not run and staging does not deploy (`deploy-staging` runs on `push` only).
+- Visual checks are deferred to the staging walk: Interceptor is not installed on this machine.
+- Run state and evidence: `MEMORY/WORK/20261005-v121-rest/ISA.md`. Handover 16's order (staging data scripts, e2e sandbox, walk, release PR steps) still applies after the above.
+
+## ▶ (SUPERSEDED by handover 17 above) START HERE (2026-10-05 handover 16): run `/session-start` from the project root. `www` is on `release/v1.21.0`. Steps 1 to 7 are committed. Step 7 is NOT pushed and NOT on staging (2 commits ahead of origin). Next: push with Max's go, then build the rest of the release scope below, then one staging walk, then the release PR.
 
 - Commits on `release/v1.21.0` since handover 15:
   - `5a95949` Step 2 groundwork (migration `0021_gift_codes.sql`)
