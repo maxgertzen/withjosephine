@@ -2,6 +2,7 @@ import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GiftDisc } from "@/components/GiftDisc";
 import { GIFT_SEND_COPY_KEYS, GiftSendForm } from "@/components/GiftSendForm";
+import { NAV_CLEARANCE_CLASS } from "@/components/Navigation";
 import { StarField } from "@/components/StarField";
 import type { GiftContent } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
@@ -34,7 +35,7 @@ export function GiftSendPageView({ copy, status, token, disabled }: GiftSendPage
       {PAGE_ORBS.map((orb, index) => (
         <CelestialOrb key={index} {...orb} />
       ))}
-      <main className="relative z-10 mx-auto flex max-w-md flex-col items-center gap-6 px-6 py-16 text-center">
+      <main className={`relative z-10 mx-auto flex max-w-md flex-col items-center gap-6 px-6 pb-16 text-center ${NAV_CLEARANCE_CLASS}`}>
         <GiftDisc className="mb-0" />
         {status ? (
           <GiftSendForm

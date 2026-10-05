@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
 import { Footer } from "@/components/Footer";
-import { Navigation } from "@/components/Navigation";
+import { NAV_CLEARANCE_CLASS, Navigation } from "@/components/Navigation";
 
 export type NotesFooterProps = Pick<
   ComponentProps<typeof Footer>,
@@ -22,7 +22,7 @@ export function NotesShell({
   return (
     <div className="min-h-screen bg-j-cream">
       <Navigation {...nav} page="notes" />
-      <main id="main" className="px-5 pt-28 pb-14 md:pt-40">
+      <main id="main" className={`px-5 pb-14 ${NAV_CLEARANCE_CLASS}`}>
         <div className="mx-auto max-w-[36rem]">{children}</div>
       </main>
       <Footer {...footer} className="border-t-0" />

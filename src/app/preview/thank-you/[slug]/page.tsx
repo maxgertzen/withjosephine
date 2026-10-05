@@ -5,6 +5,7 @@ import {
   type ResolvedThankYouContext,
 } from "@/app/(authed)/thank-you/[readingId]/deriveThankYouViewProps";
 import { ThankYouView } from "@/app/(authed)/thank-you/[readingId]/ThankYouView";
+import { SiteNavigation } from "@/components/Navigation/SiteNavigation";
 import { getReadingById } from "@/data/readings";
 import { fetchReading, fetchSiteSettings, fetchThankYouPage } from "@/lib/sanity/fetch";
 
@@ -58,5 +59,10 @@ export default async function ThankYouPagePreview({ params }: ThankYouPreviewPro
     slugForOverride: slug,
   });
 
-  return <ThankYouView {...viewProps} />;
+  return (
+    <>
+      <SiteNavigation />
+      <ThankYouView {...viewProps} />
+    </>
+  );
 }

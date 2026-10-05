@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { IconDisc } from "@/components/IconDisc";
+import { NAV_CLEARANCE_CLASS } from "@/components/Navigation";
 import { StarField } from "@/components/StarField";
 import { ThankYouGuard } from "@/components/ThankYouGuard";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
@@ -24,7 +25,7 @@ export function ThankYouShell({ icon, heading, subheading, children }: ThankYouS
         <CelestialOrb key={index} {...orb} />
       ))}
 
-      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center">
+      <main className={`relative z-10 max-w-[720px] mx-auto px-6 pb-20 text-center ${NAV_CLEARANCE_CLASS}`}>
         <IconDisc icon={icon} />
 
         <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">

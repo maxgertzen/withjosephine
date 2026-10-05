@@ -40,7 +40,7 @@ const CONTACT_SECTION_ID = "contact";
 
 type NavItem = { key: string; label: string; href?: string; current?: boolean };
 
-type NavPage = "home" | "notes";
+type NavPage = "home" | "notes" | "other";
 
 function buildNavItems(navLinks: NavLink[], page: NavPage, notesLink: NotesLink | undefined): NavItem[] {
   const items: NavItem[] = navLinks.map(({ label, sectionId }) =>

@@ -2,6 +2,7 @@ import { Mail } from "lucide-react";
 
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { IconDisc } from "@/components/IconDisc";
+import { NAV_CLEARANCE_CLASS } from "@/components/Navigation";
 import { StarField } from "@/components/StarField";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 
@@ -16,7 +17,7 @@ export default function ThankYouLoading() {
         role="status"
         aria-live="polite"
         aria-label="Loading your confirmation"
-        className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center"
+        className={`relative z-10 max-w-[720px] mx-auto px-6 pb-20 text-center ${NAV_CLEARANCE_CLASS}`}
       >
         <IconDisc icon={Mail} />
         <p className="font-display italic text-[clamp(1.5rem,3.5vw,2rem)] font-medium text-j-text-heading leading-tight">

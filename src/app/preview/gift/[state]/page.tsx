@@ -19,6 +19,7 @@ import { GIFT_SEND_PAGE_COPY_KEYS, GiftSendPageView } from "@/app/gift/send/Gift
 import { BookingPreviewUnavailable } from "@/app/preview/book/[slug]/BookingPreviewUnavailable";
 import { loadPreviewBookingFormProps } from "@/app/preview/book/[slug]/loadPreviewBookingFormProps";
 import type { GiftFoldSheet } from "@/components/GiftFold";
+import { SiteNavigation } from "@/components/Navigation/SiteNavigation";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import type { InitialPage } from "@/lib/intake/useDraftRestore";
@@ -72,7 +73,12 @@ async function renderBuyerThankYou(): Promise<ReactElement> {
     giftSettings,
   });
 
-  return <GiftThankYouView {...props} />;
+  return (
+    <>
+      <SiteNavigation />
+      <GiftThankYouView {...props} />
+    </>
+  );
 }
 
 async function renderRecipientThankYou(): Promise<ReactElement> {
@@ -84,7 +90,12 @@ async function renderRecipientThankYou(): Promise<ReactElement> {
       buyerFirstName: PREVIEW_GIFT.buyerFirstName,
     }),
   );
-  return <ThankYouView {...props} />;
+  return (
+    <>
+      <SiteNavigation />
+      <ThankYouView {...props} />
+    </>
+  );
 }
 
 async function renderGiftForm({
@@ -125,17 +136,20 @@ async function renderGiftMessage(
 
 async function renderSendPage(): Promise<ReactElement> {
   return (
-    <GiftSendPageView
-      copy={pick(await loadGiftContent("preview"), GIFT_SEND_PAGE_COPY_KEYS)}
-      status={{
-        state: "ready",
-        buyerName: PREVIEW_GIFT.buyerFirstName,
-        hasNote: true,
-        recipientName: null,
-      }}
-      token=""
-      disabled
-    />
+    <>
+      <SiteNavigation />
+      <GiftSendPageView
+        copy={pick(await loadGiftContent("preview"), GIFT_SEND_PAGE_COPY_KEYS)}
+        status={{
+          state: "ready",
+          buyerName: PREVIEW_GIFT.buyerFirstName,
+          hasNote: true,
+          recipientName: null,
+        }}
+        token=""
+        disabled
+      />
+    </>
   );
 }
 
