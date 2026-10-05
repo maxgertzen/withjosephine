@@ -29,7 +29,7 @@ import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { ReadingDelivery } from "./emails/ReadingDelivery";
 import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
-import { isFlagEnabled } from "./env";
+import { isFlagEnabled, isStagingEnvironment } from "./env";
 import { giftClientReferenceId } from "./gift/clientReference";
 import { formatGiftCode } from "./gift/giftCodeFormat";
 import { pickDefined } from "./sanity/pickDefined";
@@ -210,6 +210,12 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   }
 }
 
+const STAGING_SUBJECT_PREFIX = "[Staging] ";
+
+function subjectForEnvironment(subject: string): string {
+  return isStagingEnvironment() ? `${STAGING_SUBJECT_PREFIX}${subject}` : subject;
+}
+
 export async function sendOrSkip(args: {
   to: string | string[];
   subject: string;
@@ -224,6 +230,7 @@ export async function sendOrSkip(args: {
   originatorEmail?: string | null;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
+  const subject = subjectForEnvironment(args.subject);
   const recipientList = Array.isArray(args.to) ? args.to : [args.to];
   const skipReason = await resolveSkipReason(recipientList, args.originatorEmail ?? null);
   if (skipReason) {
@@ -235,7 +242,7 @@ export async function sendOrSkip(args: {
         body: JSON.stringify({
           label,
           to: args.to,
-          subject: args.subject,
+          subject,
           html: args.html,
         }),
       }).catch(() => undefined);
@@ -257,7 +264,7 @@ export async function sendOrSkip(args: {
       {
         from: FROM_ADDRESS,
         to: args.to,
-        subject: args.subject,
+        subject,
         html: args.html,
         ...(args.replyTo ? { replyTo: args.replyTo } : {}),
         ...(args.tags

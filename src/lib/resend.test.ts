@@ -1408,3 +1408,29 @@ describe("PortableTextBody renderer guard", () => {
     expect(file).not.toMatch(/from\s+["']@portabletext\/react["']/);
   });
 });
+
+describe("staging subject prefix", () => {
+  it("starts every subject sent from the staging worker with [Staging]", async () => {
+    vi.stubEnv("ENVIRONMENT", "staging");
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+
+    await sendOrderConfirmation(buildSubmission());
+    await sendNotificationToJosephine(buildSubmission());
+
+    expect(sendMock.mock.calls.map((call) => call[0].subject)).toEqual([
+      "[Staging] Your reading is booked: what happens next",
+      expect.stringMatching(/^\[Staging\] /),
+    ]);
+  });
+
+  it("leaves production subjects unchanged", async () => {
+    vi.stubEnv("ENVIRONMENT", "production");
+    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
+
+    await sendOrderConfirmation(buildSubmission());
+
+    expect(sendMock.mock.calls[0]?.[0].subject).toBe(
+      "Your reading is booked: what happens next",
+    );
+  });
+});
