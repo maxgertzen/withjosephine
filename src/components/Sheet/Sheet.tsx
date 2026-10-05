@@ -8,12 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 
+import { BodyPortal } from "@/components/BodyPortal";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { mergeClasses } from "@/lib/utils";
+import { LAYER } from "@/styles/layers";
 
 const SHEET_TRANSITION_MS = 300;
 const SHEET_TRANSITION_CLASSES = "duration-300 ease-out motion-reduce:transition-none";
@@ -105,43 +106,44 @@ export function Sheet({ open, onClose, labelledBy, children }: SheetProps) {
   useLockBodyScroll(active);
   useFocusTrap({ active, containerRef: panelRef, onEscape: onClose });
 
-  if (!mounted || !isClient) return null;
+  if (!mounted) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-end justify-center" inert={!active}>
-      <div
-        aria-hidden="true"
-        data-testid="sheet-dim"
-        onClick={onClose}
-        className={mergeClasses(
-          "absolute inset-0 bg-j-midnight/45 transition-opacity",
-          SHEET_TRANSITION_CLASSES,
-          raised ? "opacity-100" : "opacity-0",
-        )}
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={labelledBy}
-        tabIndex={-1}
-        data-state={raised ? "open" : "closed"}
-        className={mergeClasses(
-          "relative flex max-h-[92dvh] w-full max-w-lg translate-y-full flex-col gap-4 overflow-y-auto rounded-t-[20px] bg-j-cream px-[22px] pt-[22px] pb-[26px] shadow-[0_-8px_30px_rgba(13,11,26,0.25)] focus:outline-none data-[state=open]:translate-y-0",
-          !swipe.dragging && ["transition-transform", SHEET_TRANSITION_CLASSES],
-        )}
-      >
+  return (
+    <BodyPortal>
+      <div className={`fixed inset-0 ${LAYER.sheet} flex items-end justify-center`} inert={!active}>
         <div
           aria-hidden="true"
-          data-testid="sheet-handle"
-          {...swipe.handlers}
-          className="-mx-[22px] -mt-[22px] hidden shrink-0 touch-none justify-center pt-[22px] pb-2 any-pointer-coarse:flex"
+          data-testid="sheet-dim"
+          onClick={onClose}
+          className={mergeClasses(
+            "absolute inset-0 bg-j-midnight/45 transition-opacity",
+            SHEET_TRANSITION_CLASSES,
+            raised ? "opacity-100" : "opacity-0",
+          )}
+        />
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={labelledBy}
+          tabIndex={-1}
+          data-state={raised ? "open" : "closed"}
+          className={mergeClasses(
+            "relative flex max-h-[92dvh] w-full max-w-lg translate-y-full flex-col gap-4 overflow-y-auto rounded-t-[20px] bg-j-cream px-[22px] pt-[22px] pb-[26px] shadow-[0_-8px_30px_rgba(13,11,26,0.25)] focus:outline-none data-[state=open]:translate-y-0",
+            !swipe.dragging && ["transition-transform", SHEET_TRANSITION_CLASSES],
+          )}
         >
-          <div className="h-1 w-10 rounded bg-j-blush" />
+          <div
+            aria-hidden="true"
+            data-testid="sheet-handle"
+            {...swipe.handlers}
+            className="-mx-[22px] -mt-[22px] hidden shrink-0 touch-none justify-center pt-[22px] pb-2 any-pointer-coarse:flex"
+          >
+            <div className="h-1 w-10 rounded bg-j-blush" />
+          </div>
+          {children}
         </div>
-        {children}
       </div>
-    </div>,
-    document.body,
+    </BodyPortal>
   );
 }

@@ -35,9 +35,10 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchBookingFormPublished: vi.fn(),
   fetchBookingPagePublished: vi.fn(),
   fetchLandingPagePublished: vi.fn(),
-  fetchNotesStatePublished: vi.fn(),
+  fetchNotesStatePublished: vi.fn().mockResolvedValue(null),
   fetchReadingNotesPublished: vi.fn(),
   fetchGiftSettingsPublished: vi.fn(),
+  fetchSiteSettingsPublished: vi.fn().mockResolvedValue(null),
 }));
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";

@@ -7,11 +7,13 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchBookingPage: vi.fn(),
   fetchGiftSettings: vi.fn(),
   fetchLandingPage: vi.fn(),
-  fetchNotesState: vi.fn(),
+  fetchNotesState: vi.fn().mockResolvedValue(null),
+  fetchNotesStatePublished: vi.fn().mockResolvedValue(null),
   fetchReading: vi.fn(),
   fetchReadingNotes: vi.fn(),
   fetchReadings: vi.fn(),
   fetchSiteSettings: vi.fn(),
+  fetchSiteSettingsPublished: vi.fn().mockResolvedValue(null),
   fetchThankYouPage: vi.fn(),
 }));
 

@@ -11,6 +11,7 @@ import { deriveGiftBookingFormViewProps } from "./deriveGiftBookingFormViewProps
 const CODE = "K7M2QX9PH4TR";
 
 const BASE: BookingFormViewProps = {
+  nav: {},
   backHref: "/#reading-birth-chart",
   reading: {
     slug: "birth-chart",

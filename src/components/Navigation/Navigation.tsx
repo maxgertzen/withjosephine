@@ -14,6 +14,9 @@ import { homeSectionAnchor } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
+import { LAYER } from "@/styles/layers";
+
+import { NAV_BAR_HEIGHT_CLASS } from "./navClearance";
 
 interface NavLink {
   label: string;
@@ -42,7 +45,11 @@ type NavItem = { key: string; label: string; href?: string; current?: boolean };
 
 type NavPage = "home" | "notes" | "other";
 
-function buildNavItems(navLinks: NavLink[], page: NavPage, notesLink: NotesLink | undefined): NavItem[] {
+function buildNavItems(
+  navLinks: NavLink[],
+  page: NavPage,
+  notesLink: NotesLink | undefined,
+): NavItem[] {
   const items: NavItem[] = navLinks.map(({ label, sectionId }) =>
     page === "home"
       ? { key: sectionId, label }
@@ -159,14 +166,16 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
       <nav
         aria-label="Primary"
         className={mergeClasses(
-          "fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[100] border-b transition-all duration-300 ease-in-out",
+          `fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.nav} border-b transition-all duration-300 ease-in-out`,
           scrolled
             ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
             : "border-transparent bg-transparent",
           className,
         )}
       >
-        <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-[72px]">
+        <div
+          className={`max-w-[1280px] mx-auto px-6 flex items-center justify-between ${NAV_BAR_HEIGHT_CLASS}`}
+        >
           <Link href="/" className="block">
             <Image
               src="/images/logo-horizontal.webp"
@@ -228,7 +237,7 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
         aria-hidden={!menuOpen}
         inert={!menuOpen}
         className={mergeClasses(
-          "fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
+          `fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.navMenu} bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden`,
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

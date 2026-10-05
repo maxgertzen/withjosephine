@@ -145,6 +145,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--j-below-nav);
   scrollbar-gutter: stable;
 }
 @media (prefers-reduced-motion: reduce) {

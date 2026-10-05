@@ -24,8 +24,10 @@ export function deriveGiftMessageViewProps(
   message: GiftPageMessage,
   reading: GiftMessageReading | null,
   copy: GiftContent,
+  nav: GiftMessageViewProps["nav"],
 ): GiftMessageViewProps {
   return {
+    nav,
     ...MESSAGE_COPY[message](copy),
     backHref: reading ? homeReadingAnchor(reading.slug) : "/",
     reading: reading

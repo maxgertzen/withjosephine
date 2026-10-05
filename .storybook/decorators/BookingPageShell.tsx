@@ -24,6 +24,7 @@ export const withBookingPageShell: Decorator = (Story, context) => {
 
   return (
     <BookingPageShell
+      nav={{}}
       backHref={backHref ?? "#"}
       readingTag={readingTag ?? "Signature"}
       readingName={readingName ?? "Soul Blueprint"}

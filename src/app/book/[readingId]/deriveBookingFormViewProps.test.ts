@@ -53,6 +53,7 @@ function derive(
   extra: Partial<DeriveBookingFormViewPropsInput> = {},
 ) {
   return deriveBookingFormViewProps({
+    nav: {},
     readingId: "soul-blueprint",
     sanityReading: reading,
     sanityReadings: [],

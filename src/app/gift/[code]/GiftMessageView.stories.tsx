@@ -22,17 +22,17 @@ export default meta;
 type Story = StoryObj<typeof GiftMessageView>;
 
 export const AlreadyOpened: Story = {
-  args: deriveGiftMessageViewProps("already_opened", BIRTH_CHART, GIFT_DEFAULTS),
+  args: deriveGiftMessageViewProps("already_opened", BIRTH_CHART, GIFT_DEFAULTS, {}),
 };
 
 export const NoLongerActive: Story = {
-  args: deriveGiftMessageViewProps("no_longer_active", BIRTH_CHART, GIFT_DEFAULTS),
+  args: deriveGiftMessageViewProps("no_longer_active", BIRTH_CHART, GIFT_DEFAULTS, {}),
 };
 
 export const NotFound: Story = {
-  args: deriveGiftMessageViewProps("not_found", null, GIFT_DEFAULTS),
+  args: deriveGiftMessageViewProps("not_found", null, GIFT_DEFAULTS, {}),
 };
 
 export const RateLimited: Story = {
-  args: deriveGiftMessageViewProps("rate_limited", null, GIFT_DEFAULTS),
+  args: deriveGiftMessageViewProps("rate_limited", null, GIFT_DEFAULTS, {}),
 };

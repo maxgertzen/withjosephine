@@ -4,6 +4,8 @@ import * as RadixSelect from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { LAYER } from "@/styles/layers";
+
 export type SelectOption = {
   value: string;
   label: string;
@@ -49,7 +51,7 @@ export function Select({
       </RadixSelect.Trigger>
       <RadixSelect.Portal container={portalContainer ?? undefined}>
         <RadixSelect.Content
-          className="z-50 min-w-[var(--radix-select-trigger-width)] w-max max-w-[var(--radix-select-content-available-width)] bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading"
+          className={`${LAYER.popover} min-w-[var(--radix-select-trigger-width)] w-max max-w-[var(--radix-select-content-available-width)] bg-j-ivory border border-j-border-gold rounded-md shadow-j-card overflow-hidden font-body text-sm text-j-text-heading`}
           position="popper"
           sideOffset={4}
         >

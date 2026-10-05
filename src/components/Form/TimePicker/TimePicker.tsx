@@ -8,6 +8,7 @@ import { Select, type SelectOption } from "@/components/Form/Select";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { LAYER } from "@/styles/layers";
 
 const HHMM = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
 
@@ -141,7 +142,7 @@ export function TimePicker({
             onInteractOutside={(event) => {
               if (event.target === inputRef.current) event.preventDefault();
             }}
-            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]"
+            className={`${LAYER.popover} bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[200px]`}
           >
             <p className="font-display italic text-sm text-j-text-muted text-center mb-3">
               Hour and minute

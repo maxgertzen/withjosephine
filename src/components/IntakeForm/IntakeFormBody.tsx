@@ -22,10 +22,7 @@ import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
 import { type GiftFinalPageCopy, GiftFinalPageLines } from "./GiftFinalPageLines";
-import {
-  LegalAcknowledgments,
-  type LegalAcknowledgmentsErrors,
-} from "./LegalAcknowledgments";
+import { LegalAcknowledgments, type LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
 import { PageValidationSummary } from "./PageValidationSummary";
@@ -159,7 +156,7 @@ export function IntakeFormBody({
       onSubmit={handleSubmit}
       onKeyDown={suppressEnterInNonSubmitFields}
       noValidate
-      className="relative flex flex-col gap-10 scroll-mt-6"
+      className="relative flex flex-col gap-10"
       {...CLARITY_MASK_PROPS}
     >
       {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
@@ -172,9 +169,7 @@ export function IntakeFormBody({
             totalPages={totalPages}
             tagline={pageIndicatorTagline}
           />
-          {lastSavedAt ? (
-            <DiscardDraftButton onConfirm={handleDiscardDraft} />
-          ) : null}
+          {lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null}
         </div>
       ) : null}
 

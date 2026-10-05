@@ -12,6 +12,8 @@ import type {
 } from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
+export type ContentPerspective = "published" | "preview";
+
 export type SanityReading = {
   _id: string;
   name: string;

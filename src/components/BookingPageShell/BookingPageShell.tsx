@@ -2,10 +2,13 @@ import type { ReactNode } from "react";
 
 import { BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
+import { NAV_BAR_OFFSET_CLASS, Navigation } from "@/components/Navigation";
+import type { NotesNavProps } from "@/components/Notes/NotesShell";
 
 import { ReadingTitleBlock } from "./ReadingTitleBlock";
 
 export type BookingPageShellProps = {
+  nav: NotesNavProps;
   backHref: string;
   readingTag: string;
   readingName: string;
@@ -21,6 +24,7 @@ const OUTER_BG_CLASS: Record<NonNullable<BookingPageShellProps["outerBg"]>, stri
 };
 
 export function BookingPageShell({
+  nav,
   backHref,
   readingTag,
   readingName,
@@ -31,9 +35,12 @@ export function BookingPageShell({
 }: BookingPageShellProps) {
   return (
     <div className={`relative min-h-screen ${OUTER_BG_CLASS[outerBg]} overflow-hidden`}>
-      <BookingFlowHeader backHref={backHref} />
+      <Navigation {...nav} page="other" />
+      <div className={NAV_BAR_OFFSET_CLASS}>
+        <BookingFlowHeader backHref={backHref} />
+      </div>
 
-      <main id="main" className="relative z-10">
+      <main id="main" className="relative">
         {readingName ? (
           <ReadingTitleBlock
             readingTag={readingTag}

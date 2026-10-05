@@ -1,8 +1,5 @@
 import type { BookingFormViewProps } from "@/app/book/[readingId]/BookingFormView";
-import {
-  type BookingFormPerspective,
-  loadBookingFormViewProps,
-} from "@/app/book/[readingId]/loadBookingFormViewProps";
+import { loadBookingFormViewProps } from "@/app/book/[readingId]/loadBookingFormViewProps";
 import type { GiftContent } from "@/data/defaults";
 import { giftContent } from "@/lib/gift/giftContent";
 import { resolveReadingSummary } from "@/lib/readingSummary";
@@ -12,6 +9,7 @@ import {
   fetchReading,
   fetchReadingPublished,
 } from "@/lib/sanity/fetch";
+import type { ContentPerspective } from "@/lib/sanity/types";
 
 import {
   deriveGiftBookingFormViewProps,
@@ -19,7 +17,7 @@ import {
 } from "./deriveGiftBookingFormViewProps";
 import type { GiftMessageReading } from "./deriveGiftMessageViewProps";
 
-export async function loadGiftContent(perspective: BookingFormPerspective): Promise<GiftContent> {
+export async function loadGiftContent(perspective: ContentPerspective): Promise<GiftContent> {
   const giftSettings =
     perspective === "preview" ? await fetchGiftSettings() : await fetchGiftSettingsPublished();
   return giftContent(giftSettings);
@@ -27,7 +25,7 @@ export async function loadGiftContent(perspective: BookingFormPerspective): Prom
 
 export async function loadGiftBookingFormViewProps(
   gift: GiftBookingFormGift & { readingSlug: string },
-  perspective: BookingFormPerspective,
+  perspective: ContentPerspective,
 ): Promise<BookingFormViewProps | null> {
   const [base, copy] = await Promise.all([
     loadBookingFormViewProps(gift.readingSlug, perspective),
@@ -38,7 +36,7 @@ export async function loadGiftBookingFormViewProps(
 
 export async function loadMessageReading(
   slug: string | null,
-  perspective: BookingFormPerspective,
+  perspective: ContentPerspective,
 ): Promise<GiftMessageReading | null> {
   if (!slug) return null;
   return resolveReadingSummary(

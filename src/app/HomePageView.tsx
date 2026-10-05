@@ -121,8 +121,7 @@ export function HomePageView({
           />
           <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
             {readings.map((reading) => (
-              // scroll-mt must clear Navigation.tsx's 72px fixed nav.
-              <li key={reading.id} id={readingAnchorId(reading.id)} className="scroll-mt-[96px]">
+              <li key={reading.id} id={readingAnchorId(reading.id)}>
                 <ReadingCard
                   slug={reading.id}
                   tag={reading.tag}

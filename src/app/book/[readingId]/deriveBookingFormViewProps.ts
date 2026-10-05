@@ -49,6 +49,7 @@ export type DeriveBookingFormViewPropsInput = {
   notesState: SanityNotesState | null;
   readingNotes: NoteSummary[];
   giftSettings: SanityGiftSettings | null;
+  nav: BookingFormViewProps["nav"];
 };
 
 function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps["notes"] {
@@ -164,6 +165,7 @@ export function deriveBookingFormViewProps(
   const loadingStateCopy = input.bookingForm.loadingStateCopy;
 
   return {
+    nav: input.nav,
     backHref: homeReadingAnchor(reading.slug),
     reading: {
       slug: reading.slug,

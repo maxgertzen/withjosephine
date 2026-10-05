@@ -1,8 +1,10 @@
 import { BookingPageShell } from "@/components/BookingPageShell";
 import { Button } from "@/components/Button";
 import { GiftMessageCard } from "@/components/GiftMessageCard";
+import type { NotesNavProps } from "@/components/Notes/NotesShell";
 
 export type GiftMessageViewProps = {
+  nav: NotesNavProps;
   backHref: string;
   reading: { tag: string; name: string; priceLabel: string } | null;
   heading: string;
@@ -11,6 +13,7 @@ export type GiftMessageViewProps = {
 };
 
 export function GiftMessageView({
+  nav,
   backHref,
   reading,
   heading,
@@ -19,6 +22,7 @@ export function GiftMessageView({
 }: GiftMessageViewProps) {
   return (
     <BookingPageShell
+      nav={nav}
       backHref={backHref}
       readingTag={reading?.tag ?? ""}
       readingName={reading?.name ?? ""}

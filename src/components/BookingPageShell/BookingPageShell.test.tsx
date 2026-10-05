@@ -12,7 +12,7 @@ const READING = {
 describe("BookingPageShell", () => {
   it("renders children inside the article content area", () => {
     const { getByText } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>inner content</p>
       </BookingPageShell>,
     );
@@ -21,7 +21,7 @@ describe("BookingPageShell", () => {
 
   it("renders the BookingFlowHeader back link with the supplied href", () => {
     const { container } = render(
-      <BookingPageShell backHref="/specific-back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/specific-back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -31,7 +31,7 @@ describe("BookingPageShell", () => {
 
   it("passes the reading block through to the title block", () => {
     const { getByText } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -42,7 +42,7 @@ describe("BookingPageShell", () => {
 
   it("puts the reading name h1 inside main, after the Back header", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -53,7 +53,7 @@ describe("BookingPageShell", () => {
 
   it("uses cream outer bg, 3xl max-w, card shadow and default padding", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -65,7 +65,7 @@ describe("BookingPageShell", () => {
 
   it("applies ivory outer bg when outerBg='ivory'", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" outerBg="ivory" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" outerBg="ivory" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -75,7 +75,7 @@ describe("BookingPageShell", () => {
 
   it("renders an aria-hidden inner gold border guard", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -85,7 +85,12 @@ describe("BookingPageShell", () => {
 
   it("renders a supplied price line in place of the reading price", () => {
     const { getByText, queryByText } = render(
-      <BookingPageShell backHref="/back" {...READING} priceLine={<span>A gift, already paid</span>}>
+      <BookingPageShell
+        nav={{}}
+        backHref="/back"
+        {...READING}
+        priceLine={<span>A gift, already paid</span>}
+      >
         <p>x</p>
       </BookingPageShell>,
     );
@@ -95,7 +100,7 @@ describe("BookingPageShell", () => {
 
   it("leaves out the title block when there is no reading name", () => {
     const { container } = render(
-      <BookingPageShell backHref="/" readingTag="" readingName="" readingPrice="">
+      <BookingPageShell nav={{}} backHref="/" readingTag="" readingName="" readingPrice="">
         <p>x</p>
       </BookingPageShell>,
     );

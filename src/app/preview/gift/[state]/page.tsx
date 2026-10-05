@@ -23,6 +23,7 @@ import { SiteNavigation } from "@/components/Navigation/SiteNavigation";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import type { InitialPage } from "@/lib/intake/useDraftRestore";
+import { loadNotesNav } from "@/lib/notes/loadNotesNav";
 import {
   GIFT_PREVIEW_STATES,
   type GiftPreviewState,
@@ -75,7 +76,7 @@ async function renderBuyerThankYou(): Promise<ReactElement> {
 
   return (
     <>
-      <SiteNavigation />
+      <SiteNavigation perspective="preview" />
       <GiftThankYouView {...props} />
     </>
   );
@@ -92,7 +93,7 @@ async function renderRecipientThankYou(): Promise<ReactElement> {
   );
   return (
     <>
-      <SiteNavigation />
+      <SiteNavigation perspective="preview" />
       <ThankYouView {...props} />
     </>
   );
@@ -127,17 +128,18 @@ async function renderGiftMessage(
   message: GiftPageMessage,
   withReading: boolean,
 ): Promise<ReactElement> {
-  const [copy, reading] = await Promise.all([
+  const [copy, reading, nav] = await Promise.all([
     loadGiftContent("preview"),
     loadMessageReading(withReading ? SLUG : null, "preview"),
+    loadNotesNav("preview"),
   ]);
-  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy)} />;
+  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy, nav)} />;
 }
 
 async function renderSendPage(): Promise<ReactElement> {
   return (
     <>
-      <SiteNavigation />
+      <SiteNavigation perspective="preview" />
       <GiftSendPageView
         copy={pick(await loadGiftContent("preview"), GIFT_SEND_PAGE_COPY_KEYS)}
         status={{

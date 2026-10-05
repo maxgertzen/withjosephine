@@ -16,6 +16,7 @@ import { BookingFormView, type BookingFormViewProps } from "./BookingFormView";
 
 function props(intro: SanityPortableTextBlock[]): BookingFormViewProps {
   return {
+    nav: {},
     backHref: "/#reading-birth-chart",
     reading: {
       slug: "birth-chart",

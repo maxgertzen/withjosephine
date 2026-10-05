@@ -1,6 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { NavigationButton } from "@/components/NavigationButton";
+import { useBackLink } from "@/lib/navigation/previousPage";
 
 import { useHeaderBack } from "./headerBackContext";
 
@@ -33,9 +36,22 @@ function BackChevron() {
   );
 }
 
+function BackToPreviousPage({
+  fallbackHref,
+  children,
+}: {
+  fallbackHref: string;
+  children: ReactNode;
+}) {
+  const backLink = useBackLink(fallbackHref);
+  return (
+    <NavigationButton {...backLink} className={BACK_CLASS}>
+      {children}
+    </NavigationButton>
+  );
+}
+
 export function BookingFlowHeader({ backHref, backLabel = "Back" }: BookingFlowHeaderProps) {
-  // A client descendant (the intake form) can register an in-page back handler;
-  // when present the arrow steps back through the form instead of leaving it.
   const { onBack } = useHeaderBack();
   const back = (
     <>
@@ -45,16 +61,14 @@ export function BookingFlowHeader({ backHref, backLabel = "Back" }: BookingFlowH
   );
 
   return (
-    <header className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-[calc(1.5rem+env(safe-area-inset-top,0px))]">
+    <header className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-6">
       <div className="-mt-3 -ml-2 mb-1">
         {onBack ? (
           <button type="button" onClick={onBack} className={BACK_CLASS}>
             {back}
           </button>
         ) : (
-          <NavigationButton href={backHref} className={BACK_CLASS}>
-            {back}
-          </NavigationButton>
+          <BackToPreviousPage fallbackHref={backHref}>{back}</BackToPreviousPage>
         )}
       </div>
     </header>
