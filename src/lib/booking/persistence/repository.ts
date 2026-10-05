@@ -347,12 +347,12 @@ export function buildMarkSubmissionPaidStatement(
   };
 }
 
-export async function markSubmissionPaid(
-  id: string,
-  paid: MarkSubmissionPaidInput,
-): Promise<void> {
-  const stmt = buildMarkSubmissionPaidStatement(id, paid);
-  await dbExec(stmt.sql, stmt.params ?? []);
+export async function findPaidStripeSessionId(id: string): Promise<string | null> {
+  const rows = await dbQuery<{ stripe_session_id: string | null }>(
+    `SELECT stripe_session_id FROM submissions WHERE id = ? AND status = 'paid' LIMIT 1`,
+    [id],
+  );
+  return rows[0]?.stripe_session_id ?? null;
 }
 
 export async function markSubmissionExpired(

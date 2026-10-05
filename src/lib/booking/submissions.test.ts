@@ -111,6 +111,71 @@ describe("submissions wrapper (D1 source + Sanity mirror)", () => {
     );
   });
 
+  it("markSubmissionPaid lets one of two concurrent sessions win and mirrors only the winner", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    const paidBy = (stripeSessionId: string) =>
+      markSubmissionPaid(
+        "sub_1",
+        {
+          stripeEventId: `evt_${stripeSessionId}`,
+          stripeSessionId,
+          paidAt: "2026-04-21T10:00:00Z",
+          amountPaidCents: 12900,
+          amountPaidCurrency: "usd",
+        },
+        {
+          submissionId: "sub_1",
+          userId: null,
+          email: "ada@example.com",
+          paidAt: "2026-04-21T10:00:00Z",
+          amountPaidCents: 12900,
+          amountPaidCurrency: "usd",
+          country: null,
+          stripeSessionId,
+        },
+      );
+
+    const results = await Promise.all([paidBy("cs_1"), paidBy("cs_2")]);
+    await flushFireAndForget();
+
+    expect([...results].sort()).toEqual(["marked", "paid_by_another_session"]);
+    const winner = results[0] === "marked" ? "cs_1" : "cs_2";
+    expect((await findSubmissionById("sub_1"))?.stripeSessionId).toBe(winner);
+    expect(mockMirrorPatch).toHaveBeenCalledOnce();
+    expect(mockMirrorPatch).toHaveBeenCalledWith(
+      "sub_1",
+      expect.objectContaining({ stripeSessionId: winner }),
+    );
+  });
+
+  it("markSubmissionPaid reports not_marked when the submission row is gone", async () => {
+    expect(
+      await markSubmissionPaid("sub_missing", {
+        stripeEventId: "evt_1",
+        stripeSessionId: "cs_1",
+        paidAt: "2026-04-21T10:00:00Z",
+        amountPaidCents: 12900,
+        amountPaidCurrency: "usd",
+      }),
+    ).toBe("not_marked");
+    await flushFireAndForget();
+    expect(mockMirrorPatch).not.toHaveBeenCalled();
+  });
+
+  it("markSubmissionPaid reports marked again when the same session is applied twice", async () => {
+    await createSubmission(SUBMISSION_INPUT);
+    const paid = {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 12900,
+      amountPaidCurrency: "usd",
+    };
+
+    expect(await markSubmissionPaid("sub_1", paid)).toBe("marked");
+    expect(await markSubmissionPaid("sub_1", paid)).toBe("marked");
+  });
+
   it("markSubmissionExpired leaves a paid submission and its Sanity mirror untouched", async () => {
     await createSubmission(SUBMISSION_INPUT);
     await markSubmissionPaid("sub_1", {

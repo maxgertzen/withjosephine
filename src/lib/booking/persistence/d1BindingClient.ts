@@ -1,4 +1,4 @@
-import type { D1Database } from "@cloudflare/workers-types";
+import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { taintServerObject } from "@/lib/taint";
@@ -25,6 +25,10 @@ async function getDb(): Promise<D1Database> {
   return db;
 }
 
+function rowsWrittenOf(result: D1Result): { rowsWritten: number } {
+  return { rowsWritten: result.meta?.rows_written ?? result.meta?.changes ?? 0 };
+}
+
 export function createD1BindingClient(): SqlClient {
   const client: SqlClient = {
     async query(sql, params = []) {
@@ -34,13 +38,12 @@ export function createD1BindingClient(): SqlClient {
     },
     async exec(sql, params = []) {
       const db = await getDb();
-      const result = await db.prepare(sql).bind(...params).run();
-      return { rowsWritten: result.meta?.rows_written ?? result.meta?.changes ?? 0 };
+      return rowsWrittenOf(await db.prepare(sql).bind(...params).run());
     },
     async batch(statements) {
       const db = await getDb();
       const prepared = statements.map((s) => db.prepare(s.sql).bind(...(s.params ?? [])));
-      await db.batch(prepared);
+      return (await db.batch(prepared)).map(rowsWrittenOf);
     },
   };
   taintServerObject(

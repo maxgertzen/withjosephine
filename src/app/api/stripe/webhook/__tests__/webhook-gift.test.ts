@@ -12,6 +12,12 @@ vi.mock("@/lib/booking/submissions", async () => {
   };
 });
 
+vi.mock("@/lib/stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/stripe")>()),
+  refundDuplicateCheckoutSession: vi.fn(),
+  retrieveKeptPayment: vi.fn(),
+}));
+
 vi.mock("@/lib/booking/notifyPaid", () => ({
   applyPaidEvent: vi.fn(),
 }));
@@ -36,16 +42,22 @@ import { findGiftById } from "@/lib/gift/gifts";
 import { resolveGiftThankYou } from "@/lib/gift/giftThankYou";
 import { sendGiftPurchase } from "@/lib/resend";
 import { fetchEmailGiftSettings, fetchReadingPublished } from "@/lib/sanity/fetch";
+import { refundDuplicateCheckoutSession, retrieveKeptPayment } from "@/lib/stripe";
+import { keptPayment, refundAttempt } from "@/test/fixtures/duplicatePayment";
 import {
+  auditRows,
   createTestGift,
   forceGiftStatus,
   GIFT_SESSION_ID,
   giftCheckoutSession,
+  secondGiftCheckoutSession,
 } from "@/test/fixtures/gift";
 import { deliverCheckoutEvent } from "@/test/stripeWebhook";
 
 const mockSend = vi.mocked(sendGiftPurchase);
 const mockTrack = vi.mocked(serverTrack);
+const mockRefund = vi.mocked(refundDuplicateCheckoutSession);
+const mockRetrieveKept = vi.mocked(retrieveKeptPayment);
 
 function completed(giftId: string, paymentStatus?: Stripe.Checkout.Session["payment_status"]) {
   return deliverCheckoutEvent(
@@ -73,8 +85,11 @@ beforeEach(() => {
   vi.mocked(findSubmissionById).mockReset();
   vi.mocked(markSubmissionExpired).mockReset();
   vi.mocked(applyPaidEvent).mockReset();
+  mockRetrieveKept.mockReset();
   vi.mocked(fetchEmailGiftSettings).mockReset().mockResolvedValue(null);
   vi.mocked(fetchReadingPublished).mockReset().mockResolvedValue(null);
+  mockRefund.mockReset().mockResolvedValue(refundAttempt());
+  vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -123,6 +138,52 @@ describe("Stripe webhook, gift completed", () => {
     await completed(giftId, "unpaid");
     expect((await findGiftById(giftId))?.status).toBe("pending");
     expect(mockSend).not.toHaveBeenCalled();
+  });
+});
+
+describe("Stripe webhook, gift paid twice", () => {
+  it("never refunds the second session when the kept payment was refunded", async () => {
+    const giftId = await createTestGift();
+    await completed(giftId);
+    mockRetrieveKept.mockResolvedValue(
+      keptPayment(`gift_${giftId}`, { refunded: true, amount_refunded: 8900 }),
+    );
+
+    const res = await deliverCheckoutEvent("checkout.session.completed", secondGiftCheckoutSession(giftId));
+
+    expect(res.status).toBe(200);
+    expect(mockRetrieveKept).toHaveBeenCalledExactlyOnceWith(GIFT_SESSION_ID);
+    expect(mockRefund).not.toHaveBeenCalled();
+    expect((await findGiftById(giftId))?.stripeSessionId).toBe(GIFT_SESSION_ID);
+    expect(await auditRows()).toEqual([
+      { event_type: "duplicate_payment_refunded", success: 0, submission_id: `gift_${giftId}` },
+    ]);
+  });
+
+  it("refunds the second session once and keeps the first", async () => {
+    const giftId = await createTestGift();
+    await completed(giftId);
+    mockRetrieveKept.mockResolvedValue(keptPayment(`gift_${giftId}`));
+
+    const res = await deliverCheckoutEvent("checkout.session.completed", secondGiftCheckoutSession(giftId));
+
+    expect(res.status).toBe(200);
+    expect(mockRetrieveKept).toHaveBeenCalledExactlyOnceWith(GIFT_SESSION_ID);
+    expect(mockRefund).toHaveBeenCalledExactlyOnceWith(secondGiftCheckoutSession(giftId), {
+      client_reference_id: `gift_${giftId}`,
+    });
+    expect((await findGiftById(giftId))?.stripeSessionId).toBe(GIFT_SESSION_ID);
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(await auditRows()).toEqual([
+      { event_type: "duplicate_payment_refunded", success: 1, submission_id: `gift_${giftId}` },
+    ]);
+  });
+
+  it("never refunds a retried delivery of the same session", async () => {
+    const giftId = await createTestGift();
+    await completed(giftId);
+    await completed(giftId);
+    expect(mockRefund).not.toHaveBeenCalled();
   });
 });
 

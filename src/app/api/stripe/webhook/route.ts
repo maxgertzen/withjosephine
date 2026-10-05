@@ -2,56 +2,45 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { serverTrack } from "@/lib/analytics/server";
-import { applyPaidEvent } from "@/lib/booking/notifyPaid";
+import { applyPaidSession } from "@/lib/booking/applyPaidSession";
 import {
   findSubmissionById,
   markSubmissionExpired,
   SUBMISSION_STATUS,
 } from "@/lib/booking/submissions";
-import { activateGift, giftActivationFromSession } from "@/lib/gift/activateGift";
 import { giftIdFromClientReferenceId } from "@/lib/gift/clientReference";
 import { expireGift } from "@/lib/gift/expireGift";
 import { constructWebhookEvent } from "@/lib/stripe";
-import { paidFieldsFromSession, unixToIso } from "@/lib/stripeSession";
+import { unixToIso } from "@/lib/stripeSession";
 
 const SIGNATURE_HEADER = "stripe-signature";
 
 async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Promise<void> {
   const session = event.data.object;
   const paidAt = unixToIso(event.created);
-  const giftActivation = giftActivationFromSession(session, paidAt);
-  if (giftActivation) {
-    await activateGift(giftActivation);
-    return;
-  }
+  const outcome = await applyPaidSession(session, { stripeEventId: event.id, paidAt });
 
-  const submissionId = session.client_reference_id;
-  if (!submissionId) {
+  if (outcome.kind === "no_reference") {
     console.warn(`[stripe-webhook] event ${event.id} has no client_reference_id`);
     return;
   }
-
-  const submission = await findSubmissionById(submissionId);
-  if (!submission) {
+  if (outcome.kind === "submission_not_found") {
     console.warn(
-      `[stripe-webhook] submission ${submissionId} not found for event ${event.id} — manual reconcile will retry`,
+      `[stripe-webhook] submission ${outcome.submissionId} not found for event ${event.id}, manual reconcile will retry`,
     );
     return;
   }
+  if (outcome.kind !== "booking" || outcome.result !== "applied") return;
 
-  const paid = paidFieldsFromSession(session, paidAt);
-  const result = await applyPaidEvent(submission, { stripeEventId: event.id, ...paid });
-
-  if (result === "applied") {
-    void serverTrack("payment_success", {
-      distinct_id: submission._id,
-      submission_id: submission._id,
-      reading_id: submission.reading?.slug ?? "",
-      amount_paid_cents: paid.amountPaidCents,
-      currency: paid.amountPaidCurrency,
-      stripe_session_id: session.id,
-    });
-  }
+  const { submission, paid } = outcome;
+  void serverTrack("payment_success", {
+    distinct_id: submission._id,
+    submission_id: submission._id,
+    reading_id: submission.reading?.slug ?? "",
+    amount_paid_cents: paid.amountPaidCents,
+    currency: paid.amountPaidCurrency,
+    stripe_session_id: session.id,
+  });
 }
 
 async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise<void> {

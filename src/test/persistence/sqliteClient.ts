@@ -44,12 +44,12 @@ export function createSqliteClient(): SqlClient & { close: () => void } {
       return { rowsWritten: info.changes };
     },
     async batch(statements) {
-      const txn = db.transaction((batch: ReadonlyArray<{ sql: string; params?: ReadonlyArray<unknown> }>) => {
-        for (const s of batch) {
-          db.prepare(s.sql).run(...((s.params ?? []) as unknown[]));
-        }
-      });
-      txn(statements);
+      const txn = db.transaction((batch: ReadonlyArray<{ sql: string; params?: ReadonlyArray<unknown> }>) =>
+        batch.map((s) => ({
+          rowsWritten: db.prepare(s.sql).run(...((s.params ?? []) as unknown[])).changes,
+        })),
+      );
+      return txn(statements);
     },
     close() {
       db.close();

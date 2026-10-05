@@ -8,6 +8,7 @@ import {
   appendEmailFailure,
   appendEmailFired,
   buildCreateSubmissionStatement,
+  buildMarkSubmissionPaidStatement,
   claimReadingDeliveryAttempt,
   claimReadingDeliveryAttemptBody,
   clearReadingDeliveryAttempt,
@@ -15,6 +16,7 @@ import {
   type CreateSubmissionInput,
   deleteSubmission,
   findGiftRecipientThankYou,
+  findPaidStripeSessionId,
   findSubmissionById,
   findSubmissionByResendId,
   findSubmissionListenContext,
@@ -27,13 +29,18 @@ import {
   markReadingDeliverySentIfUnrecorded,
   markSubmissionDeliveredIfUnset,
   markSubmissionExpired,
-  markSubmissionPaid,
+  type MarkSubmissionPaidInput,
   type NewEmailFailure,
   setSubmissionEmailAndRecipient,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,
 } from "./repository";
 import { dbBatch, dbExec, dbQuery } from "./sqlClient";
+
+async function markSubmissionPaid(id: string, paid: MarkSubmissionPaidInput): Promise<void> {
+  const { sql, params } = buildMarkSubmissionPaidStatement(id, paid);
+  await dbExec(sql, params ?? []);
+}
 
 const BASE_INPUT: CreateSubmissionInput = {
   id: "sub_1",
@@ -128,6 +135,29 @@ describe("repository against in-memory SQLite", () => {
     const record = await findSubmissionById("sub_1");
     expect(record?.stripeEventId).toBe("evt_1");
     expect(record?.paidAt).toBe("2026-04-21T10:00:00Z");
+  });
+
+  it("finds the session a submission is paid by", async () => {
+    await createSubmission(BASE_INPUT);
+    expect(await findPaidStripeSessionId("sub_1")).toBeNull();
+
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "evt_1",
+      stripeSessionId: "cs_1",
+      paidAt: "2026-04-21T10:00:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+    });
+    await markSubmissionPaid("sub_1", {
+      stripeEventId: "evt_2",
+      stripeSessionId: "cs_2",
+      paidAt: "2026-04-21T10:01:00Z",
+      amountPaidCents: 9900,
+      amountPaidCurrency: "usd",
+    });
+
+    expect(await findPaidStripeSessionId("sub_1")).toBe("cs_1");
+    expect(await findPaidStripeSessionId("sub_missing")).toBeNull();
   });
 
   it("does not mark a paid submission expired", async () => {

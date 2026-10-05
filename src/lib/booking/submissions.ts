@@ -8,6 +8,7 @@ import type {
   SubmissionStatus,
 } from "@/lib/page-previews/types";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
+import { isPaidByAnotherSession } from "@/lib/stripeSession";
 
 import { deleteObject } from "../r2";
 import type { SubmissionContext, SubmissionResponse } from "../resend";
@@ -169,6 +170,12 @@ export async function findSubmissionListenContext(
   return repo.findSubmissionListenContext(id);
 }
 
+export async function findPaidStripeSessionId(submissionId: string): Promise<string | null> {
+  return repo.findPaidStripeSessionId(submissionId);
+}
+
+export type MarkSubmissionPaidOutcome = "marked" | "paid_by_another_session" | "not_marked";
+
 export async function markSubmissionPaid(
   submissionId: string,
   paid: {
@@ -183,14 +190,16 @@ export async function markSubmissionPaid(
   // single atomic D1 batch. retainedUntil is derived from paidAt so callers
   // can't diverge from the 6yr-retention policy.
   financial?: FinancialMirror,
-): Promise<void> {
-  if (financial) {
-    await dbBatch([
-      repo.buildMarkSubmissionPaidStatement(submissionId, paid),
-      buildFinancialMirrorStatement(financial),
-    ]);
-  } else {
-    await repo.markSubmissionPaid(submissionId, paid);
+): Promise<MarkSubmissionPaidOutcome> {
+  const statements = [repo.buildMarkSubmissionPaidStatement(submissionId, paid)];
+  if (financial) statements.push(buildFinancialMirrorStatement(financial));
+  const [paidUpdate] = await dbBatch(statements);
+  if (paidUpdate.rowsWritten === 0) {
+    const paidSessionId = await findPaidStripeSessionId(submissionId);
+    if (isPaidByAnotherSession(paidSessionId, paid.stripeSessionId)) {
+      return "paid_by_another_session";
+    }
+    if (!paidSessionId) return "not_marked";
   }
   runMirror(
     mirrorSubmissionPatch(submissionId, {
@@ -202,6 +211,7 @@ export async function markSubmissionPaid(
       amountPaidCurrency: paid.amountPaidCurrency,
     }),
   );
+  return "marked";
 }
 
 export async function markSubmissionExpired(

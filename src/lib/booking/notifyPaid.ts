@@ -1,5 +1,7 @@
 import "server-only";
 
+import * as Sentry from "@sentry/cloudflare";
+
 import { getOrCreateUser } from "../auth/users";
 import { appendGiftEmailFired } from "../gift/gifts";
 import type { GiftEmailFiredEntry } from "../gift/types";
@@ -9,6 +11,7 @@ import {
   sendNotificationToJosephine,
   type SubmissionContext,
 } from "../resend";
+import { isPaidByAnotherSession } from "../stripeSession";
 import { mintDataExportUrl } from "./dataExportUrl";
 import {
   type EmailFailureFields,
@@ -36,19 +39,40 @@ export type PaidEventDetails = {
   country: string | null;
 };
 
-export type ApplyPaidResult = "applied" | "alreadyApplied";
+export type ApplyPaidResult = "applied" | "alreadyApplied" | "duplicate" | "notApplied";
+
+function reportSubmissionNotMarkedPaid(submissionId: string): void {
+  console.warn(`[notifyPaid] submission ${submissionId} could not be marked paid, no refund`);
+  Sentry.captureMessage("Paid Checkout session did not mark its submission paid", {
+    level: "warning",
+    extra: { submissionId },
+  });
+}
+
+function reportPaymentForSubmissionPaidWithoutSession(
+  submissionId: string,
+  stripeSessionId: string,
+): void {
+  console.warn(
+    `[notifyPaid] submission ${submissionId} was paid without a Stripe session and got a paid session, refund it by hand`,
+  );
+  Sentry.captureMessage("Paid Checkout session for a submission paid without a Stripe session", {
+    level: "error",
+    extra: { submissionId, stripeSessionId },
+  });
+}
 
 export async function applyPaidEvent(
   submission: SubmissionRecord,
   details: PaidEventDetails,
 ): Promise<ApplyPaidResult> {
   if (submission.status === SUBMISSION_STATUS.paid) {
-    if (submission.stripeSessionId !== details.stripeSessionId) {
-      console.warn(
-        `[notifyPaid] submission ${submission._id} already paid by session ${submission.stripeSessionId}, ignoring paid session ${details.stripeSessionId}`,
-      );
+    if (!submission.stripeSessionId) {
+      reportPaymentForSubmissionPaidWithoutSession(submission._id, details.stripeSessionId);
     }
-    return "alreadyApplied";
+    return isPaidByAnotherSession(submission.stripeSessionId, details.stripeSessionId)
+      ? "duplicate"
+      : "alreadyApplied";
   }
 
   const context = buildSubmissionContext({
@@ -74,7 +98,16 @@ export async function applyPaidEvent(
     details,
   );
 
-  await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
+  const marked = await markSubmissionPaid(
+    submission._id,
+    { ...details, recipientUserId },
+    financial,
+  );
+  if (marked === "paid_by_another_session") return "duplicate";
+  if (marked === "not_marked") {
+    reportSubmissionNotMarkedPaid(submission._id);
+    return "notApplied";
+  }
 
   await afterSubmissionPaid({ submissionId: submission._id, context, recipientUserId });
 

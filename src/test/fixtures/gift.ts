@@ -112,3 +112,9 @@ export function giftCheckoutSession(
     customer_details: { email: "buyer@example.com", address: { country: "GB" } },
   } as Stripe.Checkout.Session;
 }
+
+export const SECOND_GIFT_SESSION_ID = "cs_test_second_session";
+
+export function secondGiftCheckoutSession(giftId: string): Stripe.Checkout.Session {
+  return { ...giftCheckoutSession(giftId), id: SECOND_GIFT_SESSION_ID };
+}

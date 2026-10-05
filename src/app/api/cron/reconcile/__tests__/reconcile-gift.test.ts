@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@sentry/cloudflare", () => ({ captureException: vi.fn() }));
+vi.mock("@sentry/cloudflare", () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 vi.mock("@/lib/booking/cron-auth", () => ({
   isCronRequestAuthorized: vi.fn(),
@@ -10,6 +10,8 @@ vi.mock("@/lib/booking/cron-auth", () => ({
 vi.mock("@/lib/stripe", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/stripe")>()),
   listRecentCompletedCheckoutSessions: vi.fn(),
+  refundDuplicateCheckoutSession: vi.fn(),
+  retrieveKeptPayment: vi.fn(),
 }));
 
 vi.mock("@/lib/booking/submissions", async () => {
@@ -49,18 +51,25 @@ import { findSubmissionById } from "@/lib/booking/submissions";
 import { findGiftById } from "@/lib/gift/gifts";
 import { sendGiftPurchase } from "@/lib/resend";
 import { fetchEmailGiftSettings, fetchReadingPublished } from "@/lib/sanity/fetch";
-import { listRecentCompletedCheckoutSessions } from "@/lib/stripe";
-import { createTestGift, giftCheckoutSession } from "@/test/fixtures/gift";
+import {
+  listRecentCompletedCheckoutSessions,
+  refundDuplicateCheckoutSession,
+  retrieveKeptPayment,
+} from "@/lib/stripe";
+import { keptPayment, refundAttempt } from "@/test/fixtures/duplicatePayment";
+import { createTestGift, giftCheckoutSession, secondGiftCheckoutSession } from "@/test/fixtures/gift";
 import { deliverCheckoutEvent } from "@/test/stripeWebhook";
 
 const mockSend = vi.mocked(sendGiftPurchase);
 const mockList = vi.mocked(listRecentCompletedCheckoutSessions);
+const mockRefund = vi.mocked(refundDuplicateCheckoutSession);
+const mockRetrieveKept = vi.mocked(retrieveKeptPayment);
 
 async function runReconcile(sessions: Stripe.Checkout.Session[]) {
   mockList.mockResolvedValueOnce(sessions);
   const { POST } = await import("../route");
   const res = await POST(new Request("http://localhost/api/cron/reconcile", { method: "POST" }));
-  return (await res.json()) as { checked: number; reconciled: number };
+  return (await res.json()) as { checked: number; reconciled: number; refunded: number };
 }
 
 beforeEach(() => {
@@ -68,6 +77,8 @@ beforeEach(() => {
   vi.mocked(isCronRequestAuthorized).mockReset().mockReturnValue(true);
   vi.mocked(findSubmissionById).mockReset();
   mockList.mockReset();
+  mockRetrieveKept.mockReset();
+  mockRefund.mockReset().mockResolvedValue(refundAttempt());
   mockSend.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_1" });
   vi.mocked(fetchEmailGiftSettings).mockReset().mockResolvedValue(null);
   vi.mocked(fetchReadingPublished).mockReset().mockResolvedValue(null);
@@ -93,7 +104,7 @@ describe("/api/cron/reconcile with gifts", () => {
 
     const summary = await runReconcile([giftCheckoutSession(giftId)]);
 
-    expect(summary).toEqual({ checked: 1, reconciled: 0 });
+    expect(summary).toEqual({ checked: 1, reconciled: 0, refunded: 0 });
     expect(await findGiftById(giftId)).toMatchObject({
       status: "active",
       activatedAt: "2026-10-01T10:05:00.000Z",
@@ -121,7 +132,7 @@ describe("/api/cron/reconcile with gifts", () => {
       { ...giftCheckoutSession(giftId), id: "cs_test_booking", client_reference_id: "sub_1" },
     ]);
 
-    expect(summary).toEqual({ checked: 2, reconciled: 1 });
+    expect(summary).toEqual({ checked: 2, reconciled: 1, refunded: 0 });
     expect((await findGiftById(giftId))?.buyerEmailClaimedAt).toBeNull();
     expect(Sentry.captureException).toHaveBeenCalledWith(
       expect.objectContaining({ message: "resend down" }),
@@ -130,5 +141,23 @@ describe("/api/cron/reconcile with gifts", () => {
     expect(consoleError).toHaveBeenCalledWith(
       `[cron-reconcile] gift ${giftId} activation failed (Error), next run retries`,
     );
+  });
+
+  it("refunds a second paid session for a gift once and skips Stripe on the next run", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const giftId = await createTestGift();
+    await deliverCheckoutEvent("checkout.session.completed", giftCheckoutSession(giftId));
+    const second = secondGiftCheckoutSession(giftId);
+    mockRetrieveKept.mockResolvedValue(keptPayment(`gift_${giftId}`));
+
+    const first = await runReconcile([giftCheckoutSession(giftId), second]);
+    const rerun = await runReconcile([giftCheckoutSession(giftId), second]);
+
+    expect(first).toEqual({ checked: 2, reconciled: 0, refunded: 1 });
+    expect(rerun).toEqual({ checked: 2, reconciled: 0, refunded: 0 });
+    expect(mockRefund).toHaveBeenCalledExactlyOnceWith(second, {
+      client_reference_id: `gift_${giftId}`,
+    });
+    expect((await findGiftById(giftId))?.stripeSessionId).toBe(giftCheckoutSession(giftId).id);
   });
 });

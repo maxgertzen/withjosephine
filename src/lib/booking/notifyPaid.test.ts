@@ -101,7 +101,7 @@ const SUBMISSION: SubmissionRecord = {
 };
 
 beforeEach(() => {
-  mockMarkPaid.mockReset().mockResolvedValue(undefined);
+  mockMarkPaid.mockReset().mockResolvedValue("marked");
   mockJosephine.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_j" });
   mockCustomerConfirmation
     .mockReset()
@@ -144,8 +144,7 @@ describe("applyPaidEvent", () => {
     warnSpy.mockRestore();
   });
 
-  it("warns when a second paid session arrives for an already-paid submission", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("returns duplicate without side effects when a second paid session arrives for an already-paid submission", async () => {
     const result = await applyPaidEvent(
       { ...SUBMISSION, status: "paid", stripeEventId: "evt_1", stripeSessionId: "cs_1" },
       {
@@ -158,8 +157,51 @@ describe("applyPaidEvent", () => {
       },
     );
 
+    expect(result).toBe("duplicate");
+    expect(mockMarkPaid).not.toHaveBeenCalled();
+    expect(mockJosephine).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+  });
+
+  it("warns and refunds nothing when a paid session arrives for a submission paid without a Stripe session", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await applyPaidEvent(
+      { ...SUBMISSION, status: "paid", stripeSessionId: undefined },
+      PAID_DETAILS,
+    );
+
     expect(result).toBe("alreadyApplied");
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("cs_2"));
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[notifyPaid] submission sub_1 was paid without a Stripe session and got a paid session, refund it by hand",
+    );
+    expect(mockMarkPaid).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("returns duplicate and sends nothing when another session marked the submission paid first", async () => {
+    mockMarkPaid.mockResolvedValueOnce("paid_by_another_session");
+
+    const result = await applyPaidEvent(SUBMISSION, { ...PAID_DETAILS, stripeSessionId: "cs_2" });
+
+    expect(result).toBe("duplicate");
+    expect(mockJosephine).not.toHaveBeenCalled();
+    expect(mockCustomerConfirmation).not.toHaveBeenCalled();
+    expect(mockAppendEmailFired).not.toHaveBeenCalled();
+  });
+
+  it("returns notApplied, warns and sends nothing when the submission could not be marked paid", async () => {
+    mockMarkPaid.mockResolvedValueOnce("not_marked");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await applyPaidEvent(SUBMISSION, PAID_DETAILS);
+
+    expect(result).toBe("notApplied");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[notifyPaid] submission sub_1 could not be marked paid, no refund",
+    );
+    expect(mockJosephine).not.toHaveBeenCalled();
     expect(mockCustomerConfirmation).not.toHaveBeenCalled();
     warnSpy.mockRestore();
   });

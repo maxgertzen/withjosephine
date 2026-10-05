@@ -20,3 +20,10 @@ export function paidFieldsFromSession(
     country: session.customer_details?.address?.country ?? null,
   };
 }
+
+export function isPaidByAnotherSession(
+  storedSessionId: string | null | undefined,
+  stripeSessionId: string,
+): boolean {
+  return Boolean(storedSessionId) && storedSessionId !== stripeSessionId;
+}

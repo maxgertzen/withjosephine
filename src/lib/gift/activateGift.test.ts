@@ -16,6 +16,10 @@ vi.mock("@/lib/analytics/server", () => ({
   serverTrack: vi.fn(),
 }));
 
+vi.mock("@sentry/cloudflare", () => ({ captureMessage: vi.fn() }));
+
+import * as Sentry from "@sentry/cloudflare";
+
 import { serverTrack } from "@/lib/analytics/server";
 import type { CreatePendingGiftInput } from "@/lib/gift/gifts";
 import { sendGiftPurchase } from "@/lib/resend";
@@ -73,6 +77,7 @@ beforeEach(() => {
   mockGiftSettings.mockReset().mockResolvedValue(null);
   mockReading.mockReset().mockResolvedValue({ name: "Birth Chart Reading" } as never);
   mockTrack.mockReset().mockResolvedValue(undefined);
+  vi.mocked(Sentry.captureMessage).mockReset();
   capturedConsole = captureConsole();
 });
 
@@ -295,33 +300,86 @@ describe("activateGift", () => {
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves a cancelled gift cancelled and sends nothing", async () => {
+  it("leaves a gift cancelled before payment cancelled, sends nothing and warns Sentry", async () => {
     const giftId = await createGift();
     await forceGiftStatus(giftId, "cancelled");
     const outcome = await activateGift(paidInput(giftId));
-    expect(outcome).toMatchObject({ result: "done", gift: { status: "cancelled" } });
+    await activateGift(paidInput(giftId));
+    expect(outcome).toMatchObject({
+      result: "cancelled_before_payment",
+      gift: { status: "cancelled" },
+    });
     expect((await findGiftById(giftId))?.status).toBe("cancelled");
     expect(mockSend).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledExactlyOnceWith(
+      "Paid Checkout session for a gift cancelled before payment",
+      { level: "warning", extra: { giftId, stripeSessionId: SESSION_ID } },
+    );
   });
 
-  it("warns and sends no second email when another session pays for an active gift", async () => {
+  it("flags a duplicate and sends no second email when another session pays for an active gift", async () => {
     const giftId = await createGift();
-    await activateGift(paidInput(giftId));
-    await activateGift(paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID }));
+    const first = await activateGift(paidInput(giftId));
+    const second = await activateGift(paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID }));
 
+    expect(first.result).toBe("done");
+    expect(second.result).toBe("duplicate");
     expect(mockSend).toHaveBeenCalledTimes(1);
     expect((await findGiftById(giftId))?.stripeSessionId).toBe(SESSION_ID);
-    expect(capturedConsole.text()).toContain(`gift ${giftId} already paid by another session`);
   });
 
-  it("warns when two different sessions pay for a pending gift at the same time", async () => {
+  it("flags exactly one duplicate when two different sessions pay for a pending gift at the same time", async () => {
     const giftId = await createGift();
-    await Promise.all([
+    const outcomes = await Promise.all([
       activateGift(paidInput(giftId)),
       activateGift(paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID })),
     ]);
+    expect(outcomes.map((outcome) => outcome.result).sort()).toEqual(["done", "duplicate"]);
     expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(capturedConsole.text()).toContain(`gift ${giftId} already paid by another session`);
+  });
+
+  it("does not flag a duplicate when the same session is delivered again", async () => {
+    const giftId = await createGift();
+    await activateGift(paidInput(giftId));
+    expect((await activateGift(paidInput(giftId))).result).toBe("done");
+  });
+
+  it.each(["redeemed", "cancelled"] as const)(
+    "flags a duplicate when another session pays for a %s gift",
+    async (status) => {
+      const giftId = await createGift();
+      await activateGift(paidInput(giftId));
+      await forceGiftStatus(giftId, status);
+
+      const outcome = await activateGift(paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID }));
+
+      expect(outcome.result).toBe("duplicate");
+      expect((await findGiftById(giftId))?.status).toBe(status);
+    },
+  );
+
+  it("flags a duplicate before checking the buyer email", async () => {
+    const giftId = await createGift();
+    await activateGift(paidInput(giftId));
+
+    const outcome = await activateGift(
+      paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID, buyerEmail: null }),
+    );
+
+    expect(outcome.result).toBe("duplicate");
+  });
+
+  it("sends no buyer email and tracks nothing for a duplicate session, even after a failed first send", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "rate limited" });
+    const giftId = await createGift();
+    await activateGift(paidInput(giftId));
+    mockSend.mockClear();
+    mockTrack.mockClear();
+
+    await activateGift(paidInput(giftId, { stripeSessionId: OTHER_SESSION_ID }));
+
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(mockTrack).not.toHaveBeenCalled();
   });
 
   it("releases the claim after a failed send so the next call sends", async () => {

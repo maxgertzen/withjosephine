@@ -22,7 +22,12 @@ vi.mock("@/lib/analytics/server", () => ({
   serverTrack: vi.fn(),
 }));
 
+vi.mock("@/lib/booking/duplicatePayment", () => ({
+  refundDuplicatePayment: vi.fn(),
+}));
+
 import { serverTrack } from "@/lib/analytics/server";
+import { refundDuplicatePayment } from "@/lib/booking/duplicatePayment";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
 import type { SubmissionRecord } from "@/lib/booking/submissions";
 import {
@@ -36,6 +41,7 @@ const mockFind = vi.mocked(findSubmissionById);
 const mockApply = vi.mocked(applyPaidEvent);
 const mockMarkExpired = vi.mocked(markSubmissionExpired);
 const mockServerTrack = vi.mocked(serverTrack);
+const mockRefund = vi.mocked(refundDuplicatePayment);
 
 const SUBMISSION: SubmissionRecord = {
   _id: "sub_1",
@@ -55,6 +61,7 @@ beforeEach(() => {
   mockApply.mockReset().mockResolvedValue("applied");
   mockMarkExpired.mockReset().mockResolvedValue(true);
   mockServerTrack.mockReset().mockResolvedValue(undefined);
+  mockRefund.mockReset().mockResolvedValue(true);
 });
 
 async function callRoute(
@@ -116,6 +123,40 @@ describe("/api/stripe/webhook", () => {
       amountPaidCurrency: null,
       country: null,
     });
+  });
+
+  it("refunds a duplicate paid session and does not track it as a payment", async () => {
+    const session = { id: "cs_2", client_reference_id: "sub_1", payment_status: "paid" };
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_2",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: { object: session },
+    } as never);
+    mockFind.mockResolvedValueOnce({ ...SUBMISSION, status: "paid", stripeSessionId: "cs_1" });
+    mockApply.mockResolvedValueOnce("duplicate");
+
+    const res = await callRoute("{}");
+
+    expect(res.status).toBe(200);
+    expect(mockRefund).toHaveBeenCalledExactlyOnceWith(session);
+    expect(mockServerTrack).not.toHaveBeenCalled();
+  });
+
+  it("does not mark a booking paid for an unpaid completed session", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_1",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: { object: { id: "cs_1", client_reference_id: "sub_1", payment_status: "unpaid" } },
+    } as never);
+
+    const res = await callRoute("{}");
+
+    expect(res.status).toBe(200);
+    expect(mockFind).not.toHaveBeenCalled();
+    expect(mockApply).not.toHaveBeenCalled();
+    expect(mockRefund).not.toHaveBeenCalled();
   });
 
   it("forwards customer_details.address.country to applyPaidEvent for financial_records", async () => {
