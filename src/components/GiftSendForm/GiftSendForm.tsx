@@ -103,12 +103,13 @@ function sentCardText(
   }
   return {
     heading: copy.alreadySentHeading,
-    body: lastSentAt
-      ? applyTokens(copy.alreadySentBodyTemplate, {
-          recipientName,
-          date: formatLongDate(lastSentAt),
-        })
-      : null,
+    body:
+      lastSentAt && recipientName
+        ? applyTokens(copy.alreadySentBodyTemplate, {
+            recipientName,
+            date: formatLongDate(lastSentAt),
+          })
+        : null,
   };
 }
 

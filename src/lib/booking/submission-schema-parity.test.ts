@@ -49,11 +49,8 @@ describe("submission schema parity", () => {
     }
   });
 
-  it("declares the read-only gift block with the buyer's first name and a weak gift record link", () => {
+  it("declares the read-only gift block with the buyer's first name", () => {
     expect(SCHEMA_SOURCE).toMatch(/name:\s*"gift",[^]*?readOnly:\s*true[^]*?name:\s*"buyerFirstName"/);
-    expect(SCHEMA_SOURCE).toMatch(
-      /name:\s*"gift",[^]*?name:\s*"giftRecord",[^}]*?to:\s*\[\{\s*type:\s*"giftRecord"\s*\}\],\s*weak:\s*true/,
-    );
   });
 
   it("declares deliveredAt read-only so only the send writes it", () => {

@@ -158,10 +158,13 @@ export async function recordGiftEmailResent(
   entry: GiftEmailFiredEntry,
   requestedType: GiftEmailFiredType,
 ): Promise<void> {
-  await dbBatch([
-    repo.buildAppendGiftEmailFiredStatement(giftId, entry),
-    repo.buildResolveGiftEmailFailuresStatement(giftId, requestedType, entry.sentAt),
-  ]);
+  const statements = [repo.buildAppendGiftEmailFiredStatement(giftId, entry)];
+  if (requestedType !== entry.type) {
+    statements.push(
+      repo.buildResolveGiftEmailFailuresStatement(giftId, requestedType, entry.sentAt),
+    );
+  }
+  await dbBatch(statements);
   scheduleGiftSubmissionMirror(giftId);
 }
 
@@ -169,7 +172,12 @@ export async function appendGiftEmailFailure(
   giftId: string,
   failure: NewGiftEmailFailure,
 ): Promise<void> {
-  if (await repo.appendGiftEmailFailure(giftId, failure)) scheduleGiftSubmissionMirror(giftId);
+  await dbBatch([repo.buildAppendGiftEmailFailureStatement(giftId, failure)]);
+  scheduleGiftSubmissionMirror(giftId);
+}
+
+export async function findGiftByDocId(docId: string): Promise<GiftRecord | null> {
+  return repo.findGiftByDocId(docId);
 }
 
 export async function findGiftByResendId(resendId: string): Promise<GiftRecord | null> {

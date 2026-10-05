@@ -4,6 +4,7 @@ import { buildRedeemGiftStatement } from "@/lib/gift/gifts";
 import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 
 import type { EmailFiredEntry } from "../submissions";
+import type { NewEmailFailure } from "./emailFailureSql";
 import {
   appendEmailFailure,
   appendEmailFired,
@@ -30,7 +31,6 @@ import {
   markSubmissionDeliveredIfUnset,
   markSubmissionExpired,
   type MarkSubmissionPaidInput,
-  type NewEmailFailure,
   setSubmissionEmailAndRecipient,
   setSubmissionRecipientUser,
   unsetPhotoR2Key,

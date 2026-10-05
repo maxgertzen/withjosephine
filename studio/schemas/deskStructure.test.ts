@@ -82,10 +82,13 @@ describe("desk structure submissions", () => {
 describe("desk structure failed sends", () => {
   const failedSends = item(root, "submissionsFailedSends");
 
-  it("lists submissions with an open booking failure or an open gift email failure", () => {
+  it("lists submissions with an open booking failure or an open gift failure Becky can act on", () => {
     expect(childOf(failedSends).calls.filter).toEqual([FAILED_SENDS_FILTER]);
-    expect(FAILED_SENDS_FILTER).toContain("count(emailFailures[!defined(resolvedAt)]) > 0");
-    expect(FAILED_SENDS_FILTER).toContain("count(gift.emailFailures[!defined(resolvedAt)]) > 0");
+    expect(FAILED_SENDS_FILTER).toBe(
+      '_type == "submission" && (count(emailFailures[!defined(resolvedAt)]) > 0' +
+        ' || (status == "gift_waiting" && count(gift.emailFailures[!defined(resolvedAt) && emailType in ["gift_confirmation", "gift_send"]]) > 0)' +
+        ' || (status == "paid" && count(gift.emailFailures[!defined(resolvedAt) && emailType == "gift_opened"]) > 0))',
+    );
   });
 
   it("orders by payment, then by creation for gifts not paid for by a recipient", () => {
@@ -113,9 +116,7 @@ describe("desk structure gift documents", () => {
     expect(emails).toContain("emailOrderConfirmation");
   });
 
-  it("keeps the old gift record list on its own under Gifts", () => {
-    const gifts = listOf(root, "giftsGroup");
-    expect(ids(gifts)).toEqual(["giftRecords"]);
-    expect(filterOf(gifts, "giftRecords")).toBe('_type == "giftRecord"');
+  it("has no separate Gifts group", () => {
+    expect(ids(root)).not.toContain("giftsGroup");
   });
 });

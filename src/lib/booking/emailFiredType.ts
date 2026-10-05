@@ -29,6 +29,10 @@ export function emailFiredTypeNeedle(stored: string): string {
   return `"type":"${stored}"`;
 }
 
+export function resendIdNeedle(resendId: string): string {
+  return `"resendId":${JSON.stringify(resendId)}`;
+}
+
 export function asCustomerEmailType(stored: string | undefined): CustomerEmailType | null {
   const current = stored === undefined ? undefined : currentEmailFiredType(stored);
   return CUSTOMER_EMAIL_TYPES.find((type) => type === current) ?? null;

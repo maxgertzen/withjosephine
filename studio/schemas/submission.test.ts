@@ -109,7 +109,7 @@ describe("submission delivery box", () => {
 describe("submission gift block", () => {
   const giftFields = () => findField("gift")?.fields ?? [];
 
-  it("is read-only and declares only the fields Becky sees, plus the gift record link", () => {
+  it("is read-only and declares only the fields Becky sees", () => {
     expect(findField("gift")?.readOnly).toBe(true);
     expect(giftFields().map((field) => field.name)).toEqual([
       "buyerFirstName",
@@ -119,7 +119,6 @@ describe("submission gift block", () => {
       "openedAt",
       "hasNote",
       "emailFailures",
-      "giftRecord",
     ]);
   });
 

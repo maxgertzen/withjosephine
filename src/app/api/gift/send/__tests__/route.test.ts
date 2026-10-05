@@ -381,6 +381,21 @@ describe("POST /api/gift/send success", () => {
 });
 
 describe("POST /api/gift/send failures", () => {
+  it("gives the send slot back even when the failure cannot be recorded", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500", statusCode: 500 });
+    const { giftId, token } = await activeGift();
+    await dbExec(
+      `CREATE TRIGGER block_gift_failures BEFORE UPDATE OF email_failures_json ON gift_codes
+       BEGIN SELECT RAISE(ABORT, 'failures down'); END`,
+    );
+
+    const res = await callRoute(sendBody(token));
+
+    expect(res.status).toBe(502);
+    expect(await giftRow(giftId)).toMatchObject({ send_count: 0, recipient_email: null });
+    await dbExec(`DROP TRIGGER block_gift_failures`);
+  });
+
   it("records the failed gift email for the recipient role, never the address", async () => {
     mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500", statusCode: 500 });
     const { giftId, token } = await activeGift();

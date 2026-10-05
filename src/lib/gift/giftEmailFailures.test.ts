@@ -13,7 +13,11 @@ import { dbExec } from "@/lib/booking/persistence/sqlClient";
 import { captureConsole } from "@/test/captureConsole";
 import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 
-import { recordGiftEmailFailure, releaseBouncedGiftSend } from "./giftEmailFailures";
+import {
+  recordGiftEmailFailure,
+  recordUnsentGiftEmail,
+  releaseBouncedGiftSend,
+} from "./giftEmailFailures";
 import { appendGiftEmailFired, findGiftById, recordGiftEmailResent } from "./gifts";
 
 const BOUNCE = {
@@ -151,25 +155,36 @@ describe("resolving gift failures", () => {
 
 describe("releaseBouncedGiftSend", () => {
   it.each([
-    [1, ["msg_gs_1"], 0],
-    [2, ["msg_gs_0", "msg_gs_1"], 1],
+    ["send 1 of 1", 1, ["msg_gs_1"], "msg_gs_1", 0],
+    ["send 2 of 2", 2, ["msg_gs_0", "msg_gs_1"], "msg_gs_1", 1],
   ])(
-    "gives the buyer back the send slot when the latest of %s sends bounced",
-    async (sendCount, resendIds, expected) => {
+    "gives the slot back when %s bounced and forgets the recipient name",
+    async (_label, sendCount, resendIds, bounced, expected) => {
       const giftId = await activeGift();
       await setSends(giftId, sendCount, resendIds);
+      mockMirrorGiftSubmission.mockClear();
 
-      await releaseBouncedGiftSend((await findGiftById(giftId))!, "msg_gs_1");
+      await releaseBouncedGiftSend((await findGiftById(giftId))!, bounced);
 
       const gift = (await findGiftById(giftId))!;
       expect(gift.sendCount).toBe(expected);
-      expect(gift.recipientName).toBe("Anna");
+      expect(gift.recipientName).toBeNull();
+      expect(mockMirrorGiftSubmission).toHaveBeenCalledOnce();
     },
   );
 
-  it("keeps the slot when an earlier send bounced", async () => {
+  it("keeps the slot when a late bounce of send 1 arrives while send 2 is claimed", async () => {
     const giftId = await activeGift();
     await setSends(giftId, 2, ["msg_gs_1", "msg_gs_2"]);
+
+    await releaseBouncedGiftSend((await findGiftById(giftId))!, "msg_gs_1");
+
+    expect((await findGiftById(giftId))!.sendCount).toBe(2);
+  });
+
+  it("keeps the slot when the send was claimed again after the bounced email", async () => {
+    const giftId = await activeGift();
+    await setSends(giftId, 2, ["msg_gs_1"]);
 
     await releaseBouncedGiftSend((await findGiftById(giftId))!, "msg_gs_1");
 
@@ -184,5 +199,41 @@ describe("releaseBouncedGiftSend", () => {
     await releaseBouncedGiftSend((await findGiftById(giftId))!, "msg_gs_1");
 
     expect((await findGiftById(giftId))!.sendCount).toBe(1);
+  });
+});
+
+describe("recordUnsentGiftEmail", () => {
+  it.each([
+    [{ kind: "failed" as const, error: "Resend 500", statusCode: 500 }, "send_error", "Resend 500"],
+    [{ kind: "skipped" as const, reason: "no_api_key" as const }, "refused", "no_api_key"],
+  ])("records an unsent result (%o)", async (result, kind, errorCode) => {
+    const giftId = await activeGift();
+
+    await recordUnsentGiftEmail(giftId, "gift_opened", "2026-10-05T09:00:00.000Z", result);
+
+    expect((await findGiftById(giftId))!.emailFailures).toEqual([
+      expect.objectContaining({
+        emailType: "gift_opened",
+        kind,
+        errorCode,
+        attemptedAt: "2026-10-05T09:00:00.000Z",
+      }),
+    ]);
+  });
+
+  it("records a thrown error with its message scrubbed", async () => {
+    const giftId = await activeGift();
+
+    await recordUnsentGiftEmail(
+      giftId,
+      "gift_confirmation",
+      "2026-10-05T09:00:00.000Z",
+      new Error("refused for dana@example.com"),
+    );
+
+    expect((await findGiftById(giftId))!.emailFailures[0]).toMatchObject({
+      kind: "send_error",
+      errorMessage: "refused for [address]",
+    });
   });
 });

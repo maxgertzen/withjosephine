@@ -231,8 +231,10 @@ Each journey runs once at 375px (Chrome DevTools) and once on desktop.
 **As Becky (`pnpm studio:dev`, staging workspace, before the release; deployed Studio after it):**
 1. Paid awaiting delivery: the B4 submission reads "email · Gift from <buyer> · Paid ... · Day 1 of 7".
 2. Open it: gift fields read-only, no note.
-3. Gifts list: B4 gift "Opened", the B3 gift before redeem "Sent by email", the B5 gift "Waiting".
-4. Gift Settings: change the price line; Presentation, Gift pages, "opened, with note" shows the change.
+3. 📬 Submissions, 🎁 Gifts not opened yet: the B5 gift is listed as "Gift from <buyer> · Birth Chart Reading · Not opened yet · Bought <date>". The B4 gift is not in this list.
+4. Open the B5 gift: Payment tab, Gift: "From", "Bought" and "Sent by email" have values. The Delivery box reads "Waiting for the recipient."
+5. Pages, Booking Flow, Gift Settings: change the price line; Presentation, Gift pages, "opened, with note" shows the change. The four gift emails are in Booking Flow, not in Emails.
+6. Send a fresh paid gift to `bounced@resend.dev`. ⚠️ Failed sends lists the gift. Its Delivery box shows "Gift email: Bounced" to the recipient and a "Resend gift confirmation to buyer" button. No email address is shown.
 
 ### B7: Resend tracking
 

@@ -4,7 +4,7 @@ import { asGiftEmailType } from "@/lib/gift/types";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import { asCustomerEmailType } from "../emailFiredType";
-import type { ResendRequest } from "../resendCustomerEmail";
+import type { ResendRequest } from "../resendRequest";
 
 type SanityStudioRequest = {
   _id: string;
@@ -36,11 +36,18 @@ function toPendingResendRequest(doc: SanityStudioRequest): PendingResendRequest 
   if (!requestedAt) return null;
   const giftEmailType = asGiftEmailType(doc.emailResendRequest?.emailType);
   if (giftEmailType) {
-    return { submissionId: doc._id, revision: doc._rev, emailType: giftEmailType, requestedAt };
+    return {
+      kind: "gift",
+      submissionId: doc._id,
+      revision: doc._rev,
+      emailType: giftEmailType,
+      requestedAt,
+    };
   }
   const emailType = asCustomerEmailType(doc.emailResendRequest?.emailType);
   if (!emailType) return null;
   return {
+    kind: "customer",
     submissionId: doc._id,
     revision: doc._rev,
     emailType,
@@ -90,7 +97,7 @@ export async function restoreResendRequest(request: PendingResendRequest): Promi
     .setIfMissing({
       emailResendRequest: {
         emailType: request.emailType,
-        correctedEmail: ("correctedEmail" in request && request.correctedEmail) || undefined,
+        correctedEmail: (request.kind === "customer" && request.correctedEmail) || undefined,
         requestedAt: request.requestedAt,
       },
     })

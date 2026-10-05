@@ -19,8 +19,6 @@ export const EMAIL_PREVIEW_SINGLETON_TYPES: ReadonlySet<string> = new Set(
   Object.keys(EMAIL_ALLOWED_SLOTS),
 );
 
-export const SITE_WRITTEN_TYPES: ReadonlySet<string> = new Set(["giftRecord"]);
-
 export const SINGLETON_TYPES = new Set([
   "landingPage",
   "bookingPage",
@@ -102,8 +100,13 @@ const paidAwaitingDelivery = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
-export const FAILED_SENDS_FILTER =
-  '_type == "submission" && (count(emailFailures[!defined(resolvedAt)]) > 0 || count(gift.emailFailures[!defined(resolvedAt)]) > 0)';
+const OPEN_BOOKING_FAILURE = "count(emailFailures[!defined(resolvedAt)]) > 0";
+
+const OPEN_WAITING_GIFT_FAILURE = `status == "${GIFT_SUBMISSION_STATUS.waiting}" && count(gift.emailFailures[!defined(resolvedAt) && emailType in ["gift_confirmation", "gift_send"]]) > 0`;
+
+const OPEN_OPENED_GIFT_FAILURE = `status == "paid" && count(gift.emailFailures[!defined(resolvedAt) && emailType == "gift_opened"]) > 0`;
+
+export const FAILED_SENDS_FILTER = `_type == "submission" && (${OPEN_BOOKING_FAILURE} || (${OPEN_WAITING_GIFT_FAILURE}) || (${OPEN_OPENED_GIFT_FAILURE}))`;
 
 const failedSends = (S: StructureBuilder) =>
   S.listItem()
@@ -273,28 +276,6 @@ const notesGroup = (S: StructureBuilder) =>
         ]),
     );
 
-const giftsGroup = (S: StructureBuilder) =>
-  S.listItem()
-    .title("🎁 Gifts")
-    .id("giftsGroup")
-    .child(
-      S.list()
-        .title("Gifts")
-        .items([
-          S.listItem()
-            .title("Gifts")
-            .id("giftRecords")
-            .child(
-              S.documentList()
-                .title("Gifts")
-                .schemaType("giftRecord")
-                .filter('_type == "giftRecord"')
-                .defaultOrdering([{ field: "paidAt", direction: "desc" }])
-                .initialValueTemplates([]),
-            ),
-        ]),
-    );
-
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title("Content")
@@ -310,7 +291,6 @@ export const deskStructure = (S: StructureBuilder) =>
       S.documentTypeListItem("testimonial").title("Testimonials"),
       S.documentTypeListItem("faqItem").title("FAQ Items"),
       notesGroup(S),
-      giftsGroup(S),
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),

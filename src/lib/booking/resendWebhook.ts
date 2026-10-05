@@ -28,34 +28,44 @@ function isFailureEvent(event: WebhookEventPayload): event is FailureEvent {
   return event.type in FAILURE_KIND_BY_EVENT;
 }
 
-type GiftTarget = { gift: GiftRecord; emailType: GiftEmailFiredType };
+type FailureData = FailureEvent["data"];
 
-async function findGiftTarget(data: FailureEvent["data"]): Promise<GiftTarget | null> {
-  if (data.tags?.[CUSTOMER_EMAIL_TAG.submissionId]) return null;
-  const taggedId = data.tags?.[GIFT_EMAIL_TAG.giftId];
-  const taggedType = asGiftEmailType(data.tags?.[GIFT_EMAIL_TAG.emailType]);
-  if (taggedId && taggedType) {
-    const gift = await findGiftById(taggedId);
-    return gift ? { gift, emailType: taggedType } : null;
+type FailureTarget =
+  | { kind: "submission"; submission: SubmissionRecord; emailType: CustomerEmailType }
+  | { kind: "gift"; gift: GiftRecord; emailType: GiftEmailFiredType };
+
+async function findTaggedTarget(data: FailureData): Promise<FailureTarget | null | undefined> {
+  const tags = data.tags ?? {};
+  const giftId = tags[GIFT_EMAIL_TAG.giftId];
+  const giftEmailType = asGiftEmailType(tags[GIFT_EMAIL_TAG.emailType]);
+  if (giftId && giftEmailType) {
+    const gift = await findGiftById(giftId);
+    return gift ? { kind: "gift", gift, emailType: giftEmailType } : null;
   }
-  const gift = await findGiftByResendId(data.email_id);
-  const entry = gift?.emailsFired.find((fired) => fired.resendId === data.email_id);
-  return gift && entry ? { gift, emailType: entry.type } : null;
+  const submissionId = tags[CUSTOMER_EMAIL_TAG.submissionId];
+  const customerEmailType = asCustomerEmailType(tags[CUSTOMER_EMAIL_TAG.emailType]);
+  if (submissionId && customerEmailType) {
+    const submission = await findSubmissionById(submissionId);
+    return submission ? { kind: "submission", submission, emailType: customerEmailType } : null;
+  }
+  return undefined;
 }
 
-async function findTarget(
-  data: FailureEvent["data"],
-): Promise<{ submission: SubmissionRecord; emailType: CustomerEmailType } | null> {
-  const taggedId = data.tags?.[CUSTOMER_EMAIL_TAG.submissionId];
-  const taggedType = asCustomerEmailType(data.tags?.[CUSTOMER_EMAIL_TAG.emailType]);
-  if (taggedId && taggedType) {
-    const submission = await findSubmissionById(taggedId);
-    return submission ? { submission, emailType: taggedType } : null;
+async function findTargetByResendId(resendId: string): Promise<FailureTarget | null> {
+  const submission = await findSubmissionByResendId(resendId);
+  if (submission) {
+    const entry = submission.emailsFired?.find((fired) => fired.resendId === resendId);
+    const emailType = asCustomerEmailType(entry?.type);
+    return emailType ? { kind: "submission", submission, emailType } : null;
   }
-  const submission = await findSubmissionByResendId(data.email_id);
-  const entry = submission?.emailsFired?.find((fired) => fired.resendId === data.email_id);
-  const emailType = asCustomerEmailType(entry?.type);
-  return submission && emailType ? { submission, emailType } : null;
+  const gift = await findGiftByResendId(resendId);
+  const entry = gift?.emailsFired.find((fired) => fired.resendId === resendId);
+  return gift && entry ? { kind: "gift", gift, emailType: entry.type } : null;
+}
+
+async function findTarget(data: FailureData): Promise<FailureTarget | null> {
+  const tagged = await findTaggedTarget(data);
+  return tagged === undefined ? findTargetByResendId(data.email_id) : tagged;
 }
 
 function failureDetails(
@@ -76,57 +86,74 @@ function failureDetails(
   }
 }
 
-function isStale(
-  submission: SubmissionRecord,
-  emailType: CustomerEmailType,
-  data: FailureEvent["data"],
+function hasNewerSend(
+  emailsFired: ReadonlyArray<{ type: string; sentAt: string; resendId: string | null }>,
+  matchesType: (type: string) => boolean,
+  data: FailureData,
 ): boolean {
-  const recipient = data.to[0];
-  if (recipient && normalizeEmail(recipient) !== normalizeEmail(submission.email)) return true;
-  return (submission.emailsFired ?? []).some(
+  return emailsFired.some(
     (fired) =>
-      isEmailFiredOfType(fired.type, emailType) &&
+      matchesType(fired.type) &&
       fired.resendId !== data.email_id &&
       Date.parse(fired.sentAt) > Date.parse(data.created_at),
   );
 }
 
-export type ResendWebhookOutcome = "recorded" | "duplicate" | "stale" | "ignored";
-
-function isStaleGiftEvent(
-  gift: GiftRecord,
-  emailType: GiftEmailFiredType,
-  data: FailureEvent["data"],
+function isAlreadyRecorded(
+  failures: ReadonlyArray<{ resendId: string | null; kind: EmailFailureKind }>,
+  data: FailureData,
+  kind: EmailFailureKind,
 ): boolean {
-  return gift.emailsFired.some(
-    (fired) =>
-      fired.type === emailType &&
-      fired.resendId !== data.email_id &&
-      Date.parse(fired.sentAt) > Date.parse(data.created_at),
-  );
+  return failures.some((failure) => failure.resendId === data.email_id && failure.kind === kind);
 }
 
-async function handleGiftFailureEvent(
-  event: FailureEvent,
-  { gift, emailType }: GiftTarget,
-): Promise<ResendWebhookOutcome> {
-  const kind = FAILURE_KIND_BY_EVENT[event.type];
-  if (isStaleGiftEvent(gift, emailType, event.data)) return "stale";
-  const alreadyRecorded = gift.emailFailures.some(
-    (failure) => failure.resendId === event.data.email_id && failure.kind === kind,
-  );
-  if (alreadyRecorded) return "duplicate";
-  await recordGiftEmailFailure(gift.id, {
-    emailType,
-    kind,
+function failureFromEvent(event: FailureEvent) {
+  return {
+    kind: FAILURE_KIND_BY_EVENT[event.type],
     attemptedAt: event.data.created_at,
     failedAt: event.created_at,
     resendId: event.data.email_id,
     ...failureDetails(event),
-  });
-  if (emailType === "gift_send" && UNDELIVERED_KINDS.has(kind)) {
+  };
+}
+
+export type ResendWebhookOutcome = "recorded" | "duplicate" | "stale" | "ignored";
+
+async function handleGiftFailure(
+  event: FailureEvent,
+  gift: GiftRecord,
+  emailType: GiftEmailFiredType,
+): Promise<ResendWebhookOutcome> {
+  const failure = failureFromEvent(event);
+  if (hasNewerSend(gift.emailsFired, (type) => type === emailType, event.data)) return "stale";
+  if (isAlreadyRecorded(gift.emailFailures, event.data, failure.kind)) return "duplicate";
+  if (emailType === "gift_send" && UNDELIVERED_KINDS.has(failure.kind)) {
     await releaseBouncedGiftSend(gift, event.data.email_id);
   }
+  await recordGiftEmailFailure(gift.id, { emailType, ...failure });
+  return "recorded";
+}
+
+async function handleSubmissionFailure(
+  event: FailureEvent,
+  submission: SubmissionRecord,
+  emailType: CustomerEmailType,
+): Promise<ResendWebhookOutcome> {
+  const failure = failureFromEvent(event);
+  const recipient = event.data.to[0];
+  const sentElsewhere = recipient && normalizeEmail(recipient) !== normalizeEmail(submission.email);
+  const isType = (type: string) => isEmailFiredOfType(type, emailType);
+  if (sentElsewhere || hasNewerSend(submission.emailsFired ?? [], isType, event.data)) {
+    return "stale";
+  }
+  if (isAlreadyRecorded(submission.emailFailures ?? [], event.data, failure.kind)) {
+    return "duplicate";
+  }
+  await recordEmailFailure(submission._id, {
+    emailType,
+    recipient: recipient ?? submission.email,
+    ...failure,
+  });
   return "recorded";
 }
 
@@ -134,25 +161,9 @@ export async function handleResendWebhookEvent(
   event: WebhookEventPayload,
 ): Promise<ResendWebhookOutcome> {
   if (!isFailureEvent(event)) return "ignored";
-  const giftTarget = await findGiftTarget(event.data);
-  if (giftTarget) return handleGiftFailureEvent(event, giftTarget);
   const target = await findTarget(event.data);
   if (!target) return "ignored";
-  const kind = FAILURE_KIND_BY_EVENT[event.type];
-  const { submission, emailType } = target;
-  if (isStale(submission, emailType, event.data)) return "stale";
-  const alreadyRecorded = (submission.emailFailures ?? []).some(
-    (failure) => failure.resendId === event.data.email_id && failure.kind === kind,
-  );
-  if (alreadyRecorded) return "duplicate";
-  await recordEmailFailure(submission._id, {
-    emailType,
-    kind,
-    recipient: event.data.to[0] ?? submission.email,
-    attemptedAt: event.data.created_at,
-    failedAt: event.created_at,
-    resendId: event.data.email_id,
-    ...failureDetails(event),
-  });
-  return "recorded";
+  return target.kind === "gift"
+    ? handleGiftFailure(event, target.gift, target.emailType)
+    : handleSubmissionFailure(event, target.submission, target.emailType);
 }

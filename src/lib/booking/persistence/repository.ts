@@ -1,4 +1,9 @@
-import { currentEmailFiredType, emailFiredTypeNeedle, storedEmailFiredTypes } from "../emailFiredType";
+import {
+  currentEmailFiredType,
+  emailFiredTypeNeedle,
+  resendIdNeedle,
+  storedEmailFiredTypes,
+} from "../emailFiredType";
 import type {
   CustomerEmailType,
   EmailFailureEntry,
@@ -7,6 +12,7 @@ import type {
   SubmissionRecord,
   SubmissionStatus,
 } from "../submissions";
+import { appendOpenFailure, type NewEmailFailure, resolveOpenFailures } from "./emailFailureSql";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
 const LIST_LIMIT = 500;
@@ -437,45 +443,6 @@ export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pd
 const CLEAR_READING_DELIVERY_ATTEMPT = `reading_delivery_attempt_at = NULL,
          reading_delivery_attempt_jti = NULL, reading_delivery_attempt_body = NULL`;
 
-type EmailFailuresTable = "submissions" | "gift_codes";
-
-type SetClause = { sql: string; params: string[] };
-
-export function resolveOpenFailures(
-  emailType: string,
-  resolvedAt: string,
-  table: EmailFailuresTable = "submissions",
-): SetClause {
-  return {
-    sql: `email_failures_json = (
-       SELECT json_group_array(
-         CASE WHEN json_extract(value, '$.emailType') = ? AND json_extract(value, '$.resolvedAt') IS NULL
-           THEN json_set(value, '$.resolvedAt', ?)
-           ELSE json(value)
-         END
-       )
-       FROM (SELECT value FROM json_each(${table}.email_failures_json) ORDER BY key)
-     )`,
-    params: [emailType, resolvedAt],
-  };
-}
-
-export function appendOpenFailure(
-  failure: NewEmailFailure<string, string>,
-  table: EmailFailuresTable,
-): SetClause {
-  return {
-    sql: `email_failures_json = json_insert(
-       email_failures_json, '$[#]',
-       json_set(json(?), '$.attemptNumber', (
-         SELECT count(*) FROM json_each(${table}.email_failures_json)
-         WHERE json_extract(value, '$.emailType') = ? AND json_extract(value, '$.resolvedAt') IS NULL
-       ) + 1)
-     )`,
-    params: [JSON.stringify({ ...failure, resolvedAt: null }), failure.emailType],
-  };
-}
-
 async function updateReturningFailures(
   sql: string,
   params: SqlValue[],
@@ -493,7 +460,7 @@ export async function markReadingDeliverySentIfUnrecorded(
   entry: EmailFiredEntry,
 ): Promise<EmailFailureEntry[] | null> {
   const notFired = notYetFired(entry.type);
-  const resolve = resolveOpenFailures("reading_delivery", entry.sentAt);
+  const resolve = resolveOpenFailures("reading_delivery", entry.sentAt, "submissions");
   return updateReturningFailures(
     `UPDATE submissions
      SET delivered_at = ?, voice_note_url = ?, pdf_url = ?,
@@ -569,11 +536,6 @@ export async function clearReadingDeliveryAttempt(id: string): Promise<void> {
   await dbExec(`UPDATE submissions SET ${CLEAR_READING_DELIVERY_ATTEMPT} WHERE id = ?`, [id]);
 }
 
-export type NewEmailFailure<
-  TEmailType extends string = CustomerEmailType,
-  TRecipient extends string = string,
-> = Omit<EmailFailureEntry<TEmailType, TRecipient>, "attemptNumber" | "resolvedAt">;
-
 export async function appendEmailFailure(
   id: string,
   failure: NewEmailFailure,
@@ -588,7 +550,7 @@ export async function appendEmailFailure(
 export async function findSubmissionByResendId(resendId: string): Promise<SubmissionRecord | null> {
   const rows = await dbQuery<Row>(
     `SELECT * FROM submissions WHERE instr(emails_fired_json, ?) > 0 LIMIT 1`,
-    [`"resendId":${JSON.stringify(resendId)}`],
+    [resendIdNeedle(resendId)],
   );
   return rows[0] ? rowToRecord(rows[0]) : null;
 }
@@ -617,7 +579,7 @@ export async function markSubmissionDeliveredIfUnset(
   id: string,
   delivery: SubmissionDelivery,
 ): Promise<EmailFailureEntry[] | null> {
-  const resolve = resolveOpenFailures("reading_delivery", delivery.deliveredAt);
+  const resolve = resolveOpenFailures("reading_delivery", delivery.deliveredAt, "submissions");
   return updateReturningFailures(
     `UPDATE submissions
      SET delivered_at = COALESCE(delivered_at, ?), voice_note_url = ?, pdf_url = ?,
@@ -736,7 +698,7 @@ export async function appendEmailFired(
   entry: EmailFiredEntry,
   options?: { deliveredAt?: string },
 ): Promise<EmailFailureEntry[] | null> {
-  const resolve = resolveOpenFailures(currentEmailFiredType(entry.type), entry.sentAt);
+  const resolve = resolveOpenFailures(currentEmailFiredType(entry.type), entry.sentAt, "submissions");
   const setDeliveredAt = options?.deliveredAt ? "delivered_at = ?," : "";
   return updateReturningFailures(
     `UPDATE submissions

@@ -350,13 +350,6 @@ export const submission = defineType({
           description: "Gift emails to the buyer or the recipient that did not go out.",
           of: [{ type: giftEmailFailure.name }],
         }),
-        defineField({
-          name: "giftRecord",
-          title: "Gift record",
-          type: "reference",
-          to: [{ type: "giftRecord" }],
-          weak: true,
-        }),
       ],
     }),
     defineField({

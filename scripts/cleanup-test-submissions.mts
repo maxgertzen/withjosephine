@@ -24,28 +24,20 @@ const client = createClient({
 
 type CleanupDoc = {
   _id: string;
-  _type: "submission" | "giftRecord";
   email?: string;
-  buyerFirstName?: string;
   _createdAt: string;
   isGift?: boolean;
 };
 
 const docs = await client.fetch<CleanupDoc[]>(
-  `*[_type in ["submission", "giftRecord"]]{_id, _type, email, buyerFirstName, _createdAt, "isGift": coalesce(isGift, defined(gift))} | order(_createdAt desc)`,
+  `*[_type == "submission"]{_id, email, _createdAt, "isGift": coalesce(isGift, defined(gift))} | order(_createdAt desc)`,
 );
 
 function describeDoc(d: CleanupDoc): string {
-  if (d._type === "giftRecord") return `GIFT RECORD from ${d.buyerFirstName || "(no name)"}`;
   return `${d.isGift ? "GIFT " : "READ "}${d.email ?? "(no email)"}`;
 }
 
-const submissionCount = docs.filter((d) => d._type === "submission").length;
-const giftRecordCount = docs.length - submissionCount;
-
-console.log(
-  `Found ${submissionCount} submission docs and ${giftRecordCount} giftRecord docs in dataset "${dataset}"`,
-);
+console.log(`Found ${docs.length} submission docs in dataset "${dataset}"`);
 for (const d of docs) {
   console.log(`  ${d._id}\t${describeDoc(d)}\t${d._createdAt}`);
 }
@@ -56,15 +48,11 @@ if (docs.length === 0) {
 }
 
 if (!execute) {
-  console.log(
-    "\nDRY-RUN. Pass --execute to delete all submission and giftRecord docs from this dataset.",
-  );
+  console.log("\nDRY-RUN. Pass --execute to delete all submission docs from this dataset.");
   process.exit(0);
 }
 
 const tx = client.transaction();
 for (const d of docs) tx.delete(d._id);
 await tx.commit({ visibility: "async" });
-console.log(
-  `\nDeleted ${submissionCount} submission docs and ${giftRecordCount} giftRecord docs from "${dataset}".`,
-);
+console.log(`\nDeleted ${docs.length} submission docs from "${dataset}".`);

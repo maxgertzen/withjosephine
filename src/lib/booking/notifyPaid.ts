@@ -3,12 +3,10 @@ import "server-only";
 import * as Sentry from "@sentry/cloudflare";
 
 import { getOrCreateUser } from "../auth/users";
-import { type GiftEmailFailureFields, recordGiftEmailFailure } from "../gift/giftEmailFailures";
-import { appendGiftEmailFired } from "../gift/gifts";
+import { tellBuyerGiftOpened } from "../gift/giftOpenedEmail";
 import type { GiftEmailFiredEntry } from "../gift/types";
 import {
   sendCustomerConfirmation,
-  sendGiftOpened,
   sendNotificationToJosephine,
   type SubmissionContext,
 } from "../resend";
@@ -178,43 +176,6 @@ async function confirmToCustomer({
   } catch (error) {
     console.error(`[notifyPaid] customer confirmation failed for ${submissionId}`, error);
     await recordConfirmationFailure(failureFromError(error));
-  }
-}
-
-async function tellBuyerGiftOpened(
-  context: SubmissionContext,
-  gift: PaidGift,
-  buyerEmail: string,
-): Promise<void> {
-  const attemptedAt = new Date().toISOString();
-  const recordOpenedFailure = (failure: Omit<GiftEmailFailureFields, "emailType">) =>
-    recordGiftEmailFailure(gift.id, { emailType: "gift_opened", attemptedAt, ...failure });
-  const result = await sendGiftOpened(
-    {
-      to: buyerEmail,
-      firstName: gift.buyerFirstName,
-      recipientName: context.firstName,
-      readingName: context.readingName,
-    },
-    { giftId: gift.id, idempotencyKey: `gift-opened/${gift.id}` },
-  ).catch(async (error: unknown) => {
-    console.error(`[notifyPaid] gift opened email failed for gift ${gift.id}`, error);
-    await recordOpenedFailure(failureFromError(error));
-    return null;
-  });
-  if (!result || result.kind === "dry_run") return;
-  if (result.kind !== "sent") {
-    await recordOpenedFailure(failureFromUnsentResult(result));
-    return;
-  }
-  try {
-    await appendGiftEmailFired(gift.id, {
-      type: "gift_opened",
-      sentAt: new Date().toISOString(),
-      resendId: result.resendId,
-    });
-  } catch (error) {
-    console.error(`[notifyPaid] emailsFired write failed for gift ${gift.id}`, error);
   }
 }
 

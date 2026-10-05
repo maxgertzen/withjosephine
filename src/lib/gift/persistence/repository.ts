@@ -1,9 +1,10 @@
 import { normalizeEmail } from "@/lib/auth/users";
+import { resendIdNeedle } from "@/lib/booking/emailFiredType";
 import {
   appendOpenFailure,
   type NewEmailFailure,
   resolveOpenFailures,
-} from "@/lib/booking/persistence/repository";
+} from "@/lib/booking/persistence/emailFailureSql";
 import {
   dbExec,
   dbQuery,
@@ -411,20 +412,26 @@ export type NewGiftEmailFailure = NewEmailFailure<
   GiftEmailFailureEntry["recipient"]
 >;
 
-export async function appendGiftEmailFailure(
+export function buildAppendGiftEmailFailureStatement(
   giftId: string,
   failure: NewGiftEmailFailure,
-): Promise<boolean> {
+): SqlStatement {
   const append = appendOpenFailure(failure, "gift_codes");
-  return hasRows(`UPDATE gift_codes SET ${append.sql}, updated_at = ? WHERE id = ? RETURNING id`, [
-    ...append.params,
-    new Date().toISOString(),
-    giftId,
+  return {
+    sql: `UPDATE gift_codes SET ${append.sql}, updated_at = ? WHERE id = ?`,
+    params: [...append.params, new Date().toISOString(), giftId],
+  };
+}
+
+export async function findGiftByDocId(docId: string): Promise<GiftRecord | null> {
+  return findOne(`SELECT * FROM gift_codes WHERE id = ? OR redeemed_submission_id = ? LIMIT 1`, [
+    docId,
+    docId,
   ]);
 }
 
 export async function findGiftByResendId(resendId: string): Promise<GiftRecord | null> {
   return findOne(`SELECT * FROM gift_codes WHERE instr(emails_fired_json, ?) > 0 LIMIT 1`, [
-    `"resendId":${JSON.stringify(resendId)}`,
+    resendIdNeedle(resendId),
   ]);
 }

@@ -38,7 +38,7 @@ The result reports one changed row. No changed row means the gift was opened in 
 - `SELECT status FROM gift_codes WHERE id = '<gift id>'` returns `cancelled`.
 - `/gift/<code>` shows "This gift is no longer active".
 - The buyer's send link shows "This link doesn’t work any more".
-- After the next `reconcile-mirror` run (every 6 hours), the Gifts list in Studio shows "Cancelled".
+- After the next `reconcile-mirror` run (every 6 hours), the gift's doc in Studio has the status "Gift cancelled" and is no longer in 📬 Submissions, 🎁 Gifts not opened yet.
 
 ## After the gift is opened
 

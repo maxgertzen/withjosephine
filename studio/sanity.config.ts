@@ -18,7 +18,6 @@ import {
   deskStructure,
   EMAIL_PREVIEW_SINGLETON_TYPES,
   SINGLETON_TYPES,
-  SITE_WRITTEN_TYPES,
 } from "./schemas/deskStructure";
 import { previewOriginFor, SITE_ORIGIN_BY_DATASET } from "./lib/siteOrigins";
 import { presentationResolve } from "./presentation";
@@ -43,7 +42,6 @@ const sharedPlugins = (siteOrigin: string, previewLocally = false) => [
 ];
 
 const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
-  if (SITE_WRITTEN_TYPES.has(schemaType)) return [];
   if (SINGLETON_TYPES.has(schemaType)) {
     const base = prev.filter(
       ({ action }) => action && ["publish", "discardChanges", "restore"].includes(action),
@@ -63,9 +61,7 @@ const sharedBadges: DocumentBadgesResolver = (prev, { schemaType }) =>
   schemaType === "submission" ? [...prev, deliverySentBadge] : prev;
 
 const sharedNewDocumentOptions: NewDocumentOptionsResolver = (prev) =>
-  prev.filter(
-    (item) => !SINGLETON_TYPES.has(item.templateId) && !SITE_WRITTEN_TYPES.has(item.templateId),
-  );
+  prev.filter((item) => !SINGLETON_TYPES.has(item.templateId));
 
 const sharedDocument = {
   actions: sharedActions,

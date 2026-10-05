@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { wakeOriginFor } from "./siteOrigins";
-import { requestDelivery, requestGiftResend, wakeDelivery } from "./studioRequests";
+import { requestDelivery, requestResend, wakeDelivery } from "./studioRequests";
 
 function fakeClient() {
   const commit = vi.fn().mockResolvedValue({});
@@ -61,7 +61,7 @@ describe("requestDelivery", () => {
   });
 });
 
-describe("requestGiftResend", () => {
+describe("requestResend for gift emails", () => {
   it.each(["gift_confirmation", "gift_send", "gift_opened"] as const)(
     "saves a %s request with no address to send to, then wakes the site",
     async (emailType) => {
@@ -70,7 +70,7 @@ describe("requestGiftResend", () => {
         .mockResolvedValue(new Response(null, { status: 202 }));
       const { client, commit } = fakeClient();
 
-      await requestGiftResend(client as never, "gift-1", emailType, "https://withjosephine.com");
+      await requestResend(client as never, "gift-1", { emailType }, "https://withjosephine.com");
 
       const patch = client.patch.mock.results[0]!.value;
       expect(client.patch).toHaveBeenCalledWith("gift-1");
@@ -84,4 +84,26 @@ describe("requestGiftResend", () => {
       );
     },
   );
+});
+
+describe("requestResend for a booking email", () => {
+  it("saves the trimmed address typed into the dialog", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 202 }));
+    const { client } = fakeClient();
+
+    await requestResend(
+      client as never,
+      "sub-1",
+      { emailType: "order_confirmation", sendTo: " anna@example.com " },
+      null,
+    );
+
+    expect(client.patch.mock.results[0]!.value.set).toHaveBeenCalledWith({
+      emailResendRequest: {
+        emailType: "order_confirmation",
+        correctedEmail: "anna@example.com",
+        requestedAt: expect.any(String),
+      },
+    });
+  });
 });

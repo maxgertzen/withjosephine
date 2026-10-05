@@ -32,8 +32,7 @@ export const GIFT_RESEND_COPY: Record<GiftEmailFiredType, { label: string; confi
   },
   gift_send: {
     label: "Resend gift confirmation to buyer",
-    confirmLine:
-      "Sends the gift confirmation to the buyer again. The buyer can then send the gift again.",
+    confirmLine: "Sends the gift confirmation to the buyer again.",
   },
   gift_opened: {
     label: "Resend",
@@ -52,8 +51,8 @@ export type DeliveryPanelDocument = {
   deliveryRequestedAt?: string;
   deliveryFailedAt?: string;
   emailResendRequest?: { requestedAt?: string };
-  emailFailures?: Array<EmailFailurePreviewInput & { _key?: string }>;
-  gift?: { emailFailures?: Array<EmailFailurePreviewInput & { _key?: string }> };
+  emailFailures?: FailureInput[];
+  gift?: { emailFailures?: FailureInput[] };
 };
 
 type GiftFailedSendRow = {
@@ -120,34 +119,57 @@ function sendSection(
   };
 }
 
-function openFailedSends(published: DeliveryPanelDocument): FailedSendRow[] {
-  return (published.emailFailures ?? []).flatMap((failure, index) => {
-    const emailType = asCustomerEmailType(failure.emailType);
+type FailureInput = EmailFailurePreviewInput & { _key?: string };
+
+function openFailedSendRows<TEmailType extends string>(
+  failures: readonly FailureInput[] | undefined,
+  parseType: (value: string | undefined) => TEmailType | null,
+  preview: (failure: FailureInput) => { title: string; subtitle: string },
+): Array<{
+  key: string;
+  emailType: TEmailType;
+  kind: string | undefined;
+  title: string;
+  subtitle: string;
+}> {
+  return (failures ?? []).flatMap((failure, index) => {
+    const emailType = parseType(failure.emailType);
     if (!emailType || failure.resolvedAt) return [];
-    return [{ key: failure._key ?? String(index), emailType, ...prepareEmailFailurePreview(failure) }];
+    return [
+      { key: failure._key ?? String(index), emailType, kind: failure.kind, ...preview(failure) },
+    ];
   });
 }
 
-const GIFT_RESENDABLE_BY_STATUS: Record<string, ReadonlySet<GiftEmailFiredType>> = {
+const ACTIONABLE_GIFT_EMAILS_BY_STATUS: Record<string, ReadonlySet<GiftEmailFiredType>> = {
   [GIFT_SUBMISSION_STATUS.waiting]: new Set(["gift_confirmation", "gift_send"]),
   paid: new Set(["gift_opened"]),
 };
 
-function openGiftFailedSends(published: DeliveryPanelDocument): GiftFailedSendRow[] {
-  const resendable = GIFT_RESENDABLE_BY_STATUS[published.status ?? ""] ?? new Set();
-  return (published.gift?.emailFailures ?? []).flatMap((failure, index) => {
-    const emailType = asGiftEmailType(failure.emailType);
-    if (!emailType || failure.resolvedAt) return [];
-    return [
-      {
-        key: failure._key ?? String(index),
-        emailType,
-        ...prepareGiftEmailFailurePreview(failure),
-        resendable: resendable.has(emailType),
-      },
-    ];
-  });
+const UNDELIVERED_KINDS: ReadonlySet<string> = new Set(["bounced", "suppressed"]);
+
+function isResendable(emailType: GiftEmailFiredType, kind: string | undefined): boolean {
+  return emailType !== "gift_send" || UNDELIVERED_KINDS.has(kind ?? "");
 }
+
+function openGiftFailedSends(published: DeliveryPanelDocument): GiftFailedSendRow[] {
+  const actionable = ACTIONABLE_GIFT_EMAILS_BY_STATUS[published.status ?? ""] ?? new Set();
+  return openFailedSendRows(
+    published.gift?.emailFailures,
+    asGiftEmailType,
+    prepareGiftEmailFailurePreview,
+  )
+    .filter((row) => actionable.has(row.emailType))
+    .map(({ kind, ...row }) => ({ ...row, resendable: isResendable(row.emailType, kind) }));
+}
+
+const GIFT_WAITING_MODEL: Omit<DeliveryPanelModel, "resendLine" | "giftFailedSends"> = {
+  statusLine: DELIVERY_COPY.giftWaiting,
+  button: null,
+  failedSends: [],
+  resendTypes: [],
+  defaultResendType: "order_confirmation",
+};
 
 export function deliveryPanelModel(versions: {
   published: DeliveryPanelDocument;
@@ -162,20 +184,16 @@ export function deliveryPanelModel(versions: {
       : null;
   const giftFailedSends = openGiftFailedSends(published);
   if (published.status === GIFT_SUBMISSION_STATUS.waiting) {
-    return {
-      statusLine: DELIVERY_COPY.giftWaiting,
-      button: null,
-      failedSends: [],
-      resendTypes: [],
-      defaultResendType: "order_confirmation",
-      resendLine,
-      giftFailedSends,
-    };
+    return { ...GIFT_WAITING_MODEL, resendLine, giftFailedSends };
   }
   const resendTypes: CustomerEmailType[] = hasBothFiles(published)
     ? ["order_confirmation", "reading_delivery"]
     : ["order_confirmation"];
-  const failedSends = openFailedSends(published);
+  const failedSends = openFailedSendRows(
+    published.emailFailures,
+    asCustomerEmailType,
+    prepareEmailFailurePreview,
+  );
   const firstResendable = failedSends.find((failure) => resendTypes.includes(failure.emailType));
   return {
     ...sendSection(published, hasDraft),

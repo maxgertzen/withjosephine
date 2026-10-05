@@ -49,7 +49,7 @@ async function listStagingGiftIds(likePattern: string): Promise<string[]> {
 async function wipeStagingSanity(matchPattern: string, giftIds: string[]): Promise<number> {
   const client = getStagingSanityClient("write");
   const docs = await client.fetch<Array<{ _id: string }>>(
-    `*[(_type == "submission" && (email match $pattern || _id in $giftIds)) || (_type == "giftRecord" && _id in $giftIds)]{ _id }`,
+    `*[_type == "submission" && (email match $pattern || _id in $giftIds)]{ _id }`,
     { pattern: matchPattern, giftIds },
   );
   if (docs.length === 0) return 0;

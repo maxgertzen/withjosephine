@@ -398,6 +398,26 @@ describe("activateGift", () => {
     expect((await findGiftById(giftId))?.emailsFired).toHaveLength(1);
   });
 
+  it("releases the claim even when the failure cannot be recorded", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "rate limited" });
+    const giftId = await createGift();
+    await dbExec(
+      `CREATE TRIGGER block_gift_failures BEFORE UPDATE OF email_failures_json ON gift_codes
+       BEGIN SELECT RAISE(ABORT, 'failures down'); END`,
+    );
+
+    await activateGift(paidInput(giftId));
+
+    const [row] = await dbQuery<{ buyer_email_claimed_at: string | null }>(
+      `SELECT buyer_email_claimed_at FROM gift_codes WHERE id = ?`,
+      [giftId],
+    );
+    expect(row?.buyer_email_claimed_at).toBeNull();
+    await dbExec(`DROP TRIGGER block_gift_failures`);
+    vi.restoreAllMocks();
+    capturedConsole = captureConsole();
+  });
+
   it("records a failed buyer confirmation on the gift for the buyer role", async () => {
     mockSend.mockResolvedValueOnce({ kind: "failed", error: "rate limited", statusCode: 429 });
     const giftId = await createGift();

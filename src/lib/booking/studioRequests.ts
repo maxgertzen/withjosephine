@@ -1,3 +1,4 @@
+import { processGiftResendRequest } from "../gift/giftEmailResend";
 import {
   clearDeliveryRequest,
   markDeliveryRequestFailed,
@@ -8,7 +9,8 @@ import {
   restoreResendRequest,
 } from "./persistence/sanityStudioRequests";
 import { type DeliverOutcome, deliverRequested, isDelivered } from "./readingDelivery";
-import { processResendRequest, type ResendOutcome } from "./resendCustomerEmail";
+import { processResendRequest } from "./resendCustomerEmail";
+import type { ResendOutcome } from "./resendRequest";
 
 async function logged(label: string, id: string, update: Promise<void>): Promise<boolean> {
   try {
@@ -42,7 +44,9 @@ export async function handleResendRequest(
   if (!(await logged("Resend claim", request.submissionId, claimResendRequest(request)))) {
     return "notClaimed";
   }
-  const outcome = await processResendRequest(request).catch((error): ResendOutcome => {
+  const processing =
+    request.kind === "gift" ? processGiftResendRequest(request) : processResendRequest(request);
+  const outcome = await processing.catch((error): ResendOutcome => {
     console.error(`[studio-requests] Resend failed for ${request.submissionId}`, error);
     return "retryLater";
   });

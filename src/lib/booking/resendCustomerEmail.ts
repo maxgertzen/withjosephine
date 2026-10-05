@@ -1,9 +1,7 @@
 import { LISTEN_TOKEN_TTL_MS, mintListenToken } from "@/lib/auth/listenToken";
 import { normalizeEmail } from "@/lib/auth/users";
 import { isValidEmail } from "@/lib/formStyles";
-import { type GiftResendRequest, processGiftResendRequest } from "@/lib/gift/giftEmailResend";
 import { findGiftById } from "@/lib/gift/gifts";
-import { asGiftEmailType } from "@/lib/gift/types";
 
 import { type EmailSendResult, sendCustomerConfirmation, sendReadingDelivery } from "../resend";
 import { mintDataExportUrl } from "./dataExportUrl";
@@ -18,7 +16,12 @@ import {
 import { findReadingDeliveryEntry, isEmailFiredOfType } from "./emailFiredType";
 import { deliverRequested, isDelivered, listenUrlFor } from "./readingDelivery";
 import { READING_ACCESS_TTL_MS } from "./readingRetention";
-import { isResendLimitReached } from "./resendLimit";
+import {
+  type CustomerResendRequest,
+  isResendLimitReached,
+  type ResendOutcome,
+  settleResend,
+} from "./resendRequest";
 import {
   appendEmailFired,
   buildSubmissionContext,
@@ -27,21 +30,6 @@ import {
   findSubmissionById,
   type SubmissionRecord,
 } from "./submissions";
-
-type CustomerResendRequest = {
-  submissionId: string;
-  emailType: CustomerEmailType;
-  correctedEmail: string | null;
-  requestedAt: string;
-};
-
-export type ResendRequest = CustomerResendRequest | GiftResendRequest;
-
-function isGiftResendRequest(request: ResendRequest): request is GiftResendRequest {
-  return asGiftEmailType(request.emailType) !== null;
-}
-
-export type ResendOutcome = "sent" | "dryRun" | "retryLater" | "failed" | "refused" | "notFound";
 
 type RefusedReason =
   | "rate_limited"
@@ -54,12 +42,6 @@ const IDEMPOTENCY_KEY_PREFIX: Record<CustomerEmailType, string> = {
   order_confirmation: "order-confirmation",
   reading_delivery: "reading-delivery",
 };
-
-function sentAtsOfType(submission: SubmissionRecord, emailType: CustomerEmailType): string[] {
-  return (submission.emailsFired ?? [])
-    .filter((entry) => isEmailFiredOfType(entry.type, emailType))
-    .map((entry) => entry.sentAt);
-}
 
 function recordResendFailure(
   request: CustomerResendRequest,
@@ -138,11 +120,17 @@ async function sendAgain(
   };
 }
 
-async function resendRecordedEmail(
+type SentResend = CustomerEmailSend & {
+  submission: SubmissionRecord;
+  restartsAccessWindow: boolean;
+};
+
+async function sendRecordedEmail(
   request: CustomerResendRequest,
   submission: SubmissionRecord,
-): Promise<ResendOutcome> {
-  if (isResendLimitReached(sentAtsOfType(submission, request.emailType), Date.now())) {
+): Promise<SentResend | ResendOutcome> {
+  const isRequestedType = (type: string) => isEmailFiredOfType(type, request.emailType);
+  if (isResendLimitReached(submission.emailsFired ?? [], isRequestedType, Date.now())) {
     return refuse(request, submission.email, "rate_limited");
   }
   const restartsAccessWindow =
@@ -150,25 +138,25 @@ async function resendRecordedEmail(
     hasOpenUndeliveredFailure(submission.emailFailures, "reading_delivery");
   const sent = await sendAgain(request, submission, restartsAccessWindow);
   if (typeof sent === "string") return refuse(request, submission.email, sent);
-  const { firedType, result } = sent;
-  if (result.kind === "failed" && result.error === "concurrent_idempotent_requests") {
-    return "retryLater";
-  }
-  if (result.kind === "failed" || result.kind === "skipped") {
-    await recordResendFailure(request, submission.email, failureFromUnsentResult(result));
-    return "failed";
-  }
-  const sentAt = new Date().toISOString();
-  await appendEmailFired(
-    submission._id,
-    {
-      type: firedType,
-      sentAt,
-      resendId: result.kind === "sent" ? result.resendId : null,
+  return { ...sent, submission, restartsAccessWindow };
+}
+
+function settleSentResend(
+  request: CustomerResendRequest,
+  { submission, firedType, result, restartsAccessWindow }: SentResend,
+): Promise<ResendOutcome> {
+  return settleResend(result, {
+    recordFailure: (unsent) =>
+      recordResendFailure(request, submission.email, failureFromUnsentResult(unsent)),
+    recordSent: async (resendId) => {
+      const sentAt = new Date().toISOString();
+      await appendEmailFired(
+        submission._id,
+        { type: firedType, sentAt, resendId },
+        restartsAccessWindow ? { deliveredAt: sentAt } : undefined,
+      );
     },
-    restartsAccessWindow ? { deliveredAt: sentAt } : undefined,
-  );
-  return result.kind === "sent" ? "sent" : "dryRun";
+  });
 }
 
 async function sendFirstReadingDelivery(
@@ -193,25 +181,33 @@ async function withCorrectedEmail(
   return correctCustomerEmail(submission, corrected);
 }
 
-export async function processResendRequest(request: ResendRequest): Promise<ResendOutcome> {
-  if (isGiftResendRequest(request)) return processGiftResendRequest(request);
+async function correctAndSend(
+  request: CustomerResendRequest,
+  found: SubmissionRecord,
+): Promise<SentResend | ResendOutcome> {
+  const submission = await withCorrectedEmail(request, found);
+  if (submission === "invalid") {
+    return refuse(request, request.correctedEmail ?? found.email, "invalid_address");
+  }
+  if (
+    request.emailType === "reading_delivery" &&
+    !findReadingDeliveryEntry(submission.emailsFired)
+  ) {
+    return sendFirstReadingDelivery(request, submission);
+  }
+  return sendRecordedEmail(request, submission);
+}
+
+export async function processResendRequest(request: CustomerResendRequest): Promise<ResendOutcome> {
   const found = await findSubmissionById(request.submissionId);
   if (!found) return "notFound";
   if (found.status !== "paid") return "refused";
+  let sent: SentResend | ResendOutcome;
   try {
-    const submission = await withCorrectedEmail(request, found);
-    if (submission === "invalid") {
-      return await refuse(request, request.correctedEmail ?? found.email, "invalid_address");
-    }
-    if (
-      request.emailType === "reading_delivery" &&
-      !findReadingDeliveryEntry(submission.emailsFired)
-    ) {
-      return await sendFirstReadingDelivery(request, submission);
-    }
-    return await resendRecordedEmail(request, submission);
+    sent = await correctAndSend(request, found);
   } catch (error) {
     await recordResendFailure(request, found.email, failureFromError(error));
     return "failed";
   }
+  return typeof sent === "string" ? sent : settleSentResend(request, sent);
 }

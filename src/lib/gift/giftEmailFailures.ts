@@ -1,5 +1,6 @@
 import {
   type EmailFailureFields,
+  failureFromUnsent,
   reportEmailFailure,
   scrubEmailAddresses,
   withFailureDefaults,
@@ -36,17 +37,31 @@ export async function recordGiftEmailFailure(
   }
 }
 
-function latestGiftSendResendId(gift: GiftRecord): string | null {
+export function recordUnsentGiftEmail(
+  giftId: string,
+  emailType: GiftEmailFiredType,
+  attemptedAt: string,
+  resultOrError: unknown,
+): Promise<void> {
+  return recordGiftEmailFailure(giftId, {
+    emailType,
+    attemptedAt,
+    ...failureFromUnsent(resultOrError),
+  });
+}
+
+function giftSendNumber(gift: GiftRecord, resendId: string): 1 | 2 | null {
   const sends = gift.emailsFired.filter((entry) => entry.type === "gift_send");
-  return sends.at(-1)?.resendId ?? null;
+  const position = sends.findIndex((entry) => entry.resendId === resendId) + 1;
+  return position === 1 || position === 2 ? position : null;
 }
 
 export async function releaseBouncedGiftSend(gift: GiftRecord, resendId: string): Promise<void> {
-  if (gift.status !== GIFT_STATUS.active || gift.sendCount < 1) return;
-  if (latestGiftSendResendId(gift) !== resendId) return;
+  const sendNumber = giftSendNumber(gift, resendId);
+  if (gift.status !== GIFT_STATUS.active || !sendNumber) return;
   await releaseGiftSend(gift.id, {
-    sendNumber: gift.sendCount as 1 | 2,
-    keptRecipientName: gift.recipientName,
+    sendNumber,
+    keptRecipientName: null,
     updatedAt: new Date().toISOString(),
   });
 }

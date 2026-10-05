@@ -253,6 +253,20 @@ describe("GiftSendForm resend", () => {
   });
 });
 
+describe("GiftSendForm after a bounced send gave the slot back", () => {
+  it("shows Already sent without a name line and reopens the form with the name empty", async () => {
+    const user = renderForm({ status: { ...ALREADY_SENT, recipientName: null } });
+
+    expect(screen.getByRole("heading", { name: GIFT_DEFAULTS.alreadySentHeading })).toBeVisible();
+    expect(screen.queryByText(/Sent to/)).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Wrong address? Fix it and send again (1 left)" }),
+    );
+
+    expect(screen.getByLabelText(NAME_LABEL)).toHaveValue("");
+  });
+});
+
 describe("GiftSendForm other states", () => {
   it("shows the sent twice card with no form", () => {
     renderForm({ status: { state: "used" } });

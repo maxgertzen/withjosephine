@@ -1,13 +1,13 @@
 import * as Sentry from "@sentry/cloudflare";
 
 import type { EmailSendResult } from "../resend";
-import type { NewEmailFailure } from "./persistence/repository";
+import type { NewEmailFailure } from "./persistence/emailFailureSql";
 import * as repo from "./persistence/repository";
 import { runMirror } from "./persistence/runMirror";
 import { mirrorSubmissionPatch } from "./persistence/sanityMirror";
 import type { CustomerEmailType, EmailFailureEntry, EmailFailureKind } from "./submissions";
 
-type UnsentResult = Extract<EmailSendResult, { kind: "skipped" | "failed" }>;
+export type UnsentResult = Extract<EmailSendResult, { kind: "skipped" | "failed" }>;
 
 type FailureDetails = Pick<NewEmailFailure, "kind" | "statusCode" | "errorCode" | "errorMessage">;
 
@@ -33,6 +33,17 @@ export function failureFromUnsentResult(result: UnsentResult): FailureDetails {
     errorCode: result.error,
     errorMessage: null,
   };
+}
+
+function isUnsentResult(value: unknown): value is UnsentResult {
+  if (typeof value !== "object" || value === null || !("kind" in value)) return false;
+  return value.kind === "failed" || value.kind === "skipped";
+}
+
+export function failureFromUnsent(resultOrError: unknown): FailureDetails {
+  return isUnsentResult(resultOrError)
+    ? failureFromUnsentResult(resultOrError)
+    : failureFromError(resultOrError);
 }
 
 export function failureFromError(error: unknown): FailureDetails {

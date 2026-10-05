@@ -31,31 +31,19 @@ export async function requestDelivery(
 export async function requestResend(
   client: SanityClient,
   submissionId: string,
-  request: { emailType: CustomerEmailType; sendTo: string },
+  request: { emailType: CustomerEmailType | GiftEmailFiredType; sendTo?: string },
   wakeOrigin: string | null,
 ): Promise<boolean> {
+  const correctedEmail = request.sendTo === undefined ? {} : { correctedEmail: request.sendTo.trim() };
   await client
     .patch(submissionId)
     .set({
       emailResendRequest: {
         emailType: request.emailType,
-        correctedEmail: request.sendTo.trim(),
+        ...correctedEmail,
         requestedAt: new Date().toISOString(),
       },
     })
-    .commit();
-  return wakeDelivery(wakeOrigin, submissionId);
-}
-
-export async function requestGiftResend(
-  client: SanityClient,
-  submissionId: string,
-  emailType: GiftEmailFiredType,
-  wakeOrigin: string | null,
-): Promise<boolean> {
-  await client
-    .patch(submissionId)
-    .set({ emailResendRequest: { emailType, requestedAt: new Date().toISOString() } })
     .commit();
   return wakeDelivery(wakeOrigin, submissionId);
 }

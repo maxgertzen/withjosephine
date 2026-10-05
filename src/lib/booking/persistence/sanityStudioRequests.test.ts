@@ -59,7 +59,13 @@ describe("fetchStudioRequests for gift emails", () => {
     const { resendRequests } = await fetchStudioRequests({ submissionId: "gift-1" });
 
     expect(resendRequests).toEqual([
-      { submissionId: "gift-1", revision: "r4", emailType: "gift_send", requestedAt: NEW },
+      {
+        kind: "gift",
+        submissionId: "gift-1",
+        revision: "r4",
+        emailType: "gift_send",
+        requestedAt: NEW,
+      },
     ]);
   });
 });

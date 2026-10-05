@@ -1,22 +1,20 @@
 import "server-only";
 
-import { failureFromError, failureFromUnsentResult } from "@/lib/booking/emailFailures";
-import type { ResendOutcome } from "@/lib/booking/resendCustomerEmail";
-import { isResendLimitReached } from "@/lib/booking/resendLimit";
+import {
+  type GiftResendRequest,
+  isResendLimitReached,
+  type ResendOutcome,
+  settleResend,
+} from "@/lib/booking/resendRequest";
 import { buildSubmissionContext, findSubmissionById } from "@/lib/booking/submissions";
-import { type EmailSendResult, sendGiftOpened } from "@/lib/resend";
+import type { EmailSendResult } from "@/lib/resend";
 
 import { sendBuyerConfirmation } from "./activateGift";
 import { deriveVerifiedGiftCode } from "./giftCode";
-import { type GiftEmailFailureFields, recordGiftEmailFailure } from "./giftEmailFailures";
-import { findGiftById, recordGiftEmailResent } from "./gifts";
+import { recordGiftEmailFailure, recordUnsentGiftEmail } from "./giftEmailFailures";
+import { sendBuyerGiftOpened } from "./giftOpenedEmail";
+import { findGiftByDocId, recordGiftEmailResent } from "./gifts";
 import { GIFT_STATUS, type GiftEmailFiredType, type GiftRecord, type GiftStatus } from "./types";
-
-export type GiftResendRequest = {
-  submissionId: string;
-  emailType: GiftEmailFiredType;
-  requestedAt: string;
-};
 
 type BuyerEmailType = "gift_confirmation" | "gift_opened";
 
@@ -33,27 +31,21 @@ const BUYER_EMAIL_FOR_REQUEST: Record<GiftEmailFiredType, BuyerEmailType> = {
   gift_opened: "gift_opened",
 };
 
-const REQUIRED_STATUS: Record<BuyerEmailType, GiftStatus> = {
-  gift_confirmation: GIFT_STATUS.active,
-  gift_opened: GIFT_STATUS.redeemed,
+const BUYER_EMAIL: Record<
+  BuyerEmailType,
+  { status: GiftStatus; wrongStatusReason: GiftRefusedReason; keyPrefix: string }
+> = {
+  gift_confirmation: {
+    status: GIFT_STATUS.active,
+    wrongStatusReason: "gift_not_active",
+    keyPrefix: "gift-confirmation",
+  },
+  gift_opened: {
+    status: GIFT_STATUS.redeemed,
+    wrongStatusReason: "gift_not_opened",
+    keyPrefix: "gift-opened",
+  },
 };
-
-const WRONG_STATUS_REASON: Record<BuyerEmailType, GiftRefusedReason> = {
-  gift_confirmation: "gift_not_active",
-  gift_opened: "gift_not_opened",
-};
-
-const RESEND_KEY_PREFIX: Record<BuyerEmailType, string> = {
-  gift_confirmation: "gift-confirmation",
-  gift_opened: "gift-opened",
-};
-
-async function findGiftForDoc(docId: string): Promise<GiftRecord | null> {
-  const gift = await findGiftById(docId);
-  if (gift) return gift;
-  const giftCodeId = (await findSubmissionById(docId))?.giftCodeId;
-  return giftCodeId ? findGiftById(giftCodeId) : null;
-}
 
 async function sendGiftOpenedAgain(
   gift: GiftRecord,
@@ -64,16 +56,7 @@ async function sendGiftOpenedAgain(
     ? await findSubmissionById(gift.redeemedSubmissionId)
     : null;
   if (!submission) return "gift_not_opened";
-  const context = buildSubmissionContext(submission);
-  return sendGiftOpened(
-    {
-      to: buyerEmail,
-      firstName: gift.buyerFirstName,
-      recipientName: context.firstName,
-      readingName: context.readingName,
-    },
-    { giftId: gift.id, idempotencyKey },
-  );
+  return sendBuyerGiftOpened(gift, buildSubmissionContext(submission), buyerEmail, idempotencyKey);
 }
 
 async function sendBuyerEmailAgain(
@@ -90,48 +73,37 @@ async function sendBuyerEmailAgain(
   return sendBuyerConfirmation(gift, code, gift.buyerEmail, idempotencyKey);
 }
 
-function sentAtsOfType(gift: GiftRecord, emailType: BuyerEmailType): string[] {
-  return gift.emailsFired.filter((entry) => entry.type === emailType).map((entry) => entry.sentAt);
-}
-
 export async function processGiftResendRequest(request: GiftResendRequest): Promise<ResendOutcome> {
-  const gift = await findGiftForDoc(request.submissionId);
+  const gift = await findGiftByDocId(request.submissionId);
   if (!gift) return "notFound";
   const emailType = BUYER_EMAIL_FOR_REQUEST[request.emailType];
-  const recordFailure = (fields: Omit<GiftEmailFailureFields, "emailType">) =>
-    recordGiftEmailFailure(gift.id, { emailType, ...fields });
+  const { status, wrongStatusReason, keyPrefix } = BUYER_EMAIL[emailType];
+  const attemptedAt = new Date().toISOString();
   const refuse = async (errorCode: GiftRefusedReason): Promise<"refused"> => {
-    await recordFailure({ kind: "refused", errorCode });
+    await recordGiftEmailFailure(gift.id, { emailType, kind: "refused", errorCode });
     return "refused";
   };
 
-  if (gift.status !== REQUIRED_STATUS[emailType]) return refuse(WRONG_STATUS_REASON[emailType]);
-  if (isResendLimitReached(sentAtsOfType(gift, emailType), Date.now())) {
+  if (gift.status !== status) return refuse(wrongStatusReason);
+  if (isResendLimitReached(gift.emailsFired, (type) => type === emailType, Date.now())) {
     return refuse("rate_limited");
   }
+  const idempotencyKey = `${keyPrefix}/${gift.id}/resend/${Date.parse(request.requestedAt)}`;
+  let result: EmailSendResult | GiftRefusedReason;
   try {
-    const idempotencyKey = `${RESEND_KEY_PREFIX[emailType]}/${gift.id}/resend/${Date.parse(request.requestedAt)}`;
-    const result = await sendBuyerEmailAgain(gift, emailType, idempotencyKey);
-    if (typeof result === "string") return refuse(result);
-    if (result.kind === "failed" && result.error === "concurrent_idempotent_requests") {
-      return "retryLater";
-    }
-    if (result.kind === "failed" || result.kind === "skipped") {
-      await recordFailure(failureFromUnsentResult(result));
-      return "failed";
-    }
-    await recordGiftEmailResent(
-      gift.id,
-      {
-        type: emailType,
-        sentAt: new Date().toISOString(),
-        resendId: result.kind === "sent" ? result.resendId : null,
-      },
-      request.emailType,
-    );
-    return result.kind === "sent" ? "sent" : "dryRun";
+    result = await sendBuyerEmailAgain(gift, emailType, idempotencyKey);
   } catch (error) {
-    await recordFailure(failureFromError(error));
+    await recordUnsentGiftEmail(gift.id, emailType, attemptedAt, error);
     return "failed";
   }
+  if (typeof result === "string") return refuse(result);
+  return settleResend(result, {
+    recordFailure: (unsent) => recordUnsentGiftEmail(gift.id, emailType, attemptedAt, unsent),
+    recordSent: (resendId) =>
+      recordGiftEmailResent(
+        gift.id,
+        { type: emailType, sentAt: new Date().toISOString(), resendId },
+        request.emailType,
+      ),
+  });
 }

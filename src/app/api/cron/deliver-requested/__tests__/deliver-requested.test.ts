@@ -54,6 +54,7 @@ const mockProcessResend = vi.mocked(processResendRequest);
 const mockSweep = vi.mocked(flagMissingOrderConfirmations);
 
 const RESEND_REQUEST: PendingResendRequest = {
+  kind: "customer",
   submissionId: "sub_9",
   revision: "rev_1",
   emailType: "order_confirmation",

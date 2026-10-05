@@ -16,7 +16,6 @@ import {
   QUEUED_TOAST,
   REQUESTED_TOAST,
   requestDelivery,
-  requestGiftResend,
   requestResend,
   STUDIO_API_VERSION,
 } from "../../lib/studioRequests";
@@ -35,6 +34,101 @@ const FAILED_SENDS_HEADING = "Failed sends";
 const GIFT_FAILED_SENDS_HEADING = "Failed gift emails";
 const RESEND_LABEL = "Resend";
 const RESEND_ANY_LABEL = "Resend an email…";
+
+type FailedSendRowView = { key: string; title: string; subtitle: string };
+
+type RowAction = { label: string; disabled: boolean; onClick: () => void } | null;
+
+function FailedSendsCard<TRow extends FailedSendRowView>({
+  heading,
+  rows,
+  action,
+  note = null,
+}: {
+  heading: string;
+  rows: readonly TRow[];
+  action: (row: TRow) => RowAction;
+  note?: string | null;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <Card padding={3} radius={2} border tone="critical">
+      <Stack space={3}>
+        <Text size={1} weight="semibold">
+          {heading}
+        </Text>
+        {rows.map((row) => {
+          const rowAction = action(row);
+          return (
+            <Flex key={row.key} align="center" gap={3} wrap="wrap">
+              <Stack space={2} flex={1}>
+                <Text size={1}>{row.title}</Text>
+                <Text size={1} muted>
+                  {row.subtitle}
+                </Text>
+              </Stack>
+              {rowAction && (
+                <Button
+                  text={rowAction.label}
+                  mode="ghost"
+                  disabled={rowAction.disabled}
+                  onClick={rowAction.onClick}
+                />
+              )}
+            </Flex>
+          );
+        })}
+        {note && (
+          <Text size={1} muted>
+            {note}
+          </Text>
+        )}
+      </Stack>
+    </Card>
+  );
+}
+
+function ConfirmDialog({
+  id,
+  header,
+  line,
+  isPending,
+  confirmDisabled,
+  onClose,
+  onConfirm,
+}: {
+  id: string;
+  header: string;
+  line: string;
+  isPending: boolean;
+  confirmDisabled: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      id={id}
+      header={header}
+      onClose={isPending ? undefined : onClose}
+      width={1}
+      footer={
+        <Box padding={3}>
+          <Button
+            text={CONFIRM_LABEL}
+            tone="primary"
+            width="fill"
+            disabled={confirmDisabled}
+            onClick={onConfirm}
+          />
+        </Box>
+      }
+    >
+      <Box padding={4}>
+        <Text size={1}>{line}</Text>
+      </Box>
+    </Dialog>
+  );
+}
 
 export function DeliveryPanel(props: StringInputProps) {
   const documentId = useFormValue(["_id"]) as string | undefined;
@@ -98,64 +192,30 @@ export function DeliveryPanel(props: StringInputProps) {
         </Flex>
       </Card>
 
-      {model.failedSends.length > 0 && (
-        <Card padding={3} radius={2} border tone="critical">
-          <Stack space={3}>
-            <Text size={1} weight="semibold">
-              {FAILED_SENDS_HEADING}
-            </Text>
-            {model.failedSends.map((failure) => (
-              <Flex key={failure.key} align="center" gap={3} wrap="wrap">
-                <Stack space={2} flex={1}>
-                  <Text size={1}>{failure.title}</Text>
-                  <Text size={1} muted>
-                    {failure.subtitle}
-                  </Text>
-                </Stack>
-                <Button
-                  text={RESEND_LABEL}
-                  mode="ghost"
-                  disabled={resendDisabled || !model.resendTypes.includes(failure.emailType)}
-                  onClick={() => setResendType(failure.emailType)}
-                />
-              </Flex>
-            ))}
-          </Stack>
-        </Card>
-      )}
+      <FailedSendsCard
+        heading={FAILED_SENDS_HEADING}
+        rows={model.failedSends}
+        action={(failure) => ({
+          label: RESEND_LABEL,
+          disabled: resendDisabled || !model.resendTypes.includes(failure.emailType),
+          onClick: () => setResendType(failure.emailType),
+        })}
+      />
 
-      {model.giftFailedSends.length > 0 && (
-        <Card padding={3} radius={2} border tone="critical">
-          <Stack space={3}>
-            <Text size={1} weight="semibold">
-              {GIFT_FAILED_SENDS_HEADING}
-            </Text>
-            {model.giftFailedSends.map((failure) => (
-              <Flex key={failure.key} align="center" gap={3} wrap="wrap">
-                <Stack space={2} flex={1}>
-                  <Text size={1}>{failure.title}</Text>
-                  <Text size={1} muted>
-                    {failure.subtitle}
-                  </Text>
-                </Stack>
-                {failure.resendable && (
-                  <Button
-                    text={GIFT_RESEND_COPY[failure.emailType].label}
-                    mode="ghost"
-                    disabled={resendDisabled}
-                    onClick={() => setGiftResendType(failure.emailType)}
-                  />
-                )}
-              </Flex>
-            ))}
-            {model.resendTypes.length === 0 && model.resendLine && (
-              <Text size={1} muted>
-                {model.resendLine}
-              </Text>
-            )}
-          </Stack>
-        </Card>
-      )}
+      <FailedSendsCard
+        heading={GIFT_FAILED_SENDS_HEADING}
+        rows={model.giftFailedSends}
+        action={(failure) =>
+          failure.resendable
+            ? {
+                label: GIFT_RESEND_COPY[failure.emailType].label,
+                disabled: resendDisabled,
+                onClick: () => setGiftResendType(failure.emailType),
+              }
+            : null
+        }
+        note={model.resendTypes.length === 0 ? model.resendLine : null}
+      />
 
       {model.resendTypes.length > 0 && (
         <Flex align="center" gap={3} wrap="wrap">
@@ -174,55 +234,31 @@ export function DeliveryPanel(props: StringInputProps) {
       )}
 
       {isConfirmOpen && (
-        <Dialog
+        <ConfirmDialog
           id={`${props.id}-confirm`}
           header={SEND_LABEL}
-          onClose={isPending ? undefined : () => setIsConfirmOpen(false)}
-          width={1}
-          footer={
-            <Box padding={3}>
-              <Button
-                text={CONFIRM_LABEL}
-                tone="primary"
-                width="fill"
-                disabled={isPending || model.button?.kind !== "send" || !model.button.enabled}
-                onClick={() => void sendDelivery()}
-              />
-            </Box>
-          }
-        >
-          <Box padding={4}>
-            <Text size={1}>{model.statusLine}</Text>
-          </Box>
-        </Dialog>
+          line={model.statusLine}
+          isPending={isPending}
+          confirmDisabled={isPending || model.button?.kind !== "send" || !model.button.enabled}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={() => void sendDelivery()}
+        />
       )}
 
       {giftResendType && (
-        <Dialog
+        <ConfirmDialog
           id={`${props.id}-gift-resend`}
           header={GIFT_RESEND_COPY[giftResendType].label}
-          onClose={isPending ? undefined : () => setGiftResendType(null)}
-          width={1}
-          footer={
-            <Box padding={3}>
-              <Button
-                text={CONFIRM_LABEL}
-                tone="primary"
-                width="fill"
-                disabled={resendDisabled}
-                onClick={() =>
-                  void run(() =>
-                    requestGiftResend(client, publishedId, giftResendType, wakeOrigin),
-                  )
-                }
-              />
-            </Box>
+          line={GIFT_RESEND_COPY[giftResendType].confirmLine}
+          isPending={isPending}
+          confirmDisabled={resendDisabled}
+          onClose={() => setGiftResendType(null)}
+          onConfirm={() =>
+            void run(() =>
+              requestResend(client, publishedId, { emailType: giftResendType }, wakeOrigin),
+            )
           }
-        >
-          <Box padding={4}>
-            <Text size={1}>{GIFT_RESEND_COPY[giftResendType].confirmLine}</Text>
-          </Box>
-        </Dialog>
+        />
       )}
 
       {resendType && (

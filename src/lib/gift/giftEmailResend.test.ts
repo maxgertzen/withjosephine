@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/resend", () => ({
   sendGiftPurchase: vi.fn(),
   sendGiftOpened: vi.fn(),
-  sendGiftToRecipient: vi.fn(),
 }));
 
 vi.mock("@/lib/sanity/fetch", () => ({
@@ -15,26 +14,35 @@ vi.mock("@/lib/analytics/server", () => ({ serverTrack: vi.fn() }));
 vi.mock("@sentry/cloudflare", () => ({ captureMessage: vi.fn() }));
 vi.mock("./giftSubmissionMirror", () => ({ mirrorGiftSubmission: vi.fn(async () => undefined) }));
 
+vi.mock("@/lib/booking/persistence/sanityStudioRequests", () => ({
+  claimResendRequest: vi.fn(async () => undefined),
+  restoreResendRequest: vi.fn(async () => undefined),
+}));
+
 vi.mock("@/lib/booking/submissions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/booking/submissions")>()),
   findSubmissionById: vi.fn(),
 }));
 
+import {
+  type PendingResendRequest,
+  restoreResendRequest,
+} from "@/lib/booking/persistence/sanityStudioRequests";
 import { dbExec } from "@/lib/booking/persistence/sqlClient";
-import { processResendRequest, type ResendRequest } from "@/lib/booking/resendCustomerEmail";
+import type { GiftResendRequest } from "@/lib/booking/resendRequest";
+import { handleResendRequest } from "@/lib/booking/studioRequests";
 import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submissions";
-import { sendGiftOpened, sendGiftPurchase, sendGiftToRecipient } from "@/lib/resend";
+import { sendGiftOpened, sendGiftPurchase } from "@/lib/resend";
 import { captureConsole } from "@/test/captureConsole";
-import { createTestGift } from "@/test/fixtures/gift";
+import { giftWithSendToken } from "@/test/fixtures/gift";
 
 import { recordGiftEmailFailure } from "./giftEmailFailures";
-import { type GiftResendRequest, processGiftResendRequest } from "./giftEmailResend";
+import { processGiftResendRequest } from "./giftEmailResend";
 import { findGiftById } from "./gifts";
 import type { GiftEmailFiredType } from "./types";
 
 const mockPurchase = vi.mocked(sendGiftPurchase);
 const mockOpened = vi.mocked(sendGiftOpened);
-const mockToRecipient = vi.mocked(sendGiftToRecipient);
 const mockFindSubmission = vi.mocked(findSubmissionById);
 
 const BUYER_EMAIL = "dana@example.com";
@@ -62,20 +70,14 @@ const RECIPIENT_SUBMISSION: SubmissionRecord = {
 };
 
 async function giftWith(status: "active" | "redeemed" | "cancelled"): Promise<string> {
-  const giftId = await createTestGift();
-  await dbExec(`UPDATE gift_codes SET status = ?, buyer_email = ?, activated_at = ? WHERE id = ?`, [
-    status,
-    BUYER_EMAIL,
-    "2026-10-03T08:00:00.000Z",
-    giftId,
-  ]);
+  const { giftId } = await giftWithSendToken(status, { buyerEmail: BUYER_EMAIL });
   return giftId;
 }
 
-async function redeemedGift(): Promise<string> {
+async function redeemedGift(redeemedSubmissionId?: string): Promise<string> {
   const giftId = await giftWith("redeemed");
   await dbExec(`UPDATE gift_codes SET redeemed_submission_id = ?, redeemed_at = ? WHERE id = ?`, [
-    giftId,
+    redeemedSubmissionId ?? giftId,
     "2026-10-04T08:00:00.000Z",
     giftId,
   ]);
@@ -93,7 +95,6 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "https://staging.withjosephine.com");
   mockPurchase.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_gc_new" });
   mockOpened.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_go_new" });
-  mockToRecipient.mockReset();
   mockFindSubmission.mockReset().mockResolvedValue(null);
   captureConsole();
 });
@@ -123,7 +124,6 @@ describe("processGiftResendRequest", () => {
 
     expect(await processGiftResendRequest(request(giftId, "gift_send"))).toBe("sent");
 
-    expect(mockToRecipient).not.toHaveBeenCalled();
     expect(mockPurchase).toHaveBeenCalledWith(expect.objectContaining({ to: BUYER_EMAIL }), {
       giftId,
       idempotencyKey: `gift-confirmation/${giftId}/resend/${REQUESTED_MS}`,
@@ -203,15 +203,36 @@ describe("processGiftResendRequest", () => {
     expect(await processGiftResendRequest(request(giftId, "gift_confirmation"))).toBe("retryLater");
   });
 
-  it("finds the gift of a legacy redemption doc through its submission", async () => {
-    const giftId = await giftWith("active");
+  it("finds the gift of a legacy redemption doc by its redeemed submission id", async () => {
+    const giftId = await redeemedGift("sub_recipient");
     mockFindSubmission.mockResolvedValue({ ...RECIPIENT_SUBMISSION, giftCodeId: giftId });
 
-    expect(await processGiftResendRequest(request("sub_recipient", "gift_confirmation"))).toBe(
-      "sent",
+    expect(await processGiftResendRequest(request("sub_recipient", "gift_opened"))).toBe("sent");
+
+    expect(mockFindSubmission.mock.calls).toEqual([["sub_recipient"]]);
+    expect(mockOpened).toHaveBeenCalledWith(
+      expect.objectContaining({ to: BUYER_EMAIL, recipientName: "Anna" }),
+      { giftId, idempotencyKey: `gift-opened/${giftId}/resend/${REQUESTED_MS}` },
     );
-    expect(mockPurchase).toHaveBeenCalledOnce();
   });
+
+  it.each([
+    ["the opened reading cannot be read", "gift_opened" as const],
+    ["the send throws", "gift_confirmation" as const],
+  ])(
+    "records a failure and answers failed when %s before any email goes out",
+    async (_label, emailType) => {
+      const giftId = emailType === "gift_opened" ? await redeemedGift() : await giftWith("active");
+      mockFindSubmission.mockRejectedValueOnce(new Error("D1 read failed"));
+      mockPurchase.mockRejectedValueOnce(new Error("D1 read failed"));
+
+      expect(await processGiftResendRequest(request(giftId, emailType))).toBe("failed");
+
+      expect((await findGiftById(giftId))!.emailFailures).toEqual([
+        expect.objectContaining({ emailType, kind: "send_error", errorMessage: "D1 read failed" }),
+      ]);
+    },
+  );
 
   it("answers notFound for a doc with no gift", async () => {
     expect(await processGiftResendRequest(request("nothing", "gift_confirmation"))).toBe(
@@ -220,16 +241,36 @@ describe("processGiftResendRequest", () => {
   });
 });
 
-describe("processResendRequest for gift emails", () => {
-  it("sends to the stored buyer address even when the request carries a typed address", async () => {
+describe("handleResendRequest for gift emails", () => {
+  it("retries later and restores the request when the sent email cannot be recorded", async () => {
     const giftId = await giftWith("active");
+    await dbExec(
+      `CREATE TRIGGER block_gift_failures BEFORE UPDATE OF email_failures_json ON gift_codes
+       BEGIN SELECT RAISE(ABORT, 'failures down'); END`,
+    );
+    const pending = {
+      ...request(giftId, "gift_confirmation"),
+      kind: "gift",
+      revision: "rev_1",
+    } as PendingResendRequest;
 
-    expect(
-      await processResendRequest({
-        ...request(giftId, "gift_confirmation"),
-        correctedEmail: "typed@example.com",
-      } as ResendRequest),
-    ).toBe("sent");
+    expect(await handleResendRequest(pending)).toBe("retryLater");
+
+    expect(mockPurchase).toHaveBeenCalledOnce();
+    expect(vi.mocked(restoreResendRequest)).toHaveBeenCalledWith(pending);
+    await dbExec(`DROP TRIGGER block_gift_failures`);
+  });
+
+  it("routes a gift request to the stored buyer address even when it carries a typed address", async () => {
+    const giftId = await giftWith("active");
+    const pending = {
+      ...request(giftId, "gift_confirmation"),
+      kind: "gift",
+      revision: "rev_1",
+      correctedEmail: "typed@example.com",
+    } as PendingResendRequest;
+
+    expect(await handleResendRequest(pending)).toBe("sent");
 
     expect(mockPurchase).toHaveBeenCalledWith(
       expect.objectContaining({ to: BUYER_EMAIL }),
