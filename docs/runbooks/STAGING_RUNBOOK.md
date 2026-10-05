@@ -155,6 +155,7 @@ The webhook's own auth (HMAC signature, replay-window timestamp check) IS the ac
 
 - `/api/sanity-sync` (Sanity content sync; existing).
 - `/api/sanity-backup-webhook` (Phase 3.5 backup mirror; needed for `SANITY_BACKUP_ENABLED=1` testing on staging).
+- `/api/delivery/wake` (Studio "Send reading now" and Resend call it right after they save the request; without the bypass the staging workspace waits for the 15-minute `deliver-requested` run).
 - Any future `/api/stripe/webhook`, `/api/brevo/webhook`, etc.
 
 **Production is NOT behind Access today.** This section is purely staging-tier plumbing. If apex ever gets fronted by Access (Phase 2 customer-portal posture decision), re-apply both 9a and 9b for the production hostname.

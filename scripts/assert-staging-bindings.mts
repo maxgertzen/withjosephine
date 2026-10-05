@@ -49,8 +49,8 @@ type WranglerConfig = {
 };
 
 const STAGING_SUFFIX = "-staging";
-const DELIVER_REQUESTED_CRON = "*/5 * * * *";
-const GIFT_CODE_LIMITER = "GIFT_CODE_LIMITER";
+const DELIVER_REQUESTED_CRON = "*/15 * * * *";
+const REQUIRED_LIMITERS = ["GIFT_CODE_LIMITER", "DELIVERY_WAKE_LIMITER"];
 
 function stripJsonc(source: string): string {
   return source
@@ -146,8 +146,10 @@ for (const [blockName, block] of [
   if (!block.triggers?.crons?.includes(DELIVER_REQUESTED_CRON)) {
     fail(`${blockName} triggers.crons must contain "${DELIVER_REQUESTED_CRON}" (deliver-requested)`);
   }
-  if (!block.ratelimits?.some((limiter) => limiter.name === GIFT_CODE_LIMITER)) {
-    fail(`${blockName} ratelimits must contain "${GIFT_CODE_LIMITER}"`);
+  for (const required of REQUIRED_LIMITERS) {
+    if (!block.ratelimits?.some((limiter) => limiter.name === required)) {
+      fail(`${blockName} ratelimits must contain "${required}"`);
+    }
   }
 }
 

@@ -1,15 +1,24 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { Box, Button, Card, Dialog, Flex, Stack, Text, useToast } from "@sanity/ui";
 import { useState } from "react";
-import { getPublishedId, type StringInputProps, useClient, useEditState, useFormValue } from "sanity";
+import {
+  getPublishedId,
+  type StringInputProps,
+  useClient,
+  useDataset,
+  useEditState,
+  useFormValue,
+} from "sanity";
 
 import type { CustomerEmailType } from "../../../src/lib/page-previews/types";
 import {
+  QUEUED_TOAST,
   REQUESTED_TOAST,
   requestDelivery,
   requestResend,
   STUDIO_API_VERSION,
 } from "../../lib/studioRequests";
+import { wakeOriginFor } from "../../lib/siteOrigins";
 import { type DeliveryPanelDocument, deliveryPanelModel } from "./deliveryPanelModel";
 import { ResendEmailDialog } from "./ResendEmailDialog";
 
@@ -25,6 +34,7 @@ export function DeliveryPanel(props: StringInputProps) {
   const publishedId = getPublishedId(documentId ?? "");
   const editState = useEditState(publishedId, "submission");
   const client = useClient({ apiVersion: STUDIO_API_VERSION });
+  const dataset = useDataset();
   const toast = useToast();
   const [isPending, setIsPending] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -35,11 +45,13 @@ export function DeliveryPanel(props: StringInputProps) {
   const model = deliveryPanelModel({ published, draft: editState.draft });
   const resendDisabled = isPending || model.resendLine !== null;
 
-  async function run(request: () => Promise<void>) {
+  const wakeOrigin = wakeOriginFor(dataset, window.location.origin);
+
+  async function run(request: () => Promise<boolean>) {
     setIsPending(true);
     try {
-      await request();
-      toast.push({ status: "info", title: REQUESTED_TOAST });
+      const woke = await request();
+      toast.push({ status: "info", title: woke ? REQUESTED_TOAST : QUEUED_TOAST });
       setIsConfirmOpen(false);
       setResendType(null);
     } catch (error) {
@@ -49,7 +61,7 @@ export function DeliveryPanel(props: StringInputProps) {
     }
   }
 
-  const sendDelivery = () => run(() => requestDelivery(client, publishedId));
+  const sendDelivery = () => run(() => requestDelivery(client, publishedId, wakeOrigin));
 
   return (
     <Stack space={3} id={props.id}>
@@ -149,7 +161,7 @@ export function DeliveryPanel(props: StringInputProps) {
           initialSendTo={published.email ?? ""}
           isPending={isPending}
           onClose={() => setResendType(null)}
-          onSubmit={(request) => void run(() => requestResend(client, publishedId, request))}
+          onSubmit={(request) => void run(() => requestResend(client, publishedId, request, wakeOrigin))}
         />
       )}
     </Stack>

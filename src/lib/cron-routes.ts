@@ -14,7 +14,7 @@ export const CRON_DISPATCH: Record<string, ReadonlyArray<string>> = {
   "0 10 * * *": ["/api/cron/reading-overdue-alert"],
   "0 12 * * 1": ["/api/cron/check-price-drift"],
   "0 3 * * 1": ["/api/cron/backup-sanity-dataset"],
-  "*/5 * * * *": ["/api/cron/deliver-requested"],
+  "*/15 * * * *": ["/api/cron/deliver-requested"],
 } as const;
 
 export function dispatchPathsForCron(cron: string): ReadonlyArray<string> {

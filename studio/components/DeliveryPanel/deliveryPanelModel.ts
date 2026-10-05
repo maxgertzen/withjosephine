@@ -14,11 +14,11 @@ export const DELIVERY_COPY = {
   filesMissing: "Upload the voice note and the PDF first.",
   unpublishedChanges: "Publish your changes first.",
   ready: "Sends the delivery email to {email}.",
-  requested: "Sending within 5 minutes.",
+  requested: "Sending.",
   sent: "Delivery email sent {date}.",
   sentNoDate: "Delivery email sent.",
   failed: "The email didn't send. Try again, or tell Max.",
-  resendRequested: "Resend requested. Sending within 5 minutes.",
+  resendRequested: "Resend requested. Sending.",
 } as const;
 
 type FileField = { asset?: unknown };

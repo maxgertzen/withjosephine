@@ -66,13 +66,13 @@ describe("custom worker cron auth wiring", () => {
   });
 
   it("wraps the deliver-requested dispatch in the Sentry cron monitor", async () => {
-    await worker.scheduled({ cron: "*/5 * * * *" }, env, ctx);
+    await worker.scheduled({ cron: "*/15 * * * *" }, env, ctx);
 
     expect(forwardedRequest().url).toBe("https://withjosephine.com/api/cron/deliver-requested");
     expect(withMonitor).toHaveBeenCalledWith(
       "email-day-7-deliver",
       expect.any(Function),
-      { schedule: { type: "crontab", value: "*/5 * * * *" } },
+      { schedule: { type: "crontab", value: "*/15 * * * *" } },
     );
   });
 });

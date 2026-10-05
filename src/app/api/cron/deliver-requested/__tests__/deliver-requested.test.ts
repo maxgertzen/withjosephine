@@ -265,4 +265,14 @@ describe("/api/cron/deliver-requested", () => {
 
     expect(body).toMatchObject({ missingOrderConfirmations: 2 });
   });
+
+  it("leaves requests made in the last 2 minutes to the Studio wake", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-05T10:00:00.000Z") });
+    mockAuth.mockReturnValue(true);
+
+    await callRoute();
+
+    expect(mockFetchRequests).toHaveBeenCalledWith({ requestedBefore: "2026-10-05T09:58:00.000Z" });
+    vi.useRealTimers();
+  });
 });

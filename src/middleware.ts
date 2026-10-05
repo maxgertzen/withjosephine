@@ -57,6 +57,7 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/api/stripe/webhook",
   "/api/webhooks/resend",
   "/api/cron/",
+  "/api/delivery/wake",
   "/api/internal/",
   "/api/admin/",
   "/listen/",

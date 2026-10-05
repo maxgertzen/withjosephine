@@ -25,6 +25,7 @@ type StudioRequests = {
 
 const STUDIO_REQUESTS_GROQ = groq`
   *[_type == "submission" && !(_id in path("drafts.**"))
+    && (!defined($submissionId) || _id == $submissionId)
     && (defined(deliveryRequestedAt) || defined(emailResendRequest.requestedAt))
   ]{ _id, _rev, deliveryRequestedAt, emailResendRequest }
 `;
@@ -42,12 +43,28 @@ function toPendingResendRequest(doc: SanityStudioRequest): PendingResendRequest 
   };
 }
 
-export async function fetchStudioRequests(): Promise<StudioRequests> {
+export type StudioRequestScope = { submissionId: string } | { requestedBefore: string };
+
+function isInScope(requestedAt: string | undefined, scope: StudioRequestScope): boolean {
+  if (!requestedAt) return false;
+  return "submissionId" in scope || requestedAt < scope.requestedBefore;
+}
+
+export async function fetchStudioRequests(scope: StudioRequestScope): Promise<StudioRequests> {
   const client = await getSanityWriteClient();
-  const docs = await client.fetch<SanityStudioRequest[]>(STUDIO_REQUESTS_GROQ);
+  const docs = await client.fetch<SanityStudioRequest[]>(STUDIO_REQUESTS_GROQ, {
+    submissionId: "submissionId" in scope ? scope.submissionId : null,
+  });
   return {
-    deliveryIds: docs.filter((doc) => doc.deliveryRequestedAt).map((doc) => doc._id),
-    resendRequests: docs.map(toPendingResendRequest).filter((request) => request !== null),
+    deliveryIds: docs
+      .filter((doc) => isInScope(doc.deliveryRequestedAt, scope))
+      .map((doc) => doc._id),
+    resendRequests: docs
+      .map(toPendingResendRequest)
+      .filter(
+        (request): request is PendingResendRequest =>
+          request !== null && isInScope(request.requestedAt, scope),
+      ),
   };
 }
 
