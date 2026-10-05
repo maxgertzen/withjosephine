@@ -2,7 +2,6 @@ export type EnvVar =
   | "ADMIN_API_KEY"
   | "BREVO_API_KEY"
   | "CRON_SECRET"
-  | "DELIVERY_WAKE_SECRET"
   | "ENVIRONMENT"
   | "GIFT_CODE_SECRET"
   | "MIXPANEL_SERVICE_ACCOUNT_SECRET"
@@ -51,7 +50,7 @@ export function isFlagEnabled(name: FeatureFlag) {
 }
 
 const STAGING_ORIGIN = "https://staging.withjosephine.com";
-export const PRODUCTION_ORIGIN = "https://withjosephine.com";
+const PRODUCTION_ORIGIN = "https://withjosephine.com";
 
 export function isStagingEnvironment(): boolean {
   return process.env.ENVIRONMENT === "staging";

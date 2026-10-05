@@ -105,12 +105,6 @@ Verify: `gh variable list --env <name>` returns the expected set.
 - [ ] Sanity dashboard → API → Webhooks → create webhook to `https://<name>.withjosephine.com/api/sanity-sync`.
 - [ ] HMAC secret matches the worker's `SANITY_WEBHOOK_SECRET`.
 - [ ] Filter to relevant doc types if cross-dataset sync is desired.
-- [ ] Staging only, production dataset webhook. Filter:
-      `_type != "sanity.imageAsset" && _type != "sanity.fileAsset" && _type != "magicLinkRequest" && _type != "giftRecord" && (_type != "submission" || delta::changedAny(deliveryRequestedAt))`
-- [ ] Projection:
-      `{ _id, _type, "_operation": delta::operation(), _type == "submission" => { "wakeDelivery": defined(deliveryRequestedAt) }, _type != "submission" => { ... } }`
-- [ ] A production submission that reaches staging is never written. Staging calls `https://withjosephine.com/api/cron/deliver-requested` with `DELIVERY_WAKE_SECRET`, so a Studio "Send reading now" goes out within seconds instead of at the next 5-minute run. Resend requests stay on the 5-minute run: production restores a resend request after a retryable failure, and a wake on that write would repeat every few seconds.
-- [ ] `DELIVERY_WAKE_SECRET` holds the same value on both workers: `pnpm exec wrangler secret put DELIVERY_WAKE_SECRET --env staging` and `pnpm exec wrangler secret put DELIVERY_WAKE_SECRET`. It opens `deliver-requested` only, never the other crons.
 - [ ] **CF Access Bypass policy required** for this path — see "CF Access patterns" section below. Without it, every webhook delivery 302s to Access login.
 
 ### 9. CF Access patterns for ops curls and 3rd-party webhooks (surfaced 2026-05-13 during Phase 3 provisioning)

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/booking/cron-auth", () => ({
-  isDeliveryWakeAuthorized: vi.fn(),
+  isCronRequestAuthorized: vi.fn(),
 }));
 
 vi.mock("@/lib/booking/readingDelivery", async () => {
@@ -30,7 +30,7 @@ vi.mock("@/lib/booking/orderConfirmationSweep", () => ({
   flagMissingOrderConfirmations: vi.fn(),
 }));
 
-import { isDeliveryWakeAuthorized } from "@/lib/booking/cron-auth";
+import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { flagMissingOrderConfirmations } from "@/lib/booking/orderConfirmationSweep";
 import {
   clearDeliveryRequest,
@@ -45,7 +45,7 @@ import {
 import { type DeliverOutcome, deliverRequested } from "@/lib/booking/readingDelivery";
 import { processResendRequest } from "@/lib/booking/resendCustomerEmail";
 
-const mockAuth = vi.mocked(isDeliveryWakeAuthorized);
+const mockAuth = vi.mocked(isCronRequestAuthorized);
 const mockDeliverRequested = vi.mocked(deliverRequested);
 const mockFetchRequests = vi.mocked(fetchStudioRequests);
 const mockClaimResend = vi.mocked(claimResendRequest);

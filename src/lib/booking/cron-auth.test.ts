@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  isCronRequestAuthorized,
-  isDeliveryWakeAuthorized,
-  scheduledCronRequest,
-  withoutCronHeader,
-} from "./cron-auth";
+import { isCronRequestAuthorized, scheduledCronRequest, withoutCronHeader } from "./cron-auth";
 
 const URL = "http://localhost/api/cron/test";
 
@@ -94,35 +89,5 @@ describe("withoutCronHeader", () => {
   it("returns the same request when cf-cron is absent", () => {
     const publicRequest = new Request(URL);
     expect(withoutCronHeader(publicRequest)).toBe(publicRequest);
-  });
-});
-
-describe("isDeliveryWakeAuthorized", () => {
-  const bearer = (token: string) =>
-    new Request(URL, { headers: { authorization: `Bearer ${token}` } });
-
-  it("accepts the delivery wake secret", () => {
-    vi.stubEnv("DELIVERY_WAKE_SECRET", "wake");
-    expect(isDeliveryWakeAuthorized(bearer("wake"))).toBe(true);
-  });
-
-  it("keeps accepting the cron secret and the cf-cron header", () => {
-    vi.stubEnv("CRON_SECRET", "shhh");
-    expect(isDeliveryWakeAuthorized(bearer("shhh"))).toBe(true);
-    expect(
-      isDeliveryWakeAuthorized(new Request(URL, { headers: { "cf-cron": "*/5 * * * *" } })),
-    ).toBe(true);
-  });
-
-  it("is not accepted by other cron routes", () => {
-    vi.stubEnv("DELIVERY_WAKE_SECRET", "wake");
-    expect(isCronRequestAuthorized(bearer("wake"))).toBe(false);
-  });
-
-  it("rejects a wrong token and an unset wake secret", () => {
-    vi.stubEnv("DELIVERY_WAKE_SECRET", "wake");
-    expect(isDeliveryWakeAuthorized(bearer("nope"))).toBe(false);
-    vi.stubEnv("DELIVERY_WAKE_SECRET", "");
-    expect(isDeliveryWakeAuthorized(bearer(""))).toBe(false);
   });
 });

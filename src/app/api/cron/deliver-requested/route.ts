@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isDeliveryWakeAuthorized } from "@/lib/booking/cron-auth";
+import { isCronRequestAuthorized } from "@/lib/booking/cron-auth";
 import { flagMissingOrderConfirmations } from "@/lib/booking/orderConfirmationSweep";
 import { fetchStudioRequests } from "@/lib/booking/persistence/sanityStudioRequests";
 import { type DeliverOutcome, isDelivered } from "@/lib/booking/readingDelivery";
@@ -13,7 +13,7 @@ function countDelivery(summary: DeliverySummary, outcome: DeliverOutcome): void 
 }
 
 async function handle(request: Request): Promise<Response> {
-  if (!isDeliveryWakeAuthorized(request)) {
+  if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.AUTH_TOKEN_SECRET) {
