@@ -4,6 +4,7 @@
 //   set -a && source .env.local && set +a && \
 //     pnpm tsx scripts/seed-sanity-defaults-2026-10.mts
 import { NOTES_DEFAULTS, READING_PAGE_DEFAULTS } from "../src/data/defaults";
+import { fillMissing } from "./_lib/fillMissing.mts";
 import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const client = sanityWriteClient();
@@ -31,9 +32,7 @@ const existing = new Set(
 const transaction = client.transaction();
 for (const seed of SEEDS) {
   for (const id of seed.docIds.filter((docId) => existing.has(docId))) {
-    transaction.patch(id, (patch) =>
-      (seed.parent ? patch.setIfMissing({ [seed.parent]: {} }) : patch).setIfMissing(seed.fields),
-    );
+    fillMissing(transaction, { _id: id, fields: seed.fields, parent: seed.parent });
     console.log(`[${dataset}] filling empty fields on ${id}: ${Object.keys(seed.fields).length} fields`);
   }
 }

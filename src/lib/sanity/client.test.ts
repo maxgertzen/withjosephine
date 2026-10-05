@@ -99,3 +99,35 @@ describe("getSanityWriteClient — dataset resolution", () => {
     expect(writeCalls).toHaveLength(1);
   });
 });
+
+describe("sanityClient stega filter", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockCreateClient.mockReset().mockImplementation((cfg) => ({ ...cfg, __mock: true }));
+    vi.stubEnv("NEXT_PUBLIC_SANITY_PROJECT_ID", "test-project");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function stegaFilter() {
+    const { sanityClient } = await import("./client");
+    return (sanityClient as unknown as { stega: { filter: (props: unknown) => boolean } }).stega.filter;
+  }
+
+  it("keeps a reading tag editable in Presentation, which Sanity skips by name", async () => {
+    const filter = await stegaFilter();
+    const filterDefault = vi.fn(() => false);
+
+    expect(filter({ sourcePath: ["tag"], resultPath: ["tag"], value: "Soul Records", filterDefault })).toBe(true);
+  });
+
+  it("leaves every other field to Sanity's default rule", async () => {
+    const filter = await stegaFilter();
+    const filterDefault = vi.fn(() => false);
+
+    expect(filter({ sourcePath: ["slug", "current"], resultPath: ["slug"], value: "birth-chart", filterDefault })).toBe(false);
+    expect(filterDefault).toHaveBeenCalled();
+  });
+});

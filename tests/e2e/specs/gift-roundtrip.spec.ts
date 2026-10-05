@@ -36,6 +36,27 @@ function sandboxEmail(runId: string, role: string): string {
   return `${SANDBOX_EMAIL_PREFIXES.giftRoundtrip}${runId}-${role}${SANDBOX_DOMAIN}`;
 }
 
+const PURCHASE_RESPONSE_TIMEOUT_MS = 30_000;
+
+async function capturePurchaseResponse(page: Page): Promise<Promise<{ status: number; body: string }>> {
+  let captured: (value: { status: number; body: string }) => void = () => {};
+  const response = new Promise<{ status: number; body: string }>((resolve, reject) => {
+    captured = resolve;
+    setTimeout(() => reject(new Error("[gift-roundtrip] no POST to the gift purchase route")), PURCHASE_RESPONSE_TIMEOUT_MS);
+  });
+  await page.route(
+    `**${GIFT_PURCHASE_API_ROUTE}`,
+    async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      const fetched = await route.fetch();
+      captured({ status: fetched.status(), body: await fetched.text() });
+      await route.fulfill({ response: fetched });
+    },
+    { times: 1 },
+  );
+  return response;
+}
+
 async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<BoughtGift> {
   await stubTurnstile(page);
   await page.goto(bookingPath(READING_SLUG));
@@ -45,11 +66,7 @@ async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<Bo
   await sheet.getByLabel(new RegExp(GIFT_DEFAULTS.buyerNameLabel)).fill(BUYER_FIRST_NAME);
   await sheet.getByRole("checkbox").check();
 
-  const purchase = page.waitForResponse(
-    (response) =>
-      response.url().endsWith(GIFT_PURCHASE_API_ROUTE) && response.request().method() === "POST",
-    { timeout: 30_000 },
-  );
+  const purchase = await capturePurchaseResponse(page);
   const thankYouDocument = page.waitForResponse(
     (response) =>
       response.url().includes("/thank-you/") && response.request().resourceType() === "document",
@@ -57,8 +74,8 @@ async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<Bo
   );
   await sheet.locator('button[type="submit"]').click();
   const purchaseResponse = await purchase;
-  expect(purchaseResponse.status(), await purchaseResponse.text()).toBe(200);
-  const { giftId } = (await purchaseResponse.json()) as { giftId: string };
+  expect(purchaseResponse.status, purchaseResponse.body).toBe(200);
+  const { giftId } = JSON.parse(purchaseResponse.body) as { giftId: string };
   await fillStripeCheckout(page, buyerEmail);
 
   const firstPaint = await (await thankYouDocument).text();
