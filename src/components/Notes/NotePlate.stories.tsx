@@ -39,3 +39,20 @@ export const OneColumn: Story = {
     },
   },
 };
+
+const WRAPPING_PLATE = {
+  ...PILLAR_PLATE,
+  leftLines: [
+    "Your gifts, and the places in your life where they ask to be used",
+    "Your patterns",
+    "Your purpose and your path",
+  ],
+};
+
+export const WrappingPointStacked: Story = {
+  args: { plate: WRAPPING_PLATE },
+};
+
+export const WrappingPointSideBySide: Story = {
+  args: { plate: { ...WRAPPING_PLATE, layout: "sideBySide" } },
+};
