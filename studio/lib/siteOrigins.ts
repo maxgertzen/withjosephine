@@ -14,7 +14,7 @@ export function siteOriginFor(dataset: string): string {
   return dataset === "staging" ? SITE_ORIGIN_BY_DATASET.staging : SITE_ORIGIN_BY_DATASET.production;
 }
 
-export function wakeOriginFor(dataset: string, studioOrigin: string): string | null {
+export function workerOriginFor(dataset: string, studioOrigin: string): string | null {
   if (studioOrigin === LOCAL_STUDIO_ORIGIN) return null;
   return SITE_ORIGIN_BY_DATASET[dataset as keyof typeof SITE_ORIGIN_BY_DATASET] ?? null;
 }

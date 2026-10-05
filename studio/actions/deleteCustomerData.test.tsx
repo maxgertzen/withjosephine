@@ -12,6 +12,7 @@ vi.mock("@sanity/ui", () => ({
 }));
 
 vi.mock("@sanity/icons", () => ({ TrashIcon: () => null }));
+vi.mock("sanity", () => ({ useDataset: () => "production" }));
 
 import { deleteCustomerDataAction } from "./deleteCustomerData";
 

@@ -1,15 +1,12 @@
 import { checkDeliveryWakeRateLimit } from "@/lib/booking/deliveryWakeRateLimit";
 import { runMirror } from "@/lib/booking/persistence/runMirror";
 import { canRunStudioRequests, runStudioRequests } from "@/lib/booking/runStudioRequests";
+import { withStudioCors } from "@/lib/http/studioCors";
 
-const STUDIO_ORIGIN = "https://withjosephine.sanity.studio";
 const SUBMISSION_ID_PATTERN = /^[A-Za-z0-9-]{1,100}$/;
 
 function answer(status: number): Response {
-  return new Response(null, {
-    status,
-    headers: { "Access-Control-Allow-Origin": STUDIO_ORIGIN, Vary: "Origin" },
-  });
+  return withStudioCors(new Response(null, { status }));
 }
 
 export async function POST(request: Request): Promise<Response> {

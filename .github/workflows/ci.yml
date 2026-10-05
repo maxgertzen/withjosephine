@@ -65,6 +65,16 @@ jobs:
       - run: pnpm check:stories-imports
       - run: pnpm storybook:build
 
+  studio-build:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    env:
+      SANITY_STUDIO_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm studio:build
+
   # Deploy the staging Worker (built via @opennextjs/cloudflare). Runs on
   # pushes to main. PRs do not deploy. All quality gates above must pass
   # first. Per-env vars resolve from the GH `staging` environment because
@@ -72,7 +82,7 @@ jobs:
   deploy-staging:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/v1.4.0' || github.ref == 'refs/heads/release/v1.5.0' || github.ref == 'refs/heads/release/v1.6.0' || github.ref == 'refs/heads/release/v1.7.0' || github.ref == 'refs/heads/release/v1.8.0' || github.ref == 'refs/heads/release/v1.9.0' || github.ref == 'refs/heads/release/v1.10.0' || github.ref == 'refs/heads/release/v1.11.0' || github.ref == 'refs/heads/release/v1.11.5' || github.ref == 'refs/heads/release/v1.16.0' || github.ref == 'refs/heads/release/v1.18.0' || github.ref == 'refs/heads/release/v1.19.5' || github.ref == 'refs/heads/release/v1.20.0' || github.ref == 'refs/heads/release/v1.21.0')
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, test, security-audit, storybook]
+    needs: [lint-and-typecheck, test, security-audit, storybook, studio-build]
     environment: staging
     env:
       NEXT_PUBLIC_SANITY_DATASET: ${{ vars.NEXT_PUBLIC_SANITY_DATASET }}

@@ -12,6 +12,7 @@ import {
 } from "@/lib/emails/previewRecipients";
 import { isPreviewTemplateKey } from "@/lib/emails/render-preview";
 import { sendEmailPreview } from "@/lib/emails/sendEmailPreview";
+import { studioPreflight, studioRoute } from "@/lib/http/studioCors";
 
 const REFUSED = () => new NextResponse(null, { status: 404 });
 
@@ -19,7 +20,7 @@ const REFUSED = () => new NextResponse(null, { status: 404 });
 // A caller can only ever send a rendered preview to a fixed internal address,
 // so a missing/forged token can't widen the blast radius. The destructive
 // delete route keeps its token. Locked 2026-06-16.
-export async function POST(request: Request): Promise<Response> {
+async function sendPreview(request: Request): Promise<Response> {
   if (readAllowedPreviewRecipients().length === 0) {
     return NextResponse.json(
       { outcome: "refused", reason: "preview-not-configured" },
@@ -66,4 +67,10 @@ export async function POST(request: Request): Promise<Response> {
     { outcome: "failed", reason: result.error },
     { status: 500 },
   );
+}
+
+export const POST = studioRoute("admin-send-email-preview", sendPreview);
+
+export function OPTIONS(): Response {
+  return studioPreflight();
 }

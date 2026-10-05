@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-import { generateReadingStaticParams } from "@/data/readings";
 import { siteOrigin } from "@/lib/env";
 import { bookingPath } from "@/lib/http/routes";
 import { isNotesVisible, noteLastModified, notePath, NOTES_PATH } from "@/lib/notes/notes";
 import { fetchArticleDatesPublished, fetchNotesStatePublished } from "@/lib/sanity/fetch";
+import { generateReadingStaticParams } from "@/lib/sanity/readingStaticParams";
 
 // Public, indexable surfaces only; noindexed and user-scoped routes are excluded.
 const STATIC_PATHS = ["/"];

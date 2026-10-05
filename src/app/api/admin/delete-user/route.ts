@@ -8,6 +8,7 @@ import { findUserByEmail, getOrCreateUser, normalizeEmail } from "@/lib/auth/use
 import { findSubmissionRecipientUserId } from "@/lib/booking/submissions";
 import { cascadeDeleteUser } from "@/lib/compliance/cascadeDeleteUser";
 import { listGiftsBoughtBy } from "@/lib/gift/persistence/repository";
+import { studioPreflight, studioRoute } from "@/lib/http/studioCors";
 
 /**
  * Admin-triggered GDPR Art. 17 cascade. Called by the Sanity Studio doc
@@ -45,7 +46,7 @@ async function findUserIdToDelete(body: unknown): Promise<string | null> {
   return email ? findUserIdByEmail(email) : null;
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function deleteUser(request: Request): Promise<Response> {
   const auth = await authorizeAdminToken(request);
   if (!auth.authorized) return REFUSED();
 
@@ -66,4 +67,10 @@ export async function POST(request: Request): Promise<Response> {
     brevoSmtpProcessId: result.brevoSmtpProcessId,
     mixpanelTaskId: result.mixpanelTaskId,
   });
+}
+
+export const POST = studioRoute("admin-delete-user", deleteUser);
+
+export function OPTIONS(): Response {
+  return studioPreflight();
 }

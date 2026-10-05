@@ -111,4 +111,27 @@ describe("POST /api/admin/send-email-preview", () => {
       }),
     );
   });
+
+  it("lets the hosted Studio read the answer, including a refusal", async () => {
+    const response = await callRoute({ template: "orderConfirmation", recipient: "stranger@example.com" });
+
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+  });
+
+  it("answers the browser preflight for the JSON POST", async () => {
+    const { OPTIONS } = await import("../route");
+    const response = OPTIONS();
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST");
+  });
+
+  it("keeps the Studio able to read a 500 when the send throws", async () => {
+    mockSend.mockRejectedValueOnce(new Error("resend down"));
+    const response = await callRoute({ template: "emailMagicLink", recipient: "hello@withjosephine.com" });
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+  });
 });

@@ -19,7 +19,7 @@ import {
   requestResend,
   STUDIO_API_VERSION,
 } from "../../lib/studioRequests";
-import { wakeOriginFor } from "../../lib/siteOrigins";
+import { workerOriginFor } from "../../lib/siteOrigins";
 import {
   type DeliveryPanelDocument,
   deliveryPanelModel,
@@ -147,7 +147,7 @@ export function DeliveryPanel(props: StringInputProps) {
   const model = deliveryPanelModel({ published, draft: editState.draft });
   const resendDisabled = isPending || model.resendLine !== null;
 
-  const wakeOrigin = wakeOriginFor(dataset, window.location.origin);
+  const workerOrigin = workerOriginFor(dataset, window.location.origin);
 
   async function run(request: () => Promise<boolean>) {
     setIsPending(true);
@@ -164,7 +164,7 @@ export function DeliveryPanel(props: StringInputProps) {
     }
   }
 
-  const sendDelivery = () => run(() => requestDelivery(client, publishedId, wakeOrigin));
+  const sendDelivery = () => run(() => requestDelivery(client, publishedId, workerOrigin));
 
   return (
     <Stack space={3} id={props.id}>
@@ -255,7 +255,7 @@ export function DeliveryPanel(props: StringInputProps) {
           onClose={() => setGiftResendType(null)}
           onConfirm={() =>
             void run(() =>
-              requestResend(client, publishedId, { emailType: giftResendType }, wakeOrigin),
+              requestResend(client, publishedId, { emailType: giftResendType }, workerOrigin),
             )
           }
         />
@@ -269,7 +269,7 @@ export function DeliveryPanel(props: StringInputProps) {
           initialSendTo={published.email ?? ""}
           isPending={isPending}
           onClose={() => setResendType(null)}
-          onSubmit={(request) => void run(() => requestResend(client, publishedId, request, wakeOrigin))}
+          onSubmit={(request) => void run(() => requestResend(client, publishedId, request, workerOrigin))}
         />
       )}
     </Stack>

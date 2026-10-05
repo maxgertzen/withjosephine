@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { generateReadingStaticParams } from "@/data/readings";
 import { findGiftRecipientThankYou } from "@/lib/booking/submissions";
 import { fetchThankYouSessionSnapshot } from "@/lib/booking/thankYouSession";
 import { type GiftThankYouResult, resolveGiftThankYou } from "@/lib/gift/giftThankYou";
@@ -12,6 +11,7 @@ import {
   fetchSiteSettings,
   fetchThankYouPage,
 } from "@/lib/sanity/fetch";
+import { generateReadingStaticParams } from "@/lib/sanity/readingStaticParams";
 import { isUuid } from "@/lib/uuid";
 
 import { deriveGiftThankYouViewProps } from "./deriveGiftThankYouViewProps";

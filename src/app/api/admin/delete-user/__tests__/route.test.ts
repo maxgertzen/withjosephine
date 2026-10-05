@@ -243,4 +243,19 @@ describe("POST /api/admin/delete-user with { email }", () => {
     expect(res.status).toBe(404);
     expect(mockCascade).not.toHaveBeenCalled();
   });
+
+  it("lets the hosted Studio read a refusal", async () => {
+    const res = await callRoute({ submissionId: "sub_1" }, {});
+
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+  });
+
+  it("answers the browser preflight for the admin token header", async () => {
+    const { OPTIONS } = await import("../route");
+    const res = OPTIONS();
+
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+    expect(res.headers.get("Access-Control-Allow-Headers")).toBe("content-type, x-admin-token");
+  });
 });

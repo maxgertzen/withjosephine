@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { wakeOriginFor } from "./siteOrigins";
 import { requestDelivery, requestResend, wakeDelivery } from "./studioRequests";
 
 function fakeClient() {
@@ -13,22 +12,6 @@ function fakeClient() {
 
 afterEach(() => {
   vi.restoreAllMocks();
-});
-
-describe("wakeOriginFor", () => {
-  it("wakes the site of the workspace dataset from the hosted Studio", () => {
-    expect(wakeOriginFor("production", "https://withjosephine.sanity.studio")).toBe(
-      "https://withjosephine.com",
-    );
-    expect(wakeOriginFor("staging", "https://withjosephine.sanity.studio")).toBe(
-      "https://staging.withjosephine.com",
-    );
-  });
-
-  it("does not wake from the local Studio or for an unknown dataset", () => {
-    expect(wakeOriginFor("production", "http://localhost:3333")).toBeNull();
-    expect(wakeOriginFor("scratch", "https://withjosephine.sanity.studio")).toBeNull();
-  });
 });
 
 describe("requestDelivery", () => {

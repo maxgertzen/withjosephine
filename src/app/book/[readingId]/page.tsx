@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { ReadingFoldPrePaint } from "@/components/ReadingBlock/ReadingFoldPrePaint";
-import { generateReadingStaticParams, getReadingById } from "@/data/readings";
+import { getReadingById } from "@/data/readings";
 import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import { fetchReadingPublished } from "@/lib/sanity/fetch";
+import { generateReadingStaticParams } from "@/lib/sanity/readingStaticParams";
 import { readingProductJsonLd } from "@/lib/structuredData";
 
 import { BookingFormView } from "./BookingFormView";
