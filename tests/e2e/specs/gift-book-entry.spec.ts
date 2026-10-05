@@ -18,6 +18,7 @@ import {
   readIntakeDraft,
   seedIntakeDraft,
 } from "../helpers/intakeDraft";
+import { STRIPE_BUY_GLOB } from "../helpers/stripeCheckout";
 import { MOBILE_AND_DESKTOP } from "../helpers/viewports";
 
 const READING_SLUG = "birth-chart";
@@ -25,7 +26,6 @@ const OTHER_READING_SLUG = "soul-blueprint";
 const BUYER_EMAIL = "gift-book-entry-buyer@withjosephine.com";
 const RECIPIENT_EMAIL = "gift-book-entry-recipient@withjosephine.com";
 const UNKNOWN_CODE = "AAAA AAAA AAAA";
-const STRIPE_BUY_GLOB = "https://buy.stripe.com/**";
 const GIFT_CHECK_GLOB = `**${GIFT_CHECK_API_ROUTE}`;
 const OTHER_READING_ERROR = new RegExp(
   `^${GIFT_DEFAULTS.codeOtherReadingTemplate.split("{reading}")[0]}`,

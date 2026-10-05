@@ -41,7 +41,7 @@ export interface StripeCheckoutIntercept {
   unroute(): Promise<void>;
 }
 
-const STRIPE_BUY_GLOB = "https://buy.stripe.com/**";
+export const STRIPE_BUY_GLOB = "https://buy.stripe.com/**";
 
 export async function interceptStripeCheckout(
   page: Page,

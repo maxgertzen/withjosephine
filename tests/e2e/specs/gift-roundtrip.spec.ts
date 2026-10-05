@@ -4,6 +4,7 @@ import { expect, type Page, type Response, test } from "@playwright/test";
 
 import { GIFT_DEFAULTS } from "@/data/defaults";
 import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
+import { giftIdFromClientReferenceId } from "@/lib/gift/clientReference";
 import { giftPath, normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
 import { bookingPath, GIFT_PURCHASE_API_ROUTE } from "@/lib/http/routes";
 
@@ -17,7 +18,7 @@ import {
 import { cleanupSandboxResidue } from "../helpers/sandboxResidueCleanup";
 import { forceD1Mirror, uploadDummyVoiceAndPdf } from "../helpers/sanityE2EAssets";
 import { escapeSqliteLiteral, queryStagingD1, sandboxRequestHeaders } from "../helpers/stagingApi";
-import { fillStripeCheckout } from "../helpers/stripeCheckout";
+import { fillStripeCheckout, STRIPE_BUY_GLOB } from "../helpers/stripeCheckout";
 import { stubTurnstile } from "../helpers/turnstileStub";
 
 const READING_SLUG = "birth-chart";
@@ -36,27 +37,6 @@ function sandboxEmail(runId: string, role: string): string {
   return `${SANDBOX_EMAIL_PREFIXES.giftRoundtrip}${runId}-${role}${SANDBOX_DOMAIN}`;
 }
 
-const PURCHASE_RESPONSE_TIMEOUT_MS = 30_000;
-
-async function capturePurchaseResponse(page: Page): Promise<Promise<{ status: number; body: string }>> {
-  let captured: (value: { status: number; body: string }) => void = () => {};
-  const response = new Promise<{ status: number; body: string }>((resolve, reject) => {
-    captured = resolve;
-    setTimeout(() => reject(new Error("[gift-roundtrip] no POST to the gift purchase route")), PURCHASE_RESPONSE_TIMEOUT_MS);
-  });
-  await page.route(
-    `**${GIFT_PURCHASE_API_ROUTE}`,
-    async (route) => {
-      if (route.request().method() !== "POST") return route.continue();
-      const fetched = await route.fetch();
-      captured({ status: fetched.status(), body: await fetched.text() });
-      await route.fulfill({ response: fetched });
-    },
-    { times: 1 },
-  );
-  return response;
-}
-
 async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<BoughtGift> {
   await stubTurnstile(page);
   await page.goto(bookingPath(READING_SLUG));
@@ -66,7 +46,12 @@ async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<Bo
   await sheet.getByLabel(new RegExp(GIFT_DEFAULTS.buyerNameLabel)).fill(BUYER_FIRST_NAME);
   await sheet.getByRole("checkbox").check();
 
-  const purchase = await capturePurchaseResponse(page);
+  const purchase = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(GIFT_PURCHASE_API_ROUTE) && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  const stripeRedirect = page.waitForRequest(STRIPE_BUY_GLOB, { timeout: 30_000 });
   const thankYouDocument = page.waitForResponse(
     (response) =>
       response.url().includes("/thank-you/") && response.request().resourceType() === "document",
@@ -74,8 +59,13 @@ async function buyGiftThroughGiftRow(page: Page, buyerEmail: string): Promise<Bo
   );
   await sheet.locator('button[type="submit"]').click();
   const purchaseResponse = await purchase;
-  expect(purchaseResponse.status, purchaseResponse.body).toBe(200);
-  const { giftId } = JSON.parse(purchaseResponse.body) as { giftId: string };
+  if (!purchaseResponse.ok()) throw new Error(await purchaseResponse.text());
+  const giftId = giftIdFromClientReferenceId(
+    new URL((await stripeRedirect).url()).searchParams.get("client_reference_id") ?? "",
+  );
+  if (!giftId) {
+    throw new Error("[gift-roundtrip] the Stripe redirect carries no gift client_reference_id");
+  }
   await fillStripeCheckout(page, buyerEmail);
 
   const firstPaint = await (await thankYouDocument).text();
