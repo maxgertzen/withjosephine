@@ -7,6 +7,7 @@ import { serverTrack } from "@/lib/analytics/server";
 import { AUDIT_EVENT_TYPE } from "@/lib/audit/eventTypes";
 import { isFirstReport } from "@/lib/audit/reportOnce";
 import { normalizeEmail } from "@/lib/auth/users";
+import { failureFromError, failureFromUnsentResult } from "@/lib/booking/emailFailures";
 import { buildFinancialMirror } from "@/lib/booking/financialMirror";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { siteOrigin } from "@/lib/env";
@@ -23,6 +24,7 @@ import { giftPaymentEventFields } from "./giftAnalytics";
 import { deriveGiftSendToken, deriveVerifiedGiftCode, giftUrl } from "./giftCode";
 import { formatGiftCode, giftSendPath } from "./giftCodeFormat";
 import { giftContent } from "./giftContent";
+import { recordGiftEmailFailure } from "./giftEmailFailures";
 import {
   appendGiftEmailFired,
   claimGiftBuyerEmail,
@@ -64,10 +66,11 @@ export function giftActivationFromSession(
   };
 }
 
-async function sendBuyerConfirmation(
+export async function sendBuyerConfirmation(
   gift: GiftRecord,
   code: string,
   buyerEmail: string,
+  idempotencyKey: string,
 ): ReturnType<typeof sendGiftPurchase> {
   const { fetchEmailGiftSettings, fetchReadingPublished } = await import("@/lib/sanity/fetch");
   const [settings, name, sendToken] = await Promise.all([
@@ -90,7 +93,7 @@ async function sendBuyerConfirmation(
       whatsappUrl: WHATSAPP_SHARE_URL + encodeURIComponent(`${shareMessage} ${url}`),
       sendUrl: siteOrigin() + giftSendPath(sendToken),
     },
-    { giftId: gift.id, idempotencyKey: `gift-confirmation/${gift.id}` },
+    { giftId: gift.id, idempotencyKey },
   );
 }
 
@@ -106,7 +109,27 @@ async function confirmToBuyer(
     return;
   }
 
-  const result = await sendBuyerConfirmation(claimed, code, buyerEmail);
+  const attemptedAt = new Date().toISOString();
+  const result = await sendBuyerConfirmation(
+    claimed,
+    code,
+    buyerEmail,
+    `gift-confirmation/${claimed.id}`,
+  ).catch(async (error: unknown) => {
+    await recordGiftEmailFailure(claimed.id, {
+      emailType: "gift_confirmation",
+      attemptedAt,
+      ...failureFromError(error),
+    });
+    throw error;
+  });
+  if (result.kind === "failed" || result.kind === "skipped") {
+    await recordGiftEmailFailure(claimed.id, {
+      emailType: "gift_confirmation",
+      attemptedAt,
+      ...failureFromUnsentResult(result),
+    });
+  }
   if (result.kind === "failed") {
     console.error(`[activateGift] buyer confirmation failed for gift ${claimed.id}`);
     await releaseGiftBuyerEmailClaim(claimed.id, claimedAt);

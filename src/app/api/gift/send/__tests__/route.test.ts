@@ -381,6 +381,25 @@ describe("POST /api/gift/send success", () => {
 });
 
 describe("POST /api/gift/send failures", () => {
+  it("records the failed gift email for the recipient role, never the address", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500", statusCode: 500 });
+    const { giftId, token } = await activeGift();
+
+    await callRoute(sendBody(token));
+
+    const failures = (await findGiftById(giftId))?.emailFailures ?? [];
+    expect(failures).toEqual([
+      expect.objectContaining({
+        emailType: "gift_send",
+        kind: "send_error",
+        recipient: "recipient",
+        errorCode: "Resend 500",
+        statusCode: 500,
+      }),
+    ]);
+    expect(JSON.stringify(failures)).not.toContain(RECIPIENT_EMAIL);
+  });
+
   it("releases the claim when Resend fails and the retry to the same address reuses key 1", async () => {
     mockSend.mockResolvedValueOnce({ kind: "failed", error: "Resend 500", statusCode: 500 });
     const { giftId, token } = await activeGift();

@@ -32,6 +32,7 @@ import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
 import { isFlagEnabled, isStagingEnvironment } from "./env";
 import { giftClientReferenceId } from "./gift/clientReference";
 import { formatGiftCode } from "./gift/giftCodeFormat";
+import type { GiftEmailFiredType } from "./gift/types";
 import { pickDefined } from "./sanity/pickDefined";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -164,6 +165,15 @@ function customerEmailTags(submissionId: string, emailType: CustomerEmailType) {
     [CUSTOMER_EMAIL_TAG.submissionId]: submissionId,
     [CUSTOMER_EMAIL_TAG.emailType]: emailType,
   };
+}
+
+export const GIFT_EMAIL_TAG = {
+  giftId: "gift_id",
+  emailType: CUSTOMER_EMAIL_TAG.emailType,
+} as const;
+
+function giftEmailTags(giftId: string, emailType: GiftEmailFiredType) {
+  return { [GIFT_EMAIL_TAG.giftId]: giftId, [GIFT_EMAIL_TAG.emailType]: emailType };
 }
 
 const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
@@ -513,6 +523,7 @@ export async function sendGiftPurchase(
     submissionId: null,
     giftId: options.giftId,
     idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(options.giftId, "gift_confirmation"),
   });
 }
 
@@ -536,6 +547,7 @@ export async function sendGiftOpened(
     submissionId: null,
     giftId: options.giftId,
     idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(options.giftId, "gift_opened"),
   });
 }
 
@@ -577,6 +589,7 @@ export async function sendGiftToRecipient(
     submissionId: null,
     giftId: gift.giftId,
     idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(gift.giftId, "gift_send"),
     originatorEmail: gift.buyerEmail,
   });
 }

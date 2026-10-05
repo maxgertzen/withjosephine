@@ -11,12 +11,13 @@ import type {
   InsertGiftRowInput,
   MarkGiftActiveInput,
   MarkGiftExpiredInput,
+  NewGiftEmailFailure,
   RedeemGiftInput,
   ReleaseGiftSendInput,
   UpdateGiftNoteInput,
 } from "./persistence/repository";
 import * as repo from "./persistence/repository";
-import type { GiftEmailFiredEntry, GiftRecord, GiftState } from "./types";
+import type { GiftEmailFiredEntry, GiftEmailFiredType, GiftRecord, GiftState } from "./types";
 
 export type { CompleteGiftSendInput };
 
@@ -149,7 +150,30 @@ export async function appendGiftEmailFired(
   giftId: string,
   entry: GiftEmailFiredEntry,
 ): Promise<void> {
-  await dbBatch([repo.buildAppendGiftEmailFiredStatement(giftId, entry)]);
+  if (await repo.appendGiftEmailFiredResolving(giftId, entry)) scheduleGiftSubmissionMirror(giftId);
+}
+
+export async function recordGiftEmailResent(
+  giftId: string,
+  entry: GiftEmailFiredEntry,
+  requestedType: GiftEmailFiredType,
+): Promise<void> {
+  await dbBatch([
+    repo.buildAppendGiftEmailFiredStatement(giftId, entry),
+    repo.buildResolveGiftEmailFailuresStatement(giftId, requestedType, entry.sentAt),
+  ]);
+  scheduleGiftSubmissionMirror(giftId);
+}
+
+export async function appendGiftEmailFailure(
+  giftId: string,
+  failure: NewGiftEmailFailure,
+): Promise<void> {
+  if (await repo.appendGiftEmailFailure(giftId, failure)) scheduleGiftSubmissionMirror(giftId);
+}
+
+export async function findGiftByResendId(resendId: string): Promise<GiftRecord | null> {
+  return repo.findGiftByResendId(resendId);
 }
 
 export function resolveGiftState(gift: GiftRecord | null): GiftState {

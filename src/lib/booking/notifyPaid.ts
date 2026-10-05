@@ -3,6 +3,7 @@ import "server-only";
 import * as Sentry from "@sentry/cloudflare";
 
 import { getOrCreateUser } from "../auth/users";
+import { type GiftEmailFailureFields, recordGiftEmailFailure } from "../gift/giftEmailFailures";
 import { appendGiftEmailFired } from "../gift/gifts";
 import type { GiftEmailFiredEntry } from "../gift/types";
 import {
@@ -185,24 +186,35 @@ async function tellBuyerGiftOpened(
   gift: PaidGift,
   buyerEmail: string,
 ): Promise<void> {
+  const attemptedAt = new Date().toISOString();
+  const recordOpenedFailure = (failure: Omit<GiftEmailFailureFields, "emailType">) =>
+    recordGiftEmailFailure(gift.id, { emailType: "gift_opened", attemptedAt, ...failure });
+  const result = await sendGiftOpened(
+    {
+      to: buyerEmail,
+      firstName: gift.buyerFirstName,
+      recipientName: context.firstName,
+      readingName: context.readingName,
+    },
+    { giftId: gift.id, idempotencyKey: `gift-opened/${gift.id}` },
+  ).catch(async (error: unknown) => {
+    console.error(`[notifyPaid] gift opened email failed for gift ${gift.id}`, error);
+    await recordOpenedFailure(failureFromError(error));
+    return null;
+  });
+  if (!result || result.kind === "dry_run") return;
+  if (result.kind !== "sent") {
+    await recordOpenedFailure(failureFromUnsentResult(result));
+    return;
+  }
   try {
-    const result = await sendGiftOpened(
-      {
-        to: buyerEmail,
-        firstName: gift.buyerFirstName,
-        recipientName: context.firstName,
-        readingName: context.readingName,
-      },
-      { giftId: gift.id, idempotencyKey: `gift-opened/${gift.id}` },
-    );
-    if (result.kind !== "sent") return;
     await appendGiftEmailFired(gift.id, {
       type: "gift_opened",
       sentAt: new Date().toISOString(),
       resendId: result.resendId,
     });
   } catch (error) {
-    console.error(`[notifyPaid] gift opened email failed for gift ${gift.id}`, error);
+    console.error(`[notifyPaid] emailsFired write failed for gift ${gift.id}`, error);
   }
 }
 

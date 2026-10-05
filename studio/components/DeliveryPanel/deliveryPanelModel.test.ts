@@ -4,6 +4,7 @@ import {
   DELIVERY_COPY,
   type DeliveryPanelDocument,
   deliveryPanelModel,
+  GIFT_RESEND_COPY,
   sentLine,
 } from "./deliveryPanelModel";
 
@@ -176,6 +177,7 @@ describe("deliveryPanelModel on a gift not opened yet", () => {
       resendTypes: [],
       defaultResendType: "order_confirmation",
       resendLine: null,
+      giftFailedSends: [],
     });
   });
 
@@ -186,6 +188,84 @@ describe("deliveryPanelModel on a gift not opened yet", () => {
         draft: DRAFT,
       }),
     ).toMatchObject({ statusLine: DELIVERY_COPY.giftWaiting, button: null, resendTypes: [] });
+  });
+});
+
+describe("deliveryPanelModel gift failures", () => {
+  const giftFailure = (emailType: string, extra: Record<string, unknown> = {}) => ({
+    _key: `${emailType}-0`,
+    emailType,
+    kind: "bounced",
+    recipient: emailType === "gift_send" ? "recipient" : "buyer",
+    attemptNumber: 1,
+    failedAt: "2026-10-04T06:15:20.000Z",
+    ...extra,
+  });
+  const GIFT_FAILURES = [
+    giftFailure("gift_confirmation"),
+    giftFailure("gift_send"),
+    giftFailure("gift_opened"),
+    giftFailure("gift_send", { _key: "gift_send-1", resolvedAt: "2026-10-04T07:00:00.000Z" }),
+  ];
+  const rows = (status: string) =>
+    deliveryPanelModel({
+      published: { ...READY, status, gift: { emailFailures: GIFT_FAILURES } },
+    }).giftFailedSends;
+
+  it("lists the open gift failures by role, never by address", () => {
+    expect(rows("gift_waiting").map(({ key, title, subtitle }) => ({ key, title, subtitle }))).toEqual([
+      {
+        key: "gift_confirmation-0",
+        title: "Gift confirmation: Bounced",
+        subtitle: expect.stringMatching(/to the buyer$/),
+      },
+      {
+        key: "gift_send-0",
+        title: "Gift email: Bounced",
+        subtitle: expect.stringMatching(/to the recipient$/),
+      },
+      {
+        key: "gift_opened-0",
+        title: "Gift opened: Bounced",
+        subtitle: expect.stringMatching(/to the buyer$/),
+      },
+    ]);
+  });
+
+  it("offers the buyer confirmation for confirmation and gift email failures while the gift waits", () => {
+    expect(rows("gift_waiting").map(({ emailType, resendable }) => [emailType, resendable])).toEqual([
+      ["gift_confirmation", true],
+      ["gift_send", true],
+      ["gift_opened", false],
+    ]);
+    expect(GIFT_RESEND_COPY.gift_send.label).toBe("Resend gift confirmation to buyer");
+  });
+
+  it("offers only the gift opened email once the gift is opened", () => {
+    expect(rows("paid").map(({ emailType, resendable }) => [emailType, resendable])).toEqual([
+      ["gift_confirmation", false],
+      ["gift_send", false],
+      ["gift_opened", true],
+    ]);
+  });
+
+  it("offers nothing on a cancelled gift", () => {
+    expect(rows("gift_cancelled").every((row) => !row.resendable)).toBe(true);
+  });
+
+  it("blocks gift resends while a request is waiting or a draft is open", () => {
+    expect(
+      deliveryPanelModel({
+        published: {
+          status: "gift_waiting",
+          gift: { emailFailures: GIFT_FAILURES },
+          emailResendRequest: { requestedAt: "2026-10-04T06:20:00Z" },
+        },
+      }).resendLine,
+    ).toBe(DELIVERY_COPY.resendRequested);
+    expect(
+      deliveryPanelModel({ published: { status: "gift_waiting" }, draft: DRAFT }).resendLine,
+    ).toBe(DELIVERY_COPY.unpublishedChanges);
   });
 });
 

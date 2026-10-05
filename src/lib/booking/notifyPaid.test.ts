@@ -6,6 +6,10 @@ vi.mock("../resend", () => ({
   sendGiftOpened: vi.fn(),
 }));
 
+vi.mock("../gift/giftEmailFailures", () => ({
+  recordGiftEmailFailure: vi.fn(async () => undefined),
+}));
+
 vi.mock("../gift/gifts", () => ({
   appendGiftEmailFired: vi.fn(),
 }));
@@ -46,6 +50,7 @@ vi.mock("./emailFailures", async () => {
 import { buildSubmission } from "@/test/fixtures/submission";
 
 import { getOrCreateUser } from "../auth/users";
+import { recordGiftEmailFailure } from "../gift/giftEmailFailures";
 import { appendGiftEmailFired } from "../gift/gifts";
 import {
   type EmailSendResult,
@@ -116,6 +121,7 @@ beforeEach(() => {
     .mockResolvedValue({ userId: "user_test_1", isNew: true });
   mockRecordFailure.mockReset().mockResolvedValue(undefined);
   mockGiftOpened.mockReset().mockResolvedValue({ kind: "sent", resendId: "msg_go" });
+  vi.mocked(recordGiftEmailFailure).mockClear();
   mockAppendGiftEmailFired.mockReset().mockResolvedValue(undefined);
 });
 
@@ -642,5 +648,37 @@ describe("afterSubmissionPaid for a gift", () => {
 
     await expect(runGift()).resolves.toBeUndefined();
     expect(mockAppendGiftEmailFired).not.toHaveBeenCalled();
+    expect(vi.mocked(recordGiftEmailFailure)).toHaveBeenCalledWith(
+      "gift_1",
+      expect.objectContaining({
+        emailType: "gift_opened",
+        kind: "send_error",
+        errorMessage: "Resend unreachable",
+      }),
+    );
+  });
+
+  it.each([
+    [{ kind: "failed" as const, error: "Resend 500", statusCode: 500 }, "send_error"],
+    [{ kind: "skipped" as const, reason: "no_api_key" as const }, "refused"],
+  ])("records an opened email that did not go out (%o)", async (result, kind) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGiftOpened.mockResolvedValueOnce(result);
+
+    await runGift();
+
+    expect(vi.mocked(recordGiftEmailFailure)).toHaveBeenCalledWith(
+      "gift_1",
+      expect.objectContaining({ emailType: "gift_opened", kind }),
+    );
+    expect(mockAppendGiftEmailFired).not.toHaveBeenCalled();
+  });
+
+  it("records nothing for a dry run of the opened email", async () => {
+    mockGiftOpened.mockResolvedValueOnce({ kind: "dry_run" });
+
+    await runGift();
+
+    expect(vi.mocked(recordGiftEmailFailure)).not.toHaveBeenCalled();
   });
 });

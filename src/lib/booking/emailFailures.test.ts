@@ -17,6 +17,7 @@ import {
   failureFromUnsentResult,
   hasOpenUndeliveredFailure,
   recordEmailFailure,
+  scrubEmailAddresses,
 } from "./emailFailures";
 import * as repo from "./persistence/repository";
 import { mirrorSubmissionPatch } from "./persistence/sanityMirror";
@@ -132,5 +133,19 @@ describe("failure details", () => {
     expect(
       hasOpenUndeliveredFailure([{ ...STORED, kind: "refused" }, { ...STORED, kind: "send_error" }], "order_confirmation"),
     ).toBe(false);
+  });
+});
+
+describe("scrubEmailAddresses", () => {
+  it("replaces every email address in a provider message", () => {
+    expect(
+      scrubEmailAddresses("550 5.1.1 <anna.b+gift@example.co.uk>: user unknown, cc dana@example.com"),
+    ).toBe("550 5.1.1 <[address]>: user unknown, cc [address]");
+  });
+
+  it("keeps a message without addresses and turns nothing into null", () => {
+    expect(scrubEmailAddresses("Mailbox does not exist")).toBe("Mailbox does not exist");
+    expect(scrubEmailAddresses(null)).toBeNull();
+    expect(scrubEmailAddresses("")).toBeNull();
   });
 });

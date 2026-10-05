@@ -1,5 +1,10 @@
 import { normalizeEmail } from "@/lib/auth/users";
 import {
+  appendOpenFailure,
+  type NewEmailFailure,
+  resolveOpenFailures,
+} from "@/lib/booking/persistence/repository";
+import {
   dbExec,
   dbQuery,
   type SqlStatement,
@@ -8,7 +13,9 @@ import {
 
 import {
   GIFT_SEND_LIMIT,
+  type GiftEmailFailureEntry,
   type GiftEmailFiredEntry,
+  type GiftEmailFiredType,
   type GiftRecord,
   type GiftStatus,
 } from "../types";
@@ -39,6 +46,7 @@ type Row = {
   expired_at: string | null;
   updated_at: string;
   emails_fired_json: string;
+  email_failures_json: string;
 };
 
 function rowToRecord(row: Row): GiftRecord {
@@ -66,6 +74,7 @@ function rowToRecord(row: Row): GiftRecord {
     expiredAt: row.expired_at,
     updatedAt: row.updated_at,
     emailsFired: JSON.parse(row.emails_fired_json) as GiftEmailFiredEntry[],
+    emailFailures: JSON.parse(row.email_failures_json) as GiftEmailFailureEntry[],
   };
 }
 
@@ -359,10 +368,63 @@ export function buildAppendGiftEmailFiredStatement(
   giftId: string,
   entry: GiftEmailFiredEntry,
 ): SqlStatement {
+  const resolve = resolveOpenFailures(entry.type, entry.sentAt, "gift_codes");
   return {
     sql: `UPDATE gift_codes
-          SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)), updated_at = ?
+          SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)),
+              ${resolve.sql},
+              updated_at = ?
           WHERE id = ?`,
-    params: [JSON.stringify(entry), entry.sentAt, giftId],
+    params: [JSON.stringify(entry), ...resolve.params, entry.sentAt, giftId],
   };
+}
+
+export async function appendGiftEmailFiredResolving(
+  giftId: string,
+  entry: GiftEmailFiredEntry,
+): Promise<boolean> {
+  const statement = buildAppendGiftEmailFiredStatement(giftId, entry);
+  const rows = await dbQuery<{ email_failures_json: string }>(
+    `${statement.sql} RETURNING email_failures_json`,
+    statement.params ?? [],
+  );
+  const failures = rows[0]
+    ? (JSON.parse(rows[0].email_failures_json) as GiftEmailFailureEntry[])
+    : [];
+  return failures.some((failure) => failure.resolvedAt === entry.sentAt);
+}
+
+export function buildResolveGiftEmailFailuresStatement(
+  giftId: string,
+  emailType: GiftEmailFiredType,
+  resolvedAt: string,
+): SqlStatement {
+  const resolve = resolveOpenFailures(emailType, resolvedAt, "gift_codes");
+  return {
+    sql: `UPDATE gift_codes SET ${resolve.sql}, updated_at = ? WHERE id = ?`,
+    params: [...resolve.params, resolvedAt, giftId],
+  };
+}
+
+export type NewGiftEmailFailure = NewEmailFailure<
+  GiftEmailFailureEntry["emailType"],
+  GiftEmailFailureEntry["recipient"]
+>;
+
+export async function appendGiftEmailFailure(
+  giftId: string,
+  failure: NewGiftEmailFailure,
+): Promise<boolean> {
+  const append = appendOpenFailure(failure, "gift_codes");
+  return hasRows(`UPDATE gift_codes SET ${append.sql}, updated_at = ? WHERE id = ? RETURNING id`, [
+    ...append.params,
+    new Date().toISOString(),
+    giftId,
+  ]);
+}
+
+export async function findGiftByResendId(resendId: string): Promise<GiftRecord | null> {
+  return findOne(`SELECT * FROM gift_codes WHERE instr(emails_fired_json, ?) > 0 LIMIT 1`, [
+    `"resendId":${JSON.stringify(resendId)}`,
+  ]);
 }

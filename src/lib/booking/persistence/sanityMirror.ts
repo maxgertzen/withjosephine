@@ -197,11 +197,14 @@ type MirrorPatchBase = Partial<{
   emailFailures: readonly EmailFailureEntry[];
 }>;
 
-export function keyedEmailFailures(failures: readonly EmailFailureEntry[]) {
+export function keyedEmailFailures<
+  TEntry extends EmailFailureEntry<string, string>,
+  TType extends string = "emailFailure",
+>(failures: readonly TEntry[], type: TType = "emailFailure" as TType) {
   return failures.map((failure, index) => ({
     ...failure,
     _key: `${failure.emailType}-${index}`,
-    _type: "emailFailure" as const,
+    _type: type,
   }));
 }
 

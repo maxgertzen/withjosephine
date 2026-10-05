@@ -789,7 +789,7 @@ describe("sendGiftPurchase", () => {
   };
   const giftOptions = { giftId: "g_1", idempotencyKey: "gift-confirmation/g_1" };
 
-  it("sends the buyer email with the idempotency key and no submission tags", async () => {
+  it("sends the buyer email with the idempotency key and gift tags only", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_gift" } });
 
     const result = await sendGiftPurchase(giftVars, giftOptions);
@@ -799,7 +799,10 @@ describe("sendGiftPurchase", () => {
     expect(options).toEqual({ idempotencyKey: "gift-confirmation/g_1" });
     expect(payload.to).toBe("dana@example.com");
     expect(payload.subject).toBe("Your gift is ready to send");
-    expect(payload.tags).toBeUndefined();
+    expect(payload.tags).toEqual([
+      { name: "gift_id", value: "g_1" },
+      { name: "email_type", value: "gift_confirmation" },
+    ]);
     expect(visibleText(payload.html)).toContain("K7M2-QX9P-H4TR");
   });
 
@@ -919,7 +922,7 @@ describe("sendGiftOpened", () => {
   };
   const openedOptions = { giftId: "g_1", idempotencyKey: "gift-opened/g_1" };
 
-  it("sends the opened email to the buyer with the key and no submission tags", async () => {
+  it("sends the opened email to the buyer with the key and gift tags only", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_go" } });
 
     const result = await sendGiftOpened(openedVars, openedOptions);
@@ -929,7 +932,10 @@ describe("sendGiftOpened", () => {
     expect(options).toEqual({ idempotencyKey: "gift-opened/g_1" });
     expect(payload.to).toBe("dana@example.com");
     expect(payload.subject).toBe("Anna opened your gift");
-    expect(payload.tags).toBeUndefined();
+    expect(payload.tags).toEqual([
+      { name: "gift_id", value: "g_1" },
+      { name: "email_type", value: "gift_opened" },
+    ]);
     expect(visibleText(payload.html)).toContain("Hi Dana,");
   });
 
@@ -974,7 +980,7 @@ describe("sendGiftToRecipient", () => {
   };
   const sendOptions = { idempotencyKey: "gift-send/g_1/1" };
 
-  it("sends to the recipient with the key, no reply-to and no submission tags", async () => {
+  it("sends to the recipient with the key, no reply-to and gift tags only", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_gs" } });
 
     const result = await sendGiftToRecipient(gift, sendOptions);
@@ -986,7 +992,10 @@ describe("sendGiftToRecipient", () => {
     expect(payload.from).toBe("Josephine <hello@withjosephine.com>");
     expect(payload.subject).toBe("A reading, waiting for you");
     expect(payload).not.toHaveProperty("replyTo");
-    expect(payload.tags).toBeUndefined();
+    expect(payload.tags).toEqual([
+      { name: "gift_id", value: "g_1" },
+      { name: "email_type", value: "gift_send" },
+    ]);
     const body = visibleText(payload.html);
     expect(body).toContain("Hi Anna,");
     expect(body).toContain("The code is 7KQ2-M9XW-4HBT, if the button doesn’t work.");

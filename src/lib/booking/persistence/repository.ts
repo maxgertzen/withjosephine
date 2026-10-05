@@ -437,11 +437,15 @@ export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pd
 const CLEAR_READING_DELIVERY_ATTEMPT = `reading_delivery_attempt_at = NULL,
          reading_delivery_attempt_jti = NULL, reading_delivery_attempt_body = NULL`;
 
-const OPEN_FAILURES_OF_TYPE = `
-  FROM json_each(submissions.email_failures_json)
-  WHERE json_extract(value, '$.emailType') = ? AND json_extract(value, '$.resolvedAt') IS NULL`;
+type EmailFailuresTable = "submissions" | "gift_codes";
 
-function resolveOpenFailures(emailType: string, resolvedAt: string): { sql: string; params: string[] } {
+type SetClause = { sql: string; params: string[] };
+
+export function resolveOpenFailures(
+  emailType: string,
+  resolvedAt: string,
+  table: EmailFailuresTable = "submissions",
+): SetClause {
   return {
     sql: `email_failures_json = (
        SELECT json_group_array(
@@ -450,9 +454,25 @@ function resolveOpenFailures(emailType: string, resolvedAt: string): { sql: stri
            ELSE json(value)
          END
        )
-       FROM (SELECT value FROM json_each(submissions.email_failures_json) ORDER BY key)
+       FROM (SELECT value FROM json_each(${table}.email_failures_json) ORDER BY key)
      )`,
     params: [emailType, resolvedAt],
+  };
+}
+
+export function appendOpenFailure(
+  failure: NewEmailFailure<string, string>,
+  table: EmailFailuresTable,
+): SetClause {
+  return {
+    sql: `email_failures_json = json_insert(
+       email_failures_json, '$[#]',
+       json_set(json(?), '$.attemptNumber', (
+         SELECT count(*) FROM json_each(${table}.email_failures_json)
+         WHERE json_extract(value, '$.emailType') = ? AND json_extract(value, '$.resolvedAt') IS NULL
+       ) + 1)
+     )`,
+    params: [JSON.stringify({ ...failure, resolvedAt: null }), failure.emailType],
   };
 }
 
@@ -549,21 +569,20 @@ export async function clearReadingDeliveryAttempt(id: string): Promise<void> {
   await dbExec(`UPDATE submissions SET ${CLEAR_READING_DELIVERY_ATTEMPT} WHERE id = ?`, [id]);
 }
 
-export type NewEmailFailure = Omit<EmailFailureEntry, "attemptNumber" | "resolvedAt">;
+export type NewEmailFailure<
+  TEmailType extends string = CustomerEmailType,
+  TRecipient extends string = string,
+> = Omit<EmailFailureEntry<TEmailType, TRecipient>, "attemptNumber" | "resolvedAt">;
 
 export async function appendEmailFailure(
   id: string,
   failure: NewEmailFailure,
 ): Promise<EmailFailureEntry[] | null> {
-  return updateReturningFailures(
-    `UPDATE submissions
-     SET email_failures_json = json_insert(
-       email_failures_json, '$[#]',
-       json_set(json(?), '$.attemptNumber', (SELECT count(*) ${OPEN_FAILURES_OF_TYPE}) + 1)
-     )
-     WHERE id = ?`,
-    [JSON.stringify({ ...failure, resolvedAt: null }), failure.emailType, id],
-  );
+  const append = appendOpenFailure(failure, "submissions");
+  return updateReturningFailures(`UPDATE submissions SET ${append.sql} WHERE id = ?`, [
+    ...append.params,
+    id,
+  ]);
 }
 
 export async function findSubmissionByResendId(resendId: string): Promise<SubmissionRecord | null> {

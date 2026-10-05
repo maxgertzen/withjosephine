@@ -27,10 +27,13 @@ export type EmailFailureKind =
   | "suppressed"
   | "refused";
 
-export type EmailFailureEntry = {
-  emailType: CustomerEmailType;
+export type EmailFailureEntry<
+  TEmailType extends string = CustomerEmailType,
+  TRecipient extends string = string,
+> = {
+  emailType: TEmailType;
   kind: EmailFailureKind;
-  recipient: string;
+  recipient: TRecipient;
   attemptNumber: number;
   attemptedAt: string | null;
   failedAt: string;

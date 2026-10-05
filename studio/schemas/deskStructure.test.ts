@@ -8,7 +8,7 @@ vi.mock("../views/StudioPagePreview", () => ({
   ThankYouPagePreview: () => null,
 }));
 
-import { deskStructure } from "./deskStructure";
+import { deskStructure, FAILED_SENDS_FILTER } from "./deskStructure";
 
 type FakeNode = { kind: string; calls: Record<string, unknown[]> };
 
@@ -75,6 +75,25 @@ describe("desk structure submissions", () => {
     expect(childOf(giftsNotOpened).calls.schemaType).toEqual(["submission"]);
     expect(childOf(giftsNotOpened).calls.filter).toEqual([
       '_type == "submission" && status == "gift_waiting"',
+    ]);
+  });
+});
+
+describe("desk structure failed sends", () => {
+  const failedSends = item(root, "submissionsFailedSends");
+
+  it("lists submissions with an open booking failure or an open gift email failure", () => {
+    expect(childOf(failedSends).calls.filter).toEqual([FAILED_SENDS_FILTER]);
+    expect(FAILED_SENDS_FILTER).toContain("count(emailFailures[!defined(resolvedAt)]) > 0");
+    expect(FAILED_SENDS_FILTER).toContain("count(gift.emailFailures[!defined(resolvedAt)]) > 0");
+  });
+
+  it("orders by payment, then by creation for gifts not paid for by a recipient", () => {
+    expect(childOf(failedSends).calls.defaultOrdering).toEqual([
+      [
+        { field: "paidAt", direction: "asc" },
+        { field: "createdAt", direction: "asc" },
+      ],
     ]);
   });
 });

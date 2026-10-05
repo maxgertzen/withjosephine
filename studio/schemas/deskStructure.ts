@@ -102,8 +102,8 @@ const paidAwaitingDelivery = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
-const FAILED_SENDS_FILTER =
-  '_type == "submission" && count(emailFailures[!defined(resolvedAt)]) > 0';
+export const FAILED_SENDS_FILTER =
+  '_type == "submission" && (count(emailFailures[!defined(resolvedAt)]) > 0 || count(gift.emailFailures[!defined(resolvedAt)]) > 0)';
 
 const failedSends = (S: StructureBuilder) =>
   S.listItem()
@@ -114,7 +114,10 @@ const failedSends = (S: StructureBuilder) =>
         .title("Failed sends")
         .schemaType("submission")
         .filter(FAILED_SENDS_FILTER)
-        .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
+        .defaultOrdering([
+          { field: "paidAt", direction: "asc" },
+          { field: "createdAt", direction: "asc" },
+        ]),
     );
 
 const giftsNotOpenedYet = (S: StructureBuilder) =>

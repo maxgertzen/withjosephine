@@ -398,6 +398,49 @@ describe("activateGift", () => {
     expect((await findGiftById(giftId))?.emailsFired).toHaveLength(1);
   });
 
+  it("records a failed buyer confirmation on the gift for the buyer role", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "rate limited", statusCode: 429 });
+    const giftId = await createGift();
+
+    await activateGift(paidInput(giftId));
+
+    expect((await findGiftById(giftId))?.emailFailures).toEqual([
+      expect.objectContaining({
+        emailType: "gift_confirmation",
+        kind: "send_error",
+        recipient: "buyer",
+        errorCode: "rate limited",
+        statusCode: 429,
+        resolvedAt: null,
+      }),
+    ]);
+  });
+
+  it("records a thrown buyer confirmation with the address scrubbed from the message", async () => {
+    mockSend.mockRejectedValueOnce(new Error("connect failed for ada@example.com"));
+    const giftId = await createGift();
+
+    await expect(activateGift(paidInput(giftId))).rejects.toThrow();
+
+    expect((await findGiftById(giftId))?.emailFailures).toEqual([
+      expect.objectContaining({
+        emailType: "gift_confirmation",
+        kind: "send_error",
+        errorMessage: "connect failed for [address]",
+      }),
+    ]);
+  });
+
+  it("resolves the recorded failure when the next activation sends", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "failed", error: "rate limited" });
+    const giftId = await createGift();
+
+    await activateGift(paidInput(giftId));
+    await activateGift(paidInput(giftId));
+
+    expect((await findGiftById(giftId))?.emailFailures[0]?.resolvedAt).toEqual(expect.any(String));
+  });
+
   it("releases the claim when the send throws", async () => {
     mockSend.mockRejectedValueOnce(new Error("network down"));
     const giftId = await createGift();

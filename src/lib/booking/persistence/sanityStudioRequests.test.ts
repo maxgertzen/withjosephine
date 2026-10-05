@@ -41,3 +41,25 @@ describe("fetchStudioRequests", () => {
     expect(requests.deliveryIds).toEqual(["new"]);
   });
 });
+
+describe("fetchStudioRequests for gift emails", () => {
+  it("reads a gift resend request and drops any address typed into it", async () => {
+    fetchMock.mockResolvedValue([
+      {
+        _id: "gift-1",
+        _rev: "r4",
+        emailResendRequest: {
+          emailType: "gift_send",
+          correctedEmail: "someone@example.com",
+          requestedAt: NEW,
+        },
+      },
+    ]);
+
+    const { resendRequests } = await fetchStudioRequests({ submissionId: "gift-1" });
+
+    expect(resendRequests).toEqual([
+      { submissionId: "gift-1", revision: "r4", emailType: "gift_send", requestedAt: NEW },
+    ]);
+  });
+});

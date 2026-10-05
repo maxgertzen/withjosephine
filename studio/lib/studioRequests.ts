@@ -1,5 +1,6 @@
 import type { SanityClient } from "sanity";
 
+import type { GiftEmailFiredType } from "../../src/lib/gift/types";
 import type { CustomerEmailType } from "../../src/lib/page-previews/types";
 
 export const STUDIO_API_VERSION = "2025-01-01";
@@ -42,6 +43,19 @@ export async function requestResend(
         requestedAt: new Date().toISOString(),
       },
     })
+    .commit();
+  return wakeDelivery(wakeOrigin, submissionId);
+}
+
+export async function requestGiftResend(
+  client: SanityClient,
+  submissionId: string,
+  emailType: GiftEmailFiredType,
+  wakeOrigin: string | null,
+): Promise<boolean> {
+  await client
+    .patch(submissionId)
+    .set({ emailResendRequest: { emailType, requestedAt: new Date().toISOString() } })
     .commit();
   return wakeDelivery(wakeOrigin, submissionId);
 }

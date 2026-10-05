@@ -10,22 +10,29 @@ import {
   useFormValue,
 } from "sanity";
 
+import type { GiftEmailFiredType } from "../../../src/lib/gift/types";
 import type { CustomerEmailType } from "../../../src/lib/page-previews/types";
 import {
   QUEUED_TOAST,
   REQUESTED_TOAST,
   requestDelivery,
+  requestGiftResend,
   requestResend,
   STUDIO_API_VERSION,
 } from "../../lib/studioRequests";
 import { wakeOriginFor } from "../../lib/siteOrigins";
-import { type DeliveryPanelDocument, deliveryPanelModel } from "./deliveryPanelModel";
+import {
+  type DeliveryPanelDocument,
+  deliveryPanelModel,
+  GIFT_RESEND_COPY,
+} from "./deliveryPanelModel";
 import { ResendEmailDialog } from "./ResendEmailDialog";
 
 const SEND_LABEL = "Send reading now";
 const TRY_AGAIN_LABEL = "Try again";
 const CONFIRM_LABEL = "Send";
 const FAILED_SENDS_HEADING = "Failed sends";
+const GIFT_FAILED_SENDS_HEADING = "Failed gift emails";
 const RESEND_LABEL = "Resend";
 const RESEND_ANY_LABEL = "Resend an email…";
 
@@ -39,6 +46,7 @@ export function DeliveryPanel(props: StringInputProps) {
   const [isPending, setIsPending] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [resendType, setResendType] = useState<CustomerEmailType | null>(null);
+  const [giftResendType, setGiftResendType] = useState<GiftEmailFiredType | null>(null);
 
   const published = editState.published as DeliveryPanelDocument | null;
   if (!published) return null;
@@ -54,6 +62,7 @@ export function DeliveryPanel(props: StringInputProps) {
       toast.push({ status: "info", title: woke ? REQUESTED_TOAST : QUEUED_TOAST });
       setIsConfirmOpen(false);
       setResendType(null);
+      setGiftResendType(null);
     } catch (error) {
       toast.push({ status: "error", title: error instanceof Error ? error.message : String(error) });
     } finally {
@@ -115,6 +124,39 @@ export function DeliveryPanel(props: StringInputProps) {
         </Card>
       )}
 
+      {model.giftFailedSends.length > 0 && (
+        <Card padding={3} radius={2} border tone="critical">
+          <Stack space={3}>
+            <Text size={1} weight="semibold">
+              {GIFT_FAILED_SENDS_HEADING}
+            </Text>
+            {model.giftFailedSends.map((failure) => (
+              <Flex key={failure.key} align="center" gap={3} wrap="wrap">
+                <Stack space={2} flex={1}>
+                  <Text size={1}>{failure.title}</Text>
+                  <Text size={1} muted>
+                    {failure.subtitle}
+                  </Text>
+                </Stack>
+                {failure.resendable && (
+                  <Button
+                    text={GIFT_RESEND_COPY[failure.emailType].label}
+                    mode="ghost"
+                    disabled={resendDisabled}
+                    onClick={() => setGiftResendType(failure.emailType)}
+                  />
+                )}
+              </Flex>
+            ))}
+            {model.resendTypes.length === 0 && model.resendLine && (
+              <Text size={1} muted>
+                {model.resendLine}
+              </Text>
+            )}
+          </Stack>
+        </Card>
+      )}
+
       {model.resendTypes.length > 0 && (
         <Flex align="center" gap={3} wrap="wrap">
           <Button
@@ -151,6 +193,34 @@ export function DeliveryPanel(props: StringInputProps) {
         >
           <Box padding={4}>
             <Text size={1}>{model.statusLine}</Text>
+          </Box>
+        </Dialog>
+      )}
+
+      {giftResendType && (
+        <Dialog
+          id={`${props.id}-gift-resend`}
+          header={GIFT_RESEND_COPY[giftResendType].label}
+          onClose={isPending ? undefined : () => setGiftResendType(null)}
+          width={1}
+          footer={
+            <Box padding={3}>
+              <Button
+                text={CONFIRM_LABEL}
+                tone="primary"
+                width="fill"
+                disabled={resendDisabled}
+                onClick={() =>
+                  void run(() =>
+                    requestGiftResend(client, publishedId, giftResendType, wakeOrigin),
+                  )
+                }
+              />
+            </Box>
+          }
+        >
+          <Box padding={4}>
+            <Text size={1}>{GIFT_RESEND_COPY[giftResendType].confirmLine}</Text>
           </Box>
         </Dialog>
       )}

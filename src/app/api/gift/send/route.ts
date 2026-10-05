@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { failureFromUnsentResult } from "@/lib/booking/emailFailures";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { auditGiftSent } from "@/lib/gift/giftAudit";
 import { deriveVerifiedGiftCode, giftUrl } from "@/lib/gift/giftCode";
+import { recordGiftEmailFailure } from "@/lib/gift/giftEmailFailures";
 import {
   claimGiftSend,
   completeGiftSend,
@@ -99,6 +101,7 @@ export async function POST(request: Request): Promise<Response> {
   const { sendNumber } = claim;
   const idempotencyKey = await giftSendIdempotencyKey(giftId, sendNumber, recipientEmail);
 
+  const attemptedAt = new Date().toISOString();
   const result = await sendGiftToRecipient(
     {
       giftId,
@@ -118,6 +121,13 @@ export async function POST(request: Request): Promise<Response> {
   });
   const sentAt = new Date().toISOString();
 
+  if (result.kind === "failed" || result.kind === "skipped") {
+    await recordGiftEmailFailure(giftId, {
+      emailType: "gift_send",
+      attemptedAt,
+      ...failureFromUnsentResult(result),
+    });
+  }
   if (result.kind === "failed") {
     const keptRecipientName = sendNumber === 1 ? recipientName : gift.recipientName;
     await Promise.all([

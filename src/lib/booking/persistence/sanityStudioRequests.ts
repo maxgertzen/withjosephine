@@ -1,5 +1,6 @@
 import { groq } from "next-sanity";
 
+import { asGiftEmailType } from "@/lib/gift/types";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 
 import { asCustomerEmailType } from "../emailFiredType";
@@ -32,8 +33,13 @@ const STUDIO_REQUESTS_GROQ = groq`
 
 function toPendingResendRequest(doc: SanityStudioRequest): PendingResendRequest | null {
   const { correctedEmail, requestedAt } = doc.emailResendRequest ?? {};
+  if (!requestedAt) return null;
+  const giftEmailType = asGiftEmailType(doc.emailResendRequest?.emailType);
+  if (giftEmailType) {
+    return { submissionId: doc._id, revision: doc._rev, emailType: giftEmailType, requestedAt };
+  }
   const emailType = asCustomerEmailType(doc.emailResendRequest?.emailType);
-  if (!emailType || !requestedAt) return null;
+  if (!emailType) return null;
   return {
     submissionId: doc._id,
     revision: doc._rev,
@@ -84,7 +90,7 @@ export async function restoreResendRequest(request: PendingResendRequest): Promi
     .setIfMissing({
       emailResendRequest: {
         emailType: request.emailType,
-        correctedEmail: request.correctedEmail ?? undefined,
+        correctedEmail: ("correctedEmail" in request && request.correctedEmail) || undefined,
         requestedAt: request.requestedAt,
       },
     })

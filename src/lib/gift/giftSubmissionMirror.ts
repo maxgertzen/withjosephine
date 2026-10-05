@@ -1,10 +1,11 @@
 import type { SanityClient } from "next-sanity";
 
-import { normalizeOptional } from "@/lib/booking/persistence/reconcileMirror";
+import { failuresKey, normalizeOptional } from "@/lib/booking/persistence/reconcileMirror";
 import {
   existingDocSelection,
   findReadingRef,
   getMirrorClient,
+  keyedEmailFailures,
   type ReadingRef,
   submissionMirrorFields,
 } from "@/lib/booking/persistence/sanityMirror";
@@ -12,7 +13,7 @@ import { type CreateSubmissionParams, splitMirrorConsent } from "@/lib/booking/s
 
 import { GIFT_SUBMISSION_STATUS, type GiftSubmissionStatus } from "./giftSubmissionStatus";
 import { findGiftById } from "./persistence/repository";
-import { GIFT_SEND_LIMIT, GIFT_STATUS, type GiftRecord } from "./types";
+import { GIFT_SEND_LIMIT, GIFT_STATUS, type GiftEmailFailureEntry, type GiftRecord } from "./types";
 
 type GiftBlock = {
   buyerFirstName?: string;
@@ -21,7 +22,12 @@ type GiftBlock = {
   resendUsed: boolean;
   openedAt?: string;
   hasNote: boolean;
+  emailFailures: ReturnType<typeof keyedGiftFailures>;
 };
+
+function keyedGiftFailures(failures: readonly GiftEmailFailureEntry[]) {
+  return keyedEmailFailures(failures, "giftEmailFailure");
+}
 
 type UnopenedGiftFields = {
   status: GiftSubmissionStatus;
@@ -52,7 +58,7 @@ const GIFT_BLOCK_COMPARED_FIELDS = [
   "resendUsed",
   "openedAt",
   "hasNote",
-] as const satisfies ReadonlyArray<keyof GiftBlock>;
+] as const satisfies ReadonlyArray<Exclude<keyof GiftBlock, "emailFailures">>;
 
 export function hasGiftSubmissionDoc(status: GiftRecord["status"]): boolean {
   return status === GIFT_STATUS.redeemed || UNOPENED_STATUS[status] !== undefined;
@@ -70,6 +76,7 @@ function projectGiftBlock(gift: GiftRecord): GiftBlock {
     resendUsed: gift.sendCount >= GIFT_SEND_LIMIT,
     openedAt: gift.redeemedAt ?? undefined,
     hasNote: gift.note !== null,
+    emailFailures: keyedGiftFailures(gift.emailFailures),
   };
 }
 
@@ -102,8 +109,10 @@ export async function projectGiftSubmissionWithReading(
 }
 
 function giftBlockDiffers(projected: GiftBlock, stored: Partial<GiftBlock> | undefined): boolean {
-  return GIFT_BLOCK_COMPARED_FIELDS.some(
-    (field) => normalizeOptional(projected[field]) !== normalizeOptional(stored?.[field]),
+  return (
+    GIFT_BLOCK_COMPARED_FIELDS.some(
+      (field) => normalizeOptional(projected[field]) !== normalizeOptional(stored?.[field]),
+    ) || failuresKey(projected.emailFailures) !== failuresKey(stored?.emailFailures ?? [])
   );
 }
 

@@ -24,7 +24,7 @@ import {
   projectGiftSubmission,
   writeGiftRedemption,
 } from "./giftSubmissionMirror";
-import type { GiftRecord } from "./types";
+import type { GiftEmailFailureEntry, GiftRecord } from "./types";
 
 const sanity = recordingSanityClient();
 
@@ -50,6 +50,21 @@ const ACTIVE_GIFT = makeGiftRecord({
   sendCount: 2,
   lastSentAt: "2026-10-03T09:00:00.000Z",
 });
+
+const STORED_FAILURE: GiftEmailFailureEntry = {
+  emailType: "gift_send",
+  kind: "bounced",
+  recipient: "recipient",
+  attemptNumber: 1,
+  attemptedAt: "2026-10-03T09:00:00.000Z",
+  failedAt: "2026-10-03T09:00:05.000Z",
+  statusCode: null,
+  errorCode: null,
+  errorMessage: "550 <[address]>: mailbox unknown",
+  bounceType: "Permanent / General",
+  resendId: "msg_gs",
+  resolvedAt: null,
+};
 
 const REDEEMED_GIFT: GiftRecord = {
   ...ACTIVE_GIFT,
@@ -123,6 +138,7 @@ describe("projectGiftSubmission", () => {
         resendUsed: true,
         openedAt: undefined,
         hasNote: true,
+        emailFailures: [],
       },
     });
   });
@@ -180,6 +196,29 @@ describe("giftSubmissionDiffers", () => {
     ["gift.buyerFirstName", { gift: { ...WAITING.gift, buyerFirstName: undefined } }],
   ])("is true when %s differs on an unopened gift", (_field, change) => {
     expect(giftSubmissionDiffers(WAITING, storedGiftSubmissionDoc(WAITING, change))).toBe(true);
+  });
+
+  it("is true when a recorded failure is new or changed, false when only keys differ", () => {
+    const withFailure = projectGiftSubmission(
+      { ...ACTIVE_GIFT, emailFailures: [STORED_FAILURE] },
+      READING_REF,
+    )!;
+    expect(giftSubmissionDiffers(withFailure, storedGiftSubmissionDoc(WAITING))).toBe(true);
+    const resolved = projectGiftSubmission(
+      { ...ACTIVE_GIFT, emailFailures: [{ ...STORED_FAILURE, resolvedAt: REDEEMED_AT }] },
+      READING_REF,
+    )!;
+    expect(giftSubmissionDiffers(resolved, storedGiftSubmissionDoc(withFailure))).toBe(true);
+    const rekeyed = {
+      ...withFailure.gift,
+      emailFailures: withFailure.gift.emailFailures.map((failure) => ({
+        ...failure,
+        _key: "other",
+      })),
+    };
+    expect(
+      giftSubmissionDiffers(withFailure, storedGiftSubmissionDoc(withFailure, { gift: rekeyed })),
+    ).toBe(false);
   });
 
   it("ignores top-level fields on a redeemed gift and compares only its gift block", () => {
@@ -297,7 +336,8 @@ describe("mirrorGiftSubmission", () => {
     ["active", ACTIVE_GIFT],
     ["cancelled", { ...ACTIVE_GIFT, status: "cancelled" as const }],
     ["redeemed", REDEEMED_GIFT],
-  ])("never sends Sanity a private value of a %s gift", async (_label, row) => {
+  ])("never sends Sanity a private value of a %s gift, failures included", async (_label, gift) => {
+    const row = { ...gift, emailFailures: [STORED_FAILURE] };
     mockFindGiftById.mockResolvedValue(row);
 
     await mirrorGiftSubmission(GIFT_ID);
@@ -306,7 +346,33 @@ describe("mirrorGiftSubmission", () => {
     for (const secret of await privateValues(row)) {
       expect(written).not.toContain(secret);
     }
+    expect(written).not.toMatch(/[^\s"<>[\]]+@[^\s"<>[\]]+/);
     expect(written).toContain("Dana");
+    expect(written).toContain('"_type":"giftEmailFailure"');
+  });
+
+  it("writes the recorded failures into the gift block, keyed", async () => {
+    mockFindGiftById.mockResolvedValue({ ...ACTIVE_GIFT, emailFailures: [STORED_FAILURE] });
+
+    await mirrorGiftSubmission(GIFT_ID);
+
+    const [, , operations] = sanity.writes[1] as [string, unknown, { set: { gift: object } }];
+    expect(operations.set.gift).toMatchObject({
+      emailFailures: [{ ...STORED_FAILURE, _key: "gift_send-0", _type: "giftEmailFailure" }],
+    });
+  });
+
+  it("keeps recorded failures when a later write lands on a redeemed doc", async () => {
+    mockFindGiftById.mockResolvedValue({ ...ACTIVE_GIFT, emailFailures: [STORED_FAILURE] });
+    await mirrorGiftSubmission(GIFT_ID);
+    await writeGiftRedemption(REDEMPTION, { ...REDEEMED_GIFT, emailFailures: [STORED_FAILURE] });
+    mockFindGiftById.mockResolvedValue({ ...REDEEMED_GIFT, emailFailures: [STORED_FAILURE] });
+
+    await mirrorGiftSubmission(GIFT_ID);
+
+    expect(sanity.documents.get(GIFT_ID)?.gift).toMatchObject({
+      emailFailures: [expect.objectContaining({ resendId: "msg_gs", _type: "giftEmailFailure" })],
+    });
   });
 });
 

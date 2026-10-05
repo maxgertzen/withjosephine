@@ -118,7 +118,7 @@ async function reconcileGiftSubmissions(cutoff: string): Promise<GiftSummary> {
   const giftDocs = await sanity.fetch<GiftSubmissionSnapshot[]>(
     `*[_type == "submission" && _id in $ids]{
       _id, status, createdAt, serviceRef,
-      gift{ buyerFirstName, boughtAt, sentAt, resendUsed, openedAt, hasNote }
+      gift{ buyerFirstName, boughtAt, sentAt, resendUsed, openedAt, hasNote, emailFailures }
     }`,
     { ids: giftRows.map(giftSubmissionDocId) },
   );

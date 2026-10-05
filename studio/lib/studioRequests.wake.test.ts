@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { wakeOriginFor } from "./siteOrigins";
-import { requestDelivery, wakeDelivery } from "./studioRequests";
+import { requestDelivery, requestGiftResend, wakeDelivery } from "./studioRequests";
 
 function fakeClient() {
   const commit = vi.fn().mockResolvedValue({});
@@ -59,4 +59,29 @@ describe("requestDelivery", () => {
 
     expect(await wakeDelivery(null, "sub-1")).toBe(false);
   });
+});
+
+describe("requestGiftResend", () => {
+  it.each(["gift_confirmation", "gift_send", "gift_opened"] as const)(
+    "saves a %s request with no address to send to, then wakes the site",
+    async (emailType) => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(new Response(null, { status: 202 }));
+      const { client, commit } = fakeClient();
+
+      await requestGiftResend(client as never, "gift-1", emailType, "https://withjosephine.com");
+
+      const patch = client.patch.mock.results[0]!.value;
+      expect(client.patch).toHaveBeenCalledWith("gift-1");
+      expect(patch.set).toHaveBeenCalledWith({
+        emailResendRequest: { emailType, requestedAt: expect.any(String) },
+      });
+      expect(commit).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://withjosephine.com/api/delivery/wake?submission=gift-1",
+        { method: "POST", keepalive: true },
+      );
+    },
+  );
 });

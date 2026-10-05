@@ -25,6 +25,10 @@ const REFUSED_REASON_LABELS: Record<string, string> = {
   missing_recipient_user: "no customer record",
   no_api_key: "the email service is not set up",
   no_notification_email: "the notification address is not set up",
+  gift_not_active: "the gift is no longer waiting to be opened",
+  gift_not_opened: "the gift has not been opened",
+  missing_buyer_email: "no buyer address on the gift",
+  missing_gift_code: "the gift code could not be made",
 };
 
 export type EmailFailurePreviewInput = {

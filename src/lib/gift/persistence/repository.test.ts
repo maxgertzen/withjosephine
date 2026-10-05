@@ -26,6 +26,7 @@ import {
   deleteExpiredGift,
   findGiftByCode,
   findGiftById,
+  findGiftByResendId,
   findGiftByStripeSessionId,
   listGiftsByStatusOlderThan,
   listGiftsUpdatedAfter,
@@ -486,5 +487,20 @@ describe("gift submission mirror after each write", () => {
     });
 
     expect(mirroredIds()).toEqual([activeId, activeId]);
+  });
+});
+
+describe("gift email failures column", () => {
+  it("starts every gift with no failures and finds a gift by the Resend id of a sent email", async () => {
+    const giftId = await createActiveGift();
+    await appendGiftEmailFired(giftId, {
+      type: "gift_confirmation",
+      sentAt: LATER,
+      resendId: "msg_gc_1",
+    });
+
+    expect((await findGiftById(giftId))?.emailFailures).toEqual([]);
+    expect((await findGiftByResendId("msg_gc_1"))?.id).toBe(giftId);
+    expect(await findGiftByResendId("msg_other")).toBeNull();
   });
 });

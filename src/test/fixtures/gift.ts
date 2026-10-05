@@ -33,6 +33,7 @@ const BASE_GIFT: GiftRecord = {
   expiredAt: null,
   updatedAt: "2026-10-01T10:00:00.000Z",
   emailsFired: [],
+  emailFailures: [],
 };
 
 export function makeGiftRecord(overrides: Partial<GiftRecord> = {}): GiftRecord {
