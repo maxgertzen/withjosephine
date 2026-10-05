@@ -1,6 +1,30 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-05 handover 17): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992` (Step 7, on staging, CI run 37265449219 green). Ten local commits after it are not pushed. Two pieces of work are uncommitted: booking nav plus Back in `www`, and the duplicate refund in the worktree `../www-refund`.
+## ▶ 👉 START HERE (next session, 2026-10-05 handover 18): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992`. 20 local commits after it are not pushed (19 code and dex commits plus the docs commit with this handover).
+
+- First task next session: dex `gre931wv` (p1), Becky's and Max's reading-block feedback (Sanity mapping, one shared What's included list for the homepage card and `/book`, How it works per reading, no "first paragraph" rule). Present the field layout to Max first, and prove the mapping with a mocked page or Storybook story that labels each element with its Sanity field. Becky's slide: `~/Downloads/Feedback for Max.pptx`.
+- Built this session (local commits):
+  - `02170fc` second paid session for the same gift or booking refunded automatically, only after Stripe shows the kept payment succeeded with no refund and no dispute (`esd1oud0`, runbook `docs/runbooks/DUPLICATE_PAYMENT.md`)
+  - `995a322` webhook and reconcile marking one booking paid at once: only the call whose event is stored sends (`5moajbvx`, closed)
+  - `882c56c`, `5b380ce`, `4f7ca34`, `348aba3` Design 1 commits 1 to 4: a paid gift is one `submission` doc (`_id` = gift id), gift email failures (migration `0022`) with Studio resend, `giftRecord` removed, staging cleanup script
+- Max actions, in order:
+  1. Before the push: `pnpm migrate:apply:staging` (applies `0022`; the code reads `email_failures_json`).
+  2. Go to push `release/v1.21.0`. The head commit must not carry `[skip ci]`.
+  3. After the push: CF Access bypass on staging for `/api/delivery/wake` (STAGING_RUNBOOK section 9b).
+- Staging steps after `deploy-staging` is green:
+  - `pnpm tsx scripts/migrate-gift-records-to-submissions-2026-10.mts staging`, then with `--apply`, then `bash scripts/force-cron.sh reconcile-mirror -`.
+  - Handover 16 staging data scripts (`migrate-reading-delivery-names-2026-10.mts`, `request-send-for-hand-set-delivered-2026-10.mts`), then `e2e-sandbox.yml` on `release/v1.21.0`.
+  - One staging walk at 375px and desktop (Firefox included): Cluster B and D4 (B6 now covers the gift docs in Studio), nav and Back, overlays above the consent banner, Notes Plate rows, listen intro spacing, Send reading now, a gift bought and shown under "🎁 Gifts not opened yet" (first real check of the guarded gift write against Sanity), a gift sent to `bounced@resend.dev` showing in "Failed sends" with "Resend gift confirmation to buyer".
+  - Close after the walk: `renku01k`, `xhhr3son`, `h5mu2wey`, `i2pp0i89`, `xwb7bhto`, `esd1oud0`, `vmbk83nm`.
+- Before the release PR merges: `pnpm migrate:apply:prod` (0019, 0020, 0021, 0022); click and open tracking off for `withjosephine.com` in Resend; squash with the PR body as the merge message.
+- After the production deploy: Resend webhook `https://withjosephine.com/api/webhooks/resend` and `wrangler secret put RESEND_WEBHOOK_SECRET`; the two delivery scripts on production (dry run, then `--apply`); `pnpm tsx scripts/migrate-legal-gift-lines-2026-10.ts production --apply`; `pnpm tsx scripts/migrate-gift-records-to-submissions-2026-10.mts production` (expected 0); `pnpm studio:deploy` from `main`; Becky fills Gift Settings and the four gift emails; then `8121k59q`.
+- Max's calls this session: kept-payment check before any refund; the `/simplify` and `/code-review` gates ran once over Design 1 commits 3 and 4; the gift id is also the recipient's submission id (Design 1 exposure check, not reopened).
+- Local dev: run `pnpm migrate:apply:local` after pulling `0022`, or the gift e2e specs fail with HTTP 500 ("undefined" is not valid JSON).
+- New dex: `czfryxtw` (string literals into const files, PascalCase keys), `wx47kfs3` (one duplicate classifier, audit and payments module moves), `furzuuqq` (gift e2e reload timeout on a cold dev server; run mock e2e against a production build), `gre931wv` (above).
+- Optional: drop `&& _type != "giftRecord"` from the Sanity sync webhook filter once production has run the gift-record script; then remove `giftRecord` from sanity-sync `PII_TYPES` and its comment.
+- Run state and evidence: `MEMORY/WORK/20261005-v121-rest/ISA.md`. Visual checks are deferred to the staging walk (Interceptor not installed on this machine).
+
+## ▶ (SUPERSEDED by handover 18 above) START HERE (2026-10-05 handover 17): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992` (Step 7, on staging, CI run 37265449219 green). Ten local commits after it are not pushed. Two pieces of work are uncommitted: booking nav plus Back in `www`, and the duplicate refund in the worktree `../www-refund`.
 
 - Local commits after `9cb0992`, not pushed:
   - `1ad43fb` homepage nav bar on thank-you, listen and gift send pages (`h5mu2wey`, `i2pp0i89`)
