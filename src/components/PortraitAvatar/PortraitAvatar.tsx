@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 const FRAME_SIZE_CLASS = { 40: "size-10", 56: "size-14" } as const;
+const IMAGE_NUDGE_CLASS = { 40: "translate-y-[1.5px]", 56: "" } as const;
 
 export function PortraitAvatar({
   src,
@@ -19,7 +20,7 @@ export function PortraitAvatar({
         width={size}
         height={size}
         sizes={`${size}px`}
-        className="block size-full max-w-none object-cover object-[50%_22%] scale-[1.7] origin-[50%_30%]"
+        className={`block size-full max-w-none object-cover object-[50%_22%] scale-[1.7] origin-[50%_30%] ${IMAGE_NUDGE_CLASS[size]}`}
       />
     </span>
   );
