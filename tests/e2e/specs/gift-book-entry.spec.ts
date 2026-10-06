@@ -37,6 +37,10 @@ function giftRow(page: Page): Locator {
   return page.getByRole("button", { name: GIFT_DEFAULTS.giftRowLabel });
 }
 
+function redeemLink(page: Page): Locator {
+  return page.getByTestId("gift-fold").getByRole("button", { name: GIFT_DEFAULTS.redeemLinkLabel });
+}
+
 function redeemSheet(page: Page): Locator {
   return page.getByRole("dialog").filter({ hasText: GIFT_DEFAULTS.redeemHeading });
 }
@@ -58,7 +62,7 @@ async function openGiftRow(page: Page): Promise<void> {
 async function openRedeemSheet(page: Page): Promise<Locator> {
   await openBookingPage(page);
   await openGiftRow(page);
-  await page.getByRole("button", { name: GIFT_DEFAULTS.redeemLinkLabel }).click();
+  await redeemLink(page).click();
   const sheet = redeemSheet(page);
   await expect(sheet).toBeVisible();
   return sheet;
@@ -125,7 +129,7 @@ for (const { name, viewport } of MOBILE_AND_DESKTOP) {
       await expect(page.getByText(GIFT_DEFAULTS.buyLead)).toBeVisible();
       await expect(page.getByRole("button", { name: GIFT_DEFAULTS.buyLinkLabel })).toBeVisible();
       await expect(page.getByText(GIFT_DEFAULTS.redeemLead)).toBeVisible();
-      await expect(page.getByRole("button", { name: GIFT_DEFAULTS.redeemLinkLabel })).toBeVisible();
+      await expect(redeemLink(page)).toBeVisible();
     });
 
     test("the gift sheet goes to the Payment Link and the thank-you page shows the code", async ({
@@ -217,7 +221,7 @@ for (const { name, viewport } of MOBILE_AND_DESKTOP) {
       await markDocument(page);
 
       await openGiftRow(page);
-      await page.getByRole("button", { name: GIFT_DEFAULTS.redeemLinkLabel }).click();
+      await redeemLink(page).click();
       await spendGiftLimiterCall(async () => {
         await redeemInSheet(redeemSheet(page), gift.code);
         await page.waitForURL(new RegExp(`${giftPath(gift.code)}$`), { timeout: 30_000 });
