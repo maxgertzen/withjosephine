@@ -3,6 +3,7 @@ import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
+import { NAV_CLEARANCE_CLASS } from "@/components/Navigation";
 import { PdfThumbnail } from "@/components/PdfThumbnail";
 import { StarField } from "@/components/StarField";
 import type { ListenPageContent } from "@/data/defaults";
@@ -46,10 +47,10 @@ export function ListenView({ copy, state }: ListenViewProps) {
         <CelestialOrb key={index} {...orb} />
       ))}
 
-      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20">
+      <main className={`relative z-10 max-w-[720px] mx-auto px-6 pb-20 ${NAV_CLEARANCE_CLASS}`}>
         {renderCard(copy, state)}
-        <Footer />
       </main>
+      <Footer />
     </div>
   );
 }

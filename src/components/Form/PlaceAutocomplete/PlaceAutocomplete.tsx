@@ -8,6 +8,7 @@ import { inputClasses } from "@/lib/formStyles";
 import { type CityMatch, searchCities } from "@/lib/places/cities";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 import { mergeClasses } from "@/lib/utils";
+import { LAYER } from "@/styles/layers";
 
 type PlaceAutocompleteProps = {
   id: string;
@@ -169,7 +170,8 @@ export function PlaceAutocomplete({
             }}
             style={{ width: "var(--radix-popover-trigger-width)" }}
             className={mergeClasses(
-              "z-50 bg-j-ivory rounded-md shadow-j-soft border",
+              LAYER.popover,
+              "bg-j-ivory rounded-md shadow-j-soft border",
               showMatches
                 ? "border-j-border-gold max-h-64 overflow-y-auto"
                 : "border-j-border-subtle",
@@ -189,9 +191,7 @@ export function PlaceAutocomplete({
                       commit(match);
                     }}
                     className={`px-4 py-2 font-body text-base ${
-                      index === active
-                        ? "bg-j-blush/40 text-j-text-heading"
-                        : "text-j-text"
+                      index === active ? "bg-j-blush/40 text-j-text-heading" : "text-j-text"
                     }`}
                   >
                     {match.display}
@@ -199,10 +199,7 @@ export function PlaceAutocomplete({
                 ))}
               </ul>
             ) : showEmptyHint ? (
-              <p
-                role="status"
-                className="px-4 py-3 font-display italic text-sm text-j-text-muted"
-              >
+              <p role="status" className="px-4 py-3 font-display italic text-sm text-j-text-muted">
                 Can&rsquo;t find your town? Try a more well-known place nearby.
               </p>
             ) : null}

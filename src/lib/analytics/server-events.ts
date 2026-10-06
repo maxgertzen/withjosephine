@@ -3,40 +3,51 @@
 export type EmailSubType =
   | "order_confirmation"
   | "josephine_notification"
-  | "day_7_delivery"
-  | "day_7_overdue_alert"
+  | "reading_delivery"
+  | "reading_overdue_alert"
   | "contact_form"
   | "magic_link"
   | "privacy_export"
-  | "admin_email_preview";
+  | "admin_email_preview"
+  | "gift_confirmation"
+  | "gift_opened"
+  | "gift_recipient_confirmation"
+  | "gift_send";
 
 export const EMAIL_LABELS: Record<EmailSubType, string> = {
   order_confirmation: "order confirmation",
   josephine_notification: "Josephine notification",
-  day_7_delivery: "Day +7 delivery",
-  day_7_overdue_alert: "Day +7 overdue alert",
+  reading_delivery: "reading delivery",
+  reading_overdue_alert: "reading overdue alert",
   contact_form: "contact message",
   magic_link: "magic link",
   privacy_export: "privacy export",
   admin_email_preview: "admin email preview (Studio send-to-test)",
+  gift_confirmation: "gift confirmation",
+  gift_opened: "gift opened",
+  gift_recipient_confirmation: "gift recipient confirmation",
+  gift_send: "gift to recipient",
 };
 
 export type ServerEventMap = {
   payment_success: {
-    submission_id: string;
+    submission_id: string | null;
+    gift_id?: string;
     reading_id: string;
     amount_paid_cents: number | null;
     currency: string | null;
-    stripe_session_id: string;
+    stripe_session_id: string | null;
   };
   payment_expired: {
-    submission_id: string;
+    submission_id: string | null;
+    gift_id?: string;
     reading_id: string;
-    stripe_session_id: string;
+    stripe_session_id: string | null;
   };
   email_sent: {
     sub_type: EmailSubType;
     submission_id: string | null;
+    gift_id?: string;
     recipient_redacted: string;
     resend_id_present: boolean;
   };

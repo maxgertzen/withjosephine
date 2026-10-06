@@ -9,7 +9,7 @@ import * as Sentry from "@sentry/cloudflare";
 import handler from "./.open-next/worker.js";
 import { scheduledCronRequest, withoutCronHeader } from "./src/lib/booking/cron-auth";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
-import { redactSearchParams, SENSITIVE_QUERY_PARAMS } from "./src/lib/logging/redactSearchParams";
+import { scrubBreadcrumb, scrubSentryRequest } from "./src/lib/logging/redactSearchParams";
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
@@ -17,16 +17,7 @@ type CloudflareEnv = {
 };
 
 function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
-  const request = event.request;
-  if (request?.headers && typeof request.headers === "object") {
-    delete (request.headers as Record<string, unknown>).cookie;
-    delete (request.headers as Record<string, unknown>)["cf-cron"];
-    delete (request.headers as Record<string, unknown>).authorization;
-  }
-  if (request?.url) {
-    const pathRedacted = request.url.replace(/\/listen\/[^/?#]+/, "/listen/[REDACTED]");
-    request.url = redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
-  }
+  scrubSentryRequest(event.request);
   return event;
 }
 
@@ -37,8 +28,8 @@ function originForEnv(env: CloudflareEnv): string {
 }
 
 // Sentry free tier = 1 cron monitor; scoped to the paid-fulfilment path.
-const DAY7_DELIVER_PATH = "/api/cron/email-day-7-deliver";
-const DAY7_DELIVER_MONITOR_SLUG = "email-day-7-deliver";
+const DELIVER_REQUESTED_PATH = "/api/cron/deliver-requested";
+const DELIVERY_MONITOR_SLUG = "email-day-7-deliver";
 
 const composedHandler: ExportedHandler<CloudflareEnv> = {
   fetch: (request, env, ctx) => handler.fetch!(withoutCronHeader(request), env, ctx),
@@ -55,9 +46,9 @@ const composedHandler: ExportedHandler<CloudflareEnv> = {
         console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
         return res;
       };
-      if (path === DAY7_DELIVER_PATH) {
+      if (path === DELIVER_REQUESTED_PATH) {
         await Sentry.withMonitor(
-          DAY7_DELIVER_MONITOR_SLUG,
+          DELIVERY_MONITOR_SLUG,
           async () => {
             const res = await sendCronRequest();
             if (!res.ok) {
@@ -83,6 +74,7 @@ export default Sentry.withSentry(
     tracesSampleRate: 0,
     sendDefaultPii: false,
     beforeSend: scrubSensitiveRequestData,
+    beforeBreadcrumb: scrubBreadcrumb,
   }),
   composedHandler,
 );

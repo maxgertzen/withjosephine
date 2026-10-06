@@ -65,7 +65,7 @@ async function callRoute(init: {
 const validBody = {
   submissionId: "sub_123",
   recipientUserId: "user_456",
-  mintSource: "cron_day7",
+  mintSource: "reading_delivery",
 };
 
 describe("POST /api/internal/test-mint-token", () => {
@@ -134,7 +134,7 @@ describe("POST /api/internal/test-mint-token", () => {
     it("returns 404 when submissionId is missing", async () => {
       const res = await callRoute({
         headers: { "x-admin-token": "test-admin-token" },
-        body: { recipientUserId: "u", mintSource: "cron_day7" },
+        body: { recipientUserId: "u", mintSource: "reading_delivery" },
       });
       expect(res.status).toBe(404);
       expect(mintMock).not.toHaveBeenCalled();
@@ -143,7 +143,7 @@ describe("POST /api/internal/test-mint-token", () => {
     it("returns 404 when recipientUserId is missing", async () => {
       const res = await callRoute({
         headers: { "x-admin-token": "test-admin-token" },
-        body: { submissionId: "s", mintSource: "cron_day7" },
+        body: { submissionId: "s", mintSource: "reading_delivery" },
       });
       expect(res.status).toBe(404);
       expect(mintMock).not.toHaveBeenCalled();
@@ -196,7 +196,7 @@ describe("POST /api/internal/test-mint-token", () => {
       expect(mintMock).toHaveBeenCalledWith({
         submissionId: "sub_123",
         recipientUserId: "user_456",
-        mintSource: "cron_day7",
+        mintSource: "reading_delivery",
         ttlMs: undefined,
       });
     });

@@ -2,8 +2,9 @@ export type SubmissionStatus = "pending" | "paid" | "expired";
 
 export type EmailFiredType =
   | "order_confirmation"
-  | "day7"
-  | "day7-overdue-alert"
+  | "gift_recipient_confirmation"
+  | "reading_delivery"
+  | "reading_overdue_alert"
   | "day14"
   | "abandonment";
 
@@ -11,6 +12,37 @@ export type EmailFiredEntry = {
   type: EmailFiredType;
   sentAt: string;
   resendId: string | null;
+};
+
+export const CUSTOMER_EMAIL_TYPES = ["order_confirmation", "reading_delivery"] as const;
+
+export type CustomerEmailType = (typeof CUSTOMER_EMAIL_TYPES)[number];
+
+export type EmailFailureKind =
+  | "send_error"
+  | "maybe_sent"
+  | "unrecorded"
+  | "bounced"
+  | "complained"
+  | "suppressed"
+  | "refused";
+
+export type EmailFailureEntry<
+  TEmailType extends string = CustomerEmailType,
+  TRecipient extends string = string,
+> = {
+  emailType: TEmailType;
+  kind: EmailFailureKind;
+  recipient: TRecipient;
+  attemptNumber: number;
+  attemptedAt: string | null;
+  failedAt: string;
+  statusCode: number | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  bounceType: string | null;
+  resendId: string | null;
+  resolvedAt: string | null;
 };
 
 export type SubmissionRecord = {
@@ -33,6 +65,7 @@ export type SubmissionRecord = {
   voiceNoteUrl?: string;
   pdfUrl?: string;
   emailsFired?: EmailFiredEntry[];
+  emailFailures?: EmailFailureEntry[];
   reading: {
     slug: string;
     name: string;
@@ -41,4 +74,6 @@ export type SubmissionRecord = {
   amountPaidCents: number | null;
   amountPaidCurrency: string | null;
   recipientUserId: string | null;
+  giftCodeId?: string | null;
+  isLegacyGift?: boolean;
 };

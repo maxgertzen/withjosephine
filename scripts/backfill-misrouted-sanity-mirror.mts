@@ -23,10 +23,7 @@
 
 import { type SanityClient } from "@sanity/client";
 
-import {
-  SANDBOX_DOMAIN,
-  SANDBOX_EMAIL_PREFIX_LIST,
-} from "../src/lib/booking/sandboxEmails";
+import { isSandboxEmail } from "../src/lib/booking/sandboxEmails";
 
 import { writeCsv } from "./_lib/csv.mts";
 import { quoteSql, realExecD1 } from "./_lib/d1.mts";
@@ -36,13 +33,6 @@ import { sanityWriteClient } from "./_lib/sanity-write-client.mts";
 
 const DEFAULT_FROM = "2026-05-25T04:39:00Z";
 const DEFAULT_TO = "2026-05-25T07:00:00Z";
-
-function isSandboxEmail(address: string | null | undefined): boolean {
-  if (!address) return false;
-  const lower = address.toLowerCase();
-  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
-  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
-}
 
 type Args = {
   apply: boolean;

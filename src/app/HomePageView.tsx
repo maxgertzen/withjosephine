@@ -8,10 +8,11 @@ import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Navigation } from "@/components/Navigation";
 import type { NotesNavProps } from "@/components/Notes/NotesShell";
-import { ReadingCard } from "@/components/ReadingCard";
+import { ReadingCard, readingCardProps } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
-import { bookingPath, readingAnchorId } from "@/lib/http/routes";
+import type { ReadingsSectionContent } from "@/data/defaults";
+import { readingAnchorId } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import type {
   MappedAbout,
@@ -35,7 +36,7 @@ export type HomePageViewProps = {
   faqNonce?: string;
   hero?: SanityLandingPage["hero"];
   howItWorks?: SanityLandingPage["howItWorks"];
-  readingsSection?: SanityLandingPage["readingsSection"];
+  readingsSection: ReadingsSectionContent;
   testimonialsSection?: SanityLandingPage["testimonialsSection"];
   contactSection?: SanityLandingPage["contactSection"];
 };
@@ -78,7 +79,7 @@ export function HomePageView({
               src={about.imageUrl}
               alt="Josephine"
               width={300}
-              height={450}
+              height={375}
               loading="lazy"
               sizes="(min-width: 768px) 300px, 55vw"
               className="w-[clamp(200px,55vw,300px)] mx-auto md:mx-0 md:w-[300px] h-auto object-contain"
@@ -112,27 +113,14 @@ export function HomePageView({
 
         <section id="readings" className="py-24 px-6">
           <SectionHeading
-            tag={readingsSection?.sectionTag ?? "✦ Offerings"}
-            heading={readingsSection?.heading ?? "readings"}
-            subheading={
-              readingsSection?.subheading ??
-              "Each reading is created with care, entirely for you. Nothing is templated or generic."
-            }
+            tag={readingsSection.sectionTag}
+            heading={readingsSection.heading}
+            subheading={readingsSection.subheading}
           />
           <ul className="mt-14 max-w-[900px] mx-auto flex flex-col gap-10">
             {readings.map((reading) => (
-              // scroll-mt must clear Navigation.tsx's 72px fixed nav.
-              <li key={reading.id} id={readingAnchorId(reading.id)} className="scroll-mt-[96px]">
-                <ReadingCard
-                  slug={reading.id}
-                  tag={reading.tag}
-                  name={reading.name}
-                  price={reading.price}
-                  valueProposition={reading.valueProposition}
-                  briefDescription={reading.briefDescription}
-                  expandedDetails={reading.expandedDetails}
-                  href={bookingPath(reading.id)}
-                />
+              <li key={reading.id} id={readingAnchorId(reading.id)}>
+                <ReadingCard {...readingCardProps(reading, readingsSection)} />
               </li>
             ))}
           </ul>

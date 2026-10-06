@@ -85,6 +85,8 @@
   --j-section-px: clamp(1rem, 5vw, 4rem);
   --j-section-py: clamp(3rem, 8vh, 6rem);
   --j-content-max-w: 1200px;
+  --j-nav-height: 72px;
+  --j-below-nav: calc(var(--j-nav-height) + 1.5rem);
 
   /* ── Selection ── */
   --j-selection-bg: rgba(var(--j-accent-rgb), 0.25);

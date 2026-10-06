@@ -1,0 +1,1 @@
+export { ThankYouShell } from "./ThankYouShell";

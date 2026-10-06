@@ -1,8 +1,10 @@
 import {
   PortableText,
+  type PortableTextComponentProps,
   type PortableTextComponents,
   type PortableTextMarkComponentProps,
 } from "@portabletext/react";
+import type { PortableTextBlock } from "@portabletext/types";
 import Link from "next/link";
 
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
@@ -16,21 +18,25 @@ type LinkMark = {
 const BODY_TEXT = "font-body text-base text-j-text leading-[1.9]";
 const LIST = `${BODY_TEXT} flex flex-col gap-3 pl-5 mt-3`;
 
+const BLOCK_STYLES = {
+  normal: ({ children }: PortableTextComponentProps<PortableTextBlock>) => (
+    <p className={`${BODY_TEXT} mt-5 first:mt-0`}>{children}</p>
+  ),
+  h2: ({ children }: PortableTextComponentProps<PortableTextBlock>) => (
+    <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">{children}</h2>
+  ),
+  h3: ({ children }: PortableTextComponentProps<PortableTextBlock>) => (
+    <h3 className="font-display text-xl italic text-j-text-heading mt-8 mb-3">{children}</h3>
+  ),
+  blockquote: ({ children }: PortableTextComponentProps<PortableTextBlock>) => (
+    <blockquote className="border-l-2 border-j-border-gold pl-4 my-8 font-display italic text-[1.625rem] leading-[1.35] text-j-text">
+      {children}
+    </blockquote>
+  ),
+} satisfies PortableTextComponents["block"];
+
 const components: PortableTextComponents = {
-  block: {
-    normal: ({ children }) => <p className={`${BODY_TEXT} mt-5 first:mt-0`}>{children}</p>,
-    h2: ({ children }) => (
-      <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">{children}</h2>
-    ),
-    h3: ({ children }) => (
-      <h3 className="font-display text-xl italic text-j-text-heading mt-8 mb-3">{children}</h3>
-    ),
-    blockquote: ({ children }) => (
-      <blockquote className="border-l-2 border-j-border-gold pl-4 my-8 font-display italic text-[1.625rem] leading-[1.35] text-j-text">
-        {children}
-      </blockquote>
-    ),
-  },
+  block: BLOCK_STYLES,
   list: {
     bullet: ({ children }) => <ul className={`${LIST} list-disc`}>{children}</ul>,
     number: ({ children }) => <ol className={`${LIST} list-decimal`}>{children}</ol>,

@@ -12,12 +12,17 @@ import {
   articlesQuery,
   bookingFormQuery,
   bookingPageQuery,
-  emailDay7DeliveryQuery,
+  emailGiftOpenedQuery,
+  emailGiftPurchaseQuery,
+  emailGiftRecipientConfirmationQuery,
+  emailGiftToRecipientQuery,
   emailMagicLinkQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
+  emailReadingDeliveryQuery,
   emailSharedShellQuery,
   faqItemsQuery,
+  giftSettingsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
   listenPageQuery,
@@ -40,12 +45,17 @@ import type {
   SanityArticleSummary,
   SanityBookingForm,
   SanityBookingPage,
-  SanityEmailDay7Delivery,
+  SanityEmailGiftOpened,
+  SanityEmailGiftPurchase,
+  SanityEmailGiftRecipientConfirmation,
+  SanityEmailGiftToRecipient,
   SanityEmailMagicLink,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
+  SanityEmailReadingDelivery,
   SanityEmailSharedShell,
   SanityFaqItem,
+  SanityGiftSettings,
   SanityLandingPage,
   SanityLegalPage,
   SanityListenPage,
@@ -194,8 +204,8 @@ export const fetchEmailPrivacyExport = cache((): Promise<SanityEmailPrivacyExpor
   fetchEmailCopy<SanityEmailPrivacyExport>(emailPrivacyExportQuery),
 );
 
-export const fetchEmailDay7Delivery = cache((): Promise<SanityEmailDay7Delivery | null> =>
-  fetchEmailCopy<SanityEmailDay7Delivery>(emailDay7DeliveryQuery),
+export const fetchEmailReadingDelivery = cache((): Promise<SanityEmailReadingDelivery | null> =>
+  fetchEmailCopy<SanityEmailReadingDelivery>(emailReadingDeliveryQuery),
 );
 
 export const fetchEmailOrderConfirmation = cache((): Promise<SanityEmailOrderConfirmation | null> =>
@@ -204,6 +214,27 @@ export const fetchEmailOrderConfirmation = cache((): Promise<SanityEmailOrderCon
 
 export const fetchEmailSharedShell = cache((): Promise<SanityEmailSharedShell | null> =>
   fetchEmailCopy<SanityEmailSharedShell>(emailSharedShellQuery),
+);
+
+export const fetchEmailGiftPurchase = cache((): Promise<SanityEmailGiftPurchase | null> =>
+  fetchEmailCopy<SanityEmailGiftPurchase>(emailGiftPurchaseQuery),
+);
+
+export const fetchEmailGiftOpened = cache((): Promise<SanityEmailGiftOpened | null> =>
+  fetchEmailCopy<SanityEmailGiftOpened>(emailGiftOpenedQuery),
+);
+
+export const fetchEmailGiftRecipientConfirmation = cache(
+  (): Promise<SanityEmailGiftRecipientConfirmation | null> =>
+    fetchEmailCopy<SanityEmailGiftRecipientConfirmation>(emailGiftRecipientConfirmationQuery),
+);
+
+export const fetchEmailGiftToRecipient = cache((): Promise<SanityEmailGiftToRecipient | null> =>
+  fetchEmailCopy<SanityEmailGiftToRecipient>(emailGiftToRecipientQuery),
+);
+
+export const fetchEmailGiftSettings = cache((): Promise<SanityGiftSettings | null> =>
+  fetchEmailCopy<SanityGiftSettings>(giftSettingsQuery),
 );
 
 export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {
@@ -275,6 +306,11 @@ export const fetchNotesStatePublished = cache(
     }),
 );
 
+export const fetchGiftSettingsPublished = cache(
+  async (): Promise<SanityGiftSettings | null> =>
+    publishedFetch<SanityGiftSettings | null>({ query: giftSettingsQuery, tags: ["giftSettings"] }),
+);
+
 export const fetchArticlesPublished = cache(
   async (): Promise<SanityArticleSummary[]> =>
     (await publishedFetch<SanityArticleSummary[] | null>({
@@ -294,6 +330,11 @@ export const fetchArticlePublished = cache(
 
 export const fetchNotesState = cache(async (): Promise<SanityNotesState | null> => {
   const { data } = await sanityFetch<SanityNotesState | null>({ query: notesStateQuery });
+  return data;
+});
+
+export const fetchGiftSettings = cache(async (): Promise<SanityGiftSettings | null> => {
+  const { data } = await sanityFetch<SanityGiftSettings | null>({ query: giftSettingsQuery });
   return data;
 });
 

@@ -27,10 +27,9 @@ Use **incognito / private windows** for every customer journey. Cached state bre
 | Suffix | Role | Used in |
 |---|---|---|
 | `+self` | Self-purchase customer | Cluster A |
-| `+gift-selfsend` / `+recipient-selfsend` | Gift purchaser + recipient, self-send mode | Cluster B |
-| `+gift-scheduled` / `+recipient-scheduled` | Gift purchaser + recipient, scheduled mode | Cluster C |
-| `+gift-cancel-auto` / `+recipient-cancel-auto` | Cancel-auto-send test pair | Cluster C (action: cancel-auto) |
-| `+gift-sendnow` / `+recipient-sendnow` | Send-now test pair | Cluster C (action: send-now) |
+| `+gift-buyer` | Gift buyer | Cluster B |
+| `+gift-recipient` | Gift recipient | Cluster B |
+| `+gift-race` | Second recipient for the race | B8 |
 
 Add a date suffix (e.g. `+self-20260520`) if you want to tell smoke rounds apart.
 
@@ -72,7 +71,7 @@ On a delivered `/listen/<id>` (use Cluster A's flow to produce one, or an existi
 ### G4 — regression: reading copy + names (#298)
 1. Reading cards/titles show **bare** names: "Soul Blueprint", "Birth Chart", "Akashic Record" (not "The …"). ✅
 2. Sentence/customer copy reads "…your Soul Blueprint **reading**…" (noun appended in copy, not in the bare name).
-3. Open one email (Order Confirmation or Day-7) — bare name + "reading" renders correctly, no double-noun / leading-article.
+3. Open one email (Order Confirmation or Reading Delivery) — bare name + "reading" renders correctly, no double-noun / leading-article.
 4. **Migration note:** code defaults are bare; **live Sanity overrides need `scripts/migrate-readingname-append-reading-2026-06-16.ts`**. Confirm staging renders correctly (run the migration on staging if any surface still shows old copy); **prod migration is owed at merge** (see sequence below).
 
 ### G5 — regression: Studio (#297) — PARTIAL, read the caveat
@@ -123,38 +122,38 @@ Covers v1.0 baseline, v1.4.0 one-tap (J13a, J13d, J13e, J13i), v1.6.0 form polis
 - Either email missing after 5 minutes.
 - Studio submission missing the photo or any required field.
 
-### A2: Becky delivers + Studio Day-7 schema audit
+### A2: Becky delivers + Studio reading delivery email schema audit
 
 **As Becky (in Studio):**
 1. Open the submission from A1. The **audit trail** shows consent timestamps + IP-hash + request UA-hash entries. Eyeball that they are present.
 2. Upload a short MP3 in **Voice note** (~30s, under 5MB).
 3. Upload any PDF (~1 page) in **Reading PDF**.
-4. Set **Delivered at** to now. **Publish**.
-5. Open **Email > Day 7 Delivery** in the Studio sidebar (v1.4.0 J13e). Confirm visible fields are: `subject`, `preview`, `bodyIntro`, `bodyPostButton`, `buttonLabel`. Legacy fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) should NOT be visible.
+4. **Publish**. **Delivered at** is read-only and stays empty until the delivery email is sent.
+5. Open **Emails > Reading Delivery Email → Customer** in the Studio sidebar (v1.4.0 J13e). Confirm visible fields are: `subject`, `preview`, `bodyIntro`, `bodyPostButton`, `buttonLabel`. Legacy fields (`greeting`, `lineReady`, `comfortLine`, `signedInDisclosure`, `accessWindowLine`, `comfortFollowUp`) should NOT be visible.
 
-### A3: Day-7 force-fire, one-tap, listen page, remember-me
+### A3: Reading delivery force-send, one-tap, listen page, remember-me
 
-**As maintainer:** force the Day-7 cron for the A1 submission (replace `<id>`):
+**As maintainer:** force the reading delivery for the A1 submission (replace `<id>`):
 ```
-bash scripts/force-cron.sh email-day-7-deliver <id>
+bash scripts/force-cron.sh deliver-reading <id>
 ```
 Expected response: `{"processed":1,"sent":1,"skipped":0,...}`.
 
 **As customer (in `+self`):**
-1. Day-7 delivery email arrives. Subject reads "Your <reading-name> is ready" (verify no leading "The"). Body uses the one-tap copy: "Tap below to open your reading. You will be signed in for the next seven days..." (v1.4.0 J13a). Single CTA, no em-dashes.
+1. Reading delivery email arrives. Subject reads "Your <reading-name> is ready" (verify no leading "The"). Body uses the one-tap copy: "Tap below to open your reading. You will be signed in for the next seven days..." (v1.4.0 J13a). Single CTA, no em-dashes.
 2. Tap the CTA. Land on `/my-readings/welcome?t=<lib-token>` with heading "Welcome to your library." and CTA "Continue to your library."
 3. Tap **Continue**. Land on `/my-readings?welcome=1`. Reading card visible under **Mine** with an **Open your reading** CTA.
 4. Click **Open your reading**. Land on `/listen/<id>`. Audio plays in full. PDF downloads and opens. Filename is human-readable: firstname + lastname + reading name, **space-separated, casing echoed verbatim** from the name fields (no hyphens/underscores, no app re-casing), e.g. `Jane Doe Soul Blueprint.pdf` (v1.11.0 K, #285; contract: `buildListenFilename` in `src/app/api/listen/[id]/downloadFilename.ts`). NOT the submission UUID. If the in-page loader hangs you can't reach the download — that's a BLOCK, not a pass.
 5. Confirm top-bar visible on `/listen/<id>`, `/my-readings`, `/my-readings/welcome`: ✦ Josephine wordmark on left; on the authed routes the right side shows the **owner email + Sign out** control. The old standalone "Home" link was removed in v1.11.0 (E) — the wordmark is the sole home affordance.
 6. Hit the browser **back** button after step 3. The interstitial does NOT restore from bfcache with the consumed token in the URL. The URL stays clean: no `?t=...` reappears (v1.7.0 J15a).
-7. Open the same listen URL in a second incognito window (different session). Site shows "This link has rested" form. Submit the email. A fresh email arrives — subject "Open your reading" (separate template from the Day-7 delivery; per F7 the relationship to J13d "Sign in to your library" is a TBD spec question). Tap the CTA. Land on `/listen/<id>?t=<fresh-token>` with heading "Welcome, your reading is here." and CTA "Continue to your reading." Tap, land on `/listen/<id>`.
+7. Open the same listen URL in a second incognito window (different session). Site shows "This link has rested" form. Submit the email. A fresh email arrives — subject "Open your reading" (separate template from the reading delivery email; per F7 the relationship to J13d "Sign in to your library" is a TBD spec question). Tap the CTA. Land on `/listen/<id>?t=<fresh-token>` with heading "Welcome, your reading is here." and CTA "Continue to your reading." Tap, land on `/listen/<id>`.
    - Magic-link body greeting substitutes the user's actual first name, not literal `{firstName}` (v1.5.0 J12b).
 8. In that second window, close the listen tab and reopen `/listen/<id>` directly (within 7 days of step 7). The page renders. It does NOT show "This link has rested" (7-day session persistence promise).
    - **Rested-bypass (v1.11.0 C, #287):** while signed in (valid session), append `?error=rested` to the listen URL. The reading must render normally — a valid session OUTRANKS the stale `?error=rested`; the "This link has rested" card must NOT show. (Pre-fix, a re-clicked/consumed link wrongly rested an already-signed-in user.) `?error=rested` is the deterministic trigger; the consumed-link path is an ambiguous secondary.
 9. Visit `/listen/<id>` with an obviously consumed token. Confirm the rested page renders with no em-dashes in heading or body (v1.10.0 J17d /listen rested).
 
 **Routing summary (the two welcome interstitial paths):**
-- Original Day-7 delivery email CTA → `/my-readings/welcome?t=...` ("Welcome to your library") → `/my-readings` library → user picks a card → `/listen/<id>`.
+- Original reading delivery email CTA → `/my-readings/welcome?t=...` ("Welcome to your library") → `/my-readings` library → user picks a card → `/listen/<id>`.
 - Fresh-link email after a rested listen token → `/listen/<id>?t=...` ("Welcome, your reading is here") → `/listen/<id>` directly. No library detour.
 
 **Watch for:**
@@ -170,162 +169,99 @@ Expected response: `{"processed":1,"sent":1,"skipped":0,...}`.
 
 ---
 
-## Cluster B: Gift self-send + recipient + admin emails
+## Cluster B: Gift (v1.21.0)
 
-Covers v1.0 baseline (J2, J3, J11 admin), v1.4.0 (J13a one-tap on recipient side), v1.5.0 ({firstName} substitution J12b), v1.8.0 (recipient greeting J16a), v1.10.0 (J17c gift modes, J17d /gift/claim em-dash).
+Each journey runs once at 375px (Chrome DevTools) and once on desktop.
 
-### B1: Purchaser buys, self-send mode
+### B1: Buyer, fold row to thank-you
 
-**As purchaser (incognito):**
-1. Pick **Birth Chart** ($89). Click **Buy as a gift**.
-2. Pick **I'll send the link myself** (self-send).
-3. Fill purchaser name + `yourname+gift-selfsend@gmail.com`. Tick the 2 consents (Art. 6 + cooling-off, no Art. 9 on the purchaser side).
-4. Continue to Stripe. **The Payment Link email field is PREFILLED with the purchaser's email** (`+gift-selfsend`) (v1.11.0 F, #288; reverses old B5.15). Pay with the test card.
+**As buyer (incognito):**
+1. Open `/book/birth-chart`. The "Giving or redeeming a gift" row sits inside the form card, right before "Before I read for you". Tap it. Both lines show.
+2. Tap **Send it as a gift**. Tap **Continue to payment** empty: both errors show.
+3. Type a first name and a note past 220 characters: the counter shows; past 260 it turns rose. Tick the checkbox.
+4. **Continue to payment**: "One moment, taking you to checkout." Pay with the test card and `yourname+gift-buyer@gmail.com`.
 
 **Expect:**
-- Thank-you page renders the **gift self-send variant**: "Your gift link is ready in the email I just sent..." No `{placeholder}` literals (v1.10.0 J17c gift self-send).
-- **Gift Purchase Confirmation** refund/footer link text reads **"your library"**, NOT "your gifts page" (v1.11.0 L, #286). If live Sanity still says "your gifts page", that's the pending L2 migration, not a code regression.
-- **Gift Purchase Confirmation** email arrives in `+gift-selfsend`. Body contains the **claim URL**. Copy it.
-- **Josephine notification** at `hello@withjosephine.com`.
+- The thank-you page shows the code on first load, Copy link, Share and the note.
+- Copy link shows "Link copied ✓". **Edit note**, change it, **Save note**: the callout shows; reload keeps it.
+- On a real phone, Share opens the device share menu with the share message and the link.
+- The buyer confirmation email arrives in `+gift-buyer` with the code, the link, Share on WhatsApp and **Send it by email from Josephine**.
 
 **Watch for:**
-- Claim URL missing from the email.
-- Wrong thank-you variant (self-purchase or scheduled-gift wording).
+- A page without the code that fills in later.
+- `{placeholder}` literals. Horizontal scroll at 375px.
 
-### B2: Recipient claims + intake + admin email cross-check
+### B2: Browser with no share menu
+
+**As buyer (Firefox desktop):** open the B1 thank-you URL. Share is hidden. Copy link works and pastes `/gift/<code>`.
+
+### B3: Send by email from Josephine
+
+**As buyer:** tap **Send it by email from Josephine** in the B1 email.
+1. Try `anna@emailcom`, then your own address: each shows its error.
+2. Send to `yourname+gift-recipient@gmail.com`: the sent state shows.
+3. Reload: "Already sent", and the page source holds no recipient address.
+4. Use the resend once; then "Sent twice already".
+
+**As recipient (`+gift-recipient`):** "A reading, waiting for you" arrives with the note card, **Open your gift**, the code line and the privacy line.
+
+### B4: Recipient by link
 
 **As recipient (fresh incognito):**
-1. Paste the claim URL from B1's email into the address bar. The page greets the recipient with **the purchaser's first name**, not a `{purchaserFirstName}` placeholder.
-2. Click through. Enter recipient name + `yourname+recipient-selfsend@gmail.com`. Tick all 3 consents (Art. 6 + Art. 9 + cooling-off).
-3. Walk the intake. Upload a small JPEG. Submit.
-4. **Em-dash spot-check** on `/gift/claim` surfaces (v1.10.0 J17d): visit `/gift/claim` with no token, and `/gift/claim/<used-token>` after submitting. Confirm `noTokenBody`, `seoTitle`, `alreadySubmittedHeading` carry no em-dashes.
+1. Tap **Open your gift**. Note card at the top of the form card, price line "A gift, already paid", no gift row, no "Not sure this is the one?" box, page line ending "· a gift from" the buyer.
+2. Fill page 1, close the tab, open the link again: "Welcome back. Your answers are saved."
+3. Last page: code applied with Remove, "Nothing to pay...", the line about the "gift opened" email, **Send my details**. Tick the 3 consents, submit.
 
 **Expect:**
-- Recipient lands on the **gift-recipient thank-you variant**: "Your reading is in Josephine's hands now..." No `{placeholder}` literals (v1.10.0 J17c gift recipient).
-- **Order Confirmation** email in `+recipient-selfsend`.
-- **Recipient Intake Received** email in `+gift-selfsend` (purchaser inbox).
-- **Josephine notification** at `hello@withjosephine.com`.
-- New submission appears in Studio with `recipientEmail` populated, linked back to the purchase.
+- The gift thank-you page and "Your reading is in my hands now" in `+gift-recipient`.
+- "<name> opened your gift" in `+gift-buyer`.
+- Josephine's notification at `hello@withjosephine.com` names the buyer and shows no amount.
+- The gift link again: "This gift was already opened". The B3 send link: the opened lines.
 
-**Watch for:**
-- Claim link errors with "already used" on first click.
-- Recipient greeting shows literal `{recipientName}` token or wrong name.
-- Purchaser inbox doesn't get the **Recipient Intake Received** notification.
-- Any em-dash on `/gift/claim` surfaces.
+### B5: Recipient by code
 
-### B3: Becky delivers, recipient listens with greeting
+**As recipient (desktop), with a second paid gift:**
+1. `/book/soul-blueprint`, **Redeem gift**, a wrong code: the wrong-code line.
+2. The Birth Chart code: the other-reading line and its button.
+3. On `/book/birth-chart`, type some answers, then **Redeem gift** with the code in lower case with spaces: `/gift/<code>` opens with the answers kept.
+4. On `/book/akashic-record` last page, type 6 wrong codes in the code field, pressing **Continue to payment** each time: "Too many tries. Wait a few minutes." After a minute a correct code works.
 
-**As Becky:** mirror A2 on the **recipient's submission** from B2. Upload MP3 + PDF. Set Delivered at. Publish.
+### B6: Becky
 
-**As maintainer:** `bash scripts/force-cron.sh email-day-7-deliver <recipient-submission-id>`.
+**As Becky (`pnpm studio:dev`, staging workspace, before the release; deployed Studio after it):**
+1. Paid awaiting delivery: the B4 submission reads "email · Gift from <buyer> · Paid ... · Day 1 of 7".
+2. Open it: gift fields read-only, no note.
+3. 📬 Submissions, 🎁 Gifts not opened yet: the B5 gift is listed as "Gift from <buyer> · Birth Chart Reading · Not opened yet · Bought <date>". The B4 gift is not in this list.
+4. Open the B5 gift: Payment tab, Gift: "From", "Bought" and "Sent by email" have values. The Delivery box reads "Waiting for the recipient."
+5. Pages, Booking Flow, Gift Settings: change the price line; Presentation, Gift pages, "opened, with note" shows the change. The four gift emails are in Booking Flow, not in Emails.
+6. Send a fresh paid gift to `bounced@resend.dev`. ⚠️ Failed sends lists the gift. Its Delivery box shows "Gift email: Bounced" to the recipient and a "Resend gift confirmation to buyer" button. No email address is shown.
 
-**As recipient (in `+recipient-selfsend`):**
-1. Day-7 delivery email arrives. Tap CTA. One-tap interstitial. Land on `/listen/<id>?welcome=1`.
-2. Below the welcome ribbon, the greeting line includes the recipient's first name (whatever was typed at intake). It does NOT contain literal `{recipientName}` (v1.8.0 J16a).
-3. Audio + PDF accessible.
+### B7: Resend tracking
 
-**Watch for:**
-- Recipient's listen page shows the purchaser's data, or vice versa. This is a **CRITICAL cross-user leak**, flag instantly.
-- Greeting reads "Hi there" or "Welcome, friend" (fallback chain failure).
-- Self-purchase listen page (from A3) shows a recipient greeting block. The isGift gate should suppress it.
+In the buyer and recipient emails, every link points straight at the site or `wa.me`. Resend dashboard, Domains, `withjosephine.com`: click tracking and open tracking are off.
+
+### B8: Two people open the same gift
+
+**As recipient:** open one gift link in two browsers and reach the last page in both. Submit in the first. Submit in the second with `+gift-race`.
+
+**Expect:** the second shows "This gift was opened a moment ago..."; after reload its answers are there, the code is gone, the price line is the normal one and the button reads "Continue to payment".
+
+### B9: Bad codes, headers, analytics
+
+**As anyone (desktop Chrome, DevTools open, analytics consent given):**
+1. `/gift/K7M2` and `/gift/AAAA-BBBB-CCCC`: the same "We couldn't find this gift" page.
+2. Network tab on `/gift/<code>`, a reading thank-you and a gift thank-you: `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store, max-age=0`, `noindex` in the HTML.
+3. No request to `clarity.ms` on `/gift/<code>` or any `/thank-you/` page.
 
 ---
 
-## Cluster C: Scheduled gift + /my-readings actions + privacy export
+## Cluster C: Privacy export
 
-Covers v1.0 baseline (J4, J5, J7 privacy export, J11 admin), v1.4.0 unified library + step-up OTP + DateTimePicker + timezone (J13b, J13c, J13g, J13h, J13i), v1.5.0 privacy export substitution (J12c), v1.6.0 hydration + scheduled preview text (J14c, J14g), v1.10.0 LibraryView parity + /my-gifts em-dash (J17b, J17d).
-
-**Setup:** This cluster needs **two** scheduled gift purchases because cancel-auto-send and send-now each terminally consume a gift. Use `+gift-cancel-auto` and `+gift-sendnow`.
-
-### C1: Schedule the gift (run twice, once per terminal action)
-
-**As purchaser:**
-1. Set browser timezone to something distinct from UTC (e.g. Europe/Tel_Aviv). Open Chrome DevTools > Sensors > Location to override.
-2. Incognito. Pick **Akashic Record** ($79). **Buy as a gift**. Pick **Schedule the delivery**.
-3. Fill purchaser name + `yourname+gift-<cancel-auto|sendnow>@gmail.com`.
-4. Fill recipient name + `yourname+recipient-<cancel-auto|sendnow>@gmail.com`.
-5. Pick **send-at** for ~20 minutes from now (enough time to test cancel-auto and send-now before the auto-fire).
-6. Optional gift message. Tick consents. Pay.
-
-**Expect:**
-- Thank-you page renders **gift scheduled variant**: "Your gift is scheduled for <date/time>..." (v1.10.0 J17c gift scheduled).
-- **Gift Purchase Confirmation (Scheduled)** in purchaser inbox.
-   - Send-at renders in the **purchaser's local timezone**, not UTC (v1.4.0 J13h).
-   - Preview text (inbox-list snippet before opening) reads "We'll send it to {recipientName} on {sendAtDisplay}." NOT "You don't need to do anything else." (v1.6.0 J14g).
-- Josephine notification at `hello@withjosephine.com`.
-
-### C2: /my-readings unified library + Studio preview parity
-
-**As purchaser (sign in via magic link to /my-readings):**
-1. Open Chrome DevTools console **before** navigating to `/my-readings`. Hard-refresh. **No "Hydration failed" warning** in console (v1.6.0 J14c).
-2. `/my-readings` renders as a single scrollable page with stacked **Mine** + **For others** sections (v1.4.0 J13b).
-3. Top-bar visible: ✦ Josephine wordmark + owner email + Sign out on the right. No standalone "Home" link (removed in v1.11.0 E).
-4. Visit `/my-gifts`. It 308-redirects to `/my-readings`.
-5. Em-dash spot-check on `/my-gifts` (or post-redirect view): `statusSentLabel`, `privacyNote`, edit-recipient self-send indicator (v1.10.0 J17d).
-
-**As Becky (Studio Presentation Tool):**
-6. Open the **My Readings page** singleton in Presentation. The preview iframe matches production layout 1:1: same section headings, same divider position, same empty-state copy (v1.10.0 J17b).
-7. Open any customer email singleton (e.g. **Order Confirmation**). Open Presentation's "Used on" panel. Confirm the singleton lists where it's referenced (v1.5.0 J12d).
-8. Confirm the `tokenReferenceField` banner is visible at the top of `listenPage`, `giftIntakePage`, and `thankYouPage` schemas (v1.5.0 J12d).
-
-**Watch for:**
-- Hydration warning fires on /my-readings.
-- Studio preview shows a different layout than production for /my-readings.
-- Gift-only accounts (0 readings) cannot reach the readings section (pre-collapse soft-lock from before PR #208).
-
-### C3: Repeatable + terminal actions, step-up OTP, DateTimePicker
-
-**On the `+gift-cancel-auto` purchase:**
-1. **View claim link**: click "Copy claim link", paste somewhere to confirm.
-2. **Edit recipient**: change name + email > save. Mutation returns `elevationRequired`. OTP modal opens with `role="dialog"`, focus trap, ESC closes (v1.4.0 J13c).
-3. Fetch the 6-digit code from the purchaser inbox (subject: "[Josephine] Sign-in code for sensitive change").
-4. Enter the code. Modal closes. Mutation completes.
-5. **Reschedule**: click **Edit send time**. Confirm the brand DateTimePicker opens, NOT a native `<input type="datetime-local">` (v1.4.0 J13g):
-   - Popover with calendar on left, two scroll-snap HH/MM columns on right.
-   - Keyboard nav: ArrowDown enters popover, ArrowUp/ArrowDown move within time columns, Enter commits, Escape closes.
-   - If testing on real iOS at 375px: scroll-snap time columns work natively, no iOS native `<select>` wheel.
-   - No OTP re-prompt (within 10 minutes of step 4, elevation is reused).
-6. **Cancel auto-send**: click. 5-second confirm window. Confirm. Card flips to **self-send mode** with a "Copy claim link" button now visible.
-7. Wait past the originally-scheduled fire time. Confirm **no claim email** arrives at `+recipient-cancel-auto`.
-8. Optionally walk the recipient through B2 using the now-self-send link.
-
-**On the `+gift-sendnow` purchase:**
-9. **Send now**: click. Confirm. Within ~1 min, the **Gift Claim** email lands at `+recipient-sendnow`.
-10. The /my-readings card updates to show "sent <timestamp>".
-11. Original scheduled fire time passes without a duplicate email.
-12. **After 10 minutes** from the OTP, attempt another sensitive mutation. OTP re-prompts (elevation expired).
-
-**As Becky (Studio):** Sanity copy editability proof (v1.0 baseline J5e):
-13. Open the **My Gifts page** (or **My Readings page**) singleton in Studio. Change `flipToSelfSendCtaLabel` (e.g. add a period). Publish.
-14. Back on /my-readings, hard-refresh. New label renders within ~30 seconds. (Revert after smoke.)
-
-**Watch for:**
-- OTP modal doesn't open, mutation succeeds without elevation.
-- OTP modal ARIA broken (ESC doesn't close, focus escapes, backdrop-click doesn't close).
-- Native datetime-local picker appears instead of brand DateTimePicker.
-- iOS scroll-snap breaks.
-- Gift stays in "scheduled" state after cancel (DO didn't pick up the cancel).
-- Original scheduled claim email fires anyway after cancel.
-- Send-now AND original scheduled email both fire (idempotency broken).
-
-### C4: Auto-fire + recipient claim + delivery
-
-**For a third purchase** (or reuse the `+gift-scheduled` pair without cancel/send-now), let the scheduled time fire naturally.
-
-**At the scheduled time:**
-1. **Recipient inbox** gets the **Gift Claim** email with the claim link.
-2. Recipient clicks through. From here mirror B2 (greet, consents, intake, submit).
-3. Same follow-on emails as B2.
-
-**Watch for:**
-- Claim email doesn't fire within ~5 min of scheduled time (DO scheduler issue).
-- Recipient gets the email but link is broken.
-
-**Then Becky delivers and recipient listens** per B3.
+Covers v1.0 baseline (J7 privacy export), v1.5.0 privacy export substitution (J12c).
 
 ### C5: Privacy export (GDPR Art. 20)
 
-**As any signed-in customer (continuing from A3 or C2):**
+**As any signed-in customer (continuing from A3):**
 1. Navigate to `/my-readings`. Click the self-service **Export my data** button (v1.11.0 D, #290). Confirm.
    - Happy path: request accepted (202), UI confirms it's processing.
    - Click it again immediately: the UI surfaces the **429** (already-requested / try-later) state gracefully, no crash. (413 = payload-too-large, only with an oversized export; N/A otherwise.)
@@ -345,7 +281,7 @@ Covers v1.0 baseline (J4, J5, J7 privacy export, J11 admin), v1.4.0 unified libr
 
 ## Cluster D: Admin / Studio surfaces
 
-Covers v1.0 (J9 Sanity Live edits, J11 admin emails consolidation), v1.5.0 (J12a send preview, J12d Used-on), v1.6.0 (J14h dex auto-close observational).
+Covers v1.0 (J9 Sanity Live edits, J11 admin emails consolidation), v1.5.0 (J12a send preview, J12d Used-on), v1.6.0 (J14h dex auto-close observational), v1.21.0 (D4 Send reading now).
 
 ### D1: Sanity Live content edit
 
@@ -373,11 +309,15 @@ Covers v1.0 (J9 Sanity Live edits, J11 admin emails consolidation), v1.5.0 (J12a
 - Action label "Send preview... (publish first)" disabled (unpublished draft exists).
 - `[PREVIEW]` prefix missing.
 
-Repeat on at least 2 other email singletons (e.g. **Day-7 Delivery**, **Gift Claim**).
+Repeat on at least 2 other email singletons (e.g. **Reading Delivery Email**, **Gift Claim**).
 
 ### D3: dex auto-close (observational, no walk)
 
 This fires on the next PR-to-main merge that includes `Closes/Fixes/Resolves dex <id>` in body or commit message. Not a smoke beat; check **Actions tab > dex-auto-close workflow run** after the next merge.
+
+### D4: Send reading now
+
+**As Becky:** on a paid submission with no files, **Send reading now** is disabled with its files line. **Delivered At** is read-only and empty. Upload both and publish: the ready line names the email. Press it: "Sending now." Within a minute: "Sent", the delivery email arrives once, **Delivered At** shows the send time, and the button is gone. Nothing is sent before the button is pressed, however many days pass. Use an allowlisted address: a sandbox address is a dry run and sends nothing. (Max 2026-10-04) With the wake blocked (DevTools, block `/api/delivery/wake`), the toast is "Saved. It sends within 15 minutes." and the 15-minute `deliver-requested` run sends it. (Max 2026-10-05)
 
 ---
 
@@ -391,7 +331,7 @@ Run these at mobile width in Chrome DevTools (iPhone 13):
 
 1. **Landing page**: Hero renders, no horizontal scroll, CTA button tappable, footer reachable.
 2. **A1 first page**: Reading selector tappable, consents check correctly, form fields don't overflow.
-3. **B2 claim landing**: Recipient greeting renders, intake form fields don't break.
+3. **B4 gift link**: on `/gift/<code>` the note card, the price line and the intake fields don't overflow.
 
 **Watch for:**
 - Horizontal scroll anywhere.
@@ -466,6 +406,7 @@ Which clusters carry coverage for which release arc. Use this when a release nee
 | v1.10.0 (BookingPageShell, LibraryView parity, defaults reconcile) | A, B, C | A1+B1+C1 (J17c thank-you variants), A3 (J17d /listen rested em-dash), B2 (J17d /gift/claim em-dash), C2 (J17b LibraryView preview parity, J17d /my-gifts em-dash) |
 | v1.11.0 (listen rested-bypass, listen filename, library identity+sign-out, export UI, gift Stripe prefill, gift copy, gift Day-7 routing) | A, B, C, D, E | A3.4 (K #285 human-readable filename), A3.5 (E #289 owner-email + Sign out top-bar, no Home link), A3.8 (C #287 rested-bypass with valid session), C5 (D #290 "Export my data" 202/429 UI), B1 (F #288 gift Payment Link email prefill + L #286 "your library" copy), B3 / C4 (A/F14 #279 gift Day-7 delivery routes to RECIPIENT not purchaser — the CRITICAL fix; cross-user-leak check), E5 (#279-unblocked new-device notice), D2 (#279-unblocked send-preview end-of-flow). **To run only the v1.11.0 delta:** walk A3 + C5 + B1 + B3 + C4 + E5 + D2, plus the E top-bar at C2; everything else is regression-glance. |
 | v1.11.0 smoke-fixes + late adds (#295–#300) | gate section (G1–G6) | **Run the "▶ v1.11.0 release→main gate smoke" section at the top of this doc.** Covers #295 listen (audio download / persistent ribbon / all-minute time picker — G2), #296 intake synchronous-submit (G3), #297 Studio Purchaser/Recipient labels + send-preview caveat (G5), #298 bare reading names + "reading" copy + migration (G4), **#299 Library link (G1.3)** and **#300 signed-in self-booking email lock + lockedValues authority (G1)**, plus core happy-path regression (G6). This is the pre-merge gate for #291. |
+| v1.21.0 (gift flow, Send reading now) | B, D | B1 to B9, D4 |
 
 For the v1.10.0 specific BookingPageShell 5-route render parity check (formerly J17a): walk these in sequence at mobile width, same browser window, compare header height, back-link position, footer behavior, gold inner-border (`inset-2 md:inset-3`):
 1. `/book/soul-blueprint` (control, not wrapped in shell)
@@ -484,7 +425,7 @@ You ran the test. Cleanup is NOT your job. D1, Sanity, and R2 deletions are infr
 
 Send the maintainer:
 
-1. **A pass/fail per beat**: "A1 ✅ / A2 ✅ / A3 ❌ (screenshot: Day-7 email didn't arrive) / B1 ✅ / B2 ❌ ..."
+1. **A pass/fail per beat**: "A1 ✅ / A2 ✅ / A3 ❌ (screenshot: reading delivery email didn't arrive) / B1 ✅ / B2 ❌ ..."
 2. **Screenshots for any ❌**: that's all the troubleshooting you do.
 3. **The time window you ran in**: so the maintainer can scope the cleanup script ("ran between 14:00 and 15:30 UTC today").
 
@@ -492,7 +433,7 @@ The maintainer then:
 
 - Runs `scripts/cleanup-test-submissions.mts staging` to wipe matching D1 + Sanity rows.
 - Deletes test R2 uploads from `withjosephine-booking-photos-staging` via the CF dashboard or `wrangler r2 object delete`.
-- Reverts any Studio edits from C3 step 13, D1, or E3 step 5.
+- Reverts any Studio edits from B6 step 4, D1, or E3 step 5.
 - Confirms staging is back to a blank baseline before signalling production push.
 
 You don't need access to any of those surfaces.

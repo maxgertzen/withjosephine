@@ -1,17 +1,17 @@
 {
   "_id": "reading-birth-chart",
   "briefDescription": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
-  "expandedDetails": [
-    "We'll take a look at your natal chart and the specific energies, timing and patterns that shape your experience.",
-    "This is one of the most powerful tools for self understanding I know. When you see yourself clearly through your chart, things start to fall into place. Choices make sense. Experiences make sense. You make sense.",
-    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
-  ],
   "includes": [
     "Full natal chart analysis",
     "Your gifts, wounds and soul patterns",
     "Current transits and what they mean for you",
     "Detailed voice note recording",
     "Supporting PDF"
+  ],
+  "howItWorks": [
+    "You fill in the form below with your date, time and place of birth, then pay.",
+    "I begin your reading within the next two days and send you a short note when I do.",
+    "Within seven days you receive a voice note and a PDF, sent to the email you gave me."
   ],
   "name": "The Birth Chart Reading",
   "price": 9900,

@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
+import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
 import {
   ABOUT_DEFAULTS,
+  GIFT_DEFAULTS,
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
   INTAKE_TITLE_FALLBACK,
   READING_PAGE_DEFAULTS,
 } from "@/data/defaults";
+import { getReadingById } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
+import { pick } from "@/lib/pick";
 import type {
   SanityBookingForm,
   SanityLandingPage,
@@ -32,7 +36,6 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
     priceDisplay: "$179",
     valueProposition: "The most complete picture",
     briefDescription: "My signature offering",
-    expandedDetails: [],
     includes: [],
     requiresBirthChart: true,
     requiresAkashic: true,
@@ -50,6 +53,7 @@ function derive(
   extra: Partial<DeriveBookingFormViewPropsInput> = {},
 ) {
   return deriveBookingFormViewProps({
+    nav: {},
     readingId: "soul-blueprint",
     sanityReading: reading,
     sanityReadings: [],
@@ -58,6 +62,7 @@ function derive(
     landingPage: null,
     notesState: null,
     readingNotes: [],
+    giftSettings: null,
     ...extra,
   });
 }
@@ -156,13 +161,69 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.facts).toEqual([]);
   });
 
-  it("uses the first expanded detail as the body and the rest as How it works", () => {
+  it("puts the description under the promise and the checklist under What's included", () => {
     const block = derive(
-      sanityReading({ expandedDetails: ["What it is.", "How you book.", "When it arrives."] }),
+      sanityReading({
+        briefDescription: "What it is.",
+        includes: ["One thing.", "Another thing."],
+      }),
     )?.readingBlock;
 
-    expect(block?.body).toBe("What it is.");
-    expect(block?.howItWorks.paragraphs).toEqual(["How you book.", "When it arrives."]);
+    expect(block?.lead).toBe("The most complete picture");
+    expect(block?.description).toBe("What it is.");
+    expect(block?.included.items).toEqual(["One thing.", "Another thing."]);
+  });
+
+  it("shows How it works from the reading's own lines", () => {
+    const lines = ["How you book.", "When it arrives."];
+
+    expect(derive(sanityReading({ howItWorks: lines }))?.readingBlock.howItWorks.items).toEqual(
+      lines,
+    );
+  });
+
+  it("drops blank lines, including one carrying Presentation's invisible source-map marker", () => {
+    const presentationMarker = "\u200B\u200C\u200D\uFEFF".repeat(10);
+
+    expect(
+      derive(
+        sanityReading({
+          howItWorks: ["How you book.", "  ", ` ${presentationMarker}`, "When it arrives."],
+        }),
+      )?.readingBlock.howItWorks.items,
+    ).toEqual(["How you book.", "When it arrives."]);
+  });
+
+  it("skips How it works paragraphs saved before the field became a list, until they are converted", () => {
+    const savedParagraph = paragraphBlocks(["How you book."])[0];
+
+    expect(
+      derive(
+        sanityReading({ howItWorks: [savedParagraph, "When it arrives."] as unknown as string[] }),
+      )?.readingBlock.howItWorks.items,
+    ).toEqual(["When it arrives."]);
+  });
+
+  it("drops blank What's included lines, so no row shows an empty checkmark", () => {
+    expect(
+      derive(sanityReading({ includes: ["One thing.", " ", "Another thing."] }))?.readingBlock
+        .included.items,
+    ).toEqual(["One thing.", "Another thing."]);
+  });
+
+  it.each([
+    ["unset", undefined],
+    ["null, as GROQ returns a missing field", null],
+    ["an empty list", []],
+    ["blank lines", ["", "   "]],
+  ])("hides How it works when Becky leaves the field %s", (_label, howItWorks) => {
+    expect(derive(sanityReading({ howItWorks }))?.readingBlock.howItWorks.items).toEqual([]);
+  });
+
+  it("uses the built-in How it works when the reading is missing from Sanity", () => {
+    expect(derive(null)?.readingBlock.howItWorks.items).toEqual(
+      getReadingById("soul-blueprint")!.howItWorks,
+    );
   });
 
   it("maps the picked questions in order and drops broken references", () => {
@@ -214,7 +275,7 @@ describe("deriveBookingFormViewProps reading block", () => {
     } as SanityLandingPage;
 
     expect(derive(sanityReading(), { landingPage })?.readingBlock.reader.imageUrl).toBe(
-      "https://cdn.sanity.io/images/p/d/a.jpg?w=112&auto=format",
+      "https://cdn.sanity.io/images/p/d/a.jpg?w=300&auto=format",
     );
     expect(derive()?.readingBlock.reader.imageUrl).toBe(ABOUT_DEFAULTS.imageUrl);
   });
@@ -322,5 +383,52 @@ describe("deriveBookingFormViewProps notes list", () => {
     ).toBeUndefined();
     expect(derive(sanityReading(), { readingNotes: notes })?.readingBlock.notes).toBeUndefined();
     expect(derive(sanityReading(), { notesState: visible })?.readingBlock.notes).toBeUndefined();
+  });
+});
+
+describe("deriveBookingFormViewProps gift row", () => {
+  it("takes the gift row words from Gift Settings and fills blanks from the defaults", () => {
+    const props = derive(sanityReading(), {
+      giftSettings: { giftRowLabel: "A gift?", buyLinkLabel: "  ", redeemLead: "" },
+    });
+
+    expect(props?.giftFold?.copy).toEqual({
+      giftRowLabel: "A gift?",
+      buyLead: GIFT_DEFAULTS.buyLead,
+      buyLinkLabel: GIFT_DEFAULTS.buyLinkLabel,
+      redeemLead: GIFT_DEFAULTS.redeemLead,
+      redeemLinkLabel: GIFT_DEFAULTS.redeemLinkLabel,
+    });
+  });
+
+  it("uses the defaults when Gift Settings is missing", () => {
+    expect(derive()?.giftFold?.copy.giftRowLabel).toBe(GIFT_DEFAULTS.giftRowLabel);
+    expect(derive()?.giftFold?.giftSheet.content).toEqual(
+      pick(GIFT_DEFAULTS, GIFT_SHEET_CONTENT_KEYS),
+    );
+  });
+
+  it("gives the gift sheet the payment button text and the loading text of the booking form", () => {
+    const props = derive(sanityReading(), {
+      bookingPage: { paymentButtonText: "Pay now →" },
+      bookingForm: bookingForm({ loadingStateCopy: "One moment." }),
+    });
+
+    expect(props?.giftFold?.giftSheet).toMatchObject({
+      reading: { slug: "soul-blueprint", name: "The Soul Blueprint", price: "$179" },
+      paymentButtonText: "Pay now →",
+      loadingStateCopy: "One moment.",
+      endpoint: "/api/gift/purchase",
+    });
+    expect(props?.giftFold?.redeemSheet).toMatchObject({
+      readingSlug: "soul-blueprint",
+      endpoint: "/api/gift/check",
+    });
+  });
+
+  it("turns on the gift code field of the last page", () => {
+    const props = derive(sanityReading(), { giftSettings: { codeFieldOptionalLabel: "Code?" } });
+
+    expect(props?.form.giftCodeField?.copy.codeFieldOptionalLabel).toBe("Code?");
   });
 });

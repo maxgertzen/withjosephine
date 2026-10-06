@@ -117,7 +117,7 @@ async function setupReadyToRedeem(
     page,
     submissionId,
     recipientUserId,
-    mintSource: "cron_day7",
+    mintSource: "reading_delivery",
   });
   return { submissionId, recipientUserId, token };
 }
@@ -148,7 +148,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
       data: {
         submissionId: "__probe__",
         recipientUserId: "__probe__",
-        mintSource: "cron_day7",
+        mintSource: "reading_delivery",
       },
       headers: {
         "content-type": "application/json",
@@ -319,7 +319,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
       page,
       submissionId,
       recipientUserId,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       ttlMs: -1,
     });
 
@@ -375,7 +375,7 @@ test.describe("Listen one-tap round-trip, staging", () => {
     const email = `${SANDBOX_EMAIL_PREFIXES.listenOneTap}f-${runId}${SANDBOX_DOMAIN}`;
     const { submissionId } = await setupReadyToRedeem(page, email);
 
-    // Migration guard: pre-existing day-7 emails in the wild carry no `?t=`.
+    // Migration guard: pre-existing reading delivery emails in the wild carry no `?t=`.
     // Behavior must match the historical magic-link-only flow.
     await page.goto(`/listen/${submissionId}`);
     await expect(

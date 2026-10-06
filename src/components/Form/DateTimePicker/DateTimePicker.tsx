@@ -2,14 +2,7 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { format, isValid, parse } from "date-fns";
-import {
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 
 import { createSelectDropdown } from "@/components/Form/DayPickerShared/createSelectDropdown";
@@ -19,6 +12,7 @@ import {
 } from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
+import { LAYER } from "@/styles/layers";
 
 const ISO_DATE = "yyyy-MM-dd";
 const DISPLAY_FORMAT = "dd/MM/yyyy HH:mm";
@@ -274,7 +268,7 @@ export function DateTimePicker({
             onInteractOutside={(e) => {
               if (e.target === inputRef.current) e.preventDefault();
             }}
-            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 flex flex-col gap-3"
+            className={`${LAYER.popover} bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 flex flex-col gap-3`}
           >
             <div className="flex flex-col sm:flex-row gap-4">
               <div
@@ -306,7 +300,10 @@ export function DateTimePicker({
                   onSelect={handleHourSelect}
                   isOpen={open}
                 />
-                <span aria-hidden="true" className="font-display italic text-j-text-heading text-xl">
+                <span
+                  aria-hidden="true"
+                  className="font-display italic text-j-text-heading text-xl"
+                >
                   :
                 </span>
                 <TimeColumn

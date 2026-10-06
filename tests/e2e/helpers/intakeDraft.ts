@@ -49,6 +49,13 @@ export async function seedIntakeDraft(
   );
 }
 
+export function readIntakeDraft(page: Page, readingSlug: string): Promise<DraftEnvelope | null> {
+  return page.evaluate((key) => {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as DraftEnvelope) : null;
+  }, `${DRAFT_KEY_PREFIX}${readingSlug}`);
+}
+
 export async function waitForDraftRestore(page: Page): Promise<void> {
   // `currentPageValid` (which enables both Next and Submit) only flips true
   // after the IntakeForm's mount-time `restoreDraft` populates state. Wait
@@ -67,4 +74,10 @@ export async function clickThroughIntakePages(
     if ((await page.getByTestId("intake-submit").count()) > 0) return;
     await page.getByTestId("intake-next").click();
   }
+}
+
+export async function acceptFinalPageConsents(page: Page): Promise<void> {
+  await page.locator("#field-art6-consent").check();
+  await page.locator("#field-art9-consent").check();
+  await page.locator("#field-cooling-off-consent").check();
 }

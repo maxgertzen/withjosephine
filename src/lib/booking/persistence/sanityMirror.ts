@@ -16,10 +16,10 @@ import {
   art9ConsentLabel,
   COOLING_OFF_CONSENT_LABEL,
 } from "../../compliance/intakeConsent";
-import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
+import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 import type { CreateSubmissionInput } from "./repository";
 
-type MirrorCreateConsent = {
+export type MirrorCreateConsent = {
   consentAcknowledgedAt: string;
   ipAddress: string | null;
   art6AcknowledgedAt: string | null;
@@ -37,7 +37,7 @@ function ackBlock(
   return ackAt ? { labelText: label, acknowledgedAt: ackAt } : undefined;
 }
 
-async function getClient(): Promise<SanityClient | null> {
+export async function getMirrorClient(): Promise<SanityClient | null> {
   try {
     return await getSanityWriteClient();
   } catch (error) {
@@ -70,7 +70,7 @@ async function getClient(): Promise<SanityClient | null> {
  */
 const READING_REF_TTL_MS = 5 * 60 * 1000;
 
-type ReadingRef = { _type: "reference"; _ref: string };
+export type ReadingRef = { _type: "reference"; _ref: string };
 
 type ReadingRefEntry = {
   promise: Promise<ReadingRef | null>;
@@ -83,10 +83,7 @@ export function clearReadingRefCache(): void {
   readingRefCache.clear();
 }
 
-async function fetchReadingRef(
-  client: SanityClient,
-  slug: string,
-): Promise<ReadingRef | null> {
+async function fetchReadingRef(client: SanityClient, slug: string): Promise<ReadingRef | null> {
   try {
     const result = await client.fetch<{ _id: string } | null>(
       `*[_type == "reading" && slug.current == $slug][0]{ _id }`,
@@ -122,52 +119,66 @@ export async function findReadingRef(
   return promise;
 }
 
+export function existingDocSelection(docId: string) {
+  return { query: "*[_id == $id]", params: { id: docId } };
+}
+
+export async function submissionMirrorFields(
+  client: SanityClient,
+  input: CreateSubmissionInput,
+  consent: MirrorCreateConsent,
+) {
+  const readingRef = await findReadingRef(client, input.readingSlug);
+  const responsesWithKeys = input.responses.map((response, index) => ({
+    _key: `${response.fieldKey}-${index}`,
+    _type: "submissionResponse" as const,
+    ...response,
+  }));
+  return {
+    paidFields: {
+      status: input.status,
+      createdAt: input.createdAt,
+      paidAt: input.paidAt ?? undefined,
+    },
+    firstWriteWins: {
+      ...(readingRef ? { serviceRef: readingRef } : {}),
+      email: input.email,
+      responses: responsesWithKeys,
+      consentSnapshot: {
+        // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
+        // the UI and the audit record cannot diverge.
+        // Legacy labelText/acknowledgedAt remain populated for read-back.
+        labelText: input.consentLabel ?? "",
+        acknowledgedAt: consent.consentAcknowledgedAt,
+        ipAddress: consent.ipAddress ?? undefined,
+        art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
+        art9Consent: ackBlock(art9ConsentLabel(input.readingSlug), consent.art9AcknowledgedAt),
+        coolingOffConsent: ackBlock(COOLING_OFF_CONSENT_LABEL, consent.coolingOffAcknowledgedAt),
+      },
+      photoR2Key: input.photoR2Key ?? undefined,
+      recipientUserId: input.recipientUserId ?? undefined,
+    },
+  };
+}
+
 export async function mirrorSubmissionCreate(
   input: CreateSubmissionInput,
   consent: MirrorCreateConsent,
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
 
   try {
-    const readingRef = await findReadingRef(client, input.readingSlug);
-    const responsesWithKeys = input.responses.map((response, index) => ({
-      _key: `${response.fieldKey}-${index}`,
-      _type: "submissionResponse" as const,
-      ...response,
-    }));
-    await client.create(
-      {
-        _id: input.id,
-        _type: "submission",
-        status: input.status,
-        ...(readingRef ? { serviceRef: readingRef } : {}),
-        email: input.email,
-        responses: responsesWithKeys,
-        consentSnapshot: {
-          // Art. 6 + Art. 9 labels are sourced from intakeConsent.ts so
-          // the UI and the audit record cannot diverge.
-          // Legacy labelText/acknowledgedAt remain populated for read-back.
-          labelText: input.consentLabel ?? "",
-          acknowledgedAt: consent.consentAcknowledgedAt,
-          ipAddress: consent.ipAddress ?? undefined,
-          art6Consent: ackBlock(ART6_CONSENT_LABEL, consent.art6AcknowledgedAt),
-          art9Consent: ackBlock(
-            art9ConsentLabel(input.readingSlug),
-            consent.art9AcknowledgedAt,
-          ),
-          coolingOffConsent: ackBlock(
-            COOLING_OFF_CONSENT_LABEL,
-            consent.coolingOffAcknowledgedAt,
-          ),
-        },
-        photoR2Key: input.photoR2Key ?? undefined,
-        createdAt: input.createdAt,
-      },
+    const { paidFields, firstWriteWins } = await submissionMirrorFields(client, input, consent);
+    await client.createIfNotExists(
+      { _id: input.id, _type: "submission", ...paidFields, ...firstWriteWins },
       { visibility: "async" },
     );
   } catch (error) {
-    console.error(`[sanityMirror] create failed for ${input.id} (drift; reconcile cron will retry)`, error);
+    console.error(
+      `[sanityMirror] create failed for ${input.id} (drift; reconcile cron will retry)`,
+      error,
+    );
   }
 }
 
@@ -182,7 +193,20 @@ type MirrorPatchBase = Partial<{
   responses: SubmissionRecord["responses"];
   recipientUserId: string;
   email: string;
+  deliveredAt: string;
+  emailFailures: readonly EmailFailureEntry[];
 }>;
+
+export function keyedEmailFailures<
+  TEntry extends EmailFailureEntry<string, string>,
+  TType extends string = "emailFailure",
+>(failures: readonly TEntry[], type: TType = "emailFailure" as TType) {
+  return failures.map((failure, index) => ({
+    ...failure,
+    _key: `${failure.emailType}-${index}`,
+    _type: type,
+  }));
+}
 
 // Art9 label text is derived from readingSlug. A patch that sets art9 without
 // also providing readingSlug would write the wrong label for non-soul-blueprint
@@ -195,7 +219,7 @@ export async function mirrorSubmissionPatch(
   id: string,
   patch: MirrorSubmissionPatchInput,
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
 
   // Sanity requires `_key` on each array item. Inject keys for responses
@@ -212,6 +236,9 @@ export async function mirrorSubmissionPatch(
       ...response,
     }));
   }
+  if (rest.emailFailures) {
+    sanitized.emailFailures = keyedEmailFailures(rest.emailFailures);
+  }
   if (art9AcknowledgedAt) {
     if (!readingSlug) {
       throw new Error(
@@ -227,12 +254,15 @@ export async function mirrorSubmissionPatch(
   try {
     await client.patch(id).set(sanitized).commit({ visibility: "async" });
   } catch (error) {
-    console.error(`[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`, error);
+    console.error(
+      `[sanityMirror] patch failed for ${id} (drift; reconcile cron will retry)`,
+      error,
+    );
   }
 }
 
 export async function mirrorSubmissionDelete(id: string): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.delete(id);
@@ -251,12 +281,17 @@ function sanityKeyForEmailFired(entry: EmailFiredEntry): string {
 export async function mirrorAppendEmailFired(
   id: string,
   entry: EmailFiredEntry,
+  fieldsToSet?: { deliveredAt?: string; emailFailures?: readonly EmailFailureEntry[] },
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
+  const { emailFailures, ...plainFields } = fieldsToSet ?? {};
+  const toSet = emailFailures
+    ? { ...plainFields, emailFailures: keyedEmailFailures(emailFailures) }
+    : plainFields;
   try {
-    await client
-      .patch(id)
+    const patch = Object.keys(toSet).length > 0 ? client.patch(id).set(toSet) : client.patch(id);
+    await patch
       .setIfMissing({ emailsFired: [] })
       .insert("after", "emailsFired[-1]", [{ ...entry, _key: sanityKeyForEmailFired(entry) }])
       .commit({ visibility: "async" });
@@ -267,11 +302,8 @@ export async function mirrorAppendEmailFired(
 
 // First-write-wins via setIfMissing — concurrent listens both commit
 // but only the earliest write lands.
-export async function mirrorMarkSubmissionListened(
-  id: string,
-  listenedAt: string,
-): Promise<void> {
-  const client = await getClient();
+export async function mirrorMarkSubmissionListened(id: string, listenedAt: string): Promise<void> {
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).setIfMissing({ listenedAt }).commit({ visibility: "async" });
@@ -286,7 +318,7 @@ export async function mirrorMarkSubmissionPdfDownloaded(
   id: string,
   pdfDownloadedAt: string,
 ): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).setIfMissing({ pdfDownloadedAt }).commit({ visibility: "async" });
@@ -296,7 +328,7 @@ export async function mirrorMarkSubmissionPdfDownloaded(
 }
 
 export async function mirrorUnsetPhotoKey(id: string): Promise<void> {
-  const client = await getClient();
+  const client = await getMirrorClient();
   if (!client) return;
   try {
     await client.patch(id).unset(["photoR2Key"]).commit({ visibility: "async" });

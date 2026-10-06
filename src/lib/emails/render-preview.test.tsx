@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
+
+import { PREVIEW_GIFT } from "./preview-fixtures";
 import {
   isPreviewTemplateKey,
   PREVIEW_TEMPLATE_KEYS,
@@ -46,6 +49,38 @@ describe("render-preview", () => {
     it("falls back to defaults when sanityCopy is null", async () => {
       const html = await renderEmailPreview("emailOrderConfirmation", null);
       expect(html).toContain("Ada");
+    });
+
+    it("renders emailGiftPurchase from the sample gift, whose code is not a valid gift code", async () => {
+      const html = await renderEmailPreview("emailGiftPurchase", null);
+      expect(html).toContain(PREVIEW_GIFT.code);
+      expect(html).toContain(PREVIEW_GIFT.buyerFirstName);
+      expect(normalizeGiftCode(PREVIEW_GIFT.code)).toBeNull();
+    });
+
+    it("renders emailGiftOpened with the sample buyer and recipient", async () => {
+      const html = await renderEmailPreview("emailGiftOpened", null);
+      expect(html).toContain(`Hi ${PREVIEW_GIFT.buyerFirstName},`);
+      expect(html).toContain(PREVIEW_GIFT.recipientFirstName);
+      expect(html).not.toContain(PREVIEW_GIFT.code);
+      expect(html).not.toContain(PREVIEW_GIFT.note);
+    });
+
+    it("renders emailGiftRecipientConfirmation with the sample recipient and buyer", async () => {
+      const html = await renderEmailPreview("emailGiftRecipientConfirmation", null);
+      expect(html).toContain(`Hi ${PREVIEW_GIFT.recipientFirstName},`);
+      expect(html).toContain(PREVIEW_GIFT.buyerFirstName);
+      expect(html).not.toContain(PREVIEW_GIFT.code);
+      expect(html).not.toContain(PREVIEW_GIFT.note);
+    });
+
+    it("renders emailGiftToRecipient with the sample gift, its note and its code", async () => {
+      const html = await renderEmailPreview("emailGiftToRecipient", null);
+      expect(html).toContain(`Hi ${PREVIEW_GIFT.recipientFirstName},`);
+      expect(html).toContain(PREVIEW_GIFT.buyerFirstName);
+      expect(html).toContain(PREVIEW_GIFT.code);
+      expect(html).toContain(PREVIEW_GIFT.giftUrl);
+      expect(html).toContain(PREVIEW_GIFT.note);
     });
 
     it.each(PREVIEW_TEMPLATE_KEYS.map((key) => [key]))(

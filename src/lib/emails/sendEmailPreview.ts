@@ -9,9 +9,13 @@ const SUBJECT_PREVIEW_PREFIX = "[PREVIEW] ";
 
 const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
   emailOrderConfirmation: "Order Confirmation",
-  emailDay7Delivery: "Reading Delivery (Day 7)",
+  emailReadingDelivery: "Reading Delivery Email",
   emailMagicLink: "Magic Link (Listen Page)",
   emailPrivacyExport: "Privacy Export (GDPR)",
+  emailGiftPurchase: "Gift Purchase (Buyer)",
+  emailGiftOpened: "Gift Opened (Buyer)",
+  emailGiftRecipientConfirmation: "Gift Confirmation (Recipient)",
+  emailGiftToRecipient: "Gift to Recipient",
 };
 
 async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> {
@@ -19,12 +23,20 @@ async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> 
   switch (template) {
     case "emailOrderConfirmation":
       return fetch.fetchEmailOrderConfirmation().catch(() => null);
-    case "emailDay7Delivery":
-      return fetch.fetchEmailDay7Delivery().catch(() => null);
+    case "emailReadingDelivery":
+      return fetch.fetchEmailReadingDelivery().catch(() => null);
     case "emailMagicLink":
       return fetch.fetchEmailMagicLink().catch(() => null);
     case "emailPrivacyExport":
       return fetch.fetchEmailPrivacyExport().catch(() => null);
+    case "emailGiftPurchase":
+      return fetch.fetchEmailGiftPurchase().catch(() => null);
+    case "emailGiftOpened":
+      return fetch.fetchEmailGiftOpened().catch(() => null);
+    case "emailGiftRecipientConfirmation":
+      return fetch.fetchEmailGiftRecipientConfirmation().catch(() => null);
+    case "emailGiftToRecipient":
+      return fetch.fetchEmailGiftToRecipient().catch(() => null);
   }
 }
 

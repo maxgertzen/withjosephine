@@ -1,4 +1,4 @@
-import { nonBlank } from "@/lib/notes/notes";
+import { nonBlank } from "@/lib/content/nonBlank";
 import type { NotePlateValue } from "@/lib/notes/types";
 
 import { StarMark } from "./StarMark";
@@ -6,21 +6,33 @@ import { StarMark } from "./StarMark";
 type PlateColumn = { heading?: string; lines: string[] };
 type PlateLayout = NonNullable<NotePlateValue["layout"]>;
 
-const HEADING =
-  "m-0 mb-2.5 font-display italic font-semibold text-2xl leading-[1.2] text-j-text-heading";
+const HEADING_BASE =
+  "m-0 font-display italic font-semibold text-2xl leading-[1.2] text-j-text-heading";
 
-const WIDE_ROW = "min-[480px]:flex-row min-[480px]:gap-5";
-const WIDE_FIRST = "min-[480px]:flex-1 min-[480px]:py-1";
+const WIDE_GRID =
+  "min-[480px]:grid min-[480px]:grid-cols-2 min-[480px]:gap-x-5 min-[480px]:gap-y-2";
+const WIDE_SUBGRID = "min-[480px]:grid min-[480px]:grid-rows-subgrid";
+const WIDE_FIRST = `${WIDE_SUBGRID} min-[480px]:py-1`;
 const WIDE_SECOND = `${WIDE_FIRST} min-[480px]:border-t-0 min-[480px]:border-l min-[480px]:pl-5`;
 
-const LAYOUT_CLASSES: Record<PlateLayout, { row: string; columns: [string, string] }> = {
+const LAYOUT_CLASSES: Record<
+  PlateLayout,
+  { grid: string; columns: [string, string]; lines: string; heading: string }
+> = {
   stacked: {
-    row: `flex flex-col ${WIDE_ROW}`,
+    grid: `flex flex-col ${WIDE_GRID}`,
     columns: [`pt-1 pb-3.5 ${WIDE_FIRST}`, `pt-3.5 border-t border-j-border-subtle ${WIDE_SECOND}`],
+    lines: `flex flex-col gap-2 ${WIDE_SUBGRID}`,
+    heading: "mb-2.5 min-[480px]:mb-0.5",
   },
   sideBySide: {
-    row: `flex flex-row gap-3.5 ${WIDE_ROW}`,
-    columns: ["flex-1 py-1", "flex-1 py-1 border-l border-j-border-subtle pl-3.5 min-[480px]:pl-5"],
+    grid: `grid grid-cols-2 gap-x-3.5 gap-y-2 min-[480px]:gap-x-5`,
+    columns: [
+      "grid grid-rows-subgrid py-1",
+      "grid grid-rows-subgrid py-1 border-l border-j-border-subtle pl-3.5 min-[480px]:pl-5",
+    ],
+    lines: "grid grid-rows-subgrid",
+    heading: "mb-0.5",
   },
 };
 
@@ -30,12 +42,19 @@ function column(heading: string | undefined, lines: string[] | undefined): Plate
 
 function TwoColumns({ columns, layout }: { columns: PlateColumn[]; layout: PlateLayout }) {
   const classes = LAYOUT_CLASSES[layout];
+  const headingRows = columns.some((plateColumn) => plateColumn.heading) ? 1 : 0;
+  const totalRows =
+    headingRows + Math.max(...columns.map((plateColumn) => plateColumn.lines.length));
   return (
-    <div className={classes.row}>
+    <div className={classes.grid} style={{ gridTemplateRows: `repeat(${totalRows}, auto)` }}>
       {columns.map((plateColumn, index) => (
-        <div key={index} className={classes.columns[index]}>
-          {plateColumn.heading ? <p className={HEADING}>{plateColumn.heading}</p> : null}
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <div key={index} className={`row-span-full ${classes.columns[index]}`}>
+          {plateColumn.heading ? (
+            <p className={`${HEADING_BASE} ${classes.heading}`}>{plateColumn.heading}</p>
+          ) : null}
+          <ul
+            className={`m-0 list-none p-0 ${headingRows ? "row-[2/-1]" : "row-span-full"} ${classes.lines}`}
+          >
             {plateColumn.lines.map((line, lineIndex) => (
               <li
                 key={lineIndex}
@@ -55,7 +74,9 @@ function TwoColumns({ columns, layout }: { columns: PlateColumn[]; layout: Plate
 function OneColumn({ plateColumn }: { plateColumn: PlateColumn }) {
   return (
     <>
-      {plateColumn.heading ? <p className={HEADING}>{plateColumn.heading}</p> : null}
+      {plateColumn.heading ? (
+        <p className={`${HEADING_BASE} mb-2.5`}>{plateColumn.heading}</p>
+      ) : null}
       {plateColumn.lines.map((line, index) => (
         <p
           key={index}

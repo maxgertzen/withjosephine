@@ -83,6 +83,10 @@ describe("booking page visit (peek, then settle)", () => {
     expect(isFoldedEntry("reading_switch")).toBe(false);
   });
 
+  it("folds the reading block on a gift visit", () => {
+    expect(isFoldedEntry("gift")).toBe(true);
+  });
+
   it("counts the card tap once, so a later visit in the same document is not homepage_card", () => {
     markEntryClick("soul-blueprint", "homepage_card");
     expect(visitBookingPage("soul-blueprint")).toBe("homepage_card");

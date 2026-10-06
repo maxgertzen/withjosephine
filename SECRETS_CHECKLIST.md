@@ -28,6 +28,7 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the booking webhook endpoint | Stripe dashboard → Developers → Webhooks → endpoint → Signing secret |
 | `STRIPE_SECRET_KEY` | Stripe API key (only used to call `webhooks.constructEvent`) | Stripe dashboard → Developers → API keys |
 | `RESEND_API_KEY` | Resend API key with sending permission | Resend dashboard → API Keys → Create |
+| `RESEND_WEBHOOK_SECRET` | Signing secret of the webhook at `/api/webhooks/resend` (events: bounced, complained, suppressed, failed). Unset: the route returns 404 | Resend dashboard → Webhooks → Add endpoint → Signing secret |
 | `TURNSTILE_SECRET_KEY` | Server-side Turnstile secret for the booking + contact forms | Cloudflare dashboard → Turnstile → widget → Secret key |
 | `R2_ACCOUNT_ID` | Cloudflare account ID that owns the R2 bucket | CF dashboard → R2 → Manage R2 API tokens, or account home page |
 | `R2_ACCESS_KEY_ID` | R2 S3-API access key ID | CF dashboard → R2 → Manage R2 API tokens → Create |
@@ -35,8 +36,8 @@ Set each via `pnpm exec wrangler secret put <NAME>` (prompts for the value) or i
 | `R2_BUCKET_NAME` | R2 bucket name | `withjosephine-booking-photos` |
 | `NOTIFICATION_EMAIL` | Inbox that receives new-booking notifications | `hello@withjosephine.com` (or chosen alias) |
 | `SANITY_WRITE_TOKEN` | Sanity API token with **Editor** (write) permission, used by `/api/booking` to create submission docs | Sanity manage → API → Tokens → **Add API token** → Editor |
-| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, email-day-2, email-day-7, email-day-7-deliver). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
-| `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the Day +7 delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
+| `CRON_SECRET` | Bearer token for manually triggering `/api/cron/*` (reconcile, cleanup, reading-overdue-alert, deliver-requested, deliver-reading). Cloudflare-triggered crons send `cf-cron` header and bypass this check; Bearer is for ad-hoc invocation. Generate with `openssl rand -hex 32`. | Generated locally |
+| `LISTEN_TOKEN_SECRET` | HMAC-SHA256 secret used to sign `/listen/[token]` URLs in the reading delivery email. Must be at least 32 bytes — generate with `openssl rand -hex 32`. Rotate by re-issuing tokens (no live tokens to invalidate before first delivery). | Generated locally |
 | `BOOKING_DB_DRIVER` | Set to `d1` on the deployed Worker. Local dev/tests default to `sqlite` (better-sqlite3 against `.local/booking.db` or `:memory:`). | Plain text |
 
 In production, the Worker reaches D1 via the `withjosephine_bookings` binding declared in `wrangler.jsonc`. No `D1_*` secrets are required.
@@ -47,6 +48,7 @@ Example:
 pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET
 pnpm exec wrangler secret put STRIPE_SECRET_KEY
 pnpm exec wrangler secret put RESEND_API_KEY
+pnpm exec wrangler secret put RESEND_WEBHOOK_SECRET
 pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
 pnpm exec wrangler secret put R2_ACCOUNT_ID
 pnpm exec wrangler secret put R2_ACCESS_KEY_ID

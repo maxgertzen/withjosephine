@@ -269,6 +269,10 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
 
 - `folded` (on `entry_page_view`): `true` for `homepage_card` and `draft`. These visitors get the folded reading block once it ships; before that, the flag only marks the group.
 
+### Email events
+
+`email_sent` carries the email in `sub_type`. From v1.21.0 the reading email is `reading_delivery` and Josephine's overdue alert is `reading_overdue_alert`. Events sent before v1.21.0 carry `day_7_delivery` and `day_7_overdue_alert`. A report that spans v1.21.0 filters on both values.
+
 ### Useful cohorts
 
 - **Form abandoners** — visitors who fired `intake_page_view` for at least one page but never `intake_submit_success`. Drill into why via Clarity replays.

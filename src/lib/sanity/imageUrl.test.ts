@@ -10,6 +10,6 @@ describe("sanityImageUrl", () => {
   });
 
   it("leaves a local image unchanged", () => {
-    expect(sanityImageUrl("/images/akasha.webp", { w: 80 })).toBe("/images/akasha.webp");
+    expect(sanityImageUrl("/images/josephine-portrait.webp", { w: 80 })).toBe("/images/josephine-portrait.webp");
   });
 });

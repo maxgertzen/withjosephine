@@ -7,10 +7,13 @@ const mockSetIfMissing = vi.fn();
 const mockSet = vi.fn();
 const mockCommit = vi.fn();
 const mockPatch = vi.fn();
-
+const mockCreateIfNotExists = vi.fn();
+const mockFetch = vi.fn();
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: vi.fn(() => ({
     patch: mockPatch,
+    createIfNotExists: mockCreateIfNotExists,
+    fetch: mockFetch,
   })),
 }));
 
@@ -23,6 +26,62 @@ beforeEach(() => {
     setIfMissing: mockSetIfMissing,
     set: mockSet,
   }));
+  mockCreateIfNotExists.mockReset().mockResolvedValue(undefined);
+  mockFetch.mockReset().mockResolvedValue({ _id: "reading-birth-chart" });
+});
+
+describe("mirrorSubmissionCreate", () => {
+  const PAID_AT = "2026-10-04T09:30:00.000Z";
+  const CONSENT = {
+    consentAcknowledgedAt: PAID_AT,
+    ipAddress: "203.0.113.9",
+    art6AcknowledgedAt: PAID_AT,
+    art9AcknowledgedAt: PAID_AT,
+    coolingOffAcknowledgedAt: PAID_AT,
+  };
+  const GIFT_SUBMISSION = {
+    id: "sub_gift",
+    email: "anna@example.com",
+    status: "paid" as const,
+    readingSlug: "birth-chart",
+    readingName: "Birth Chart Reading",
+    readingPriceDisplay: "$89",
+    responses: [],
+    consentLabel: "art6 | art9 | cooling-off",
+    photoR2Key: null,
+    createdAt: PAID_AT,
+    paidAt: PAID_AT,
+    recipientUserId: "user_anna",
+    giftCodeId: "gift_1",
+  };
+
+  it("writes paidAt and the recipient user in one create, never the gift code id", async () => {
+    const { mirrorSubmissionCreate } = await import("./sanityMirror");
+    await mirrorSubmissionCreate(GIFT_SUBMISSION, CONSENT);
+
+    const [doc] = mockCreateIfNotExists.mock.calls[0]!;
+    expect(doc).toMatchObject({
+      _id: "sub_gift",
+      _type: "submission",
+      status: "paid",
+      paidAt: PAID_AT,
+      recipientUserId: "user_anna",
+      consentSnapshot: expect.objectContaining({ ipAddress: "203.0.113.9" }),
+    });
+    expect(doc).not.toHaveProperty("giftCodeId");
+  });
+
+  it("leaves paidAt and gift unset for a booking", async () => {
+    const { mirrorSubmissionCreate } = await import("./sanityMirror");
+    await mirrorSubmissionCreate(
+      { ...GIFT_SUBMISSION, status: "pending", paidAt: null, recipientUserId: null, giftCodeId: null },
+      CONSENT,
+    );
+
+    const [doc] = mockCreateIfNotExists.mock.calls[0]!;
+    expect(doc.paidAt).toBeUndefined();
+    expect(doc.gift).toBeUndefined();
+  });
 });
 
 describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
@@ -49,12 +108,12 @@ describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
   it("derives different keys for entries of the same type sent at different times", async () => {
     const { mirrorAppendEmailFired } = await import("./sanityMirror");
     await mirrorAppendEmailFired("sub_1", {
-      type: "day7",
+      type: "reading_delivery",
       sentAt: "2026-05-01T09:00:00.000Z",
       resendId: "msg_a",
     });
     await mirrorAppendEmailFired("sub_1", {
-      type: "day7",
+      type: "reading_delivery",
       sentAt: "2026-05-08T09:00:00.000Z",
       resendId: "msg_b",
     });
@@ -66,7 +125,7 @@ describe("mirrorAppendEmailFired — Sanity _key on every array item", () => {
   it("strips characters that aren't valid in a Sanity _key (only [A-Za-z0-9_-])", async () => {
     const { mirrorAppendEmailFired } = await import("./sanityMirror");
     await mirrorAppendEmailFired("sub_1", {
-      type: "day7-overdue-alert",
+      type: "reading_overdue_alert",
       sentAt: "2026-05-01T09:00:00.000Z",
       resendId: null,
     });
@@ -85,6 +144,30 @@ describe("mirrorMarkSubmissionPdfDownloaded — first-write-wins via setIfMissin
     });
     expect(mockSet).not.toHaveBeenCalled();
     expect(mockCommit).toHaveBeenCalledWith({ visibility: "async" });
+  });
+});
+
+describe("mirrorAppendEmailFired with fields to set", () => {
+  it("sets deliveredAt and appends the reading_delivery entry in one patch", async () => {
+    mockSet.mockReturnValueOnce({ setIfMissing: mockSetIfMissing });
+    const { mirrorAppendEmailFired } = await import("./sanityMirror");
+    await mirrorAppendEmailFired(
+      "sub_1",
+      { type: "reading_delivery", sentAt: "2026-04-29T12:00:07.000Z", resendId: "msg_d7" },
+      { deliveredAt: "2026-04-29T12:00:07.000Z" },
+    );
+
+    expect(mockPatch).toHaveBeenCalledOnce();
+    expect(mockSet).toHaveBeenCalledWith({ deliveredAt: "2026-04-29T12:00:07.000Z" });
+    expect(mockInsert.mock.calls[0]?.[2]).toEqual([
+      {
+        _key: "reading_delivery-2026-04-29T12-00-07-000Z",
+        type: "reading_delivery",
+        sentAt: "2026-04-29T12:00:07.000Z",
+        resendId: "msg_d7",
+      },
+    ]);
+    expect(mockCommit).toHaveBeenCalledOnce();
   });
 });
 

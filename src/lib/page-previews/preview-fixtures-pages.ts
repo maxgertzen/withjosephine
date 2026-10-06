@@ -35,6 +35,31 @@ export const THANKYOU_FIXTURES: Record<string, ResolvedThankYouContext> = {
   },
 };
 
+export const GIFT_PREVIEW_STATES = [
+  { state: "buy-sheet", title: "Gift row and sheets" },
+  { state: "buyer-thank-you", title: "Gift thank-you (buyer)" },
+  { state: "redeem-sheet", title: "Gift: redeem sheet" },
+  { state: "opened", title: "Gift: opened, with note" },
+  { state: "opened-no-note", title: "Gift: no note" },
+  { state: "already-opened", title: "Gift: already opened" },
+  { state: "no-longer-active", title: "Gift: no longer active" },
+  { state: "not-found", title: "Gift: not found" },
+  { state: "last-page", title: "Gift: last page" },
+  { state: "recipient-thank-you", title: "Gift thank-you (recipient)" },
+  { state: "send-link", title: "Gift: send page" },
+] as const;
+
+export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];
+
+export function giftPreviewPath(state: GiftPreviewState): string {
+  return `/preview/gift/${state}`;
+}
+
+export const GIFT_PREVIEW_LINKS = GIFT_PREVIEW_STATES.map(({ state, title }) => ({
+  title,
+  href: giftPreviewPath(state),
+}));
+
 export const PREVIEW_SURFACES = ["listen", "magic-link-verify", "thank-you"] as const;
 export type PreviewSurface = (typeof PREVIEW_SURFACES)[number];
 

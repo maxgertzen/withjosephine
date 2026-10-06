@@ -1,7 +1,22 @@
-import type { EmailFiredEntry, EmailFiredType, SubmissionRecord, SubmissionStatus } from "../submissions";
+import {
+  currentEmailFiredType,
+  emailFiredTypeNeedle,
+  resendIdNeedle,
+  storedEmailFiredTypes,
+} from "../emailFiredType";
+import type {
+  CustomerEmailType,
+  EmailFailureEntry,
+  EmailFiredEntry,
+  EmailFiredType,
+  SubmissionRecord,
+  SubmissionStatus,
+} from "../submissions";
+import { appendOpenFailure, type NewEmailFailure, resolveOpenFailures } from "./emailFailureSql";
 import { dbExec, dbQuery, type SqlStatement, type SqlValue } from "./sqlClient";
 
 const LIST_LIMIT = 500;
+const NOT_A_LEGACY_GIFT = `(is_gift = 0 OR is_gift IS NULL)`;
 
 type Row = {
   id: string;
@@ -22,14 +37,18 @@ type Row = {
   voice_note_url: string | null;
   pdf_url: string | null;
   emails_fired_json: string;
+  email_failures_json: string;
   amount_paid_cents: number | null;
   amount_paid_currency: string | null;
   recipient_user_id: string | null;
+  gift_code_id?: string | null;
+  is_gift?: number | null;
 };
 
 function rowToRecord(row: Row): SubmissionRecord {
   const responses = JSON.parse(row.responses_json) as SubmissionRecord["responses"];
   const emailsFired = JSON.parse(row.emails_fired_json) as EmailFiredEntry[];
+  const emailFailures = parseEmailFailures(row.email_failures_json);
   const reading =
     row.reading_slug || row.reading_name || row.reading_price_display
       ? {
@@ -53,11 +72,41 @@ function rowToRecord(row: Row): SubmissionRecord {
     voiceNoteUrl: row.voice_note_url ?? undefined,
     pdfUrl: row.pdf_url ?? undefined,
     emailsFired,
+    emailFailures,
     reading,
     amountPaidCents: row.amount_paid_cents,
     amountPaidCurrency: row.amount_paid_currency,
     recipientUserId: row.recipient_user_id ?? null,
+    giftCodeId: row.gift_code_id ?? null,
+    ...(row.is_gift === 1 ? { isLegacyGift: true } : {}),
   };
+}
+
+export function recordFromCreateInput(input: CreateSubmissionInput): SubmissionRecord {
+  return {
+    _id: input.id,
+    email: input.email,
+    status: input.status,
+    responses: input.responses,
+    photoR2Key: input.photoR2Key ?? undefined,
+    createdAt: input.createdAt,
+    paidAt: input.paidAt ?? undefined,
+    emailsFired: [],
+    emailFailures: [],
+    reading: {
+      slug: input.readingSlug,
+      name: input.readingName ?? "",
+      priceDisplay: input.readingPriceDisplay ?? "",
+    },
+    amountPaidCents: null,
+    amountPaidCurrency: null,
+    recipientUserId: input.recipientUserId ?? null,
+    giftCodeId: input.giftCodeId ?? null,
+  };
+}
+
+function parseEmailFailures(json: string): EmailFailureEntry[] {
+  return JSON.parse(json) as EmailFailureEntry[];
 }
 
 export type CreateSubmissionInput = {
@@ -72,29 +121,144 @@ export type CreateSubmissionInput = {
   photoR2Key: string | null;
   createdAt: string;
   coolingOffAcknowledgedAt?: string | null;
+  paidAt?: string | null;
+  recipientUserId?: string | null;
+  giftCodeId?: string | null;
+  giftRedeemEventId?: string;
 };
 
-export async function createSubmission(input: CreateSubmissionInput): Promise<void> {
-  await dbExec(
-    `INSERT INTO submissions (
+const SUBMISSION_INSERT_COLUMNS = `INSERT INTO submissions (
        id, email, status, reading_slug, reading_name, reading_price_display,
        responses_json, consent_label, photo_r2_key, created_at,
-       cooling_off_acknowledged_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      input.id,
-      input.email,
-      input.status,
-      input.readingSlug,
-      input.readingName,
-      input.readingPriceDisplay,
-      JSON.stringify(input.responses),
-      input.consentLabel,
-      input.photoR2Key,
-      input.createdAt,
-      input.coolingOffAcknowledgedAt ?? null,
-    ],
+       cooling_off_acknowledged_at, paid_at, recipient_user_id, gift_code_id`;
+
+export function buildCreateSubmissionStatement(input: CreateSubmissionInput): SqlStatement {
+  const values: SqlValue[] = [
+    input.id,
+    input.email,
+    input.status,
+    input.readingSlug,
+    input.readingName,
+    input.readingPriceDisplay,
+    JSON.stringify(input.responses),
+    input.consentLabel,
+    input.photoR2Key,
+    input.createdAt,
+    input.coolingOffAcknowledgedAt ?? null,
+    input.paidAt ?? null,
+    input.recipientUserId ?? null,
+    input.giftCodeId ?? null,
+  ];
+  if (!input.giftCodeId) {
+    return {
+      sql: `${SUBMISSION_INSERT_COLUMNS}
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      params: values,
+    };
+  }
+  return {
+    sql: `${SUBMISSION_INSERT_COLUMNS}, stripe_event_id
+     ) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+     WHERE EXISTS (SELECT 1 FROM gift_codes WHERE id = ? AND redeemed_submission_id = ?)
+     ON CONFLICT DO NOTHING`,
+    params: [...values, input.giftRedeemEventId ?? null, input.giftCodeId, input.id],
+  };
+}
+
+export async function createSubmission(input: CreateSubmissionInput): Promise<void> {
+  const stmt = buildCreateSubmissionStatement(input);
+  await dbExec(stmt.sql, stmt.params ?? []);
+}
+
+export async function hasGiftSubmission(
+  id: string,
+  giftCodeId: string,
+  giftRedeemEventId: string,
+): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(
+    `SELECT id FROM submissions WHERE id = ? AND gift_code_id = ? AND stripe_event_id = ? LIMIT 1`,
+    [id, giftCodeId, giftRedeemEventId],
   );
+  return rows.length > 0;
+}
+
+export async function findGiftSubmissionInput(
+  id: string,
+  giftCodeId: string,
+): Promise<CreateSubmissionInput | null> {
+  const rows = await dbQuery<
+    Pick<
+      Row,
+      | "id"
+      | "email"
+      | "status"
+      | "reading_slug"
+      | "reading_name"
+      | "reading_price_display"
+      | "responses_json"
+      | "consent_label"
+      | "photo_r2_key"
+      | "created_at"
+      | "paid_at"
+      | "recipient_user_id"
+    > & { cooling_off_acknowledged_at: string | null }
+  >(
+    `SELECT id, email, status, reading_slug, reading_name, reading_price_display, responses_json,
+            consent_label, photo_r2_key, created_at, cooling_off_acknowledged_at, paid_at,
+            recipient_user_id
+       FROM submissions WHERE id = ? AND gift_code_id = ? LIMIT 1`,
+    [id, giftCodeId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    status: row.status as SubmissionStatus,
+    readingSlug: row.reading_slug,
+    readingName: row.reading_name,
+    readingPriceDisplay: row.reading_price_display,
+    responses: JSON.parse(row.responses_json) as SubmissionRecord["responses"],
+    consentLabel: row.consent_label,
+    photoR2Key: row.photo_r2_key,
+    createdAt: row.created_at,
+    coolingOffAcknowledgedAt: row.cooling_off_acknowledged_at,
+    paidAt: row.paid_at,
+    recipientUserId: row.recipient_user_id,
+    giftCodeId,
+  };
+}
+
+export type GiftRecipientThankYouRow = {
+  readingSlug: string;
+  readingName: string | null;
+  responses: SubmissionRecord["responses"];
+  buyerFirstName: string;
+};
+
+export async function findGiftRecipientThankYou(
+  submissionId: string,
+): Promise<GiftRecipientThankYouRow | null> {
+  const rows = await dbQuery<{
+    reading_slug: string;
+    reading_name: string | null;
+    responses_json: string;
+    buyer_first_name: string;
+  }>(
+    `SELECT s.reading_slug, s.reading_name, s.responses_json, g.buyer_first_name
+       FROM submissions s JOIN gift_codes g ON g.id = s.gift_code_id
+      WHERE s.id = ? AND s.status = 'paid'
+      LIMIT 1`,
+    [submissionId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    readingSlug: row.reading_slug,
+    readingName: row.reading_name,
+    responses: JSON.parse(row.responses_json) as SubmissionRecord["responses"],
+    buyerFirstName: row.buyer_first_name,
+  };
 }
 
 export async function findSubmissionById(id: string): Promise<SubmissionRecord | null> {
@@ -195,12 +359,16 @@ export function buildMarkSubmissionPaidStatement(
   };
 }
 
-export async function markSubmissionPaid(
-  id: string,
-  paid: MarkSubmissionPaidInput,
-): Promise<void> {
-  const stmt = buildMarkSubmissionPaidStatement(id, paid);
-  await dbExec(stmt.sql, stmt.params ?? []);
+type PaidMarker = { stripeSessionId: string | null; stripeEventId: string | null };
+
+export async function findPaidMarker(id: string): Promise<PaidMarker | null> {
+  const rows = await dbQuery<{ stripe_session_id: string | null; stripe_event_id: string | null }>(
+    `SELECT stripe_session_id, stripe_event_id FROM submissions WHERE id = ? AND status = 'paid' LIMIT 1`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return { stripeSessionId: row.stripe_session_id, stripeEventId: row.stripe_event_id };
 }
 
 export async function markSubmissionExpired(
@@ -270,15 +438,154 @@ export async function setSubmissionRecipientUser(
   );
 }
 
-export async function markSubmissionDelivered(
+export type SubmissionDelivery = { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string };
+
+const CLEAR_READING_DELIVERY_ATTEMPT = `reading_delivery_attempt_at = NULL,
+         reading_delivery_attempt_jti = NULL, reading_delivery_attempt_body = NULL`;
+
+async function updateReturningFailures(
+  sql: string,
+  params: SqlValue[],
+): Promise<EmailFailureEntry[] | null> {
+  const rows = await dbQuery<{ email_failures_json: string }>(
+    `${sql} RETURNING email_failures_json`,
+    params,
+  );
+  return rows[0] ? parseEmailFailures(rows[0].email_failures_json) : null;
+}
+
+export async function markReadingDeliverySentIfUnrecorded(
   id: string,
-  delivery: { deliveredAt: string; voiceNoteUrl: string; pdfUrl: string },
+  delivery: SubmissionDelivery,
+  entry: EmailFiredEntry,
+): Promise<EmailFailureEntry[] | null> {
+  const notFired = notYetFired(entry.type);
+  const resolve = resolveOpenFailures("reading_delivery", entry.sentAt, "submissions");
+  return updateReturningFailures(
+    `UPDATE submissions
+     SET delivered_at = ?, voice_note_url = ?, pdf_url = ?,
+         emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)),
+         reading_delivery_attempt_body = NULL,
+         ${resolve.sql}
+     WHERE id = ? AND ${notFired.sql}`,
+    [
+      delivery.deliveredAt,
+      delivery.voiceNoteUrl,
+      delivery.pdfUrl,
+      JSON.stringify(entry),
+      ...resolve.params,
+      id,
+      ...notFired.params,
+    ],
+  );
+}
+
+export type ReadingDeliveryAttempt = { attemptedAt: string; jti: string };
+
+export type RenderedEmail = { subject: string; html: string };
+
+export type ClaimedReadingDeliveryAttempt = ReadingDeliveryAttempt & {
+  body: RenderedEmail | null;
+};
+
+export async function claimReadingDeliveryAttempt(
+  id: string,
+  fresh: ReadingDeliveryAttempt,
+): Promise<ClaimedReadingDeliveryAttempt | null> {
+  const rows = await dbQuery<{
+    reading_delivery_attempt_at: string;
+    reading_delivery_attempt_jti: string;
+    reading_delivery_attempt_body: string | null;
+  }>(
+    `UPDATE submissions
+     SET reading_delivery_attempt_at = COALESCE(reading_delivery_attempt_at, ?),
+         reading_delivery_attempt_jti = COALESCE(reading_delivery_attempt_jti, ?)
+     WHERE id = ?
+     RETURNING reading_delivery_attempt_at, reading_delivery_attempt_jti,
+               reading_delivery_attempt_body`,
+    [fresh.attemptedAt, fresh.jti, id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    attemptedAt: row.reading_delivery_attempt_at,
+    jti: row.reading_delivery_attempt_jti,
+    body: row.reading_delivery_attempt_body
+      ? (JSON.parse(row.reading_delivery_attempt_body) as RenderedEmail)
+      : null,
+  };
+}
+
+export async function claimReadingDeliveryAttemptBody(
+  id: string,
+  jti: string,
+  fresh: RenderedEmail,
+): Promise<RenderedEmail | null> {
+  const rows = await dbQuery<{ reading_delivery_attempt_body: string }>(
+    `UPDATE submissions
+     SET reading_delivery_attempt_body = COALESCE(reading_delivery_attempt_body, ?)
+     WHERE id = ? AND reading_delivery_attempt_jti = ?
+     RETURNING reading_delivery_attempt_body`,
+    [JSON.stringify(fresh), id, jti],
+  );
+  const row = rows[0];
+  return row ? (JSON.parse(row.reading_delivery_attempt_body) as RenderedEmail) : null;
+}
+
+export async function clearReadingDeliveryAttempt(id: string): Promise<void> {
+  await dbExec(`UPDATE submissions SET ${CLEAR_READING_DELIVERY_ATTEMPT} WHERE id = ?`, [id]);
+}
+
+export async function appendEmailFailure(
+  id: string,
+  failure: NewEmailFailure,
+): Promise<EmailFailureEntry[] | null> {
+  const append = appendOpenFailure(failure, "submissions");
+  return updateReturningFailures(`UPDATE submissions SET ${append.sql} WHERE id = ?`, [
+    ...append.params,
+    id,
+  ]);
+}
+
+export async function findSubmissionByResendId(resendId: string): Promise<SubmissionRecord | null> {
+  const rows = await dbQuery<Row>(
+    `SELECT * FROM submissions WHERE instr(emails_fired_json, ?) > 0 LIMIT 1`,
+    [resendIdNeedle(resendId)],
+  );
+  return rows[0] ? rowToRecord(rows[0]) : null;
+}
+
+export async function setSubmissionEmailAndRecipient(
+  id: string,
+  correction: { email: string; recipientUserId: string },
 ): Promise<void> {
   await dbExec(
     `UPDATE submissions
-     SET delivered_at = ?, voice_note_url = ?, pdf_url = ?
+     SET email = ?, recipient_user_id = ?, ${CLEAR_READING_DELIVERY_ATTEMPT}
      WHERE id = ?`,
-    [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, id],
+    [correction.email, correction.recipientUserId, id],
+  );
+}
+
+export async function countSubmissionsByRecipientUserId(userId: string): Promise<number> {
+  const rows = await dbQuery<{ total: number }>(
+    `SELECT count(*) AS total FROM submissions WHERE recipient_user_id = ?`,
+    [userId],
+  );
+  return rows[0]?.total ?? 0;
+}
+
+export async function markSubmissionDeliveredIfUnset(
+  id: string,
+  delivery: SubmissionDelivery,
+): Promise<EmailFailureEntry[] | null> {
+  const resolve = resolveOpenFailures("reading_delivery", delivery.deliveredAt, "submissions");
+  return updateReturningFailures(
+    `UPDATE submissions
+     SET delivered_at = COALESCE(delivered_at, ?), voice_note_url = ?, pdf_url = ?,
+         ${resolve.sql}
+     WHERE id = ?`,
+    [delivery.deliveredAt, delivery.voiceNoteUrl, delivery.pdfUrl, ...resolve.params, id],
   );
 }
 
@@ -344,18 +651,28 @@ export async function listAllReferencedPhotoKeys(): Promise<Set<string>> {
 
 export async function listPaidSubmissionsForEmail(
   emailType: EmailFiredType,
-  options: { paidBefore?: string },
+  options: { paidBefore?: string; paidAfter?: string; withoutFailureOf?: CustomerEmailType },
 ): Promise<SubmissionRecord[]> {
+  const notFired = notYetFired(emailType);
   const filters = [
     `status = 'paid'`,
-    `instr(emails_fired_json, ?) = 0`,
-    // Legacy guard: gift removed in v1.16.0; skip dormant gift rows so day-7 never routes a recipient link to the purchaser.
-    `(is_gift = 0 OR is_gift IS NULL)`,
+    notFired.sql,
+    NOT_A_LEGACY_GIFT,
   ];
-  const params: SqlValue[] = [`"type":"${emailType}"`];
+  const params: SqlValue[] = [...notFired.params];
   if (options.paidBefore) {
     filters.push(`paid_at < ?`);
     params.push(options.paidBefore);
+  }
+  if (options.paidAfter) {
+    filters.push(`paid_at >= ?`);
+    params.push(options.paidAfter);
+  }
+  if (options.withoutFailureOf) {
+    filters.push(
+      `NOT EXISTS (SELECT 1 FROM json_each(email_failures_json) WHERE json_extract(value, '$.emailType') = ?)`,
+    );
+    params.push(options.withoutFailureOf);
   }
 
   const rows = await dbQuery<Row>(
@@ -368,11 +685,32 @@ export async function listPaidSubmissionsForEmail(
   return rows.map(rowToRecord);
 }
 
-export async function appendEmailFired(id: string, entry: EmailFiredEntry): Promise<void> {
-  await dbExec(
+function notYetFired(emailType: EmailFiredType): { sql: string; params: string[] } {
+  const needles = storedEmailFiredTypes(emailType).map(emailFiredTypeNeedle);
+  return {
+    sql: needles.map(() => "instr(emails_fired_json, ?) = 0").join(" AND "),
+    params: needles,
+  };
+}
+
+export async function appendEmailFired(
+  id: string,
+  entry: EmailFiredEntry,
+  options?: { deliveredAt?: string },
+): Promise<EmailFailureEntry[] | null> {
+  const resolve = resolveOpenFailures(currentEmailFiredType(entry.type), entry.sentAt, "submissions");
+  const setDeliveredAt = options?.deliveredAt ? "delivered_at = ?," : "";
+  return updateReturningFailures(
     `UPDATE submissions
-     SET emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?))
+     SET ${setDeliveredAt}
+         emails_fired_json = json_insert(emails_fired_json, '$[#]', json(?)),
+         ${resolve.sql}
      WHERE id = ?`,
-    [JSON.stringify(entry), id],
+    [
+      ...(options?.deliveredAt ? [options.deliveredAt] : []),
+      JSON.stringify(entry),
+      ...resolve.params,
+      id,
+    ],
   );
 }

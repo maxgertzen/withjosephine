@@ -2,11 +2,15 @@ import { render } from "@react-email/render";
 
 import { pickDefined } from "@/lib/sanity/pickDefined";
 
-import { Day7Delivery } from "./Day7Delivery";
+import { GiftOpened } from "./GiftOpened";
+import { GiftPurchase } from "./GiftPurchase";
+import { GiftRecipientConfirmation } from "./GiftRecipientConfirmation";
+import { GiftToRecipient } from "./GiftToRecipient";
 import { MagicLink } from "./MagicLink";
 import { OrderConfirmation } from "./OrderConfirmation";
-import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE } from "./preview-fixtures";
+import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE, PREVIEW_GIFT } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
+import { ReadingDelivery } from "./ReadingDelivery";
 import type { EmailTemplateKey } from "./slots";
 
 /**
@@ -23,9 +27,13 @@ function stripRenderBlockers(html: string): string {
 
 export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailOrderConfirmation",
-  "emailDay7Delivery",
+  "emailReadingDelivery",
   "emailMagicLink",
   "emailPrivacyExport",
+  "emailGiftPurchase",
+  "emailGiftOpened",
+  "emailGiftRecipientConfirmation",
+  "emailGiftToRecipient",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -63,15 +71,15 @@ async function renderRaw(
           copy={merged as typeof PREVIEW_DEFAULTS.emailOrderConfirmation}
         />,
       );
-    case "emailDay7Delivery":
+    case "emailReadingDelivery":
       return render(
-        <Day7Delivery
+        <ReadingDelivery
           vars={{
             firstName: PREVIEW_FIXTURE.firstName,
             readingName: PREVIEW_FIXTURE.readingName,
             listenUrl: PREVIEW_FIXTURE.listenUrl,
           }}
-          copy={merged as typeof PREVIEW_DEFAULTS.emailDay7Delivery}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailReadingDelivery}
         />,
       );
     case "emailMagicLink": {
@@ -102,6 +110,58 @@ async function renderRaw(
             expiryDays: PREVIEW_FIXTURE.expiryDays,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailPrivacyExport}
+        />,
+      );
+    case "emailGiftPurchase":
+      return render(
+        <GiftPurchase
+          vars={{
+            firstName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            hasNote: true,
+            displayCode: PREVIEW_GIFT.code,
+            giftUrl: PREVIEW_GIFT.giftUrl,
+            whatsappUrl: PREVIEW_GIFT.whatsappUrl,
+            sendUrl: PREVIEW_GIFT.sendUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftPurchase}
+        />,
+      );
+    case "emailGiftOpened":
+      return render(
+        <GiftOpened
+          vars={{
+            firstName: PREVIEW_GIFT.buyerFirstName,
+            recipientName: PREVIEW_GIFT.recipientFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftOpened}
+        />,
+      );
+    case "emailGiftRecipientConfirmation":
+      return render(
+        <GiftRecipientConfirmation
+          vars={{
+            firstName: PREVIEW_GIFT.recipientFirstName,
+            buyerFirstName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            dataExportUrl: PREVIEW_FIXTURE.dataExportUrl,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftRecipientConfirmation}
+        />,
+      );
+    case "emailGiftToRecipient":
+      return render(
+        <GiftToRecipient
+          vars={{
+            firstName: PREVIEW_GIFT.recipientFirstName,
+            buyerName: PREVIEW_GIFT.buyerFirstName,
+            readingName: PREVIEW_GIFT.readingName,
+            displayCode: PREVIEW_GIFT.code,
+            giftUrl: PREVIEW_GIFT.giftUrl,
+            note: PREVIEW_GIFT.note,
+          }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailGiftToRecipient}
         />,
       );
     default: {

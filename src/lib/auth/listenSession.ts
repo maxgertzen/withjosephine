@@ -21,7 +21,7 @@ import {
  * matching it against session.user_id.
  *
  * Flow:
- *   1. Day-7 delivery email links the customer to /listen/[submissionId].
+ *   1. Reading delivery email links the customer to /listen/[submissionId].
  *   2. No cookie → "send fresh link" form → POST /api/auth/magic-link →
  *      issueMagicLink (user looked up by email).
  *   3. Customer clicks emailed link → confirm-email form (Level 1
@@ -498,7 +498,7 @@ export async function revokeSession(args: {
  * is also nullable and populated only when the event is tied to a specific
  * reading.
  */
-export async function writeAudit(args: {
+export type AuditRow = {
   userId: string | null;
   submissionId?: string | null;
   eventType: AuditEventType;
@@ -506,22 +506,40 @@ export async function writeAudit(args: {
   userAgentHash?: string | null;
   success?: boolean;
   now?: number;
-}): Promise<void> {
-  const now = args.now ?? Date.now();
-  const params: SqlValue[] = [
-    crypto.randomUUID(),
+};
+
+const INSERT_AUDIT_ROW = `INSERT INTO listen_audit
+       (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+function auditRowParams(id: string, args: AuditRow): SqlValue[] {
+  return [
+    id,
     args.userId,
     args.submissionId ?? null,
     args.eventType,
-    now,
+    args.now ?? Date.now(),
     args.ipHash ?? null,
     args.userAgentHash ?? null,
     args.success === false ? 0 : 1,
   ];
-  await dbExec(
-    `INSERT INTO listen_audit
-       (id, user_id, submission_id, event_type, timestamp, ip_hash, user_agent_hash, success)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    params,
+}
+
+export async function writeAudit(args: AuditRow): Promise<void> {
+  await dbExec(INSERT_AUDIT_ROW, auditRowParams(crypto.randomUUID(), args));
+}
+
+export async function writeAuditOnce(id: string, args: AuditRow): Promise<boolean> {
+  const { rowsWritten } = await dbExec(
+    `${INSERT_AUDIT_ROW} ON CONFLICT(id) DO NOTHING`,
+    auditRowParams(id, args),
   );
+  return rowsWritten > 0;
+}
+
+export async function hasAuditRow(id: string): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(`SELECT id FROM listen_audit WHERE id = ? LIMIT 1`, [
+    id,
+  ]);
+  return rows.length > 0;
 }

@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { StructureBuilder } from "sanity/structure";
 
 import { EMAIL_ALLOWED_SLOTS } from "../../src/lib/emails/slots";
+import { GIFT_SUBMISSION_STATUS } from "../../src/lib/gift/giftSubmissionStatus";
 import { EmailPreview } from "../views/EmailPreview";
 import {
   ListenPagePreview,
@@ -29,12 +30,17 @@ export const SINGLETON_TYPES = new Set([
   "bookingForm",
   "magicLinkVerifyPage",
   "emailMagicLink",
-  "emailDay7Delivery",
+  "emailReadingDelivery",
   "emailOrderConfirmation",
+  "emailGiftPurchase",
+  "emailGiftOpened",
+  "emailGiftRecipientConfirmation",
+  "emailGiftToRecipient",
   "emailPrivacyExport",
   "emailSharedShell",
   "listenPage",
   "notesSettings",
+  "giftSettings",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -94,6 +100,41 @@ const paidAwaitingDelivery = (S: StructureBuilder) =>
         .defaultOrdering([{ field: "paidAt", direction: "asc" }]),
     );
 
+const OPEN_BOOKING_FAILURE = "count(emailFailures[!defined(resolvedAt)]) > 0";
+
+const OPEN_WAITING_GIFT_FAILURE = `status == "${GIFT_SUBMISSION_STATUS.waiting}" && count(gift.emailFailures[!defined(resolvedAt) && emailType in ["gift_confirmation", "gift_send"]]) > 0`;
+
+const OPEN_OPENED_GIFT_FAILURE = `status == "paid" && count(gift.emailFailures[!defined(resolvedAt) && emailType == "gift_opened"]) > 0`;
+
+export const FAILED_SENDS_FILTER = `_type == "submission" && (${OPEN_BOOKING_FAILURE} || (${OPEN_WAITING_GIFT_FAILURE}) || (${OPEN_OPENED_GIFT_FAILURE}))`;
+
+const failedSends = (S: StructureBuilder) =>
+  S.listItem()
+    .title("⚠️ Failed sends")
+    .id("submissionsFailedSends")
+    .child(
+      S.documentList()
+        .title("Failed sends")
+        .schemaType("submission")
+        .filter(FAILED_SENDS_FILTER)
+        .defaultOrdering([
+          { field: "paidAt", direction: "asc" },
+          { field: "createdAt", direction: "asc" },
+        ]),
+    );
+
+const giftsNotOpenedYet = (S: StructureBuilder) =>
+  S.listItem()
+    .title("🎁 Gifts not opened yet")
+    .id("submissionsGiftsNotOpenedYet")
+    .child(
+      S.documentList()
+        .title("Gifts not opened yet")
+        .schemaType("submission")
+        .filter(`_type == "submission" && status == "${GIFT_SUBMISSION_STATUS.waiting}"`)
+        .defaultOrdering([{ field: "createdAt", direction: "desc" }]),
+    );
+
 const deliveredListened = (S: StructureBuilder) =>
   S.listItem()
     .title("✓ Listened")
@@ -135,7 +176,12 @@ const submissionsRoot = (S: StructureBuilder) =>
     .child(
       S.list()
         .title("Submissions")
-        .items([awaitingPayment(S), paidAwaitingDelivery(S), deliveredGroup(S)]),
+        .items([
+          awaitingPayment(S),
+          paidAwaitingDelivery(S),
+          giftsNotOpenedYet(S),
+          deliveredGroup(S),
+        ]),
     );
 
 const bookingFlowGroup = (S: StructureBuilder) =>
@@ -149,6 +195,16 @@ const bookingFlowGroup = (S: StructureBuilder) =>
           singletonListItem(S, "bookingPage", "Booking Page"),
           pagePreviewSingletonListItem(S, "thankYouPage", "Thank You Page", ThankYouPagePreview),
           singletonListItem(S, "bookingForm", "Booking Form"),
+          S.divider(),
+          singletonListItem(S, "giftSettings", "Gift Settings"),
+          emailSingletonListItem(S, "emailGiftPurchase", "Gift Purchase → Buyer"),
+          emailSingletonListItem(S, "emailGiftToRecipient", "Gift → Recipient"),
+          emailSingletonListItem(S, "emailGiftOpened", "Gift Opened → Buyer"),
+          emailSingletonListItem(
+            S,
+            "emailGiftRecipientConfirmation",
+            "Gift Confirmation → Recipient",
+          ),
         ]),
     );
 
@@ -185,7 +241,7 @@ const emailsGroup = (S: StructureBuilder) =>
         .title("Emails")
         .items([
           emailSingletonListItem(S, "emailOrderConfirmation", "Order Confirmation → Self-Purchaser"),
-          emailSingletonListItem(S, "emailDay7Delivery", "Reading Delivery → Customer"),
+          emailSingletonListItem(S, "emailReadingDelivery", "Reading Delivery Email → Customer"),
           emailSingletonListItem(S, "emailMagicLink", "Magic Link → Listen Page"),
           emailSingletonListItem(S, "emailPrivacyExport", "Privacy Export → Requester (GDPR)"),
           S.divider(),
@@ -238,5 +294,6 @@ export const deskStructure = (S: StructureBuilder) =>
       S.divider(),
       S.documentTypeListItem("legalPage").title("Legal Pages"),
       S.divider(),
+      failedSends(S),
       submissionsRoot(S),
     ]);

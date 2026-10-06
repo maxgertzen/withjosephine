@@ -1,7 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { isStaticCspPath, NONCE_HEADER, PRODUCTION_HOSTS } from "@/lib/constants";
+import {
+  isPrivateLinkPath,
+  isStaticCspPath,
+  NONCE_HEADER,
+  PRODUCTION_HOSTS,
+} from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
 
@@ -40,8 +46,7 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //                           scheduled-mode gift claim email.
 //   - /listen/            : Submission-scoped delivery links sent in customer
 //                           emails; auth-gated by magic-link cookie. The
-//                           email bodies hardcode apex URLs (see
-//                           email-day-7-deliver/route.ts SITE_ORIGIN).
+//                           email bodies hardcode apex URLs.
 //   - /privacy /terms /refund-policy : Statutory compliance pages must
 //                           remain reachable on the apex even when the
 //                           holding page is rendered. GDPR + UK consumer
@@ -50,7 +55,9 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 //                           a soft-launch posture, not a legal waiver.
 const APEX_ALLOWLIST_PREFIXES = [
   "/api/stripe/webhook",
+  "/api/webhooks/resend",
   "/api/cron/",
+  "/api/delivery/wake",
   "/api/internal/",
   "/api/admin/",
   "/listen/",
@@ -202,15 +209,17 @@ export function middleware(request: NextRequest) {
   );
 
   const isListen = pathname.startsWith("/listen/");
+  const isPrivateLink = isPrivateLinkPath(pathname);
+  const urlCarriesSecret = isListen || isPrivateLink;
 
-  // The listen page receives `?t=<token>` on GET; no-referrer prevents the
-  // token leaking via the Referer header on outbound nav.
-  if (isListen) {
+  if (urlCarriesSecret) {
     response.headers.set("Referrer-Policy", "no-referrer");
+  }
+  if (isDraft || isPrivateLink) {
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
   }
 
   if (isDraft) {
-    response.headers.set("Cache-Control", "private, no-store, max-age=0");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   } else if (!isPublicApex) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
@@ -221,7 +230,7 @@ export function middleware(request: NextRequest) {
       JSON.stringify({
         type: "request",
         method: request.method,
-        pathname,
+        pathname: redactSensitiveUrl(pathname),
         host,
         isDraft,
         isPublicApex,

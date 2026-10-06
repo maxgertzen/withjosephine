@@ -7,7 +7,9 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 export type RateLimitBindingName =
   | "LISTEN_AUTH_SEND_LIMITER"
   | "LISTEN_AUTH_VERIFY_LIMITER"
-  | "LISTEN_ASSET_LIMITER";
+  | "LISTEN_ASSET_LIMITER"
+  | "GIFT_CODE_LIMITER"
+  | "DELIVERY_WAKE_LIMITER";
 
 type RateLimiter = {
   limit: (args: { key: string }) => Promise<{ success: boolean }>;
@@ -18,6 +20,8 @@ declare global {
     LISTEN_AUTH_SEND_LIMITER?: RateLimiter;
     LISTEN_AUTH_VERIFY_LIMITER?: RateLimiter;
     LISTEN_ASSET_LIMITER?: RateLimiter;
+    GIFT_CODE_LIMITER?: RateLimiter;
+    DELIVERY_WAKE_LIMITER?: RateLimiter;
   }
 }
 
@@ -26,12 +30,17 @@ declare global {
 export async function checkRateLimit(
   binding: RateLimitBindingName,
   key: string,
+  options?: { failClosed?: boolean },
 ): Promise<boolean> {
   let limiter: RateLimiter | undefined;
   try {
     const { env } = await getCloudflareContext({ async: true });
     limiter = env[binding];
   } catch {
+    if (options?.failClosed && process.env.ENVIRONMENT === "production") {
+      console.error(`[rateLimit] context unavailable for ${binding}, failing closed`);
+      return false;
+    }
     return true;
   }
   if (!limiter) {

@@ -9,6 +9,7 @@ const TABLES_TO_TRUNCATE = [
   "listen_magic_link",
   "financial_records",
   "deletion_log",
+  "gift_codes",
   "submissions",
   "user",
 ] as const;

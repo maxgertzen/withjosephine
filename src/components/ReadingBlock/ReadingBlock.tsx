@@ -1,7 +1,7 @@
-import { Check } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
+import { IncludedList } from "@/components/IncludedList";
+import { PortraitAvatar } from "@/components/PortraitAvatar";
 import type { ReadingFact, ReadingFactsLayout } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 import { eyebrowClasses, smallCapsClasses } from "@/lib/textStyles";
@@ -18,12 +18,12 @@ export type ReadingBlockProps = {
   foldRowLabel: string;
   eyebrow: string;
   lead: string;
-  body?: string;
+  description: string;
   facts: ReadingFact[];
   factsLayout: ReadingFactsLayout;
   reader: { name: string; line: string; imageUrl?: string };
   included: { title: string; items: string[] };
-  howItWorks: { title: string; paragraphs: string[] };
+  howItWorks: { title: string; items: string[] };
   questions: { title: string; items: MappedFaqItem[] };
   otherReadings: { title: string; readings: OtherReading[] };
   notes?: { title: string; items: { title: string; slug: string; href: string }[] };
@@ -32,28 +32,19 @@ export type ReadingBlockProps = {
 const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3";
 
 function ReadingContent(props: ReadingBlockProps) {
-  const { slug, eyebrow, lead, body, facts, factsLayout, reader, included, howItWorks, questions, otherReadings, notes } =
+  const { slug, eyebrow, lead, description, facts, factsLayout, reader, included, howItWorks, questions, otherReadings, notes } =
     props;
   return (
     <>
       <p className={`${eyebrowClasses} mb-3`}>{eyebrow}</p>
       <p className="font-display italic text-[1.35rem] leading-[1.4] text-j-text mb-3">{lead}</p>
-      {body ? <p className="font-body text-base leading-[1.7] text-j-text mb-2">{body}</p> : null}
+      {description ? <p className="font-body text-base leading-[1.7] text-j-text mb-2">{description}</p> : null}
 
       <FactsRow facts={facts} layout={factsLayout} />
 
       <div className="mt-6 flex items-center gap-[0.9rem]">
         {reader.imageUrl ? (
-          <span className="size-14 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
-            <Image
-              src={reader.imageUrl}
-              alt=""
-              width={56}
-              height={56}
-              sizes="56px"
-              className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
-            />
-          </span>
+          <PortraitAvatar src={reader.imageUrl} size={56} />
         ) : null}
         <p className="m-0 flex flex-col">
           <span className="font-display italic text-[1.2rem] text-j-text-heading">{reader.name}</span>
@@ -64,23 +55,12 @@ function ReadingContent(props: ReadingBlockProps) {
       <div className="mt-6 flex flex-col gap-4">
         {included.items.length > 0 ? (
           <ReadingAccordion id={`${slug}-included`} title={included.title}>
-            <ul className="m-0 mb-3 flex list-none flex-col gap-3 p-0">
-              {included.items.map((item, index) => (
-                <li key={index} className="flex gap-3 font-body text-base leading-[1.6] text-j-text-muted">
-                  <Check aria-hidden="true" className="mt-[0.3rem] size-4 shrink-0 text-j-ornament" strokeWidth={2} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <IncludedList items={included.items} size="page" className="mb-3" />
           </ReadingAccordion>
         ) : null}
-        {howItWorks.paragraphs.length > 0 ? (
+        {howItWorks.items.length > 0 ? (
           <ReadingAccordion id={`${slug}-how`} title={howItWorks.title}>
-            {howItWorks.paragraphs.map((paragraph, index) => (
-              <p key={index} className={ANSWER_CLASS}>
-                {paragraph}
-              </p>
-            ))}
+            <IncludedList items={howItWorks.items} size="page" className="mb-3" />
           </ReadingAccordion>
         ) : null}
         {questions.items.length > 0 ? (

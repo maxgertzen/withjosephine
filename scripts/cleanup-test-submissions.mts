@@ -22,17 +22,24 @@ const client = createClient({
   token: process.env.SANITY_WRITE_TOKEN,
 });
 
-const docs = await client.fetch<
-  Array<{ _id: string; email?: string; _createdAt: string; isGift?: boolean }>
->(
-  `*[_type == "submission"]{_id, email, _createdAt, isGift} | order(_createdAt desc)`,
+type CleanupDoc = {
+  _id: string;
+  email?: string;
+  _createdAt: string;
+  isGift?: boolean;
+};
+
+const docs = await client.fetch<CleanupDoc[]>(
+  `*[_type == "submission"]{_id, email, _createdAt, "isGift": coalesce(isGift, defined(gift))} | order(_createdAt desc)`,
 );
+
+function describeDoc(d: CleanupDoc): string {
+  return `${d.isGift ? "GIFT " : "READ "}${d.email ?? "(no email)"}`;
+}
 
 console.log(`Found ${docs.length} submission docs in dataset "${dataset}"`);
 for (const d of docs) {
-  console.log(
-    `  ${d._id}\t${d.isGift ? "GIFT " : "READ "}${d.email ?? "(no email)"}\t${d._createdAt}`,
-  );
+  console.log(`  ${d._id}\t${describeDoc(d)}\t${d._createdAt}`);
 }
 
 if (docs.length === 0) {
@@ -41,9 +48,7 @@ if (docs.length === 0) {
 }
 
 if (!execute) {
-  console.log(
-    "\nDRY-RUN. Pass --execute to delete all submission docs from this dataset.",
-  );
+  console.log("\nDRY-RUN. Pass --execute to delete all submission docs from this dataset.");
   process.exit(0);
 }
 

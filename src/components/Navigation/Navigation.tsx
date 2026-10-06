@@ -3,16 +3,20 @@
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useScrolled } from "@/hooks/useScrolled";
 import { homeSectionAnchor } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
+import { LAYER } from "@/styles/layers";
+
+import { NAV_BAR_HEIGHT_CLASS } from "./navClearance";
 
 interface NavLink {
   label: string;
@@ -39,9 +43,13 @@ const CONTACT_SECTION_ID = "contact";
 
 type NavItem = { key: string; label: string; href?: string; current?: boolean };
 
-type NavPage = "home" | "notes";
+type NavPage = "home" | "notes" | "other";
 
-function buildNavItems(navLinks: NavLink[], page: NavPage, notesLink: NotesLink | undefined): NavItem[] {
+function buildNavItems(
+  navLinks: NavLink[],
+  page: NavPage,
+  notesLink: NotesLink | undefined,
+): NavItem[] {
   const items: NavItem[] = navLinks.map(({ label, sectionId }) =>
     page === "home"
       ? { key: sectionId, label }
@@ -118,9 +126,6 @@ function NavCta({
   );
 }
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
-
 type NavigationProps = {
   content?: NavigationContent;
   notesLink?: NotesLink;
@@ -147,58 +152,30 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
     setMenuOpen(false);
   }, []);
 
-  // Move focus into the open overlay, keep Tab trapped inside it, close on
-  // Escape, and restore focus to the toggle when it closes.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const overlay = overlayRef.current;
-    const toggle = toggleRef.current;
-    overlay?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !overlay) return;
-      const overlayFocusables = Array.from(
-        overlay.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      );
-      // The visible close button lives in the <nav>, outside the overlay;
-      // include it so Tab can reach it while the menu is open.
-      const focusable = toggle ? [toggle, ...overlayFocusables] : overlayFocusables;
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      toggle?.focus();
-    };
-  }, [menuOpen]);
+  useFocusTrap({
+    active: menuOpen,
+    containerRef: overlayRef,
+    onEscape: closeMenu,
+    extraFocusables: [toggleRef],
+    initialFocus: "firstFocusable",
+    returnFocusRef: toggleRef,
+  });
 
   return (
     <>
       <nav
         aria-label="Primary"
         className={mergeClasses(
-          "fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[100] border-b transition-all duration-300 ease-in-out",
+          `fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.nav} border-b transition-all duration-300 ease-in-out`,
           scrolled
             ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
             : "border-transparent bg-transparent",
           className,
         )}
       >
-        <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-[72px]">
+        <div
+          className={`max-w-[1280px] mx-auto px-6 flex items-center justify-between ${NAV_BAR_HEIGHT_CLASS}`}
+        >
           <Link href="/" className="block">
             <Image
               src="/images/logo-horizontal.webp"
@@ -260,7 +237,7 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
         aria-hidden={!menuOpen}
         inert={!menuOpen}
         className={mergeClasses(
-          "fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] z-[99] bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden",
+          `fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.navMenu} bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden`,
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
       >

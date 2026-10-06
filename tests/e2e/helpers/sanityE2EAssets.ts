@@ -1,7 +1,3 @@
-// Sanity-write helpers for the listen-roundtrip spec: flips a paid submission
-// to "delivered" (voiceNote + readingPdf + deliveredAt) and force-fires the
-// day-7-deliver cron's Sanity→D1 mirror for one row.
-
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,7 +20,6 @@ export async function uploadDummyVoiceAndPdf(
 ): Promise<{
   voiceAssetId: string;
   pdfAssetId: string;
-  deliveredAt: string;
 }> {
   const client = getStagingSanityClient("write");
   const audioBuf = readFileSync(resolve(FIXTURES_DIR, "dummy-audio.wav"));
@@ -41,21 +36,17 @@ export async function uploadDummyVoiceAndPdf(
     }),
   ]);
 
-  const deliveredAt = new Date().toISOString();
-
   await client
     .patch(submissionId)
     .set({
       voiceNote: { _type: "file", asset: { _type: "reference", _ref: voiceAsset._id } },
       readingPdf: { _type: "file", asset: { _type: "reference", _ref: pdfAsset._id } },
-      deliveredAt,
     })
     .commit();
 
   return {
     voiceAssetId: voiceAsset._id,
     pdfAssetId: pdfAsset._id,
-    deliveredAt,
   };
 }
 
@@ -67,7 +58,7 @@ export async function forceD1Mirror(submissionId: string): Promise<{
   submissionId: string;
 }> {
   const cronSecret = requireStagingEnv("CRON_SECRET");
-  const url = `${STAGING_URL}/api/cron/email-day-7-deliver?force=${encodeURIComponent(submissionId)}`;
+  const url = `${STAGING_URL}/api/cron/deliver-reading?force=${encodeURIComponent(submissionId)}`;
   const response = await fetch(url, {
     method: "GET",
     headers: {

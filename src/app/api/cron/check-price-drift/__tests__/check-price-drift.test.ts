@@ -33,7 +33,6 @@ function makeReading(over: Partial<SanityReading>): SanityReading {
     priceDisplay: over.priceDisplay ?? "$129",
     valueProposition: "vp",
     briefDescription: "bd",
-    expandedDetails: [],
     includes: [],
     requiresBirthChart: false,
     requiresAkashic: false,

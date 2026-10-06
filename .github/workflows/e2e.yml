@@ -6,16 +6,31 @@ on:
       - main
     paths:
       - "src/components/IntakeForm/**"
-      - "src/components/GiftForm/**"
+      - "src/components/*Gift*/**"
+      - "src/components/*Sheet*/**"
+      - "src/components/BookingPageShell/**"
+      - "src/components/Form/**"
+      - "src/components/ReadingBlock/**"
       - "src/app/book/**"
       - "src/app/gift/**"
-      - "src/app/thank-you/**"
+      - "src/app/(authed)/thank-you/**"
+      - "src/app/preview/**"
+      - "src/app/api/gift/**"
+      - "src/app/api/stripe/**"
+      - "src/app/api/cron/**"
+      - "src/middleware.ts"
       - "src/app/api/booking/**"
       - "src/lib/booking/**"
       - "src/lib/sanity/**"
       - "src/lib/compliance/**"
+      - "src/lib/gift/**"
+      - "src/lib/intake/**"
+      - "src/lib/emails/**"
+      - "src/lib/resend.tsx"
+      - "src/lib/stripe.ts"
+      - "src/data/defaults.ts"
       - "studio/schemas/bookingForm.ts"
-      - "studio/schemas/bookingGiftForm.ts"
+      - "studio/schemas/giftSettings.ts"
       - "studio/schemas/formField.ts"
       - "studio/schemas/formSection.ts"
       - "src/__fixtures__/sanity/e2e/**"
@@ -54,6 +69,7 @@ jobs:
       BOOKING_TURNSTILE_BYPASS: "1"
       TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
       AUTH_TOKEN_SECRET: e2e_auth_token_secret_dummy
+      GIFT_CODE_SECRET: e2e_gift_code_secret_dummy
       LISTEN_TOKEN_SECRET: e2e_listen_token_secret_dummy
       ADMIN_API_KEY: e2e_admin_api_key_dummy
       E2E: "1"

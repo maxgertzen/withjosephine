@@ -8,7 +8,8 @@
  * mirror calls.
  */
 
-import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
+import { currentEmailFiredType } from "../emailFiredType";
+import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 
 const COMPARED_FIELDS = [
   "status",
@@ -22,29 +23,43 @@ type ComparedField = (typeof COMPARED_FIELDS)[number];
 
 export type SanityMirrorSnapshot = {
   _id: string;
+  hasEmail?: boolean;
   status?: SubmissionRecord["status"];
   paidAt?: string;
   expiredAt?: string;
   amountPaidCents?: number | null;
   amountPaidCurrency?: string | null;
   emailsFired?: EmailFiredEntry[];
+  emailFailures?: Array<EmailFailureEntry & { _key?: string; _type?: string }>;
 };
+
+type ReconcilePatch = Partial<Pick<SubmissionRecord, ComparedField | "emailFailures">>;
 
 export type ReconcileAction =
   | { kind: "skip" }
   | { kind: "create" }
   | {
       kind: "patch";
-      patch: Partial<Pick<SubmissionRecord, ComparedField>>;
+      patch: ReconcilePatch;
       missingEmails: EmailFiredEntry[];
     };
 
-function normalizeOptional<T>(value: T | null | undefined): T | null {
+export function normalizeOptional<T>(value: T | null | undefined): T | null {
   return value ?? null;
 }
 
 function emailFiredKey(entry: EmailFiredEntry): string {
-  return `${entry.type}|${entry.sentAt}`;
+  return `${currentEmailFiredType(entry.type)}|${entry.sentAt}`;
+}
+
+export function failuresKey(failures: ReadonlyArray<Record<string, unknown>>): string {
+  return JSON.stringify(
+    failures.map((failure) =>
+      Object.entries(failure)
+        .filter(([field, value]) => value !== null && field !== "_key" && field !== "_type")
+        .sort(([a], [b]) => a.localeCompare(b)),
+    ),
+  );
 }
 
 export function diffSubmission(
@@ -52,14 +67,20 @@ export function diffSubmission(
   sanity: SanityMirrorSnapshot | null,
 ): ReconcileAction {
   if (sanity === null) return { kind: "create" };
+  if (d1.giftCodeId && !sanity.hasEmail) return { kind: "create" };
 
-  const patch: Partial<Pick<SubmissionRecord, ComparedField>> = {};
+  const patch: ReconcilePatch = {};
   for (const field of COMPARED_FIELDS) {
     if (normalizeOptional(d1[field]) !== normalizeOptional(sanity[field])) {
       // `as` is sound here because `field` is a key of both shapes and the
       // value types match per the COMPARED_FIELDS definition.
       patch[field] = d1[field] as never;
     }
+  }
+
+  const d1Failures = d1.emailFailures ?? [];
+  if (failuresKey(d1Failures) !== failuresKey(sanity.emailFailures ?? [])) {
+    patch.emailFailures = d1Failures;
   }
 
   const sanityEmailKeys = new Set((sanity.emailsFired ?? []).map(emailFiredKey));

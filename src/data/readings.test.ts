@@ -13,7 +13,6 @@ describe("readings data", () => {
       expect(reading.name).toBeTruthy();
       expect(reading.price).toMatch(/^\$/);
       expect(reading.includes.length).toBeGreaterThan(0);
-      expect(reading.expandedDetails.length).toBeGreaterThan(0);
     }
   });
 

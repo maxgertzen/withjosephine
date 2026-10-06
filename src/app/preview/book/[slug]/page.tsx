@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 
 import { BookingFormView } from "@/app/book/[readingId]/BookingFormView";
-import { deriveBookingFormViewProps } from "@/app/book/[readingId]/deriveBookingFormViewProps";
-import {
-  fetchBookingForm,
-  fetchBookingPage,
-  fetchLandingPage,
-  fetchNotesState,
-  fetchReading,
-  fetchReadingNotes,
-  fetchReadings,
-} from "@/lib/sanity/fetch";
+
+import { BookingPreviewUnavailable } from "./BookingPreviewUnavailable";
+import { loadPreviewBookingFormProps } from "./loadPreviewBookingFormProps";
 
 export const metadata: Metadata = {
   title: "Preview: Booking Page",
@@ -23,43 +16,7 @@ type BookingPreviewProps = {
 
 export default async function BookingPagePreview({ params }: BookingPreviewProps) {
   const { slug } = await params;
-
-  const [
-    sanityReading,
-    sanityReadings,
-    bookingPage,
-    bookingForm,
-    landingPage,
-    notesState,
-    readingNotes,
-  ] = await Promise.all([
-    fetchReading(slug),
-    fetchReadings(),
-    fetchBookingPage(),
-    fetchBookingForm(),
-    fetchLandingPage(),
-    fetchNotesState(),
-    fetchReadingNotes(slug),
-  ]);
-
-  const props = deriveBookingFormViewProps({
-    readingId: slug,
-    sanityReading,
-    sanityReadings,
-    bookingPage,
-    bookingForm,
-    landingPage,
-    notesState,
-    readingNotes,
-  });
-
-  if (!props) {
-    return (
-      <p className="font-body text-base text-j-text-muted p-8">
-        Preview unavailable: no reading or booking form found for slug &ldquo;{slug}&rdquo;.
-      </p>
-    );
-  }
-
+  const props = await loadPreviewBookingFormProps(slug);
+  if (!props) return <BookingPreviewUnavailable slug={slug} />;
   return <BookingFormView {...props} />;
 }

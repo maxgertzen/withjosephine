@@ -12,7 +12,7 @@ const READING = {
 describe("BookingPageShell", () => {
   it("renders children inside the article content area", () => {
     const { getByText } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>inner content</p>
       </BookingPageShell>,
     );
@@ -21,7 +21,7 @@ describe("BookingPageShell", () => {
 
   it("renders the BookingFlowHeader back link with the supplied href", () => {
     const { container } = render(
-      <BookingPageShell backHref="/specific-back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/specific-back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -31,7 +31,7 @@ describe("BookingPageShell", () => {
 
   it("passes the reading block through to the title block", () => {
     const { getByText } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -40,20 +40,31 @@ describe("BookingPageShell", () => {
     expect(getByText("$129")).toBeTruthy();
   });
 
-  it("puts the reading name h1 inside main, after the Back header", () => {
-    const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+  it("puts the reading name h1 and one Back link inside main, with no separate Back header", () => {
+    const { container, getAllByRole } = render(
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
     expect(container.querySelector("main#main h1")?.textContent).toBe("Soul Blueprint");
-    expect(container.querySelector("header h1")).toBeNull();
+    expect(container.querySelector("header")).toBeNull();
+    expect(getAllByRole("link", { name: "Back" }).map((link) => link.getAttribute("href"))).toEqual([
+      "/back",
+    ]);
+  });
+
+  it("shows the Back header when there is no reading name", () => {
+    const { container } = render(
+      <BookingPageShell nav={{}} backHref="/back" {...READING} readingName="">
+        <p>x</p>
+      </BookingPageShell>,
+    );
     expect(container.querySelector("header a")?.getAttribute("href")).toBe("/back");
   });
 
   it("uses cream outer bg, 3xl max-w, card shadow and default padding", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -65,7 +76,7 @@ describe("BookingPageShell", () => {
 
   it("applies ivory outer bg when outerBg='ivory'", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" outerBg="ivory" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" outerBg="ivory" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
@@ -75,11 +86,35 @@ describe("BookingPageShell", () => {
 
   it("renders an aria-hidden inner gold border guard", () => {
     const { container } = render(
-      <BookingPageShell backHref="/back" {...READING}>
+      <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
     const guard = container.querySelector('[aria-hidden="true"].border-j-border-gold');
     expect(guard).toBeTruthy();
+  });
+
+  it("renders a supplied price line in place of the reading price", () => {
+    const { getByText, queryByText } = render(
+      <BookingPageShell
+        nav={{}}
+        backHref="/back"
+        {...READING}
+        priceLine={<span>A gift, already paid</span>}
+      >
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(getByText("A gift, already paid")).toBeTruthy();
+    expect(queryByText("$129")).toBeNull();
+  });
+
+  it("leaves out the title block when there is no reading name", () => {
+    const { container } = render(
+      <BookingPageShell nav={{}} backHref="/" readingTag="" readingName="" readingPrice="">
+        <p>x</p>
+      </BookingPageShell>,
+    );
+    expect(container.querySelector("h1")).toBeNull();
   });
 });

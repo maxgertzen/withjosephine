@@ -198,9 +198,231 @@ export const NOTES_DEFAULTS: NotesContent = {
   readingPageTitle: "Notes on this reading",
 };
 
+export interface GiftContent {
+  sheetEyebrow: string;
+  sheetCancelLabel: string;
+  shareMessageTemplate: string;
+  sheetTitleTemplate: string;
+  sheetStepPay: string;
+  sheetStepSend: string;
+  sheetStepRecipient: string;
+  buyerNameLabel: string;
+  buyerNameHelp: string;
+  buyerNameRequired: string;
+  noteLabel: string;
+  noteHelpBeforePayment: string;
+  noteCounterTemplate: string;
+  sheetSubmitFailed: string;
+  sheetNetworkFailed: string;
+  thankYouHeadingTemplate: string;
+  thankYouSubheading: string;
+  codeCardLabel: string;
+  copyLinkLabel: string;
+  linkCopiedLabel: string;
+  shareLabel: string;
+  codeHelpTemplate: string;
+  savedNoteLabelTemplate: string;
+  editNoteLabel: string;
+  noteFootnote: string;
+  addNoteLabel: string;
+  editNoteHeading: string;
+  fromLabel: string;
+  saveNoteLabel: string;
+  noteSavedNotice: string;
+  noteLockedNotice: string;
+  thankYouOpenedNotice: string;
+  pendingHeadingTemplate: string;
+  pendingSubheading: string;
+  pendingBody: string;
+  priceLine: string;
+  noteCardLabelTemplate: string;
+  noteCardFoot: string;
+  noteCardLabelNoBuyer: string;
+  noteCardNoBuyerBody: string;
+  noteCardFootNoBuyer: string;
+  pageLineGiftTemplate: string;
+  draftRestoredNotice: string;
+  codeAppliedTemplate: string;
+  removeCodeLabel: string;
+  giftFootTemplate: string;
+  giftFootNoBuyer: string;
+  openedNoticeTemplate: string;
+  sendDetailsLabel: string;
+  sendingDetailsOverlay: string;
+  openedRaceError: string;
+  alreadyOpenedHeading: string;
+  alreadyOpenedBody: string;
+  noLongerActiveHeading: string;
+  noLongerActiveBody: string;
+  notFoundHeading: string;
+  notFoundBody: string;
+  rateLimitedHeading: string;
+  rateLimitedBody: string;
+  bookYourselfTemplate: string;
+  redeemHeading: string;
+  redeemBody: string;
+  codeFieldLabel: string;
+  redeemSheetEmpty: string;
+  codeChecking: string;
+  redeemButtonLabel: string;
+  codeNotFound: string;
+  codeOtherReadingTemplate: string;
+  goToReadingTemplate: string;
+  codeTooManyTries: string;
+  codeFieldOptionalLabel: string;
+  recipientThankYouHeadingTemplate: string;
+  recipientThankYouSubheading: string;
+  recipientThankYouCardLabelTemplate: string;
+  recipientThankYouCardLabelNoBuyer: string;
+  recipientThankYouTimelineTemplate: string;
+  sendOpenLabel: string;
+  sendHeading: string;
+  recipientNameLabel: string;
+  recipientEmailLabel: string;
+  recipientEmailInvalid: string;
+  recipientEmailIsBuyer: string;
+  sendHelpTemplate: string;
+  sendHelpNoNoteTemplate: string;
+  sendButtonLabel: string;
+  sendingLabel: string;
+  sentHeadingTemplate: string;
+  sentBodyTemplate: string;
+  resendLinkTemplate: string;
+  resendUsedHeading: string;
+  resendUsedBody: string;
+  sendPageHeadingTemplate: string;
+  alreadySentHeading: string;
+  alreadySentBodyTemplate: string;
+  sendPageOpenedHeadingTemplate: string;
+  sendPageOpenedBody: string;
+  sendLinkInvalidHeading: string;
+  sendLinkInvalidBody: string;
+  sendFailedNotice: string;
+  giftRowLabel: string;
+  buyLead: string;
+  buyLinkLabel: string;
+  redeemLead: string;
+  redeemLinkLabel: string;
+}
+
+export const GIFT_DEFAULTS: GiftContent = {
+  sheetEyebrow: "A reading, given.",
+  sheetCancelLabel: "Not now",
+  shareMessageTemplate: "A reading for you, from {buyerName} ✨",
+  sheetTitleTemplate: "{reading} · {price}",
+  sheetStepPay: "You pay now and get a gift code and a link.",
+  sheetStepSend: "Send it your way, or have Josephine email it.",
+  sheetStepRecipient: "They fill in their own details when they’re ready.",
+  buyerNameLabel: "Your first name",
+  buyerNameHelp: "So they know who it’s from.",
+  buyerNameRequired: "Your first name is required.",
+  noteLabel: "A note for them (optional)",
+  noteHelpBeforePayment: "You can add or change it after paying.",
+  noteCounterTemplate: "{remaining} left",
+  sheetSubmitFailed: "Something went wrong submitting your form. Please try again.",
+  sheetNetworkFailed: "Network error. Please check your connection and try again.",
+  thankYouHeadingTemplate: "Thank you, {buyerName}. Your gift is ready.",
+  thankYouSubheading: "Send it whenever the timing feels right.",
+  codeCardLabel: "Their gift code",
+  copyLinkLabel: "Copy link",
+  linkCopiedLabel: "Link copied ✓",
+  shareLabel: "Share",
+  codeHelpTemplate: "For the {reading}. It does not expire.",
+  savedNoteLabelTemplate: "Your note, from {buyerName}",
+  editNoteLabel: "Edit note",
+  noteFootnote: "They see it when they open the gift. You can change it until then.",
+  addNoteLabel: "Add a note",
+  editNoteHeading: "Your note",
+  fromLabel: "From",
+  saveNoteLabel: "Save note",
+  noteSavedNotice: "Your note is saved. They see it when they open the gift.",
+  noteLockedNotice: "This gift has been opened, so the note can’t be changed now.",
+  thankYouOpenedNotice: "The gift has been opened. There’s nothing more to send.",
+  pendingHeadingTemplate: "Thank you, {buyerName}.",
+  pendingSubheading: "Your gift is almost ready.",
+  pendingBody:
+    "Your bank is still confirming the payment. The code comes by email as soon as it clears.",
+  priceLine: "A gift, already paid",
+  noteCardLabelTemplate: "A note from {buyerName}",
+  noteCardFoot: "This reading is already paid for.",
+  noteCardLabelNoBuyer: "A reading, given",
+  noteCardNoBuyerBody: "Someone sent you this reading.",
+  noteCardFootNoBuyer: "It’s already paid for.",
+  pageLineGiftTemplate: "a gift from {buyerName}",
+  draftRestoredNotice: "Welcome back. Your answers are saved.",
+  codeAppliedTemplate: "Gift code {code} applied",
+  removeCodeLabel: "Remove",
+  giftFootTemplate: "Nothing to pay. This reading is a gift from {buyerName}.",
+  giftFootNoBuyer: "Nothing to pay. This reading is a gift.",
+  openedNoticeTemplate:
+    "When you send your details, {buyerName} gets a short email saying you opened the gift. It says nothing about your answers.",
+  sendDetailsLabel: "Send my details →",
+  sendingDetailsOverlay: "One moment, sending your details.",
+  openedRaceError:
+    "This gift was opened a moment ago, maybe on another device. Your answers are saved. Write to hello@withjosephine.com, or book it yourself.",
+  alreadyOpenedHeading: "This gift was already opened",
+  alreadyOpenedBody:
+    "If you think this is a mistake, reply to the email your gift came in, or write to hello@withjosephine.com.",
+  noLongerActiveHeading: "This gift is no longer active",
+  noLongerActiveBody: "Write to hello@withjosephine.com and Josephine will help.",
+  notFoundHeading: "We couldn’t find this gift",
+  notFoundBody: "Check the code in your message, or write to hello@withjosephine.com.",
+  rateLimitedHeading: "One moment",
+  rateLimitedBody: "Too many tries. Wait a few minutes, then open the link again.",
+  bookYourselfTemplate: "Book the {reading} yourself",
+  redeemHeading: "Have a gift code?",
+  redeemBody: "Enter the code from your message or email.",
+  codeFieldLabel: "Gift code",
+  redeemSheetEmpty: "Enter your gift code.",
+  codeChecking: "Checking…",
+  redeemButtonLabel: "Redeem gift",
+  codeNotFound: "We couldn’t find this code. Check it and try again.",
+  codeOtherReadingTemplate: "This code is for the {reading}.",
+  goToReadingTemplate: "Go to the {reading}",
+  codeTooManyTries: "Too many tries. Wait a few minutes.",
+  codeFieldOptionalLabel: "Gift code (optional)",
+  recipientThankYouHeadingTemplate: "Thank you, {recipientName}. Your reading is in my hands now.",
+  recipientThankYouSubheading: "I’ve received everything I need to begin.",
+  recipientThankYouCardLabelTemplate: "Your gift, from {buyerName}",
+  recipientThankYouCardLabelNoBuyer: "Your gift",
+  recipientThankYouTimelineTemplate:
+    "I’ll begin your reading within the next two days, and I’ll send a short note when I do. Your voice note and PDF will arrive within {deliveryDays}, sent to the email you gave me.",
+  sendOpenLabel: "Send it by email from Josephine",
+  sendHeading: "Send it from Josephine",
+  recipientNameLabel: "Their name",
+  recipientEmailLabel: "Their email",
+  recipientEmailInvalid: "Enter a valid recipient email.",
+  recipientEmailIsBuyer: "The recipient must be someone other than you.",
+  sendHelpTemplate: "From {buyerName}, with your note. Sent now, from hello@withjosephine.com.",
+  sendHelpNoNoteTemplate: "From {buyerName}. Sent now, from hello@withjosephine.com.",
+  sendButtonLabel: "Send now",
+  sendingLabel: "Sending…",
+  sentHeadingTemplate: "Sent to {recipientName}",
+  sentBodyTemplate: "{recipientEmail} · just now.",
+  resendLinkTemplate: "Wrong address? Fix it and send again ({count} left)",
+  resendUsedHeading: "Sent twice already",
+  resendUsedBody:
+    "If something isn’t right, write to hello@withjosephine.com and Josephine will sort it out.",
+  sendPageHeadingTemplate: "Send {recipientName}’s gift",
+  alreadySentHeading: "Already sent",
+  alreadySentBodyTemplate: "Sent to {recipientName} on {date}.",
+  sendPageOpenedHeadingTemplate: "The gift has been opened",
+  sendPageOpenedBody: "The reading is with Josephine now. There’s nothing more to send.",
+  sendLinkInvalidHeading: "This link doesn’t work any more",
+  sendLinkInvalidBody: "Write to hello@withjosephine.com and Josephine will help.",
+  sendFailedNotice: "The email didn’t send. Try again.",
+  giftRowLabel: "Giving or redeeming a gift",
+  buyLead: "Buying it for someone?",
+  buyLinkLabel: "Send it as a gift",
+  redeemLead: "Have a code?",
+  redeemLinkLabel: "Redeem gift",
+};
+
 export const NOTES_INDEX_ILLUSTRATION_URL = "/images/notes-illustration.svg";
 
 export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
+
+export const PAYMENT_BUTTON_TEXT_FALLBACK = "Continue to payment →";
 
 const INTAKE_OPENER =
   "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.";
@@ -221,6 +443,29 @@ export const INTAKE_INTRO_FALLBACK = [
   INTAKE_OPENER,
   "Take your time. There\u2019s no wrong answer.",
 ];
+
+export interface ReadingCardLabels {
+  learnMoreLabel: string;
+  showLessLabel: string;
+  bookButtonText: string;
+}
+
+export const READING_CARD_LABEL_KEYS = ["learnMoreLabel", "showLessLabel", "bookButtonText"] as const;
+
+export interface ReadingsSectionContent extends ReadingCardLabels {
+  sectionTag: string;
+  heading: string;
+  subheading: string;
+}
+
+export const READINGS_SECTION_DEFAULTS: ReadingsSectionContent = {
+  sectionTag: "\u2726 Offerings",
+  heading: "readings",
+  subheading: "Each reading is created with care, entirely for you. Nothing is templated or generic.",
+  learnMoreLabel: "Learn More \u2193",
+  showLessLabel: "Show Less \u2191",
+  bookButtonText: "Book This Reading",
+};
 
 export interface MagicLinkVerifyPageContent {
   confirmHeading: string;
@@ -340,7 +585,7 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   dataExportButtonLabel: "Request an export",
 };
 
-export interface EmailDay7DeliveryContent {
+export interface EmailReadingDeliveryContent {
   subjectTemplate: string;
   preview: string;
   heroLine: string;
@@ -380,7 +625,7 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
   signOff: null,
 };
 
-export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
+export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
   subjectTemplate: "Your {readingName} reading is ready",
   preview: "A short note before you press play.",
   heroLine: "Your reading is ready",
@@ -407,6 +652,125 @@ export const EMAIL_DAY7_DELIVERY_DEFAULTS: EmailDay7DeliveryContent = {
   cardLabel: "Your reading",
   cardDeliveryLine: "Voice note + PDF",
   signOff: null,
+};
+
+export interface EmailGiftPurchaseContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body: EmailRichText;
+  noteLine: string;
+  cardLabel: string;
+  cardLineTemplate: string;
+  shareButtonLabel: string;
+  sendButtonLabel: string;
+  bodyPostButton: EmailRichText;
+}
+
+export const EMAIL_GIFT_PURCHASE_DEFAULTS: EmailGiftPurchaseContent = {
+  subject: "Your gift is ready to send",
+  preview: "The code and link are inside.",
+  heroLine: "A reading, ready for them",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for gifting a {readingName}. Below is the code and a link you can send whenever the timing feels right.",
+    ),
+  ],
+  noteLine: "They’ll see your note when they open it.",
+  cardLabel: "The gift",
+  cardLineTemplate: "For the {readingName} · does not expire",
+  shareButtonLabel: "Share on WhatsApp",
+  sendButtonLabel: "Send it by email from Josephine",
+  bodyPostButton: [
+    ...stringToPortableTextBlocks("Gifts are non-refundable once payment is complete."),
+    ...stringToPortableTextBlocks(
+      "If anything comes up with the gift, just reply to this email. It comes straight to me.",
+    ),
+  ],
+};
+
+export interface EmailGiftOpenedContent {
+  subjectTemplate: string;
+  preview: string;
+  heroLine: string;
+  body: EmailRichText;
+}
+
+export const EMAIL_GIFT_OPENED_DEFAULTS: EmailGiftOpenedContent = {
+  subjectTemplate: "{recipientName} opened your gift",
+  preview: "Their reading is with me now.",
+  heroLine: "Your gift was opened",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "{recipientName} opened the {readingName} you gave them and shared what I need. I’ll have it with them within seven days.",
+    ),
+  ],
+};
+
+export interface EmailGiftRecipientConfirmationContent {
+  subject: string;
+  preview: string;
+  heroLine: string;
+  body: EmailRichText;
+  buyerNameFallback: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  dataExportHeading: string;
+  dataExportButtonLabel: string;
+}
+
+export const EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS: EmailGiftRecipientConfirmationContent = {
+  subject: "Your reading is in my hands now",
+  preview: "Your answers landed safely. Here’s what happens next.",
+  heroLine: "Your reading is in my hands",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "Thank you for sharing what you did. {buyerName} gifted you a {readingName}, and I have everything I need now to begin.",
+    ),
+    ...stringToPortableTextBlocks(
+      "I’ll begin your reading in the next day or two. Your voice note and PDF will arrive within seven days, to this email address.",
+    ),
+  ],
+  buyerNameFallback: "Someone",
+  cardLabel: "Your reading",
+  cardDeliveryLine: "Delivery within 7 days",
+  dataExportHeading: "Need a copy of your data?",
+  dataExportButtonLabel: "Request an export",
+};
+
+export interface EmailGiftToRecipientContent {
+  subject: string;
+  previewTemplate: string;
+  heroLine: string;
+  body: EmailRichText;
+  noteLabelTemplate: string;
+  openButtonLabel: string;
+  codeFallbackTemplate: string;
+  cardLabel: string;
+  cardDeliveryLine: string;
+  privacyLineTemplate: string;
+}
+
+export const EMAIL_GIFT_TO_RECIPIENT_DEFAULTS: EmailGiftToRecipientContent = {
+  subject: "A reading, waiting for you",
+  previewTemplate: "{buyerName} has sent you a reading.",
+  heroLine: "A reading, for you",
+  body: [
+    ...stringToPortableTextBlocks("Hi {firstName},"),
+    ...stringToPortableTextBlocks(
+      "{buyerName} has given you a {readingName} with me. When you’re ready, tap below. A short form follows, so I know what to read for you, and the reading lands in your inbox within seven days.",
+    ),
+  ],
+  noteLabelTemplate: "A note from {buyerName}",
+  openButtonLabel: "Open your gift",
+  codeFallbackTemplate: "The code is {code}, if the button doesn’t work.",
+  cardLabel: "The gift",
+  cardDeliveryLine: "Delivered within 7 days of your intake",
+  privacyLineTemplate:
+    "{buyerName} gave me your name and email address to send you this gift. Your email address is used for this email only and deleted once it is sent.",
 };
 
 export interface ListenPageContent {
@@ -504,7 +868,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
 export const ABOUT_DEFAULTS: MappedAbout = {
   sectionTag: "\u2726 About",
   heading: "who i am + what this is",
-  imageUrl: "/images/akasha.webp",
+  imageUrl: "/images/josephine-portrait.webp",
   paragraphs: [
     "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up - this led me to astrology and then to the Akashic Records.",
     "These two things together changed everything for me. And now I use them as a bridge for others. Astrology maps your soul\u2019s blueprint through your birth chart. Your gifts, your wounds, your patterns and your path.",

@@ -16,7 +16,7 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchSiteSettingsPublished: vi.fn(),
 }));
 
-vi.mock("@/data/readings", () => ({
+vi.mock("@/lib/sanity/readingStaticParams", () => ({
   generateReadingStaticParams: vi.fn(async () => [{ readingId: "soul-blueprint" }]),
 }));
 

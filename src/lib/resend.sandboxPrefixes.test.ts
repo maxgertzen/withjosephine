@@ -3,8 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { SANDBOX_EMAIL_PREFIX_LIST } from "./booking/sandboxEmails";
-import { isSandboxEmail } from "./resend";
+import { isSandboxEmail, SANDBOX_EMAIL_PREFIX_LIST } from "./booking/sandboxEmails";
 
 const SPECS_DIR = join(process.cwd(), "tests", "e2e", "specs");
 const PREFIX_PATTERN = /["`']([a-z][a-z0-9-]*)\+[^@"`']*@withjosephine\.com["`']/g;

@@ -8,6 +8,7 @@ import {
   markSubmissionExpired,
   scrubSubmissionPhoto,
 } from "@/lib/booking/submissions";
+import { deleteExpiredGift, listGiftsByStatusOlderThan, markGiftExpired } from "@/lib/gift/gifts";
 import { deleteObject, listObjectsByPrefix } from "@/lib/r2";
 
 const PENDING_TO_EXPIRED_DAYS = 14;
@@ -52,11 +53,17 @@ async function cleanup(): Promise<{
   const now = new Date();
   const summary = { expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0 };
 
-  const [stalePending, staleExpired, oldPaid] = await Promise.all([
-    listSubmissionsByStatusOlderThan("pending", cutoffIso(PENDING_TO_EXPIRED_DAYS, now)),
-    listSubmissionsByStatusOlderThan("expired", cutoffIso(EXPIRED_TO_DELETE_DAYS, now)),
-    listSubmissionsByStatusOlderThan("paid", cutoffIso(PAID_PHOTO_RETENTION_DAYS, now)),
-  ]);
+  const pendingCutoff = cutoffIso(PENDING_TO_EXPIRED_DAYS, now);
+  const expiredCutoff = cutoffIso(EXPIRED_TO_DELETE_DAYS, now);
+
+  const [stalePending, staleExpired, oldPaid, stalePendingGifts, staleExpiredGifts] =
+    await Promise.all([
+      listSubmissionsByStatusOlderThan("pending", pendingCutoff),
+      listSubmissionsByStatusOlderThan("expired", expiredCutoff),
+      listSubmissionsByStatusOlderThan("paid", cutoffIso(PAID_PHOTO_RETENTION_DAYS, now)),
+      listGiftsByStatusOlderThan("pending", pendingCutoff),
+      listGiftsByStatusOlderThan("expired", expiredCutoff),
+    ]);
 
   for (const submission of stalePending) {
     const wasExpired = await markSubmissionExpired(submission._id, {
@@ -69,6 +76,16 @@ async function cleanup(): Promise<{
     const result = await deleteSubmissionAndPhoto(submission);
     summary.deleted += 1;
     if (result.photoDeleted) summary.photosDeleted += 1;
+  }
+
+  for (const gift of stalePendingGifts) {
+    const wasExpired = await markGiftExpired(gift.id, { expiredAt: now.toISOString() });
+    if (wasExpired) summary.expired += 1;
+  }
+
+  for (const gift of staleExpiredGifts) {
+    const wasDeleted = await deleteExpiredGift(gift.id);
+    if (wasDeleted) summary.deleted += 1;
   }
 
   for (const submission of oldPaid) {

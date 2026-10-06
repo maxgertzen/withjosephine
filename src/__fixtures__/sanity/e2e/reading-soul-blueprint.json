@@ -1,11 +1,6 @@
 {
   "_id": "reading-soul-blueprint",
   "briefDescription": "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
-  "expandedDetails": [
-    "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
-    "You'll complete a personalised question menu when booking your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
-    "Delivered as a detailed voice note and a supporting PDF within 7 days of payment."
-  ],
   "includes": [
     "Akashic Record reading with card pulls",
     "In-depth birth chart analysis",
@@ -13,6 +8,11 @@
     "Personalised questions chosen by you",
     "Detailed voice note recording",
     "Supporting PDF"
+  ],
+  "howItWorks": [
+    "You fill in the form below with your birth details, your full name, a recent photo and the three questions you most want answered, then pay.",
+    "I begin your reading within the next two days and send you a short note when I do.",
+    "Within seven days you receive a voice note and a PDF, sent to the email you gave me."
   ],
   "name": "The Soul Blueprint",
   "price": 12900,

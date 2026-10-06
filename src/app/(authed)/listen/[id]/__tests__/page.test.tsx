@@ -94,7 +94,7 @@ describe("/listen/[id] one-tap token branch", () => {
       valid: true,
       submissionId: "sub_1",
       jti: "jti-1",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       expMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
 
@@ -137,7 +137,7 @@ describe("/listen/[id] one-tap token branch", () => {
       valid: true,
       submissionId: "sub_other",
       jti: "jti-1",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       expMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
 

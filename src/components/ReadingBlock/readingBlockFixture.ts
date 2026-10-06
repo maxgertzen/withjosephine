@@ -1,13 +1,16 @@
 import { ABOUT_DEFAULTS, READING_PAGE_DEFAULTS } from "@/data/defaults";
+import { getReadingById } from "@/data/readings";
 
 import type { ReadingBlockProps } from "./ReadingBlock";
+
+const SOUL_BLUEPRINT = getReadingById("soul-blueprint")!;
 
 export const SOUL_BLUEPRINT_BLOCK: ReadingBlockProps = {
   slug: "soul-blueprint",
   foldRowLabel: "About the Soul Blueprint Reading",
   eyebrow: READING_PAGE_DEFAULTS.eyebrow,
-  lead: "The most complete picture of your soul I can give you",
-  body: "It brings together your purpose, your past lives, and the patterns you’ve carried down through your family line.",
+  lead: SOUL_BLUEPRINT.valueProposition,
+  description: SOUL_BLUEPRINT.briefDescription,
   facts: READING_PAGE_DEFAULTS.facts,
   factsLayout: READING_PAGE_DEFAULTS,
   reader: {
@@ -17,19 +20,11 @@ export const SOUL_BLUEPRINT_BLOCK: ReadingBlockProps = {
   },
   included: {
     title: READING_PAGE_DEFAULTS.includedTitle,
-    items: [
-      "Birth chart reading",
-      "Akashic Record reading with a card pulls",
-      "Your soul’s purpose in this lifetime",
-      "Detailed voice note recording & supporting PDF",
-    ],
+    items: SOUL_BLUEPRINT.includes,
   },
   howItWorks: {
     title: READING_PAGE_DEFAULTS.howItWorksTitle,
-    paragraphs: [
-      "You’ll complete a personalised question menu when booking, so the reading follows what you most want to understand.",
-      "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-    ],
+    items: SOUL_BLUEPRINT.howItWorks,
   },
   questions: {
     title: READING_PAGE_DEFAULTS.questionsTitle,

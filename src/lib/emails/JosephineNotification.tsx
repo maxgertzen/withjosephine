@@ -1,15 +1,11 @@
 import { Link, Text } from "@react-email/components";
 
+import { isVisibleIntakeAnswer } from "@/lib/booking/intakeAnswers";
 import type { SubmissionResponse } from "@/lib/resend";
 
 import { EmailShell } from "./EmailShell";
 import { LabelValueRow } from "./LabelValueRow";
 import { SerifHeading } from "./SerifHeading";
-
-// File uploads surface as a dedicated "Photo:" link block; consent toggles
-// (e.g. "I don't know my birth time") are answered structurally elsewhere
-// in the response set, so listing them as Yes/No rows is noise.
-const NOISE_FIELD_TYPES = new Set(["fileUpload", "consent"]);
 
 export type JosephineNotificationProps = {
   readingName: string;
@@ -20,7 +16,14 @@ export type JosephineNotificationProps = {
   submissionId: string;
   photoUrl: string | null;
   responses: SubmissionResponse[];
+  giftBuyerFirstName?: string;
 };
+
+export function josephineNotificationTitle(readingName: string, giftBuyerFirstName?: string) {
+  const booking = `New ${readingName} booking`;
+  if (giftBuyerFirstName === undefined) return booking;
+  return giftBuyerFirstName ? `${booking}, gift from ${giftBuyerFirstName}` : `${booking}, gift`;
+}
 
 export function JosephineNotification({
   readingName,
@@ -31,12 +34,16 @@ export function JosephineNotification({
   submissionId,
   photoUrl,
   responses,
+  giftBuyerFirstName,
 }: JosephineNotificationProps) {
-  const visible = responses.filter((r) => !NOISE_FIELD_TYPES.has(r.fieldType));
+  const visible = responses.filter(isVisibleIntakeAnswer);
+  const title = josephineNotificationTitle(readingName, giftBuyerFirstName);
   return (
-    <EmailShell maxWidth={640} preview={`New ${readingName} booking — ${email}`}>
-      <SerifHeading>New {readingName} booking</SerifHeading>
-      <LabelValueRow label="Status">Paid</LabelValueRow>
+    <EmailShell maxWidth={640} preview={`${title} — ${email}`}>
+      <SerifHeading>{title}</SerifHeading>
+      <LabelValueRow label="Status">
+        {giftBuyerFirstName === undefined ? "Paid" : "Paid by gift"}
+      </LabelValueRow>
       <LabelValueRow label="Price">{readingPriceDisplay}</LabelValueRow>
       {amountPaidDisplay ? (
         <LabelValueRow label="Amount paid">{amountPaidDisplay}</LabelValueRow>

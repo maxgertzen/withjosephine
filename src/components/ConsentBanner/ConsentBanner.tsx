@@ -4,11 +4,11 @@ import Link from "next/link";
 
 import { ROUTES } from "@/lib/constants";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
+import { LAYER } from "@/styles/layers";
 
 const DEFAULTS = {
   title: "A note on analytics",
-  body:
-    "We use Mixpanel to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
+  body: "We use Mixpanel to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
   privacyLinkText: "Read the privacy policy",
   acceptLabel: "Accept",
   declineLabel: "Decline",
@@ -32,11 +32,14 @@ export function ConsentBanner({ onAccept, onDecline, content }: ConsentBannerPro
       role="dialog"
       aria-modal="false"
       aria-labelledby="consent-banner-title"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-j-border-subtle bg-j-cream shadow-j-soft"
+      className={`fixed inset-x-0 bottom-0 ${LAYER.consentBanner} border-t border-j-border-subtle bg-j-cream shadow-j-soft`}
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between md:gap-6">
         <div className="text-sm leading-relaxed text-j-text">
-          <p id="consent-banner-title" className="font-display italic text-base text-j-text-heading">
+          <p
+            id="consent-banner-title"
+            className="font-display italic text-base text-j-text-heading"
+          >
             {title}
           </p>
           <p className="mt-1 text-sm text-j-text-muted">

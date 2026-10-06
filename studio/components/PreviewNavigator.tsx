@@ -3,46 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useClient } from "sanity";
 import { usePresentationNavigate, usePresentationParams } from "sanity/presentation";
 
-const DRAFTS_PERSPECTIVE_API_VERSION = "2025-02-19";
+import { type PageGroup, pageGroups } from "../lib/previewPageGroups";
 
-type PageLink = { title: string; href: string };
-type PageGroup = { title: string; pages: PageLink[] };
-type SluggedDoc = { title: string; slug: string };
+const DRAFTS_PERSPECTIVE_API_VERSION = "2025-02-19";
 
 const PAGES_QUERY = `{
   "readings": *[_type == "reading" && defined(slug.current)] | order(order asc) { "title": name, "slug": slug.current },
   "notes": *[_type == "article" && defined(slug.current)] | order(publishedAt desc) { title, "slug": slug.current },
   "legal": *[_type == "legalPage" && defined(slug.current)] | order(title asc) { title, "slug": slug.current }
 }`;
-
-function pageGroups(docs: { readings: SluggedDoc[]; notes: SluggedDoc[]; legal: SluggedDoc[] }): PageGroup[] {
-  return [
-    {
-      title: "Site",
-      pages: [
-        { title: "Home", href: "/preview" },
-        { title: "Notes", href: "/preview/notes" },
-      ],
-    },
-    { title: "Notes", pages: docs.notes.map((note) => ({ title: note.title, href: `/preview/notes/${note.slug}` })) },
-    {
-      title: "Booking pages",
-      pages: docs.readings.map((reading) => ({ title: reading.title, href: `/preview/book/${reading.slug}` })),
-    },
-    {
-      title: "Thank-you pages",
-      pages: docs.readings.map((reading) => ({ title: reading.title, href: `/preview/thank-you/${reading.slug}` })),
-    },
-    {
-      title: "Other pages",
-      pages: [
-        ...docs.legal.map((page) => ({ title: page.title, href: `/preview/${page.slug}` })),
-        { title: "Page not found", href: "/preview/404" },
-        { title: "Under construction", href: "/preview/under-construction" },
-      ],
-    },
-  ].filter((group) => group.pages.length > 0);
-}
 
 export function PreviewNavigator() {
   const baseClient = useClient({ apiVersion: DRAFTS_PERSPECTIVE_API_VERSION });

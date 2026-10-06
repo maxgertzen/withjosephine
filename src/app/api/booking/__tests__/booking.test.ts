@@ -18,12 +18,24 @@ vi.mock("@/lib/booking/submissions", () => ({
   SUBMISSION_STATUS: { pending: "pending", paid: "paid", expired: "expired" },
 }));
 
+vi.mock("@/lib/gift/giftRateLimit", () => ({
+  checkGiftRateLimit: vi.fn(),
+}));
+
+vi.mock("@/lib/gift/redeemGift", () => ({
+  redeemGiftSubmission: vi.fn(),
+}));
+
+import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
+import { redeemGiftSubmission } from "@/lib/gift/redeemGift";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerify = vi.mocked(verifyTurnstileToken);
 const mockReading = vi.mocked(fetchReading);
 const mockForm = vi.mocked(fetchBookingForm);
+const mockGiftRateLimit = vi.mocked(checkGiftRateLimit);
+const mockRedeem = vi.mocked(redeemGiftSubmission);
 
 const READING: SanityReading = {
   _id: "reading-1",
@@ -35,7 +47,6 @@ const READING: SanityReading = {
   priceDisplay: "$179",
   valueProposition: "",
   briefDescription: "",
-  expandedDetails: [],
   includes: [],
   requiresBirthChart: false,
   requiresAkashic: false,
@@ -69,6 +80,8 @@ beforeEach(() => {
   mockReading.mockReset();
   mockForm.mockReset();
   createSubmissionMock.mockReset().mockResolvedValue(undefined);
+  mockGiftRateLimit.mockReset().mockResolvedValue(true);
+  mockRedeem.mockReset().mockResolvedValue({ kind: "redeemed", submissionId: "sub_gift" });
 });
 
 async function callRoute(body: unknown, headers: Record<string, string> = {}): Promise<Response> {
@@ -289,5 +302,104 @@ describe("/api/booking", () => {
     expect(responses.find((r) => r.fieldKey === "tob_unknown")).toBeUndefined();
     expect(responses.find((r) => r.fieldKey === "agreement")).toBeUndefined();
     expect(responses.find((r) => r.fieldKey === "email")).toBeDefined();
+  });
+});
+
+describe("/api/booking with a gift code", () => {
+  const GIFT_BODY = { ...VALID_BODY, giftCode: "4K7M2QXR9TBW" };
+
+  function passBookingChecks() {
+    mockVerify.mockResolvedValueOnce(true);
+    mockReading.mockResolvedValueOnce(READING);
+    mockForm.mockResolvedValueOnce(FORM);
+  }
+
+  it("rejects a non-string gift code as an invalid body", async () => {
+    const res = await callRoute({ ...VALID_BODY, giftCode: 42 });
+
+    expect(res.status).toBe(400);
+    expect(mockRedeem).not.toHaveBeenCalled();
+  });
+
+  it("applies the booking validation to the gift branch", async () => {
+    passBookingChecks();
+
+    const res = await callRoute({
+      ...GIFT_BODY,
+      values: { fullName: "", email: "not-email", agreement: false },
+    });
+
+    expect(res.status).toBe(400);
+    expect(mockGiftRateLimit).not.toHaveBeenCalled();
+    expect(mockRedeem).not.toHaveBeenCalled();
+  });
+
+  it("answers 429 when the gift limiter refuses", async () => {
+    passBookingChecks();
+    mockGiftRateLimit.mockResolvedValueOnce(false);
+
+    const res = await callRoute(GIFT_BODY);
+
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+    expect(mockRedeem).not.toHaveBeenCalled();
+  });
+
+  it("redeems instead of creating a pending submission and returns the recipient thank-you", async () => {
+    passBookingChecks();
+
+    const res = await callRoute(GIFT_BODY, { "cf-connecting-ip": "1.2.3.4" });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      thankYouUrl: "/thank-you/soul-blueprint?submissionId=sub_gift",
+      submissionId: "sub_gift",
+    });
+    expect(createSubmissionMock).not.toHaveBeenCalled();
+    expect(mockRedeem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: "4K7M2QXR9TBW",
+        submission: expect.objectContaining({
+          readingSlug: "soul-blueprint",
+          readingName: "Soul Blueprint",
+          readingPriceDisplay: "$179",
+          email: "ada@example.com",
+          photoR2Key: null,
+          ipAddress: "1.2.3.4",
+          createdAt: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it.each([
+    [{ kind: "already_redeemed" } as const, 409, { error: "gift_already_redeemed" }],
+    [{ kind: "not_active" } as const, 409, { error: "gift_not_active" }],
+    [{ kind: "not_found" } as const, 404, { error: "gift_not_found" }],
+    [
+      { kind: "other_reading", readingSlug: "birth-chart" } as const,
+      400,
+      { error: "gift_other_reading", readingSlug: "birth-chart" },
+    ],
+  ])("maps %o to %i", async (result, status, body) => {
+    passBookingChecks();
+    mockRedeem.mockResolvedValueOnce(result);
+
+    const res = await callRoute(GIFT_BODY);
+
+    expect(res.status).toBe(status);
+    expect(await res.json()).toEqual(body);
+  });
+
+  it("answers 500 without the code in the log when the redeem throws", async () => {
+    passBookingChecks();
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockRedeem.mockRejectedValueOnce(new Error("D1 unavailable"));
+
+    const res = await callRoute(GIFT_BODY);
+
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain("4K7M2QXR9TBW");
+    errorSpy.mockRestore();
   });
 });

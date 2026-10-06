@@ -3,13 +3,32 @@ import { defineField, defineType } from "sanity";
 import { parseDisplayToCents } from "../../src/lib/pricing";
 import { hideFactsField, readingFactsField } from "./readingFacts";
 
+const PARAGRAPHS_WITH_BOLD_AND_ITALIC = {
+  type: "block",
+  styles: [{ title: "Paragraph", value: "normal" }],
+  lists: [],
+  marks: {
+    decorators: [
+      { title: "Bold", value: "strong" },
+      { title: "Italic", value: "em" },
+    ],
+    annotations: [],
+  },
+};
+
 export const reading = defineType({
   name: "reading",
   title: "Reading",
   type: "document",
+  groups: [
+    { name: "bothPages", title: "Homepage and booking page", default: true },
+    { name: "bookingPage", title: "Booking page only" },
+    { name: "setup", title: "Setup" },
+  ],
   fields: [
     defineField({
       name: "name",
+      group: "setup",
       title: "Name",
       type: "string",
       description: 'The reading title without a leading article (e.g. "Soul Blueprint", not "The Soul Blueprint").',
@@ -28,6 +47,7 @@ export const reading = defineType({
     }),
     defineField({
       name: "slug",
+      group: "setup",
       title: "Slug",
       type: "slug",
       options: { source: "name", maxLength: 96 },
@@ -35,6 +55,7 @@ export const reading = defineType({
     }),
     defineField({
       name: "tag",
+      group: "setup",
       title: "Tag",
       type: "string",
       description: 'Category label (e.g. "Signature", "Astrology", "Soul Records")',
@@ -42,33 +63,23 @@ export const reading = defineType({
     }),
     defineField({
       name: "subtitle",
+      group: "setup",
       title: "Subtitle",
       type: "string",
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
     }),
     defineField({
       name: "intakeIntro",
+      group: "bookingPage",
       title: "Intake Intro",
       type: "array",
-      of: [
-        {
-          type: "block",
-          styles: [{ title: "Paragraph", value: "normal" }],
-          lists: [],
-          marks: {
-            decorators: [
-              { title: "Bold", value: "strong" },
-              { title: "Italic", value: "em" },
-            ],
-            annotations: [],
-          },
-        },
-      ],
+      of: [PARAGRAPHS_WITH_BOLD_AND_ITALIC],
       description:
         "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold and italic are available. Leave empty to use the built-in wording.",
     }),
     defineField({
       name: "price",
+      group: "setup",
       title: "Price (cents)",
       type: "number",
       description: "Price in cents (e.g. 17900 for $179)",
@@ -76,6 +87,7 @@ export const reading = defineType({
     }),
     defineField({
       name: "priceDisplay",
+      group: "setup",
       title: "Display Price",
       type: "string",
       description: 'Formatted price shown to visitors (e.g. "$179"). Must agree with Price (cents) above.',
@@ -104,36 +116,43 @@ export const reading = defineType({
     }),
     defineField({
       name: "valueProposition",
-      title: "Value Proposition",
+      group: "bothPages",
+      title: "Promise",
       type: "string",
-      description: "One-line hook shown on the reading card",
+      description:
+        "One line. Shown on the homepage card under the price, and at the top of the booking page under 'Online reading'.",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "briefDescription",
-      title: "Brief Description",
+      group: "bothPages",
+      title: "Description",
       type: "text",
-      rows: 3,
-      description: "Short description shown on the reading card",
+      rows: 4,
+      description: "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page.",
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "expandedDetails",
-      title: "Expanded Details",
-      type: "array",
-      of: [{ type: "text", rows: 3 }],
-      description:
-        "Paragraphs shown when the homepage card is expanded. On the booking page, the first paragraph is the line under the promise and the rest go under 'How it works'.",
-    }),
-    defineField({
       name: "includes",
-      title: "What's Included",
+      group: "bothPages",
+      title: "What's included",
       type: "array",
       of: [{ type: "string" }],
-      description: "Checklist items under 'What's included' on the booking page",
+      description:
+        "The checklist. Shown on the homepage card when 'Learn More' is opened, and under 'What's included' on the booking page.",
+    }),
+    defineField({
+      name: "howItWorks",
+      group: "bookingPage",
+      title: "How it works",
+      type: "array",
+      of: [{ type: "string" }],
+      description:
+        "Booking page only, under 'What's included'. One line per item, each with a checkmark. Remove every item to hide the section.",
     }),
     defineField({
       name: "questionsOnPage",
+      group: "bookingPage",
       title: "Questions on this page",
       type: "array",
       of: [{ type: "reference", to: [{ type: "faqItem" }] }],
@@ -142,6 +161,7 @@ export const reading = defineType({
     }),
     defineField({
       name: "formTestimonial",
+      group: "bookingPage",
       title: "Testimonial on the booking form",
       type: "reference",
       to: [{ type: "testimonial" }],
@@ -156,6 +176,7 @@ export const reading = defineType({
     }),
     defineField({
       name: "estimatedMinutes",
+      group: "bookingPage",
       title: "Minutes to fill in the form",
       type: "number",
       description:
@@ -163,12 +184,17 @@ export const reading = defineType({
       validation: (rule) => rule.integer().min(1).max(60),
     }),
     readingFactsField({
+      group: "bookingPage",
       description:
         "This reading's own facts row on its booking page. Leave empty to use the shared Facts Row from Booking Form.",
     }),
-    hideFactsField({ description: "Leaves out the facts row on this reading's booking page." }),
+    hideFactsField({
+      group: "bookingPage",
+      description: "Leaves out the facts row on this reading's booking page.",
+    }),
     defineField({
       name: "stripePaymentLink",
+      group: "setup",
       title: "Stripe Payment Link",
       type: "url",
       description: "Stripe Payment Link URL for this reading. Created in Stripe Dashboard → Payment Links.",
@@ -176,30 +202,35 @@ export const reading = defineType({
     }),
     defineField({
       name: "requiresBirthChart",
+      group: "setup",
       title: "Requires Birth Chart",
       type: "boolean",
       initialValue: false,
     }),
     defineField({
       name: "requiresAkashic",
+      group: "setup",
       title: "Requires Akashic Details",
       type: "boolean",
       initialValue: false,
     }),
     defineField({
       name: "requiresQuestions",
+      group: "setup",
       title: "Requires Questions",
       type: "boolean",
       initialValue: false,
     }),
     defineField({
       name: "order",
+      group: "setup",
       title: "Display Order",
       type: "number",
       initialValue: 0,
     }),
     defineField({
       name: "seo",
+      group: "setup",
       title: "SEO",
       type: "object",
       fields: [

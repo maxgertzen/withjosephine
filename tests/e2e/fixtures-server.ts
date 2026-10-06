@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
 import { FIXTURE_SIDECAR_PORT } from "./constants";
+import { buildStubCheckoutSession, type StubCheckoutSession } from "./helpers/stripeStub";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.resolve(here, "../../src/__fixtures__/sanity/e2e");
@@ -55,8 +56,15 @@ export type CapturedEmail = {
   at: string;
 };
 
+type StoredCheckoutSession = StubCheckoutSession & { created: number };
+
 const mutationLog: CapturedMutation[] = [];
 const emailLog: CapturedEmail[] = [];
+const stripeSessions = new Map<string, StoredCheckoutSession>();
+
+function nowUnixSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}
 
 async function loadJson<T>(filename: string): Promise<T | null> {
   try {
@@ -252,9 +260,24 @@ export async function startFixtureSidecar(): Promise<FixtureSidecar> {
     return c.json({ ok: true });
   });
 
+  app.get("/v1/checkout/sessions/:id", (c) => {
+    const id = c.req.param("id");
+    return c.json(buildStubCheckoutSession(stripeSessions.get(id) ?? { id }));
+  });
+
+  app.post("/_e2e/stripe-sessions", async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as Partial<StubCheckoutSession>;
+    if (typeof body.id !== "string" || !body.id) {
+      return c.json({ error: "id is required" }, 400);
+    }
+    stripeSessions.set(body.id, { ...body, id: body.id, created: nowUnixSeconds() });
+    return c.json({ ok: true });
+  });
+
   app.post("/_e2e/reset", (c) => {
     mutationLog.length = 0;
     emailLog.length = 0;
+    stripeSessions.clear();
     return c.json({ ok: true });
   });
 

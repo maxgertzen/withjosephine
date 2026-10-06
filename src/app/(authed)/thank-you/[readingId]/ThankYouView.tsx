@@ -1,13 +1,11 @@
-import { Mail } from "lucide-react";
+import { Gift, Mail } from "lucide-react";
 
 import { Button } from "@/components/Button";
-import { CelestialOrb } from "@/components/CelestialOrb";
-import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
-import { StarField } from "@/components/StarField";
-import { ThankYouGuard } from "@/components/ThankYouGuard";
-import { PAGE_ORBS } from "@/lib/celestialPresets";
+import { ThankYouShell } from "@/components/ThankYouShell";
 import { renderWithSlots } from "@/lib/copy/templateSlots";
+
+import { cardLabelClasses, cardSurfaceClasses } from "./CardSurface";
 
 export type ThankYouViewCopy = {
   heading: string;
@@ -21,14 +19,18 @@ export type ThankYouViewCopy = {
   deliveryDaysPhrase: string;
 };
 
+const ICONS = { mail: Mail, gift: Gift } as const;
+
 export type ThankYouViewProps = {
-  reading: { name: string; price: string; cents: number | null };
+  icon?: keyof typeof ICONS;
+  reading: { name: string; price: string | null; cents: number | null };
   paidAmount: { cents: number | null; display: string | null };
   contactEmail: string;
   copy: ThankYouViewCopy;
 };
 
 export function ThankYouView({
+  icon = "mail",
   reading,
   paidAmount,
   contactEmail,
@@ -36,85 +38,61 @@ export function ThankYouView({
 }: ThankYouViewProps) {
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
+  const shownPrice = paidAmount.display ?? reading.price;
 
   return (
-    <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <ThankYouGuard />
-      <StarField count={30} className="opacity-[0.03]" />
-      {PAGE_ORBS.map((orb, index) => (
-        <CelestialOrb key={index} {...orb} />
-      ))}
-
-      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20 text-center">
-        <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-j-accent/30 bg-j-accent/10">
-          <Mail className="w-9 h-9 text-j-ornament" strokeWidth={1.5} />
+    <ThankYouShell icon={ICONS[icon]} heading={copy.heading} subheading={copy.subheading}>
+      <div className={`mt-10 ${cardSurfaceClasses} inline-flex items-center gap-6`}>
+        <div className="text-left">
+          <span className={cardLabelClasses}>{copy.readingLabel}</span>
+          <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
         </div>
+        {showsDiscountedPrice ? (
+          <span className="font-display text-2xl italic flex items-baseline gap-2">
+            <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
+            <span className="text-j-text-gold-lg">{paidAmount.display}</span>
+          </span>
+        ) : shownPrice ? (
+          <span className="font-display text-2xl italic text-j-text-gold-lg">{shownPrice}</span>
+        ) : null}
+      </div>
 
-        <h1 className="font-display italic text-[clamp(2rem,5vw,3rem)] font-medium text-j-text-heading leading-tight">
-          {copy.heading}
-        </h1>
-        <p className="font-display italic text-lg text-j-text-muted mt-4 max-w-md mx-auto">
-          {copy.subheading}
+      <GoldDivider className="max-w-xs mx-auto my-12" />
+
+      <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
+        <p className="whitespace-pre-line">{copy.confirmationBody}</p>
+        <p className="whitespace-pre-line">
+          {renderWithSlots(copy.timelineBody, {
+            deliveryDays: (
+              <span className="font-display italic text-j-text-gold">{copy.deliveryDaysPhrase}</span>
+            ),
+          })}
         </p>
-
-        <div className="mt-10 bg-j-ivory border border-j-border-subtle rounded-[20px] p-6 shadow-j-soft inline-flex items-center gap-6">
-          <div className="text-left">
-            <span className="font-body text-xs tracking-[0.18em] uppercase text-j-text-muted">
-              {copy.readingLabel}
-            </span>
-            <p className="font-display text-xl italic text-j-text-heading mt-1">{reading.name}</p>
-          </div>
-          {showsDiscountedPrice ? (
-            <span className="font-display text-2xl italic flex items-baseline gap-2">
-              <span className="line-through text-j-text-muted text-lg">{reading.price}</span>
-              <span className="text-j-text-gold-lg">{paidAmount.display}</span>
-            </span>
-          ) : (
-            <span className="font-display text-2xl italic text-j-text-gold-lg">
-              {paidAmount.display ?? reading.price}
-            </span>
-          )}
-        </div>
-
-        <GoldDivider className="max-w-xs mx-auto my-12" />
-
-        <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-          <p className="whitespace-pre-line">{copy.confirmationBody}</p>
-          <p className="whitespace-pre-line">
-            {renderWithSlots(copy.timelineBody, {
-              deliveryDays: (
-                <span className="font-display italic text-j-text-gold">{copy.deliveryDaysPhrase}</span>
-              ),
-            })}
-          </p>
-          <p className="whitespace-pre-line">
-            {renderWithSlots(copy.contactBody, {
-              email: (
-                <a
-                  href={`mailto:${contactEmail}`}
-                  className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
-                >
-                  {contactEmail}
-                </a>
-              ),
-            })}
-          </p>
-        </div>
-
-        <GoldDivider className="max-w-xs mx-auto my-12" />
-
-        <p className="font-display italic text-base text-j-text max-w-sm mx-auto whitespace-pre-line">
-          {copy.closingMessage}
+        <p className="whitespace-pre-line">
+          {renderWithSlots(copy.contactBody, {
+            email: (
+              <a
+                href={`mailto:${contactEmail}`}
+                className="font-display italic text-j-text-heading border-b border-j-border-gold hover:border-j-accent transition-colors"
+              >
+                {contactEmail}
+              </a>
+            ),
+          })}
         </p>
+      </div>
 
-        <div className="mt-10">
-          <Button href="/" variant="ghost" size="lg">
-            {copy.returnButtonText}
-          </Button>
-        </div>
-      </main>
+      <GoldDivider className="max-w-xs mx-auto my-12" />
 
-      <Footer />
-    </div>
+      <p className="font-display italic text-base text-j-text max-w-sm mx-auto whitespace-pre-line">
+        {copy.closingMessage}
+      </p>
+
+      <div className="mt-10">
+        <Button href="/" variant="ghost" size="lg">
+          {copy.returnButtonText}
+        </Button>
+      </div>
+    </ThankYouShell>
   );
 }

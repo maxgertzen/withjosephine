@@ -32,11 +32,6 @@ async function seed() {
       valueProposition: "The most complete picture of your soul I can give you",
       briefDescription:
         "My signature offering combining your birth chart, Akashic Records and card pulls to reveal your purpose, past lives, and ancestral patterns.",
-      expandedDetails: [
-        "This is honestly something really unusual. It weaves together three powerful modalities to create the deepest, most complete understanding of who you are and why you're here.",
-        "I'll send you a personalised question menu before your reading so you can choose what you most want to explore. Nothing is generic. Everything is specific to you.",
-        "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-      ],
       bookingSummary:
         "My most comprehensive reading. Your birth chart, Akashic Records and card pulls woven together to create the deepest, most complete picture of your soul I can give you.",
       includes: [
@@ -64,11 +59,6 @@ async function seed() {
       valueProposition: "Understand yourself in a way that makes sense of your life",
       briefDescription:
         "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now.",
-      expandedDetails: [
-        "Astrology at this level isn't about your sun sign. It's about the specific energies, timing and patterns that shape your experience.",
-        "We'll look at your natal chart and the current transits affecting you, so you understand both who you are and what's unfolding for you now.",
-        "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-      ],
       bookingSummary:
         "A deep dive into your chart. Your core themes, gifts, patterns — and what the current stars are saying about where you are right now.",
       includes: [
@@ -95,11 +85,6 @@ async function seed() {
       valueProposition: "Direct answers from your soul's infinite records",
       briefDescription:
         "You choose three questions, I open your records, tune in and pull a card for each. The most direct way to access what your soul already knows.",
-      expandedDetails: [
-        "The Akashic Records hold everything your soul has experienced across time. Sometimes the clearest guidance comes from simply asking the right question.",
-        "I'll send you a question menu so you can choose what feels most relevant to you right now. Three questions, three clear answers.",
-        "Delivered as a detailed voice note and a supporting PDF within 7 days of payment.",
-      ],
       bookingSummary:
         "You choose three questions, I open your records and pull a card for each. The most direct way to access what your soul already knows.",
       includes: [

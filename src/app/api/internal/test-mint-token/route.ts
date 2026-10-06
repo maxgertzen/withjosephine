@@ -24,7 +24,7 @@ import { isValidMintSource, mintListenToken } from "@/lib/auth/listenToken";
  * `issue-magic-link` and `admin/regenerate-gift-claim`.
  *
  * Body: `{submissionId, recipientUserId, mintSource, ttlMs?}`. `mintSource`
- * must be `"cron_day7"` or `"admin_resend"`. `ttlMs` is forwarded verbatim,
+ * must be `"reading_delivery"` or `"admin_resend"`. `ttlMs` is forwarded verbatim,
  * including negative values (the spec uses `ttlMs: -1` to drive the
  * expired-token branch of the redeem route).
  */

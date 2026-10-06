@@ -63,7 +63,7 @@ describe("slots — formatSlotValidationError", () => {
   it("names the unknown slot and lists the allowed set", () => {
     const result = validateSlotsInValue(
       "Hi {firstName}, your {wrongSlot}.",
-      "emailDay7Delivery",
+      "emailReadingDelivery",
     );
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -79,22 +79,63 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
   it("covers every template referenced by code-side senders", () => {
     expect(Object.keys(EMAIL_ALLOWED_SLOTS).sort()).toEqual(
       [
-        "emailDay7Delivery",
+        "emailReadingDelivery",
         "emailMagicLink",
         "emailOrderConfirmation",
         "emailPrivacyExport",
+        "emailGiftPurchase",
+        "emailGiftOpened",
+        "emailGiftRecipientConfirmation",
+        "emailGiftToRecipient",
       ].sort(),
     );
   });
 
   it("makes readingPriceDisplay available in customer emails that have purchase context", () => {
     expect(EMAIL_ALLOWED_SLOTS.emailOrderConfirmation).toContain("readingPriceDisplay");
-    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("readingPriceDisplay");
+    expect(EMAIL_ALLOWED_SLOTS.emailReadingDelivery).toContain("readingPriceDisplay");
   });
 
   it("exposes URL tokens where the template's vars carry them", () => {
-    expect(EMAIL_ALLOWED_SLOTS.emailDay7Delivery).toContain("listenUrl");
+    expect(EMAIL_ALLOWED_SLOTS.emailReadingDelivery).toContain("listenUrl");
     expect(EMAIL_ALLOWED_SLOTS.emailPrivacyExport).toContain("downloadUrl");
+  });
+
+  it("limits the gift purchase email to the buyer's first name and the reading name", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftPurchase).toEqual(["firstName", "readingName"]);
+    expect(validateSlotsInValue("Your code is {code}", "emailGiftPurchase")).toEqual({
+      ok: false,
+      unknown: ["code"],
+      allowed: ["firstName", "readingName"],
+    });
+  });
+
+  it("limits the gift emails to first names and the reading name, never the code or the note", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftOpened).toEqual(["firstName", "recipientName", "readingName"]);
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftRecipientConfirmation).toEqual([
+      "firstName",
+      "buyerName",
+      "readingName",
+    ]);
+    for (const template of ["emailGiftOpened", "emailGiftRecipientConfirmation"] as const) {
+      expect(validateSlotsInValue("{code} {note} {buyerEmail}", template)).toMatchObject({
+        ok: false,
+        unknown: ["buyerEmail", "code", "note"],
+      });
+    }
+  });
+
+  it("limits the gift-to-recipient email to the names, the reading name and the code, never the note", () => {
+    expect(EMAIL_ALLOWED_SLOTS.emailGiftToRecipient).toEqual([
+      "firstName",
+      "buyerName",
+      "readingName",
+      "code",
+    ]);
+    expect(validateSlotsInValue("{note} {buyerEmail} {recipientEmail}", "emailGiftToRecipient")).toMatchObject({
+      ok: false,
+      unknown: ["buyerEmail", "note", "recipientEmail"],
+    });
   });
 
   it("exposes amountPaidDisplay where the template's vars carry it", () => {

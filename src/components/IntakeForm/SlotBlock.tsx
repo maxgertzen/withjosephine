@@ -1,4 +1,5 @@
 import type { SanityFormFieldOption } from "@/lib/sanity/types";
+import { calloutClasses } from "@/lib/textStyles";
 
 type SlotBlockProps = {
   count: number;
@@ -70,10 +71,7 @@ export function SlotBlock({ count, selected, status, limitMessage }: SlotBlockPr
       </p>
 
       {limitMessage ? (
-        <p
-          role="alert"
-          className="font-display italic text-sm text-j-text-heading bg-j-blush/40 border-l-2 border-j-accent rounded-r-md px-4 py-3 mt-2"
-        >
+        <p role="alert" className={`${calloutClasses} mt-2`}>
           {limitMessage}
         </p>
       ) : null}

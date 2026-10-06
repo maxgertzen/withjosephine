@@ -13,6 +13,7 @@ import {
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
+import { LAYER } from "@/styles/layers";
 
 const ISO_DATE = "yyyy-MM-dd";
 const SLASH_DATE = "dd/MM/yyyy";
@@ -171,8 +172,8 @@ export function DatePicker({
               <span aria-hidden="true" className="text-j-ornament mr-2">
                 ✦
               </span>
-              That puts you under {minAge}. Please double-check the date — if it&rsquo;s
-              correct, no need to change a thing.
+              That puts you under {minAge}. Please double-check the date — if it&rsquo;s correct, no
+              need to change a thing.
             </p>
           ) : null}
         </Popover.Anchor>
@@ -188,7 +189,7 @@ export function DatePicker({
             onInteractOutside={(event) => {
               if (event.target === inputRef.current) event.preventDefault();
             }}
-            className="z-50 bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]"
+            className={`${LAYER.popover} bg-j-ivory border border-j-border-gold rounded-md shadow-j-card p-4 min-w-[280px]`}
           >
             <DayPicker
               mode="single"

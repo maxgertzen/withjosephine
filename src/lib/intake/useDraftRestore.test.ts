@@ -12,6 +12,8 @@ import {
 } from "./localStorageDraft";
 import { pickCarriedOverFields, useDraftRestore } from "./useDraftRestore";
 
+const TOTAL_PAGES = 3;
+
 const DEFAULT_VALUES: FieldValues = {
   email: "",
   first_name: "",
@@ -68,6 +70,7 @@ describe("useDraftRestore — fresh mount, no saved draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
       }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
@@ -88,6 +91,7 @@ describe("useDraftRestore — restore existing draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
       }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
@@ -106,10 +110,119 @@ describe("useDraftRestore — restore existing draft", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
       }),
     );
     await waitFor(() => expect(result.current.isRestored).toBe(true));
     expect(result.current.values.email).toBe("ada@example.com");
+    expect(result.current.currentPage).toBe(0);
+  });
+
+  it("resumes on the last page when asked to", async () => {
+    saveDraft("soul-blueprint", { currentPage: 0, values: { email: "ada@example.com" } });
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+        initialPage: "last",
+      }),
+    );
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.currentPage).toBe(TOTAL_PAGES - 1);
+  });
+
+  it("reports a restore from a saved draft", async () => {
+    saveDraft("soul-blueprint", { currentPage: 0, values: { email: "ada@example.com" } });
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.restoredFromDraft).toBe(true);
+  });
+
+  it("reports no restore from a draft on a fresh mount", async () => {
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.restoredFromDraft).toBe(false);
+  });
+
+  it("restores the answers of a draft saved with a gift code, without the code among them", async () => {
+    saveDraft("soul-blueprint", {
+      currentPage: 0,
+      values: { email: "anna@example.com", first_name: "Anna" },
+      giftCode: "K7M2QX9PH4TR",
+    });
+    const { result } = renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.values).toEqual({
+      ...DEFAULT_VALUES,
+      email: "anna@example.com",
+      first_name: "Anna",
+    });
+  });
+});
+
+describe("useDraftRestore - a draft saved with a gift code", () => {
+  const GIFT_CODE = "K7M2QX9PH4TR";
+
+  function restoreGiftForm(giftCode: string | undefined) {
+    return renderHook(() =>
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+        giftCode,
+      }),
+    );
+  }
+
+  it("opens on the last page when the draft was left there with this gift's code", async () => {
+    saveDraft("soul-blueprint", {
+      currentPage: TOTAL_PAGES - 1,
+      values: { email: "anna@example.com" },
+      giftCode: GIFT_CODE,
+    });
+    const { result } = restoreGiftForm(GIFT_CODE);
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
+    expect(result.current.currentPage).toBe(TOTAL_PAGES - 1);
+  });
+
+  it.each([
+    { draftCode: GIFT_CODE, draftPage: 0, routeCode: GIFT_CODE, case: "left on an earlier page" },
+    { draftCode: "Q9PH4TRK7M2X", draftPage: TOTAL_PAGES - 1, routeCode: GIFT_CODE, case: "for another code" },
+    { draftCode: undefined, draftPage: TOTAL_PAGES - 1, routeCode: GIFT_CODE, case: "without a code" },
+    { draftCode: GIFT_CODE, draftPage: TOTAL_PAGES - 1, routeCode: undefined, case: "outside gift mode" },
+  ])("opens on the first page for a draft $case", async ({ draftCode, draftPage, routeCode }) => {
+    saveDraft("soul-blueprint", {
+      currentPage: draftPage,
+      values: { email: "anna@example.com" },
+      giftCode: draftCode,
+    });
+    const { result } = restoreGiftForm(routeCode);
+
+    await waitFor(() => expect(result.current.isRestored).toBe(true));
     expect(result.current.currentPage).toBe(0);
   });
 });
@@ -123,7 +236,11 @@ describe("useDraftRestore — carry-over from the last reading (P2.4e)", () => {
     setLastReadingId("akashic-record");
 
     const { result } = renderHook(() =>
-      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
     );
 
     await waitFor(() => expect(result.current.nameOrEmailCarriedOver).toBe(true));
@@ -139,7 +256,11 @@ describe("useDraftRestore — carry-over from the last reading (P2.4e)", () => {
     setLastReadingId("akashic-record");
 
     const { result } = renderHook(() =>
-      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
     );
 
     await waitFor(() => expect(result.current.isRestored).toBe(true));
@@ -152,7 +273,11 @@ describe("useDraftRestore — carry-over from the last reading (P2.4e)", () => {
     setLastReadingId("akashic-record");
 
     const { result } = renderHook(() =>
-      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
     );
 
     await waitFor(() => expect(result.current.isRestored).toBe(true));
@@ -161,7 +286,11 @@ describe("useDraftRestore — carry-over from the last reading (P2.4e)", () => {
 
   it("reports no carry-over when no previous reading was tracked", async () => {
     const { result } = renderHook(() =>
-      useDraftRestore({ readingId: "soul-blueprint", defaultValues: DEFAULT_VALUES }),
+      useDraftRestore({
+        readingId: "soul-blueprint",
+        defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
+      }),
     );
 
     await waitFor(() => expect(result.current.isRestored).toBe(true));
@@ -175,6 +304,7 @@ describe("useDraftRestore — writes lastReadingId on mount", () => {
       useDraftRestore({
         readingId: "birth-chart",
         defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
       }),
     );
     expect(window.localStorage.getItem(LAST_READING_ID_KEY)).toBe("birth-chart");
@@ -196,6 +326,7 @@ describe("useDraftRestore — corrupted draft is ignored", () => {
       useDraftRestore({
         readingId: "soul-blueprint",
         defaultValues: DEFAULT_VALUES,
+        totalPages: TOTAL_PAGES,
       }),
     );
     expect(result.current.values.email).toBe("");

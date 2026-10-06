@@ -1,7 +1,19 @@
 import type { PortableTextBlock } from "@portabletext/types";
 
-import type { NotesContent, ReadingFact, ReadingPageContent } from "@/data/defaults";
+import type {
+  EmailGiftOpenedContent,
+  EmailGiftPurchaseContent,
+  EmailGiftRecipientConfirmationContent,
+  EmailGiftToRecipientContent,
+  GiftContent,
+  NotesContent,
+  ReadingFact,
+  ReadingPageContent,
+  ReadingsSectionContent,
+} from "@/data/defaults";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
+
+export type ContentPerspective = "published" | "preview";
 
 export type SanityReading = {
   _id: string;
@@ -14,8 +26,8 @@ export type SanityReading = {
   priceDisplay: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
   includes: string[];
+  howItWorks?: string[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
@@ -73,11 +85,7 @@ export type SanityLandingPage = {
   hero: SanityHero;
   about: SanityAbout;
   howItWorks: SanityHowItWorks;
-  readingsSection: {
-    sectionTag: string;
-    heading: string;
-    subheading: string;
-  };
+  readingsSection: Partial<ReadingsSectionContent>;
   testimonialsSection: {
     sectionTag: string;
     heading: string;
@@ -151,7 +159,7 @@ export type SanityEmailPrivacyExport = {
   signOff: string | null;
 };
 
-export type SanityEmailDay7Delivery = {
+export type SanityEmailReadingDelivery = {
   subjectTemplate: string;
   preview: string;
   bodyIntro?: PortableTextBlock[];
@@ -165,6 +173,14 @@ export type SanityEmailDay7Delivery = {
   comfortFollowUp?: PortableTextBlock[];
   signOff: string | null;
 };
+
+export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
+
+export type SanityEmailGiftOpened = Partial<EmailGiftOpenedContent>;
+
+export type SanityEmailGiftRecipientConfirmation = Partial<EmailGiftRecipientConfirmationContent>;
+
+export type SanityEmailGiftToRecipient = Partial<EmailGiftToRecipientContent>;
 
 export type SanityEmailSharedShell = {
   brandName: string;
@@ -413,6 +429,8 @@ export type SanityLegalPage = {
   body: SanityPortableTextBlock[];
   seo?: Pick<SanitySeo, "metaTitle" | "metaDescription">;
 };
+
+export type SanityGiftSettings = Partial<GiftContent>;
 
 export type SanityNotesSettings = Partial<NotesContent> & {
   enabled?: boolean;

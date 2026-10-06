@@ -20,6 +20,12 @@ export const AUDIT_EVENT_TYPE = {
   deletion_request: "deletion_request",
   admin_auth_failed: "admin_auth_failed",
   admin_email_preview_sent: "admin_email_preview_sent",
+  gift_code_invalid: "gift_code_invalid",
+  gift_redeemed: "gift_redeemed",
+  gift_sent: "gift_sent",
+  gift_send_link_invalid: "gift_send_link_invalid",
+  duplicate_payment_refunded: "duplicate_payment_refunded",
+  cancelled_gift_paid: "cancelled_gift_paid",
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPE)[keyof typeof AUDIT_EVENT_TYPE];

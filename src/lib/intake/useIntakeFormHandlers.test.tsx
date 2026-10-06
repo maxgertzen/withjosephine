@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { useRef, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/analytics", () => ({
   track: vi.fn(),
@@ -9,9 +9,12 @@ vi.mock("@/lib/analytics", () => ({
 
 import type { LegalAcknowledgmentsErrors } from "@/components/IntakeForm/LegalAcknowledgments";
 import type { FieldValues } from "@/components/IntakeForm/types";
-import { emptyConsentSnapshot } from "@/lib/compliance/intakeConsent";
+import { GIFT_DEFAULTS } from "@/data/defaults";
+import { emptyConsentSnapshot, type LegalConsentSnapshot } from "@/lib/compliance/intakeConsent";
+import type { GiftCodeCheckOutcome } from "@/lib/gift/useGiftCodeCheck";
 import type { SanityFormField } from "@/lib/sanity/types";
 
+import { restore as restoreDraft, save as saveDraft } from "./localStorageDraft";
 import {
   useIntakeFormHandlers,
   type UseIntakeFormHandlersArgs,
@@ -181,5 +184,266 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
 
     expect(setIsSubmitting).toHaveBeenCalledWith(true);
     expect(setIsSubmitting).toHaveBeenLastCalledWith(false);
+  });
+});
+
+const READING = "soul-blueprint";
+const GIFT_CODE = "K7M2QX9PH4TR";
+
+function fullyConsented(): LegalConsentSnapshot {
+  const snapshot = emptyConsentSnapshot();
+  return {
+    ...snapshot,
+    art6: { ...snapshot.art6, acknowledged: true },
+    art9: { ...snapshot.art9, acknowledged: true },
+    coolingOff: { ...snapshot.coolingOff, acknowledged: true },
+  };
+}
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), { status });
+}
+
+const fetchMock = vi.fn();
+const assignMock = vi.fn();
+const originalLocation = window.location;
+
+function finalPageSubmitHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
+  return renderHook(() =>
+    useTestHarness({
+      isFinalPage: true,
+      submitIntentRef: { current: true },
+      consentSnapshot: fullyConsented(),
+      ...overrides,
+    }),
+  );
+}
+
+async function pressSubmit(result: { current: ReturnType<typeof useTestHarness> }) {
+  await act(async () => {
+    await result.current.handlers.handleSubmit(submitEvent());
+  });
+}
+
+const GIFT_ERRORS = {
+  ending: {
+    gift_already_redeemed: GIFT_DEFAULTS.openedRaceError,
+    gift_not_found: GIFT_DEFAULTS.notFoundHeading,
+    gift_not_active: GIFT_DEFAULTS.noLongerActiveHeading,
+  },
+  tooManyTries: GIFT_DEFAULTS.codeTooManyTries,
+};
+
+function giftMode(endGiftMode = vi.fn()) {
+  return { code: GIFT_CODE, errors: GIFT_ERRORS, endGiftMode };
+}
+
+function postedBody(): Record<string, unknown> {
+  return JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+}
+
+function useStubbedFetchAndLocation() {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockReset();
+    assignMock.mockReset();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "", assign: assignMock },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Object.defineProperty(window, "location", { configurable: true, value: originalLocation });
+  });
+}
+
+describe("useIntakeFormHandlers — gift mode submit", () => {
+  useStubbedFetchAndLocation();
+
+  beforeEach(() => {
+    saveDraft(READING, { currentPage: 1, values: { email: "anna@example.com" }, giftCode: GIFT_CODE });
+  });
+
+  it("sends the gift code, clears the draft and goes to the thank-you page on 200", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { thankYouUrl: "/thank-you/soul-blueprint?submissionId=sub_1", submissionId: "sub_1" }),
+    );
+    const { result } = finalPageSubmitHarness({ gift: giftMode() });
+
+    await pressSubmit(result);
+
+    expect(postedBody().giftCode).toBe(GIFT_CODE);
+    expect(restoreDraft(READING)).toBeNull();
+    expect(window.location.href).toBe("/thank-you/soul-blueprint?submissionId=sub_1");
+  });
+
+  it("on a lost race clears the code, keeps the answers, ends gift mode and shows the race message", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(409, { error: "gift_already_redeemed" }));
+    const endGiftMode = vi.fn();
+    const { result } = finalPageSubmitHarness({ gift: giftMode(endGiftMode) });
+
+    await pressSubmit(result);
+
+    const draft = restoreDraft(READING);
+    expect(draft?.giftCode).toBeUndefined();
+    expect(draft?.values).toEqual({ email: "anna@example.com" });
+    expect(endGiftMode).toHaveBeenCalledTimes(1);
+    expect(result.current.submitError).toBe(GIFT_DEFAULTS.openedRaceError);
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
+  it.each([
+    [404, "gift_not_found", GIFT_DEFAULTS.notFoundHeading],
+    [409, "gift_not_active", GIFT_DEFAULTS.noLongerActiveHeading],
+  ])("on %s %s shows its message and leaves gift mode", async (status, error, message) => {
+    fetchMock.mockResolvedValue(jsonResponse(status, { error }));
+    const endGiftMode = vi.fn();
+    const { result } = finalPageSubmitHarness({ gift: giftMode(endGiftMode) });
+
+    await pressSubmit(result);
+
+    expect(result.current.submitError).toBe(message);
+    expect(endGiftMode).toHaveBeenCalled();
+    expect(restoreDraft(READING)?.giftCode).toBeUndefined();
+  });
+
+  it("on 429 shows the too-many-tries message and keeps the code", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(429, { error: "rate_limited" }));
+    const endGiftMode = vi.fn();
+    const { result } = finalPageSubmitHarness({ gift: giftMode(endGiftMode) });
+
+    await pressSubmit(result);
+
+    expect(result.current.submitError).toBe(GIFT_DEFAULTS.codeTooManyTries);
+    expect(endGiftMode).not.toHaveBeenCalled();
+    expect(restoreDraft(READING)?.giftCode).toBe(GIFT_CODE);
+  });
+
+  it("Remove clears the code and goes to the booking page", () => {
+    const endGiftMode = vi.fn();
+    const { result } = renderHook(() => useTestHarness({ gift: giftMode(endGiftMode) }));
+
+    act(() => {
+      result.current.handlers.handleRemoveGiftCode();
+    });
+
+    expect(restoreDraft(READING)?.giftCode).toBeUndefined();
+    expect(restoreDraft(READING)?.values).toEqual({ email: "anna@example.com" });
+    expect(endGiftMode).not.toHaveBeenCalled();
+    expect(assignMock).toHaveBeenCalledWith("/book/soul-blueprint");
+  });
+});
+
+describe("useIntakeFormHandlers — gift code field on the last page", () => {
+  useStubbedFetchAndLocation();
+
+  function codeField(
+    outcome: GiftCodeCheckOutcome | null,
+    value = " k7m2-qx9p-h4tr ",
+    checking = false,
+  ) {
+    return { value, checking, check: vi.fn(async () => outcome) };
+  }
+
+  it("checks the code on the press, saves it with the draft and goes to the gift page when valid", async () => {
+    const field = codeField({ kind: "valid", path: `/gift/${GIFT_CODE}` });
+    const { result } = finalPageSubmitHarness({ giftCodeField: field });
+
+    await pressSubmit(result);
+
+    expect(field.check).toHaveBeenCalledTimes(1);
+    expect(restoreDraft(READING)?.giftCode).toBe(GIFT_CODE);
+    expect(assignMock).toHaveBeenCalledWith(`/gift/${GIFT_CODE}`);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends nothing else when the code is not valid", async () => {
+    const field = codeField({ kind: "error", message: GIFT_DEFAULTS.codeNotFound });
+    const { result } = finalPageSubmitHarness({ giftCodeField: field });
+
+    await pressSubmit(result);
+
+    expect(field.check).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assignMock).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on a second press while the check is in flight", async () => {
+    const field = codeField({ kind: "valid", path: `/gift/${GIFT_CODE}` }, GIFT_CODE, true);
+    const { result } = finalPageSubmitHarness({ giftCodeField: field });
+
+    await pressSubmit(result);
+
+    expect(field.check).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assignMock).not.toHaveBeenCalled();
+  });
+
+  it("submits as today when the field is empty", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_1" }),
+    );
+    const field = codeField(null, "  ");
+    const { result } = finalPageSubmitHarness({ giftCodeField: field });
+
+    await pressSubmit(result);
+
+    expect(field.check).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith("/api/booking", expect.objectContaining({ method: "POST" }));
+    expect(postedBody().giftCode).toBeUndefined();
+  });
+
+  it("checks nothing until the press", () => {
+    const field = codeField({ kind: "valid", path: `/gift/${GIFT_CODE}` });
+    const { result } = renderHook(() => useTestHarness({ isFinalPage: true, giftCodeField: field }));
+
+    act(() => {
+      result.current.handlers.setValue("email", "anna@example.com");
+    });
+
+    expect(field.check).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("useIntakeFormHandlers - preview", () => {
+  useStubbedFetchAndLocation();
+
+  beforeEach(() => {
+    saveDraft(READING, { currentPage: 1, values: { email: "anna@example.com" }, giftCode: GIFT_CODE });
+  });
+
+  it("the last-page submit posts nothing and stays on the page", async () => {
+    const { result } = finalPageSubmitHarness({ gift: giftMode(), preview: true });
+
+    await pressSubmit(result);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
+  it("Next still moves to the next page", async () => {
+    const { result } = renderHook(() =>
+      useTestHarness({ submitIntentRef: { current: true }, gift: giftMode(), preview: true }),
+    );
+
+    await pressSubmit(result);
+
+    expect(result.current.currentPage).toBe(1);
+  });
+
+  it("Remove keeps the code and stays on the page", () => {
+    const { result } = renderHook(() => useTestHarness({ gift: giftMode(), preview: true }));
+
+    act(() => {
+      result.current.handlers.handleRemoveGiftCode();
+    });
+
+    expect(restoreDraft(READING)?.giftCode).toBe(GIFT_CODE);
+    expect(assignMock).not.toHaveBeenCalled();
   });
 });

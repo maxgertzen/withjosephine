@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EmailFiredEntry, SubmissionRecord } from "../submissions";
+import type { EmailFailureEntry, EmailFiredEntry, SubmissionRecord } from "../submissions";
 import { diffSubmission, type SanityMirrorSnapshot } from "./reconcileMirror";
 
 function makeD1(overrides: Partial<SubmissionRecord> = {}): SubmissionRecord {
@@ -78,5 +78,80 @@ describe("diffSubmission", () => {
     const e1 = makeEmail("order_confirmation", "2026-05-01T00:00:00.000Z");
     const d1 = makeD1({ emailsFired: [e1] });
     expect(diffSubmission(d1, makeMatchingSanity(d1))).toEqual({ kind: "skip" });
+  });
+
+  it.each([
+    ["D1 is migrated and Sanity is not", "reading_delivery", "day7"],
+    ["Sanity is migrated and D1 is not", "day7", "reading_delivery"],
+  ])("returns 'skip' when %s", (_label, d1Type, sanityType) => {
+    const sentAt = "2026-05-01T00:00:00.000Z";
+    const asEntry = (type: string) =>
+      ({ type, sentAt, resendId: null }) as unknown as EmailFiredEntry;
+    const d1 = makeD1({ emailsFired: [asEntry(d1Type)] });
+    const sanity = { ...makeMatchingSanity(d1), emailsFired: [asEntry(sanityType)] };
+    expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
+  });
+
+  describe("email failures", () => {
+    const FAILURE: EmailFailureEntry = {
+      emailType: "reading_delivery",
+      kind: "bounced",
+      recipient: "test@example.com",
+      attemptNumber: 1,
+      attemptedAt: null,
+      failedAt: "2026-05-02T00:00:00.000Z",
+      statusCode: null,
+      errorCode: null,
+      errorMessage: "Mailbox does not exist",
+      bounceType: "Permanent / General",
+      resendId: "msg_1",
+      resolvedAt: null,
+    };
+
+    it("skips when Sanity holds the same failures with keys and without null fields", () => {
+      const d1 = makeD1({ emailFailures: [FAILURE] });
+      const sanityCopy = Object.fromEntries(
+        Object.entries(FAILURE).filter(([, value]) => value !== null),
+      ) as EmailFailureEntry;
+      const sanity = {
+        ...makeMatchingSanity(d1),
+        emailFailures: [{ ...sanityCopy, _key: "reading_delivery-0", _type: "emailFailure" }],
+      };
+
+      expect(diffSubmission(d1, sanity)).toEqual({ kind: "skip" });
+    });
+
+    it("patches the full list when Sanity kept a failure that D1 resolved", () => {
+      const resolved = { ...FAILURE, resolvedAt: "2026-05-03T00:00:00.000Z" };
+      const d1 = makeD1({ emailFailures: [resolved] });
+      const sanity = { ...makeMatchingSanity(d1), emailFailures: [FAILURE] };
+
+      expect(diffSubmission(d1, sanity)).toMatchObject({
+        kind: "patch",
+        patch: { emailFailures: [resolved] },
+      });
+    });
+  });
+});
+
+describe("diffSubmission for a redeemed gift", () => {
+  const GIFT_ROW = makeD1({ _id: "gift_1", status: "paid", giftCodeId: "gift_1" });
+
+  it("recreates a gift submission whose Sanity doc has no email yet", () => {
+    expect(diffSubmission(GIFT_ROW, makeMatchingSanity(GIFT_ROW))).toEqual({ kind: "create" });
+  });
+
+  it("patches a gift submission that has its email", () => {
+    const sanity = { ...makeMatchingSanity(GIFT_ROW), hasEmail: true };
+    expect(diffSubmission(GIFT_ROW, sanity)).toEqual({ kind: "skip" });
+    expect(diffSubmission(GIFT_ROW, { ...sanity, status: undefined })).toMatchObject({
+      kind: "patch",
+      patch: { status: "paid" },
+    });
+  });
+
+  it("does not ask a booking for its email", () => {
+    const booking = makeD1();
+    expect(diffSubmission(booking, makeMatchingSanity(booking))).toEqual({ kind: "skip" });
   });
 });

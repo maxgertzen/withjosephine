@@ -106,7 +106,7 @@ describe("deriveNoteViewProps", () => {
       },
     );
     expect(withPhoto.author.photoUrl).toBe(
-      "https://cdn.sanity.io/images/p/d/me.jpg?w=80&auto=format",
+      "https://cdn.sanity.io/images/p/d/me.jpg?w=210&auto=format",
     );
   });
 

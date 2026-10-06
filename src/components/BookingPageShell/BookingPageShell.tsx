@@ -1,15 +1,19 @@
 import type { ReactNode } from "react";
 
-import { BookingFlowHeader } from "@/components/BookingFlowHeader";
+import { BackControl, BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
+import { NAV_BAR_OFFSET_CLASS, Navigation } from "@/components/Navigation";
+import type { NotesNavProps } from "@/components/Notes/NotesShell";
 
 import { ReadingTitleBlock } from "./ReadingTitleBlock";
 
 export type BookingPageShellProps = {
+  nav: NotesNavProps;
   backHref: string;
   readingTag: string;
   readingName: string;
   readingPrice: string;
+  priceLine?: ReactNode;
   outerBg?: "cream" | "ivory";
   children: ReactNode;
 };
@@ -20,23 +24,32 @@ const OUTER_BG_CLASS: Record<NonNullable<BookingPageShellProps["outerBg"]>, stri
 };
 
 export function BookingPageShell({
+  nav,
   backHref,
   readingTag,
   readingName,
   readingPrice,
+  priceLine,
   outerBg = "cream",
   children,
 }: BookingPageShellProps) {
   return (
     <div className={`relative min-h-screen ${OUTER_BG_CLASS[outerBg]} overflow-hidden`}>
-      <BookingFlowHeader backHref={backHref} />
+      <Navigation {...nav} page="other" />
+      <div className={NAV_BAR_OFFSET_CLASS}>
+        {readingName ? null : <BookingFlowHeader backHref={backHref} />}
+      </div>
 
-      <main id="main" className="relative z-10">
-        <ReadingTitleBlock
-          readingTag={readingTag}
-          readingName={readingName}
-          readingPrice={readingPrice}
-        />
+      <main id="main" className="relative">
+        {readingName ? (
+          <ReadingTitleBlock
+            readingTag={readingTag}
+            readingName={readingName}
+            readingPrice={readingPrice}
+            priceLine={priceLine}
+            back={<BackControl backHref={backHref} />}
+          />
+        ) : null}
         <div className="max-w-3xl mx-auto px-6 py-16">
           <article className="relative bg-j-ivory border border-j-blush rounded-sm shadow-j-card">
             <div

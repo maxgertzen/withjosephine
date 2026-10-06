@@ -46,4 +46,17 @@ describe("ClarityRouteTracking", () => {
     pathnameSpy.mockReturnValue("/b");
     expect(() => rerender(<ClarityRouteTracking />)).not.toThrow();
   });
+
+  it.each(["/gift/x", "/thank-you/x"])(
+    "does NOT fire on a soft navigation to %s",
+    (pathname) => {
+      const clarityMock = vi.fn();
+      (window as unknown as { clarity: typeof clarityMock }).clarity = clarityMock;
+      pathnameSpy.mockReturnValue("/book/soul-blueprint");
+      const { rerender } = render(<ClarityRouteTracking />);
+      pathnameSpy.mockReturnValue(pathname);
+      rerender(<ClarityRouteTracking />);
+      expect(clarityMock).not.toHaveBeenCalled();
+    },
+  );
 });

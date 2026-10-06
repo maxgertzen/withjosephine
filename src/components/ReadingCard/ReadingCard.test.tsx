@@ -35,7 +35,9 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
+import { READING_CARD_LABEL_KEYS, READINGS_SECTION_DEFAULTS } from "@/data/defaults";
 import { clearEntryClick, pendingEntryClick } from "@/lib/intake/entryMarker";
+import { pick } from "@/lib/pick";
 
 import { ReadingCard } from "./ReadingCard";
 
@@ -46,7 +48,8 @@ const defaultProps = {
   price: "$179",
   valueProposition: "The complete picture of your soul's design.",
   briefDescription: "A deep dive into your birth chart and Akashic Records.",
-  expandedDetails: ["Full birth chart analysis", "Akashic Record insights", "Voice note + PDF"],
+  includes: ["Full birth chart analysis", "Akashic Record insights", "Voice note + PDF"],
+  labels: pick(READINGS_SECTION_DEFAULTS, READING_CARD_LABEL_KEYS),
   href: "/book/soul-blueprint",
 };
 
@@ -63,13 +66,13 @@ describe("ReadingCard", () => {
     expect(screen.getByText(defaultProps.briefDescription)).toBeInTheDocument();
   });
 
-  it("does not show expanded details initially", () => {
+  it("does not show the checklist initially", () => {
     render(<ReadingCard {...defaultProps} />);
 
     expect(screen.queryByText("Full birth chart analysis")).not.toBeInTheDocument();
   });
 
-  it("toggles expanded details on Learn More click", async () => {
+  it("shows the What's included checklist on Learn More click", async () => {
     const user = userEvent.setup();
     render(<ReadingCard {...defaultProps} />);
 
@@ -115,5 +118,21 @@ describe("ReadingCard", () => {
     await user.click(screen.getByRole("link", { name: "Book This Reading" }));
 
     expect(pendingEntryClick("soul-blueprint")).toBeNull();
+  });
+
+  it("leaves out Learn More when the reading has no checklist", () => {
+    render(<ReadingCard {...defaultProps} includes={[]} />);
+
+    expect(screen.queryByText("Learn More ↓")).not.toBeInTheDocument();
+  });
+
+  it("uses the labels from Sanity", async () => {
+    const user = userEvent.setup();
+    const labels = { learnMoreLabel: "More", showLessLabel: "Less", bookButtonText: "Book it" };
+    render(<ReadingCard {...defaultProps} labels={labels} />);
+
+    expect(screen.getByRole("link", { name: "Book it" })).toBeInTheDocument();
+    await user.click(screen.getByText("More"));
+    expect(screen.getByText("Less")).toBeInTheDocument();
   });
 });

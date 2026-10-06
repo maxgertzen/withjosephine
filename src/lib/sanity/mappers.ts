@@ -1,6 +1,7 @@
 import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
+import { linesWithText } from "@/lib/content/nonBlank";
 import type { NotesLink } from "@/lib/notes/notes";
 
 import type {
@@ -18,7 +19,7 @@ export type MappedReading = {
   price: string;
   valueProposition: string;
   briefDescription: string;
-  expandedDetails: string[];
+  includes: string[];
 };
 
 export type MappedTestimonial = {
@@ -64,7 +65,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
       price: SANITY_READING_PRICES[r.id] ?? r.price,
       valueProposition: r.valueProposition,
       briefDescription: r.briefDescription,
-      expandedDetails: r.expandedDetails,
+      includes: r.includes,
     }));
   }
 
@@ -75,7 +76,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
     price: r.priceDisplay,
     valueProposition: r.valueProposition,
     briefDescription: r.briefDescription,
-    expandedDetails: r.expandedDetails,
+    includes: linesWithText(r.includes),
   }));
 }
 

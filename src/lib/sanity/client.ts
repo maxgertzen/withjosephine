@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createClient, type SanityClient } from "next-sanity";
+import { createClient, type FilterDefault, type SanityClient } from "next-sanity";
 
 import { requireEnv } from "../env";
 import { taintServerObject } from "../taint";
@@ -46,6 +46,9 @@ async function resolveDataset(): Promise<string> {
  */
 const studioUrl = process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "http://localhost:3333";
 
+const editableInPresentation: FilterDefault = (props) =>
+  props.sourcePath.at(-1) === "tag" || props.filterDefault(props);
+
 /**
  * Single shared Sanity client. Perspective (`published` vs `drafts`) is
  * switched per-request by `sanityFetch` in `./live.ts` based on Next.js
@@ -58,7 +61,7 @@ export const sanityClient = createClient({
   dataset: buildBakedDataset,
   apiVersion,
   useCdn: true,
-  stega: { studioUrl },
+  stega: { studioUrl, filter: editableInPresentation },
   ...hostOverride,
 });
 

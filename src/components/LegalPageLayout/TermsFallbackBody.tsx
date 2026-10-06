@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 import { ROUTES } from "@/lib/constants";
 
+import { TERMS_GIFT_LINES } from "./legalLines";
+
 export function TermsFallbackBody() {
   return (
     <>
@@ -20,7 +22,7 @@ export function TermsFallbackBody() {
       <p className="font-body text-base text-j-text leading-[1.9] font-light">
         You must be 18 years of age or older to book a reading. By booking you confirm you are.
         Gift bookings for someone else are welcome, provided that person also meets this
-        requirement and has consented to having a reading done for them.
+        requirement and has consented to having a reading done for them. {TERMS_GIFT_LINES}
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">

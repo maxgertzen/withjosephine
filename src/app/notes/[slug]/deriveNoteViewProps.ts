@@ -1,9 +1,9 @@
 import { ABOUT_DEFAULTS } from "@/data/defaults";
+import { nonBlank } from "@/lib/content/nonBlank";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { bookingPath } from "@/lib/http/routes";
 import {
   formatMonthYear,
-  nonBlank,
   noteLastModified,
   notePath,
   notesContent,
@@ -16,7 +16,7 @@ import type { SanityArticle, SanityNotesState, SanitySiteSettings } from "@/lib/
 import type { NoteEnding, NoteViewProps } from "./NoteView";
 
 const MORE_NOTES_LIMIT = 2;
-const AUTHOR_PHOTO_PX = 80;
+const AUTHOR_PHOTO_PX = 210;
 
 function pickedNotes(article: SanityArticle): NoteSummary[] {
   return (article.moreNotes ?? [])

@@ -1,5 +1,7 @@
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 
+import { US_BASED_PROCESSORS } from "./legalLines";
+
 export function PrivacyFallbackBody() {
   return (
     <>
@@ -165,9 +167,8 @@ export function PrivacyFallbackBody() {
         Kingdom and the European Economic Area, including countries that do not have a UK or EU
         adequacy decision. When that happens, the transfer is necessary for the performance of your
         booking contract with Josephine (UK GDPR / GDPR Article 49(1)(b)). Several processors are
-        US-based (Stripe, Sanity, Mixpanel, Microsoft) and operate under the EU-US / UK Data Privacy
-        Framework and Standard Contractual Clauses. Your data is not stored long-term on personal
-        devices.
+        US-based ({US_BASED_PROCESSORS}) and operate under the EU-US / UK Data Privacy Framework and
+        Standard Contractual Clauses. Your data is not stored long-term on personal devices.
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">

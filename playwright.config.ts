@@ -42,7 +42,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   timeout: isSandbox ? 5 * 60 * 1000 : 60_000,
   expect: { timeout: 10_000 },
-  globalTimeout: isSandbox ? 25 * 60 * 1000 : 6 * 60 * 1000,
+  globalTimeout: isSandbox ? 25 * 60 * 1000 : 12 * 60 * 1000,
   globalSetup: "./tests/e2e/global-setup.ts",
 
   use: {
@@ -106,11 +106,14 @@ export default defineConfig({
             E2E_RESET_TOKEN: e2eResetToken,
             E2E_CAPTURE_URL: sidecarUrl,
             SANITY_API_HOST: sidecarUrl,
+            STRIPE_API_HOST: sidecarUrl,
             RESEND_DRY_RUN: "1",
+            NOTIFICATION_EMAIL: "hello@withjosephine.com",
             SANITY_WRITE_TOKEN: "e2e_write_token_dummy",
             STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
             STRIPE_WEBHOOK_SECRET: e2eWebhookSecret,
             AUTH_TOKEN_SECRET: "e2e_auth_token_secret_dummy",
+            GIFT_CODE_SECRET: "e2e_gift_code_secret_dummy",
             ADMIN_API_KEY: "e2e_admin_api_key_dummy",
           },
         },

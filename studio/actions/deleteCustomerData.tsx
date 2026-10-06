@@ -1,7 +1,13 @@
 import { TrashIcon } from "@sanity/icons";
 import { Box, Button, Stack, Text, TextInput, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
-import type { DocumentActionComponent, DocumentActionProps } from "sanity";
+import { type DocumentActionComponent, type DocumentActionProps, useDataset } from "sanity";
+
+
+import { isGiftSubmissionStatus } from "../../src/lib/gift/giftSubmissionStatus";
+import { ADMIN_TOKEN_HEADER } from "../../src/lib/http/headers";
+import { ADMIN_DELETE_USER_API_ROUTE } from "../../src/lib/http/routes";
+import { workerOriginFor } from "../lib/siteOrigins";
 
 /**
  * GDPR Art. 17 cascade delete trigger. Registered for the `submission` doc
@@ -16,7 +22,6 @@ import type { DocumentActionComponent, DocumentActionProps } from "sanity";
  */
 
 const CONFIRMATION_PHRASE = "DELETE";
-const ADMIN_ROUTE = "/api/admin/delete-user";
 
 type CascadeResponse = {
   userId: string;
@@ -29,6 +34,7 @@ type CascadeResponse = {
 
 export const deleteCustomerDataAction: DocumentActionComponent = (props: DocumentActionProps) => {
   const toast = useToast();
+  const workerOrigin = workerOriginFor(useDataset(), window.location.origin);
   const [isOpen, setIsOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [adminToken, setAdminToken] = useState("");
@@ -45,14 +51,18 @@ export const deleteCustomerDataAction: DocumentActionComponent = (props: Documen
   const handleConfirm = useCallback(async () => {
     if (confirmText !== CONFIRMATION_PHRASE) return;
     if (!adminToken) return;
+    if (!workerOrigin) {
+      toast.push({ status: "error", title: "Delete works from the hosted Studio only." });
+      return;
+    }
     setIsPending(true);
 
     try {
-      const response = await fetch(ADMIN_ROUTE, {
+      const response = await fetch(`${workerOrigin}${ADMIN_DELETE_USER_API_ROUTE}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Token": adminToken,
+          [ADMIN_TOKEN_HEADER]: adminToken,
         },
         body: JSON.stringify({ submissionId }),
       });
@@ -89,9 +99,11 @@ export const deleteCustomerDataAction: DocumentActionComponent = (props: Documen
       });
       setIsPending(false);
     }
-  }, [adminToken, confirmText, props, submissionId, toast]);
+  }, [adminToken, confirmText, props, submissionId, toast, workerOrigin]);
 
   const isReadyToFire = confirmText === CONFIRMATION_PHRASE && adminToken.length > 0 && !isPending;
+
+  if (isGiftSubmissionStatus((props.published ?? props.draft)?.status)) return null;
 
   return {
     label: "Delete customer data",

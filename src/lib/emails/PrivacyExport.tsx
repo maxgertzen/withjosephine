@@ -8,6 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { PILL_BUTTON_STYLE } from "./pillButtonStyle";
 import { PortableTextBody } from "./PortableTextBody";
 
 export type PrivacyExportVars = {
@@ -50,12 +51,7 @@ export function PrivacyExport({
           <Button
             href={vars.downloadUrl}
             className="bg-ink text-cream font-sans no-underline"
-            style={{
-              padding: "16px 32px",
-              fontSize: 16,
-              borderRadius: 50,
-              letterSpacing: "0.02em",
-            }}
+            style={PILL_BUTTON_STYLE}
           >
             {copy.ctaLabel}
           </Button>

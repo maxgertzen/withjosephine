@@ -55,3 +55,9 @@ const STATIC_CSP_PATTERNS: readonly RegExp[] = [/^\/book\/[^/]+$/, /^\/notes\/[^
 export function isStaticCspPath(pathname: string): boolean {
   return STATIC_CSP_PATHS.has(pathname) || STATIC_CSP_PATTERNS.some((re) => re.test(pathname));
 }
+
+export const PRIVATE_LINK_PREFIXES = ["/gift/", "/thank-you/"] as const;
+
+export function isPrivateLinkPath(pathname: string): boolean {
+  return PRIVATE_LINK_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}

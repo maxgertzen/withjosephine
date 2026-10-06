@@ -1,7 +1,16 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { stubNavigationHistory } from "@/test/navigationHistory";
 
 import { BookingFlowHeader } from "./BookingFlowHeader";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
+});
 
 describe("BookingFlowHeader", () => {
   it("renders a Back link with the supplied href and label", () => {
@@ -30,5 +39,29 @@ describe("BookingFlowHeader", () => {
   it("no longer renders an About Josephine link", () => {
     render(<BookingFlowHeader backHref="/" />);
     expect(screen.queryByRole("link", { name: "About Josephine" })).toBeNull();
+  });
+
+  it("links to the page the visitor came from on this site and steps back on a click", async () => {
+    const { traverseTo } = stubNavigationHistory([
+      "/notes/what-your-chart-shows",
+      "/book/soul-blueprint",
+    ]);
+    render(<BookingFlowHeader backHref="/#reading-soul-blueprint" />);
+
+    const link = screen.getByRole("link", { name: /Back/ });
+    expect(link).toHaveAttribute("href", "/notes/what-your-chart-shows");
+    await userEvent.click(link);
+
+    expect(traverseTo).toHaveBeenCalledExactlyOnceWith("entry-0");
+  });
+
+  it("links to the homepage card when there is no page on this site behind it", () => {
+    stubNavigationHistory(["/book/soul-blueprint"]);
+    render(<BookingFlowHeader backHref="/#reading-soul-blueprint" />);
+
+    expect(screen.getByRole("link", { name: /Back/ })).toHaveAttribute(
+      "href",
+      "/#reading-soul-blueprint",
+    );
   });
 });

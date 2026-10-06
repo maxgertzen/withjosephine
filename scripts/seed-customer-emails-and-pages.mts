@@ -2,7 +2,12 @@ import fs from "node:fs";
 import { createClient } from "@sanity/client";
 
 import {
-  EMAIL_DAY7_DELIVERY_DEFAULTS,
+  EMAIL_GIFT_OPENED_DEFAULTS,
+  EMAIL_GIFT_PURCHASE_DEFAULTS,
+  EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS,
+  EMAIL_GIFT_TO_RECIPIENT_DEFAULTS,
+  EMAIL_READING_DELIVERY_DEFAULTS,
+  GIFT_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
@@ -13,6 +18,7 @@ import {
   UNDER_CONSTRUCTION_PAGE_DEFAULTS,
 } from "../src/data/defaults";
 import { stringToPortableTextBlocks } from "../src/lib/emails/portableTextBuild";
+import { fillMissing } from "./_lib/fillMissing.mts";
 
 // Bootstraps the 7 customer-facing singletons under "Customer emails & pages"
 // into the Sanity dataset using their code-side defaults. Without this, Studio
@@ -58,7 +64,7 @@ function omitNullish<T extends object>(record: T): Partial<T> {
 
 const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
   emailOrderConfirmation: new Set(["body", "thanksLine", "timelineLine", "contactLine"]),
-  emailDay7Delivery: new Set([
+  emailReadingDelivery: new Set([
     "bodyIntro",
     "bodyPostButton",
     "comfortLine",
@@ -105,53 +111,50 @@ function normalizePtFields<T extends Record<string, unknown>>(seed: T): T {
   return out as T;
 }
 
-const SEEDS = [
-  { _id: "listenPage", _type: "listenPage", ...omitNullish(LISTEN_PAGE_DEFAULTS) },
-  {
-    _id: "magicLinkVerifyPage",
-    _type: "magicLinkVerifyPage",
-    ...omitNullish(MAGIC_LINK_VERIFY_PAGE_DEFAULTS),
-  },
-  {
-    _id: "emailOrderConfirmation",
-    _type: "emailOrderConfirmation",
-    ...omitNullish(EMAIL_ORDER_CONFIRMATION_DEFAULTS),
-  },
-  {
-    _id: "emailDay7Delivery",
-    _type: "emailDay7Delivery",
-    ...omitNullish(EMAIL_DAY7_DELIVERY_DEFAULTS),
-  },
-  { _id: "emailMagicLink", _type: "emailMagicLink", ...omitNullish(EMAIL_MAGIC_LINK_DEFAULTS) },
-  {
-    _id: "emailPrivacyExport",
-    _type: "emailPrivacyExport",
-    ...omitNullish(EMAIL_PRIVACY_EXPORT_DEFAULTS),
-  },
-  {
-    _id: "emailSharedShell",
-    _type: "emailSharedShell",
-    ...omitNullish(EMAIL_SHARED_SHELL_DEFAULTS),
-  },
-  {
-    _id: "notFoundPage",
-    _type: "notFoundPage",
-    ...omitNullish(NOT_FOUND_PAGE_DEFAULTS),
-  },
-  {
-    _id: "underConstructionPage",
-    _type: "underConstructionPage",
-    ...omitNullish(UNDER_CONSTRUCTION_PAGE_DEFAULTS),
-  },
-];
+const DEFAULTS_BY_TYPE: Record<string, object> = {
+  listenPage: LISTEN_PAGE_DEFAULTS,
+  magicLinkVerifyPage: MAGIC_LINK_VERIFY_PAGE_DEFAULTS,
+  emailOrderConfirmation: EMAIL_ORDER_CONFIRMATION_DEFAULTS,
+  emailReadingDelivery: EMAIL_READING_DELIVERY_DEFAULTS,
+  emailMagicLink: EMAIL_MAGIC_LINK_DEFAULTS,
+  emailPrivacyExport: EMAIL_PRIVACY_EXPORT_DEFAULTS,
+  emailSharedShell: EMAIL_SHARED_SHELL_DEFAULTS,
+  notFoundPage: NOT_FOUND_PAGE_DEFAULTS,
+  underConstructionPage: UNDER_CONSTRUCTION_PAGE_DEFAULTS,
+  giftSettings: GIFT_DEFAULTS,
+  emailGiftPurchase: EMAIL_GIFT_PURCHASE_DEFAULTS,
+  emailGiftToRecipient: EMAIL_GIFT_TO_RECIPIENT_DEFAULTS,
+  emailGiftOpened: EMAIL_GIFT_OPENED_DEFAULTS,
+  emailGiftRecipientConfirmation: EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS,
+};
 
-for (const seed of SEEDS) {
-  const normalized = normalizePtFields(seed as Record<string, unknown>);
-  const result = await client.createIfNotExists(normalized as never);
-  const created = result._createdAt === result._updatedAt;
-  console.log(
-    `[${dataset}] ${seed._type}: ${created ? "created with defaults" : "already exists, no changes"}`,
+const NEW_IN_V1_21 = new Set([
+  "giftSettings",
+  "emailGiftPurchase",
+  "emailGiftToRecipient",
+  "emailGiftOpened",
+  "emailGiftRecipientConfirmation",
+]);
+
+const types = Object.keys(DEFAULTS_BY_TYPE);
+const existing = new Set(await client.fetch<string[]>(`*[_id in $ids]._id`, { ids: types }));
+
+const transaction = client.transaction();
+for (const type of types) {
+  const fields = Object.fromEntries(
+    Object.entries(normalizePtFields({ _type: type, ...omitNullish(DEFAULTS_BY_TYPE[type]) })).filter(
+      ([key]) => key !== "_type",
+    ),
   );
+  transaction.createIfNotExists({ _id: type, _type: type, ...(NEW_IN_V1_21.has(type) ? {} : fields) });
+  if (NEW_IN_V1_21.has(type)) fillMissing(transaction, { _id: type, fields });
+  const outcome = !existing.has(type)
+    ? "created with defaults"
+    : NEW_IN_V1_21.has(type)
+      ? "exists, empty fields filled"
+      : "exists, no changes";
+  console.log(`[${dataset}] ${type}: ${outcome}`);
 }
+await transaction.commit();
 
 console.log(`[${dataset}] Seed complete.`);

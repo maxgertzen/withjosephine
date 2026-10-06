@@ -63,3 +63,46 @@ Brevo deletion is part of the same cascade in production; it returns "not config
 - **Admin token mismatch.** Re-paste from the password manager; whitespace or extra chars break the timing-safe compare.
 - **Mixpanel auth shape wrong.** `wrangler tail` shows the per-step partial-failure string; check `MIXPANEL_SERVICE_ACCOUNT_USERNAME` includes the project-id suffix per Mixpanel's docs.
 - **Studio doc action missing.** Studio cache; hard-refresh + reopen the submission.
+
+## Gift buyer by email
+
+The admin endpoint takes `{ email }` when `submissionId` is absent. A gift buyer with no user row gets one for the run, and the cascade removes it at the end.
+
+### Pre-requisites
+
+- A gift bought on staging with a `+gift-buyer` address that has no booking ([`MANUAL_SMOKE_TEST.md`](../MANUAL_SMOKE_TEST.md) B1).
+- The gift's Checkout Session id from the Stripe test-mode dashboard.
+
+### Steps
+
+1. Run the cascade:
+   ```sh
+   curl -sS -X POST https://staging.withjosephine.com/api/admin/delete-user \
+     -H "Content-Type: application/json" \
+     -H "X-Admin-Token: <ADMIN_API_KEY>" \
+     -d '{"email":"<buyer email>"}'
+   ```
+2. Check the gift row:
+   ```sh
+   pnpm exec wrangler d1 execute withjosephine_bookings --env staging --remote \
+     --command "SELECT id, status, buyer_email, buyer_first_name, note, consent_ip_address FROM gift_codes WHERE stripe_session_id = '<gift Checkout Session id>'"
+   ```
+3. Check the user row and the audit rows:
+   ```sh
+   pnpm exec wrangler d1 execute withjosephine_bookings --env staging --remote \
+     --command "SELECT id FROM user WHERE email = '<buyer email>'"
+   pnpm exec wrangler d1 execute withjosephine_bookings --env staging --remote \
+     --command "SELECT action, submission_ids_json, stripe_redaction_job_id FROM deletion_log ORDER BY started_at DESC LIMIT 2"
+   ```
+4. Run step 1 again.
+
+### Pass criteria
+
+- Step 1 returns 200 with `"submissionIds": []` and a non-null `stripeRedactionJobId`.
+- The gift row keeps its `status`. `buyer_email`, `note` and `consent_ip_address` are NULL and `buyer_first_name` is empty.
+- The user query returns no row.
+- Both `deletion_log` rows list `gift_<gift id>` in `submission_ids_json`.
+- If the gift was not opened, its doc in 📬 Submissions, 🎁 Gifts not opened yet has no "From" value under Gift and "Note waiting" is off.
+- If the gift was opened, the recipient's submission in Studio has no "From" value under Gift.
+- The Stripe redaction job lists the gift Checkout Session.
+- Step 4 returns 404 with an empty body.

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Turnstile,
-  type TurnstileInstance,
-} from "@marsidev/react-turnstile";
 import type {
-  ChangeEvent,
   Dispatch,
   FormEvent,
   KeyboardEvent,
@@ -14,19 +9,20 @@ import type {
   SetStateAction,
 } from "react";
 
-import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+import { GiftCodeField, type GiftCodeFieldProps } from "@/components/GiftCodeField";
+import { HoneypotField } from "@/components/HoneypotField";
+import { InvisibleTurnstile } from "@/components/InvisibleTurnstile";
 import type { IntakePage } from "@/lib/booking/derivePages";
 import { CLARITY_MASK_PROPS } from "@/lib/clarity";
 import type { LegalConsentSnapshot } from "@/lib/compliance/intakeConsent";
 import { errorClasses } from "@/lib/formStyles";
 import { homeReadingAnchor } from "@/lib/http/routes";
+import type { UseTurnstileChallengeResult } from "@/lib/intake/useTurnstileChallenge";
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
-import {
-  LegalAcknowledgments,
-  type LegalAcknowledgmentsErrors,
-} from "./LegalAcknowledgments";
+import { type GiftFinalPageCopy, GiftFinalPageLines } from "./GiftFinalPageLines";
+import { LegalAcknowledgments, type LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import { PageIndicator } from "./PageIndicator";
 import { PageNav } from "./PageNav";
 import { PageValidationSummary } from "./PageValidationSummary";
@@ -81,11 +77,7 @@ export type IntakeFormBodyProps = {
   clearConsentError: (key: keyof LegalAcknowledgmentsErrors) => void;
   showCoolingOff: boolean;
 
-  turnstileRequired: boolean;
-  turnstileSiteKey: string | undefined;
-  turnstileRef: RefObject<TurnstileInstance | null>;
-  handleTurnstileSuccess: (token: string) => void;
-  handleTurnstileFailure: () => void;
+  turnstile: UseTurnstileChallengeResult;
 
   submitError: string | null;
 
@@ -94,6 +86,10 @@ export type IntakeFormBodyProps = {
   handleReviewEdit: (targetPageIndex: number) => void;
   handleSaveLater: () => void;
   handleDiscardDraft: () => void;
+
+  giftFinalPage?: GiftFinalPageCopy;
+  onRemoveGiftCode: () => void;
+  giftCodeField?: GiftCodeFieldProps;
 };
 
 function suppressEnterInNonSubmitFields(event: KeyboardEvent<HTMLFormElement>) {
@@ -143,17 +139,16 @@ export function IntakeFormBody({
   consentErrors,
   clearConsentError,
   showCoolingOff,
-  turnstileRequired,
-  turnstileSiteKey,
-  turnstileRef,
-  handleTurnstileSuccess,
-  handleTurnstileFailure,
+  turnstile,
   submitError,
   handleNext,
   handleBack,
   handleReviewEdit,
   handleSaveLater,
   handleDiscardDraft,
+  giftFinalPage,
+  onRemoveGiftCode,
+  giftCodeField,
 }: IntakeFormBodyProps) {
   return (
     <form
@@ -161,22 +156,11 @@ export function IntakeFormBody({
       onSubmit={handleSubmit}
       onKeyDown={suppressEnterInNonSubmitFields}
       noValidate
-      className="relative flex flex-col gap-10 scroll-mt-6"
+      className="relative flex flex-col gap-10"
       {...CLARITY_MASK_PROPS}
     >
       {isSubmitting ? <SubmitOverlay text={loadingStateCopy} /> : null}
-      <input
-        type="text"
-        name={HONEYPOT_FIELD}
-        value={honeypot}
-        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-          setHoneypot(event.target.value)
-        }
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden="true"
-        className="absolute left-[-9999px] h-0 w-0 opacity-0"
-      />
+      <HoneypotField value={honeypot} onChange={setHoneypot} />
 
       {totalPages > 0 ? (
         <div className="flex items-center justify-between gap-4">
@@ -185,9 +169,7 @@ export function IntakeFormBody({
             totalPages={totalPages}
             tagline={pageIndicatorTagline}
           />
-          {lastSavedAt ? (
-            <DiscardDraftButton onConfirm={handleDiscardDraft} />
-          ) : null}
+          {lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null}
         </div>
       ) : null}
 
@@ -221,21 +203,14 @@ export function IntakeFormBody({
             isSubmitting={isSubmitting}
             showCoolingOff={showCoolingOff}
           />
+          {giftFinalPage ? (
+            <GiftFinalPageLines {...giftFinalPage} onRemove={onRemoveGiftCode} />
+          ) : null}
+          {giftCodeField ? <GiftCodeField {...giftCodeField} /> : null}
         </div>
       ) : null}
 
-      {turnstileRequired && turnstileSiteKey ? (
-        <div className="sr-only" aria-hidden="true">
-          <Turnstile
-            ref={turnstileRef}
-            siteKey={turnstileSiteKey}
-            options={{ execution: "execute", appearance: "interaction-only" }}
-            onSuccess={handleTurnstileSuccess}
-            onExpire={handleTurnstileFailure}
-            onError={handleTurnstileFailure}
-          />
-        </div>
-      ) : null}
+      <InvisibleTurnstile challenge={turnstile} />
 
       {submitError ? (
         <p role="alert" className={errorClasses}>

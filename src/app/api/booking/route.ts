@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
+import { buildPaymentUrl } from "@/lib/booking/paymentUrl";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
@@ -10,9 +11,11 @@ import {
   isFullyConsented,
   serializeAcknowledgedLabels,
 } from "@/lib/compliance/intakeConsent";
+import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
+import { redeemGiftSubmission, type RedeemGiftSubmissionResult } from "@/lib/gift/redeemGift";
 import { getClientIp } from "@/lib/request";
 import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
-import type { SanityFormField, SanityFormFieldType, SanityReading } from "@/lib/sanity/types";
+import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 type BookingRequestBody = {
@@ -22,6 +25,7 @@ type BookingRequestBody = {
   art6Consent: boolean;
   art9Consent: boolean;
   coolingOffConsent: boolean;
+  giftCode?: string;
   [HONEYPOT_FIELD]?: string;
 };
 
@@ -35,8 +39,34 @@ function isBookingBody(body: unknown): body is BookingRequestBody {
     candidate.values !== null &&
     typeof candidate.art6Consent === "boolean" &&
     typeof candidate.art9Consent === "boolean" &&
-    typeof candidate.coolingOffConsent === "boolean"
+    typeof candidate.coolingOffConsent === "boolean" &&
+    (candidate.giftCode === undefined || typeof candidate.giftCode === "string")
   );
+}
+
+function giftThankYouUrl(readingSlug: string, submissionId: string): string {
+  return `/thank-you/${readingSlug}?submissionId=${encodeURIComponent(submissionId)}`;
+}
+
+function giftRedeemResponse(readingSlug: string, result: RedeemGiftSubmissionResult): Response {
+  switch (result.kind) {
+    case "redeemed":
+      return NextResponse.json({
+        thankYouUrl: giftThankYouUrl(readingSlug, result.submissionId),
+        submissionId: result.submissionId,
+      });
+    case "not_found":
+      return NextResponse.json({ error: "gift_not_found" }, { status: 404 });
+    case "not_active":
+      return NextResponse.json({ error: "gift_not_active" }, { status: 409 });
+    case "other_reading":
+      return NextResponse.json(
+        { error: "gift_other_reading", readingSlug: result.readingSlug },
+        { status: 400 },
+      );
+    case "already_redeemed":
+      return NextResponse.json({ error: "gift_already_redeemed" }, { status: 409 });
+  }
 }
 
 function lookupLabel(field: SanityFormField, value: string): string {
@@ -75,24 +105,6 @@ function buildResponses(
     }));
 }
 
-function buildPaymentUrl(
-  reading: SanityReading,
-  submissionId: string,
-  email: string,
-): string | null {
-  if (!reading.stripePaymentLink) return null;
-  let url: URL;
-  try {
-    url = new URL(reading.stripePaymentLink);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" || !url.hostname.endsWith(".stripe.com")) return null;
-  url.searchParams.set("client_reference_id", submissionId);
-  url.searchParams.set("prefilled_email", email);
-  return url.toString();
-}
-
 export async function POST(request: Request) {
   assertEnvironmentBindings();
 
@@ -107,6 +119,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  const { giftCode } = parsedBody;
+
   // Honeypot first — cheap local check rejects bots before we hit Cloudflare.
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
@@ -118,8 +132,7 @@ export async function POST(request: Request) {
   if (!isFullyConsented(consentSnapshot, { requireArt9: true })) {
     return NextResponse.json(
       {
-        error:
-          "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
+        error: "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
       },
       { status: 400 },
     );
@@ -183,28 +196,40 @@ export async function POST(request: Request) {
       ? validatedValues.photo
       : undefined;
 
-  const responses = buildResponses(fields, validatedValues);
   const acknowledgedAt = new Date().toISOString();
+  const submission = {
+    email,
+    readingSlug: parsedBody.readingSlug,
+    readingName: reading.name,
+    readingPriceDisplay: reading.priceDisplay,
+    responses: buildResponses(fields, validatedValues),
+    consentLabel: serializeAcknowledgedLabels(consentSnapshot),
+    photoR2Key: photoR2Key ?? null,
+    createdAt: acknowledgedAt,
+    consentAcknowledgedAt: acknowledgedAt,
+    ipAddress: ip ?? null,
+    art6AcknowledgedAt: acknowledgedAt,
+    art9AcknowledgedAt: acknowledgedAt,
+    coolingOffAcknowledgedAt: acknowledgedAt,
+  };
+
+  if (giftCode !== undefined) {
+    if (!(await checkGiftRateLimit(request.headers))) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+    try {
+      const result = await redeemGiftSubmission({ request, code: giftCode, submission });
+      return giftRedeemResponse(parsedBody.readingSlug, result);
+    } catch (error) {
+      console.error("[booking] Failed to redeem gift", error);
+      return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
+    }
+  }
+
   const submissionId = crypto.randomUUID();
 
   try {
-    await createSubmission({
-      id: submissionId,
-      email,
-      status: SUBMISSION_STATUS.pending,
-      readingSlug: parsedBody.readingSlug,
-      readingName: reading.name,
-      readingPriceDisplay: reading.priceDisplay,
-      responses,
-      consentLabel: serializeAcknowledgedLabels(consentSnapshot),
-      photoR2Key: photoR2Key ?? null,
-      createdAt: acknowledgedAt,
-      consentAcknowledgedAt: acknowledgedAt,
-      ipAddress: ip ?? null,
-      art6AcknowledgedAt: acknowledgedAt,
-      art9AcknowledgedAt: acknowledgedAt,
-      coolingOffAcknowledgedAt: acknowledgedAt,
-    });
+    await createSubmission({ ...submission, id: submissionId, status: SUBMISSION_STATUS.pending });
   } catch (error) {
     console.error("[booking] Failed to create submission", error);
     return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });

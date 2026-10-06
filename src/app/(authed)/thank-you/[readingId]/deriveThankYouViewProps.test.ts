@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { GIFT_DEFAULTS } from "@/data/defaults";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import type { SanitySiteSettings, SanityThankYouPage } from "@/lib/sanity/types";
 
@@ -86,5 +87,69 @@ describe("deriveThankYouViewProps", () => {
       slugForOverride: "soul-blueprint",
     });
     expect(props.contactEmail).toBe("becky@example.com");
+  });
+});
+
+describe("deriveThankYouViewProps for a gift recipient", () => {
+  const giftContext = context({
+    reading: { name: "Birth Chart Reading", price: null, cents: null },
+    paidAmount: { cents: null, display: null },
+  });
+
+  function derive(buyerFirstName: string, thankYouPageContent: SanityThankYouPage | null = null) {
+    return deriveThankYouViewProps({
+      context: giftContext,
+      thankYouPageContent,
+      siteSettings: null,
+      slugForOverride: "birth-chart",
+      gift: { recipientName: "Anna", buyerFirstName, giftCopy: GIFT_DEFAULTS },
+    });
+  }
+
+  it("uses the gift heading, subheading, card label and timeline with the gift icon", () => {
+    const props = derive("Dana");
+    expect(props.icon).toBe("gift");
+    expect(props.reading.price).toBeNull();
+    expect(props.copy).toMatchObject({
+      heading: "Thank you, Anna. Your reading is in my hands now.",
+      subheading: "I’ve received everything I need to begin.",
+      readingLabel: "Your gift, from Dana",
+      timelineBody: GIFT_DEFAULTS.recipientThankYouTimelineTemplate,
+      deliveryDaysPhrase: "seven days",
+    });
+  });
+
+  it("uses the no-buyer card label when the buyer name is empty", () => {
+    expect(derive("").copy.readingLabel).toBe("Your gift");
+  });
+
+  it("keeps the thank-you page copy and a reading override for everything else", () => {
+    const sanity = {
+      confirmationBody: "Custom confirmation",
+      closingMessage: "Generic closing",
+      deliveryDaysPhrase: "ten days",
+      overrides: [
+        {
+          readingSlug: "birth-chart",
+          heading: "Override heading",
+          closingMessage: "Override closing",
+        },
+      ],
+    } as unknown as SanityThankYouPage;
+    const props = derive("Dana", sanity);
+    expect(props.copy.heading).toBe("Thank you, Anna. Your reading is in my hands now.");
+    expect(props.copy.confirmationBody).toBe("Custom confirmation");
+    expect(props.copy.closingMessage).toBe("Override closing");
+    expect(props.copy.deliveryDaysPhrase).toBe("ten days");
+  });
+
+  it("sets no icon for a reading", () => {
+    const props = deriveThankYouViewProps({
+      context: context(),
+      thankYouPageContent: null,
+      siteSettings: null,
+      slugForOverride: "soul-blueprint",
+    });
+    expect(props).not.toHaveProperty("icon");
   });
 });

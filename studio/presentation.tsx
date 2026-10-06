@@ -1,6 +1,8 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
+import { GIFT_PREVIEW_LINKS } from "@/lib/page-previews/preview-fixtures-pages";
+
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
  * website is responsible for reading `draftMode()` and switching to the
@@ -29,6 +31,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       params: ({ params }) => ({ slug: params.slug }),
     },
     { route: "/preview/thank-you/:slug", type: "thankYouPage" },
+    { route: "/preview/gift/:state", type: "giftSettings" },
     {
       route: "/preview/notes/:slug",
       filter: `_type == "article" && slug.current == $slug`,
@@ -104,6 +107,14 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       message: "Affects /notes and every note.",
       locations: [{ title: "Notes", href: "/preview/notes" }],
     }),
+    giftSettings: defineLocations({
+      message:
+        "Affects the gift row on every booking page (/book/*), the gift sheets and the gift pages.",
+      locations: [
+        { title: "Booking", href: "/preview/book/soul-blueprint" },
+        ...GIFT_PREVIEW_LINKS,
+      ],
+    }),
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",
       locations: [{ title: "Under Construction", href: "/preview/under-construction" }],
@@ -113,7 +124,11 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       locations: [{ title: "404 Page", href: "/preview/404" }],
     }),
     emailOrderConfirmation: emailLocation("Email: Order Confirmation"),
-    emailDay7Delivery: emailLocation("Email: Reading Delivery (Day 7)"),
+    emailGiftPurchase: emailLocation("Email: Gift Buyer Confirmation"),
+    emailGiftOpened: emailLocation("Email: Gift Opened (Buyer)"),
+    emailGiftRecipientConfirmation: emailLocation("Email: Gift Confirmation (Recipient)"),
+    emailGiftToRecipient: emailLocation("Email: Gift To Recipient"),
+    emailReadingDelivery: emailLocation("Email: Reading Delivery Email"),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),
     emailSharedShell: emailLocation("Email: Shared Shell (brand + footer)"),

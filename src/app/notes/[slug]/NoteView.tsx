@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { ListenButton } from "@/components/Notes/ListenButton";
 import { NoteBody } from "@/components/Notes/NoteBody";
 import { type NotesFooterProps, type NotesNavProps, NotesShell } from "@/components/Notes/NotesShell";
 import { StarMark } from "@/components/Notes/StarMark";
+import { PortraitAvatar } from "@/components/PortraitAvatar";
 import { NOTES_PATH } from "@/lib/notes/notes";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
@@ -135,16 +135,7 @@ export function NoteView({
 
         <div className="mt-6 flex items-center gap-3">
           {author.photoUrl ? (
-            <span className="size-10 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
-              <Image
-                src={author.photoUrl}
-                alt=""
-                width={40}
-                height={40}
-                sizes="40px"
-                className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
-              />
-            </span>
+            <PortraitAvatar src={author.photoUrl} size={40} />
           ) : null}
           <p className="m-0 flex flex-col">
             <span className="font-body text-[0.9375rem] font-medium text-j-text">

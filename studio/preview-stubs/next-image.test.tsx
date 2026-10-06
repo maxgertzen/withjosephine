@@ -23,7 +23,7 @@ describe("resolveSrc", () => {
     expect(text.swapped).toBe(false);
     expect(text.src).toContain("Josephine");
 
-    const otherImage = resolveSrc("/images/akasha.webp");
+    const otherImage = resolveSrc("/images/josephine-portrait.webp");
     expect(otherImage.swapped).toBe(true);
   });
 

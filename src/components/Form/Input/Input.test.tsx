@@ -54,4 +54,19 @@ describe("Input", () => {
     renderInput({ required: true });
     expect(screen.getByLabelText(/Full name/)).toBeRequired();
   });
+
+  it("passes maxLength to the input", () => {
+    renderInput({ maxLength: 80 });
+    expect(screen.getByLabelText(/Full name/)).toHaveAttribute("maxlength", "80");
+  });
+
+  it("spaces the letters and uses tabular figures for variant=code", () => {
+    renderInput({ variant: "code", label: "Gift code" });
+    expect(screen.getByLabelText(/Gift code/)).toHaveClass("tracking-[0.14em]", "tabular-nums");
+  });
+
+  it("keeps the default letter spacing without a variant", () => {
+    renderInput();
+    expect(screen.getByLabelText(/Full name/)).not.toHaveClass("tabular-nums");
+  });
 });

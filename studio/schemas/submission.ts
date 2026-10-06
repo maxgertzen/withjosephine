@@ -1,10 +1,19 @@
 import { defineField, defineType, type CustomValidator } from "sanity";
 
+import {
+  GIFT_SUBMISSION_STATUS,
+  isGiftSubmissionStatus,
+} from "../../src/lib/gift/giftSubmissionStatus";
+import { DeliveryPanel } from "../components/DeliveryPanel/DeliveryPanel";
+import { showsDeliveryBox } from "../components/DeliveryPanel/deliveryPanelModel";
+import { IntakeAnswersInput } from "../components/IntakeAnswers/IntakeAnswersInput";
 import { PdfThumbnailGenerator } from "../components/PdfThumbnailGenerator";
 import { PhotoR2Preview } from "../components/PhotoR2Preview";
+import { emailFailure } from "./emailFailure";
+import { giftEmailFailure } from "./giftEmailFailure";
 import { prepareSubmissionPreview } from "./submissionPreview";
 
-const requireWhenDeliveredAtSet =
+const requireOnceDelivered =
   (errorMessage: string): CustomValidator<unknown> =>
   (value, context) => {
     const parent = context.parent as { deliveredAt?: string } | undefined;
@@ -12,39 +21,220 @@ const requireWhenDeliveredAtSet =
     return true;
   };
 
+export const requireEmailUnlessGift: CustomValidator<string | undefined> = (value, context) => {
+  if (value || isGiftSubmissionStatus(context.document?.status)) return true;
+  return "Required";
+};
+
+const hiddenWhenEmpty = ({ value }: { value?: unknown }) =>
+  !Array.isArray(value) || value.length === 0;
+
+const consentRecord = (name: string, title: string, description: string) =>
+  defineField({
+    name,
+    title,
+    type: "object",
+    description,
+    fields: [
+      defineField({
+        name: "labelText",
+        title: "Wording",
+        type: "text",
+        description: "The exact wording the customer saw.",
+      }),
+      defineField({ name: "acknowledgedAt", title: "Agreed at", type: "datetime" }),
+    ],
+  });
+
 export const submission = defineType({
   name: "submission",
   title: "Submission",
   type: "document",
+  groups: [
+    { name: "reading", title: "Reading", default: true },
+    { name: "emails", title: "Emails" },
+    { name: "payment", title: "Payment" },
+    { name: "records", title: "Records" },
+  ],
+  fieldsets: [
+    { name: "order", title: "Order", options: { columns: 2 } },
+    { name: "files", title: "Reading files" },
+    { name: "afterDelivery", title: "After delivery", options: { columns: 3 } },
+  ],
   fields: [
     defineField({
+      name: "serviceRef",
+      title: "Reading",
+      type: "reference",
+      to: [{ type: "reading" }],
+      readOnly: true,
+      group: "reading",
+      fieldset: "order",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "email",
+      title: "Email",
+      type: "string",
+      readOnly: true,
+      group: "reading",
+      fieldset: "order",
+      description: "To change it, use Resend an email in the Delivery box and type the new address.",
+      validation: (rule) => rule.email().custom(requireEmailUnlessGift),
+    }),
+    defineField({
+      name: "status",
+      title: "Status",
+      type: "string",
+      readOnly: true,
+      group: "reading",
+      fieldset: "order",
+      options: {
+        list: [
+          { title: "Pending", value: "pending" },
+          { title: "Paid", value: "paid" },
+          { title: "Expired", value: "expired" },
+          { title: "Gift, not opened yet", value: GIFT_SUBMISSION_STATUS.waiting },
+          { title: "Gift cancelled", value: GIFT_SUBMISSION_STATUS.cancelled },
+        ],
+        layout: "radio",
+      },
+      initialValue: "pending",
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "createdAt",
+      title: "Submitted",
+      type: "datetime",
+      readOnly: true,
+      group: "reading",
+      fieldset: "order",
+      initialValue: () => new Date().toISOString(),
+    }),
+    defineField({
+      name: "paidAt",
+      title: "Paid",
+      type: "datetime",
+      readOnly: true,
+      group: "reading",
+      fieldset: "order",
+    }),
+    defineField({
+      name: "responses",
+      title: "Intake answers",
+      type: "array",
+      readOnly: true,
+      group: "reading",
+      description: "The customer's answers, as they submitted them.",
+      components: { input: IntakeAnswersInput },
+      of: [
+        {
+          type: "object",
+          name: "submissionResponse",
+          fields: [
+            defineField({
+              name: "fieldKey",
+              title: "Field key",
+              type: "string",
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "fieldLabelSnapshot",
+              title: "Question",
+              type: "string",
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "fieldType",
+              title: "Field type",
+              type: "string",
+              validation: (rule) => rule.required(),
+            }),
+            defineField({ name: "value", title: "Answer", type: "text" }),
+          ],
+          preview: {
+            select: { title: "fieldLabelSnapshot", subtitle: "value" },
+          },
+        },
+      ],
+    }),
+    defineField({
+      name: "photoR2Key",
+      title: "Photo",
+      type: "string",
+      readOnly: true,
+      group: "reading",
+      description: "The photo the customer uploaded with the form.",
+      components: { input: PhotoR2Preview },
+    }),
+    defineField({
       name: "voiceNote",
-      title: "Voice Note",
+      title: "Voice note",
       type: "file",
-      description:
-        "Drag the recorded voice note here (mp3 / m4a / wav). Required before you can mark this reading delivered.",
+      group: "reading",
+      fieldset: "files",
+      description: "The recorded voice note (mp3, m4a or wav). Needed before the reading can be sent.",
       options: { accept: "audio/*" },
       validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the voice note before setting Delivered At.")),
+        rule.custom(requireOnceDelivered("This reading was sent with a voice note. Upload it again.")),
     }),
     defineField({
       name: "readingPdf",
       title: "Reading PDF",
       type: "file",
+      group: "reading",
+      fieldset: "files",
       description:
-        "Drag the supporting PDF here. Required before you can mark this reading delivered. A first-page thumbnail is generated automatically.",
+        "The reading PDF. Needed before the reading can be sent. The thumbnail below is made from its first page.",
       options: { accept: "application/pdf" },
       components: { input: PdfThumbnailGenerator },
       validation: (rule) =>
-        rule.custom(requireWhenDeliveredAtSet("Upload the reading PDF before setting Delivered At.")),
+        rule.custom(requireOnceDelivered("This reading was sent with a PDF. Upload it again.")),
     }),
     defineField({
       name: "pdfThumbnail",
-      title: "Reading PDF — first-page thumbnail",
+      title: "PDF thumbnail",
       type: "image",
       readOnly: true,
-      description:
-        "Auto-generated from the Reading PDF's first page on upload. Shown on the customer's listen page; a styled placeholder covers it if absent. Not required for delivery.",
+      group: "reading",
+      fieldset: "files",
+      description: "Made from the PDF's first page. Shown on the customer's listen page.",
+    }),
+    defineField({
+      name: "delivery",
+      title: "Delivery",
+      type: "string",
+      readOnly: true,
+      group: "reading",
+      hidden: ({ document }) => !showsDeliveryBox(document?.status),
+      components: { input: DeliveryPanel },
+    }),
+    defineField({
+      name: "deliveredAt",
+      title: "Delivered",
+      type: "datetime",
+      readOnly: true,
+      group: "reading",
+      fieldset: "afterDelivery",
+      description: "When the delivery email was sent.",
+    }),
+    defineField({
+      name: "listenedAt",
+      title: "First listened",
+      type: "datetime",
+      readOnly: true,
+      group: "reading",
+      fieldset: "afterDelivery",
+      description: "When the customer first played the voice note.",
+    }),
+    defineField({
+      name: "pdfDownloadedAt",
+      title: "PDF first downloaded",
+      type: "datetime",
+      readOnly: true,
+      group: "reading",
+      fieldset: "afterDelivery",
+      description: "When the customer first downloaded the PDF.",
     }),
     defineField({
       name: "pdfThumbnailSourceRef",
@@ -54,268 +244,49 @@ export const submission = defineType({
       readOnly: true,
     }),
     defineField({
-      name: "deliveredAt",
-      title: "Delivered At",
+      name: "deliveryRequestedAt",
+      title: "Delivery requested at (internal)",
       type: "datetime",
-      description:
-        "Set this only after BOTH files (Voice Note + Reading PDF) are uploaded. The customer's Day +7 delivery email will fire at the next cron tick after this is set.",
-      validation: (rule) =>
-        rule.custom((value, context) => {
-          if (!value) return true;
-          const parent = context.parent as
-            | { voiceNote?: unknown; readingPdf?: unknown }
-            | undefined;
-          if (!parent?.voiceNote || !parent?.readingPdf) {
-            return "Upload Voice Note and Reading PDF before setting Delivered At.";
-          }
-          return true;
-        }),
-    }),
-    defineField({
-      name: "listenedAt",
-      title: "Listened At",
-      type: "datetime",
-      description:
-        "First time the customer hit play on the audio. Written by the audio proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      hidden: true,
       readOnly: true,
     }),
     defineField({
-      name: "pdfDownloadedAt",
-      title: "PDF Downloaded At",
+      name: "deliveryFailedAt",
+      title: "Delivery failed at (internal)",
       type: "datetime",
-      description:
-        "First time the customer downloaded the reading PDF. Written by the PDF proxy route on first 2xx Range response — first-write-wins. Read-only signal, do not edit.",
+      hidden: true,
       readOnly: true,
     }),
     defineField({
-      name: "photoR2Key",
-      title: "Photo R2 Key",
-      type: "string",
-      description: "R2 object key — not the URL.",
-      components: { input: PhotoR2Preview },
-    }),
-    defineField({
-      name: "responses",
-      title: "Responses",
-      type: "array",
-      description: "Snapshot of every form field answer at submission time.",
-      of: [
-        {
-          type: "object",
-          name: "submissionResponse",
-          fields: [
-            defineField({
-              name: "fieldKey",
-              title: "Field Key",
-              type: "string",
-              description: "Canonical key from the form field at submission time.",
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: "fieldLabelSnapshot",
-              title: "Field Label (snapshot)",
-              type: "string",
-              description: "Label text as it appeared to the user when they submitted.",
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: "fieldType",
-              title: "Field Type",
-              type: "string",
-              description: "Type of the field at submission time (shortText, multiSelectExact, etc).",
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: "value",
-              title: "Value",
-              type: "text",
-              description:
-                "Submitted value. Multi-select answers are stored as a comma-joined string.",
-            }),
-          ],
-          preview: {
-            select: { title: "fieldLabelSnapshot", subtitle: "value" },
-          },
-        },
-      ],
-    }),
-    defineField({
-      name: "createdAt",
-      title: "Submitted At",
-      type: "datetime",
-      readOnly: true,
-      description: "When the customer submitted the intake form.",
-      initialValue: () => new Date().toISOString(),
-    }),
-    defineField({
-      name: "status",
-      title: "Status",
-      type: "string",
-      description: "Lifecycle state. Pending → Paid (via Stripe webhook) or Expired (via cleanup cron).",
-      options: {
-        list: [
-          { title: "Pending", value: "pending" },
-          { title: "Paid", value: "paid" },
-          { title: "Expired", value: "expired" },
-        ],
-        layout: "radio",
-      },
-      initialValue: "pending",
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "serviceRef",
-      title: "Service",
-      type: "reference",
-      description: "Reading the user submitted this intake form for.",
-      to: [{ type: "reading" }],
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: "email",
-      title: "Email",
-      type: "string",
-      description: "Client email captured at form submission.",
-      validation: (rule) => rule.required().email(),
-    }),
-    defineField({
-      name: "consentSnapshot",
-      title: "Consent Snapshot",
+      name: "emailResendRequest",
+      title: "Email resend request (internal)",
       type: "object",
-      description:
-        "Frozen record of the consent terms the user agreed to at submission. art6Consent + art9Consent are the GDPR audit fields; labelText/acknowledgedAt are retained read-only for legacy rows.",
+      hidden: true,
+      readOnly: true,
       fields: [
-        defineField({
-          name: "art6Consent",
-          title: "Art. 6 Consent (ordinary processing)",
-          type: "object",
-          description: "Explicit acknowledgment of name/email/birth-data/photo/intake processing.",
-          fields: [
-            defineField({
-              name: "labelText",
-              title: "Label Text",
-              type: "text",
-              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
-            }),
-            defineField({
-              name: "acknowledgedAt",
-              title: "Acknowledged At",
-              type: "datetime",
-            }),
-          ],
-        }),
-        defineField({
-          name: "art9Consent",
-          title: "Art. 9 Consent (special-category, explicit)",
-          type: "object",
-          description:
-            "Explicit consent for special-category processing — birth chart + intake answers may reveal spiritual/philosophical beliefs (ICO Art. 9 guidance).",
-          fields: [
-            defineField({
-              name: "labelText",
-              title: "Label Text",
-              type: "text",
-              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
-            }),
-            defineField({
-              name: "acknowledgedAt",
-              title: "Acknowledged At",
-              type: "datetime",
-            }),
-          ],
-        }),
-        defineField({
-          name: "coolingOffConsent",
-          title: "Cooling-Off Waiver (EU CRD Art. 16(m))",
-          type: "object",
-          description:
-            "Verbatim wording the user saw + acknowledgment timestamp. Required to start the reading per EU consumer-rights cooling-off waiver.",
-          fields: [
-            defineField({
-              name: "labelText",
-              title: "Label Text",
-              type: "text",
-              description: "Verbatim wording the user saw — sourced from src/lib/compliance/intakeConsent.ts.",
-            }),
-            defineField({
-              name: "acknowledgedAt",
-              title: "Acknowledged At",
-              type: "datetime",
-            }),
-          ],
-        }),
-        defineField({
-          name: "labelText",
-          title: "Legacy Consent Label Text",
-          type: "text",
-          description: "Pre-Phase-4 single-checkbox label. Read-only for new submissions.",
-          readOnly: true,
-        }),
-        defineField({
-          name: "acknowledgedAt",
-          title: "Legacy Acknowledged At",
-          type: "datetime",
-          description: "Pre-Phase-4 timestamp. Read-only for new submissions.",
-          readOnly: true,
-        }),
-        defineField({
-          name: "ipAddress",
-          title: "IP Address",
-          type: "string",
-          description: "Client IP captured at consent — used for audit trail only.",
-        }),
+        defineField({ name: "emailType", title: "Email", type: "string" }),
+        defineField({ name: "correctedEmail", title: "Send to", type: "string" }),
+        defineField({ name: "requestedAt", title: "Requested at", type: "datetime" }),
       ],
     }),
     defineField({
-      name: "stripeEventId",
-      title: "Stripe Event ID",
-      type: "string",
-      description: "For webhook idempotency.",
-    }),
-    defineField({
-      name: "stripeSessionId",
-      title: "Stripe Session ID",
-      type: "string",
-      description: "Stripe Checkout Session ID associated with the paid event.",
-    }),
-    defineField({
-      name: "paidAt",
-      title: "Paid At",
-      type: "datetime",
-      description: "Set by the Stripe webhook handler when payment is confirmed.",
-    }),
-    defineField({
-      name: "amountPaidCents",
-      title: "Amount Paid (cents)",
-      type: "number",
-      description:
-        "Actual amount Stripe collected (in smallest currency unit, e.g. cents for USD). Differs from list price when a coupon is redeemed.",
-    }),
-    defineField({
-      name: "amountPaidCurrency",
-      title: "Amount Paid Currency",
-      type: "string",
-      description: "ISO currency code Stripe returned (lowercase, e.g. \"usd\").",
-    }),
-    defineField({
-      name: "expiredAt",
-      title: "Expired At",
-      type: "datetime",
-      description: "Set by the cleanup cron when an unpaid submission ages out.",
-    }),
-    defineField({
-      name: "recipientUserId",
-      title: "Recipient User ID",
-      type: "string",
-      description:
-        "Stable user id for the reading recipient. Load-bearing for listen-page session linkage. Read-only mirror of D1.",
+      name: "emailFailures",
+      title: "Failed sends",
+      type: "array",
       readOnly: true,
+      group: "emails",
+      hidden: hiddenWhenEmpty,
+      description:
+        "Customer emails that did not go out, including ones sent since. To resend, use the Delivery box on the Reading tab.",
+      of: [{ type: emailFailure.name }],
     }),
     defineField({
       name: "emailsFired",
-      title: "Emails Fired",
+      title: "Emails sent",
       type: "array",
-      description: "Audit log of every transactional email sent for this submission.",
+      readOnly: true,
+      group: "emails",
+      description: "Every email sent for this order.",
       of: [
         {
           type: "object",
@@ -323,15 +294,14 @@ export const submission = defineType({
           fields: [
             defineField({
               name: "type",
-              title: "Type",
+              title: "Email",
               type: "string",
-              description:
-                "Email kind. Mirrors the EmailFiredType union in src/lib/booking/submissions.ts.",
               options: {
                 list: [
                   { title: "Order confirmation", value: "order_confirmation" },
-                  { title: "Day +7 (delivery)", value: "day7" },
-                  { title: "Day +7 overdue alert (Josephine)", value: "day7-overdue-alert" },
+                  { title: "Gift confirmation (recipient)", value: "gift_recipient_confirmation" },
+                  { title: "Reading delivery", value: "reading_delivery" },
+                  { title: "Reading overdue alert (Josephine)", value: "reading_overdue_alert" },
                   { title: "Day +14 (post-delivery follow-up)", value: "day14" },
                   { title: "Abandonment recovery", value: "abandonment" },
                 ],
@@ -341,21 +311,132 @@ export const submission = defineType({
             }),
             defineField({
               name: "sentAt",
-              title: "Sent At",
+              title: "Sent at",
               type: "datetime",
               validation: (rule) => rule.required(),
             }),
-            defineField({
-              name: "resendId",
-              title: "Resend ID",
-              type: "string",
-              description: "Resend message ID for traceability.",
-            }),
+            defineField({ name: "resendId", title: "Resend email id", type: "string" }),
           ],
           preview: { select: { title: "type", subtitle: "sentAt" } },
         },
       ],
       initialValue: [],
+    }),
+    defineField({
+      name: "gift",
+      title: "Gift",
+      type: "object",
+      readOnly: true,
+      group: "payment",
+      hidden: ({ document }) => !document?.gift,
+      description: "Bought as a gift. Set by the site.",
+      fields: [
+        defineField({ name: "buyerFirstName", title: "From", type: "string" }),
+        defineField({ name: "boughtAt", title: "Bought", type: "datetime" }),
+        defineField({ name: "sentAt", title: "Sent by email", type: "datetime" }),
+        defineField({ name: "resendUsed", title: "Second email used", type: "boolean" }),
+        defineField({ name: "openedAt", title: "Opened", type: "datetime" }),
+        defineField({
+          name: "hasNote",
+          title: "Note waiting",
+          type: "boolean",
+          description: "The buyer's note is deleted when the gift is opened.",
+        }),
+        defineField({
+          name: "emailFailures",
+          title: "Failed gift emails",
+          type: "array",
+          hidden: hiddenWhenEmpty,
+          description: "Gift emails to the buyer or the recipient that did not go out.",
+          of: [{ type: giftEmailFailure.name }],
+        }),
+      ],
+    }),
+    defineField({
+      name: "amountPaidCents",
+      title: "Amount paid (cents)",
+      type: "number",
+      readOnly: true,
+      group: "payment",
+      description: "What Stripe charged, in cents. Lower than the list price when a coupon was used.",
+    }),
+    defineField({
+      name: "amountPaidCurrency",
+      title: "Currency",
+      type: "string",
+      readOnly: true,
+      group: "payment",
+    }),
+    defineField({
+      name: "stripeSessionId",
+      title: "Stripe session",
+      type: "string",
+      readOnly: true,
+      group: "payment",
+    }),
+    defineField({
+      name: "stripeEventId",
+      title: "Stripe event",
+      type: "string",
+      readOnly: true,
+      group: "payment",
+    }),
+    defineField({
+      name: "expiredAt",
+      title: "Expired",
+      type: "datetime",
+      readOnly: true,
+      group: "payment",
+      description: "When an unpaid order expired.",
+    }),
+    defineField({
+      name: "consentSnapshot",
+      title: "Consent capture",
+      type: "object",
+      readOnly: true,
+      group: "records",
+      description: "What the customer agreed to at booking. Kept for the legal record.",
+      fields: [
+        consentRecord(
+          "art6Consent",
+          "Art. 6 Consent (ordinary processing)",
+          "Processing of name, email, birth data, photo and intake answers.",
+        ),
+        consentRecord(
+          "art9Consent",
+          "Art. 9 Consent (special-category, explicit)",
+          "Birth chart and intake answers may reveal spiritual or philosophical beliefs.",
+        ),
+        consentRecord(
+          "coolingOffConsent",
+          "Cooling-Off Waiver (EU CRD Art. 16(m))",
+          "Agreement to start the reading within the cooling-off period.",
+        ),
+        defineField({
+          name: "labelText",
+          title: "Legacy consent wording",
+          type: "text",
+          description: "Single-checkbox wording on orders from before the three checkboxes.",
+        }),
+        defineField({
+          name: "acknowledgedAt",
+          title: "Legacy agreed at",
+          type: "datetime",
+        }),
+        defineField({
+          name: "ipAddress",
+          title: "IP address",
+          type: "string",
+        }),
+      ],
+    }),
+    defineField({
+      name: "recipientUserId",
+      title: "Customer record id",
+      type: "string",
+      readOnly: true,
+      group: "records",
+      description: "Links this order to the customer's sign-in. Set by the site.",
     }),
   ],
   orderings: [
@@ -374,6 +455,9 @@ export const submission = defineType({
       deliveredAt: "deliveredAt",
       listenedAt: "listenedAt",
       responses: "responses",
+      giftBuyerFirstName: "gift.buyerFirstName",
+      giftBoughtAt: "gift.boughtAt",
+      readingName: "serviceRef.name",
     },
     prepare: prepareSubmissionPreview,
   },

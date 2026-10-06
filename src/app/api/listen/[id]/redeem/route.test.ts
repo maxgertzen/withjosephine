@@ -82,7 +82,7 @@ describe("POST /api/listen/[id]/redeem", () => {
       valid: true,
       submissionId: "sub_1",
       jti: "jti-abc",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       expMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
     recordMock.mockResolvedValue({ ok: true });
@@ -103,7 +103,7 @@ describe("POST /api/listen/[id]/redeem", () => {
         jti: "jti-abc",
         submissionId: "sub_1",
         recipientUserId: "user_1",
-        mintSource: "cron_day7",
+        mintSource: "reading_delivery",
       }),
     );
     const setCookie = response.headers.get("set-cookie") ?? "";
@@ -131,7 +131,7 @@ describe("POST /api/listen/[id]/redeem", () => {
       valid: true,
       submissionId: "sub_1",
       jti: "jti-abc",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       expMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
     recordMock.mockResolvedValue({ ok: false, reason: "already_redeemed" });
@@ -175,7 +175,7 @@ describe("POST /api/listen/[id]/redeem", () => {
       valid: true,
       submissionId: "sub_other",
       jti: "jti-abc",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       expMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
     const response = await invoke(form({ t: "valid.token" }));

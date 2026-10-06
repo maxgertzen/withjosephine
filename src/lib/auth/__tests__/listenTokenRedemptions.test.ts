@@ -19,7 +19,7 @@ const baseArgs = {
   redeemedAt: 1_700_000_000_000,
   ipHash: "deadbeef",
   uaHash: "uahash-baseline",
-  mintSource: "cron_day7" as const,
+  mintSource: "reading_delivery" as const,
 };
 
 describe("recordListenTokenRedemption", () => {
@@ -74,7 +74,7 @@ describe("recordListenTokenRedemption", () => {
       redeemedAt: 1_700_000_123_456,
       ipHash: "hash-cols",
       uaHash: "ua-cols",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
     });
 
     const rows = await dbQuery<LedgerRow & { ua_hash: string | null }>(
@@ -89,7 +89,7 @@ describe("recordListenTokenRedemption", () => {
       redeemed_at: 1_700_000_123_456,
       ip_hash: "hash-cols",
       ua_hash: "ua-cols",
-      mint_source: "cron_day7",
+      mint_source: "reading_delivery",
     });
   });
 
@@ -101,7 +101,7 @@ describe("recordListenTokenRedemption", () => {
       redeemedAt: 1_700_000_000_000,
       ipHash: null,
       uaHash: null,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
     });
     expect(result).toEqual({ ok: true });
 
@@ -112,17 +112,17 @@ describe("recordListenTokenRedemption", () => {
     expect(rows[0]?.ip_hash).toBeNull();
   });
 
-  it("round-trips mint_source=cron_day7", async () => {
+  it("round-trips mint_source=reading_delivery", async () => {
     await recordListenTokenRedemption({
       jti: "jti-cron",
       ...baseArgs,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
     });
     const rows = await dbQuery<LedgerRow>(
       `SELECT mint_source FROM listen_token_redemptions WHERE jti = ?`,
       ["jti-cron"],
     );
-    expect(rows[0]?.mint_source).toBe("cron_day7");
+    expect(rows[0]?.mint_source).toBe("reading_delivery");
   });
 
   it("round-trips mint_source=admin_resend", async () => {
@@ -159,7 +159,7 @@ describe("recordListenTokenRedemption", () => {
       redeemedAt: 1_700_000_000_000,
       ipHash: "ip-original",
       uaHash: "ua-original",
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
     });
 
     const second = await recordListenTokenRedemption({
@@ -183,7 +183,7 @@ describe("recordListenTokenRedemption", () => {
       recipient_user_id: "user-original",
       redeemed_at: 1_700_000_000_000,
       ip_hash: "ip-original",
-      mint_source: "cron_day7",
+      mint_source: "reading_delivery",
     });
   });
 

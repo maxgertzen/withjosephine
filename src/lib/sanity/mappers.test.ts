@@ -6,6 +6,8 @@ vi.mock("@/data/readings.generated", () => ({
   },
 }));
 
+import { getReadingById } from "@/data/readings";
+
 import {
   mapAbout,
   mapFaqItems,
@@ -33,7 +35,6 @@ const SANITY_READING: SanityReading = {
   priceDisplay: "$179",
   valueProposition: "The most complete picture of your soul I can give you",
   briefDescription: "My signature offering combining your birth chart...",
-  expandedDetails: ["Detail one", "Detail two"],
   includes: ["Item one", "Item two"],
   requiresBirthChart: true,
   requiresAkashic: true,
@@ -112,7 +113,7 @@ describe("mapReadings", () => {
     const result = mapReadings([]);
 
     const birthChart = result.find((r) => r.id === "birth-chart");
-    expect(birthChart?.price).toBe("$99");
+    expect(birthChart?.price).toBe(getReadingById("birth-chart")?.price);
   });
 
   it("maps Sanity readings using slug as id and priceDisplay as price", () => {
@@ -122,7 +123,7 @@ describe("mapReadings", () => {
     expect(result[0].id).toBe("soul-blueprint");
     expect(result[0].price).toBe("$179");
     expect(result[0].tag).toBe("Signature");
-    expect(result[0].expandedDetails).toEqual(["Detail one", "Detail two"]);
+    expect(result[0].includes).toEqual(["Item one", "Item two"]);
   });
 
   it("maps multiple Sanity readings preserving order", () => {
@@ -212,7 +213,7 @@ describe("mapAbout", () => {
   it("returns defaults when landingPage is null", () => {
     const result = mapAbout(null);
 
-    expect(result.imageUrl).toBe("/images/akasha.webp");
+    expect(result.imageUrl).toBe("/images/josephine-portrait.webp");
     expect(result.signoff).toBe("Josephine");
     expect(result.paragraphs).toHaveLength(4);
   });

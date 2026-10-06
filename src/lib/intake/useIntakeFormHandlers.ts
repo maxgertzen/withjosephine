@@ -18,7 +18,9 @@ import {
   isFullyConsented,
   type LegalConsentSnapshot,
 } from "@/lib/compliance/intakeConsent";
-import { BOOKING_API_ROUTE } from "@/lib/http/routes";
+import { normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
+import type { GiftCodeCheckOutcome } from "@/lib/gift/useGiftCodeCheck";
+import { BOOKING_API_ROUTE, bookingPath } from "@/lib/http/routes";
 import type { SanityFormField } from "@/lib/sanity/types";
 
 import {
@@ -28,7 +30,59 @@ import {
   validateCurrentPage,
   validateFullSubmission,
 } from "./intakeValidation";
-import { clear as clearDraft } from "./localStorageDraft";
+import {
+  clear as clearDraft,
+  clearGiftCode,
+  type DraftValues,
+  save as saveDraft,
+} from "./localStorageDraft";
+
+const GIFT_ENDING_ERRORS = ["gift_already_redeemed", "gift_not_found", "gift_not_active"] as const;
+
+export type GiftEndingError = (typeof GIFT_ENDING_ERRORS)[number];
+
+export type IntakeGiftErrors = {
+  ending: Record<GiftEndingError, string>;
+  tooManyTries: string;
+};
+
+export type IntakeSubmitGift = {
+  code: string;
+  errors: IntakeGiftErrors;
+  endGiftMode: () => void;
+};
+
+export type IntakeGiftCodeFieldState = {
+  value: string;
+  checking: boolean;
+  check: () => Promise<GiftCodeCheckOutcome | null>;
+};
+
+const HTTP_BAD_REQUEST = 400;
+const HTTP_NOT_FOUND = 404;
+const HTTP_CONFLICT = 409;
+const HTTP_TOO_MANY_REQUESTS = 429;
+
+function isGiftEndingError(error: unknown): error is GiftEndingError {
+  return GIFT_ENDING_ERRORS.includes(error as GiftEndingError);
+}
+
+async function giftEndingErrorMessage(
+  response: Response,
+  gift: IntakeSubmitGift | undefined,
+): Promise<string | null> {
+  if (!gift) return null;
+  if (response.status !== HTTP_NOT_FOUND && response.status !== HTTP_CONFLICT) return null;
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  return isGiftEndingError(body?.error) ? gift.errors.ending[body.error] : null;
+}
+
+function failedSubmitMessage(status: number, gift: IntakeSubmitGift | undefined): string {
+  if (gift && status === HTTP_TOO_MANY_REQUESTS) return gift.errors.tooManyTries;
+  return status === HTTP_BAD_REQUEST
+    ? "Some fields didn't pass validation. Please review and try again."
+    : "Something went wrong submitting your form. Please try again.";
+}
 
 export type UseIntakeFormHandlersArgs = {
   readingId: string;
@@ -53,6 +107,9 @@ export type UseIntakeFormHandlersArgs = {
   turnstileToken: string | null;
   requestFreshTurnstileToken: () => Promise<string | null>;
   flushSave: (nextValues: FieldValues, nextPage: number) => void;
+  gift?: IntakeSubmitGift;
+  giftCodeField?: IntakeGiftCodeFieldState;
+  preview?: boolean;
 };
 
 export type UseIntakeFormHandlersResult = {
@@ -61,6 +118,8 @@ export type UseIntakeFormHandlersResult = {
   handleBack: () => void;
   handleReviewEdit: (targetPageIndex: number) => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  handleApplyGiftCode: () => Promise<void>;
+  handleRemoveGiftCode: () => void;
 };
 
 function blurAndScrollToForm(form: HTMLFormElement | null): void {
@@ -93,6 +152,9 @@ export function useIntakeFormHandlers({
   turnstileToken,
   requestFreshTurnstileToken,
   flushSave,
+  gift,
+  giftCodeField,
+  preview = false,
 }: UseIntakeFormHandlersArgs): UseIntakeFormHandlersResult {
   const setValue = useCallback(
     (key: string, value: FieldValues[string]) => {
@@ -111,14 +173,11 @@ export function useIntakeFormHandlers({
     (targetPageIndex: number, direction: "back" | "review-edit") => {
       setSubmitError(null);
       setErrors({});
-      track(
-        direction === "back" ? "intake_page_back_click" : "intake_page_review_edit_click",
-        {
-          reading_id: readingId,
-          from_page: currentPage + 1,
-          to_page: targetPageIndex + 1,
-        },
-      );
+      track(direction === "back" ? "intake_page_back_click" : "intake_page_review_edit_click", {
+        reading_id: readingId,
+        from_page: currentPage + 1,
+        to_page: targetPageIndex + 1,
+      });
       setCurrentPage(targetPageIndex);
       flushSave(values, targetPageIndex);
       blurAndScrollToForm(formRef.current);
@@ -128,11 +187,7 @@ export function useIntakeFormHandlers({
 
   const handleNext = useCallback(() => {
     setSubmitError(null);
-    const { success, fieldErrors } = validateCurrentPage(
-      allFields,
-      currentKeys,
-      values,
-    );
+    const { success, fieldErrors } = validateCurrentPage(allFields, currentKeys, values);
     track("intake_page_next_click", {
       reading_id: readingId,
       page_number: currentPage + 1,
@@ -174,6 +229,19 @@ export function useIntakeFormHandlers({
     [navigateToPage, currentPage],
   );
 
+  const handleApplyGiftCode = useCallback(async () => {
+    if (preview || !giftCodeField || giftCodeField.checking) return;
+    setSubmitError(null);
+    const outcome = await giftCodeField.check();
+    if (outcome?.kind !== "valid") return;
+    saveDraft(readingId, {
+      currentPage,
+      values: values as DraftValues,
+      giftCode: normalizeGiftCode(giftCodeField.value) ?? undefined,
+    });
+    window.location.assign(outcome.path);
+  }, [preview, giftCodeField, setSubmitError, readingId, currentPage, values]);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -184,6 +252,13 @@ export function useIntakeFormHandlers({
 
       if (!isFinalPage) {
         handleNext();
+        return;
+      }
+
+      if (preview) return;
+
+      if (giftCodeField?.value.trim()) {
+        await handleApplyGiftCode();
         return;
       }
 
@@ -218,7 +293,10 @@ export function useIntakeFormHandlers({
       if (turnstileRequired) {
         submissionTurnstileToken = await requestFreshTurnstileToken();
         if (!submissionTurnstileToken) {
-          failSubmit(INTAKE_SUBMIT_ERROR.turnstileFailed, "Please complete the verification challenge.");
+          failSubmit(
+            INTAKE_SUBMIT_ERROR.turnstileFailed,
+            "Please complete the verification challenge.",
+          );
           return;
         }
       }
@@ -256,6 +334,7 @@ export function useIntakeFormHandlers({
           art9Consent: consentSnapshot.art9.acknowledged,
           coolingOffConsent: consentSnapshot.coolingOff.acknowledged,
           consentSnapshot,
+          ...(gift ? { giftCode: gift.code } : {}),
         };
 
         const response = await fetch(BOOKING_API_ROUTE, {
@@ -265,34 +344,49 @@ export function useIntakeFormHandlers({
         });
 
         if (!response.ok) {
-          const message =
-            response.status === 400
-              ? "Some fields didn't pass validation. Please review and try again."
-              : "Something went wrong submitting your form. Please try again.";
-          failSubmit(`http_${response.status}`, message);
+          const giftEndingMessage = await giftEndingErrorMessage(response, gift);
+          if (giftEndingMessage) {
+            clearGiftCode(readingId);
+            gift?.endGiftMode();
+          }
+          failSubmit(
+            `http_${response.status}`,
+            giftEndingMessage ?? failedSubmitMessage(response.status, gift),
+          );
           return;
         }
 
         const data = (await response.json()) as {
           paymentUrl?: string;
+          thankYouUrl?: string;
           submissionId?: string;
         };
-        if (!data.paymentUrl || !data.submissionId) {
-          failSubmit(INTAKE_SUBMIT_ERROR.missingPaymentUrl, "Unexpected response. Please try again.");
+        const nextUrl = gift ? data.thankYouUrl : data.paymentUrl;
+
+        if (!nextUrl || !data.submissionId) {
+          failSubmit(
+            gift ? INTAKE_SUBMIT_ERROR.missingThankYouUrl : INTAKE_SUBMIT_ERROR.missingPaymentUrl,
+            "Unexpected response. Please try again.",
+          );
           return;
         }
 
         track("intake_submit_success", { reading_id: readingId });
         identifySubmission(data.submissionId);
-        track("stripe_redirect", {
-          reading_id: readingId,
-          submission_id: data.submissionId,
-        });
+        if (!gift) {
+          track("stripe_redirect", {
+            reading_id: readingId,
+            submission_id: data.submissionId,
+          });
+        }
 
         clearDraft(readingId);
-        window.location.href = data.paymentUrl;
+        window.location.href = nextUrl;
       } catch {
-        failSubmit(INTAKE_SUBMIT_ERROR.networkError, "Network error. Please check your connection and try again.");
+        failSubmit(
+          INTAKE_SUBMIT_ERROR.networkError,
+          "Network error. Please check your connection and try again.",
+        );
       }
     },
     [
@@ -313,8 +407,18 @@ export function useIntakeFormHandlers({
       formRef,
       setIsSubmitting,
       honeypot,
+      gift,
+      giftCodeField,
+      handleApplyGiftCode,
+      preview,
     ],
   );
+
+  const handleRemoveGiftCode = useCallback(() => {
+    if (preview) return;
+    clearGiftCode(readingId);
+    window.location.assign(bookingPath(readingId));
+  }, [readingId, preview]);
 
   return {
     setValue,
@@ -322,5 +426,7 @@ export function useIntakeFormHandlers({
     handleBack,
     handleReviewEdit,
     handleSubmit,
+    handleApplyGiftCode,
+    handleRemoveGiftCode,
   };
 }

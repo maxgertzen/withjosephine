@@ -1,4 +1,8 @@
+import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
+import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
+import { INTAKE_GIFT_CODE_COPY_KEYS } from "@/components/IntakeForm/intakeGiftCodeCopy";
 import type { ReadingBlockProps } from "@/components/ReadingBlock";
+import { REDEEM_SHEET_CONTENT_KEYS } from "@/components/RedeemSheet/redeemSheetCopy";
 import {
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
@@ -10,17 +14,25 @@ import {
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
+import { linesWithText } from "@/lib/content/nonBlank";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
-import { homeReadingAnchor } from "@/lib/http/routes";
+import { giftContent } from "@/lib/gift/giftContent";
+import {
+  GIFT_CHECK_API_ROUTE,
+  GIFT_PURCHASE_API_ROUTE,
+  homeReadingAnchor,
+} from "@/lib/http/routes";
 import { isNotesVisible, notePath, notesContent } from "@/lib/notes/notes";
 import type { NoteSummary } from "@/lib/notes/types";
+import { pick } from "@/lib/pick";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import { mapAbout, mapFaqItems, mapReadings } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
   SanityReading,
@@ -37,6 +49,8 @@ export type DeriveBookingFormViewPropsInput = {
   landingPage: SanityLandingPage | null;
   notesState: SanityNotesState | null;
   readingNotes: NoteSummary[];
+  giftSettings: SanityGiftSettings | null;
+  nav: BookingFormViewProps["nav"];
 };
 
 function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps["notes"] {
@@ -47,7 +61,7 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
   };
 }
 
-const PORTRAIT_WIDTH_PX = 112;
+const PORTRAIT_WIDTH_PX = 300;
 
 function pageFacts(
   reading: SanityReading | null | undefined,
@@ -68,8 +82,9 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
       subtitle: sanityReading.subtitle,
       priceLabel: sanityReading.priceDisplay,
       valueProposition: sanityReading.valueProposition,
-      expandedDetails: sanityReading.expandedDetails ?? [],
-      includes: sanityReading.includes ?? [],
+      description: sanityReading.briefDescription,
+      includes: linesWithText(sanityReading.includes),
+      howItWorks: linesWithText(sanityReading.howItWorks),
     };
   }
   const fallback = getReadingById(readingId);
@@ -81,8 +96,9 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
     subtitle: fallback.subtitle,
     priceLabel: fallback.price,
     valueProposition: fallback.valueProposition,
-    expandedDetails: fallback.expandedDetails,
+    description: fallback.briefDescription,
     includes: fallback.includes,
+    howItWorks: fallback.howItWorks,
   };
 }
 
@@ -98,7 +114,6 @@ export function deriveBookingFormViewProps(
     ...READING_PAGE_DEFAULTS,
     ...pickDefined(input.bookingForm.readingPageContent ?? {}),
   };
-  const [body, ...howItWorks] = reading.expandedDetails;
   const minutes = input.sanityReading?.estimatedMinutes;
   const formTestimonial = input.sanityReading?.formTestimonial;
   const pageIndicatorTagline = [
@@ -113,7 +128,7 @@ export function deriveBookingFormViewProps(
     foldRowLabel: applyTokens(content.foldRowLabel, { reading: reading.subtitle || reading.name }),
     eyebrow: content.eyebrow,
     lead: reading.valueProposition,
-    body,
+    description: reading.description,
     facts: pageFacts(input.sanityReading, content),
     factsLayout: content,
     reader: {
@@ -124,7 +139,7 @@ export function deriveBookingFormViewProps(
         : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
     },
     included: { title: content.includedTitle, items: reading.includes },
-    howItWorks: { title: content.howItWorksTitle, paragraphs: howItWorks },
+    howItWorks: { title: content.howItWorksTitle, items: reading.howItWorks },
     questions: {
       title: content.questionsTitle,
       items: mapFaqItems(
@@ -147,7 +162,12 @@ export function deriveBookingFormViewProps(
     notes: readingNotes(input),
   };
 
+  const gift = giftContent(input.giftSettings);
+  const submitLabel = input.bookingPage?.paymentButtonText;
+  const loadingStateCopy = input.bookingForm.loadingStateCopy;
+
   return {
+    nav: input.nav,
     backHref: homeReadingAnchor(reading.slug),
     reading: {
       slug: reading.slug,
@@ -166,8 +186,8 @@ export function deriveBookingFormViewProps(
       sections: filterSectionsForReading(input.bookingForm.sections, reading.slug),
       nonRefundableNotice: input.bookingForm.nonRefundableNotice,
       pagination: input.bookingForm.pagination,
-      loadingStateCopy: input.bookingForm.loadingStateCopy,
-      submitLabel: input.bookingPage?.paymentButtonText,
+      loadingStateCopy,
+      submitLabel,
       nextLabel: input.bookingForm.nextButtonText,
       saveLaterLabel: input.bookingForm.saveAndContinueLaterText,
       pageIndicatorTagline: pageIndicatorTagline || undefined,
@@ -180,6 +200,23 @@ export function deriveBookingFormViewProps(
             detail: formTestimonial.detail,
           }
         : undefined,
+      giftCodeField: { copy: pick(gift, INTAKE_GIFT_CODE_COPY_KEYS) },
+    },
+    giftFold: {
+      readingSlug: reading.slug,
+      copy: pick(gift, GIFT_FOLD_COPY_KEYS),
+      giftSheet: {
+        reading: { slug: reading.slug, name: reading.name, price: reading.priceLabel },
+        content: pick(gift, GIFT_SHEET_CONTENT_KEYS),
+        paymentButtonText: submitLabel,
+        loadingStateCopy,
+        endpoint: GIFT_PURCHASE_API_ROUTE,
+      },
+      redeemSheet: {
+        readingSlug: reading.slug,
+        content: pick(gift, REDEEM_SHEET_CONTENT_KEYS),
+        endpoint: GIFT_CHECK_API_ROUTE,
+      },
     },
   };
 }

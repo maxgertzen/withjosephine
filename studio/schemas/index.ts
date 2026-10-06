@@ -11,8 +11,12 @@ import { underConstructionPage } from "./underConstructionPage";
 import { notFoundPage } from "./notFoundPage";
 import { magicLinkVerifyPage } from "./magicLinkVerifyPage";
 import { emailMagicLink } from "./emailMagicLink";
-import { emailDay7Delivery } from "./emailDay7Delivery";
+import { emailReadingDelivery } from "./emailReadingDelivery";
 import { emailOrderConfirmation } from "./emailOrderConfirmation";
+import { emailGiftPurchase } from "./emailGiftPurchase";
+import { emailGiftOpened } from "./emailGiftOpened";
+import { emailGiftRecipientConfirmation } from "./emailGiftRecipientConfirmation";
+import { emailGiftToRecipient } from "./emailGiftToRecipient";
 import { emailPrivacyExport } from "./emailPrivacyExport";
 import { emailSharedShell } from "./emailSharedShell";
 import { listenPage } from "./listenPage";
@@ -20,9 +24,12 @@ import { formField } from "./formField";
 import { formSection } from "./formSection";
 import { bookingForm } from "./bookingForm";
 import { submission } from "./submission";
+import { emailFailure } from "./emailFailure";
+import { giftEmailFailure } from "./giftEmailFailure";
 import { article } from "./article";
 import { notePlate } from "./notePlate";
 import { notesSettings } from "./notesSettings";
+import { giftSettings } from "./giftSettings";
 
 export const schemaTypes = [
   reading,
@@ -38,8 +45,12 @@ export const schemaTypes = [
   notFoundPage,
   magicLinkVerifyPage,
   emailMagicLink,
-  emailDay7Delivery,
+  emailReadingDelivery,
   emailOrderConfirmation,
+  emailGiftPurchase,
+  emailGiftOpened,
+  emailGiftRecipientConfirmation,
+  emailGiftToRecipient,
   emailPrivacyExport,
   emailSharedShell,
   listenPage,
@@ -47,7 +58,10 @@ export const schemaTypes = [
   formSection,
   bookingForm,
   submission,
+  emailFailure,
+  giftEmailFailure,
   article,
   notePlate,
   notesSettings,
+  giftSettings,
 ];

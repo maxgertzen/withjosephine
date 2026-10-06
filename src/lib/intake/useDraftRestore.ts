@@ -5,6 +5,7 @@ import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 
 import type { FieldValues } from "@/components/IntakeForm/types";
 
 import {
+  type DraftEnvelope,
   type DraftValues,
   getLastReadingId,
   restore as restoreDraft,
@@ -44,9 +45,22 @@ function fieldsCarriedOverFrom(readingId: string): Partial<FieldValues> {
   return previousDraft ? pickCarriedOverFields(previousDraft.values) : {};
 }
 
+function isGiftDraftLeftOnPage(
+  draft: DraftEnvelope | null,
+  giftCode: string | undefined,
+  page: number,
+): boolean {
+  return giftCode !== undefined && draft?.giftCode === giftCode && draft.currentPage === page;
+}
+
+export type InitialPage = "first" | "last";
+
 export type UseDraftRestoreArgs = {
   readingId: string;
   defaultValues: FieldValues;
+  totalPages: number;
+  initialPage?: InitialPage;
+  giftCode?: string;
 };
 
 export type UseDraftRestoreResult = {
@@ -57,17 +71,22 @@ export type UseDraftRestoreResult = {
   lastSavedAt: Date | null;
   setLastSavedAt: Dispatch<SetStateAction<Date | null>>;
   isRestored: boolean;
+  restoredFromDraft: boolean;
   nameOrEmailCarriedOver: boolean;
 };
 
 export function useDraftRestore({
   readingId,
   defaultValues,
+  totalPages,
+  initialPage = "first",
+  giftCode,
 }: UseDraftRestoreArgs): UseDraftRestoreResult {
   const [values, setValues] = useState<FieldValues>(defaultValues);
   const [currentPage, setCurrentPage] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isRestored, setIsRestored] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const [nameOrEmailCarriedOver, setNameOrEmailCarriedOver] = useState(false);
   const restoredForReadingRef = useRef<string | null>(null);
 
@@ -85,18 +104,20 @@ export function useDraftRestore({
       const parsed = new Date(restored.savedAt);
       return Number.isNaN(parsed.getTime()) ? null : parsed;
     })();
+    const lastPage = Math.max(totalPages - 1, 0);
+    const opensOnLastPage =
+      initialPage === "last" || isGiftDraftLeftOnPage(restored, giftCode, lastPage);
     setLastReadingId(readingId);
     restoredForReadingRef.current = readingId;
     queueMicrotask(() => {
       setValues(seeded);
       setNameOrEmailCarriedOver(hasNameOrEmail(carriedOverFields));
-      // Always resume on the first page even when values are prefilled; the
-      // saved page index is intentionally not restored.
-      setCurrentPage(0);
+      setCurrentPage(opensOnLastPage ? lastPage : 0);
       if (restoredSavedAt) setLastSavedAt(restoredSavedAt);
+      setRestoredFromDraft(restored !== null);
       setIsRestored(true);
     });
-  }, [readingId, defaultValues]);
+  }, [readingId, defaultValues, totalPages, initialPage, giftCode]);
 
   return {
     values,
@@ -106,6 +127,7 @@ export function useDraftRestore({
     lastSavedAt,
     setLastSavedAt,
     isRestored,
+    restoredFromDraft,
     nameOrEmailCarriedOver,
   };
 }

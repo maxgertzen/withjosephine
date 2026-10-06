@@ -30,8 +30,7 @@ export const readingsQuery = groq`
     priceDisplay,
     valueProposition,
     briefDescription,
-    expandedDetails,
-    includes,
+    "includes": coalesce(includes, []),
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
@@ -52,8 +51,8 @@ export const readingBySlugQuery = groq`
     priceDisplay,
     valueProposition,
     briefDescription,
-    expandedDetails,
-    includes,
+    "includes": coalesce(includes, []),
+    howItWorks,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
@@ -211,8 +210,8 @@ export const emailOrderConfirmationQuery = groq`
   }
 `;
 
-export const emailDay7DeliveryQuery = groq`
-  *[_type == "emailDay7Delivery"][0] {
+export const emailReadingDeliveryQuery = groq`
+  coalesce(*[_type == "emailReadingDelivery"][0], *[_type == "emailDay7Delivery"][0]) {
     subjectTemplate,
     preview,
     bodyIntro,
@@ -225,6 +224,59 @@ export const emailDay7DeliveryQuery = groq`
     accessWindowLine,
     comfortFollowUp,
     signOff
+  }
+`;
+
+export const emailGiftPurchaseQuery = groq`
+  *[_type == "emailGiftPurchase"][0] {
+    subject,
+    preview,
+    heroLine,
+    body,
+    noteLine,
+    cardLabel,
+    cardLineTemplate,
+    shareButtonLabel,
+    sendButtonLabel,
+    bodyPostButton
+  }
+`;
+
+export const emailGiftOpenedQuery = groq`
+  *[_type == "emailGiftOpened"][0] {
+    subjectTemplate,
+    preview,
+    heroLine,
+    body
+  }
+`;
+
+export const emailGiftRecipientConfirmationQuery = groq`
+  *[_type == "emailGiftRecipientConfirmation"][0] {
+    subject,
+    preview,
+    heroLine,
+    body,
+    buyerNameFallback,
+    cardLabel,
+    cardDeliveryLine,
+    dataExportHeading,
+    dataExportButtonLabel
+  }
+`;
+
+export const emailGiftToRecipientQuery = groq`
+  *[_type == "emailGiftToRecipient"][0] {
+    subject,
+    previewTemplate,
+    heroLine,
+    body,
+    noteLabelTemplate,
+    openButtonLabel,
+    codeFallbackTemplate,
+    cardLabel,
+    cardDeliveryLine,
+    privacyLineTemplate
   }
 `;
 
@@ -412,6 +464,10 @@ export const notesStateQuery = groq`
     },
     "publishedCount": count(*[_type == "article" && defined(slug.current)])
   }
+`;
+
+export const giftSettingsQuery = groq`
+  *[_type == "giftSettings"][0] { ... }
 `;
 
 const articleBaseFields = `

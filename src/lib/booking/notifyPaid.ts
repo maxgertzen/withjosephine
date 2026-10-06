@@ -1,13 +1,29 @@
 import "server-only";
 
-import { mintExportToken } from "../auth/exportToken";
+import * as Sentry from "@sentry/cloudflare";
+
 import { getOrCreateUser } from "../auth/users";
-import { siteOrigin } from "../env";
-import { sendNotificationToJosephine, sendOrderConfirmation } from "../resend";
+import { tellBuyerGiftOpened } from "../gift/giftOpenedEmail";
+import type { GiftEmailFiredEntry } from "../gift/types";
+import {
+  sendCustomerConfirmation,
+  sendNotificationToJosephine,
+  type SubmissionContext,
+} from "../resend";
+import { isPaidByAnotherSession } from "../stripeSession";
+import { mintDataExportUrl } from "./dataExportUrl";
+import {
+  type EmailFailureFields,
+  failureFromError,
+  failureFromUnsentResult,
+  recordEmailFailure,
+} from "./emailFailures";
+import { isEmailFiredOfType } from "./emailFiredType";
+import { buildFinancialMirror } from "./financialMirror";
 import {
   appendEmailFired,
   buildSubmissionContext,
-  type FinancialMirror,
+  type EmailFiredEntry,
   markSubmissionPaid,
   SUBMISSION_STATUS,
   type SubmissionRecord,
@@ -22,19 +38,40 @@ export type PaidEventDetails = {
   country: string | null;
 };
 
-export type ApplyPaidResult = "applied" | "alreadyApplied";
+export type ApplyPaidResult = "applied" | "alreadyApplied" | "duplicate" | "notApplied";
+
+function reportSubmissionNotMarkedPaid(submissionId: string): void {
+  console.warn(`[notifyPaid] submission ${submissionId} could not be marked paid, no refund`);
+  Sentry.captureMessage("Paid Checkout session did not mark its submission paid", {
+    level: "warning",
+    extra: { submissionId },
+  });
+}
+
+function reportPaymentForSubmissionPaidWithoutSession(
+  submissionId: string,
+  stripeSessionId: string,
+): void {
+  console.warn(
+    `[notifyPaid] submission ${submissionId} was paid without a Stripe session and got a paid session, refund it by hand`,
+  );
+  Sentry.captureMessage("Paid Checkout session for a submission paid without a Stripe session", {
+    level: "error",
+    extra: { submissionId, stripeSessionId },
+  });
+}
 
 export async function applyPaidEvent(
   submission: SubmissionRecord,
   details: PaidEventDetails,
 ): Promise<ApplyPaidResult> {
   if (submission.status === SUBMISSION_STATUS.paid) {
-    if (submission.stripeSessionId !== details.stripeSessionId) {
-      console.warn(
-        `[notifyPaid] submission ${submission._id} already paid by session ${submission.stripeSessionId}, ignoring paid session ${details.stripeSessionId}`,
-      );
+    if (!submission.stripeSessionId) {
+      reportPaymentForSubmissionPaidWithoutSession(submission._id, details.stripeSessionId);
     }
-    return "alreadyApplied";
+    return isPaidByAnotherSession(submission.stripeSessionId, details.stripeSessionId)
+      ? "duplicate"
+      : "alreadyApplied";
   }
 
   const context = buildSubmissionContext({
@@ -55,75 +92,112 @@ export async function applyPaidEvent(
     console.error(`[notifyPaid] user-create failed for ${submission._id}`, error);
   }
 
-  // Tax-retention record (6yr HMRC) — separable from reading content (3yr)
-  // so the cascade can scrub PII without breaching record-keeping.
-  // Stripe always returns amount + currency on a paid checkout session;
-  // the null-guard keeps the contract type-safe and skips the financial
-  // row on the reconcile-cron path that synthesizes a stripeEventId.
-  const financial: FinancialMirror | undefined =
-    details.amountPaidCents != null && details.amountPaidCurrency != null
-      ? {
-          submissionId: submission._id,
-          userId: recipientUserId,
-          email: submission.email,
-          paidAt: details.paidAt,
-          amountPaidCents: details.amountPaidCents,
-          amountPaidCurrency: details.amountPaidCurrency,
-          country: details.country,
-          stripeSessionId: details.stripeSessionId,
-        }
-      : undefined;
+  const financial = buildFinancialMirror(
+    { submissionId: submission._id, userId: recipientUserId, email: submission.email },
+    details,
+  );
 
-  await markSubmissionPaid(submission._id, { ...details, recipientUserId }, financial);
-
-  let dataExportUrl: string | undefined;
-  if (recipientUserId) {
-    try {
-      const exportToken = await mintExportToken({
-        submissionId: submission._id,
-        recipientUserId,
-        mintSource: "order_confirmation",
-      });
-      dataExportUrl = `${siteOrigin()}/privacy/export?t=${exportToken}`;
-    } catch (error) {
-      console.error(`[notifyPaid] export-link mint failed for ${submission._id}`, error);
-    }
+  const marked = await markSubmissionPaid(
+    submission._id,
+    { ...details, recipientUserId },
+    financial,
+  );
+  if (marked === "paid_by_another_session") return "duplicate";
+  if (marked === "already_marked") return "alreadyApplied";
+  if (marked === "not_marked") {
+    reportSubmissionNotMarkedPaid(submission._id);
+    return "notApplied";
   }
+
+  await afterSubmissionPaid({ submissionId: submission._id, context, recipientUserId });
+
+  return "applied";
+}
+
+export type PaidGift = {
+  id: string;
+  buyerFirstName: string;
+  buyerEmail: string | null;
+  emailsFired?: readonly GiftEmailFiredEntry[];
+};
+
+export type AfterSubmissionPaidInput = {
+  submissionId: string;
+  context: SubmissionContext;
+  recipientUserId: string | null;
+  gift?: PaidGift;
+  emailsFired?: readonly EmailFiredEntry[];
+};
+
+async function confirmToCustomer({
+  submissionId,
+  context,
+  recipientUserId,
+  gift,
+}: AfterSubmissionPaidInput): Promise<void> {
+  const dataExportUrl = await mintDataExportUrl({
+    submissionId,
+    recipientUserId,
+    mintSource: "order_confirmation",
+  });
+  const attemptedAt = new Date().toISOString();
+  const recordConfirmationFailure = (
+    failure: Omit<EmailFailureFields, "emailType" | "recipient">,
+  ) =>
+    recordEmailFailure(submissionId, {
+      emailType: "order_confirmation",
+      recipient: context.email,
+      attemptedAt,
+      ...failure,
+    });
+
+  try {
+    const { firedType, result } = await sendCustomerConfirmation(context, {
+      dataExportUrl,
+      idempotencyKey: gift
+        ? `gift-recipient-confirmation/${submissionId}`
+        : `order-confirmation/${submissionId}`,
+      giftBuyerFirstName: gift?.buyerFirstName,
+    });
+    if (result.kind === "dry_run") return;
+    if (result.kind !== "sent") {
+      await recordConfirmationFailure(failureFromUnsentResult(result));
+      return;
+    }
+    try {
+      await appendEmailFired(submissionId, {
+        type: firedType,
+        sentAt: new Date().toISOString(),
+        resendId: result.resendId,
+      });
+    } catch (error) {
+      console.error(`[notifyPaid] emailsFired write failed for ${submissionId}`, error);
+    }
+  } catch (error) {
+    console.error(`[notifyPaid] customer confirmation failed for ${submissionId}`, error);
+    await recordConfirmationFailure(failureFromError(error));
+  }
+}
+
+export async function afterSubmissionPaid(input: AfterSubmissionPaidInput): Promise<void> {
+  const { submissionId, context, gift, emailsFired = [] } = input;
+  const confirmationAlreadySent = emailsFired.some((entry) =>
+    isEmailFiredOfType(entry.type, "order_confirmation"),
+  );
+  const giftOpenedAlreadySent = gift?.emailsFired?.some((entry) => entry.type === "gift_opened");
 
   const dispatches: Array<Promise<unknown>> = [
     sendNotificationToJosephine(context, {
-      idempotencyKey: `josephine-notification/${submission._id}`,
+      idempotencyKey: `josephine-notification/${submissionId}`,
+      ...(gift && { giftBuyerFirstName: gift.buyerFirstName }),
     }).catch((error) => {
-      console.error(`[notifyPaid] Josephine email failed for ${submission._id}`, error);
+      console.error(`[notifyPaid] Josephine email failed for ${submissionId}`, error);
     }),
   ];
-
-  dispatches.push(
-    sendOrderConfirmation(context, {
-      dataExportUrl,
-      idempotencyKey: `order-confirmation/${submission._id}`,
-    })
-      .then(async (result) => {
-        if (result.kind !== "sent") return;
-        try {
-          await appendEmailFired(submission._id, {
-            type: "order_confirmation",
-            sentAt: new Date().toISOString(),
-            resendId: result.resendId,
-          });
-        } catch (error) {
-          console.error(
-            `[notifyPaid] emailsFired write failed for ${submission._id}`,
-            error,
-          );
-        }
-      })
-      .catch((error) => {
-        console.error(`[notifyPaid] Order confirmation failed for ${submission._id}`, error);
-      }),
-  );
+  if (!confirmationAlreadySent) dispatches.push(confirmToCustomer(input));
+  if (gift?.buyerEmail && !giftOpenedAlreadySent) {
+    dispatches.push(tellBuyerGiftOpened(context, gift, gift.buyerEmail));
+  }
 
   await Promise.all(dispatches);
-
-  return "applied";
 }

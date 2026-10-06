@@ -1,23 +1,38 @@
 import { render } from "@react-email/render";
 import { headers } from "next/headers";
-import { Resend } from "resend";
+import { type ErrorResponse, Resend, type WebhookEventPayload } from "resend";
 
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
+import { isSandboxEmail } from "./booking/sandboxEmails";
 import {
-  SANDBOX_DOMAIN,
-  SANDBOX_EMAIL_PREFIX_LIST,
-} from "./booking/sandboxEmails";
-import { FIRST_NAME_FALLBACK } from "./booking/submissions";
+  type CustomerEmailType,
+  type EmailFiredType,
+  FIRST_NAME_FALLBACK,
+  type RenderedEmail,
+} from "./booking/submissions";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
-import { Day7Delivery } from "./emails/Day7Delivery";
-import { Day7OverdueAlert } from "./emails/Day7OverdueAlert";
-import { JosephineNotification } from "./emails/JosephineNotification";
+import { GiftOpened, type GiftOpenedVars } from "./emails/GiftOpened";
+import { GiftPurchase, type GiftPurchaseVars } from "./emails/GiftPurchase";
+import {
+  GiftRecipientConfirmation,
+  giftRecipientConfirmationTokens,
+} from "./emails/GiftRecipientConfirmation";
+import { GiftToRecipient, giftToRecipientTokens } from "./emails/GiftToRecipient";
+import {
+  JosephineNotification,
+  josephineNotificationTitle,
+} from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
-import { isFlagEnabled } from "./env";
+import { ReadingDelivery } from "./emails/ReadingDelivery";
+import { ReadingOverdueAlert } from "./emails/ReadingOverdueAlert";
+import { isFlagEnabled, isStagingEnvironment } from "./env";
+import { giftClientReferenceId } from "./gift/clientReference";
+import { formatGiftCode } from "./gift/giftCodeFormat";
+import type { GiftEmailFiredType } from "./gift/types";
 import { pickDefined } from "./sanity/pickDefined";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
@@ -45,7 +60,7 @@ export type EmailSendResult =
   | { kind: "sent"; resendId: string }
   | { kind: "dry_run" }
   | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" }
-  | { kind: "failed"; error: string };
+  | { kind: "failed"; error: string; statusCode?: number | null };
 
 // Brand + footer copy shared across every branded template. Sanity edit on
 // the `emailSharedShell` singleton propagates to every customer-facing email.
@@ -68,6 +83,16 @@ function getResendClient(): Resend | null {
   if (!apiKey) return null;
   if (!cachedClient) cachedClient = new Resend(apiKey);
   return cachedClient;
+}
+
+export function verifyResendWebhook(args: {
+  payload: string;
+  headers: { id: string; timestamp: string; signature: string };
+  webhookSecret: string;
+}): WebhookEventPayload {
+  const client = getResendClient();
+  if (!client) throw new Error("RESEND_API_KEY missing");
+  return client.webhooks.verify(args);
 }
 
 /**
@@ -93,23 +118,31 @@ function redactRecipient(to: string | string[]) {
 
 type SkipReason = "sandbox_prefix" | "env_guard" | "flag" | "header";
 
+function configuredSkipReason(
+  recipients: readonly string[],
+  originatorEmail: string | null,
+): Exclude<SkipReason, "header"> | null {
+  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
+    return "sandbox_prefix";
+  }
+  if (!isProductionEnv() && !recipients.every(isProductionAllowlistedRecipient)) {
+    return "env_guard";
+  }
+  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  return null;
+}
+
 async function resolveSkipReason(
   recipients: readonly string[],
   originatorEmail: string | null,
 ): Promise<SkipReason | null> {
-  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
-    return "sandbox_prefix";
+  const configured = configuredSkipReason(recipients, originatorEmail);
+  if (configured === "env_guard") {
+    console.warn(
+      `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
+    );
   }
-  if (!isProductionEnv()) {
-    const allAllowed = recipients.every(isProductionAllowlistedRecipient);
-    if (!allAllowed) {
-      console.warn(
-        `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
-      );
-      return "env_guard";
-    }
-  }
-  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
+  if (configured) return configured;
   if (await shouldDryRunFromRequestHeader()) return "header";
   return null;
 }
@@ -118,11 +151,41 @@ function isProductionEnv(): boolean {
   return process.env.NEXT_PUBLIC_SANITY_DATASET === "production";
 }
 
+export function isDryRunRecipient(recipient: string): boolean {
+  return configuredSkipReason([recipient], null) !== null;
+}
+
+export const CUSTOMER_EMAIL_TAG = {
+  submissionId: "submission_id",
+  emailType: "email_type",
+} as const;
+
+function customerEmailTags(submissionId: string, emailType: CustomerEmailType) {
+  return {
+    [CUSTOMER_EMAIL_TAG.submissionId]: submissionId,
+    [CUSTOMER_EMAIL_TAG.emailType]: emailType,
+  };
+}
+
+export const GIFT_EMAIL_TAG = {
+  giftId: "gift_id",
+  emailType: CUSTOMER_EMAIL_TAG.emailType,
+} as const;
+
+function giftEmailTags(giftId: string, emailType: GiftEmailFiredType) {
+  return { [GIFT_EMAIL_TAG.giftId]: giftId, [GIFT_EMAIL_TAG.emailType]: emailType };
+}
+
 const PRODUCTION_RECIPIENT_ALLOWLIST: ReadonlyArray<string> = [
   "hello@withjosephine.com",
   "maxgertzen@gmail.com",
+  "mgertzen2@gmail.com",
   "beckyridgley1@gmail.com",
   "beckyridgley@hotmail.co.uk",
+  "delivered@resend.dev",
+  "bounced@resend.dev",
+  "complained@resend.dev",
+  "suppressed@resend.dev",
 ];
 
 export function isProductionAllowlistedRecipient(
@@ -158,13 +221,10 @@ async function shouldDryRunFromRequestHeader(): Promise<boolean> {
   }
 }
 
-// DO alarms, cron sweeps, and the Stripe webhook have no request context,
-// so the X-E2E-Resend-DryRun header can't reach them — match by email instead.
-export function isSandboxEmail(address: string | null | undefined): boolean {
-  if (!address) return false;
-  const lower = address.toLowerCase();
-  if (!lower.endsWith(SANDBOX_DOMAIN)) return false;
-  return SANDBOX_EMAIL_PREFIX_LIST.some((prefix) => lower.startsWith(prefix));
+const STAGING_SUBJECT_PREFIX = "[Staging] ";
+
+function subjectForEnvironment(subject: string): string {
+  return isStagingEnvironment() ? `${STAGING_SUBJECT_PREFIX}${subject}` : subject;
 }
 
 export async function sendOrSkip(args: {
@@ -173,12 +233,15 @@ export async function sendOrSkip(args: {
   html: string;
   subType: EmailSubType;
   submissionId: string | null;
+  giftId?: string;
   replyTo?: string;
   idempotencyKey?: string;
+  tags?: Record<string, string>;
   // Admin notifications: `to` is always hello@, so check the submission email too.
   originatorEmail?: string | null;
 }): Promise<EmailSendResult> {
   const label = EMAIL_LABELS[args.subType];
+  const subject = subjectForEnvironment(args.subject);
   const recipientList = Array.isArray(args.to) ? args.to : [args.to];
   const skipReason = await resolveSkipReason(recipientList, args.originatorEmail ?? null);
   if (skipReason) {
@@ -190,7 +253,7 @@ export async function sendOrSkip(args: {
         body: JSON.stringify({
           label,
           to: args.to,
-          subject: args.subject,
+          subject,
           html: args.html,
         }),
       }).catch(() => undefined);
@@ -206,18 +269,23 @@ export async function sendOrSkip(args: {
     return { kind: "skipped", reason: "no_api_key" };
   }
   let resendId: string | null;
+  let resendError: ErrorResponse | null;
   try {
     const response = await client.emails.send(
       {
         from: FROM_ADDRESS,
         to: args.to,
-        subject: args.subject,
+        subject,
         html: args.html,
         ...(args.replyTo ? { replyTo: args.replyTo } : {}),
+        ...(args.tags
+          ? { tags: Object.entries(args.tags).map(([name, value]) => ({ name, value })) }
+          : {}),
       },
       args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
     );
     resendId = response.data?.id ?? null;
+    resendError = response.error;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[resend] send failed for ${label}: ${message}`);
@@ -225,15 +293,25 @@ export async function sendOrSkip(args: {
   }
 
   void serverTrack("email_sent", {
-    distinct_id: args.submissionId ?? generateAnonymousDistinctId(),
+    distinct_id:
+      args.submissionId ??
+      (args.giftId ? giftClientReferenceId(args.giftId) : generateAnonymousDistinctId()),
     sub_type: args.subType,
     submission_id: args.submissionId,
+    ...(args.giftId ? { gift_id: args.giftId } : {}),
     recipient_redacted: redactRecipient(args.to),
     resend_id_present: resendId !== null,
   });
 
   if (resendId === null) {
-    return { kind: "failed", error: "Resend returned no id" };
+    console.error(
+      `[resend] send failed for ${label}: ${resendError?.name ?? "no id"} (${resendError?.statusCode ?? "no status"})`,
+    );
+    return {
+      kind: "failed",
+      error: resendError?.name ?? "Resend returned no id",
+      statusCode: resendError?.statusCode ?? null,
+    };
   }
   return { kind: "sent", resendId };
 }
@@ -249,7 +327,7 @@ function requireNotificationEmail(subType: EmailSubType): string | EmailSendResu
 
 export async function sendNotificationToJosephine(
   submission: SubmissionContext,
-  options?: { idempotencyKey?: string },
+  options?: { idempotencyKey?: string; giftBuyerFirstName?: string },
 ): Promise<EmailSendResult> {
   const notificationEmail = requireNotificationEmail("josephine_notification");
   if (typeof notificationEmail !== "string") return notificationEmail;
@@ -264,12 +342,13 @@ export async function sendNotificationToJosephine(
       submissionId={submission.id}
       photoUrl={submission.photoUrl}
       responses={submission.responses}
+      giftBuyerFirstName={options?.giftBuyerFirstName}
     />,
   );
 
   return sendOrSkip({
     to: notificationEmail,
-    subject: `New ${submission.readingName} booking — ${submission.email}`,
+    subject: `${josephineNotificationTitle(submission.readingName, options?.giftBuyerFirstName)} — ${submission.email}`,
     html,
     subType: "josephine_notification",
     submissionId: submission.id,
@@ -310,27 +389,109 @@ export async function sendOrderConfirmation(
     subType: "order_confirmation",
     submissionId: submission.id,
     idempotencyKey: options?.idempotencyKey,
+    tags: customerEmailTags(submission.id, "order_confirmation"),
   });
 }
 
-export async function sendDay7Delivery(
+export async function sendGiftRecipientConfirmation(
   submission: SubmissionContext,
-  listenUrl: string,
+  options: { buyerFirstName: string; dataExportUrl?: string; idempotencyKey?: string },
 ): Promise<EmailSendResult> {
-  // Lazy imports scope the Sanity fetch to test runs that don't mock it.
-  const { EMAIL_DAY7_DELIVERY_DEFAULTS } = await import("@/data/defaults");
-  const { fetchEmailDay7Delivery } = await import("@/lib/sanity/fetch");
+  const { EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftRecipientConfirmation } = await import("@/lib/sanity/fetch");
   const [sanity, shell] = await Promise.all([
-    fetchEmailDay7Delivery().catch(() => null),
+    fetchEmailGiftRecipientConfirmation().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_DAY7_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = { ...EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const vars = {
+    firstName: submission.firstName,
+    buyerFirstName: options.buyerFirstName,
+    readingName: submission.readingName,
+    dataExportUrl: options.dataExportUrl ?? null,
+  };
+  const html = await render(<GiftRecipientConfirmation vars={vars} copy={copy} shell={shell} />);
+
+  return sendOrSkip({
+    to: submission.email,
+    subject: applyTokens(copy.subject, giftRecipientConfirmationTokens(vars, copy)),
+    html,
+    subType: "gift_recipient_confirmation",
+    submissionId: submission.id,
+    idempotencyKey: options.idempotencyKey,
+    tags: customerEmailTags(submission.id, "order_confirmation"),
+  });
+}
+
+export type CustomerConfirmationSend = {
+  firedType: Extract<EmailFiredType, "order_confirmation" | "gift_recipient_confirmation">;
+  result: EmailSendResult;
+};
+
+export async function sendCustomerConfirmation(
+  submission: SubmissionContext,
+  options: { dataExportUrl?: string; idempotencyKey: string; giftBuyerFirstName?: string },
+): Promise<CustomerConfirmationSend> {
+  const { dataExportUrl, idempotencyKey, giftBuyerFirstName } = options;
+  if (giftBuyerFirstName === undefined) {
+    return {
+      firedType: "order_confirmation",
+      result: await sendOrderConfirmation(submission, { dataExportUrl, idempotencyKey }),
+    };
+  }
+  return {
+    firedType: "gift_recipient_confirmation",
+    result: await sendGiftRecipientConfirmation(submission, {
+      buyerFirstName: giftBuyerFirstName,
+      dataExportUrl,
+      idempotencyKey,
+    }),
+  };
+}
+
+export async function sendReadingDelivery(
+  submission: SubmissionContext,
+  listenUrl: string,
+  options?: { idempotencyKey?: string },
+): Promise<EmailSendResult> {
+  const rendered = await renderReadingDelivery(submission, listenUrl);
+  return sendRenderedReadingDelivery(submission, rendered, options);
+}
+
+export async function sendRenderedReadingDelivery(
+  submission: Pick<SubmissionContext, "id" | "email">,
+  rendered: RenderedEmail,
+  options?: { idempotencyKey?: string },
+): Promise<EmailSendResult> {
+  return sendOrSkip({
+    to: submission.email,
+    subject: rendered.subject,
+    html: rendered.html,
+    subType: "reading_delivery",
+    submissionId: submission.id,
+    idempotencyKey: options?.idempotencyKey,
+    tags: customerEmailTags(submission.id, "reading_delivery"),
+  });
+}
+
+export async function renderReadingDelivery(
+  submission: SubmissionContext,
+  listenUrl: string,
+): Promise<RenderedEmail> {
+  // Lazy imports scope the Sanity fetch to test runs that don't mock it.
+  const { EMAIL_READING_DELIVERY_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailReadingDelivery } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailReadingDelivery().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_READING_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
   const subject = applyTokens(copy.subjectTemplate, {
     readingName: submission.readingName,
     readingPriceDisplay: submission.readingPriceDisplay,
   });
   const html = await render(
-    <Day7Delivery
+    <ReadingDelivery
       vars={{
         firstName: submission.firstName,
         readingName: submission.readingName,
@@ -340,12 +501,97 @@ export async function sendDay7Delivery(
       shell={shell}
     />,
   );
+  return { subject, html };
+}
+
+export async function sendGiftPurchase(
+  { to, ...vars }: GiftPurchaseVars & { to: string },
+  options: { giftId: string; idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_PURCHASE_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftPurchase } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftPurchase().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_PURCHASE_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const html = await render(<GiftPurchase vars={vars} copy={copy} shell={shell} />);
   return sendOrSkip({
-    to: submission.email,
-    subject,
+    to,
+    subject: applyTokens(copy.subject, { firstName: vars.firstName, readingName: vars.readingName }),
     html,
-    subType: "day_7_delivery",
-    submissionId: submission.id,
+    subType: "gift_confirmation",
+    submissionId: null,
+    giftId: options.giftId,
+    idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(options.giftId, "gift_confirmation"),
+  });
+}
+
+export async function sendGiftOpened(
+  { to, ...vars }: GiftOpenedVars & { to: string },
+  options: { giftId: string; idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_OPENED_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftOpened } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftOpened().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_OPENED_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const html = await render(<GiftOpened vars={vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to,
+    subject: applyTokens(copy.subjectTemplate, vars),
+    html,
+    subType: "gift_opened",
+    submissionId: null,
+    giftId: options.giftId,
+    idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(options.giftId, "gift_opened"),
+  });
+}
+
+export async function sendGiftToRecipient(
+  gift: {
+    giftId: string;
+    recipientName: string;
+    recipientEmail: string;
+    buyerName: string;
+    buyerEmail: string;
+    note: string | null;
+    readingName: string;
+    code: string;
+    giftUrl: string;
+  },
+  options: { idempotencyKey: string },
+): Promise<EmailSendResult> {
+  const { EMAIL_GIFT_TO_RECIPIENT_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailGiftToRecipient } = await import("@/lib/sanity/fetch");
+  const [sanity, shell] = await Promise.all([
+    fetchEmailGiftToRecipient().catch(() => null),
+    fetchSharedShell(),
+  ]);
+  const copy = { ...EMAIL_GIFT_TO_RECIPIENT_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const vars = {
+    firstName: gift.recipientName,
+    buyerName: gift.buyerName,
+    readingName: gift.readingName,
+    displayCode: formatGiftCode(gift.code),
+    giftUrl: gift.giftUrl,
+    note: gift.note,
+  };
+  const html = await render(<GiftToRecipient vars={vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to: gift.recipientEmail,
+    subject: applyTokens(copy.subject, giftToRecipientTokens(vars)),
+    html,
+    subType: "gift_send",
+    submissionId: null,
+    giftId: gift.giftId,
+    idempotencyKey: options.idempotencyKey,
+    tags: giftEmailTags(gift.giftId, "gift_send"),
+    originatorEmail: gift.buyerEmail,
   });
 }
 
@@ -455,12 +701,12 @@ export async function sendContactMessage(contact: ContactPayload): Promise<Email
   });
 }
 
-export async function sendDay7OverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
-  const notificationEmail = requireNotificationEmail("day_7_overdue_alert");
+export async function sendReadingOverdueAlert(submission: SubmissionContext): Promise<EmailSendResult> {
+  const notificationEmail = requireNotificationEmail("reading_overdue_alert");
   if (typeof notificationEmail !== "string") return notificationEmail;
 
   const html = await render(
-    <Day7OverdueAlert
+    <ReadingOverdueAlert
       email={submission.email}
       readingName={submission.readingName}
       submissionId={submission.id}
@@ -471,7 +717,7 @@ export async function sendDay7OverdueAlert(submission: SubmissionContext): Promi
     to: notificationEmail,
     subject: `Reading overdue — ${submission.readingName} for ${submission.email}`,
     html,
-    subType: "day_7_overdue_alert",
+    subType: "reading_overdue_alert",
     submissionId: submission.id,
     originatorEmail: submission.email,
   });

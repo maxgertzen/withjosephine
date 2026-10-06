@@ -64,6 +64,10 @@ test.describe("Prod read-only public smoke", () => {
         html,
         "Back should land on the homepage card the visitor came from",
       ).toContain(`/#reading-${slug}`);
+      expect(
+        html,
+        "the gift row ships in the static page",
+      ).toContain('data-testid="gift-fold"');
     });
   }
 
@@ -121,6 +125,23 @@ test.describe("Prod read-only public smoke", () => {
       `POST /api/booking returned ${res.status()} — expected 4xx (Turnstile gate proof)`,
     ).toBeGreaterThanOrEqual(400);
     expect(res.status()).toBeLessThan(500);
+  });
+
+  test("/api/gift/purchase gate rejects dummy Turnstile token with 400", async ({ request }) => {
+    const res = await request.post("/api/gift/purchase", {
+      data: {
+        readingSlug: "birth-chart",
+        buyerFirstName: "Prod Smoke",
+        note: "",
+        coolingOffConsent: true,
+        turnstileToken: "XXXX.SMOKE.TOKEN.XXXX",
+      },
+    });
+    expect(
+      res.status(),
+      `POST /api/gift/purchase returned ${res.status()}, expected 400 (Turnstile gate proof)`,
+    ).toBe(400);
+    expect(await res.json()).toEqual({ error: "Verification failed" });
   });
 
   test("/api/contact gate rejects dummy Turnstile token with 4xx", async ({ request }) => {

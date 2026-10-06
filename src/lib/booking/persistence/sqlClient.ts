@@ -37,7 +37,7 @@ export type SqlClient = {
    * together (e.g. consume magic link + insert session) so a mid-sequence
    * failure can't leave the database in a half-redeemed state.
    */
-  batch(statements: ReadonlyArray<SqlStatement>): Promise<void>;
+  batch(statements: ReadonlyArray<SqlStatement>): Promise<Array<{ rowsWritten: number }>>;
 };
 
 type ClientFactory = () => SqlClient | Promise<SqlClient>;
@@ -89,7 +89,9 @@ export async function dbExec(
   return client.exec(sql, params);
 }
 
-export async function dbBatch(statements: ReadonlyArray<SqlStatement>): Promise<void> {
+export async function dbBatch(
+  statements: ReadonlyArray<SqlStatement>,
+): Promise<Array<{ rowsWritten: number }>> {
   const client = await getClient();
   return client.batch(statements);
 }

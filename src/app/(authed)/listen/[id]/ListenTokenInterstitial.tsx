@@ -2,6 +2,7 @@ import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { Footer } from "@/components/Footer";
 import { GoldDivider } from "@/components/GoldDivider";
+import { NAV_CLEARANCE_CLASS } from "@/components/Navigation";
 import { StarField } from "@/components/StarField";
 import type { ListenInterstitialContent } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
@@ -34,7 +35,7 @@ export function ListenTokenInterstitial({
         <CelestialOrb key={index} {...orb} />
       ))}
 
-      <main className="relative z-10 max-w-[720px] mx-auto px-6 py-20">
+      <main className={`relative z-10 max-w-[720px] mx-auto px-6 pb-20 ${NAV_CLEARANCE_CLASS}`}>
         <div className="max-w-md mx-auto bg-j-ivory border border-j-blush rounded-2xl p-10 text-center">
           <h1 className="font-display italic text-3xl text-j-text-heading">{copy.heading}</h1>
           <GoldDivider className="max-w-xs mx-auto my-8" />
@@ -51,8 +52,8 @@ export function ListenTokenInterstitial({
             </Button>
           </form>
         </div>
-        <Footer />
       </main>
+      <Footer />
     </div>
   );
 }

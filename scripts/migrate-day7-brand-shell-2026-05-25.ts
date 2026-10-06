@@ -19,7 +19,7 @@
 import { fileURLToPath } from "node:url";
 import { createClient } from "@sanity/client";
 
-import { EMAIL_DAY7_DELIVERY_DEFAULTS } from "../src/data/defaults";
+import { EMAIL_READING_DELIVERY_DEFAULTS } from "../src/data/defaults";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
 
 const SANITY_API_VERSION = "2025-01-01";
@@ -51,9 +51,9 @@ async function main(): Promise<void> {
   await client
     .patch(SINGLETON_ID)
     .setIfMissing({
-      heroLine: EMAIL_DAY7_DELIVERY_DEFAULTS.heroLine,
-      cardLabel: EMAIL_DAY7_DELIVERY_DEFAULTS.cardLabel,
-      cardDeliveryLine: EMAIL_DAY7_DELIVERY_DEFAULTS.cardDeliveryLine,
+      heroLine: EMAIL_READING_DELIVERY_DEFAULTS.heroLine,
+      cardLabel: EMAIL_READING_DELIVERY_DEFAULTS.cardLabel,
+      cardDeliveryLine: EMAIL_READING_DELIVERY_DEFAULTS.cardDeliveryLine,
     })
     .commit();
 

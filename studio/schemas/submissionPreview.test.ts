@@ -243,3 +243,63 @@ describe("prepareSubmissionPreview — subtitle when title falls back to email (
     expect(result.subtitle).toBe("Submitted 8 May 2026");
   });
 });
+
+describe("buildPreview — gift desk line", () => {
+  const NOW = new Date("2026-10-04T12:00:00.000Z");
+  const PAID = {
+    email: "anna@email.com",
+    status: "paid",
+    paidAt: "2026-10-03T08:00:00.000Z",
+  };
+
+  it("puts Gift from <buyer> between the email and the dates", () => {
+    expect(buildPreview({ ...NAME_FIELDS, ...PAID, giftBuyerFirstName: "Dana" }, NOW).subtitle).toBe(
+      "anna@email.com · Gift from Dana · Paid 3 Oct 2026 · Day 2 of 7",
+    );
+  });
+
+  it("leaves the line unchanged without a gift", () => {
+    expect(buildPreview({ ...NAME_FIELDS, ...PAID }, NOW).subtitle).toBe(
+      "anna@email.com · Paid 3 Oct 2026 · Day 2 of 7",
+    );
+  });
+
+  it("keeps the gift segment when the title falls back to the email", () => {
+    expect(buildPreview({ ...PAID, giftBuyerFirstName: "Dana" }, NOW)).toEqual({
+      title: "anna@email.com",
+      subtitle: "Gift from Dana · Paid 3 Oct 2026 · Day 2 of 7",
+    });
+  });
+});
+
+describe("buildPreview — gift rows", () => {
+  const NOW = new Date("2026-10-05T12:00:00.000Z");
+  const WAITING = {
+    status: "gift_waiting",
+    giftBuyerFirstName: "Dana",
+    giftBoughtAt: "2026-10-03T08:00:00.000Z",
+    readingName: "Birth Chart Reading",
+    createdAt: "2026-10-03T08:00:00.000Z",
+  };
+
+  it("titles a gift not opened yet by the buyer and shows the reading and bought date", () => {
+    expect(buildPreview(WAITING, NOW)).toEqual({
+      title: "Gift from Dana",
+      subtitle: "Birth Chart Reading · Not opened yet · Bought 3 Oct 2026",
+    });
+  });
+
+  it("shows a cancelled gift as Gift cancelled", () => {
+    expect(buildPreview({ ...WAITING, status: "gift_cancelled" }, NOW)).toEqual({
+      title: "Gift from Dana",
+      subtitle: "Birth Chart Reading · Gift cancelled",
+    });
+  });
+
+  it("falls back to Gift with no buyer name, reading or bought date", () => {
+    expect(buildPreview({ status: "gift_waiting" }, NOW)).toEqual({
+      title: "Gift",
+      subtitle: "Not opened yet",
+    });
+  });
+});

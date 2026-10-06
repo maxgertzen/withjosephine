@@ -13,7 +13,7 @@ import "server-only";
  *   - called from Stripe webhook after submission paid-write
  *   - same email returns same userId, isNew=false
  */
-import { dbQuery } from "@/lib/booking/persistence/sqlClient";
+import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
 
 export type GetOrCreateUserResult = { userId: string; isNew: boolean };
 export type UserRecord = { id: string; email: string };
@@ -75,6 +75,14 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
     [normalized],
   );
   return rows[0] ?? null;
+}
+
+export async function setUserEmail(id: string, email: string, now = Date.now()): Promise<void> {
+  await dbExec(`UPDATE user SET email = ?, updated_at = ? WHERE id = ?`, [
+    normalizeEmail(email),
+    now,
+    id,
+  ]);
 }
 
 export async function findUserById(id: string): Promise<UserRecord | null> {

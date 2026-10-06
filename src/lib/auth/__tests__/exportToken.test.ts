@@ -262,7 +262,7 @@ describe("export token mint + verify", () => {
     const listenToken = await mintListenToken({
       submissionId: SUBMISSION_ID,
       recipientUserId: RECIPIENT_USER_ID,
-      mintSource: "cron_day7",
+      mintSource: "reading_delivery",
       now: NOW,
       jti: FIXED_JTI,
     });

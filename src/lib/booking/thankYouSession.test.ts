@@ -4,6 +4,11 @@ vi.mock("../stripe", () => ({
   retrieveCheckoutSession: vi.fn(),
 }));
 
+import { retrieveCheckoutSession } from "../stripe";
+import { fetchThankYouSessionSnapshot } from "./thankYouSession";
+
+const mockRetrieve = vi.mocked(retrieveCheckoutSession);
+
 beforeEach(() => {
   vi.resetAllMocks();
 });
@@ -12,58 +17,44 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("fetchThankYouSessionSnapshot — bug #8", () => {
-  it("flags isGift=true when session metadata.is_gift === 'true'", async () => {
-    const { retrieveCheckoutSession } = await import("../stripe");
-    vi.mocked(retrieveCheckoutSession).mockResolvedValue({
-      id: "cs_test_gift_1",
-      amount_total: 9900,
-      currency: "usd",
-      client_reference_id: "sub_gift_1",
-      metadata: { is_gift: "true" },
-    } as never);
-    const { fetchThankYouSessionSnapshot } = await import("./thankYouSession");
-    const snapshot = await fetchThankYouSessionSnapshot("cs_test_gift_1");
-    expect(snapshot.isGift).toBe(true);
-    expect(snapshot.submissionIdFromSession).toBe("sub_gift_1");
-    expect(snapshot.paidAmount.cents).toBe(9900);
-  });
-
-  it("flags isGift=false when session metadata.is_gift is missing", async () => {
-    const { retrieveCheckoutSession } = await import("../stripe");
-    vi.mocked(retrieveCheckoutSession).mockResolvedValue({
+describe("fetchThankYouSessionSnapshot", () => {
+  it("returns the session and the paid amount", async () => {
+    const session = {
       id: "cs_test_purchase_1",
       amount_total: 17900,
       currency: "usd",
       client_reference_id: "sub_purchase_1",
-      metadata: null,
-    } as never);
-    const { fetchThankYouSessionSnapshot } = await import("./thankYouSession");
+    };
+    mockRetrieve.mockResolvedValue(session as never);
+
     const snapshot = await fetchThankYouSessionSnapshot("cs_test_purchase_1");
-    expect(snapshot.isGift).toBe(false);
+
+    expect(snapshot).toEqual({
+      kind: "ok",
+      paidAmount: { cents: 17900, display: "$179.00" },
+      session,
+    });
   });
 
-  it("flags isGift=false when metadata.is_gift is the string 'false'", async () => {
-    const { retrieveCheckoutSession } = await import("../stripe");
-    vi.mocked(retrieveCheckoutSession).mockResolvedValue({
-      id: "cs_test_purchase_2",
-      amount_total: 7900,
-      currency: "usd",
-      client_reference_id: "sub_purchase_2",
-      metadata: { is_gift: "false" },
-    } as never);
-    const { fetchThankYouSessionSnapshot } = await import("./thankYouSession");
-    const snapshot = await fetchThankYouSessionSnapshot("cs_test_purchase_2");
-    expect(snapshot.isGift).toBe(false);
+  it("returns a null paid amount when Stripe has no amount", async () => {
+    mockRetrieve.mockResolvedValue({ id: "cs_test_free", amount_total: null } as never);
+    const snapshot = await fetchThankYouSessionSnapshot("cs_test_free");
+    expect(snapshot).toMatchObject({ kind: "ok", paidAmount: { cents: null, display: null } });
   });
 
-  it("returns safe defaults when Stripe API throws", async () => {
-    const { retrieveCheckoutSession } = await import("../stripe");
-    vi.mocked(retrieveCheckoutSession).mockRejectedValue(new Error("Stripe down"));
-    const { fetchThankYouSessionSnapshot } = await import("./thankYouSession");
+  it("returns unavailable when Stripe throws, without logging the session id", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const stripeError = Object.assign(new Error("No such checkout.session: 'cs_test_err'"), {
+      type: "StripeInvalidRequestError",
+    });
+    mockRetrieve.mockRejectedValue(stripeError);
+
     const snapshot = await fetchThankYouSessionSnapshot("cs_test_err");
-    expect(snapshot.isGift).toBe(false);
-    expect(snapshot.paidAmount).toEqual({ cents: null, display: null });
-    expect(snapshot.submissionIdFromSession).toBeNull();
+
+    expect(snapshot).toEqual({ kind: "unavailable" });
+    expect(warn).toHaveBeenCalledTimes(1);
+    const logged = warn.mock.calls.flat().map(String).join(" ");
+    expect(logged).toContain("StripeInvalidRequestError");
+    expect(logged).not.toMatch(/cs_/);
   });
 });

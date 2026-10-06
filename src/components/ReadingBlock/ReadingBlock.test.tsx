@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import type { BookingEntry } from "@/lib/analytics";
 import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
+import { PRE_PAINT_FOLD_ATTRIBUTE } from "@/lib/intake/readingFoldPrePaint";
 
 import { ReadingBlock } from "./ReadingBlock";
 import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
@@ -18,6 +19,8 @@ function renderAs(entry: BookingEntry | null, props = SOUL_BLUEPRINT_BLOCK) {
 
 const panelOf = (text: string) => screen.getByText(text).closest("[role=region]");
 const blockPanel = () => document.getElementById(`${SOUL_BLUEPRINT_BLOCK.slug}-reading-block`);
+const foldRow = () =>
+  screen.getByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel, hidden: true });
 
 describe("ReadingBlock, open for a visitor from search", () => {
   it("shows the promise, facts, reader and section titles with no fold row", () => {
@@ -29,16 +32,26 @@ describe("ReadingBlock, open for a visitor from search", () => {
     expect(screen.getByRole("button", { name: /What.s included/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How it works" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Questions" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel })).toBeNull();
+    expect(foldRow()).toHaveClass("hidden");
     expect(blockPanel()).not.toHaveAttribute("inert");
     expect(blockPanel()).not.toHaveAttribute("role");
   });
 
-  it("renders open before the visit is classified, as the server does", () => {
+  it("renders open before the visit is classified, folding by CSS when the pre-paint script found a draft", () => {
     renderAs(null);
 
-    expect(screen.queryByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel })).toBeNull();
+    expect(foldRow()).toHaveClass("hidden", "[body[data-reading-fold]_&]:flex");
     expect(blockPanel()).not.toHaveAttribute("inert");
+    expect(blockPanel()).toHaveClass("[body[data-reading-fold]_&]:grid-rows-[0fr]!");
+  });
+
+  it("removes the pre-paint fold marker once the visit is classified", () => {
+    document.body.setAttribute(PRE_PAINT_FOLD_ATTRIBUTE, "");
+
+    renderAs("draft");
+
+    expect(document.body).not.toHaveAttribute(PRE_PAINT_FOLD_ATTRIBUTE);
+    expect(foldRow()).not.toHaveClass("hidden");
   });
 
   it("keeps closed accordion text in the page, out of reach until opened", async () => {
@@ -50,6 +63,15 @@ describe("ReadingBlock, open for a visitor from search", () => {
 
     expect(screen.getByRole("button", { name: "Questions" })).toHaveAttribute("aria-expanded", "true");
     expect(panel).not.toHaveAttribute("inert");
+  });
+
+  it("lists each How it works line as a checked row", () => {
+    const { items } = SOUL_BLUEPRINT_BLOCK.howItWorks;
+    renderAs("external");
+
+    const rows = panelOf(items[0])!.querySelectorAll("li");
+    expect([...rows].map((row) => row.textContent)).toEqual(items);
+    expect(rows[0].querySelector("svg")).not.toBeNull();
   });
 
   it("hides the Questions section when no questions are picked", () => {

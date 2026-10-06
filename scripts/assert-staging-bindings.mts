@@ -24,19 +24,33 @@ type WranglerR2Binding = {
   bucket_name: string;
 };
 
+type WranglerTriggers = {
+  crons?: string[];
+};
+
+type WranglerRateLimit = {
+  name: string;
+};
+
 type WranglerEnv = {
   name?: string;
   d1_databases?: WranglerD1Binding[];
   r2_buckets?: WranglerR2Binding[];
   vars?: Record<string, string>;
+  triggers?: WranglerTriggers;
+  ratelimits?: WranglerRateLimit[];
 };
 
 type WranglerConfig = {
   vars?: Record<string, string>;
   env?: Record<string, WranglerEnv>;
+  triggers?: WranglerTriggers;
+  ratelimits?: WranglerRateLimit[];
 };
 
 const STAGING_SUFFIX = "-staging";
+const DELIVER_REQUESTED_CRON = "*/15 * * * *";
+const REQUIRED_LIMITERS = ["GIFT_CODE_LIMITER", "DELIVERY_WAKE_LIMITER"];
 
 function stripJsonc(source: string): string {
   return source
@@ -111,6 +125,39 @@ if (vars.RESEND_DRY_RUN !== undefined) {
 if (vars.NEXT_PUBLIC_SANITY_DATASET !== "staging") {
   fail(
     `env.staging vars.NEXT_PUBLIC_SANITY_DATASET expected "staging", got "${vars.NEXT_PUBLIC_SANITY_DATASET ?? "(missing)"}"`,
+  );
+}
+
+for (const [blockName, blockVars] of [
+  ["production", prodVars],
+  ["env.staging", vars],
+] as const) {
+  if (blockVars.STRIPE_API_HOST !== undefined) {
+    fail(
+      `${blockName} vars.STRIPE_API_HOST must NOT be set (got "${blockVars.STRIPE_API_HOST}"). It points the Stripe client, and the secret key it sends, at the mock e2e sidecar. Set it in playwright.config.ts only.`,
+    );
+  }
+}
+
+for (const [blockName, block] of [
+  ["production", config],
+  ["env.staging", staging],
+] as const) {
+  if (!block.triggers?.crons?.includes(DELIVER_REQUESTED_CRON)) {
+    fail(`${blockName} triggers.crons must contain "${DELIVER_REQUESTED_CRON}" (deliver-requested)`);
+  }
+  for (const required of REQUIRED_LIMITERS) {
+    if (!block.ratelimits?.some((limiter) => limiter.name === required)) {
+      fail(`${blockName} ratelimits must contain "${required}"`);
+    }
+  }
+}
+
+const limiterNames = (block: { ratelimits?: WranglerRateLimit[] }) =>
+  (block.ratelimits ?? []).map((limiter) => limiter.name).sort().join(", ");
+if (limiterNames(config) !== limiterNames(staging)) {
+  fail(
+    `ratelimits differ between production [${limiterNames(config)}] and env.staging [${limiterNames(staging)}]`,
   );
 }
 

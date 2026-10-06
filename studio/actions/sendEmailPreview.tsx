@@ -1,15 +1,20 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { Box, Button, Select, Stack, Text, useToast } from "@sanity/ui";
 import { useCallback, useEffect, useState } from "react";
-import type { DocumentActionComponent, DocumentActionProps } from "sanity";
+import { type DocumentActionComponent, type DocumentActionProps, useDataset } from "sanity";
 
-const LIST_ROUTE = "/api/admin/list-preview-recipients";
-const SEND_ROUTE = "/api/admin/send-email-preview";
+import {
+  ADMIN_PREVIEW_RECIPIENTS_API_ROUTE,
+  ADMIN_SEND_PREVIEW_API_ROUTE,
+} from "../../src/lib/http/routes";
+import { workerOriginFor } from "../lib/siteOrigins";
+
 
 export const sendEmailPreviewAction: DocumentActionComponent = (
   props: DocumentActionProps,
 ) => {
   const toast = useToast();
+  const workerOrigin = workerOriginFor(useDataset(), window.location.origin);
   const [isOpen, setIsOpen] = useState(false);
   const [recipients, setRecipients] = useState<readonly string[]>([]);
   const [recipient, setRecipient] = useState<string>("");
@@ -18,8 +23,12 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
 
   const loadRecipients = useCallback(async () => {
     setLoadError(null);
+    if (!workerOrigin) {
+      setLoadError("Send-to-test works from the hosted Studio only.");
+      return;
+    }
     try {
-      const response = await fetch(LIST_ROUTE, { method: "GET" });
+      const response = await fetch(`${workerOrigin}${ADMIN_PREVIEW_RECIPIENTS_API_ROUTE}`, { method: "GET" });
       if (response.status === 503) {
         setLoadError(
           "Send-to-test is not configured on this environment (ALLOWED_PREVIEW_RECIPIENTS unset).",
@@ -37,7 +46,7 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error));
     }
-  }, []);
+  }, [workerOrigin]);
 
   // The allowlist is the boundary now (no admin token), so the dropdown loads
   // as soon as the dialog opens instead of waiting on a token blur.
@@ -52,10 +61,10 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
   }, [isOpen, loadRecipients]);
 
   const handleSend = useCallback(async () => {
-    if (!recipient) return;
+    if (!recipient || !workerOrigin) return;
     setIsPending(true);
     try {
-      const response = await fetch(SEND_ROUTE, {
+      const response = await fetch(`${workerOrigin}${ADMIN_SEND_PREVIEW_API_ROUTE}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template: props.type, recipient }),
@@ -86,7 +95,7 @@ export const sendEmailPreviewAction: DocumentActionComponent = (
       });
       setIsPending(false);
     }
-  }, [props, recipient, toast]);
+  }, [props, recipient, toast, workerOrigin]);
 
   const hasUnpublishedChanges = Boolean(props.draft && props.draft._rev !== props.published?._rev);
   const canSend = Boolean(recipient && !isPending);

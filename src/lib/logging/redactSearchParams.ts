@@ -1,6 +1,10 @@
 const RELATIVE_URL_SENTINEL = "https://redact.local";
 
-export const SENSITIVE_QUERY_PARAMS = ["t"] as const;
+export const SENSITIVE_QUERY_PARAMS = ["t", "sessionId", "submissionId"] as const;
+
+const LISTEN_PATH = /\/listen\/[^/?#]+/;
+const GIFT_CODE_PATH = /(\/api)?\/gift\/(?!send(?:[/?#]|$))[^/?#]+/;
+const GIFT_PATH_WITH_FRAGMENT = /(\/gift\/[^#]*)#.*$/;
 
 /** Mutates `params` in place. Returns true if any redaction was applied. */
 function redactInParams(
@@ -81,4 +85,60 @@ export function redactSearchParams(
       : out;
   }
   return out;
+}
+
+const SENSITIVE_PARAM_PRESENT = new RegExp(
+  `[?&#](?:${SENSITIVE_QUERY_PARAMS.join("|")})(?:[=&#]|$)`,
+);
+
+const SENSITIVE_REQUEST_HEADERS = new Set(["cookie", "authorization", "referer", "cf-cron"]);
+
+export function redactSensitiveUrl(url: string): string {
+  const pathRedacted = url
+    .replace(LISTEN_PATH, "/listen/[REDACTED]")
+    .replace(GIFT_CODE_PATH, (match, apiPrefix) => (apiPrefix ? match : "/gift/[REDACTED]"))
+    .replace(GIFT_PATH_WITH_FRAGMENT, "$1#[REDACTED]");
+  if (!SENSITIVE_PARAM_PRESENT.test(pathRedacted)) return pathRedacted;
+  return redactSearchParams(pathRedacted, SENSITIVE_QUERY_PARAMS);
+}
+
+type SentryRequestData = {
+  headers?: unknown;
+  url?: string;
+  query_string?: unknown;
+  data?: unknown;
+};
+
+export function scrubSentryRequest(request: SentryRequestData | undefined): void {
+  if (!request) return;
+  if (request.headers && typeof request.headers === "object") {
+    const headers = request.headers as Record<string, unknown>;
+    for (const name of Object.keys(headers)) {
+      if (SENSITIVE_REQUEST_HEADERS.has(name.toLowerCase())) delete headers[name];
+    }
+  }
+  if (request.url) {
+    request.url = redactSensitiveUrl(request.url);
+  }
+  if (typeof request.query_string === "string") {
+    const redacted = redactSensitiveUrl(`/?${request.query_string}`);
+    request.query_string = redacted.slice(redacted.indexOf("?") + 1);
+  } else {
+    delete request.query_string;
+  }
+  delete request.data;
+}
+
+const BREADCRUMB_URL_KEYS = ["url", "from", "to"] as const;
+
+export function scrubBreadcrumb<T extends { data?: Record<string, unknown> }>(breadcrumb: T): T {
+  const data = breadcrumb.data;
+  if (!data) return breadcrumb;
+  for (const key of BREADCRUMB_URL_KEYS) {
+    const value = data[key];
+    if (typeof value === "string") {
+      data[key] = redactSensitiveUrl(value);
+    }
+  }
+  return breadcrumb;
 }

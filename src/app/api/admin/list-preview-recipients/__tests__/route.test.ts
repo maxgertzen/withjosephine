@@ -34,4 +34,10 @@ describe("GET /api/admin/list-preview-recipients", () => {
     const data = (await response.json()) as { reason: string };
     expect(data.reason).toBe("preview-not-configured");
   });
+
+  it("lets the hosted Studio read the list", async () => {
+    const response = await callRoute();
+
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://withjosephine.sanity.studio");
+  });
 });
