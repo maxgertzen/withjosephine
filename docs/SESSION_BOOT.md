@@ -1,6 +1,21 @@
 # Session Boot — Active State
 
-## ▶ 👉 START HERE (next session, 2026-10-05 handover 18): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992`. 20 local commits after it are not pushed (19 code and dex commits plus the docs commit with this handover).
+## ▶ 👉 START HERE (next session, 2026-10-06 handover 19): run `/session-start` from the project root. `www` is on `release/v1.21.0`, pushed. The release PR into `main` is open. Staging walks 1 to 3 passed after the walk fixes; walk 4 is left for later (Max: any fixes go into a minor release).
+
+- Before the release PR merges, each with Max's go:
+  - `pnpm migrate:apply:prod` (0019, 0020, 0021, 0022).
+  - `pnpm tsx scripts/migrate-how-it-works-to-lines-2026-10.mts production` (expected nothing to convert).
+  - `pnpm tsx scripts/seed-reading-defaults-2026-10.mts production`, then with `--apply` (seeds How it works as lines).
+  - `pnpm tsx scripts/seed-customer-emails-and-pages.mts production` (after the delivery rename script).
+  - Click and open tracking off for `withjosephine.com` in Resend.
+  - Squash with the PR body as the merge message.
+- After the production deploy: Resend webhook `https://withjosephine.com/api/webhooks/resend` and `wrangler secret put RESEND_WEBHOOK_SECRET`; the two delivery scripts on production (dry run, then `--apply`); `pnpm tsx scripts/migrate-legal-gift-lines-2026-10.ts production --apply`; `pnpm tsx scripts/migrate-gift-records-to-submissions-2026-10.mts production` (expected 0); `pnpm studio:deploy` from `main`; `pnpm tsx scripts/unset-unknown-sanity-fields.mts production`, then with `--apply` (removes `expandedDetails`); Becky fills Gift Settings and the four gift emails.
+- Static `/book` pages keep the Sanity data from their build. A data change made by a script shows only after a deploy or a later publish, so run the production data scripts before the merge deploys.
+- After the release: dex `xw925t6w`, ship the local branch `chore/remove-one-off-scripts` (49 one-off scripts removed) as a minor fix; walk 4 (`docs/runbooks/V1_21_STAGING_WALK.md`) and its dex `xwb7bhto`; dex `78t0h759` (a dry-run send counts as sent).
+- Staging test data was cleared 2026-10-06 (D1 and Sanity submissions). D1 restore bookmark: `000007f0-00000000-000050fc-d72b17e023fdf7726283e31cc1a840cf`.
+- Run state and evidence: `MEMORY/WORK/20261006-walk1-fixes/ISA.md`.
+
+## ▶ (SUPERSEDED by handover 19 above) START HERE (2026-10-05 handover 18): run `/session-start` from the project root. `www` is on `release/v1.21.0`. `origin` has everything up to `9cb0992`. 20 local commits after it are not pushed (19 code and dex commits plus the docs commit with this handover).
 
 - 2026-10-06 staging walks 1 and 2: fixes on `release/v1.21.0` (`b148cae`, `cb1e8ad` and the walk 2 commit). How it works is now a Sanity list of lines (`howItWorks: string[]`). After the walk 2 push: `pnpm tsx scripts/migrate-how-it-works-to-lines-2026-10.mts staging`, then with `--apply` (3 readings), then `pnpm studio:deploy`. Before production: the same script on `production` (expected nothing to convert), then `seed-reading-defaults-2026-10.mts production` seeds lines. Dex `jny3qhn7` (staging test data cleanup) and `nkjwzz4s` (which Sanity scripts stay) before the release merge.
 - `gre931wv` reading block fields: built, not committed when this line was written; see `MEMORY/WORK/20261005-reading-block-fields/ISA.md`. Was: dex `gre931wv` (p1), Becky's and Max's reading-block feedback (Sanity mapping, one shared What's included list for the homepage card and `/book`, How it works per reading, no "first paragraph" rule). Present the field layout to Max first, and prove the mapping with a mocked page or Storybook story that labels each element with its Sanity field. Becky's slide: `~/Downloads/Feedback for Max.pptx`.
