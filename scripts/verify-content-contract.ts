@@ -131,7 +131,7 @@ async function main() {
       for (const cf of consentFields) {
         fail(
           "invariant-3",
-          `Deprecated consent-type field still present: section="${cf.section}" key="${cf.key}". Run scripts/migrate-strip-consent-fields-2026-05.ts.`,
+          `Deprecated consent-type field still present: section="${cf.section}" key="${cf.key}". Remove it from the booking form in Studio; consent UI is hardcoded.`,
         );
       }
     } else {
