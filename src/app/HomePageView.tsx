@@ -79,7 +79,7 @@ export function HomePageView({
               src={about.imageUrl}
               alt="Josephine"
               width={300}
-              height={450}
+              height={375}
               loading="lazy"
               sizes="(min-width: 768px) 300px, 55vw"
               className="w-[clamp(200px,55vw,300px)] mx-auto md:mx-0 md:w-[300px] h-auto object-contain"

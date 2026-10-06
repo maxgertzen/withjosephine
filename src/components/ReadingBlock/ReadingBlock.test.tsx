@@ -65,14 +65,12 @@ describe("ReadingBlock, open for a visitor from search", () => {
     expect(panel).not.toHaveAttribute("inert");
   });
 
-  it("lists each How it works paragraph as a checked row", () => {
-    const { content } = SOUL_BLUEPRINT_BLOCK.howItWorks;
+  it("lists each How it works line as a checked row", () => {
+    const { items } = SOUL_BLUEPRINT_BLOCK.howItWorks;
     renderAs("external");
 
-    const rows = panelOf(content[0].children[0].text)!.querySelectorAll("li");
-    expect([...rows].map((row) => row.textContent)).toEqual(
-      content.map((paragraph) => paragraph.children[0].text),
-    );
+    const rows = panelOf(items[0])!.querySelectorAll("li");
+    expect([...rows].map((row) => row.textContent)).toEqual(items);
     expect(rows[0].querySelector("svg")).not.toBeNull();
   });
 

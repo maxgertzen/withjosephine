@@ -1,11 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { IncludedList } from "@/components/IncludedList";
-import { PortableTextContent } from "@/components/PortableTextContent";
+import { PortraitAvatar } from "@/components/PortraitAvatar";
 import type { ReadingFact, ReadingFactsLayout } from "@/data/defaults";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
-import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 import { eyebrowClasses, smallCapsClasses } from "@/lib/textStyles";
 
 import { FactsRow } from "./FactsRow";
@@ -25,7 +23,7 @@ export type ReadingBlockProps = {
   factsLayout: ReadingFactsLayout;
   reader: { name: string; line: string; imageUrl?: string };
   included: { title: string; items: string[] };
-  howItWorks: { title: string; content: SanityPortableTextBlock[] };
+  howItWorks: { title: string; items: string[] };
   questions: { title: string; items: MappedFaqItem[] };
   otherReadings: { title: string; readings: OtherReading[] };
   notes?: { title: string; items: { title: string; slug: string; href: string }[] };
@@ -46,16 +44,7 @@ function ReadingContent(props: ReadingBlockProps) {
 
       <div className="mt-6 flex items-center gap-[0.9rem]">
         {reader.imageUrl ? (
-          <span className="size-14 shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm">
-            <Image
-              src={reader.imageUrl}
-              alt=""
-              width={56}
-              height={56}
-              sizes="56px"
-              className="block size-full max-w-none object-cover object-[50%_12%] scale-[1.2] origin-[50%_38%]"
-            />
-          </span>
+          <PortraitAvatar src={reader.imageUrl} size={56} />
         ) : null}
         <p className="m-0 flex flex-col">
           <span className="font-display italic text-[1.2rem] text-j-text-heading">{reader.name}</span>
@@ -69,15 +58,9 @@ function ReadingContent(props: ReadingBlockProps) {
             <IncludedList items={included.items} size="page" className="mb-3" />
           </ReadingAccordion>
         ) : null}
-        {howItWorks.content.length > 0 ? (
+        {howItWorks.items.length > 0 ? (
           <ReadingAccordion id={`${slug}-how`} title={howItWorks.title}>
-            <IncludedList
-              items={howItWorks.content.map((paragraph) => (
-                <PortableTextContent key={paragraph._key} value={[paragraph]} paragraphClassName="m-0" />
-              ))}
-              size="page"
-              className="mb-3"
-            />
+            <IncludedList items={howItWorks.items} size="page" className="mb-3" />
           </ReadingAccordion>
         ) : null}
         {questions.items.length > 0 ? (

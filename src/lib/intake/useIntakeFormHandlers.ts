@@ -118,6 +118,7 @@ export type UseIntakeFormHandlersResult = {
   handleBack: () => void;
   handleReviewEdit: (targetPageIndex: number) => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  handleApplyGiftCode: () => Promise<void>;
   handleRemoveGiftCode: () => void;
 };
 
@@ -172,14 +173,11 @@ export function useIntakeFormHandlers({
     (targetPageIndex: number, direction: "back" | "review-edit") => {
       setSubmitError(null);
       setErrors({});
-      track(
-        direction === "back" ? "intake_page_back_click" : "intake_page_review_edit_click",
-        {
-          reading_id: readingId,
-          from_page: currentPage + 1,
-          to_page: targetPageIndex + 1,
-        },
-      );
+      track(direction === "back" ? "intake_page_back_click" : "intake_page_review_edit_click", {
+        reading_id: readingId,
+        from_page: currentPage + 1,
+        to_page: targetPageIndex + 1,
+      });
       setCurrentPage(targetPageIndex);
       flushSave(values, targetPageIndex);
       blurAndScrollToForm(formRef.current);
@@ -189,11 +187,7 @@ export function useIntakeFormHandlers({
 
   const handleNext = useCallback(() => {
     setSubmitError(null);
-    const { success, fieldErrors } = validateCurrentPage(
-      allFields,
-      currentKeys,
-      values,
-    );
+    const { success, fieldErrors } = validateCurrentPage(allFields, currentKeys, values);
     track("intake_page_next_click", {
       reading_id: readingId,
       page_number: currentPage + 1,
@@ -235,6 +229,19 @@ export function useIntakeFormHandlers({
     [navigateToPage, currentPage],
   );
 
+  const handleApplyGiftCode = useCallback(async () => {
+    if (preview || !giftCodeField || giftCodeField.checking) return;
+    setSubmitError(null);
+    const outcome = await giftCodeField.check();
+    if (outcome?.kind !== "valid") return;
+    saveDraft(readingId, {
+      currentPage,
+      values: values as DraftValues,
+      giftCode: normalizeGiftCode(giftCodeField.value) ?? undefined,
+    });
+    window.location.assign(outcome.path);
+  }, [preview, giftCodeField, setSubmitError, readingId, currentPage, values]);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -251,16 +258,7 @@ export function useIntakeFormHandlers({
       if (preview) return;
 
       if (giftCodeField?.value.trim()) {
-        if (giftCodeField.checking) return;
-        const outcome = await giftCodeField.check();
-        if (outcome?.kind === "valid") {
-          saveDraft(readingId, {
-            currentPage,
-            values: values as DraftValues,
-            giftCode: normalizeGiftCode(giftCodeField.value) ?? undefined,
-          });
-          window.location.assign(outcome.path);
-        }
+        await handleApplyGiftCode();
         return;
       }
 
@@ -295,7 +293,10 @@ export function useIntakeFormHandlers({
       if (turnstileRequired) {
         submissionTurnstileToken = await requestFreshTurnstileToken();
         if (!submissionTurnstileToken) {
-          failSubmit(INTAKE_SUBMIT_ERROR.turnstileFailed, "Please complete the verification challenge.");
+          failSubmit(
+            INTAKE_SUBMIT_ERROR.turnstileFailed,
+            "Please complete the verification challenge.",
+          );
           return;
         }
       }
@@ -382,7 +383,10 @@ export function useIntakeFormHandlers({
         clearDraft(readingId);
         window.location.href = nextUrl;
       } catch {
-        failSubmit(INTAKE_SUBMIT_ERROR.networkError, "Network error. Please check your connection and try again.");
+        failSubmit(
+          INTAKE_SUBMIT_ERROR.networkError,
+          "Network error. Please check your connection and try again.",
+        );
       }
     },
     [
@@ -405,7 +409,7 @@ export function useIntakeFormHandlers({
       honeypot,
       gift,
       giftCodeField,
-      currentPage,
+      handleApplyGiftCode,
       preview,
     ],
   );
@@ -422,6 +426,7 @@ export function useIntakeFormHandlers({
     handleBack,
     handleReviewEdit,
     handleSubmit,
+    handleApplyGiftCode,
     handleRemoveGiftCode,
   };
 }

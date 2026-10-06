@@ -1,6 +1,5 @@
 import { ABOUT_DEFAULTS, READING_PAGE_DEFAULTS } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
-import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 
 import type { ReadingBlockProps } from "./ReadingBlock";
 
@@ -25,7 +24,7 @@ export const SOUL_BLUEPRINT_BLOCK: ReadingBlockProps = {
   },
   howItWorks: {
     title: READING_PAGE_DEFAULTS.howItWorksTitle,
-    content: paragraphBlocks(SOUL_BLUEPRINT.howItWorks),
+    items: SOUL_BLUEPRINT.howItWorks,
   },
   questions: {
     title: READING_PAGE_DEFAULTS.questionsTitle,

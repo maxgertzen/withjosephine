@@ -16,7 +16,7 @@ import type { SanityArticle, SanityNotesState, SanitySiteSettings } from "@/lib/
 import type { NoteEnding, NoteViewProps } from "./NoteView";
 
 const MORE_NOTES_LIMIT = 2;
-const AUTHOR_PHOTO_PX = 80;
+const AUTHOR_PHOTO_PX = 210;
 
 function pickedNotes(article: SanityArticle): NoteSummary[] {
   return (article.moreNotes ?? [])

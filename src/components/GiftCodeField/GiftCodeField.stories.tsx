@@ -46,3 +46,16 @@ export const OtherReading: Story = {
 export const TooManyTries: Story = {
   args: { value: CODE, error: GIFT_DEFAULTS.codeTooManyTries },
 };
+
+export const WithRedeemButton: Story = {
+  args: {
+    value: CODE,
+    apply: { label: GIFT_DEFAULTS.redeemButtonLabel, onApply: () => {} },
+  },
+};
+
+export const WithRedeemButtonEmpty: Story = {
+  args: {
+    apply: { label: GIFT_DEFAULTS.redeemButtonLabel, onApply: () => {} },
+  },
+};

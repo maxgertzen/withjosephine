@@ -14,7 +14,8 @@ import {
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
-import { hasText, paragraphBlocks } from "@/lib/copy/paragraphBlocks";
+import { linesWithText } from "@/lib/content/nonBlank";
+import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { giftContent } from "@/lib/gift/giftContent";
 import {
@@ -34,7 +35,6 @@ import type {
   SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
-  SanityPortableTextBlock,
   SanityReading,
 } from "@/lib/sanity/types";
 
@@ -61,7 +61,7 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
   };
 }
 
-const PORTRAIT_WIDTH_PX = 112;
+const PORTRAIT_WIDTH_PX = 300;
 
 function pageFacts(
   reading: SanityReading | null | undefined,
@@ -71,10 +71,6 @@ function pageFacts(
   if (reading?.facts?.length) return reading.facts.slice(0, MAX_READING_FACTS);
   if (shared.hideFacts) return [];
   return shared.facts.slice(0, MAX_READING_FACTS);
-}
-
-function blocksWithText(blocks: SanityPortableTextBlock[] | null | undefined): SanityPortableTextBlock[] {
-  return blocks?.filter((block) => hasText([block])) ?? [];
 }
 
 function resolveReading(readingId: string, sanityReading: SanityReading | null) {
@@ -87,8 +83,8 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
       priceLabel: sanityReading.priceDisplay,
       valueProposition: sanityReading.valueProposition,
       description: sanityReading.briefDescription,
-      includes: sanityReading.includes,
-      howItWorks: blocksWithText(sanityReading.howItWorks),
+      includes: linesWithText(sanityReading.includes),
+      howItWorks: linesWithText(sanityReading.howItWorks),
     };
   }
   const fallback = getReadingById(readingId);
@@ -102,7 +98,7 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
     valueProposition: fallback.valueProposition,
     description: fallback.briefDescription,
     includes: fallback.includes,
-    howItWorks: paragraphBlocks(fallback.howItWorks),
+    howItWorks: fallback.howItWorks,
   };
 }
 
@@ -143,7 +139,7 @@ export function deriveBookingFormViewProps(
         : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
     },
     included: { title: content.includedTitle, items: reading.includes },
-    howItWorks: { title: content.howItWorksTitle, content: reading.howItWorks },
+    howItWorks: { title: content.howItWorksTitle, items: reading.howItWorks },
     questions: {
       title: content.questionsTitle,
       items: mapFaqItems(

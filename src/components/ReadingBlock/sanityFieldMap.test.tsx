@@ -26,7 +26,7 @@ describe("Sanity field map", () => {
     expect(block.lead).toBe("[Reading › Promise · valueProposition]");
     expect(block.description).toBe("[Reading › Description · briefDescription]");
     expect(block.included.items).toEqual(fieldMapCardProps().includes);
-    expect(block.howItWorks.content.map((paragraph) => paragraph.children[0].text)).toEqual([
+    expect(block.howItWorks.items).toEqual([
       "[Reading › How it works · howItWorks[0]]",
       "[Reading › How it works · howItWorks[1]]",
     ]);

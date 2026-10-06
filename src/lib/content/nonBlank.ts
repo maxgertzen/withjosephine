@@ -1,5 +1,13 @@
+import { stegaClean } from "@sanity/client/stega";
+
 export function nonBlank(value: string | null | undefined): string | undefined {
-  return value?.trim() || undefined;
+  return value && stegaClean(value).trim() !== "" ? value.trim() : undefined;
+}
+
+export function linesWithText(lines: readonly unknown[] | null | undefined): string[] {
+  return (lines ?? []).filter(
+    (line): line is string => typeof line === "string" && nonBlank(line) !== undefined,
+  );
 }
 
 export function withNonBlankOverrides<T extends { [K in keyof T]: string }>(

@@ -163,7 +163,10 @@ describe("deriveBookingFormViewProps reading block", () => {
 
   it("puts the description under the promise and the checklist under What's included", () => {
     const block = derive(
-      sanityReading({ briefDescription: "What it is.", includes: ["One thing.", "Another thing."] }),
+      sanityReading({
+        briefDescription: "What it is.",
+        includes: ["One thing.", "Another thing."],
+      }),
     )?.readingBlock;
 
     expect(block?.lead).toBe("The most complete picture");
@@ -171,35 +174,55 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(block?.included.items).toEqual(["One thing.", "Another thing."]);
   });
 
-  it("shows How it works from the reading's own field", () => {
-    const content = paragraphBlocks(["How you book.", "When it arrives."]);
+  it("shows How it works from the reading's own lines", () => {
+    const lines = ["How you book.", "When it arrives."];
 
-    expect(derive(sanityReading({ howItWorks: content }))?.readingBlock.howItWorks.content).toEqual(
-      content,
+    expect(derive(sanityReading({ howItWorks: lines }))?.readingBlock.howItWorks.items).toEqual(
+      lines,
     );
   });
 
-  it("drops blank paragraphs between written ones, so no row shows an empty checkmark", () => {
-    const [howYouBook, blank, whenItArrives] = paragraphBlocks(["How you book.", "  ", "When it arrives."]);
+  it("drops blank lines, including one carrying Presentation's invisible source-map marker", () => {
+    const presentationMarker = "\u200B\u200C\u200D\uFEFF".repeat(10);
 
     expect(
-      derive(sanityReading({ howItWorks: [howYouBook, blank, whenItArrives] }))?.readingBlock.howItWorks
-        .content,
-    ).toEqual([howYouBook, whenItArrives]);
+      derive(
+        sanityReading({
+          howItWorks: ["How you book.", "  ", ` ${presentationMarker}`, "When it arrives."],
+        }),
+      )?.readingBlock.howItWorks.items,
+    ).toEqual(["How you book.", "When it arrives."]);
+  });
+
+  it("skips How it works paragraphs saved before the field became a list, until they are converted", () => {
+    const savedParagraph = paragraphBlocks(["How you book."])[0];
+
+    expect(
+      derive(
+        sanityReading({ howItWorks: [savedParagraph, "When it arrives."] as unknown as string[] }),
+      )?.readingBlock.howItWorks.items,
+    ).toEqual(["When it arrives."]);
+  });
+
+  it("drops blank What's included lines, so no row shows an empty checkmark", () => {
+    expect(
+      derive(sanityReading({ includes: ["One thing.", " ", "Another thing."] }))?.readingBlock
+        .included.items,
+    ).toEqual(["One thing.", "Another thing."]);
   });
 
   it.each([
     ["unset", undefined],
     ["null, as GROQ returns a missing field", null],
     ["an empty list", []],
-    ["blank paragraphs", paragraphBlocks(["", "   "])],
+    ["blank lines", ["", "   "]],
   ])("hides How it works when Becky leaves the field %s", (_label, howItWorks) => {
-    expect(derive(sanityReading({ howItWorks }))?.readingBlock.howItWorks.content).toEqual([]);
+    expect(derive(sanityReading({ howItWorks }))?.readingBlock.howItWorks.items).toEqual([]);
   });
 
   it("uses the built-in How it works when the reading is missing from Sanity", () => {
-    expect(derive(null)?.readingBlock.howItWorks.content).toEqual(
-      paragraphBlocks(getReadingById("soul-blueprint")!.howItWorks),
+    expect(derive(null)?.readingBlock.howItWorks.items).toEqual(
+      getReadingById("soul-blueprint")!.howItWorks,
     );
   });
 
@@ -252,7 +275,7 @@ describe("deriveBookingFormViewProps reading block", () => {
     } as SanityLandingPage;
 
     expect(derive(sanityReading(), { landingPage })?.readingBlock.reader.imageUrl).toBe(
-      "https://cdn.sanity.io/images/p/d/a.jpg?w=112&auto=format",
+      "https://cdn.sanity.io/images/p/d/a.jpg?w=300&auto=format",
     );
     expect(derive()?.readingBlock.reader.imageUrl).toBe(ABOUT_DEFAULTS.imageUrl);
   });

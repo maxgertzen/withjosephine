@@ -868,7 +868,7 @@ export const LISTEN_PAGE_DEFAULTS: ListenPageContent = {
 export const ABOUT_DEFAULTS: MappedAbout = {
   sectionTag: "\u2726 About",
   heading: "who i am + what this is",
-  imageUrl: "/images/akasha.webp",
+  imageUrl: "/images/josephine-portrait.webp",
   paragraphs: [
     "I found this work through my own search for purpose. Wanting to understand myself more deeply, why I was the way I was, what I was here for, why certain patterns kept showing up - this led me to astrology and then to the Akashic Records.",
     "These two things together changed everything for me. And now I use them as a bridge for others. Astrology maps your soul\u2019s blueprint through your birth chart. Your gifts, your wounds, your patterns and your path.",

@@ -61,4 +61,50 @@ describe("GiftCodeField", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
+
+  describe("with a Redeem gift button", () => {
+    const apply = () => ({ label: GIFT_DEFAULTS.redeemButtonLabel, onApply: vi.fn() });
+    const button = () => screen.getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel });
+
+    it("redeems the typed code from the button", async () => {
+      const redeem = apply();
+      renderField({ value: "K7M2-AAAA-BBBB", apply: redeem });
+
+      await userEvent.click(button());
+
+      expect(redeem.onApply).toHaveBeenCalledOnce();
+    });
+
+    it("redeems the typed code on Enter", async () => {
+      const redeem = apply();
+      renderField({ value: "K7M2-AAAA-BBBB", apply: redeem });
+
+      field().focus();
+      await userEvent.keyboard("{Enter}");
+
+      expect(redeem.onApply).toHaveBeenCalledOnce();
+    });
+
+    it("redeems once when Enter is pressed on the button itself", async () => {
+      const redeem = apply();
+      renderField({ value: "K7M2-AAAA-BBBB", apply: redeem });
+
+      button().focus();
+      await userEvent.keyboard("{Enter}");
+
+      expect(redeem.onApply).toHaveBeenCalledOnce();
+    });
+
+    it("waits for a code, and for a check already running", () => {
+      const { rerender } = render(
+        <GiftCodeField {...FIELD_PROPS} value="" onChange={vi.fn()} apply={apply()} />,
+      );
+      expect(button()).toBeDisabled();
+
+      rerender(
+        <GiftCodeField {...FIELD_PROPS} value="K7M2" onChange={vi.fn()} apply={apply()} checking />,
+      );
+      expect(button()).toBeDisabled();
+    });
+  });
 });

@@ -1,7 +1,6 @@
 import { deriveBookingFormViewProps } from "@/app/book/[readingId]/deriveBookingFormViewProps";
 import { toHomePageViewProps } from "@/app/homePageViewProps";
 import { type ReadingCardProps, readingCardProps } from "@/components/ReadingCard";
-import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import type { SanityBookingForm, SanityLandingPage, SanityReading } from "@/lib/sanity/types";
 
 import type { ReadingBlockProps } from "./ReadingBlock";
@@ -29,7 +28,7 @@ function fieldMapReading(slug: string): SanityReading {
     valueProposition: readingField("Promise", "valueProposition"),
     briefDescription: readingField("Description", "briefDescription"),
     includes: [0, 1, 2].map((index) => readingField("What's included", `includes[${index}]`)),
-    howItWorks: paragraphBlocks([0, 1].map((index) => readingField("How it works", `howItWorks[${index}]`))),
+    howItWorks: [0, 1].map((index) => readingField("How it works", `howItWorks[${index}]`)),
     requiresBirthChart: true,
     requiresAkashic: true,
     requiresQuestions: true,

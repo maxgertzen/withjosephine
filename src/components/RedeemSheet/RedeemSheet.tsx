@@ -55,7 +55,6 @@ export function RedeemSheet({ open, onClose, readingSlug, content, endpoint }: R
           id="redeem-gift-code"
           label={content.codeFieldLabel}
           checkingLabel={content.codeChecking}
-          enterKeyHint="go"
           value={field.value}
           onChange={handleCodeChange}
           checking={field.checking}

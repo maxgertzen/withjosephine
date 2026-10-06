@@ -27,7 +27,7 @@ export type SanityReading = {
   valueProposition: string;
   briefDescription: string;
   includes: string[];
-  howItWorks?: SanityPortableTextBlock[] | null;
+  howItWorks?: string[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;

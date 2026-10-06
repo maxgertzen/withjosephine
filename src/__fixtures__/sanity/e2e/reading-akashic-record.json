@@ -9,48 +9,9 @@
     "Supporting PDF"
   ],
   "howItWorks": [
-    {
-      "_type": "block",
-      "_key": "fallback-0",
-      "style": "normal",
-      "markDefs": [],
-      "children": [
-        {
-          "_type": "span",
-          "_key": "fallback-0-0",
-          "text": "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
-          "marks": []
-        }
-      ]
-    },
-    {
-      "_type": "block",
-      "_key": "fallback-1",
-      "style": "normal",
-      "markDefs": [],
-      "children": [
-        {
-          "_type": "span",
-          "_key": "fallback-1-0",
-          "text": "I begin your reading within the next two days and send you a short note when I do.",
-          "marks": []
-        }
-      ]
-    },
-    {
-      "_type": "block",
-      "_key": "fallback-2",
-      "style": "normal",
-      "markDefs": [],
-      "children": [
-        {
-          "_type": "span",
-          "_key": "fallback-2-0",
-          "text": "Within seven days you receive a voice note and a PDF, sent to the email you gave me.",
-          "marks": []
-        }
-      ]
-    }
+    "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
+    "I begin your reading within the next two days and send you a short note when I do.",
+    "Within seven days you receive a voice note and a PDF, sent to the email you gave me."
   ],
   "name": "The Akashic Record Reading",
   "price": 7900,

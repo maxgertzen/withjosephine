@@ -84,28 +84,8 @@ const components: PortableTextComponents = {
 
 interface PortableTextContentProps {
   value: SanityPortableTextBlock[];
-  paragraphClassName?: string;
 }
 
-const componentsByParagraphClass = new Map<string, PortableTextComponents>();
-
-function componentsWithParagraphClass(paragraphClassName: string): PortableTextComponents {
-  const cached = componentsByParagraphClass.get(paragraphClassName);
-  if (cached) return cached;
-  const built: PortableTextComponents = {
-    ...components,
-    block: {
-      ...BLOCK_STYLES,
-      normal: ({ children }: PortableTextComponentProps<PortableTextBlock>) => (
-        <p className={paragraphClassName}>{children}</p>
-      ),
-    },
-  };
-  componentsByParagraphClass.set(paragraphClassName, built);
-  return built;
-}
-
-export function PortableTextContent({ value, paragraphClassName }: PortableTextContentProps) {
-  const chosen = paragraphClassName ? componentsWithParagraphClass(paragraphClassName) : components;
-  return <PortableText value={value} components={chosen} />;
+export function PortableTextContent({ value }: PortableTextContentProps) {
+  return <PortableText value={value} components={components} />;
 }

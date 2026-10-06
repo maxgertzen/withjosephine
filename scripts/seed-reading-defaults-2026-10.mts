@@ -23,7 +23,7 @@ async function readingSeeds(client: SanityClient): Promise<FillMissingSeed[]> {
   return readings.flatMap((doc) => {
     const reading = getReadingById(doc.slug);
     const fields = {
-      ...(howItWorksNeverSeeded && reading ? { howItWorks: paragraphBlocks(reading.howItWorks) } : {}),
+      ...(howItWorksNeverSeeded && reading ? { howItWorks: reading.howItWorks } : {}),
       ...(doc.hasIntro
         ? {}
         : { intakeIntro: paragraphBlocks(INTAKE_INTRO_BY_SLUG[doc.slug] ?? INTAKE_INTRO_FALLBACK) }),

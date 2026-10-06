@@ -213,7 +213,7 @@ describe("mapAbout", () => {
   it("returns defaults when landingPage is null", () => {
     const result = mapAbout(null);
 
-    expect(result.imageUrl).toBe("/images/akasha.webp");
+    expect(result.imageUrl).toBe("/images/josephine-portrait.webp");
     expect(result.signoff).toBe("Josephine");
     expect(result.paragraphs).toHaveLength(4);
   });

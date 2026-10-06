@@ -205,36 +205,43 @@ export function IntakeForm(props: IntakeFormProps) {
     focusFirstError(formRef.current, firstErrorKey, { scroll: true });
   }, [firstErrorKey]);
 
-  const { setValue, handleNext, handleBack, handleReviewEdit, handleSubmit, handleRemoveGiftCode } =
-    useIntakeFormHandlers({
-      readingId,
-      formRef,
-      submitIntentRef,
-      values,
-      setValues,
-      allFields,
-      currentPage,
-      setCurrentPage,
-      totalPages,
-      isFinalPage,
-      currentKeys,
-      submissionSchema,
-      setErrors,
-      setSubmitError,
-      setIsSubmitting,
-      consentSnapshot,
-      setConsentErrors,
-      honeypot,
-      turnstileRequired,
-      turnstileToken,
-      requestFreshTurnstileToken,
-      flushSave,
-      gift: activeGift
-        ? { code: activeGift.code, errors: activeGift.errors, endGiftMode }
-        : undefined,
-      giftCodeField: activeGiftCodeField ? giftCodeFieldState : undefined,
-      preview,
-    });
+  const {
+    setValue,
+    handleNext,
+    handleBack,
+    handleReviewEdit,
+    handleSubmit,
+    handleApplyGiftCode,
+    handleRemoveGiftCode,
+  } = useIntakeFormHandlers({
+    readingId,
+    formRef,
+    submitIntentRef,
+    values,
+    setValues,
+    allFields,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    isFinalPage,
+    currentKeys,
+    submissionSchema,
+    setErrors,
+    setSubmitError,
+    setIsSubmitting,
+    consentSnapshot,
+    setConsentErrors,
+    honeypot,
+    turnstileRequired,
+    turnstileToken,
+    requestFreshTurnstileToken,
+    flushSave,
+    gift: activeGift
+      ? { code: activeGift.code, errors: activeGift.errors, endGiftMode }
+      : undefined,
+    giftCodeField: activeGiftCodeField ? giftCodeFieldState : undefined,
+    preview,
+  });
 
   // Let the shell header's back arrow step through form pages: register
   // handleBack while past the first page, so the top arrow only leaves the
@@ -345,6 +352,10 @@ export function IntakeForm(props: IntakeFormProps) {
                 onChange: giftCodeFieldState.onChange,
                 checking: giftCodeFieldState.checking,
                 error: giftCodeFieldState.error,
+                apply: {
+                  label: activeGiftCodeField.copy.redeemButtonLabel,
+                  onApply: handleApplyGiftCode,
+                },
               }
             : undefined
         }

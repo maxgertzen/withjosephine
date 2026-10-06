@@ -1,5 +1,4 @@
 import { Check } from "lucide-react";
-import type { ReactNode } from "react";
 
 import { mergeClasses } from "@/lib/utils";
 
@@ -9,7 +8,7 @@ const SIZE_CLASSES = {
 };
 
 export type IncludedListProps = {
-  items: ReactNode[];
+  items: string[];
   size: keyof typeof SIZE_CLASSES;
   className?: string;
 };
@@ -25,7 +24,7 @@ export function IncludedList({ items, size, className }: IncludedListProps) {
             className={mergeClasses("size-4 shrink-0 text-j-ornament", classes.check)}
             strokeWidth={2}
           />
-          <div>{item}</div>
+          <span>{item}</span>
         </li>
       ))}
     </ul>

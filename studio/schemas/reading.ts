@@ -146,9 +146,9 @@ export const reading = defineType({
       group: "bookingPage",
       title: "How it works",
       type: "array",
-      of: [PARAGRAPHS_WITH_BOLD_AND_ITALIC],
+      of: [{ type: "string" }],
       description:
-        "Booking page only, under 'What's included'. Each paragraph shows as its own line with a checkmark; bold and italic are available. Delete all the text to hide the section.",
+        "Booking page only, under 'What's included'. One line per item, each with a checkmark. Remove every item to hide the section.",
     }),
     defineField({
       name: "questionsOnPage",
