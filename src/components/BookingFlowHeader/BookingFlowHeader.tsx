@@ -7,13 +7,13 @@ import { useBackLink } from "@/lib/navigation/previousPage";
 
 import { useHeaderBack } from "./headerBackContext";
 
-type BookingFlowHeaderProps = {
+type BackControlProps = {
   backHref: string;
   backLabel?: string;
 };
 
 const BACK_CLASS =
-  "relative z-20 font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center gap-1.5 min-h-11 px-2 shrink-0";
+  "relative z-20 -ml-2 font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center gap-1.5 min-h-11 px-2 shrink-0";
 
 function BackChevron() {
   return (
@@ -51,7 +51,7 @@ function BackToPreviousPage({
   );
 }
 
-export function BookingFlowHeader({ backHref, backLabel = "Back" }: BookingFlowHeaderProps) {
+export function BackControl({ backHref, backLabel = "Back" }: BackControlProps) {
   const { onBack } = useHeaderBack();
   const back = (
     <>
@@ -60,16 +60,20 @@ export function BookingFlowHeader({ backHref, backLabel = "Back" }: BookingFlowH
     </>
   );
 
+  return onBack ? (
+    <button type="button" onClick={onBack} className={BACK_CLASS}>
+      {back}
+    </button>
+  ) : (
+    <BackToPreviousPage fallbackHref={backHref}>{back}</BackToPreviousPage>
+  );
+}
+
+export function BookingFlowHeader(props: BackControlProps) {
   return (
     <header className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-6">
-      <div className="-mt-3 -ml-2 mb-1">
-        {onBack ? (
-          <button type="button" onClick={onBack} className={BACK_CLASS}>
-            {back}
-          </button>
-        ) : (
-          <BackToPreviousPage fallbackHref={backHref}>{back}</BackToPreviousPage>
-        )}
+      <div className="-mt-3 mb-1">
+        <BackControl {...props} />
       </div>
     </header>
   );

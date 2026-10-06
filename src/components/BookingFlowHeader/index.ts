@@ -1,1 +1,1 @@
-export { BookingFlowHeader } from "./BookingFlowHeader";
+export { BackControl, BookingFlowHeader } from "./BookingFlowHeader";

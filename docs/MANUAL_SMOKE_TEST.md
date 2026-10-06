@@ -317,7 +317,7 @@ This fires on the next PR-to-main merge that includes `Closes/Fixes/Resolves dex
 
 ### D4: Send reading now
 
-**As Becky:** on a paid submission with no files, **Send reading now** is disabled with its files line. **Delivered At** is read-only and empty. Upload both and publish: the ready line names the email. Press it: "Sending now. You can close this." Within a minute: "Sent", the delivery email arrives once, **Delivered At** shows the send time, and the button is gone. Nothing is sent before the button is pressed, however many days pass. Use an allowlisted address: a sandbox address is a dry run and sends nothing. (Max 2026-10-04) With the wake blocked (DevTools, block `/api/delivery/wake`), the toast is "Saved. It sends within 15 minutes. You can close this." and the 15-minute `deliver-requested` run sends it. (Max 2026-10-05)
+**As Becky:** on a paid submission with no files, **Send reading now** is disabled with its files line. **Delivered At** is read-only and empty. Upload both and publish: the ready line names the email. Press it: "Sending now." Within a minute: "Sent", the delivery email arrives once, **Delivered At** shows the send time, and the button is gone. Nothing is sent before the button is pressed, however many days pass. Use an allowlisted address: a sandbox address is a dry run and sends nothing. (Max 2026-10-04) With the wake blocked (DevTools, block `/api/delivery/wake`), the toast is "Saved. It sends within 15 minutes." and the 15-minute `deliver-requested` run sends it. (Max 2026-10-05)
 
 ---
 

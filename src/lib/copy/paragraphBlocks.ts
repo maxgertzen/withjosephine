@@ -1,9 +1,10 @@
 import { toPlainText } from "@portabletext/react";
+import { stegaClean } from "@sanity/client/stega";
 
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 export function hasText(blocks: SanityPortableTextBlock[]): boolean {
-  return toPlainText(blocks).trim() !== "";
+  return stegaClean(toPlainText(blocks)).trim() !== "";
 }
 
 export function paragraphBlocks(paragraphs: string[]): SanityPortableTextBlock[] {

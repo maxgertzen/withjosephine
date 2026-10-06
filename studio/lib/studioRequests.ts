@@ -5,8 +5,8 @@ import type { CustomerEmailType } from "../../src/lib/page-previews/types";
 
 export const STUDIO_API_VERSION = "2025-01-01";
 
-export const REQUESTED_TOAST = "Sending now. You can close this.";
-export const QUEUED_TOAST = "Saved. It sends within 15 minutes. You can close this.";
+export const REQUESTED_TOAST = "Sending now.";
+export const QUEUED_TOAST = "Saved. It sends within 15 minutes.";
 
 export const DELIVERY_WAKE_PATH = "/api/delivery/wake";
 

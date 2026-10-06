@@ -1334,6 +1334,18 @@ describe("env_guard (layer-3 defense in non-production envs)", () => {
     expect(sendMock).toHaveBeenCalledOnce();
   });
 
+  it("sends to a second test Gmail on staging, so a gift buyer and recipient can differ", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    sendMock.mockResolvedValue({ data: { id: "msg_second_inbox" } });
+    headersGetMock.mockReturnValue(null);
+
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "mgertzen2+gift-recipient@gmail.com" }),
+    );
+
+    expect(getResendId(result)).toBe("msg_second_inbox");
+  });
+
   it("allows the NOTIFICATION_EMAIL env value", async () => {
     vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
     vi.stubEnv("NOTIFICATION_EMAIL", "ops@withjosephine.com");

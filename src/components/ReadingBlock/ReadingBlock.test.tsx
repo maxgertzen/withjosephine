@@ -65,6 +65,17 @@ describe("ReadingBlock, open for a visitor from search", () => {
     expect(panel).not.toHaveAttribute("inert");
   });
 
+  it("lists each How it works paragraph as a checked row", () => {
+    const { content } = SOUL_BLUEPRINT_BLOCK.howItWorks;
+    renderAs("external");
+
+    const rows = panelOf(content[0].children[0].text)!.querySelectorAll("li");
+    expect([...rows].map((row) => row.textContent)).toEqual(
+      content.map((paragraph) => paragraph.children[0].text),
+    );
+    expect(rows[0].querySelector("svg")).not.toBeNull();
+  });
+
   it("hides the Questions section when no questions are picked", () => {
     renderAs("external", { ...SOUL_BLUEPRINT_BLOCK, questions: { title: "Questions", items: [] } });
 

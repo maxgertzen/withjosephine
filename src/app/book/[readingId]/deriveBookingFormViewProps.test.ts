@@ -179,6 +179,15 @@ describe("deriveBookingFormViewProps reading block", () => {
     );
   });
 
+  it("drops blank paragraphs between written ones, so no row shows an empty checkmark", () => {
+    const [howYouBook, blank, whenItArrives] = paragraphBlocks(["How you book.", "  ", "When it arrives."]);
+
+    expect(
+      derive(sanityReading({ howItWorks: [howYouBook, blank, whenItArrives] }))?.readingBlock.howItWorks
+        .content,
+    ).toEqual([howYouBook, whenItArrives]);
+  });
+
   it.each([
     ["unset", undefined],
     ["null, as GROQ returns a missing field", null],

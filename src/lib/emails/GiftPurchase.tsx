@@ -8,6 +8,7 @@ import { BrandHeader } from "./BrandHeader";
 import { EmailFooter } from "./EmailFooter";
 import { EmailShell } from "./EmailShell";
 import { GoldHero } from "./GoldHero";
+import { PILL_BUTTON_STYLE } from "./pillButtonStyle";
 import { PortableTextBody } from "./PortableTextBody";
 import { ReadingCard } from "./ReadingCard";
 
@@ -64,25 +65,23 @@ export function GiftPurchase({ vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_D
           className="font-sans text-center"
           style={{ padding: "24px 48px 8px 48px", fontSize: 14, lineHeight: 1.6 }}
         >
-          <p style={{ margin: "0 0 12px 0" }}>
+          <p style={{ margin: "0 0 20px 0" }}>
             <Link href={vars.giftUrl} className="text-ink">
               {vars.giftUrl}
             </Link>
           </p>
-          <p style={{ margin: "0 0 20px 0" }}>
-            <Link href={vars.whatsappUrl} className="text-ink">
-              {copy.shareButtonLabel}
-            </Link>
-          </p>
+          <Button
+            href={vars.whatsappUrl}
+            className="border border-solid border-gold text-ink font-sans no-underline"
+            style={{ ...PILL_BUTTON_STYLE, marginBottom: 12 }}
+          >
+            {copy.shareButtonLabel}
+          </Button>
+          <br />
           <Button
             href={vars.sendUrl}
-            className="bg-ink text-cream font-sans no-underline"
-            style={{
-              padding: "16px 32px",
-              fontSize: 16,
-              borderRadius: 50,
-              letterSpacing: "0.02em",
-            }}
+            className="border border-solid border-ink bg-ink text-cream font-sans no-underline"
+            style={PILL_BUTTON_STYLE}
           >
             {copy.sendButtonLabel}
           </Button>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { BookingFlowHeader } from "@/components/BookingFlowHeader";
+import { BackControl, BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { NAV_BAR_OFFSET_CLASS, Navigation } from "@/components/Navigation";
 import type { NotesNavProps } from "@/components/Notes/NotesShell";
@@ -37,7 +37,7 @@ export function BookingPageShell({
     <div className={`relative min-h-screen ${OUTER_BG_CLASS[outerBg]} overflow-hidden`}>
       <Navigation {...nav} page="other" />
       <div className={NAV_BAR_OFFSET_CLASS}>
-        <BookingFlowHeader backHref={backHref} />
+        {readingName ? null : <BookingFlowHeader backHref={backHref} />}
       </div>
 
       <main id="main" className="relative">
@@ -47,6 +47,7 @@ export function BookingPageShell({
             readingName={readingName}
             readingPrice={readingPrice}
             priceLine={priceLine}
+            back={<BackControl backHref={backHref} />}
           />
         ) : null}
         <div className="max-w-3xl mx-auto px-6 py-16">

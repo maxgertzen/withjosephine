@@ -27,7 +27,12 @@ import { fetchEmailGiftSettings, fetchReadingPublished } from "@/lib/sanity/fetc
 import { captureConsole } from "@/test/captureConsole";
 import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 
-import { activateGift, giftActivationFromSession, type GiftActivationInput } from "./activateGift";
+import {
+  activateGift,
+  giftActivationFromSession,
+  type GiftActivationInput,
+  whatsappShareUrl,
+} from "./activateGift";
 import { deriveGiftCode, deriveGiftSendToken } from "./giftCode";
 import { formatGiftCode } from "./giftCodeFormat";
 import { findGiftById } from "./gifts";
@@ -91,6 +96,29 @@ afterEach(async () => {
     expect(logs).not.toContain(formatGiftCode(code));
   }
   vi.restoreAllMocks();
+});
+
+describe("whatsappShareUrl", () => {
+  const url = "https://withjosephine.com/gift/K7M2AAAABBBB";
+  const sharedAs = (text: string) => `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`;
+
+  it("drops emoji, which WhatsApp's share page shows as �", () => {
+    expect(whatsappShareUrl("For you ✨ 🎁 ❤️ ❤ 👍🏽 🇹🇭 👨‍👩‍👧 1️⃣", url)).toBe(sharedAs("For you"));
+  });
+
+  it("keeps ™, © and ®, which the share page shows as typed", () => {
+    expect(whatsappShareUrl("Soul Blueprint™ © ®", url)).toBe(sharedAs("Soul Blueprint™ © ®"));
+  });
+
+  it("sends the bare link when the message is only emoji", () => {
+    expect(whatsappShareUrl("🎁✨", url)).toBe(`https://wa.me/?text=${encodeURIComponent(url)}`);
+  });
+
+  it("keeps accents, curly quotes and non-Latin letters, which the share page shows as typed", () => {
+    expect(whatsappShareUrl("Pour toi, de Zoé. Here’s สมชาย", url)).toBe(
+      sharedAs("Pour toi, de Zoé. Here’s สมชาย"),
+    );
+  });
 });
 
 describe("giftActivationFromSession", () => {
@@ -226,7 +254,7 @@ describe("activateGift", () => {
 
     const vars = mockSend.mock.calls[0][0];
     expect(vars.hasNote).toBe(false);
-    expect(decodeURIComponent(vars.whatsappUrl)).toContain("A reading for you, from Marguerite ✨");
+    expect(decodeURIComponent(vars.whatsappUrl)).toContain("A reading for you, from Marguerite https://");
   });
 
   it("falls back to the built-in reading name when Sanity has none", async () => {

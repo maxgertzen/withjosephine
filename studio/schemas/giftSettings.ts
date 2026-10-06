@@ -23,7 +23,7 @@ const TEXT_FIELDS: Record<keyof GiftContent, GiftTextField> = {
     title: "Share message",
     group: "thankYou",
     description:
-      "The message in the share sheet and in the Share on WhatsApp link of the buyer email. {buyerName} becomes the buyer's first name.",
+      "The message in the share sheet and in the Share on WhatsApp link of the buyer email. {buyerName} becomes the buyer's first name. The WhatsApp link leaves out emoji, because WhatsApp shows them as a broken character.",
   },
   sheetTitleTemplate: {
     title: "Sheet title",

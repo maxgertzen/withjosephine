@@ -34,6 +34,18 @@ import {
 import { GIFT_STATUS, type GiftRecord, type GiftStatus } from "./types";
 
 const WHATSAPP_SHARE_URL = "https://wa.me/?text=";
+const EMOJI_WHATSAPP_WEB_BREAKS = new RegExp(
+  "\\p{RGI_Emoji}|[[\\p{Extended_Pictographic}\\p{Emoji_Modifier}\\p{Regional_Indicator}]--[©®™]]",
+  "gv",
+);
+
+export function whatsappShareUrl(message: string, url: string): string {
+  const textWhatsAppWebCanShow = message
+    .replace(EMOJI_WHATSAPP_WEB_BREAKS, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return WHATSAPP_SHARE_URL + encodeURIComponent([textWhatsAppWebCanShow, url].filter(Boolean).join(" "));
+}
 
 export type GiftActivationInput = PaidSessionFields & {
   giftId: string;
@@ -89,7 +101,7 @@ export async function sendBuyerConfirmation(
       hasNote: gift.note !== null,
       displayCode: formatGiftCode(code),
       giftUrl: url,
-      whatsappUrl: WHATSAPP_SHARE_URL + encodeURIComponent(`${shareMessage} ${url}`),
+      whatsappUrl: whatsappShareUrl(shareMessage, url),
       sendUrl: siteOrigin() + giftSendPath(sendToken),
     },
     { giftId: gift.id, idempotencyKey },

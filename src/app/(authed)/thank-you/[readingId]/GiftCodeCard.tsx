@@ -24,7 +24,7 @@ type GiftCodeCardProps = {
   shareText: string;
 };
 
-const ROW_BUTTON_CLASSES = "flex-1 min-h-11 px-3 indent-[0.12em]";
+const ROW_BUTTON_CLASSES = "sm:flex-1 min-h-11 px-3 indent-[0.12em]";
 
 export function GiftCodeCard({ copy, displayCode, giftUrl, shareText }: GiftCodeCardProps) {
   const [linkCopied, setLinkCopied] = useState(false);
@@ -45,11 +45,11 @@ export function GiftCodeCard({ copy, displayCode, giftUrl, shareText }: GiftCode
       <p
         {...CLARITY_MASK_PROPS}
         data-testid="gift-code"
-        className="font-body font-medium text-2xl leading-tight tracking-[0.14em] tabular-nums text-j-deep"
+        className="font-body font-medium text-lg min-[360px]:text-xl sm:text-2xl leading-tight tracking-[0.14em] tabular-nums whitespace-nowrap text-j-deep"
       >
         {displayCode}
       </p>
-      <div className="flex gap-2.5">
+      <div className="flex flex-col sm:flex-row gap-2.5">
         <Button type="button" onClick={copyLink} className={ROW_BUTTON_CLASSES}>
           {linkCopied ? copy.linkCopiedLabel : copy.copyLinkLabel}
         </Button>

@@ -71,7 +71,13 @@ function ReadingContent(props: ReadingBlockProps) {
         ) : null}
         {howItWorks.content.length > 0 ? (
           <ReadingAccordion id={`${slug}-how`} title={howItWorks.title}>
-            <PortableTextContent value={howItWorks.content} paragraphClassName={ANSWER_CLASS} />
+            <IncludedList
+              items={howItWorks.content.map((paragraph) => (
+                <PortableTextContent key={paragraph._key} value={[paragraph]} paragraphClassName="m-0" />
+              ))}
+              size="page"
+              className="mb-3"
+            />
           </ReadingAccordion>
         ) : null}
         {questions.items.length > 0 ? (

@@ -74,7 +74,7 @@ function pageFacts(
 }
 
 function blocksWithText(blocks: SanityPortableTextBlock[] | null | undefined): SanityPortableTextBlock[] {
-  return blocks && hasText(blocks) ? blocks : [];
+  return blocks?.filter((block) => hasText([block])) ?? [];
 }
 
 function resolveReading(readingId: string, sanityReading: SanityReading | null) {

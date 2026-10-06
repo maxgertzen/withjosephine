@@ -40,14 +40,25 @@ describe("BookingPageShell", () => {
     expect(getByText("$129")).toBeTruthy();
   });
 
-  it("puts the reading name h1 inside main, after the Back header", () => {
-    const { container } = render(
+  it("puts the reading name h1 and one Back link inside main, with no separate Back header", () => {
+    const { container, getAllByRole } = render(
       <BookingPageShell nav={{}} backHref="/back" {...READING}>
         <p>x</p>
       </BookingPageShell>,
     );
     expect(container.querySelector("main#main h1")?.textContent).toBe("Soul Blueprint");
-    expect(container.querySelector("header h1")).toBeNull();
+    expect(container.querySelector("header")).toBeNull();
+    expect(getAllByRole("link", { name: "Back" }).map((link) => link.getAttribute("href"))).toEqual([
+      "/back",
+    ]);
+  });
+
+  it("shows the Back header when there is no reading name", () => {
+    const { container } = render(
+      <BookingPageShell nav={{}} backHref="/back" {...READING} readingName="">
+        <p>x</p>
+      </BookingPageShell>,
+    );
     expect(container.querySelector("header a")?.getAttribute("href")).toBe("/back");
   });
 
