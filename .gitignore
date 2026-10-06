@@ -73,3 +73,6 @@ playwright/.cache/
 # Ephemeral diagnostic probe (not source-of-truth)
 probe-deployed-studio.mjs
 .playwright-cli/
+
+# Local session handover, not tracked
+docs/SESSION_BOOT.md
