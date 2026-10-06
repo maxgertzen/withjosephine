@@ -14,3 +14,8 @@ reason = "Dev-only transitive dep (Storybook dev server via @storybook/builder-w
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2026-11-15
 reason = "braces 3.0.3 comes only from build and CLI tooling (@sanity/codegen, Storybook, eslint-config-next globbing), never from site code. No fixed version yet."
+
+[[IgnoredVulns]]
+id = "GHSA-hp3w-g68c-fv3c"
+ignoreUntil = 2026-12-15
+reason = "sprintf-js 1.0.3 comes only through argparse in js-yaml 3 under @sanity/cli (@vercel/frameworks), CLI tooling never bundled into the site. No fixed version yet."
