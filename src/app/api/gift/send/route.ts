@@ -120,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
   });
   const sentAt = new Date().toISOString();
 
-  if (result.kind === "failed") {
+  if (result.kind === "failed" || result.kind === "skipped") {
     const keptRecipientName = sendNumber === 1 ? recipientName : gift.recipientName;
     await Promise.all([
       releaseGiftSend(giftId, { sendNumber, keptRecipientName, updatedAt: sentAt }),
@@ -139,9 +139,6 @@ export async function POST(request: Request): Promise<Response> {
     auditGiftSent(request, { giftId, success: true }).catch(() => {
       console.error(`[gift-send] audit of the sent email failed for gift ${giftId}`);
     }),
-    result.kind === "skipped"
-      ? recordUnsentGiftEmail(giftId, "gift_send", attemptedAt, result)
-      : undefined,
   ]);
 
   return NextResponse.json({

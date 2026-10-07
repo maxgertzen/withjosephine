@@ -1293,7 +1293,7 @@ describe("env_guard (layer-3 defense in non-production envs)", () => {
       buildSubmission({ email: "real-customer@example.com" }),
     );
 
-    expect(getResendId(result)).toBeNull();
+    expect(result).toEqual({ kind: "skipped", reason: "env_guard" });
     expect(sendMock).not.toHaveBeenCalled();
   });
 

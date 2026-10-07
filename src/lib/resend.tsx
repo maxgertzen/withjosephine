@@ -59,7 +59,7 @@ export type SubmissionContext = {
 export type EmailSendResult =
   | { kind: "sent"; resendId: string }
   | { kind: "dry_run" }
-  | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" }
+  | { kind: "skipped"; reason: "no_api_key" | "no_notification_email" | "env_guard" }
   | { kind: "failed"; error: string; statusCode?: number | null };
 
 // Brand + footer copy shared across every branded template. Sanity edit on
@@ -261,7 +261,7 @@ export async function sendOrSkip(args: {
     console.warn(
       `[resend] RESEND_DRY_RUN — skipping ${label} (reason=${skipReason}, to=${redactRecipient(args.to)})`,
     );
-    return { kind: "dry_run" };
+    return skipReason === "env_guard" ? { kind: "skipped", reason: "env_guard" } : { kind: "dry_run" };
   }
   const client = getResendClient();
   if (!client) {

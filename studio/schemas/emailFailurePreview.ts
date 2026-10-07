@@ -29,6 +29,7 @@ const REFUSED_REASON_LABELS: Record<string, string> = {
   gift_not_opened: "the gift has not been opened",
   missing_buyer_email: "no buyer address on the gift",
   missing_gift_code: "the gift code could not be made",
+  env_guard: "staging only sends to allowlisted addresses",
 };
 
 export type EmailFailurePreviewInput = {
