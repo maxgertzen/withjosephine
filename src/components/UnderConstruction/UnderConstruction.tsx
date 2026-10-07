@@ -30,7 +30,7 @@ export function UnderConstruction({ content }: UnderConstructionProps) {
         alt={imageAlt}
         width={480}
         height={480}
-        priority
+        loading="eager"
         className="rounded-2xl shadow-j-soft mt-10 max-w-[min(480px,90vw)] h-auto"
       />
 
