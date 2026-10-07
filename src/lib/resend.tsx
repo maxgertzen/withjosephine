@@ -118,32 +118,43 @@ function redactRecipient(to: string | string[]) {
 
 type SkipReason = "sandbox_prefix" | "env_guard" | "flag" | "header";
 
+function deliberateDryRunReason(
+  recipients: readonly string[],
+  originatorEmail: string | null,
+): "sandbox_prefix" | "flag" | null {
+  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
+    return "sandbox_prefix";
+  }
+  return isFlagEnabled("RESEND_DRY_RUN") ? "flag" : null;
+}
+
+function blockedByEnvGuard(recipients: readonly string[]): boolean {
+  return !isProductionEnv() && !recipients.every(isProductionAllowlistedRecipient);
+}
+
 function configuredSkipReason(
   recipients: readonly string[],
   originatorEmail: string | null,
 ): Exclude<SkipReason, "header"> | null {
-  if (recipients.some(isSandboxEmail) || isSandboxEmail(originatorEmail)) {
-    return "sandbox_prefix";
-  }
-  if (!isProductionEnv() && !recipients.every(isProductionAllowlistedRecipient)) {
-    return "env_guard";
-  }
-  if (isFlagEnabled("RESEND_DRY_RUN")) return "flag";
-  return null;
+  return (
+    deliberateDryRunReason(recipients, originatorEmail) ??
+    (blockedByEnvGuard(recipients) ? "env_guard" : null)
+  );
 }
 
 async function resolveSkipReason(
   recipients: readonly string[],
   originatorEmail: string | null,
 ): Promise<SkipReason | null> {
-  const configured = configuredSkipReason(recipients, originatorEmail);
-  if (configured === "env_guard") {
+  const deliberate = deliberateDryRunReason(recipients, originatorEmail);
+  if (deliberate) return deliberate;
+  if (await shouldDryRunFromRequestHeader()) return "header";
+  if (blockedByEnvGuard(recipients)) {
     console.warn(
       `[resend] env_guard fired in non-production env (NEXT_PUBLIC_SANITY_DATASET=${process.env.NEXT_PUBLIC_SANITY_DATASET ?? "<unset>"}). Recipient(s) ${recipients.map(redactEmail).join(",")} not on sandbox-prefix list nor production allowlist. Skipping send (fail-closed). Add a prefix entry to src/lib/booking/sandboxEmails.ts for test specs, or use a recipient already on the production allowlist for staging smoke.`,
     );
+    return "env_guard";
   }
-  if (configured) return configured;
-  if (await shouldDryRunFromRequestHeader()) return "header";
   return null;
 }
 

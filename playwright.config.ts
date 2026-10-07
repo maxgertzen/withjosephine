@@ -95,7 +95,7 @@ export default defineConfig({
           command: "pnpm dev",
           url: "http://localhost:3000",
           reuseExistingServer: !isCI,
-          timeout: 120_000,
+          timeout: 240_000,
           stdout: "pipe",
           stderr: "pipe",
           env: {
