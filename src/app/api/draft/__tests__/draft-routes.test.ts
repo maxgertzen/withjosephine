@@ -25,8 +25,17 @@ vi.mock("next/navigation", () => ({
 describe("/api/draft/disable", () => {
   it("disables draft mode and redirects to /", async () => {
     const { GET } = await import("../disable/route");
-    await expect(GET()).rejects.toMatchObject({ url: "/" });
+    await expect(GET(new Request("https://withjosephine.com/api/draft/disable"))).rejects.toMatchObject({
+      url: "/",
+    });
     expect(disableSpy).toHaveBeenCalledOnce();
+  });
+
+  it("returns to the page given in redirect", async () => {
+    const { GET } = await import("../disable/route");
+    await expect(
+      GET(new Request("https://withjosephine.com/api/draft/disable?redirect=%2Fbook%2Fbirth-chart")),
+    ).rejects.toMatchObject({ url: "/book/birth-chart" });
   });
 });
 
