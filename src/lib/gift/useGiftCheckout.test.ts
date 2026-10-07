@@ -1,6 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HONEYPOT_FIELD } from "@/lib/booking/constants";
+
 const { requestFreshToken, turnstileState } = vi.hoisted(() => ({
   requestFreshToken: vi.fn<() => Promise<string | null>>(),
   turnstileState: { required: true },
@@ -83,7 +85,7 @@ describe("useGiftCheckout", () => {
       note: "Happy birthday",
       coolingOffConsent: true,
       turnstileToken: "turnstile-token",
-      website: "bot",
+      [HONEYPOT_FIELD]: "bot",
     });
   });
 

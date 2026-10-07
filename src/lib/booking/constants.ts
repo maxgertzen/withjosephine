@@ -1,4 +1,4 @@
-export const HONEYPOT_FIELD = "website";
+export const HONEYPOT_FIELD = "hp_ref";
 
 export const COMPANION_SUFFIX_UNKNOWN = "_unknown";
 export const COMPANION_SUFFIX_GEONAMEID = "_geonameid";

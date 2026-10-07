@@ -9,6 +9,7 @@ import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
 import { isClarityBlockedPath } from "@/lib/clarityGate";
 import { readConsent, writeConsent } from "@/lib/consent";
+import { cookieFlagIsSet } from "@/lib/cookieFlag";
 import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { initSentryClient } from "@/lib/sentry-client";
@@ -20,9 +21,7 @@ function bootstrapClientObservability(): void {
 
 function consentRequiredFromCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie
-    .split(";")
-    .some((entry) => entry.trim() === `${CONSENT_REQUIRED_COOKIE}=1`);
+  return cookieFlagIsSet(document.cookie, CONSENT_REQUIRED_COOKIE);
 }
 
 interface AnalyticsBootstrapProps {

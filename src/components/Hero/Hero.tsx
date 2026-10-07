@@ -82,7 +82,7 @@ export function Hero({ content, className }: HeroProps) {
             alt="Josephine Soul Readings"
             width={960}
             height={960}
-            priority
+            loading="eager"
             className="h-auto w-[clamp(280px,40vw,480px)]"
           />
         </div>

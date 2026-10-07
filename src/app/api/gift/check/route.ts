@@ -7,7 +7,7 @@ import { giftPath, normalizeGiftCode } from "@/lib/gift/giftCodeFormat";
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { findGiftByCode, resolveGiftState } from "@/lib/gift/gifts";
 import { resolveReadingName } from "@/lib/readingSummary";
-import { fetchReading } from "@/lib/sanity/fetch";
+import { fetchReadingPublished } from "@/lib/sanity/fetch";
 
 function isGiftCheckRequest(body: unknown): body is GiftCheckRequest {
   if (typeof body !== "object" || body === null) return false;
@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   return respond({
     result: "other_reading",
     readingSlug: gift.readingSlug,
-    readingName: await resolveReadingName(gift.readingSlug, fetchReading),
+    readingName: await resolveReadingName(gift.readingSlug, fetchReadingPublished),
     path,
   });
 }

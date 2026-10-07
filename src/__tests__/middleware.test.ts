@@ -17,7 +17,11 @@ vi.mock("next/server", () => {
   class FakeResponse {
     headers = new FakeHeaders();
     cookieStore = new Map<string, string>();
-    cookies = { set: (k: string, v: string) => this.cookieStore.set(k, v) };
+    deletedCookies: string[] = [];
+    cookies = {
+      set: (k: string, v: string) => this.cookieStore.set(k, v),
+      delete: (k: string) => this.deletedCookies.push(k),
+    };
     rewriteTo: string | null = null;
   }
   return {
@@ -36,20 +40,24 @@ import type { NextRequest } from "next/server";
 
 import { DRAFT_COOKIE, middleware } from "../middleware";
 
+type FakeRes = { cookieStore: Map<string, string>; deletedCookies: string[] };
+
 function makeRequest({
   hasDraft,
   host = "withjosephine.com",
   pathname = "/",
   country = null,
+  otherCookies = [],
 }: {
   hasDraft: boolean;
   host?: string;
   pathname?: string;
   country?: string | null;
+  otherCookies?: string[];
 }) {
   return {
     cookies: {
-      has: (name: string) => hasDraft && name === DRAFT_COOKIE,
+      has: (name: string) => (hasDraft && name === DRAFT_COOKIE) || otherCookies.includes(name),
     },
     headers: {
       get: (name: string) => {
@@ -202,6 +210,19 @@ describe("middleware CSP + draft hardening", () => {
       expect(scriptDirective, pathname).toContain("'nonce-");
       expect(scriptDirective, pathname).not.toContain("'unsafe-inline'");
     }
+  });
+
+  it("sets the readable preview-active flag while the draft cookie is present", () => {
+    const res = middleware(makeRequest({ hasDraft: true })) as unknown as FakeRes;
+    expect(res.cookieStore.get("preview-active")).toBe("1");
+  });
+
+  it("clears a leftover preview-active flag once draft mode is off", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, otherCookies: ["preview-active"] }),
+    ) as unknown as FakeRes;
+    expect(res.cookieStore.has("preview-active")).toBe(false);
+    expect(res.deletedCookies).toEqual(["preview-active"]);
   });
 
   it("sets the consent-required cookie to '0' for non-consent regions", () => {

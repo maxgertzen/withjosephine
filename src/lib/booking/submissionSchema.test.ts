@@ -1,3 +1,4 @@
+import { stegaEncodeSourceMap } from "@sanity/client/stega";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SanityFormField } from "@/lib/sanity/types";
@@ -152,5 +153,42 @@ describe("buildSubmissionSchema", () => {
     expect(schema.safeParse({ nick: "ab" }).success).toBe(false);
     expect(schema.safeParse({ nick: "abcdefghi" }).success).toBe(false);
     expect(schema.safeParse({ nick: "abcd" }).success).toBe(true);
+  });
+});
+
+describe("buildSubmissionSchema with stega-encoded Sanity strings", () => {
+  const LETTERS_ONLY = "^[A-Za-z '-]+$";
+  const MESSAGE = "Please use letters only.";
+
+  function encoded<T>(value: T): T {
+    return stegaEncodeSourceMap(
+      value,
+      {
+        documents: [{ _id: "bookingForm", _type: "bookingForm" }],
+        paths: ["$['pattern']", "$['message']"],
+        mappings: {
+          "$['pattern']": { type: "value", source: { type: "documentValue", document: 0, path: 0 } },
+          "$['message']": { type: "value", source: { type: "documentValue", document: 0, path: 1 } },
+        },
+      },
+      { enabled: true, studioUrl: "https://example.sanity.studio", filter: () => true } as never,
+    );
+  }
+
+  it("matches a valid name and reports the clean message", () => {
+    const { pattern, message } = encoded({ pattern: LETTERS_ONLY, message: MESSAGE });
+    expect(pattern).not.toBe(LETTERS_ONLY);
+    const schema = buildSubmissionSchema([
+      field({
+        type: "shortText",
+        key: "first_name",
+        required: true,
+        validation: { pattern, patternErrorMessage: message },
+      }),
+    ]);
+    expect(schema.safeParse({ first_name: "Rebecca" }).success).toBe(true);
+    const failed = schema.safeParse({ first_name: "R3becca" });
+    expect(failed.success).toBe(false);
+    expect(failed.error?.issues[0]?.message).toBe(MESSAGE);
   });
 });

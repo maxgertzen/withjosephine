@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import type { SanityBookingForm, SanityReading } from "@/lib/sanity/types";
 
 vi.mock("@/lib/turnstile", () => ({
@@ -7,8 +8,8 @@ vi.mock("@/lib/turnstile", () => ({
 }));
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchReading: vi.fn(),
-  fetchBookingForm: vi.fn(),
+  fetchReadingFresh: vi.fn(),
+  fetchBookingFormFresh: vi.fn(),
 }));
 
 const createSubmissionMock = vi.fn();
@@ -28,12 +29,12 @@ vi.mock("@/lib/gift/redeemGift", () => ({
 
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { redeemGiftSubmission } from "@/lib/gift/redeemGift";
-import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
+import { fetchBookingFormFresh, fetchReadingFresh } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerify = vi.mocked(verifyTurnstileToken);
-const mockReading = vi.mocked(fetchReading);
-const mockForm = vi.mocked(fetchBookingForm);
+const mockReading = vi.mocked(fetchReadingFresh);
+const mockForm = vi.mocked(fetchBookingFormFresh);
 const mockGiftRateLimit = vi.mocked(checkGiftRateLimit);
 const mockRedeem = vi.mocked(redeemGiftSubmission);
 
@@ -110,7 +111,7 @@ const VALID_BODY = {
 
 describe("/api/booking", () => {
   it("rejects when honeypot field is non-empty", async () => {
-    const res = await callRoute({ ...VALID_BODY, website: "spam" });
+    const res = await callRoute({ ...VALID_BODY, [HONEYPOT_FIELD]: "spam" });
     expect(res.status).toBe(400);
     expect(mockVerify).not.toHaveBeenCalled();
   });
@@ -120,6 +121,22 @@ describe("/api/booking", () => {
     const res = await callRoute(VALID_BODY);
     expect(res.status).toBe(400);
     expect(createSubmissionMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["honeypot", () => callRoute({ ...VALID_BODY, [HONEYPOT_FIELD]: "spam" })],
+    [
+      "turnstile",
+      () => {
+        mockVerify.mockResolvedValueOnce(false);
+        return callRoute(VALID_BODY);
+      },
+    ],
+  ] as const)("logs the %s rejection reason", async (reason, send) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await send();
+    expect(warn).toHaveBeenCalledWith(JSON.stringify({ type: "booking_rejected", reason }));
+    warn.mockRestore();
   });
 
   it("returns 404 when reading is missing", async () => {

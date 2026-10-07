@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   fetchBookingForm,
+  fetchBookingFormFresh,
   fetchBookingPage,
   fetchEmailMagicLink,
   fetchEmailOrderConfirmation,
@@ -12,6 +13,7 @@ import {
   fetchLandingPage,
   fetchLegalPage,
   fetchReading,
+  fetchReadingFresh,
   fetchReadings,
   fetchReadingSlugs,
   fetchSiteSettings,
@@ -162,6 +164,24 @@ describe("email template fetchers use the fresh uncached client", () => {
     const data = { subjectTemplate: "Your {readingName} is ready" };
     mockFreshFetch.mockResolvedValue(data);
     expect(await fetcher()).toEqual(data);
+    expect(mockFreshFetch).toHaveBeenCalledOnce();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("booking write-path fetchers ignore draft mode", () => {
+  it("fetchReadingFresh reads the published reading via the fresh client", async () => {
+    const data = { slug: "birth-chart", stripePaymentLink: "https://buy.stripe.com/x" };
+    mockFreshFetch.mockResolvedValue(data);
+    expect(await fetchReadingFresh("birth-chart")).toEqual(data);
+    expect(mockFreshFetch).toHaveBeenCalledWith(expect.any(String), { slug: "birth-chart" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("fetchBookingFormFresh reads the published form via the fresh client", async () => {
+    const data = { sections: [] };
+    mockFreshFetch.mockResolvedValue(data);
+    expect(await fetchBookingFormFresh()).toEqual(data);
     expect(mockFreshFetch).toHaveBeenCalledOnce();
     expect(mockFetch).not.toHaveBeenCalled();
   });

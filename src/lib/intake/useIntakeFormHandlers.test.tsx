@@ -44,6 +44,7 @@ function useTestHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
     totalPages: 3,
     isFinalPage: false,
     currentKeys: [],
+    pageIndexOfField: () => -1,
     submissionSchema: { safeParse: () => ({ success: true, data: {} }) } as never,
     setErrors,
     setSubmitError,
@@ -445,5 +446,53 @@ describe("useIntakeFormHandlers - preview", () => {
 
     expect(restoreDraft(READING)?.giftCode).toBe(GIFT_CODE);
     expect(assignMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("useIntakeFormHandlers — server field errors", () => {
+  useStubbedFetchAndLocation();
+
+  it("shows the server's field errors and opens the page holding the first one", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(400, { error: "Validation failed", fieldErrors: { first_name: "Letters only." } }),
+    );
+    const setCurrentPage = vi.fn();
+    const { result } = finalPageSubmitHarness({
+      currentPage: 2,
+      setCurrentPage,
+      pageIndexOfField: (key) => (key === "first_name" ? 0 : -1),
+    });
+    await pressSubmit(result);
+    expect(result.current.errors).toEqual({ first_name: "Letters only." });
+    expect(setCurrentPage).toHaveBeenCalledWith(0);
+    expect(result.current.submitError).toBe("Please fix the highlighted fields and try again.");
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
+  it("keeps the generic message for a 400 without field errors", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(400, { error: "Verification failed" }));
+    const { result } = finalPageSubmitHarness();
+    await pressSubmit(result);
+    expect(result.current.errors).toEqual({});
+    expect(result.current.submitError).toBe(
+      "Some fields didn't pass validation. Please review and try again.",
+    );
+  });
+});
+
+describe("useIntakeFormHandlers — server field errors on fields this page does not have", () => {
+  useStubbedFetchAndLocation();
+
+  it("asks for a reload instead of claiming fields are highlighted", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(400, { error: "Validation failed", fieldErrors: { new_field: "Required." } }),
+    );
+    const { result } = finalPageSubmitHarness();
+    await pressSubmit(result);
+    expect(result.current.errors).toEqual({});
+    expect(result.current.submitError).toBe(
+      "This form was just updated. Please reload the page and try again.",
+    );
+    expect(result.current.isSubmitting).toBe(false);
   });
 });

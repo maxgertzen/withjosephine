@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { COOLING_OFF_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
 import type { SanityReading } from "@/lib/sanity/types";
 import { captureConsole } from "@/test/captureConsole";
@@ -9,7 +10,7 @@ vi.mock("@/lib/turnstile", () => ({
 }));
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchReading: vi.fn(),
+  fetchReadingFresh: vi.fn(),
 }));
 
 vi.mock("@/lib/gift/gifts", () => ({
@@ -17,11 +18,11 @@ vi.mock("@/lib/gift/gifts", () => ({
 }));
 
 import { createPendingGift } from "@/lib/gift/gifts";
-import { fetchReading } from "@/lib/sanity/fetch";
+import { fetchReadingFresh } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerify = vi.mocked(verifyTurnstileToken);
-const mockReading = vi.mocked(fetchReading);
+const mockReading = vi.mocked(fetchReadingFresh);
 const mockCreatePendingGift = vi.mocked(createPendingGift);
 
 const GIFT_ID = "11111111-2222-4333-8444-555555555555";
@@ -105,7 +106,7 @@ describe("POST /api/gift/purchase guards", () => {
   });
 
   it("returns 400 when the honeypot is filled, before Turnstile", async () => {
-    const res = await callRoute({ ...VALID_BODY, website: "spam" });
+    const res = await callRoute({ ...VALID_BODY, [HONEYPOT_FIELD]: "spam" });
     expect(res.status).toBe(400);
     expect(mockVerify).not.toHaveBeenCalled();
   });

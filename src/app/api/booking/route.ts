@@ -14,7 +14,7 @@ import {
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { redeemGiftSubmission, type RedeemGiftSubmissionResult } from "@/lib/gift/redeemGift";
 import { getClientIp } from "@/lib/request";
-import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
+import { fetchBookingFormFresh, fetchReadingFresh } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -105,6 +105,29 @@ function buildResponses(
     }));
 }
 
+type BookingRejectReason =
+  | "invalid_json"
+  | "invalid_body"
+  | "honeypot"
+  | "consent"
+  | "turnstile"
+  | "validation"
+  | "email_missing";
+
+function rejectBooking(
+  reason: BookingRejectReason,
+  body: { error: string; fieldErrors?: Record<string, string> },
+): Response {
+  console.warn(
+    JSON.stringify({
+      type: "booking_rejected",
+      reason,
+      fieldKeys: body.fieldErrors ? Object.keys(body.fieldErrors) : undefined,
+    }),
+  );
+  return NextResponse.json(body, { status: 400 });
+}
+
 export async function POST(request: Request) {
   assertEnvironmentBindings();
 
@@ -112,42 +135,39 @@ export async function POST(request: Request) {
   try {
     parsedBody = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return rejectBooking("invalid_json", { error: "Invalid JSON" });
   }
 
   if (!isBookingBody(parsedBody)) {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return rejectBooking("invalid_body", { error: "Invalid request body" });
   }
 
   const { giftCode } = parsedBody;
 
   // Honeypot first — cheap local check rejects bots before we hit Cloudflare.
   if (typeof parsedBody[HONEYPOT_FIELD] === "string" && parsedBody[HONEYPOT_FIELD] !== "") {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+    return rejectBooking("honeypot", { error: "Bad request" });
   }
 
   const consentSnapshot = consentSnapshotFromBody(parsedBody, {
     readingSlug: parsedBody.readingSlug,
   });
   if (!isFullyConsented(consentSnapshot, { requireArt9: true })) {
-    return NextResponse.json(
-      {
-        error: "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
-      },
-      { status: 400 },
-    );
+    return rejectBooking("consent", {
+      error: "Art. 6, Art. 9, and cooling-off acknowledgments are all required to submit.",
+    });
   }
 
   const ip = getClientIp(request);
 
   const turnstileOk = await verifyTurnstileToken(parsedBody.turnstileToken, ip ?? undefined);
   if (!turnstileOk) {
-    return NextResponse.json({ error: "Verification failed" }, { status: 400 });
+    return rejectBooking("turnstile", { error: "Verification failed" });
   }
 
   const [reading, bookingForm] = await Promise.all([
-    fetchReading(parsedBody.readingSlug),
-    fetchBookingForm(),
+    fetchReadingFresh(parsedBody.readingSlug),
+    fetchBookingFormFresh(),
   ]);
 
   if (!reading) {
@@ -169,26 +189,21 @@ export async function POST(request: Request) {
         fieldErrors[key] = issue.message;
       }
     }
-    return NextResponse.json({ error: "Validation failed", fieldErrors }, { status: 400 });
+    return rejectBooking("validation", { error: "Validation failed", fieldErrors });
   }
 
   const validatedValues = validation.data as Record<string, unknown>;
   const email = typeof validatedValues.email === "string" ? validatedValues.email : "";
   if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    return rejectBooking("email_missing", { error: "Email is required" });
   }
   // RFC 5321 254-char cap — also defends against pathologically long emails
   // being ferried to Stripe Payment Link URLs.
   if (email.length > MAX_EMAIL_CHARS) {
-    return NextResponse.json(
-      {
-        error: "Validation failed",
-        fieldErrors: {
-          email: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.`,
-        },
-      },
-      { status: 400 },
-    );
+    return rejectBooking("validation", {
+      error: "Validation failed",
+      fieldErrors: { email: `Email must be ${MAX_EMAIL_CHARS} characters or fewer.` },
+    });
   }
 
   const photoR2Key =

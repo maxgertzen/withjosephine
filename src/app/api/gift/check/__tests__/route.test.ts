@@ -5,14 +5,14 @@ vi.mock("@/lib/gift/giftRateLimit", () => ({
 }));
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchReading: vi.fn(),
+  fetchReadingPublished: vi.fn(),
 }));
 
 import { dbQuery } from "@/lib/booking/persistence/sqlClient";
 import { deriveGiftCode } from "@/lib/gift/giftCode";
 import { formatGiftCode } from "@/lib/gift/giftCodeFormat";
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
-import { fetchReading } from "@/lib/sanity/fetch";
+import { fetchReadingPublished } from "@/lib/sanity/fetch";
 import type { SanityReading } from "@/lib/sanity/types";
 import { captureConsole } from "@/test/captureConsole";
 import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
@@ -20,7 +20,7 @@ import { createTestGift, forceGiftStatus } from "@/test/fixtures/gift";
 import { POST } from "../route";
 
 const mockRateLimit = vi.mocked(checkGiftRateLimit);
-const mockReading = vi.mocked(fetchReading);
+const mockReading = vi.mocked(fetchReadingPublished);
 
 async function check(body: unknown): Promise<Response> {
   return POST(

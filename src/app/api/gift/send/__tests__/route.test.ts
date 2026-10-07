@@ -361,23 +361,36 @@ describe("POST /api/gift/send success", () => {
     expect(await giftRow(giftId)).toMatchObject({ send_count: 1, recipient_email: null });
   });
 
-  it.each([{ kind: "dry_run" }, { kind: "skipped", reason: "no_api_key" }] as const)(
-    "counts a $kind send and sets last_sent_at without an emails_fired entry",
-    async (result) => {
-      mockSend.mockResolvedValueOnce(result);
-      const { giftId, token } = await activeGift();
+  it("counts a dry_run send and sets last_sent_at without an emails_fired entry", async () => {
+    mockSend.mockResolvedValueOnce({ kind: "dry_run" });
+    const { giftId, token } = await activeGift();
 
-      const res = await callRoute(sendBody(token));
+    const res = await callRoute(sendBody(token));
 
-      expect(res.status).toBe(200);
-      const row = await giftRow(giftId);
-      expect(row).toMatchObject({ send_count: 1, recipient_email: null, emails_fired_json: "[]" });
-      expect(row.last_sent_at).not.toBeNull();
-      expect(await auditRows()).toEqual([
-        { event_type: "gift_sent", success: 1, submission_id: `gift_${giftId}` },
-      ]);
-    },
-  );
+    expect(res.status).toBe(200);
+    const row = await giftRow(giftId);
+    expect(row).toMatchObject({ send_count: 1, recipient_email: null, emails_fired_json: "[]" });
+    expect(row.last_sent_at).not.toBeNull();
+    expect(await auditRows()).toEqual([
+      { event_type: "gift_sent", success: 1, submission_id: `gift_${giftId}` },
+    ]);
+  });
+
+  it.each([
+    { kind: "skipped", reason: "env_guard" },
+    { kind: "skipped", reason: "no_api_key" },
+  ] as const)("gives the send back and records a failure on skipped ($reason)", async (result) => {
+    mockSend.mockResolvedValueOnce(result);
+    const { giftId, token } = await activeGift();
+
+    const res = await callRoute(sendBody(token));
+
+    expect(res.status).toBe(502);
+    expect(await giftRow(giftId)).toMatchObject({ send_count: 0, recipient_email: null });
+    expect((await findGiftById(giftId))?.emailFailures).toEqual([
+      expect.objectContaining({ emailType: "gift_send", kind: "refused", errorCode: result.reason }),
+    ]);
+  });
 });
 
 describe("POST /api/gift/send failures", () => {

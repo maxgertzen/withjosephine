@@ -182,7 +182,7 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
               alt="Josephine Soul Readings"
               width={480}
               height={160}
-              priority
+              fetchPriority="high"
               className="h-auto w-[140px] nav:hidden"
             />
             <Image
@@ -190,7 +190,7 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
               alt="Josephine Soul Readings"
               width={480}
               height={160}
-              priority
+              fetchPriority="high"
               className="hidden h-auto w-[clamp(120px,8vw,160px)] nav:block"
             />
           </Link>

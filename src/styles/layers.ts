@@ -1,4 +1,5 @@
 export const LAYER = {
+  previewNotice: "z-40",
   consentBanner: "z-50",
   toast: "z-[60]",
   navMenu: "z-[99]",

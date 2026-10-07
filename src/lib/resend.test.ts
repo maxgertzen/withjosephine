@@ -1293,7 +1293,20 @@ describe("env_guard (layer-3 defense in non-production envs)", () => {
       buildSubmission({ email: "real-customer@example.com" }),
     );
 
-    expect(getResendId(result)).toBeNull();
+    expect(result).toEqual({ kind: "skipped", reason: "env_guard" });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("treats RESEND_DRY_RUN as a dry run even for a non-allowlisted recipient", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SANITY_DATASET", "staging");
+    vi.stubEnv("RESEND_DRY_RUN", "1");
+    headersGetMock.mockReturnValue(null);
+
+    const result = await sendOrderConfirmation(
+      buildSubmission({ email: "real-customer@example.com" }),
+    );
+
+    expect(result).toEqual({ kind: "dry_run" });
     expect(sendMock).not.toHaveBeenCalled();
   });
 

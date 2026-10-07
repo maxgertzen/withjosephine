@@ -183,6 +183,10 @@ export function IntakeForm(props: IntakeFormProps) {
   const isFinalPage = currentPage === totalPages - 1 || totalPages === 0;
   const currentSections = useMemo(() => pages[currentPage] ?? [], [pages, currentPage]);
   const currentKeys = useMemo(() => pageFieldKeys(currentSections), [currentSections]);
+  const pageIndexOfField = useCallback(
+    (key: string) => pages.findIndex((page) => pageFieldKeys(page).includes(key)),
+    [pages],
+  );
 
   useEffect(() => {
     if (!isRestored) return;
@@ -225,6 +229,7 @@ export function IntakeForm(props: IntakeFormProps) {
     totalPages,
     isFinalPage,
     currentKeys,
+    pageIndexOfField,
     submissionSchema,
     setErrors,
     setSubmitError,

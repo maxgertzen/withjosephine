@@ -189,52 +189,45 @@ export const fetchMagicLinkVerifyPage = cache(
   },
 );
 
-// Email copy bypasses `sanityFetch` (the live/cached path) so cron/DO/webhook
-// sends always render the latest published template. See `getSanityFreshReadClient`.
-async function fetchEmailCopy<T>(query: string): Promise<T | null> {
-  const client = await getSanityFreshReadClient();
-  return client.fetch<T | null>(query);
-}
-
 export const fetchEmailMagicLink = cache((): Promise<SanityEmailMagicLink | null> =>
-  fetchEmailCopy<SanityEmailMagicLink>(emailMagicLinkQuery),
+  freshFetch<SanityEmailMagicLink>(emailMagicLinkQuery),
 );
 
 export const fetchEmailPrivacyExport = cache((): Promise<SanityEmailPrivacyExport | null> =>
-  fetchEmailCopy<SanityEmailPrivacyExport>(emailPrivacyExportQuery),
+  freshFetch<SanityEmailPrivacyExport>(emailPrivacyExportQuery),
 );
 
 export const fetchEmailReadingDelivery = cache((): Promise<SanityEmailReadingDelivery | null> =>
-  fetchEmailCopy<SanityEmailReadingDelivery>(emailReadingDeliveryQuery),
+  freshFetch<SanityEmailReadingDelivery>(emailReadingDeliveryQuery),
 );
 
 export const fetchEmailOrderConfirmation = cache((): Promise<SanityEmailOrderConfirmation | null> =>
-  fetchEmailCopy<SanityEmailOrderConfirmation>(emailOrderConfirmationQuery),
+  freshFetch<SanityEmailOrderConfirmation>(emailOrderConfirmationQuery),
 );
 
 export const fetchEmailSharedShell = cache((): Promise<SanityEmailSharedShell | null> =>
-  fetchEmailCopy<SanityEmailSharedShell>(emailSharedShellQuery),
+  freshFetch<SanityEmailSharedShell>(emailSharedShellQuery),
 );
 
 export const fetchEmailGiftPurchase = cache((): Promise<SanityEmailGiftPurchase | null> =>
-  fetchEmailCopy<SanityEmailGiftPurchase>(emailGiftPurchaseQuery),
+  freshFetch<SanityEmailGiftPurchase>(emailGiftPurchaseQuery),
 );
 
 export const fetchEmailGiftOpened = cache((): Promise<SanityEmailGiftOpened | null> =>
-  fetchEmailCopy<SanityEmailGiftOpened>(emailGiftOpenedQuery),
+  freshFetch<SanityEmailGiftOpened>(emailGiftOpenedQuery),
 );
 
 export const fetchEmailGiftRecipientConfirmation = cache(
   (): Promise<SanityEmailGiftRecipientConfirmation | null> =>
-    fetchEmailCopy<SanityEmailGiftRecipientConfirmation>(emailGiftRecipientConfirmationQuery),
+    freshFetch<SanityEmailGiftRecipientConfirmation>(emailGiftRecipientConfirmationQuery),
 );
 
 export const fetchEmailGiftToRecipient = cache((): Promise<SanityEmailGiftToRecipient | null> =>
-  fetchEmailCopy<SanityEmailGiftToRecipient>(emailGiftToRecipientQuery),
+  freshFetch<SanityEmailGiftToRecipient>(emailGiftToRecipientQuery),
 );
 
 export const fetchEmailGiftSettings = cache((): Promise<SanityGiftSettings | null> =>
-  fetchEmailCopy<SanityGiftSettings>(giftSettingsQuery),
+  freshFetch<SanityGiftSettings>(giftSettingsQuery),
 );
 
 export const fetchListenPage = cache(async (): Promise<SanityListenPage | null> => {
@@ -267,10 +260,20 @@ export const fetchSiteSettingsPublished = cache(async (): Promise<SanitySiteSett
 // editor's publish is live without a redeploy. On-demand revalidateTag is
 // unavailable on this stack (no tagCache in open-next.config.ts; it caused a
 // read-storm), so freshness comes from per-request rendering, not invalidation.
-export const fetchLegalPageFresh = cache(async (slug: string): Promise<SanityLegalPage | null> => {
+async function freshFetch<T>(query: string, params: Record<string, unknown> = {}): Promise<T | null> {
   const client = await getSanityFreshReadClient();
-  return client.fetch<SanityLegalPage | null>(legalPageBySlugQuery, { slug });
-});
+  return client.fetch<T | null>(query, params);
+}
+
+export const fetchLegalPageFresh = cache((slug: string) =>
+  freshFetch<SanityLegalPage>(legalPageBySlugQuery, { slug }),
+);
+
+export const fetchReadingFresh = cache((slug: string) =>
+  freshFetch<SanityReading>(readingBySlugQuery, { slug }),
+);
+
+export const fetchBookingFormFresh = cache(() => freshFetch<SanityBookingForm>(bookingFormQuery));
 
 export const fetchUnderConstructionPagePublished = cache(
   async (): Promise<SanityUnderConstructionPage | null> =>
