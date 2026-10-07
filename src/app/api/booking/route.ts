@@ -14,7 +14,7 @@ import {
 import { checkGiftRateLimit } from "@/lib/gift/giftRateLimit";
 import { redeemGiftSubmission, type RedeemGiftSubmissionResult } from "@/lib/gift/redeemGift";
 import { getClientIp } from "@/lib/request";
-import { fetchBookingForm, fetchReading } from "@/lib/sanity/fetch";
+import { fetchBookingFormFresh, fetchReadingFresh } from "@/lib/sanity/fetch";
 import type { SanityFormField, SanityFormFieldType } from "@/lib/sanity/types";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -146,8 +146,8 @@ export async function POST(request: Request) {
   }
 
   const [reading, bookingForm] = await Promise.all([
-    fetchReading(parsedBody.readingSlug),
-    fetchBookingForm(),
+    fetchReadingFresh(parsedBody.readingSlug),
+    fetchBookingFormFresh(),
   ]);
 
   if (!reading) {

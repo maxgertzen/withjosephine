@@ -59,6 +59,8 @@ export type IntakeGiftCodeFieldState = {
 };
 
 const HTTP_BAD_REQUEST = 400;
+const FIX_HIGHLIGHTED_FIELDS = "Please fix the highlighted fields and try again.";
+const FORM_CHANGED_MESSAGE = "This form was just updated. Please reload the page and try again.";
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -75,6 +77,15 @@ async function giftEndingErrorMessage(
   if (response.status !== HTTP_NOT_FOUND && response.status !== HTTP_CONFLICT) return null;
   const body = (await response.json().catch(() => null)) as { error?: string } | null;
   return isGiftEndingError(body?.error) ? gift.errors.ending[body.error] : null;
+}
+
+async function serverFieldErrors(response: Response): Promise<Record<string, string> | null> {
+  if (response.status !== HTTP_BAD_REQUEST) return null;
+  const body = (await response.json().catch(() => null)) as {
+    fieldErrors?: Record<string, string>;
+  } | null;
+  const fieldErrors = body?.fieldErrors;
+  return fieldErrors && Object.keys(fieldErrors).length > 0 ? fieldErrors : null;
 }
 
 function failedSubmitMessage(status: number, gift: IntakeSubmitGift | undefined): string {
@@ -96,6 +107,7 @@ export type UseIntakeFormHandlersArgs = {
   totalPages: number;
   isFinalPage: boolean;
   currentKeys: string[];
+  pageIndexOfField: (key: string) => number;
   submissionSchema: DynamicSchema;
   setErrors: Dispatch<SetStateAction<Record<string, string>>>;
   setSubmitError: Dispatch<SetStateAction<string | null>>;
@@ -141,6 +153,7 @@ export function useIntakeFormHandlers({
   totalPages,
   isFinalPage,
   currentKeys,
+  pageIndexOfField,
   submissionSchema,
   setErrors,
   setSubmitError,
@@ -277,6 +290,24 @@ export function useIntakeFormHandlers({
         });
       }
 
+      function showServerFieldErrors(fieldErrors: Record<string, string>) {
+        const shownKey = Object.keys(fieldErrors).find((key) => pageIndexOfField(key) >= 0);
+        if (!shownKey) {
+          failSubmit(INTAKE_SUBMIT_ERROR.serverValidationFailed, FORM_CHANGED_MESSAGE);
+          return;
+        }
+        setErrors(fieldErrors);
+        failSubmit(INTAKE_SUBMIT_ERROR.serverValidationFailed, FIX_HIGHLIGHTED_FIELDS);
+        const errorPage = pageIndexOfField(shownKey);
+        if (errorPage === currentPage) {
+          focusFirstError(formRef.current, shownKey);
+          return;
+        }
+        setCurrentPage(errorPage);
+        flushSave(values, errorPage);
+        blurAndScrollToForm(formRef.current);
+      }
+
       const validation = validateFullSubmission(submissionSchema, allFields, values);
       const consentRequirements = {
         requireArt9: true,
@@ -306,7 +337,7 @@ export function useIntakeFormHandlers({
         setErrors(validation.fieldErrors);
         const message = !consentOk
           ? "All required acknowledgments below must be checked to continue."
-          : "Please fix the highlighted fields and try again.";
+          : FIX_HIGHLIGHTED_FIELDS;
         setSubmitError(message);
         focusFirstError(formRef.current, validation.fieldErrors);
         track("intake_submit_error", {
@@ -344,6 +375,11 @@ export function useIntakeFormHandlers({
         });
 
         if (!response.ok) {
+          const fieldErrors = await serverFieldErrors(response);
+          if (fieldErrors) {
+            showServerFieldErrors(fieldErrors);
+            return;
+          }
           const giftEndingMessage = await giftEndingErrorMessage(response, gift);
           if (giftEndingMessage) {
             clearGiftCode(readingId);
@@ -411,6 +447,10 @@ export function useIntakeFormHandlers({
       giftCodeField,
       handleApplyGiftCode,
       preview,
+      pageIndexOfField,
+      currentPage,
+      setCurrentPage,
+      flushSave,
     ],
   );
 

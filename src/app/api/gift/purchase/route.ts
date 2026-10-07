@@ -9,7 +9,7 @@ import { giftClientReferenceId } from "@/lib/gift/clientReference";
 import { parseGiftPurchaseBody, validateGiftSheet } from "@/lib/gift/giftInput";
 import { createPendingGift } from "@/lib/gift/gifts";
 import { getClientIp } from "@/lib/request";
-import { fetchReading } from "@/lib/sanity/fetch";
+import { fetchReadingFresh } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Verification failed" }, { status: 400 });
   }
 
-  const reading = await fetchReading(body.readingSlug);
+  const reading = await fetchReadingFresh(body.readingSlug);
   if (!reading) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }

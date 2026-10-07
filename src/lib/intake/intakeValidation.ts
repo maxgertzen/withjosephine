@@ -13,6 +13,7 @@ export function fieldDomId(fieldKey: string): string {
 export const INTAKE_SUBMIT_ERROR = {
   turnstileFailed: "turnstile_failed",
   validationFailed: "validation_failed",
+  serverValidationFailed: "server_validation_failed",
   missingPaymentUrl: "missing_payment_url",
   missingThankYouUrl: "missing_thank_you_url",
   networkError: "network_error",

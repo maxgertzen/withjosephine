@@ -1,3 +1,4 @@
+import { stegaClean } from "@sanity/client/stega";
 import { z, type ZodTypeAny } from "zod";
 
 import type { SanityFormField } from "@/lib/sanity/types";
@@ -19,11 +20,11 @@ export function buildFieldSchema(field: SanityFormField): ZodTypeAny {
       if (typeof max === "number") {
         schema = schema.max(max, `Please keep this under ${max} characters.`);
       }
-      const patternSource = field.validation?.pattern;
+      const patternSource = stegaClean(field.validation?.pattern);
       if (patternSource) {
         try {
           schema = schema.regex(new RegExp(patternSource), {
-            message: field.validation?.patternErrorMessage ?? "Please check the format.",
+            message: stegaClean(field.validation?.patternErrorMessage) ?? "Please check the format.",
           });
         } catch {
           // Sanity stored an invalid pattern — ignore rather than crash submissions.

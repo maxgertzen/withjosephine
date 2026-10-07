@@ -9,7 +9,7 @@ vi.mock("@/lib/turnstile", () => ({
 }));
 
 vi.mock("@/lib/sanity/fetch", () => ({
-  fetchReading: vi.fn(),
+  fetchReadingFresh: vi.fn(),
 }));
 
 vi.mock("@/lib/gift/gifts", () => ({
@@ -17,11 +17,11 @@ vi.mock("@/lib/gift/gifts", () => ({
 }));
 
 import { createPendingGift } from "@/lib/gift/gifts";
-import { fetchReading } from "@/lib/sanity/fetch";
+import { fetchReadingFresh } from "@/lib/sanity/fetch";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerify = vi.mocked(verifyTurnstileToken);
-const mockReading = vi.mocked(fetchReading);
+const mockReading = vi.mocked(fetchReadingFresh);
 const mockCreatePendingGift = vi.mocked(createPendingGift);
 
 const GIFT_ID = "11111111-2222-4333-8444-555555555555";
