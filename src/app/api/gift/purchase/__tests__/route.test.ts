@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { COOLING_OFF_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
 import type { SanityReading } from "@/lib/sanity/types";
 import { captureConsole } from "@/test/captureConsole";
@@ -105,7 +106,7 @@ describe("POST /api/gift/purchase guards", () => {
   });
 
   it("returns 400 when the honeypot is filled, before Turnstile", async () => {
-    const res = await callRoute({ ...VALID_BODY, website: "spam" });
+    const res = await callRoute({ ...VALID_BODY, [HONEYPOT_FIELD]: "spam" });
     expect(res.status).toBe(400);
     expect(mockVerify).not.toHaveBeenCalled();
   });

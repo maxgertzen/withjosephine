@@ -34,8 +34,20 @@ export async function verifyTurnstileToken(token: string, ip?: string): Promise<
     body,
   });
 
-  if (!response.ok) return false;
+  if (!response.ok) {
+    console.warn(JSON.stringify({ type: "turnstile_rejected", status: response.status }));
+    return false;
+  }
 
   const data = (await response.json()) as TurnstileResponse;
+  if (data.success !== true) {
+    console.warn(
+      JSON.stringify({
+        type: "turnstile_rejected",
+        errorCodes: data["error-codes"] ?? [],
+        hostname: data.hostname,
+      }),
+    );
+  }
   return data.success === true;
 }
