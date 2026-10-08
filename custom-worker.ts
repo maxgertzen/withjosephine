@@ -1,19 +1,19 @@
 // Wraps the OpenNext-generated worker fetch handler with Sentry error capture
-// AND adds a `scheduled` handler so wrangler cron triggers dispatch internally
-// instead of needing external Bearer-authenticated curl invocations.
+// AND adds a `scheduled` handler so wrangler cron triggers dispatch internally.
 // OpenNext's customWorker pattern: re-import .open-next/worker.js after the
 // `opennextjs-cloudflare build` step has produced it, then wrangler bundles
 // this file and resolves the import. wrangler.jsonc `main` points here.
 import * as Sentry from "@sentry/cloudflare";
 
 import handler from "./.open-next/worker.js";
-import { scheduledCronRequest, withoutCronHeader } from "./src/lib/booking/cron-auth";
+import { scheduledCronRequest } from "./src/lib/booking/cron-auth";
 import { dispatchPathsForCron } from "./src/lib/cron-routes";
 import { scrubBreadcrumb, scrubSentryRequest } from "./src/lib/logging/redactSearchParams";
 
 type CloudflareEnv = {
   SENTRY_DSN?: string;
   ENVIRONMENT?: string;
+  CRON_SECRET?: string;
 };
 
 function scrubSensitiveRequestData(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
@@ -32,17 +32,22 @@ const DELIVER_REQUESTED_PATH = "/api/cron/deliver-requested";
 const DELIVERY_MONITOR_SLUG = "email-day-7-deliver";
 
 const composedHandler: ExportedHandler<CloudflareEnv> = {
-  fetch: (request, env, ctx) => handler.fetch!(withoutCronHeader(request), env, ctx),
+  fetch: handler.fetch,
   async scheduled(event, env, ctx) {
     const paths = dispatchPathsForCron(event.cron);
     if (paths.length === 0) {
       console.warn(`[scheduled] no routes mapped for cron "${event.cron}"`);
       return;
     }
+    const cronSecret = env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error(`[scheduled] CRON_SECRET is not set; "${event.cron}" not dispatched`);
+      return;
+    }
     const origin = originForEnv(env);
     const dispatch = paths.map(async (path) => {
       const sendCronRequest = async () => {
-        const res = await handler.fetch!(scheduledCronRequest(`${origin}${path}`), env, ctx);
+        const res = await handler.fetch!(scheduledCronRequest(`${origin}${path}`, cronSecret), env, ctx);
         console.log(`[scheduled] ${event.cron} → ${path} → ${res.status}`);
         return res;
       };

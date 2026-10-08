@@ -40,7 +40,7 @@ export const DRAFT_COOKIE = "__prerender_bypass";
 // HTML. Rationale per entry:
 //   - /api/stripe/webhook : Stripe POSTs server-to-server; redirecting it would
 //                           drop events and silently break payment reconcile.
-//   - /api/cron/          : Cloudflare cron triggers hit these on the apex.
+//   - /api/cron/          : The scheduled handler dispatches to apex URLs.
 //   - /api/internal/      : Durable-Object alarm dispatch + admin recovery
 //                           scripts post here over public HTTPS using the apex
 //                           origin; rewrite would silently drop every

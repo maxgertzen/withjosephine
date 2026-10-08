@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isCronRequestAuthorized } from "./cron-auth";
-
 const openNextFetch = vi.hoisted(() => vi.fn(async () => new Response("ok")));
 const withMonitor = vi.hoisted(() =>
   vi.fn((_slug: string, callback: () => Promise<unknown>) => callback()),
@@ -25,7 +23,7 @@ type WorkerEntry = {
 const workerEntryPath = "../../../custom-worker";
 const { default: worker } = (await import(workerEntryPath)) as { default: WorkerEntry };
 
-const env = { ENVIRONMENT: "production" };
+const env = { ENVIRONMENT: "production", CRON_SECRET: "from-worker-env" };
 const ctx = { waitUntil: vi.fn(), passThroughOnException: vi.fn() };
 
 function forwardedRequest(): Request {
@@ -44,25 +42,21 @@ afterEach(() => {
 });
 
 describe("custom worker cron auth wiring", () => {
-  it("public fetch reaches OpenNext without cf-cron, so cron auth rejects it", async () => {
-    const request = new Request("https://withjosephine.com/api/cron/cleanup", {
-      method: "POST",
-      headers: { "cf-cron": "1" },
-    });
-
-    await worker.fetch(request, env, ctx);
-
-    expect(forwardedRequest().headers.has("cf-cron")).toBe(false);
-    expect(isCronRequestAuthorized(forwardedRequest())).toBe(false);
-  });
-
-  it("scheduled dispatch sends a request cron auth accepts", async () => {
-    vi.stubEnv("CRON_SECRET", "");
-
+  it("scheduled dispatch sends the worker env CRON_SECRET as Bearer", async () => {
     await worker.scheduled({ cron: "0 3 * * *" }, env, ctx);
 
     expect(forwardedRequest().url).toBe("https://withjosephine.com/api/cron/cleanup");
-    expect(isCronRequestAuthorized(forwardedRequest())).toBe(true);
+    expect(forwardedRequest().headers.get("authorization")).toBe("Bearer from-worker-env");
+  });
+
+  it("scheduled dispatch sends nothing and logs an error when CRON_SECRET is missing", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await worker.scheduled({ cron: "0 3 * * *" }, { ENVIRONMENT: "production" }, ctx);
+
+    expect(openNextFetch).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("CRON_SECRET is not set"));
+    error.mockRestore();
   });
 
   it("wraps the deliver-requested dispatch in the Sentry cron monitor", async () => {

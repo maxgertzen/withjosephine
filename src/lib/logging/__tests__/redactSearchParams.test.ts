@@ -182,7 +182,6 @@ describe("scrubSentryRequest", () => {
         Cookie: "c",
         authorization: "Bearer x",
         Referer: "https://withjosephine.com/gift/K7M2QX9PH4TR",
-        "CF-Cron": "1",
         "user-agent": "ua",
       },
       url: "https://withjosephine.com/thank-you/birth-chart?sessionId=cs_live_x",

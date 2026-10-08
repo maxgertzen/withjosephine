@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isCronRequestAuthorized, scheduledCronRequest, withoutCronHeader } from "./cron-auth";
+import { isCronRequestAuthorized, scheduledCronRequest } from "./cron-auth";
 
 const URL = "http://localhost/api/cron/test";
 
@@ -13,9 +13,10 @@ afterEach(() => {
 });
 
 describe("isCronRequestAuthorized", () => {
-  it("accepts requests with cf-cron header", () => {
+  it("rejects a cf-cron header without the Bearer secret", () => {
+    vi.stubEnv("CRON_SECRET", "shhh");
     const request = new Request(URL, { headers: { "cf-cron": "0 */6 * * *" } });
-    expect(isCronRequestAuthorized(request)).toBe(true);
+    expect(isCronRequestAuthorized(request)).toBe(false);
   });
 
   it("accepts Bearer token when CRON_SECRET matches", () => {
@@ -30,13 +31,13 @@ describe("isCronRequestAuthorized", () => {
     expect(isCronRequestAuthorized(request)).toBe(false);
   });
 
-  it("rejects when CRON_SECRET is not set and no cf-cron header", () => {
+  it("rejects when CRON_SECRET is not set", () => {
     vi.stubEnv("CRON_SECRET", "");
     const request = new Request(URL, { headers: { authorization: "Bearer anything" } });
     expect(isCronRequestAuthorized(request)).toBe(false);
   });
 
-  it("rejects when no auth header and no cf-cron header", () => {
+  it("rejects when no auth header", () => {
     vi.stubEnv("CRON_SECRET", "shhh");
     const request = new Request(URL);
     expect(isCronRequestAuthorized(request)).toBe(false);
@@ -50,44 +51,11 @@ describe("isCronRequestAuthorized", () => {
 });
 
 describe("scheduledCronRequest", () => {
-  it("builds a POST that cron auth accepts without CRON_SECRET", () => {
-    vi.stubEnv("CRON_SECRET", "");
-    const request = scheduledCronRequest(URL);
+  it("builds a POST that cron auth accepts with the matching secret", () => {
+    vi.stubEnv("CRON_SECRET", "shhh");
+    const request = scheduledCronRequest(URL, "shhh");
     expect(request.method).toBe("POST");
     expect(request.url).toBe(URL);
     expect(isCronRequestAuthorized(request)).toBe(true);
-  });
-});
-
-describe("withoutCronHeader", () => {
-  it("strips cf-cron from a public request so cron auth rejects it", async () => {
-    vi.stubEnv("CRON_SECRET", "shhh");
-    const publicRequest = new Request(`${URL}?force=abc`, {
-      method: "POST",
-      headers: { "cf-cron": "1", "content-type": "application/json" },
-      body: '{"a":1}',
-    });
-
-    const forwarded = withoutCronHeader(publicRequest);
-
-    expect(forwarded.headers.has("cf-cron")).toBe(false);
-    expect(isCronRequestAuthorized(forwarded)).toBe(false);
-    expect(forwarded.method).toBe("POST");
-    expect(forwarded.url).toBe(`${URL}?force=abc`);
-    expect(forwarded.headers.get("content-type")).toBe("application/json");
-    expect(await forwarded.text()).toBe('{"a":1}');
-  });
-
-  it("keeps Bearer CRON_SECRET working on a request that also sent cf-cron", () => {
-    vi.stubEnv("CRON_SECRET", "shhh");
-    const publicRequest = new Request(URL, {
-      headers: { "cf-cron": "1", authorization: "Bearer shhh" },
-    });
-    expect(isCronRequestAuthorized(withoutCronHeader(publicRequest))).toBe(true);
-  });
-
-  it("returns the same request when cf-cron is absent", () => {
-    const publicRequest = new Request(URL);
-    expect(withoutCronHeader(publicRequest)).toBe(publicRequest);
   });
 });

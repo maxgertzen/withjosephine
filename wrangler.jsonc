@@ -12,7 +12,7 @@
 		"global_fetch_strictly_public"
 	],
 	"workers_dev": true,
-	"preview_urls": true,
+	"preview_urls": false,
 	// ─── Required environment ────────────────────────────────────────────────
 	// Server secrets (set via `wrangler secret put <NAME>` or CF dashboard →
 	// Workers → withjosephine → Settings → Variables → Secrets):
@@ -28,7 +28,7 @@
 	//   - R2_BUCKET_NAME             R2 bucket name (withjosephine-booking-photos)
 	//   - NOTIFICATION_EMAIL         Inbox that receives new-booking notifications
 	//   - SANITY_WRITE_TOKEN         Sanity Editor token used by /api/booking to write submissions
-	//   - CRON_SECRET                Bearer token for manually triggering /api/cron/* (cf-cron header bypasses)
+	//   - CRON_SECRET                Bearer token for /api/cron/*, sent by the scheduled handler and manual triggers
 	//   - AUTH_TOKEN_SECRET          Master HMAC secret (32-byte hex). Per-purpose subkeys for listen tokens
 	//                                and request audit are HKDF-derived in src/lib/auth/tokenSubkey.ts.
 	//   - GIFT_CODE_SECRET           HMAC secret (32-byte hex) for gift codes, lookup hashes and send links.
@@ -89,9 +89,8 @@
 		},
 	],
 	// Cloudflare Cron Triggers. Dispatched by `custom-worker.ts`'s `scheduled`
-	// handler into internal fetches against /api/cron/* routes (the `cf-cron`
-	// header satisfies `isCronRequestAuthorized`). The CRON_SECRET-bearer-curl
-	// path remains as a manual-trigger fallback; both paths are accepted.
+	// handler into internal fetches against /api/cron/* routes with
+	// `Authorization: Bearer CRON_SECRET`.
 	// Source of truth for schedule → routes mapping: `src/lib/cron-routes.ts`.
 	//
 	// Cadences:
@@ -196,6 +195,7 @@
 	"env": {
 		"staging": {
 			"name": "withjosephine-staging",
+			"workers_dev": false,
 			"compatibility_date": "2025-08-16",
 			"compatibility_flags": [
 				"nodejs_compat",
