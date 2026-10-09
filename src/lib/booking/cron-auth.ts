@@ -1,25 +1,15 @@
 import { optionalEnv } from "../env";
 import { timingSafeStringEqual } from "../hmac";
-import {
-  AUTHORIZATION_HEADER,
-  BEARER_PREFIX,
-  CF_CRON_HEADER,
-} from "../http/headers";
+import { AUTHORIZATION_HEADER, BEARER_PREFIX } from "../http/headers";
 
-export function scheduledCronRequest(url: string): Request {
-  return new Request(url, { method: "POST", headers: { [CF_CRON_HEADER]: "1" } });
-}
-
-export function withoutCronHeader(request: Request): Request {
-  if (!request.headers.has(CF_CRON_HEADER)) return request;
-  const headers = new Headers(request.headers);
-  headers.delete(CF_CRON_HEADER);
-  return new Request(request, { headers });
+export function scheduledCronRequest(url: string, cronSecret: string): Request {
+  return new Request(url, {
+    method: "POST",
+    headers: { [AUTHORIZATION_HEADER]: `${BEARER_PREFIX}${cronSecret}` },
+  });
 }
 
 export function isCronRequestAuthorized(request: Request) {
-  if (request.headers.get(CF_CRON_HEADER)) return true;
-
   const expected = optionalEnv("CRON_SECRET");
   if (!expected) return false;
 

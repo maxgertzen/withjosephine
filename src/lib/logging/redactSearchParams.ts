@@ -91,7 +91,7 @@ const SENSITIVE_PARAM_PRESENT = new RegExp(
   `[?&#](?:${SENSITIVE_QUERY_PARAMS.join("|")})(?:[=&#]|$)`,
 );
 
-const SENSITIVE_REQUEST_HEADERS = new Set(["cookie", "authorization", "referer", "cf-cron"]);
+const SENSITIVE_REQUEST_HEADERS = new Set(["cookie", "authorization", "referer"]);
 
 export function redactSensitiveUrl(url: string): string {
   const pathRedacted = url
