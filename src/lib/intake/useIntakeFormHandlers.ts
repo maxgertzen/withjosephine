@@ -60,6 +60,19 @@ export type IntakeGiftCodeFieldState = {
 
 const HTTP_BAD_REQUEST = 400;
 const FIX_HIGHLIGHTED_FIELDS = "Please fix the highlighted fields and try again.";
+const CONSENT_FIELD_KEYS = {
+  art6: "art6-consent",
+  art9: "art9-consent",
+  coolingOff: "cooling-off-consent",
+} as const;
+
+function firstConsentKey(
+  uncheckedConsents: Partial<Record<keyof typeof CONSENT_FIELD_KEYS, string>>,
+): keyof typeof CONSENT_FIELD_KEYS | undefined {
+  return (Object.keys(CONSENT_FIELD_KEYS) as (keyof typeof CONSENT_FIELD_KEYS)[]).find(
+    (key) => uncheckedConsents[key],
+  );
+}
 const FORM_CHANGED_MESSAGE = "This form was just updated. Please reload the page and try again.";
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
@@ -281,7 +294,8 @@ export function useIntakeFormHandlers({
         requireCoolingOff: true,
       };
       const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
-      setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
+      const uncheckedConsents = collectConsentErrors(consentSnapshot, consentRequirements);
+      setConsentErrors(uncheckedConsents);
       track("intake_submit_click", {
         reading_id: readingId,
         validation_pass: validation.success && consentOk,
@@ -290,10 +304,16 @@ export function useIntakeFormHandlers({
       if (!validation.success || !consentOk) {
         setErrors(validation.fieldErrors);
         const message = !consentOk
-          ? "All required acknowledgments below must be checked to continue."
+          ? "All required acknowledgments must be checked to continue."
           : FIX_HIGHLIGHTED_FIELDS;
         setSubmitError(message);
-        focusFirstError(formRef.current, validation.fieldErrors);
+        const firstUncheckedConsent = firstConsentKey(uncheckedConsents);
+        focusFirstError(
+          formRef.current,
+          validation.success && firstUncheckedConsent
+            ? CONSENT_FIELD_KEYS[firstUncheckedConsent]
+            : validation.fieldErrors,
+        );
         track("intake_submit_error", {
           reading_id: readingId,
           error_code: INTAKE_SUBMIT_ERROR.validationFailed,

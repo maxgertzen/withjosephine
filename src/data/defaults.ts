@@ -270,6 +270,7 @@ export interface GiftContent {
   goToReadingTemplate: string;
   codeTooManyTries: string;
   codeFieldOptionalLabel: string;
+  codeApplyLabel: string;
   recipientThankYouHeadingTemplate: string;
   recipientThankYouSubheading: string;
   recipientThankYouCardLabelTemplate: string;
@@ -381,6 +382,7 @@ export const GIFT_DEFAULTS: GiftContent = {
   goToReadingTemplate: "Go to the {reading}",
   codeTooManyTries: "Too many tries. Wait a few minutes.",
   codeFieldOptionalLabel: "Gift code (optional)",
+  codeApplyLabel: "Apply",
   recipientThankYouHeadingTemplate: "Thank you, {recipientName}. Your reading is in my hands now.",
   recipientThankYouSubheading: "I’ve received everything I need to begin.",
   recipientThankYouCardLabelTemplate: "Your gift, from {buyerName}",

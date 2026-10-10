@@ -5,7 +5,7 @@ export const INTAKE_GIFT_CODE_COPY_KEYS = [
   ...GIFT_CODE_CHECK_MESSAGE_KEYS,
   "codeFieldOptionalLabel",
   "codeChecking",
-  "redeemButtonLabel",
+  "codeApplyLabel",
 ] as const satisfies readonly (keyof GiftContent)[];
 
 export type IntakeGiftCodeCopy = Pick<GiftContent, (typeof INTAKE_GIFT_CODE_COPY_KEYS)[number]>;

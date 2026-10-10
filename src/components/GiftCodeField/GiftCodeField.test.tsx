@@ -62,9 +62,9 @@ describe("GiftCodeField", () => {
     fetchSpy.mockRestore();
   });
 
-  describe("with a Redeem gift button", () => {
-    const apply = () => ({ label: GIFT_DEFAULTS.redeemButtonLabel, onApply: vi.fn() });
-    const button = () => screen.getByRole("button", { name: GIFT_DEFAULTS.redeemButtonLabel });
+  describe("with an Apply button", () => {
+    const apply = () => ({ label: GIFT_DEFAULTS.codeApplyLabel, onApply: vi.fn() });
+    const button = () => screen.getByRole("button", { name: GIFT_DEFAULTS.codeApplyLabel });
 
     it("redeems the typed code from the button", async () => {
       const redeem = apply();

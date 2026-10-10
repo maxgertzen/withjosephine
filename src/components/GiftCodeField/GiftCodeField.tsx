@@ -58,7 +58,7 @@ export function GiftCodeField({
           variant="outlined"
           onClick={apply.onApply}
           disabled={!canApply}
-          className="self-start"
+          className="w-full"
         >
           {apply.label}
         </Button>

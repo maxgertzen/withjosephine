@@ -375,6 +375,11 @@ const TEXT_FIELDS: Record<keyof GiftContent, GiftTextField> = {
     group: "bookingPage",
     description: "The code field label on the last page of the booking form.",
   },
+  codeApplyLabel: {
+    title: "Last page apply button",
+    group: "bookingPage",
+    description: "The button below the code field on the last page of the booking form.",
+  },
   recipientThankYouHeadingTemplate: {
     title: "Thank-you heading",
     group: "recipient",

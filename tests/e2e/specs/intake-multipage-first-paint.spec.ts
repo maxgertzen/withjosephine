@@ -65,7 +65,7 @@ test.describe("Intake multi-page first paint — no validation carry-over (B-1)"
 
     const submitOnPageTwo = page.getByTestId("intake-submit");
     await expect(submitOnPageTwo).toBeVisible();
-    await submitOnPageTwo.click({ force: true });
+    await submitOnPageTwo.click();
 
     await expect(page.locator("[aria-invalid='true']").first()).toBeVisible();
   });

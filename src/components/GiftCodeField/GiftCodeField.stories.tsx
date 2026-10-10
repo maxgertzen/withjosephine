@@ -47,15 +47,15 @@ export const TooManyTries: Story = {
   args: { value: CODE, error: GIFT_DEFAULTS.codeTooManyTries },
 };
 
-export const WithRedeemButton: Story = {
+export const WithApplyButton: Story = {
   args: {
     value: CODE,
-    apply: { label: GIFT_DEFAULTS.redeemButtonLabel, onApply: () => {} },
+    apply: { label: GIFT_DEFAULTS.codeApplyLabel, onApply: () => {} },
   },
 };
 
-export const WithRedeemButtonEmpty: Story = {
+export const WithApplyButtonEmpty: Story = {
   args: {
-    apply: { label: GIFT_DEFAULTS.redeemButtonLabel, onApply: () => {} },
+    apply: { label: GIFT_DEFAULTS.codeApplyLabel, onApply: () => {} },
   },
 };

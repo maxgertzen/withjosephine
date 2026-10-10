@@ -59,7 +59,6 @@ export type IntakeFormBodyProps = {
   errorCount: number;
   firstFieldLabel: string | null;
   onJumpToFirstError: () => void;
-  submitDisabled: boolean;
   onAdvanceAttempt: () => void;
   valuesUntouched: boolean;
   values: FieldValues;
@@ -124,7 +123,6 @@ export function IntakeFormBody({
   errorCount,
   firstFieldLabel,
   onJumpToFirstError,
-  submitDisabled,
   onAdvanceAttempt,
   valuesUntouched,
   values,
@@ -239,8 +237,6 @@ export function IntakeFormBody({
           onAdvanceAttempt();
         }}
         isSubmitting={isSubmitting}
-        nextDisabled={submitDisabled}
-        submitDisabled={submitDisabled}
         saveLaterDisabled={valuesUntouched}
         submitLabel={submitLabel}
         nextLabel={nextLabel}

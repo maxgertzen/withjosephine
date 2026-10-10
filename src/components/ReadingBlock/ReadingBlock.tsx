@@ -16,6 +16,7 @@ export type OtherReading = { name: string; price: string; line: string; slug: st
 export type ReadingBlockProps = {
   slug: string;
   foldRowLabel: string;
+  compactGapWhenClosed?: boolean;
   eyebrow: string;
   lead: string;
   description: string;
@@ -120,7 +121,11 @@ function ReadingContent(props: ReadingBlockProps) {
 
 export function ReadingBlock(props: ReadingBlockProps) {
   return (
-    <ReadingFold slug={props.slug} label={props.foldRowLabel}>
+    <ReadingFold
+      slug={props.slug}
+      label={props.foldRowLabel}
+      compactGapWhenClosed={props.compactGapWhenClosed}
+    >
       <ReadingContent {...props} />
     </ReadingFold>
   );
