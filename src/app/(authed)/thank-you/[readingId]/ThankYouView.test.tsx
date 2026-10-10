@@ -3,9 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ThankYouView, type ThankYouViewCopy } from "./ThankYouView";
 
-vi.mock("@/components/ThankYouGuard", () => ({
-  ThankYouGuard: () => null,
-}));
 vi.mock("@/components/StarField", () => ({
   StarField: () => null,
 }));

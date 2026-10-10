@@ -27,6 +27,7 @@ export type ThankYouViewProps = {
   paidAmount: { cents: number | null; display: string | null };
   contactEmail: string;
   copy: ThankYouViewCopy;
+  backGoesHome?: boolean;
 };
 
 export function ThankYouView({
@@ -35,13 +36,19 @@ export function ThankYouView({
   paidAmount,
   contactEmail,
   copy,
+  backGoesHome,
 }: ThankYouViewProps) {
   const showsDiscountedPrice =
     paidAmount.cents !== null && reading.cents !== null && paidAmount.cents < reading.cents;
   const shownPrice = paidAmount.display ?? reading.price;
 
   return (
-    <ThankYouShell icon={ICONS[icon]} heading={copy.heading} subheading={copy.subheading}>
+    <ThankYouShell
+      icon={ICONS[icon]}
+      heading={copy.heading}
+      subheading={copy.subheading}
+      backGoesHome={backGoesHome}
+    >
       <div className={`mt-10 ${cardSurfaceClasses} inline-flex items-center gap-6`}>
         <div className="text-left">
           <span className={cardLabelClasses}>{copy.readingLabel}</span>

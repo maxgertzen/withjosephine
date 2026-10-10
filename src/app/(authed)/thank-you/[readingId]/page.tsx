@@ -71,7 +71,7 @@ async function renderGiftThankYou(
   ]);
   if (!reading) notFound();
   const viewProps = deriveGiftThankYouViewProps({ gift, readingName: reading.name, giftSettings });
-  return <GiftThankYouView {...viewProps} />;
+  return <GiftThankYouView {...viewProps} backGoesHome />;
 }
 
 async function renderRecipientThankYou(submissionId: string) {
@@ -108,5 +108,5 @@ export default async function ThankYouPage({ params, searchParams }: ThankYouPag
     slugForOverride: readingId,
   });
 
-  return <ThankYouView {...viewProps} />;
+  return <ThankYouView {...viewProps} backGoesHome />;
 }

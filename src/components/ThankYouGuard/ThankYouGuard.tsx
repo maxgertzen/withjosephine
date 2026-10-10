@@ -1,24 +1,33 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+function isOnLinkOrButton(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("a, button") !== null;
+}
+
 export function ThankYouGuard() {
-  const pathname = usePathname();
-  const previewMode = pathname?.startsWith("/preview") ?? false;
+  const { replace } = useRouter();
 
   useEffect(() => {
-    if (previewMode) return;
-
-    window.history.replaceState(null, "", window.location.href);
-
-    const handlePopState = () => {
-      window.location.href = "/";
+    const mounted = new AbortController();
+    const firstInteraction = new AbortController();
+    const goHomeOnBack = () => replace("/");
+    const addHomeStep = (event: Event) => {
+      if (isOnLinkOrButton(event.target)) return;
+      firstInteraction.abort();
+      window.history.pushState(null, "", window.location.href);
+      window.addEventListener("popstate", goHomeOnBack, { signal: mounted.signal });
     };
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [previewMode]);
+    window.addEventListener("click", addHomeStep, { signal: firstInteraction.signal });
+    window.addEventListener("keydown", addHomeStep, { signal: firstInteraction.signal });
+    return () => {
+      firstInteraction.abort();
+      mounted.abort();
+    };
+  }, [replace]);
 
   return null;
 }

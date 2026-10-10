@@ -73,9 +73,14 @@ function GiftThankYouBody(props: GiftThankYouViewProps) {
   );
 }
 
-export function GiftThankYouView(props: GiftThankYouViewProps) {
+export function GiftThankYouView(props: GiftThankYouViewProps & { backGoesHome?: boolean }) {
   return (
-    <ThankYouShell icon={Gift} heading={props.copy.heading} subheading={props.copy.subheading}>
+    <ThankYouShell
+      icon={Gift}
+      heading={props.copy.heading}
+      subheading={props.copy.subheading}
+      backGoesHome={props.backGoesHome}
+    >
       <div className="mt-10 max-w-md mx-auto flex flex-col gap-4">
         <GiftThankYouBody {...props} />
       </div>

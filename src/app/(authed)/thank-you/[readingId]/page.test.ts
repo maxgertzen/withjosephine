@@ -280,6 +280,7 @@ describe("ThankYouPage paid amount", () => {
     expect(result.props.reading.cents).toBe(17900);
     expect(result.props.paidAmount.cents).toBe(9900);
     expect(result.props.paidAmount.display).toBe("$99.00");
+    expect(result.props.backGoesHome).toBe(true);
   });
 
   it("passes an equal paid amount (no discount UI)", async () => {
@@ -525,6 +526,7 @@ describe("ThankYouPage gift branch", () => {
 
     expect(result.type).toBe((await import("./GiftThankYouView")).GiftThankYouView);
     expect(result.props).toMatchObject({
+      backGoesHome: true,
       state: "active",
       displayCode: SHOWN.displayCode,
       giftUrl: SHOWN.giftUrl,
@@ -680,6 +682,7 @@ describe("ThankYouPage recipient gift branch", () => {
 
     expect(result.type).toBe((await import("./ThankYouView")).ThankYouView);
     expect(result.props.icon).toBe("gift");
+    expect(result.props.backGoesHome).toBeUndefined();
     expect(result.props.reading).toEqual({ name: "Birth Chart Reading", price: null, cents: null });
     expect(result.props.paidAmount).toEqual({ cents: null, display: null });
     expect(result.props.copy).toMatchObject({
