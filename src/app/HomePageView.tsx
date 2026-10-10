@@ -14,6 +14,7 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import type { ReadingsSectionContent } from "@/data/defaults";
 import { readingAnchorId } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
+import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type {
   MappedAbout,
   MappedFaqItem,
@@ -76,12 +77,12 @@ export function HomePageView({
           <SectionHeading tag={about.sectionTag} heading={about.heading} />
           <div className="mt-14 max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-16 items-start">
             <Image
-              src={about.imageUrl}
+              src={sanityImageUrl(about.imageUrl, { w: 600 })}
               alt="Josephine"
               width={300}
               height={375}
-              loading="lazy"
-              sizes="(min-width: 768px) 300px, 55vw"
+              loading="eager"
+              fetchPriority="low"
               className="w-[clamp(200px,55vw,300px)] mx-auto md:mx-0 md:w-[300px] h-auto object-contain"
             />
             <div className="flex flex-col gap-5">
