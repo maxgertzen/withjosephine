@@ -1,7 +1,29 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DatePicker } from "./DatePicker";
+
+function ControlledDatePicker(props: { helpText?: string; error?: string }) {
+  const [value, setValue] = useState("");
+  return (
+    <DatePicker
+      id="birthDate"
+      name="birthDate"
+      label="Birth date"
+      value={value}
+      onChange={setValue}
+      {...props}
+    />
+  );
+}
+
+function typeAndLeave(text: string): HTMLInputElement {
+  const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+  fireEvent.change(input, { target: { value: text } });
+  fireEvent.blur(input);
+  return input;
+}
 
 describe("DatePicker", () => {
   it("renders a text input that opens a calendar popover on focus", () => {
@@ -94,6 +116,85 @@ describe("DatePicker", () => {
     fireEvent.change(input, { target: { value: "12/04/19" } });
     expect(input.value).toBe("12/04/19");
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each(["29/10/98", "31/02/1990"])(
+    "marks %s invalid with the format hint when the visitor leaves the field",
+    (typed) => {
+      render(<ControlledDatePicker />);
+      const input = typeAndLeave(typed);
+
+      expect(input.value).toBe(typed);
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByRole("alert")).toHaveTextContent("DD/MM/YYYY, for example 24/03/1990");
+    },
+  );
+
+  it("names the format in the error even when the Sanity hint says something else", () => {
+    render(<ControlledDatePicker helpText="I use this to cast your chart" />);
+    typeAndLeave("29/10/98");
+    expect(screen.getByRole("alert")).toHaveTextContent("DD/MM/YYYY, for example 24/03/1990");
+  });
+
+  it("shows the format error instead of the generic form error for a typed bad date", () => {
+    render(<ControlledDatePicker error="Please pick a date." />);
+    typeAndLeave("29/10/98");
+    expect(screen.getByRole("alert")).toHaveTextContent("DD/MM/YYYY, for example 24/03/1990");
+  });
+
+  it("does not mark the field invalid when focus moves into the calendar", () => {
+    render(<ControlledDatePicker />);
+    const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "24/03" } });
+    const dayButton = screen.getAllByRole("button").find((button) => button.closest("[role='dialog']"));
+    fireEvent.blur(input, { relatedTarget: dayButton });
+    expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("drops a stale typed draft when the stored date is set from outside", () => {
+    const { rerender } = render(
+      <DatePicker id="birthDate" name="birthDate" label="Birth date" value="" onChange={vi.fn()} />,
+    );
+    typeAndLeave("29/10");
+    rerender(
+      <DatePicker id="birthDate" name="birthDate" label="Birth date" value="1992-04-21" onChange={vi.fn()} />,
+    );
+    const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+    expect(input.value).toBe("21/04/1992");
+    expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("clears the invalid mark once the visitor types again", () => {
+    render(<ControlledDatePicker />);
+    typeAndLeave("29/10/98");
+    const input = typeAndLeave("29/10/1998");
+
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(input.value).toBe("29/10/1998");
+  });
+
+  it("shows the format as hint text under the field when Sanity sets none", () => {
+    render(
+      <DatePicker id="birthDate" name="birthDate" label="Birth date" value="" onChange={vi.fn()} />,
+    );
+    expect(screen.getByText("DD/MM/YYYY, for example 24/03/1990")).toBeInTheDocument();
+  });
+
+  it("shows the Sanity hint text instead of the default when one is set", () => {
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={vi.fn()}
+        helpText="Day, month, then year"
+      />,
+    );
+    expect(screen.getByText("Day, month, then year")).toBeInTheDocument();
+    expect(screen.queryByText("DD/MM/YYYY, for example 24/03/1990")).toBeNull();
   });
 
   it("shows DD/MM/YYYY when Sanity sets no placeholder", () => {

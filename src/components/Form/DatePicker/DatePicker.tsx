@@ -11,7 +11,7 @@ import {
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
 import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
-import { DATE_PLACEHOLDER_FALLBACK } from "@/data/defaults";
+import { DATE_HELP_TEXT_FALLBACK, DATE_PLACEHOLDER_FALLBACK } from "@/data/defaults";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 import { LAYER } from "@/styles/layers";
@@ -96,6 +96,8 @@ export function DatePicker({
   const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<string | null>(null);
+  const [leftWithInvalidDate, setLeftWithInvalidDate] = useState(false);
+  const shownError = leftWithInvalidDate ? DATE_HELP_TEXT_FALLBACK : error;
 
   const dayPickerComponents = useMemo(
     () => ({ Dropdown: createSelectDropdown(contentNode) }),
@@ -118,6 +120,10 @@ export function DatePicker({
   if (prevValue !== value) {
     setPrevValue(value);
     setMonth(selected ?? maxDate ?? new Date());
+    if (value) {
+      setManualDraft(null);
+      setLeftWithInvalidDate(false);
+    }
   }
   const ageWarning =
     typeof minAge === "number" && selected && selected <= new Date()
@@ -125,18 +131,14 @@ export function DatePicker({
       : false;
 
   function handleSelect(date: Date | undefined) {
-    if (!date) {
-      onChange("");
-      setManualDraft(null);
-      setOpen(false);
-      return;
-    }
-    onChange(format(date, ISO_DATE));
+    onChange(date ? format(date, ISO_DATE) : "");
     setManualDraft(null);
+    setLeftWithInvalidDate(false);
     setOpen(false);
   }
 
   function handleManualInput(text: string) {
+    setLeftWithInvalidDate(false);
     const filledDate = dateFromBrowserFill(text);
     if (filledDate) {
       setManualDraft(format(filledDate, SLASH_DATE));
@@ -164,10 +166,10 @@ export function DatePicker({
       id={id}
       label={label}
       required={required}
-      helpText={helpText}
+      helpText={leftWithInvalidDate ? undefined : helpText || DATE_HELP_TEXT_FALLBACK}
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
-      error={error}
+      error={shownError}
       noLabel
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
@@ -189,10 +191,12 @@ export function DatePicker({
             aria-haspopup="dialog"
             aria-controls={popoverId}
             aria-expanded={open}
-            aria-invalid={error ? true : undefined}
+            aria-invalid={shownError ? true : undefined}
             className={inputClasses}
-            onBlur={() => {
-              if (manualDraft === "" || manualDraft?.length === 10) setManualDraft(null);
+            onBlur={(event) => {
+              if (contentNode?.contains(event.relatedTarget)) return;
+              if (manualDraft && !value) setLeftWithInvalidDate(true);
+              else setManualDraft(null);
             }}
           />
           <FloatingLabel id={id} label={label} required={required} />

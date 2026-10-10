@@ -426,6 +426,8 @@ export const PAYMENT_BUTTON_TEXT_FALLBACK = "Continue to payment →";
 
 export const DATE_PLACEHOLDER_FALLBACK = "DD/MM/YYYY";
 
+export const DATE_HELP_TEXT_FALLBACK = `${DATE_PLACEHOLDER_FALLBACK}, for example 24/03/1990`;
+
 const INTAKE_OPENER =
   "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.";
 
