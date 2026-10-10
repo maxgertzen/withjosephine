@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { LIMIT_MESSAGE_DEFAULT } from "@/lib/booking/nameFollowup";
 import type { SanityFormFieldOption } from "@/lib/sanity/types";
 
 import { SlotBlock } from "./SlotBlock";
@@ -43,7 +44,7 @@ describe("SlotBlock", () => {
         count={3}
         selected={[ONE, TWO, { value: "x", label: "Third", category: "Other" }]}
         status="Three chosen."
-        limitMessage="Three is the limit — release one to choose another."
+        limitMessage={LIMIT_MESSAGE_DEFAULT}
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(/Three is the limit/);

@@ -36,5 +36,5 @@ function capitalSpelledOut(n: number) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-export const LIMIT_MESSAGE_DEFAULT = "Three is the limit — release one to choose another.";
+export const LIMIT_MESSAGE_DEFAULT = "Three is the limit - release one to choose another.";
 export const LIMIT_MESSAGE_TIMEOUT_MS = 3500;

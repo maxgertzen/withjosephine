@@ -72,7 +72,7 @@
             "maxLength": 80,
             "minLength": 1,
             "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
-            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+            "patternErrorMessage": "Please use letters only - no numbers or symbols."
           }
         },
         {
@@ -95,7 +95,7 @@
           "validation": {
             "maxLength": 80,
             "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]*$",
-            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+            "patternErrorMessage": "Please use letters only - no numbers or symbols."
           }
         },
         {
@@ -119,7 +119,7 @@
             "maxLength": 80,
             "minLength": 1,
             "pattern": "^[A-Za-z\\u00C0-\\u017F'\\-\\s.]+$",
-            "patternErrorMessage": "Please use letters only — no numbers or symbols."
+            "patternErrorMessage": "Please use letters only - no numbers or symbols."
           }
         }
       ],
