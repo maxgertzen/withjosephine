@@ -4,11 +4,9 @@
   0%,
   100% {
     opacity: 0.15;
-    transform: scale(1);
   }
   50% {
     opacity: 0.85;
-    transform: scale(1.3);
   }
 }
 

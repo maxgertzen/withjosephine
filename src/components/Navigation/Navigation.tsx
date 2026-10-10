@@ -166,9 +166,9 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
       <nav
         aria-label="Primary"
         className={mergeClasses(
-          `fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.nav} border-b transition-all duration-300 ease-in-out`,
+          `fixed top-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.nav} border-b transition-[background-color,border-color,box-shadow] duration-300 ease-in-out`,
           scrolled
-            ? "bg-j-cream/95 backdrop-blur-[10px] border-j-border-subtle shadow-j-soft"
+            ? "bg-j-cream/95 border-j-border-subtle shadow-j-soft"
             : "border-transparent bg-transparent",
           className,
         )}
@@ -238,8 +238,8 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
         aria-hidden={!menuOpen}
         inert={!menuOpen}
         className={mergeClasses(
-          `fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.navMenu} bg-j-cream/[0.98] backdrop-blur-[20px] flex flex-col items-center justify-center gap-8 transition-opacity duration-300 ease-in-out nav:hidden`,
-          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          `fixed top-0 bottom-0 left-0 right-[var(--j-scroll-lock-gutter,0px)] ${LAYER.navMenu} bg-j-cream/[0.98] flex flex-col items-center justify-center gap-8 transition-[opacity,visibility] duration-300 ease-in-out nav:hidden`,
+          menuOpen ? "visible opacity-100 pointer-events-auto" : "invisible opacity-0 pointer-events-none",
         )}
       >
         <nav className="flex flex-col items-center gap-6" aria-label="Mobile navigation">

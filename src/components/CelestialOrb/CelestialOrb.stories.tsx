@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { HERO_ORBS, PAGE_ORBS } from "@/lib/celestialPresets";
+
 import { CelestialOrb } from "./CelestialOrb";
 
 const meta: Meta<typeof CelestialOrb> = {
@@ -7,7 +9,7 @@ const meta: Meta<typeof CelestialOrb> = {
   component: CelestialOrb,
   decorators: [
     (Story) => (
-      <div className="relative bg-j-bg-dark min-h-[400px] w-full">
+      <div className="relative overflow-hidden bg-j-cream min-h-[600px] w-full">
         <Story />
       </div>
     ),
@@ -17,55 +19,20 @@ const meta: Meta<typeof CelestialOrb> = {
 export default meta;
 type Story = StoryObj<typeof CelestialOrb>;
 
-export const GoldOrb: Story = {
-  args: {
-    color: "radial-gradient(circle, #C4A46B, transparent)",
-    size: 300,
-    top: "50px",
-    left: "100px",
-    opacity: 0.25,
-    blur: 80,
-  },
+export const HeroOrb: Story = {
+  args: HERO_ORBS[0],
 };
 
-export const RoseOrb: Story = {
-  args: {
-    color: "radial-gradient(circle, #BF9B8B, transparent)",
-    size: 250,
-    top: "80px",
-    left: "120px",
-    opacity: 0.3,
-    blur: 60,
-  },
+export const PageOrb: Story = {
+  args: PAGE_ORBS[1],
 };
 
-export const MultipleOrbs: Story = {
+export const HeroOrbs: Story = {
   render: () => (
-    <div className="relative bg-j-bg-dark min-h-[400px] w-full">
-      <CelestialOrb
-        color="radial-gradient(circle, #C4A46B, transparent)"
-        size={300}
-        top="20px"
-        left="50px"
-        opacity={0.25}
-        blur={80}
-      />
-      <CelestialOrb
-        color="radial-gradient(circle, #BF9B8B, transparent)"
-        size={200}
-        top="100px"
-        right="80px"
-        opacity={0.2}
-        blur={60}
-      />
-      <CelestialOrb
-        color="radial-gradient(circle, #E8D5C4, transparent)"
-        size={150}
-        bottom="40px"
-        left="200px"
-        opacity={0.15}
-        blur={100}
-      />
-    </div>
+    <>
+      {HERO_ORBS.map((orb, index) => (
+        <CelestialOrb key={index} {...orb} />
+      ))}
+    </>
   ),
 };

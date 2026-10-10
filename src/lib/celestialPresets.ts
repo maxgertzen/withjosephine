@@ -1,26 +1,45 @@
-type OrbPreset = {
-  color: string;
-  size: number;
-  top?: string;
-  right?: string;
-  bottom?: string;
-  left?: string;
-  opacity: number;
-};
+import type { ComponentProps } from "react";
+
+import type { CelestialOrb } from "@/components/CelestialOrb";
+
+type OrbPreset = Omit<ComponentProps<typeof CelestialOrb>, "className">;
+
+type OrbColorToken = "j-accent" | "j-rose" | "j-blush";
+
+function orbGradient(colorToken: OrbColorToken): string {
+  return `radial-gradient(circle, var(--${colorToken}) 0%, transparent 70%)`;
+}
 
 export const PAGE_ORBS: OrbPreset[] = [
   {
-    color: "radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)",
-    size: 300,
-    top: "-5%",
-    right: "-5%",
-    opacity: 0.08,
+    color: orbGradient("j-accent"),
+    size: 420,
+    top: "-12%",
+    right: "-12%",
+    opacity: 0.4,
   },
   {
-    color: "radial-gradient(circle, var(--color-j-rose) 0%, transparent 70%)",
-    size: 250,
-    bottom: "10%",
-    left: "-5%",
-    opacity: 0.06,
+    color: orbGradient("j-rose"),
+    size: 370,
+    bottom: "4%",
+    left: "-12%",
+    opacity: 0.4,
+  },
+];
+
+export const HERO_ORBS: OrbPreset[] = [
+  {
+    color: orbGradient("j-accent"),
+    size: 700,
+    top: "-25%",
+    left: "-20%",
+    opacity: 0.4,
+  },
+  {
+    color: orbGradient("j-blush"),
+    size: 580,
+    bottom: "-18%",
+    right: "-17%",
+    opacity: 0.4,
   },
 ];
