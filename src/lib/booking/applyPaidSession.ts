@@ -39,6 +39,15 @@ function paidRecordNotFound(recordId: string, stripeSessionId: string): AppliedS
   return { kind: "record_not_found", recordId };
 }
 
+function paidSessionWithoutReference(stripeSessionId: string): AppliedSession {
+  console.warn(`[applyPaidSession] paid session ${stripeSessionId} has no client_reference_id`);
+  Sentry.captureMessage("Paid Checkout session has no client_reference_id", {
+    level: "warning",
+    extra: { stripeSessionId },
+  });
+  return { kind: "no_reference" };
+}
+
 async function applySession(
   session: Stripe.Checkout.Session,
   { stripeEventId, paidAt }: PaidEventMeta,
@@ -51,7 +60,11 @@ async function applySession(
   }
 
   const submissionId = session.client_reference_id;
-  if (!submissionId) return { kind: "no_reference" };
+  if (!submissionId) {
+    return session.payment_status === "unpaid"
+      ? { kind: "no_reference" }
+      : paidSessionWithoutReference(session.id);
+  }
   if (session.payment_status === "unpaid") {
     Sentry.captureMessage("Completed Checkout session is unpaid, booking not marked paid", {
       level: "warning",

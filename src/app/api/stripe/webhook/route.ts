@@ -35,10 +35,6 @@ async function handleCompleted(
   const session = event.data.object;
   const paidAt = unixToIso(event.created);
   const outcome = await applyPaidSession(session, { stripeEventId: event.id, paidAt });
-
-  if (outcome.kind === "no_reference") {
-    console.warn(`[stripe-webhook] event ${event.id} has no client_reference_id`);
-  }
   trackPaymentSuccess(outcome, session);
   return outcome;
 }
