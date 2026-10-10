@@ -150,6 +150,7 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
         isFinalPage: true,
         submitIntentRef: { current: true },
         setIsSubmitting,
+        consentSnapshot: fullyConsented(),
         turnstileRequired: true,
         requestFreshTurnstileToken,
       }),
@@ -167,15 +168,16 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
     );
   });
 
-  it("resets pending when validation fails so the button is not stuck disabled", async () => {
+  it("never shows pending or asks Turnstile when consents are missing", async () => {
     const setIsSubmitting = vi.fn();
+    const requestFreshTurnstileToken = vi.fn(async () => "tok");
     const { result } = renderHook(() =>
       useTestHarness({
         isFinalPage: true,
         submitIntentRef: { current: true },
         setIsSubmitting,
-        // emptyConsentSnapshot from the harness fails the consent gate, so the
-        // submit takes the validation-fail branch and must reset pending.
+        turnstileRequired: true,
+        requestFreshTurnstileToken,
       }),
     );
 
@@ -183,8 +185,8 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
       await result.current.handlers.handleSubmit(submitEvent());
     });
 
-    expect(setIsSubmitting).toHaveBeenCalledWith(true);
-    expect(setIsSubmitting).toHaveBeenLastCalledWith(false);
+    expect(setIsSubmitting).not.toHaveBeenCalled();
+    expect(requestFreshTurnstileToken).not.toHaveBeenCalled();
   });
 });
 

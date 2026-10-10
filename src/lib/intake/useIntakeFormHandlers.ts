@@ -275,10 +275,32 @@ export function useIntakeFormHandlers({
         return;
       }
 
-      // Reflect pending synchronously, before the first await (the turnstile
-      // token fetch below). Otherwise the submit button looks dead for the
-      // first beat. Every non-navigating exit must reset it (failSubmit does;
-      // the validation-fail branch resets explicitly).
+      const validation = validateFullSubmission(submissionSchema, allFields, values);
+      const consentRequirements = {
+        requireArt9: true,
+        requireCoolingOff: true,
+      };
+      const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
+      setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
+      track("intake_submit_click", {
+        reading_id: readingId,
+        validation_pass: validation.success && consentOk,
+      });
+
+      if (!validation.success || !consentOk) {
+        setErrors(validation.fieldErrors);
+        const message = !consentOk
+          ? "All required acknowledgments below must be checked to continue."
+          : FIX_HIGHLIGHTED_FIELDS;
+        setSubmitError(message);
+        focusFirstError(formRef.current, validation.fieldErrors);
+        track("intake_submit_error", {
+          reading_id: readingId,
+          error_code: INTAKE_SUBMIT_ERROR.validationFailed,
+        });
+        return;
+      }
+
       setIsSubmitting(true);
 
       function failSubmit(errorCode: IntakeSubmitErrorCode, userMessage: string) {
@@ -308,18 +330,6 @@ export function useIntakeFormHandlers({
         blurAndScrollToForm(formRef.current);
       }
 
-      const validation = validateFullSubmission(submissionSchema, allFields, values);
-      const consentRequirements = {
-        requireArt9: true,
-        requireCoolingOff: true,
-      };
-      const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
-      setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
-      track("intake_submit_click", {
-        reading_id: readingId,
-        validation_pass: validation.success && consentOk,
-      });
-
       let submissionTurnstileToken: string | null = turnstileToken;
       if (turnstileRequired) {
         submissionTurnstileToken = await requestFreshTurnstileToken();
@@ -330,21 +340,6 @@ export function useIntakeFormHandlers({
           );
           return;
         }
-      }
-
-      if (!validation.success || !consentOk) {
-        setIsSubmitting(false);
-        setErrors(validation.fieldErrors);
-        const message = !consentOk
-          ? "All required acknowledgments below must be checked to continue."
-          : FIX_HIGHLIGHTED_FIELDS;
-        setSubmitError(message);
-        focusFirstError(formRef.current, validation.fieldErrors);
-        track("intake_submit_error", {
-          reading_id: readingId,
-          error_code: INTAKE_SUBMIT_ERROR.validationFailed,
-        });
-        return;
       }
 
       try {

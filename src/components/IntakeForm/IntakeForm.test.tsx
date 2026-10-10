@@ -12,6 +12,8 @@ import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm, type IntakeGift } from "./IntakeForm";
 
+const turnstile = vi.hoisted(() => ({ neverAnswers: false }));
+
 vi.mock("@marsidev/react-turnstile", async () => {
   const React = await import("react");
   return {
@@ -22,7 +24,7 @@ vi.mock("@marsidev/react-turnstile", async () => {
       React.useImperativeHandle(ref, () => ({
         reset: () => {},
         execute: () => {
-          onSuccess("turnstile-token-stub");
+          if (!turnstile.neverAnswers) onSuccess("turnstile-token-stub");
         },
       }));
       return <div data-testid="turnstile-stub" />;
@@ -115,6 +117,7 @@ beforeEach(() => {
   // submit assertion below.
   vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
+  turnstile.neverAnswers = false;
 });
 
 afterEach(() => {
@@ -234,6 +237,22 @@ describe("IntakeForm — single-page flow", () => {
     const submit = screen.getByRole("button", { name: /Continue to payment/i });
     expect(submit).toHaveAttribute("aria-disabled", "true");
     await user.click(submit).catch(() => undefined);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows what is missing without the loader when the disabled Continue is clicked", async () => {
+    turnstile.neverAnswers = true;
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
+    expect(screen.queryByRole("button", { name: /Submitting/i })).toBeNull();
+    expect(
+      await screen.findByText(/All required acknowledgments below must be checked/),
+    ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
