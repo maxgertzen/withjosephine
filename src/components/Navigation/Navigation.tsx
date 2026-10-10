@@ -182,6 +182,7 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
               alt="Josephine Soul Readings"
               width={480}
               height={160}
+              loading="eager"
               fetchPriority="high"
               className="h-auto w-[140px] nav:hidden"
             />

@@ -51,12 +51,17 @@ describe("ContactForm", () => {
     expect(screen.getByRole("button", { name: "Submit Now" })).toBeInTheDocument();
   });
 
-  it("renders all form fields and Turnstile widget", () => {
+  it("renders all form fields and loads Turnstile only once a field is focused", async () => {
+    const user = userEvent.setup();
     render(<ContactForm />);
 
     expect(screen.getByLabelText("Your name")).toBeInTheDocument();
     expect(screen.getByLabelText("Your email")).toBeInTheDocument();
     expect(screen.getByLabelText("Your message")).toBeInTheDocument();
+    expect(screen.queryByTestId("turnstile-stub")).toBeNull();
+
+    await user.click(screen.getByLabelText("Your name"));
+
     expect(screen.getByTestId("turnstile-stub")).toBeInTheDocument();
   });
 

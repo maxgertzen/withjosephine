@@ -36,6 +36,7 @@ export function ContactForm({ content, className }: ContactFormProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [visitorStartedForm, setVisitorStartedForm] = useState(false);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -129,7 +130,12 @@ export function ContactForm({ content, className }: ContactFormProps) {
 
         <p className="font-body text-base text-j-text-muted text-center mb-12">{description}</p>
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+        <form
+          onSubmit={handleSubmit}
+          onFocus={() => setVisitorStartedForm(true)}
+          noValidate
+          className="flex flex-col gap-6"
+        >
           <input
             type="checkbox"
             name="botcheck"
@@ -187,7 +193,13 @@ export function ContactForm({ content, className }: ContactFormProps) {
             <FloatingLabel id="contact-message" label="Your message" multiline />
           </div>
 
-          <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+          {turnstileSiteKey && (
+            <div className="min-h-[65px]">
+              {visitorStartedForm && (
+                <TurnstileGate siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+              )}
+            </div>
+          )}
 
           {errorMessage && (
             <p id={CONTACT_ERROR_ID} role="alert" className={`${errorClasses} text-center`}>

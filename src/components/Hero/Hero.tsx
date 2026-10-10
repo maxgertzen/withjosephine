@@ -83,6 +83,7 @@ export function Hero({ content, className }: HeroProps) {
             width={960}
             height={960}
             loading="eager"
+            fetchPriority="high"
             className="h-auto w-[clamp(280px,40vw,480px)]"
           />
         </div>
