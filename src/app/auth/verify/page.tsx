@@ -4,11 +4,12 @@ import { MAGIC_LINK_VERIFY_PAGE_DEFAULTS } from "@/data/defaults";
 import { safeNext } from "@/lib/auth/safeNext";
 import { fetchMagicLinkVerifyPage } from "@/lib/sanity/fetch";
 import { pickDefined } from "@/lib/sanity/pickDefined";
+import { pageTitle } from "@/lib/seoMetadata";
 
 import { VerifyPageView } from "./VerifyPageView";
 
 export const metadata: Metadata = {
-  title: "Open your reading — Josephine",
+  title: pageTitle("Open your reading"),
   description: "Confirm your email to open your reading.",
   robots: { index: false, follow: false },
 };

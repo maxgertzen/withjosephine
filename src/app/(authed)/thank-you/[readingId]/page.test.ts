@@ -118,7 +118,7 @@ describe("ThankYouPage generateMetadata", () => {
     mockFetchThankYouPage.mockResolvedValue(
       thankYouPage({
         seo: {
-          metaTitle: "Thank You — Josephine",
+          metaTitle: "Custom title from Sanity",
           metaDescription: "Custom description from Sanity.",
         },
       }),
@@ -127,7 +127,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You — Josephine");
+    expect(metadata.title).toBe("Custom title from Sanity");
     expect(metadata.description).toBe("Custom description from Sanity.");
   });
 
@@ -137,7 +137,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You \u2014 Josephine");
+    expect(metadata.title).toBe("Thank You | Josephine Soul Readings");
     expect(metadata.description).toBe(
       "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );
@@ -149,7 +149,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You \u2014 Josephine");
+    expect(metadata.title).toBe("Thank You | Josephine Soul Readings");
     expect(metadata.description).toBe(
       "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );

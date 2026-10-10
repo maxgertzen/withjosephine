@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { pageTitle } from "@/lib/seoMetadata";
+
 import { PrivacyExportView } from "./PrivacyExportView";
 
 type PrivacyExportSearchParams = {
@@ -11,7 +13,7 @@ type PrivacyExportPageProps = {
 };
 
 export const metadata: Metadata = {
-  title: "Request your data export | Josephine",
+  title: pageTitle("Request your data export"),
   description:
     "Download the data we hold for your reading. Your right under GDPR.",
   robots: { index: false, follow: false },

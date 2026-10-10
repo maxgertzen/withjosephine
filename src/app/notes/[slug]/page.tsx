@@ -13,7 +13,7 @@ import {
 } from "@/lib/sanity/fetch";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type { SanityArticle } from "@/lib/sanity/types";
-import { buildPageMetadata, SITE_NAME } from "@/lib/seoMetadata";
+import { buildPageMetadata, pageTitle } from "@/lib/seoMetadata";
 import { articleJsonLd } from "@/lib/structuredData";
 
 import { deriveNoteViewProps } from "./deriveNoteViewProps";
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: NotePageProps): Promise<Metad
   if (!article) return {};
   const image = shareImageUrl(article);
   return buildPageMetadata({
-    title: `${article.title} | ${SITE_NAME}`,
+    title: pageTitle(article.title),
     description: noteDescription(article),
     path: notePath(slug),
     seo: image ? { ogImage: { asset: { url: image } } } : undefined,

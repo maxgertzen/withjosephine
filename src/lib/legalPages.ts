@@ -8,6 +8,7 @@ import {
 
 import type { LegalPageFallback } from "./legalPage";
 import type { LegalSlug } from "./legalSlugs";
+import { pageTitle } from "./seoMetadata";
 
 export { isLegalSlug, type LegalSlug } from "./legalSlugs";
 
@@ -23,7 +24,7 @@ export const LEGAL_PAGES: Record<
       tag: "✦ Privacy",
       title: "Privacy Policy",
       lastUpdated: "2026-10-04",
-      metaTitle: "Privacy Policy · Josephine",
+      metaTitle: pageTitle("Privacy Policy"),
       metaDescription:
         "How Josephine collects, uses, and protects the information you share when booking a soul reading.",
     },
@@ -34,7 +35,7 @@ export const LEGAL_PAGES: Record<
       tag: "✦ Terms",
       title: "Terms of Service",
       lastUpdated: "2026-10-04",
-      metaTitle: "Terms of Service · Josephine",
+      metaTitle: pageTitle("Terms of Service"),
       metaDescription:
         "The agreement between you and Josephine when you book a soul reading: what's delivered, how, and the limits of it.",
     },
@@ -45,7 +46,7 @@ export const LEGAL_PAGES: Record<
       tag: "✦ Refunds",
       title: "Refund Policy",
       lastUpdated: "2026-10-04",
-      metaTitle: "Refund Policy · Josephine",
+      metaTitle: pageTitle("Refund Policy"),
       metaDescription:
         "Readings are non-refundable. How the cooling-off waiver works, and how duplicate-charge and delivery-issue cases are handled.",
     },

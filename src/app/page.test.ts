@@ -60,7 +60,7 @@ describe("LandingPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Josephine — Soul Readings");
+    expect(metadata.title).toBe("Astrology & Akashic Records Readings | Josephine Soul Readings");
   });
 
   it("includes ogImage in openGraph when seo has it", async () => {

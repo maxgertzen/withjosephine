@@ -230,6 +230,7 @@ export function IntakeForm(props: IntakeFormProps) {
     isFinalPage,
     currentKeys,
     pageIndexOfField,
+    revealErrorsOnPage: setRevealedOnPage,
     submissionSchema,
     setErrors,
     setSubmitError,

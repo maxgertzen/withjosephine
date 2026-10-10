@@ -12,6 +12,7 @@ import {
   fetchThankYouPage,
 } from "@/lib/sanity/fetch";
 import { generateReadingStaticParams } from "@/lib/sanity/readingStaticParams";
+import { pageTitle } from "@/lib/seoMetadata";
 import { isUuid } from "@/lib/uuid";
 
 import { deriveGiftThankYouViewProps } from "./deriveGiftThankYouViewProps";
@@ -45,7 +46,7 @@ function isValidStripeSession(sessionId: string | string[] | undefined): session
 export async function generateMetadata(): Promise<Metadata> {
   const thankYouPageContent = await fetchThankYouPage();
   return {
-    title: thankYouPageContent?.seo?.metaTitle ?? "Thank You — Josephine",
+    title: thankYouPageContent?.seo?.metaTitle || pageTitle("Thank You"),
     description:
       thankYouPageContent?.seo?.metaDescription ??
       "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",

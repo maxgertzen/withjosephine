@@ -14,12 +14,13 @@ import { findSubmissionById, SUBMISSION_STATUS } from "@/lib/booking/submissions
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 import { fetchListenPage } from "@/lib/sanity/fetch";
 import { pickDefined } from "@/lib/sanity/pickDefined";
+import { pageTitle } from "@/lib/seoMetadata";
 
 import { ListenTokenInterstitial } from "./ListenTokenInterstitial";
 import { ListenView, type ListenViewProps, type ListenViewState } from "./ListenView";
 
 export const metadata: Metadata = {
-  title: "Your reading — Josephine",
+  title: pageTitle("Your reading"),
   description: "Listen to your reading and download the supporting PDF.",
   robots: { index: false, follow: false },
 };
