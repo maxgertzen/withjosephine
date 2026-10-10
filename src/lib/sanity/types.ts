@@ -352,7 +352,7 @@ export type SanityFormFieldValidation = {
   patternErrorMessage?: string;
 };
 
-export type SanityFormHelperPosition = "before" | "after";
+export type SanityFormHelperPosition = "before" | "after" | null;
 
 export type SanityFormField = {
   _id: string;

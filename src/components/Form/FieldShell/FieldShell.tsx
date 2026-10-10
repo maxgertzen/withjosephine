@@ -23,13 +23,14 @@ export function FieldShell({
   label,
   required,
   helpText,
-  helperPosition = "after",
+  helperPosition,
   clarificationNote,
   error,
   children,
   noLabel = false,
   multilineLabel = false,
 }: FieldShellProps) {
+  const helperBefore = helperPosition === "before";
   const helpId = helpText ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
@@ -38,7 +39,7 @@ export function FieldShell({
     <p
       id={helpId}
       className={`font-body text-xs text-j-text-muted ${
-        helperPosition === "before" ? "mt-1 mb-3" : "mt-2"
+        helperBefore ? "mt-1 mb-3" : "mt-2"
       }`}
     >
       {helpText}
@@ -52,7 +53,7 @@ export function FieldShell({
           {clarificationNote}
         </p>
       ) : null}
-      {helperPosition === "before" ? helper : null}
+      {helperBefore ? helper : null}
       <div className="relative">
         {children}
         {noLabel ? null : (
@@ -64,7 +65,7 @@ export function FieldShell({
           />
         )}
       </div>
-      {helperPosition === "after" ? helper : null}
+      {helperBefore ? null : helper}
       {error ? (
         <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>
           {error}

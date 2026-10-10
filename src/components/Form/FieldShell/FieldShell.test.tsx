@@ -17,6 +17,17 @@ describe("FieldShell", () => {
     expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("renders helper text after the input when Sanity sends a null position", () => {
+    render(
+      <FieldShell id="x" label="Field" helpText="Help me" helperPosition={null}>
+        <input id="x" data-testid="x" />
+      </FieldShell>,
+    );
+
+    const position = screen.getByTestId("x").compareDocumentPosition(screen.getByText("Help me"));
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("renders helper text before the input when helperPosition is 'before'", () => {
     render(
       <FieldShell id="x" label="Field" helpText="Help me" helperPosition="before">
