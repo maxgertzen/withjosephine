@@ -24,11 +24,20 @@ type AppliedSession =
     }
   | { kind: "no_reference" }
   | { kind: "unpaid" }
-  | { kind: "submission_not_found"; submissionId: string };
+  | { kind: "record_not_found"; recordId: string };
 
 export type PaidSessionOutcome = AppliedSession & { refunded: boolean };
 
 type PaidEventMeta = { stripeEventId: string; paidAt: string };
+
+function paidRecordNotFound(recordId: string, stripeSessionId: string): AppliedSession {
+  console.warn(`[applyPaidSession] record ${recordId} not found for session ${stripeSessionId}`);
+  Sentry.captureMessage("Paid Checkout session has no matching submission or gift", {
+    level: "warning",
+    extra: { recordId, stripeSessionId },
+  });
+  return { kind: "record_not_found", recordId };
+}
 
 async function applySession(
   session: Stripe.Checkout.Session,
@@ -37,6 +46,7 @@ async function applySession(
   const giftActivation = giftActivationFromSession(session, paidAt);
   if (giftActivation) {
     const { result } = await activateGift(giftActivation);
+    if (result === "not_found") return paidRecordNotFound(giftActivation.giftId, session.id);
     return { kind: "gift", result };
   }
 
@@ -51,7 +61,7 @@ async function applySession(
   }
 
   const submission = await findSubmissionById(submissionId);
-  if (!submission) return { kind: "submission_not_found", submissionId };
+  if (!submission) return paidRecordNotFound(submissionId, session.id);
 
   const paid = paidFieldsFromSession(session, paidAt);
   const result = await applyPaidEvent(submission, { stripeEventId, ...paid });

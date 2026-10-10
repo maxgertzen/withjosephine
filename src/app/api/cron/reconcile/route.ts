@@ -46,11 +46,6 @@ async function reconcile(): Promise<ReconcileSummary> {
   let refunded = 0;
   for (const session of sessions) {
     const outcome = await applyReportingFailures(session);
-    if (outcome?.kind === "submission_not_found") {
-      console.warn(
-        `[cron-reconcile] submission ${outcome.submissionId} not found for session ${session.id}`,
-      );
-    }
     if (outcome?.kind === "booking" && outcome.result === "applied") reconciled += 1;
     if (outcome?.refunded) refunded += 1;
   }

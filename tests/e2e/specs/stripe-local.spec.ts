@@ -132,7 +132,7 @@ test.describe("Stripe round-trip — mock mode", () => {
     ).toBe(false);
   });
 
-  test("unhappy: signed webhook for unknown submission returns 200 (Stripe-contract pin)", async ({
+  test("unhappy: signed webhook for unknown submission returns 500 so Stripe retries", async ({
     request,
   }) => {
     const orphanId = crypto.randomUUID();
@@ -143,7 +143,7 @@ test.describe("Stripe round-trip — mock mode", () => {
       headers: { "stripe-signature": signature, "content-type": "application/json" },
       data: body,
     });
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(500);
   });
 
   test("unhappy: booking POST without consent returns 400", async ({ request }) => {

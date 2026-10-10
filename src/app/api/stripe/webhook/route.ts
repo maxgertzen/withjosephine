@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { serverTrack } from "@/lib/analytics/server";
-import { applyPaidSession } from "@/lib/booking/applyPaidSession";
+import { applyPaidSession, type PaidSessionOutcome } from "@/lib/booking/applyPaidSession";
 import {
   findSubmissionById,
   markSubmissionExpired,
@@ -15,21 +15,7 @@ import { unixToIso } from "@/lib/stripeSession";
 
 const SIGNATURE_HEADER = "stripe-signature";
 
-async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Promise<void> {
-  const session = event.data.object;
-  const paidAt = unixToIso(event.created);
-  const outcome = await applyPaidSession(session, { stripeEventId: event.id, paidAt });
-
-  if (outcome.kind === "no_reference") {
-    console.warn(`[stripe-webhook] event ${event.id} has no client_reference_id`);
-    return;
-  }
-  if (outcome.kind === "submission_not_found") {
-    console.warn(
-      `[stripe-webhook] submission ${outcome.submissionId} not found for event ${event.id}, manual reconcile will retry`,
-    );
-    return;
-  }
+function trackPaymentSuccess(outcome: PaidSessionOutcome, session: Stripe.Checkout.Session): void {
   if (outcome.kind !== "booking" || outcome.result !== "applied") return;
 
   const { submission, paid } = outcome;
@@ -41,6 +27,20 @@ async function handleCompleted(event: Stripe.CheckoutSessionCompletedEvent): Pro
     currency: paid.amountPaidCurrency,
     stripe_session_id: session.id,
   });
+}
+
+async function handleCompleted(
+  event: Stripe.CheckoutSessionCompletedEvent,
+): Promise<PaidSessionOutcome> {
+  const session = event.data.object;
+  const paidAt = unixToIso(event.created);
+  const outcome = await applyPaidSession(session, { stripeEventId: event.id, paidAt });
+
+  if (outcome.kind === "no_reference") {
+    console.warn(`[stripe-webhook] event ${event.id} has no client_reference_id`);
+  }
+  trackPaymentSuccess(outcome, session);
+  return outcome;
 }
 
 async function handleExpired(event: Stripe.CheckoutSessionExpiredEvent): Promise<void> {
@@ -95,9 +95,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   switch (event.type) {
-    case "checkout.session.completed":
-      await handleCompleted(event);
+    case "checkout.session.completed": {
+      const outcome = await handleCompleted(event);
+      if (outcome.kind === "record_not_found") {
+        return NextResponse.json({ error: "Paid record not found" }, { status: 500 });
+      }
       break;
+    }
     case "checkout.session.expired":
       await handleExpired(event);
       break;

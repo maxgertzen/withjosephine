@@ -112,6 +112,14 @@ describe("Stripe webhook, gift completed", () => {
     expect(applyPaidEvent).not.toHaveBeenCalled();
   });
 
+  it("returns 500 when the gift is missing so Stripe retries", async () => {
+    const res = await completed("missing-gift");
+
+    expect(res.status).toBe(500);
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(findSubmissionById).not.toHaveBeenCalled();
+  });
+
   it("sends one email when the webhook is delivered twice", async () => {
     const giftId = await createTestGift();
     await completed(giftId);
