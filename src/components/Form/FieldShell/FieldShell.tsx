@@ -14,31 +14,42 @@ type FieldShellProps = {
   clarificationNote?: string;
   error?: string;
   children: ReactNode;
+  afterField?: ReactNode;
   noLabel?: boolean;
   multilineLabel?: boolean;
 };
+
+export function fieldDescribedBy(
+  id: string,
+  { helpText, error }: { helpText?: string; error?: string },
+): string | undefined {
+  const ids = [helpText ? `${id}-help` : null, error ? `${id}-error` : null].filter(Boolean);
+  return ids.length ? ids.join(" ") : undefined;
+}
 
 export function FieldShell({
   id,
   label,
   required,
   helpText,
-  helperPosition = "after",
+  helperPosition,
   clarificationNote,
   error,
   children,
+  afterField,
   noLabel = false,
   multilineLabel = false,
 }: FieldShellProps) {
+  const helperBefore = helperPosition === "before";
   const helpId = helpText ? `${id}-help` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = fieldDescribedBy(id, { helpText, error });
 
   const helper = helpText ? (
     <p
       id={helpId}
       className={`font-body text-xs text-j-text-muted ${
-        helperPosition === "before" ? "mt-1 mb-3" : "mt-2"
+        helperBefore ? "mt-1 mb-3" : "mt-2"
       }`}
     >
       {helpText}
@@ -52,7 +63,7 @@ export function FieldShell({
           {clarificationNote}
         </p>
       ) : null}
-      {helperPosition === "before" ? helper : null}
+      {helperBefore ? helper : null}
       <div className="relative">
         {children}
         {noLabel ? null : (
@@ -64,7 +75,8 @@ export function FieldShell({
           />
         )}
       </div>
-      {helperPosition === "after" ? helper : null}
+      {helperBefore ? null : helper}
+      {afterField}
       {error ? (
         <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>
           {error}

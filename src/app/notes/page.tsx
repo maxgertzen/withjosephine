@@ -7,7 +7,7 @@ import {
   fetchNotesStatePublished,
   fetchSiteSettingsPublished,
 } from "@/lib/sanity/fetch";
-import { buildPageMetadata, SITE_NAME } from "@/lib/seoMetadata";
+import { buildPageMetadata, pageTitle } from "@/lib/seoMetadata";
 
 import { deriveNotesIndexViewProps } from "./deriveNotesIndexViewProps";
 import { NotesIndexView } from "./NotesIndexView";
@@ -15,7 +15,7 @@ import { NotesIndexView } from "./NotesIndexView";
 export async function generateMetadata(): Promise<Metadata> {
   const content = notesContent(await fetchNotesStatePublished());
   return buildPageMetadata({
-    title: `${content.indexTitle} | ${SITE_NAME}`,
+    title: pageTitle(content.indexTitle),
     description: content.indexSearchDescription,
     path: NOTES_PATH,
   });

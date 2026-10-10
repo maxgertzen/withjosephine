@@ -12,6 +12,8 @@ import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { IntakeForm, type IntakeGift } from "./IntakeForm";
 
+const turnstile = vi.hoisted(() => ({ neverAnswers: false }));
+
 vi.mock("@marsidev/react-turnstile", async () => {
   const React = await import("react");
   return {
@@ -22,7 +24,7 @@ vi.mock("@marsidev/react-turnstile", async () => {
       React.useImperativeHandle(ref, () => ({
         reset: () => {},
         execute: () => {
-          onSuccess("turnstile-token-stub");
+          if (!turnstile.neverAnswers) onSuccess("turnstile-token-stub");
         },
       }));
       return <div data-testid="turnstile-stub" />;
@@ -115,6 +117,7 @@ beforeEach(() => {
   // submit assertion below.
   vi.stubEnv("NEXT_PUBLIC_BOOKING_TURNSTILE_BYPASS", "");
   window.localStorage.clear();
+  turnstile.neverAnswers = false;
 });
 
 afterEach(() => {
@@ -185,12 +188,15 @@ describe("IntakeForm — single-page flow", () => {
     expect(screen.queryByRole("button", { name: /^Next/ })).toBeNull();
   });
 
-  it("disables Continue while required fields are empty (bug #3)", () => {
+  it("keeps Continue enabled while required fields are empty and focuses the first one on click", async () => {
+    const user = userEvent.setup();
     renderForm();
-    expect(screen.getByRole("button", { name: /Continue to payment/i })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    const submit = screen.getByRole("button", { name: /Continue to payment/i });
+    expect(submit).toBeEnabled();
+    expect(submit).not.toHaveAttribute("aria-disabled");
+    await user.click(submit);
+    expect(screen.getByLabelText(/Full name/)).toHaveFocus();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("does not render a validation summary on first paint (bug #2)", () => {
@@ -223,7 +229,7 @@ describe("IntakeForm — single-page flow", () => {
     expect(body.turnstileToken).toBe("turnstile-token-stub");
   });
 
-  it("blocks submission when consents are incomplete — Continue stays disabled (bug #3)", async () => {
+  it("blocks submission when consents are incomplete", async () => {
     const user = userEvent.setup();
     renderForm();
     await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
@@ -231,9 +237,24 @@ describe("IntakeForm — single-page flow", () => {
     await user.click(screen.getByLabelText(/non-refundable/));
     // Check only the Art. 6 consent — Art. 9 deliberately left unchecked.
     await user.click(screen.getByLabelText(/processing my booking details/));
-    const submit = screen.getByRole("button", { name: /Continue to payment/i });
-    expect(submit).toHaveAttribute("aria-disabled", "true");
-    await user.click(submit).catch(() => undefined);
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/explicitly consent/)).toHaveFocus();
+  });
+
+  it("shows what is missing without the loader when Continue is clicked with consents unchecked", async () => {
+    turnstile.neverAnswers = true;
+    const user = userEvent.setup();
+    renderForm();
+    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
+    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
+
+    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
+    expect(screen.queryByRole("button", { name: /Submitting/i })).toBeNull();
+    expect(
+      await screen.findByText(/All required acknowledgments must be checked/),
+    ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -361,32 +382,38 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     );
   }
 
-  it("disables Next when both required fields are empty (bug #3)", () => {
+  it("stays on page 1 when Next is clicked with both required fields empty", async () => {
+    const user = userEvent.setup();
     renderProdShape();
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByText(/still need/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.queryByRole("heading", { name: "Your photo" })).toBeNull();
   });
 
-  it("keeps Next disabled when only the email is filled (bug #3)", async () => {
+  it("stays on page 1 when only the email is filled", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.queryByRole("heading", { name: "Your photo" })).toBeNull();
   });
 
-  it("keeps Next disabled when only the name is filled (bug #3)", async () => {
+  it("stays on page 1 when only the name is filled", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.queryByRole("heading", { name: "Your photo" })).toBeNull();
   });
 
-  it("keeps Next disabled when the email format is invalid (bug #3)", async () => {
+  it("stays on page 1 and focuses the email when its format is invalid", async () => {
     const user = userEvent.setup();
     renderProdShape();
     await user.type(screen.getByLabelText(/Email/), "not-an-email");
     await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.queryByRole("heading", { name: "Your photo" })).toBeNull();
+    expect(screen.getByLabelText(/Email/)).toHaveFocus();
   });
 
   it("clears the validation summary once both required fields are valid", async () => {
@@ -417,10 +444,12 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.queryByRole("button", { name: /Continue to payment/i })).toBeNull();
   });
 
-  it("disables Next while current-page validation is failing (bug #3)", () => {
+  it("stays on page 1 when Next is clicked while current-page validation is failing", async () => {
+    const user = userEvent.setup();
     renderForm(TWO_PAGE_SECTIONS);
-    expect(screen.getByRole("button", { name: /Next/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByText(/still need/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
   });
 
   it("advances to page 2 when current-page validation passes", async () => {

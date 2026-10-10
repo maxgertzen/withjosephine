@@ -10,13 +10,28 @@ import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
-import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { fieldDescribedBy, FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { DATE_HELP_TEXT_FALLBACK, DATE_PLACEHOLDER_FALLBACK } from "@/data/defaults";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
 import { LAYER } from "@/styles/layers";
 
 const ISO_DATE = "yyyy-MM-dd";
 const SLASH_DATE = "dd/MM/yyyy";
+const BROWSER_FILL_FORMATS = [
+  ISO_DATE,
+  "yyyy/M/d",
+  "d.M.yyyy",
+  "d/M/yyyy",
+  "M/d/yyyy",
+  "d-M-yyyy",
+  "d M yyyy",
+  "MMMM d, yyyy",
+  "MMM d, yyyy",
+  "d MMMM yyyy",
+  "d MMM yyyy",
+];
+const HAS_FULL_YEAR = /^\d{4}\D|\D\d{4}$/;
 
 type DatePickerProps = {
   id: string;
@@ -27,6 +42,7 @@ type DatePickerProps = {
   helpText?: string;
   helperPosition?: SanityFormHelperPosition;
   clarificationNote?: string;
+  placeholder?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -39,6 +55,16 @@ function parseIso(value: string): Date | undefined {
   if (!value) return undefined;
   const parsed = parse(value, ISO_DATE, new Date());
   return isValid(parsed) ? parsed : undefined;
+}
+
+function dateFromBrowserFill(text: string): Date | null {
+  const trimmed = text.trim();
+  if (!HAS_FULL_YEAR.test(trimmed)) return null;
+  for (const pattern of BROWSER_FILL_FORMATS) {
+    const parsed = parse(trimmed, pattern, new Date());
+    if (isValid(parsed)) return parsed;
+  }
+  return null;
 }
 
 function autoformatSlash(text: string): string {
@@ -57,6 +83,7 @@ export function DatePicker({
   helpText,
   helperPosition,
   clarificationNote,
+  placeholder,
   error,
   required,
   disabled,
@@ -69,6 +96,9 @@ export function DatePicker({
   const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<string | null>(null);
+  const [leftWithInvalidDate, setLeftWithInvalidDate] = useState(false);
+  const shownError = leftWithInvalidDate ? DATE_HELP_TEXT_FALLBACK : error;
+  const shownHelp = leftWithInvalidDate ? undefined : helpText || DATE_HELP_TEXT_FALLBACK;
 
   const dayPickerComponents = useMemo(
     () => ({ Dropdown: createSelectDropdown(contentNode) }),
@@ -91,6 +121,10 @@ export function DatePicker({
   if (prevValue !== value) {
     setPrevValue(value);
     setMonth(selected ?? maxDate ?? new Date());
+    if (value) {
+      setManualDraft(null);
+      setLeftWithInvalidDate(false);
+    }
   }
   const ageWarning =
     typeof minAge === "number" && selected && selected <= new Date()
@@ -98,18 +132,20 @@ export function DatePicker({
       : false;
 
   function handleSelect(date: Date | undefined) {
-    if (!date) {
-      onChange("");
-      setManualDraft(null);
-      setOpen(false);
-      return;
-    }
-    onChange(format(date, ISO_DATE));
+    onChange(date ? format(date, ISO_DATE) : "");
     setManualDraft(null);
+    setLeftWithInvalidDate(false);
     setOpen(false);
   }
 
   function handleManualInput(text: string) {
+    setLeftWithInvalidDate(false);
+    const filledDate = dateFromBrowserFill(text);
+    if (filledDate) {
+      setManualDraft(format(filledDate, SLASH_DATE));
+      onChange(format(filledDate, ISO_DATE));
+      return;
+    }
     const formatted = autoformatSlash(text);
     setManualDraft(formatted);
     if (formatted === "") {
@@ -131,10 +167,25 @@ export function DatePicker({
       id={id}
       label={label}
       required={required}
-      helpText={helpText}
+      helpText={shownHelp}
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
-      error={error}
+      error={shownError}
+      afterField={
+        ageWarning ? (
+          <p
+            data-testid="dob-age-warning"
+            role="note"
+            className="mt-2 font-display italic text-sm text-j-text-muted"
+          >
+            <span aria-hidden="true" className="text-j-ornament mr-2">
+              ✦
+            </span>
+            That puts you under {minAge}. Please double-check the date - if it&rsquo;s correct, no
+            need to change a thing.
+          </p>
+        ) : null
+      }
       noLabel
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
@@ -148,7 +199,7 @@ export function DatePicker({
             value={draft}
             onChange={(event) => handleManualInput(event.target.value)}
             onFocus={() => setOpen(true)}
-            placeholder=" "
+            placeholder={placeholder || DATE_PLACEHOLDER_FALLBACK}
             disabled={disabled}
             required={required}
             autoComplete="bday"
@@ -156,26 +207,16 @@ export function DatePicker({
             aria-haspopup="dialog"
             aria-controls={popoverId}
             aria-expanded={open}
-            aria-invalid={error ? true : undefined}
+            aria-invalid={shownError ? true : undefined}
+            aria-describedby={fieldDescribedBy(id, { helpText: shownHelp, error: shownError })}
             className={inputClasses}
-            onBlur={() => {
-              if (manualDraft === "" || manualDraft?.length === 10) setManualDraft(null);
+            onBlur={(event) => {
+              if (contentNode?.contains(event.relatedTarget)) return;
+              if (manualDraft && !value) setLeftWithInvalidDate(true);
+              else setManualDraft(null);
             }}
           />
           <FloatingLabel id={id} label={label} required={required} />
-          {ageWarning ? (
-            <p
-              data-testid="dob-age-warning"
-              role="note"
-              className="mt-2 font-display italic text-sm text-j-text-muted"
-            >
-              <span aria-hidden="true" className="text-j-ornament mr-2">
-                ✦
-              </span>
-              That puts you under {minAge}. Please double-check the date — if it&rsquo;s correct, no
-              need to change a thing.
-            </p>
-          ) : null}
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content

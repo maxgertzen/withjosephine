@@ -11,16 +11,18 @@ import { mergeClasses } from "@/lib/utils";
 import { DisclosureButton } from "./DisclosureButton";
 
 const ROW_WHEN_PRE_PAINT_FOLDED = "[body[data-reading-fold]_&]:flex";
+const COMPACT_GAP_WHEN_PRE_PAINT_FOLDED = "[body[data-reading-fold]_&]:mb-2";
 const PANEL_WHEN_PRE_PAINT_FOLDED =
   "[body[data-reading-fold]_&]:grid-rows-[0fr]! [body[data-reading-fold]_&]:opacity-0! [body[data-reading-fold]_&]:invisible";
 
 type ReadingFoldProps = {
   slug: string;
   label: string;
+  compactGapWhenClosed?: boolean;
   children: ReactNode;
 };
 
-export function ReadingFold({ slug, label, children }: ReadingFoldProps) {
+export function ReadingFold({ slug, label, compactGapWhenClosed, children }: ReadingFoldProps) {
   const entry = useBookingEntry();
   const folded = isFoldedEntry(entry);
   const prePaintFoldable = !folded;
@@ -34,7 +36,13 @@ export function ReadingFold({ slug, label, children }: ReadingFoldProps) {
   }, [entry]);
 
   return (
-    <section className="mb-9">
+    <section
+      className={mergeClasses(
+        compactGapWhenClosed && folded && !open ? "mb-2" : "mb-9",
+        toggled && "transition-[margin] duration-250 ease-in-out motion-reduce:transition-none",
+        compactGapWhenClosed && prePaintFoldable && COMPACT_GAP_WHEN_PRE_PAINT_FOLDED,
+      )}
+    >
       <DisclosureButton
         id={rowId}
         controls={panelId}

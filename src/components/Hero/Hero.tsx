@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { StarField } from "@/components/StarField";
 import { HERO_DEFAULTS, type HeroContent } from "@/data/defaults";
+import { HERO_ORBS } from "@/lib/celestialPresets";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
@@ -41,35 +42,14 @@ export function Hero({ content, className }: HeroProps) {
       )}
       style={{
         background:
-          "linear-gradient(160deg, var(--color-j-bg-section) 0%, var(--color-j-bg-primary) 55%, #F2EDE3 100%)",
+          "linear-gradient(160deg, var(--j-bg-section) 0%, var(--j-bg-primary) 55%, #F2EDE3 100%)",
       }}
     >
       <StarField count={30} className="z-[1] opacity-[0.15]" />
 
-      <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)"
-        size={500}
-        top="-15%"
-        left="-12%"
-        opacity={0.08}
-        blur={100}
-      />
-      <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-blush) 0%, transparent 70%)"
-        size={400}
-        bottom="-10%"
-        right="-10%"
-        opacity={0.12}
-        blur={90}
-      />
-      <CelestialOrb
-        color="radial-gradient(circle, var(--color-j-accent) 0%, transparent 70%)"
-        size={200}
-        top="30%"
-        right="8%"
-        opacity={0.06}
-        blur={60}
-      />
+      {HERO_ORBS.map((orb, index) => (
+        <CelestialOrb key={index} {...orb} />
+      ))}
 
       <MoonCrescent className="absolute bottom-[8%] right-[6%] z-[1] w-40 text-j-ornament/[0.12]" />
       <MoonCrescent className="absolute top-[14%] left-[4%] z-[1] w-[90px] text-j-ornament/10" />
@@ -83,6 +63,7 @@ export function Hero({ content, className }: HeroProps) {
             width={960}
             height={960}
             loading="eager"
+            fetchPriority="high"
             className="h-auto w-[clamp(280px,40vw,480px)]"
           />
         </div>

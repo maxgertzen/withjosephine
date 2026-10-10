@@ -164,7 +164,7 @@ export const listenPage = defineType({
       description:
         "Same copy fires for every failure mode by design (no information leak about whether the link was expired, mismatched, or never existed).",
       initialValue:
-        "This link's already been opened — sometimes that's because you clicked it on another device. No problem — we'll send a fresh one.",
+        "This link's already been opened - sometimes that's because you clicked it on another device. No problem - we'll send a fresh one.",
     }),
     defineField({
       name: "restedCtaLabel",
@@ -187,7 +187,7 @@ export const listenPage = defineType({
       rows: 3,
       group: "throttled",
       initialValue:
-        "We've sent a few links already. Try again in a few minutes — or write to me directly and I'll sort it out.",
+        "We've sent a few links already. Try again in a few minutes - or write to me directly and I'll sort it out.",
     }),
     defineField({
       name: "throttledMailtoLabel",
@@ -219,7 +219,7 @@ export const listenPage = defineType({
       description:
         "Shown when the reading is owned by this account but the voice note or PDF isn't reachable from this page.",
       initialValue:
-        "The reading is here — sometimes the connection isn't. Try again in a minute, or write to me and I'll make sure it reaches you.",
+        "The reading is here - sometimes the connection isn't. Try again in a minute, or write to me and I'll make sure it reaches you.",
     }),
     defineField({
       name: "assetTroubleTryAgainLabel",
@@ -258,7 +258,7 @@ export const listenPage = defineType({
       description:
         "Shown when more than 90 days have passed since this reading was delivered.",
       initialValue:
-        "Self-serve links to your reading rest after ninety days. Write to me and I'll send a fresh one in a moment — no rush.",
+        "Self-serve links to your reading rest after ninety days. Write to me and I'll send a fresh one in a moment - no rush.",
     }),
     defineField({
       name: "expiredMailtoLabel",

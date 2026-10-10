@@ -26,6 +26,13 @@ vi.mock("@/lib/booking/duplicatePayment", () => ({
   refundDuplicatePayment: vi.fn(),
 }));
 
+vi.mock("@sentry/cloudflare", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@sentry/cloudflare")>()),
+  captureMessage: vi.fn(),
+}));
+
+import * as Sentry from "@sentry/cloudflare";
+
 import { serverTrack } from "@/lib/analytics/server";
 import { refundDuplicatePayment } from "@/lib/booking/duplicatePayment";
 import { applyPaidEvent } from "@/lib/booking/notifyPaid";
@@ -62,6 +69,7 @@ beforeEach(() => {
   mockMarkExpired.mockReset().mockResolvedValue(true);
   mockServerTrack.mockReset().mockResolvedValue(undefined);
   mockRefund.mockReset().mockResolvedValue(true);
+  vi.mocked(Sentry.captureMessage).mockReset();
 });
 
 async function callRoute(
@@ -212,21 +220,38 @@ describe("/api/stripe/webhook", () => {
     });
   });
 
-  it("returns 200 silently when checkout.session.completed has no client_reference_id", async () => {
+  it("returns 200 and reports a paid session with no client_reference_id", async () => {
     mockConstruct.mockReturnValueOnce({
       id: "evt_1",
       type: "checkout.session.completed",
       created: 1714291200,
-      data: { object: { id: "cs_1", client_reference_id: null } },
+      data: { object: { id: "cs_1", client_reference_id: null, payment_status: "paid" } },
     } as never);
 
     const res = await callRoute("{}");
     expect(res.status).toBe(200);
     expect(mockFind).not.toHaveBeenCalled();
     expect(mockApply).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      "Paid Checkout session has no client_reference_id",
+      { level: "warning", extra: { stripeSessionId: "cs_1" } },
+    );
   });
 
-  it("returns 200 silently when submission is missing (no retry)", async () => {
+  it("does not report an unpaid session with no client_reference_id", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_1",
+      type: "checkout.session.completed",
+      created: 1714291200,
+      data: { object: { id: "cs_1", client_reference_id: null, payment_status: "unpaid" } },
+    } as never);
+
+    const res = await callRoute("{}");
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 when the submission is missing so Stripe retries", async () => {
     mockConstruct.mockReturnValueOnce({
       id: "evt_1",
       type: "checkout.session.completed",
@@ -236,8 +261,26 @@ describe("/api/stripe/webhook", () => {
     mockFind.mockResolvedValueOnce(null);
 
     const res = await callRoute("{}");
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(mockApply).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      "Paid Checkout session has no matching submission or gift",
+      { level: "warning", extra: { recordId: "missing", stripeSessionId: "cs_1" } },
+    );
+  });
+
+  it("returns 200 for an expired event whose submission is missing", async () => {
+    mockConstruct.mockReturnValueOnce({
+      id: "evt_2",
+      type: "checkout.session.expired",
+      created: 1714291200,
+      data: { object: { id: "cs_2", client_reference_id: "missing" } },
+    } as never);
+    mockFind.mockResolvedValueOnce(null);
+
+    const res = await callRoute("{}");
+    expect(res.status).toBe(200);
+    expect(mockMarkExpired).not.toHaveBeenCalled();
   });
 
   it("on idempotent replay applyPaidEvent reports alreadyApplied and route returns 200", async () => {

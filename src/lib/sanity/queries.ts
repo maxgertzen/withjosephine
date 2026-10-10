@@ -170,11 +170,7 @@ export const emailPrivacyExportQuery = groq`
     heroLine,
     bodyIntro,
     bodyPostButton,
-    greeting,
-    introLine,
-    contentsLine,
     ctaLabel,
-    expiryLine,
     signOff
   }
 `;
@@ -185,7 +181,6 @@ export const emailMagicLinkQuery = groq`
     preview,
     heroLine,
     buttonLabel,
-    greeting,
     body,
     signOff
   }

@@ -13,13 +13,20 @@ type ThankYouShellProps = {
   icon: LucideIcon;
   heading: string;
   subheading: string;
+  backGoesHome?: boolean;
   children: ReactNode;
 };
 
-export function ThankYouShell({ icon, heading, subheading, children }: ThankYouShellProps) {
+export function ThankYouShell({
+  icon,
+  heading,
+  subheading,
+  backGoesHome = false,
+  children,
+}: ThankYouShellProps) {
   return (
     <div className="relative min-h-screen bg-j-cream overflow-hidden">
-      <ThankYouGuard />
+      {backGoesHome && <ThankYouGuard />}
       <StarField count={30} className="opacity-[0.03]" />
       {PAGE_ORBS.map((orb, index) => (
         <CelestialOrb key={index} {...orb} />

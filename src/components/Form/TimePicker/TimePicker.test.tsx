@@ -5,6 +5,26 @@ import { describe, expect, it, vi } from "vitest";
 import { TimePicker } from "./TimePicker";
 
 describe("TimePicker", () => {
+  it("shows the help text above the I don't know checkbox and announces it on the input", () => {
+    render(
+      <TimePicker
+        id="birthTime"
+        name="birthTime"
+        label="Birth time"
+        value=""
+        onChange={vi.fn()}
+        helpText="As accurate as possible."
+        unknownToggle={{ label: "I don't know my birth time", checked: false, onChange: vi.fn() }}
+      />,
+    );
+    const hint = screen.getByText("As accurate as possible.");
+    const checkbox = screen.getByLabelText("I don't know my birth time");
+    const isBefore = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(isBefore(hint, checkbox)).toBe(true);
+    expect(screen.getByRole("combobox")).toHaveAccessibleDescription("As accurate as possible.");
+  });
+
   it("renders a text input that opens a time popover on focus", () => {
     render(
       <TimePicker

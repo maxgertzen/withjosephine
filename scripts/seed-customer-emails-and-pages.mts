@@ -72,13 +72,7 @@ const PT_FIELDS_BY_TYPE: Record<string, ReadonlySet<string>> = {
     "accessWindowLine",
     "comfortFollowUp",
   ]),
-  emailPrivacyExport: new Set([
-    "bodyIntro",
-    "bodyPostButton",
-    "introLine",
-    "contentsLine",
-    "expiryLine",
-  ]),
+  emailPrivacyExport: new Set(["bodyIntro", "bodyPostButton"]),
   emailMagicLink: new Set(["body"]),
 };
 

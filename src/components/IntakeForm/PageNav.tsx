@@ -12,8 +12,6 @@ type PageNavProps = {
   onNext?: () => void;
   onSubmitIntent?: () => void;
   isSubmitting?: boolean;
-  nextDisabled?: boolean;
-  submitDisabled?: boolean;
   saveLaterDisabled?: boolean;
   submitLabel?: string;
   nextLabel?: string;
@@ -30,8 +28,6 @@ export function PageNav({
   onNext,
   onSubmitIntent,
   isSubmitting = false,
-  nextDisabled = false,
-  submitDisabled = false,
   saveLaterDisabled = false,
   submitLabel = PAYMENT_BUTTON_TEXT_FALLBACK,
   nextLabel = "Next →",
@@ -41,7 +37,7 @@ export function PageNav({
   return (
     <nav
       aria-label="Form navigation"
-      className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center mt-10"
+      className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center"
     >
       <div className="flex justify-center md:justify-start order-3 md:order-1">
         {isFirstPage ? (
@@ -79,9 +75,8 @@ export function PageNav({
             type="submit"
             size="lg"
             data-testid="intake-submit"
-            className="w-full md:w-auto min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium aria-disabled:opacity-50"
+            className="w-full md:w-auto min-h-14 whitespace-nowrap !font-display !italic !normal-case !tracking-normal !text-base !font-medium"
             disabled={isSubmitting}
-            aria-disabled={submitDisabled || isSubmitting}
             onClick={() => onSubmitIntent?.()}
           >
             {isSubmitting ? "Submitting…" : submitLabel}
@@ -92,8 +87,7 @@ export function PageNav({
             size="default"
             data-testid="intake-next"
             onClick={onNext}
-            aria-disabled={nextDisabled}
-            className="w-full md:w-auto min-h-11 whitespace-nowrap aria-disabled:opacity-50"
+            className="w-full md:w-auto min-h-11 whitespace-nowrap"
           >
             {nextLabel}
           </Button>

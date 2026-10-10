@@ -82,7 +82,7 @@ export function FileUpload({
   value,
   onChange,
   helpText,
-  helperPosition = "after",
+  helperPosition,
   clarificationNote,
   error,
   required,
@@ -247,7 +247,7 @@ export function FileUpload({
         </p>
       ) : null}
 
-      {helperPosition === "after" ? helperEl : null}
+      {helperPosition === "before" ? null : helperEl}
 
       {displayedError ? (
         <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>

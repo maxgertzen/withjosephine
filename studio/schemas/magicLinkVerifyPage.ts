@@ -51,7 +51,7 @@ export const magicLinkVerifyPage = defineType({
       type: "text",
       rows: 2,
       initialValue:
-        "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one — it'll arrive in a moment.",
+        "Magic links are good for one open and twenty-four hours. Head to your reading and ask for a fresh one - it'll arrive in a moment.",
     }),
     defineField({
       name: "restedCtaLabel",

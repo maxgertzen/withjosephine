@@ -45,6 +45,12 @@ describe("ReadingBlock, open for a visitor from search", () => {
     expect(blockPanel()).toHaveClass("[body[data-reading-fold]_&]:grid-rows-[0fr]!");
   });
 
+  it("before classification, sets the compact gap only through the pre-paint fold marker", () => {
+    renderAs(null, { ...SOUL_BLUEPRINT_BLOCK, compactGapWhenClosed: true });
+
+    expect(foldRow().closest("section")).toHaveClass("mb-9", "[body[data-reading-fold]_&]:mb-2");
+  });
+
   it("removes the pre-paint fold marker once the visit is classified", () => {
     document.body.setAttribute(PRE_PAINT_FOLD_ATTRIBUTE, "");
 
@@ -110,6 +116,23 @@ describe.each<BookingEntry>(["homepage_card", "draft"])("ReadingBlock, folded fo
       "true",
     );
     expect(blockPanel()).not.toHaveAttribute("inert");
+  });
+
+  it("keeps a compact gap below the closed row and the full gap once opened", async () => {
+    renderAs(entry, { ...SOUL_BLUEPRINT_BLOCK, compactGapWhenClosed: true });
+    const fold = foldRow().closest("section");
+
+    expect(fold).toHaveClass("mb-2");
+
+    await userEvent.click(foldRow());
+
+    expect(fold).toHaveClass("mb-9");
+  });
+
+  it("keeps the full gap below the closed row without a compact gap", () => {
+    renderAs(entry);
+
+    expect(foldRow().closest("section")).toHaveClass("mb-9");
   });
 });
 

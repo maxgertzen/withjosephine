@@ -217,10 +217,7 @@ export async function activateGift(input: GiftActivationInput): Promise<Activate
   if (input.paymentStatus !== "paid") return { result: "not_paid", gift: null };
 
   const gift = await findGiftById(giftId);
-  if (!gift) {
-    console.warn(`[activateGift] gift ${giftId} not found, manual reconcile will retry`);
-    return { result: "not_found", gift: null };
-  }
+  if (!gift) return { result: "not_found", gift: null };
   if (isSecondPayment(gift, stripeSessionId)) return { result: "duplicate", gift };
   if (gift.status === GIFT_STATUS.cancelled && !gift.stripeSessionId) {
     await reportPaymentForUnpaidCancelledGift(giftId, stripeSessionId);

@@ -20,11 +20,14 @@ import {
   type UseIntakeFormHandlersArgs,
 } from "./useIntakeFormHandlers";
 
-function useTestHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
+function useTestHarness({
+  currentPage: initialPage = 0,
+  ...overrides
+}: Partial<UseIntakeFormHandlersArgs> = {}) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIntentRef = useRef(false);
   const [values, setValues] = useState<FieldValues>({});
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +48,7 @@ function useTestHarness(overrides: Partial<UseIntakeFormHandlersArgs> = {}) {
     isFinalPage: false,
     currentKeys: [],
     pageIndexOfField: () => -1,
+    revealErrorsOnPage: () => {},
     submissionSchema: { safeParse: () => ({ success: true, data: {} }) } as never,
     setErrors,
     setSubmitError,
@@ -150,6 +154,7 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
         isFinalPage: true,
         submitIntentRef: { current: true },
         setIsSubmitting,
+        consentSnapshot: fullyConsented(),
         turnstileRequired: true,
         requestFreshTurnstileToken,
       }),
@@ -167,15 +172,16 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
     );
   });
 
-  it("resets pending when validation fails so the button is not stuck disabled", async () => {
+  it("never shows pending or asks Turnstile when consents are missing", async () => {
     const setIsSubmitting = vi.fn();
+    const requestFreshTurnstileToken = vi.fn(async () => "tok");
     const { result } = renderHook(() =>
       useTestHarness({
         isFinalPage: true,
         submitIntentRef: { current: true },
         setIsSubmitting,
-        // emptyConsentSnapshot from the harness fails the consent gate, so the
-        // submit takes the validation-fail branch and must reset pending.
+        turnstileRequired: true,
+        requestFreshTurnstileToken,
       }),
     );
 
@@ -183,8 +189,8 @@ describe("useIntakeFormHandlers — pending state timing (u7usxewf)", () => {
       await result.current.handlers.handleSubmit(submitEvent());
     });
 
-    expect(setIsSubmitting).toHaveBeenCalledWith(true);
-    expect(setIsSubmitting).toHaveBeenLastCalledWith(false);
+    expect(setIsSubmitting).not.toHaveBeenCalled();
+    expect(requestFreshTurnstileToken).not.toHaveBeenCalled();
   });
 });
 
@@ -457,14 +463,17 @@ describe("useIntakeFormHandlers — server field errors", () => {
       jsonResponse(400, { error: "Validation failed", fieldErrors: { first_name: "Letters only." } }),
     );
     const setCurrentPage = vi.fn();
+    const revealErrorsOnPage = vi.fn();
     const { result } = finalPageSubmitHarness({
       currentPage: 2,
       setCurrentPage,
+      revealErrorsOnPage,
       pageIndexOfField: (key) => (key === "first_name" ? 0 : -1),
     });
     await pressSubmit(result);
     expect(result.current.errors).toEqual({ first_name: "Letters only." });
     expect(setCurrentPage).toHaveBeenCalledWith(0);
+    expect(revealErrorsOnPage).toHaveBeenCalledWith(0);
     expect(result.current.submitError).toBe("Please fix the highlighted fields and try again.");
     expect(result.current.isSubmitting).toBe(false);
   });
@@ -479,6 +488,88 @@ describe("useIntakeFormHandlers — server field errors", () => {
     );
   });
 });
+
+describe("useIntakeFormHandlers — last-page validation errors on earlier pages", () => {
+  useStubbedFetchAndLocation();
+
+  it("opens the earliest page with an error, reveals it there and posts nothing", async () => {
+    const failingSchema = {
+      safeParse: () => ({
+        success: false,
+        error: {
+          issues: [
+            { path: ["birth_place"], message: "Required." },
+            { path: ["first_name"], message: "Required." },
+          ],
+        },
+      }),
+    } as never;
+    const pages: Record<string, number> = { first_name: 0, birth_place: 1 };
+    const setCurrentPage = vi.fn();
+    const revealErrorsOnPage = vi.fn();
+    const { result } = finalPageSubmitHarness({
+      currentPage: 2,
+      setCurrentPage,
+      revealErrorsOnPage,
+      submissionSchema: failingSchema,
+      pageIndexOfField: (key) => pages[key] ?? -1,
+    });
+    await pressSubmit(result);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(setCurrentPage).toHaveBeenCalledWith(0);
+    expect(revealErrorsOnPage).toHaveBeenCalledWith(0);
+    expect(result.current.submitError).toBe("Please fix the highlighted fields and try again.");
+  });
+
+  it("focuses the field once the earlier page is shown", async () => {
+    const form = document.createElement("form");
+    const input = document.createElement("input");
+    input.id = "field-first_name";
+    form.append(input);
+    document.body.append(form);
+    const { result } = finalPageSubmitHarness({
+      formRef: { current: form },
+      currentPage: 2,
+      submissionSchema: failingSchema(["first_name"]),
+      pageIndexOfField: (key) => (key === "first_name" ? 0 : -1),
+    });
+    await pressSubmit(result);
+    expect(result.current.currentPage).toBe(0);
+    expect(input).toHaveFocus();
+  });
+
+  it("names the field errors, not the acknowledgments, when both are missing", async () => {
+    const { result } = finalPageSubmitHarness({
+      currentPage: 2,
+      consentSnapshot: emptyConsentSnapshot(),
+      submissionSchema: failingSchema(["first_name"]),
+      pageIndexOfField: (key) => (key === "first_name" ? 0 : -1),
+    });
+    await pressSubmit(result);
+    expect(result.current.submitError).toBe("Please fix the highlighted fields and try again.");
+  });
+
+  it("asks for a reload when the failing field is on no page", async () => {
+    const { result } = finalPageSubmitHarness({
+      currentPage: 2,
+      submissionSchema: failingSchema(["retired_field"]),
+    });
+    await pressSubmit(result);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.submitError).toBe(
+      "This form was just updated. Please reload the page and try again.",
+    );
+  });
+});
+
+function failingSchema(keys: string[]) {
+  return {
+    safeParse: () => ({
+      success: false,
+      error: { issues: keys.map((key) => ({ path: [key], message: "Required." })) },
+    }),
+  } as never;
+}
 
 describe("useIntakeFormHandlers — server field errors on fields this page does not have", () => {
   useStubbedFetchAndLocation();

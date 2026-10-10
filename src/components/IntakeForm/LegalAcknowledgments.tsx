@@ -20,6 +20,12 @@ type LegalAcknowledgmentsProps = {
   consentIntro?: string;
 };
 
+export const CONSENT_FIELD_KEY = {
+  art6: "art6-consent",
+  art9: "art9-consent",
+  coolingOff: "cooling-off-consent",
+} as const;
+
 export function LegalAcknowledgments({
   snapshot,
   setSnapshot,
@@ -43,7 +49,7 @@ export function LegalAcknowledgments({
         </p>
       ) : null}
       <Checkbox
-        id={`${idPrefix}-art6-consent`}
+        id={`${idPrefix}-${CONSENT_FIELD_KEY.art6}`}
         name="art6Consent"
         checked={snapshot.art6.acknowledged}
         onChange={(checked) => {
@@ -61,7 +67,7 @@ export function LegalAcknowledgments({
       </Checkbox>
       {showArt9 ? (
         <Checkbox
-          id={`${idPrefix}-art9-consent`}
+          id={`${idPrefix}-${CONSENT_FIELD_KEY.art9}`}
           name="art9Consent"
           checked={snapshot.art9.acknowledged}
           onChange={(checked) => {
@@ -80,7 +86,7 @@ export function LegalAcknowledgments({
       ) : null}
       {showCoolingOff ? (
         <Checkbox
-          id={`${idPrefix}-cooling-off-consent`}
+          id={`${idPrefix}-${CONSENT_FIELD_KEY.coolingOff}`}
           name="coolingOffConsent"
           checked={snapshot.coolingOff.acknowledged}
           onChange={(checked) => {

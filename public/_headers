@@ -9,3 +9,6 @@
 # forever and never revalidated.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

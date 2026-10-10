@@ -44,7 +44,7 @@ export async function buildLegalMetadata(
   fetcher: LegalFetcher = fetchLegalPage,
 ): Promise<Metadata> {
   const doc = await fetcher(slug);
-  const title = doc?.seo?.metaTitle ?? fallback.metaTitle;
+  const title = doc?.seo?.metaTitle || fallback.metaTitle;
   const description = doc?.seo?.metaDescription ?? fallback.metaDescription;
   return {
     ...buildPageMetadata({ title, description, path: `/${slug}`, seo: doc?.seo }),

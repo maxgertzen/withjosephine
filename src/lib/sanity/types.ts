@@ -123,7 +123,6 @@ export type SanityEmailMagicLink = {
   preview: string;
   heroLine: string;
   buttonLabel: string;
-  greeting?: string;
   body: PortableTextBlock[];
   signOff: string | null;
 };
@@ -151,11 +150,7 @@ export type SanityEmailPrivacyExport = {
   heroLine: string;
   bodyIntro?: PortableTextBlock[];
   bodyPostButton?: PortableTextBlock[];
-  greeting?: string;
-  introLine?: PortableTextBlock[];
-  contentsLine?: PortableTextBlock[];
   ctaLabel: string;
-  expiryLine?: PortableTextBlock[];
   signOff: string | null;
 };
 
@@ -357,7 +352,7 @@ export type SanityFormFieldValidation = {
   patternErrorMessage?: string;
 };
 
-export type SanityFormHelperPosition = "before" | "after";
+export type SanityFormHelperPosition = "before" | "after" | null;
 
 export type SanityFormField = {
   _id: string;

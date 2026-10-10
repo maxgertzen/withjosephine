@@ -53,7 +53,7 @@ export function BookingFormView({
         }
       >
         {gift ? <GiftModeNote {...gift.noteCard} /> : null}
-        <ReadingBlock {...readingBlock} />
+        <ReadingBlock {...readingBlock} compactGapWhenClosed={Boolean(giftFold)} />
         {giftFold ? <GiftFold {...giftFold} /> : null}
         {copy.title ? <BookingPageHeading title={copy.title} /> : null}
         <div className="max-w-[50ch] mb-10">

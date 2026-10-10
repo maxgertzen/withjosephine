@@ -9,7 +9,7 @@ import {
   fetchSiteSettingsPublished,
   fetchTestimonialsPublished,
 } from "@/lib/sanity/fetch";
-import { buildPageMetadata } from "@/lib/seoMetadata";
+import { buildPageMetadata, pageTitle } from "@/lib/seoMetadata";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/structuredData";
 
 import { HomePageView } from "./HomePageView";
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const landingPage = await fetchLandingPagePublished();
   const seo = landingPage?.seo;
 
-  const title = seo?.metaTitle ?? "Josephine — Soul Readings";
+  const title = seo?.metaTitle || pageTitle("Astrology & Akashic Records Readings");
   const description =
     seo?.metaDescription ??
     "Your soul has patterns. Your chart reveals them. Your records explain why.";

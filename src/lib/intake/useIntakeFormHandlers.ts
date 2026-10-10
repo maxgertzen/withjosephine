@@ -6,9 +6,14 @@ import {
   type RefObject,
   type SetStateAction,
   useCallback,
+  useEffect,
+  useRef,
 } from "react";
 
-import type { LegalAcknowledgmentsErrors } from "@/components/IntakeForm/LegalAcknowledgments";
+import {
+  CONSENT_FIELD_KEY,
+  type LegalAcknowledgmentsErrors,
+} from "@/components/IntakeForm/LegalAcknowledgments";
 import type { FieldValues } from "@/components/IntakeForm/types";
 import { identifySubmission, track } from "@/lib/analytics";
 import { COMPANION_SUFFIX_GEONAMEID, HONEYPOT_FIELD } from "@/lib/booking/constants";
@@ -60,10 +65,19 @@ export type IntakeGiftCodeFieldState = {
 
 const HTTP_BAD_REQUEST = 400;
 const FIX_HIGHLIGHTED_FIELDS = "Please fix the highlighted fields and try again.";
+const CONSENT_ORDER = ["art6", "art9", "coolingOff"] as const;
+const CONSENT_MISSING_MESSAGE = "All required acknowledgments must be checked to continue.";
 const FORM_CHANGED_MESSAGE = "This form was just updated. Please reload the page and try again.";
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_TOO_MANY_REQUESTS = 429;
+
+function firstUncheckedConsentFieldKey(
+  uncheckedConsents: Partial<Record<(typeof CONSENT_ORDER)[number], string>>,
+): string | undefined {
+  const consent = CONSENT_ORDER.find((key) => uncheckedConsents[key]);
+  return consent ? CONSENT_FIELD_KEY[consent] : undefined;
+}
 
 function isGiftEndingError(error: unknown): error is GiftEndingError {
   return GIFT_ENDING_ERRORS.includes(error as GiftEndingError);
@@ -108,6 +122,7 @@ export type UseIntakeFormHandlersArgs = {
   isFinalPage: boolean;
   currentKeys: string[];
   pageIndexOfField: (key: string) => number;
+  revealErrorsOnPage: (pageIndex: number) => void;
   submissionSchema: DynamicSchema;
   setErrors: Dispatch<SetStateAction<Record<string, string>>>;
   setSubmitError: Dispatch<SetStateAction<string | null>>;
@@ -134,6 +149,20 @@ export type UseIntakeFormHandlersResult = {
   handleRemoveGiftCode: () => void;
 };
 
+type ShownFieldError = { key: string; page: number };
+
+function earliestShownError(
+  fieldErrors: Record<string, string>,
+  pageIndexOfField: (key: string) => number,
+): ShownFieldError | undefined {
+  let earliest: ShownFieldError | undefined;
+  for (const key of Object.keys(fieldErrors)) {
+    const page = pageIndexOfField(key);
+    if (page >= 0 && (earliest === undefined || page < earliest.page)) earliest = { key, page };
+  }
+  return earliest;
+}
+
 function blurAndScrollToForm(form: HTMLFormElement | null): void {
   if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
@@ -154,6 +183,7 @@ export function useIntakeFormHandlers({
   isFinalPage,
   currentKeys,
   pageIndexOfField,
+  revealErrorsOnPage,
   submissionSchema,
   setErrors,
   setSubmitError,
@@ -169,6 +199,15 @@ export function useIntakeFormHandlers({
   giftCodeField,
   preview = false,
 }: UseIntakeFormHandlersArgs): UseIntakeFormHandlersResult {
+  const focusAfterPageChangeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const key = focusAfterPageChangeRef.current;
+    if (!key) return;
+    focusAfterPageChangeRef.current = null;
+    focusFirstError(formRef.current, key, { scroll: true });
+  }, [currentPage, formRef]);
+
   const setValue = useCallback(
     (key: string, value: FieldValues[string]) => {
       setValues((prev) => ({ ...prev, [key]: value }));
@@ -275,10 +314,50 @@ export function useIntakeFormHandlers({
         return;
       }
 
-      // Reflect pending synchronously, before the first await (the turnstile
-      // token fetch below). Otherwise the submit button looks dead for the
-      // first beat. Every non-navigating exit must reset it (failSubmit does;
-      // the validation-fail branch resets explicitly).
+      const validation = validateFullSubmission(submissionSchema, allFields, values);
+      const consentRequirements = {
+        requireArt9: true,
+        requireCoolingOff: true,
+      };
+      const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
+      const uncheckedConsents = collectConsentErrors(consentSnapshot, consentRequirements);
+      setConsentErrors(uncheckedConsents);
+      track("intake_submit_click", {
+        reading_id: readingId,
+        validation_pass: validation.success && consentOk,
+      });
+
+      function showErrorOnItsPage({ key, page }: ShownFieldError) {
+        revealErrorsOnPage(page);
+        if (page === currentPage) {
+          focusFirstError(formRef.current, key);
+          return;
+        }
+        focusAfterPageChangeRef.current = key;
+        setCurrentPage(page);
+        flushSave(values, page);
+      }
+
+      if (!validation.success || !consentOk) {
+        setErrors(validation.fieldErrors);
+        const firstFieldError = earliestShownError(validation.fieldErrors, pageIndexOfField);
+        const firstConsentKey = firstUncheckedConsentFieldKey(uncheckedConsents);
+        if (firstFieldError) {
+          setSubmitError(FIX_HIGHLIGHTED_FIELDS);
+          showErrorOnItsPage(firstFieldError);
+        } else if (firstConsentKey) {
+          setSubmitError(CONSENT_MISSING_MESSAGE);
+          focusFirstError(formRef.current, firstConsentKey);
+        } else {
+          setSubmitError(FORM_CHANGED_MESSAGE);
+        }
+        track("intake_submit_error", {
+          reading_id: readingId,
+          error_code: INTAKE_SUBMIT_ERROR.validationFailed,
+        });
+        return;
+      }
+
       setIsSubmitting(true);
 
       function failSubmit(errorCode: IntakeSubmitErrorCode, userMessage: string) {
@@ -291,34 +370,15 @@ export function useIntakeFormHandlers({
       }
 
       function showServerFieldErrors(fieldErrors: Record<string, string>) {
-        const shownKey = Object.keys(fieldErrors).find((key) => pageIndexOfField(key) >= 0);
-        if (!shownKey) {
+        const shownError = earliestShownError(fieldErrors, pageIndexOfField);
+        if (!shownError) {
           failSubmit(INTAKE_SUBMIT_ERROR.serverValidationFailed, FORM_CHANGED_MESSAGE);
           return;
         }
         setErrors(fieldErrors);
         failSubmit(INTAKE_SUBMIT_ERROR.serverValidationFailed, FIX_HIGHLIGHTED_FIELDS);
-        const errorPage = pageIndexOfField(shownKey);
-        if (errorPage === currentPage) {
-          focusFirstError(formRef.current, shownKey);
-          return;
-        }
-        setCurrentPage(errorPage);
-        flushSave(values, errorPage);
-        blurAndScrollToForm(formRef.current);
+        showErrorOnItsPage(shownError);
       }
-
-      const validation = validateFullSubmission(submissionSchema, allFields, values);
-      const consentRequirements = {
-        requireArt9: true,
-        requireCoolingOff: true,
-      };
-      const consentOk = isFullyConsented(consentSnapshot, consentRequirements);
-      setConsentErrors(collectConsentErrors(consentSnapshot, consentRequirements));
-      track("intake_submit_click", {
-        reading_id: readingId,
-        validation_pass: validation.success && consentOk,
-      });
 
       let submissionTurnstileToken: string | null = turnstileToken;
       if (turnstileRequired) {
@@ -330,21 +390,6 @@ export function useIntakeFormHandlers({
           );
           return;
         }
-      }
-
-      if (!validation.success || !consentOk) {
-        setIsSubmitting(false);
-        setErrors(validation.fieldErrors);
-        const message = !consentOk
-          ? "All required acknowledgments below must be checked to continue."
-          : FIX_HIGHLIGHTED_FIELDS;
-        setSubmitError(message);
-        focusFirstError(formRef.current, validation.fieldErrors);
-        track("intake_submit_error", {
-          reading_id: readingId,
-          error_code: INTAKE_SUBMIT_ERROR.validationFailed,
-        });
-        return;
       }
 
       try {
@@ -448,6 +493,7 @@ export function useIntakeFormHandlers({
       handleApplyGiftCode,
       preview,
       pageIndexOfField,
+      revealErrorsOnPage,
       currentPage,
       setCurrentPage,
       flushSave,

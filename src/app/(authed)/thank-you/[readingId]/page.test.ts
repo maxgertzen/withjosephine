@@ -118,7 +118,7 @@ describe("ThankYouPage generateMetadata", () => {
     mockFetchThankYouPage.mockResolvedValue(
       thankYouPage({
         seo: {
-          metaTitle: "Thank You — Josephine",
+          metaTitle: "Custom title from Sanity",
           metaDescription: "Custom description from Sanity.",
         },
       }),
@@ -127,7 +127,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You — Josephine");
+    expect(metadata.title).toBe("Custom title from Sanity");
     expect(metadata.description).toBe("Custom description from Sanity.");
   });
 
@@ -137,7 +137,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You \u2014 Josephine");
+    expect(metadata.title).toBe("Thank You | Josephine Soul Readings");
     expect(metadata.description).toBe(
       "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );
@@ -149,7 +149,7 @@ describe("ThankYouPage generateMetadata", () => {
     const generateMetadata = await loadGenerateMetadata();
     const metadata = await generateMetadata();
 
-    expect(metadata.title).toBe("Thank You \u2014 Josephine");
+    expect(metadata.title).toBe("Thank You | Josephine Soul Readings");
     expect(metadata.description).toBe(
       "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
     );
@@ -280,6 +280,7 @@ describe("ThankYouPage paid amount", () => {
     expect(result.props.reading.cents).toBe(17900);
     expect(result.props.paidAmount.cents).toBe(9900);
     expect(result.props.paidAmount.display).toBe("$99.00");
+    expect(result.props.backGoesHome).toBe(true);
   });
 
   it("passes an equal paid amount (no discount UI)", async () => {
@@ -525,6 +526,7 @@ describe("ThankYouPage gift branch", () => {
 
     expect(result.type).toBe((await import("./GiftThankYouView")).GiftThankYouView);
     expect(result.props).toMatchObject({
+      backGoesHome: true,
       state: "active",
       displayCode: SHOWN.displayCode,
       giftUrl: SHOWN.giftUrl,
@@ -680,6 +682,7 @@ describe("ThankYouPage recipient gift branch", () => {
 
     expect(result.type).toBe((await import("./ThankYouView")).ThankYouView);
     expect(result.props.icon).toBe("gift");
+    expect(result.props.backGoesHome).toBeUndefined();
     expect(result.props.reading).toEqual({ name: "Birth Chart Reading", price: null, cents: null });
     expect(result.props.paidAmount).toEqual({ cents: null, display: null });
     expect(result.props.copy).toMatchObject({

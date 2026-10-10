@@ -230,6 +230,7 @@ export function IntakeForm(props: IntakeFormProps) {
     isFinalPage,
     currentKeys,
     pageIndexOfField,
+    revealErrorsOnPage: setRevealedOnPage,
     submissionSchema,
     setErrors,
     setSubmitError,
@@ -264,11 +265,6 @@ export function IntakeForm(props: IntakeFormProps) {
 
   const visibleErrorCount = errorsVisible ? errorCount : 0;
   const visibleFirstFieldLabel = errorsVisible ? firstFieldLabel : null;
-  const consentsFullySatisfied = useMemo(
-    () => isFullyConsented(consentSnapshot, { requireArt9: true, requireCoolingOff: true }),
-    [consentSnapshot],
-  );
-  const submitGateInvalid = errorCount > 0 || (isFinalPage && !consentsFullySatisfied);
 
   const handleConsentSnapshotChange = useCallback((next: LegalConsentSnapshot) => {
     setConsentSnapshot(next);
@@ -323,7 +319,6 @@ export function IntakeForm(props: IntakeFormProps) {
         errorCount={visibleErrorCount}
         firstFieldLabel={visibleFirstFieldLabel}
         onJumpToFirstError={jumpToFirstError}
-        submitDisabled={submitGateInvalid}
         onAdvanceAttempt={revealErrors}
         valuesUntouched={valuesUntouched}
         values={values}
@@ -358,7 +353,7 @@ export function IntakeForm(props: IntakeFormProps) {
                 checking: giftCodeFieldState.checking,
                 error: giftCodeFieldState.error,
                 apply: {
-                  label: activeGiftCodeField.copy.redeemButtonLabel,
+                  label: activeGiftCodeField.copy.codeApplyLabel,
                   onApply: handleApplyGiftCode,
                 },
               }

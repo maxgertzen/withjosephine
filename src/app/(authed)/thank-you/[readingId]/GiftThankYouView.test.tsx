@@ -9,9 +9,6 @@ import { ACTIVE_GIFT, giftThankYouViewProps, SHOWN_GIFT } from "@/test/fixtures/
 import type { GiftThankYouSource } from "./deriveGiftThankYouViewProps";
 import { GiftThankYouView } from "./GiftThankYouView";
 
-vi.mock("@/components/ThankYouGuard", () => ({
-  ThankYouGuard: () => null,
-}));
 vi.mock("@/components/StarField", () => ({
   StarField: () => null,
 }));
