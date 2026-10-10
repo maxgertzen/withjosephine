@@ -34,6 +34,13 @@ describe("ThankYouGuard", () => {
     expect(pushState).toHaveBeenCalledExactlyOnceWith(null, "", window.location.href);
   });
 
+  it("stops the browser restoring the thank-you scroll position when Back lands on it", () => {
+    window.history.scrollRestoration = "auto";
+    render(<ThankYouGuard />);
+    fireEvent.click(document.body);
+    expect(window.history.scrollRestoration).toBe("manual");
+  });
+
   it("goes home when Back lands on the added entry", () => {
     render(<ThankYouGuard />);
     fireEvent.click(document.body);

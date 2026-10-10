@@ -17,6 +17,7 @@ export function ThankYouGuard() {
     const addHomeStep = (event: Event) => {
       if (isOnLinkOrButton(event.target)) return;
       firstInteraction.abort();
+      window.history.scrollRestoration = "manual";
       window.history.pushState(null, "", window.location.href);
       window.addEventListener("popstate", goHomeOnBack, { signal: mounted.signal });
     };
