@@ -3,7 +3,7 @@
 import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState } from "react";
 
-import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { fieldDescribedBy, FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { Select, type SelectOption } from "@/components/Form/Select";
 import { TIME_UNKNOWN_SENTINEL } from "@/lib/booking/submissionSchema";
 import { inputClasses } from "@/lib/formStyles";
@@ -30,6 +30,32 @@ type TimePickerProps = {
     onChange: (checked: boolean) => void;
   };
 };
+
+function UnknownTimeToggle({
+  toggle,
+  disabled,
+}: {
+  toggle: NonNullable<TimePickerProps["unknownToggle"]>;
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
+        <input
+          type="checkbox"
+          checked={toggle.checked}
+          onChange={(event) => toggle.onChange(event.target.checked)}
+          disabled={disabled}
+          className="h-4 w-4 accent-j-accent"
+        />
+        <span>{toggle.label}</span>
+      </label>
+      <span role="status" aria-live="polite" className="sr-only">
+        {toggle.checked ? "Birth time set to unknown." : ""}
+      </span>
+    </>
+  );
+}
 
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
@@ -103,6 +129,9 @@ export function TimePicker({
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={error}
+      afterField={
+        unknownToggle ? <UnknownTimeToggle toggle={unknownToggle} disabled={disabled} /> : null
+      }
       noLabel
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
@@ -126,6 +155,7 @@ export function TimePicker({
             aria-controls={popoverId}
             aria-expanded={open}
             aria-invalid={error ? true : undefined}
+            aria-describedby={fieldDescribedBy(id, { helpText, error })}
             className={`${inputClasses} ${isUnknown ? "opacity-60" : ""}`}
           />
           <FloatingLabel id={id} label={label} required={required} />
@@ -178,23 +208,6 @@ export function TimePicker({
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
-      {unknownToggle ? (
-        <>
-          <label className="mt-3 inline-flex items-center gap-2 font-body text-sm text-j-text">
-            <input
-              type="checkbox"
-              checked={unknownToggle.checked}
-              onChange={(event) => unknownToggle.onChange(event.target.checked)}
-              disabled={disabled}
-              className="h-4 w-4 accent-j-accent"
-            />
-            <span>{unknownToggle.label}</span>
-          </label>
-          <span role="status" aria-live="polite" className="sr-only">
-            {unknownToggle.checked ? "Birth time set to unknown." : ""}
-          </span>
-        </>
-      ) : null}
     </FieldShell>
   );
 }

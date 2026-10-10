@@ -10,7 +10,7 @@ import {
   DAY_PICKER_BASE_CLASSES,
   DAY_PICKER_LABELS,
 } from "@/components/Form/DayPickerShared/dayPickerShared";
-import { FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
+import { fieldDescribedBy, FieldShell, FloatingLabel } from "@/components/Form/FieldShell";
 import { DATE_HELP_TEXT_FALLBACK, DATE_PLACEHOLDER_FALLBACK } from "@/data/defaults";
 import { inputClasses } from "@/lib/formStyles";
 import type { SanityFormHelperPosition } from "@/lib/sanity/types";
@@ -98,6 +98,7 @@ export function DatePicker({
   const [manualDraft, setManualDraft] = useState<string | null>(null);
   const [leftWithInvalidDate, setLeftWithInvalidDate] = useState(false);
   const shownError = leftWithInvalidDate ? DATE_HELP_TEXT_FALLBACK : error;
+  const shownHelp = leftWithInvalidDate ? undefined : helpText || DATE_HELP_TEXT_FALLBACK;
 
   const dayPickerComponents = useMemo(
     () => ({ Dropdown: createSelectDropdown(contentNode) }),
@@ -166,10 +167,25 @@ export function DatePicker({
       id={id}
       label={label}
       required={required}
-      helpText={leftWithInvalidDate ? undefined : helpText || DATE_HELP_TEXT_FALLBACK}
+      helpText={shownHelp}
       helperPosition={helperPosition}
       clarificationNote={clarificationNote}
       error={shownError}
+      afterField={
+        ageWarning ? (
+          <p
+            data-testid="dob-age-warning"
+            role="note"
+            className="mt-2 font-display italic text-sm text-j-text-muted"
+          >
+            <span aria-hidden="true" className="text-j-ornament mr-2">
+              ✦
+            </span>
+            That puts you under {minAge}. Please double-check the date - if it&rsquo;s correct, no
+            need to change a thing.
+          </p>
+        ) : null
+      }
       noLabel
     >
       <Popover.Root open={open} onOpenChange={setOpen}>
@@ -192,6 +208,7 @@ export function DatePicker({
             aria-controls={popoverId}
             aria-expanded={open}
             aria-invalid={shownError ? true : undefined}
+            aria-describedby={fieldDescribedBy(id, { helpText: shownHelp, error: shownError })}
             className={inputClasses}
             onBlur={(event) => {
               if (contentNode?.contains(event.relatedTarget)) return;
@@ -200,19 +217,6 @@ export function DatePicker({
             }}
           />
           <FloatingLabel id={id} label={label} required={required} />
-          {ageWarning ? (
-            <p
-              data-testid="dob-age-warning"
-              role="note"
-              className="mt-2 font-display italic text-sm text-j-text-muted"
-            >
-              <span aria-hidden="true" className="text-j-ornament mr-2">
-                ✦
-              </span>
-              That puts you under {minAge}. Please double-check the date — if it&rsquo;s correct, no
-              need to change a thing.
-            </p>
-          ) : null}
         </Popover.Anchor>
         <Popover.Portal>
           <Popover.Content
