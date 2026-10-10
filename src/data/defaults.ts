@@ -424,6 +424,8 @@ export const INTAKE_TITLE_FALLBACK = "A few things, before we begin.";
 
 export const PAYMENT_BUTTON_TEXT_FALLBACK = "Continue to payment →";
 
+export const DATE_PLACEHOLDER_FALLBACK = "DD/MM/YYYY";
+
 const INTAKE_OPENER =
   "Before I read for you, I want to know a little about you. A few details, a few questions you\u2019d like held.";
 

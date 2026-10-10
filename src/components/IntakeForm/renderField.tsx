@@ -94,6 +94,7 @@ export function renderField(field: SanityFormField, ctx: RenderContext) {
           value={typeof value === "string" ? value : ""}
           onChange={(next) => setValue(field.key, next)}
           {...shellProps}
+          placeholder={field.placeholder}
           error={error}
           required={field.required}
           disabled={disabled}

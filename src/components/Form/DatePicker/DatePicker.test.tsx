@@ -54,6 +54,72 @@ describe("DatePicker", () => {
     expect(onChange).toHaveBeenCalledWith("1990-04-12");
   });
 
+  it.each([
+    ["1990-04-12", "12/04/1990", "1990-04-12"],
+    ["1990/4/12", "12/04/1990", "1990-04-12"],
+    ["5.4.1990", "05/04/1990", "1990-04-05"],
+    ["5/4/1990", "05/04/1990", "1990-04-05"],
+    ["4/13/1990", "13/04/1990", "1990-04-13"],
+    ["April 12, 1990", "12/04/1990", "1990-04-12"],
+    ["12 Apr 1990", "12/04/1990", "1990-04-12"],
+  ])("reads a browser-filled date %s as %s", (filled, shown, emitted) => {
+    const onChange = vi.fn();
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: filled } });
+    expect(input.value).toBe(shown);
+    expect(onChange).toHaveBeenCalledWith(emitted);
+  });
+
+  it("keeps a partly typed year as typed instead of reading it as a full date", () => {
+    const onChange = vi.fn();
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText(/Birth date/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "12/04/19" } });
+    expect(input.value).toBe("12/04/19");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("shows DD/MM/YYYY when Sanity sets no placeholder", () => {
+    render(
+      <DatePicker id="birthDate" name="birthDate" label="Birth date" value="" onChange={vi.fn()} />,
+    );
+    expect(screen.getByLabelText(/Birth date/)).toHaveAttribute("placeholder", "DD/MM/YYYY");
+  });
+
+  it("shows the Sanity placeholder when one is set", () => {
+    render(
+      <DatePicker
+        id="birthDate"
+        name="birthDate"
+        label="Birth date"
+        value=""
+        onChange={vi.fn()}
+        placeholder="Day / month / year"
+      />,
+    );
+    expect(screen.getByLabelText(/Birth date/)).toHaveAttribute(
+      "placeholder",
+      "Day / month / year",
+    );
+  });
+
   it("formats an existing ISO value as DD/MM/YYYY for display", () => {
     render(
       <DatePicker
