@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: pnpm check:stories-imports
-      - run: pnpm storybook:build
+      - run: .github/scripts/retry-on-font-fetch.sh pnpm storybook:build
 
   studio-build:
     runs-on: ubuntu-latest
@@ -101,7 +101,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Build Worker bundle (staging)
-        run: pnpm cf:build
+        run: .github/scripts/retry-on-font-fetch.sh pnpm cf:bundle && pnpm cf:package
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -159,7 +159,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Build Worker bundle (production)
-        run: pnpm cf:build
+        run: .github/scripts/retry-on-font-fetch.sh pnpm cf:bundle && pnpm cf:package
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
