@@ -38,6 +38,9 @@ on:
       - "playwright.config.ts"
       - "scripts/generate-e2e-fixtures.ts"
       - ".github/workflows/e2e.yml"
+      - ".github/actions/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
   workflow_dispatch:
 
 concurrency:
@@ -81,15 +84,15 @@ jobs:
       CI: "1"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -111,7 +114,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
@@ -119,7 +122,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.shard }}
           path: test-results/
