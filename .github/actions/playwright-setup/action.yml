@@ -16,14 +16,9 @@ runs:
       id: pw-cache
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+        key: playwright-${{ runner.os }}-${{ env.ImageOS }}-${{ steps.pw-version.outputs.version }}
 
     - name: Install Playwright browsers
       if: steps.pw-cache.outputs.cache-hit != 'true'
       shell: bash
       run: pnpm exec playwright install --with-deps chromium
-
-    - name: Install Playwright system deps (browsers cached)
-      if: steps.pw-cache.outputs.cache-hit == 'true'
-      shell: bash
-      run: pnpm exec playwright install-deps chromium
