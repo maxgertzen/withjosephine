@@ -29,15 +29,24 @@ updates:
           - "@types/react*"
           - "tailwindcss"
           - "@tailwindcss/*"
+      sanity:
+        patterns:
+          - "sanity"
+          - "next-sanity"
+          - "@sanity/*"
       minor-and-patch:
         update-types:
           - minor
           - patch
 
   - package-ecosystem: github-actions
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       github-actions:
         patterns:
