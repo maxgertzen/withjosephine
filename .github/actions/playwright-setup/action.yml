@@ -10,13 +10,14 @@ runs:
       run: |
         version=$(node -p "require('./node_modules/@playwright/test/package.json').version")
         echo "version=$version" >> $GITHUB_OUTPUT
+        echo "image=$ImageOS" >> $GITHUB_OUTPUT
 
     - name: Cache Playwright browsers
       uses: actions/cache@v6
       id: pw-cache
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ env.ImageOS }}-${{ steps.pw-version.outputs.version }}
+        key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.image }}-${{ steps.pw-version.outputs.version }}
 
     - name: Install Playwright browsers
       if: steps.pw-cache.outputs.cache-hit != 'true'
