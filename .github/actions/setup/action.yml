@@ -25,6 +25,4 @@ runs:
 
     - name: Install studio dependencies
       shell: bash
-      # studio/pnpm-lock.yaml is gitignored (separate pnpm project), so
-      # --frozen-lockfile would fail in CI. Resolve from package.json.
-      run: pnpm --dir studio install --no-frozen-lockfile
+      run: pnpm --dir studio install --frozen-lockfile

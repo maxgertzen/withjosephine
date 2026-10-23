@@ -1,2 +1,6 @@
+overrides:
+  "adm-zip@<0.6.1": "^0.6.1"
+  "js-yaml@<3.15.2": "^3.15.2"
+  "uuid@<14.0.0": "^14.0.0"
 allowBuilds:
   esbuild: true

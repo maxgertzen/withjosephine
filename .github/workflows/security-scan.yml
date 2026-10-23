@@ -15,4 +15,36 @@ jobs:
     with:
       scan-args: |-
         --lockfile=./pnpm-lock.yaml
+        --lockfile=./studio/pnpm-lock.yaml
         --config=./osv-scanner.toml
+
+  report:
+    needs: osv-scan
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SCAN_RESULT: ${{ needs.osv-scan.result }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ASSIGNEE: ${{ github.repository_owner }}
+    steps:
+      - name: Open, update or close the security-scan issue
+        run: |
+          open_issue=$(gh issue list --label security-scan --state open --json number --jq '.[0].number // empty')
+          if [ "$SCAN_RESULT" = "failure" ]; then
+            if [ -n "$open_issue" ]; then
+              gh issue comment "$open_issue" --body "The security scan failed again: $RUN_URL"
+            else
+              gh label create security-scan --color B60205 --description "Weekly OSV scan failed" --force
+              gh issue create \
+                --title "Weekly security scan failed" \
+                --label security-scan \
+                --assignee "$ASSIGNEE" \
+                --body "The run log lists the vulnerable packages with their fixed versions, or the error that stopped the scan: $RUN_URL"
+            fi
+          elif [ "$SCAN_RESULT" = "success" ] && [ -n "$open_issue" ]; then
+            gh issue close "$open_issue" --comment "The security scan passed: $RUN_URL"
+          fi

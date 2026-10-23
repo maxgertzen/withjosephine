@@ -46,6 +46,7 @@ jobs:
     with:
       scan-args: |-
         --lockfile=./pnpm-lock.yaml
+        --lockfile=./studio/pnpm-lock.yaml
         --config=./osv-scanner.toml
 
   test:

@@ -1,5 +1,4 @@
 node_modules/
 dist/
 .sanity/
-pnpm-lock.yaml
 .env

@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/studio"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    ignore:
+      - dependency-name: "@sanity/color-input"
+        versions: [">=6.1.2"]
+      - dependency-name: "sanity-plugin-iframe-pane"
+        versions: [">=5.0.31"]
+    groups:
+      hosting-and-framework:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+          - "@next/*"
+          - "@opennextjs/*"
+          - "wrangler"
+          - "@cloudflare/*"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
