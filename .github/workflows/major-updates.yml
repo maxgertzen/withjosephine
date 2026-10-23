@@ -1,0 +1,44 @@
+name: major-updates
+
+on:
+  schedule:
+    - cron: "30 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            studio
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: issue
+        name: Open, update or close the major-updates issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/report-major-updates.mjs
+      - if: steps.issue.outputs.new_majors_issue_url != ''
+        uses: ./.github/actions/telegram-alert
+        with:
+          text: "withjosephine has new major dependency versions to review: ${{ steps.issue.outputs.new_majors_issue_url }}"
+          bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          topic-id: ${{ secrets.TELEGRAM_TOPIC_ID }}
+      - if: failure()
+        uses: ./.github/actions/telegram-alert
+        with:
+          text: "The withjosephine major-updates check failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          topic-id: ${{ secrets.TELEGRAM_TOPIC_ID }}

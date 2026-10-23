@@ -9,6 +9,8 @@ updates:
     cooldown:
       default-days: 3
     ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "@sanity/color-input"
         versions: [">=6.1.2"]
       - dependency-name: "sanity-plugin-iframe-pane"

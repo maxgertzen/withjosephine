@@ -40,7 +40,7 @@ jobs:
       - name: Open, update or close the security-scan issue
         run: |
           open_issue=$(gh issue list --label security-scan --state open --json number --jq '.[0].number // empty')
-          if [ "$SCAN_RESULT" = "failure" ]; then
+          if [ "$SCAN_RESULT" != "success" ]; then
             if [ -n "$open_issue" ]; then
               gh issue comment "$open_issue" --body "The security scan failed again: $RUN_URL"
             else
@@ -57,20 +57,17 @@ jobs:
 
   telegram:
     needs: osv-scan
-    if: ${{ always() && (needs.osv-scan.result == 'failure' || inputs.telegram_test) }}
+    if: ${{ always() && (needs.osv-scan.result != 'success' || inputs.telegram_test) }}
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     steps:
-      - name: Send a message to the Telegram alerts topic
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
-          TEXT: ${{ inputs.telegram_test && 'Test message from the withjosephine security scan' || 'The withjosephine weekly security scan failed' }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          curl --fail --silent --show-error --output /dev/null --retry 3 --retry-all-errors \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "message_thread_id=${TELEGRAM_TOPIC_ID}" \
-            --data-urlencode "text=${TEXT}: ${RUN_URL}"
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/telegram-alert
+        with:
+          text: "${{ inputs.telegram_test && 'Test message from the withjosephine security scan' || 'The withjosephine weekly security scan failed' }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          topic-id: ${{ secrets.TELEGRAM_TOPIC_ID }}
