@@ -4,9 +4,15 @@ on:
   schedule:
     - cron: "0 3 * * 1"
   workflow_dispatch:
+    inputs:
+      telegram_test:
+        description: Only send a test message to Telegram, skip the scan
+        type: boolean
+        default: false
 
 jobs:
   osv-scan:
+    if: ${{ !inputs.telegram_test }}
     permissions:
       contents: read
       security-events: write
@@ -20,7 +26,7 @@ jobs:
 
   report:
     needs: osv-scan
-    if: always()
+    if: ${{ always() && !inputs.telegram_test }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -48,3 +54,23 @@ jobs:
           elif [ "$SCAN_RESULT" = "success" ] && [ -n "$open_issue" ]; then
             gh issue close "$open_issue" --comment "The security scan passed: $RUN_URL"
           fi
+
+  telegram:
+    needs: osv-scan
+    if: ${{ always() && (needs.osv-scan.result == 'failure' || inputs.telegram_test) }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Send a message to the Telegram alerts topic
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          TEXT: ${{ inputs.telegram_test && 'Test message from the withjosephine security scan' || 'The withjosephine weekly security scan failed' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl --fail --silent --show-error --output /dev/null --retry 3 --retry-all-errors \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "message_thread_id=${TELEGRAM_TOPIC_ID}" \
+            --data-urlencode "text=${TEXT}: ${RUN_URL}"
