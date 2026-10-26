@@ -29,8 +29,10 @@ const __dirname = path.dirname(__filename);
 const SOURCE_DATASET = "production";
 const TARGET_DATASET = "staging";
 
+const NEVER_COPIED_TYPES = new Set(["submission", "sanity.previewUrlSecret"]);
+
 export function isExcluded(type: string): boolean {
-  return type === "submission" || type.startsWith("system.");
+  return NEVER_COPIED_TYPES.has(type) || type.startsWith("system.");
 }
 
 async function discoverTypes(
