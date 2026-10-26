@@ -1,11 +1,9 @@
 import { Box, Button, Card, Label, Spinner, Stack } from "@sanity/ui";
-import { useEffect, useMemo, useState } from "react";
-import { useClient } from "sanity";
+import { useEffect, useState } from "react";
 import { usePresentationNavigate, usePresentationParams } from "sanity/presentation";
 
+import { useDraftsClient } from "../lib/draftsClient";
 import { type PageGroup, pageGroups } from "../lib/previewPageGroups";
-
-const DRAFTS_PERSPECTIVE_API_VERSION = "2025-02-19";
 
 const PAGES_QUERY = `{
   "readings": *[_type == "reading" && defined(slug.current)] | order(order asc) { "title": name, "slug": slug.current },
@@ -14,8 +12,7 @@ const PAGES_QUERY = `{
 }`;
 
 export function PreviewNavigator() {
-  const baseClient = useClient({ apiVersion: DRAFTS_PERSPECTIVE_API_VERSION });
-  const client = useMemo(() => baseClient.withConfig({ perspective: "drafts" }), [baseClient]);
+  const client = useDraftsClient();
   const navigate = usePresentationNavigate();
   const previewUrl = usePresentationParams(false)?.preview;
   const currentPath = previewUrl ? new URL(previewUrl, window.location.origin).pathname : undefined;

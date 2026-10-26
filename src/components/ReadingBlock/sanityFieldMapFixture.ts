@@ -42,7 +42,6 @@ const FIELD_MAP_BOOKING_FORM: SanityBookingForm = {
   sections: [],
   readingPageContent: {
     eyebrow: readingPageField("Small Label Above the Promise", "eyebrow"),
-    foldRowLabel: readingPageField("Folded Row Label", "foldRowLabel"),
     facts: [0, 1, 2].map((index) => ({
       label: readingPageField("Facts Row label", `facts[${index}].label`),
       value: readingPageField("Facts Row value", `facts[${index}].value`),

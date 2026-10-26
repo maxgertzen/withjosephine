@@ -15,6 +15,7 @@ export type BookingPageShellProps = {
   readingPrice: string;
   priceLine?: ReactNode;
   outerBg?: "cream" | "ivory";
+  belowCard?: ReactNode;
   children: ReactNode;
 };
 
@@ -31,6 +32,7 @@ export function BookingPageShell({
   readingPrice,
   priceLine,
   outerBg = "cream",
+  belowCard,
   children,
 }: BookingPageShellProps) {
   return (
@@ -58,6 +60,7 @@ export function BookingPageShell({
             />
             <div className="relative px-6 py-10 md:px-12 md:py-14">{children}</div>
           </article>
+          {belowCard ? <div className="mt-12 px-1 md:px-6">{belowCard}</div> : null}
         </div>
       </main>
 

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 
 import { type ReadingId, track } from "@/lib/analytics";
-import { isFoldedEntry } from "@/lib/intake/bookingEntry";
 import { useBookingEntry } from "@/lib/intake/bookingEntryContext";
 
 export function EntryPageView({ readingId }: { readingId: ReadingId }) {
@@ -17,7 +16,6 @@ export function EntryPageView({ readingId }: { readingId: ReadingId }) {
       referrer: document.referrer,
       viewport_width: window.innerWidth,
       entry,
-      folded: isFoldedEntry(entry),
     });
   }, [entry, readingId]);
   return null;

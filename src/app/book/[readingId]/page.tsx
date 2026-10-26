@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
-import { ReadingFoldPrePaint } from "@/components/ReadingBlock/ReadingFoldPrePaint";
 import { getReadingById } from "@/data/readings";
 import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
@@ -49,7 +48,6 @@ export default async function BookingPage({ params }: BookingPageProps) {
   return (
     <BookingEntryProvider key={props.reading.slug} readingId={props.reading.slug}>
       <JsonLd data={productJsonLd} />
-      <ReadingFoldPrePaint slug={props.reading.slug} />
       <BookingFormView {...props} />
       <EntryPageView readingId={props.reading.slug} />
     </BookingEntryProvider>

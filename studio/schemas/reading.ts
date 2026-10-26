@@ -1,6 +1,7 @@
 import { defineField, defineType } from "sanity";
 
 import { parseDisplayToCents } from "../../src/lib/pricing";
+import { readingBookingPageLayoutField } from "./bookingPageLayout";
 import { hideFactsField, readingFactsField } from "./readingFacts";
 
 const PARAGRAPHS_WITH_BOLD_AND_ITALIC = {
@@ -68,6 +69,7 @@ export const reading = defineType({
       type: "string",
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
     }),
+    readingBookingPageLayoutField("bookingPage"),
     defineField({
       name: "intakeIntro",
       group: "bookingPage",

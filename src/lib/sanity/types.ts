@@ -11,6 +11,7 @@ import type {
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
+import type { BookingPageLayoutEntry } from "@/lib/booking/pageLayout";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type ContentPerspective = "published" | "preview";
@@ -37,6 +38,7 @@ export type SanityReading = {
   hideFacts?: boolean;
   questionsOnPage?: SanityReadingQuestion[] | null;
   formTestimonial?: SanityFormTestimonial | null;
+  pageLayout?: BookingPageLayoutEntry[] | null;
   seo?: SanitySeo;
 };
 
@@ -412,6 +414,7 @@ export type SanityBookingForm = {
   nextButtonText?: string;
   saveAndContinueLaterText?: string;
   pageIndicatorTagline?: string;
+  pageLayout?: BookingPageLayoutEntry[] | null;
   sections: SanityFormSection[];
 };
 

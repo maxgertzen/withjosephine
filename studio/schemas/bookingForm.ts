@@ -1,6 +1,7 @@
 import { defineField, defineType } from "sanity";
 
 import { MAX_READING_FACTS, READING_PAGE_DEFAULTS } from "../../src/data/defaults";
+import { sharedBookingPageLayoutField } from "./bookingPageLayout";
 import { factsPerRowField, hideFactsField, readingFactsField } from "./readingFacts";
 
 export const bookingForm = defineType({
@@ -8,6 +9,7 @@ export const bookingForm = defineType({
   title: "Booking Form",
   type: "document",
   fields: [
+    sharedBookingPageLayoutField,
     defineField({
       name: "sections",
       title: "Sections",
@@ -51,13 +53,6 @@ export const bookingForm = defineType({
           name: "eyebrow",
           title: "Small Label Above the Promise",
           type: "string",
-        }),
-        defineField({
-          name: "foldRowLabel",
-          title: "Folded Row Label",
-          type: "string",
-          description:
-            "Shown to visitors who came from a homepage card, as one row that opens the block. {reading} becomes the reading's subtitle, for example 'About the {reading}'.",
         }),
         hideFactsField({
           fieldset: "facts",

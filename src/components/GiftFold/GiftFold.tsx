@@ -87,7 +87,7 @@ export function GiftFold({
   return (
     <section
       data-testid="gift-fold"
-      className="mb-9 overflow-hidden rounded-[16px] border border-j-border-subtle bg-j-warm"
+      className="overflow-hidden rounded-[16px] border border-j-border-subtle bg-j-warm"
     >
       <DisclosureButton
         id={rowId}

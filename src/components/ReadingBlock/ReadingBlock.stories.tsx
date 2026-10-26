@@ -1,24 +1,11 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 
-import type { BookingEntry } from "@/lib/analytics";
-import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
-
-import { ReadingBlock } from "./ReadingBlock";
 import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
+import { ReadingBlockPreview } from "./ReadingBlockPreview";
 
-function visitorFrom(entry: BookingEntry): Decorator {
-  return function VisitorFrom(Story) {
-    return (
-      <BookingEntryContext.Provider value={entry}>
-        <Story />
-      </BookingEntryContext.Provider>
-    );
-  };
-}
-
-const meta: Meta<typeof ReadingBlock> = {
+const meta: Meta<typeof ReadingBlockPreview> = {
   title: "Components/Booking/ReadingBlock",
-  component: ReadingBlock,
+  component: ReadingBlockPreview,
   args: SOUL_BLUEPRINT_BLOCK,
   decorators: [
     (Story) => (
@@ -30,21 +17,15 @@ const meta: Meta<typeof ReadingBlock> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof ReadingBlock>;
+type Story = StoryObj<typeof ReadingBlockPreview>;
 
-export const OpenForSearchVisitor: Story = { decorators: [visitorFrom("external")] };
-
-export const FoldedForHomepageCardVisitor: Story = { decorators: [visitorFrom("homepage_card")] };
-
-export const FoldedForSavedDraft: Story = { decorators: [visitorFrom("draft")] };
+export const Default: Story = {};
 
 export const WithoutQuestions: Story = {
-  decorators: [visitorFrom("external")],
   args: { questions: { title: "Questions", items: [] } },
 };
 
 export const WithoutReaderPhoto: Story = {
-  decorators: [visitorFrom("external")],
   args: { reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } },
 };
 
@@ -56,16 +37,14 @@ const SIX_FACTS = [
 ];
 
 export const SixFactsBalanced: Story = {
-  decorators: [visitorFrom("external")],
   args: { facts: SIX_FACTS },
 };
 
 export const FiveFactsListOnPhones: Story = {
-  decorators: [visitorFrom("external")],
   args: {
     facts: SIX_FACTS.slice(0, 5),
     factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
   },
 };
 
-export const FactsHidden: Story = { decorators: [visitorFrom("external")], args: { facts: [] } };
+export const FactsHidden: Story = { args: { facts: [] } };

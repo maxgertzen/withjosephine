@@ -224,9 +224,7 @@ entry_page_view  →  intake_field_first_focus  →  intake_submit_success
 
 `/book/[slug]` is the form, so `entry_page_view` and `intake_page_view` fire on the same page load. Step 2 is the first field the visitor focuses.
 
-Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry` or `folded`, optionally `reading_id`.
-
-After the reading block ships, break this funnel down by `folded` to compare homepage-card visitors with search and shared-link visitors. The before/after comparison for the block uses funnel 3, which has data from before the block.
+Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry`, optionally `reading_id`.
 
 **2. Mid-funnel: intake completion**
 
@@ -267,7 +265,6 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
   | `external` | Referred by another site (search, TikTok, a shared link opened from an app). |
   | `direct` | No referrer: typed, bookmarked, or opened from an app that sends none. |
 
-- `folded` (on `entry_page_view`): `true` for `homepage_card` and `draft`. These visitors get the folded reading block once it ships; before that, the flag only marks the group.
 
 ### Email events
 

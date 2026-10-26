@@ -114,7 +114,6 @@ export interface ReadingFactsLayout {
 
 export interface ReadingPageContent extends ReadingFactsLayout {
   eyebrow: string;
-  foldRowLabel: string;
   facts: ReadingFact[];
   hideFacts: boolean;
   hideReaderPhoto: boolean;
@@ -131,7 +130,6 @@ export interface ReadingPageContent extends ReadingFactsLayout {
 
 export const READING_PAGE_DEFAULTS: ReadingPageContent = {
   eyebrow: "Online reading",
-  foldRowLabel: "About the {reading}",
   facts: [
     { label: "Format", value: "Voice + PDF" },
     { label: "Length", value: "30-40 min" },

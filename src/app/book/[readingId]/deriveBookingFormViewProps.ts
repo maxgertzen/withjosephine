@@ -13,6 +13,7 @@ import {
   type ReadingPageContent,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
+import { chooseLayoutEntries, resolveBookingPageLayout } from "@/lib/booking/pageLayout";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { linesWithText } from "@/lib/content/nonBlank";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
@@ -125,7 +126,6 @@ export function deriveBookingFormViewProps(
 
   const readingBlock: ReadingBlockProps = {
     slug: reading.slug,
-    foldRowLabel: applyTokens(content.foldRowLabel, { reading: reading.subtitle || reading.name }),
     eyebrow: content.eyebrow,
     lead: reading.valueProposition,
     description: reading.description,
@@ -176,6 +176,9 @@ export function deriveBookingFormViewProps(
       priceLabel: reading.priceLabel,
     },
     readingBlock,
+    layout: resolveBookingPageLayout(
+      chooseLayoutEntries(input.sanityReading?.pageLayout, input.bookingForm.pageLayout),
+    ),
     copy: {
       title: entry.showLetterTitle ? (entry.letterTitle ?? INTAKE_TITLE_FALLBACK) : undefined,
       intro: input.sanityReading?.intakeIntro?.length

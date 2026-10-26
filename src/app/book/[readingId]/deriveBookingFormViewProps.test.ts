@@ -137,21 +137,18 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(block?.eyebrow).toBe(READING_PAGE_DEFAULTS.eyebrow);
     expect(block?.facts).toEqual(READING_PAGE_DEFAULTS.facts);
     expect(block?.reader.name).toBe(READING_PAGE_DEFAULTS.readerName);
-    expect(block?.foldRowLabel).toBe("About the Soul Blueprint Reading");
   });
 
   it("takes Sanity's shared wording and keeps defaults for null fields", () => {
     const form = bookingForm({
       readingPageContent: {
         eyebrow: "Live reading",
-        foldRowLabel: "Read about the {reading}",
         readerLine: null as unknown as string,
       },
     });
     const block = derive(sanityReading(), { bookingForm: form })?.readingBlock;
 
     expect(block?.eyebrow).toBe("Live reading");
-    expect(block?.foldRowLabel).toBe("Read about the Soul Blueprint Reading");
     expect(block?.reader.line).toBe(READING_PAGE_DEFAULTS.readerLine);
   });
 
@@ -430,5 +427,21 @@ describe("deriveBookingFormViewProps gift row", () => {
     const props = derive(sanityReading(), { giftSettings: { codeFieldOptionalLabel: "Code?" } });
 
     expect(props?.form.giftCodeField?.copy.codeFieldOptionalLabel).toBe("Code?");
+  });
+});
+
+describe("deriveBookingFormViewProps page order", () => {
+  it("uses the built-in order when Sanity has none", () => {
+    expect(derive()?.layout.aboveForm[0]).toBe("summary");
+  });
+
+  it("uses the shared order and lets a reading replace it", () => {
+    const form = bookingForm({ pageLayout: [{ element: "facts", hidden: true }] });
+    expect(derive(sanityReading(), { bookingForm: form })?.layout.aboveForm).not.toContain("facts");
+
+    const reading = sanityReading({ pageLayout: [{ element: "reader", hidden: true }] });
+    const layout = derive(reading, { bookingForm: form })?.layout;
+    expect(layout?.aboveForm).toContain("facts");
+    expect(layout?.aboveForm).not.toContain("reader");
   });
 });

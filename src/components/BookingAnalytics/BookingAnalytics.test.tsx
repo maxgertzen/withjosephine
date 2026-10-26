@@ -43,7 +43,7 @@ afterEach(() => {
 });
 
 describe("EntryPageView", () => {
-  it("fires entry_page_view exactly once on mount with referrer, viewport, entry and fold state", async () => {
+  it("fires entry_page_view exactly once on mount with referrer, viewport and entry", async () => {
     await act(async () => {
       render(<Page />);
     });
@@ -53,18 +53,17 @@ describe("EntryPageView", () => {
       referrer: "https://example.com/source",
       viewport_width: 1280,
       entry: "external",
-      folded: false,
     });
   });
 
-  it("reports a homepage card visitor as folded", async () => {
+  it("reports a homepage card visitor", async () => {
     markEntryClick("soul-blueprint", "homepage_card");
     await act(async () => {
       render(<Page />);
     });
     expect(track).toHaveBeenCalledWith(
       "entry_page_view",
-      expect.objectContaining({ entry: "homepage_card", folded: true }),
+      expect.objectContaining({ entry: "homepage_card" }),
     );
   });
 
@@ -80,9 +79,9 @@ describe("EntryPageView", () => {
     expect(track).toHaveBeenCalledOnce();
   });
 
-  it("gives the fold and the page view the same classification of one homepage card tap", async () => {
+  it("gives the page and the page view the same classification of one homepage card tap", async () => {
     const seen: (string | null)[] = [];
-    function FoldProbe() {
+    function EntryProbe() {
       seen.push(useBookingEntry());
       return null;
     }
@@ -90,25 +89,25 @@ describe("EntryPageView", () => {
     await act(async () => {
       render(
         <Page>
-          <FoldProbe />
+          <EntryProbe />
         </Page>,
       );
     });
     expect(seen.at(-1)).toBe("homepage_card");
     expect(track).toHaveBeenCalledWith(
       "entry_page_view",
-      expect.objectContaining({ entry: "homepage_card", folded: true }),
+      expect.objectContaining({ entry: "homepage_card" }),
     );
   });
 
-  it("records a reading switch as its own entry, with the block open", async () => {
+  it("records a reading switch as its own entry", async () => {
     markEntryClick("soul-blueprint", "reading_switch");
     await act(async () => {
       render(<Page />);
     });
     expect(track).toHaveBeenCalledWith(
       "entry_page_view",
-      expect.objectContaining({ entry: "reading_switch", folded: false }),
+      expect.objectContaining({ entry: "reading_switch" }),
     );
   });
 

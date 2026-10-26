@@ -74,6 +74,7 @@ export const readingBySlugQuery = groq`
       name,
       "detail": coalesce(readingType->subtitle, detailOverride)
     },
+    pageLayout[] { element, hidden, insideForm },
     seo
   }
 `;
@@ -362,7 +363,6 @@ export const bookingFormQuery = groq`
     },
     readingPageContent {
       eyebrow,
-      foldRowLabel,
       facts[] {
         label,
         value
@@ -393,6 +393,7 @@ export const bookingFormQuery = groq`
     nextButtonText,
     saveAndContinueLaterText,
     pageIndicatorTagline,
+    pageLayout[] { element, hidden, insideForm },
     "sections": sections[]-> {
       _id,
       sectionTitle,

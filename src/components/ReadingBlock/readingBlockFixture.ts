@@ -7,7 +7,6 @@ const SOUL_BLUEPRINT = getReadingById("soul-blueprint")!;
 
 export const SOUL_BLUEPRINT_BLOCK: ReadingBlockProps = {
   slug: "soul-blueprint",
-  foldRowLabel: "About the Soul Blueprint Reading",
   eyebrow: READING_PAGE_DEFAULTS.eyebrow,
   lead: SOUL_BLUEPRINT.valueProposition,
   description: SOUL_BLUEPRINT.briefDescription,

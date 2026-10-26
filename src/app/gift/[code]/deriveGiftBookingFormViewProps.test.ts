@@ -4,6 +4,7 @@ import type { BookingFormViewProps } from "@/app/book/[readingId]/BookingFormVie
 import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
 import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
 import { GIFT_DEFAULTS } from "@/data/defaults";
+import { DEFAULT_BOOKING_PAGE_LAYOUT } from "@/lib/booking/pageLayout";
 import { pick } from "@/lib/pick";
 
 import { deriveGiftBookingFormViewProps } from "./deriveGiftBookingFormViewProps";
@@ -19,6 +20,7 @@ const BASE: BookingFormViewProps = {
     name: "Birth Chart Reading",
     priceLabel: "$89",
   },
+  layout: DEFAULT_BOOKING_PAGE_LAYOUT,
   readingBlock: {
     ...SOUL_BLUEPRINT_BLOCK,
     otherReadings: {
