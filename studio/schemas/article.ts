@@ -136,8 +136,7 @@ export const article = defineType({
       group: "ending",
       to: [{ type: "reading" }],
       description:
-        "The end of the note shows a box with this reading's name, price, its short line from the homepage, and a button to book it. This note is also listed on that reading's booking page.",
-      validation: (rule) => rule.required(),
+        "The end of the note shows a box with this reading's name, price, its short line from the homepage, and a button to book it. This note is also listed on that reading's booking page. Leave empty for a note with no reading box that is not listed on any booking page.",
     }),
     defineField({
       name: "hideCardLeadIn",

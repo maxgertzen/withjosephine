@@ -147,6 +147,14 @@ describe("/api/booking", () => {
     expect(res.status).toBe(404);
   });
 
+  it("returns 404 for a reading switched off on the site", async () => {
+    mockVerify.mockResolvedValueOnce(true);
+    mockReading.mockResolvedValueOnce({ ...READING, onSite: false });
+    mockForm.mockResolvedValueOnce(FORM);
+    const res = await callRoute(VALID_BODY);
+    expect(res.status).toBe(404);
+  });
+
   it("returns 400 with field errors when validation fails", async () => {
     mockVerify.mockResolvedValueOnce(true);
     mockReading.mockResolvedValueOnce(READING);
@@ -330,6 +338,17 @@ describe("/api/booking with a gift code", () => {
     mockReading.mockResolvedValueOnce(READING);
     mockForm.mockResolvedValueOnce(FORM);
   }
+
+  it("still redeems a gift for a reading switched off on the site", async () => {
+    mockVerify.mockResolvedValueOnce(true);
+    mockReading.mockResolvedValueOnce({ ...READING, onSite: false });
+    mockForm.mockResolvedValueOnce(FORM);
+
+    const res = await callRoute(GIFT_BODY);
+
+    expect(res.status).not.toBe(404);
+    expect(mockRedeem).toHaveBeenCalled();
+  });
 
   it("rejects a non-string gift code as an invalid body", async () => {
     const res = await callRoute({ ...VALID_BODY, giftCode: 42 });

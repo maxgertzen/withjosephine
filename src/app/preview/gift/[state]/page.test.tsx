@@ -43,6 +43,7 @@ import {
 import {
   fetchBookingForm,
   fetchGiftSettings,
+  fetchReading,
   fetchReadingNotes,
   fetchReadings,
   fetchSiteSettings,
@@ -77,9 +78,11 @@ beforeEach(() => {
   intakeFormMock.mockClear();
 });
 
-async function renderPreview(state: string) {
+async function renderPreview(state: string, reading?: string) {
   const Page = (await import("./page")).default;
-  return render(await Page({ params: Promise.resolve({ state }) }));
+  return render(
+    await Page({ params: Promise.resolve({ state }), searchParams: Promise.resolve({ reading }) }),
+  );
 }
 
 describe("/preview/gift/[state]", () => {
@@ -87,6 +90,12 @@ describe("/preview/gift/[state]", () => {
     await renderPreview(state);
 
     expect(await screen.findByText(EXPECTED_TEXT[state])).toBeTruthy();
+  });
+
+  it("opens the gift recipient view for the reading named in the address", async () => {
+    await renderPreview("opened", "soul-blueprint");
+
+    expect(fetchReading).toHaveBeenCalledWith("soul-blueprint");
   });
 
   it("buy-sheet opens the gift sheet for the Birth Chart reading", async () => {

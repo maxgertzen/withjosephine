@@ -171,6 +171,16 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(block?.included.items).toEqual(["One thing.", "Another thing."]);
   });
 
+  it("shows the booking page checklist instead of the homepage card one when it has items", () => {
+    const reading = sanityReading({ includes: ["Card line."], bookingIncludes: ["Page line."] });
+
+    expect(derive(reading)?.readingBlock.included.items).toEqual(["Page line."]);
+    expect(
+      derive(sanityReading({ includes: ["Card line."], bookingIncludes: [] }))?.readingBlock
+        .included.items,
+    ).toEqual(["Card line."]);
+  });
+
   it("shows How it works from the reading's own lines", () => {
     const lines = ["How you book.", "When it arrives."];
 
@@ -443,5 +453,20 @@ describe("deriveBookingFormViewProps page order", () => {
     const layout = derive(reading, { bookingForm: form })?.layout;
     expect(layout?.aboveForm).toContain("facts");
     expect(layout?.aboveForm).not.toContain("reader");
+  });
+});
+
+describe("deriveBookingFormViewProps for readings removed or switched off", () => {
+  it("returns nothing for a slug Sanity no longer has, instead of the built-in copy", () => {
+    expect(derive(null, { sanityReadings: [sanityReading()] })).toBeNull();
+  });
+
+  it("sends Back to the homepage top for a reading switched off on the site", () => {
+    expect(derive(sanityReading({ onSite: false }))?.backHref).toBe("/");
+  });
+
+  it("falls back to the homepage checklist when the booking list holds only blank lines", () => {
+    const reading = sanityReading({ includes: ["Card line."], bookingIncludes: ["  "] });
+    expect(derive(reading)?.readingBlock.included.items).toEqual(["Card line."]);
   });
 });

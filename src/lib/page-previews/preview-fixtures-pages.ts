@@ -51,8 +51,16 @@ export const GIFT_PREVIEW_STATES = [
 
 export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];
 
-export function giftPreviewPath(state: GiftPreviewState): string {
-  return `/preview/gift/${state}`;
+export function giftPreviewPath(state: GiftPreviewState, readingSlug?: string): string {
+  const path = `/preview/gift/${state}`;
+  return readingSlug ? `${path}?reading=${encodeURIComponent(readingSlug)}` : path;
+}
+
+export function giftRecipientPreviewLinks(readingSlug: string) {
+  return [
+    { title: "Gift recipient view", href: giftPreviewPath("opened", readingSlug) },
+    { title: "Gift recipient view, last page", href: giftPreviewPath("last-page", readingSlug) },
+  ];
 }
 
 export const GIFT_PREVIEW_LINKS = GIFT_PREVIEW_STATES.map(({ state, title }) => ({

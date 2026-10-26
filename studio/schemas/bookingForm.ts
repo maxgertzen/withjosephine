@@ -60,7 +60,8 @@ export const bookingForm = defineType({
         }),
         readingFactsField({
           fieldset: "facts",
-          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own. Leave empty to use the built-in three.`,
+          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own.`,
+          inherits: "builtIn",
         }),
         factsPerRowField({
           name: "factsPerRowPhone",

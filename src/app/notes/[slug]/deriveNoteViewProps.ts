@@ -1,4 +1,5 @@
 import { ABOUT_DEFAULTS } from "@/data/defaults";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { nonBlank } from "@/lib/content/nonBlank";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { bookingPath } from "@/lib/http/routes";
@@ -38,7 +39,7 @@ export function deriveNoteViewProps(input: {
   const lastModified = noteLastModified(article);
 
   const ending: NoteEnding | undefined =
-    reading?.slug && !article.hideReadingBox
+    reading?.slug && isReadingOnSite(reading) && !article.hideReadingBox
       ? {
           leadIn: article.hideCardLeadIn ? undefined : content.cardLeadIn,
           readingName: reading.name,

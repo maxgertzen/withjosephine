@@ -36,29 +36,31 @@ export function GiftCodeField({
     <div
       {...CLARITY_MASK_PROPS}
       onKeyDown={apply ? applyOnEnterInField : undefined}
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 md:flex-row md:items-start"
     >
-      <Input
-        id={id}
-        name="giftCode"
-        label={label}
-        value={value}
-        onChange={onChange}
-        variant="code"
-        helpText={checking ? checkingLabel : undefined}
-        error={error}
-        autoComplete="off"
-        autoCapitalize="characters"
-        spellCheck={false}
-        enterKeyHint="go"
-      />
+      <div className="min-w-0 md:flex-1">
+        <Input
+          id={id}
+          name="giftCode"
+          label={label}
+          value={value}
+          onChange={onChange}
+          variant="code"
+          helpText={checking ? checkingLabel : undefined}
+          error={error}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          enterKeyHint="go"
+        />
+      </div>
       {apply ? (
         <Button
           type="button"
           variant="outlined"
           onClick={apply.onApply}
           disabled={!canApply}
-          className="w-full"
+          className="w-full md:h-14.5 md:w-auto md:shrink-0"
         >
           {apply.label}
         </Button>

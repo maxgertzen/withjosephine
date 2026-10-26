@@ -18,6 +18,7 @@ export type ContentPerspective = "published" | "preview";
 
 export type SanityReading = {
   _id: string;
+  onSite?: boolean | null;
   name: string;
   slug: string;
   tag: string;
@@ -28,6 +29,7 @@ export type SanityReading = {
   valueProposition: string;
   briefDescription: string;
   includes: string[];
+  bookingIncludes?: string[] | null;
   howItWorks?: string[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
@@ -457,6 +459,7 @@ export type SanityArticle = SanityArticleBase & {
   searchDescription?: string;
   body: NoteBodyBlock[];
   relatedReading?: {
+    onSite?: boolean | null;
     name: string;
     slug: string;
     priceDisplay?: string;

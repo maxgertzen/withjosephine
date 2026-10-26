@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { getReadingById } from "@/data/readings";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import { fetchReadingPublished } from "@/lib/sanity/fetch";
@@ -32,7 +33,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
     loadBookingFormViewProps(readingId, "published"),
     fetchReadingPublished(readingId),
   ]);
-  if (!props) {
+  if (!props || !isReadingOnSite(sanityReading)) {
     notFound();
   }
 

@@ -4,10 +4,10 @@ import { parseDisplayToCents } from "../../src/lib/pricing";
 import { readingBookingPageLayoutField } from "./bookingPageLayout";
 import { hideFactsField, readingFactsField } from "./readingFacts";
 
-const PARAGRAPHS_WITH_BOLD_AND_ITALIC = {
+const PARAGRAPHS_AND_BULLETS = {
   type: "block",
   styles: [{ title: "Paragraph", value: "normal" }],
-  lists: [],
+  lists: [{ title: "Bullet", value: "bullet" }],
   marks: {
     decorators: [
       { title: "Bold", value: "strong" },
@@ -23,10 +23,20 @@ export const reading = defineType({
   type: "document",
   groups: [
     { name: "bothPages", title: "Homepage and booking page", default: true },
+    { name: "homepageCard", title: "Homepage card only" },
     { name: "bookingPage", title: "Booking page only" },
     { name: "setup", title: "Setup" },
   ],
   fields: [
+    defineField({
+      name: "onSite",
+      group: "setup",
+      title: "Show on the site",
+      type: "boolean",
+      initialValue: true,
+      description:
+        "Off: the reading leaves the homepage, the 'Not sure this is the one?' links and the sitemap, its booking page shows the not-found page, and nobody can book it or buy it as a gift. Gift codes already paid for it still open. Turn a reading off instead of deleting it when it has orders.",
+    }),
     defineField({
       name: "name",
       group: "setup",
@@ -75,9 +85,9 @@ export const reading = defineType({
       group: "bookingPage",
       title: "Intake Intro",
       type: "array",
-      of: [PARAGRAPHS_WITH_BOLD_AND_ITALIC],
+      of: [PARAGRAPHS_AND_BULLETS],
       description:
-        "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold and italic are available. Leave empty to use the built-in wording.",
+        "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold, italic and bullet lists are available, and bullets show with the site's checkmarks. Leave empty to use the built-in wording.",
     }),
     defineField({
       name: "price",
@@ -136,12 +146,20 @@ export const reading = defineType({
     }),
     defineField({
       name: "includes",
-      group: "bothPages",
-      title: "What's included",
+      group: "homepageCard",
+      title: "What's included on the homepage card",
+      type: "array",
+      of: [{ type: "string" }],
+      description: "The checklist shown on the homepage card when 'Learn More' is opened.",
+    }),
+    defineField({
+      name: "bookingIncludes",
+      group: "bookingPage",
+      title: "What's included on the booking page",
       type: "array",
       of: [{ type: "string" }],
       description:
-        "The checklist. Shown on the homepage card when 'Learn More' is opened, and under 'What's included' on the booking page.",
+        "The checklist under 'What's included' on this reading's booking page, one line per item. When empty, the homepage card list shows here. To hide the section, use its switch in Booking page order.",
     }),
     defineField({
       name: "howItWorks",
@@ -188,7 +206,8 @@ export const reading = defineType({
     readingFactsField({
       group: "bookingPage",
       description:
-        "This reading's own facts row on its booking page. Leave empty to use the shared Facts Row from Booking Form.",
+        "This reading's own facts row on its booking page. Leave as it is to use the Facts Row from Booking Form.",
+      inherits: "bookingForm",
     }),
     hideFactsField({
       group: "bookingPage",

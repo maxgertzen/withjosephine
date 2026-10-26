@@ -21,6 +21,7 @@ export const landingPageQuery = groq`
 export const readingsQuery = groq`
   *[_type == "reading"] | order(order asc) {
     _id,
+    onSite,
     name,
     "slug": slug.current,
     tag,
@@ -42,6 +43,7 @@ export const readingsQuery = groq`
 export const readingBySlugQuery = groq`
   *[_type == "reading" && slug.current == $slug][0] {
     _id,
+    onSite,
     name,
     "slug": slug.current,
     tag,
@@ -52,6 +54,7 @@ export const readingBySlugQuery = groq`
     valueProposition,
     briefDescription,
     "includes": coalesce(includes, []),
+    bookingIncludes,
     howItWorks,
     requiresBirthChart,
     requiresAkashic,
@@ -80,7 +83,7 @@ export const readingBySlugQuery = groq`
 `;
 
 export const readingSlugsQuery = groq`
-  *[_type == "reading"] { "slug": slug.current }
+  *[_type == "reading"] { "slug": slug.current, onSite }
 `;
 
 export const testimonialsQuery = groq`
@@ -499,6 +502,7 @@ export const articleBySlugQuery = groq`
       }
     },
     "relatedReading": relatedReading-> {
+      onSite,
       name,
       "slug": slug.current,
       priceDisplay,

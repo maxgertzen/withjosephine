@@ -7,13 +7,12 @@ import {
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
   INTAKE_TITLE_FALLBACK,
-  MAX_READING_FACTS,
   READING_PAGE_DEFAULTS,
-  type ReadingFact,
-  type ReadingPageContent,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
+import { pageFacts } from "@/lib/booking/pageFacts";
 import { chooseLayoutEntries, resolveBookingPageLayout } from "@/lib/booking/pageLayout";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { linesWithText } from "@/lib/content/nonBlank";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
@@ -64,17 +63,16 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
 
 const PORTRAIT_WIDTH_PX = 300;
 
-function pageFacts(
-  reading: SanityReading | null | undefined,
-  shared: ReadingPageContent,
-): ReadingFact[] {
-  if (reading?.hideFacts) return [];
-  if (reading?.facts?.length) return reading.facts.slice(0, MAX_READING_FACTS);
-  if (shared.hideFacts) return [];
-  return shared.facts.slice(0, MAX_READING_FACTS);
+function ownOrHomepageLines(own: string[] | null | undefined, homepage: string[]) {
+  const ownLines = linesWithText(own);
+  return ownLines.length > 0 ? ownLines : linesWithText(homepage);
 }
 
-function resolveReading(readingId: string, sanityReading: SanityReading | null) {
+function resolveReading(
+  readingId: string,
+  sanityReading: SanityReading | null,
+  sanityHasReadings: boolean,
+) {
   if (sanityReading) {
     return {
       slug: sanityReading.slug,
@@ -84,11 +82,11 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
       priceLabel: sanityReading.priceDisplay,
       valueProposition: sanityReading.valueProposition,
       description: sanityReading.briefDescription,
-      includes: linesWithText(sanityReading.includes),
+      includes: ownOrHomepageLines(sanityReading.bookingIncludes, sanityReading.includes),
       howItWorks: linesWithText(sanityReading.howItWorks),
     };
   }
-  const fallback = getReadingById(readingId);
+  const fallback = sanityHasReadings ? undefined : getReadingById(readingId);
   if (!fallback) return null;
   return {
     slug: readingId,
@@ -106,7 +104,11 @@ function resolveReading(readingId: string, sanityReading: SanityReading | null) 
 export function deriveBookingFormViewProps(
   input: DeriveBookingFormViewPropsInput,
 ): BookingFormViewProps | null {
-  const reading = resolveReading(input.readingId, input.sanityReading);
+  const reading = resolveReading(
+    input.readingId,
+    input.sanityReading,
+    input.sanityReadings.length > 0,
+  );
   if (!reading) return null;
   if (!input.bookingForm) return null;
 
@@ -168,7 +170,7 @@ export function deriveBookingFormViewProps(
 
   return {
     nav: input.nav,
-    backHref: homeReadingAnchor(reading.slug),
+    backHref: isReadingOnSite(input.sanityReading) ? homeReadingAnchor(reading.slug) : "/",
     reading: {
       slug: reading.slug,
       tag: reading.tag,

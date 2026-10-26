@@ -1,7 +1,7 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
-import { GIFT_PREVIEW_LINKS } from "@/lib/page-previews/preview-fixtures-pages";
+import { GIFT_PREVIEW_LINKS, giftRecipientPreviewLinks } from "@/lib/page-previews/preview-fixtures-pages";
 
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
@@ -16,9 +16,14 @@ const emailLocation = (title: string) =>
     locations: [{ title, href: "#", showHref: false, icon: EnvelopeIcon }],
   });
 
+const SAMPLE_BOOKING_SLUG = "soul-blueprint";
+
 const BOOKING_PAGES = defineLocations({
   message: "Affects every booking page (/book/*).",
-  locations: [{ title: "Booking", href: "/preview/book/soul-blueprint" }],
+  locations: [
+    { title: "Booking", href: `/preview/book/${SAMPLE_BOOKING_SLUG}` },
+    ...giftRecipientPreviewLinks(SAMPLE_BOOKING_SLUG),
+  ],
 });
 
 export const presentationResolve: PresentationPluginOptions["resolve"] = {
@@ -57,6 +62,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
         locations: doc?.slug
           ? [
               { title: String(doc.name ?? "Reading"), href: `/preview/book/${doc.slug}` },
+              ...giftRecipientPreviewLinks(String(doc.slug)),
               { title: "Thank You", href: `/preview/thank-you/${doc.slug}` },
             ]
           : [],

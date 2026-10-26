@@ -55,7 +55,7 @@ export function BookingFormView({
       <>
         {copy.title ? <BookingPageHeading title={copy.title} /> : null}
         <div className="max-w-[50ch]">
-          <PortableTextContent value={copy.intro} />
+          <PortableTextContent value={copy.intro} bullets="checkmarks" />
         </div>
       </>
     ),

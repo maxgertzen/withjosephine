@@ -179,3 +179,24 @@ describe("BookingFormView page order", () => {
     expect(screen.getByText(/It named what I felt/)).toBeInTheDocument();
   });
 });
+
+describe("BookingFormView intro bullets", () => {
+  it("renders bullet items from the intro with the site's checkmark", () => {
+    const intro: SanityPortableTextBlock[] = [
+      {
+        _type: "block",
+        _key: "l0",
+        style: "normal",
+        listItem: "bullet",
+        level: 1,
+        markDefs: [],
+        children: [{ _type: "span", _key: "l0-0", text: "Your date of birth", marks: [] }],
+      },
+    ];
+    render(<BookingFormView {...props(intro)} />);
+
+    const item = screen.getByText("Your date of birth").closest("li");
+    expect(item?.querySelector("svg")).not.toBeNull();
+    expect(item?.closest("ul")).not.toHaveClass("list-disc");
+  });
+});

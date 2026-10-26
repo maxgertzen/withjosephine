@@ -9,10 +9,12 @@ type InheritedArrayInputOptions<Item> = {
   describe: (item: Item) => { title: string; subtitle?: string };
   itemType: string;
   inheritedHeading: string;
-  loadFailedText: string;
+  inheritedEmptyText?: string;
+  loadFailedText?: string;
   copyLabel: string;
   resetLabel?: string;
   upToDate?: { apply: (items: Item[]) => Item[]; label: string };
+  emptyListInherits?: boolean;
 };
 
 type StoredItem = { _key?: string; _type?: string };
@@ -42,7 +44,7 @@ export function inheritedArrayInput<Item extends object>(options: InheritedArray
     const client = useDraftsClient();
     const [inherited, setInherited] = useState<Item[] | null>(null);
     const [loadFailed, setLoadFailed] = useState(false);
-    const empty = !props.value || props.value.length === 0;
+    const empty = !props.value || (props.value.length === 0 && options.emptyListInherits !== false);
 
     useEffect(() => {
       if (!empty) return;
@@ -98,6 +100,9 @@ export function inheritedArrayInput<Item extends object>(options: InheritedArray
           <Text size={1} muted>
             {loadFailed ? options.loadFailedText : options.inheritedHeading}
           </Text>
+          {inherited?.length === 0 && options.inheritedEmptyText ? (
+            <Text size={1}>{options.inheritedEmptyText}</Text>
+          ) : null}
           <Stack space={2}>
             {(inherited ?? []).map((item, index) => {
               const row = options.describe(item);

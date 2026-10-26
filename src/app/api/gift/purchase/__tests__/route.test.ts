@@ -126,6 +126,13 @@ describe("POST /api/gift/purchase guards", () => {
     expect(mockCreatePendingGift).not.toHaveBeenCalled();
   });
 
+  it("returns 404 for a reading switched off on the site", async () => {
+    mockReading.mockResolvedValueOnce({ ...READING, onSite: false });
+    const res = await callRoute(VALID_BODY);
+    expect(res.status).toBe(404);
+    expect(mockCreatePendingGift).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when the reading is missing", async () => {
     mockReading.mockResolvedValueOnce(null);
     const res = await callRoute(VALID_BODY);

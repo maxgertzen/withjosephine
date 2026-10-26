@@ -9,6 +9,7 @@ import { presentationTool } from "sanity/presentation";
 import { visionTool } from "@sanity/vision";
 import { colorInput } from "@sanity/color-input";
 import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
+import { deleteReadingAction } from "./actions/deleteReading";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
 import { deliverySentBadge } from "./components/DeliveryPanel/deliverySentBadge";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
@@ -53,6 +54,9 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
   }
   if (schemaType === "submission") {
     return [...prev, deleteCustomerDataAction];
+  }
+  if (schemaType === "reading") {
+    return [...prev.filter(({ action }) => action !== "delete"), deleteReadingAction];
   }
   return prev;
 };

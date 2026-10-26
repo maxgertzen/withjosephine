@@ -7,7 +7,9 @@ import {
 import type { PortableTextBlock } from "@portabletext/types";
 import Link from "next/link";
 
+import { includedListClasses, IncludedListRow } from "@/components/IncludedList";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
+import { mergeClasses } from "@/lib/utils";
 
 type LinkMark = {
   _type: string;
@@ -82,10 +84,22 @@ const components: PortableTextComponents = {
   },
 };
 
+const checkmarkListComponents: PortableTextComponents = {
+  ...components,
+  list: { bullet: ({ children }) => <ul className={mergeClasses(includedListClasses, "mt-5")}>{children}</ul> },
+  listItem: { bullet: ({ children }) => <IncludedListRow size="page">{children}</IncludedListRow> },
+};
+
 interface PortableTextContentProps {
   value: SanityPortableTextBlock[];
+  bullets?: "dots" | "checkmarks";
 }
 
-export function PortableTextContent({ value }: PortableTextContentProps) {
-  return <PortableText value={value} components={components} />;
+export function PortableTextContent({ value, bullets = "dots" }: PortableTextContentProps) {
+  return (
+    <PortableText
+      value={value}
+      components={bullets === "checkmarks" ? checkmarkListComponents : components}
+    />
+  );
 }

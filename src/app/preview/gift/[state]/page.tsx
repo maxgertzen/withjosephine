@@ -41,11 +41,15 @@ const UNREDEEMABLE_PREVIEW_CODE = "K7M2QX9PH4TU";
 
 type GiftPreviewProps = {
   params: Promise<{ state: string }>;
+  searchParams: Promise<{ reading?: string }>;
 };
 
-async function renderBookingFormWithSheet(initialSheet: GiftFoldSheet): Promise<ReactElement> {
-  const props = await loadPreviewBookingFormProps(SLUG, initialSheet);
-  if (!props) return <BookingPreviewUnavailable slug={SLUG} />;
+async function renderBookingFormWithSheet(
+  slug: string,
+  initialSheet: GiftFoldSheet,
+): Promise<ReactElement> {
+  const props = await loadPreviewBookingFormProps(slug, initialSheet);
+  if (!props) return <BookingPreviewUnavailable slug={slug} />;
   return <BookingFormView {...props} />;
 }
 
@@ -100,9 +104,11 @@ async function renderRecipientThankYou(): Promise<ReactElement> {
 }
 
 async function renderGiftForm({
+  slug,
   note,
   initialPage,
 }: {
+  slug: string;
   note: string | null;
   initialPage?: InitialPage;
 }): Promise<ReactElement> {
@@ -111,14 +117,14 @@ async function renderGiftForm({
       code: UNREDEEMABLE_PREVIEW_CODE,
       buyerFirstName: PREVIEW_GIFT.buyerFirstName,
       note,
-      readingSlug: SLUG,
+      readingSlug: slug,
     },
     "preview",
   );
-  if (!props) return <BookingPreviewUnavailable slug={SLUG} />;
+  if (!props) return <BookingPreviewUnavailable slug={slug} />;
 
   return (
-    <BookingEntryProvider readingId={SLUG} entry="gift">
+    <BookingEntryProvider readingId={slug} entry="gift">
       <BookingFormView {...props} form={{ ...props.form, initialPage, preview: true }} />
     </BookingEntryProvider>
   );
@@ -155,16 +161,16 @@ async function renderSendPage(): Promise<ReactElement> {
   );
 }
 
-const GIFT_PREVIEWS: Record<GiftPreviewState, () => Promise<ReactElement>> = {
-  "buy-sheet": () => renderBookingFormWithSheet("gift"),
+const GIFT_PREVIEWS: Record<GiftPreviewState, (slug: string) => Promise<ReactElement>> = {
+  "buy-sheet": (slug) => renderBookingFormWithSheet(slug, "gift"),
   "buyer-thank-you": renderBuyerThankYou,
-  "redeem-sheet": () => renderBookingFormWithSheet("redeem"),
-  opened: () => renderGiftForm({ note: PREVIEW_GIFT.note }),
-  "opened-no-note": () => renderGiftForm({ note: null }),
+  "redeem-sheet": (slug) => renderBookingFormWithSheet(slug, "redeem"),
+  opened: (slug) => renderGiftForm({ slug, note: PREVIEW_GIFT.note }),
+  "opened-no-note": (slug) => renderGiftForm({ slug, note: null }),
   "already-opened": () => renderGiftMessage("already_opened", true),
   "no-longer-active": () => renderGiftMessage("no_longer_active", true),
   "not-found": () => renderGiftMessage("not_found", false),
-  "last-page": () => renderGiftForm({ note: PREVIEW_GIFT.note, initialPage: "last" }),
+  "last-page": (slug) => renderGiftForm({ slug, note: PREVIEW_GIFT.note, initialPage: "last" }),
   "recipient-thank-you": renderRecipientThankYou,
   "send-link": renderSendPage,
 };
@@ -173,8 +179,8 @@ function isGiftPreviewState(state: string): state is GiftPreviewState {
   return GIFT_PREVIEW_STATES.some((entry) => entry.state === state);
 }
 
-export default async function GiftPagePreview({ params }: GiftPreviewProps) {
-  const { state } = await params;
+export default async function GiftPagePreview({ params, searchParams }: GiftPreviewProps) {
+  const [{ state }, { reading }] = await Promise.all([params, searchParams]);
   if (!isGiftPreviewState(state)) notFound();
-  return GIFT_PREVIEWS[state]();
+  return GIFT_PREVIEWS[state](reading ?? SLUG);
 }
