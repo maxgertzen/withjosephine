@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
+import { SOUL_BLUEPRINT_BLOCK, SOUL_BLUEPRINT_SECTIONS } from "./readingBlockFixture";
 import { ReadingBlockPreview } from "./ReadingBlockPreview";
 
 const meta: Meta<typeof ReadingBlockPreview> = {
   title: "Components/Booking/ReadingBlock",
   component: ReadingBlockPreview,
-  args: SOUL_BLUEPRINT_BLOCK,
+  args: { block: SOUL_BLUEPRINT_BLOCK, sections: SOUL_BLUEPRINT_SECTIONS },
   decorators: [
     (Story) => (
       <div className="max-w-3xl bg-j-ivory p-6">
@@ -22,11 +22,20 @@ type Story = StoryObj<typeof ReadingBlockPreview>;
 export const Default: Story = {};
 
 export const WithoutQuestions: Story = {
-  args: { questions: { title: "Questions", items: [] } },
+  args: { sections: SOUL_BLUEPRINT_SECTIONS.filter((section) => section.kind !== "questions") },
+};
+
+export const ExtraBoxWithAList: Story = {
+  args: {
+    sections: [
+      ...SOUL_BLUEPRINT_SECTIONS,
+      { key: "extra", kind: "list", title: "What to have ready", items: ["Your birth date", "A quiet hour"] },
+    ],
+  },
 };
 
 export const WithoutReaderPhoto: Story = {
-  args: { reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } },
+  args: { block: { ...SOUL_BLUEPRINT_BLOCK, reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } } },
 };
 
 const SIX_FACTS = [
@@ -37,14 +46,17 @@ const SIX_FACTS = [
 ];
 
 export const SixFactsBalanced: Story = {
-  args: { facts: SIX_FACTS },
+  args: { block: { ...SOUL_BLUEPRINT_BLOCK, facts: SIX_FACTS } },
 };
 
 export const FiveFactsListOnPhones: Story = {
   args: {
-    facts: SIX_FACTS.slice(0, 5),
-    factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
+    block: {
+      ...SOUL_BLUEPRINT_BLOCK,
+      facts: SIX_FACTS.slice(0, 5),
+      factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
+    },
   },
 };
 
-export const FactsHidden: Story = { args: { facts: [] } };
+export const FactsHidden: Story = { args: { block: { ...SOUL_BLUEPRINT_BLOCK, facts: [] } } };

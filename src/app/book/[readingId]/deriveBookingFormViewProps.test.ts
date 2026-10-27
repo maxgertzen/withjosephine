@@ -15,6 +15,7 @@ import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { pick } from "@/lib/pick";
 import type {
   SanityBookingForm,
+  SanityBookingPageSection,
   SanityLandingPage,
   SanityPortableTextBlock,
   SanityReading,
@@ -41,6 +42,23 @@ function sanityReading(overrides: Partial<SanityReading> = {}): SanityReading {
     requiresAkashic: true,
     requiresQuestions: true,
     ...overrides,
+  };
+}
+
+function part(type: string, extra: Partial<SanityBookingPageSection> = {}): SanityBookingPageSection {
+  return { _key: type, _type: type, ...extra };
+}
+
+function listSection(key: string, title: string, items: string[]): SanityBookingPageSection {
+  return { _key: key, _type: "listSection", title, items };
+}
+
+function testimonialSection(extra: Partial<SanityBookingPageSection> = {}): SanityBookingPageSection {
+  return {
+    _key: "quote",
+    _type: "testimonialSection",
+    testimonial: { _id: "t", quote: "It connected the dots.", name: "Raphi", detail: "Soul Blueprint Reading" },
+    ...extra,
   };
 }
 
@@ -103,17 +121,24 @@ describe("deriveBookingFormViewProps intake copy", () => {
     expect(props?.copy.title).toBe(INTAKE_TITLE_FALLBACK);
   });
 
-  it("uses the reading's intakeIntro verbatim, marks and all", () => {
+  it("uses the opening words from the form heading row verbatim, marks and all", () => {
     const authored = paragraphBlocks(["Tell me what you already suspect."]);
+    const reading = sanityReading({ bookingPage: [part("introSection", { openingWords: authored })] });
 
-    expect(derive(sanityReading({ intakeIntro: authored }))?.copy.intro).toBe(authored);
+    expect(derive(reading)?.copy.intro).toBe(authored);
   });
 
-  it("falls back to the per-slug paragraphs when intakeIntro is absent or empty", () => {
+  it("falls back to the per-slug paragraphs when the row has no opening words", () => {
+    const emptyRow = sanityReading({ bookingPage: [part("introSection", { openingWords: [] })] });
+
     expect(introText(derive()?.copy.intro)).toEqual(INTAKE_INTRO_BY_SLUG["soul-blueprint"]);
-    expect(introText(derive(sanityReading({ intakeIntro: [] }))?.copy.intro)).toEqual(
-      INTAKE_INTRO_BY_SLUG["soul-blueprint"],
-    );
+    expect(introText(derive(emptyRow)?.copy.intro)).toEqual(INTAKE_INTRO_BY_SLUG["soul-blueprint"]);
+  });
+
+  it("shows the row heading even when the shared heading is switched off", () => {
+    const reading = sanityReading({ bookingPage: [part("introSection", { title: "Before we start" })] });
+
+    expect(derive(reading)?.copy.title).toBe("Before we start");
   });
 
   it("falls back to the generic paragraphs for a slug with no built-in copy", () => {
@@ -158,97 +183,84 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.facts).toEqual([]);
   });
 
-  it("puts the description under the promise and the checklist under What's included", () => {
-    const block = derive(
-      sanityReading({
-        briefDescription: "What it is.",
-        includes: ["One thing.", "Another thing."],
-      }),
-    )?.readingBlock;
+  it("puts the description under the promise", () => {
+    const block = derive(sanityReading({ briefDescription: "What it is." }))?.readingBlock;
 
     expect(block?.lead).toBe("The most complete picture");
     expect(block?.description).toBe("What it is.");
-    expect(block?.included.items).toEqual(["One thing.", "Another thing."]);
   });
 
-  it("shows the booking page checklist instead of the homepage card one when it has items", () => {
-    const reading = sanityReading({ includes: ["Card line."], bookingIncludes: ["Page line."] });
+  it("shows each box from the reading's Booking page list, in order", () => {
+    const reading = sanityReading({
+      bookingPage: [
+        listSection("included", "What's included", ["One thing.", "Another thing."]),
+        listSection("extra", "What to have ready", ["Your birth date."]),
+      ],
+    });
 
-    expect(derive(reading)?.readingBlock.included.items).toEqual(["Page line."]);
-    expect(
-      derive(sanityReading({ includes: ["Card line."], bookingIncludes: [] }))?.readingBlock
-        .included.items,
-    ).toEqual(["Card line."]);
-  });
-
-  it("shows How it works from the reading's own lines", () => {
-    const lines = ["How you book.", "When it arrives."];
-
-    expect(derive(sanityReading({ howItWorks: lines }))?.readingBlock.howItWorks.items).toEqual(
-      lines,
-    );
+    expect(derive(reading)?.sections.aboveForm).toEqual([
+      { key: "included", kind: "list", title: "What's included", items: ["One thing.", "Another thing."] },
+      { key: "extra", kind: "list", title: "What to have ready", items: ["Your birth date."] },
+    ]);
   });
 
   it("drops blank lines, including one carrying Presentation's invisible source-map marker", () => {
-    const presentationMarker = "\u200B\u200C\u200D\uFEFF".repeat(10);
+    const presentationMarker = "​‌‍﻿".repeat(10);
+    const reading = sanityReading({
+      bookingPage: [listSection("how", "How it works", ["How you book.", "  ", ` ${presentationMarker}`, "When it arrives."])],
+    });
 
-    expect(
-      derive(
-        sanityReading({
-          howItWorks: ["How you book.", "  ", ` ${presentationMarker}`, "When it arrives."],
-        }),
-      )?.readingBlock.howItWorks.items,
-    ).toEqual(["How you book.", "When it arrives."]);
+    expect(derive(reading)?.sections.aboveForm).toEqual([
+      { key: "how", kind: "list", title: "How it works", items: ["How you book.", "When it arrives."] },
+    ]);
   });
 
-  it("skips How it works paragraphs saved before the field became a list, until they are converted", () => {
-    const savedParagraph = paragraphBlocks(["How you book."])[0];
+  it("skips paragraphs saved before the lines became a list", () => {
+    const savedParagraph = paragraphBlocks(["How you book."])[0] as unknown as string;
+    const reading = sanityReading({ bookingPage: [listSection("how", "How it works", [savedParagraph, "When it arrives."])] });
 
-    expect(
-      derive(
-        sanityReading({ howItWorks: [savedParagraph, "When it arrives."] as unknown as string[] }),
-      )?.readingBlock.howItWorks.items,
-    ).toEqual(["When it arrives."]);
+    expect(derive(reading)?.sections.aboveForm).toEqual([
+      { key: "how", kind: "list", title: "How it works", items: ["When it arrives."] },
+    ]);
   });
 
-  it("drops blank What's included lines, so no row shows an empty checkmark", () => {
-    expect(
-      derive(sanityReading({ includes: ["One thing.", " ", "Another thing."] }))?.readingBlock
-        .included.items,
-    ).toEqual(["One thing.", "Another thing."]);
+  it("shows no box for a list with no lines", () => {
+    const reading = sanityReading({ bookingPage: [listSection("how", "How it works", ["", "   "])] });
+
+    expect(derive(reading)?.sections.aboveForm).toEqual([]);
   });
 
-  it.each([
-    ["unset", undefined],
-    ["null, as GROQ returns a missing field", null],
-    ["an empty list", []],
-    ["blank lines", ["", "   "]],
-  ])("hides How it works when Becky leaves the field %s", (_label, howItWorks) => {
-    expect(derive(sanityReading({ howItWorks }))?.readingBlock.howItWorks.items).toEqual([]);
-  });
+  it("uses the built-in What's included and How it works when the reading is missing from Sanity", () => {
+    const built = getReadingById("soul-blueprint")!;
+    const lists = derive(null)?.sections.aboveForm.filter((section) => section.kind === "list");
 
-  it("uses the built-in How it works when the reading is missing from Sanity", () => {
-    expect(derive(null)?.readingBlock.howItWorks.items).toEqual(
-      getReadingById("soul-blueprint")!.howItWorks,
-    );
+    expect(lists?.map((section) => section.kind === "list" && section.items)).toEqual([built.includes, built.howItWorks]);
   });
 
   it("maps the picked questions in order and drops broken references", () => {
-    const block = derive(
-      sanityReading({
-        questionsOnPage: [
-          { _id: "b", question: "Second?", answer: "Yes." },
-          null as unknown as { _id: string; question: string; answer: string },
-          { _id: "a", question: "First?", answer: "No." },
-        ],
-      }),
-    )?.readingBlock;
+    const reading = sanityReading({
+      bookingPage: [
+        {
+          _key: "faq",
+          _type: "questionsSection",
+          title: "Questions",
+          questions: [
+            { _id: "b", question: "Second?", answer: "Yes." },
+            null,
+            { _id: "a", question: "First?", answer: "No." },
+          ],
+        },
+      ],
+    });
+    const [section] = derive(reading)?.sections.aboveForm ?? [];
 
-    expect(block?.questions.items.map((item) => item.id)).toEqual(["b", "a"]);
+    expect(section?.kind === "questions" && section.questions.map((item) => item.id)).toEqual(["b", "a"]);
   });
 
-  it("has no questions when none are picked", () => {
-    expect(derive()?.readingBlock.questions.items).toEqual([]);
+  it("shows no Questions box when none are picked", () => {
+    const reading = sanityReading({ bookingPage: [{ _key: "faq", _type: "questionsSection", title: "Questions", questions: [] }] });
+
+    expect(derive(reading)?.sections.aboveForm).toEqual([]);
   });
 
   it("lists the other readings from Sanity, excluding this one", () => {
@@ -287,7 +299,7 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive()?.readingBlock.reader.imageUrl).toBe(ABOUT_DEFAULTS.imageUrl);
   });
 
-  it("uses the shared facts unless the reading has its own", () => {
+  it("uses the shared facts unless the facts row has its own", () => {
     const own = [{ label: "Length", value: "1 hour" }];
     const shared = [{ label: "Format", value: "Voice" }];
     const withShared = (extra: Partial<SanityBookingForm["readingPageContent"]> = {}) =>
@@ -296,7 +308,8 @@ describe("deriveBookingFormViewProps reading block", () => {
       derive(sanityReading(readingOverrides), { bookingForm: form })?.readingBlock.facts;
 
     expect(facts({})).toEqual(shared);
-    expect(facts({ facts: own })).toEqual(own);
+    expect(facts({ bookingPage: [part("factsSection", { facts: own })] })).toEqual(own);
+    expect(facts({ bookingPage: [part("factsSection", { facts: [] })] })).toEqual(shared);
     expect(facts({}, withShared({ facts: [] }))).toEqual([]);
     expect(derive()?.readingBlock.facts).toEqual(READING_PAGE_DEFAULTS.facts);
   });
@@ -334,24 +347,24 @@ describe("deriveBookingFormViewProps form extras", () => {
     expect(derive()?.form.pageIndicatorTagline).toBeUndefined();
   });
 
-  it("passes the reading's testimonial with the shared label", () => {
-    const form = derive(
-      sanityReading({
-        formTestimonial: {
-          _id: "t",
-          quote: "It connected the dots.",
-          name: "Raphi",
-          detail: "Soul Blueprint Reading",
-        },
-      }),
-    )?.form;
+  it("passes the reading's testimonial into the form with the shared label", () => {
+    const reading = sanityReading({ bookingPage: [testimonialSection()] });
+    const props = derive(reading);
 
-    expect(form?.testimonial).toEqual({
+    expect(props?.form.testimonial).toEqual({
       label: READING_PAGE_DEFAULTS.testimonialLabel,
       quote: "It connected the dots.",
       name: "Raphi",
       detail: "Soul Blueprint Reading",
     });
+    expect(props?.sections.aboveForm).toEqual([]);
+  });
+
+  it("shows the testimonial on the page when its switch puts it outside the form", () => {
+    const props = derive(sanityReading({ bookingPage: [testimonialSection({ insideForm: false })] }));
+
+    expect(props?.form.testimonial).toBeUndefined();
+    expect(props?.sections.aboveForm[0]).toMatchObject({ kind: "testimonial", testimonial: { quote: "It connected the dots." } });
   });
 
   it("passes no testimonial when none is set", () => {
@@ -438,26 +451,86 @@ describe("deriveBookingFormViewProps gift row", () => {
   });
 });
 
+describe("deriveBookingFormViewProps words held by the rows", () => {
+  const form = bookingForm({
+    readingPageContent: { eyebrow: "Shared label", readerName: "Shared name", otherReadingsTitle: "Shared others" },
+  });
+  const rowsReading = sanityReading({
+    bookingPage: [
+      part("summarySection", { eyebrow: "Own label", promise: "Own promise", description: " " }),
+      part("readerSection", { name: "Becky", hidePhoto: true }),
+      part("giftRowSection", { giftRowLabel: "Own gift row" }),
+      part("otherReadingsSection"),
+    ],
+  });
+
+  it("uses each row's own words and fills blank ones with the shared words", () => {
+    const props = derive(rowsReading, { bookingForm: form });
+
+    expect(props?.readingBlock).toMatchObject({
+      eyebrow: "Own label",
+      lead: "Own promise",
+      description: "My signature offering",
+      reader: { name: "Becky", line: READING_PAGE_DEFAULTS.readerLine, imageUrl: undefined },
+      otherReadings: { title: "Shared others" },
+    });
+    expect(props?.giftFold?.copy).toMatchObject({ giftRowLabel: "Own gift row", buyLead: GIFT_DEFAULTS.buyLead });
+  });
+
+  it("uses the row photo over the About photo", () => {
+    const reading = sanityReading({
+      bookingPage: [part("readerSection", { photoUrl: "https://cdn.sanity.io/images/p/d/own.jpg" })],
+    });
+
+    expect(derive(reading)?.readingBlock.reader.imageUrl).toBe("https://cdn.sanity.io/images/p/d/own.jpg?w=300&auto=format");
+  });
+
+  it("points a blank row word at its row in Presentation, and leaves filled ones to their own source map", () => {
+    const targets = derive(rowsReading, { bookingForm: form, editable: true })?.readingBlock.editTargets;
+
+    expect(targets?.eyebrow).toBeUndefined();
+    expect(targets?.description).toContain("path=bookingPage:summarySection.description");
+    expect(targets?.description).toContain("reading-soul-blueprint");
+    expect(targets?.readerLine).toContain("path=bookingPage:readerSection.line");
+    expect(targets?.otherReadingsTitle).toContain("path=bookingPage:otherReadingsSection.title");
+  });
+
+  it("leaves the shared words clickable to their own place when the reading uses the starting list", () => {
+    const starting = bookingForm({
+      readingPageContent: { eyebrow: "Shared label" },
+      bookingPageStart: [part("summarySection")],
+    });
+    const props = derive(sanityReading(), { bookingForm: starting, editable: true });
+
+    expect(props?.readingBlock.eyebrow).toBe("Shared label");
+    expect(props?.readingBlock.editTargets?.eyebrow).toBeUndefined();
+  });
+
+  it("adds no click targets outside Presentation", () => {
+    const targets = derive(rowsReading, { bookingForm: form })?.readingBlock.editTargets;
+
+    expect(Object.values(targets ?? {}).filter(Boolean)).toEqual([]);
+  });
+});
+
 describe("deriveBookingFormViewProps page order", () => {
-  it("uses the built-in order when Sanity has none", () => {
-    expect(derive()?.layout.aboveForm[0]).toBe("summary");
+  const types = (sections: { kind: string; key: string }[] | undefined) => sections?.map(({ key }) => key);
+
+  it("uses the built-in list when Sanity has none", () => {
+    expect(derive()?.sections.aboveForm[0]).toMatchObject({ kind: "part", part: "summarySection" });
   });
 
-  it("uses the shared order and lets a reading replace it", () => {
-    const form = bookingForm({ pageLayout: [{ element: "form" }, { element: "summary" }] });
-    expect(derive(sanityReading(), { bookingForm: form })?.layout.belowForm).toContain("summary");
+  it("uses the starting list from Booking Form until the reading has its own", () => {
+    const form = bookingForm({ bookingPageStart: [part("formSection"), part("summarySection")] });
+    expect(types(derive(sanityReading(), { bookingForm: form })?.sections.belowForm)).toEqual(["summarySection"]);
 
-    const reading = sanityReading({ pageLayout: [{ element: "summary" }, { element: "form" }] });
-    expect(derive(reading, { bookingForm: form })?.layout.aboveForm[0]).toBe("summary");
+    const reading = sanityReading({ bookingPage: [part("summarySection"), part("formSection")] });
+    expect(types(derive(reading, { bookingForm: form })?.sections.aboveForm)).toEqual(["summarySection"]);
   });
 
-  it("hides what Booking Form hides plus what the reading also hides", () => {
-    const form = bookingForm({ hiddenParts: ["facts"], testimonialInsideForm: false });
-    const reading = sanityReading({ hiddenParts: ["reader"] });
-    const layout = derive(reading, { bookingForm: form })?.layout;
-    expect(layout?.aboveForm).not.toContain("facts");
-    expect(layout?.aboveForm).not.toContain("reader");
-    expect(layout?.testimonialInsideForm).toBe(false);
+  it("leaves out the rows that are switched off", () => {
+    const reading = sanityReading({ bookingPage: [part("factsSection", { shown: false }), part("readerSection")] });
+    expect(types(derive(reading)?.sections.aboveForm)).toEqual(["readerSection"]);
   });
 
   it("passes the editable navigation words", () => {
@@ -476,10 +549,5 @@ describe("deriveBookingFormViewProps for readings removed or switched off", () =
 
   it("sends Back to the homepage top for a reading switched off on the site", () => {
     expect(derive(sanityReading({ onSite: false }))?.backHref).toBe("/");
-  });
-
-  it("falls back to the homepage checklist when the booking list holds only blank lines", () => {
-    const reading = sanityReading({ includes: ["Card line."], bookingIncludes: ["  "] });
-    expect(derive(reading)?.readingBlock.included.items).toEqual(["Card line."]);
   });
 });

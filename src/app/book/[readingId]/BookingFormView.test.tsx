@@ -7,23 +7,31 @@ vi.mock("@/components/IntakeForm", () => ({
 }));
 
 import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
-import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
+import { SOUL_BLUEPRINT_BLOCK, SOUL_BLUEPRINT_SECTIONS } from "@/components/ReadingBlock/readingBlockFixture";
 import { GIFT_DEFAULTS } from "@/data/defaults";
-import {
-  type BookingPageLayout,
-  DEFAULT_BOOKING_PAGE_LAYOUT,
-  defaultBookingPageLayoutEntries,
-  resolveBookingPageLayout,
-} from "@/lib/booking/pageLayout";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { pick } from "@/lib/pick";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 import { BookingFormView, type BookingFormViewProps } from "./BookingFormView";
 
+const BELOW_THE_CARD = new Set(["other", "notes"]);
+
+const ABOVE_THE_CARD = SOUL_BLUEPRINT_SECTIONS.filter(({ key }) => !BELOW_THE_CARD.has(key));
+
+const SECTIONS: BookingFormViewProps["sections"] = {
+  aboveForm: [
+    ...ABOVE_THE_CARD.slice(0, 5),
+    { key: "gift", kind: "part", part: "giftRowSection" },
+    ...ABOVE_THE_CARD.slice(5),
+    { key: "intro", kind: "part", part: "introSection" },
+  ],
+  belowForm: SOUL_BLUEPRINT_SECTIONS.filter(({ key }) => BELOW_THE_CARD.has(key)),
+};
+
 function props(
   intro: SanityPortableTextBlock[],
-  layout: BookingPageLayout = DEFAULT_BOOKING_PAGE_LAYOUT,
+  sections: BookingFormViewProps["sections"] = SECTIONS,
 ): BookingFormViewProps {
   return {
     nav: {},
@@ -35,7 +43,7 @@ function props(
       priceLabel: "$89",
     },
     readingBlock: SOUL_BLUEPRINT_BLOCK,
-    layout,
+    sections,
     copy: { title: "A few things, before we begin.", intro },
     form: {
       sections: [],
@@ -143,27 +151,24 @@ describe("BookingFormView gift row", () => {
 
 const TESTIMONIAL = { label: "From a client", quote: "It named what I felt.", name: "Ada" };
 
-describe("BookingFormView page order", () => {
-  it("leaves out a hidden element", () => {
-    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), {
-      hiddenEverywhere: ["otherReadings"],
-    });
-    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), layout)} />);
+describe("BookingFormView sections", () => {
+  it("leaves out a section that is not in the list", () => {
+    const sections = { ...SECTIONS, belowForm: SECTIONS.belowForm.filter(({ key }) => key !== "other") };
+    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), sections)} />);
 
     expect(screen.queryByRole("navigation", { name: "Not sure this is the one?" })).toBeNull();
     expect(screen.getByText(SOUL_BLUEPRINT_BLOCK.lead)).toBeInTheDocument();
   });
 
   it("renders elements placed after the form below the card", () => {
-    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries());
-    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), layout)} />);
+    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]))} />);
 
     const otherReadings = screen.getByRole("navigation", { name: "Not sure this is the one?" });
     expect(otherReadings.closest("article")).toBeNull();
     expect(screen.getByText(SOUL_BLUEPRINT_BLOCK.lead).closest("article")).not.toBeNull();
   });
 
-  it("puts the testimonial inside the form by default", () => {
+  it("passes the form its testimonial", () => {
     const base = props(paragraphBlocks(["Only paragraph."]));
     render(<BookingFormView {...base} form={{ ...base.form, testimonial: TESTIMONIAL }} />);
 
@@ -171,10 +176,12 @@ describe("BookingFormView page order", () => {
     expect(screen.queryByText(/It named what I felt/)).toBeNull();
   });
 
-  it("shows the testimonial on the page instead of in the form when moved out", () => {
-    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), { testimonialInsideForm: false });
-    const base = props(paragraphBlocks(["Only paragraph."]), layout);
-    render(<BookingFormView {...base} form={{ ...base.form, testimonial: TESTIMONIAL }} />);
+  it("shows a testimonial section on the page", () => {
+    const sections = {
+      ...SECTIONS,
+      aboveForm: [...SECTIONS.aboveForm, { key: "quote", kind: "testimonial" as const, testimonial: TESTIMONIAL }],
+    };
+    render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), sections)} />);
 
     expect(intakeForm.mock.lastCall?.[0].testimonial).toBeUndefined();
     expect(screen.getByText(/It named what I felt/)).toBeInTheDocument();

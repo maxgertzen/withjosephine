@@ -1,22 +1,24 @@
 import { HeaderBackProvider } from "@/components/BookingFlowHeader/headerBackContext";
 import { BookingPageHeading } from "@/components/BookingPageHeading";
 import { BookingPageShell } from "@/components/BookingPageShell";
-import {
-  type BookingPageElementNodes,
-  BookingPageStack,
-  renderedElements,
-} from "@/components/BookingPageStack";
+import { BookingPageStack, type BookingPageStackItem, shownStackItems } from "@/components/BookingPageStack";
 import { GiftFold, type GiftFoldProps } from "@/components/GiftFold";
 import { GiftModeProvider } from "@/components/GiftMode/GiftModeContext";
 import { GiftModeNote, type GiftModeNoteProps } from "@/components/GiftMode/GiftModeNote";
 import { GiftPriceLine } from "@/components/GiftMode/GiftPriceLine";
 import { IntakeForm, type IntakeFormProps } from "@/components/IntakeForm";
-import { TestimonialLine } from "@/components/IntakeForm/TestimonialLine";
 import type { NotesFooterProps, NotesNavProps } from "@/components/Notes/NotesShell";
 import { PortableTextContent } from "@/components/PortableTextContent";
-import { readingBlockElements, type ReadingBlockProps } from "@/components/ReadingBlock";
-import type { BookingPageLayout } from "@/lib/booking/pageLayout";
+import {
+  type BookingPageParts,
+  type BookingSectionView,
+  readingBlockParts,
+  type ReadingBlockProps,
+  sectionStackItem,
+} from "@/components/ReadingBlock";
 import type { SanityPortableTextBlock } from "@/lib/sanity/types";
+
+export type BookingFormViewSection = BookingSectionView;
 
 export type BookingFormViewProps = {
   nav: NotesNavProps;
@@ -25,10 +27,12 @@ export type BookingFormViewProps = {
   backLabel?: string;
   reading: { slug: string; tag: string; name: string; priceLabel: string };
   readingBlock: ReadingBlockProps;
-  layout: BookingPageLayout;
+  sections: { aboveForm: BookingFormViewSection[]; belowForm: BookingFormViewSection[] };
   copy: {
     title?: string;
+    titleEditTarget?: string;
     intro: SanityPortableTextBlock[];
+    introEditTarget?: string;
   };
   form: Omit<IntakeFormProps, "readingId" | "readingName">;
   gift?: {
@@ -45,35 +49,30 @@ export function BookingFormView({
   backLabel,
   reading,
   readingBlock,
-  layout,
+  sections,
   copy,
   form,
   gift,
   giftFold,
 }: BookingFormViewProps) {
-  const { testimonial, ...formWithoutTestimonial } = form;
-  const elements: BookingPageElementNodes = {
-    ...readingBlockElements(readingBlock),
-    giftRow: giftFold ? <GiftFold {...giftFold} /> : null,
-    intro: (
+  const parts: BookingPageParts = {
+    ...readingBlockParts(readingBlock),
+    giftRowSection: giftFold ? <GiftFold {...giftFold} /> : null,
+    introSection: (
       <>
-        {copy.title ? <BookingPageHeading title={copy.title} /> : null}
-        <div className="max-w-[50ch]">
+        {copy.title ? <BookingPageHeading title={copy.title} editTarget={copy.titleEditTarget} /> : null}
+        <div className="max-w-[50ch]" data-sanity={copy.introEditTarget}>
           <PortableTextContent value={copy.intro} bullets="checkmarks" />
         </div>
       </>
     ),
-    testimonial: testimonial ? <TestimonialLine {...testimonial} /> : null,
-    form: (
-      <IntakeForm
-        readingId={reading.slug}
-        readingName={reading.name}
-        {...formWithoutTestimonial}
-        testimonial={layout.testimonialInsideForm ? testimonial : undefined}
-      />
-    ),
   };
-  const belowCard = renderedElements(layout.belowForm, elements);
+  const stackItem = (section: BookingFormViewSection) => sectionStackItem(section, parts, reading.slug);
+  const aboveCard: BookingPageStackItem[] = [
+    ...sections.aboveForm.map(stackItem),
+    { key: "form", form: true, node: <IntakeForm readingId={reading.slug} readingName={reading.name} {...form} /> },
+  ];
+  const belowCard = shownStackItems(sections.belowForm.map(stackItem));
 
   const view = (
     <HeaderBackProvider>
@@ -92,12 +91,12 @@ export function BookingFormView({
         }
         belowCard={
           belowCard.length > 0 ? (
-            <BookingPageStack order={belowCard} elements={elements} />
+            <BookingPageStack items={belowCard} />
           ) : undefined
         }
       >
         {gift ? <GiftModeNote {...gift.noteCard} /> : null}
-        <BookingPageStack order={[...layout.aboveForm, "form"]} elements={elements} />
+        <BookingPageStack items={aboveCard} />
       </BookingPageShell>
     </HeaderBackProvider>
   );

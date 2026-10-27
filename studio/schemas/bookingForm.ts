@@ -1,7 +1,7 @@
 import { defineField, defineType } from "sanity";
 
 import { MAX_READING_FACTS, READING_PAGE_DEFAULTS } from "../../src/data/defaults";
-import { hiddenEverywhereField, sharedBookingPageLayoutField, testimonialInsideFormField } from "./bookingPageLayout";
+import { startingBookingPageField } from "./bookingPageSections";
 import { factsPerRowField, readingFactsField } from "./readingFacts";
 
 export const bookingForm = defineType({
@@ -9,9 +9,7 @@ export const bookingForm = defineType({
   title: "Booking Form",
   type: "document",
   fields: [
-    sharedBookingPageLayoutField,
-    hiddenEverywhereField,
-    testimonialInsideFormField,
+    startingBookingPageField,
     defineField({
       name: "sections",
       title: "Sections",
@@ -29,7 +27,7 @@ export const bookingForm = defineType({
           title: "Show the Form Heading",
           type: "boolean",
           description:
-            "Shows only the heading line above the opening words. Off by default: the reading name at the top already heads the page. To hide both, tick Form heading and opening words in Hide on every booking page.",
+            "On: a heading shows above the opening words of the form. Off: no heading, because the reading name at the top of the page is already a heading. To hide the heading and the opening words, switch off 'Form heading and opening words' in the reading's Booking page list.",
           initialValue: false,
         }),
         defineField({
@@ -49,7 +47,7 @@ export const bookingForm = defineType({
       title: "Reading Page",
       type: "object",
       description:
-        "Words on the reading block above the form, shared by every reading. Leave a field blank to use the built-in wording.",
+        "Words every reading shares. In a reading's Booking page list they show in grey, and the reading can type its own words instead. Leave a field empty to use the site's own words.",
       fieldsets: [
         { name: "facts", title: "Facts row", options: { collapsible: true, collapsed: false } },
         { name: "navigation", title: "Back links and page line", options: { collapsible: true, collapsed: false } },
@@ -108,23 +106,8 @@ export const bookingForm = defineType({
           title: "Hide the Reader Photo",
           type: "boolean",
           description:
-            "Hides only the round photo. To hide the name and photo, tick Reader name and photo in Hide on every booking page.",
+            "Hides the round photo next to the reader name on every reading, unless a reading sets 'Hide the photo' itself. To hide the name too, switch off 'Reader name and photo' in the reading's Booking page list.",
           initialValue: false,
-        }),
-        defineField({
-          name: "includedTitle",
-          title: "What's Included Title",
-          type: "string",
-        }),
-        defineField({
-          name: "howItWorksTitle",
-          title: "How It Works Title",
-          type: "string",
-        }),
-        defineField({
-          name: "questionsTitle",
-          title: "Questions Title",
-          type: "string",
         }),
         defineField({
           name: "otherReadingsTitle",

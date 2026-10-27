@@ -1,5 +1,30 @@
 import { groq } from "next-sanity";
 
+const BOOKING_PAGE_SECTION_PROJECTION = `{
+  _key,
+  _type,
+  shown,
+  title,
+  items,
+  eyebrow,
+  promise,
+  description,
+  facts[] { label, value },
+  name,
+  line,
+  "photoUrl": photo.asset->url,
+  hidePhoto,
+  giftRowLabel,
+  buyLead,
+  buyLinkLabel,
+  redeemLead,
+  redeemLinkLabel,
+  openingWords,
+  "questions": questions[]-> { _id, question, answer },
+  "testimonial": testimonial-> { _id, quote, name, "detail": coalesce(readingType->subtitle, detailOverride) },
+  insideForm
+}`;
+
 export const landingPageQuery = groq`
   *[_type == "landingPage"][0] {
     _id,
@@ -27,7 +52,6 @@ export const readingsQuery = groq`
     "slug": slug.current,
     tag,
     subtitle,
-    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
@@ -49,36 +73,17 @@ export const readingBySlugQuery = groq`
     "slug": slug.current,
     tag,
     subtitle,
-    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
     briefDescription,
     "includes": coalesce(includes, []),
-    bookingIncludes,
-    howItWorks,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
     stripePaymentLink,
     estimatedMinutes,
-    facts[] {
-      label,
-      value
-    },
-    "questionsOnPage": questionsOnPage[]-> {
-      _id,
-      question,
-      answer
-    },
-    "formTestimonial": formTestimonial-> {
-      _id,
-      quote,
-      name,
-      "detail": coalesce(readingType->subtitle, detailOverride)
-    },
-    pageLayout[] { element },
-    hiddenParts,
+    bookingPage[] ${BOOKING_PAGE_SECTION_PROJECTION},
     seo
   }
 `;
@@ -378,9 +383,6 @@ export const bookingFormQuery = groq`
       readerName,
       readerLine,
       hideReaderPhoto,
-      includedTitle,
-      howItWorksTitle,
-      questionsTitle,
       otherReadingsTitle,
       switchNoticeTemplate,
       testimonialLabel,
@@ -401,9 +403,7 @@ export const bookingFormQuery = groq`
     nextButtonText,
     saveAndContinueLaterText,
     pageIndicatorTagline,
-    pageLayout[] { element },
-    hiddenParts,
-    testimonialInsideForm,
+    bookingPageStart[] ${BOOKING_PAGE_SECTION_PROJECTION},
     "sections": sections[]-> {
       _id,
       sectionTitle,

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useClient } from "sanity";
 
-const PERSPECTIVE_API_VERSION = "2025-02-19";
+export const PERSPECTIVE_API_VERSION = "2025-02-19";
 
-export function usePerspectiveClient(perspective: "drafts" | "raw") {
+export function usePerspectiveClient(perspective: "drafts" | "raw" | "published") {
   const baseClient = useClient({ apiVersion: PERSPECTIVE_API_VERSION });
   return useMemo(() => baseClient.withConfig({ perspective }), [baseClient, perspective]);
 }

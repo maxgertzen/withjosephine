@@ -104,7 +104,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     }),
     faqItem: defineLocations({
       message:
-        "Shown in the FAQ section on the landing page, and on the booking page of a reading that picks it in Questions on this page.",
+        "Shown in the FAQ section on the landing page, and on a reading's booking page when it is picked in a box with questions.",
       locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     article: defineLocations({

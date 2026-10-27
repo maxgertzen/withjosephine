@@ -1,35 +1,25 @@
 import type { ReactNode } from "react";
 
-import type { BookingPageElement } from "@/lib/booking/pageLayout";
+export type BookingPageStackItem = { key: string; node: ReactNode; accordion?: boolean; form?: boolean };
 
-const ACCORDIONS = new Set<BookingPageElement>(["included", "howItWorks", "questions"]);
-
-export type BookingPageElementNodes = Partial<Record<BookingPageElement, ReactNode>>;
-
-function gapClass(previous: BookingPageElement | undefined, current: BookingPageElement) {
+function gapClass(previous: BookingPageStackItem | undefined, current: BookingPageStackItem) {
   if (!previous) return undefined;
-  if (current === "form") return "mt-10";
-  if (ACCORDIONS.has(previous) && ACCORDIONS.has(current)) return "mt-4";
+  if (current.form) return "mt-10";
+  if (previous.accordion && current.accordion) return "mt-4";
   return "mt-8";
 }
 
-export function renderedElements(order: readonly BookingPageElement[], elements: BookingPageElementNodes) {
-  return order.filter((element) => elements[element] !== null && elements[element] !== undefined);
+export function shownStackItems(items: readonly BookingPageStackItem[]) {
+  return items.filter(({ node }) => node !== null && node !== undefined);
 }
 
-export function BookingPageStack({
-  order,
-  elements,
-}: {
-  order: readonly BookingPageElement[];
-  elements: BookingPageElementNodes;
-}) {
-  const shown = renderedElements(order, elements);
+export function BookingPageStack({ items }: { items: readonly BookingPageStackItem[] }) {
+  const shown = shownStackItems(items);
   return (
     <div>
-      {shown.map((element, index) => (
-        <div key={element} className={gapClass(shown[index - 1], element)}>
-          {elements[element]}
+      {shown.map((item, index) => (
+        <div key={item.key} className={gapClass(shown[index - 1], item)}>
+          {item.node}
         </div>
       ))}
     </div>

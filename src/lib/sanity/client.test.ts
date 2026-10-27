@@ -132,8 +132,6 @@ describe("sanityClient stega filter", () => {
   });
 
   it.each([
-    [["readingPageContent", "pageLayout", { _key: "a" }, "element"]],
-    [["hiddenParts", 0]],
     [["sections", 0, "fields", 1, "helperPosition"]],
     [["socialLinks", 0, "platform"]],
     [["iconKey"]],

@@ -1,5 +1,6 @@
 import { deriveBookingFormViewProps } from "@/app/book/[readingId]/deriveBookingFormViewProps";
-import { SOUL_BLUEPRINT_BLOCK } from "@/components/ReadingBlock/readingBlockFixture";
+import { SOUL_BLUEPRINT_QUESTIONS } from "@/components/ReadingBlock/readingBlockFixture";
+import { builtInBookingPage } from "@/lib/booking/bookingPageSections";
 import type { SanityBookingForm, SanityReading } from "@/lib/sanity/types";
 
 import bookingFormFixture from "../../../../src/__fixtures__/sanity/e2e/bookingForm.json";
@@ -10,18 +11,27 @@ const bookingForm = bookingFormFixture as unknown as SanityBookingForm;
 
 const SOUL_BLUEPRINT_EXTRAS: Partial<SanityReading> = {
   estimatedMinutes: 4,
-  questionsOnPage: SOUL_BLUEPRINT_BLOCK.questions.items.map(({ id, question, answer }) => ({
-    _id: id,
-    question,
-    answer,
-  })),
-  formTestimonial: {
+  bookingPage: builtInBookingPage({
+    included: readings.find((reading) => reading.slug === "soul-blueprint")?.includes,
+  }).map((section, index) => {
+    const keyed = { ...section, _key: `section-${index}` };
+    if (section._type === "questionsSection") {
+      return { ...keyed, questions: SOUL_BLUEPRINT_QUESTIONS.map(({ id, question, answer }) => ({ _id: id, question, answer })) };
+    }
+    if (section._type === "testimonialSection") {
+      return {
+        ...keyed,
+        testimonial: {
     _id: "testimonial-raphi",
     quote:
       "Josephine’s reading and visions really connected a lot of dots for me. It was such a beautiful invitation to trust my intuition.",
     name: "Raphi, Switzerland",
     detail: "Soul Blueprint Reading",
-  },
+        },
+      };
+    }
+    return keyed;
+  }),
 };
 
 function argsFor(slug: string, extras: Partial<SanityReading> = {}) {

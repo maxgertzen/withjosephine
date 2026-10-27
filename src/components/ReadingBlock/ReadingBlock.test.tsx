@@ -2,14 +2,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { readingBlockElements } from "./ReadingBlock";
-import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
+import { readingBlockParts } from "./ReadingBlock";
+import { SOUL_BLUEPRINT_BLOCK, SOUL_BLUEPRINT_QUESTIONS, SOUL_BLUEPRINT_SECTIONS } from "./readingBlockFixture";
+import { ReadingBlockPreview } from "./ReadingBlockPreview";
 
-function renderBlock(props = SOUL_BLUEPRINT_BLOCK) {
-  const elements = readingBlockElements(props);
-  render(<>{Object.values(elements)}</>);
-  return elements;
+function renderBlock(block = SOUL_BLUEPRINT_BLOCK, sections = SOUL_BLUEPRINT_SECTIONS) {
+  render(<ReadingBlockPreview block={block} sections={sections} />);
+  return readingBlockParts(block);
 }
+
+const withoutQuestions = SOUL_BLUEPRINT_SECTIONS.filter((section) => section.kind !== "questions");
+const howItWorks = SOUL_BLUEPRINT_SECTIONS.find((section) => section.key === "how");
 
 const panelOf = (text: string) => screen.getByText(text).closest("[role=region]");
 
@@ -25,23 +28,21 @@ describe("ReadingBlock elements", () => {
     expect(screen.getByRole("button", { name: "Questions" })).toBeInTheDocument();
   });
 
-  it("gives an empty section no element", () => {
-    const elements = renderBlock({
+  it("gives an empty part no element", () => {
+    const parts = renderBlock({
       ...SOUL_BLUEPRINT_BLOCK,
       facts: [],
-      questions: { title: "Questions", items: [] },
       otherReadings: { title: "Not sure this is the one?", readings: [] },
     });
 
-    expect(elements.facts).toBeNull();
-    expect(elements.questions).toBeNull();
-    expect(elements.otherReadings).toBeNull();
-    expect(elements.notes).toBeNull();
+    expect(parts.factsSection).toBeNull();
+    expect(parts.otherReadingsSection).toBeNull();
+    expect(parts.notesSection).toBeNull();
   });
 
   it("keeps closed accordion text in the page, out of reach until opened", async () => {
     renderBlock();
-    const panel = panelOf(SOUL_BLUEPRINT_BLOCK.questions.items[0].answer);
+    const panel = panelOf(SOUL_BLUEPRINT_QUESTIONS[0].answer);
     expect(panel).toHaveAttribute("inert");
 
     await userEvent.click(screen.getByRole("button", { name: "Questions" }));
@@ -51,7 +52,7 @@ describe("ReadingBlock elements", () => {
   });
 
   it("lists each How it works line as a checked row", () => {
-    const { items } = SOUL_BLUEPRINT_BLOCK.howItWorks;
+    const items = howItWorks?.kind === "list" ? howItWorks.items : [];
     renderBlock();
 
     const rows = panelOf(items[0])!.querySelectorAll("li");
@@ -59,8 +60,8 @@ describe("ReadingBlock elements", () => {
     expect(rows[0].querySelector("svg")).not.toBeNull();
   });
 
-  it("hides the Questions section when no questions are picked", () => {
-    renderBlock({ ...SOUL_BLUEPRINT_BLOCK, questions: { title: "Questions", items: [] } });
+  it("shows no Questions box when the list has none", () => {
+    renderBlock(SOUL_BLUEPRINT_BLOCK, withoutQuestions);
 
     expect(screen.queryByRole("button", { name: "Questions" })).toBeNull();
   });

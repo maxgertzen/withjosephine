@@ -3,21 +3,7 @@ import { defineField, defineType } from "sanity";
 
 import { isReadingOnSite, OFF_THE_SITE_LABEL } from "../../src/lib/booking/readingVisibility";
 import { parseDisplayToCents } from "../../src/lib/pricing";
-import { hiddenOnReadingField, readingBookingPageLayoutField } from "./bookingPageLayout";
-import { readingFactsField } from "./readingFacts";
-
-const PARAGRAPHS_AND_BULLETS = {
-  type: "block",
-  styles: [{ title: "Paragraph", value: "normal" }],
-  lists: [{ title: "Bullet", value: "bullet" }],
-  marks: {
-    decorators: [
-      { title: "Bold", value: "strong" },
-      { title: "Italic", value: "em" },
-    ],
-    annotations: [],
-  },
-};
+import { readingBookingPageField } from "./bookingPageSections";
 
 export const reading = defineType({
   name: "reading",
@@ -37,8 +23,9 @@ export const reading = defineType({
       type: "boolean",
       initialValue: true,
       description:
-        "On: the reading is on the homepage and can be booked. Off: it leaves the homepage, the 'Not sure this is the one?' links and the sitemap, its booking page shows the not-found page, and nobody can book it or buy it as a gift. Gift codes already paid for it still open. Turn a reading off instead of deleting it when it has orders. To change where it sits on the homepage, drag it in the Readings list.",
+        "On: people can see this reading on the homepage and book it. Off: the reading disappears from the site and nobody can book it or buy it as a gift. Gift codes people already paid for still work. Switch it off instead of deleting a reading that has orders. To change where it sits on the homepage, drag it up or down in the Readings list.",
     }),
+    readingBookingPageField("bookingPage"),
     defineField({
       name: "name",
       group: "setup",
@@ -80,17 +67,6 @@ export const reading = defineType({
       title: "Subtitle",
       type: "string",
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
-    }),
-    readingBookingPageLayoutField("bookingPage"),
-    hiddenOnReadingField("bookingPage"),
-    defineField({
-      name: "intakeIntro",
-      group: "bookingPage",
-      title: "Intake Intro",
-      type: "array",
-      of: [PARAGRAPHS_AND_BULLETS],
-      description:
-        "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold, italic and bullet lists are available, and bullets show with the site's checkmarks. Leave empty to use the built-in wording.",
     }),
     defineField({
       name: "price",
@@ -135,7 +111,7 @@ export const reading = defineType({
       title: "Promise",
       type: "string",
       description:
-        "One line. Shown on the homepage card under the price, and at the top of the booking page under 'Online reading'.",
+        "One line. Shown on the homepage card under the price, and at the top of the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -144,58 +120,18 @@ export const reading = defineType({
       title: "Description",
       type: "text",
       rows: 4,
-      description: "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page.",
+      description:
+        "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "includes",
       group: "homepageCard",
-      title: "What's included on the homepage card",
-      type: "array",
-      of: [{ type: "string" }],
-      description: "The checklist shown on the homepage card when 'Learn More' is opened.",
-    }),
-    defineField({
-      name: "bookingIncludes",
-      group: "bookingPage",
-      title: "What's included on the booking page",
+      title: "Lines under 'Learn More' on the homepage card",
       type: "array",
       of: [{ type: "string" }],
       description:
-        "The checklist under 'What's included' on this reading's booking page, one line per item. When empty, the homepage card list shows here. To hide the section, use its switch in Booking page order.",
-    }),
-    defineField({
-      name: "howItWorks",
-      group: "bookingPage",
-      title: "How it works",
-      type: "array",
-      of: [{ type: "string" }],
-      description:
-        "Booking page only, under 'What's included'. One line per item, each with a checkmark. Remove every item to hide the section.",
-    }),
-    defineField({
-      name: "questionsOnPage",
-      group: "bookingPage",
-      title: "Questions on this page",
-      type: "array",
-      of: [{ type: "reference", to: [{ type: "faqItem" }] }],
-      description:
-        "Questions and answers shown on this reading's booking page, in the part called Questions and answers (FAQ) in Booking page order. Pick from the FAQ list or create a new one, and drag to set the order. The homepage FAQ is not affected. Leave empty and the section does not show.",
-    }),
-    defineField({
-      name: "formTestimonial",
-      group: "bookingPage",
-      title: "Testimonial on the booking form",
-      type: "reference",
-      to: [{ type: "testimonial" }],
-      options: {
-        filter: ({ document }) => ({
-          filter: "readingType._ref == $readingId",
-          params: { readingId: document._id.replace(/^(drafts|versions\.[^.]+)\./, "") },
-        }),
-      },
-      description:
-        "One quote shown on the last page of the form, above the consent checkboxes. Only testimonials linked to this reading are listed. Leave empty to show no quote.",
+        "People tap 'Learn More' on this reading's homepage card to see these lines. One line per item. Each line gets a small tick.",
     }),
     defineField({
       name: "estimatedMinutes",
@@ -203,14 +139,8 @@ export const reading = defineType({
       title: "Minutes to fill in the form",
       type: "number",
       description:
-        "Shown in the page line, for example 'Page 1 of 2 · about 3 minutes'. Leave empty to leave the minutes out.",
+        "How long the form takes, in minutes. It shows next to the page number, like 'Page 1 of 2 · about 3 minutes'. Leave it blank to leave the minutes out.",
       validation: (rule) => rule.integer().min(1).max(60),
-    }),
-    readingFactsField({
-      group: "bookingPage",
-      description:
-        "This reading's own facts row on its booking page. Leave as it is to use the Facts Row from Booking Form.",
-      inherits: "bookingForm",
     }),
     defineField({
       name: "stripePaymentLink",

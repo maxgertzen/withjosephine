@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { type ArrayOfObjectsInputProps, set, unset } from "sanity";
 
 import { useDraftsClient } from "../lib/draftsClient";
+import { randomKey } from "../lib/randomKey";
 
 type InheritedArrayInputOptions<Item> = {
   loadInherited: (client: ReturnType<typeof useDraftsClient>) => Promise<Item[]>;
@@ -13,7 +14,6 @@ type InheritedArrayInputOptions<Item> = {
   loadFailedText?: string;
   copyLabel: string;
   resetLabel?: string;
-  upToDate?: { apply: (items: Item[]) => Item[]; label: string };
   emptyListInherits?: boolean;
 };
 
@@ -23,20 +23,8 @@ function keyed<Item extends object>(items: Item[], itemType: string) {
   return items.map((item) => ({
     ...item,
     _type: itemType,
-    _key: Math.random().toString(36).slice(2, 12),
+    _key: randomKey(),
   }));
-}
-
-function withoutSanityKeys<Item>(value: StoredItem[]): Item[] {
-  return value.map(({ _key, _type, ...item }) => item as Item);
-}
-
-function sortedKeysJson(value: unknown) {
-  return JSON.stringify(value, (_key, nested) =>
-    nested && typeof nested === "object" && !Array.isArray(nested)
-      ? Object.fromEntries(Object.entries(nested).sort(([a], [b]) => a.localeCompare(b)))
-      : nested,
-  );
 }
 
 export function inheritedArrayInput<Item extends object>(options: InheritedArrayInputOptions<Item>) {
@@ -64,22 +52,10 @@ export function inheritedArrayInput<Item extends object>(options: InheritedArray
     }, [client, empty]);
 
     if (!empty) {
-      const stored = withoutSanityKeys<Item>(props.value as StoredItem[]);
-      const updated = options.upToDate?.apply(stored);
-      const outOfDate = updated !== undefined && sortedKeysJson(updated) !== sortedKeysJson(stored);
       return (
         <Stack space={3}>
           {props.renderDefault(props)}
           <Flex gap={2} wrap="wrap">
-            {outOfDate && options.upToDate ? (
-              <Button
-                tone="caution"
-                fontSize={1}
-                text={options.upToDate.label}
-                disabled={props.readOnly}
-                onClick={() => props.onChange(set(keyed(updated, options.itemType)))}
-              />
-            ) : null}
             {options.resetLabel ? (
               <Button
                 mode="ghost"

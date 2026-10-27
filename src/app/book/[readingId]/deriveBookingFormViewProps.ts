@@ -1,7 +1,10 @@
-import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
+import { stegaClean } from "@sanity/client/stega";
+
+import { GIFT_FOLD_COPY_KEYS, type GiftFoldCopy } from "@/components/GiftFold/giftFoldCopy";
 import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
 import { FORM_NAVIGATION_LABEL_KEYS } from "@/components/IntakeForm/formNavigationLabels";
 import { INTAKE_GIFT_CODE_COPY_KEYS } from "@/components/IntakeForm/intakeGiftCodeCopy";
+import type { FormTestimonial } from "@/components/IntakeForm/TestimonialLine";
 import type { ReadingBlockProps } from "@/components/ReadingBlock";
 import { REDEEM_SHEET_CONTENT_KEYS } from "@/components/RedeemSheet/redeemSheetCopy";
 import {
@@ -10,12 +13,20 @@ import {
   INTAKE_TITLE_FALLBACK,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
+import {
+  type BookingPagePart,
+  type BookingPageSection,
+  builtInBookingPage,
+  chooseBookingPage,
+  partRows,
+  resolveBookingPage,
+  type RowWordField,
+} from "@/lib/booking/bookingPageSections";
 import { pageFacts } from "@/lib/booking/pageFacts";
-import { chooseLayoutEntries, resolveBookingPageLayout } from "@/lib/booking/pageLayout";
 import { readingPageContent } from "@/lib/booking/readingPageContent";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
-import { linesWithText } from "@/lib/content/nonBlank";
+import { nonBlank } from "@/lib/content/nonBlank";
 import { paragraphBlocks } from "@/lib/copy/paragraphBlocks";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import { giftContent } from "@/lib/gift/giftContent";
@@ -33,13 +44,16 @@ import { mapAbout, mapFaqItems, mapReadings } from "@/lib/sanity/mappers";
 import type {
   SanityBookingForm,
   SanityBookingPage,
+  SanityBookingPageSection,
+  SanityFormTestimonial,
   SanityGiftSettings,
   SanityLandingPage,
   SanityNotesState,
   SanityReading,
+  SanityReadingQuestion,
 } from "@/lib/sanity/types";
 
-import type { BookingFormViewProps } from "./BookingFormView";
+import type { BookingFormViewProps, BookingFormViewSection } from "./BookingFormView";
 
 export type DeriveBookingFormViewPropsInput = {
   readingId: string;
@@ -66,9 +80,67 @@ function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps
 
 const PORTRAIT_WIDTH_PX = 300;
 
-function ownOrHomepageLines(own: string[] | null | undefined, homepage: string[]) {
-  const ownLines = linesWithText(own);
-  return ownLines.length > 0 ? ownLines : linesWithText(homepage);
+function formTestimonial(label: string, testimonial: SanityFormTestimonial | undefined): FormTestimonial | undefined {
+  return testimonial?.quote
+    ? { label, quote: testimonial.quote, name: testimonial.name, detail: testimonial.detail }
+    : undefined;
+}
+
+function viewSection(
+  section: BookingPageSection<SanityReadingQuestion, SanityFormTestimonial>,
+  testimonialLabel: string,
+): BookingFormViewSection[] {
+  if (section.kind === "questions") {
+    const items = mapFaqItems(section.questions.filter((item) => item.question && item.answer));
+    return items.length > 0 ? [{ ...section, questions: items }] : [];
+  }
+  if (section.kind === "testimonial") {
+    const testimonial = formTestimonial(testimonialLabel, section.testimonial);
+    return testimonial ? [{ ...section, testimonial }] : [];
+  }
+  return [section];
+}
+
+type BookingPageRows = {
+  rows: SanityBookingPageSection[];
+  parts: Partial<Record<BookingPagePart, SanityBookingPageSection>>;
+  editTargetOf: (row: SanityBookingPageSection | undefined, field: string) => string | undefined;
+};
+
+function bookingPageRows(input: DeriveBookingFormViewPropsInput): BookingPageRows {
+  const builtIn = getReadingById(input.readingId);
+  const { rows, owner } = input.sanityReading
+    ? chooseBookingPage(input.sanityReading.bookingPage, input.bookingForm?.bookingPageStart)
+    : { rows: builtInBookingPage({ included: builtIn?.includes, howItWorks: builtIn?.howItWorks }), owner: "builtIn" as const };
+  const readingDocument =
+    owner === "reading" && input.sanityReading ? { id: input.sanityReading._id, type: "reading" } : undefined;
+  return {
+    rows,
+    parts: partRows(rows),
+    editTargetOf: (row, field) =>
+      input.editable && readingDocument && row?._key
+        ? editTarget(readingDocument, `bookingPage[_key=="${stegaClean(row._key)}"].${field}`)
+        : undefined,
+  };
+}
+
+type RowWord = { text: string; editTarget?: string };
+
+function ownOrShared(own: string | null | undefined, shared: string, editTargetIfShared: string | undefined): RowWord {
+  const ownText = nonBlank(own);
+  if (ownText) return { text: ownText };
+  return editTargetIfShared ? { text: stegaClean(shared), editTarget: editTargetIfShared } : { text: shared };
+}
+
+function bookingPageSections(rows: SanityBookingPageSection[], testimonialLabel: string) {
+  const page = resolveBookingPage(rows);
+  const view = (sections: typeof page.aboveForm): BookingFormViewSection[] =>
+    sections.flatMap((section) => viewSection(section, testimonialLabel));
+  return {
+    aboveForm: view(page.aboveForm),
+    belowForm: view(page.belowForm),
+    testimonialInsideForm: formTestimonial(testimonialLabel, page.testimonialInsideForm),
+  };
 }
 
 function resolveReading(
@@ -85,8 +157,6 @@ function resolveReading(
       priceLabel: sanityReading.priceDisplay,
       valueProposition: sanityReading.valueProposition,
       description: sanityReading.briefDescription,
-      includes: ownOrHomepageLines(sanityReading.bookingIncludes, sanityReading.includes),
-      howItWorks: linesWithText(sanityReading.howItWorks),
     };
   }
   const fallback = sanityHasReadings ? undefined : getReadingById(readingId);
@@ -99,8 +169,6 @@ function resolveReading(
     priceLabel: fallback.price,
     valueProposition: fallback.valueProposition,
     description: fallback.briefDescription,
-    includes: fallback.includes,
-    howItWorks: fallback.howItWorks,
   };
 }
 
@@ -117,8 +185,10 @@ export function deriveBookingFormViewProps(
 
   const entry = input.bookingForm.entryPageContent ?? {};
   const content = readingPageContent(input.bookingForm);
+  const bookingPage = bookingPageRows(input);
+  const { parts, editTargetOf } = bookingPage;
+  const page = bookingPageSections(bookingPage.rows, content.testimonialLabel);
   const minutes = input.sanityReading?.estimatedMinutes;
-  const formTestimonial = input.sanityReading?.formTestimonial;
   const pageIndicatorTagline = [
     minutes ? applyTokens(content.minutesTemplate, { minutes }) : undefined,
     input.bookingForm.pageIndicatorTagline,
@@ -126,36 +196,46 @@ export function deriveBookingFormViewProps(
     .filter(Boolean)
     .join(" · ");
 
+  const { summarySection, factsSection, readerSection, giftRowSection, introSection, otherReadingsSection, notesSection } =
+    parts;
+  const word = (row: SanityBookingPageSection | undefined, field: RowWordField, shared: string) =>
+    ownOrShared(row?.[field], shared, editTargetOf(row, field));
+  const eyebrow = word(summarySection, "eyebrow", content.eyebrow);
+  const lead = word(summarySection, "promise", reading.valueProposition);
+  const description = word(summarySection, "description", reading.description);
+  const readerName = word(readerSection, "name", content.readerName);
+  const readerLine = word(readerSection, "line", content.readerLine);
+  const otherReadingsTitle = word(otherReadingsSection, "title", content.otherReadingsTitle);
+  const sharedNotes = readingNotes(input);
+  const notesTitle = sharedNotes && word(notesSection, "title", sharedNotes.title);
+  const notes = sharedNotes && notesTitle && { ...sharedNotes, title: notesTitle.text };
+  const ownFacts = factsSection?.facts?.length ? factsSection : undefined;
+  const factsEditTarget = ownFacts ? undefined : editTargetOf(factsSection, "facts");
+  const facts = pageFacts(ownFacts, content).map((fact) =>
+    factsEditTarget ? { label: stegaClean(fact.label), value: stegaClean(fact.value) } : fact,
+  );
+  const hidePhoto = readerSection?.hidePhoto ?? content.hideReaderPhoto;
+  const photoUrl = nonBlank(readerSection?.photoUrl) ?? mapAbout(input.landingPage).imageUrl;
+  const aboutPhotoEditTarget =
+    input.editable && input.landingPage?._id
+      ? editTarget({ id: input.landingPage._id, type: "landingPage" }, "about.image")
+      : undefined;
+
   const readingBlock: ReadingBlockProps = {
     slug: reading.slug,
-    eyebrow: content.eyebrow,
-    lead: reading.valueProposition,
-    description: reading.description,
-    facts: pageFacts(input.sanityReading, content),
+    eyebrow: eyebrow.text,
+    lead: lead.text,
+    description: description.text,
+    facts,
     factsLayout: content,
     reader: {
-      name: content.readerName,
-      line: content.readerLine,
-      imageUrl: content.hideReaderPhoto
-        ? undefined
-        : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
-      imageEditTarget:
-        input.editable && input.landingPage?._id
-          ? editTarget({ id: input.landingPage._id, type: "landingPage" }, "about.image")
-          : undefined,
-    },
-    included: { title: content.includedTitle, items: reading.includes },
-    howItWorks: { title: content.howItWorksTitle, items: reading.howItWorks },
-    questions: {
-      title: content.questionsTitle,
-      items: mapFaqItems(
-        (input.sanityReading?.questionsOnPage ?? []).filter(
-          (item) => item?.question && item.answer,
-        ),
-      ),
+      name: readerName.text,
+      line: readerLine.text,
+      imageUrl: hidePhoto ? undefined : sanityImageUrl(photoUrl, { w: PORTRAIT_WIDTH_PX }),
+      imageEditTarget: editTargetOf(readerSection, "photo") ?? aboutPhotoEditTarget,
     },
     otherReadings: {
-      title: content.otherReadingsTitle,
+      title: otherReadingsTitle.text,
       readings: mapReadings(input.sanityReadings)
         .filter((other) => other.id !== reading.slug)
         .map((other) => ({
@@ -165,10 +245,26 @@ export function deriveBookingFormViewProps(
           slug: other.id,
         })),
     },
-    notes: readingNotes(input),
+    notes,
+    editTargets: {
+      eyebrow: eyebrow.editTarget,
+      lead: lead.editTarget,
+      description: description.editTarget,
+      facts: factsEditTarget,
+      readerName: readerName.editTarget,
+      readerLine: readerLine.editTarget,
+      otherReadingsTitle: otherReadingsTitle.editTarget,
+      notesTitle: notesTitle?.editTarget,
+    },
   };
 
   const gift = giftContent(input.giftSettings);
+  const giftFoldWords = GIFT_FOLD_COPY_KEYS.map((key) => [key, word(giftRowSection, key, gift[key])] as const);
+  const formHeading =
+    nonBlank(introSection?.title) || entry.showLetterTitle
+      ? word(introSection, "title", entry.letterTitle ?? INTAKE_TITLE_FALLBACK)
+      : undefined;
+  const ownOpeningWords = introSection?.openingWords?.length ? introSection.openingWords : undefined;
   const submitLabel = input.bookingPage?.paymentButtonText;
   const loadingStateCopy = input.bookingForm.loadingStateCopy;
 
@@ -184,19 +280,12 @@ export function deriveBookingFormViewProps(
       priceLabel: reading.priceLabel,
     },
     readingBlock,
-    layout: resolveBookingPageLayout(
-      chooseLayoutEntries(input.sanityReading?.pageLayout, input.bookingForm.pageLayout),
-      {
-        hiddenEverywhere: input.bookingForm.hiddenParts,
-        hiddenOnReading: input.sanityReading?.hiddenParts,
-        testimonialInsideForm: input.bookingForm.testimonialInsideForm,
-      },
-    ),
+    sections: { aboveForm: page.aboveForm, belowForm: page.belowForm },
     copy: {
-      title: entry.showLetterTitle ? (entry.letterTitle ?? INTAKE_TITLE_FALLBACK) : undefined,
-      intro: input.sanityReading?.intakeIntro?.length
-        ? input.sanityReading.intakeIntro
-        : paragraphBlocks(INTAKE_INTRO_BY_SLUG[reading.slug] ?? INTAKE_INTRO_FALLBACK),
+      title: formHeading?.text,
+      titleEditTarget: formHeading?.editTarget,
+      intro: ownOpeningWords ?? paragraphBlocks(INTAKE_INTRO_BY_SLUG[reading.slug] ?? INTAKE_INTRO_FALLBACK),
+      introEditTarget: ownOpeningWords ? undefined : editTargetOf(introSection, "openingWords"),
     },
     form: {
       sections: filterSectionsForReading(input.bookingForm.sections, reading.slug),
@@ -209,19 +298,13 @@ export function deriveBookingFormViewProps(
       navigationLabels: pick(content, FORM_NAVIGATION_LABEL_KEYS),
       pageIndicatorTagline: pageIndicatorTagline || undefined,
       switchNotice: applyTokens(content.switchNoticeTemplate, { reading: reading.name }),
-      testimonial: formTestimonial?.quote
-        ? {
-            label: content.testimonialLabel,
-            quote: formTestimonial.quote,
-            name: formTestimonial.name,
-            detail: formTestimonial.detail,
-          }
-        : undefined,
+      testimonial: page.testimonialInsideForm,
       giftCodeField: { copy: pick(gift, INTAKE_GIFT_CODE_COPY_KEYS) },
     },
     giftFold: {
       readingSlug: reading.slug,
-      copy: pick(gift, GIFT_FOLD_COPY_KEYS),
+      copy: Object.fromEntries(giftFoldWords.map(([key, { text }]) => [key, text])) as GiftFoldCopy,
+      editTargets: Object.fromEntries(giftFoldWords.map(([key, { editTarget: target }]) => [key, target])),
       giftSheet: {
         reading: { slug: reading.slug, name: reading.name, price: reading.priceLabel },
         content: pick(gift, GIFT_SHEET_CONTENT_KEYS),

@@ -7,11 +7,10 @@ import type {
   EmailGiftToRecipientContent,
   GiftContent,
   NotesContent,
-  ReadingFact,
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
-import type { BookingPageLayoutEntry } from "@/lib/booking/pageLayout";
+import type { StoredSection } from "@/lib/booking/bookingPageSections";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type ContentPerspective = "published" | "preview";
@@ -23,30 +22,25 @@ export type SanityReading = {
   slug: string;
   tag: string;
   subtitle: string;
-  intakeIntro?: SanityPortableTextBlock[];
   price: number;
   priceDisplay: string;
   valueProposition: string;
   briefDescription: string;
   includes: string[];
-  bookingIncludes?: string[] | null;
-  howItWorks?: string[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
   stripePaymentLink?: string;
   estimatedMinutes?: number;
-  facts?: ReadingFact[] | null;
-  questionsOnPage?: SanityReadingQuestion[] | null;
-  formTestimonial?: SanityFormTestimonial | null;
-  pageLayout?: BookingPageLayoutEntry[] | null;
-  hiddenParts?: string[] | null;
+  bookingPage?: SanityBookingPageSection[] | null;
   seo?: SanitySeo;
 };
 
-type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
+export type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
 
-type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
+export type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
+
+export type SanityBookingPageSection = StoredSection<SanityReadingQuestion, SanityFormTestimonial>;
 
 export type SanityTestimonial = {
   _id: string;
@@ -417,9 +411,7 @@ export type SanityBookingForm = {
   nextButtonText?: string;
   saveAndContinueLaterText?: string;
   pageIndicatorTagline?: string;
-  pageLayout?: BookingPageLayoutEntry[] | null;
-  hiddenParts?: string[] | null;
-  testimonialInsideForm?: boolean | null;
+  bookingPageStart?: SanityBookingPageSection[] | null;
   sections: SanityFormSection[];
 };
 

@@ -44,7 +44,8 @@ export const BookingPageReadingBlock: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: BLOCK.included.title }));
-    await userEvent.click(canvas.getByRole("button", { name: BLOCK.howItWorks.title }));
+    for (const section of BLOCK.sections) {
+      if (section.kind === "list") await userEvent.click(canvas.getByRole("button", { name: section.title }));
+    }
   },
 };

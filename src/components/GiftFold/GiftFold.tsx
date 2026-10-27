@@ -34,6 +34,7 @@ export type GiftFoldSheet = "gift" | "redeem";
 export type GiftFoldProps = {
   readingSlug: string;
   copy: GiftFoldCopy;
+  editTargets?: Partial<Record<keyof GiftFoldCopy, string>>;
   giftSheet: Omit<GiftSheetProps, "open" | "onClose">;
   redeemSheet: Omit<RedeemSheetProps, "open" | "onClose">;
   initialSheet?: GiftFoldSheet;
@@ -43,15 +44,20 @@ type GiftFoldActionProps = {
   lead: string;
   label: string;
   onClick: () => void;
+  leadEditTarget?: string;
+  labelEditTarget?: string;
 };
 
-function GiftFoldAction({ lead, label, onClick }: GiftFoldActionProps) {
+function GiftFoldAction({ lead, label, onClick, leadEditTarget, labelEditTarget }: GiftFoldActionProps) {
   return (
     <div className="flex flex-col items-start gap-0.5 px-4 py-3">
-      <span className="font-body text-[13px] text-j-text-muted-warm">{lead}</span>
+      <span className="font-body text-[13px] text-j-text-muted-warm" data-sanity={leadEditTarget}>
+        {lead}
+      </span>
       <button
         type="button"
         onClick={onClick}
+        data-sanity={labelEditTarget}
         className={`${goldLinkClasses} text-left font-display text-lg italic`}
       >
         {label}
@@ -63,6 +69,7 @@ function GiftFoldAction({ lead, label, onClick }: GiftFoldActionProps) {
 export function GiftFold({
   readingSlug,
   copy,
+  editTargets,
   giftSheet,
   redeemSheet,
   initialSheet,
@@ -108,15 +115,23 @@ export function GiftFold({
         }
         className="gap-2.5 px-[18px] py-3.5 text-[17px]"
       >
-        {copy.giftRowLabel}
+        <span data-sanity={editTargets?.giftRowLabel}>{copy.giftRowLabel}</span>
       </DisclosureButton>
       <AnimatedCollapse id={panelId} open={open} labelledBy={rowId} animated={toggled}>
         <div className="divide-y divide-j-border-subtle border-t border-j-border-subtle bg-j-cream">
-          <GiftFoldAction lead={copy.buyLead} label={copy.buyLinkLabel} onClick={openGiftSheet} />
+          <GiftFoldAction
+            lead={copy.buyLead}
+            label={copy.buyLinkLabel}
+            onClick={openGiftSheet}
+            leadEditTarget={editTargets?.buyLead}
+            labelEditTarget={editTargets?.buyLinkLabel}
+          />
           <GiftFoldAction
             lead={copy.redeemLead}
             label={copy.redeemLinkLabel}
             onClick={openRedeemSheet}
+            leadEditTarget={editTargets?.redeemLead}
+            labelEditTarget={editTargets?.redeemLinkLabel}
           />
         </div>
       </AnimatedCollapse>

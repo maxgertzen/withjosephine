@@ -1,8 +1,11 @@
 import { BookingPageStack } from "@/components/BookingPageStack";
-import { DEFAULT_ORDER } from "@/lib/booking/pageLayout";
 
-import { readingBlockElements, type ReadingBlockProps } from "./ReadingBlock";
+import { readingBlockParts, type ReadingBlockProps } from "./ReadingBlock";
+import { type BookingSectionView, sectionStackItem } from "./sectionStackItem";
 
-export function ReadingBlockPreview(props: ReadingBlockProps) {
-  return <BookingPageStack order={DEFAULT_ORDER} elements={readingBlockElements(props)} />;
+export type ReadingBlockPreviewProps = { block: ReadingBlockProps; sections: BookingSectionView[] };
+
+export function ReadingBlockPreview({ block, sections }: ReadingBlockPreviewProps) {
+  const parts = readingBlockParts(block);
+  return <BookingPageStack items={sections.map((section) => sectionStackItem(section, parts, block.slug))} />;
 }

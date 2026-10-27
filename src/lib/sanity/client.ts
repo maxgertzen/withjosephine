@@ -40,7 +40,7 @@ async function resolveDataset(): Promise<string> {
   return buildBakedDataset;
 }
 
-const VALUES_COMPARED_IN_CODE = new Set(["element", "hiddenParts", "helperPosition", "platform", "iconKey"]);
+const VALUES_COMPARED_IN_CODE = new Set(["helperPosition", "platform", "iconKey"]);
 
 const isComparedInCode = (sourcePath: readonly unknown[]) =>
   sourcePath.some((segment) => typeof segment === "string" && VALUES_COMPARED_IN_CODE.has(segment));
