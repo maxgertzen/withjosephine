@@ -2,11 +2,16 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vitest/config";
 
+const isCanceledAnimation = (error: { name?: string; message?: string }) =>
+  error.name === "AbortError" && error.message === "The animation was canceled.";
+
 export default defineConfig({
   plugins: [react()],
   test: {
     environment: "happy-dom",
+    environmentOptions: { happyDOM: { settings: { handleDisabledFileLoadingAsSuccess: true } } },
     setupFiles: "./vitest.setup.ts",
+    onUnhandledError: (error) => !isCanceledAnimation(error),
     include: ["src/**/*.test.{ts,tsx}", "studio/**/*.test.{ts,tsx}", "scripts/**/*.test.{ts,tsx}"],
     // Module-init env reads (e.g. R2_PUBLIC_ORIGIN in src/lib/constants.ts)
     // happen before vitest.setup.ts runs, so per-test stubs can't help.
