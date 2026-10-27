@@ -44,7 +44,7 @@ export function LegalAcknowledgments({
         <p className="font-display italic text-base text-j-text-muted-warm">{consentIntro}</p>
       ) : null}
       {nonRefundableNotice ? (
-        <p className="font-body text-sm text-j-text-muted-warm leading-relaxed whitespace-pre-line">
+        <p className="font-body text-sm text-j-text-muted-warm leading-relaxed">
           {nonRefundableNotice}
         </p>
       ) : null}

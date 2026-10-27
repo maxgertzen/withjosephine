@@ -41,6 +41,16 @@ describe("deriveNoteViewProps", () => {
     expect(ending).toMatchObject({ leadIn: "Ready?", button: "Book it" });
   });
 
+  it("shows the reading's own Notes promise in the box, the homepage card promise when it is blank", () => {
+    const relatedReading = { ...PILLAR_ARTICLE.relatedReading!, notePromise: "Start with your soul's records" };
+    expect(derive({ relatedReading }).ending?.line).toBe("Start with your soul's records");
+
+    const blankPromise = { ...PILLAR_ARTICLE.relatedReading!, notePromise: "  " };
+    expect(derive({ relatedReading: blankPromise }).ending?.line).toBe(
+      "The most complete picture of your soul I can give you",
+    );
+  });
+
   it("drops the reading box when the reading is missing", () => {
     expect(derive({ relatedReading: null }).ending).toBeUndefined();
   });

@@ -116,6 +116,10 @@
 
 /* ── Base Styles ── */
 @layer base {
+  body {
+    white-space: pre-line;
+  }
+
   button:not(:disabled),
   a[href],
   summary,

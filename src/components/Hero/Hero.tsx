@@ -28,7 +28,6 @@ export function Hero({ content, className }: HeroProps) {
     ...HERO_DEFAULTS,
     ...pickDefined(content ?? {}),
   };
-  const [bodyFirst, bodySecond] = introBody.split("\n\n");
 
   const handleScrollToReadings = () => {
     document.getElementById("readings")?.scrollIntoView({ behavior: "smooth" });
@@ -76,14 +75,9 @@ export function Hero({ content, className }: HeroProps) {
           <p className="mb-4 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] font-light italic leading-[1.75] text-j-text">
             {introGreeting}
           </p>
-          <p className="mb-3 font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted-warm">
-            {bodyFirst}
+          <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted-warm">
+            {introBody}
           </p>
-          {bodySecond && (
-            <p className="font-body text-[clamp(0.85rem,1.7vw,0.97rem)] font-light leading-[1.85] text-j-text-muted-warm">
-              {bodySecond}
-            </p>
-          )}
         </div>
 
         <div className="j-hero-in j-hero-delay-3">

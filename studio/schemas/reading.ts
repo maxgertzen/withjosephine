@@ -12,6 +12,7 @@ export const reading = defineType({
   groups: [
     { name: "homepageCard", title: "Homepage card only" },
     { name: "bookingPage", title: "Booking page only" },
+    { name: "notes", title: "Box on Notes" },
     { name: "setup", title: "Setup" },
   ],
   fields: [
@@ -122,6 +123,14 @@ export const reading = defineType({
       description:
         "A few sentences under the promise on this reading's homepage card. The booking page has its own description: open 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "notePromise",
+      group: "notes",
+      title: "Promise in the box on Notes",
+      type: "string",
+      description:
+        "One line under this reading's name in the box at the end of a Note. Leave it blank and the box shows your homepage card promise.",
     }),
     defineField({
       name: "includes",

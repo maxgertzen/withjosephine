@@ -15,7 +15,7 @@ export function GiftNoteCard({ label, note, foot }: GiftNoteCardProps) {
       <p className={`${smallCapsClasses} m-0 text-j-text-muted-warm`}>{label}</p>
       {note ? (
         <p
-          className="m-0 whitespace-pre-line font-display text-[1.3rem] italic leading-[1.45] text-j-deep"
+          className="m-0 font-display text-[1.3rem] italic leading-[1.45] text-j-deep"
           {...CLARITY_MASK_PROPS}
         >
           {note}

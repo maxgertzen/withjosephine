@@ -6,6 +6,8 @@ vi.mock("next/image", () => ({
   default: ({ alt, ...props }: Record<string, unknown>) => <img alt={alt as string} {...props} />,
 }));
 
+import { HERO_DEFAULTS } from "@/data/defaults";
+
 import { Hero } from "./Hero";
 
 describe("Hero", () => {
@@ -33,9 +35,15 @@ describe("Hero", () => {
 
     expect(screen.getByText("Custom Tagline")).toBeInTheDocument();
     expect(screen.getByText("Hello there.")).toBeInTheDocument();
-    expect(screen.getByText("First paragraph.")).toBeInTheDocument();
-    expect(screen.getByText("Second paragraph.")).toBeInTheDocument();
     expect(screen.getByText("Get Started")).toBeInTheDocument();
+  });
+
+  it("renders the intro exactly as typed, keeping every line break and blank line", () => {
+    const introBody = "First paragraph.\nSame paragraph, new line.\n\nSecond paragraph.\n\n\nThird paragraph.";
+
+    render(<Hero content={{ ...HERO_DEFAULTS, introBody }} />);
+
+    expect(screen.getByText((_, element) => element?.textContent === introBody)).toBeInTheDocument();
   });
 
   it("renders CTA button with default text", () => {
