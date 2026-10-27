@@ -157,8 +157,6 @@ function resolveReading(
       name: sanityReading.name,
       subtitle: sanityReading.subtitle,
       priceLabel: sanityReading.priceDisplay,
-      valueProposition: sanityReading.valueProposition,
-      description: sanityReading.briefDescription,
     };
   }
   const fallback = sanityHasReadings ? undefined : getReadingById(readingId);
@@ -169,8 +167,6 @@ function resolveReading(
     name: fallback.name,
     subtitle: fallback.subtitle,
     priceLabel: fallback.price,
-    valueProposition: fallback.valueProposition,
-    description: fallback.briefDescription,
   };
 }
 
@@ -203,8 +199,9 @@ export function deriveBookingFormViewProps(
   const word = (row: SanityBookingPageSection | undefined, field: RowWordField, shared: string) =>
     ownOrShared(row?.[field], shared, editTargetOf(row, field));
   const eyebrow = word(summarySection, "eyebrow", content.eyebrow);
-  const lead = word(summarySection, "promise", reading.valueProposition);
-  const description = word(summarySection, "description", reading.description);
+  const builtInReading = getReadingById(reading.slug);
+  const lead = word(summarySection, "promise", builtInReading?.valueProposition ?? "");
+  const description = word(summarySection, "description", builtInReading?.briefDescription ?? "");
   const readerName = word(readerSection, "name", content.readerName);
   const readerLine = word(readerSection, "line", content.readerLine);
   const otherReadingsTitle = word(otherReadingsSection, "title", content.otherReadingsTitle);
@@ -243,7 +240,7 @@ export function deriveBookingFormViewProps(
         .map((other) => ({
           name: other.name,
           price: other.price,
-          line: other.valueProposition,
+          line: other.bookingPromise ?? other.valueProposition,
           slug: other.id,
         })),
     },

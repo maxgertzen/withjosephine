@@ -38,7 +38,7 @@ import {
   TESTIMONIAL_SECTION,
 } from "../../src/lib/booking/bookingPageSections";
 import { BookingPageSectionRow } from "../components/BookingPageSectionRow";
-import { documentWordsInput, sharedWordsInput } from "../components/SharedWordsInput";
+import { sharedWordsInput } from "../components/SharedWordsInput";
 import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
 import { randomKey } from "../lib/randomKey";
 import { readingFactsField } from "./readingFacts";
@@ -125,14 +125,22 @@ const PART_WORDS: Record<BookingPagePart, FieldDefinition[]> = {
       "Small label",
       bookingFormWords("eyebrow", READING_PAGE_DEFAULTS.eyebrow),
     ),
-    wordsField("promise", "Promise", documentWordsInput("valueProposition"), {
+    defineField({
+      name: "promise",
+      title: "Promise",
+      type: "string",
       description:
-        "Leave it empty to use the grey words, which are this reading's promise on the homepage card. Type here to use different words on the booking page.",
+        "One line at the top of this reading's booking page, under the small label. It also shows under this reading's name in 'Not sure this is the one?' on the other booking pages. The homepage card has its own promise.",
+      validation: (rule) => rule.required(),
     }),
-    wordsField("description", "Description", documentWordsInput("briefDescription"), {
+    defineField({
+      name: "description",
+      title: "Description",
+      type: "text",
       rows: 4,
       description:
-        "Leave it empty to use the grey words, which are this reading's description on the homepage card. Type here to use different words on the booking page. Press Enter to start a new line.",
+        "A few sentences under the promise on this reading's booking page. Press Enter to start a new line. The homepage card has its own description.",
+      validation: (rule) => rule.required(),
     }),
   ],
   factsSection: [

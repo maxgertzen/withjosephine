@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
-import { getReadingById } from "@/data/readings";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { bookingPath } from "@/lib/http/routes";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
@@ -37,10 +36,9 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound();
   }
 
-  const fallbackReading = getReadingById(readingId);
   const productJsonLd = readingProductJsonLd({
     name: props.reading.name,
-    description: sanityReading?.briefDescription ?? fallbackReading?.briefDescription ?? "",
+    description: props.readingBlock.description || sanityReading?.briefDescription || "",
     price: props.reading.priceLabel,
     path: bookingPath(readingId),
     image: sanityReading?.seo?.ogImage?.asset?.url,

@@ -46,9 +46,11 @@ function Summary({ eyebrow, lead, description, editTargets }: ReadingBlockProps)
       <p className={`${eyebrowClasses} mb-3`} data-sanity={editTargets?.eyebrow}>
         {eyebrow}
       </p>
-      <p className="font-display italic text-[1.35rem] leading-[1.4] text-j-text mb-3" data-sanity={editTargets?.lead}>
-        {lead}
-      </p>
+      {lead ? (
+        <p className="font-display italic text-[1.35rem] leading-[1.4] text-j-text mb-3" data-sanity={editTargets?.lead}>
+          {lead}
+        </p>
+      ) : null}
       {description ? (
         <p className="font-body text-base leading-[1.7] text-j-text m-0 whitespace-pre-line" data-sanity={editTargets?.description}>
           {description}

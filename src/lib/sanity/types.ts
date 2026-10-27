@@ -26,6 +26,7 @@ export type SanityReading = {
   priceDisplay: string;
   valueProposition: string;
   briefDescription: string;
+  bookingPromise?: string | null;
   includes: string[];
   requiresBirthChart: boolean;
   requiresAkashic: boolean;

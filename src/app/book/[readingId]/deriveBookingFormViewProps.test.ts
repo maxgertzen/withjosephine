@@ -183,11 +183,23 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive(sanityReading(), { bookingForm: form })?.readingBlock.facts).toEqual([]);
   });
 
-  it("puts the description under the promise", () => {
-    const block = derive(sanityReading({ briefDescription: "What it is." }))?.readingBlock;
+  it("takes the promise and description from the booking page row, else the built-in words, never the homepage card", () => {
+    const own = sanityReading({
+      briefDescription: "Homepage description.",
+      bookingPage: [part("summarySection", { promise: "Booking promise.", description: "\nBooking description.\n" })],
+    });
+    const blank = sanityReading({ briefDescription: "Homepage description.", bookingPage: [part("summarySection")] });
+    const built = getReadingById("soul-blueprint")!;
 
-    expect(block?.lead).toBe("The most complete picture");
-    expect(block?.description).toBe("What it is.");
+    expect(derive(own)?.readingBlock).toMatchObject({ lead: "Booking promise.", description: "Booking description." });
+    expect(derive(blank)?.readingBlock).toMatchObject({ lead: built.valueProposition, description: built.briefDescription });
+    expect(derive(sanityReading({ slug: "tarot-spread" }))?.readingBlock).toMatchObject({ lead: "", description: "" });
+  });
+
+  it("keeps the built-in promise and description when Sanity has no reading", () => {
+    const built = getReadingById("soul-blueprint")!;
+
+    expect(derive(null)?.readingBlock).toMatchObject({ lead: built.valueProposition, description: built.briefDescription });
   });
 
   it("shows each box from the reading's Booking page list, in order", () => {
@@ -270,7 +282,8 @@ describe("deriveBookingFormViewProps reading block", () => {
         slug: "birth-chart",
         name: "Birth Chart Reading",
         priceDisplay: "$89",
-        valueProposition: "Your chart.",
+        valueProposition: "Homepage promise.",
+        bookingPromise: "Your chart.",
       }),
     ];
 
@@ -470,17 +483,11 @@ describe("deriveBookingFormViewProps words held by the rows", () => {
     expect(props?.readingBlock).toMatchObject({
       eyebrow: "Own label",
       lead: "Own promise",
-      description: "My signature offering",
+      description: getReadingById("soul-blueprint")!.briefDescription,
       reader: { name: "Becky", line: READING_PAGE_DEFAULTS.readerLine, imageUrl: undefined },
       otherReadings: { title: "Shared others" },
     });
     expect(props?.giftFold?.copy).toMatchObject({ giftRowLabel: "Own gift row", buyLead: GIFT_DEFAULTS.buyLead });
-  });
-
-  it("drops the line breaks around the homepage description when the row has none", () => {
-    const reading = sanityReading({ briefDescription: "\nWhat it is.\n", bookingPage: [part("summarySection")] });
-
-    expect(derive(reading)?.readingBlock.description).toBe("What it is.");
   });
 
   it("uses the row photo over the About photo", () => {

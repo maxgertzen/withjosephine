@@ -56,6 +56,7 @@ export const readingsQuery = groq`
     priceDisplay,
     valueProposition,
     briefDescription,
+    "bookingPromise": bookingPage[_type == "summarySection" && shown != false][0].promise,
     "includes": coalesce(includes, []),
     requiresBirthChart,
     requiresAkashic,
