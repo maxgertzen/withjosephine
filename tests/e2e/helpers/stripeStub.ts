@@ -1,11 +1,12 @@
 import type { APIRequestContext } from "@playwright/test";
+import type Stripe from "stripe";
 
 import { sidecarUrl } from "./captureStore";
 
 export type StubCheckoutSession = {
   id: string;
   client_reference_id?: string | null;
-  payment_status?: "paid" | "unpaid" | "no_payment_required";
+  payment_status?: Stripe.Checkout.Session["payment_status"];
   amount_total?: number | null;
   currency?: string | null;
   customer_email?: string | null;
