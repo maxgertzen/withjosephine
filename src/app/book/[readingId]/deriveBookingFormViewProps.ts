@@ -129,7 +129,9 @@ type RowWord = { text: string; editTarget?: string };
 function ownOrShared(own: string | null | undefined, shared: string, editTargetIfShared: string | undefined): RowWord {
   const ownText = nonBlank(own);
   if (ownText) return { text: ownText };
-  return editTargetIfShared ? { text: stegaClean(shared), editTarget: editTargetIfShared } : { text: shared };
+  return editTargetIfShared
+    ? { text: stegaClean(shared).trim(), editTarget: editTargetIfShared }
+    : { text: shared.trim() };
 }
 
 function bookingPageSections(rows: SanityBookingPageSection[], testimonialLabel: string) {

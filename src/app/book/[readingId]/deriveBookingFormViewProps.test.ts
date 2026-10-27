@@ -477,6 +477,12 @@ describe("deriveBookingFormViewProps words held by the rows", () => {
     expect(props?.giftFold?.copy).toMatchObject({ giftRowLabel: "Own gift row", buyLead: GIFT_DEFAULTS.buyLead });
   });
 
+  it("drops the line breaks around the homepage description when the row has none", () => {
+    const reading = sanityReading({ briefDescription: "\nWhat it is.\n", bookingPage: [part("summarySection")] });
+
+    expect(derive(reading)?.readingBlock.description).toBe("What it is.");
+  });
+
   it("uses the row photo over the About photo", () => {
     const reading = sanityReading({
       bookingPage: [part("readerSection", { photoUrl: "https://cdn.sanity.io/images/p/d/own.jpg" })],

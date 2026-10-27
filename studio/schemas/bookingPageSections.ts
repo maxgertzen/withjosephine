@@ -132,7 +132,7 @@ const PART_WORDS: Record<BookingPagePart, FieldDefinition[]> = {
     wordsField("description", "Description", documentWordsInput("briefDescription"), {
       rows: 4,
       description:
-        "Leave it empty to use the grey words, which are this reading's description on the homepage card. Type here to use different words on the booking page.",
+        "Leave it empty to use the grey words, which are this reading's description on the homepage card. Type here to use different words on the booking page. Press Enter to start a new line.",
     }),
   ],
   factsSection: [

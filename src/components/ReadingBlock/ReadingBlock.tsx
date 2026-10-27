@@ -38,7 +38,7 @@ type ReadingBlockWord =
 
 type ReadingBlockPart = "summarySection" | "factsSection" | "readerSection" | "otherReadingsSection" | "notesSection";
 
-const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3";
+const ANSWER_CLASS = "font-body text-base leading-[1.7] text-j-text-muted mb-3 whitespace-pre-line";
 
 function Summary({ eyebrow, lead, description, editTargets }: ReadingBlockProps) {
   return (
@@ -50,7 +50,7 @@ function Summary({ eyebrow, lead, description, editTargets }: ReadingBlockProps)
         {lead}
       </p>
       {description ? (
-        <p className="font-body text-base leading-[1.7] text-j-text m-0" data-sanity={editTargets?.description}>
+        <p className="font-body text-base leading-[1.7] text-j-text m-0 whitespace-pre-line" data-sanity={editTargets?.description}>
           {description}
         </p>
       ) : null}
