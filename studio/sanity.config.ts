@@ -1,5 +1,6 @@
 import type {
   DocumentActionsResolver,
+  DocumentBadgeComponent,
   DocumentBadgesResolver,
   NewDocumentOptionsResolver,
 } from "sanity";
@@ -12,6 +13,7 @@ import { deleteCustomerDataAction } from "./actions/deleteCustomerData";
 import { deleteReadingAction } from "./actions/deleteReading";
 import { sendEmailPreviewAction } from "./actions/sendEmailPreview";
 import { deliverySentBadge } from "./components/DeliveryPanel/deliverySentBadge";
+import { offTheSiteBadge } from "./components/ReadingBadges/offTheSiteBadge";
 import { EmailDescriptionBanner } from "./components/EmailDescriptionBanner";
 import { PreviewNavigator } from "./components/PreviewNavigator";
 import { schemaTypes } from "./schemas";
@@ -61,8 +63,13 @@ const sharedActions: DocumentActionsResolver = (prev, { schemaType }) => {
   return prev;
 };
 
+const BADGES_BY_TYPE: Record<string, DocumentBadgeComponent> = {
+  submission: deliverySentBadge,
+  reading: offTheSiteBadge,
+};
+
 const sharedBadges: DocumentBadgesResolver = (prev, { schemaType }) =>
-  schemaType === "submission" ? [...prev, deliverySentBadge] : prev;
+  BADGES_BY_TYPE[schemaType] ? [...prev, BADGES_BY_TYPE[schemaType]] : prev;
 
 const sharedNewDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter((item) => !SINGLETON_TYPES.has(item.templateId));

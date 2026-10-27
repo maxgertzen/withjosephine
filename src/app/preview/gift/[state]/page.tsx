@@ -12,6 +12,7 @@ import { GiftMessageView } from "@/app/gift/[code]/GiftMessageView";
 import {
   loadGiftBookingFormViewProps,
   loadGiftContent,
+  loadGiftMessageShell,
   loadMessageReading,
 } from "@/app/gift/[code]/loadGiftPageProps";
 import type { GiftPageMessage } from "@/app/gift/[code]/resolveGiftRequest";
@@ -23,7 +24,6 @@ import { SiteNavigation } from "@/components/Navigation/SiteNavigation";
 import { PREVIEW_GIFT } from "@/lib/emails/preview-fixtures";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
 import type { InitialPage } from "@/lib/intake/useDraftRestore";
-import { loadNotesNav } from "@/lib/notes/loadNotesNav";
 import {
   GIFT_PREVIEW_STATES,
   type GiftPreviewState,
@@ -134,12 +134,12 @@ async function renderGiftMessage(
   message: GiftPageMessage,
   withReading: boolean,
 ): Promise<ReactElement> {
-  const [copy, reading, nav] = await Promise.all([
+  const [copy, reading, shell] = await Promise.all([
     loadGiftContent("preview"),
     loadMessageReading(withReading ? SLUG : null, "preview"),
-    loadNotesNav("preview"),
+    loadGiftMessageShell("preview"),
   ]);
-  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy, nav)} />;
+  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy, shell)} />;
 }
 
 async function renderSendPage(): Promise<ReactElement> {

@@ -4,11 +4,8 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 import type { SanityDocument } from "sanity";
 
-import { renderPagePreview } from "@/lib/page-previews/render-preview-pages";
-import {
-  previewStateKeysFor,
-  type PreviewSurface,
-} from "@/lib/page-previews/preview-fixtures-pages";
+import { THANKYOU_FIXTURES } from "@/lib/page-previews/preview-fixtures-pages";
+import { renderThankYouPagePreview } from "@/lib/page-previews/render-preview-pages";
 
 import { PREVIEW_STYLES } from "../.generated/preview-styles";
 
@@ -32,87 +29,83 @@ function CenteredCard({ tone, children }: { tone: CardTone; children: ReactNode 
   );
 }
 
-function makeStudioPagePreview(surface: PreviewSurface, label: string) {
-  return function StudioPagePreview(props: StudioPagePreviewProps) {
-    const displayed = props.document?.displayed ?? null;
-    const stateKeys = previewStateKeysFor(surface);
-    const [stateKey, setStateKey] = useState<string>(stateKeys[0] ?? "");
-    const [html, setHtml] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [renderTick, setRenderTick] = useState(0);
+const LABEL = "Thank You page";
+const STATE_KEYS = Object.keys(THANKYOU_FIXTURES);
 
-    useEffect(() => {
-      let cancelled = false;
-      renderPagePreview(surface, stateKey, displayed, PREVIEW_STYLES)
-        .then((rendered) => {
-          if (!cancelled) {
-            setHtml(rendered);
-            setError(null);
-            setRenderTick((tick) => tick + 1);
-          }
-        })
-        .catch((err) => {
-          if (!cancelled) {
-            setError(err instanceof Error ? err.message : String(err));
-            setHtml(null);
-          }
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, [displayed, stateKey]);
+export function ThankYouPagePreview(props: StudioPagePreviewProps) {
+  const displayed = props.document?.displayed ?? null;
+  const [stateKey, setStateKey] = useState<string>(STATE_KEYS[0] ?? "");
+  const [html, setHtml] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [renderTick, setRenderTick] = useState(0);
 
-    if (error) {
-      return (
-        <CenteredCard tone="critical">
-          <Stack space={2}>
-            <Text size={2} weight="semibold">
-              Preview failed to render
-            </Text>
-            <Text size={1} muted>
-              {error}
-            </Text>
-          </Stack>
-        </CenteredCard>
-      );
-    }
+  useEffect(() => {
+    let cancelled = false;
+    renderThankYouPagePreview(stateKey, displayed, PREVIEW_STYLES)
+      .then((rendered) => {
+        if (!cancelled) {
+          setHtml(rendered);
+          setError(null);
+          setRenderTick((tick) => tick + 1);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setHtml(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [displayed, stateKey]);
 
+  if (error) {
     return (
-      <Flex direction="column" style={{ height: "100%" }}>
-        <Card padding={3} tone="transparent" border style={{ borderRadius: 0 }}>
-          <Flex align="center" gap={3}>
-            <Text size={1} weight="semibold" style={{ flexShrink: 0 }}>
-              {label} — state:
-            </Text>
-            <Select
-              fontSize={1}
-              padding={2}
-              value={stateKey}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => setStateKey(event.target.value)}
-            >
-              {stateKeys.map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
-            </Select>
-            <Text size={1} muted>
-              Fixture state — never real customer data.
-            </Text>
-          </Flex>
-        </Card>
-        <iframe
-          key={`${surface}-${stateKey}-${renderTick}`}
-          srcDoc={html ?? ""}
-          title={`${label} preview — ${stateKey}`}
-          sandbox=""
-          style={{ flex: 1, width: "100%", minHeight: 0, border: "none", background: "#FAF8F4" }}
-        />
-      </Flex>
+      <CenteredCard tone="critical">
+        <Stack space={2}>
+          <Text size={2} weight="semibold">
+            Preview failed to render
+          </Text>
+          <Text size={1} muted>
+            {error}
+          </Text>
+        </Stack>
+      </CenteredCard>
     );
-  };
-}
+  }
 
-export const ListenPagePreview = makeStudioPagePreview("listen", "Listen page");
-export const MagicLinkVerifyPagePreview = makeStudioPagePreview("magic-link-verify", "Magic Link Confirm page");
-export const ThankYouPagePreview = makeStudioPagePreview("thank-you", "Thank You page");
+  return (
+    <Flex direction="column" style={{ height: "100%" }}>
+      <Card padding={3} tone="transparent" border style={{ borderRadius: 0 }}>
+        <Flex align="center" gap={3}>
+          <Text size={1} weight="semibold" style={{ flexShrink: 0 }}>
+            {LABEL} — state:
+          </Text>
+          <Select
+            fontSize={1}
+            padding={2}
+            value={stateKey}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => setStateKey(event.target.value)}
+          >
+            {STATE_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </Select>
+          <Text size={1} muted>
+            Fixture state — never real customer data.
+          </Text>
+        </Flex>
+      </Card>
+      <iframe
+        key={`${stateKey}-${renderTick}`}
+        srcDoc={html ?? ""}
+        title={`${LABEL} preview — ${stateKey}`}
+        sandbox=""
+        style={{ flex: 1, width: "100%", minHeight: 0, border: "none", background: "#FAF8F4" }}
+      />
+    </Flex>
+  );
+}

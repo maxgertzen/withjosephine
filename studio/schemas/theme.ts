@@ -1,55 +1,55 @@
 import { defineField, defineType } from "sanity";
 
-const BACKGROUND_PRESETS = [
-  { title: "Cream", value: "#FAF8F4" },
-  { title: "Warm Linen", value: "#F5F0E8" },
-  { title: "Ivory", value: "#FAFAF8" },
-  { title: "Snow", value: "#FFFAFA" },
-  { title: "Alabaster", value: "#F2F0EB" },
-];
+const BACKGROUND_PRESETS = {
+  "Cream": "#FAF8F4",
+  "Warm Linen": "#F5F0E8",
+  "Ivory": "#FAFAF8",
+  "Snow": "#FFFAFA",
+  "Alabaster": "#F2F0EB",
+};
 
-const DARK_PRESETS = [
-  { title: "Midnight", value: "#0D0B1A" },
-  { title: "Deep Indigo", value: "#1C1935" },
-  { title: "Charcoal", value: "#1A1A2E" },
-  { title: "Obsidian", value: "#0B0B0F" },
-];
+const DARK_PRESETS = {
+  "Midnight": "#0D0B1A",
+  "Deep Indigo": "#1C1935",
+  "Charcoal": "#1A1A2E",
+  "Obsidian": "#0B0B0F",
+};
 
-const ACCENT_PRESETS = [
-  { title: "Gold", value: "#C4A46B" },
-  { title: "Gold Light", value: "#D4BC8B" },
-  { title: "Amber", value: "#D4A853" },
-  { title: "Champagne", value: "#C9B77D" },
-  { title: "Copper", value: "#B87333" },
-];
+const ACCENT_PRESETS = {
+  "Gold": "#C4A46B",
+  "Gold Light": "#D4BC8B",
+  "Amber": "#D4A853",
+  "Champagne": "#C9B77D",
+  "Copper": "#B87333",
+};
 
-const SKIN_TONE_PRESETS = [
-  { title: "Blush", value: "#E8D5C4" },
-  { title: "Rose", value: "#BF9B8B" },
-  { title: "Dusty Rose", value: "#C9A9A6" },
-  { title: "Mauve", value: "#C4A4A7" },
-  { title: "Peach", value: "#E8C8B8" },
-];
+const SKIN_TONE_PRESETS = {
+  "Blush": "#E8D5C4",
+  "Rose": "#BF9B8B",
+  "Dusty Rose": "#C9A9A6",
+  "Mauve": "#C4A4A7",
+  "Peach": "#E8C8B8",
+};
 
-const TEXT_PRESETS = [
-  { title: "Warm Charcoal", value: "#3D3633" },
-  { title: "Soft Black", value: "#2B2826" },
-  { title: "Muted", value: "#7A6F6A" },
-  { title: "Stone", value: "#5C5652" },
-];
+const TEXT_PRESETS = {
+  "Warm Charcoal": "#3D3633",
+  "Soft Black": "#2B2826",
+  "Muted": "#7A6F6A",
+  "Stone": "#5C5652",
+};
 
 const semanticColorField = (
   name: string,
   title: string,
   description: string,
-  colorList: { title: string; value: string }[]
+  presets: Record<string, string>
 ) =>
   defineField({
     name,
     title,
     type: "color",
     description,
-    options: { colorList },
+    options: { colorList: Object.values(presets) },
   });
 
 export const theme = defineType({
@@ -101,7 +101,7 @@ export const theme = defineType({
           "textHeading",
           "Heading Text",
           "Section headings and titles color",
-          [...DARK_PRESETS, ...TEXT_PRESETS]
+          { ...DARK_PRESETS, ...TEXT_PRESETS }
         ),
         semanticColorField(
           "textMuted",

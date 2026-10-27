@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { NavigationButton } from "@/components/NavigationButton";
+import { READING_PAGE_DEFAULTS } from "@/data/defaults";
 import { useBackLink } from "@/lib/navigation/previousPage";
 
 import { useHeaderBack } from "./headerBackContext";
@@ -51,7 +52,7 @@ function BackToPreviousPage({
   );
 }
 
-export function BackControl({ backHref, backLabel = "Back" }: BackControlProps) {
+export function BackControl({ backHref, backLabel = READING_PAGE_DEFAULTS.backLabel }: BackControlProps) {
   const { onBack } = useHeaderBack();
   const back = (
     <>

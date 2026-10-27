@@ -37,10 +37,10 @@ export type SanityReading = {
   stripePaymentLink?: string;
   estimatedMinutes?: number;
   facts?: ReadingFact[] | null;
-  hideFacts?: boolean;
   questionsOnPage?: SanityReadingQuestion[] | null;
   formTestimonial?: SanityFormTestimonial | null;
   pageLayout?: BookingPageLayoutEntry[] | null;
+  hiddenParts?: string[] | null;
   seo?: SanitySeo;
 };
 
@@ -86,6 +86,7 @@ export type SanityHowItWorks = {
 };
 
 export type SanityLandingPage = {
+  _id?: string;
   hero: SanityHero;
   about: SanityAbout;
   howItWorks: SanityHowItWorks;
@@ -417,6 +418,8 @@ export type SanityBookingForm = {
   saveAndContinueLaterText?: string;
   pageIndicatorTagline?: string;
   pageLayout?: BookingPageLayoutEntry[] | null;
+  hiddenParts?: string[] | null;
+  testimonialInsideForm?: boolean | null;
   sections: SanityFormSection[];
 };
 

@@ -36,17 +36,17 @@ export const THANKYOU_FIXTURES: Record<string, ResolvedThankYouContext> = {
 };
 
 export const GIFT_PREVIEW_STATES = [
-  { state: "buy-sheet", title: "Gift row and sheets" },
-  { state: "buyer-thank-you", title: "Gift thank-you (buyer)" },
-  { state: "redeem-sheet", title: "Gift: redeem sheet" },
-  { state: "opened", title: "Gift: opened, with note" },
-  { state: "opened-no-note", title: "Gift: no note" },
-  { state: "already-opened", title: "Gift: already opened" },
-  { state: "no-longer-active", title: "Gift: no longer active" },
-  { state: "not-found", title: "Gift: not found" },
-  { state: "last-page", title: "Gift: last page" },
-  { state: "recipient-thank-you", title: "Gift thank-you (recipient)" },
-  { state: "send-link", title: "Gift: send page" },
+  { state: "buy-sheet", title: "Buy sheet" },
+  { state: "buyer-thank-you", title: "Thank-you page for the buyer" },
+  { state: "redeem-sheet", title: "Redeem sheet" },
+  { state: "opened", title: "Opened, with a note" },
+  { state: "opened-no-note", title: "Opened, no note" },
+  { state: "already-opened", title: "Already opened" },
+  { state: "no-longer-active", title: "No longer active" },
+  { state: "not-found", title: "Code not found" },
+  { state: "last-page", title: "Last page of the form" },
+  { state: "recipient-thank-you", title: "Thank-you page for the recipient" },
+  { state: "send-link", title: "Send page" },
 ] as const;
 
 export type GiftPreviewState = (typeof GIFT_PREVIEW_STATES)[number]["state"];
@@ -56,23 +56,38 @@ export function giftPreviewPath(state: GiftPreviewState, readingSlug?: string): 
   return readingSlug ? `${path}?reading=${encodeURIComponent(readingSlug)}` : path;
 }
 
-export function giftRecipientPreviewLinks(readingSlug: string) {
+export function giftRecipientPreviewLinks(readingSlug: string, readingName = "Gift recipient view") {
   return [
-    { title: "Gift recipient view", href: giftPreviewPath("opened", readingSlug) },
-    { title: "Gift recipient view, last page", href: giftPreviewPath("last-page", readingSlug) },
+    { title: readingName, href: giftPreviewPath("opened", readingSlug) },
+    { title: `${readingName}, last page`, href: giftPreviewPath("last-page", readingSlug) },
   ];
 }
 
-export const GIFT_PREVIEW_LINKS = GIFT_PREVIEW_STATES.map(({ state, title }) => ({
-  title,
-  href: giftPreviewPath(state),
-}));
+export const LISTEN_PREVIEW_STATES = [
+  { state: "delivered", title: "Reading ready" },
+  { state: "signIn", title: "Sign in" },
+  { state: "checkEmail", title: "Check your email" },
+  { state: "rested", title: "Link rested" },
+  { state: "throttled", title: "Too many tries" },
+  { state: "assetTrouble", title: "Files not loading" },
+  { state: "expired", title: "Access ended" },
+] as const;
 
-export const PREVIEW_SURFACES = ["listen", "magic-link-verify", "thank-you"] as const;
-export type PreviewSurface = (typeof PREVIEW_SURFACES)[number];
+export const SIGN_IN_LINK_PREVIEW_STATES = [
+  { state: "confirm", title: "Confirm sign-in" },
+  { state: "rested", title: "Link rested" },
+] as const;
 
-export function previewStateKeysFor(surface: PreviewSurface): string[] {
-  if (surface === "listen") return Object.keys(LISTEN_FIXTURES);
-  if (surface === "thank-you") return Object.keys(THANKYOU_FIXTURES);
-  return Object.keys(VERIFY_FIXTURES);
+function previewLinks<State extends string>(
+  states: readonly { state: State; title: string }[],
+  href: (state: State) => string,
+) {
+  return states.map(({ state, title }) => ({ title, href: href(state) }));
 }
+
+export const LISTEN_PREVIEW_LINKS = previewLinks(LISTEN_PREVIEW_STATES, (state) => `/preview/listen/${state}`);
+export const SIGN_IN_LINK_PREVIEW_LINKS = previewLinks(
+  SIGN_IN_LINK_PREVIEW_STATES,
+  (state) => `/preview/sign-in-link/${state}`,
+);
+export const GIFT_PREVIEW_LINKS = previewLinks(GIFT_PREVIEW_STATES, giftPreviewPath);

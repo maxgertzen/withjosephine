@@ -2,28 +2,32 @@ import { type ArrayActionName, defineArrayMember, defineField } from "sanity";
 
 import {
   BOOKING_PAGE_ELEMENTS,
+  type BookingPageElement,
   type BookingPageLayoutEntry,
   chooseLayoutEntries,
   defaultBookingPageLayoutEntries,
+  HIDEABLE_ELEMENTS,
   normalizeLayoutEntries,
 } from "../../src/lib/booking/pageLayout";
 import { inheritedArrayInput } from "../components/InheritedArrayInput";
 
 const ITEM_TYPE = "bookingPageElement";
-const SHARED_LAYOUT_QUERY = `*[_type == "bookingForm"][0].pageLayout[]{ element, hidden, insideForm }`;
+const SHARED_LAYOUT_QUERY = `*[_type == "bookingForm"][0].pageLayout[]{ element }`;
+
+const ROW_NOTES: Partial<Record<BookingPageElement, string>> = {
+  questions: "Picked per reading in Questions on this page",
+  testimonial: "Inside the form unless that switch is off",
+  form: "Always shown",
+};
 
 function titleOf(element: string | null | undefined) {
   return BOOKING_PAGE_ELEMENTS.find(({ key }) => key === element)?.title ?? String(element);
 }
 
-function stateOf({ element, hidden, insideForm }: BookingPageLayoutEntry) {
-  if (element === "form") return "Always shown";
-  if (hidden) return "Hidden";
-  if (element === "testimonial" && insideForm !== false) return "Inside the form, on its last page";
-  return "Shown";
-}
-
-const describe = (entry: BookingPageLayoutEntry) => ({ title: titleOf(entry.element), subtitle: stateOf(entry) });
+const describe = ({ element }: BookingPageLayoutEntry) => ({
+  title: titleOf(element),
+  subtitle: ROW_NOTES[element as BookingPageElement],
+});
 
 const elementMember = defineArrayMember({
   type: "object",
@@ -36,24 +40,9 @@ const elementMember = defineArrayMember({
       readOnly: true,
       options: { list: BOOKING_PAGE_ELEMENTS.map(({ key, title }) => ({ value: key, title })) },
     }),
-    defineField({
-      name: "hidden",
-      title: "Hide on the page",
-      type: "boolean",
-      initialValue: false,
-      hidden: ({ parent }) => parent?.element === "form",
-    }),
-    defineField({
-      name: "insideForm",
-      title: "Inside the form, on its last page",
-      type: "boolean",
-      description: "On: the quote sits above the consent boxes on the form's last page. Off: it shows where it sits in this list.",
-      initialValue: true,
-      hidden: ({ parent }) => parent?.element !== "testimonial",
-    }),
   ],
   preview: {
-    select: { element: "element", hidden: "hidden", insideForm: "insideForm" },
+    select: { element: "element" },
     prepare: (entry: BookingPageLayoutEntry) => describe(entry),
   },
 });
@@ -75,7 +64,7 @@ export const sharedBookingPageLayoutField = defineField({
   ...baseField,
   title: "Booking page order",
   description:
-    "Drag the parts of every booking page into the order you want, and open one to hide it. Parts below The form show under the form's frame. A reading can have its own order.",
+    "Drag the parts into the order every booking page shows them. Parts below The form show under the form's box. To hide a part, tick it in Hide on every booking page.",
   components: {
     input: inheritedArrayInput<BookingPageLayoutEntry>({
       loadInherited: async () => defaultBookingPageLayoutEntries(),
@@ -95,7 +84,7 @@ export function readingBookingPageLayoutField(group: string) {
     title: "Booking page order for this reading",
     group,
     description:
-      "Leave as it is to use the order from Booking Form. Change it to give this reading's booking page its own order.",
+      "Leave as it is to use the order from Booking Form. Change it to give this reading's booking page its own order. To hide parts, use Also hide on this reading.",
     components: {
       input: inheritedArrayInput<BookingPageLayoutEntry>({
         loadInherited: async (client) =>
@@ -118,3 +107,37 @@ export function readingBookingPageLayoutField(group: string) {
     },
   });
 }
+
+function hiddenPartsField(field: { title: string; description: string; group?: string }) {
+  return defineField({
+    ...field,
+    name: "hiddenParts",
+    type: "array",
+    of: [{ type: "string" }],
+    options: { list: HIDEABLE_ELEMENTS.map(({ key, title }) => ({ value: key, title })) },
+  });
+}
+
+export const hiddenEverywhereField = hiddenPartsField({
+  title: "Hide on every booking page",
+  description:
+    "Tick a part to hide it on every reading's booking page. Untick it to show it again. A reading can hide more parts in Also hide on this reading.",
+});
+
+export function hiddenOnReadingField(group: string) {
+  return hiddenPartsField({
+    title: "Also hide on this reading",
+    group,
+    description:
+      "Tick parts to hide on this reading's booking page only. Parts ticked in Hide on every booking page, on Booking Form, stay hidden here too.",
+  });
+}
+
+export const testimonialInsideFormField = defineField({
+  name: "testimonialInsideForm",
+  title: "Put the testimonial inside the form, on its last page",
+  type: "boolean",
+  initialValue: true,
+  description:
+    "On: the reading's quote sits above the consent boxes on the form's last page. Off: it shows at its place in Booking page order.",
+});

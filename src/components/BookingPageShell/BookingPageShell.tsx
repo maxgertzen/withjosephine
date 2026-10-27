@@ -3,13 +3,15 @@ import type { ReactNode } from "react";
 import { BackControl, BookingFlowHeader } from "@/components/BookingFlowHeader";
 import { Footer } from "@/components/Footer";
 import { NAV_BAR_OFFSET_CLASS, Navigation } from "@/components/Navigation";
-import type { NotesNavProps } from "@/components/Notes/NotesShell";
+import type { NotesFooterProps, NotesNavProps } from "@/components/Notes/NotesShell";
 
 import { ReadingTitleBlock } from "./ReadingTitleBlock";
 
 export type BookingPageShellProps = {
   nav: NotesNavProps;
+  footer?: NotesFooterProps;
   backHref: string;
+  backLabel?: string;
   readingTag: string;
   readingName: string;
   readingPrice: string;
@@ -26,7 +28,9 @@ const OUTER_BG_CLASS: Record<NonNullable<BookingPageShellProps["outerBg"]>, stri
 
 export function BookingPageShell({
   nav,
+  footer,
   backHref,
+  backLabel,
   readingTag,
   readingName,
   readingPrice,
@@ -39,7 +43,7 @@ export function BookingPageShell({
     <div className={`relative min-h-screen ${OUTER_BG_CLASS[outerBg]} overflow-hidden`}>
       <Navigation {...nav} page="other" />
       <div className={NAV_BAR_OFFSET_CLASS}>
-        {readingName ? null : <BookingFlowHeader backHref={backHref} />}
+        {readingName ? null : <BookingFlowHeader backHref={backHref} backLabel={backLabel} />}
       </div>
 
       <main id="main" className="relative">
@@ -49,7 +53,7 @@ export function BookingPageShell({
             readingName={readingName}
             readingPrice={readingPrice}
             priceLine={priceLine}
-            back={<BackControl backHref={backHref} />}
+            back={<BackControl backHref={backHref} backLabel={backLabel} />}
           />
         ) : null}
         <div className="max-w-3xl mx-auto px-6 py-16">
@@ -64,7 +68,7 @@ export function BookingPageShell({
         </div>
       </main>
 
-      <Footer />
+      <Footer {...footer} />
     </div>
   );
 }

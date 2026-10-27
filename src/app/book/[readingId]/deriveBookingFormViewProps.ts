@@ -1,5 +1,6 @@
 import { GIFT_FOLD_COPY_KEYS } from "@/components/GiftFold/giftFoldCopy";
 import { GIFT_SHEET_CONTENT_KEYS } from "@/components/GiftSheet/giftSheetCopy";
+import { FORM_NAVIGATION_LABEL_KEYS } from "@/components/IntakeForm/formNavigationLabels";
 import { INTAKE_GIFT_CODE_COPY_KEYS } from "@/components/IntakeForm/intakeGiftCodeCopy";
 import type { ReadingBlockProps } from "@/components/ReadingBlock";
 import { REDEEM_SHEET_CONTENT_KEYS } from "@/components/RedeemSheet/redeemSheetCopy";
@@ -7,11 +8,11 @@ import {
   INTAKE_INTRO_BY_SLUG,
   INTAKE_INTRO_FALLBACK,
   INTAKE_TITLE_FALLBACK,
-  READING_PAGE_DEFAULTS,
 } from "@/data/defaults";
 import { getReadingById } from "@/data/readings";
 import { pageFacts } from "@/lib/booking/pageFacts";
 import { chooseLayoutEntries, resolveBookingPageLayout } from "@/lib/booking/pageLayout";
+import { readingPageContent } from "@/lib/booking/readingPageContent";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { filterSectionsForReading } from "@/lib/booking/sectionFilters";
 import { linesWithText } from "@/lib/content/nonBlank";
@@ -26,9 +27,9 @@ import {
 import { isNotesVisible, notePath, notesContent } from "@/lib/notes/notes";
 import type { NoteSummary } from "@/lib/notes/types";
 import { pick } from "@/lib/pick";
+import { editTarget } from "@/lib/sanity/editTarget";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import { mapAbout, mapFaqItems, mapReadings } from "@/lib/sanity/mappers";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 import type {
   SanityBookingForm,
   SanityBookingPage,
@@ -51,6 +52,8 @@ export type DeriveBookingFormViewPropsInput = {
   readingNotes: NoteSummary[];
   giftSettings: SanityGiftSettings | null;
   nav: BookingFormViewProps["nav"];
+  footer?: BookingFormViewProps["footer"];
+  editable?: boolean;
 };
 
 function readingNotes(input: DeriveBookingFormViewPropsInput): ReadingBlockProps["notes"] {
@@ -113,10 +116,7 @@ export function deriveBookingFormViewProps(
   if (!input.bookingForm) return null;
 
   const entry = input.bookingForm.entryPageContent ?? {};
-  const content = {
-    ...READING_PAGE_DEFAULTS,
-    ...pickDefined(input.bookingForm.readingPageContent ?? {}),
-  };
+  const content = readingPageContent(input.bookingForm);
   const minutes = input.sanityReading?.estimatedMinutes;
   const formTestimonial = input.sanityReading?.formTestimonial;
   const pageIndicatorTagline = [
@@ -139,6 +139,10 @@ export function deriveBookingFormViewProps(
       imageUrl: content.hideReaderPhoto
         ? undefined
         : sanityImageUrl(mapAbout(input.landingPage).imageUrl, { w: PORTRAIT_WIDTH_PX }),
+      imageEditTarget:
+        input.editable && input.landingPage?._id
+          ? editTarget({ id: input.landingPage._id, type: "landingPage" }, "about.image")
+          : undefined,
     },
     included: { title: content.includedTitle, items: reading.includes },
     howItWorks: { title: content.howItWorksTitle, items: reading.howItWorks },
@@ -170,7 +174,9 @@ export function deriveBookingFormViewProps(
 
   return {
     nav: input.nav,
+    footer: input.footer,
     backHref: isReadingOnSite(input.sanityReading) ? homeReadingAnchor(reading.slug) : "/",
+    backLabel: content.backLabel,
     reading: {
       slug: reading.slug,
       tag: reading.tag,
@@ -180,6 +186,11 @@ export function deriveBookingFormViewProps(
     readingBlock,
     layout: resolveBookingPageLayout(
       chooseLayoutEntries(input.sanityReading?.pageLayout, input.bookingForm.pageLayout),
+      {
+        hiddenEverywhere: input.bookingForm.hiddenParts,
+        hiddenOnReading: input.sanityReading?.hiddenParts,
+        testimonialInsideForm: input.bookingForm.testimonialInsideForm,
+      },
     ),
     copy: {
       title: entry.showLetterTitle ? (entry.letterTitle ?? INTAKE_TITLE_FALLBACK) : undefined,
@@ -195,6 +206,7 @@ export function deriveBookingFormViewProps(
       submitLabel,
       nextLabel: input.bookingForm.nextButtonText,
       saveLaterLabel: input.bookingForm.saveAndContinueLaterText,
+      navigationLabels: pick(content, FORM_NAVIGATION_LABEL_KEYS),
       pageIndicatorTagline: pageIndicatorTagline || undefined,
       switchNotice: applyTokens(content.switchNoticeTemplate, { reading: reading.name }),
       testimonial: formTestimonial?.quote

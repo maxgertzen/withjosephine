@@ -2,24 +2,26 @@ import { Box, Button, Card, Label, Spinner, Stack } from "@sanity/ui";
 import { useEffect, useState } from "react";
 import { usePresentationNavigate, usePresentationParams } from "sanity/presentation";
 
-import { useDraftsClient } from "../lib/draftsClient";
-import { type PageGroup, pageGroups } from "../lib/previewPageGroups";
+import { usePerspectiveClient } from "../lib/draftsClient";
+import { type PageGroup, pageGroups, type PreviewPageDocs } from "../lib/previewPageGroups";
+
+const NOT_A_RELEASE = `!(_id in path("versions.**"))`;
 
 const PAGES_QUERY = `{
-  "readings": *[_type == "reading" && defined(slug.current)] | order(order asc) { "title": name, "slug": slug.current },
-  "notes": *[_type == "article" && defined(slug.current)] | order(publishedAt desc) { title, "slug": slug.current },
-  "legal": *[_type == "legalPage" && defined(slug.current)] | order(title asc) { title, "slug": slug.current }
+  "readings": *[_type == "reading" && defined(slug.current) && ${NOT_A_RELEASE}] | order(orderRank) { _id, "title": name, "slug": slug.current, onSite },
+  "notes": *[_type == "article" && defined(slug.current) && ${NOT_A_RELEASE}] | order(publishedAt desc) { _id, title, "slug": slug.current },
+  "legal": *[_type == "legalPage" && defined(slug.current) && ${NOT_A_RELEASE}] | order(title asc) { _id, title, "slug": slug.current }
 }`;
 
 export function PreviewNavigator() {
-  const client = useDraftsClient();
+  const client = usePerspectiveClient("raw");
   const navigate = usePresentationNavigate();
   const previewUrl = usePresentationParams(false)?.preview;
   const currentPath = previewUrl ? new URL(previewUrl, window.location.origin).pathname : undefined;
   const [groups, setGroups] = useState<PageGroup[] | null>(null);
 
   useEffect(() => {
-    const subscription = client.observable.fetch(PAGES_QUERY).subscribe((docs) => setGroups(pageGroups(docs)));
+    const subscription = client.observable.fetch<PreviewPageDocs>(PAGES_QUERY).subscribe((docs) => setGroups(pageGroups(docs)));
     return () => subscription.unsubscribe();
   }, [client]);
 
@@ -43,7 +45,7 @@ export function PreviewNavigator() {
             </Box>
             {group.pages.map((page) => (
               <Button
-                key={page.href}
+                key={`${page.title}|${page.href}`}
                 mode="bleed"
                 justify="flex-start"
                 text={page.title}

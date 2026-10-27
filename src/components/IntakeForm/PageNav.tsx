@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/Button";
-import { PAYMENT_BUTTON_TEXT_FALLBACK } from "@/data/defaults";
+import { PAYMENT_BUTTON_TEXT_FALLBACK, READING_PAGE_DEFAULTS } from "@/data/defaults";
 
 type PageNavProps = {
   isFirstPage: boolean;
@@ -16,6 +16,8 @@ type PageNavProps = {
   submitLabel?: string;
   nextLabel?: string;
   saveLaterLabel?: string;
+  backToReadingsLabel?: string;
+  previousPageLabel?: string;
   savedIndicator?: React.ReactNode;
 };
 
@@ -32,6 +34,8 @@ export function PageNav({
   submitLabel = PAYMENT_BUTTON_TEXT_FALLBACK,
   nextLabel = "Next →",
   saveLaterLabel = "Save and continue later",
+  backToReadingsLabel = READING_PAGE_DEFAULTS.backToReadingsLabel,
+  previousPageLabel = READING_PAGE_DEFAULTS.previousPageLabel,
   savedIndicator,
 }: PageNavProps) {
   return (
@@ -45,7 +49,7 @@ export function PageNav({
             href={backHref}
             className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2"
           >
-            ← Back to all readings
+            {backToReadingsLabel}
           </Link>
         ) : (
           <button
@@ -53,7 +57,7 @@ export function PageNav({
             onClick={onBack}
             className="font-body text-sm text-j-text-muted hover:text-j-text-heading transition-colors inline-flex items-center min-h-11 px-2"
           >
-            ← Previous page
+            {previousPageLabel}
           </button>
         )}
       </div>

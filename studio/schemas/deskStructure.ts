@@ -1,14 +1,11 @@
+import { orderableDocumentListDeskItem } from "@sanity/orderable-document-list";
 import type { ComponentType } from "react";
-import type { StructureBuilder } from "sanity/structure";
+import type { StructureBuilder, StructureResolverContext } from "sanity/structure";
 
 import { EMAIL_ALLOWED_SLOTS } from "../../src/lib/emails/slots";
 import { GIFT_SUBMISSION_STATUS } from "../../src/lib/gift/giftSubmissionStatus";
 import { EmailPreview } from "../views/EmailPreview";
-import {
-  ListenPagePreview,
-  MagicLinkVerifyPagePreview,
-  ThankYouPagePreview,
-} from "../views/StudioPagePreview";
+import { ThankYouPagePreview } from "../views/StudioPagePreview";
 
 // Email singletons that support the send-to-test doc action.
 // Derived from EmailTemplateKey via EMAIL_ALLOWED_SLOTS keys so adding a
@@ -220,13 +217,8 @@ const pagesGroup = (S: StructureBuilder) =>
           singletonListItem(S, "underConstructionPage", "Under Construction Page"),
           singletonListItem(S, "notFoundPage", "404 Page"),
           S.divider(),
-          pagePreviewSingletonListItem(S, "listenPage", "Listen Page", ListenPagePreview),
-          pagePreviewSingletonListItem(
-            S,
-            "magicLinkVerifyPage",
-            "Magic Link: Confirm Email Page",
-            MagicLinkVerifyPagePreview,
-          ),
+          singletonListItem(S, "listenPage", "Listen Page"),
+          singletonListItem(S, "magicLinkVerifyPage", "Magic Link: Confirm Email Page"),
           S.divider(),
           bookingFlowGroup(S),
         ]),
@@ -276,7 +268,7 @@ const notesGroup = (S: StructureBuilder) =>
         ]),
     );
 
-export const deskStructure = (S: StructureBuilder) =>
+export const deskStructure = (S: StructureBuilder, context: StructureResolverContext) =>
   S.list()
     .title("Content")
     .items([
@@ -287,7 +279,7 @@ export const deskStructure = (S: StructureBuilder) =>
       emailsGroup(S),
       formBuildingBlocksGroup(S),
       S.divider(),
-      S.documentTypeListItem("reading").title("Readings"),
+      orderableDocumentListDeskItem({ type: "reading", title: "Readings", S, context }),
       S.documentTypeListItem("testimonial").title("Testimonials"),
       S.documentTypeListItem("faqItem").title("FAQ Items"),
       notesGroup(S),

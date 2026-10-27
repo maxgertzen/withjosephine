@@ -7,6 +7,8 @@ import type { GiftPageMessage } from "./resolveGiftRequest";
 
 export type GiftMessageReading = { slug: string; tag: string; name: string; priceLabel: string };
 
+export type GiftMessageShell = Pick<GiftMessageViewProps, "nav" | "footer" | "backLabel">;
+
 const MESSAGE_COPY: Record<
   GiftPageMessage,
   (copy: GiftContent) => Pick<GiftMessageViewProps, "heading" | "body">
@@ -24,10 +26,10 @@ export function deriveGiftMessageViewProps(
   message: GiftPageMessage,
   reading: GiftMessageReading | null,
   copy: GiftContent,
-  nav: GiftMessageViewProps["nav"],
+  shell: GiftMessageShell,
 ): GiftMessageViewProps {
   return {
-    nav,
+    ...shell,
     ...MESSAGE_COPY[message](copy),
     backHref: reading ? homeReadingAnchor(reading.slug) : "/",
     reading: reading

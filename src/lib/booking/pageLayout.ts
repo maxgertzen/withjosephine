@@ -4,21 +4,23 @@ export const BOOKING_PAGE_ELEMENTS = [
   { key: "reader", title: "Reader name and photo" },
   { key: "included", title: "What's included" },
   { key: "howItWorks", title: "How it works" },
-  { key: "questions", title: "Questions" },
-  { key: "notes", title: "Notes" },
-  { key: "otherReadings", title: "Not sure this is the one?" },
   { key: "giftRow", title: "Gift row" },
+  { key: "questions", title: "Questions and answers (FAQ)" },
   { key: "intro", title: "Form heading and opening words" },
   { key: "testimonial", title: "Testimonial" },
   { key: "form", title: "The form" },
+  { key: "otherReadings", title: "Not sure this is the one?" },
+  { key: "notes", title: "Notes" },
 ] as const;
 
 export type BookingPageElement = (typeof BOOKING_PAGE_ELEMENTS)[number]["key"];
 
-export type BookingPageLayoutEntry = {
-  element?: string | null;
-  hidden?: boolean | null;
-  insideForm?: boolean | null;
+export type BookingPageLayoutEntry = { element?: string | null };
+
+export type BookingPageVisibility = {
+  hiddenEverywhere?: readonly string[] | null;
+  hiddenOnReading?: readonly string[] | null;
+  testimonialInsideForm?: boolean | null;
 };
 
 export type BookingPageLayout = {
@@ -29,20 +31,16 @@ export type BookingPageLayout = {
 
 export const DEFAULT_ORDER: BookingPageElement[] = BOOKING_PAGE_ELEMENTS.map(({ key }) => key);
 
+export const HIDEABLE_ELEMENTS = BOOKING_PAGE_ELEMENTS.filter(({ key }) => key !== "form");
+
 function isBookingPageElement(value: unknown): value is BookingPageElement {
   return DEFAULT_ORDER.includes(value as BookingPageElement);
 }
 
-type KnownLayoutEntry = BookingPageLayoutEntry & { element: BookingPageElement };
-
-function defaultEntry(element: BookingPageElement): KnownLayoutEntry {
-  return element === "testimonial"
-    ? { element, hidden: false, insideForm: true }
-    : { element, hidden: false };
-}
+type KnownLayoutEntry = { element: BookingPageElement };
 
 export function defaultBookingPageLayoutEntries(): KnownLayoutEntry[] {
-  return DEFAULT_ORDER.map(defaultEntry);
+  return DEFAULT_ORDER.map((element) => ({ element }));
 }
 
 function knownEntriesOnce(entries: BookingPageLayoutEntry[]): KnownLayoutEntry[] {
@@ -51,7 +49,7 @@ function knownEntriesOnce(entries: BookingPageLayoutEntry[]): KnownLayoutEntry[]
   for (const entry of entries) {
     if (!isBookingPageElement(entry.element) || seen.has(entry.element)) continue;
     seen.add(entry.element);
-    known.push({ ...entry, element: entry.element });
+    known.push({ element: entry.element });
   }
   return known;
 }
@@ -63,7 +61,7 @@ export function normalizeLayoutEntries(entries: BookingPageLayoutEntry[]): Known
     if (has(element)) return;
     const previous = DEFAULT_ORDER.slice(0, defaultIndex).reverse().find(has);
     const insertAt = previous ? result.findIndex((entry) => entry.element === previous) + 1 : 0;
-    result.splice(insertAt, 0, defaultEntry(element));
+    result.splice(insertAt, 0, { element });
   });
   return result;
 }
@@ -77,21 +75,21 @@ export function chooseLayoutEntries(
   return defaultBookingPageLayoutEntries();
 }
 
-export function resolveBookingPageLayout(entries: BookingPageLayoutEntry[]): BookingPageLayout {
+export function resolveBookingPageLayout(
+  entries: BookingPageLayoutEntry[],
+  visibility: BookingPageVisibility = {},
+): BookingPageLayout {
+  const hidden = new Set([...(visibility.hiddenEverywhere ?? []), ...(visibility.hiddenOnReading ?? [])]);
+  const testimonialInsideForm = visibility.testimonialInsideForm !== false && !hidden.has("testimonial");
+  const shown = ({ element }: KnownLayoutEntry) =>
+    !hidden.has(element) && !(element === "testimonial" && testimonialInsideForm);
   const normalized = normalizeLayoutEntries(entries);
-  const testimonial = normalized.find((entry) => entry.element === "testimonial");
-  const testimonialInsideForm = testimonial?.insideForm !== false;
-  const shown = (entry: KnownLayoutEntry) => {
-    if (entry.element === "form") return false;
-    if (entry.element === "testimonial" && testimonialInsideForm) return false;
-    return !entry.hidden;
-  };
-  const formIndex = normalized.findIndex((entry) => entry.element === "form");
-  const elementsOf = (slice: KnownLayoutEntry[]) => slice.filter(shown).map((entry) => entry.element);
+  const formIndex = normalized.findIndex(({ element }) => element === "form");
+  const elementsOf = (slice: KnownLayoutEntry[]) => slice.filter(shown).map(({ element }) => element);
   return {
     aboveForm: elementsOf(normalized.slice(0, formIndex)),
     belowForm: elementsOf(normalized.slice(formIndex + 1)),
-    testimonialInsideForm: testimonialInsideForm && !testimonial?.hidden,
+    testimonialInsideForm,
   };
 }
 

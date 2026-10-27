@@ -1,7 +1,12 @@
 import { EnvelopeIcon } from "@sanity/icons";
 import { defineDocuments, defineLocations, type PresentationPluginOptions } from "sanity/presentation";
 
-import { GIFT_PREVIEW_LINKS, giftRecipientPreviewLinks } from "@/lib/page-previews/preview-fixtures-pages";
+import {
+  GIFT_PREVIEW_LINKS,
+  giftRecipientPreviewLinks,
+  LISTEN_PREVIEW_LINKS,
+  SIGN_IN_LINK_PREVIEW_LINKS,
+} from "@/lib/page-previews/preview-fixtures-pages";
 
 /**
  * `origin` is the preview host (set via SANITY_STUDIO_PREVIEW_URL); the
@@ -43,6 +48,8 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       params: ({ params }) => ({ slug: params.slug }),
     },
     { route: "/preview/notes", type: "notesSettings" },
+    { route: "/preview/listen/:state", type: "listenPage" },
+    { route: "/preview/sign-in-link/:state", type: "magicLinkVerifyPage" },
     { route: "/preview/under-construction", type: "underConstructionPage" },
     { route: "/preview/404", type: "notFoundPage" },
     {
@@ -91,11 +98,13 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     testimonial: defineLocations({
-      message: "Shown in the testimonials section on the landing page.",
+      message:
+        "Shown in the testimonials section on the landing page, and on the booking page of a reading that picks it as its quote.",
       locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     faqItem: defineLocations({
-      message: "Shown in the FAQ section on the landing page.",
+      message:
+        "Shown in the FAQ section on the landing page, and on the booking page of a reading that picks it in Questions on this page.",
       locations: [{ title: "Landing Page", href: "/preview" }],
     }),
     article: defineLocations({
@@ -124,6 +133,14 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     underConstructionPage: defineLocations({
       message: "Shown when the site is in under-construction mode.",
       locations: [{ title: "Under Construction", href: "/preview/under-construction" }],
+    }),
+    listenPage: defineLocations({
+      message: "Affects the page where a client listens to their reading (/listen/*).",
+      locations: LISTEN_PREVIEW_LINKS,
+    }),
+    magicLinkVerifyPage: defineLocations({
+      message: "Affects the page a client opens from a sign-in email link.",
+      locations: SIGN_IN_LINK_PREVIEW_LINKS,
     }),
     notFoundPage: defineLocations({
       message: "Shown for unknown routes (404).",

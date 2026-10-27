@@ -22,6 +22,7 @@ import { usePageErrors } from "@/lib/intake/usePageErrors";
 import { useTurnstileChallenge } from "@/lib/intake/useTurnstileChallenge";
 import type { SanityFormSection, SanityPagination } from "@/lib/sanity/types";
 
+import type { FormNavigationLabels } from "./formNavigationLabels";
 import type { GiftFinalPageCopy } from "./GiftFinalPageLines";
 import { IntakeFormBody } from "./IntakeFormBody";
 import type { IntakeGiftCodeCopy } from "./intakeGiftCodeCopy";
@@ -50,6 +51,7 @@ export type IntakeFormProps = {
   submitLabel?: string;
   nextLabel?: string;
   saveLaterLabel?: string;
+  navigationLabels?: FormNavigationLabels;
   pageIndicatorTagline?: string;
   testimonial?: FormTestimonial;
   pagination?: SanityPagination;
@@ -72,6 +74,7 @@ export function IntakeForm(props: IntakeFormProps) {
     submitLabel,
     nextLabel,
     saveLaterLabel,
+    navigationLabels,
     pageIndicatorTagline,
     testimonial,
     pagination,
@@ -308,6 +311,7 @@ export function IntakeForm(props: IntakeFormProps) {
         submitLabel={submitLabel}
         nextLabel={nextLabel}
         saveLaterLabel={saveLaterLabel}
+        navigationLabels={navigationLabels}
         nonRefundableNotice={nonRefundableNotice}
         honeypot={honeypot}
         setHoneypot={setHoneypot}

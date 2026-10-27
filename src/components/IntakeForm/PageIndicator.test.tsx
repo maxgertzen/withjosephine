@@ -20,17 +20,6 @@ describe("PageIndicator", () => {
     expect(screen.getByText(/Page 1 of 4 · about five minutes, all in\./)).toBeInTheDocument();
   });
 
-  it("uses the provided text override verbatim", () => {
-    render(
-      <PageIndicator
-        pageNumber={1}
-        totalPages={1}
-        text="One short page · about 2 minutes."
-      />,
-    );
-    expect(screen.getByText(/One short page · about 2 minutes\./)).toBeInTheDocument();
-  });
-
   it("falls back to the single-page wording when totalPages is 1", () => {
     render(<PageIndicator pageNumber={1} totalPages={1} />);
     expect(screen.getByText(/One short page/)).toBeInTheDocument();

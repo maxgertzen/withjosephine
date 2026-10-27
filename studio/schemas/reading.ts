@@ -1,8 +1,10 @@
+import { orderRankField, orderRankOrdering } from "@sanity/orderable-document-list";
 import { defineField, defineType } from "sanity";
 
+import { isReadingOnSite, OFF_THE_SITE_LABEL } from "../../src/lib/booking/readingVisibility";
 import { parseDisplayToCents } from "../../src/lib/pricing";
-import { readingBookingPageLayoutField } from "./bookingPageLayout";
-import { hideFactsField, readingFactsField } from "./readingFacts";
+import { hiddenOnReadingField, readingBookingPageLayoutField } from "./bookingPageLayout";
+import { readingFactsField } from "./readingFacts";
 
 const PARAGRAPHS_AND_BULLETS = {
   type: "block",
@@ -22,7 +24,7 @@ export const reading = defineType({
   title: "Reading",
   type: "document",
   groups: [
-    { name: "bothPages", title: "Homepage and booking page", default: true },
+    { name: "bothPages", title: "Homepage and booking page" },
     { name: "homepageCard", title: "Homepage card only" },
     { name: "bookingPage", title: "Booking page only" },
     { name: "setup", title: "Setup" },
@@ -30,12 +32,12 @@ export const reading = defineType({
   fields: [
     defineField({
       name: "onSite",
-      group: "setup",
+      group: ["bothPages", "homepageCard", "bookingPage", "setup"],
       title: "Show on the site",
       type: "boolean",
       initialValue: true,
       description:
-        "Off: the reading leaves the homepage, the 'Not sure this is the one?' links and the sitemap, its booking page shows the not-found page, and nobody can book it or buy it as a gift. Gift codes already paid for it still open. Turn a reading off instead of deleting it when it has orders.",
+        "On: the reading is on the homepage and can be booked. Off: it leaves the homepage, the 'Not sure this is the one?' links and the sitemap, its booking page shows the not-found page, and nobody can book it or buy it as a gift. Gift codes already paid for it still open. Turn a reading off instead of deleting it when it has orders. To change where it sits on the homepage, drag it in the Readings list.",
     }),
     defineField({
       name: "name",
@@ -80,6 +82,7 @@ export const reading = defineType({
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
     }),
     readingBookingPageLayoutField("bookingPage"),
+    hiddenOnReadingField("bookingPage"),
     defineField({
       name: "intakeIntro",
       group: "bookingPage",
@@ -177,7 +180,7 @@ export const reading = defineType({
       type: "array",
       of: [{ type: "reference", to: [{ type: "faqItem" }] }],
       description:
-        "Questions shown under 'Questions' on this reading's booking page. Pick from the FAQ list or create a new one, and drag to set the order. Leave empty to hide the section. The homepage FAQ is not affected.",
+        "Questions and answers shown on this reading's booking page, in the part called Questions and answers (FAQ) in Booking page order. Pick from the FAQ list or create a new one, and drag to set the order. The homepage FAQ is not affected. Leave empty and the section does not show.",
     }),
     defineField({
       name: "formTestimonial",
@@ -209,10 +212,6 @@ export const reading = defineType({
         "This reading's own facts row on its booking page. Leave as it is to use the Facts Row from Booking Form.",
       inherits: "bookingForm",
     }),
-    hideFactsField({
-      group: "bookingPage",
-      description: "Leaves out the facts row on this reading's booking page.",
-    }),
     defineField({
       name: "stripePaymentLink",
       group: "setup",
@@ -242,13 +241,7 @@ export const reading = defineType({
       type: "boolean",
       initialValue: false,
     }),
-    defineField({
-      name: "order",
-      group: "setup",
-      title: "Display Order",
-      type: "number",
-      initialValue: 0,
-    }),
+    orderRankField({ type: "reading" }),
     defineField({
       name: "seo",
       group: "setup",
@@ -267,14 +260,12 @@ export const reading = defineType({
       ],
     }),
   ],
-  orderings: [
-    {
-      title: "Display Order",
-      name: "order",
-      by: [{ field: "order", direction: "asc" }],
-    },
-  ],
+  orderings: [orderRankOrdering],
   preview: {
-    select: { title: "name", subtitle: "priceDisplay" },
+    select: { title: "name", priceDisplay: "priceDisplay", onSite: "onSite" },
+    prepare: ({ title, priceDisplay, onSite }) => ({
+      title,
+      subtitle: isReadingOnSite({ onSite }) ? priceDisplay : OFF_THE_SITE_LABEL,
+    }),
   },
 });

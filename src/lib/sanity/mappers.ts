@@ -149,9 +149,7 @@ export function mapFaqItems(
 const SAFE_URL_PROTOCOL = /^(https?:|mailto:)/;
 
 export function mapSocialLinks(siteSettings: SanitySiteSettings | null): MappedSocialLink[] {
-  if (!siteSettings) return [];
-
-  return siteSettings.socialLinks
+  return (siteSettings?.socialLinks ?? [])
     .filter((link) => SAFE_URL_PROTOCOL.test(link.url))
     .map((link) => ({
       platform: link.platform,

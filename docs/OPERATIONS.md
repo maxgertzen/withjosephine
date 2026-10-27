@@ -182,6 +182,10 @@ When a schema change adds a *required field* to an existing doc type, both `prod
 
 The seed script does NOT solve content migrations. If a schema change adds a required field, write a one-shot migration script (see `scripts/migrate-*` for examples) and run it against both `production` and `staging`.
 
+### Reading order
+
+Readings sort by `orderRank`, which Becky sets by dragging readings in the Studio Readings list. Readings without `orderRank` come back in no fixed order. `pnpm tsx scripts/prepare-readings-2026-10.mts <staging|production> --apply` ranks unranked readings by the old `order` field and sets `onSite: true` where it is unset; run it on a dataset before code that sorts by `orderRank` reaches that dataset.
+
 ### When to re-seed
 
 | Trigger | Action |

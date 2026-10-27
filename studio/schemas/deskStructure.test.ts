@@ -1,10 +1,8 @@
-import type { StructureBuilder } from "sanity/structure";
+import type { StructureBuilder, StructureResolverContext } from "sanity/structure";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../views/EmailPreview", () => ({ EmailPreview: () => null }));
 vi.mock("../views/StudioPagePreview", () => ({
-  ListenPagePreview: () => null,
-  MagicLinkVerifyPagePreview: () => null,
   ThankYouPagePreview: () => null,
 }));
 
@@ -33,7 +31,9 @@ const S = new Proxy(
   { get: (_, kind) => (kind === "view" ? viewBuilder : () => fakeNode(String(kind))) },
 ) as unknown as StructureBuilder;
 
-const root = deskStructure(S) as unknown as FakeNode;
+const context = { getClient: () => ({}), schema: { get: () => undefined } } as unknown as StructureResolverContext;
+
+const root = deskStructure(S, context) as unknown as FakeNode;
 
 const itemsOf = (node: FakeNode) => node.calls.items[0] as FakeNode[];
 const childOf = (node: FakeNode) => node.calls.child[0] as FakeNode;

@@ -4,43 +4,37 @@ import {
   BOOKING_PAGE_ELEMENTS,
   chooseLayoutEntries,
   DEFAULT_BOOKING_PAGE_LAYOUT,
-  DEFAULT_ORDER,
   defaultBookingPageLayoutEntries,
+  HIDEABLE_ELEMENTS,
   normalizeLayoutEntries,
   resolveBookingPageLayout,
 } from "./pageLayout";
 
-const allAboveForm = DEFAULT_ORDER.filter(
-  (key) => key !== "form" && key !== "testimonial",
-);
-
 describe("resolveBookingPageLayout", () => {
-  it("renders every element above the form with the testimonial inside it by default", () => {
+  it("uses the built-in order with the testimonial inside the form", () => {
     expect(DEFAULT_BOOKING_PAGE_LAYOUT).toEqual({
-      aboveForm: allAboveForm,
-      belowForm: [],
+      aboveForm: ["summary", "facts", "reader", "included", "howItWorks", "giftRow", "questions", "intro"],
+      belowForm: ["otherReadings", "notes"],
       testimonialInsideForm: true,
     });
   });
 
   it("puts elements listed after the form below it", () => {
-    const layout = resolveBookingPageLayout([
-      { element: "summary" },
-      { element: "form" },
-      { element: "notes" },
-    ]);
-    expect(layout.belowForm[0]).toBe("notes");
+    const layout = resolveBookingPageLayout([{ element: "summary" }, { element: "form" }, { element: "facts" }]);
     expect(layout.aboveForm[0]).toBe("summary");
+    expect(layout.belowForm).toContain("facts");
+    expect(layout.aboveForm).not.toContain("facts");
   });
 
-  it("leaves out hidden elements but never hides the form", () => {
-    const layout = resolveBookingPageLayout([
-      { element: "otherReadings", hidden: true },
-      { element: "form", hidden: true },
-    ]);
-    expect([...layout.aboveForm, ...layout.belowForm]).not.toContain("otherReadings");
-    expect(layout.aboveForm).not.toContain("form");
-    expect(layout.belowForm).not.toContain("form");
+  it("hides what either list hides, and never the form", () => {
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), {
+      hiddenEverywhere: ["otherReadings", "form"],
+      hiddenOnReading: ["facts"],
+    });
+    const shown = [...layout.aboveForm, ...layout.belowForm];
+    expect(shown).not.toContain("otherReadings");
+    expect(shown).not.toContain("facts");
+    expect(shown).toContain("notes");
   });
 
   it("ignores unknown elements and keeps the first of a duplicate", () => {
@@ -56,25 +50,20 @@ describe("resolveBookingPageLayout", () => {
 
   it("brings back a missing element after its default neighbour", () => {
     const stored = defaultBookingPageLayoutEntries().filter((entry) => entry.element !== "reader");
-    expect(resolveBookingPageLayout(stored).aboveForm).toEqual(allAboveForm);
+    expect(resolveBookingPageLayout(stored)).toEqual(DEFAULT_BOOKING_PAGE_LAYOUT);
   });
 
   it("shows the testimonial at its list position when it is not inside the form", () => {
-    const others = defaultBookingPageLayoutEntries().filter(
-      (entry) => entry.element !== "testimonial",
-    );
-    const layout = resolveBookingPageLayout([
-      { element: "testimonial", insideForm: false },
-      ...others,
-    ]);
-    expect(layout.aboveForm[0]).toBe("testimonial");
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), { testimonialInsideForm: false });
+    expect(layout.aboveForm.at(-1)).toBe("testimonial");
     expect(layout.testimonialInsideForm).toBe(false);
   });
 
   it("drops a hidden testimonial from the page and the form", () => {
-    const layout = resolveBookingPageLayout([
-      { element: "testimonial", hidden: true, insideForm: true },
-    ]);
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), {
+      hiddenOnReading: ["testimonial"],
+      testimonialInsideForm: false,
+    });
     expect(layout.aboveForm).not.toContain("testimonial");
     expect(layout.testimonialInsideForm).toBe(false);
   });
@@ -91,16 +80,23 @@ describe("chooseLayoutEntries", () => {
 });
 
 describe("normalizeLayoutEntries", () => {
-  it("keeps stored flags, drops unknown and repeated entries, and adds missing ones with defaults", () => {
+  it("drops unknown and repeated entries, drops stored flags, and adds missing ones", () => {
     const normalized = normalizeLayoutEntries([
       { element: "form" },
       { element: "retired" },
-      { element: "facts", hidden: true },
-      { element: "form", hidden: true },
+      { element: "facts", hidden: true } as { element: string },
+      { element: "form" },
     ]);
-    expect(normalized.map((entry) => entry.element)).toHaveLength(BOOKING_PAGE_ELEMENTS.length);
-    expect(normalized.find((entry) => entry.element === "facts")?.hidden).toBe(true);
-    expect(normalized.find((entry) => entry.element === "testimonial")?.insideForm).toBe(true);
+    expect(normalized).toHaveLength(BOOKING_PAGE_ELEMENTS.length);
+    expect(normalized.find((entry) => entry.element === "facts")).toEqual({ element: "facts" });
     expect(normalized.filter((entry) => entry.element === "form")).toEqual([{ element: "form" }]);
+  });
+});
+
+describe("HIDEABLE_ELEMENTS", () => {
+  it("lists every part except the form", () => {
+    expect(HIDEABLE_ELEMENTS.map(({ key }) => key)).toEqual(
+      BOOKING_PAGE_ELEMENTS.map(({ key }) => key).filter((key) => key !== "form"),
+    );
   });
 });

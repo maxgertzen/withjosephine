@@ -12,7 +12,7 @@ import { GiftModeNote, type GiftModeNoteProps } from "@/components/GiftMode/Gift
 import { GiftPriceLine } from "@/components/GiftMode/GiftPriceLine";
 import { IntakeForm, type IntakeFormProps } from "@/components/IntakeForm";
 import { TestimonialLine } from "@/components/IntakeForm/TestimonialLine";
-import type { NotesNavProps } from "@/components/Notes/NotesShell";
+import type { NotesFooterProps, NotesNavProps } from "@/components/Notes/NotesShell";
 import { PortableTextContent } from "@/components/PortableTextContent";
 import { readingBlockElements, type ReadingBlockProps } from "@/components/ReadingBlock";
 import type { BookingPageLayout } from "@/lib/booking/pageLayout";
@@ -20,7 +20,9 @@ import type { SanityPortableTextBlock } from "@/lib/sanity/types";
 
 export type BookingFormViewProps = {
   nav: NotesNavProps;
+  footer?: NotesFooterProps;
   backHref: string;
+  backLabel?: string;
   reading: { slug: string; tag: string; name: string; priceLabel: string };
   readingBlock: ReadingBlockProps;
   layout: BookingPageLayout;
@@ -38,7 +40,9 @@ export type BookingFormViewProps = {
 
 export function BookingFormView({
   nav,
+  footer,
   backHref,
+  backLabel,
   reading,
   readingBlock,
   layout,
@@ -75,7 +79,9 @@ export function BookingFormView({
     <HeaderBackProvider>
       <BookingPageShell
         nav={nav}
+        footer={footer}
         backHref={backHref}
+        backLabel={backLabel}
         readingTag={reading.tag}
         readingName={reading.name}
         readingPrice={reading.priceLabel}

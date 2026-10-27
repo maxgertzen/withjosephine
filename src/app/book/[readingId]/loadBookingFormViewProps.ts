@@ -1,4 +1,4 @@
-import { loadNotesNav } from "@/lib/notes/loadNotesNav";
+import { loadSiteChrome } from "@/lib/notes/loadSiteChrome";
 import type { NoteSummary } from "@/lib/notes/types";
 import {
   fetchBookingForm,
@@ -81,7 +81,7 @@ export async function loadBookingFormViewProps(
     notesState,
     readingNotes,
     giftSettings,
-    nav,
+    chrome,
   ] = await Promise.all([
     sources.reading(readingId),
     sources.readings(),
@@ -91,7 +91,7 @@ export async function loadBookingFormViewProps(
     sources.notesState(),
     sources.readingNotes(readingId),
     sources.giftSettings(),
-    loadNotesNav(perspective),
+    loadSiteChrome(perspective),
   ]);
 
   return deriveBookingFormViewProps({
@@ -104,6 +104,7 @@ export async function loadBookingFormViewProps(
     notesState,
     readingNotes,
     giftSettings,
-    nav,
+    ...chrome,
+    editable: perspective === "preview",
   });
 }

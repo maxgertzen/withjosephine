@@ -287,7 +287,7 @@ describe("deriveBookingFormViewProps reading block", () => {
     expect(derive()?.readingBlock.reader.imageUrl).toBe(ABOUT_DEFAULTS.imageUrl);
   });
 
-  it("uses the shared facts unless the reading has its own, and honours both hide switches", () => {
+  it("uses the shared facts unless the reading has its own", () => {
     const own = [{ label: "Length", value: "1 hour" }];
     const shared = [{ label: "Format", value: "Voice" }];
     const withShared = (extra: Partial<SanityBookingForm["readingPageContent"]> = {}) =>
@@ -297,9 +297,7 @@ describe("deriveBookingFormViewProps reading block", () => {
 
     expect(facts({})).toEqual(shared);
     expect(facts({ facts: own })).toEqual(own);
-    expect(facts({ facts: own }, withShared({ hideFacts: true }))).toEqual(own);
-    expect(facts({}, withShared({ hideFacts: true }))).toEqual([]);
-    expect(facts({ facts: own, hideFacts: true })).toEqual([]);
+    expect(facts({}, withShared({ facts: [] }))).toEqual([]);
     expect(derive()?.readingBlock.facts).toEqual(READING_PAGE_DEFAULTS.facts);
   });
 
@@ -446,13 +444,28 @@ describe("deriveBookingFormViewProps page order", () => {
   });
 
   it("uses the shared order and lets a reading replace it", () => {
-    const form = bookingForm({ pageLayout: [{ element: "facts", hidden: true }] });
-    expect(derive(sanityReading(), { bookingForm: form })?.layout.aboveForm).not.toContain("facts");
+    const form = bookingForm({ pageLayout: [{ element: "form" }, { element: "summary" }] });
+    expect(derive(sanityReading(), { bookingForm: form })?.layout.belowForm).toContain("summary");
 
-    const reading = sanityReading({ pageLayout: [{ element: "reader", hidden: true }] });
+    const reading = sanityReading({ pageLayout: [{ element: "summary" }, { element: "form" }] });
+    expect(derive(reading, { bookingForm: form })?.layout.aboveForm[0]).toBe("summary");
+  });
+
+  it("hides what Booking Form hides plus what the reading also hides", () => {
+    const form = bookingForm({ hiddenParts: ["facts"], testimonialInsideForm: false });
+    const reading = sanityReading({ hiddenParts: ["reader"] });
     const layout = derive(reading, { bookingForm: form })?.layout;
-    expect(layout?.aboveForm).toContain("facts");
+    expect(layout?.aboveForm).not.toContain("facts");
     expect(layout?.aboveForm).not.toContain("reader");
+    expect(layout?.testimonialInsideForm).toBe(false);
+  });
+
+  it("passes the editable navigation words", () => {
+    const form = bookingForm({ readingPageContent: { backLabel: "Go back", pageCounterTemplate: "{page}/{total}" } });
+    const props = derive(sanityReading(), { bookingForm: form });
+    expect(props?.backLabel).toBe("Go back");
+    expect(props?.form.navigationLabels?.pageCounterTemplate).toBe("{page}/{total}");
+    expect(props?.form.navigationLabels?.previousPageLabel).toBe(READING_PAGE_DEFAULTS.previousPageLabel);
   });
 });
 

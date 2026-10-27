@@ -2,6 +2,7 @@ import { groq } from "next-sanity";
 
 export const landingPageQuery = groq`
   *[_type == "landingPage"][0] {
+    _id,
     hero,
     about {
       sectionTag,
@@ -19,7 +20,7 @@ export const landingPageQuery = groq`
 `;
 
 export const readingsQuery = groq`
-  *[_type == "reading"] | order(order asc) {
+  *[_type == "reading"] | order(orderRank) {
     _id,
     onSite,
     name,
@@ -65,7 +66,6 @@ export const readingBySlugQuery = groq`
       label,
       value
     },
-    hideFacts,
     "questionsOnPage": questionsOnPage[]-> {
       _id,
       question,
@@ -77,7 +77,8 @@ export const readingBySlugQuery = groq`
       name,
       "detail": coalesce(readingType->subtitle, detailOverride)
     },
-    pageLayout[] { element, hidden, insideForm },
+    pageLayout[] { element },
+    hiddenParts,
     seo
   }
 `;
@@ -370,7 +371,6 @@ export const bookingFormQuery = groq`
         label,
         value
       },
-      hideFacts,
       factsPerRowPhone,
       factsPerRowDesktop,
       factsBalanceRows,
@@ -384,7 +384,12 @@ export const bookingFormQuery = groq`
       otherReadingsTitle,
       switchNoticeTemplate,
       testimonialLabel,
-      minutesTemplate
+      minutesTemplate,
+      backLabel,
+      backToReadingsLabel,
+      previousPageLabel,
+      pageCounterTemplate,
+      onePageLabel
     },
     pagination {
       overrides[] {
@@ -396,7 +401,9 @@ export const bookingFormQuery = groq`
     nextButtonText,
     saveAndContinueLaterText,
     pageIndicatorTagline,
-    pageLayout[] { element, hidden, insideForm },
+    pageLayout[] { element },
+    hiddenParts,
+    testimonialInsideForm,
     "sections": sections[]-> {
       _id,
       sectionTitle,

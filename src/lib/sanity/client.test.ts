@@ -130,4 +130,17 @@ describe("sanityClient stega filter", () => {
     expect(filter({ sourcePath: ["slug", "current"], resultPath: ["slug"], value: "birth-chart", filterDefault })).toBe(false);
     expect(filterDefault).toHaveBeenCalled();
   });
+
+  it.each([
+    [["readingPageContent", "pageLayout", { _key: "a" }, "element"]],
+    [["hiddenParts", 0]],
+    [["sections", 0, "fields", 1, "helperPosition"]],
+    [["socialLinks", 0, "platform"]],
+    [["iconKey"]],
+  ])("leaves values the code compares unmarked: %j", async (sourcePath) => {
+    const filter = await stegaFilter();
+    const filterDefault = vi.fn(() => true);
+
+    expect(filter({ sourcePath, resultPath: sourcePath, value: "facts", filterDefault })).toBe(false);
+  });
 });

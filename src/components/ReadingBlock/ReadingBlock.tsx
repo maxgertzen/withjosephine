@@ -21,7 +21,7 @@ export type ReadingBlockProps = {
   description: string;
   facts: ReadingFact[];
   factsLayout: ReadingFactsLayout;
-  reader: { name: string; line: string; imageUrl?: string };
+  reader: { name: string; line: string; imageUrl?: string; imageEditTarget?: string };
   included: { title: string; items: string[] };
   howItWorks: { title: string; items: string[] };
   questions: { title: string; items: MappedFaqItem[] };
@@ -49,7 +49,7 @@ function Summary({ eyebrow, lead, description }: ReadingBlockProps) {
 function Reader({ reader }: ReadingBlockProps) {
   return (
     <div className="flex items-center gap-[0.9rem]">
-      {reader.imageUrl ? <PortraitAvatar src={reader.imageUrl} size={56} /> : null}
+      {reader.imageUrl ? <PortraitAvatar src={reader.imageUrl} size={56} editTarget={reader.imageEditTarget} /> : null}
       <p className="m-0 flex flex-col">
         <span className="font-display italic text-[1.2rem] text-j-text-heading">{reader.name}</span>
         <span className="font-body text-sm text-j-text-muted">{reader.line}</span>

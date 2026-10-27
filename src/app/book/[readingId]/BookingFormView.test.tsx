@@ -145,7 +145,9 @@ const TESTIMONIAL = { label: "From a client", quote: "It named what I felt.", na
 
 describe("BookingFormView page order", () => {
   it("leaves out a hidden element", () => {
-    const layout = resolveBookingPageLayout([{ element: "otherReadings", hidden: true }]);
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), {
+      hiddenEverywhere: ["otherReadings"],
+    });
     render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), layout)} />);
 
     expect(screen.queryByRole("navigation", { name: "Not sure this is the one?" })).toBeNull();
@@ -153,8 +155,7 @@ describe("BookingFormView page order", () => {
   });
 
   it("renders elements placed after the form below the card", () => {
-    const entries = defaultBookingPageLayoutEntries().filter((entry) => entry.element !== "otherReadings");
-    const layout = resolveBookingPageLayout([...entries, { element: "otherReadings" }]);
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries());
     render(<BookingFormView {...props(paragraphBlocks(["Only paragraph."]), layout)} />);
 
     const otherReadings = screen.getByRole("navigation", { name: "Not sure this is the one?" });
@@ -171,7 +172,7 @@ describe("BookingFormView page order", () => {
   });
 
   it("shows the testimonial on the page instead of in the form when moved out", () => {
-    const layout = resolveBookingPageLayout([{ element: "testimonial", insideForm: false }, { element: "form" }]);
+    const layout = resolveBookingPageLayout(defaultBookingPageLayoutEntries(), { testimonialInsideForm: false });
     const base = props(paragraphBlocks(["Only paragraph."]), layout);
     render(<BookingFormView {...base} form={{ ...base.form, testimonial: TESTIMONIAL }} />);
 

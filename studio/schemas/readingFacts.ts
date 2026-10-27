@@ -8,7 +8,7 @@ import { inheritedArrayInput } from "../components/InheritedArrayInput";
 type FieldPlacement = { description: string; fieldset?: string; group?: string };
 
 const ITEM_TYPE = "readingFact";
-const SHARED_FACTS_QUERY = `*[_type == "bookingForm"][0].readingPageContent{ facts[]{ label, value }, hideFacts }`;
+const SHARED_FACTS_QUERY = `*[_type == "bookingForm"][0].readingPageContent{ facts[]{ label, value } }`;
 const describe = ({ label, value }: ReadingFact) => ({ title: label, subtitle: value });
 
 const builtInFactsInput = inheritedArrayInput<ReadingFact>({
@@ -26,7 +26,7 @@ const bookingFormFactsInput = inheritedArrayInput<ReadingFact>({
     sharedFacts(
       await client
         .withConfig({ perspective: "published" })
-        .fetch<{ facts?: ReadingFact[] | null; hideFacts?: boolean | null } | null>(SHARED_FACTS_QUERY),
+        .fetch<{ facts?: ReadingFact[] | null } | null>(SHARED_FACTS_QUERY),
     ),
   describe,
   itemType: ITEM_TYPE,
@@ -59,16 +59,6 @@ export function readingFactsField({
       },
     ],
     validation: (rule) => rule.max(MAX_READING_FACTS),
-  });
-}
-
-export function hideFactsField(placement: FieldPlacement) {
-  return defineField({
-    name: "hideFacts",
-    title: "Hide the Facts Row",
-    type: "boolean",
-    ...placement,
-    initialValue: false,
   });
 }
 
