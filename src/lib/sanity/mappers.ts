@@ -1,6 +1,7 @@
 import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { linesWithText } from "@/lib/content/nonBlank";
 import type { NotesLink } from "@/lib/notes/notes";
 
@@ -69,7 +70,7 @@ export function mapReadings(sanityReadings: SanityReading[]): MappedReading[] {
     }));
   }
 
-  return sanityReadings.map((r) => ({
+  return sanityReadings.filter(isReadingOnSite).map((r) => ({
     id: r.slug,
     tag: r.tag,
     name: r.name,
@@ -148,9 +149,7 @@ export function mapFaqItems(
 const SAFE_URL_PROTOCOL = /^(https?:|mailto:)/;
 
 export function mapSocialLinks(siteSettings: SanitySiteSettings | null): MappedSocialLink[] {
-  if (!siteSettings) return [];
-
-  return siteSettings.socialLinks
+  return (siteSettings?.socialLinks ?? [])
     .filter((link) => SAFE_URL_PROTOCOL.test(link.url))
     .map((link) => ({
       platform: link.platform,

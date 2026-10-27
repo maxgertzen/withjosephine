@@ -8,11 +8,6 @@
     "Detailed voice note recording",
     "Supporting PDF"
   ],
-  "howItWorks": [
-    "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
-    "I begin your reading within the next two days and send you a short note when I do.",
-    "Within seven days you receive a voice note and a PDF, sent to the email you gave me."
-  ],
   "name": "The Akashic Record Reading",
   "price": 7900,
   "priceDisplay": "$79",
@@ -33,5 +28,83 @@
   "stripePaymentLink": "https://buy.stripe.com/test_00w00b5iv2qN4FK0Ec8Vi00",
   "subtitle": "Akashic Record Reading",
   "tag": "Soul Records",
-  "valueProposition": "Direct answers from your soul's infinite records"
+  "valueProposition": "Direct answers from your soul's infinite records",
+  "bookingPage": [
+    {
+      "_key": "section-0",
+      "_type": "summarySection",
+      "shown": true
+    },
+    {
+      "_key": "section-1",
+      "_type": "factsSection",
+      "shown": true
+    },
+    {
+      "_key": "section-2",
+      "_type": "readerSection",
+      "shown": true
+    },
+    {
+      "_key": "section-3",
+      "_type": "listSection",
+      "shown": true,
+      "title": "What’s included",
+      "items": [
+        "Three questions explored in depth",
+        "Akashic Record reading with card pulls",
+        "Personalised questions chosen by you",
+        "Detailed voice note recording",
+        "Supporting PDF"
+      ]
+    },
+    {
+      "_key": "section-4",
+      "_type": "listSection",
+      "shown": true,
+      "title": "How it works",
+      "items": [
+        "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
+        "I begin your reading within the next two days and send you a short note when I do.",
+        "Within seven days you receive a voice note and a PDF, sent to the email you gave me."
+      ]
+    },
+    {
+      "_key": "section-5",
+      "_type": "giftRowSection",
+      "shown": true
+    },
+    {
+      "_key": "section-6",
+      "_type": "questionsSection",
+      "shown": true,
+      "title": "Questions",
+      "questions": []
+    },
+    {
+      "_key": "section-7",
+      "_type": "introSection",
+      "shown": true
+    },
+    {
+      "_key": "section-8",
+      "_type": "testimonialSection",
+      "shown": true,
+      "insideForm": true
+    },
+    {
+      "_key": "section-9",
+      "_type": "formSection"
+    },
+    {
+      "_key": "section-10",
+      "_type": "otherReadingsSection",
+      "shown": true
+    },
+    {
+      "_key": "section-11",
+      "_type": "notesSection",
+      "shown": true
+    }
+  ]
 }

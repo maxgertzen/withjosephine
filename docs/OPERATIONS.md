@@ -160,7 +160,7 @@ set -a && source .env.local && set +a && pnpm seed:staging
 The script (`scripts/seed-staging-dataset.ts`):
 
 1. Queries `production` live for `array::unique(*[]._type)`.
-2. Filters out `submission` (PII) and any `system.*` types Sanity manages internally.
+2. Filters out `submission` (PII), `sanity.previewUrlSecret` and any `system.*` types Sanity manages internally.
 3. Exports the remaining types + their assets via `sanity dataset export`.
 4. Imports into `staging` via `sanity dataset import --replace`.
 
@@ -182,6 +182,10 @@ When a schema change adds a *required field* to an existing doc type, both `prod
 
 The seed script does NOT solve content migrations. If a schema change adds a required field, write a one-shot migration script (see `scripts/migrate-*` for examples) and run it against both `production` and `staging`.
 
+### Reading order
+
+Readings sort by `orderRank`, which Becky sets by dragging readings in the Studio Readings list. Readings without `orderRank` come back in no fixed order. `pnpm tsx scripts/prepare-readings-2026-10.mts <staging|production> --apply` ranks unranked readings by the old `order` field and sets `onSite: true` where it is unset; run it on a dataset before code that sorts by `orderRank` reaches that dataset.
+
 ### When to re-seed
 
 | Trigger | Action |
@@ -197,7 +201,7 @@ The seed script does NOT solve content migrations. If a schema change adds a req
 
 Staging diverges from production where staging-only QA content makes sense:
 
-- **`reading` doc `stripePaymentLink`** — currently same as production (re-used existing test-mode Payment Links). When apex unparks and production swaps to live-mode Payment Links (see [`BACKLOG.md`](./BACKLOG.md) § "Apex unpark — Stripe live-mode flip target"), staging stays on test-mode URLs. Re-seeding from production AFTER that flip would clobber staging's test-mode URLs with live-mode ones — at that point, either drop the `reading` type from the seed, or post-process to revert payment links per env.
+- **`reading` doc `stripePaymentLink`**: production uses live Payment Links, staging uses test-mode links (`https://buy.stripe.com/test_...`). The seed copies the live links, so after every `pnpm seed:staging` set the three staging readings back to their test links and check that every staging `stripePaymentLink` starts with `https://buy.stripe.com/test_`.
 
 ---
 
@@ -224,9 +228,7 @@ entry_page_view  →  intake_field_first_focus  →  intake_submit_success
 
 `/book/[slug]` is the form, so `entry_page_view` and `intake_page_view` fire on the same page load. Step 2 is the first field the visitor focuses.
 
-Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry` or `folded`, optionally `reading_id`.
-
-After the reading block ships, break this funnel down by `folded` to compare homepage-card visitors with search and shared-link visitors. The before/after comparison for the block uses funnel 3, which has data from before the block.
+Setup: Reports → Funnels → "+ Build new funnel" → steps `entry_page_view`, `intake_field_first_focus`, `intake_submit_success`; conversion window **1 hour**; filter `environment = production`; breakdown by `entry`, optionally `reading_id`.
 
 **2. Mid-funnel: intake completion**
 
@@ -267,7 +269,6 @@ Setup: conversion window **1 hour**, filter `environment = production`, segment 
   | `external` | Referred by another site (search, TikTok, a shared link opened from an app). |
   | `direct` | No referrer: typed, bookmarked, or opened from an app that sends none. |
 
-- `folded` (on `entry_page_view`): `true` for `homepage_card` and `draft`. These visitors get the folded reading block once it ships; before that, the flag only marks the group.
 
 ### Email events
 

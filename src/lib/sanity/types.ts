@@ -7,42 +7,40 @@ import type {
   EmailGiftToRecipientContent,
   GiftContent,
   NotesContent,
-  ReadingFact,
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
+import type { StoredSection } from "@/lib/booking/bookingPageSections";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
 
 export type ContentPerspective = "published" | "preview";
 
 export type SanityReading = {
   _id: string;
+  onSite?: boolean | null;
   name: string;
   slug: string;
   tag: string;
   subtitle: string;
-  intakeIntro?: SanityPortableTextBlock[];
   price: number;
   priceDisplay: string;
   valueProposition: string;
   briefDescription: string;
   includes: string[];
-  howItWorks?: string[] | null;
   requiresBirthChart: boolean;
   requiresAkashic: boolean;
   requiresQuestions: boolean;
   stripePaymentLink?: string;
   estimatedMinutes?: number;
-  facts?: ReadingFact[] | null;
-  hideFacts?: boolean;
-  questionsOnPage?: SanityReadingQuestion[] | null;
-  formTestimonial?: SanityFormTestimonial | null;
+  bookingPage?: SanityBookingPageSection[] | null;
   seo?: SanitySeo;
 };
 
-type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
+export type SanityReadingQuestion = Omit<SanityFaqItem, "order">;
 
-type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
+export type SanityFormTestimonial = Omit<SanityTestimonial, "order" | "detail"> & { detail?: string };
+
+export type SanityBookingPageSection = StoredSection<SanityReadingQuestion, SanityFormTestimonial>;
 
 export type SanityTestimonial = {
   _id: string;
@@ -82,6 +80,7 @@ export type SanityHowItWorks = {
 };
 
 export type SanityLandingPage = {
+  _id?: string;
   hero: SanityHero;
   about: SanityAbout;
   howItWorks: SanityHowItWorks;
@@ -412,6 +411,7 @@ export type SanityBookingForm = {
   nextButtonText?: string;
   saveAndContinueLaterText?: string;
   pageIndicatorTagline?: string;
+  bookingPageStart?: SanityBookingPageSection[] | null;
   sections: SanityFormSection[];
 };
 
@@ -454,6 +454,7 @@ export type SanityArticle = SanityArticleBase & {
   searchDescription?: string;
   body: NoteBodyBlock[];
   relatedReading?: {
+    onSite?: boolean | null;
     name: string;
     slug: string;
     priceDisplay?: string;

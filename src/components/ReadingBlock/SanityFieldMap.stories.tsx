@@ -2,9 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { userEvent, within } from "storybook/test";
 
 import { ReadingCard } from "@/components/ReadingCard";
-import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
 
-import { ReadingBlock } from "./ReadingBlock";
+import { ReadingBlockPreview } from "./ReadingBlockPreview";
 import { fieldMapBlockProps, fieldMapCardProps } from "./sanityFieldMapFixture";
 
 const meta: Meta = {
@@ -39,15 +38,14 @@ export const HomepageReadingCard: Story = {
 
 export const BookingPageReadingBlock: Story = {
   render: () => (
-    <BookingEntryContext.Provider value="external">
-      <div className="max-w-3xl bg-j-ivory p-6">
-        <ReadingBlock {...BLOCK} />
-      </div>
-    </BookingEntryContext.Provider>
+    <div className="max-w-3xl bg-j-ivory p-6">
+      <ReadingBlockPreview {...BLOCK} />
+    </div>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: BLOCK.included.title }));
-    await userEvent.click(canvas.getByRole("button", { name: BLOCK.howItWorks.title }));
+    for (const section of BLOCK.sections) {
+      if (section.kind === "list") await userEvent.click(canvas.getByRole("button", { name: section.title }));
+    }
   },
 };

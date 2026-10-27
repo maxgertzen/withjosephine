@@ -1,7 +1,33 @@
 import { groq } from "next-sanity";
 
+const BOOKING_PAGE_SECTION_PROJECTION = `{
+  _key,
+  _type,
+  shown,
+  title,
+  items,
+  eyebrow,
+  promise,
+  description,
+  facts[] { label, value },
+  name,
+  line,
+  "photoUrl": photo.asset->url,
+  hidePhoto,
+  giftRowLabel,
+  buyLead,
+  buyLinkLabel,
+  redeemLead,
+  redeemLinkLabel,
+  openingWords,
+  "questions": questions[]-> { _id, question, answer },
+  "testimonial": testimonial-> { _id, quote, name, "detail": coalesce(readingType->subtitle, detailOverride) },
+  insideForm
+}`;
+
 export const landingPageQuery = groq`
   *[_type == "landingPage"][0] {
+    _id,
     hero,
     about {
       sectionTag,
@@ -19,13 +45,13 @@ export const landingPageQuery = groq`
 `;
 
 export const readingsQuery = groq`
-  *[_type == "reading"] | order(order asc) {
+  *[_type == "reading"] | order(orderRank) {
     _id,
+    onSite,
     name,
     "slug": slug.current,
     tag,
     subtitle,
-    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
@@ -42,44 +68,28 @@ export const readingsQuery = groq`
 export const readingBySlugQuery = groq`
   *[_type == "reading" && slug.current == $slug][0] {
     _id,
+    onSite,
     name,
     "slug": slug.current,
     tag,
     subtitle,
-    intakeIntro,
     price,
     priceDisplay,
     valueProposition,
     briefDescription,
     "includes": coalesce(includes, []),
-    howItWorks,
     requiresBirthChart,
     requiresAkashic,
     requiresQuestions,
     stripePaymentLink,
     estimatedMinutes,
-    facts[] {
-      label,
-      value
-    },
-    hideFacts,
-    "questionsOnPage": questionsOnPage[]-> {
-      _id,
-      question,
-      answer
-    },
-    "formTestimonial": formTestimonial-> {
-      _id,
-      quote,
-      name,
-      "detail": coalesce(readingType->subtitle, detailOverride)
-    },
+    bookingPage[] ${BOOKING_PAGE_SECTION_PROJECTION},
     seo
   }
 `;
 
 export const readingSlugsQuery = groq`
-  *[_type == "reading"] { "slug": slug.current }
+  *[_type == "reading"] { "slug": slug.current, onSite }
 `;
 
 export const testimonialsQuery = groq`
@@ -362,12 +372,10 @@ export const bookingFormQuery = groq`
     },
     readingPageContent {
       eyebrow,
-      foldRowLabel,
       facts[] {
         label,
         value
       },
-      hideFacts,
       factsPerRowPhone,
       factsPerRowDesktop,
       factsBalanceRows,
@@ -375,13 +383,15 @@ export const bookingFormQuery = groq`
       readerName,
       readerLine,
       hideReaderPhoto,
-      includedTitle,
-      howItWorksTitle,
-      questionsTitle,
       otherReadingsTitle,
       switchNoticeTemplate,
       testimonialLabel,
-      minutesTemplate
+      minutesTemplate,
+      backLabel,
+      backToReadingsLabel,
+      previousPageLabel,
+      pageCounterTemplate,
+      onePageLabel
     },
     pagination {
       overrides[] {
@@ -393,6 +403,7 @@ export const bookingFormQuery = groq`
     nextButtonText,
     saveAndContinueLaterText,
     pageIndicatorTagline,
+    bookingPageStart[] ${BOOKING_PAGE_SECTION_PROJECTION},
     "sections": sections[]-> {
       _id,
       sectionTitle,
@@ -498,6 +509,7 @@ export const articleBySlugQuery = groq`
       }
     },
     "relatedReading": relatedReading-> {
+      onSite,
       name,
       "slug": slug.current,
       priceDisplay,

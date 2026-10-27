@@ -3,6 +3,7 @@ import { createClient, type FilterDefault, type SanityClient } from "next-sanity
 
 import { requireEnv } from "../env";
 import { taintServerObject } from "../taint";
+import { studioUrl } from "./studioUrl";
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
 const buildBakedDataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
@@ -39,15 +40,14 @@ async function resolveDataset(): Promise<string> {
   return buildBakedDataset;
 }
 
-/**
- * `stega.studioUrl` tells the `<VisualEditing />` overlay where to send
- * editors when they click an editable region. Falls back to the local Studio
- * dev URL so visual editing works during `pnpm studio:dev`.
- */
-const studioUrl = process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "http://localhost:3333";
+const VALUES_COMPARED_IN_CODE = new Set(["helperPosition", "platform", "iconKey"]);
+
+const isComparedInCode = (sourcePath: readonly unknown[]) =>
+  sourcePath.some((segment) => typeof segment === "string" && VALUES_COMPARED_IN_CODE.has(segment));
 
 const editableInPresentation: FilterDefault = (props) =>
-  props.sourcePath.at(-1) === "tag" || props.filterDefault(props);
+  !isComparedInCode(props.sourcePath) &&
+  (props.sourcePath.at(-1) === "tag" || props.filterDefault(props));
 
 /**
  * Single shared Sanity client. Perspective (`published` vs `drafts`) is

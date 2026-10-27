@@ -21,6 +21,7 @@ import type { UseTurnstileChallengeResult } from "@/lib/intake/useTurnstileChall
 import type { SanityFormSection } from "@/lib/sanity/types";
 
 import { DiscardDraftButton } from "./DiscardDraftButton";
+import type { FormNavigationLabels } from "./formNavigationLabels";
 import { type GiftFinalPageCopy, GiftFinalPageLines } from "./GiftFinalPageLines";
 import { LegalAcknowledgments, type LegalAcknowledgmentsErrors } from "./LegalAcknowledgments";
 import { PageIndicator } from "./PageIndicator";
@@ -46,6 +47,7 @@ export type IntakeFormBodyProps = {
   submitLabel?: string;
   nextLabel?: string;
   saveLaterLabel?: string;
+  navigationLabels?: FormNavigationLabels;
   nonRefundableNotice: string;
 
   honeypot: string;
@@ -112,6 +114,7 @@ export function IntakeFormBody({
   submitLabel,
   nextLabel,
   saveLaterLabel,
+  navigationLabels,
   nonRefundableNotice,
   honeypot,
   setHoneypot,
@@ -166,6 +169,8 @@ export function IntakeFormBody({
             pageNumber={currentPage + 1}
             totalPages={totalPages}
             tagline={pageIndicatorTagline}
+            counterTemplate={navigationLabels?.pageCounterTemplate}
+            onePageText={navigationLabels?.onePageLabel}
           />
           {lastSavedAt ? <DiscardDraftButton onConfirm={handleDiscardDraft} /> : null}
         </div>
@@ -241,6 +246,8 @@ export function IntakeFormBody({
         submitLabel={submitLabel}
         nextLabel={nextLabel}
         saveLaterLabel={saveLaterLabel}
+        backToReadingsLabel={navigationLabels?.backToReadingsLabel}
+        previousPageLabel={navigationLabels?.previousPageLabel}
         savedIndicator={savedIndicator}
       />
 

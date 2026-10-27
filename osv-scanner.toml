@@ -14,3 +14,8 @@ reason = "Dev-only transitive dep (Storybook dev server via @storybook/builder-w
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2026-11-15
 reason = "braces 3.0.3 comes only from build and CLI tooling (@sanity/codegen, Storybook, eslint-config-next globbing), never from site code. No fixed version yet."
+
+[[IgnoredVulns]]
+id = "GHSA-834v-8h66-3h79"
+ignoreUntil = 2026-12-15
+reason = "happy-dom is only the vitest test environment and never ships; tests do not evaluate untrusted scripts. The fix (21.0.4) is a major update that breaks framer-motion animation teardown in tests; dex tracks the move to 21."

@@ -220,7 +220,6 @@ describe("non-production opt-in gate", () => {
       referrer: "",
       viewport_width: 1024,
       entry: "direct",
-      folded: false,
     });
     await initAnalytics();
     // After skipped init, isInitialized = true, queue cleared.
@@ -241,7 +240,6 @@ describe("track buffer", () => {
       referrer: "",
       viewport_width: 1024,
       entry: "direct",
-      folded: false,
     });
     track("intake_page_view", {
       reading_id: "soul-blueprint",
@@ -281,7 +279,6 @@ describe("track buffer", () => {
       referrer: "",
       viewport_width: 1024,
       entry: "direct",
-      folded: false,
     });
     await initAnalytics();
     expect(mixpanel.track).not.toHaveBeenCalled();

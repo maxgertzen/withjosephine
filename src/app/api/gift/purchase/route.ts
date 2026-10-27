@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { HONEYPOT_FIELD } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { buildPaymentUrl, isStripePaymentLink } from "@/lib/booking/paymentUrl";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { COOLING_OFF_CONSENT_LABEL } from "@/lib/compliance/intakeConsent";
 import { optionalEnv } from "@/lib/env";
 import { giftClientReferenceId } from "@/lib/gift/clientReference";
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   const reading = await fetchReadingFresh(body.readingSlug);
-  if (!reading) {
+  if (!reading || !isReadingOnSite(reading)) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
 

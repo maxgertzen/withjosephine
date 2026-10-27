@@ -6,12 +6,15 @@ const IMAGE_NUDGE_CLASS = { 40: "translate-y-[1.5px]", 56: "" } as const;
 export function PortraitAvatar({
   src,
   size,
+  editTarget,
 }: {
   src: string;
   size: keyof typeof FRAME_SIZE_CLASS;
+  editTarget?: string;
 }) {
   return (
     <span
+      data-sanity={editTarget}
       className={`${FRAME_SIZE_CLASS[size]} shrink-0 overflow-hidden rounded-full border border-j-border-gold bg-j-warm`}
     >
       <Image

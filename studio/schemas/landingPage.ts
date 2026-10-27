@@ -3,8 +3,8 @@ import { defineField, defineType } from "sanity";
 import { type ReadingCardLabels, READINGS_SECTION_DEFAULTS } from "../../src/data/defaults";
 
 const READING_CARD_LABEL_FIELDS: { name: keyof ReadingCardLabels; title: string; description: string }[] = [
-  { name: "learnMoreLabel", title: "Learn More button", description: "On each reading card. Opens the 'What's included' list." },
-  { name: "showLessLabel", title: "Show Less button", description: "On each reading card once the list is open." },
+  { name: "learnMoreLabel", title: "Learn More button", description: "On each reading card. Tapping it shows more lines about the reading." },
+  { name: "showLessLabel", title: "Show Less button", description: "On each reading card once those lines are open. Tapping it hides them again." },
   { name: "bookButtonText", title: "Book button", description: "On each reading card. Opens the reading's booking page." },
 ];
 

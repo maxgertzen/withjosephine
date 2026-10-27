@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("sanity", () => ({
+  defineArrayMember: <T,>(member: T) => member,
   defineField: <T,>(field: T) => field,
   defineType: <T,>(type: T) => type,
 }));
+
+vi.mock("../components/InheritedArrayInput", () => ({ inheritedArrayInput: () => () => null }));
 
 vi.mock("../../src/lib/pricing", () => ({
   parseDisplayToCents: () => null,

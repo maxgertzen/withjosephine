@@ -1,31 +1,31 @@
+import { orderRankField, orderRankOrdering } from "@sanity/orderable-document-list";
 import { defineField, defineType } from "sanity";
 
+import { isReadingOnSite, OFF_THE_SITE_LABEL } from "../../src/lib/booking/readingVisibility";
 import { parseDisplayToCents } from "../../src/lib/pricing";
-import { hideFactsField, readingFactsField } from "./readingFacts";
-
-const PARAGRAPHS_WITH_BOLD_AND_ITALIC = {
-  type: "block",
-  styles: [{ title: "Paragraph", value: "normal" }],
-  lists: [],
-  marks: {
-    decorators: [
-      { title: "Bold", value: "strong" },
-      { title: "Italic", value: "em" },
-    ],
-    annotations: [],
-  },
-};
+import { readingBookingPageField } from "./bookingPageSections";
 
 export const reading = defineType({
   name: "reading",
   title: "Reading",
   type: "document",
   groups: [
-    { name: "bothPages", title: "Homepage and booking page", default: true },
+    { name: "bothPages", title: "Homepage and booking page" },
+    { name: "homepageCard", title: "Homepage card only" },
     { name: "bookingPage", title: "Booking page only" },
     { name: "setup", title: "Setup" },
   ],
   fields: [
+    defineField({
+      name: "onSite",
+      group: ["bothPages", "homepageCard", "bookingPage", "setup"],
+      title: "Show on the site",
+      type: "boolean",
+      initialValue: true,
+      description:
+        "On: people can see this reading on the homepage and book it. Off: the reading disappears from the site and nobody can book it or buy it as a gift. Gift codes people already paid for still work. Switch it off instead of deleting a reading that has orders. To change where it sits on the homepage, drag it up or down in the Readings list.",
+    }),
+    readingBookingPageField("bookingPage"),
     defineField({
       name: "name",
       group: "setup",
@@ -67,15 +67,6 @@ export const reading = defineType({
       title: "Subtitle",
       type: "string",
       description: "Short label shown in booking summary (e.g. 'Soul Blueprint Reading')",
-    }),
-    defineField({
-      name: "intakeIntro",
-      group: "bookingPage",
-      title: "Intake Intro",
-      type: "array",
-      of: [PARAGRAPHS_WITH_BOLD_AND_ITALIC],
-      description:
-        "The words under the heading on this reading's intake form. Write as many paragraphs as you like; bold and italic are available. Leave empty to use the built-in wording.",
     }),
     defineField({
       name: "price",
@@ -120,7 +111,7 @@ export const reading = defineType({
       title: "Promise",
       type: "string",
       description:
-        "One line. Shown on the homepage card under the price, and at the top of the booking page under 'Online reading'.",
+        "One line. Shown on the homepage card under the price, and at the top of the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -129,50 +120,18 @@ export const reading = defineType({
       title: "Description",
       type: "text",
       rows: 4,
-      description: "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page.",
+      description:
+        "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "includes",
-      group: "bothPages",
-      title: "What's included",
+      group: "homepageCard",
+      title: "Lines under 'Learn More' on the homepage card",
       type: "array",
       of: [{ type: "string" }],
       description:
-        "The checklist. Shown on the homepage card when 'Learn More' is opened, and under 'What's included' on the booking page.",
-    }),
-    defineField({
-      name: "howItWorks",
-      group: "bookingPage",
-      title: "How it works",
-      type: "array",
-      of: [{ type: "string" }],
-      description:
-        "Booking page only, under 'What's included'. One line per item, each with a checkmark. Remove every item to hide the section.",
-    }),
-    defineField({
-      name: "questionsOnPage",
-      group: "bookingPage",
-      title: "Questions on this page",
-      type: "array",
-      of: [{ type: "reference", to: [{ type: "faqItem" }] }],
-      description:
-        "Questions shown under 'Questions' on this reading's booking page. Pick from the FAQ list or create a new one, and drag to set the order. Leave empty to hide the section. The homepage FAQ is not affected.",
-    }),
-    defineField({
-      name: "formTestimonial",
-      group: "bookingPage",
-      title: "Testimonial on the booking form",
-      type: "reference",
-      to: [{ type: "testimonial" }],
-      options: {
-        filter: ({ document }) => ({
-          filter: "readingType._ref == $readingId",
-          params: { readingId: document._id.replace(/^(drafts|versions\.[^.]+)\./, "") },
-        }),
-      },
-      description:
-        "One quote shown on the last page of the form, above the consent checkboxes. Only testimonials linked to this reading are listed. Leave empty to show no quote.",
+        "People tap 'Learn More' on this reading's homepage card to see these lines. One line per item. Each line gets a small tick.",
     }),
     defineField({
       name: "estimatedMinutes",
@@ -180,17 +139,8 @@ export const reading = defineType({
       title: "Minutes to fill in the form",
       type: "number",
       description:
-        "Shown in the page line, for example 'Page 1 of 2 · about 3 minutes'. Leave empty to leave the minutes out.",
+        "How long the form takes, in minutes. It shows next to the page number, like 'Page 1 of 2 · about 3 minutes'. Leave it blank to leave the minutes out.",
       validation: (rule) => rule.integer().min(1).max(60),
-    }),
-    readingFactsField({
-      group: "bookingPage",
-      description:
-        "This reading's own facts row on its booking page. Leave empty to use the shared Facts Row from Booking Form.",
-    }),
-    hideFactsField({
-      group: "bookingPage",
-      description: "Leaves out the facts row on this reading's booking page.",
     }),
     defineField({
       name: "stripePaymentLink",
@@ -221,13 +171,7 @@ export const reading = defineType({
       type: "boolean",
       initialValue: false,
     }),
-    defineField({
-      name: "order",
-      group: "setup",
-      title: "Display Order",
-      type: "number",
-      initialValue: 0,
-    }),
+    orderRankField({ type: "reading" }),
     defineField({
       name: "seo",
       group: "setup",
@@ -246,14 +190,12 @@ export const reading = defineType({
       ],
     }),
   ],
-  orderings: [
-    {
-      title: "Display Order",
-      name: "order",
-      by: [{ field: "order", direction: "asc" }],
-    },
-  ],
+  orderings: [orderRankOrdering],
   preview: {
-    select: { title: "name", subtitle: "priceDisplay" },
+    select: { title: "name", priceDisplay: "priceDisplay", onSite: "onSite" },
+    prepare: ({ title, priceDisplay, onSite }) => ({
+      title,
+      subtitle: isReadingOnSite({ onSite }) ? priceDisplay : OFF_THE_SITE_LABEL,
+    }),
   },
 });

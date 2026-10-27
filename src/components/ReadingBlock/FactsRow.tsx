@@ -5,7 +5,7 @@ import { factRows } from "./factRows";
 
 const LABEL_CLASSES = "font-body uppercase text-[0.68rem] tracking-[0.18em] text-j-text-muted";
 const VALUE_CLASSES = "m-0 font-display italic text-[1.15rem] leading-[1.2] text-j-text";
-const FRAME_CLASSES = "mt-6 border-y border-j-border-subtle divide-y divide-j-border-subtle";
+const FRAME_CLASSES = "border-y border-j-border-subtle divide-y divide-j-border-subtle";
 
 function splitIntoRows(facts: ReadingFact[], rows: number[]): ReadingFact[][] {
   return rows.map((size, index) => {

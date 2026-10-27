@@ -1,25 +1,12 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 
-import type { BookingEntry } from "@/lib/analytics";
-import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
+import { SOUL_BLUEPRINT_BLOCK, SOUL_BLUEPRINT_SECTIONS } from "./readingBlockFixture";
+import { ReadingBlockPreview } from "./ReadingBlockPreview";
 
-import { ReadingBlock } from "./ReadingBlock";
-import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
-
-function visitorFrom(entry: BookingEntry): Decorator {
-  return function VisitorFrom(Story) {
-    return (
-      <BookingEntryContext.Provider value={entry}>
-        <Story />
-      </BookingEntryContext.Provider>
-    );
-  };
-}
-
-const meta: Meta<typeof ReadingBlock> = {
+const meta: Meta<typeof ReadingBlockPreview> = {
   title: "Components/Booking/ReadingBlock",
-  component: ReadingBlock,
-  args: SOUL_BLUEPRINT_BLOCK,
+  component: ReadingBlockPreview,
+  args: { block: SOUL_BLUEPRINT_BLOCK, sections: SOUL_BLUEPRINT_SECTIONS },
   decorators: [
     (Story) => (
       <div className="max-w-3xl bg-j-ivory p-6">
@@ -30,22 +17,25 @@ const meta: Meta<typeof ReadingBlock> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof ReadingBlock>;
+type Story = StoryObj<typeof ReadingBlockPreview>;
 
-export const OpenForSearchVisitor: Story = { decorators: [visitorFrom("external")] };
-
-export const FoldedForHomepageCardVisitor: Story = { decorators: [visitorFrom("homepage_card")] };
-
-export const FoldedForSavedDraft: Story = { decorators: [visitorFrom("draft")] };
+export const Default: Story = {};
 
 export const WithoutQuestions: Story = {
-  decorators: [visitorFrom("external")],
-  args: { questions: { title: "Questions", items: [] } },
+  args: { sections: SOUL_BLUEPRINT_SECTIONS.filter((section) => section.kind !== "questions") },
+};
+
+export const ExtraBoxWithAList: Story = {
+  args: {
+    sections: [
+      ...SOUL_BLUEPRINT_SECTIONS,
+      { key: "extra", kind: "list", title: "What to have ready", items: ["Your birth date", "A quiet hour"] },
+    ],
+  },
 };
 
 export const WithoutReaderPhoto: Story = {
-  decorators: [visitorFrom("external")],
-  args: { reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } },
+  args: { block: { ...SOUL_BLUEPRINT_BLOCK, reader: { ...SOUL_BLUEPRINT_BLOCK.reader, imageUrl: undefined } } },
 };
 
 const SIX_FACTS = [
@@ -56,16 +46,17 @@ const SIX_FACTS = [
 ];
 
 export const SixFactsBalanced: Story = {
-  decorators: [visitorFrom("external")],
-  args: { facts: SIX_FACTS },
+  args: { block: { ...SOUL_BLUEPRINT_BLOCK, facts: SIX_FACTS } },
 };
 
 export const FiveFactsListOnPhones: Story = {
-  decorators: [visitorFrom("external")],
   args: {
-    facts: SIX_FACTS.slice(0, 5),
-    factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
+    block: {
+      ...SOUL_BLUEPRINT_BLOCK,
+      facts: SIX_FACTS.slice(0, 5),
+      factsLayout: { ...SOUL_BLUEPRINT_BLOCK.factsLayout, factsListOnPhones: true },
+    },
   },
 };
 
-export const FactsHidden: Story = { decorators: [visitorFrom("external")], args: { facts: [] } };
+export const FactsHidden: Story = { args: { block: { ...SOUL_BLUEPRINT_BLOCK, facts: [] } } };

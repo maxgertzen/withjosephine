@@ -126,6 +126,10 @@ describe("mapReadings", () => {
     expect(result[0].includes).toEqual(["Item one", "Item two"]);
   });
 
+  it("leaves out a reading switched off on the site, without falling back to the built-in readings", () => {
+    expect(mapReadings([{ ...SANITY_READING, onSite: false }])).toEqual([]);
+  });
+
   it("maps multiple Sanity readings preserving order", () => {
     const second: SanityReading = {
       ...SANITY_READING,

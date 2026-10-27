@@ -1,4 +1,4 @@
-import type { NotesNavProps } from "@/components/Notes/NotesShell";
+import type { NotesFooterProps, NotesNavProps } from "@/components/Notes/NotesShell";
 import {
   fetchNotesState,
   fetchNotesStatePublished,
@@ -7,15 +7,15 @@ import {
 } from "@/lib/sanity/fetch";
 import type { ContentPerspective } from "@/lib/sanity/types";
 
-import { notesNav } from "./notesChrome";
+import { notesFooter, notesNav } from "./notesChrome";
 
-export async function loadNotesNav(
-  perspective: ContentPerspective = "published",
-): Promise<NotesNavProps> {
+export type SiteChrome = { nav: NotesNavProps; footer: NotesFooterProps };
+
+export async function loadSiteChrome(perspective: ContentPerspective = "published"): Promise<SiteChrome> {
   const preview = perspective === "preview";
   const [siteSettings, notesState] = await Promise.all([
     (preview ? fetchSiteSettings() : fetchSiteSettingsPublished()).catch(() => null),
     (preview ? fetchNotesState() : fetchNotesStatePublished()).catch(() => null),
   ]);
-  return notesNav(siteSettings, notesState);
+  return { nav: notesNav(siteSettings, notesState), footer: notesFooter(siteSettings, notesState) };
 }

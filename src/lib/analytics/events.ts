@@ -20,7 +20,6 @@ export type ClientEventMap = {
     referrer: string;
     viewport_width: number;
     entry: BookingEntry;
-    folded: boolean;
   };
   intake_page_view: {
     reading_id: ReadingId;

@@ -45,6 +45,11 @@ describe("deriveNoteViewProps", () => {
     expect(derive({ relatedReading: null }).ending).toBeUndefined();
   });
 
+  it("drops the reading box when the reading is switched off on the site", () => {
+    const relatedReading = { name: "Akashic Records Reading", slug: "akashic-record", onSite: false };
+    expect(derive({ relatedReading }).ending).toBeUndefined();
+  });
+
   it("lists picked notes, never itself or an unpublished pick", () => {
     const { moreNotes } = derive({
       moreNotes: [null, { title: "Self", slug: PILLAR_ARTICLE.slug }, NOTE_SUMMARIES[1]],

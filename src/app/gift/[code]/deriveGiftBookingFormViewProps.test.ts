@@ -19,6 +19,7 @@ const BASE: BookingFormViewProps = {
     name: "Birth Chart Reading",
     priceLabel: "$89",
   },
+  sections: { aboveForm: [], belowForm: [] },
   readingBlock: {
     ...SOUL_BLUEPRINT_BLOCK,
     otherReadings: {

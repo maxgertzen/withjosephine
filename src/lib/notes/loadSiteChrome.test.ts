@@ -8,10 +8,10 @@ vi.mock("@/lib/sanity/fetch", () => ({
   fetchNotesStatePublished: () => fetchNotesStatePublished(),
 }));
 
-import { loadNotesNav } from "./loadNotesNav";
-import { notesNav } from "./notesChrome";
+import { loadSiteChrome } from "./loadSiteChrome";
+import { notesFooter, notesNav } from "./notesChrome";
 
-describe("loadNotesNav", () => {
+describe("loadSiteChrome", () => {
   beforeEach(() => {
     fetchSiteSettingsPublished.mockResolvedValue(null);
     fetchNotesStatePublished.mockResolvedValue(null);
@@ -24,13 +24,20 @@ describe("loadNotesNav", () => {
     };
     fetchSiteSettingsPublished.mockResolvedValue(siteSettings);
 
-    expect(await loadNotesNav()).toEqual(notesNav(siteSettings as never, null));
+    expect((await loadSiteChrome()).nav).toEqual(notesNav(siteSettings as never, null));
+  });
+
+  it("maps the footer from the same site settings", async () => {
+    const siteSettings = { copyrightText: "Josephine, 2026" };
+    fetchSiteSettingsPublished.mockResolvedValue(siteSettings);
+
+    expect((await loadSiteChrome()).footer).toEqual(notesFooter(siteSettings as never, null));
   });
 
   it("falls back to the default nav when Sanity fails", async () => {
     fetchSiteSettingsPublished.mockRejectedValue(new Error("sanity down"));
     fetchNotesStatePublished.mockRejectedValue(new Error("sanity down"));
 
-    expect(await loadNotesNav()).toEqual(notesNav(null, null));
+    expect((await loadSiteChrome()).nav).toEqual(notesNav(null, null));
   });
 });

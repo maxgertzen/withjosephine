@@ -5,7 +5,6 @@ import { BookingFormView } from "@/app/book/[readingId]/BookingFormView";
 import { loadReadingPageMetadata } from "@/app/book/[readingId]/readingPageMetadata";
 import { EntryPageView } from "@/components/BookingAnalytics";
 import { BookingEntryProvider } from "@/lib/intake/bookingEntryContext";
-import { loadNotesNav } from "@/lib/notes/loadNotesNav";
 import { SITE_NAME } from "@/lib/seoMetadata";
 
 import { deriveGiftMessageViewProps } from "./deriveGiftMessageViewProps";
@@ -13,6 +12,7 @@ import { GiftMessageView } from "./GiftMessageView";
 import {
   loadGiftBookingFormViewProps,
   loadGiftContent,
+  loadGiftMessageShell,
   loadMessageReading,
 } from "./loadGiftPageProps";
 import { type GiftPageState, resolveGiftRequest } from "./resolveGiftRequest";
@@ -36,12 +36,12 @@ export async function generateMetadata({ params }: GiftPageProps): Promise<Metad
 }
 
 async function renderGiftMessage({ message, readingSlug }: MessageState) {
-  const [copy, reading, nav] = await Promise.all([
+  const [copy, reading, shell] = await Promise.all([
     loadGiftContent("published"),
     loadMessageReading(readingSlug, "published"),
-    loadNotesNav(),
+    loadGiftMessageShell("published"),
   ]);
-  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy, nav)} />;
+  return <GiftMessageView {...deriveGiftMessageViewProps(message, reading, copy, shell)} />;
 }
 
 async function renderGiftBookingForm({ gift }: FormState) {

@@ -109,9 +109,9 @@ export const fetchReading = cache(async (slug: string): Promise<SanityReading | 
  * scope — `sanityFetch`/`draftMode()` would throw there. Static params are
  * always sourced from published documents anyway.
  */
-async function fetchPublishedSlugs(query: string): Promise<{ slug: string }[]> {
+async function fetchPublishedSlugs<Row extends { slug: string }>(query: string): Promise<Row[]> {
   return (
-    (await sanityClient.fetch<{ slug: string }[] | null>(
+    (await sanityClient.fetch<Row[] | null>(
       query,
       {},
       { perspective: "published", stega: false },
@@ -119,7 +119,8 @@ async function fetchPublishedSlugs(query: string): Promise<{ slug: string }[]> {
   );
 }
 
-export const fetchReadingSlugs = () => fetchPublishedSlugs(readingSlugsQuery);
+export const fetchReadingSlugs = () =>
+  fetchPublishedSlugs<{ slug: string; onSite?: boolean | null }>(readingSlugsQuery);
 
 export const fetchArticleSlugs = () => fetchPublishedSlugs(articleSlugsQuery);
 

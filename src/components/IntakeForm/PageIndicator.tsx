@@ -1,29 +1,28 @@
+import { READING_PAGE_DEFAULTS } from "@/data/defaults";
+import { applyTokens } from "@/lib/emails/applyTokens";
+
 type PageIndicatorProps = {
   pageNumber: number;
   totalPages: number;
   tagline?: string;
-  text?: string;
-  className?: string;
+  counterTemplate?: string;
+  onePageText?: string;
 };
 
 export function PageIndicator({
   pageNumber,
   totalPages,
   tagline,
-  text,
-  className,
+  counterTemplate = READING_PAGE_DEFAULTS.pageCounterTemplate,
+  onePageText = READING_PAGE_DEFAULTS.onePageLabel,
 }: PageIndicatorProps) {
-  const body = text ?? defaultText(pageNumber, totalPages, tagline);
+  const counter = totalPages > 1 ? applyTokens(counterTemplate, { page: pageNumber, total: totalPages }) : onePageText;
+  const body = tagline ? `${counter} · ${tagline}` : counter;
 
   return (
     <p
-      className={[
-        "font-display italic text-base text-j-text-muted",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      aria-label={`Page ${pageNumber} of ${totalPages}`}
+      className="font-display italic text-base text-j-text-muted"
+      aria-label={counter}
       role="status"
       aria-live="polite"
       tabIndex={-1}
@@ -34,9 +33,4 @@ export function PageIndicator({
       <em>{body}</em>
     </p>
   );
-}
-
-function defaultText(pageNumber: number, totalPages: number, tagline?: string): string {
-  const base = totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : "One short page";
-  return tagline ? `${base} · ${tagline}` : base;
 }

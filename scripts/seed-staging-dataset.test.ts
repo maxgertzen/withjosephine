@@ -20,6 +20,10 @@ const SCRIPT_PATH = path.resolve(__dirname, "seed-staging-dataset.ts");
 const SOURCE = readFileSync(SCRIPT_PATH, "utf8");
 
 describe("isExcluded predicate", () => {
+  it("excludes production's preview URL secret", () => {
+    expect(isExcluded("sanity.previewUrlSecret")).toBe(true);
+  });
+
   it("excludes the submission type (PII protection)", () => {
     expect(isExcluded("submission")).toBe(true);
   });

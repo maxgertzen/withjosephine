@@ -2,29 +2,23 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import type { BookingEntry } from "@/lib/analytics";
-import { BookingEntryContext } from "@/lib/intake/bookingEntryContext";
-import { PRE_PAINT_FOLD_ATTRIBUTE } from "@/lib/intake/readingFoldPrePaint";
+import { readingBlockParts } from "./ReadingBlock";
+import { SOUL_BLUEPRINT_BLOCK, SOUL_BLUEPRINT_QUESTIONS, SOUL_BLUEPRINT_SECTIONS } from "./readingBlockFixture";
+import { ReadingBlockPreview } from "./ReadingBlockPreview";
 
-import { ReadingBlock } from "./ReadingBlock";
-import { SOUL_BLUEPRINT_BLOCK } from "./readingBlockFixture";
-
-function renderAs(entry: BookingEntry | null, props = SOUL_BLUEPRINT_BLOCK) {
-  render(
-    <BookingEntryContext.Provider value={entry}>
-      <ReadingBlock {...props} />
-    </BookingEntryContext.Provider>,
-  );
+function renderBlock(block = SOUL_BLUEPRINT_BLOCK, sections = SOUL_BLUEPRINT_SECTIONS) {
+  render(<ReadingBlockPreview block={block} sections={sections} />);
+  return readingBlockParts(block);
 }
 
-const panelOf = (text: string) => screen.getByText(text).closest("[role=region]");
-const blockPanel = () => document.getElementById(`${SOUL_BLUEPRINT_BLOCK.slug}-reading-block`);
-const foldRow = () =>
-  screen.getByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel, hidden: true });
+const withoutQuestions = SOUL_BLUEPRINT_SECTIONS.filter((section) => section.kind !== "questions");
+const howItWorks = SOUL_BLUEPRINT_SECTIONS.find((section) => section.key === "how");
 
-describe("ReadingBlock, open for a visitor from search", () => {
-  it("shows the promise, facts, reader and section titles with no fold row", () => {
-    renderAs("external");
+const panelOf = (text: string) => screen.getByText(text).closest("[role=region]");
+
+describe("ReadingBlock elements", () => {
+  it("shows the promise, facts, reader and section titles", () => {
+    renderBlock();
 
     expect(screen.getByText(SOUL_BLUEPRINT_BLOCK.lead)).toBeInTheDocument();
     expect(screen.getByText("Voice + PDF")).toBeInTheDocument();
@@ -32,37 +26,35 @@ describe("ReadingBlock, open for a visitor from search", () => {
     expect(screen.getByRole("button", { name: /What.s included/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How it works" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Questions" })).toBeInTheDocument();
-    expect(foldRow()).toHaveClass("hidden");
-    expect(blockPanel()).not.toHaveAttribute("inert");
-    expect(blockPanel()).not.toHaveAttribute("role");
   });
 
-  it("renders open before the visit is classified, folding by CSS when the pre-paint script found a draft", () => {
-    renderAs(null);
+  it("keeps the line breaks Becky types in the description", () => {
+    renderBlock({ ...SOUL_BLUEPRINT_BLOCK, description: "First line.\n\nSecond paragraph." });
 
-    expect(foldRow()).toHaveClass("hidden", "[body[data-reading-fold]_&]:flex");
-    expect(blockPanel()).not.toHaveAttribute("inert");
-    expect(blockPanel()).toHaveClass("[body[data-reading-fold]_&]:grid-rows-[0fr]!");
+    expect(screen.getByText(/First line\./)).toHaveClass("whitespace-pre-line");
   });
 
-  it("before classification, sets the compact gap only through the pre-paint fold marker", () => {
-    renderAs(null, { ...SOUL_BLUEPRINT_BLOCK, compactGapWhenClosed: true });
+  it("keeps the line breaks in a question's answer", () => {
+    renderBlock();
 
-    expect(foldRow().closest("section")).toHaveClass("mb-9", "[body[data-reading-fold]_&]:mb-2");
+    expect(screen.getByText(SOUL_BLUEPRINT_QUESTIONS[0].answer)).toHaveClass("whitespace-pre-line");
   });
 
-  it("removes the pre-paint fold marker once the visit is classified", () => {
-    document.body.setAttribute(PRE_PAINT_FOLD_ATTRIBUTE, "");
+  it("gives an empty part no element", () => {
+    const parts = renderBlock({
+      ...SOUL_BLUEPRINT_BLOCK,
+      facts: [],
+      otherReadings: { title: "Not sure this is the one?", readings: [] },
+    });
 
-    renderAs("draft");
-
-    expect(document.body).not.toHaveAttribute(PRE_PAINT_FOLD_ATTRIBUTE);
-    expect(foldRow()).not.toHaveClass("hidden");
+    expect(parts.factsSection).toBeNull();
+    expect(parts.otherReadingsSection).toBeNull();
+    expect(parts.notesSection).toBeNull();
   });
 
   it("keeps closed accordion text in the page, out of reach until opened", async () => {
-    renderAs("external");
-    const panel = panelOf(SOUL_BLUEPRINT_BLOCK.questions.items[0].answer);
+    renderBlock();
+    const panel = panelOf(SOUL_BLUEPRINT_QUESTIONS[0].answer);
     expect(panel).toHaveAttribute("inert");
 
     await userEvent.click(screen.getByRole("button", { name: "Questions" }));
@@ -72,22 +64,22 @@ describe("ReadingBlock, open for a visitor from search", () => {
   });
 
   it("lists each How it works line as a checked row", () => {
-    const { items } = SOUL_BLUEPRINT_BLOCK.howItWorks;
-    renderAs("external");
+    const items = howItWorks?.kind === "list" ? howItWorks.items : [];
+    renderBlock();
 
     const rows = panelOf(items[0])!.querySelectorAll("li");
     expect([...rows].map((row) => row.textContent)).toEqual(items);
     expect(rows[0].querySelector("svg")).not.toBeNull();
   });
 
-  it("hides the Questions section when no questions are picked", () => {
-    renderAs("external", { ...SOUL_BLUEPRINT_BLOCK, questions: { title: "Questions", items: [] } });
+  it("shows no Questions box when the list has none", () => {
+    renderBlock(SOUL_BLUEPRINT_BLOCK, withoutQuestions);
 
     expect(screen.queryByRole("button", { name: "Questions" })).toBeNull();
   });
 
   it("links to the other readings", () => {
-    renderAs("external");
+    renderBlock();
 
     const nav = screen.getByRole("navigation", { name: "Not sure this is the one?" });
     expect(nav.querySelectorAll("a")).toHaveLength(2);
@@ -95,50 +87,9 @@ describe("ReadingBlock, open for a visitor from search", () => {
   });
 });
 
-describe.each<BookingEntry>(["homepage_card", "draft"])("ReadingBlock, folded for a %s visitor", (entry) => {
-  it("shows one closed row and keeps the block text in the page", () => {
-    renderAs(entry);
-
-    expect(screen.getByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(blockPanel()).toHaveAttribute("inert");
-  });
-
-  it("opens the block on tap", async () => {
-    renderAs(entry);
-
-    await userEvent.click(screen.getByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel }));
-
-    expect(screen.getByRole("button", { name: SOUL_BLUEPRINT_BLOCK.foldRowLabel })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(blockPanel()).not.toHaveAttribute("inert");
-  });
-
-  it("keeps a compact gap below the closed row and the full gap once opened", async () => {
-    renderAs(entry, { ...SOUL_BLUEPRINT_BLOCK, compactGapWhenClosed: true });
-    const fold = foldRow().closest("section");
-
-    expect(fold).toHaveClass("mb-2");
-
-    await userEvent.click(foldRow());
-
-    expect(fold).toHaveClass("mb-9");
-  });
-
-  it("keeps the full gap below the closed row without a compact gap", () => {
-    renderAs(entry);
-
-    expect(foldRow().closest("section")).toHaveClass("mb-9");
-  });
-});
-
 describe("ReadingBlock notes list", () => {
   it("lists the reading's notes under their heading", () => {
-    renderAs("external", {
+    renderBlock({
       ...SOUL_BLUEPRINT_BLOCK,
       notes: {
         title: "Notes on this reading",
@@ -150,7 +101,7 @@ describe("ReadingBlock notes list", () => {
   });
 
   it("shows no notes list without notes", () => {
-    renderAs("external");
+    renderBlock();
     expect(screen.queryByRole("navigation", { name: "Notes on this reading" })).not.toBeInTheDocument();
   });
 });

@@ -1,13 +1,15 @@
 import { defineField, defineType } from "sanity";
 
 import { MAX_READING_FACTS, READING_PAGE_DEFAULTS } from "../../src/data/defaults";
-import { factsPerRowField, hideFactsField, readingFactsField } from "./readingFacts";
+import { startingBookingPageField } from "./bookingPageSections";
+import { factsPerRowField, readingFactsField } from "./readingFacts";
 
 export const bookingForm = defineType({
   name: "bookingForm",
   title: "Booking Form",
   type: "document",
   fields: [
+    startingBookingPageField,
     defineField({
       name: "sections",
       title: "Sections",
@@ -24,7 +26,8 @@ export const bookingForm = defineType({
           name: "showLetterTitle",
           title: "Show the Form Heading",
           type: "boolean",
-          description: "Off by default: the reading name at the top already heads the page.",
+          description:
+            "On: a heading shows above the opening words of the form. Off: no heading, because the reading name at the top of the page is already a heading. To hide the heading and the opening words, switch off 'Form heading and opening words' in the reading's Booking page list.",
           initialValue: false,
         }),
         defineField({
@@ -44,28 +47,21 @@ export const bookingForm = defineType({
       title: "Reading Page",
       type: "object",
       description:
-        "Words on the reading block above the form, shared by every reading. Leave a field blank to use the built-in wording.",
-      fieldsets: [{ name: "facts", title: "Facts row", options: { collapsible: true, collapsed: false } }],
+        "Words every reading shares. In a reading's Booking page list they show in grey, and the reading can type its own words instead. Leave a field empty to use the site's own words.",
+      fieldsets: [
+        { name: "facts", title: "Facts row", options: { collapsible: true, collapsed: false } },
+        { name: "navigation", title: "Back links and page line", options: { collapsible: true, collapsed: false } },
+      ],
       fields: [
         defineField({
           name: "eyebrow",
           title: "Small Label Above the Promise",
           type: "string",
         }),
-        defineField({
-          name: "foldRowLabel",
-          title: "Folded Row Label",
-          type: "string",
-          description:
-            "Shown to visitors who came from a homepage card, as one row that opens the block. {reading} becomes the reading's subtitle, for example 'About the {reading}'.",
-        }),
-        hideFactsField({
-          fieldset: "facts",
-          description: "Leaves out the facts row on every booking page, except readings that have their own facts.",
-        }),
         readingFactsField({
           fieldset: "facts",
-          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own. Leave empty to use the built-in three.`,
+          description: `Up to ${MAX_READING_FACTS} short facts under the promise, shared by every reading. A reading can replace them with its own.`,
+          inherits: "builtIn",
         }),
         factsPerRowField({
           name: "factsPerRowPhone",
@@ -109,23 +105,9 @@ export const bookingForm = defineType({
           name: "hideReaderPhoto",
           title: "Hide the Reader Photo",
           type: "boolean",
-          description: "Leaves out the round portrait next to the reader name. The name and line stay.",
+          description:
+            "Hides the round photo next to the reader name on every reading, unless a reading sets 'Hide the photo' itself. To hide the name too, switch off 'Reader name and photo' in the reading's Booking page list.",
           initialValue: false,
-        }),
-        defineField({
-          name: "includedTitle",
-          title: "What's Included Title",
-          type: "string",
-        }),
-        defineField({
-          name: "howItWorksTitle",
-          title: "How It Works Title",
-          type: "string",
-        }),
-        defineField({
-          name: "questionsTitle",
-          title: "Questions Title",
-          type: "string",
         }),
         defineField({
           name: "otherReadingsTitle",
@@ -151,6 +133,40 @@ export const bookingForm = defineType({
           type: "string",
           description:
             "Added to the page line when a reading has its minutes set. {minutes} becomes the number.",
+        }),
+        defineField({
+          name: "backLabel",
+          title: "Back Link",
+          type: "string",
+          fieldset: "navigation",
+          description: "The link above the reading name that returns to the previous page.",
+        }),
+        defineField({
+          name: "backToReadingsLabel",
+          title: "Back to All Readings Link",
+          type: "string",
+          fieldset: "navigation",
+          description: "Under the form's first page.",
+        }),
+        defineField({
+          name: "previousPageLabel",
+          title: "Previous Page Button",
+          type: "string",
+          fieldset: "navigation",
+          description: "Under the form from its second page on.",
+        }),
+        defineField({
+          name: "pageCounterTemplate",
+          title: "Page Line",
+          type: "string",
+          fieldset: "navigation",
+          description: "Above the form. {page} becomes the page number and {total} the number of pages.",
+        }),
+        defineField({
+          name: "onePageLabel",
+          title: "Page Line for a One-Page Form",
+          type: "string",
+          fieldset: "navigation",
         }),
       ],
       options: { collapsible: true, collapsed: false },

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { HONEYPOT_FIELD, MAX_EMAIL_CHARS } from "@/lib/booking/constants";
 import { assertEnvironmentBindings } from "@/lib/booking/envAssertions";
 import { buildPaymentUrl } from "@/lib/booking/paymentUrl";
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { flattenActiveFields } from "@/lib/booking/sectionFilters";
 import { createSubmission, SUBMISSION_STATUS } from "@/lib/booking/submissions";
 import { buildSubmissionSchema } from "@/lib/booking/submissionSchema";
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
     fetchBookingFormFresh(),
   ]);
 
-  if (!reading) {
+  if (!reading || (!isReadingOnSite(reading) && giftCode === undefined)) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
   }
   if (!bookingForm) {

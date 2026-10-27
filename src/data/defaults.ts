@@ -114,9 +114,7 @@ export interface ReadingFactsLayout {
 
 export interface ReadingPageContent extends ReadingFactsLayout {
   eyebrow: string;
-  foldRowLabel: string;
   facts: ReadingFact[];
-  hideFacts: boolean;
   hideReaderPhoto: boolean;
   readerName: string;
   readerLine: string;
@@ -127,17 +125,20 @@ export interface ReadingPageContent extends ReadingFactsLayout {
   switchNoticeTemplate: string;
   testimonialLabel: string;
   minutesTemplate: string;
+  backLabel: string;
+  backToReadingsLabel: string;
+  previousPageLabel: string;
+  pageCounterTemplate: string;
+  onePageLabel: string;
 }
 
 export const READING_PAGE_DEFAULTS: ReadingPageContent = {
   eyebrow: "Online reading",
-  foldRowLabel: "About the {reading}",
   facts: [
     { label: "Format", value: "Voice + PDF" },
     { label: "Length", value: "30-40 min" },
     { label: "Arrives", value: "7 days" },
   ],
-  hideFacts: false,
   hideReaderPhoto: false,
   factsPerRowPhone: 3,
   factsPerRowDesktop: 4,
@@ -152,6 +153,11 @@ export const READING_PAGE_DEFAULTS: ReadingPageContent = {
   switchNoticeTemplate: "Switched to {reading}. Your details are saved. Start where you left off.",
   testimonialLabel: "From a client",
   minutesTemplate: "about {minutes} minutes",
+  backLabel: "Back",
+  backToReadingsLabel: "← Back to all readings",
+  previousPageLabel: "← Previous page",
+  pageCounterTemplate: "Page {page} of {total}",
+  onePageLabel: "One short page",
 };
 
 export interface NotesContent {
