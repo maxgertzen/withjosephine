@@ -197,7 +197,7 @@ export function ReviewSummary({
                 <dt className="font-body text-xs uppercase tracking-wide text-j-text-muted-warm">
                   {field.label}
                 </dt>
-                <dd className="font-body text-sm text-j-text whitespace-pre-line break-words">
+                <dd className="font-body text-sm text-j-text break-words">
                   {renderFieldValue(field, values)}
                 </dd>
               </div>

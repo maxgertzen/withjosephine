@@ -172,7 +172,7 @@ export function renderField(field: SanityFormField, ctx: RenderContext) {
           onChange={(next) => setValue(field.key, next)}
           options={field.options ?? []}
           count={field.multiSelectCount ?? 0}
-          helpText={field.helpText}
+          {...shellProps}
           error={error}
           required={field.required}
           disabled={disabled}

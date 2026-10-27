@@ -460,6 +460,7 @@ export type SanityArticle = SanityArticleBase & {
     slug: string;
     priceDisplay?: string;
     valueProposition?: string;
+    notePromise?: string;
   } | null;
   moreNotes?: (NoteSummary | null)[];
   hideReadingBox?: boolean;

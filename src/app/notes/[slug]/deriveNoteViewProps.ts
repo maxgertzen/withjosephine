@@ -45,7 +45,7 @@ export function deriveNoteViewProps(input: {
           readingName: reading.name,
           readingSlug: reading.slug,
           price: nonBlank(reading.priceDisplay),
-          line: nonBlank(reading.valueProposition),
+          line: nonBlank(reading.notePromise) ?? nonBlank(reading.valueProposition),
           button: content.cardButton,
           href: bookingPath(reading.slug),
         }

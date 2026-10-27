@@ -134,14 +134,14 @@ export function HomePageView({
             tag={testimonialsSection?.sectionTag ?? "✦ Kind Words"}
             heading={testimonialsSection?.heading ?? "what others have said"}
           />
-          <div className="mt-14 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            {testimonials.map((testimonial, index) => (
+          <div className="mt-14 max-w-5xl mx-auto columns-1 md:columns-2 gap-8">
+            {testimonials.map((testimonial) => (
               <TestimonialCard
                 key={testimonial.id}
                 quote={testimonial.quote}
                 name={testimonial.name}
                 detail={testimonial.detail}
-                className={index === 0 ? "md:col-span-2" : undefined}
+                className="mb-8 break-inside-avoid"
               />
             ))}
           </div>

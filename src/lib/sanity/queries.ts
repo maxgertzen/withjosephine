@@ -514,7 +514,8 @@ export const articleBySlugQuery = groq`
       name,
       "slug": slug.current,
       priceDisplay,
-      valueProposition
+      valueProposition,
+      notePromise
     },
     "moreNotes": moreNotes[]-> { title, "slug": slug.current },
     hideReadingBox,

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { fieldDescribedBy, FieldShell } from "@/components/Form/FieldShell";
 import { QuestionCard } from "@/components/IntakeForm/QuestionCard";
 import { SlotBlock } from "@/components/IntakeForm/SlotBlock";
 import {
@@ -9,8 +10,7 @@ import {
   LIMIT_MESSAGE_TIMEOUT_MS,
   statusLineFor,
 } from "@/lib/booking/nameFollowup";
-import { errorClasses } from "@/lib/formStyles";
-import type { SanityFormFieldOption } from "@/lib/sanity/types";
+import type { SanityFormFieldOption, SanityFormHelperPosition } from "@/lib/sanity/types";
 
 type MultiSelectExactProps = {
   id: string;
@@ -21,6 +21,8 @@ type MultiSelectExactProps = {
   options: SanityFormFieldOption[];
   count: number;
   helpText?: string;
+  helperPosition?: SanityFormHelperPosition;
+  clarificationNote?: string;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -61,14 +63,14 @@ export function MultiSelectExact({
   options,
   count,
   helpText,
+  helperPosition,
+  clarificationNote,
   error,
   required,
   disabled,
   nameFollowupValues = {},
   onNameFollowupChange,
 }: MultiSelectExactProps) {
-  const helpId = helpText ? `${id}-help` : undefined;
-  const errorId = error ? `${id}-error` : undefined;
   const reachedLimit = value.length >= count;
 
   const [flashCount, setFlashCount] = useState(0);
@@ -134,60 +136,60 @@ export function MultiSelectExact({
   }
 
   return (
-    <fieldset
+    <FieldShell
       id={id}
-      className="border-0 p-0 m-0"
-      aria-invalid={error ? true : undefined}
-      aria-describedby={[errorId, helpId].filter(Boolean).join(" ") || undefined}
+      label={label}
+      required={required}
+      helpText={helpText}
+      helperPosition={helperPosition}
+      clarificationNote={clarificationNote}
+      error={error}
+      noLabel
     >
-      <legend className="sr-only">
-        {label}
-        {required ? <span aria-hidden="true"> *</span> : null}
-      </legend>
+      <fieldset
+        id={id}
+        className="border-0 p-0 m-0"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={fieldDescribedBy(id, { helpText, error })}
+      >
+        <legend className="sr-only">
+          {label}
+          {required ? <span aria-hidden="true"> *</span> : null}
+        </legend>
 
-      {isCategorized ? (
-        <div className="flex flex-col gap-6">
-          {grouped.map((group) => (
-            <div key={group.name || UNCATEGORIZED}>
-              {group.name ? (
-                <div className="flex items-baseline justify-between font-body text-xs font-semibold tracking-widest uppercase text-j-text-heading border-b border-j-border-subtle pb-2 mb-3">
-                  <span>{group.name}</span>
-                  <span className="font-normal text-j-text-muted tracking-wider">
-                    {group.options.length}
-                  </span>
-                </div>
-              ) : null}
-              <ul className="list-none p-0 m-0 flex flex-col gap-2">
-                {group.options.map(renderCard)}
-              </ul>
-            </div>
-          ))}
+        {isCategorized ? (
+          <div className="flex flex-col gap-6">
+            {grouped.map((group) => (
+              <div key={group.name || UNCATEGORIZED}>
+                {group.name ? (
+                  <div className="flex items-baseline justify-between font-body text-xs font-semibold tracking-widest uppercase text-j-text-heading border-b border-j-border-subtle pb-2 mb-3">
+                    <span>{group.name}</span>
+                    <span className="font-normal text-j-text-muted tracking-wider">
+                      {group.options.length}
+                    </span>
+                  </div>
+                ) : null}
+                <ul className="list-none p-0 m-0 flex flex-col gap-2">
+                  {group.options.map(renderCard)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ul className="list-none p-0 m-0 flex flex-col gap-2">
+            {options.map(renderCard)}
+          </ul>
+        )}
+
+        <div className="mt-6">
+          <SlotBlock
+            count={count}
+            selected={selectedOptions}
+            status={status}
+            limitMessage={limitMessage}
+          />
         </div>
-      ) : (
-        <ul className="list-none p-0 m-0 flex flex-col gap-2">
-          {options.map(renderCard)}
-        </ul>
-      )}
-
-      <div className="mt-6">
-        <SlotBlock
-          count={count}
-          selected={selectedOptions}
-          status={status}
-          limitMessage={limitMessage}
-        />
-      </div>
-
-      {helpText ? (
-        <p id={helpId} className="font-body text-xs text-j-text-muted mt-2">
-          {helpText}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} role="alert" className={`${errorClasses} mt-2`}>
-          {error}
-        </p>
-      ) : null}
-    </fieldset>
+      </fieldset>
+    </FieldShell>
   );
 }

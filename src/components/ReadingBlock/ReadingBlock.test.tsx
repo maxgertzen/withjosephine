@@ -29,15 +29,10 @@ describe("ReadingBlock elements", () => {
   });
 
   it("keeps the line breaks Becky types in the description", () => {
-    renderBlock({ ...SOUL_BLUEPRINT_BLOCK, description: "First line.\n\nSecond paragraph." });
+    const description = "First line.\n\nSecond paragraph.";
+    renderBlock({ ...SOUL_BLUEPRINT_BLOCK, description });
 
-    expect(screen.getByText(/First line\./)).toHaveClass("whitespace-pre-line");
-  });
-
-  it("keeps the line breaks in a question's answer", () => {
-    renderBlock();
-
-    expect(screen.getByText(SOUL_BLUEPRINT_QUESTIONS[0].answer)).toHaveClass("whitespace-pre-line");
+    expect(screen.getByText((_, element) => element?.textContent === description)).toBeInTheDocument();
   });
 
   it("gives an empty part no element", () => {

@@ -67,15 +67,15 @@ export function ThankYouView({
       <GoldDivider className="max-w-xs mx-auto my-12" />
 
       <div className="text-left max-w-prose mx-auto flex flex-col gap-5 font-body text-base text-j-text leading-relaxed">
-        <p className="whitespace-pre-line">{copy.confirmationBody}</p>
-        <p className="whitespace-pre-line">
+        <p>{copy.confirmationBody}</p>
+        <p>
           {renderWithSlots(copy.timelineBody, {
             deliveryDays: (
               <span className="font-display italic text-j-text-gold">{copy.deliveryDaysPhrase}</span>
             ),
           })}
         </p>
-        <p className="whitespace-pre-line">
+        <p>
           {renderWithSlots(copy.contactBody, {
             email: (
               <a
@@ -91,7 +91,7 @@ export function ThankYouView({
 
       <GoldDivider className="max-w-xs mx-auto my-12" />
 
-      <p className="font-display italic text-base text-j-text max-w-sm mx-auto whitespace-pre-line">
+      <p className="font-display italic text-base text-j-text max-w-sm mx-auto">
         {copy.closingMessage}
       </p>
 

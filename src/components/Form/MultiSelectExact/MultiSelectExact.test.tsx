@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LIMIT_MESSAGE_TIMEOUT_MS } from "@/lib/booking/nameFollowup";
@@ -13,7 +14,7 @@ const OPTIONS = [
   { value: "career", label: "Career", category: "Bonds", categoryOrder: 2 },
 ];
 
-function setup(value: string[] = []) {
+function setup(value: string[] = [], props: Partial<ComponentProps<typeof MultiSelectExact>> = {}) {
   const onChange = vi.fn();
   const onNameFollowupChange = vi.fn();
   render(
@@ -26,12 +27,28 @@ function setup(value: string[] = []) {
       options={OPTIONS}
       count={3}
       onNameFollowupChange={onNameFollowupChange}
+      {...props}
     />,
   );
   return { onChange, onNameFollowupChange };
 }
 
 describe("MultiSelectExact", () => {
+  it("shows the clarification note exactly as typed, line breaks kept", () => {
+    const clarificationNote = "Pick the three that feel loudest.\n\nYou can change them later.";
+    setup([], { clarificationNote });
+
+    expect(screen.getByText((_, element) => element?.textContent === clarificationNote)).toBeInTheDocument();
+  });
+
+  it("shows the help text above the questions when Becky picks 'before'", () => {
+    setup([], { helpText: "Choose carefully.", helperPosition: "before" });
+
+    const help = screen.getByText("Choose carefully.");
+    const firstQuestion = screen.getByLabelText("Soul Purpose");
+    expect(help.compareDocumentPosition(firstQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("adds an option when clicked under the limit", async () => {
     const user = userEvent.setup();
     const { onChange } = setup([]);

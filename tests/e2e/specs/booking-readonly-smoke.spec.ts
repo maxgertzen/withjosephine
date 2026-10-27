@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@sanity/client";
 
+import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { SANDBOX_DOMAIN, SANDBOX_EMAIL_PREFIXES } from "@/lib/booking/sandboxEmails";
 
 // A buy.stripe.com link that is NOT test-mode (test links carry a `test_` path
@@ -23,6 +24,20 @@ const PUBLIC_PAGES = [
   { path: "/refund-policy", needle: "refund" },
 ] as const;
 
+function prodSanityClient() {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  expect(
+    projectId,
+    "NEXT_PUBLIC_SANITY_PROJECT_ID must be set on the prod-smoke job",
+  ).toBeTruthy();
+  return createClient({
+    projectId: projectId!,
+    dataset: "production",
+    apiVersion: "2025-01-01",
+    useCdn: true,
+  });
+}
+
 test.describe.configure({ mode: "parallel" });
 
 test.describe("Prod read-only public smoke", () => {
@@ -40,8 +55,20 @@ test.describe("Prod read-only public smoke", () => {
   }
 
   for (const { slug, needle } of READINGS) {
-    test(`/book/${slug} renders the intake form, not an entry page`, async ({ request }) => {
-      const res = await request.get(`/book/${slug}`);
+    test(`/book/${slug} renders the intake form when on the site, 404 when switched off`, async ({
+      request,
+    }) => {
+      const [reading, res] = await Promise.all([
+        prodSanityClient().fetch<{ onSite: boolean | null } | null>(
+          `*[_type=="reading" && slug.current==$slug][0]{ onSite }`,
+          { slug },
+        ),
+        request.get(`/book/${slug}`),
+      ]);
+      if (!isReadingOnSite(reading)) {
+        expect(res.status(), `GET /book/${slug} is switched off in prod CMS, should 404`).toBe(404);
+        return;
+      }
       expect(res.status(), `GET /book/${slug} should return 200`).toBe(200);
       const html = await res.text();
       expect(
@@ -83,18 +110,7 @@ test.describe("Prod read-only public smoke", () => {
   });
 
   test("every reading carries a live-mode stripePaymentLink in prod CMS", async () => {
-    const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-    expect(
-      projectId,
-      "NEXT_PUBLIC_SANITY_PROJECT_ID must be set on the prod-smoke job",
-    ).toBeTruthy();
-    const client = createClient({
-      projectId: projectId!,
-      dataset: "production",
-      apiVersion: "2025-01-01",
-      useCdn: true,
-    });
-    const rows = await client.fetch<{ slug: string | null; link: string | null }[]>(
+    const rows = await prodSanityClient().fetch<{ slug: string | null; link: string | null }[]>(
       `*[_type=="reading"]{ "slug": slug.current, "link": stripePaymentLink }`,
     );
     for (const { slug } of READINGS) {
