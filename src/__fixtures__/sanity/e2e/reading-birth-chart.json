@@ -33,7 +33,9 @@
     {
       "_key": "section-0",
       "_type": "summarySection",
-      "shown": true
+      "shown": true,
+      "promise": "Understand yourself in a way that makes sense of your life",
+      "description": "A deep dive into your chart revealing your core themes, gifts, patterns and what the current stars are saying about where you are right now."
     },
     {
       "_key": "section-1",

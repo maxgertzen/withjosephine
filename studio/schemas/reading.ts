@@ -10,7 +10,6 @@ export const reading = defineType({
   title: "Reading",
   type: "document",
   groups: [
-    { name: "bothPages", title: "Homepage and booking page" },
     { name: "homepageCard", title: "Homepage card only" },
     { name: "bookingPage", title: "Booking page only" },
     { name: "setup", title: "Setup" },
@@ -18,7 +17,7 @@ export const reading = defineType({
   fields: [
     defineField({
       name: "onSite",
-      group: ["bothPages", "homepageCard", "bookingPage", "setup"],
+      group: ["homepageCard", "bookingPage", "setup"],
       title: "Show on the site",
       type: "boolean",
       initialValue: true,
@@ -107,21 +106,21 @@ export const reading = defineType({
     }),
     defineField({
       name: "valueProposition",
-      group: "bothPages",
-      title: "Promise",
+      group: "homepageCard",
+      title: "Promise on the homepage card",
       type: "string",
       description:
-        "One line. Shown on the homepage card under the price, and at the top of the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
+        "One line on this reading's homepage card, under the price. The booking page has its own promise: open 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "briefDescription",
-      group: "bothPages",
-      title: "Description",
+      group: "homepageCard",
+      title: "Description on the homepage card",
       type: "text",
       rows: 4,
       description:
-        "A few sentences about the reading. Shown under the promise on the homepage card and on the booking page. The booking page can use other words: see 'Small label, promise and description' in the Booking page list.",
+        "A few sentences under the promise on this reading's homepage card. The booking page has its own description: open 'Small label, promise and description' in the Booking page list.",
       validation: (rule) => rule.required(),
     }),
     defineField({

@@ -6,8 +6,8 @@ describe("Sanity field map", () => {
   it("feeds the homepage card from Promise, Description, the lines under Learn More and the Readings Section buttons", () => {
     const card = fieldMapCardProps();
 
-    expect(card.valueProposition).toBe("[Reading › Promise · valueProposition]");
-    expect(card.briefDescription).toBe("[Reading › Description · briefDescription]");
+    expect(card.valueProposition).toBe("[Reading › Promise on the homepage card · valueProposition]");
+    expect(card.briefDescription).toBe("[Reading › Description on the homepage card · briefDescription]");
     expect(card.includes).toEqual([
       "[Reading › Lines under 'Learn More' on the homepage card · includes[0]]",
       "[Reading › Lines under 'Learn More' on the homepage card · includes[1]]",
@@ -20,11 +20,11 @@ describe("Sanity field map", () => {
     });
   });
 
-  it("feeds the booking page from the same Promise and Description, and its boxes from the reading's Booking page list", () => {
+  it("feeds the booking page promise, description and boxes from the reading's Booking page list, not from the homepage card", () => {
     const { block, sections } = fieldMapBlockProps();
 
-    expect(block.lead).toBe("[Reading › Promise · valueProposition]");
-    expect(block.description).toBe("[Reading › Description · briefDescription]");
+    expect(block.lead).toBe("[Reading › Booking page › Promise · bookingPage[summary].promise]");
+    expect(block.description).toBe("[Reading › Booking page › Description · bookingPage[summary].description]");
     expect(sections.filter((section) => section.kind === "list")).toEqual([
       {
         key: "included",

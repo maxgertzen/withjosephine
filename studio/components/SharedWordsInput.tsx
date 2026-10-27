@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type StringInputProps, type TextInputProps, useFormValue } from "sanity";
+import { type StringInputProps, type TextInputProps } from "sanity";
 
 import { usePerspectiveClient } from "../lib/draftsClient";
 
@@ -10,13 +10,6 @@ function withPlaceholder(props: WordsInputProps, placeholder: string | undefined
     ...props,
     elementProps: { ...props.elementProps, placeholder },
   } as WordsInputProps);
-}
-
-export function documentWordsInput(field: string) {
-  return function DocumentWordsInput(props: WordsInputProps) {
-    const words = useFormValue([field]);
-    return withPlaceholder(props, typeof words === "string" ? words : undefined);
-  };
 }
 
 export function sharedWordsInput(query: string, params: Record<string, string> = {}) {
