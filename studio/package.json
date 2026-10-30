@@ -11,10 +11,10 @@
   "dependencies": {
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.1",
-    "@sanity/client": "8.10.1",
+    "@sanity/client": "8.11.0",
     "@sanity/color-input": "6.1.1",
     "@sanity/icons": "^3.8.0",
-    "@sanity/orderable-document-list": "2.0.18",
+    "@sanity/orderable-document-list": "2.0.28",
     "@sanity/ui": "^3.5.5",
     "@sanity/vision": "^5.31.2",
     "pdfjs-dist": "^4.10.38",
