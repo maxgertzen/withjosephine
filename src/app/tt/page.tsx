@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
 import { LINKS_PAGE_ORIGIN } from "@/lib/constants";
 import { nonBlank } from "@/lib/content/nonBlank";
+import { buildTimeSiteOrigin } from "@/lib/env";
 import {
   fetchLinksPagePublished,
   fetchNotesStatePublished,
@@ -39,7 +40,13 @@ export default async function LinksPage() {
 
   return (
     <LinksPageView
-      {...deriveLinksPageViewProps({ state, readings, siteSettings, notesState })}
+      {...deriveLinksPageViewProps({
+        state,
+        readings,
+        siteSettings,
+        notesState,
+        siteOrigin: buildTimeSiteOrigin(),
+      })}
       fontVariables={linksPageFontVariables(state?.page?.nameFont, state?.page?.textFont)}
     />
   );

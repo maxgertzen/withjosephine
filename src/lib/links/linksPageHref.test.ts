@@ -15,6 +15,15 @@ describe("linksPageHref", () => {
     );
   });
 
+  it("points links into the site at the site address when the build knows it", () => {
+    expect(linksPageHref({ destination: "home" }, "home", "https://withjosephine.com")).toBe(
+      "https://withjosephine.com/?utm_source=tiktok&utm_medium=bio&utm_content=home",
+    );
+    expect(linksPageHref({ destination: "web", url: "https://example.com" }, "web:x", "https://withjosephine.com")).toBe(
+      "https://example.com",
+    );
+  });
+
   it("leaves email and outside website links untagged", () => {
     expect(linksPageHref({ destination: "email", email: " hello@withjosephine.com " }, "email:x")).toBe(
       "mailto:hello@withjosephine.com",

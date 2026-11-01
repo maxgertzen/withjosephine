@@ -9,19 +9,16 @@ export type LinksPageTarget = LinkTarget & { slug?: string; fileUrl?: string };
 
 const SANITY_FILE_CDN = "https://cdn.sanity.io/files/";
 
-function withTikTokUtm(path: string, key: string): string {
-  const params = new URLSearchParams({ ...TIKTOK_BIO_UTM, utm_content: key });
-  return `${path}?${params.toString()}`;
-}
-
-export function linksPageHref(target: LinksPageTarget, key: string): string | null {
+export function linksPageHref(target: LinksPageTarget, key: string, siteOrigin = ""): string | null {
+  const withTikTokUtm = (path: string) =>
+    `${siteOrigin}${path}?${new URLSearchParams({ ...TIKTOK_BIO_UTM, utm_content: key }).toString()}`;
   switch (target.destination) {
     case "reading":
-      return target.slug ? withTikTokUtm(bookingPath(target.slug), key) : null;
+      return target.slug ? withTikTokUtm(bookingPath(target.slug)) : null;
     case "note":
-      return target.slug ? withTikTokUtm(notePath(target.slug), key) : null;
+      return target.slug ? withTikTokUtm(notePath(target.slug)) : null;
     case "home":
-      return withTikTokUtm("/", key);
+      return withTikTokUtm("/");
     case "email":
       return target.email ? `mailto:${target.email.trim()}` : null;
     case "web":

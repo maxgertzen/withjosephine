@@ -31,6 +31,7 @@ function derive(page: SanityLinksPage | null, extra: Partial<Parameters<typeof d
     readings: [reading({})],
     siteSettings,
     notesState: visibleNotes,
+    siteOrigin: "",
     ...extra,
   });
 }
@@ -171,5 +172,23 @@ describe("deriveLinksPageViewProps second line, shape and files", () => {
   it("uses the chosen button shape and ignores unknown values", () => {
     expect(derive({ buttonShape: "squareShadow" }).buttonShape).toBe("squareShadow");
     expect(derive({ buttonShape: "blob" }).buttonShape).toBe(LINKS_PAGE_DEFAULTS.buttonShape);
+  });
+});
+
+describe("deriveLinksPageViewProps site address", () => {
+  it("prefixes links into the site with the site address, leaving outside links alone", () => {
+    const props = derive(
+      {
+        buttons: [
+          { _key: "a", label: "Home", destination: "home" },
+          { _key: "b", label: "Insta", destination: "web", url: "https://instagram.com/withjosephine" },
+        ],
+      },
+      { siteOrigin: "https://withjosephine.com" },
+    );
+    expect(props.buttons.map((b) => b.href)).toEqual([
+      "https://withjosephine.com/?utm_source=tiktok&utm_medium=bio&utm_content=home",
+      "https://instagram.com/withjosephine",
+    ]);
   });
 });

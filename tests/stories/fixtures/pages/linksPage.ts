@@ -35,6 +35,7 @@ function args(page: SanityLinksPage | null): LinksPageViewProps {
     readings: READINGS,
     siteSettings: SITE_SETTINGS,
     notesState: null,
+    siteOrigin: "",
   });
 }
 

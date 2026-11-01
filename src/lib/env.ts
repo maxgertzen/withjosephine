@@ -58,13 +58,12 @@ export function isStagingEnvironment(): boolean {
   return process.env.ENVIRONMENT === "staging";
 }
 
-// NEXT_PUBLIC_SITE_ORIGIN is inlined at build time and may be undefined when
-// CI builds a single bundle for multiple environments. ENVIRONMENT is a
-// Worker-runtime variable (set per-env in wrangler.jsonc) so the staging
-// worker resolves to the staging hostname even when the inlined build-time
-// origin is missing.
+export function buildTimeSiteOrigin(): string {
+  return process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "";
+}
+
 export function siteOrigin(): string {
-  const fromBuild = process.env.NEXT_PUBLIC_SITE_ORIGIN;
+  const fromBuild = buildTimeSiteOrigin();
   if (fromBuild) return fromBuild;
   if (isStagingEnvironment()) return STAGING_ORIGIN;
   return PRODUCTION_ORIGIN;

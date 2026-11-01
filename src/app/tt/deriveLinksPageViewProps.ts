@@ -71,12 +71,12 @@ function pickedButtonSource(button: SanityLinksPageButton, notesVisible: boolean
   }
 }
 
-function toButtons(sources: ButtonSource[]): LinksPageButton[] {
+function toButtons(sources: ButtonSource[], siteOrigin: string): LinksPageButton[] {
   const buttons: LinksPageButton[] = [];
   const seen = new Set<string>();
   for (const source of sources) {
     const key = linkKey(source.target);
-    const href = key ? linksPageHref(source.target, key) : null;
+    const href = key ? linksPageHref(source.target, key, siteOrigin) : null;
     if (!key || !href || seen.has(key)) continue;
     seen.add(key);
     buttons.push({
@@ -101,8 +101,9 @@ export function deriveLinksPageViewProps(input: {
   readings: SanityReading[];
   siteSettings: SanitySiteSettings | null;
   notesState: SanityNotesState | null;
+  siteOrigin: string;
 }): LinksPageViewProps {
-  const { state, readings, siteSettings, notesState } = input;
+  const { state, readings, siteSettings, notesState, siteOrigin } = input;
   const page = state?.page ?? null;
   const notesVisible = isNotesVisible(notesState);
   const pickedButtons = page?.buttons ?? [];
@@ -122,7 +123,7 @@ export function deriveLinksPageViewProps(input: {
     footerLine: nonBlank(page?.footerLine) ?? LINKS_PAGE_DEFAULTS.footerLine,
     nameSize: oneOf(LINKS_PAGE_NAME_SIZES, page?.nameSize, LINKS_PAGE_DEFAULTS.nameSize),
     buttonShape: oneOf(LINKS_PAGE_BUTTON_SHAPES, page?.buttonShape, LINKS_PAGE_DEFAULTS.buttonShape),
-    buttons: toButtons(sources),
+    buttons: toButtons(sources, siteOrigin),
     socialLinks: showSocialLinks ? mapSocialLinks(siteSettings) : [],
     colourVariables: linksPageColourVariables(page ?? {}),
     pageColour: safeCssHex(page?.pageColour),
