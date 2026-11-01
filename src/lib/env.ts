@@ -1,3 +1,5 @@
+import { MAIN_SITE_ORIGIN } from "./constants";
+
 export type EnvVar =
   | "ADMIN_API_KEY"
   | "BREVO_API_KEY"
@@ -50,7 +52,7 @@ export function isFlagEnabled(name: FeatureFlag) {
 }
 
 const STAGING_ORIGIN = "https://staging.withjosephine.com";
-const PRODUCTION_ORIGIN = "https://withjosephine.com";
+const PRODUCTION_ORIGIN = MAIN_SITE_ORIGIN;
 
 export function isStagingEnvironment(): boolean {
   return process.env.ENVIRONMENT === "staging";

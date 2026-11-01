@@ -1,4 +1,4 @@
-export type LinkDestination = "reading" | "note" | "home" | "email" | "web";
+export type LinkDestination = "reading" | "note" | "home" | "email" | "web" | "file";
 
 export type LinkTarget = {
   destination: LinkDestination;
@@ -16,6 +16,14 @@ function fnv1aHex(text: string): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
+export function isHttpsAddress(value: string): boolean {
+  try {
+    return new URL(value.trim()).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function normalizeWebUrl(url: string): string | null {
   try {
     const parsed = new URL(url.trim());
@@ -30,6 +38,7 @@ export function linkKey(target: LinkTarget): string | null {
   switch (target.destination) {
     case "reading":
     case "note":
+    case "file":
       return target.documentId ? `${target.destination}:${target.documentId}` : null;
     case "home":
       return "home";

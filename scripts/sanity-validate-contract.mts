@@ -469,6 +469,7 @@ export const SINGLETONS: SingletonContract[] = [
       { name: "nameFont", type: "string" },
       { name: "textFont", type: "string" },
       { name: "nameSize", type: "string" },
+      { name: "buttonShape", type: "string" },
       { name: "seo", type: "object" },
     ],
   },

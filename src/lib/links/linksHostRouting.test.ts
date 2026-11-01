@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+
+import { routeLinksHost } from "./linksHostRouting";
+
+describe("routeLinksHost", () => {
+  it("serves the links page at the root of links.withjosephine.com", () => {
+    expect(routeLinksHost("links.withjosephine.com", "/", "")).toEqual({ kind: "rewrite", pathname: "/tt" });
+  });
+
+  it("sends every other path on the links subdomain to the main site, keeping the tags", () => {
+    expect(
+      routeLinksHost("links.withjosephine.com", "/book/soul-blueprint", "?utm_source=tiktok&utm_content=home"),
+    ).toEqual({
+      kind: "redirect",
+      url: "https://withjosephine.com/book/soul-blueprint?utm_source=tiktok&utm_content=home",
+    });
+  });
+
+  it("sends the home page button on the subdomain to the main site home page", () => {
+    expect(
+      routeLinksHost("links.withjosephine.com", "/", "?utm_source=tiktok&utm_medium=bio&utm_content=home"),
+    ).toEqual({ kind: "redirect", url: "https://withjosephine.com/?utm_source=tiktok&utm_medium=bio&utm_content=home" });
+  });
+
+  it("still shows the links page when TikTok adds its own tracking to the bio link", () => {
+    expect(routeLinksHost("links.withjosephine.com", "/", "?_t=abc&_r=1")).toEqual({ kind: "rewrite", pathname: "/tt" });
+  });
+
+  it("sends the old withjosephine.com/tt link to the subdomain", () => {
+    expect(routeLinksHost("withjosephine.com", "/tt", "")).toEqual({
+      kind: "redirect",
+      url: "https://links.withjosephine.com/",
+    });
+    expect(routeLinksHost("www.withjosephine.com", "/tt", "?x=1")).toEqual({
+      kind: "redirect",
+      url: "https://links.withjosephine.com/?x=1",
+    });
+  });
+
+  it("leaves staging, local and every other main-site path alone", () => {
+    expect(routeLinksHost("staging.withjosephine.com", "/tt", "")).toBeNull();
+    expect(routeLinksHost("localhost:3000", "/tt", "")).toBeNull();
+    expect(routeLinksHost("withjosephine.com", "/", "")).toBeNull();
+    expect(routeLinksHost("withjosephine.com", "/tt/go/home", "")).toBeNull();
+  });
+});

@@ -7,6 +7,7 @@ import {
   PRODUCTION_HOSTS,
 } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { routeLinksHost } from "@/lib/links/linksHostRouting";
 import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { PREVIEW_ACTIVE_COOKIE } from "@/lib/previewModeCookie";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
@@ -149,7 +150,10 @@ export function middleware(request: NextRequest) {
   // SEO on the apex. We treat anything other than the bare apex as "private".
   const host = request.headers.get("host") ?? "";
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
-  const { pathname } = request.nextUrl;
+  const linksRoute = routeLinksHost(host, request.nextUrl.pathname, request.nextUrl.search);
+  if (linksRoute?.kind === "redirect") return NextResponse.redirect(linksRoute.url, 307);
+  const rewritePath = linksRoute?.kind === "rewrite" ? linksRoute.pathname : null;
+  const pathname = rewritePath ?? request.nextUrl.pathname;
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
   // allowlisted (Stripe webhook, crons, /listen/[id], legal pages) gets
@@ -192,7 +196,9 @@ export function middleware(request: NextRequest) {
   const nonce = generateNonce();
   requestHeaders.set(NONCE_HEADER, nonce);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = rewritePath
+    ? NextResponse.rewrite(new URL(rewritePath, request.url), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
 
   response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
     sameSite: "lax",

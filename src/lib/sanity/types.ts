@@ -11,7 +11,9 @@ import type {
   ReadingsSectionContent,
 } from "@/data/defaults";
 import type { StoredSection } from "@/lib/booking/bookingPageSections";
+import type { LinkDestination } from "@/lib/links/linkKey";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 
 export type ContentPerspective = "published" | "preview";
 
@@ -471,3 +473,35 @@ export type SanityArticle = SanityArticleBase & {
 };
 
 export type SanityArticleDates = Pick<SanityArticleBase, "slug" | "publishedAt" | "updatedAt">;
+
+export type SanityLinksPageButton = {
+  _key: string;
+  label?: string;
+  subtitle?: string;
+  destination?: LinkDestination;
+  standOut?: boolean;
+  email?: string;
+  url?: string;
+  reading?: { _id: string; slug: string; name?: string; onSite?: boolean | null } | null;
+  note?: { _id: string; slug: string } | null;
+  file?: { _id: string; url: string } | null;
+};
+
+export type SanityLinksPage = LinksPageColours & {
+  photoUrl?: string;
+  name?: string;
+  intro?: string;
+  footerLine?: string;
+  showSocialLinks?: boolean;
+  nameFont?: string;
+  textFont?: string;
+  nameSize?: string;
+  buttonShape?: string;
+  seo?: SanitySeo;
+  buttons?: SanityLinksPageButton[];
+};
+
+export type SanityLinksPageState = {
+  page: SanityLinksPage | null;
+  aboutPhotoUrl: string | null;
+};

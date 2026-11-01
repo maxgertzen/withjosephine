@@ -164,3 +164,20 @@ describe("checkButtonTarget", () => {
     expect(checkButtonTarget("web", "web", "https://example.com")).toBe(true);
   });
 });
+
+describe("file buttons", () => {
+  it("asks for the file when the button downloads one", () => {
+    expect(checkButtonTarget("file", "file", undefined)).toBe("Upload the file this button downloads.");
+    expect(checkButtonTarget("file", "file", { asset: { _ref: "file-a-pdf" } })).toBe(true);
+    expect(checkButtonTarget("file", "file", { _type: "file" })).toBe("Upload the file this button downloads.");
+  });
+
+  it("refuses the same file on two buttons", () => {
+    expect(
+      noButtonGoesToTheSamePlace([
+        { destination: "file", file: { asset: { _ref: "file-a-pdf" } } },
+        { destination: "file", file: { asset: { _ref: "file-a-pdf" } } },
+      ]),
+    ).toBe(SAME_PLACE_TWICE);
+  });
+});

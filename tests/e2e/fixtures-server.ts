@@ -22,6 +22,7 @@ type GroqResponse = { ms: number; query: string; result: unknown };
 const SINGLETON_DOC_TYPES = [
   "bookingForm",
   "bookingPage",
+  "linksPage",
   "siteSettings",
   "thankYouPage",
   "theme",

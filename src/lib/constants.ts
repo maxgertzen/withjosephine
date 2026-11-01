@@ -2,15 +2,17 @@ export const CONTACT_EMAIL = "hello@withjosephine.com";
 
 export const NONCE_HEADER = "x-nonce";
 
+export const MAIN_SITE_ORIGIN = "https://withjosephine.com";
+export const MAIN_SITE_HOSTS: ReadonlyArray<string> = ["withjosephine.com", "www.withjosephine.com"];
+export const LINKS_HOST = "links.withjosephine.com";
+export const LINKS_PAGE_ORIGIN = `https://${LINKS_HOST}`;
+
 /**
  * Hosts that count as the live production site. Anything else (preview
  * subdomains, *.workers.dev URLs, localhost) is treated as private and gets
  * `X-Robots-Tag: noindex` from the edge middleware.
  */
-export const PRODUCTION_HOSTS: ReadonlyArray<string> = [
-  "withjosephine.com",
-  "www.withjosephine.com",
-];
+export const PRODUCTION_HOSTS: ReadonlyArray<string> = [...MAIN_SITE_HOSTS, LINKS_HOST];
 
 /**
  * Maps a `window.location.host` to a coarse environment label used by
@@ -30,6 +32,7 @@ export const ROUTES = {
   terms: "/terms",
   refundPolicy: "/refund-policy",
   notes: "/notes",
+  tt: "/tt",
 } as const;
 
 /**
@@ -45,6 +48,7 @@ export const STATIC_CSP_PATHS: ReadonlySet<string> = new Set([
   "/",
   "/under-construction",
   ROUTES.notes,
+  ROUTES.tt,
 ]);
 
 // Prerendered slug routes, which an exact-match Set cannot express. `/book/<slug>`

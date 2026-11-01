@@ -1,5 +1,11 @@
 import { groq } from "next-sanity";
 
+const LINKS_PAGE_SEO_PROJECTION = `seo {
+      metaTitle,
+      metaDescription,
+      "ogImage": select(defined(ogImage.asset) => { "asset": { "url": ogImage.asset->url } })
+    }`;
+
 const BOOKING_PAGE_SECTION_PROJECTION = `{
   _key,
   _type,
@@ -537,4 +543,38 @@ export const articleDatesQuery = groq`
 export const readingNotesQuery = groq`
   *[_type == "article" && relatedReading->slug.current == $slug && defined(slug.current)]
     | order(publishedAt desc) { title, "slug": slug.current }
+`;
+
+export const linksPageQuery = groq`
+  {
+    "page": *[_type == "linksPage"][0] {
+      "photoUrl": photo.asset->url,
+      name,
+      intro,
+      footerLine,
+      showSocialLinks,
+      pageColour,
+      wordsColour,
+      buttonColour,
+      buttonWordsColour,
+      nameFont,
+      textFont,
+      nameSize,
+      buttonShape,
+      ${LINKS_PAGE_SEO_PROJECTION},
+      "buttons": buttons[] {
+        _key,
+        label,
+        subtitle,
+        destination,
+        standOut,
+        email,
+        url,
+        "reading": select(destination == "reading" => reading->{ _id, "slug": slug.current, name, onSite }),
+        "note": select(destination == "note" => note->{ _id, "slug": slug.current }),
+        "file": select(destination == "file" => file.asset->{ _id, url })
+      }
+    },
+    "aboutPhotoUrl": *[_type == "landingPage"][0].about.image.asset->url
+  }
 `;

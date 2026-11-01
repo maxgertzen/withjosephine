@@ -1,28 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { SocialLinks } from "@/components/SocialLinks";
 import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
 import type { NotesLink } from "@/lib/notes/notes";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
-
-const SOCIAL_LABELS: Record<string, string> = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-  twitter: "Twitter",
-  youtube: "YouTube",
-  email: "Email",
-};
-
-function TikTokIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.7a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.13Z" />
-    </svg>
-  );
-}
 
 const LEGAL_LINKS = [
   { label: "Privacy", href: ROUTES.privacy },
@@ -61,42 +46,7 @@ export function Footer({ content, socialLinks, notesLink, className }: FooterPro
         />
       )}
 
-      {socialLinks && socialLinks.length > 0 && (
-        <div className="flex justify-center items-center gap-5 mb-4">
-          {socialLinks.map((link) => {
-            const isEmail = link.platform === "email";
-
-            if (link.platform === "tiktok") {
-              return (
-                <a
-                  key={link.platform}
-                  href={link.url}
-                  aria-label={link.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={FOOTER_LINK_CLASSES}
-                >
-                  <TikTokIcon className="w-8 h-8" />
-                </a>
-              );
-            }
-
-            return (
-              <a
-                key={link.platform}
-                href={link.url}
-                aria-label={link.label}
-                className={FOOTER_LINK_CLASSES}
-                {...(isEmail ? {} : { target: "_blank", rel: "noopener noreferrer" })}
-              >
-                <span className="font-body text-xs tracking-wide">
-                  {SOCIAL_LABELS[link.platform] ?? link.label}
-                </span>
-              </a>
-            );
-          })}
-        </div>
-      )}
+      <SocialLinks links={socialLinks ?? []} linkClassName={FOOTER_LINK_CLASSES} className="mb-4" />
 
       <nav aria-label="Footer" className="flex justify-center flex-wrap gap-x-5 gap-y-2 mb-4">
         {links.map((link) => (

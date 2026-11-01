@@ -1,4 +1,4 @@
-import { type LinkDestination, linkKey } from "@/lib/links/linkKey";
+import { isHttpsAddress, type LinkDestination, linkKey } from "@/lib/links/linkKey";
 import { contrastRatio, extractHex, READABLE_CONTRAST, themeColorOrBuiltIn } from "@/lib/theme/palette";
 
 export const COLOURS_TOO_CLOSE =
@@ -63,6 +63,7 @@ export type StoredLinkButton = {
   destination?: LinkDestination;
   reading?: { _ref?: string };
   note?: { _ref?: string };
+  file?: { asset?: { _ref?: string } };
   email?: string;
   url?: string;
 };
@@ -70,6 +71,7 @@ export type StoredLinkButton = {
 function pickedDocumentId(button: StoredLinkButton): string | undefined {
   if (button.destination === "reading") return button.reading?._ref;
   if (button.destination === "note") return button.note?._ref;
+  if (button.destination === "file") return button.file?.asset?._ref;
   return undefined;
 }
 
@@ -93,17 +95,12 @@ const PICK_WHERE_IT_GOES: Record<Exclude<LinkDestination, "home">, string> = {
   note: "Pick which note this button goes to.",
   email: "Type the email address this button opens.",
   web: "Type the website address this button opens.",
+  file: "Upload the file this button downloads.",
 };
 
 const LOOKS_LIKE_AN_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function isHttpsAddress(value: string) {
-  try {
-    return new URL(value).protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+
 
 export function checkButtonTarget(
   destination: Exclude<LinkDestination, "home">,
@@ -111,7 +108,8 @@ export function checkButtonTarget(
   value: unknown,
 ): true | string {
   if (pickedDestination !== destination) return true;
-  if (!value) return PICK_WHERE_IT_GOES[destination];
+  const fileMissing = destination === "file" && !(value as { asset?: { _ref?: string } } | undefined)?.asset?._ref;
+  if (!value || fileMissing) return PICK_WHERE_IT_GOES[destination];
   if (destination === "email" && !LOOKS_LIKE_AN_EMAIL.test(String(value))) {
     return "This does not look like an email address.";
   }

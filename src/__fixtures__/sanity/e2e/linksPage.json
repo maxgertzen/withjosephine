@@ -1,0 +1,44 @@
+{
+  "page": {
+    "photoUrl": null,
+    "name": "withjosephine",
+    "intro": "Psychological astrology & Akashic Records readings",
+    "footerLine": "withjosephine.com",
+    "showSocialLinks": true,
+    "pageColour": { "hex": "#F5F3EF" },
+    "wordsColour": { "hex": "#0D0B1A" },
+    "buttonColour": { "hex": "#1F1E22" },
+    "buttonWordsColour": { "hex": "#FAF8F4" },
+    "nameFont": "Playfair Display",
+    "textFont": "site",
+    "nameSize": "large",
+    "buttonShape": "squareShadow",
+    "seo": { "metaTitle": "withjosephine on TikTok", "metaDescription": "Readings, notes and a free guide.", "ogImage": null },
+    "buttons": [
+      {
+        "_key": "guide",
+        "label": "What Your Moon Sign Is Trying to Protect",
+        "subtitle": "Free 20-page guide & reflection workbook",
+        "destination": "web",
+        "url": "https://shop.beacons.ai/withjosephine",
+        "standOut": true
+      },
+      {
+        "_key": "blueprint",
+        "label": "Soul Blueprint Reading · $129",
+        "subtitle": "Your birth chart, Akashic Records & intuitive card pulls",
+        "destination": "reading",
+        "reading": { "_id": "reading-soul-blueprint", "slug": "soul-blueprint", "name": "The Soul Blueprint", "onSite": true }
+      },
+      { "_key": "home", "label": "Visit the website", "destination": "home" },
+      { "_key": "write", "label": "Write to me", "destination": "email", "email": "e2e-test@withjosephine.com" },
+      {
+        "_key": "workbook",
+        "label": "Download the workbook",
+        "destination": "file",
+        "file": { "_id": "file-e2e-workbook-pdf", "url": "https://cdn.sanity.io/files/e2e/e2e/workbook.pdf" }
+      }
+    ]
+  },
+  "aboutPhotoUrl": null
+}

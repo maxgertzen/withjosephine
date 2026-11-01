@@ -8,6 +8,11 @@ describe("linkKey", () => {
     expect(linkKey({ destination: "note", documentId: "n1" })).toBe("note:n1");
   });
 
+  it("keys an uploaded file by its file id", () => {
+    expect(linkKey({ destination: "file", documentId: "file-abc-pdf" })).toBe("file:file-abc-pdf");
+    expect(linkKey({ destination: "file" })).toBeNull();
+  });
+
   it("returns null for a reading or note with nothing picked yet", () => {
     expect(linkKey({ destination: "reading" })).toBeNull();
     expect(linkKey({ destination: "note" })).toBeNull();

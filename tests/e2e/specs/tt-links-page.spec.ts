@@ -1,0 +1,126 @@
+import { expect, test } from "@playwright/test";
+
+import { CONSENT_STORAGE_KEY } from "@/lib/consent";
+import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
+
+import { MOBILE_AND_DESKTOP } from "../helpers/viewports";
+
+const PHONE = MOBILE_AND_DESKTOP[0].viewport;
+const BUTTON_LINKS = "main ul a";
+const NO_CONSENT_COUNTRY = { "cf-ipcountry": "TH" };
+const CONSENT_COUNTRY = { "cf-ipcountry": "DE" };
+
+const EXPECTED_HREFS = [
+  "https://shop.beacons.ai/withjosephine",
+  "/book/soul-blueprint?utm_source=tiktok&utm_medium=bio&utm_content=reading%3Areading-soul-blueprint",
+  "/?utm_source=tiktok&utm_medium=bio&utm_content=home",
+  "mailto:e2e-test@withjosephine.com",
+  "https://cdn.sanity.io/files/e2e/e2e/workbook.pdf?dl=",
+];
+
+test.describe("TikTok links page", () => {
+  test.use({ viewport: PHONE, extraHTTPHeaders: NO_CONSENT_COUNTRY });
+
+  test("shows the name, the short line and every button as a plain link, without scrolling sideways", async ({
+    page,
+  }) => {
+    await page.goto("/tt");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("withjosephine");
+    await expect(page.getByText("Psychological astrology & Akashic Records readings")).toBeVisible();
+    const links = page.locator(BUTTON_LINKS);
+    await expect(links).toHaveCount(EXPECTED_HREFS.length);
+    for (const [index, href] of EXPECTED_HREFS.entries()) {
+      await expect(links.nth(index)).toHaveAttribute("href", href);
+    }
+    await expect(links.first()).toContainText("Free 20-page guide & reflection workbook");
+    const scrollsSideways = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(scrollsSideways).toBe(false);
+  });
+
+  test("every button is at least 44px tall", async ({ page }) => {
+    await page.goto("/tt");
+    const heights = await page.locator(BUTTON_LINKS).evaluateAll((links) =>
+      links.map((link) => link.getBoundingClientRect().height),
+    );
+    for (const height of heights) expect(height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("uses Becky's colours on the page, the body and the buttons", async ({ page }) => {
+    await page.goto("/tt");
+    const colours = await page.evaluate(() => {
+      const button = document.querySelector("main ul a") as HTMLElement;
+      return {
+        body: getComputedStyle(document.body).backgroundColor,
+        button: getComputedStyle(button).backgroundColor,
+        buttonWords: getComputedStyle(button).color,
+      };
+    });
+    expect(colours).toEqual({
+      body: "rgb(245, 243, 239)",
+      button: "rgb(31, 30, 34)",
+      buttonWords: "rgb(250, 248, 244)",
+    });
+  });
+
+  test("loads the chosen name font and no other links-page font, and the layout settles", async ({ page }) => {
+    const fontRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.resourceType() === "font") fontRequests.push(request.url());
+    });
+    await page.goto("/tt");
+    await page.evaluate(() => document.fonts.ready);
+    const nameFont = await page
+      .getByRole("heading", { level: 1 })
+      .evaluate((heading) => getComputedStyle(heading).fontFamily);
+    expect(nameFont).toMatch(/Playfair/i);
+    const shift = await page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          let total = 0;
+          new PerformanceObserver((list) => {
+            for (const entry of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
+              if (!entry.hadRecentInput) total += entry.value;
+            }
+          }).observe({ type: "layout-shift", buffered: true });
+          setTimeout(() => resolve(total), 500);
+        }),
+    );
+    expect(shift).toBeLessThan(0.1);
+    expect(fontRequests.length).toBeGreaterThan(0);
+  });
+
+  test("is kept out of search results and the sitemap", async ({ page, request }) => {
+    await page.goto("/tt");
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    const sitemap = await (await request.get("/sitemap.xml")).text();
+    expect(sitemap).not.toContain("/tt");
+  });
+});
+
+test.describe("TikTok links page in a country that asks for consent", () => {
+  test.use({ viewport: PHONE, extraHTTPHeaders: CONSENT_COUNTRY });
+
+  test("shows the consent banner without hiding the last button, and stores the choice", async ({ page, context }) => {
+    await page.goto("/tt");
+    const cookies = await context.cookies();
+    expect(cookies.find((cookie) => cookie.name === CONSENT_REQUIRED_COOKIE)?.value).toBe("1");
+    const banner = page.getByRole("dialog");
+    await expect(banner).toBeVisible();
+
+    const lastButton = page.locator(BUTTON_LINKS).last();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const [buttonBox, bannerBox] = await Promise.all([lastButton.boundingBox(), banner.boundingBox()]);
+    expect(buttonBox!.y + buttonBox!.height).toBeLessThanOrEqual(bannerBox!.y);
+
+    await banner.getByRole("button", { name: "Accept" }).click();
+    expect(await page.evaluate((key) => localStorage.getItem(key), CONSENT_STORAGE_KEY)).toBe("granted");
+  });
+
+  test("stores a decline", async ({ page }) => {
+    await page.goto("/tt");
+    await page.getByRole("dialog").getByRole("button", { name: "Decline" }).click();
+    expect(await page.evaluate((key) => localStorage.getItem(key), CONSENT_STORAGE_KEY)).toBe("declined");
+  });
+});

@@ -915,6 +915,10 @@ export const LINKS_PAGE_NAME_SIZES = ["small", "medium", "large"] as const;
 
 export type LinksPageNameSize = (typeof LINKS_PAGE_NAME_SIZES)[number];
 
+export const LINKS_PAGE_BUTTON_SHAPES = ["round", "square", "squareShadow"] as const;
+
+export type LinksPageButtonShape = (typeof LINKS_PAGE_BUTTON_SHAPES)[number];
+
 export type LinksPageContent = {
   name: string;
   intro: string;
@@ -922,6 +926,7 @@ export type LinksPageContent = {
   metaTitle: string;
   metaDescription: string;
   nameSize: LinksPageNameSize;
+  buttonShape: LinksPageButtonShape;
   nameFont: string;
   textFont: string;
   showSocialLinks: boolean;
@@ -934,6 +939,7 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
   metaTitle: "Josephine Soul Readings",
   metaDescription: "Soul readings from your birth chart and Akashic Records, by Josephine.",
   nameSize: "medium",
+  buttonShape: "round",
   nameFont: LINKS_PAGE_SITE_STYLE,
   textFont: LINKS_PAGE_SITE_STYLE,
   showSocialLinks: true,

@@ -1,13 +1,14 @@
 import { defineArrayMember, defineField, defineType, type ValidationContext } from "sanity";
 
 import {
+  LINKS_PAGE_BUTTON_SHAPES,
   LINKS_PAGE_DEFAULTS,
   LINKS_PAGE_MAX_BUTTONS,
   LINKS_PAGE_NAME_SIZES,
   LINKS_PAGE_SITE_STYLE,
 } from "../../src/data/defaults";
 import type { LinkDestination } from "@/lib/links/linkKey";
-import { ALL_COLOR_PRESETS, BODY_FONT_NAMES, DISPLAY_FONT_NAMES } from "@/lib/theme/palette";
+import { ALL_COLOR_PRESETS, BODY_FONT_NAMES, LINKS_PAGE_NAME_FONT_NAMES } from "@/lib/theme/palette";
 import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
 import {
   bothColoursPicked,
@@ -28,7 +29,14 @@ const DESTINATION_CHOICES: { title: string; value: LinkDestination }[] = [
   { title: "The home page", value: "home" },
   { title: "An email", value: "email" },
   { title: "Another website", value: "web" },
+  { title: "A file to download", value: "file" },
 ];
+
+const BUTTON_SHAPE_TITLES: Record<(typeof LINKS_PAGE_BUTTON_SHAPES)[number], string> = {
+  round: "Round",
+  square: "Square",
+  squareShadow: "Square with a shadow underneath",
+};
 
 const DESTINATION_TITLES = Object.fromEntries(DESTINATION_CHOICES.map((choice) => [choice.value, choice.title]));
 
@@ -128,6 +136,13 @@ const linkButton = defineArrayMember({
       validation: (rule) => rule.required().error("Pick where this button goes."),
     }),
     defineField({
+      name: "subtitle",
+      title: "Small line under the button words",
+      type: "string",
+      description: "A short second line on the button, like a price or what is inside. Leave blank for none.",
+      validation: (rule) => rule.max(80).error("Keep this line to 80 letters or fewer."),
+    }),
+    defineField({
       name: "reading",
       title: "Which reading",
       type: "reference",
@@ -158,6 +173,15 @@ const linkButton = defineArrayMember({
       description: "Starts with https://",
       hidden: hiddenUnless("web"),
       validation: (rule) => rule.custom(targetRule("web")),
+    }),
+    defineField({
+      name: "file",
+      title: "File to download",
+      type: "file",
+      description: "Upload the file (for example a PDF guide). Tapping the button downloads it.",
+      options: { accept: ".pdf,application/pdf" },
+      hidden: hiddenUnless("file"),
+      validation: (rule) => rule.custom(targetRule("file")),
     }),
     defineField({
       name: "standOut",
@@ -253,7 +277,7 @@ export const linksPage = defineType({
       siteWords: "textOnDark",
       siteBackground: "bgInteractive",
     }),
-    fontField("nameFont", "Font for the name", DISPLAY_FONT_NAMES),
+    fontField("nameFont", "Font for the name", LINKS_PAGE_NAME_FONT_NAMES),
     fontField("textFont", "Font for the buttons and lines", BODY_FONT_NAMES),
     defineField({
       name: "nameSize",
@@ -267,6 +291,18 @@ export const linksPage = defineType({
         direction: "horizontal",
       },
       initialValue: LINKS_PAGE_DEFAULTS.nameSize,
+    }),
+    defineField({
+      name: "buttonShape",
+      title: "Button shape",
+      type: "string",
+      group: "look",
+      description: "How the buttons look.",
+      options: {
+        list: LINKS_PAGE_BUTTON_SHAPES.map((shape) => ({ title: BUTTON_SHAPE_TITLES[shape], value: shape })),
+        layout: "radio",
+      },
+      initialValue: LINKS_PAGE_DEFAULTS.buttonShape,
     }),
     defineField({
       name: "seo",
