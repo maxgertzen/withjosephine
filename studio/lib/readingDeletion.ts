@@ -7,6 +7,8 @@ export type ReadingReferrer = {
   detailOverride?: string | null;
   appliesToServices?: string[] | null;
   overrideKeys?: string[] | null;
+  buttonKeys?: string[] | null;
+  leftoverButtonKeys?: string[] | null;
 };
 
 type ReadingPatch = { id: string; set?: Record<string, string>; unset: string[] };
@@ -25,8 +27,14 @@ export const READING_REFERRERS_QUERY = `*[references($id)]{
   "title": coalesce(title, label, sectionTitle, name, _id),
   detailOverride,
   "appliesToServices": appliesToServices[]._ref,
-  "overrideKeys": overrides[reading._ref == $id]._key
+  "overrideKeys": overrides[reading._ref == $id]._key,
+  "buttonKeys": buttons[destination == "reading" && reading._ref == $id]._key,
+  "leftoverButtonKeys": buttons[destination != "reading" && reading._ref == $id]._key
 }`;
+
+function keyedPaths(arrayField: string, keys: string[] | null | undefined, field = "") {
+  return (keys ?? []).map((key) => `${arrayField}[_key=="${key}"]${field}`);
+}
 
 function countLine(count: number, one: string, many: string) {
   return count === 1 ? `1 ${one}` : `${count} ${many}`;
@@ -79,9 +87,15 @@ export function planReadingDeletion(
         }
         break;
       case "thankYouPage":
+        patches.push({ id: referrer._id, unset: keyedPaths("overrides", referrer.overrideKeys) });
+        break;
+      case "linksPage":
         patches.push({
           id: referrer._id,
-          unset: (referrer.overrideKeys ?? []).map((key) => `overrides[_key=="${key}"]`),
+          unset: [
+            ...keyedPaths("buttons", referrer.buttonKeys),
+            ...keyedPaths("buttons", referrer.leftoverButtonKeys, ".reading"),
+          ],
         });
         break;
       default:
@@ -107,6 +121,9 @@ export function planReadingDeletion(
     );
   }
   if (byType("thankYouPage").length > 0) summary.push("The thank-you page drops this reading's own wording.");
+  if (byType("linksPage").some((referrer) => (referrer.buttonKeys ?? []).length > 0)) {
+    summary.push("The button for this reading on the TikTok links page will be removed.");
+  }
 
   return { blocked: [...blocked], patches, summary };
 }

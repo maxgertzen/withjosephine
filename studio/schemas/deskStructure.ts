@@ -38,6 +38,7 @@ export const SINGLETON_TYPES = new Set([
   "listenPage",
   "notesSettings",
   "giftSettings",
+  "linksPage",
 ]);
 
 const singletonListItem = (S: StructureBuilder, typeName: string, title: string) =>
@@ -276,6 +277,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
       singletonListItem(S, "theme", "Theme"),
       S.divider(),
       pagesGroup(S),
+      singletonListItem(S, "linksPage", "🔗 TikTok links page"),
       emailsGroup(S),
       formBuildingBlocksGroup(S),
       S.divider(),

@@ -31,6 +31,7 @@ const STUDIO_SRC_ALIASES = [
   { find: /^@\/styles\/layers$/, replacement: `${SRC}/styles/layers.ts` },
   { find: /^@\/lib\/auth\/emailValidation$/, replacement: `${SRC}/lib/auth/emailValidation.ts` },
   { find: /^@\/lib\/sanity\/pickDefined$/, replacement: `${SRC}/lib/sanity/pickDefined.ts` },
+  { find: /^@\/lib\/links\/linkKey$/, replacement: `${SRC}/lib/links/linkKey.ts` },
   { find: /^@\/lib\/notes\/notes$/, replacement: `${SRC}/lib/notes/notes.ts` },
   { find: /^@\/lib\/content\/nonBlank$/, replacement: `${SRC}/lib/content/nonBlank.ts` },
   { find: /^@\/lib\/notes\/types$/, replacement: `${SRC}/lib/notes/types.ts` },

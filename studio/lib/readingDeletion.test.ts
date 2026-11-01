@@ -67,3 +67,27 @@ describe("planReadingDeletion edge cases", () => {
     expect(planReadingDeletion(ID, "Akashic", [], 1).blocked[0]).toContain("waiting in a release");
   });
 });
+
+describe("planReadingDeletion TikTok links page", () => {
+  it("removes the reading's button from the links page instead of blocking, published and draft", () => {
+    const result = plan([
+      { _id: "linksPage", _type: "linksPage", buttonKeys: ["b1"] },
+      { _id: "drafts.linksPage", _type: "linksPage", buttonKeys: ["b1"] },
+    ]);
+    expect(result.blocked).toEqual([]);
+    expect(result.patches).toEqual([
+      { id: "linksPage", unset: ['buttons[_key=="b1"]'] },
+      { id: "drafts.linksPage", unset: ['buttons[_key=="b1"]'] },
+    ]);
+    expect(result.summary).toEqual(["The button for this reading on the TikTok links page will be removed."]);
+  });
+});
+
+describe("planReadingDeletion TikTok links page leftovers", () => {
+  it("clears a reading left behind on a button that now goes somewhere else, and keeps the button", () => {
+    const result = plan([{ _id: "linksPage", _type: "linksPage", buttonKeys: [], leftoverButtonKeys: ["w1"] }]);
+    expect(result.blocked).toEqual([]);
+    expect(result.patches).toEqual([{ id: "linksPage", unset: ['buttons[_key=="w1"].reading'] }]);
+    expect(result.summary).toEqual([]);
+  });
+});

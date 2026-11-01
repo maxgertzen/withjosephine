@@ -30,6 +30,7 @@ import { article } from "./article";
 import { notePlate } from "./notePlate";
 import { notesSettings } from "./notesSettings";
 import { giftSettings } from "./giftSettings";
+import { linksPage } from "./linksPage";
 
 export const schemaTypes = [
   reading,
@@ -64,4 +65,5 @@ export const schemaTypes = [
   notePlate,
   notesSettings,
   giftSettings,
+  linksPage,
 ];

@@ -1,53 +1,20 @@
-import type { SanityTheme, SanityThemeColors } from "@/lib/sanity/types";
+import type { SanityTheme } from "@/lib/sanity/types";
 
-type SemanticColorKey = keyof SanityThemeColors;
-
-type ColorConfig = {
-  semantic: string;
-  palette?: string;
-};
-
-const COLOR_CONFIG: Record<SemanticColorKey, ColorConfig> = {
-  bgPrimary: { semantic: "--j-bg-primary", palette: "--j-cream" },
-  bgSection: { semantic: "--j-bg-section", palette: "--j-warm" },
-  bgDark: { semantic: "--j-bg-dark", palette: "--j-midnight" },
-  bgInteractive: { semantic: "--j-bg-interactive", palette: "--j-deep" },
-  textPrimary: { semantic: "--j-text-primary", palette: "--j-text" },
-  textHeading: { semantic: "--j-text-heading" },
-  textMuted: { semantic: "--j-text-muted", palette: "--j-muted" },
-  textOnDark: { semantic: "--j-text-on-dark" },
-  accent: { semantic: "--j-accent", palette: "--j-gold" },
-  accentLight: { semantic: "--j-accent-light", palette: "--j-gold-light" },
-  blush: { semantic: "--j-blush" },
-  rose: { semantic: "--j-rose" },
-  ivory: { semantic: "--j-ivory" },
-};
+import {
+  BODY_FONTS,
+  BUILT_IN_THEME_COLORS,
+  COLOR_CONFIG,
+  DEFAULT_BODY_FONT,
+  DEFAULT_DISPLAY_FONT,
+  DISPLAY_FONTS,
+  extractHex,
+  type FontConfig,
+  hexChannels,
+  type SemanticColorKey,
+} from "./palette";
 
 function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-/**
- * The staging Sanity theme document has historically been written with
- * recursively-nested hex values (`{ hex: { hex: { hex: "#…" }}}`) on some
- * color fields — likely a re-save loop in the Studio color input. A
- * `${color.hex}` template literal on that shape stringifies the object as
- * "[object Object]", which lands as `--j-ivory: [object Object]` in the
- * generated tokens CSS, making `bg-j-ivory` resolve to invalid color and the
- * popover backgrounds turn transparent. Walk down `.hex` until we find the
- * actual string so future re-saves can't reintroduce the bug.
- */
-function extractHex(value: unknown): string | undefined {
-  if (typeof value === "string") {
-    return value.startsWith("#") ? value : undefined;
-  }
-  if (value && typeof value === "object" && "hex" in value) {
-    return extractHex((value as { hex: unknown }).hex);
-  }
-  return undefined;
+  return hexChannels(hex).join(", ");
 }
 
 export function generateTokensCss(theme: SanityTheme | null): string {
@@ -92,13 +59,13 @@ export function generateTokensCss(theme: SanityTheme | null): string {
 }
 
 const EMAIL_TOKEN_DEFAULTS = {
-  ink: "#1C1935",
-  body: "#3D3633",
-  muted: "#7A6F6A",
-  divider: "#E8D5C4",
-  cream: "#FAF8F4",
-  warm: "#F5F0E8",
-  gold: "#C4A46B",
+  ink: BUILT_IN_THEME_COLORS.bgInteractive,
+  body: BUILT_IN_THEME_COLORS.textPrimary,
+  muted: BUILT_IN_THEME_COLORS.textMuted,
+  divider: BUILT_IN_THEME_COLORS.blush,
+  cream: BUILT_IN_THEME_COLORS.bgPrimary,
+  warm: BUILT_IN_THEME_COLORS.bgSection,
+  gold: BUILT_IN_THEME_COLORS.accent,
   mutedOnWarm: "#6F6560",
 } as const;
 
@@ -124,10 +91,10 @@ export function generateEmailTokensModule(theme: SanityTheme | null): string {
 
   const displayFontName = theme?.displayFont && DISPLAY_FONTS[theme.displayFont]
     ? theme.displayFont
-    : "Cormorant Garamond";
+    : DEFAULT_DISPLAY_FONT;
   const bodyFontName = theme?.bodyFont && BODY_FONTS[theme.bodyFont]
     ? theme.bodyFont
-    : "Inter";
+    : DEFAULT_BODY_FONT;
 
   const serifStack = `'${displayFontName}', Georgia, serif`;
   const sansStack = `${bodyFontName}, -apple-system, Helvetica, Arial, sans-serif`;
@@ -144,85 +111,6 @@ export function generateEmailTokensModule(theme: SanityTheme | null): string {
   ].join("\n");
 }
 
-type FontConfig = {
-  importName: string;
-  variable: string;
-  weights: string[];
-  styles: string[];
-};
-
-const DISPLAY_FONTS: Record<string, FontConfig> = {
-  "Cormorant Garamond": {
-    importName: "Cormorant_Garamond",
-    variable: "--font-display-source",
-    weights: ["300", "400", "500", "600"],
-    styles: ["normal", "italic"],
-  },
-  "Playfair Display": {
-    importName: "Playfair_Display",
-    variable: "--font-display-source",
-    weights: ["400", "500", "600", "700"],
-    styles: ["normal", "italic"],
-  },
-  "EB Garamond": {
-    importName: "EB_Garamond",
-    variable: "--font-display-source",
-    weights: ["400", "500", "600"],
-    styles: ["normal", "italic"],
-  },
-  Lora: {
-    importName: "Lora",
-    variable: "--font-display-source",
-    weights: ["400", "500", "600", "700"],
-    styles: ["normal", "italic"],
-  },
-  "Crimson Text": {
-    importName: "Crimson_Text",
-    variable: "--font-display-source",
-    weights: ["400", "600", "700"],
-    styles: ["normal", "italic"],
-  },
-  "Libre Baskerville": {
-    importName: "Libre_Baskerville",
-    variable: "--font-display-source",
-    weights: ["400", "700"],
-    styles: ["normal", "italic"],
-  },
-};
-
-const BODY_FONTS: Record<string, FontConfig> = {
-  Inter: {
-    importName: "Inter",
-    variable: "--font-body-source",
-    weights: ["300", "400", "500"],
-    styles: ["normal"],
-  },
-  "DM Sans": {
-    importName: "DM_Sans",
-    variable: "--font-body-source",
-    weights: ["300", "400", "500"],
-    styles: ["normal"],
-  },
-  "Source Sans 3": {
-    importName: "Source_Sans_3",
-    variable: "--font-body-source",
-    weights: ["300", "400", "500"],
-    styles: ["normal"],
-  },
-  "Nunito Sans": {
-    importName: "Nunito_Sans",
-    variable: "--font-body-source",
-    weights: ["300", "400", "500"],
-    styles: ["normal"],
-  },
-  "Work Sans": {
-    importName: "Work_Sans",
-    variable: "--font-body-source",
-    weights: ["300", "400", "500"],
-    styles: ["normal"],
-  },
-};
-
 function getFontConfig(
   fontName: string | undefined,
   registry: Record<string, FontConfig>,
@@ -233,8 +121,8 @@ function getFontConfig(
 }
 
 export function generateFontsModule(theme: SanityTheme | null): string {
-  const display = getFontConfig(theme?.displayFont, DISPLAY_FONTS, "Cormorant Garamond");
-  const body = getFontConfig(theme?.bodyFont, BODY_FONTS, "Inter");
+  const display = getFontConfig(theme?.displayFont, DISPLAY_FONTS, DEFAULT_DISPLAY_FONT);
+  const body = getFontConfig(theme?.bodyFont, BODY_FONTS, DEFAULT_BODY_FONT);
 
   const lines: string[] = [];
   lines.push("/* Auto-generated from Sanity theme — do not edit manually */");

@@ -6,7 +6,7 @@ vi.mock("../views/StudioPagePreview", () => ({
   ThankYouPagePreview: () => null,
 }));
 
-import { deskStructure, FAILED_SENDS_FILTER } from "./deskStructure";
+import { deskStructure, FAILED_SENDS_FILTER, SINGLETON_TYPES } from "./deskStructure";
 
 type FakeNode = { kind: string; calls: Record<string, unknown[]> };
 
@@ -118,5 +118,23 @@ describe("desk structure gift documents", () => {
 
   it("has no separate Gifts group", () => {
     expect(ids(root)).not.toContain("giftsGroup");
+  });
+});
+
+describe("desk structure TikTok links page", () => {
+  it("shows the TikTok links page as its own item next to Pages", () => {
+    const rootIds = ids(root);
+    expect(rootIds).toContain("linksPage");
+    expect(rootIds.indexOf("linksPage")).toBe(rootIds.indexOf("pagesGroup") + 1);
+  });
+
+  it("opens the one linksPage document", () => {
+    const document = childOf(item(root, "linksPage"));
+    expect(document.calls.schemaType).toEqual(["linksPage"]);
+    expect(document.calls.documentId).toEqual(["linksPage"]);
+  });
+
+  it("treats linksPage as a singleton", () => {
+    expect(SINGLETON_TYPES.has("linksPage")).toBe(true);
   });
 });

@@ -453,6 +453,26 @@ export const SINGLETONS: SingletonContract[] = [
     ],
   },
   {
+    id: "linksPage",
+    type: "linksPage",
+    fields: [
+      { name: "photo", type: "image" },
+      { name: "name", type: "string" },
+      { name: "intro", type: "text" },
+      { name: "buttons", type: "array" },
+      { name: "showSocialLinks", type: "boolean" },
+      { name: "footerLine", type: "string" },
+      { name: "pageColour", type: "object" },
+      { name: "wordsColour", type: "object" },
+      { name: "buttonColour", type: "object" },
+      { name: "buttonWordsColour", type: "object" },
+      { name: "nameFont", type: "string" },
+      { name: "textFont", type: "string" },
+      { name: "nameSize", type: "string" },
+      { name: "seo", type: "object" },
+    ],
+  },
+  {
     id: "giftSettings",
     type: "giftSettings",
     fields: [
