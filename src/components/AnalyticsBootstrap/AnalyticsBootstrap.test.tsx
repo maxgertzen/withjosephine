@@ -19,10 +19,10 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 
 import { initAnalytics } from "@/lib/analytics";
+import { CONSENT_COOKIE, CONSENT_STORAGE_KEY as STORAGE_KEY } from "@/lib/consent";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 
-const STORAGE_KEY = "josephine.consent";
 const mockUsePathname = vi.mocked(usePathname);
 
 function setConsentRequired(required: boolean) {
@@ -31,6 +31,7 @@ function setConsentRequired(required: boolean) {
 
 function clearConsentCookie() {
   document.cookie = "consent-required=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
 }
 
 beforeEach(() => {

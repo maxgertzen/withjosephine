@@ -2,9 +2,10 @@ export const CONTACT_EMAIL = "hello@withjosephine.com";
 
 export const NONCE_HEADER = "x-nonce";
 
-export const MAIN_SITE_ORIGIN = "https://withjosephine.com";
-export const MAIN_SITE_HOSTS: ReadonlyArray<string> = ["withjosephine.com", "www.withjosephine.com"];
-export const LINKS_HOST = "links.withjosephine.com";
+export const SITE_DOMAIN = "withjosephine.com";
+export const MAIN_SITE_ORIGIN = `https://${SITE_DOMAIN}`;
+export const MAIN_SITE_HOSTS: ReadonlyArray<string> = [SITE_DOMAIN, `www.${SITE_DOMAIN}`];
+export const LINKS_HOST = `links.${SITE_DOMAIN}`;
 export const LINKS_PAGE_ORIGIN = `https://${LINKS_HOST}`;
 
 /**
@@ -13,6 +14,10 @@ export const LINKS_PAGE_ORIGIN = `https://${LINKS_HOST}`;
  * `X-Robots-Tag: noindex` from the edge middleware.
  */
 export const PRODUCTION_HOSTS: ReadonlyArray<string> = [...MAIN_SITE_HOSTS, LINKS_HOST];
+
+export function sharesSiteCookies(hostname: string): boolean {
+  return PRODUCTION_HOSTS.includes(hostname);
+}
 
 /**
  * Maps a `window.location.host` to a coarse environment label used by

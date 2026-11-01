@@ -37,7 +37,7 @@ beforeEach(() => {
   // Default to a production host so init runs in tests by default; the
   // non-prod-opt-in gate has dedicated tests below.
   Object.defineProperty(window, "location", {
-    value: { host: "withjosephine.com" },
+    value: { host: "withjosephine.com", hostname: "withjosephine.com", protocol: "https:" },
     configurable: true,
   });
   // jsdom's default UA doesn't match the headless regex; explicit set
@@ -61,7 +61,9 @@ describe("initAnalytics", () => {
       expect.objectContaining({
         track_pageview: false,
         ip: false,
-        persistence: "localStorage",
+        persistence: "cookie",
+        cross_subdomain_cookie: true,
+        secure_cookie: true,
         // Consent banner is the gate; DNT must not silently swallow events.
         ignore_dnt: true,
       }),
@@ -71,7 +73,7 @@ describe("initAnalytics", () => {
 
   it("registers environment super property based on hostname", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "withjosephine.com" },
+      value: { host: "withjosephine.com", hostname: "withjosephine.com", protocol: "https:" },
       configurable: true,
     });
     await initAnalytics();
@@ -80,9 +82,34 @@ describe("initAnalytics", () => {
     );
   });
 
+  it("keeps the Mixpanel cookie on the staging host instead of sharing it with production", async () => {
+    Object.defineProperty(window, "location", {
+      value: { host: "staging.withjosephine.com", hostname: "staging.withjosephine.com", protocol: "https:" },
+      configurable: true,
+    });
+    vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
+    await initAnalytics();
+    expect(mixpanel.init).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ cross_subdomain_cookie: false, persistence_name: "local" }),
+    );
+  });
+
+  it("shares the Mixpanel cookie between the main site and the links subdomain", async () => {
+    Object.defineProperty(window, "location", {
+      value: { host: "links.withjosephine.com", hostname: "links.withjosephine.com", protocol: "https:" },
+      configurable: true,
+    });
+    await initAnalytics();
+    expect(mixpanel.init).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ cross_subdomain_cookie: true }),
+    );
+  });
+
   it("tags preview hosts as environment=preview (when opted in)", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "preview.withjosephine.com" },
+      value: { host: "preview.withjosephine.com", hostname: "preview.withjosephine.com", protocol: "https:" },
       configurable: true,
     });
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
@@ -94,7 +121,7 @@ describe("initAnalytics", () => {
 
   it("tags workers.dev hosts as environment=workers-dev (when opted in)", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "withjosephine.maxgertzen.workers.dev" },
+      value: { host: "withjosephine.maxgertzen.workers.dev", hostname: "withjosephine.maxgertzen.workers.dev", protocol: "https:" },
       configurable: true,
     });
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
@@ -106,7 +133,7 @@ describe("initAnalytics", () => {
 
   it("tags localhost as environment=local (when opted in)", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "localhost:3000" },
+      value: { host: "localhost:3000", hostname: "localhost", protocol: "https:" },
       configurable: true,
     });
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
@@ -179,7 +206,7 @@ describe("non-production opt-in gate", () => {
 
   it("inits on non-prod when NEXT_PUBLIC_TRACK_NON_PROD=1 is set", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "preview.withjosephine.com" },
+      value: { host: "preview.withjosephine.com", hostname: "preview.withjosephine.com", protocol: "https:" },
       configurable: true,
     });
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "1");
@@ -189,7 +216,7 @@ describe("non-production opt-in gate", () => {
 
   it("ignores any value other than '1' for the opt-in flag", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "preview.withjosephine.com" },
+      value: { host: "preview.withjosephine.com", hostname: "preview.withjosephine.com", protocol: "https:" },
       configurable: true,
     });
     vi.stubEnv("NEXT_PUBLIC_TRACK_NON_PROD", "true");
@@ -212,7 +239,7 @@ describe("non-production opt-in gate", () => {
 
   it("buffer is drained (not held forever) when init is skipped on non-prod", async () => {
     Object.defineProperty(window, "location", {
-      value: { host: "localhost:3000" },
+      value: { host: "localhost:3000", hostname: "localhost", protocol: "https:" },
       configurable: true,
     });
     track("entry_page_view", {

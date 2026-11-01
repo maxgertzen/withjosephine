@@ -1,6 +1,6 @@
 "use client";
 
-import { deriveEnvironmentFromHost } from "@/lib/constants";
+import { deriveEnvironmentFromHost, sharesSiteCookies } from "@/lib/constants";
 import { shouldEnableClientObservability } from "@/lib/observability-gate";
 
 import type { ClientEventMap, ClientEventName } from "./events";
@@ -56,10 +56,14 @@ export async function initAnalytics() {
     return;
   }
 
+  const sharedCookies = sharesSiteCookies(window.location.hostname);
   mixpanel.init(token, {
     debug: false,
     track_pageview: false,
-    persistence: "localStorage",
+    persistence: "cookie",
+    cross_subdomain_cookie: sharedCookies,
+    ...(sharedCookies ? {} : { persistence_name: deriveEnvironmentFromHost(host) }),
+    secure_cookie: window.location.protocol === "https:",
     // DNT was deprecated by W3C in 2019 and ships on by default in
     // Brave / Firefox strict / Edge tracking-protection. Respecting it
     // silently swallows track() calls without gaining a meaningful
