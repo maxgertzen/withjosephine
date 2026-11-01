@@ -17,106 +17,112 @@ import {
 
 const cormorantGaramond = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["300"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const ebGaramond = EB_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["400"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const lora = Lora({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const crimsonText = Crimson_Text({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
+  weight: ["400"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const bitter = Bitter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["300"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const zillaSlab = Zilla_Slab({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["300"],
+  style: ["italic"],
   display: "swap",
   preload: false,
 });
 
 const robotoSlab = Roboto_Slab({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["300"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });
 
 const sourceSans3 = Source_Sans_3({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });
 
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });
 
 const workSans = Work_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
+  style: ["normal"],
   display: "swap",
   preload: false,
 });

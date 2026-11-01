@@ -30,7 +30,7 @@ vi.mock("next/font/google", () => {
   );
 });
 
-import { BODY_FONT_NAMES, BODY_FONTS, DISPLAY_FONTS, LINKS_PAGE_NAME_FONT_NAMES } from "@/lib/theme/palette";
+import { BODY_FONT_NAMES, BODY_FONTS, LINKS_PAGE_NAME_FONT_NAMES } from "@/lib/theme/palette";
 
 import { LINKS_PAGE_BODY_FONTS, LINKS_PAGE_NAME_FONTS, linksPageFontVariables } from "./fonts";
 
@@ -44,10 +44,16 @@ describe("links page fonts", () => {
     }
   });
 
-  it("loads the Theme fonts with the Theme weights", () => {
-    for (const config of Object.values({ ...DISPLAY_FONTS, ...BODY_FONTS })) {
-      const call = calls.find((entry) => entry.family === config.importName);
-      expect(call?.options.weight, config.importName).toEqual(config.weights);
+  it("loads only what the page shows: one weight and one style for the name, 400 and 500 for the words", () => {
+    const bodyFamilies = Object.values(BODY_FONTS).map((font) => font.importName);
+    for (const call of calls) {
+      if (bodyFamilies.includes(call.family)) {
+        expect(call.options.weight, call.family).toEqual(["400", "500"]);
+        expect(call.options.style, call.family).toEqual(["normal"]);
+      } else {
+        expect(call.options.weight, call.family).toHaveLength(1);
+        expect(call.options.style, call.family).toHaveLength(1);
+      }
     }
   });
 
