@@ -342,6 +342,11 @@ export const fetchArticlePublished = cache(
     }),
 );
 
+export const fetchLinksPage = cache(async (): Promise<SanityLinksPageState | null> => {
+  const { data } = await sanityFetch<SanityLinksPageState | null>({ query: linksPageQuery });
+  return data;
+});
+
 export const fetchNotesState = cache(async (): Promise<SanityNotesState | null> => {
   const { data } = await sanityFetch<SanityNotesState | null>({ query: notesStateQuery });
   return data;

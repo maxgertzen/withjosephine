@@ -91,3 +91,5 @@ export const SIGN_IN_LINK_PREVIEW_LINKS = previewLinks(
   (state) => `/preview/sign-in-link/${state}`,
 );
 export const GIFT_PREVIEW_LINKS = previewLinks(GIFT_PREVIEW_STATES, giftPreviewPath);
+
+export const LINKS_PAGE_PREVIEW_LINK = { title: "TikTok links", href: "/preview/tt" };

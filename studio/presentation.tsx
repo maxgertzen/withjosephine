@@ -4,6 +4,7 @@ import { defineDocuments, defineLocations, type PresentationPluginOptions } from
 import {
   GIFT_PREVIEW_LINKS,
   giftRecipientPreviewLinks,
+  LINKS_PAGE_PREVIEW_LINK,
   LISTEN_PREVIEW_LINKS,
   SIGN_IN_LINK_PREVIEW_LINKS,
 } from "@/lib/page-previews/preview-fixtures-pages";
@@ -52,6 +53,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     { route: "/preview/sign-in-link/:state", type: "magicLinkVerifyPage" },
     { route: "/preview/under-construction", type: "underConstructionPage" },
     { route: "/preview/404", type: "notFoundPage" },
+    { route: "/preview/tt", type: "linksPage" },
     {
       route: "/preview/:slug",
       filter: `_type == "legalPage" && slug.current == $slug`,
@@ -61,7 +63,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
   locations: {
     landingPage: defineLocations({
       message: "This document impacts the landing page.",
-      locations: [{ title: "Landing Page", href: "/preview" }],
+      locations: [{ title: "Landing Page", href: "/preview" }, LINKS_PAGE_PREVIEW_LINK],
     }),
     reading: defineLocations({
       select: { name: "name", slug: "slug.current" },
@@ -71,6 +73,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
               { title: String(doc.name ?? "Reading"), href: `/preview/book/${doc.slug}` },
               ...giftRecipientPreviewLinks(String(doc.slug)),
               { title: "Thank You", href: `/preview/thank-you/${doc.slug}` },
+              LINKS_PAGE_PREVIEW_LINK,
             ]
           : [],
       }),
@@ -91,11 +94,11 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     }),
     siteSettings: defineLocations({
       message: "Global site settings: affects every page.",
-      locations: [{ title: "Landing Page", href: "/preview" }],
+      locations: [{ title: "Landing Page", href: "/preview" }, LINKS_PAGE_PREVIEW_LINK],
     }),
     theme: defineLocations({
       message: "Global theme tokens: affects every page.",
-      locations: [{ title: "Landing Page", href: "/preview" }],
+      locations: [{ title: "Landing Page", href: "/preview" }, LINKS_PAGE_PREVIEW_LINK],
     }),
     testimonial: defineLocations({
       message:
@@ -114,13 +117,14 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
           ? [
               { title: String(doc.title ?? "Note"), href: `/preview/notes/${doc.slug}` },
               { title: "Notes", href: "/preview/notes" },
+              LINKS_PAGE_PREVIEW_LINK,
             ]
           : [],
       }),
     }),
     notesSettings: defineLocations({
       message: "Affects /notes and every note.",
-      locations: [{ title: "Notes", href: "/preview/notes" }],
+      locations: [{ title: "Notes", href: "/preview/notes" }, LINKS_PAGE_PREVIEW_LINK],
     }),
     giftSettings: defineLocations({
       message:
@@ -141,6 +145,10 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     magicLinkVerifyPage: defineLocations({
       message: "Affects the page a client opens from a sign-in email link.",
       locations: SIGN_IN_LINK_PREVIEW_LINKS,
+    }),
+    linksPage: defineLocations({
+      message: "Affects the TikTok links page (links.withjosephine.com).",
+      locations: [LINKS_PAGE_PREVIEW_LINK],
     }),
     notFoundPage: defineLocations({
       message: "Shown for unknown routes (404).",
