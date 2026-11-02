@@ -8,7 +8,7 @@ describe("ConsentBanner", () => {
   it("renders the heading, the body copy, and a privacy-policy link", () => {
     render(<ConsentBanner onAccept={vi.fn()} onDecline={vi.fn()} />);
     expect(screen.getByText("A note on analytics")).toBeInTheDocument();
-    expect(screen.getByText(/Mixpanel/)).toBeInTheDocument();
+    expect(screen.getByText(/Mixpanel and Microsoft Clarity/)).toBeInTheDocument();
     const link = screen.getByRole("link", { name: /privacy policy/i });
     expect(link).toHaveAttribute("href", "/privacy");
   });

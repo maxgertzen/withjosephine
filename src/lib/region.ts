@@ -26,5 +26,6 @@ export function requiresConsent(
 }
 
 // JS-readable cookie carrying the region consent-required flag ("1"/"0"). Set by
-// middleware, read client-side by AnalyticsBootstrap so the layout stays static.
+// middleware, read client-side by src/lib/consent.ts so the layout stays static.
 export const CONSENT_REQUIRED_COOKIE = "consent-required";
+export const CONSENT_REQUIRED = { yes: "1", no: "0" } as const;

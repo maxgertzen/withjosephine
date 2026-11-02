@@ -23,6 +23,11 @@ export interface ClarityWindow extends Window {
   clarity?: ClarityFn;
 }
 
+export function mountedClarity(): ClarityFn | null {
+  const { clarity } = window as ClarityWindow;
+  return typeof clarity === "function" ? clarity : null;
+}
+
 export const CLARITY_MASK_PROPS = {
   "data-clarity-mask": "True",
 } as const;

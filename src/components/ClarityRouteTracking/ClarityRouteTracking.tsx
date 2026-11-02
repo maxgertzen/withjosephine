@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import type { ClarityWindow } from "@/lib/clarity";
+import { mountedClarity } from "@/lib/clarity";
 import { isClarityBlockedPath } from "@/lib/clarityGate";
 
 // App Router soft navigations don't fire the Clarity tag's own page-detect
@@ -24,9 +24,7 @@ export function ClarityRouteTracking() {
     if (previous === null) return;
     if (previous === pathname) return;
     if (isClarityBlockedPath(pathname)) return;
-    const w = window as ClarityWindow;
-    if (typeof w.clarity !== "function") return;
-    w.clarity("set", "page", pathname);
+    mountedClarity()?.("set", "page", pathname);
   }, [pathname]);
 
   return null;

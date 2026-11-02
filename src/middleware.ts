@@ -1,16 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  cspExtraFrameSources,
   isPrivateLinkPath,
   isStaticCspPath,
   NONCE_HEADER,
   PRODUCTION_HOSTS,
 } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { CONSENT_API_ROUTE } from "@/lib/http/routes";
+import { isTapCounterPath, routeLinksHost } from "@/lib/links/linksHostRouting";
 import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { PREVIEW_ACTIVE_COOKIE } from "@/lib/previewModeCookie";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
-import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
+import { CONSENT_REQUIRED, CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
 
 /**
  * Edge middleware owns the Content-Security-Policy header because it has to
@@ -61,6 +64,7 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/api/delivery/wake",
   "/api/internal/",
   "/api/admin/",
+  CONSENT_API_ROUTE,
   "/listen/",
   "/privacy",
   "/terms",
@@ -97,8 +101,9 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean }): string {
+function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean; extraFrames: readonly string[] }): string {
   const { isDraft, nonce, staticRoute } = opts;
+  const extraFrames = opts.extraFrames.map((source) => ` ${source}`).join("");
   // Prerendered (static) routes have no per-request nonce, so Next's first-party
   // inline bootstrap can only be admitted via 'unsafe-inline' (a nonce CSP forces
   // dynamic rendering; hashes can't cover content/build-variable RSC flight data).
@@ -118,8 +123,8 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     ? `'self' https://*.sanity.studio https://*.sanity.io${localStudioFrameAncestor}`
     : `'none'`;
   const frameSrc = isDraft
-    ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
-    : `https://challenges.cloudflare.com`;
+    ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com${extraFrames}`
+    : `https://challenges.cloudflare.com${extraFrames}`;
   return (
     "default-src 'self'; " +
     `script-src ${scriptSrc}; ` +
@@ -149,7 +154,10 @@ export function middleware(request: NextRequest) {
   // SEO on the apex. We treat anything other than the bare apex as "private".
   const host = request.headers.get("host") ?? "";
   const isPublicApex = PRODUCTION_HOSTS.includes(host);
-  const { pathname } = request.nextUrl;
+  const linksRoute = routeLinksHost(host, request.nextUrl.pathname, request.nextUrl.search);
+  if (linksRoute?.kind === "redirect") return NextResponse.redirect(linksRoute.url, 307);
+  const rewritePath = linksRoute?.kind === "rewrite" ? linksRoute.pathname : null;
+  const pathname = rewritePath ?? request.nextUrl.pathname;
 
   // Apex lockdown: when under-construction is on, every apex path that isn't
   // allowlisted (Stripe webhook, crons, /listen/[id], legal pages) gets
@@ -171,7 +179,7 @@ export function middleware(request: NextRequest) {
     // (no nonce needed).
     holdingResponse.headers.set(
       "Content-Security-Policy",
-      buildCsp({ isDraft: false, nonce: "", staticRoute: true }),
+      buildCsp({ isDraft: false, nonce: "", staticRoute: true, extraFrames: cspExtraFrameSources("/under-construction") }),
     );
     return holdingResponse;
   }
@@ -192,18 +200,22 @@ export function middleware(request: NextRequest) {
   const nonce = generateNonce();
   requestHeaders.set(NONCE_HEADER, nonce);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = rewritePath
+    ? NextResponse.rewrite(new URL(rewritePath, request.url), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
 
-  response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
-    sameSite: "lax",
-    path: "/",
-    secure: !isDev,
-  });
+  if (!isTapCounterPath(pathname)) {
+    response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? CONSENT_REQUIRED.yes : CONSENT_REQUIRED.no, {
+      sameSite: "lax",
+      path: "/",
+      secure: !isDev,
+    });
 
-  if (isDraft) {
-    response.cookies.set(PREVIEW_ACTIVE_COOKIE, "1", { sameSite: "lax", path: "/", secure: !isDev });
-  } else if (request.cookies.has(PREVIEW_ACTIVE_COOKIE)) {
-    response.cookies.delete(PREVIEW_ACTIVE_COOKIE);
+    if (isDraft) {
+      response.cookies.set(PREVIEW_ACTIVE_COOKIE, "1", { sameSite: "lax", path: "/", secure: !isDev });
+    } else if (request.cookies.has(PREVIEW_ACTIVE_COOKIE)) {
+      response.cookies.delete(PREVIEW_ACTIVE_COOKIE);
+    }
   }
 
   // Strict CSP only on the public apex without draft mode. Anywhere else
@@ -212,7 +224,12 @@ export function middleware(request: NextRequest) {
   const isStrict = isPublicApex && !isDraft;
   response.headers.set(
     "Content-Security-Policy",
-    buildCsp({ isDraft: !isStrict, nonce, staticRoute: isStaticCspPath(pathname) }),
+    buildCsp({
+      isDraft: !isStrict,
+      nonce,
+      staticRoute: isStaticCspPath(pathname),
+      extraFrames: cspExtraFrameSources(pathname),
+    }),
   );
 
   const isListen = pathname.startsWith("/listen/");

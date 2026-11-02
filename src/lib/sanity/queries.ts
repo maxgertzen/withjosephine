@@ -1,5 +1,13 @@
 import { groq } from "next-sanity";
 
+const PUBLISHED_NOTES_COUNT = `count(*[_type == "article" && defined(slug.current)])`;
+
+const LINKS_PAGE_SEO_PROJECTION = `seo {
+      metaTitle,
+      metaDescription,
+      "ogImage": select(defined(ogImage.asset) => { "asset": { "url": ogImage.asset->url } })
+    }`;
+
 const BOOKING_PAGE_SECTION_PROJECTION = `{
   _key,
   _type,
@@ -469,7 +477,7 @@ export const notesStateQuery = groq`
       ),
       "indexIllustrationUrl": indexIllustration.asset->url
     },
-    "publishedCount": count(*[_type == "article" && defined(slug.current)])
+    "publishedCount": ${PUBLISHED_NOTES_COUNT}
   }
 `;
 
@@ -537,4 +545,53 @@ export const articleDatesQuery = groq`
 export const readingNotesQuery = groq`
   *[_type == "article" && relatedReading->slug.current == $slug && defined(slug.current)]
     | order(publishedAt desc) { title, "slug": slug.current }
+`;
+
+export const linksPageQuery = groq`
+  {
+    "page": *[_type == "linksPage"][0] {
+      "photoUrl": photo.asset->url,
+      name,
+      intro,
+      footerLine,
+      showSocialLinks,
+      socialLinks[] { _key, platform, address },
+      videosTitle,
+      videos[] { _key, url },
+      playVideo,
+      showShareButtons,
+      shareWords,
+      nameStyle,
+      buttonLetterCase,
+      pageColour,
+      wordsColour,
+      buttonColour,
+      buttonWordsColour,
+      nameFont,
+      textFont,
+      nameSize,
+      photoSize,
+      buttonShape,
+      ${LINKS_PAGE_SEO_PROJECTION},
+      "buttons": buttons[] {
+        _key,
+        label,
+        subtitle,
+        destination,
+        standOut,
+        email,
+        url,
+        "reading": select(destination == "reading" => reading->{ _id, "slug": slug.current, name, onSite }),
+        "note": select(destination == "note" => note->{ _id, "slug": slug.current }),
+        "file": select(destination == "file" => file.asset->{ _id, url })
+      }
+    },
+    "aboutPhotoUrl": *[_type == "landingPage"][0].about.image.asset->url,
+    "readings": *[_type == "reading"] | order(orderRank) { _id, onSite, name, "slug": slug.current },
+    "notesState": {
+      "settings": *[_type == "notesSettings"][0] { enabled },
+      "publishedCount": ${PUBLISHED_NOTES_COUNT}
+    },
+    "siteSettings": *[_type == "siteSettings"][0] { socialLinks }
+  }
 `;

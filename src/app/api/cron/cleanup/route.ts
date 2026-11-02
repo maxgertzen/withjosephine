@@ -9,6 +9,7 @@ import {
   scrubSubmissionPhoto,
 } from "@/lib/booking/submissions";
 import { deleteExpiredGift, listGiftsByStatusOlderThan, markGiftExpired } from "@/lib/gift/gifts";
+import { deleteTapsOlderThanAMonth } from "@/lib/links/tapCounts";
 import { deleteObject, listObjectsByPrefix } from "@/lib/r2";
 
 const PENDING_TO_EXPIRED_DAYS = 14;
@@ -49,9 +50,10 @@ async function cleanup(): Promise<{
   deleted: number;
   photosDeleted: number;
   orphansReaped: number;
+  oldTapDaysDeleted: number;
 }> {
   const now = new Date();
-  const summary = { expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0 };
+  const summary = { expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0 };
 
   const pendingCutoff = cutoffIso(PENDING_TO_EXPIRED_DAYS, now);
   const expiredCutoff = cutoffIso(EXPIRED_TO_DELETE_DAYS, now);
@@ -94,6 +96,7 @@ async function cleanup(): Promise<{
   }
 
   summary.orphansReaped = await reapOrphanPhotos(now);
+  summary.oldTapDaysDeleted = await deleteTapsOlderThanAMonth(now);
 
   return summary;
 }

@@ -78,6 +78,10 @@ export type ClientEventMap = {
     referrer: string;
     viewport_width: number;
   };
+  links_page_view: {
+    referrer_host: string;
+    viewport_width: number;
+  };
 };
 
 export type ClientEventName = keyof ClientEventMap;

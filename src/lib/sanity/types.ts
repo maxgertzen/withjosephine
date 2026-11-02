@@ -10,8 +10,11 @@ import type {
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
+import type { LinksPageShareWords } from "@/data/defaults";
 import type { StoredSection } from "@/lib/booking/bookingPageSections";
+import type { LinkDestination } from "@/lib/links/linkKey";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 
 export type ContentPerspective = "published" | "preview";
 
@@ -471,3 +474,53 @@ export type SanityArticle = SanityArticleBase & {
 };
 
 export type SanityArticleDates = Pick<SanityArticleBase, "slug" | "publishedAt" | "updatedAt">;
+
+export type SanityLinksPageButton = {
+  _key: string;
+  label?: string;
+  subtitle?: string;
+  destination?: LinkDestination;
+  standOut?: boolean;
+  email?: string;
+  url?: string;
+  reading?: { _id: string; slug: string; name?: string; onSite?: boolean | null } | null;
+  note?: { _id: string; slug: string } | null;
+  file?: { _id: string; url: string } | null;
+};
+
+export type SanityLinksPageSocialLink = { _key: string; platform?: string; address?: string };
+
+export type SanityLinksPageVideo = { _key: string; url?: string };
+
+export type SanityLinksPage = LinksPageColours & {
+  photoUrl?: string;
+  name?: string;
+  intro?: string;
+  footerLine?: string;
+  showSocialLinks?: boolean;
+  socialLinks?: SanityLinksPageSocialLink[];
+  videosTitle?: string;
+  videos?: SanityLinksPageVideo[];
+  playVideo?: string;
+  showShareButtons?: boolean;
+  shareWords?: Partial<LinksPageShareWords>;
+  nameFont?: string;
+  textFont?: string;
+  nameSize?: string;
+  photoSize?: number;
+  nameStyle?: string;
+  buttonLetterCase?: string;
+  buttonShape?: string;
+  seo?: SanitySeo;
+  buttons?: SanityLinksPageButton[];
+};
+
+export type SanityLinksPageReading = Pick<SanityReading, "_id" | "onSite" | "name" | "slug">;
+
+export type SanityLinksPageState = {
+  page: SanityLinksPage | null;
+  aboutPhotoUrl: string | null;
+  readings: SanityLinksPageReading[];
+  notesState: SanityNotesState | null;
+  siteSettings: Pick<SanitySiteSettings, "socialLinks"> | null;
+};

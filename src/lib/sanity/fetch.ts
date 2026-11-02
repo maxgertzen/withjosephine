@@ -25,6 +25,7 @@ import {
   giftSettingsQuery,
   landingPageQuery,
   legalPageBySlugQuery,
+  linksPageQuery,
   listenPageQuery,
   magicLinkVerifyPageQuery,
   notesStateQuery,
@@ -58,6 +59,7 @@ import type {
   SanityGiftSettings,
   SanityLandingPage,
   SanityLegalPage,
+  SanityLinksPageState,
   SanityListenPage,
   SanityMagicLinkVerifyPage,
   SanityNotesState,
@@ -302,6 +304,14 @@ export const fetchBookingPagePublished = cache(async (): Promise<SanityBookingPa
 export const fetchBookingFormPublished = cache(async (): Promise<SanityBookingForm | null> =>
   publishedFetch<SanityBookingForm | null>({ query: bookingFormQuery, tags: ["bookingForm"] }));
 
+export const fetchLinksPagePublished = cache(
+  async (): Promise<SanityLinksPageState | null> =>
+    publishedFetch<SanityLinksPageState | null>({
+      query: linksPageQuery,
+      tags: ["linksPage", "landingPage", "reading", "article", "notesSettings", "siteSettings"],
+    }),
+);
+
 export const fetchNotesStatePublished = cache(
   async (): Promise<SanityNotesState | null> =>
     publishedFetch<SanityNotesState | null>({
@@ -331,6 +341,11 @@ export const fetchArticlePublished = cache(
       tags: ["article", `article:${slug}`],
     }),
 );
+
+export const fetchLinksPage = cache(async (): Promise<SanityLinksPageState | null> => {
+  const { data } = await sanityFetch<SanityLinksPageState | null>({ query: linksPageQuery });
+  return data;
+});
 
 export const fetchNotesState = cache(async (): Promise<SanityNotesState | null> => {
   const { data } = await sanityFetch<SanityNotesState | null>({ query: notesStateQuery });

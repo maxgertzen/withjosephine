@@ -4,6 +4,7 @@ import { isReadingOnSite, OFF_THE_SITE_LABEL } from "../../src/lib/booking/readi
 import {
   GIFT_PREVIEW_LINKS,
   giftRecipientPreviewLinks,
+  LINKS_PAGE_PREVIEW_LINK,
   LISTEN_PREVIEW_LINKS,
   SIGN_IN_LINK_PREVIEW_LINKS,
 } from "@/lib/page-previews/preview-fixtures-pages";
@@ -43,6 +44,7 @@ export function pageGroups(docs: PreviewPageDocs): PageGroup[] {
       pages: [
         { title: "Home", href: "/preview" },
         { title: "Notes", href: "/preview/notes" },
+        LINKS_PAGE_PREVIEW_LINK,
       ],
     },
     { title: "Notes", pages: notes.map((note) => ({ title: labelled(note), href: `/preview/notes/${note.slug}` })) },

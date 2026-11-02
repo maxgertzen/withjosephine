@@ -23,7 +23,7 @@ export const LEGAL_PAGES: Record<
     fallback: {
       tag: "✦ Privacy",
       title: "Privacy Policy",
-      lastUpdated: "2026-10-04",
+      lastUpdated: "2026-11-02",
       metaTitle: pageTitle("Privacy Policy"),
       metaDescription:
         "How Josephine collects, uses, and protects the information you share when booking a soul reading.",

@@ -19,10 +19,11 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 
 import { initAnalytics } from "@/lib/analytics";
+import { CONSENT_STORAGE_KEY as STORAGE_KEY } from "@/lib/consent";
+import { CONSENT_COOKIE } from "@/lib/consentCookie";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 
-const STORAGE_KEY = "josephine.consent";
 const mockUsePathname = vi.mocked(usePathname);
 
 function setConsentRequired(required: boolean) {
@@ -31,6 +32,7 @@ function setConsentRequired(required: boolean) {
 
 function clearConsentCookie() {
   document.cookie = "consent-required=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
 }
 
 beforeEach(() => {
@@ -46,6 +48,25 @@ afterEach(() => {
 });
 
 describe("AnalyticsBootstrap", () => {
+  describe("on the links page in a consent region", () => {
+    it("starts neither Mixpanel nor Clarity until the visitor accepts", async () => {
+      setConsentRequired(true);
+      mockUsePathname.mockReturnValue("/tt");
+      const user = userEvent.setup();
+      await act(async () => {
+        render(<AnalyticsBootstrap />);
+      });
+      expect(initAnalytics).not.toHaveBeenCalled();
+      expect(screen.queryByTestId("clarity-script")).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Accept" }));
+
+      expect(initAnalytics).toHaveBeenCalledOnce();
+      expect(screen.getByTestId("clarity-script")).toBeInTheDocument();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBe("granted");
+    });
+  });
+
   describe("consent not required (rest of world)", () => {
     it("calls initAnalytics on mount and renders no banner", async () => {
       setConsentRequired(false);

@@ -23,6 +23,8 @@ vi.mock("next/server", () => {
       delete: (k: string) => this.deletedCookies.push(k),
     };
     rewriteTo: string | null = null;
+    redirectTo: string | null = null;
+    status = 200;
   }
   return {
     NextResponse: {
@@ -30,6 +32,12 @@ vi.mock("next/server", () => {
       rewrite: (url: URL) => {
         const r = new FakeResponse();
         r.rewriteTo = url.pathname;
+        return r;
+      },
+      redirect: (url: string, status: number) => {
+        const r = new FakeResponse();
+        r.redirectTo = url;
+        r.status = status;
         return r;
       },
     },
@@ -48,10 +56,12 @@ function makeRequest({
   pathname = "/",
   country = null,
   otherCookies = [],
+  search = "",
 }: {
   hasDraft: boolean;
   host?: string;
   pathname?: string;
+  search?: string;
   country?: string | null;
   otherCookies?: string[];
 }) {
@@ -67,8 +77,10 @@ function makeRequest({
         return null;
       },
     },
+    url: `https://${host}${pathname}${search}`,
     nextUrl: {
       pathname,
+      search,
       clone: () => ({ pathname }),
     },
     method: "GET",
@@ -81,6 +93,13 @@ beforeEach(() => {
 });
 
 describe("middleware CSP + draft hardening", () => {
+  it("lets the TikTok player load on the links page only", () => {
+    const linksPage = middleware(makeRequest({ hasDraft: false, host: "links.withjosephine.com" }));
+    const home = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    expect(linksPage.headers.get("content-security-policy")).toMatch(/frame-src [^;]*https:\/\/www\.tiktok\.com/);
+    expect(home.headers.get("content-security-policy")).not.toContain("tiktok");
+  });
+
   it("public request on apex gets strict CSP and no Cache-Control/noindex", () => {
     const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
     const csp = res.headers.get("content-security-policy");
@@ -239,6 +258,14 @@ describe("middleware CSP + draft hardening", () => {
     expect(res.cookieStore.get("consent-required")).toBe("1");
   });
 
+  it("sets no cookie at all on a links page tap", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", pathname: "/tt/go/home", country: "DE", otherCookies: ["preview-active"] }),
+    ) as unknown as FakeRes;
+    expect(res.cookieStore.size).toBe(0);
+    expect(res.deletedCookies).toEqual([]);
+  });
+
   it("sets the consent-required cookie to '1' for GDPR-aligned regions", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, host: "withjosephine.com", country: "DE" }),
@@ -277,7 +304,7 @@ describe("middleware gift and thank-you hardening", () => {
   });
 });
 
-type RewriteResponse = { rewriteTo: string | null };
+type RewriteResponse = { rewriteTo: string | null; redirectTo: string | null; status: number };
 
 describe("middleware apex lockdown (under-construction on)", () => {
   beforeEach(() => {
@@ -310,6 +337,13 @@ describe("middleware apex lockdown (under-construction on)", () => {
   it("does NOT rewrite Stripe webhook on apex (server-to-server must work)", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, pathname: "/api/stripe/webhook" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
+  it("does NOT rewrite the consent choice on apex, so the legal pages can still save it", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/api/consent" }),
     ) as unknown as RewriteResponse;
     expect(res.rewriteTo).toBeNull();
   });
@@ -412,6 +446,35 @@ describe("middleware apex lockdown (under-construction on)", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, pathname: "/under-construction" }),
     ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+});
+
+describe("middleware links subdomain", () => {
+  it("serves the links page at the root of links.withjosephine.com with the strict static CSP and the consent cookie", () => {
+    const res = middleware(makeRequest({ hasDraft: false, host: "links.withjosephine.com", country: "DE" })) as unknown as RewriteResponse & FakeRes & { headers: { get: (k: string) => string | null } };
+    expect(res.rewriteTo).toBe("/tt");
+    expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(res.cookieStore.get("consent-required")).toBe("1");
+  });
+
+  it("sends other paths on the subdomain to the main site with a temporary redirect", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "links.withjosephine.com", pathname: "/book/soul-blueprint", search: "?utm_source=tiktok" }),
+    ) as unknown as RewriteResponse;
+    expect(res.status).toBe(307);
+    expect(res.redirectTo).toBe("https://withjosephine.com/book/soul-blueprint?utm_source=tiktok");
+  });
+
+  it("sends withjosephine.com/tt to the subdomain", () => {
+    const res = middleware(makeRequest({ hasDraft: false, pathname: "/tt" })) as unknown as RewriteResponse;
+    expect(res.status).toBe(307);
+    expect(res.redirectTo).toBe("https://links.withjosephine.com/");
+  });
+
+  it("keeps staging /tt as the page itself", () => {
+    const res = middleware(makeRequest({ hasDraft: false, host: "staging.withjosephine.com", pathname: "/tt" })) as unknown as RewriteResponse;
+    expect(res.redirectTo).toBeNull();
     expect(res.rewriteTo).toBeNull();
   });
 });

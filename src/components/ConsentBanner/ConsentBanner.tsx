@@ -2,17 +2,10 @@
 
 import Link from "next/link";
 
+import { CONSENT_BANNER_DEFAULTS } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { LAYER } from "@/styles/layers";
-
-const DEFAULTS = {
-  title: "A note on analytics",
-  body: "We use Mixpanel to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
-  privacyLinkText: "Read the privacy policy",
-  acceptLabel: "Accept",
-  declineLabel: "Decline",
-};
 
 interface ConsentBannerProps {
   onAccept: () => void;
@@ -21,11 +14,11 @@ interface ConsentBannerProps {
 }
 
 export function ConsentBanner({ onAccept, onDecline, content }: ConsentBannerProps) {
-  const title = content?.title || DEFAULTS.title;
-  const body = content?.body || DEFAULTS.body;
-  const privacyLinkText = content?.privacyLinkText || DEFAULTS.privacyLinkText;
-  const acceptLabel = content?.acceptLabel || DEFAULTS.acceptLabel;
-  const declineLabel = content?.declineLabel || DEFAULTS.declineLabel;
+  const title = content?.title || CONSENT_BANNER_DEFAULTS.title;
+  const body = content?.body || CONSENT_BANNER_DEFAULTS.body;
+  const privacyLinkText = content?.privacyLinkText || CONSENT_BANNER_DEFAULTS.privacyLinkText;
+  const acceptLabel = content?.acceptLabel || CONSENT_BANNER_DEFAULTS.acceptLabel;
+  const declineLabel = content?.declineLabel || CONSENT_BANNER_DEFAULTS.declineLabel;
 
   return (
     <div

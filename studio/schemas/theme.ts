@@ -1,42 +1,36 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, type ValidationContext } from "sanity";
 
-const BACKGROUND_PRESETS = {
-  "Cream": "#FAF8F4",
-  "Warm Linen": "#F5F0E8",
-  "Ivory": "#FAFAF8",
-  "Snow": "#FFFAFA",
-  "Alabaster": "#F2F0EB",
-};
+import {
+  ACCENT_PRESETS,
+  BACKGROUND_PRESETS,
+  BODY_FONT_NAMES,
+  DARK_PRESETS,
+  DEFAULT_BODY_FONT,
+  DEFAULT_DISPLAY_FONT,
+  DISPLAY_FONT_NAMES,
+  SKIN_TONE_PRESETS,
+  TEXT_PRESETS,
+} from "@/lib/theme/palette";
 
-const DARK_PRESETS = {
-  "Midnight": "#0D0B1A",
-  "Deep Indigo": "#1C1935",
-  "Charcoal": "#1A1A2E",
-  "Obsidian": "#0B0B0F",
-};
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 
-const ACCENT_PRESETS = {
-  "Gold": "#C4A46B",
-  "Gold Light": "#D4BC8B",
-  "Amber": "#D4A853",
-  "Champagne": "#C9B77D",
-  "Copper": "#B87333",
-};
+import { publishedValidationClient } from "../lib/draftsClient";
+import {
+  LINKS_PAGE_COLOURS_QUERY,
+  linksPageStaysReadable,
+  PUBLISHED_READ_REUSE_MS,
+  reuseFor,
+} from "../lib/linksPageValidation";
 
-const SKIN_TONE_PRESETS = {
-  "Blush": "#E8D5C4",
-  "Rose": "#BF9B8B",
-  "Dusty Rose": "#C9A9A6",
-  "Mauve": "#C4A4A7",
-  "Peach": "#E8C8B8",
-};
+const reusedLinksPageColours = reuseFor<LinksPageColours>(PUBLISHED_READ_REUSE_MS);
 
-const TEXT_PRESETS = {
-  "Warm Charcoal": "#3D3633",
-  "Soft Black": "#2B2826",
-  "Muted": "#7A6F6A",
-  "Stone": "#5C5652",
-};
+async function publishedLinksPageColours(context: ValidationContext): Promise<LinksPageColours | null> {
+  try {
+    return (await publishedValidationClient(context).fetch<LinksPageColours | null>(LINKS_PAGE_COLOURS_QUERY)) ?? {};
+  } catch {
+    return null;
+  }
+}
 
 const semanticColorField = (
   name: string,
@@ -149,39 +143,28 @@ export const theme = defineType({
       options: {
         columns: 2,
       },
+      validation: (rule) =>
+        rule
+          .custom(async (colours, context) =>
+            linksPageStaysReadable(await reusedLinksPageColours(() => publishedLinksPageColours(context)), (colours ?? null) as Record<string, unknown> | null),
+          )
+          .warning(),
     }),
     defineField({
       name: "displayFont",
       title: "Display Font",
       type: "string",
       group: "typography",
-      options: {
-        list: [
-          "Cormorant Garamond",
-          "Playfair Display",
-          "EB Garamond",
-          "Lora",
-          "Crimson Text",
-          "Libre Baskerville",
-        ],
-      },
-      initialValue: "Cormorant Garamond",
+      options: { list: DISPLAY_FONT_NAMES },
+      initialValue: DEFAULT_DISPLAY_FONT,
     }),
     defineField({
       name: "bodyFont",
       title: "Body Font",
       type: "string",
       group: "typography",
-      options: {
-        list: [
-          "Inter",
-          "DM Sans",
-          "Source Sans 3",
-          "Nunito Sans",
-          "Work Sans",
-        ],
-      },
-      initialValue: "Inter",
+      options: { list: BODY_FONT_NAMES },
+      initialValue: DEFAULT_BODY_FONT,
     }),
   ],
   preview: {

@@ -24,6 +24,10 @@ describe("pageGroups", () => {
     ]);
   });
 
+  it("lists the links page under Site", () => {
+    expect(pagesOf("Site")).toContainEqual({ title: "Josephine's Link Tree", href: "/preview/tt" });
+  });
+
   it("orders the groups and lists the Listen and sign-in link pages", () => {
     const titles = pageGroups({
       ...NO_DOCS,

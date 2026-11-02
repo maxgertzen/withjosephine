@@ -2,6 +2,7 @@ import type { PortableTextBlock } from "@portabletext/types";
 
 import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
 import type {
+  SanityConsentBanner,
   SanityNotFoundPage,
   SanityThankYouPage,
   SanityUnderConstructionPage,
@@ -908,3 +909,104 @@ export const THANK_YOU_PAGE_DEFAULTS: ThankYouPageContent = {
   closingMessage: "With love, Josephine \u2726",
   returnButtonText: "Return to Home",
 };
+
+export const LINKS_PAGE_SITE_STYLE = "site";
+
+export const LINKS_PAGE_NAME_SIZES = ["small", "medium", "large"] as const;
+
+export type LinksPageNameSize = (typeof LINKS_PAGE_NAME_SIZES)[number];
+
+const STANDARD_PHOTO_PX = 144;
+
+export const LINKS_PAGE_PHOTO_PX = {
+  min: 80,
+  max: 200,
+  step: 4,
+  standard: STANDARD_PHOTO_PX,
+  marks: [
+    { label: "Small", px: 112 },
+    { label: "Medium", px: STANDARD_PHOTO_PX },
+    { label: "Large", px: 176 },
+  ],
+};
+
+export const LINKS_PAGE_BUTTON_SHAPES = ["round", "square", "squareShadow"] as const;
+
+export type LinksPageButtonShape = (typeof LINKS_PAGE_BUTTON_SHAPES)[number];
+
+export const LINKS_PAGE_NAME_STYLES = ["slanted", "bold"] as const;
+
+export type LinksPageNameStyle = (typeof LINKS_PAGE_NAME_STYLES)[number];
+
+export const LINKS_PAGE_LETTER_CASES = ["normal", "upper"] as const;
+
+export type LinksPageLetterCase = (typeof LINKS_PAGE_LETTER_CASES)[number];
+
+export type LinksPageShareWords = {
+  shareButton: string;
+  title: string;
+  copyLink: string;
+  copied: string;
+  email: string;
+  close: string;
+};
+
+export type LinksPageContent = {
+  name: string;
+  intro: string;
+  footerLine: string;
+  metaTitle: string;
+  metaDescription: string;
+  nameSize: LinksPageNameSize;
+  photoSize: number;
+  buttonShape: LinksPageButtonShape;
+  nameStyle: LinksPageNameStyle;
+  buttonLetterCase: LinksPageLetterCase;
+  nameFont: string;
+  textFont: string;
+  showSocialLinks: boolean;
+  showShareButtons: boolean;
+  shareWords: LinksPageShareWords;
+  videosTitle: string;
+  playVideo: string;
+};
+
+export const CONSENT_BANNER_DEFAULTS: Required<Omit<SanityConsentBanner, "hideInPreview">> = {
+  title: "A note on analytics",
+  body: "We use Mixpanel and Microsoft Clarity to understand how visitors move through the booking flow so we can keep improving it. Accepting also lets TikTok videos play on the links page. No personal information is shared.",
+  privacyLinkText: "Read the privacy policy",
+  acceptLabel: "Accept",
+  declineLabel: "Decline",
+};
+
+export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
+  name: "Josephine",
+  intro: "Your soul has patterns. Your chart reveals them. Your records explain why.",
+  footerLine: "withjosephine.com",
+  metaTitle: "Josephine Soul Readings",
+  metaDescription: "Soul readings from your birth chart and Akashic Records, by Josephine.",
+  nameSize: "medium",
+  photoSize: LINKS_PAGE_PHOTO_PX.standard,
+  buttonShape: "round",
+  nameStyle: "slanted",
+  buttonLetterCase: "normal",
+  nameFont: LINKS_PAGE_SITE_STYLE,
+  textFont: LINKS_PAGE_SITE_STYLE,
+  showSocialLinks: true,
+  showShareButtons: true,
+  shareWords: {
+    shareButton: "Share",
+    title: "Share link",
+    copyLink: "Copy link",
+    copied: "Link copied",
+    email: "Email",
+    close: "Close",
+  },
+  videosTitle: "TikToks",
+  playVideo: "Play video",
+};
+
+export const LINKS_PAGE_MAX_BUTTONS = 8;
+export const LINKS_PAGE_MAX_BUTTON_LETTERS = 60;
+export const LINKS_PAGE_MAX_VIDEOS = 6;
+export const LINKS_PAGE_MAX_SOCIAL_LINKS = 10;

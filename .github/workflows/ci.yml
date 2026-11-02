@@ -94,6 +94,7 @@ jobs:
       NEXT_PUBLIC_UNDER_CONSTRUCTION: ${{ vars.NEXT_PUBLIC_UNDER_CONSTRUCTION }}
       NEXT_PUBLIC_TRACK_NON_PROD: ${{ vars.NEXT_PUBLIC_TRACK_NON_PROD }}
       NEXT_PUBLIC_R2_PUBLIC_HOST: ${{ vars.NEXT_PUBLIC_R2_PUBLIC_HOST }}
+      NEXT_PUBLIC_SITE_ORIGIN: https://staging.withjosephine.com
     permissions:
       contents: read
       deployments: write
@@ -152,6 +153,7 @@ jobs:
       NEXT_PUBLIC_UNDER_CONSTRUCTION: ${{ vars.NEXT_PUBLIC_UNDER_CONSTRUCTION }}
       NEXT_PUBLIC_TRACK_NON_PROD: ${{ vars.NEXT_PUBLIC_TRACK_NON_PROD }}
       NEXT_PUBLIC_R2_PUBLIC_HOST: ${{ vars.NEXT_PUBLIC_R2_PUBLIC_HOST }}
+      NEXT_PUBLIC_SITE_ORIGIN: https://withjosephine.com
     permissions:
       contents: read
       deployments: write

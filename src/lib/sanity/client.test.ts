@@ -135,6 +135,11 @@ describe("sanityClient stega filter", () => {
     [["sections", 0, "fields", 1, "helperPosition"]],
     [["socialLinks", 0, "platform"]],
     [["iconKey"]],
+    [["buttons", 0, "destination"]],
+    [["nameFont"]],
+    [["textFont"]],
+    [["nameSize"]],
+    [["buttonShape"]],
   ])("leaves values the code compares unmarked: %j", async (sourcePath) => {
     const filter = await stegaFilter();
     const filterDefault = vi.fn(() => true);
