@@ -21,7 +21,8 @@ describe("LinksPageView", () => {
     expect(first).toHaveAttribute("data-mp-position", "1");
     expect(first).toHaveAttribute("data-mp-stand-out", "true");
     expect(first).toHaveAttribute("data-clarity-event", "tt_link_click");
-    expect(first).toHaveAttribute("data-clarity-key", "reading:r1");
+    expect(first).toHaveAttribute("data-clarity-tag-tt-link", "reading:r1");
+    expect(first).toHaveAttribute("data-mp-transport", "sendBeacon");
   });
 
   it("shows the name, the short line and the bottom line", () => {

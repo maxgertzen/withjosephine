@@ -10,6 +10,7 @@ import { HEADLESS_UA_PATTERN } from "./headless";
 // initAnalytics so it lands in an async chunk loaded only after consent,
 // off the first-paint critical path. Events fired before it loads queue.
 type Mixpanel = (typeof import("mixpanel-browser"))["default"];
+type TrackOptions = import("mixpanel-browser").RequestOptions;
 
 let bootstrapped = false;
 let mixpanelLoading = false;
@@ -18,6 +19,7 @@ let mp: Mixpanel | null = null;
 type QueuedEvent = {
   event: string;
   properties: Record<string, unknown>;
+  options?: TrackOptions;
 };
 
 // Cap on the pre-init buffer. The window between module load and
@@ -87,20 +89,17 @@ export async function initAnalytics() {
   mixpanelLoading = false;
 
   for (const item of queue) {
-    mp.track(item.event, item.properties);
+    mp.track(item.event, item.properties, item.options);
   }
   queue.length = 0;
 }
 
-export function track<E extends ClientEventName>(event: E, properties: ClientEventMap[E]) {
-  const props = properties as Record<string, unknown>;
-  if (mp) {
-    mp.track(event, props);
-    return;
-  }
-  if (bootstrapped && !mixpanelLoading) return;
-  if (queue.length >= MAX_QUEUED_EVENTS) return;
-  queue.push({ event, properties: props });
+export function track<E extends ClientEventName>(
+  event: E,
+  properties: ClientEventMap[E],
+  options?: TrackOptions,
+) {
+  trackUntyped(event, properties as Record<string, unknown>, options);
 }
 
 /**
@@ -110,14 +109,14 @@ export function track<E extends ClientEventName>(event: E, properties: ClientEve
  * ad-hoc `<button data-mp-event="…" data-mp-…="…">` instrumentation
  * doesn't have to widen the typed map for every surface.
  */
-export function trackUntyped(event: string, properties: Record<string, unknown>) {
+export function trackUntyped(event: string, properties: Record<string, unknown>, options?: TrackOptions) {
   if (mp) {
-    mp.track(event, properties);
+    mp.track(event, properties, options);
     return;
   }
   if (bootstrapped && !mixpanelLoading) return;
   if (queue.length >= MAX_QUEUED_EVENTS) return;
-  queue.push({ event, properties });
+  queue.push({ event, properties, options });
 }
 
 const lastTrackedAt = new Map<string, number>();

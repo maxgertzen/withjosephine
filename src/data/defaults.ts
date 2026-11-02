@@ -2,6 +2,7 @@ import type { PortableTextBlock } from "@portabletext/types";
 
 import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
 import type {
+  SanityConsentBanner,
   SanityNotFoundPage,
   SanityThankYouPage,
   SanityUnderConstructionPage,
@@ -930,6 +931,14 @@ export type LinksPageContent = {
   nameFont: string;
   textFont: string;
   showSocialLinks: boolean;
+};
+
+export const CONSENT_BANNER_DEFAULTS: Required<Omit<SanityConsentBanner, "hideInPreview">> = {
+  title: "A note on analytics",
+  body: "We use Mixpanel and Microsoft Clarity to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
+  privacyLinkText: "Read the privacy policy",
+  acceptLabel: "Accept",
+  declineLabel: "Decline",
 };
 
 export const LINKS_PAGE_DEFAULTS: LinksPageContent = {

@@ -47,6 +47,25 @@ afterEach(() => {
 });
 
 describe("AnalyticsBootstrap", () => {
+  describe("on the TikTok links page in a consent region", () => {
+    it("starts neither Mixpanel nor Clarity until the visitor accepts", async () => {
+      setConsentRequired(true);
+      mockUsePathname.mockReturnValue("/tt");
+      const user = userEvent.setup();
+      await act(async () => {
+        render(<AnalyticsBootstrap />);
+      });
+      expect(initAnalytics).not.toHaveBeenCalled();
+      expect(screen.queryByTestId("clarity-script")).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Accept" }));
+
+      expect(initAnalytics).toHaveBeenCalledOnce();
+      expect(screen.getByTestId("clarity-script")).toBeInTheDocument();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBe("granted");
+    });
+  });
+
   describe("consent not required (rest of world)", () => {
     it("calls initAnalytics on mount and renders no banner", async () => {
       setConsentRequired(false);

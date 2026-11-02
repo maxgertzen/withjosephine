@@ -282,21 +282,24 @@ describe("track buffer", () => {
       1,
       "entry_page_view",
       expect.objectContaining({ reading_id: "soul-blueprint" }),
+      undefined,
     );
     expect(mixpanel.track).toHaveBeenNthCalledWith(
       2,
       "intake_page_view",
       expect.objectContaining({ page_number: 1 }),
+      undefined,
     );
   });
 
   it("after init, track() forwards directly to mixpanel.track", async () => {
     await initAnalytics();
     track("intake_save_click", { reading_id: "akashic-record", page_number: 2 });
-    expect(mixpanel.track).toHaveBeenCalledWith("intake_save_click", {
-      reading_id: "akashic-record",
-      page_number: 2,
-    });
+    expect(mixpanel.track).toHaveBeenCalledWith(
+      "intake_save_click",
+      { reading_id: "akashic-record", page_number: 2 },
+      undefined,
+    );
   });
 
   it("drops the buffer (no-ops on flush) when token is unset", async () => {
@@ -350,18 +353,30 @@ describe("trackUntyped", () => {
   it("forwards arbitrary event names to mixpanel.track post-init", async () => {
     await initAnalytics();
     trackUntyped("button_click", { button_name: "hero_cta" });
-    expect(mixpanel.track).toHaveBeenCalledWith("button_click", {
-      button_name: "hero_cta",
-    });
+    expect(mixpanel.track).toHaveBeenCalledWith("button_click", { button_name: "hero_cta" }, undefined);
+  });
+
+  it("passes request options through to mixpanel.track", async () => {
+    await initAnalytics();
+    trackUntyped("links_link_click", { link_key: "home" }, { transport: "sendBeacon", send_immediately: true });
+    expect(mixpanel.track).toHaveBeenCalledWith(
+      "links_link_click",
+      { link_key: "home" },
+      { transport: "sendBeacon", send_immediately: true },
+    );
+  });
+
+  it("keeps request options on events queued before init", async () => {
+    trackUntyped("links_link_click", { link_key: "home" }, { transport: "sendBeacon" });
+    await initAnalytics();
+    expect(mixpanel.track).toHaveBeenCalledWith("links_link_click", { link_key: "home" }, { transport: "sendBeacon" });
   });
 
   it("queues calls before init and flushes them on init", async () => {
     trackUntyped("link_click", { link_id: "footer_about" });
     expect(mixpanel.track).not.toHaveBeenCalled();
     await initAnalytics();
-    expect(mixpanel.track).toHaveBeenCalledWith("link_click", {
-      link_id: "footer_about",
-    });
+    expect(mixpanel.track).toHaveBeenCalledWith("link_click", { link_id: "footer_about" }, undefined);
   });
 
   it("drops events when bootstrapped without a token (no-op silently)", async () => {

@@ -15,6 +15,7 @@ import { buildPageMetadata } from "@/lib/seoMetadata";
 import { deriveLinksPageViewProps } from "./deriveLinksPageViewProps";
 import { linksPageFontVariables } from "./fonts";
 import { LinksPageView } from "./LinksPageView";
+import { LinksPageViewTracking } from "./LinksPageViewTracking";
 
 export async function generateMetadata(): Promise<Metadata> {
   const state = await fetchLinksPagePublished();
@@ -39,15 +40,18 @@ export default async function LinksPage() {
   ]);
 
   return (
-    <LinksPageView
-      {...deriveLinksPageViewProps({
-        state,
-        readings,
-        siteSettings,
-        notesState,
-        siteOrigin: buildTimeSiteOrigin(),
-      })}
-      fontVariables={linksPageFontVariables(state?.page?.nameFont, state?.page?.textFont)}
-    />
+    <>
+      <LinksPageView
+        {...deriveLinksPageViewProps({
+          state,
+          readings,
+          siteSettings,
+          notesState,
+          siteOrigin: buildTimeSiteOrigin(),
+        })}
+        fontVariables={linksPageFontVariables(state?.page?.nameFont, state?.page?.textFont)}
+      />
+      <LinksPageViewTracking />
+    </>
   );
 }

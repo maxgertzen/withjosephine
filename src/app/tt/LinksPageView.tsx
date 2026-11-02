@@ -60,8 +60,9 @@ function trackingAttributes(button: LinksPageButton) {
     "data-mp-destination-label": button.label,
     "data-mp-position": String(button.position),
     "data-mp-stand-out": String(button.standOut),
+    "data-mp-transport": "sendBeacon",
     "data-clarity-event": "tt_link_click",
-    "data-clarity-key": button.key,
+    "data-clarity-tag-tt-link": button.key,
   };
 }
 
