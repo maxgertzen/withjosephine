@@ -244,6 +244,14 @@ describe("deriveLinksPageViewProps videos and look choices", () => {
     expect(derive({ videosTitle: " " }).videosTitle).toBe(LINKS_PAGE_DEFAULTS.videosTitle);
   });
 
+  it("uses the chosen photo size within the allowed range, and the standard size when unset", () => {
+    expect(derive({ photoSize: 176 }).photoSize).toBe(176);
+    expect(derive({ photoSize: 900 }).photoSize).toBe(200);
+    expect(derive({ photoSize: 10 }).photoSize).toBe(80);
+    expect(derive({ photoSize: 150 }).photoSize).toBe(152);
+    expect(derive({}).photoSize).toBe(LINKS_PAGE_DEFAULTS.photoSize);
+  });
+
   it("uses the chosen name style and button letters, and the defaults for unknown values", () => {
     expect(derive({ nameStyle: "bold", buttonLetterCase: "upper" })).toMatchObject({
       nameStyle: "bold",

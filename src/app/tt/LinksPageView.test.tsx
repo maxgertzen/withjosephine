@@ -88,16 +88,17 @@ describe("LinksPageView share menu, videos and social icons", () => {
     expect(container.querySelectorAll('a[aria-label="Email"] svg')).toHaveLength(1);
   });
 
-  it("shows the videos under their title, with no TikTok player before a tap", () => {
-    const { container } = render(
-      <LinksPageView
-        {...props}
-        videos={[{ videoId: "7412345678901234567", url: "https://www.tiktok.com/@withjosephine/video/7412345678901234567" }]}
-      />,
-    );
+  it("shows the videos under their title", () => {
+    const { container } = render(<LinksPageView {...props} videoIds={["7412345678901234567"]} />);
     expect(screen.getByRole("heading", { name: "TikToks" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play video" })).toBeInTheDocument();
-    expect(container.querySelector("iframe")).toBeNull();
+    expect(container.querySelectorAll("section li")).toHaveLength(1);
+  });
+
+  it("draws the round photo at the chosen size", () => {
+    const { rerender } = render(<LinksPageView {...props} photoUrl="https://cdn.sanity.io/images/p/d/logo.png" />);
+    expect(screen.getByRole("img", { name: props.name }).style.width).toBe("144px");
+    rerender(<LinksPageView {...props} photoUrl="https://cdn.sanity.io/images/p/d/logo.png" photoSize={176} />);
+    expect(screen.getByRole("img", { name: props.name }).style.width).toBe("176px");
   });
 
   it("writes the button words in normal letters unless capitals are chosen", () => {

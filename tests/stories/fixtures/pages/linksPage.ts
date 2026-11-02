@@ -52,10 +52,7 @@ export const LINKS_PAGE_DARK_ARGS = args({
   nameSize: "large",
 });
 
-const BEACONS_VIDEOS = ["7412345678901234567", "7412345678901234568", "7412345678901234569"].map((videoId) => ({
-  videoId,
-  url: `https://www.tiktok.com/@withjosephine/video/${videoId}`,
-}));
+const BEACONS_VIDEO_IDS = ["7700268561549544711", "7699677717997899015", "7698520041167260936"];
 
 const beaconsLook = args({
   name: "withjosephine",
@@ -105,4 +102,4 @@ const beaconsLook = args({
   ],
 });
 
-export const LINKS_PAGE_BEACONS_LOOK_ARGS: LinksPageViewProps = { ...beaconsLook, videos: BEACONS_VIDEOS };
+export const LINKS_PAGE_BEACONS_LOOK_ARGS: LinksPageViewProps = { ...beaconsLook, videoIds: BEACONS_VIDEO_IDS };

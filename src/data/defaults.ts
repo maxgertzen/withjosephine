@@ -916,6 +916,20 @@ export const LINKS_PAGE_NAME_SIZES = ["small", "medium", "large"] as const;
 
 export type LinksPageNameSize = (typeof LINKS_PAGE_NAME_SIZES)[number];
 
+const STANDARD_PHOTO_PX = 144;
+
+export const LINKS_PAGE_PHOTO_PX = {
+  min: 80,
+  max: 200,
+  step: 4,
+  standard: STANDARD_PHOTO_PX,
+  marks: [
+    { label: "Small", px: 112 },
+    { label: "Medium", px: STANDARD_PHOTO_PX },
+    { label: "Large", px: 176 },
+  ],
+};
+
 export const LINKS_PAGE_BUTTON_SHAPES = ["round", "square", "squareShadow"] as const;
 
 export type LinksPageButtonShape = (typeof LINKS_PAGE_BUTTON_SHAPES)[number];
@@ -944,6 +958,7 @@ export type LinksPageContent = {
   metaTitle: string;
   metaDescription: string;
   nameSize: LinksPageNameSize;
+  photoSize: number;
   buttonShape: LinksPageButtonShape;
   nameStyle: LinksPageNameStyle;
   buttonLetterCase: LinksPageLetterCase;
@@ -958,7 +973,7 @@ export type LinksPageContent = {
 
 export const CONSENT_BANNER_DEFAULTS: Required<Omit<SanityConsentBanner, "hideInPreview">> = {
   title: "A note on analytics",
-  body: "We use Mixpanel and Microsoft Clarity to understand how visitors move through the booking flow so we can keep improving it. No personal information is shared.",
+  body: "We use Mixpanel and Microsoft Clarity to understand how visitors move through the booking flow so we can keep improving it. Accepting also lets TikTok videos play on the links page. No personal information is shared.",
   privacyLinkText: "Read the privacy policy",
   acceptLabel: "Accept",
   declineLabel: "Decline",
@@ -971,6 +986,7 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
   metaTitle: "Josephine Soul Readings",
   metaDescription: "Soul readings from your birth chart and Akashic Records, by Josephine.",
   nameSize: "medium",
+  photoSize: LINKS_PAGE_PHOTO_PX.standard,
   buttonShape: "round",
   nameStyle: "slanted",
   buttonLetterCase: "normal",

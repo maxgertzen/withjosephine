@@ -1,4 +1,4 @@
-import { TIKTOK_COVER_HOSTS, TIKTOK_PLAYER_ORIGIN } from "@/lib/links/tiktokVideo";
+import { TIKTOK_PLAYER_ORIGIN } from "@/lib/links/tiktokVideo";
 export const CONTACT_EMAIL = "hello@withjosephine.com";
 
 export const NONCE_HEADER = "x-nonce";
@@ -66,19 +66,13 @@ export function isStaticCspPath(pathname: string): boolean {
   return STATIC_CSP_PATHS.has(pathname) || STATIC_CSP_PATTERNS.some((re) => re.test(pathname));
 }
 
-export type CspExtraSources = { frameSrc: readonly string[]; imgSrc: readonly string[] };
-
-const TIKTOK_VIDEO_SOURCES: CspExtraSources = { frameSrc: [TIKTOK_PLAYER_ORIGIN], imgSrc: TIKTOK_COVER_HOSTS };
-
-const CSP_EXTRA_SOURCES: ReadonlyMap<string, CspExtraSources> = new Map([
-  [ROUTES.tt, TIKTOK_VIDEO_SOURCES],
-  [`/preview${ROUTES.tt}`, TIKTOK_VIDEO_SOURCES],
+const CSP_EXTRA_FRAME_SOURCES: ReadonlyMap<string, readonly string[]> = new Map([
+  [ROUTES.tt, [TIKTOK_PLAYER_ORIGIN]],
+  [`/preview${ROUTES.tt}`, [TIKTOK_PLAYER_ORIGIN]],
 ]);
 
-const NO_EXTRA_SOURCES: CspExtraSources = { frameSrc: [], imgSrc: [] };
-
-export function cspExtraSources(pathname: string): CspExtraSources {
-  return CSP_EXTRA_SOURCES.get(pathname) ?? NO_EXTRA_SOURCES;
+export function cspExtraFrameSources(pathname: string): readonly string[] {
+  return CSP_EXTRA_FRAME_SOURCES.get(pathname) ?? [];
 }
 
 export const PRIVATE_LINK_PREFIXES = ["/gift/", "/thank-you/"] as const;

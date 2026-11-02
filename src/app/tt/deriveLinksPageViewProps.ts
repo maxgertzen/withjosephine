@@ -6,6 +6,7 @@ import {
   LINKS_PAGE_LETTER_CASES,
   LINKS_PAGE_NAME_SIZES,
   LINKS_PAGE_NAME_STYLES,
+  LINKS_PAGE_PHOTO_PX,
 } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
@@ -28,7 +29,7 @@ import { linksPageColourVariables, safeCssHex } from "@/lib/theme/linksPageStyle
 
 import type { LinksPageButton, LinksPageViewProps } from "./LinksPageView";
 
-const PHOTO_SOURCE_PX = 224;
+const PHOTO_SOURCE_PX = LINKS_PAGE_PHOTO_PX.max * 2;
 
 type ButtonSource = {
   label: string;
@@ -111,6 +112,13 @@ function pageSocialLinks(page: SanityLinksPage | null): MappedSocialLink[] {
   });
 }
 
+function photoPx(chosen: number | undefined): number {
+  const { min, max, step, standard } = LINKS_PAGE_PHOTO_PX;
+  if (typeof chosen !== "number" || !Number.isFinite(chosen)) return standard;
+  const onTheBar = min + Math.round((chosen - min) / step) * step;
+  return Math.min(max, Math.max(min, onTheBar));
+}
+
 function oneOf<T extends string>(choices: readonly T[], value: string | undefined, fallback: T): T {
   const clean = value === undefined ? undefined : stegaClean(value);
   return (choices as readonly string[]).includes(clean ?? "") ? (clean as T) : fallback;
@@ -143,6 +151,7 @@ export function deriveLinksPageViewProps(input: {
     intro: nonBlank(page?.intro) ?? LINKS_PAGE_DEFAULTS.intro,
     footerLine: nonBlank(page?.footerLine) ?? LINKS_PAGE_DEFAULTS.footerLine,
     nameSize: oneOf(LINKS_PAGE_NAME_SIZES, page?.nameSize, LINKS_PAGE_DEFAULTS.nameSize),
+    photoSize: photoPx(page?.photoSize),
     buttonShape: oneOf(LINKS_PAGE_BUTTON_SHAPES, page?.buttonShape, LINKS_PAGE_DEFAULTS.buttonShape),
     nameStyle: oneOf(LINKS_PAGE_NAME_STYLES, page?.nameStyle, LINKS_PAGE_DEFAULTS.nameStyle),
     buttonLetterCase: oneOf(LINKS_PAGE_LETTER_CASES, page?.buttonLetterCase, LINKS_PAGE_DEFAULTS.buttonLetterCase),
@@ -152,7 +161,7 @@ export function deriveLinksPageViewProps(input: {
         ? withNonBlankOverrides(LINKS_PAGE_DEFAULTS.shareWords, page?.shareWords)
         : undefined,
     videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
-    videos: [],
+    videoIds: [],
     playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,
     socialLinks: showSocialLinks ? (ownSocialLinks.length > 0 ? ownSocialLinks : mapSocialLinks(siteSettings)) : [],
     colourVariables: linksPageColourVariables(page ?? {}),

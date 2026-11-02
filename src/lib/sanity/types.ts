@@ -507,6 +507,7 @@ export type SanityLinksPage = LinksPageColours & {
   nameFont?: string;
   textFont?: string;
   nameSize?: string;
+  photoSize?: number;
   nameStyle?: string;
   buttonLetterCase?: string;
   buttonShape?: string;

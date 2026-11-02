@@ -114,13 +114,14 @@ test.describe("Links page", () => {
     await expect(dialog).toBeHidden();
   });
 
-  test("shows the social icons and loads a TikTok video only after a tap", async ({ page }) => {
+  test("shows the social icons and TikTok's player for each video", async ({ page }) => {
     await page.goto("/tt");
     await expect(page.getByRole("link", { name: "TikTok" }).locator("svg")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "TikToks" })).toBeVisible();
-    await expect(page.locator("iframe")).toHaveCount(0);
-    await page.getByRole("button", { name: /^Play video/ }).click();
-    await expect(page.locator("iframe")).toHaveAttribute("src", /^https:\/\/www\.tiktok\.com\/player\/v1\/7412345678901234567/);
+    await page.getByRole("heading", { name: "TikToks" }).scrollIntoViewIfNeeded();
+    await expect(page.locator("iframe")).toHaveAttribute(
+      "src",
+      /^https:\/\/www\.tiktok\.com\/player\/v1\/7412345678901234567\?autoplay=0/,
+    );
   });
 
   test("is kept out of search results and the sitemap", async ({ page, request }) => {
@@ -148,6 +149,15 @@ test.describe("Links page in a country that asks for consent", () => {
 
     await banner.getByRole("button", { name: "Accept" }).click();
     expect(await page.evaluate((key) => localStorage.getItem(key), CONSENT_STORAGE_KEY)).toBe("granted");
+  });
+
+  test("loads TikTok's player only after the visitor accepts or taps a video", async ({ page }) => {
+    await page.goto("/tt");
+    await page.getByRole("heading", { name: "TikToks" }).scrollIntoViewIfNeeded();
+    await expect(page.getByRole("button", { name: /^Play video: TikToks 1/ })).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
+    await page.getByRole("dialog").getByRole("button", { name: "Accept" }).click();
+    await expect(page.locator("iframe")).toHaveCount(1);
   });
 
   test("stores a decline", async ({ page }) => {

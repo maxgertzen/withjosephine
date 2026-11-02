@@ -1,32 +1,37 @@
-const FULL_VIDEO_LINK = /^https:\/\/(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|v\/)(\d{8,25})(?:\.html)?(?:[/?#].*)?$/i;
-const SHORT_VIDEO_LINK = /^https:\/\/(?:(?:vm|vt)\.tiktok\.com\/|(?:www\.)?tiktok\.com\/t\/)[\w-]+\/?(?:\?.*)?$/i;
+const TIKTOK_HOSTS = new Set(["tiktok.com", "www.tiktok.com", "m.tiktok.com"]);
+const SHORT_LINK_HOSTS = new Set(["vm.tiktok.com", "vt.tiktok.com"]);
+const VIDEO_PATH = /^\/(?:@[\w.-]+\/video\/(\d+)|v\/(\d+)(?:\.html)?)(?:\/.*)?$/i;
+const SHORT_CODE_PATH = /^\/[\w-]+\/?$/;
+const SHARE_PATH = /^\/t\/[\w-]+\/?$/;
+const VIDEO_NUMBER = /^\d{8,25}$/;
 
 export const TIKTOK_PLAYER_ORIGIN = "https://www.tiktok.com";
 
-const TIKTOK_COVER_DOMAINS = ["tiktokcdn.com", "tiktokcdn-us.com"];
-
-export const TIKTOK_COVER_HOSTS = TIKTOK_COVER_DOMAINS.map((domain) => `https://*.${domain}`);
-
-export type TikTokVideo = { videoId: string; url: string; coverUrl?: string; title?: string };
-
-export function tiktokVideoId(url: string | undefined): string | null {
-  return url?.trim().match(FULL_VIDEO_LINK)?.[1] ?? null;
-}
-
-export function isTikTokVideoLink(url: string | undefined): boolean {
-  const trimmed = url?.trim() ?? "";
-  return tiktokVideoId(trimmed) !== null || SHORT_VIDEO_LINK.test(trimmed);
-}
-
-export function tiktokPlayerUrl(videoId: string): string {
-  return `${TIKTOK_PLAYER_ORIGIN}/player/v1/${videoId}?autoplay=1&rel=0&description=0`;
-}
-
-export function isTikTokCoverUrl(value: string): boolean {
+function httpsUrl(value: string | undefined): URL | null {
   try {
-    const { protocol, hostname } = new URL(value);
-    return protocol === "https:" && TIKTOK_COVER_DOMAINS.some((domain) => hostname.endsWith(`.${domain}`));
+    const url = new URL(value?.trim() ?? "");
+    return url.protocol === "https:" ? url : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function tiktokVideoId(value: string | undefined): string | null {
+  const url = httpsUrl(value);
+  if (!url || !TIKTOK_HOSTS.has(url.hostname)) return null;
+  const path = url.pathname.match(VIDEO_PATH);
+  const id = path?.[1] ?? path?.[2] ?? url.searchParams.get("referer_video_id");
+  return id && VIDEO_NUMBER.test(id) ? id : null;
+}
+
+export function isTikTokVideoLink(value: string | undefined): value is string {
+  if (tiktokVideoId(value)) return true;
+  const url = httpsUrl(value);
+  if (!url) return false;
+  if (SHORT_LINK_HOSTS.has(url.hostname)) return SHORT_CODE_PATH.test(url.pathname);
+  return TIKTOK_HOSTS.has(url.hostname) && SHARE_PATH.test(url.pathname);
+}
+
+export function tiktokPlayerUrl(videoId: string, { autoplay }: { autoplay: boolean }): string {
+  return `${TIKTOK_PLAYER_ORIGIN}/player/v1/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0&description=0&music_info=0`;
 }

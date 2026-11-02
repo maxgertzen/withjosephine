@@ -12,7 +12,6 @@ import type {
 } from "@/data/defaults";
 import type { LinkDestination } from "@/lib/links/linkKey";
 import { SHARE_APPS, type ShareApp } from "@/lib/links/shareTargets";
-import type { TikTokVideo } from "@/lib/links/tiktokVideo";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { mergeClasses } from "@/lib/utils";
 
@@ -37,18 +36,20 @@ export type LinksPageViewProps = {
   intro: string;
   footerLine: string;
   nameSize: LinksPageNameSize;
+  photoSize: number;
   buttonShape: LinksPageButtonShape;
   nameStyle: LinksPageNameStyle;
   buttonLetterCase: LinksPageLetterCase;
   buttons: LinksPageButton[];
   shareWords?: LinksPageShareWords;
   videosTitle: string;
-  videos: TikTokVideo[];
+  videoIds: string[];
   playVideo: string;
   socialLinks: MappedSocialLink[];
   colourVariables: Record<string, string>;
   pageColour?: string;
   fontVariables?: Record<string, string>;
+  inStudioPreview?: boolean;
 };
 
 const NAME_SIZE_CLASSES: Record<LinksPageNameSize, string> = {
@@ -56,8 +57,6 @@ const NAME_SIZE_CLASSES: Record<LinksPageNameSize, string> = {
   medium: "text-[2.6rem]",
   large: "text-[3.2rem]",
 };
-
-const PHOTO_PX = 112;
 
 const NAME_STYLE_CLASSES: Record<LinksPageNameStyle, string> = {
   slanted: "font-light italic",
@@ -108,18 +107,20 @@ export function LinksPageView({
   intro,
   footerLine,
   nameSize,
+  photoSize,
   buttonShape,
   nameStyle,
   buttonLetterCase,
   buttons,
   shareWords,
   videosTitle,
-  videos,
+  videoIds,
   playVideo,
   socialLinks,
   colourVariables,
   pageColour,
   fontVariables,
+  inStudioPreview = false,
 }: LinksPageViewProps) {
   const style = { ...colourVariables, ...fontVariables } as CSSProperties;
 
@@ -134,10 +135,11 @@ export function LinksPageView({
           <Image
             src={photoUrl}
             alt={name}
-            width={PHOTO_PX}
-            height={PHOTO_PX}
+            width={photoSize}
+            height={photoSize}
+            style={{ width: photoSize, height: photoSize }}
             priority
-            className="mb-6 h-28 w-28 rounded-full border-2 border-j-text-heading object-cover"
+            className="mb-6 rounded-full border-2 border-j-text-heading object-cover"
           />
         ) : null}
         <h1
@@ -160,7 +162,10 @@ export function LinksPageView({
         />
         <ul className="mt-8 flex w-full list-none flex-col gap-3 p-0">
           {buttons.map((button) => {
-            const share = shareWords && button.shareHref ? { words: shareWords, href: button.shareHref } : undefined;
+            const share =
+              shareWords && button.shareHref
+                ? { words: shareWords, href: button.shareHref }
+                : undefined;
             return (
               <li key={button.key} className="relative">
                 <a
@@ -174,7 +179,9 @@ export function LinksPageView({
                   {...trackingAttributes(button)}
                 >
                   <span className={BUTTON_WORDS_CLASSES[buttonLetterCase]}>{button.label}</span>
-                  {button.subtitle ? <span className="text-[0.8rem] opacity-85">{button.subtitle}</span> : null}
+                  {button.subtitle ? (
+                    <span className="text-[0.8rem] opacity-85">{button.subtitle}</span>
+                  ) : null}
                 </a>
                 {share ? (
                   <ShareMenu
@@ -189,19 +196,22 @@ export function LinksPageView({
             );
           })}
         </ul>
-        {videos.length > 0 ? (
+        {videoIds.length > 0 ? (
           <section className="mt-10 w-full" aria-labelledby="links-page-videos">
-            <h2 id="links-page-videos" className="m-0 mb-3 font-body text-base font-semibold text-j-text-heading">
+            <h2
+              id="links-page-videos"
+              className="m-0 mb-3 font-body text-base font-semibold text-j-text-heading"
+            >
               {videosTitle}
             </h2>
-            <ul className="m-0 -mx-6 flex list-none snap-x gap-3 overflow-x-auto px-6 pb-2">
-              {videos.map((video) => (
-                <li key={video.videoId}>
+            <ul className="m-0 flex w-full list-none snap-x snap-mandatory gap-3 overflow-x-auto p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {videoIds.map((videoId, index) => (
+                <li key={videoId} className="w-[38%] shrink-0 snap-start">
                   <TikTokVideoCard
-                    videoId={video.videoId}
-                    coverUrl={video.coverUrl}
-                    title={video.title}
+                    videoId={videoId}
+                    title={`${videosTitle} ${index + 1}`}
                     playLabel={playVideo}
+                    inStudioPreview={inStudioPreview}
                   />
                 </li>
               ))}
@@ -209,7 +219,9 @@ export function LinksPageView({
           </section>
         ) : null}
         {footerLine ? (
-          <p className="mt-8 font-body text-xs tracking-wide text-j-text-muted opacity-70">{footerLine}</p>
+          <p className="mt-8 font-body text-xs tracking-wide text-j-text-muted opacity-70">
+            {footerLine}
+          </p>
         ) : null}
       </main>
     </div>

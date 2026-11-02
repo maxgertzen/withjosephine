@@ -10,6 +10,16 @@ describe("tiktokVideoId", () => {
     expect(tiktokVideoId(" https://tiktok.com/@with.josephine/video/7412345678901234567 ")).toBe("7412345678901234567");
   });
 
+  it("reads the video number from a link copied out of TikTok's video player", () => {
+    expect(
+      tiktokVideoId(
+        "https://www.tiktok.com/@withjosephine?utm_campaign=&utm_source=unknown&refer=player_v1&referrer_url=https%3A%2F%2Fwww.tiktok.com%2Fplayer%2Fv1%2F7700268561549544711&referer_video_id=7700268561549544711",
+      ),
+    ).toBe("7700268561549544711");
+    expect(tiktokVideoId("https://evil.example/@a?referer_video_id=7700268561549544711")).toBeNull();
+    expect(tiktokVideoId("https://www.tiktok.com/@a?referer_video_id=abc")).toBeNull();
+  });
+
   it("refuses profiles, other sites and look-alikes", () => {
     expect(tiktokVideoId("https://www.tiktok.com/@withjosephine")).toBeNull();
     expect(tiktokVideoId("https://evil.example/@a/video/7412345678901234567")).toBeNull();
@@ -18,7 +28,9 @@ describe("tiktokVideoId", () => {
   });
 
   it("builds the TikTok player address for a video", () => {
-    expect(tiktokPlayerUrl("7412345678901234567")).toMatch(/^https:\/\/www\.tiktok\.com\/player\/v1\/7412345678901234567\?/);
+    expect(tiktokPlayerUrl("7412345678901234567", { autoplay: false })).toMatch(
+      /^https:\/\/www\.tiktok\.com\/player\/v1\/7412345678901234567\?autoplay=0/,
+    );
   });
 });
 
@@ -33,6 +45,11 @@ describe("isTikTokVideoLink", () => {
     ]) {
       expect(isTikTokVideoLink(link), link).toBe(true);
     }
+  });
+
+  it("accepts extra path parts and capitals after the video number", () => {
+    expect(tiktokVideoId("https://www.tiktok.com/@withjosephine/video/7412345678901234567/extra")).toBe("7412345678901234567");
+    expect(tiktokVideoId("https://m.tiktok.com/V/7412345678901234567.html")).toBe("7412345678901234567");
   });
 
   it("refuses profiles and other sites", () => {

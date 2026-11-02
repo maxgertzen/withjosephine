@@ -117,6 +117,10 @@ export function PrivacyFallbackBody() {
           counts. It uses no cookies and stores nothing on your device.
         </li>
         <li>
+          <strong className="font-medium">TikTok</strong>: plays Josephine&rsquo;s videos on the
+          links page. TikTok&rsquo;s player can set TikTok cookies.
+        </li>
+        <li>
           <strong className="font-medium">Sentry</strong>: error monitoring, so faults can be
           diagnosed.
         </li>
@@ -210,8 +214,10 @@ export function PrivacyFallbackBody() {
         banner and neither of them runs until you accept. Cloudflare Web Analytics counts visits for
         everyone without cookies and stores nothing on your device. The links page at
         links.withjosephine.com keeps an anonymous count of taps per button per day, with nothing
-        about the person who tapped and nothing stored on your device. The only other persistent
-        storage is what Stripe sets for checkout (governed by Stripe&rsquo;s policy).
+        about the person who tapped and nothing stored on your device. Its TikTok videos use
+        TikTok&rsquo;s player; in the regions above it loads only after you accept or tap a video.
+        The only other persistent storage is what Stripe sets for checkout (governed by
+        Stripe&rsquo;s policy).
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">Children</h2>

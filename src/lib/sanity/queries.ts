@@ -568,6 +568,7 @@ export const linksPageQuery = groq`
       nameFont,
       textFont,
       nameSize,
+      photoSize,
       buttonShape,
       ${LINKS_PAGE_SEO_PROJECTION},
       "buttons": buttons[] {

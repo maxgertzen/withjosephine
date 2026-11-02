@@ -32,6 +32,7 @@ export default async function LinksPagePreview() {
     <LinksPageView
       {...props}
       {...await linksPageExtras(props, state?.page)}
+      inStudioPreview
     />
   );
 }

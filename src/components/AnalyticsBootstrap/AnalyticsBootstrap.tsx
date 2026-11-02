@@ -8,20 +8,13 @@ import { ClarityScript } from "@/components/ClarityScript";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { initAnalytics } from "@/lib/analytics";
 import { isClarityBlockedPath } from "@/lib/clarityGate";
-import { readConsent, writeConsent } from "@/lib/consent";
-import { cookieFlagIsSet } from "@/lib/cookieFlag";
-import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
+import { readConsent, thirdPartyContentAllowed, writeConsent } from "@/lib/consent";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { initSentryClient } from "@/lib/sentry-client";
 
 function bootstrapClientObservability(): void {
   initAnalytics();
   initSentryClient();
-}
-
-function consentRequiredFromCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  return cookieFlagIsSet(document.cookie, CONSENT_REQUIRED_COOKIE);
 }
 
 interface AnalyticsBootstrapProps {
@@ -49,18 +42,12 @@ export function AnalyticsBootstrap({ consentBannerContent }: AnalyticsBootstrapP
       }
       return;
     }
-    if (!consentRequiredFromCookie()) {
+    if (thirdPartyContentAllowed()) {
       bootstrapClientObservability();
       setObservabilityLive(true);
       return;
     }
-    const choice = readConsent();
-    if (choice === "granted") {
-      bootstrapClientObservability();
-      setObservabilityLive(true);
-      return;
-    }
-    if (choice === null) {
+    if (readConsent() === null) {
       setShowBanner(true);
     }
   }, [previewMode, consentBannerContent]);

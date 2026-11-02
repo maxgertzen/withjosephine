@@ -6,6 +6,7 @@ import {
   LINKS_PAGE_MAX_BUTTONS,
   LINKS_PAGE_MAX_SOCIAL_LINKS,
   LINKS_PAGE_MAX_VIDEOS,
+  LINKS_PAGE_PHOTO_PX,
   LINKS_PAGE_SITE_STYLE,
   type LinksPageButtonShape,
   type LinksPageContent,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/theme/palette";
 import { READINGS } from "../../src/data/readings";
 import { type FontSample, fontPickerInput } from "../components/FontPickerInput";
+import { pixelSliderInput } from "../components/PixelSliderInput";
 import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
 import {
   bothColoursPicked,
@@ -471,6 +473,16 @@ export const linksPage = defineType({
     choiceField("nameStyle", "How the name looks", NAME_STYLE_TITLES, { direction: "horizontal" }),
     choiceField("buttonLetterCase", "Letters on the buttons", LETTER_CASE_TITLES, { direction: "horizontal" }),
     choiceField("nameSize", "Size of the name", NAME_SIZE_TITLES, { description: "How big your name is.", direction: "horizontal" }),
+    defineField({
+      name: "photoSize",
+      title: "Size of the photo",
+      type: "number",
+      group: "look",
+      description: "How big the round photo at the top is. Drag the bar, or pick Small, Medium or Large.",
+      components: { input: pixelSliderInput(LINKS_PAGE_PHOTO_PX) },
+      initialValue: LINKS_PAGE_PHOTO_PX.standard,
+      validation: (rule) => rule.integer().min(LINKS_PAGE_PHOTO_PX.min).max(LINKS_PAGE_PHOTO_PX.max),
+    }),
     choiceField("buttonShape", "Button shape", BUTTON_SHAPE_TITLES, { description: "How the buttons look." }),
     defineField({
       name: "seo",

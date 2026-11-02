@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
-  type CspExtraSources,
-  cspExtraSources,
+  cspExtraFrameSources,
   isPrivateLinkPath,
   isStaticCspPath,
   NONCE_HEADER,
@@ -13,7 +12,7 @@ import { isTapCounterPath, routeLinksHost } from "@/lib/links/linksHostRouting";
 import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { PREVIEW_ACTIVE_COOKIE } from "@/lib/previewModeCookie";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
-import { CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
+import { CONSENT_REQUIRED, CONSENT_REQUIRED_COOKIE, requiresConsent } from "@/lib/region";
 
 /**
  * Edge middleware owns the Content-Security-Policy header because it has to
@@ -100,14 +99,9 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function withExtra(sources: readonly string[]): string {
-  return sources.map((source) => ` ${source}`).join("");
-}
-
-function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean; extra: CspExtraSources }): string {
-  const { isDraft, nonce, staticRoute, extra } = opts;
-  const extraFrames = withExtra(extra.frameSrc);
-  const extraImages = withExtra(extra.imgSrc);
+function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean; extraFrames: readonly string[] }): string {
+  const { isDraft, nonce, staticRoute } = opts;
+  const extraFrames = opts.extraFrames.map((source) => ` ${source}`).join("");
   // Prerendered (static) routes have no per-request nonce, so Next's first-party
   // inline bootstrap can only be admitted via 'unsafe-inline' (a nonce CSP forces
   // dynamic rendering; hashes can't cover content/build-variable RSC flight data).
@@ -138,7 +132,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean;
     // style nonce. Script-src is the load-bearing XSS gate.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com${extraImages} data: blob:; ` +
+    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com data: blob:; ` +
     "media-src 'self' https://cdn.sanity.io; " +
     `connect-src ${connectSrc}; ` +
     "worker-src 'self' blob:; " +
@@ -183,7 +177,7 @@ export function middleware(request: NextRequest) {
     // (no nonce needed).
     holdingResponse.headers.set(
       "Content-Security-Policy",
-      buildCsp({ isDraft: false, nonce: "", staticRoute: true, extra: cspExtraSources("/under-construction") }),
+      buildCsp({ isDraft: false, nonce: "", staticRoute: true, extraFrames: cspExtraFrameSources("/under-construction") }),
     );
     return holdingResponse;
   }
@@ -209,7 +203,7 @@ export function middleware(request: NextRequest) {
     : NextResponse.next({ request: { headers: requestHeaders } });
 
   if (!isTapCounterPath(pathname)) {
-    response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
+    response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? CONSENT_REQUIRED.yes : CONSENT_REQUIRED.no, {
       sameSite: "lax",
       path: "/",
       secure: !isDev,
@@ -232,7 +226,7 @@ export function middleware(request: NextRequest) {
       isDraft: !isStrict,
       nonce,
       staticRoute: isStaticCspPath(pathname),
-      extra: cspExtraSources(pathname),
+      extraFrames: cspExtraFrameSources(pathname),
     }),
   );
 
