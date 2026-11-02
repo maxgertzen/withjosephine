@@ -2,6 +2,7 @@ import { defineArrayMember, defineField, defineType, type ValidationContext } fr
 
 import {
   LINKS_PAGE_DEFAULTS,
+  LINKS_PAGE_MAX_BUTTON_LETTERS,
   LINKS_PAGE_MAX_BUTTONS,
   LINKS_PAGE_MAX_SOCIAL_LINKS,
   LINKS_PAGE_MAX_VIDEOS,
@@ -61,14 +62,14 @@ const LETTER_CASE_TITLES: Record<LinksPageLetterCase, string> = {
 
 const socialLink = defineArrayMember({
   name: "linksPageSocialLink",
-  title: "Social link",
+  title: "Social icon",
   type: "object",
   fields: [
     defineField({
       name: "platform",
       title: "Which one",
       type: "string",
-      description: "The little picture next to your name matches this.",
+      description: "The little picture under your name matches this.",
       options: { list: SOCIAL_PLATFORMS.map(({ value, title }) => ({ value, title })) },
       validation: (rule) => rule.required().error("Pick which one this is."),
     }),
@@ -232,7 +233,7 @@ const linkButton = defineArrayMember({
       description: "What the button says.",
       validation: (rule) => [
         rule.required().error("Type what this button says."),
-        rule.max(40).error("Keep the button words to 40 letters or fewer."),
+        rule.max(LINKS_PAGE_MAX_BUTTON_LETTERS).error(`Keep the button words to ${LINKS_PAGE_MAX_BUTTON_LETTERS} letters or fewer.`),
       ],
     }),
     defineField({
@@ -312,7 +313,7 @@ const linkButton = defineArrayMember({
 
 export const linksPage = defineType({
   name: "linksPage",
-  title: "TikTok links page",
+  title: "Josephine's Link Tree",
   type: "document",
   groups: [
     { name: "content", title: "Words and buttons", default: true },
@@ -360,7 +361,7 @@ export const linksPage = defineType({
     }),
     defineField({
       name: "showSocialLinks",
-      title: "Show the social links",
+      title: "Show the social icons",
       type: "boolean",
       group: "content",
       description: "Shows the little social pictures under your name.",
@@ -368,15 +369,15 @@ export const linksPage = defineType({
     }),
     defineField({
       name: "socialLinks",
-      title: "Social links",
+      title: "Social icons",
       type: "array",
       group: "content",
       description:
-        "The little pictures under your name, in this order. Add as many as you like. Leave the list blank to use the ones from Site Settings.",
+        `The little pictures under your name, in this order, up to ${LINKS_PAGE_MAX_SOCIAL_LINKS}. Leave the list blank to use the Social Links from Site Settings.`,
       of: [socialLink],
       hidden: ({ document }) => document?.showSocialLinks === false,
       validation: (rule) =>
-        rule.max(LINKS_PAGE_MAX_SOCIAL_LINKS).error(`You can have up to ${LINKS_PAGE_MAX_SOCIAL_LINKS} social links.`),
+        rule.max(LINKS_PAGE_MAX_SOCIAL_LINKS).error(`You can have up to ${LINKS_PAGE_MAX_SOCIAL_LINKS} social icons.`),
     }),
     defineField({
       name: "videosTitle",
@@ -484,6 +485,6 @@ export const linksPage = defineType({
     }),
   ],
   preview: {
-    prepare: () => ({ title: "TikTok links page" }),
+    prepare: () => ({ title: "Josephine's Link Tree" }),
   },
 });

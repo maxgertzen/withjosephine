@@ -991,5 +991,6 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
 };
 
 export const LINKS_PAGE_MAX_BUTTONS = 8;
+export const LINKS_PAGE_MAX_BUTTON_LETTERS = 60;
 export const LINKS_PAGE_MAX_VIDEOS = 6;
 export const LINKS_PAGE_MAX_SOCIAL_LINKS = 10;

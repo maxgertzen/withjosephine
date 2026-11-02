@@ -92,4 +92,4 @@ export const SIGN_IN_LINK_PREVIEW_LINKS = previewLinks(
 );
 export const GIFT_PREVIEW_LINKS = previewLinks(GIFT_PREVIEW_STATES, giftPreviewPath);
 
-export const LINKS_PAGE_PREVIEW_LINK = { title: "TikTok links", href: "/preview/tt" };
+export const LINKS_PAGE_PREVIEW_LINK = { title: "Josephine's Link Tree", href: "/preview/tt" };

@@ -68,7 +68,7 @@ describe("planReadingDeletion edge cases", () => {
   });
 });
 
-describe("planReadingDeletion TikTok links page", () => {
+describe("planReadingDeletion links page", () => {
   it("removes the reading's button from the links page instead of blocking, published and draft", () => {
     const result = plan([
       { _id: "linksPage", _type: "linksPage", buttonKeys: ["b1"] },
@@ -79,11 +79,11 @@ describe("planReadingDeletion TikTok links page", () => {
       { id: "linksPage", unset: ['buttons[_key=="b1"]'] },
       { id: "drafts.linksPage", unset: ['buttons[_key=="b1"]'] },
     ]);
-    expect(result.summary).toEqual(["The button for this reading on the TikTok links page will be removed."]);
+    expect(result.summary).toEqual(["The button for this reading on Josephine's Link Tree will be removed."]);
   });
 });
 
-describe("planReadingDeletion TikTok links page leftovers", () => {
+describe("planReadingDeletion links page leftovers", () => {
   it("clears a reading left behind on a button that now goes somewhere else, and keeps the button", () => {
     const result = plan([{ _id: "linksPage", _type: "linksPage", buttonKeys: [], leftoverButtonKeys: ["w1"] }]);
     expect(result.blocked).toEqual([]);

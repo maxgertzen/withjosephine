@@ -147,7 +147,7 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
       locations: SIGN_IN_LINK_PREVIEW_LINKS,
     }),
     linksPage: defineLocations({
-      message: "Affects the TikTok links page (links.withjosephine.com).",
+      message: "Affects Josephine's Link Tree (links.withjosephine.com).",
       locations: [LINKS_PAGE_PREVIEW_LINK],
     }),
     notFoundPage: defineLocations({

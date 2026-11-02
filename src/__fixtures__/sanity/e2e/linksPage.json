@@ -36,7 +36,7 @@
         "destination": "reading",
         "reading": { "_id": "reading-soul-blueprint", "slug": "soul-blueprint", "name": "The Soul Blueprint", "onSite": true }
       },
-      { "_key": "home", "label": "Visit the website", "destination": "home" },
+      { "_key": "home", "label": "Visit the website to read my notes and learn more about me", "destination": "home" },
       { "_key": "write", "label": "Write to me", "destination": "email", "email": "e2e-test@withjosephine.com" },
       {
         "_key": "workbook",

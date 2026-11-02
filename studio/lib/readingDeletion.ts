@@ -122,7 +122,7 @@ export function planReadingDeletion(
   }
   if (byType("thankYouPage").length > 0) summary.push("The thank-you page drops this reading's own wording.");
   if (byType("linksPage").some((referrer) => (referrer.buttonKeys ?? []).length > 0)) {
-    summary.push("The button for this reading on the TikTok links page will be removed.");
+    summary.push("The button for this reading on Josephine's Link Tree will be removed.");
   }
 
   return { blocked: [...blocked], patches, summary };

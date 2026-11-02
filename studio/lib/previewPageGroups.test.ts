@@ -24,8 +24,8 @@ describe("pageGroups", () => {
     ]);
   });
 
-  it("lists the TikTok links page under Site", () => {
-    expect(pagesOf("Site")).toContainEqual({ title: "TikTok links", href: "/preview/tt" });
+  it("lists the links page under Site", () => {
+    expect(pagesOf("Site")).toContainEqual({ title: "Josephine's Link Tree", href: "/preview/tt" });
   });
 
   it("orders the groups and lists the Listen and sign-in link pages", () => {

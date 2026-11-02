@@ -279,7 +279,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
       singletonListItem(S, "theme", "Theme"),
       S.divider(),
       pagesGroup(S),
-      singletonWithViewListItem(S, "linksPage", "🔗 TikTok links page", LinksPageStats, "Taps"),
+      singletonWithViewListItem(S, "linksPage", "🔗 Josephine's Link Tree", LinksPageStats, "Taps"),
       emailsGroup(S),
       formBuildingBlocksGroup(S),
       S.divider(),

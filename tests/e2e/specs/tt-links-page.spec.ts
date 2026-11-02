@@ -19,7 +19,7 @@ const EXPECTED_DESTINATIONS = [
   "https://cdn.sanity.io/files/e2e/e2e/workbook.pdf?dl=",
 ];
 
-test.describe("TikTok links page", () => {
+test.describe("Links page", () => {
   test.use({ viewport: PHONE, extraHTTPHeaders: NO_CONSENT_COUNTRY });
 
   test("shows the name, the short line and every button as a plain link, without scrolling sideways", async ({
@@ -131,7 +131,7 @@ test.describe("TikTok links page", () => {
   });
 });
 
-test.describe("TikTok links page in a country that asks for consent", () => {
+test.describe("Links page in a country that asks for consent", () => {
   test.use({ viewport: PHONE, extraHTTPHeaders: CONSENT_COUNTRY });
 
   test("shows the consent banner without hiding the last button, and stores the choice", async ({ page, context }) => {

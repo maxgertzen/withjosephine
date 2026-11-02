@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe("AnalyticsBootstrap", () => {
-  describe("on the TikTok links page in a consent region", () => {
+  describe("on the links page in a consent region", () => {
     it("starts neither Mixpanel nor Clarity until the visitor accepts", async () => {
       setConsentRequired(true);
       mockUsePathname.mockReturnValue("/tt");

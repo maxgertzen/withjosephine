@@ -9,7 +9,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { LinksPageView } from "./LinksPageView";
 
 const meta: Meta<typeof LinksPageView> = {
-  title: "Pages/TikTok links",
+  title: "Pages/Josephine's Link Tree",
   component: LinksPageView,
   parameters: { layout: "fullscreen", viewport: { defaultViewport: "mobile1" } },
   args: LINKS_PAGE_FULL_ARGS,

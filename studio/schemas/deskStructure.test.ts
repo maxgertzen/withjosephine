@@ -122,8 +122,8 @@ describe("desk structure gift documents", () => {
   });
 });
 
-describe("desk structure TikTok links page", () => {
-  it("shows the TikTok links page as its own item next to Pages", () => {
+describe("desk structure links page", () => {
+  it("shows the links page as its own item next to Pages", () => {
     const rootIds = ids(root);
     expect(rootIds).toContain("linksPage");
     expect(rootIds.indexOf("linksPage")).toBe(rootIds.indexOf("pagesGroup") + 1);

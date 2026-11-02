@@ -8,7 +8,7 @@ import { fetchLinksPage, fetchNotesState, fetchReadings, fetchSiteSettings } fro
 const PREVIEW_SITE_ORIGIN = "";
 
 export const metadata: Metadata = {
-  title: "Preview: TikTok links",
+  title: "Preview: Josephine's Link Tree",
   robots: { index: false, follow: false },
 };
 

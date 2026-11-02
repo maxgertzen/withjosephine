@@ -207,10 +207,10 @@ export function PrivacyFallbackBody() {
         use two privacy-preserving analytics tools - Mixpanel (anonymous funnel metrics) and
         Microsoft Clarity (anonymous session analytics with your form entries masked). If
         you&rsquo;re in the EU/EEA, UK, Switzerland, or California, you&rsquo;ll see a consent
-        banner and neither of them runs until you accept. Cloudflare Web Analytics counts visits
-        for everyone without cookies and stores nothing on your device. The TikTok links page keeps
-        an anonymous count of taps per button per day, with nothing about the person who tapped
-        and nothing stored on your device. The only other persistent
+        banner and neither of them runs until you accept. Cloudflare Web Analytics counts visits for
+        everyone without cookies and stores nothing on your device. The links page at
+        links.withjosephine.com keeps an anonymous count of taps per button per day, with nothing
+        about the person who tapped and nothing stored on your device. The only other persistent
         storage is what Stripe sets for checkout (governed by Stripe&rsquo;s policy).
       </p>
 
