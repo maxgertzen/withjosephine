@@ -1,13 +1,23 @@
-import { LINKS_PAGE_BUTTON_SHAPES, LINKS_PAGE_DEFAULTS, LINKS_PAGE_NAME_SIZES } from "@/data/defaults";
+import { stegaClean } from "@sanity/client/stega";
+
+import {
+  LINKS_PAGE_BUTTON_SHAPES,
+  LINKS_PAGE_DEFAULTS,
+  LINKS_PAGE_LETTER_CASES,
+  LINKS_PAGE_NAME_SIZES,
+  LINKS_PAGE_NAME_STYLES,
+} from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
-import { nonBlank } from "@/lib/content/nonBlank";
+import { nonBlank, withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { linkKey } from "@/lib/links/linkKey";
-import { linksPageHref, type LinksPageTarget } from "@/lib/links/linksPageHref";
+import { linksPageAddresses, type LinksPageTarget } from "@/lib/links/linksPageHref";
+import { socialLinkHref, socialPlatformTitle } from "@/lib/links/socialPlatforms";
 import { isNotesVisible } from "@/lib/notes/notes";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
-import { mapSocialLinks } from "@/lib/sanity/mappers";
+import { type MappedSocialLink, mapSocialLinks } from "@/lib/sanity/mappers";
 import type {
+  SanityLinksPage,
   SanityLinksPageButton,
   SanityLinksPageState,
   SanityNotesState,
@@ -76,14 +86,14 @@ function toButtons(sources: ButtonSource[], siteOrigin: string): LinksPageButton
   const seen = new Set<string>();
   for (const source of sources) {
     const key = linkKey(source.target);
-    const href = key ? linksPageHref(source.target, key, siteOrigin) : null;
-    if (!key || !href || seen.has(key)) continue;
+    const addresses = key ? linksPageAddresses(source.target, key, siteOrigin) : null;
+    if (!key || !addresses || seen.has(key)) continue;
     seen.add(key);
     buttons.push({
       key,
       label: source.label,
       subtitle: source.subtitle,
-      href,
+      ...addresses,
       destination: source.target.destination,
       standOut: source.standOut,
       position: buttons.length + 1,
@@ -92,8 +102,18 @@ function toButtons(sources: ButtonSource[], siteOrigin: string): LinksPageButton
   return buttons;
 }
 
+function pageSocialLinks(page: SanityLinksPage | null): MappedSocialLink[] {
+  return (page?.socialLinks ?? []).flatMap(({ platform, address }) => {
+    if (!platform) return [];
+    const url = socialLinkHref(platform, address);
+    const label = socialPlatformTitle(platform);
+    return url && label ? [{ platform, url, label }] : [];
+  });
+}
+
 function oneOf<T extends string>(choices: readonly T[], value: string | undefined, fallback: T): T {
-  return (choices as readonly string[]).includes(value ?? "") ? (value as T) : fallback;
+  const clean = value === undefined ? undefined : stegaClean(value);
+  return (choices as readonly string[]).includes(clean ?? "") ? (clean as T) : fallback;
 }
 
 export function deriveLinksPageViewProps(input: {
@@ -115,6 +135,7 @@ export function deriveLinksPageViewProps(input: {
       : defaultButtonSources(readings);
   const photo = page?.photoUrl || state?.aboutPhotoUrl || undefined;
   const showSocialLinks = page?.showSocialLinks ?? LINKS_PAGE_DEFAULTS.showSocialLinks;
+  const ownSocialLinks = pageSocialLinks(page);
 
   return {
     photoUrl: photo ? sanityImageUrl(photo, { w: PHOTO_SOURCE_PX, h: PHOTO_SOURCE_PX, fit: "crop" }) : undefined,
@@ -123,8 +144,17 @@ export function deriveLinksPageViewProps(input: {
     footerLine: nonBlank(page?.footerLine) ?? LINKS_PAGE_DEFAULTS.footerLine,
     nameSize: oneOf(LINKS_PAGE_NAME_SIZES, page?.nameSize, LINKS_PAGE_DEFAULTS.nameSize),
     buttonShape: oneOf(LINKS_PAGE_BUTTON_SHAPES, page?.buttonShape, LINKS_PAGE_DEFAULTS.buttonShape),
+    nameStyle: oneOf(LINKS_PAGE_NAME_STYLES, page?.nameStyle, LINKS_PAGE_DEFAULTS.nameStyle),
+    buttonLetterCase: oneOf(LINKS_PAGE_LETTER_CASES, page?.buttonLetterCase, LINKS_PAGE_DEFAULTS.buttonLetterCase),
     buttons: toButtons(sources, siteOrigin),
-    socialLinks: showSocialLinks ? mapSocialLinks(siteSettings) : [],
+    shareWords:
+      (page?.showShareButtons ?? LINKS_PAGE_DEFAULTS.showShareButtons)
+        ? withNonBlankOverrides(LINKS_PAGE_DEFAULTS.shareWords, page?.shareWords)
+        : undefined,
+    videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
+    videos: [],
+    playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,
+    socialLinks: showSocialLinks ? (ownSocialLinks.length > 0 ? ownSocialLinks : mapSocialLinks(siteSettings)) : [],
     colourVariables: linksPageColourVariables(page ?? {}),
     pageColour: safeCssHex(page?.pageColour),
   };

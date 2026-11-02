@@ -1,18 +1,27 @@
 import { defineArrayMember, defineField, defineType, type ValidationContext } from "sanity";
 
 import {
-  LINKS_PAGE_BUTTON_SHAPES,
   LINKS_PAGE_DEFAULTS,
   LINKS_PAGE_MAX_BUTTONS,
-  LINKS_PAGE_NAME_SIZES,
+  LINKS_PAGE_MAX_SOCIAL_LINKS,
+  LINKS_PAGE_MAX_VIDEOS,
   LINKS_PAGE_SITE_STYLE,
+  type LinksPageButtonShape,
+  type LinksPageContent,
+  type LinksPageLetterCase,
+  type LinksPageNameSize,
+  type LinksPageNameStyle,
+  type LinksPageShareWords,
 } from "../../src/data/defaults";
 import type { LinkDestination } from "@/lib/links/linkKey";
-import { ALL_COLOR_PRESETS, BODY_FONT_NAMES, LINKS_PAGE_NAME_FONT_NAMES } from "@/lib/theme/palette";
+import { SOCIAL_PLATFORMS, socialPlatformTitle } from "@/lib/links/socialPlatforms";
+import { isTikTokVideoLink } from "@/lib/links/tiktokVideo";
+import { ALL_COLOR_PRESETS, LINKS_PAGE_NAME_FONT_NAMES, LINKS_PAGE_TEXT_FONT_NAMES } from "@/lib/theme/palette";
 import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
 import {
   bothColoursPicked,
   checkButtonTarget,
+  checkSocialLink,
   noButtonGoesToTheSamePlace,
   readablePair,
   reuseSiteColoursFor,
@@ -32,11 +41,110 @@ const DESTINATION_CHOICES: { title: string; value: LinkDestination }[] = [
   { title: "A file to download", value: "file" },
 ];
 
-const BUTTON_SHAPE_TITLES: Record<(typeof LINKS_PAGE_BUTTON_SHAPES)[number], string> = {
+const BUTTON_SHAPE_TITLES: Record<LinksPageButtonShape, string> = {
   round: "Round",
   square: "Square",
   squareShadow: "Square with a shadow underneath",
 };
+
+const NAME_SIZE_TITLES: Record<LinksPageNameSize, string> = { small: "Small", medium: "Medium", large: "Large" };
+
+const NAME_STYLE_TITLES: Record<LinksPageNameStyle, string> = {
+  slanted: "Thin and slanted",
+  bold: "Bold and straight",
+};
+
+const LETTER_CASE_TITLES: Record<LinksPageLetterCase, string> = {
+  normal: "Normal letters",
+  upper: "ALL CAPITAL LETTERS",
+};
+
+const socialLink = defineArrayMember({
+  name: "linksPageSocialLink",
+  title: "Social link",
+  type: "object",
+  fields: [
+    defineField({
+      name: "platform",
+      title: "Which one",
+      type: "string",
+      description: "The little picture next to your name matches this.",
+      options: { list: SOCIAL_PLATFORMS.map(({ value, title }) => ({ value, title })) },
+      validation: (rule) => rule.required().error("Pick which one this is."),
+    }),
+    defineField({
+      name: "address",
+      title: "Link or email address",
+      type: "string",
+      description: "Copy the link from your profile, starting with https://. For Email, type the email address.",
+      validation: (rule) =>
+        rule.custom((address, context) =>
+          checkSocialLink((context.parent as { platform?: string } | undefined)?.platform, address),
+        ),
+    }),
+  ],
+  preview: {
+    select: { platform: "platform", address: "address" },
+    prepare: ({ platform, address }) => ({
+      title: socialPlatformTitle(platform) ?? "Not picked yet",
+      subtitle: address,
+    }),
+  },
+});
+
+const tiktokVideo = defineArrayMember({
+  name: "linksPageVideo",
+  title: "TikTok video",
+  type: "object",
+  fields: [
+    defineField({
+      name: "url",
+      title: "Video link",
+      type: "string",
+      description: "On TikTok, open the video, tap Share, then Copy link, and paste it here.",
+      validation: (rule) => [
+        rule.required().error("Paste the link of the video."),
+        rule.custom((url) =>
+          !url || isTikTokVideoLink(url as string)
+            ? true
+            : "This is not the link of one TikTok video. Open the video on TikTok, tap Share, then Copy link.",
+        ),
+      ],
+    }),
+  ],
+  preview: { select: { title: "url" }, prepare: ({ title }) => ({ title: title || "Video with no link yet" }) },
+});
+
+const SHARE_WORD_TITLES: Record<keyof LinksPageShareWords, string> = {
+  title: "Title of the share menu",
+  copyLink: "Copy button",
+  copied: "Words after copying",
+  email: "Email button",
+  close: "Close button",
+  shareButton: "Words read out for the three dots",
+};
+
+type ChoiceFieldName = keyof Pick<LinksPageContent, "nameSize" | "nameStyle" | "buttonLetterCase" | "buttonShape">;
+
+const choiceField = <T extends string>(
+  name: ChoiceFieldName,
+  title: string,
+  titles: Record<T, string>,
+  options: { description?: string; direction?: "horizontal" } = {},
+) =>
+  defineField({
+    name,
+    title,
+    type: "string",
+    group: "look",
+    description: options.description,
+    options: {
+      list: (Object.keys(titles) as T[]).map((value) => ({ title: titles[value], value })),
+      layout: "radio",
+      direction: options.direction,
+    },
+    initialValue: LINKS_PAGE_DEFAULTS[name],
+  });
 
 const DESTINATION_TITLES = Object.fromEntries(DESTINATION_CHOICES.map((choice) => [choice.value, choice.title]));
 
@@ -208,6 +316,8 @@ export const linksPage = defineType({
   type: "document",
   groups: [
     { name: "content", title: "Words and buttons", default: true },
+    { name: "videos", title: "TikTok videos" },
+    { name: "share", title: "Share menu" },
     { name: "look", title: "Colours and fonts" },
     { name: "sharing", title: "Link preview" },
   ],
@@ -253,8 +363,69 @@ export const linksPage = defineType({
       title: "Show the social links",
       type: "boolean",
       group: "content",
-      description: "Shows the links you set in Site Settings.",
+      description: "Shows the little social pictures under your name.",
       initialValue: LINKS_PAGE_DEFAULTS.showSocialLinks,
+    }),
+    defineField({
+      name: "socialLinks",
+      title: "Social links",
+      type: "array",
+      group: "content",
+      description:
+        "The little pictures under your name, in this order. Add as many as you like. Leave the list blank to use the ones from Site Settings.",
+      of: [socialLink],
+      hidden: ({ document }) => document?.showSocialLinks === false,
+      validation: (rule) =>
+        rule.max(LINKS_PAGE_MAX_SOCIAL_LINKS).error(`You can have up to ${LINKS_PAGE_MAX_SOCIAL_LINKS} social links.`),
+    }),
+    defineField({
+      name: "videosTitle",
+      title: "Title above the videos",
+      type: "string",
+      group: "videos",
+      description: `Leave blank to show "${LINKS_PAGE_DEFAULTS.videosTitle}".`,
+    }),
+    defineField({
+      name: "videos",
+      title: "TikTok videos",
+      type: "array",
+      group: "videos",
+      description:
+        "Videos shown in a row under the buttons, left to right. Visitors see the video picture first and the video plays when they tap it. Leave the list blank to show no videos.",
+      of: [tiktokVideo],
+      validation: (rule) => rule.max(LINKS_PAGE_MAX_VIDEOS).error(`You can have up to ${LINKS_PAGE_MAX_VIDEOS} videos.`),
+    }),
+    defineField({
+      name: "playVideo",
+      title: "Words read out for the play button",
+      type: "string",
+      group: "videos",
+      description: `Phones read these words aloud to people who cannot see the screen. Leave blank for "${LINKS_PAGE_DEFAULTS.playVideo}".`,
+    }),
+    defineField({
+      name: "showShareButtons",
+      title: "Show the share button on each button",
+      type: "boolean",
+      group: "share",
+      description: "Adds three small dots on the right of each button. Tapping them lets visitors send that link to a friend.",
+      initialValue: LINKS_PAGE_DEFAULTS.showShareButtons,
+    }),
+    defineField({
+      name: "shareWords",
+      title: "Words in the share menu",
+      type: "object",
+      group: "share",
+      description: "Leave any of these blank to use the words shown in grey.",
+      hidden: ({ document }) => document?.showShareButtons === false,
+      fields: (Object.keys(SHARE_WORD_TITLES) as (keyof LinksPageShareWords)[]).map((word) =>
+        defineField({
+          name: word,
+          title: SHARE_WORD_TITLES[word],
+          type: "string",
+          placeholder: LINKS_PAGE_DEFAULTS.shareWords[word],
+          description: word === "shareButton" ? "Phones read these words aloud, followed by the button words." : undefined,
+        }),
+      ),
     }),
     defineField({
       name: "footerLine",
@@ -278,32 +449,11 @@ export const linksPage = defineType({
       siteBackground: "bgInteractive",
     }),
     fontField("nameFont", "Font for the name", LINKS_PAGE_NAME_FONT_NAMES),
-    fontField("textFont", "Font for the buttons and lines", BODY_FONT_NAMES),
-    defineField({
-      name: "nameSize",
-      title: "Size of the name",
-      type: "string",
-      group: "look",
-      description: "How big your name is.",
-      options: {
-        list: LINKS_PAGE_NAME_SIZES.map((size) => ({ title: size[0].toUpperCase() + size.slice(1), value: size })),
-        layout: "radio",
-        direction: "horizontal",
-      },
-      initialValue: LINKS_PAGE_DEFAULTS.nameSize,
-    }),
-    defineField({
-      name: "buttonShape",
-      title: "Button shape",
-      type: "string",
-      group: "look",
-      description: "How the buttons look.",
-      options: {
-        list: LINKS_PAGE_BUTTON_SHAPES.map((shape) => ({ title: BUTTON_SHAPE_TITLES[shape], value: shape })),
-        layout: "radio",
-      },
-      initialValue: LINKS_PAGE_DEFAULTS.buttonShape,
-    }),
+    fontField("textFont", "Font for the buttons and lines", LINKS_PAGE_TEXT_FONT_NAMES),
+    choiceField("nameStyle", "How the name looks", NAME_STYLE_TITLES, { direction: "horizontal" }),
+    choiceField("buttonLetterCase", "Letters on the buttons", LETTER_CASE_TITLES, { direction: "horizontal" }),
+    choiceField("nameSize", "Size of the name", NAME_SIZE_TITLES, { description: "How big your name is.", direction: "horizontal" }),
+    choiceField("buttonShape", "Button shape", BUTTON_SHAPE_TITLES, { description: "How the buttons look." }),
     defineField({
       name: "seo",
       title: "Link preview",

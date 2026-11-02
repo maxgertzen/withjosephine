@@ -218,3 +218,4 @@ export const DISPLAY_FONT_NAMES = Object.keys(DISPLAY_FONTS);
 export const LINKS_PAGE_SLAB_FONT_NAMES = ["Bitter", "Zilla Slab", "Roboto Slab"];
 export const LINKS_PAGE_NAME_FONT_NAMES = [...DISPLAY_FONT_NAMES, ...LINKS_PAGE_SLAB_FONT_NAMES];
 export const BODY_FONT_NAMES = Object.keys(BODY_FONTS);
+export const LINKS_PAGE_TEXT_FONT_NAMES = [...BODY_FONT_NAMES, "Lora", "Bitter", "Libre Baskerville"];

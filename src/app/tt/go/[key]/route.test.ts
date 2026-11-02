@@ -39,9 +39,10 @@ beforeEach(() => {
       href: BOOKING_HREF,
       destination: "reading",
       standOut: false,
+      countsTaps: true,
       position: 1,
     },
-    { key: "email:1a2b3c4d", label: "Email", href: "mailto:hello@withjosephine.com", destination: "email", standOut: false, position: 2 },
+    { key: "email:1a2b3c4d", label: "Email", href: "mailto:hello@withjosephine.com", destination: "email", standOut: false, countsTaps: false, position: 2 },
   ]);
 });
 

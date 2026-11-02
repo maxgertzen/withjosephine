@@ -30,13 +30,21 @@ vi.mock("next/font/google", () => {
   );
 });
 
-import { BODY_FONT_NAMES, BODY_FONTS, LINKS_PAGE_NAME_FONT_NAMES } from "@/lib/theme/palette";
+import { LINKS_PAGE_NAME_FONT_NAMES, LINKS_PAGE_TEXT_FONT_NAMES } from "@/lib/theme/palette";
 
-import { LINKS_PAGE_BODY_FONTS, LINKS_PAGE_NAME_FONTS, linksPageFontVariables } from "./fonts";
+import {
+  LINKS_PAGE_BODY_FONTS,
+  LINKS_PAGE_BOLD_NAME_FONTS,
+  LINKS_PAGE_NAME_FONTS,
+  linksPageFontVariables,
+} from "./fonts";
+
+const isBoldCut = (call: (typeof calls)[number]) =>
+  JSON.stringify(call.options.weight) === '["700"]' && JSON.stringify(call.options.style) === '["normal"]';
 
 describe("links page fonts", () => {
   it("loads every font without preloading, latin only, keeping the fallback size adjustment", () => {
-    expect(calls).toHaveLength(LINKS_PAGE_NAME_FONT_NAMES.length + BODY_FONT_NAMES.length);
+    expect(calls).toHaveLength(LINKS_PAGE_NAME_FONT_NAMES.length * 2 + LINKS_PAGE_TEXT_FONT_NAMES.length);
     for (const call of calls) {
       expect(call.options.preload, call.family).toBe(false);
       expect(call.options.subsets).toEqual(["latin"]);
@@ -44,33 +52,41 @@ describe("links page fonts", () => {
     }
   });
 
-  it("loads only what the page shows: one weight and one style for the name, 400 and 500 for the words", () => {
-    const bodyFamilies = Object.values(BODY_FONTS).map((font) => font.importName);
-    for (const call of calls) {
-      if (bodyFamilies.includes(call.family)) {
-        expect(call.options.weight, call.family).toEqual(["400", "500"]);
-        expect(call.options.style, call.family).toEqual(["normal"]);
-      } else {
-        expect(call.options.weight, call.family).toHaveLength(1);
-        expect(call.options.style, call.family).toHaveLength(1);
-      }
+  it("loads one bold cut per name font and only upright cuts for the words", () => {
+    expect(calls.filter(isBoldCut)).toHaveLength(LINKS_PAGE_NAME_FONT_NAMES.length);
+    const wordCuts = calls.filter(
+      (call) => !isBoldCut(call) && (call.options.weight as string[]).includes("400") && JSON.stringify(call.options.style) === '["normal"]',
+    );
+    expect(wordCuts).toHaveLength(LINKS_PAGE_TEXT_FONT_NAMES.length);
+    for (const call of wordCuts) {
+      expect(call.options.style, call.family).toEqual(["normal"]);
+      expect(call.options.weight, call.family).not.toContain("700");
     }
   });
 
-  it("offers the Theme fonts plus the slab serifs for the name, and the Theme body fonts", () => {
+  it("offers the same names for both name styles, and the Theme body fonts plus three serifs for the words", () => {
     expect(Object.keys(LINKS_PAGE_NAME_FONTS)).toEqual(LINKS_PAGE_NAME_FONT_NAMES);
-    expect(Object.keys(LINKS_PAGE_BODY_FONTS)).toEqual(BODY_FONT_NAMES);
+    expect(Object.keys(LINKS_PAGE_BOLD_NAME_FONTS)).toEqual(LINKS_PAGE_NAME_FONT_NAMES);
+    expect(Object.keys(LINKS_PAGE_BODY_FONTS)).toEqual(LINKS_PAGE_TEXT_FONT_NAMES);
   });
 
   it("points the site font variables at the chosen fonts", () => {
-    expect(linksPageFontVariables("Playfair Display", "Work Sans")).toEqual({
+    expect(linksPageFontVariables("Playfair Display", "Work Sans", "slanted")).toEqual({
       "--font-display-source": "'__Playfair_Display'",
       "--font-body-source": "'__Work_Sans'",
     });
   });
 
+  it("uses the bold cut of the name font when the name is bold", () => {
+    expect(linksPageFontVariables("Zilla Slab", "Bitter", "bold")).toEqual({
+      "--font-display-source": LINKS_PAGE_BOLD_NAME_FONTS["Zilla Slab"].style.fontFamily,
+      "--font-body-source": LINKS_PAGE_BODY_FONTS.Bitter.style.fontFamily,
+    });
+    expect(LINKS_PAGE_BOLD_NAME_FONTS["Zilla Slab"]).not.toBe(LINKS_PAGE_NAME_FONTS["Zilla Slab"]);
+  });
+
   it("changes nothing for 'Same as the rest of the site' or an unknown name", () => {
-    expect(linksPageFontVariables("site", undefined)).toEqual({});
-    expect(linksPageFontVariables("Comic Sans", "site")).toEqual({});
+    expect(linksPageFontVariables("site", undefined, "slanted")).toEqual({});
+    expect(linksPageFontVariables("Comic Sans", "site", "bold")).toEqual({});
   });
 });

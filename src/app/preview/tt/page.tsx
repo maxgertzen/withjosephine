@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
 import { deriveLinksPageViewProps } from "@/app/tt/deriveLinksPageViewProps";
-import { linksPageFontVariables } from "@/app/tt/fonts";
+import { linksPageExtras } from "@/app/tt/linksPageExtras";
 import { LinksPageView } from "@/app/tt/LinksPageView";
 import { fetchLinksPage, fetchNotesState, fetchReadings, fetchSiteSettings } from "@/lib/sanity/fetch";
 
-const SAME_ORIGIN_SO_LINKS_STAY_IN_PREVIEW = "";
+const PREVIEW_SITE_ORIGIN = "";
 
 export const metadata: Metadata = {
   title: "Preview: TikTok links",
@@ -20,16 +20,18 @@ export default async function LinksPagePreview() {
     fetchNotesState(),
   ]);
 
+  const props = deriveLinksPageViewProps({
+    state,
+    readings,
+    siteSettings,
+    notesState,
+    siteOrigin: PREVIEW_SITE_ORIGIN,
+  });
+
   return (
     <LinksPageView
-      {...deriveLinksPageViewProps({
-        state,
-        readings,
-        siteSettings,
-        notesState,
-        siteOrigin: SAME_ORIGIN_SO_LINKS_STAY_IN_PREVIEW,
-      })}
-      fontVariables={linksPageFontVariables(state?.page?.nameFont, state?.page?.textFont)}
+      {...props}
+      {...await linksPageExtras(props, state?.page)}
     />
   );
 }

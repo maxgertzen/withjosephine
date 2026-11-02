@@ -192,3 +192,66 @@ describe("deriveLinksPageViewProps site address", () => {
     ]);
   });
 });
+
+describe("deriveLinksPageViewProps social links", () => {
+  it("uses the page's own social links with their names, skipping broken ones", () => {
+    const props = derive({
+      socialLinks: [
+        { _key: "a", platform: "instagram", address: "https://instagram.com/withjosephine" },
+        { _key: "b", platform: "email", address: "hello@withjosephine.com" },
+        { _key: "c", platform: "youtube", address: "youtube.com/nope" },
+        { _key: "d", address: "https://example.com" },
+      ],
+    });
+    expect(props.socialLinks).toEqual([
+      { platform: "instagram", url: "https://instagram.com/withjosephine", label: "Instagram" },
+      { platform: "email", url: "mailto:hello@withjosephine.com", label: "Email" },
+    ]);
+  });
+
+  it("uses the Site Settings links when the page has none, and shows none when switched off", () => {
+    expect(derive({}).socialLinks).toEqual(siteSettings.socialLinks);
+    expect(
+      derive({ showSocialLinks: false, socialLinks: [{ _key: "a", platform: "x", address: "https://x.com/j" }] })
+        .socialLinks,
+    ).toEqual([]);
+  });
+});
+
+describe("deriveLinksPageViewProps share menu", () => {
+  it("gives each button an address to share, none for email, and the built-in words where blank", () => {
+    const props = derive(
+      {
+        shareWords: { title: "Send this", copied: " " },
+        buttons: [
+          { _key: "a", label: "Home", destination: "home" },
+          { _key: "b", label: "Write", destination: "email", email: "hello@withjosephine.com" },
+        ],
+      },
+      { siteOrigin: "https://withjosephine.com" },
+    );
+    expect(props.buttons.map((b) => b.shareHref)).toEqual(["https://withjosephine.com/", undefined]);
+    expect(props.shareWords).toEqual({ ...LINKS_PAGE_DEFAULTS.shareWords, title: "Send this" });
+  });
+
+  it("has no share menu when switched off", () => {
+    expect(derive({ showShareButtons: false }).shareWords).toBeUndefined();
+  });
+});
+
+describe("deriveLinksPageViewProps videos and look choices", () => {
+  it("uses the built-in title above the videos when it is blank", () => {
+    expect(derive({ videosTitle: " " }).videosTitle).toBe(LINKS_PAGE_DEFAULTS.videosTitle);
+  });
+
+  it("uses the chosen name style and button letters, and the defaults for unknown values", () => {
+    expect(derive({ nameStyle: "bold", buttonLetterCase: "upper" })).toMatchObject({
+      nameStyle: "bold",
+      buttonLetterCase: "upper",
+    });
+    expect(derive({ nameStyle: "wobbly", buttonLetterCase: "small caps" })).toMatchObject({
+      nameStyle: LINKS_PAGE_DEFAULTS.nameStyle,
+      buttonLetterCase: LINKS_PAGE_DEFAULTS.buttonLetterCase,
+    });
+  });
+});

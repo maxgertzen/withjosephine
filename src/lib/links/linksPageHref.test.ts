@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { linksPageHref } from "./linksPageHref";
+import { linksPageAddresses, type LinksPageTarget } from "./linksPageHref";
+
+const linksPageHref = (target: LinksPageTarget, key: string, siteOrigin = "") =>
+  linksPageAddresses(target, key, siteOrigin)?.href ?? null;
+
+const linksPageShareHref = (target: LinksPageTarget, siteOrigin = "") =>
+  linksPageAddresses(target, "key", siteOrigin)?.shareHref ?? null;
 
 describe("linksPageHref", () => {
   it("adds the TikTok bio tags and the button key to links into the site", () => {
@@ -49,5 +55,29 @@ describe("linksPageHref", () => {
     expect(linksPageHref({ destination: "email" }, "email:x")).toBeNull();
     expect(linksPageHref({ destination: "web", url: "javascript:alert(1)" }, "web:x")).toBeNull();
     expect(linksPageHref({ destination: "web", url: "http://example.com" }, "web:x")).toBeNull();
+  });
+});
+
+describe("linksPageShareHref", () => {
+  it("shares the page itself without the TikTok tags, and nothing for an email button", () => {
+    expect(linksPageShareHref({ destination: "reading", slug: "soul-blueprint" }, "https://withjosephine.com")).toBe(
+      "https://withjosephine.com/book/soul-blueprint",
+    );
+    expect(linksPageShareHref({ destination: "home" })).toBe("/");
+    expect(linksPageShareHref({ destination: "web", url: " https://shop.beacons.ai/withjosephine " })).toBe(
+      "https://shop.beacons.ai/withjosephine",
+    );
+    expect(linksPageShareHref({ destination: "file", fileUrl: "https://cdn.sanity.io/files/p/d/guide.pdf" })).toBe(
+      "https://cdn.sanity.io/files/p/d/guide.pdf",
+    );
+    expect(linksPageShareHref({ destination: "email", email: "hello@withjosephine.com" })).toBeNull();
+  });
+});
+
+describe("linksPageAddresses tap counting", () => {
+  it("counts taps on every button except the one that opens the mail app", () => {
+    expect(linksPageAddresses({ destination: "home" }, "home")?.countsTaps).toBe(true);
+    expect(linksPageAddresses({ destination: "web", url: "https://x.com/j" }, "web:1")?.countsTaps).toBe(true);
+    expect(linksPageAddresses({ destination: "email", email: "a@b.co" }, "email:1")?.countsTaps).toBe(false);
   });
 });

@@ -5,6 +5,12 @@
     "intro": "Psychological astrology & Akashic Records readings",
     "footerLine": "withjosephine.com",
     "showSocialLinks": true,
+    "socialLinks": [
+      { "_key": "tiktok", "platform": "tiktok", "address": "https://www.tiktok.com/@withjosephine" },
+      { "_key": "email", "platform": "email", "address": "e2e-test@withjosephine.com" }
+    ],
+    "videosTitle": "TikToks",
+    "videos": [{ "_key": "moon", "url": "https://www.tiktok.com/@withjosephine/video/7412345678901234567" }],
     "pageColour": { "hex": "#F5F3EF" },
     "wordsColour": { "hex": "#0D0B1A" },
     "buttonColour": { "hex": "#1F1E22" },

@@ -10,6 +10,7 @@ import type {
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
+import type { LinksPageShareWords } from "@/data/defaults";
 import type { StoredSection } from "@/lib/booking/bookingPageSections";
 import type { LinkDestination } from "@/lib/links/linkKey";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
@@ -487,15 +488,27 @@ export type SanityLinksPageButton = {
   file?: { _id: string; url: string } | null;
 };
 
+export type SanityLinksPageSocialLink = { _key: string; platform?: string; address?: string };
+
+export type SanityLinksPageVideo = { _key: string; url?: string };
+
 export type SanityLinksPage = LinksPageColours & {
   photoUrl?: string;
   name?: string;
   intro?: string;
   footerLine?: string;
   showSocialLinks?: boolean;
+  socialLinks?: SanityLinksPageSocialLink[];
+  videosTitle?: string;
+  videos?: SanityLinksPageVideo[];
+  playVideo?: string;
+  showShareButtons?: boolean;
+  shareWords?: Partial<LinksPageShareWords>;
   nameFont?: string;
   textFont?: string;
   nameSize?: string;
+  nameStyle?: string;
+  buttonLetterCase?: string;
   buttonShape?: string;
   seo?: SanitySeo;
   buttons?: SanityLinksPageButton[];

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { mergeClasses } from "@/lib/utils";
 
@@ -17,23 +19,14 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
-function MailIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="1.5" />
-      <path d="m3.5 6 8.5 7 8.5-7" />
-    </svg>
-  );
-}
-
 interface SocialLinksProps {
   links: MappedSocialLink[];
   linkClassName: string;
   className?: string;
-  emailAsIcon?: boolean;
+  renderIcon?: (platform: string) => ReactNode;
 }
 
-export function SocialLinks({ links, linkClassName, className, emailAsIcon = false }: SocialLinksProps) {
+export function SocialLinks({ links, linkClassName, className, renderIcon }: SocialLinksProps) {
   if (links.length === 0) return null;
 
   return (
@@ -42,21 +35,20 @@ export function SocialLinks({ links, linkClassName, className, emailAsIcon = fal
         const opensNewTab = link.platform !== "email";
         return (
           <a
-            key={link.platform}
+            key={`${link.platform}:${link.url}`}
             href={link.url}
             aria-label={link.label}
             className={linkClassName}
             {...(opensNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
-            {link.platform === "tiktok" ? (
-              <TikTokIcon className="w-8 h-8" />
-            ) : emailAsIcon && link.platform === "email" ? (
-              <MailIcon className="w-8 h-8" />
-            ) : (
+            {renderIcon?.(link.platform) ??
+              (link.platform === "tiktok" ? (
+                <TikTokIcon className="w-8 h-8" />
+              ) : (
               <span className="font-body text-xs tracking-wide">
                 {SOCIAL_LABELS[link.platform] ?? link.label}
               </span>
-            )}
+            ))}
           </a>
         );
       })}

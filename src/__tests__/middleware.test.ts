@@ -93,6 +93,15 @@ beforeEach(() => {
 });
 
 describe("middleware CSP + draft hardening", () => {
+  it("lets the TikTok player and cover pictures load on the links page only", () => {
+    const linksPage = middleware(makeRequest({ hasDraft: false, host: "links.withjosephine.com" }));
+    const home = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
+    const linksCsp = linksPage.headers.get("content-security-policy") ?? "";
+    expect(linksCsp).toMatch(/frame-src [^;]*https:\/\/www\.tiktok\.com/);
+    expect(linksCsp).toMatch(/img-src [^;]*https:\/\/\*\.tiktokcdn\.com/);
+    expect(home.headers.get("content-security-policy")).not.toContain("tiktok");
+  });
+
   it("public request on apex gets strict CSP and no Cache-Control/noindex", () => {
     const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com" }));
     const csp = res.headers.get("content-security-policy");

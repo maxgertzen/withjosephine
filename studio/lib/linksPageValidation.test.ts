@@ -5,6 +5,7 @@ import { BUILT_IN_THEME_COLORS } from "@/lib/theme/palette";
 import {
   bothColoursPicked,
   checkButtonTarget,
+  checkSocialLink,
   COLOURS_TOO_CLOSE,
   noButtonGoesToTheSamePlace,
   readablePair,
@@ -179,5 +180,21 @@ describe("file buttons", () => {
         { destination: "file", file: { asset: { _ref: "file-a-pdf" } } },
       ]),
     ).toBe(SAME_PLACE_TWICE);
+  });
+});
+
+describe("checkSocialLink", () => {
+  it("accepts an https link, or an email address for Email", () => {
+    expect(checkSocialLink("instagram", "https://instagram.com/withjosephine")).toBe(true);
+    expect(checkSocialLink("email", "hello@withjosephine.com")).toBe(true);
+  });
+
+  it("says what is wrong in the same words as the buttons", () => {
+    expect(checkSocialLink("instagram", "instagram.com/withjosephine")).toBe("The address must start with https://");
+    expect(checkSocialLink("email", "hello")).toBe("This does not look like an email address.");
+  });
+
+  it("waits until a platform is picked", () => {
+    expect(checkSocialLink(undefined, "anything")).toBe(true);
   });
 });

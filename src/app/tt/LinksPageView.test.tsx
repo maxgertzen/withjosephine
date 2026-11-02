@@ -59,3 +59,51 @@ describe("LinksPageView buttons", () => {
     expect(email.querySelector("svg")).not.toBeNull();
   });
 });
+
+describe("LinksPageView share menu, videos and social icons", () => {
+  const props = {
+    ...LINKS_PAGE_FULL_ARGS,
+    socialLinks: [
+      { platform: "instagram", url: "https://instagram.com/withjosephine", label: "Instagram" },
+      { platform: "email", url: "mailto:hello@withjosephine.com", label: "Email" },
+    ],
+  };
+
+  it("puts a share button on every button except the email one", () => {
+    render(<LinksPageView {...props} />);
+    expect(screen.getAllByRole("button", { name: /^Share / })).toHaveLength(
+      props.buttons.filter((button) => button.destination !== "email").length,
+    );
+    expect(screen.queryByRole("button", { name: "Share Write to me" })).toBeNull();
+  });
+
+  it("has no share buttons when the share menu is off", () => {
+    render(<LinksPageView {...props} shareWords={undefined} />);
+    expect(screen.queryAllByRole("button", { name: /^Share / })).toHaveLength(0);
+  });
+
+  it("shows the social links as icons", () => {
+    const { container } = render(<LinksPageView {...props} />);
+    expect(screen.getByRole("link", { name: "Instagram" }).querySelector("svg")).not.toBeNull();
+    expect(container.querySelectorAll('a[aria-label="Email"] svg')).toHaveLength(1);
+  });
+
+  it("shows the videos under their title, with no TikTok player before a tap", () => {
+    const { container } = render(
+      <LinksPageView
+        {...props}
+        videos={[{ videoId: "7412345678901234567", url: "https://www.tiktok.com/@withjosephine/video/7412345678901234567" }]}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "TikToks" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play video" })).toBeInTheDocument();
+    expect(container.querySelector("iframe")).toBeNull();
+  });
+
+  it("writes the button words in normal letters unless capitals are chosen", () => {
+    const { rerender } = render(<LinksPageView {...props} />);
+    expect(screen.getAllByText("Birth Chart Reading")[0].className).not.toContain("uppercase");
+    rerender(<LinksPageView {...props} buttonLetterCase="upper" />);
+    expect(screen.getAllByText("Birth Chart Reading")[0].className).toContain("uppercase");
+  });
+});

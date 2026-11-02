@@ -9,12 +9,10 @@ import { fetchLinksPagePublished } from "@/lib/sanity/fetch";
 import { buildPageMetadata } from "@/lib/seoMetadata";
 
 import { deriveLinksPageViewProps } from "./deriveLinksPageViewProps";
-import { linksPageFontVariables } from "./fonts";
+import { linksPageExtras } from "./linksPageExtras";
 import { LinksPageView } from "./LinksPageView";
 import { LinksPageViewTracking } from "./LinksPageViewTracking";
 import { fetchPublishedLinksPageInputs } from "./publishedLinksPage";
-
-const MAIL_APP_OPENS_ONLY_FROM_A_DIRECT_LINK = "email";
 
 export async function generateMetadata(): Promise<Metadata> {
   const state = await fetchLinksPagePublished();
@@ -35,9 +33,7 @@ export default async function LinksPage() {
   const siteOrigin = buildTimeSiteOrigin();
   const props = deriveLinksPageViewProps({ ...inputs, siteOrigin });
   const buttons = props.buttons.map((button) =>
-    button.destination === MAIL_APP_OPENS_ONLY_FROM_A_DIRECT_LINK
-      ? button
-      : { ...button, href: `${siteOrigin}${tapCounterPath(button.key)}` },
+    button.countsTaps ? { ...button, href: `${siteOrigin}${tapCounterPath(button.key)}` } : button,
   );
 
   return (
@@ -45,7 +41,7 @@ export default async function LinksPage() {
       <LinksPageView
         {...props}
         buttons={buttons}
-        fontVariables={linksPageFontVariables(inputs.state?.page?.nameFont, inputs.state?.page?.textFont)}
+        {...await linksPageExtras(props, inputs.state?.page)}
       />
       <LinksPageViewTracking />
     </>

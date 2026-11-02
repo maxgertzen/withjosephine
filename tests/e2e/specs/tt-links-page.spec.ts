@@ -7,7 +7,7 @@ import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 import { MOBILE_AND_DESKTOP } from "../helpers/viewports";
 
 const PHONE = MOBILE_AND_DESKTOP[0].viewport;
-const BUTTON_LINKS = "main ul a";
+const BUTTON_LINKS = "main > ul > li > a";
 const NO_CONSENT_COUNTRY = { "cf-ipcountry": "TH" };
 const CONSENT_COUNTRY = { "cf-ipcountry": "DE" };
 
@@ -61,14 +61,14 @@ test.describe("TikTok links page", () => {
 
   test("uses Becky's colours on the page, the body and the buttons", async ({ page }) => {
     await page.goto("/tt");
-    const colours = await page.evaluate(() => {
-      const button = document.querySelector("main ul a") as HTMLElement;
+    const colours = await page.evaluate((selector) => {
+      const button = document.querySelector(selector) as HTMLElement;
       return {
         body: getComputedStyle(document.body).backgroundColor,
         button: getComputedStyle(button).backgroundColor,
         buttonWords: getComputedStyle(button).color,
       };
-    });
+    }, BUTTON_LINKS);
     expect(colours).toEqual({
       body: "rgb(245, 243, 239)",
       button: "rgb(31, 30, 34)",
@@ -101,6 +101,26 @@ test.describe("TikTok links page", () => {
     );
     expect(shift).toBeLessThan(0.1);
     expect(fontRequests.length).toBeGreaterThan(0);
+  });
+
+  test("opens a share menu for a button with the page address to copy", async ({ page }) => {
+    await page.goto("/tt");
+    await page.getByRole("button", { name: /^Share Soul Blueprint/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Share link" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute("href", /withjosephine|localhost/);
+    await expect(dialog.getByRole("button", { name: /Copy link/ })).toBeVisible();
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("shows the social icons and loads a TikTok video only after a tap", async ({ page }) => {
+    await page.goto("/tt");
+    await expect(page.getByRole("link", { name: "TikTok" }).locator("svg")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "TikToks" })).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
+    await page.getByRole("button", { name: /^Play video/ }).click();
+    await expect(page.locator("iframe")).toHaveAttribute("src", /^https:\/\/www\.tiktok\.com\/player\/v1\/7412345678901234567/);
   });
 
   test("is kept out of search results and the sitemap", async ({ page, request }) => {

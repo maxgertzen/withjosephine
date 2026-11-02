@@ -1,4 +1,6 @@
+import { isValidEmail } from "@/lib/formStyles";
 import { isHttpsAddress, type LinkDestination, linkKey } from "@/lib/links/linkKey";
+import { socialLinkHref } from "@/lib/links/socialPlatforms";
 import { contrastRatio, extractHex, READABLE_CONTRAST, themeColorOrBuiltIn } from "@/lib/theme/palette";
 
 export const COLOURS_TOO_CLOSE =
@@ -98,9 +100,14 @@ const PICK_WHERE_IT_GOES: Record<Exclude<LinkDestination, "home">, string> = {
   file: "Upload the file this button downloads.",
 };
 
-const LOOKS_LIKE_AN_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NOT_AN_EMAIL = "This does not look like an email address.";
+const NOT_HTTPS = "The address must start with https://";
 
-
+export function checkSocialLink(platform: string | undefined, address: unknown): true | string {
+  if (!platform) return true;
+  if (socialLinkHref(platform, typeof address === "string" ? address : undefined)) return true;
+  return platform === "email" ? NOT_AN_EMAIL : NOT_HTTPS;
+}
 
 export function checkButtonTarget(
   destination: Exclude<LinkDestination, "home">,
@@ -110,11 +117,7 @@ export function checkButtonTarget(
   if (pickedDestination !== destination) return true;
   const fileMissing = destination === "file" && !(value as { asset?: { _ref?: string } } | undefined)?.asset?._ref;
   if (!value || fileMissing) return PICK_WHERE_IT_GOES[destination];
-  if (destination === "email" && !LOOKS_LIKE_AN_EMAIL.test(String(value))) {
-    return "This does not look like an email address.";
-  }
-  if (destination === "web" && !isHttpsAddress(String(value))) {
-    return "The address must start with https://";
-  }
+  if (destination === "email" && !isValidEmail(String(value))) return NOT_AN_EMAIL;
+  if (destination === "web" && !isHttpsAddress(String(value))) return NOT_HTTPS;
   return true;
 }

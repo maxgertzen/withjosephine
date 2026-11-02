@@ -52,9 +52,21 @@ export const LINKS_PAGE_DARK_ARGS = args({
   nameSize: "large",
 });
 
-export const LINKS_PAGE_BEACONS_LOOK_ARGS = args({
+const BEACONS_VIDEOS = ["7412345678901234567", "7412345678901234568", "7412345678901234569"].map((videoId) => ({
+  videoId,
+  url: `https://www.tiktok.com/@withjosephine/video/${videoId}`,
+}));
+
+const beaconsLook = args({
   name: "withjosephine",
   intro: "Psychological astrology & Akashic Records readings",
+  nameFont: "Zilla Slab",
+  nameStyle: "bold",
+  textFont: "Bitter",
+  socialLinks: [
+    { _key: "t", platform: "tiktok", address: "https://www.tiktok.com/@withjosephine" },
+    { _key: "e", platform: "email", address: "hello@withjosephine.com" },
+  ],
   pageColour: { hex: "#F5F3EF" },
   wordsColour: { hex: "#0D0B1A" },
   buttonColour: { hex: "#1F1E22" },
@@ -83,5 +95,14 @@ export const LINKS_PAGE_BEACONS_LOOK_ARGS = args({
       destination: "reading",
       reading: READINGS[1],
     },
+    {
+      _key: "e",
+      label: "Meet Josephine",
+      subtitle: "About me, my approach to readings & FAQs",
+      destination: "web",
+      url: "https://withjosephine.com/#about",
+    },
   ],
 });
+
+export const LINKS_PAGE_BEACONS_LOOK_ARGS: LinksPageViewProps = { ...beaconsLook, videos: BEACONS_VIDEOS };

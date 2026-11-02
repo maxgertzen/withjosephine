@@ -1,17 +1,31 @@
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { SocialLinks } from "@/components/SocialLinks";
-import type { LinksPageButtonShape, LinksPageNameSize } from "@/data/defaults";
+import { socialIcon } from "@/components/SocialLinks/socialIcons";
+import type {
+  LinksPageButtonShape,
+  LinksPageLetterCase,
+  LinksPageNameSize,
+  LinksPageNameStyle,
+  LinksPageShareWords,
+} from "@/data/defaults";
 import type { LinkDestination } from "@/lib/links/linkKey";
+import { SHARE_APPS, type ShareApp } from "@/lib/links/shareTargets";
+import type { TikTokVideo } from "@/lib/links/tiktokVideo";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { mergeClasses } from "@/lib/utils";
+
+import { ShareMenu } from "./ShareMenu";
+import { TikTokVideoCard } from "./TikTokVideoCard";
 
 export type LinksPageButton = {
   key: string;
   label: string;
   subtitle?: string;
   href: string;
+  shareHref?: string;
+  countsTaps: boolean;
   destination: LinkDestination;
   standOut: boolean;
   position: number;
@@ -24,7 +38,13 @@ export type LinksPageViewProps = {
   footerLine: string;
   nameSize: LinksPageNameSize;
   buttonShape: LinksPageButtonShape;
+  nameStyle: LinksPageNameStyle;
+  buttonLetterCase: LinksPageLetterCase;
   buttons: LinksPageButton[];
+  shareWords?: LinksPageShareWords;
+  videosTitle: string;
+  videos: TikTokVideo[];
+  playVideo: string;
   socialLinks: MappedSocialLink[];
   colourVariables: Record<string, string>;
   pageColour?: string;
@@ -38,6 +58,22 @@ const NAME_SIZE_CLASSES: Record<LinksPageNameSize, string> = {
 };
 
 const PHOTO_PX = 112;
+
+const NAME_STYLE_CLASSES: Record<LinksPageNameStyle, string> = {
+  slanted: "font-light italic",
+  bold: "font-bold not-italic",
+};
+
+const BUTTON_WORDS_CLASSES: Record<LinksPageLetterCase, string> = {
+  normal: "text-[0.95rem] font-medium",
+  upper: "text-[0.82rem] font-medium uppercase tracking-[0.12em]",
+};
+
+const SHARE_ICONS_DRAWN_ON_THE_SERVER = Object.fromEntries(
+  SHARE_APPS.map((app) => [app, socialIcon(app, "h-5 w-5")]),
+) as Record<ShareApp, ReactNode>;
+
+const socialLinkIcon = (platform: string) => socialIcon(platform, "h-7 w-7");
 
 const BUTTON_CLASSES =
   "flex min-h-12 w-full flex-col items-center justify-center gap-1 bg-j-bg-interactive px-6 py-3 font-body text-j-text-on-dark transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep";
@@ -73,7 +109,13 @@ export function LinksPageView({
   footerLine,
   nameSize,
   buttonShape,
+  nameStyle,
+  buttonLetterCase,
   buttons,
+  shareWords,
+  videosTitle,
+  videos,
+  playVideo,
   socialLinks,
   colourVariables,
   pageColour,
@@ -100,7 +142,8 @@ export function LinksPageView({
         ) : null}
         <h1
           className={mergeClasses(
-            "m-0 font-display font-light italic leading-tight text-j-text-heading",
+            "m-0 font-display leading-tight text-j-text-heading",
+            NAME_STYLE_CLASSES[nameStyle],
             NAME_SIZE_CLASSES[nameSize],
           )}
         >
@@ -113,28 +156,58 @@ export function LinksPageView({
           links={socialLinks}
           linkClassName={SOCIAL_LINK_CLASSES}
           className="mt-6"
-          emailAsIcon
+          renderIcon={socialLinkIcon}
         />
         <ul className="mt-8 flex w-full list-none flex-col gap-3 p-0">
-          {buttons.map((button) => (
-            <li key={button.key}>
-              <a
-                href={button.href}
-                className={mergeClasses(
-                  BUTTON_CLASSES,
-                  BUTTON_SHAPE_CLASSES[buttonShape],
-                  button.standOut && STAND_OUT_CLASSES,
-                )}
-                {...trackingAttributes(button)}
-              >
-                <span className="text-[0.82rem] font-medium uppercase tracking-[0.12em]">{button.label}</span>
-                {button.subtitle ? (
-                  <span className="text-[0.8rem] normal-case tracking-normal opacity-85">{button.subtitle}</span>
+          {buttons.map((button) => {
+            const share = shareWords && button.shareHref ? { words: shareWords, href: button.shareHref } : undefined;
+            return (
+              <li key={button.key} className="relative">
+                <a
+                  href={button.href}
+                  className={mergeClasses(
+                    BUTTON_CLASSES,
+                    BUTTON_SHAPE_CLASSES[buttonShape],
+                    button.standOut && STAND_OUT_CLASSES,
+                    share && "px-11",
+                  )}
+                  {...trackingAttributes(button)}
+                >
+                  <span className={BUTTON_WORDS_CLASSES[buttonLetterCase]}>{button.label}</span>
+                  {button.subtitle ? <span className="text-[0.8rem] opacity-85">{button.subtitle}</span> : null}
+                </a>
+                {share ? (
+                  <ShareMenu
+                    label={button.label}
+                    shareHref={share.href}
+                    linkKey={button.key}
+                    words={share.words}
+                    appIcons={SHARE_ICONS_DRAWN_ON_THE_SERVER}
+                  />
                 ) : null}
-              </a>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
+        {videos.length > 0 ? (
+          <section className="mt-10 w-full" aria-labelledby="links-page-videos">
+            <h2 id="links-page-videos" className="m-0 mb-3 font-body text-base font-semibold text-j-text-heading">
+              {videosTitle}
+            </h2>
+            <ul className="m-0 -mx-6 flex list-none snap-x gap-3 overflow-x-auto px-6 pb-2">
+              {videos.map((video) => (
+                <li key={video.videoId}>
+                  <TikTokVideoCard
+                    videoId={video.videoId}
+                    coverUrl={video.coverUrl}
+                    title={video.title}
+                    playLabel={playVideo}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {footerLine ? (
           <p className="mt-8 font-body text-xs tracking-wide text-j-text-muted opacity-70">{footerLine}</p>
         ) : null}

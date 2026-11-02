@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  type CspExtraSources,
+  cspExtraSources,
   isPrivateLinkPath,
   isStaticCspPath,
   NONCE_HEADER,
@@ -98,8 +100,14 @@ function generateNonce(): string {
   return btoa(binary);
 }
 
-function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean }): string {
-  const { isDraft, nonce, staticRoute } = opts;
+function withExtra(sources: readonly string[]): string {
+  return sources.map((source) => ` ${source}`).join("");
+}
+
+function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean; extra: CspExtraSources }): string {
+  const { isDraft, nonce, staticRoute, extra } = opts;
+  const extraFrames = withExtra(extra.frameSrc);
+  const extraImages = withExtra(extra.imgSrc);
   // Prerendered (static) routes have no per-request nonce, so Next's first-party
   // inline bootstrap can only be admitted via 'unsafe-inline' (a nonce CSP forces
   // dynamic rendering; hashes can't cover content/build-variable RSC flight data).
@@ -119,8 +127,8 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     ? `'self' https://*.sanity.studio https://*.sanity.io${localStudioFrameAncestor}`
     : `'none'`;
   const frameSrc = isDraft
-    ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com`
-    : `https://challenges.cloudflare.com`;
+    ? `'self' https://*.sanity.studio https://*.sanity.io https://challenges.cloudflare.com${extraFrames}`
+    : `https://challenges.cloudflare.com${extraFrames}`;
   return (
     "default-src 'self'; " +
     `script-src ${scriptSrc}; ` +
@@ -130,7 +138,7 @@ function buildCsp(opts: { isDraft: boolean; nonce: string; staticRoute: boolean 
     // style nonce. Script-src is the load-bearing XSS gate.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com data: blob:; ` +
+    `img-src 'self' https://cdn.sanity.io ${R2_PUBLIC_ORIGIN} https://*.clarity.ms https://c.bing.com${extraImages} data: blob:; ` +
     "media-src 'self' https://cdn.sanity.io; " +
     `connect-src ${connectSrc}; ` +
     "worker-src 'self' blob:; " +
@@ -175,7 +183,7 @@ export function middleware(request: NextRequest) {
     // (no nonce needed).
     holdingResponse.headers.set(
       "Content-Security-Policy",
-      buildCsp({ isDraft: false, nonce: "", staticRoute: true }),
+      buildCsp({ isDraft: false, nonce: "", staticRoute: true, extra: cspExtraSources("/under-construction") }),
     );
     return holdingResponse;
   }
@@ -220,7 +228,12 @@ export function middleware(request: NextRequest) {
   const isStrict = isPublicApex && !isDraft;
   response.headers.set(
     "Content-Security-Policy",
-    buildCsp({ isDraft: !isStrict, nonce, staticRoute: isStaticCspPath(pathname) }),
+    buildCsp({
+      isDraft: !isStrict,
+      nonce,
+      staticRoute: isStaticCspPath(pathname),
+      extra: cspExtraSources(pathname),
+    }),
   );
 
   const isListen = pathname.startsWith("/listen/");

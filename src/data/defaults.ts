@@ -920,6 +920,23 @@ export const LINKS_PAGE_BUTTON_SHAPES = ["round", "square", "squareShadow"] as c
 
 export type LinksPageButtonShape = (typeof LINKS_PAGE_BUTTON_SHAPES)[number];
 
+export const LINKS_PAGE_NAME_STYLES = ["slanted", "bold"] as const;
+
+export type LinksPageNameStyle = (typeof LINKS_PAGE_NAME_STYLES)[number];
+
+export const LINKS_PAGE_LETTER_CASES = ["normal", "upper"] as const;
+
+export type LinksPageLetterCase = (typeof LINKS_PAGE_LETTER_CASES)[number];
+
+export type LinksPageShareWords = {
+  shareButton: string;
+  title: string;
+  copyLink: string;
+  copied: string;
+  email: string;
+  close: string;
+};
+
 export type LinksPageContent = {
   name: string;
   intro: string;
@@ -928,9 +945,15 @@ export type LinksPageContent = {
   metaDescription: string;
   nameSize: LinksPageNameSize;
   buttonShape: LinksPageButtonShape;
+  nameStyle: LinksPageNameStyle;
+  buttonLetterCase: LinksPageLetterCase;
   nameFont: string;
   textFont: string;
   showSocialLinks: boolean;
+  showShareButtons: boolean;
+  shareWords: LinksPageShareWords;
+  videosTitle: string;
+  playVideo: string;
 };
 
 export const CONSENT_BANNER_DEFAULTS: Required<Omit<SanityConsentBanner, "hideInPreview">> = {
@@ -949,9 +972,24 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
   metaDescription: "Soul readings from your birth chart and Akashic Records, by Josephine.",
   nameSize: "medium",
   buttonShape: "round",
+  nameStyle: "slanted",
+  buttonLetterCase: "normal",
   nameFont: LINKS_PAGE_SITE_STYLE,
   textFont: LINKS_PAGE_SITE_STYLE,
   showSocialLinks: true,
+  showShareButtons: true,
+  shareWords: {
+    shareButton: "Share",
+    title: "Share link",
+    copyLink: "Copy link",
+    copied: "Link copied",
+    email: "Email",
+    close: "Close",
+  },
+  videosTitle: "TikToks",
+  playVideo: "Play video",
 };
 
 export const LINKS_PAGE_MAX_BUTTONS = 8;
+export const LINKS_PAGE_MAX_VIDEOS = 6;
+export const LINKS_PAGE_MAX_SOCIAL_LINKS = 10;
