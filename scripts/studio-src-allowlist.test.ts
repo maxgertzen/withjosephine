@@ -7,6 +7,7 @@ import { STUDIO_SRC_ALIASES } from "../studio/srcAliases";
 import { checkStory, FORBIDDEN_SPECIFIERS } from "./check-stories-import-graph.mts";
 
 const STUDIO = path.resolve(__dirname, "../studio");
+const GENERATED_FOLDER = ".generated";
 const SKIPPED_FOLDERS = new Set(["node_modules", "dist", "www", "preview-stubs"]);
 const STUDIO_FILE = /\.(ts|tsx)$/;
 const TEST_FILE = /\.test\.(ts|tsx)$/;
@@ -44,6 +45,7 @@ describe("Studio imports from src", () => {
     const notAllowlisted = new Set<string>();
     const missing = new Set<string>();
     const resolveOrRecord = (base: string, specifier: string, fromFile: string) => {
+      if (base.includes(`${path.sep}${GENERATED_FOLDER}${path.sep}`)) return null;
       const file = existingFile(base);
       if (!file && !NOT_CODE.test(specifier)) missing.add(`${specifier} (from ${path.relative(STUDIO, fromFile)})`);
       return file;
