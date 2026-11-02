@@ -5,6 +5,7 @@ import type { StructureBuilder, StructureResolverContext } from "sanity/structur
 import { EMAIL_ALLOWED_SLOTS } from "../../src/lib/emails/slots";
 import { GIFT_SUBMISSION_STATUS } from "../../src/lib/gift/giftSubmissionStatus";
 import { EmailPreview } from "../views/EmailPreview";
+import { LinksPageStats } from "../views/LinksPageStats";
 import { ThankYouPagePreview } from "../views/StudioPagePreview";
 
 // Email singletons that support the send-to-test doc action.
@@ -58,11 +59,12 @@ const emailSingletonListItem = (S: StructureBuilder, typeName: string, title: st
         .views([S.view.form(), S.view.component(EmailPreview).title("Preview")]),
     );
 
-const pagePreviewSingletonListItem = (
+const singletonWithViewListItem = (
   S: StructureBuilder,
   typeName: string,
   title: string,
-  PreviewComponent: ComponentType,
+  ViewComponent: ComponentType,
+  viewTitle: string,
 ) =>
   S.listItem()
     .title(title)
@@ -71,7 +73,7 @@ const pagePreviewSingletonListItem = (
       S.document()
         .schemaType(typeName)
         .documentId(typeName)
-        .views([S.view.form(), S.view.component(PreviewComponent).title("Preview")]),
+        .views([S.view.form(), S.view.component(ViewComponent).title(viewTitle)]),
     );
 
 const awaitingPayment = (S: StructureBuilder) =>
@@ -191,7 +193,7 @@ const bookingFlowGroup = (S: StructureBuilder) =>
         .title("Booking Flow")
         .items([
           singletonListItem(S, "bookingPage", "Booking Page"),
-          pagePreviewSingletonListItem(S, "thankYouPage", "Thank You Page", ThankYouPagePreview),
+          singletonWithViewListItem(S, "thankYouPage", "Thank You Page", ThankYouPagePreview, "Preview"),
           singletonListItem(S, "bookingForm", "Booking Form"),
           S.divider(),
           singletonListItem(S, "giftSettings", "Gift Settings"),
@@ -277,7 +279,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
       singletonListItem(S, "theme", "Theme"),
       S.divider(),
       pagesGroup(S),
-      singletonListItem(S, "linksPage", "🔗 TikTok links page"),
+      singletonWithViewListItem(S, "linksPage", "🔗 TikTok links page", LinksPageStats, "Taps"),
       emailsGroup(S),
       formBuildingBlocksGroup(S),
       S.divider(),

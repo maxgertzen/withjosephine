@@ -251,6 +251,14 @@ describe("middleware CSP + draft hardening", () => {
     expect(res.cookieStore.get("consent-required")).toBe("1");
   });
 
+  it("sets no cookie at all on a links page tap", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", pathname: "/tt/go/home", country: "DE", otherCookies: ["preview-active"] }),
+    ) as unknown as FakeRes;
+    expect(res.cookieStore.size).toBe(0);
+    expect(res.deletedCookies).toEqual([]);
+  });
+
   it("sets the consent-required cookie to '1' for GDPR-aligned regions", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, host: "withjosephine.com", country: "DE" }),

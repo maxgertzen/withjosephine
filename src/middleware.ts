@@ -7,7 +7,7 @@ import {
   PRODUCTION_HOSTS,
 } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
-import { routeLinksHost } from "@/lib/links/linksHostRouting";
+import { isTapCounterPath, routeLinksHost } from "@/lib/links/linksHostRouting";
 import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { PREVIEW_ACTIVE_COOKIE } from "@/lib/previewModeCookie";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
@@ -200,16 +200,18 @@ export function middleware(request: NextRequest) {
     ? NextResponse.rewrite(new URL(rewritePath, request.url), { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } });
 
-  response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
-    sameSite: "lax",
-    path: "/",
-    secure: !isDev,
-  });
+  if (!isTapCounterPath(pathname)) {
+    response.cookies.set(CONSENT_REQUIRED_COOKIE, consentRequired ? "1" : "0", {
+      sameSite: "lax",
+      path: "/",
+      secure: !isDev,
+    });
 
-  if (isDraft) {
-    response.cookies.set(PREVIEW_ACTIVE_COOKIE, "1", { sameSite: "lax", path: "/", secure: !isDev });
-  } else if (request.cookies.has(PREVIEW_ACTIVE_COOKIE)) {
-    response.cookies.delete(PREVIEW_ACTIVE_COOKIE);
+    if (isDraft) {
+      response.cookies.set(PREVIEW_ACTIVE_COOKIE, "1", { sameSite: "lax", path: "/", secure: !isDev });
+    } else if (request.cookies.has(PREVIEW_ACTIVE_COOKIE)) {
+      response.cookies.delete(PREVIEW_ACTIVE_COOKIE);
+    }
   }
 
   // Strict CSP only on the public apex without draft mode. Anywhere else

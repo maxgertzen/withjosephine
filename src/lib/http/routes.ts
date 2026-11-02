@@ -7,6 +7,7 @@ export const CONTACT_API_ROUTE = "/api/contact";
 export const ADMIN_PREVIEW_RECIPIENTS_API_ROUTE = "/api/admin/list-preview-recipients";
 export const ADMIN_SEND_PREVIEW_API_ROUTE = "/api/admin/send-email-preview";
 export const ADMIN_DELETE_USER_API_ROUTE = "/api/admin/delete-user";
+export const TT_TAP_COUNTS_API_ROUTE = "/api/tt/taps";
 export const PRIVACY_EXPORT_API_ROUTE = "/api/privacy/export";
 export const DRAFT_DISABLE_ROUTE = "/api/draft/disable";
 export const GIFT_PURCHASE_API_ROUTE = "/api/gift/purchase";

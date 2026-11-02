@@ -2,6 +2,7 @@ import type { StructureBuilder, StructureResolverContext } from "sanity/structur
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../views/EmailPreview", () => ({ EmailPreview: () => null }));
+vi.mock("../views/LinksPageStats", () => ({ LinksPageStats: () => null }));
 vi.mock("../views/StudioPagePreview", () => ({
   ThankYouPagePreview: () => null,
 }));
@@ -132,6 +133,12 @@ describe("desk structure TikTok links page", () => {
     const document = childOf(item(root, "linksPage"));
     expect(document.calls.schemaType).toEqual(["linksPage"]);
     expect(document.calls.documentId).toEqual(["linksPage"]);
+  });
+
+  it("shows the form and a Taps view on the linksPage document", () => {
+    const views = childOf(item(root, "linksPage")).calls.views[0] as FakeNode[];
+    expect(views.map((view) => view.kind)).toEqual(["view.form", "view.component"]);
+    expect(views[1].calls.title).toEqual(["Taps"]);
   });
 
   it("treats linksPage as a singleton", () => {

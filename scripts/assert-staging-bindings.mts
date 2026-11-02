@@ -50,7 +50,7 @@ type WranglerConfig = {
 
 const STAGING_SUFFIX = "-staging";
 const DELIVER_REQUESTED_CRON = "*/15 * * * *";
-const REQUIRED_LIMITERS = ["GIFT_CODE_LIMITER", "DELIVERY_WAKE_LIMITER"];
+const REQUIRED_LIMITERS = ["GIFT_CODE_LIMITER", "DELIVERY_WAKE_LIMITER", "TT_TAP_LIMITER"];
 
 function stripJsonc(source: string): string {
   return source

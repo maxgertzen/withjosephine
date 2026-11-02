@@ -4,18 +4,17 @@ import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
 import { LINKS_PAGE_ORIGIN } from "@/lib/constants";
 import { nonBlank } from "@/lib/content/nonBlank";
 import { buildTimeSiteOrigin } from "@/lib/env";
-import {
-  fetchLinksPagePublished,
-  fetchNotesStatePublished,
-  fetchReadingsPublished,
-  fetchSiteSettingsPublished,
-} from "@/lib/sanity/fetch";
+import { tapCounterPath } from "@/lib/links/linksHostRouting";
+import { fetchLinksPagePublished } from "@/lib/sanity/fetch";
 import { buildPageMetadata } from "@/lib/seoMetadata";
 
 import { deriveLinksPageViewProps } from "./deriveLinksPageViewProps";
 import { linksPageFontVariables } from "./fonts";
 import { LinksPageView } from "./LinksPageView";
 import { LinksPageViewTracking } from "./LinksPageViewTracking";
+import { fetchPublishedLinksPageInputs } from "./publishedLinksPage";
+
+const MAIL_APP_OPENS_ONLY_FROM_A_DIRECT_LINK = "email";
 
 export async function generateMetadata(): Promise<Metadata> {
   const state = await fetchLinksPagePublished();
@@ -32,24 +31,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LinksPage() {
-  const [state, readings, siteSettings, notesState] = await Promise.all([
-    fetchLinksPagePublished(),
-    fetchReadingsPublished(),
-    fetchSiteSettingsPublished(),
-    fetchNotesStatePublished(),
-  ]);
+  const inputs = await fetchPublishedLinksPageInputs();
+  const siteOrigin = buildTimeSiteOrigin();
+  const props = deriveLinksPageViewProps({ ...inputs, siteOrigin });
+  const buttons = props.buttons.map((button) =>
+    button.destination === MAIL_APP_OPENS_ONLY_FROM_A_DIRECT_LINK
+      ? button
+      : { ...button, href: `${siteOrigin}${tapCounterPath(button.key)}` },
+  );
 
   return (
     <>
       <LinksPageView
-        {...deriveLinksPageViewProps({
-          state,
-          readings,
-          siteSettings,
-          notesState,
-          siteOrigin: buildTimeSiteOrigin(),
-        })}
-        fontVariables={linksPageFontVariables(state?.page?.nameFont, state?.page?.textFont)}
+        {...props}
+        buttons={buttons}
+        fontVariables={linksPageFontVariables(inputs.state?.page?.nameFont, inputs.state?.page?.textFont)}
       />
       <LinksPageViewTracking />
     </>

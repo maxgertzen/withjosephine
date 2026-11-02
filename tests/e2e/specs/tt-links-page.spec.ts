@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { CONSENT_STORAGE_KEY } from "@/lib/consent";
+import { isTapCounterPath } from "@/lib/links/linksHostRouting";
 import { CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 
 import { MOBILE_AND_DESKTOP } from "../helpers/viewports";
@@ -10,7 +11,7 @@ const BUTTON_LINKS = "main ul a";
 const NO_CONSENT_COUNTRY = { "cf-ipcountry": "TH" };
 const CONSENT_COUNTRY = { "cf-ipcountry": "DE" };
 
-const EXPECTED_HREFS = [
+const EXPECTED_DESTINATIONS = [
   "https://shop.beacons.ai/withjosephine",
   "/book/soul-blueprint?utm_source=tiktok&utm_medium=bio&utm_content=reading%3Areading-soul-blueprint",
   "/?utm_source=tiktok&utm_medium=bio&utm_content=home",
@@ -23,14 +24,25 @@ test.describe("TikTok links page", () => {
 
   test("shows the name, the short line and every button as a plain link, without scrolling sideways", async ({
     page,
+    request,
+    baseURL,
   }) => {
     await page.goto("/tt");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("withjosephine");
     await expect(page.getByText("Psychological astrology & Akashic Records readings")).toBeVisible();
     const links = page.locator(BUTTON_LINKS);
-    await expect(links).toHaveCount(EXPECTED_HREFS.length);
-    for (const [index, href] of EXPECTED_HREFS.entries()) {
-      await expect(links.nth(index)).toHaveAttribute("href", href);
+    await expect(links).toHaveCount(EXPECTED_DESTINATIONS.length);
+    for (const [index, destination] of EXPECTED_DESTINATIONS.entries()) {
+      const href = await links.nth(index).getAttribute("href");
+      if (destination.startsWith("mailto:")) {
+        expect(href).toBe(destination);
+        continue;
+      }
+      expect(isTapCounterPath(href!)).toBe(true);
+      const tap = await request.get(href!, { maxRedirects: 0 });
+      expect(tap.status()).toBe(307);
+      expect(tap.headers()["set-cookie"]).toBeUndefined();
+      expect(tap.headers().location).toBe(new URL(destination, baseURL).toString());
     }
     await expect(links.first()).toContainText("Free 20-page guide & reflection workbook");
     const scrollsSideways = await page.evaluate(

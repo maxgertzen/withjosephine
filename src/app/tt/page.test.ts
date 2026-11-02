@@ -11,9 +11,9 @@ vi.mock("@/lib/sanity/fetch", () => ({
 }));
 
 import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
-import { fetchLinksPagePublished } from "@/lib/sanity/fetch";
+import { fetchLinksPagePublished, fetchReadingsPublished } from "@/lib/sanity/fetch";
 
-import { generateMetadata } from "./page";
+import LinksPage, { generateMetadata } from "./page";
 
 const mockFetchLinksPage = vi.mocked(fetchLinksPagePublished);
 
@@ -45,5 +45,23 @@ describe("links page metadata", () => {
 
     mockFetchLinksPage.mockResolvedValue({ page: null, aboutPhotoUrl: null });
     expect(JSON.stringify((await generateMetadata()).openGraph)).toContain("/og-image.png");
+  });
+});
+
+describe("links page buttons", () => {
+  it("sends every button through the tap counter, and email buttons straight to the mail app", async () => {
+    mockFetchLinksPage.mockResolvedValue({
+      page: {
+        buttons: [
+          { _key: "a", label: "Home", destination: "home" },
+          { _key: "b", label: "Email", destination: "email", email: "hello@withjosephine.com" },
+        ],
+      },
+      aboutPhotoUrl: null,
+    });
+    vi.mocked(fetchReadingsPublished).mockResolvedValue([]);
+    const page = (await LinksPage()) as { props: { children: { props: { buttons: { key: string; href: string }[] } }[] } };
+    const buttons = page.props.children[0].props.buttons;
+    expect(buttons.map(({ href }) => href)).toEqual(["/tt/go/home", "mailto:hello@withjosephine.com"]);
   });
 });

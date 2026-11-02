@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { routeLinksHost } from "./linksHostRouting";
+import { isTapCounterPath, routeLinksHost, tapCounterPath } from "./linksHostRouting";
+
+describe("tap counter paths", () => {
+  it("puts every tap under /tt/go and recognises only those paths", () => {
+    expect(tapCounterPath("reading:abc")).toBe("/tt/go/reading:abc");
+    expect(isTapCounterPath(tapCounterPath("home"))).toBe(true);
+    expect(isTapCounterPath("/tt")).toBe(false);
+    expect(isTapCounterPath("/tt/gone")).toBe(false);
+  });
+});
 
 describe("routeLinksHost", () => {
   it("serves the links page at the root of links.withjosephine.com", () => {
