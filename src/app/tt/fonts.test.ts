@@ -30,7 +30,13 @@ vi.mock("next/font/google", () => {
   );
 });
 
-import { LINKS_PAGE_NAME_FONT_NAMES, LINKS_PAGE_TEXT_FONT_NAMES } from "@/lib/theme/palette";
+import {
+  LINKS_PAGE_NAME_FONT_NAMES,
+  LINKS_PAGE_SLANTED_NAME_CUTS,
+  LINKS_PAGE_TEXT_CUT,
+  LINKS_PAGE_TEXT_CUTS,
+  LINKS_PAGE_TEXT_FONT_NAMES,
+} from "@/lib/theme/palette";
 
 import {
   LINKS_PAGE_BODY_FONTS,
@@ -61,6 +67,23 @@ describe("links page fonts", () => {
     for (const call of wordCuts) {
       expect(call.options.style, call.family).toEqual(["normal"]);
       expect(call.options.weight, call.family).not.toContain("700");
+    }
+  });
+
+  it("loads the slanted name cut that the Studio font preview shows", () => {
+    for (const [font, cut] of Object.entries(LINKS_PAGE_SLANTED_NAME_CUTS)) {
+      const family = font.replace(/ /g, "_");
+      const loader = calls.find((call) => call.family === family && !isBoldCut(call) && (call.options.style as string[]).includes(cut.italic ? "italic" : "normal") && (call.options.weight as string[]).includes(cut.weight));
+      expect(loader, font).toBeDefined();
+    }
+  });
+
+  it("loads the word font weight that the Studio font preview shows", () => {
+    for (const font of LINKS_PAGE_TEXT_FONT_NAMES) {
+      const { weight } = LINKS_PAGE_TEXT_CUTS[font] ?? LINKS_PAGE_TEXT_CUT;
+      const family = font.replace(/ /g, "_");
+      const loader = calls.find((call) => call.family === family && !isBoldCut(call) && JSON.stringify(call.options.style) === '["normal"]' && (call.options.weight as string[]).includes(weight));
+      expect(loader, font).toBeDefined();
     }
   });
 

@@ -17,7 +17,15 @@ import {
 import type { LinkDestination } from "@/lib/links/linkKey";
 import { SOCIAL_PLATFORMS, socialPlatformTitle } from "@/lib/links/socialPlatforms";
 import { isTikTokVideoLink } from "@/lib/links/tiktokVideo";
-import { ALL_COLOR_PRESETS, LINKS_PAGE_NAME_FONT_NAMES, LINKS_PAGE_TEXT_FONT_NAMES } from "@/lib/theme/palette";
+import {
+  ALL_COLOR_PRESETS,
+  DEFAULT_BODY_FONT,
+  DEFAULT_DISPLAY_FONT,
+  LINKS_PAGE_NAME_FONT_NAMES,
+  LINKS_PAGE_TEXT_FONT_NAMES,
+} from "@/lib/theme/palette";
+import { READINGS } from "../../src/data/readings";
+import { type FontSample, fontPickerInput } from "../components/FontPickerInput";
 import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
 import {
   bothColoursPicked,
@@ -210,14 +218,15 @@ const colourField = (name: keyof ColourDocument, title: string, pair?: ReadableP
       : undefined,
   });
 
-const fontField = (name: string, title: string, fonts: string[]) =>
+const fontField = (name: string, title: string, fonts: string[], sample: FontSample) =>
   defineField({
     name,
     title,
     type: "string",
     group: "look",
-    description: "The font for these words.",
+    description: "Each choice is shown in its own font. Pick the one you like.",
     options: { list: [SITE_STYLE_CHOICE, ...fonts.map((font) => ({ title: font, value: font }))] },
+    components: { input: fontPickerInput(sample) },
     initialValue: LINKS_PAGE_SITE_STYLE,
   });
 
@@ -449,8 +458,16 @@ export const linksPage = defineType({
       siteWords: "textOnDark",
       siteBackground: "bgInteractive",
     }),
-    fontField("nameFont", "Font for the name", LINKS_PAGE_NAME_FONT_NAMES),
-    fontField("textFont", "Font for the buttons and lines", LINKS_PAGE_TEXT_FONT_NAMES),
+    fontField("nameFont", "Font for the name", LINKS_PAGE_NAME_FONT_NAMES, {
+      kind: "name",
+      words: { path: ["name"], fallback: LINKS_PAGE_DEFAULTS.name },
+      siteFont: { themeField: "displayFont", fallback: DEFAULT_DISPLAY_FONT },
+    }),
+    fontField("textFont", "Font for the buttons and lines", LINKS_PAGE_TEXT_FONT_NAMES, {
+      kind: "text",
+      words: { path: ["buttons", 0, "label"], fallback: READINGS[0].name },
+      siteFont: { themeField: "bodyFont", fallback: DEFAULT_BODY_FONT },
+    }),
     choiceField("nameStyle", "How the name looks", NAME_STYLE_TITLES, { direction: "horizontal" }),
     choiceField("buttonLetterCase", "Letters on the buttons", LETTER_CASE_TITLES, { direction: "horizontal" }),
     choiceField("nameSize", "Size of the name", NAME_SIZE_TITLES, { description: "How big your name is.", direction: "horizontal" }),

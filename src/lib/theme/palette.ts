@@ -219,3 +219,34 @@ export const LINKS_PAGE_SLAB_FONT_NAMES = ["Bitter", "Zilla Slab", "Roboto Slab"
 export const LINKS_PAGE_NAME_FONT_NAMES = [...DISPLAY_FONT_NAMES, ...LINKS_PAGE_SLAB_FONT_NAMES];
 export const BODY_FONT_NAMES = Object.keys(BODY_FONTS);
 export const LINKS_PAGE_TEXT_FONT_NAMES = [...BODY_FONT_NAMES, "Lora", "Bitter", "Libre Baskerville"];
+
+export type FontCut = { weight: string; italic: boolean };
+
+export const LINKS_PAGE_SLANTED_NAME_CUTS: Record<string, FontCut> = {
+  "Cormorant Garamond": { weight: "300", italic: true },
+  "Playfair Display": { weight: "400", italic: true },
+  "EB Garamond": { weight: "400", italic: true },
+  Lora: { weight: "400", italic: true },
+  "Crimson Text": { weight: "400", italic: true },
+  "Libre Baskerville": { weight: "400", italic: true },
+  Bitter: { weight: "300", italic: true },
+  "Zilla Slab": { weight: "300", italic: true },
+  "Roboto Slab": { weight: "300", italic: false },
+};
+
+export const LINKS_PAGE_BOLD_NAME_CUT: FontCut = { weight: "700", italic: false };
+
+export const LINKS_PAGE_TEXT_CUT: FontCut = { weight: "500", italic: false };
+
+export const LINKS_PAGE_TEXT_CUTS: Record<string, FontCut> = {
+  "Libre Baskerville": { weight: "400", italic: false },
+};
+
+export function siteFontCut(font: FontConfig | undefined, target: string, slanted: boolean): FontCut {
+  const weights = (font?.weights ?? [target]).map(Number);
+  const wanted = Number(target);
+  const nearest = weights.reduce((best, weight) => (Math.abs(weight - wanted) < Math.abs(best - wanted) ? weight : best));
+  return { weight: String(nearest), italic: slanted && (font?.styles.includes("italic") ?? false) };
+}
+
+export const LINKS_PAGE_SERIF_FONT_NAMES = new Set([...LINKS_PAGE_NAME_FONT_NAMES, "Lora", "Bitter", "Libre Baskerville"]);
