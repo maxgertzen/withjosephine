@@ -31,6 +31,14 @@ describe("routeLinksHost", () => {
     ).toEqual({ kind: "redirect", url: "https://withjosephine.com/?utm_source=tiktok&utm_medium=bio&utm_content=home" });
   });
 
+  it("answers the consent request the links page sends on the subdomain itself, and sends every other API path to the main site", () => {
+    expect(routeLinksHost("links.withjosephine.com", "/api/consent", "")).toBeNull();
+    expect(routeLinksHost("links.withjosephine.com", "/api/auth/magic-link/verify", "?t=x")).toEqual({
+      kind: "redirect",
+      url: "https://withjosephine.com/api/auth/magic-link/verify?t=x",
+    });
+  });
+
   it("still shows the links page when TikTok adds its own tracking to the bio link", () => {
     expect(routeLinksHost("links.withjosephine.com", "/", "?_t=abc&_r=1")).toEqual({ kind: "rewrite", pathname: "/tt" });
   });

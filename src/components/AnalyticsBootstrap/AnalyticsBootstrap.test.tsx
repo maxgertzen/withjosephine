@@ -19,7 +19,8 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 
 import { initAnalytics } from "@/lib/analytics";
-import { CONSENT_COOKIE, CONSENT_STORAGE_KEY as STORAGE_KEY } from "@/lib/consent";
+import { CONSENT_STORAGE_KEY as STORAGE_KEY } from "@/lib/consent";
+import { CONSENT_COOKIE } from "@/lib/consentCookie";
 
 import { AnalyticsBootstrap } from "./AnalyticsBootstrap";
 

@@ -7,9 +7,11 @@ import {
   checkButtonTarget,
   checkSocialLink,
   COLOURS_TOO_CLOSE,
+  LINKS_PAGE_HARD_TO_READ,
+  linksPageStaysReadable,
   noButtonGoesToTheSamePlace,
   readablePair,
-  reuseSiteColoursFor,
+  reuseFor,
   SAME_PLACE_TWICE,
   type SiteColours,
   siteColoursFromTheme,
@@ -31,6 +33,29 @@ describe("readablePair", () => {
 
   it("reads nested hex values", () => {
     expect(readablePair({ hex: { hex: "#0D0B1A" } }, "#3d3633", undefined, "#faf8f4")).toBe(true);
+  });
+});
+
+describe("linksPageStaysReadable", () => {
+  const lightTheme = { bgPrimary: { hex: "#FAF8F4" }, textPrimary: { hex: "#3D3633" } };
+
+  it("warns when a new Theme page colour makes the words Becky picked hard to read", () => {
+    const linksPage = { wordsColour: { hex: "#FAF8F4" } };
+    expect(linksPageStaysReadable(linksPage, { bgPrimary: { hex: "#0D0B1A" } })).toBe(true);
+    expect(linksPageStaysReadable(linksPage, lightTheme)).toBe(LINKS_PAGE_HARD_TO_READ);
+  });
+
+  it("checks the buttons too", () => {
+    const linksPage = { buttonColour: { hex: "#FAF8F4" } };
+    expect(linksPageStaysReadable(linksPage, { textOnDark: { hex: "#FAF8F4" } })).toBe(LINKS_PAGE_HARD_TO_READ);
+  });
+
+  it("stays quiet when the links page picked both colours of a pair, or neither, or does not exist", () => {
+    expect(linksPageStaysReadable({ pageColour: { hex: "#0D0B1A" }, wordsColour: { hex: "#FAF8F4" } }, lightTheme)).toBe(
+      true,
+    );
+    expect(linksPageStaysReadable({}, { bgPrimary: { hex: "#3D3633" }, textPrimary: { hex: "#3D3633" } })).toBe(true);
+    expect(linksPageStaysReadable(null, lightTheme)).toBe(true);
   });
 });
 
@@ -122,13 +147,13 @@ describe("bothColoursPicked", () => {
   });
 });
 
-describe("reuseSiteColoursFor", () => {
+describe("reuseFor", () => {
   const colours: SiteColours = siteColoursFromTheme(null);
 
   it("loads once and reuses the answer within the window", async () => {
     let clock = 0;
     const load = vi.fn(async () => colours);
-    const get = reuseSiteColoursFor(60_000, () => clock);
+    const get = reuseFor<SiteColours>(60_000, () => clock);
     await get(load);
     clock = 59_999;
     await get(load);
@@ -140,7 +165,7 @@ describe("reuseSiteColoursFor", () => {
 
   it("tries again on the next call after a failed load", async () => {
     const load = vi.fn<() => Promise<SiteColours | null>>().mockResolvedValueOnce(null).mockResolvedValueOnce(colours);
-    const get = reuseSiteColoursFor(60_000, () => 0);
+    const get = reuseFor<SiteColours>(60_000, () => 0);
     expect(await get(load)).toBeNull();
     expect(await get(load)).toEqual(colours);
     expect(load).toHaveBeenCalledTimes(2);

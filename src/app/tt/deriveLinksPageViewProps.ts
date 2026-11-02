@@ -20,12 +20,10 @@ import { type MappedSocialLink, mapSocialLinks } from "@/lib/sanity/mappers";
 import type {
   SanityLinksPage,
   SanityLinksPageButton,
+  SanityLinksPageReading,
   SanityLinksPageState,
-  SanityNotesState,
-  SanityReading,
-  SanitySiteSettings,
 } from "@/lib/sanity/types";
-import { linksPageColourVariables, safeCssHex } from "@/lib/theme/linksPageStyle";
+import { linksPageColourVariables } from "@/lib/theme/linksPageStyle";
 
 import type { LinksPageButton, LinksPageViewProps } from "./LinksPageView";
 
@@ -38,7 +36,7 @@ type ButtonSource = {
   target: LinksPageTarget;
 };
 
-function defaultButtonSources(readings: SanityReading[]): ButtonSource[] {
+function defaultButtonSources(readings: SanityLinksPageReading[]): ButtonSource[] {
   const shown =
     readings.length > 0
       ? readings.filter(isReadingOnSite).map((reading) => ({ id: reading._id, slug: reading.slug, name: reading.name }))
@@ -124,26 +122,20 @@ function oneOf<T extends string>(choices: readonly T[], value: string | undefine
   return (choices as readonly string[]).includes(clean ?? "") ? (clean as T) : fallback;
 }
 
-export function deriveLinksPageViewProps(input: {
-  state: SanityLinksPageState | null;
-  readings: SanityReading[];
-  siteSettings: SanitySiteSettings | null;
-  notesState: SanityNotesState | null;
-  siteOrigin: string;
-}): LinksPageViewProps {
-  const { state, readings, siteSettings, notesState, siteOrigin } = input;
+export function deriveLinksPageViewProps(state: SanityLinksPageState | null, siteOrigin: string): LinksPageViewProps {
   const page = state?.page ?? null;
-  const notesVisible = isNotesVisible(notesState);
+  const notesVisible = isNotesVisible(state?.notesState ?? null);
   const pickedButtons = page?.buttons ?? [];
   const sources =
     pickedButtons.length > 0
       ? pickedButtons
           .map((button) => pickedButtonSource(button, notesVisible))
           .filter((source): source is ButtonSource => source !== null)
-      : defaultButtonSources(readings);
+      : defaultButtonSources(state?.readings ?? []);
   const photo = page?.photoUrl || state?.aboutPhotoUrl || undefined;
   const showSocialLinks = page?.showSocialLinks ?? LINKS_PAGE_DEFAULTS.showSocialLinks;
   const ownSocialLinks = pageSocialLinks(page);
+  const socialLinks = ownSocialLinks.length > 0 ? ownSocialLinks : mapSocialLinks(state?.siteSettings ?? null);
 
   return {
     photoUrl: photo ? sanityImageUrl(photo, { w: PHOTO_SOURCE_PX, h: PHOTO_SOURCE_PX, fit: "crop" }) : undefined,
@@ -163,8 +155,7 @@ export function deriveLinksPageViewProps(input: {
     videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
     videoIds: [],
     playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,
-    socialLinks: showSocialLinks ? (ownSocialLinks.length > 0 ? ownSocialLinks : mapSocialLinks(siteSettings)) : [],
+    socialLinks: showSocialLinks ? socialLinks : [],
     colourVariables: linksPageColourVariables(page ?? {}),
-    pageColour: safeCssHex(page?.pageColour),
   };
 }

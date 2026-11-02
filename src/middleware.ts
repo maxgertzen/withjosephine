@@ -8,6 +8,7 @@ import {
   PRODUCTION_HOSTS,
 } from "@/lib/constants";
 import { isUnderConstruction } from "@/lib/featureFlags";
+import { CONSENT_API_ROUTE } from "@/lib/http/routes";
 import { isTapCounterPath, routeLinksHost } from "@/lib/links/linksHostRouting";
 import { redactSensitiveUrl } from "@/lib/logging/redactSearchParams";
 import { PREVIEW_ACTIVE_COOKIE } from "@/lib/previewModeCookie";
@@ -63,6 +64,7 @@ const APEX_ALLOWLIST_PREFIXES = [
   "/api/delivery/wake",
   "/api/internal/",
   "/api/admin/",
+  CONSENT_API_ROUTE,
   "/listen/",
   "/privacy",
   "/terms",

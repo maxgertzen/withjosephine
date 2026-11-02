@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { linksPageColourVariables, safeCssHex } from "./linksPageStyle";
+import { linksPageColourVariables } from "./linksPageStyle";
 
 describe("linksPageColourVariables", () => {
   it("sets nothing for colours left blank", () => {
@@ -30,10 +30,14 @@ describe("linksPageColourVariables", () => {
   });
 });
 
-describe("safeCssHex", () => {
+describe("linksPageColourVariables with unsafe colours", () => {
   it("lets only plain hex colours through", () => {
-    expect(safeCssHex({ hex: "#abc" })).toBe("#abc");
-    expect(safeCssHex({ hex: "#fff}body{display:none" })).toBeUndefined();
-    expect(safeCssHex("red")).toBeUndefined();
+    expect(linksPageColourVariables({ pageColour: { hex: "#abc" } })["--j-cream"]).toBe("#abc");
+    expect(
+      linksPageColourVariables({
+        pageColour: { hex: "#fff}body{display:none" },
+        wordsColour: "red",
+      }),
+    ).toEqual({});
   });
 });

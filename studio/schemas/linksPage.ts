@@ -25,19 +25,22 @@ import {
   LINKS_PAGE_NAME_FONT_NAMES,
   LINKS_PAGE_TEXT_FONT_NAMES,
 } from "@/lib/theme/palette";
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 import { READINGS } from "../../src/data/readings";
 import { type FontSample, fontPickerInput } from "../components/FontPickerInput";
 import { pixelSliderInput } from "../components/PixelSliderInput";
-import { PERSPECTIVE_API_VERSION } from "../lib/draftsClient";
+import { publishedValidationClient } from "../lib/draftsClient";
 import {
   bothColoursPicked,
   checkButtonTarget,
   checkSocialLink,
+  LINKS_PAGE_READABLE_PAIRS,
   noButtonGoesToTheSamePlace,
   readablePair,
-  reuseSiteColoursFor,
+  type ReadablePairRule,
+  PUBLISHED_READ_REUSE_MS,
+  reuseFor,
   SITE_COLOURS_QUERY,
-  SITE_COLOURS_REUSE_MS,
   siteColoursFromTheme,
   type SiteColours,
   type StoredLinkButton,
@@ -169,35 +172,20 @@ function targetRule(destination: Exclude<LinkDestination, "home">) {
     checkButtonTarget(destination, (context.parent as { destination?: string } | undefined)?.destination, value);
 }
 
-const reusedSiteColours = reuseSiteColoursFor(SITE_COLOURS_REUSE_MS);
+const reusedSiteColours = reuseFor<SiteColours>(PUBLISHED_READ_REUSE_MS);
 
 async function fetchSiteColours(context: ValidationContext): Promise<SiteColours | null> {
   try {
-    const themeColours = await context
-      .getClient({ apiVersion: PERSPECTIVE_API_VERSION })
-      .withConfig({ perspective: "published" })
-      .fetch<Record<string, unknown> | null>(SITE_COLOURS_QUERY);
+    const themeColours = await publishedValidationClient(context).fetch<Record<string, unknown> | null>(
+      SITE_COLOURS_QUERY,
+    );
     return siteColoursFromTheme(themeColours);
   } catch {
     return null;
   }
 }
 
-type ColourDocument = {
-  pageColour?: unknown;
-  wordsColour?: unknown;
-  buttonColour?: unknown;
-  buttonWordsColour?: unknown;
-};
-
-type ReadablePairRule = {
-  words: keyof ColourDocument;
-  background: keyof ColourDocument;
-  siteWords: keyof SiteColours;
-  siteBackground: keyof SiteColours;
-};
-
-const colourField = (name: keyof ColourDocument, title: string, pair?: ReadablePairRule) =>
+const colourField = (name: keyof LinksPageColours, title: string, pair?: ReadablePairRule) =>
   defineField({
     name,
     title,
@@ -209,7 +197,7 @@ const colourField = (name: keyof ColourDocument, title: string, pair?: ReadableP
     validation: pair
       ? (rule) =>
           rule.custom(async (_value, context) => {
-            const doc = (context.document ?? {}) as ColourDocument;
+            const doc = (context.document ?? {}) as LinksPageColours;
             const words = doc[pair.words];
             const background = doc[pair.background];
             const site = bothColoursPicked(words, background)
@@ -447,19 +435,9 @@ export const linksPage = defineType({
       description: `The words at the very bottom. Leave blank to show "${LINKS_PAGE_DEFAULTS.footerLine}".`,
     }),
     colourField("pageColour", "Page colour"),
-    colourField("wordsColour", "Words colour", {
-      words: "wordsColour",
-      background: "pageColour",
-      siteWords: "textPrimary",
-      siteBackground: "bgPrimary",
-    }),
+    colourField("wordsColour", "Words colour", LINKS_PAGE_READABLE_PAIRS.words),
     colourField("buttonColour", "Button colour"),
-    colourField("buttonWordsColour", "Button words colour", {
-      words: "buttonWordsColour",
-      background: "buttonColour",
-      siteWords: "textOnDark",
-      siteBackground: "bgInteractive",
-    }),
+    colourField("buttonWordsColour", "Button words colour", LINKS_PAGE_READABLE_PAIRS.buttonWords),
     fontField("nameFont", "Font for the name", LINKS_PAGE_NAME_FONT_NAMES, {
       kind: "name",
       words: { path: ["name"], fallback: LINKS_PAGE_DEFAULTS.name },

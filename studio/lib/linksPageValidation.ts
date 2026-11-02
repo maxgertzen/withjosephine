@@ -1,11 +1,14 @@
 import { isValidEmail } from "@/lib/formStyles";
 import { isHttpsAddress, type LinkDestination, linkKey } from "@/lib/links/linkKey";
 import { socialLinkHref } from "@/lib/links/socialPlatforms";
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 import { contrastRatio, extractHex, READABLE_CONTRAST, themeColorOrBuiltIn } from "@/lib/theme/palette";
 
 export const COLOURS_TOO_CLOSE =
   "These two colours are too close. People will not be able to read the words.";
 export const SAME_PLACE_TWICE = "Two buttons go to the same place. Change one of them.";
+export const LINKS_PAGE_HARD_TO_READ =
+  "With this colour, some words on Josephine's Link Tree would be hard to read. Pick another colour here, or open Josephine's Link Tree and change its colours.";
 
 export const SITE_COLOURS_QUERY = `*[_id == "theme"][0].colors{bgPrimary, textPrimary, bgInteractive, textOnDark}`;
 
@@ -25,25 +28,44 @@ export function siteColoursFromTheme(themeColours: Record<string, unknown> | nul
   };
 }
 
-export const SITE_COLOURS_REUSE_MS = 60_000;
+export const PUBLISHED_READ_REUSE_MS = 60_000;
 
-export function reuseSiteColoursFor(
+export function reuseFor<T>(
   reuseMs: number,
   now: () => number = Date.now,
-): (load: () => Promise<SiteColours | null>) => Promise<SiteColours | null> {
-  let loaded: { at: number; colours: Promise<SiteColours | null> } | null = null;
+): (load: () => Promise<T | null>) => Promise<T | null> {
+  let loaded: { at: number; answer: Promise<T | null> } | null = null;
   return (load) => {
     if (!loaded || now() - loaded.at >= reuseMs) {
-      const colours = load();
-      const entry = { at: now(), colours };
+      const answer = load();
+      const entry = { at: now(), answer };
       loaded = entry;
-      colours.then((value) => {
+      answer.then((value) => {
         if (value === null && loaded === entry) loaded = null;
       });
     }
-    return loaded.colours;
+    return loaded.answer;
   };
 }
+
+export type ReadablePairRule = {
+  words: keyof LinksPageColours;
+  background: keyof LinksPageColours;
+  siteWords: keyof SiteColours;
+  siteBackground: keyof SiteColours;
+};
+
+export const LINKS_PAGE_READABLE_PAIRS = {
+  words: { words: "wordsColour", background: "pageColour", siteWords: "textPrimary", siteBackground: "bgPrimary" },
+  buttonWords: {
+    words: "buttonWordsColour",
+    background: "buttonColour",
+    siteWords: "textOnDark",
+    siteBackground: "bgInteractive",
+  },
+} as const satisfies Record<string, ReadablePairRule>;
+
+export const LINKS_PAGE_COLOURS_QUERY = `*[_type == "linksPage"][0]{pageColour, wordsColour, buttonColour, buttonWordsColour}`;
 
 export function bothColoursPicked(words: unknown, background: unknown): boolean {
   return extractHex(words) !== undefined && extractHex(background) !== undefined;
@@ -120,4 +142,19 @@ export function checkButtonTarget(
   if (destination === "email" && !isValidEmail(String(value))) return NOT_AN_EMAIL;
   if (destination === "web" && !isHttpsAddress(String(value))) return NOT_HTTPS;
   return true;
+}
+
+export function linksPageStaysReadable(
+  linksPage: LinksPageColours | null,
+  themeColours: Record<string, unknown> | null,
+): true | string {
+  if (!linksPage) return true;
+  const site = siteColoursFromTheme(themeColours);
+  const unreadable = Object.values(LINKS_PAGE_READABLE_PAIRS).some((pair) => {
+    const words = linksPage[pair.words];
+    const background = linksPage[pair.background];
+    const onlyOnePicked = (extractHex(words) === undefined) !== (extractHex(background) === undefined);
+    return onlyOnePicked && readablePair(words, site[pair.siteWords], background, site[pair.siteBackground]) !== true;
+  });
+  return unreadable ? LINKS_PAGE_HARD_TO_READ : true;
 }

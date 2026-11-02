@@ -222,6 +222,14 @@ export const LINKS_PAGE_TEXT_FONT_NAMES = [...BODY_FONT_NAMES, "Lora", "Bitter",
 
 export type FontCut = { weight: string; italic: boolean };
 
+export function fontFileSlug(family: string): string {
+  return family.toLowerCase().replace(/ /g, "-");
+}
+
+export function fontFileName(family: string, cut: FontCut): string {
+  return `${fontFileSlug(family)}-${cut.weight}${cut.italic ? "-italic" : ""}.woff2`;
+}
+
 export const LINKS_PAGE_SLANTED_NAME_CUTS: Record<string, FontCut> = {
   "Cormorant Garamond": { weight: "300", italic: true },
   "Playfair Display": { weight: "400", italic: true },

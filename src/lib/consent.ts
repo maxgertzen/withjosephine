@@ -3,46 +3,35 @@
 import { useSyncExternalStore } from "react";
 
 import { withLocalStorage } from "@/lib/browserStorage";
-import { sharesSiteCookies,SITE_DOMAIN } from "@/lib/constants";
+import {
+  asConsentChoice,
+  CONSENT_COOKIE,
+  type ConsentChoice,
+  consentCookie,
+} from "@/lib/consentCookie";
+import { sharesSiteCookies } from "@/lib/constants";
 import { cookieValue } from "@/lib/cookieFlag";
+import { CONSENT_API_ROUTE } from "@/lib/http/routes";
 import { CONSENT_REQUIRED, CONSENT_REQUIRED_COOKIE } from "@/lib/region";
 
 export const CONSENT_STORAGE_KEY = "josephine.consent";
-export const CONSENT_COOKIE = "josephine_consent";
-
-const CONSENT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-
-export type ConsentChoice = "granted" | "declined";
 
 const CONSENT_CHANGED_EVENT = "josephine:consent-changed";
-
-
-function asChoice(value: string | null | undefined): ConsentChoice | null {
-  return value === "granted" || value === "declined" ? value : null;
-}
-
-export function consentCookie(choice: ConsentChoice): string {
-  return [
-    `${CONSENT_COOKIE}=${choice}`,
-    "Path=/",
-    `Max-Age=${CONSENT_COOKIE_MAX_AGE_SECONDS}`,
-    "SameSite=Lax",
-    `Domain=.${SITE_DOMAIN}`,
-    "Secure",
-  ].join("; ");
-}
 
 function onProductionHost(): boolean {
   return typeof window !== "undefined" && sharesSiteCookies(window.location.hostname);
 }
 
 export function readConsent(): ConsentChoice | null {
-  const shared = onProductionHost() ? asChoice(cookieValue(document.cookie, CONSENT_COOKIE)) : null;
-  return shared ?? withLocalStorage((storage) => asChoice(storage.getItem(CONSENT_STORAGE_KEY)), null);
+  const shared = onProductionHost() ? asConsentChoice(cookieValue(document.cookie, CONSENT_COOKIE)) : null;
+  return shared ?? withLocalStorage((storage) => asConsentChoice(storage.getItem(CONSENT_STORAGE_KEY)), null);
 }
 
 export function writeConsent(choice: ConsentChoice) {
-  if (onProductionHost()) document.cookie = consentCookie(choice);
+  if (onProductionHost()) {
+    document.cookie = consentCookie(choice);
+    void fetch(CONSENT_API_ROUTE, { method: "POST", body: choice, keepalive: true }).catch(() => undefined);
+  }
   withLocalStorage((storage) => storage.setItem(CONSENT_STORAGE_KEY, choice), undefined);
   window.dispatchEvent(new Event(CONSENT_CHANGED_EVENT));
 }

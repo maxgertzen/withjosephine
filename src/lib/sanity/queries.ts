@@ -1,5 +1,7 @@
 import { groq } from "next-sanity";
 
+const PUBLISHED_NOTES_COUNT = `count(*[_type == "article" && defined(slug.current)])`;
+
 const LINKS_PAGE_SEO_PROJECTION = `seo {
       metaTitle,
       metaDescription,
@@ -475,7 +477,7 @@ export const notesStateQuery = groq`
       ),
       "indexIllustrationUrl": indexIllustration.asset->url
     },
-    "publishedCount": count(*[_type == "article" && defined(slug.current)])
+    "publishedCount": ${PUBLISHED_NOTES_COUNT}
   }
 `;
 
@@ -584,6 +586,12 @@ export const linksPageQuery = groq`
         "file": select(destination == "file" => file.asset->{ _id, url })
       }
     },
-    "aboutPhotoUrl": *[_type == "landingPage"][0].about.image.asset->url
+    "aboutPhotoUrl": *[_type == "landingPage"][0].about.image.asset->url,
+    "readings": *[_type == "reading"] | order(orderRank) { _id, onSite, name, "slug": slug.current },
+    "notesState": {
+      "settings": *[_type == "notesSettings"][0] { enabled },
+      "publishedCount": ${PUBLISHED_NOTES_COUNT}
+    },
+    "siteSettings": *[_type == "siteSettings"][0] { socialLinks }
   }
 `;

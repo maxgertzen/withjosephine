@@ -32,14 +32,19 @@ describe("LinksPageView", () => {
     expect(screen.getByText("withjosephine.com")).toBeInTheDocument();
   });
 
-  it("paints Becky's colours on the page and the body", () => {
-    const { container } = render(<LinksPageView {...LINKS_PAGE_DARK_ARGS} />);
-    const wrapper = container.firstElementChild as HTMLElement;
-    expect(wrapper.style.getPropertyValue("--j-bg-primary")).toBe("#0D0B1A");
-    expect(container.querySelector("style")?.textContent).toBe("body{background-color:#0D0B1A}");
+  it("sets Becky's colours and fonts on the whole page, so the consent banner uses them too", () => {
+    const { container } = render(
+      <LinksPageView {...LINKS_PAGE_DARK_ARGS} fontVariables={{ "--font-body-source": "'__Bitter_1', serif" }} />,
+    );
+    const rule = container.querySelector("style")?.textContent ?? "";
+    expect(rule.startsWith(":root body{")).toBe(true);
+    expect(rule).toContain("--j-cream:#0D0B1A");
+    expect(rule).toContain("--j-bg-primary:#0D0B1A");
+    expect(rule).toContain("--font-body-source:'__Bitter_1', serif");
+    expect((container.firstElementChild as HTMLElement).getAttribute("style")).toBeNull();
   });
 
-  it("adds no body colour when the page colour is left blank", () => {
+  it("adds no style when Becky picked no colours or fonts", () => {
     const { container } = render(<LinksPageView {...LINKS_PAGE_FULL_ARGS} />);
     expect(container.querySelector("style")).toBeNull();
   });

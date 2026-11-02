@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { SocialLinks } from "@/components/SocialLinks";
 import { socialIcon } from "@/components/SocialLinks/socialIcons";
@@ -47,7 +47,6 @@ export type LinksPageViewProps = {
   playVideo: string;
   socialLinks: MappedSocialLink[];
   colourVariables: Record<string, string>;
-  pageColour?: string;
   fontVariables?: Record<string, string>;
   inStudioPreview?: boolean;
 };
@@ -85,6 +84,13 @@ const BUTTON_SHAPE_CLASSES: Record<LinksPageButtonShape, string> = {
 
 const STAND_OUT_CLASSES = "ring-2 ring-j-ornament ring-offset-2 ring-offset-j-cream";
 
+const WHOLE_PAGE_SELECTOR = ":root body";
+
+function wholePageStyle(variables: Record<string, string>): string | null {
+  const declarations = Object.entries(variables).map(([name, value]) => `${name}:${value}`);
+  return declarations.length > 0 ? `${WHOLE_PAGE_SELECTOR}{${declarations.join(";")}}` : null;
+}
+
 const SOCIAL_LINK_CLASSES = "text-j-text-heading hover:opacity-70 transition-opacity";
 
 function trackingAttributes(button: LinksPageButton) {
@@ -118,15 +124,14 @@ export function LinksPageView({
   playVideo,
   socialLinks,
   colourVariables,
-  pageColour,
   fontVariables,
   inStudioPreview = false,
 }: LinksPageViewProps) {
-  const style = { ...colourVariables, ...fontVariables } as CSSProperties;
+  const pageStyle = wholePageStyle({ ...colourVariables, ...fontVariables });
 
   return (
-    <div style={style} className="min-h-dvh bg-j-cream text-j-text">
-      {pageColour ? <style>{`body{background-color:${pageColour}}`}</style> : null}
+    <div className="min-h-dvh bg-j-cream text-j-text">
+      {pageStyle ? <style>{pageStyle}</style> : null}
       <main
         id="main"
         className="mx-auto flex w-full max-w-md flex-col items-center px-6 pt-14 pb-10 text-center [body:has(#consent-banner-title)_&]:pb-72"

@@ -12,7 +12,6 @@ import { deriveLinksPageViewProps } from "./deriveLinksPageViewProps";
 import { linksPageExtras } from "./linksPageExtras";
 import { LinksPageView } from "./LinksPageView";
 import { LinksPageViewTracking } from "./LinksPageViewTracking";
-import { fetchPublishedLinksPageInputs } from "./publishedLinksPage";
 
 export async function generateMetadata(): Promise<Metadata> {
   const state = await fetchLinksPagePublished();
@@ -29,9 +28,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LinksPage() {
-  const inputs = await fetchPublishedLinksPageInputs();
+  const state = await fetchLinksPagePublished();
   const siteOrigin = buildTimeSiteOrigin();
-  const props = deriveLinksPageViewProps({ ...inputs, siteOrigin });
+  const props = deriveLinksPageViewProps(state, siteOrigin);
   const buttons = props.buttons.map((button) =>
     button.countsTaps ? { ...button, href: `${siteOrigin}${tapCounterPath(button.key)}` } : button,
   );
@@ -41,7 +40,7 @@ export default async function LinksPage() {
       <LinksPageView
         {...props}
         buttons={buttons}
-        {...await linksPageExtras(props, inputs.state?.page)}
+        {...await linksPageExtras(props, state?.page)}
       />
       <LinksPageViewTracking />
     </>

@@ -4,36 +4,41 @@ import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 import type {
   SanityLinksPage,
+  SanityLinksPageReading,
   SanityLinksPageState,
   SanityNotesState,
-  SanityReading,
-  SanitySiteSettings,
 } from "@/lib/sanity/types";
 
 import { deriveLinksPageViewProps } from "./deriveLinksPageViewProps";
 
-const reading = (overrides: Partial<SanityReading>): SanityReading =>
-  ({ _id: "r1", name: "Soul Blueprint", slug: "soul-blueprint", onSite: true, ...overrides }) as SanityReading;
+const reading = (overrides: Partial<SanityLinksPageReading>): SanityLinksPageReading => ({
+  _id: "r1",
+  name: "Soul Blueprint",
+  slug: "soul-blueprint",
+  onSite: true,
+  ...overrides,
+});
 
 const visibleNotes: SanityNotesState = {
   settings: { enabled: true } as SanityNotesState["settings"],
   publishedCount: 2,
 };
 
-const siteSettings = {
-  socialLinks: [{ platform: "tiktok", url: "https://tiktok.com/@withjosephine", label: "TikTok" }],
-} as SanitySiteSettings;
+const siteSocialLinks = [{ platform: "tiktok", url: "https://tiktok.com/@withjosephine", label: "TikTok" }];
 
-function derive(page: SanityLinksPage | null, extra: Partial<Parameters<typeof deriveLinksPageViewProps>[0]> = {}) {
-  const state: SanityLinksPageState = { page, aboutPhotoUrl: "https://cdn.sanity.io/about.jpg" };
-  return deriveLinksPageViewProps({
-    state,
+function derive(
+  page: SanityLinksPage | null,
+  { siteOrigin = "", ...extra }: Partial<Omit<SanityLinksPageState, "page">> & { siteOrigin?: string } = {},
+) {
+  const state: SanityLinksPageState = {
+    page,
+    aboutPhotoUrl: "https://cdn.sanity.io/about.jpg",
     readings: [reading({})],
-    siteSettings,
     notesState: visibleNotes,
-    siteOrigin: "",
+    siteSettings: { socialLinks: siteSocialLinks },
     ...extra,
-  });
+  };
+  return deriveLinksPageViewProps(state, siteOrigin);
 }
 
 describe("deriveLinksPageViewProps defaults", () => {
@@ -49,7 +54,6 @@ describe("deriveLinksPageViewProps defaults", () => {
       expect.objectContaining({ key: "reading:r1", label: "Soul Blueprint", position: 1 }),
     ]);
     expect(props.colourVariables).toEqual({});
-    expect(props.pageColour).toBeUndefined();
   });
 
   it("falls back to the built-in readings when Sanity has none", () => {
@@ -122,7 +126,6 @@ describe("deriveLinksPageViewProps look", () => {
     const props = derive({ pageColour: { hex: "#0D0B1A" }, wordsColour: { hex: "#FAF8F4" } });
     expect(props.colourVariables["--j-bg-primary"]).toBe("#0D0B1A");
     expect(props.colourVariables["--j-text"]).toBe("#FAF8F4");
-    expect(props.pageColour).toBe("#0D0B1A");
   });
 
   it("uses the chosen name size and ignores unknown values", () => {
@@ -210,7 +213,7 @@ describe("deriveLinksPageViewProps social links", () => {
   });
 
   it("uses the Site Settings links when the page has none, and shows none when switched off", () => {
-    expect(derive({}).socialLinks).toEqual(siteSettings.socialLinks);
+    expect(derive({}).socialLinks).toEqual(siteSocialLinks);
     expect(
       derive({ showSocialLinks: false, socialLinks: [{ _key: "a", platform: "x", address: "https://x.com/j" }] })
         .socialLinks,

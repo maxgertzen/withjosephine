@@ -4,6 +4,7 @@ export const UPLOAD_URL_API_ROUTE = "/api/booking/upload-url";
 export const AUTH_MAGIC_LINK_ROUTE = "/api/auth/magic-link";
 export const AUTH_MAGIC_LINK_VERIFY_ROUTE = "/api/auth/magic-link/verify";
 export const CONTACT_API_ROUTE = "/api/contact";
+export const CONSENT_API_ROUTE = "/api/consent";
 export const ADMIN_PREVIEW_RECIPIENTS_API_ROUTE = "/api/admin/list-preview-recipients";
 export const ADMIN_SEND_PREVIEW_API_ROUTE = "/api/admin/send-email-preview";
 export const ADMIN_DELETE_USER_API_ROUTE = "/api/admin/delete-user";

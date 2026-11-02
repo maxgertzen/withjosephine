@@ -308,7 +308,7 @@ export const fetchLinksPagePublished = cache(
   async (): Promise<SanityLinksPageState | null> =>
     publishedFetch<SanityLinksPageState | null>({
       query: linksPageQuery,
-      tags: ["linksPage", "landingPage", "reading", "article"],
+      tags: ["linksPage", "landingPage", "reading", "article", "notesSettings", "siteSettings"],
     }),
 );
 

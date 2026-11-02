@@ -1,218 +1,177 @@
-import {
-  Bitter,
-  Cormorant_Garamond,
-  Crimson_Text,
-  DM_Sans,
-  EB_Garamond,
-  Inter,
-  Libre_Baskerville,
-  Lora,
-  Nunito_Sans,
-  Playfair_Display,
-  Roboto_Slab,
-  Source_Sans_3,
-  Work_Sans,
-  Zilla_Slab,
-} from "next/font/google";
+import localFont from "next/font/local";
 
 import type { LinksPageNameStyle } from "@/data/defaults";
 
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300"],
-  style: ["italic"],
-  display: "swap",
+const cormorantGaramond = localFont({
+  src: [{ path: "./fonts/cormorant-garamond-300-italic.woff2", weight: "300", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const playfairDisplay = localFont({
+  src: [{ path: "./fonts/playfair-display-400-italic.woff2", weight: "400", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const ebGaramond = localFont({
+  src: [{ path: "./fonts/eb-garamond-400-italic.woff2", weight: "400", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const lora = localFont({
+  src: [{ path: "./fonts/lora-400-italic.woff2", weight: "400", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const crimsonText = localFont({
+  src: [{ path: "./fonts/crimson-text-400-italic.woff2", weight: "400", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const libreBaskerville = localFont({
+  src: [{ path: "./fonts/libre-baskerville-400-italic.woff2", weight: "400", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const bitter = localFont({
+  src: [{ path: "./fonts/bitter-300-italic.woff2", weight: "300", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const zillaSlab = localFont({
+  src: [{ path: "./fonts/zilla-slab-300-italic.woff2", weight: "300", style: "italic" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const robotoSlab = localFont({
+  src: [{ path: "./fonts/roboto-slab-300.woff2", weight: "300", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const cormorantGaramondBold = localFont({
+  src: [{ path: "./fonts/cormorant-garamond-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const playfairDisplayBold = localFont({
+  src: [{ path: "./fonts/playfair-display-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const ebGaramondBold = localFont({
+  src: [{ path: "./fonts/eb-garamond-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const loraBold = localFont({
+  src: [{ path: "./fonts/lora-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const crimsonTextBold = localFont({
+  src: [{ path: "./fonts/crimson-text-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const libreBaskervilleBold = localFont({
+  src: [{ path: "./fonts/libre-baskerville-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const bitterBold = localFont({
+  src: [{ path: "./fonts/bitter-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const zillaSlabBold = localFont({
+  src: [{ path: "./fonts/zilla-slab-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const robotoSlabBold = localFont({
+  src: [{ path: "./fonts/roboto-slab-700.woff2", weight: "700", style: "normal" }],
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const inter = localFont({
+  src: [
+    { path: "./fonts/inter-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/inter-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
 });
 
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["italic"],
-  display: "swap",
+const dmSans = localFont({
+  src: [
+    { path: "./fonts/dm-sans-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/dm-sans-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
 });
 
-const ebGaramond = EB_Garamond({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["italic"],
-  display: "swap",
+const sourceSans3 = localFont({
+  src: [
+    { path: "./fonts/source-sans-3-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/source-sans-3-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
 });
 
-const lora = Lora({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["italic"],
-  display: "swap",
+const nunitoSans = localFont({
+  src: [
+    { path: "./fonts/nunito-sans-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/nunito-sans-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
 });
 
-const crimsonText = Crimson_Text({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["italic"],
-  display: "swap",
+const workSans = localFont({
+  src: [
+    { path: "./fonts/work-sans-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/work-sans-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
 });
 
-const libreBaskerville = Libre_Baskerville({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["italic"],
-  display: "swap",
+const loraText = localFont({
+  src: [
+    { path: "./fonts/lora-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/lora-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const bitter = Bitter({
-  subsets: ["latin"],
-  weight: ["300"],
-  style: ["italic"],
-  display: "swap",
+const bitterText = localFont({
+  src: [
+    { path: "./fonts/bitter-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/bitter-500.woff2", weight: "500", style: "normal" },
+  ],
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const zillaSlab = Zilla_Slab({
-  subsets: ["latin"],
-  weight: ["300"],
-  style: ["italic"],
-  display: "swap",
+const libreBaskervilleText = localFont({
+  src: [{ path: "./fonts/libre-baskerville-400.woff2", weight: "400", style: "normal" }],
   preload: false,
-});
-
-const robotoSlab = Roboto_Slab({
-  subsets: ["latin"],
-  weight: ["300"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const sourceSans3 = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const nunitoSans = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const workSans = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const cormorantGaramondBold = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const playfairDisplayBold = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const ebGaramondBold = EB_Garamond({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const loraBold = Lora({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const crimsonTextBold = Crimson_Text({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const libreBaskervilleBold = Libre_Baskerville({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const bitterBold = Bitter({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const zillaSlabBold = Zilla_Slab({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const robotoSlabBold = Roboto_Slab({
-  subsets: ["latin"],
-  weight: ["700"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-
-const loraText = Lora({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const bitterText = Bitter({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
-});
-const libreBaskervilleText = Libre_Baskerville({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal"],
-  display: "swap",
-  preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
 type LoadedFont = { style: { fontFamily: string } };

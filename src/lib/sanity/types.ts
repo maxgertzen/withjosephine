@@ -515,7 +515,12 @@ export type SanityLinksPage = LinksPageColours & {
   buttons?: SanityLinksPageButton[];
 };
 
+export type SanityLinksPageReading = Pick<SanityReading, "_id" | "onSite" | "name" | "slug">;
+
 export type SanityLinksPageState = {
   page: SanityLinksPage | null;
   aboutPhotoUrl: string | null;
+  readings: SanityLinksPageReading[];
+  notesState: SanityNotesState | null;
+  siteSettings: Pick<SanitySiteSettings, "socialLinks"> | null;
 };

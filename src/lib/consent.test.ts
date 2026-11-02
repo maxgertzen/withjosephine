@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CONSENT_COOKIE, CONSENT_STORAGE_KEY as STORAGE_KEY, consentCookie, readConsent, writeConsent } from "./consent";
+import { CONSENT_STORAGE_KEY as STORAGE_KEY, readConsent, writeConsent } from "./consent";
+import { CONSENT_COOKIE, consentCookie } from "./consentCookie";
 
 function clearConsentCookie() {
   document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
@@ -68,11 +69,13 @@ describe("consent shared across the production hosts", () => {
     expect(readConsent()).toBe("granted");
   });
 
-  it("writes the shared cookie on a production host", () => {
+  it("writes the shared cookie on a production host and asks the server to set it too", () => {
     onHost("withjosephine.com");
     const set = vi.spyOn(document, "cookie", "set");
+    const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
     writeConsent("declined");
     expect(set).toHaveBeenCalledWith(consentCookie("declined"));
+    expect(send).toHaveBeenCalledWith("/api/consent", { method: "POST", body: "declined", keepalive: true });
   });
 
   it("ignores the shared cookie on staging and keeps staging's own choice", () => {
@@ -80,8 +83,10 @@ describe("consent shared across the production hosts", () => {
     window.localStorage.setItem(STORAGE_KEY, "declined");
     vi.spyOn(document, "cookie", "get").mockReturnValue("josephine_consent=granted");
     const set = vi.spyOn(document, "cookie", "set");
+    const send = vi.spyOn(globalThis, "fetch");
     expect(readConsent()).toBe("declined");
     writeConsent("granted");
     expect(set).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 });

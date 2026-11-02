@@ -1,20 +1,18 @@
 import { deriveLinksPageViewProps } from "@/app/tt/deriveLinksPageViewProps";
 import type { LinksPageViewProps } from "@/app/tt/LinksPageView";
-import type { SanityLinksPage, SanityReading, SanitySiteSettings } from "@/lib/sanity/types";
+import type { SanityLinksPage, SanityLinksPageReading } from "@/lib/sanity/types";
 
 const READINGS = [
   { _id: "r1", name: "Soul Blueprint", slug: "soul-blueprint", onSite: true },
   { _id: "r2", name: "Birth Chart Reading", slug: "birth-chart", onSite: true },
   { _id: "r3", name: "Akashic Record Reading", slug: "akashic-record", onSite: true },
-] as SanityReading[];
+] satisfies SanityLinksPageReading[];
 
-const SITE_SETTINGS = {
-  socialLinks: [
-    { platform: "tiktok", url: "https://www.tiktok.com/@withjosephine", label: "TikTok" },
-    { platform: "instagram", url: "https://instagram.com/withjosephine", label: "Instagram" },
-    { platform: "email", url: "mailto:hello@withjosephine.com", label: "Email" },
-  ],
-} as SanitySiteSettings;
+const SITE_SOCIAL_LINKS = [
+  { platform: "tiktok", url: "https://www.tiktok.com/@withjosephine", label: "TikTok" },
+  { platform: "instagram", url: "https://instagram.com/withjosephine", label: "Instagram" },
+  { platform: "email", url: "mailto:hello@withjosephine.com", label: "Email" },
+];
 
 const FULL_PAGE: SanityLinksPage = {
   name: "Josephine",
@@ -30,13 +28,16 @@ const FULL_PAGE: SanityLinksPage = {
 };
 
 function args(page: SanityLinksPage | null): LinksPageViewProps {
-  return deriveLinksPageViewProps({
-    state: { page, aboutPhotoUrl: "/images/josephine-portrait.webp" },
-    readings: READINGS,
-    siteSettings: SITE_SETTINGS,
-    notesState: null,
-    siteOrigin: "",
-  });
+  return deriveLinksPageViewProps(
+    {
+      page,
+      aboutPhotoUrl: "/images/josephine-portrait.webp",
+      readings: READINGS,
+      notesState: null,
+      siteSettings: { socialLinks: SITE_SOCIAL_LINKS },
+    },
+    "",
+  );
 }
 
 export const LINKS_PAGE_FULL_ARGS = args(FULL_PAGE);

@@ -16,7 +16,7 @@ const ROLE_KEYS: Record<keyof LinksPageColours, SemanticColorKey[]> = {
   buttonWordsColour: ["textOnDark"],
 };
 
-export function safeCssHex(value: unknown): string | undefined {
+function safeCssHex(value: unknown): string | undefined {
   const hex = extractHex(value);
   return hex && CSS_HEX.test(hex) ? hex : undefined;
 }

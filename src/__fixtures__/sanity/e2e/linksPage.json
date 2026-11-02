@@ -46,5 +46,16 @@
       }
     ]
   },
-  "aboutPhotoUrl": null
+  "aboutPhotoUrl": null,
+  "readings": [
+    { "_id": "reading-soul-blueprint", "name": "The Soul Blueprint", "slug": "soul-blueprint" },
+    { "_id": "reading-birth-chart", "name": "The Birth Chart Reading", "slug": "birth-chart" },
+    { "_id": "reading-akashic-record", "name": "The Akashic Record Reading", "slug": "akashic-record" }
+  ],
+  "notesState": { "settings": null, "publishedCount": 0 },
+  "siteSettings": {
+    "socialLinks": [
+      { "_key": "social-tiktok", "label": "Follow on TikTok", "platform": "tiktok", "url": "https://www.tiktok.com/@withjosephine" }
+    ]
+  }
 }

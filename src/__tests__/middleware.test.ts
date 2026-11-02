@@ -341,6 +341,13 @@ describe("middleware apex lockdown (under-construction on)", () => {
     expect(res.rewriteTo).toBeNull();
   });
 
+  it("does NOT rewrite the consent choice on apex, so the legal pages can still save it", () => {
+    const res = middleware(
+      makeRequest({ hasDraft: false, pathname: "/api/consent" }),
+    ) as unknown as RewriteResponse;
+    expect(res.rewriteTo).toBeNull();
+  });
+
   it("does NOT rewrite the Resend webhook on apex", () => {
     const res = middleware(
       makeRequest({ hasDraft: false, pathname: "/api/webhooks/resend" }),

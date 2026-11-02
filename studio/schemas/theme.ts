@@ -1,4 +1,4 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, type ValidationContext } from "sanity";
 
 import {
   ACCENT_PRESETS,
@@ -11,6 +11,26 @@ import {
   SKIN_TONE_PRESETS,
   TEXT_PRESETS,
 } from "@/lib/theme/palette";
+
+import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
+
+import { publishedValidationClient } from "../lib/draftsClient";
+import {
+  LINKS_PAGE_COLOURS_QUERY,
+  linksPageStaysReadable,
+  PUBLISHED_READ_REUSE_MS,
+  reuseFor,
+} from "../lib/linksPageValidation";
+
+const reusedLinksPageColours = reuseFor<LinksPageColours>(PUBLISHED_READ_REUSE_MS);
+
+async function publishedLinksPageColours(context: ValidationContext): Promise<LinksPageColours | null> {
+  try {
+    return (await publishedValidationClient(context).fetch<LinksPageColours | null>(LINKS_PAGE_COLOURS_QUERY)) ?? {};
+  } catch {
+    return null;
+  }
+}
 
 const semanticColorField = (
   name: string,
@@ -123,6 +143,12 @@ export const theme = defineType({
       options: {
         columns: 2,
       },
+      validation: (rule) =>
+        rule
+          .custom(async (colours, context) =>
+            linksPageStaysReadable(await reusedLinksPageColours(() => publishedLinksPageColours(context)), (colours ?? null) as Record<string, unknown> | null),
+          )
+          .warning(),
     }),
     defineField({
       name: "displayFont",

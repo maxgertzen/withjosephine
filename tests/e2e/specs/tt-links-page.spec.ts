@@ -141,6 +141,9 @@ test.describe("Links page in a country that asks for consent", () => {
     expect(cookies.find((cookie) => cookie.name === CONSENT_REQUIRED_COOKIE)?.value).toBe("1");
     const banner = page.getByRole("dialog");
     await expect(banner).toBeVisible();
+    expect(await banner.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(245, 243, 239)");
+    const bannerTitle = banner.locator("#consent-banner-title");
+    expect(await bannerTitle.evaluate((element) => getComputedStyle(element).fontFamily)).toMatch(/Playfair/i);
 
     const lastButton = page.locator(BUTTON_LINKS).last();
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));

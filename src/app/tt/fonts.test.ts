@@ -1,36 +1,23 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 
-const { calls } = vi.hoisted(() => ({ calls: [] as { family: string; options: Record<string, unknown> }[] }));
+type FontFile = { path: string; weight: string; style: string };
+type LocalFontOptions = { src: FontFile[]; preload?: boolean; adjustFontFallback?: unknown };
 
-vi.mock("next/font/google", () => {
-  const families = [
-    "Cormorant_Garamond",
-    "Playfair_Display",
-    "EB_Garamond",
-    "Lora",
-    "Crimson_Text",
-    "Libre_Baskerville",
-    "Bitter",
-    "Zilla_Slab",
-    "Roboto_Slab",
-    "Inter",
-    "DM_Sans",
-    "Source_Sans_3",
-    "Nunito_Sans",
-    "Work_Sans",
-  ];
-  return Object.fromEntries(
-    families.map((family) => [
-      family,
-      (options: Record<string, unknown>) => {
-        calls.push({ family, options });
-        return { style: { fontFamily: `'__${family}'` }, className: "", variable: "" };
-      },
-    ]),
-  );
-});
+const { calls } = vi.hoisted(() => ({ calls: [] as LocalFontOptions[] }));
+
+vi.mock("next/font/local", () => ({
+  default: (options: LocalFontOptions) => {
+    calls.push(options);
+    return { style: { fontFamily: `'${options.src[0].path}'` }, className: "", variable: "" };
+  },
+}));
 
 import {
+  fontFileName,
+  LINKS_PAGE_BOLD_NAME_CUT,
   LINKS_PAGE_NAME_FONT_NAMES,
   LINKS_PAGE_SLANTED_NAME_CUTS,
   LINKS_PAGE_TEXT_CUT,
@@ -45,45 +32,40 @@ import {
   linksPageFontVariables,
 } from "./fonts";
 
-const isBoldCut = (call: (typeof calls)[number]) =>
-  JSON.stringify(call.options.weight) === '["700"]' && JSON.stringify(call.options.style) === '["normal"]';
+const loadedFiles = () => calls.flatMap(({ src }) => src.map((file) => path.basename(file.path)));
+
+const filesOf = (fontFamily: string) =>
+  calls.find((call) => `'${call.src[0].path}'` === fontFamily)?.src ?? [];
 
 describe("links page fonts", () => {
-  it("loads every font without preloading, latin only, keeping the fallback size adjustment", () => {
-    expect(calls).toHaveLength(LINKS_PAGE_NAME_FONT_NAMES.length * 2 + LINKS_PAGE_TEXT_FONT_NAMES.length);
-    for (const call of calls) {
-      expect(call.options.preload, call.family).toBe(false);
-      expect(call.options.subsets).toEqual(["latin"]);
-      expect(call.options.adjustFontFallback).not.toBe(false);
-    }
-  });
-
-  it("loads one bold cut per name font and only upright cuts for the words", () => {
-    expect(calls.filter(isBoldCut)).toHaveLength(LINKS_PAGE_NAME_FONT_NAMES.length);
-    const wordCuts = calls.filter(
-      (call) => !isBoldCut(call) && (call.options.weight as string[]).includes("400") && JSON.stringify(call.options.style) === '["normal"]',
+  it("loads every font from a latin-only file in the repo, without preloading, keeping the fallback size adjustment", () => {
+    expect(calls).toHaveLength(
+      LINKS_PAGE_NAME_FONT_NAMES.length * 2 + LINKS_PAGE_TEXT_FONT_NAMES.length,
     );
-    expect(wordCuts).toHaveLength(LINKS_PAGE_TEXT_FONT_NAMES.length);
-    for (const call of wordCuts) {
-      expect(call.options.style, call.family).toEqual(["normal"]);
-      expect(call.options.weight, call.family).not.toContain("700");
+    for (const call of calls) {
+      expect(call.preload).toBe(false);
+      expect(call.adjustFontFallback).not.toBe(false);
+      for (const file of call.src) {
+        expect(existsSync(path.join(import.meta.dirname, file.path)), file.path).toBe(true);
+      }
     }
   });
 
-  it("loads the slanted name cut that the Studio font preview shows", () => {
-    for (const [font, cut] of Object.entries(LINKS_PAGE_SLANTED_NAME_CUTS)) {
-      const family = font.replace(/ /g, "_");
-      const loader = calls.find((call) => call.family === family && !isBoldCut(call) && (call.options.style as string[]).includes(cut.italic ? "italic" : "normal") && (call.options.weight as string[]).includes(cut.weight));
-      expect(loader, font).toBeDefined();
+  it("loads the slanted and the bold name cuts the Studio font preview shows", () => {
+    for (const font of LINKS_PAGE_NAME_FONT_NAMES) {
+      expect(loadedFiles(), font).toContain(fontFileName(font, LINKS_PAGE_SLANTED_NAME_CUTS[font]));
+      expect(loadedFiles(), font).toContain(fontFileName(font, LINKS_PAGE_BOLD_NAME_CUT));
     }
   });
 
-  it("loads the word font weight that the Studio font preview shows", () => {
+  it("loads only upright cuts for the words, in the weight the Studio font preview shows", () => {
     for (const font of LINKS_PAGE_TEXT_FONT_NAMES) {
-      const { weight } = LINKS_PAGE_TEXT_CUTS[font] ?? LINKS_PAGE_TEXT_CUT;
-      const family = font.replace(/ /g, "_");
-      const loader = calls.find((call) => call.family === family && !isBoldCut(call) && JSON.stringify(call.options.style) === '["normal"]' && (call.options.weight as string[]).includes(weight));
-      expect(loader, font).toBeDefined();
+      const cut = LINKS_PAGE_TEXT_CUTS[font] ?? LINKS_PAGE_TEXT_CUT;
+      expect(loadedFiles(), font).toContain(fontFileName(font, cut));
+      for (const file of filesOf(LINKS_PAGE_BODY_FONTS[font].style.fontFamily)) {
+        expect(file.style, file.path).toBe("normal");
+        expect(file.weight, file.path).not.toBe("700");
+      }
     }
   });
 
@@ -95,8 +77,8 @@ describe("links page fonts", () => {
 
   it("points the site font variables at the chosen fonts", () => {
     expect(linksPageFontVariables("Playfair Display", "Work Sans", "slanted")).toEqual({
-      "--font-display-source": "'__Playfair_Display'",
-      "--font-body-source": "'__Work_Sans'",
+      "--font-display-source": "'./fonts/playfair-display-400-italic.woff2'",
+      "--font-body-source": "'./fonts/work-sans-400.woff2'",
     });
   });
 
