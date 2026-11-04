@@ -6,8 +6,12 @@ import { newsletterContent } from "@/lib/signup/newsletterContent";
 
 import { NewsletterConfirmView, type NewsletterConfirmViewState } from "./NewsletterConfirmView";
 
+async function publishedNewsletterWords() {
+  return newsletterContent((await fetchSiteSettingsPublished().catch(() => null))?.newsletter);
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const words = newsletterContent((await fetchSiteSettingsPublished().catch(() => null))?.newsletter);
+  const words = await publishedNewsletterWords();
   return { title: pageTitle(words.title), robots: { index: false, follow: false } };
 }
 
@@ -22,6 +26,6 @@ export default async function NewsletterConfirmPage({
 }: {
   searchParams: Promise<{ token?: string; status?: string }>;
 }) {
-  const [params, settings] = await Promise.all([searchParams, fetchSiteSettingsPublished().catch(() => null)]);
-  return <NewsletterConfirmView words={newsletterContent(settings?.newsletter)} state={viewState(params)} />;
+  const [params, words] = await Promise.all([searchParams, publishedNewsletterWords()]);
+  return <NewsletterConfirmView words={words} state={viewState(params)} />;
 }

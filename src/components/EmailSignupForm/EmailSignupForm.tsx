@@ -23,30 +23,31 @@ type Problem = keyof Pick<SignupFormWords, "invalidEmail" | "failed">;
 
 export type EmailSignupFormProps = {
   words: SignupFormWords;
-  newsletterBox: "optional" | "required" | "none";
-  consent: NewsletterConsentWords;
+  newsletter: { box: "optional" | "required"; consent: NewsletterConsentWords } | null;
   look?: "pill" | "underline";
   buttonKey?: string;
   className?: string;
 };
 
-const FIELD_CLASSES = {
+const LOOK = {
   pill: {
     row: "flex w-full flex-col gap-2",
     input:
       "min-h-12 w-full rounded-full border border-j-border-subtle bg-white/70 px-5 font-body text-base text-j-text placeholder:text-j-text-muted focus:border-j-text-gold focus:outline-none aria-invalid:border-red-700",
+    buttonVariant: "primary",
+    button: "min-h-12 w-full break-words",
   },
   underline: {
-    row: "flex w-full items-center gap-3 border-b border-j-deep focus-within:border-j-text-gold has-[input[aria-invalid=true]]:border-red-700",
+    row: "flex w-full items-center gap-3 border-b border-j-deep focus-within:border-j-text-gold has-[input[aria-invalid=true]]:border-red-700!",
     input:
       "min-h-12 min-w-0 flex-1 border-0 bg-transparent px-0.5 font-body text-base text-j-text placeholder:text-j-text-muted focus:outline-none",
+    buttonVariant: "ghost",
+    button:
+      "flex max-w-[50%] shrink-0 items-center gap-2 px-0 py-2 text-right text-[0.78rem] font-medium tracking-[0.16em] text-j-deep disabled:opacity-40 disabled:hover:text-j-deep",
   },
 } as const;
 
-const UNDERLINE_BUTTON_CLASSES =
-  "flex max-w-[50%] shrink-0 items-center gap-2 py-2 text-right font-body text-[0.78rem] font-medium uppercase tracking-[0.16em] text-j-deep transition-colors hover:text-j-text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-j-deep disabled:opacity-40 disabled:hover:text-j-deep";
-
-export function EmailSignupForm({ words, newsletterBox, consent, look = "pill", buttonKey, className }: EmailSignupFormProps) {
+export function EmailSignupForm({ words, newsletter, look = "pill", buttonKey, className }: EmailSignupFormProps) {
   const id = useId();
   const turnstile = useTurnstileChallenge();
   const [email, setEmail] = useState("");
@@ -88,7 +89,7 @@ export function EmailSignupForm({ words, newsletterBox, consent, look = "pill", 
   }
 
   const sending = status === "sending";
-  const submitOff = sending || (newsletterBox === "required" && !newsletterTicked);
+  const submitOff = sending || (newsletter?.box === "required" && !newsletterTicked);
 
   return (
     <form
@@ -97,7 +98,7 @@ export function EmailSignupForm({ words, newsletterBox, consent, look = "pill", 
       className={mergeClasses("flex w-full flex-col gap-3 text-left", className)}
     >
       <HoneypotField value={honeypot} onChange={setHoneypot} />
-      <div className={FIELD_CLASSES[look].row}>
+      <div className={LOOK[look].row}>
         <label htmlFor={emailId} className="sr-only">
           {words.emailLabel}
         </label>
@@ -114,20 +115,14 @@ export function EmailSignupForm({ words, newsletterBox, consent, look = "pill", 
           disabled={sending}
           aria-invalid={problem === "invalidEmail"}
           aria-describedby={problem ? problemId : undefined}
-          className={FIELD_CLASSES[look].input}
+          className={LOOK[look].input}
         />
-        {look === "underline" ? (
-          <button type="submit" className={UNDERLINE_BUTTON_CLASSES} disabled={submitOff}>
-            {sending ? words.sending : words.submit}
-            <span aria-hidden="true">→</span>
-          </button>
-        ) : (
-          <Button type="submit" className="min-h-12 w-full break-words" disabled={submitOff}>
-            {sending ? words.sending : words.submit}
-          </Button>
-        )}
+        <Button type="submit" variant={LOOK[look].buttonVariant} className={LOOK[look].button} disabled={submitOff}>
+          {sending ? words.sending : words.submit}
+          {look === "underline" ? <span aria-hidden="true">→</span> : null}
+        </Button>
       </div>
-      {newsletterBox === "none" ? null : (
+      {newsletter === null ? null : (
       <label className="flex items-start gap-3 font-body text-[0.82rem] leading-snug text-j-text-muted">
         <input
           type="checkbox"
@@ -138,9 +133,9 @@ export function EmailSignupForm({ words, newsletterBox, consent, look = "pill", 
           className="mt-0.5 h-4 w-4 shrink-0 accent-j-bg-interactive"
         />
         <span>
-          {consent.consentText}{" "}
+          {newsletter.consent.consentText}{" "}
           <Link href={ROUTES.privacy} className="underline underline-offset-2 hover:text-j-text-gold">
-            {consent.privacyLinkText}
+            {newsletter.consent.privacyLinkText}
           </Link>
         </span>
       </label>

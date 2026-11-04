@@ -21,19 +21,21 @@ export async function registerSignup(args: {
   wantsNewsletter: boolean;
   buttonKey?: string;
 }): Promise<SignupOutcome> {
-  const [download, settings] = await Promise.all([
+  const [download, newsletter] = await Promise.all([
     args.buttonKey ? publishedEmailFirstButton(args.buttonKey) : null,
-    fetchSiteSettingsPublished(),
+    fetchSiteSettingsPublished().then(
+      (settings) => newsletterContent(settings?.newsletter),
+      () => null,
+    ),
   ]);
-  const newsletter = newsletterContent(settings?.newsletter);
-  const wantsNewsletter = args.wantsNewsletter && newsletter.show;
+  const consentText = args.wantsNewsletter && newsletter?.show ? newsletter.consentText : null;
   if (args.buttonKey && !download) return "not_offered";
-  if (!download && !wantsNewsletter) return "not_offered";
+  if (!download && consentText === null) return "not_offered";
 
   const signup = await saveEmailSignup({
     email: args.email,
     source: download ? `links:${download.key}` : "footer",
-    consentText: wantsNewsletter ? newsletter.consentText : null,
+    consentText,
   });
 
   const origin = siteOrigin();

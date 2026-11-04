@@ -31,6 +31,7 @@ vi.mock("./vendors/mixpanelDelete", () => ({
   createMixpanelDataDeletion: vi.fn(),
 }));
 
+import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/gift/types";
 import { createTestGift } from "@/test/fixtures/gift";
 
@@ -44,7 +45,7 @@ import { deleteBrevoContact, deleteBrevoSmtpLog } from "./vendors/brevoDelete";
 import { createMixpanelDataDeletion } from "./vendors/mixpanelDelete";
 import { createStripeRedactionJob } from "./vendors/stripeRedaction";
 
-const CONSENT = "Yes, send me the newsletter.";
+const CONSENT = NEWSLETTER_DEFAULTS.consentText;
 
 const mockFindUser = vi.mocked(findUserById);
 const mockListSubs = vi.mocked(listSubmissionsByRecipientUserId);

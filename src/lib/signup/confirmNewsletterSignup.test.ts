@@ -4,13 +4,14 @@ vi.mock("@/lib/marketing/newsletterProvider", () => ({
   addNewsletterContact: vi.fn(),
 }));
 
+import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import { addNewsletterContact } from "@/lib/marketing/newsletterProvider";
 
 import { confirmNewsletterSignup } from "./confirmNewsletterSignup";
 import { findEmailSignup, saveEmailSignup } from "./emailSignups";
 import { mintNewsletterConfirmToken, NEWSLETTER_CONFIRM_TTL_MS } from "./newsletterConfirmToken";
 
-const CONSENT = "Yes, send me the newsletter.";
+const CONSENT = NEWSLETTER_DEFAULTS.consentText;
 
 const addContact = vi.mocked(addNewsletterContact);
 const NOW = new Date("2026-11-04T10:00:00Z");

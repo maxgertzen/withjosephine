@@ -27,14 +27,14 @@ async function typeEmail(value: string) {
 
 describe("EmailSignupForm", () => {
   it("shows Becky's tick box words and privacy link with the box unticked", () => {
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="optional" buttonKey="file:1" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
 
     expect(screen.getByRole("checkbox", { name: /Becky's own tick box words/ })).not.toBeChecked();
     expect(screen.getByRole("link", { name: "Read how" })).toHaveAttribute("href", "/privacy");
   });
 
   it("sends the download request without the newsletter when the box stays unticked", async () => {
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="optional" buttonKey="file:1" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
     await typeEmail("ada@example.com");
     await userEvent.click(screen.getByRole("button", { name: WORDS.submit }));
 
@@ -45,7 +45,7 @@ describe("EmailSignupForm", () => {
   });
 
   it("sends the newsletter tick when the visitor ticks the box", async () => {
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="optional" buttonKey="file:1" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
     await typeEmail("ada@example.com");
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: WORDS.submit }));
@@ -55,7 +55,7 @@ describe("EmailSignupForm", () => {
   });
 
   it("keeps the button off until the box is ticked when the newsletter is the whole point", async () => {
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="required" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "required", consent: CONSENT }} />);
     await typeEmail("ada@example.com");
 
     expect(screen.getByRole("button", { name: WORDS.submit })).toBeDisabled();
@@ -64,7 +64,7 @@ describe("EmailSignupForm", () => {
   });
 
   it("says the email is not complete and sends nothing", async () => {
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="optional" buttonKey="file:1" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
     await typeEmail("ada@");
     await userEvent.click(screen.getByRole("button", { name: WORDS.submit }));
 
@@ -74,7 +74,7 @@ describe("EmailSignupForm", () => {
 
   it("says something went wrong when the server refuses, and lets the visitor try again", async () => {
     fetchMock.mockResolvedValue(new Response("{}", { status: 502 }));
-    render(<EmailSignupForm words={WORDS} consent={CONSENT} newsletterBox="optional" buttonKey="file:1" />);
+    render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
     await typeEmail("ada@example.com");
     await userEvent.click(screen.getByRole("button", { name: WORDS.submit }));
 

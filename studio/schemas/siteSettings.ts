@@ -11,13 +11,17 @@ type NewsletterWordField = {
 };
 
 const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
-  { name: "title", title: "Title above the box" },
+  {
+    name: "title",
+    title: "Title above the box",
+    description: "Also the name on the browser tab of the page the email link opens. Leave blank to use the words shown in grey.",
+  },
   { name: "line", title: "Short line under the title", long: true },
   {
     name: "consentText",
     title: "Words next to the tick box",
     description:
-      "Visitors tick this box to say yes to your newsletter. Each sign-up saves the exact words shown at that moment, so change them only when you mean it. The box always shows.",
+      "Visitors tick this box to say yes to your newsletter. Each sign-up saves the exact words shown at that moment, so change them only when you mean it. The tick box shows on every sign-up form while \"Show the newsletter box\" is on.",
     long: true,
   },
   { name: "privacyLinkText", title: "Link to the privacy page, after those words" },

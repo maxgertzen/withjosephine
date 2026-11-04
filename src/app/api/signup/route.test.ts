@@ -169,6 +169,18 @@ describe("POST /api/signup", () => {
     ]);
   });
 
+  it("still sends the download, without the newsletter, when Site Settings cannot be read", async () => {
+    vi.mocked(fetchSiteSettingsPublished).mockRejectedValue(new Error("sanity down"));
+
+    expect((await post({ ...DOWNLOAD, wantsNewsletter: true })).status).toBe(200);
+
+    expect(sendDownloadLink).toHaveBeenCalledOnce();
+    expect(sendNewsletterConfirm).not.toHaveBeenCalled();
+    expect(await signupRows()).toEqual([
+      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, wants_newsletter: 0, consent_text: null },
+    ]);
+  });
+
   it("refuses a footer signup while the newsletter box is switched off in Studio", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({ newsletter: { show: false } } as SanitySiteSettings);
 

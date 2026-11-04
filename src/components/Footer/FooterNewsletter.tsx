@@ -25,7 +25,7 @@ export function FooterNewsletter({ title, line, words, consent }: FooterNewslett
         {title}
       </h2>
       <p className="mt-1.5 mb-6 font-body text-sm text-j-text-muted">{line}</p>
-      <EmailSignupForm words={words} consent={consent} newsletterBox="required" look="underline" />
+      <EmailSignupForm words={words} newsletter={{ box: "required", consent }} look="underline" />
     </section>
   );
 }

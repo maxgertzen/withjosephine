@@ -11,13 +11,12 @@ type EmailFirstButtonProps = {
   buttonKey: string;
   className: string;
   words: LinksPageEmailFormWords;
-  offersNewsletter: boolean;
-  consent: NewsletterConsentWords;
+  newsletterConsent: NewsletterConsentWords | null;
   trackingAttributes: Record<string, string>;
   children: ReactNode;
 };
 
-export function EmailFirstButton({ buttonKey, className, words, offersNewsletter, consent, trackingAttributes, children }: EmailFirstButtonProps) {
+export function EmailFirstButton({ buttonKey, className, words, newsletterConsent, trackingAttributes, children }: EmailFirstButtonProps) {
   const formId = useId();
   const [open, setOpen] = useState(false);
 
@@ -36,7 +35,11 @@ export function EmailFirstButton({ buttonKey, className, words, offersNewsletter
       {open ? (
         <div id={formId} className="mt-3 rounded-2xl bg-white/50 px-4 py-4 text-left">
           <p className="m-0 mb-3 font-body text-[0.95rem] text-j-text-heading">{words.prompt}</p>
-          <EmailSignupForm words={words} consent={consent} newsletterBox={offersNewsletter ? "optional" : "none"} buttonKey={buttonKey} />
+          <EmailSignupForm
+            words={words}
+            newsletter={newsletterConsent ? { box: "optional", consent: newsletterConsent } : null}
+            buttonKey={buttonKey}
+          />
         </div>
       ) : null}
     </>

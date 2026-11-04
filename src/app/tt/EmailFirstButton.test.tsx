@@ -41,7 +41,7 @@ describe("a links page button that asks for an email first", () => {
 
 describe("a links page button that asks for an email first while the newsletter is off", () => {
   it("shows the email form without the newsletter box", async () => {
-    render(<LinksPageView {...LINKS_PAGE_EMAIL_FIRST_ARGS} offersNewsletter={false} />);
+    render(<LinksPageView {...LINKS_PAGE_EMAIL_FIRST_ARGS} newsletterConsent={null} />);
 
     await userEvent.click(screen.getByRole("button", { name: GUIDE }));
 

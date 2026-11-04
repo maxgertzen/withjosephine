@@ -166,8 +166,7 @@ export function deriveLinksPageViewProps(state: SanityLinksPageState | null, sit
         ? withNonBlankOverrides(LINKS_PAGE_DEFAULTS.shareWords, page?.shareWords)
         : undefined,
     emailFormWords: withNonBlankOverrides(LINKS_PAGE_EMAIL_FORM_DEFAULTS, page?.emailForm),
-    offersNewsletter: newsletter.show,
-    newsletterConsent: newsletterConsentWords(newsletter),
+    newsletterConsent: newsletter.show ? newsletterConsentWords(newsletter) : null,
     videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
     videoIds: [],
     playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,

@@ -1,6 +1,8 @@
 import { deriveLinksPageViewProps } from "@/app/tt/deriveLinksPageViewProps";
 import type { LinksPageViewProps } from "@/app/tt/LinksPageView";
+import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { SanityLinksPage, SanityLinksPageReading } from "@/lib/sanity/types";
+import { newsletterConsentWords } from "@/lib/signup/newsletterContent";
 
 const READINGS = [
   { _id: "r1", name: "Soul Blueprint", slug: "soul-blueprint", onSite: true },
@@ -107,7 +109,7 @@ export const LINKS_PAGE_BEACONS_LOOK_ARGS: LinksPageViewProps = { ...beaconsLook
 
 export const LINKS_PAGE_EMAIL_FIRST_ARGS: LinksPageViewProps = {
   ...LINKS_PAGE_BEACONS_LOOK_ARGS,
-  offersNewsletter: true,
+  newsletterConsent: newsletterConsentWords(NEWSLETTER_DEFAULTS),
   buttons: LINKS_PAGE_BEACONS_LOOK_ARGS.buttons.map((button, index) =>
     index === 0 ? { ...button, askForEmail: true, shareHref: undefined } : button,
   ),

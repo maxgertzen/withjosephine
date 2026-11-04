@@ -47,12 +47,11 @@ export async function saveEmailSignup(args: {
   consentText: string | null;
   now?: Date;
 }): Promise<EmailSignup> {
-  const wantsNewsletter = args.consentText !== null;
   const signup: EmailSignup = {
     id: crypto.randomUUID(),
     email: normalizeEmail(args.email),
     source: args.source,
-    wantsNewsletter,
+    wantsNewsletter: args.consentText !== null,
     consentText: args.consentText,
     createdAt: (args.now ?? new Date()).toISOString(),
     confirmedAt: null,

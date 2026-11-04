@@ -88,7 +88,9 @@ export function fieldMapLinksPageEmailForm(): {
 } {
   const props = deriveLinksPageViewProps(FIELD_MAP_LINKS_PAGE_STATE, "");
   const [button] = props.buttons;
-  if (!button) throw new Error("field map fixture did not produce the email-first button");
+  if (!button || !props.newsletterConsent) {
+    throw new Error("field map fixture did not produce the email-first button with the newsletter box");
+  }
   return { button, words: props.emailFormWords, consent: props.newsletterConsent };
 }
 

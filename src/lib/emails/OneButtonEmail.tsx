@@ -1,7 +1,7 @@
 import { Button, Container, Link, Section } from "@react-email/components";
 
 import type { EmailOneButtonContent, EmailSharedShellContent } from "@/data/defaults";
-import { EMAIL_COPY_LINK_LABEL_DEFAULT, EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
+import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
 
 import { applyTokens } from "./applyTokens";
 import { BrandHeader } from "./BrandHeader";
@@ -14,7 +14,7 @@ import { PortableTextBody } from "./PortableTextBody";
 export type OneButtonEmailProps = {
   buttonUrl: string;
   vars: Record<string, string>;
-  copy: Omit<EmailOneButtonContent, "subject" | "copyLinkLabel"> & { copyLinkLabel?: string };
+  copy: Omit<EmailOneButtonContent, "subject">;
   shell?: EmailSharedShellContent;
 };
 
@@ -45,7 +45,7 @@ export function OneButtonEmail({ buttonUrl, vars, copy: rawCopy, shell = EMAIL_S
           style={{ padding: "16px 48px 0 48px", fontSize: 13, lineHeight: 1.6 }}
         >
           <p style={{ margin: 0 }}>
-            {copy.copyLinkLabel ?? EMAIL_COPY_LINK_LABEL_DEFAULT}{" "}
+            {copy.copyLinkLabel}{" "}
             <Link href={buttonUrl} className="text-ink">
               {buttonUrl}
             </Link>

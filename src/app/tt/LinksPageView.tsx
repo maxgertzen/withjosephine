@@ -47,8 +47,7 @@ export type LinksPageViewProps = {
   buttons: LinksPageButton[];
   shareWords?: LinksPageShareWords;
   emailFormWords: LinksPageEmailFormWords;
-  offersNewsletter: boolean;
-  newsletterConsent: NewsletterConsentWords;
+  newsletterConsent: NewsletterConsentWords | null;
   videosTitle: string;
   videoIds: string[];
   playVideo: string;
@@ -127,7 +126,6 @@ export function LinksPageView({
   buttons,
   shareWords,
   emailFormWords,
-  offersNewsletter,
   newsletterConsent,
   videosTitle,
   videoIds,
@@ -200,8 +198,7 @@ export function LinksPageView({
                     buttonKey={button.key}
                     className={buttonClasses}
                     words={emailFormWords}
-                    offersNewsletter={offersNewsletter}
-                    consent={newsletterConsent}
+                    newsletterConsent={newsletterConsent}
                     trackingAttributes={trackingAttributes(button)}
                   >
                     {buttonWords}
