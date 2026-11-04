@@ -82,7 +82,7 @@ export function EmailSignupForm({ words, newsletterBox, buttonKey, className }: 
       className={mergeClasses("flex w-full flex-col gap-3 text-left", className)}
     >
       <HoneypotField value={honeypot} onChange={setHoneypot} />
-      <div className="flex w-full flex-col gap-2 sm:flex-row">
+      <div className="flex w-full flex-col gap-2">
         <label htmlFor={emailId} className="sr-only">
           {words.emailLabel}
         </label>
@@ -103,7 +103,7 @@ export function EmailSignupForm({ words, newsletterBox, buttonKey, className }: 
         />
         <Button
           type="submit"
-          className="min-h-12 shrink-0"
+          className="min-h-12 w-full break-words"
           disabled={sending || (newsletterBox === "required" && !newsletterTicked)}
         >
           {sending ? words.sending : words.submit}
