@@ -1,3 +1,4 @@
+import { stegaEncodeSourceMap } from "@sanity/client/stega";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/turnstile", () => ({ verifyTurnstileToken: vi.fn() }));
@@ -51,8 +52,9 @@ function post(body: unknown): Promise<Response> {
   );
 }
 
-const DOWNLOAD = { email: "Ada@Example.com", wantsNewsletter: false, buttonKey: GUIDE_KEY, turnstileToken: "ok" };
-const FOOTER = { email: "ada@example.com", wantsNewsletter: true, turnstileToken: "ok" };
+const SHOWN_WORDS = "The tick box words on the page the visitor saw.";
+const DOWNLOAD = { email: "Ada@Example.com", consentText: null, buttonKey: GUIDE_KEY, turnstileToken: "ok" };
+const FOOTER = { email: "ada@example.com", consentText: SHOWN_WORDS, turnstileToken: "ok" };
 
 const signupRows = () => dbQuery("SELECT email, source, wants_newsletter, consent_text FROM email_signups");
 
@@ -74,7 +76,11 @@ beforeEach(() => {
 describe("POST /api/signup", () => {
   it.each([
     ["broken JSON", "{"],
-    ["a missing turnstile token", { email: "ada@example.com", wantsNewsletter: true }],
+    ["a missing turnstile token", { email: "ada@example.com", consentText: SHOWN_WORDS }],
+    ["blank tick box words", { ...FOOTER, consentText: "  " }],
+    ["tick box words over 2000 characters", { ...FOOTER, consentText: "a".repeat(2001) }],
+    ["tick box words that are not text", { ...FOOTER, consentText: true }],
+    ["a body with no tick box words at all", { email: "ada@example.com", buttonKey: GUIDE_KEY, turnstileToken: "ok" }],
     ["a filled honeypot", { ...FOOTER, hp_ref: "bot" }],
     ["an incomplete email", { ...FOOTER, email: "ada@" }],
   ])("rejects %s with 400 and stores nothing", async (_case, body) => {
@@ -113,7 +119,7 @@ describe("POST /api/signup", () => {
   });
 
   it("sends both emails when the newsletter box is ticked on a download, and adds nobody to the provider yet", async () => {
-    expect((await post({ ...DOWNLOAD, wantsNewsletter: true })).status).toBe(200);
+    expect((await post({ ...DOWNLOAD, consentText: SHOWN_WORDS })).status).toBe(200);
 
     expect(sendDownloadLink).toHaveBeenCalledOnce();
     const confirm = vi.mocked(sendNewsletterConfirm).mock.calls[0][0];
@@ -140,27 +146,46 @@ describe("POST /api/signup", () => {
     expect((await post({ ...DOWNLOAD, buttonKey: "file:other" })).status).toBe(400);
   });
 
-  it("stores the tick box words Becky published in Site Settings", async () => {
+  it("stores the tick box words the visitor saw, even after Becky publishes new ones", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({
-      newsletter: { show: true, consentText: "Becky's published tick box words." },
+      newsletter: { show: true, consentText: "Becky's newer published words." },
     } as SanitySiteSettings);
 
     expect((await post(FOOTER)).status).toBe(200);
 
     expect(await signupRows()).toEqual([
-      { email: "ada@example.com", source: "footer", wants_newsletter: 1, consent_text: "Becky's published tick box words." },
+      { email: "ada@example.com", source: "footer", wants_newsletter: 1, consent_text: SHOWN_WORDS },
     ]);
   });
 
+  it("stores the tick box words trimmed and without the hidden preview markers", async () => {
+    const previewWords = stegaEncodeSourceMap(
+      { consentText: ` ${SHOWN_WORDS}\n` },
+      {
+        documents: [{ _id: "siteSettings", _type: "siteSettings" }],
+        paths: ["$['newsletter']['consentText']"],
+        mappings: {
+          "$['consentText']": { type: "value", source: { type: "documentValue", document: 0, path: 0 } },
+        },
+      },
+      { enabled: true, studioUrl: "https://example.sanity.studio", filter: () => true } as never,
+    ).consentText;
+    expect(previewWords).not.toBe(` ${SHOWN_WORDS}\n`);
+
+    expect((await post({ ...FOOTER, consentText: previewWords })).status).toBe(200);
+
+    expect((await signupRows())[0].consent_text).toBe(SHOWN_WORDS);
+  });
+
   it("refuses a footer signup without the newsletter box ticked", async () => {
-    expect((await post({ ...FOOTER, wantsNewsletter: false })).status).toBe(400);
+    expect((await post({ ...FOOTER, consentText: null })).status).toBe(400);
     expect(await signupRows()).toEqual([]);
   });
 
   it("sends only the download and stores no consent when a ticked box arrives while the newsletter is off", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({ newsletter: { show: false } } as SanitySiteSettings);
 
-    expect((await post({ ...DOWNLOAD, wantsNewsletter: true })).status).toBe(200);
+    expect((await post({ ...DOWNLOAD, consentText: SHOWN_WORDS })).status).toBe(200);
 
     expect(sendDownloadLink).toHaveBeenCalledOnce();
     expect(sendNewsletterConfirm).not.toHaveBeenCalled();
@@ -172,7 +197,7 @@ describe("POST /api/signup", () => {
   it("still sends the download, without the newsletter, when Site Settings cannot be read", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockRejectedValue(new Error("sanity down"));
 
-    expect((await post({ ...DOWNLOAD, wantsNewsletter: true })).status).toBe(200);
+    expect((await post({ ...DOWNLOAD, consentText: SHOWN_WORDS })).status).toBe(200);
 
     expect(sendDownloadLink).toHaveBeenCalledOnce();
     expect(sendNewsletterConfirm).not.toHaveBeenCalled();

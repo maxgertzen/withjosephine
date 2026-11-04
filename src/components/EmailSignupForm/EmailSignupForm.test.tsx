@@ -41,17 +41,17 @@ describe("EmailSignupForm", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(WORDS.sent));
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(SIGNUP_API_ROUTE);
-    expect(JSON.parse(init.body)).toMatchObject({ email: "ada@example.com", wantsNewsletter: false, buttonKey: "file:1" });
+    expect(JSON.parse(init.body)).toMatchObject({ email: "ada@example.com", consentText: null, buttonKey: "file:1" });
   });
 
-  it("sends the newsletter tick when the visitor ticks the box", async () => {
+  it("sends the tick box words it showed when the visitor ticks the box", async () => {
     render(<EmailSignupForm words={WORDS} newsletter={{ box: "optional", consent: CONSENT }} buttonKey="file:1" />);
     await typeEmail("ada@example.com");
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: WORDS.submit }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).wantsNewsletter).toBe(true);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).consentText).toBe(CONSENT.consentText);
   });
 
   it("keeps the button off until the box is ticked when the newsletter is the whole point", async () => {

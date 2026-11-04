@@ -70,7 +70,7 @@ export function EmailSignupForm({ words, newsletter, look = "pill", buttonKey, c
     const turnstileToken = turnstile.turnstileRequired ? await turnstile.requestFreshToken() : "";
     const request: SignupRequest = {
       email: email.trim(),
-      wantsNewsletter: newsletterTicked,
+      consentText: newsletter && newsletterTicked ? newsletter.consent.consentText : null,
       buttonKey,
       turnstileToken: turnstileToken ?? "",
       [HONEYPOT_FIELD]: honeypot,

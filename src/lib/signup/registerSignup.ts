@@ -18,17 +18,19 @@ function sentOrSkipped(result: EmailSendResult): boolean {
 
 export async function registerSignup(args: {
   email: string;
-  wantsNewsletter: boolean;
+  consentText: string | null;
   buttonKey?: string;
 }): Promise<SignupOutcome> {
-  const [download, newsletter] = await Promise.all([
+  const [download, newsletterOn] = await Promise.all([
     args.buttonKey ? publishedEmailFirstButton(args.buttonKey) : null,
-    fetchSiteSettingsPublished().then(
-      (settings) => newsletterContent(settings?.newsletter),
-      () => null,
-    ),
+    args.consentText === null
+      ? false
+      : fetchSiteSettingsPublished().then(
+          (settings) => newsletterContent(settings?.newsletter).show,
+          () => false,
+        ),
   ]);
-  const consentText = args.wantsNewsletter && newsletter?.show ? newsletter.consentText : null;
+  const consentText = newsletterOn ? args.consentText : null;
   if (args.buttonKey && !download) return "not_offered";
   if (!download && consentText === null) return "not_offered";
 

@@ -1,6 +1,11 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, type StringRule } from "sanity";
 
-import { NEWSLETTER_DEFAULTS, type NewsletterContent, type SignupFormWords } from "../../src/data/defaults";
+import {
+  NEWSLETTER_CONSENT_TEXT_MAX_LENGTH,
+  NEWSLETTER_DEFAULTS,
+  type NewsletterContent,
+  type SignupFormWords,
+} from "../../src/data/defaults";
 import { SIGNUP_FORM_WORD_TITLES } from "./_shared/signupFormWords";
 
 type NewsletterWordField = {
@@ -8,6 +13,7 @@ type NewsletterWordField = {
   title: string;
   description?: string;
   long?: true;
+  maxLength?: number;
 };
 
 const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
@@ -23,6 +29,7 @@ const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
     description:
       "Visitors tick this box to say yes to your newsletter. Each sign-up saves the exact words shown at that moment, so change them only when you mean it. The tick box shows on every sign-up form while \"Show the newsletter box\" is on.",
     long: true,
+    maxLength: NEWSLETTER_CONSENT_TEXT_MAX_LENGTH,
   },
   { name: "privacyLinkText", title: "Link to the privacy page, after those words" },
   ...(Object.keys(SIGNUP_FORM_WORD_TITLES) as (keyof SignupFormWords)[]).map((name) => ({
@@ -137,12 +144,15 @@ export const siteSettings = defineType({
           description: "Turn on to show the box at the bottom of every page.",
           initialValue: NEWSLETTER_DEFAULTS.show,
         }),
-        ...NEWSLETTER_WORD_FIELDS.map(({ name, title, description, long }) => {
+        ...NEWSLETTER_WORD_FIELDS.map(({ name, title, description, long, maxLength }) => {
           const common = {
             name,
             title,
             description: description ?? "Leave blank to use the words shown in grey.",
             placeholder: NEWSLETTER_DEFAULTS[name],
+            validation: maxLength
+              ? (rule: StringRule) => rule.max(maxLength).error(`Keep these words to ${maxLength} letters or fewer.`)
+              : undefined,
           };
           return long ? defineField({ ...common, type: "text", rows: 2 }) : defineField({ ...common, type: "string" });
         }),

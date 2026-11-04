@@ -1042,6 +1042,8 @@ export type NewsletterContent = SignupFormWords &
   confirmFailedBody: string;
 };
 
+export const NEWSLETTER_CONSENT_TEXT_MAX_LENGTH = 2000;
+
 export const NEWSLETTER_DEFAULTS: NewsletterContent = {
   show: false,
   title: "Letters from Josephine",
