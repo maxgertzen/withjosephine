@@ -47,7 +47,7 @@ const EMAIL_FORM_TITLES: Record<keyof LinksPageEmailFormWords, string> = {
 
 function labelled<T extends string>(place: string, field: string, titles: Record<T, string>): Record<T, string> {
   return Object.fromEntries(
-    (Object.keys(titles) as T[]).map((key) => [key, fieldLabel(place, titles[key], `${field}.${key}`)]),
+    (Object.keys(titles) as T[]).map((key) => [key, fieldLabel(place, titles[key], field ? `${field}.${key}` : key)]),
   ) as Record<T, string>;
 }
 
@@ -94,16 +94,27 @@ export function fieldMapLinksPageEmailForm(): {
   return { button, words: props.emailFormWords, consent: props.newsletterConsent };
 }
 
-function fieldMapEmail(place: string): EmailOneButtonContent {
-  return {
-    subject: fieldLabel(place, "Subject", "subject"),
-    preview: fieldLabel(place, "Preview text", "preview"),
-    heroLine: fieldLabel(place, "Big line at the top", "heroLine"),
-    buttonLabel: fieldLabel(place, "Button words", "buttonLabel"),
-    copyLinkLabel: fieldLabel(place, "Words before the link under the button", "copyLinkLabel"),
-    body: stringToPortableTextBlocks(fieldLabel(place, "Words above the button", "body")),
-  };
+const ONE_BUTTON_EMAIL_TITLES: Record<keyof EmailOneButtonContent, string> = {
+  subject: "Subject",
+  preview: "Preview text",
+  heroLine: "Big line at the top",
+  buttonLabel: "Button words",
+  copyLinkLabel: "Words before the link under the button",
+  body: "Words above the button",
+};
+
+const MAGIC_LINK_EMAIL_TITLES: Record<keyof EmailOneButtonContent, string> = {
+  ...ONE_BUTTON_EMAIL_TITLES,
+  heroLine: "Hero line (after divider)",
+  buttonLabel: "Button label",
+  body: "Body paragraphs",
+};
+
+function fieldMapEmail(place: string, titles = ONE_BUTTON_EMAIL_TITLES): EmailOneButtonContent {
+  const words = labelled(place, "", titles);
+  return { ...words, body: stringToPortableTextBlocks(words.body) };
 }
 
 export const FIELD_MAP_DOWNLOAD_EMAIL = fieldMapEmail("Emails › Download Link → Links Page Visitor");
 export const FIELD_MAP_NEWSLETTER_CONFIRM_EMAIL = fieldMapEmail("Emails › Newsletter: Confirm Your Email");
+export const FIELD_MAP_MAGIC_LINK_EMAIL = fieldMapEmail("Emails › Magic Link → Listen Page", MAGIC_LINK_EMAIL_TITLES);

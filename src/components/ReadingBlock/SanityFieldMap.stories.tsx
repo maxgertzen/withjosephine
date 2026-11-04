@@ -10,6 +10,7 @@ import type { EmailOneButtonContent } from "@/data/defaults";
 import { OneButtonEmail } from "@/lib/emails/OneButtonEmail";
 import {
   FIELD_MAP_DOWNLOAD_EMAIL,
+  FIELD_MAP_MAGIC_LINK_EMAIL,
   FIELD_MAP_NEWSLETTER_CONFIRM_EMAIL,
   FIELD_MAP_STORED_NEWSLETTER,
   fieldMapLinksPageEmailForm,
@@ -112,6 +113,11 @@ const EmailFrame = ({ html }: { html: string }) => (
 
 export const DownloadLinkEmail: Story = {
   loaders: [emailHtml(FIELD_MAP_DOWNLOAD_EMAIL, "https://cdn.sanity.io/files/preview/production/guide.pdf?dl=")],
+  render: (_args, { loaded }) => <EmailFrame html={loaded.html as string} />,
+};
+
+export const MagicLinkEmail: Story = {
+  loaders: [emailHtml(FIELD_MAP_MAGIC_LINK_EMAIL, "https://withjosephine.com/auth/verify?token=preview")],
   render: (_args, { loaded }) => <EmailFrame html={loaded.html as string} />,
 };
 

@@ -5,6 +5,16 @@ import type { EmailTemplateKey } from "../../../src/lib/emails/slots";
 import { tokenReferenceField } from "../../lib/tokenHelp";
 import { slotValidation } from "../../lib/validateSlots";
 
+export function copyLinkLabelField(placeholder: string) {
+  return defineField({
+    name: "copyLinkLabel",
+    title: "Words before the link under the button",
+    type: "string",
+    description: "Shown before the link, for people whose email does not show the button.",
+    placeholder,
+  });
+}
+
 export function oneButtonEmailSchema(args: {
   name: EmailTemplateKey;
   title: string;
@@ -29,13 +39,7 @@ export function oneButtonEmailSchema(args: {
       }),
       defineField({ name: "heroLine", title: "Big line at the top", type: "string", placeholder: defaults.heroLine }),
       defineField({ name: "buttonLabel", title: "Button words", type: "string", placeholder: defaults.buttonLabel }),
-      defineField({
-        name: "copyLinkLabel",
-        title: "Words before the link under the button",
-        type: "string",
-        description: "Shown before the link, for people whose email does not show the button.",
-        placeholder: defaults.copyLinkLabel,
-      }),
+      copyLinkLabelField(defaults.copyLinkLabel),
       defineField({
         name: "body",
         title: "Words above the button",

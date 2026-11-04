@@ -16,11 +16,13 @@ import {
 } from "@/lib/booking/submissions";
 import { wasUserDeleted } from "@/lib/compliance/cascadeDeleteUser";
 import { READING_CONTENT_RETENTION_YEARS, TAX_RETENTION_YEARS } from "@/lib/compliance/retention";
+import { pick } from "@/lib/pick";
 import { getSignedDownloadUrl, putObject } from "@/lib/r2";
 import { R2_PUBLIC_ORIGIN } from "@/lib/r2/publicOrigin";
 import { getClientIp } from "@/lib/request";
 import { sendPrivacyExportEmail } from "@/lib/resend";
 import { getSanityWriteClient } from "@/lib/sanity/client";
+import { findEmailSignupsFor } from "@/lib/signup/emailSignups";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 /**
@@ -126,6 +128,7 @@ function buildReadme(): string {
     "  consent.json      — the consent records you agreed to at booking (Art. 6 + Art. 9)",
     "  transaction.json  — payment record (amount, date, currency, country)",
     "  delivery.json     — email history + delivery + listen timestamps",
+    "  email-signups.json - each time this email address signed up for a free download or the newsletter",
     "  photo.*           — the photo you uploaded (if any)",
     "  voice-note.*      — the voice note Josephine recorded for you (if delivered)",
     "  reading.pdf       — the supporting PDF (if delivered)",
@@ -149,6 +152,13 @@ function buildReadme(): string {
     "  emailsFired          — the emails we sent you for this order",
     "  emailFailures        - emails for this order that did not reach you, and why",
     "  status               — the order's current state",
+    "email-signups.json",
+    "  source               - where you signed up: footer, or links:<button> for a free download",
+    "  consentText          - the newsletter tick box words you agreed to (null when you did not join the newsletter)",
+    "  createdAt            - when you signed up (ISO 8601)",
+    "  emailsSentAt         - when we emailed you your download or the newsletter confirm link (null if not sent)",
+    "  confirmedAt          - when you confirmed the newsletter from your email (null if not confirmed)",
+    "  providerSyncedAt     - when we added your address to our newsletter service, Brevo (null if not added)",
     "",
     "Retention",
     "---------",
@@ -280,9 +290,10 @@ export async function POST(request: Request): Promise<Response> {
     success: true,
   });
 
-  const [consentSnapshot, assetResults] = await Promise.all([
+  const [consentSnapshot, assetResults, emailSignups] = await Promise.all([
     fetchConsentSnapshot(submission._id),
     Promise.all(collectAssetTasks(submission).map(fetchAsset)),
+    findEmailSignupsFor(submission.email),
   ]);
 
   const bundle: Zippable = {};
@@ -325,6 +336,16 @@ export async function POST(request: Request): Promise<Response> {
         emailFailures: submission.emailFailures ?? [],
         status: submission.status,
       },
+      null,
+      2,
+    ),
+  );
+
+  bundle[`${folder}/email-signups.json`] = strToU8(
+    JSON.stringify(
+      emailSignups.map((signup) =>
+        pick(signup, ["source", "consentText", "createdAt", "emailsSentAt", "confirmedAt", "providerSyncedAt"]),
+      ),
       null,
       2,
     ),

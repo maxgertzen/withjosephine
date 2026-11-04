@@ -524,14 +524,18 @@ export interface EmailMagicLinkContent {
   heroLine: string;
   body: EmailRichText;
   buttonLabel: string;
+  copyLinkLabel: string;
   signOff: string | null;
 }
+
+const EMAIL_COPY_LINK_LABEL_DEFAULT = "Or copy this link:";
 
 export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
   subject: "Open your reading",
   preview: "Open your reading",
   heroLine: "Open your reading",
   buttonLabel: "Open your reading",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
   body: [
     ...stringToPortableTextBlocks(
       "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
@@ -1064,9 +1068,7 @@ export const NEWSLETTER_DEFAULTS: NewsletterContent = {
   confirmFailedBody: "It may be older than seven days. Sign up again at the bottom of any page.",
 };
 
-export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff"> & { copyLinkLabel: string };
-
-export const EMAIL_COPY_LINK_LABEL_DEFAULT = "Or copy this link:";
+export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff">;
 
 export const EMAIL_DOWNLOAD_LINK_DEFAULTS: EmailOneButtonContent = {
   subject: "Your download from Josephine",

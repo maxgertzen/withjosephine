@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
 
-import { pickDefined } from "@/lib/sanity/pickDefined";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 
 import { GiftOpened } from "./GiftOpened";
 import { GiftPurchase } from "./GiftPurchase";
@@ -56,10 +56,10 @@ async function renderRaw(
   sanityCopy: unknown,
 ): Promise<string> {
   type TemplateDefaults = (typeof PREVIEW_DEFAULTS)[typeof template];
-  const merged = {
-    ...PREVIEW_DEFAULTS[template],
-    ...pickDefined((sanityCopy as Partial<TemplateDefaults> | null) ?? {}),
-  };
+  const merged = withNonBlankOverrides<TemplateDefaults>(
+    PREVIEW_DEFAULTS[template],
+    sanityCopy as Partial<TemplateDefaults> | null,
+  );
   switch (template) {
     case "emailOrderConfirmation":
       return render(
@@ -95,12 +95,7 @@ async function renderRaw(
             readingName: PREVIEW_FIXTURE.readingName,
             readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
           }}
-          copy={{
-            preview: copy.preview,
-            heroLine: copy.heroLine,
-            buttonLabel: copy.buttonLabel,
-            body: copy.body,
-          }}
+          copy={copy}
         />,
       );
     }

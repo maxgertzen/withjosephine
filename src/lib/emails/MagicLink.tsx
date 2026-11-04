@@ -1,6 +1,6 @@
-import { EMAIL_COPY_LINK_LABEL_DEFAULT, type EmailRichText, type EmailSharedShellContent } from "@/data/defaults";
+import type { EmailSharedShellContent } from "@/data/defaults";
 
-import { OneButtonEmail } from "./OneButtonEmail";
+import { OneButtonEmail, type OneButtonEmailProps } from "./OneButtonEmail";
 
 export type MagicLinkVars = {
   magicLinkUrl: string;
@@ -9,12 +9,7 @@ export type MagicLinkVars = {
   readingPriceDisplay: string;
 };
 
-export type MagicLinkCopy = {
-  preview: string;
-  heroLine: string;
-  buttonLabel: string;
-  body: EmailRichText;
-};
+export type MagicLinkCopy = OneButtonEmailProps["copy"];
 
 export type MagicLinkProps = {
   vars: MagicLinkVars;
@@ -23,5 +18,5 @@ export type MagicLinkProps = {
 };
 
 export function MagicLink({ vars, copy, shell }: MagicLinkProps) {
-  return <OneButtonEmail buttonUrl={vars.magicLinkUrl} vars={vars} copy={{ ...copy, copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT }} shell={shell} />;
+  return <OneButtonEmail buttonUrl={vars.magicLinkUrl} vars={vars} copy={copy} shell={shell} />;
 }

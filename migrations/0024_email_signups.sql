@@ -2,9 +2,9 @@ CREATE TABLE IF NOT EXISTS email_signups (
   id                 TEXT PRIMARY KEY NOT NULL,
   email              TEXT NOT NULL,
   source             TEXT NOT NULL,
-  wants_newsletter   INTEGER NOT NULL CHECK (wants_newsletter IN (0, 1)),
   consent_text       TEXT,
   created_at         TEXT NOT NULL,
+  emails_sent_at     TEXT,
   confirmed_at       TEXT,
   provider_synced_at TEXT
 );

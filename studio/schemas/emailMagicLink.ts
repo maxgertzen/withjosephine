@@ -1,6 +1,8 @@
 import { defineField, defineType } from "sanity";
 
+import { EMAIL_MAGIC_LINK_DEFAULTS } from "../../src/data/defaults";
 import { tokenReferenceField } from "../lib/tokenHelp";
+import { copyLinkLabelField } from "./_shared/oneButtonEmail";
 import { slotValidation } from "../lib/validateSlots";
 
 const validateMagicLinkSlots = slotValidation("emailMagicLink");
@@ -38,6 +40,7 @@ export const emailMagicLink = defineType({
       type: "string",
       initialValue: "Open your reading",
     }),
+    copyLinkLabelField(EMAIL_MAGIC_LINK_DEFAULTS.copyLinkLabel),
     defineField({
       name: "body",
       title: "Body paragraphs",

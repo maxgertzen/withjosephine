@@ -7,6 +7,8 @@ import {
   deleteEmailSignupsFor,
   deleteSignupsNeverConfirmed,
   findEmailSignup,
+  findEmailSignupsFor,
+  markEmailsSent,
   markNewsletterConfirmed,
   saveEmailSignup,
 } from "./emailSignups";
@@ -24,9 +26,9 @@ describe("email signups", () => {
       id: signup.id,
       email: "ada@example.com",
       source: "footer",
-      wantsNewsletter: true,
       consentText: CONSENT,
       createdAt: NOW.toISOString(),
+      emailsSentAt: null,
       confirmedAt: null,
       providerSyncedAt: null,
     });
@@ -58,6 +60,37 @@ describe("email signups", () => {
     const ids = (await dbQuery<{ id: string }>("SELECT id FROM email_signups")).map(({ id }) => id).sort();
     expect(ids).toEqual([recent.id, confirmed.id].sort());
     expect(await findEmailSignup(old.id)).toBeNull();
+  });
+
+  it("returns the same signup while its emails are unsent and the same address signs up the same way within a day", async () => {
+    const first = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT, now: daysAgo(1.5) });
+    const again = await saveEmailSignup({ email: "ADA@example.com", source: "footer", consentText: CONSENT, now: daysAgo(1) });
+    const nextDay = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT, now: NOW });
+    const download = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", consentText: null, now: NOW });
+    const downloadAgain = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", consentText: null, now: NOW });
+
+    expect(again).toEqual(first);
+    expect(nextDay.id).not.toBe(first.id);
+    expect(downloadAgain).toEqual(download);
+    expect(await dbQuery("SELECT id FROM email_signups")).toHaveLength(3);
+  });
+
+  it("starts a new signup once the earlier one's emails were sent or the words changed", async () => {
+    const sent = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT, now: NOW });
+    await markEmailsSent(sent.id, NOW);
+    const askedAgain = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT, now: NOW });
+    const newWords = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: "New words.", now: NOW });
+
+    expect(new Set([sent.id, askedAgain.id, newWords.id]).size).toBe(3);
+    expect((await findEmailSignup(sent.id))?.emailsSentAt).toBe(NOW.toISOString());
+  });
+
+  it("lists every signup for an address, oldest first", async () => {
+    const footer = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT, now: daysAgo(2) });
+    const download = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", consentText: null, now: NOW });
+    await saveEmailSignup({ email: "other@example.com", source: "footer", consentText: CONSENT, now: NOW });
+
+    expect(await findEmailSignupsFor("Ada@Example.com")).toEqual([footer, download]);
   });
 
   it("deletes every signup for an address, whatever its case", async () => {

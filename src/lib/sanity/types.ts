@@ -126,11 +126,12 @@ export type SanityEmailMagicLink = {
   preview: string;
   heroLine: string;
   buttonLabel: string;
+  copyLinkLabel?: string | null;
   body: PortableTextBlock[];
   signOff: string | null;
 };
 
-export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff"> & { copyLinkLabel?: string };
+export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff">;
 
 export type SanityEmailOrderConfirmation = {
   subject: string;

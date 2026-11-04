@@ -1,12 +1,12 @@
 import "server-only";
 
-import { publishedEmailFirstButton } from "@/app/tt/publishedLinksPage";
+import { publishedEmailFirstSignup } from "@/app/tt/publishedLinksPage";
 import { siteOrigin } from "@/lib/env";
 import { NEWSLETTER_CONFIRM_ROUTE } from "@/lib/http/routes";
 import { type EmailSendResult, sendDownloadLink, sendNewsletterConfirm } from "@/lib/resend";
 import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
 
-import { saveEmailSignup } from "./emailSignups";
+import { markEmailsSent, saveEmailSignup, wantsNewsletter } from "./emailSignups";
 import { mintNewsletterConfirmToken } from "./newsletterConfirmToken";
 import { newsletterContent } from "./newsletterContent";
 
@@ -16,27 +16,28 @@ function sentOrSkipped(result: EmailSendResult): boolean {
   return result.kind === "sent" || result.kind === "dry_run";
 }
 
+function newsletterOnInSiteSettings(): Promise<boolean> {
+  return fetchSiteSettingsPublished().then(
+    (settings) => newsletterContent(settings?.newsletter).show,
+    () => false,
+  );
+}
+
 export async function registerSignup(args: {
   email: string;
   consentText: string | null;
   buttonKey?: string;
 }): Promise<SignupOutcome> {
-  const [download, newsletterOn] = await Promise.all([
-    args.buttonKey ? publishedEmailFirstButton(args.buttonKey) : null,
-    args.consentText === null
-      ? false
-      : fetchSiteSettingsPublished().then(
-          (settings) => newsletterContent(settings?.newsletter).show,
-          () => false,
-        ),
-  ]);
-  const consentText = newsletterOn ? args.consentText : null;
+  const download = args.buttonKey ? await publishedEmailFirstSignup(args.buttonKey) : null;
   if (args.buttonKey && !download) return "not_offered";
+  const newsletterOn =
+    args.consentText !== null && (download ? download.newsletterOn : await newsletterOnInSiteSettings());
+  const consentText = newsletterOn ? args.consentText : null;
   if (!download && consentText === null) return "not_offered";
 
   const signup = await saveEmailSignup({
     email: args.email,
-    source: download ? `links:${download.key}` : "footer",
+    source: download ? `links:${download.button.key}` : "footer",
     consentText,
   });
 
@@ -47,17 +48,21 @@ export async function registerSignup(args: {
       sendDownloadLink({
         to: signup.email,
         signupId: signup.id,
-        downloadUrl: download.href,
-        downloadName: download.label,
+        downloadUrl: download.button.href,
+        downloadName: download.button.label,
       }),
     );
   }
-  if (signup.wantsNewsletter) {
-    const token = await mintNewsletterConfirmToken(signup.id, signup.email);
+  if (wantsNewsletter(signup)) {
+    const token = await mintNewsletterConfirmToken(signup.id, signup.email, Date.parse(signup.createdAt));
     const confirmUrl = `${origin}${NEWSLETTER_CONFIRM_ROUTE}?${new URLSearchParams({ token })}`;
     sends.push(sendNewsletterConfirm({ to: signup.email, signupId: signup.id, confirmUrl }));
   }
 
   const results = await Promise.all(sends);
-  return results.every(sentOrSkipped) ? "done" : "email_failed";
+  if (!results.every(sentOrSkipped)) return "email_failed";
+  await markEmailsSent(signup.id).catch((error: unknown) => {
+    console.error("[signup] could not record sent emails", error instanceof Error ? error.name : "unknown");
+  });
+  return "done";
 }

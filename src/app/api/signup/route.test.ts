@@ -32,13 +32,13 @@ const guideButton = (overrides: Partial<SanityLinksPageButton> = {}): SanityLink
   ...overrides,
 });
 
-function publishLinksPage(page: SanityLinksPage) {
+function publishLinksPage(page: SanityLinksPage, newsletterShow = true) {
   vi.mocked(fetchLinksPagePublished).mockResolvedValue({
     page,
     aboutPhotoUrl: null,
     readings: [],
     notesState: null,
-    siteSettings: null,
+    siteSettings: { socialLinks: [], newsletter: { show: newsletterShow } },
   });
 }
 
@@ -56,7 +56,7 @@ const SHOWN_WORDS = "The tick box words on the page the visitor saw.";
 const DOWNLOAD = { email: "Ada@Example.com", consentText: null, buttonKey: GUIDE_KEY, turnstileToken: "ok" };
 const FOOTER = { email: "ada@example.com", consentText: SHOWN_WORDS, turnstileToken: "ok" };
 
-const signupRows = () => dbQuery("SELECT email, source, wants_newsletter, consent_text FROM email_signups");
+const signupRows = () => dbQuery("SELECT email, source, consent_text FROM email_signups");
 
 beforeEach(() => {
   vi.stubEnv("AUTH_TOKEN_SECRET", "test-auth-token-secret");
@@ -114,7 +114,7 @@ describe("POST /api/signup", () => {
     );
     expect(sendNewsletterConfirm).not.toHaveBeenCalled();
     expect(await signupRows()).toEqual([
-      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, wants_newsletter: 0, consent_text: null },
+      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, consent_text: null },
     ]);
   });
 
@@ -126,6 +126,30 @@ describe("POST /api/signup", () => {
     expect(confirm.confirmUrl).toMatch(/^https:\/\/withjosephine\.com\/newsletter\/confirm\?token=/);
     expect(confirm.confirmUrl).not.toContain("ada");
     expect(addNewsletterContact).not.toHaveBeenCalled();
+    expect(fetchSiteSettingsPublished).not.toHaveBeenCalled();
+  });
+
+  it("reuses the first signup when the visitor tries again after an email failed, so nothing is sent twice", async () => {
+    vi.mocked(sendNewsletterConfirm).mockResolvedValueOnce({ kind: "failed", error: "down" });
+    const ticked = { ...DOWNLOAD, consentText: SHOWN_WORDS };
+
+    expect((await post(ticked)).status).toBe(502);
+    expect((await post(ticked)).status).toBe(200);
+
+    expect(await signupRows()).toHaveLength(1);
+    const [first, second] = vi.mocked(sendDownloadLink).mock.calls.map(([args]) => args);
+    expect(second).toEqual(first);
+    const [firstConfirm, secondConfirm] = vi.mocked(sendNewsletterConfirm).mock.calls.map(([args]) => args);
+    expect(secondConfirm).toEqual(firstConfirm);
+  });
+
+  it("sends again with a new signup when the visitor asks again after the emails went out", async () => {
+    expect((await post(DOWNLOAD)).status).toBe(200);
+    expect((await post(DOWNLOAD)).status).toBe(200);
+
+    expect(await signupRows()).toHaveLength(2);
+    const [first, second] = vi.mocked(sendDownloadLink).mock.calls.map(([args]) => args.signupId);
+    expect(second).not.toBe(first);
   });
 
   it("refuses a button that does not ask for an email", async () => {
@@ -154,7 +178,7 @@ describe("POST /api/signup", () => {
     expect((await post(FOOTER)).status).toBe(200);
 
     expect(await signupRows()).toEqual([
-      { email: "ada@example.com", source: "footer", wants_newsletter: 1, consent_text: SHOWN_WORDS },
+      { email: "ada@example.com", source: "footer", consent_text: SHOWN_WORDS },
     ]);
   });
 
@@ -183,33 +207,44 @@ describe("POST /api/signup", () => {
   });
 
   it("sends only the download and stores no consent when a ticked box arrives while the newsletter is off", async () => {
-    vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({ newsletter: { show: false } } as SanitySiteSettings);
+    publishLinksPage({ showPage: true, buttons: [guideButton()] }, false);
 
     expect((await post({ ...DOWNLOAD, consentText: SHOWN_WORDS })).status).toBe(200);
 
     expect(sendDownloadLink).toHaveBeenCalledOnce();
     expect(sendNewsletterConfirm).not.toHaveBeenCalled();
     expect(await signupRows()).toEqual([
-      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, wants_newsletter: 0, consent_text: null },
+      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, consent_text: null },
     ]);
   });
 
-  it("still sends the download, without the newsletter, when Site Settings cannot be read", async () => {
+  it("refuses a footer signup when Site Settings cannot be read", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockRejectedValue(new Error("sanity down"));
 
-    expect((await post({ ...DOWNLOAD, consentText: SHOWN_WORDS })).status).toBe(200);
-
-    expect(sendDownloadLink).toHaveBeenCalledOnce();
+    expect((await post(FOOTER)).status).toBe(400);
     expect(sendNewsletterConfirm).not.toHaveBeenCalled();
-    expect(await signupRows()).toEqual([
-      { email: "ada@example.com", source: `links:${GUIDE_KEY}`, wants_newsletter: 0, consent_text: null },
-    ]);
+    expect(await signupRows()).toEqual([]);
   });
 
   it("refuses a footer signup while the newsletter box is switched off in Studio", async () => {
     vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({ newsletter: { show: false } } as SanitySiteSettings);
 
     expect((await post(FOOTER)).status).toBe(400);
+  });
+
+  it("still reports the signup as done when recording the sent emails fails", async () => {
+    const sqlClient = await import("@/lib/booking/persistence/sqlClient");
+    const realExec = sqlClient.dbExec;
+    const spy = vi.spyOn(sqlClient, "dbExec").mockImplementation((sql, params) =>
+      sql.startsWith("UPDATE email_signups SET emails_sent_at") ? Promise.reject(new Error("d1 down")) : realExec(sql, params),
+    );
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect((await post(FOOTER)).status).toBe(200);
+    expect(sendNewsletterConfirm).toHaveBeenCalledOnce();
+    expect(logged).toHaveBeenCalledWith("[signup] could not record sent emails", "Error");
+    spy.mockRestore();
+    logged.mockRestore();
   });
 
   it("returns 502 when the email cannot be sent", async () => {

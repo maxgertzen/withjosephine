@@ -13,7 +13,7 @@ const codec = createSignedTokenCodec<NewsletterConfirmMintSource>({
 export type NewsletterConfirmClaim = { signupId: string; emailHash: string };
 
 export function mintNewsletterConfirmToken(signupId: string, email: string, now?: number): Promise<string> {
-  return codec.mint({ submissionId: signupId, recipientUserId: email, mintSource: "newsletter_signup", now });
+  return codec.mint({ submissionId: signupId, recipientUserId: email, mintSource: "newsletter_signup", now, jti: signupId });
 }
 
 export async function readNewsletterConfirmToken(token: string, now?: number): Promise<NewsletterConfirmClaim | null> {

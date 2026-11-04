@@ -201,6 +201,7 @@ export const emailMagicLinkQuery = groq`
     preview,
     heroLine,
     buttonLabel,
+    copyLinkLabel,
     body,
     signOff
   }
