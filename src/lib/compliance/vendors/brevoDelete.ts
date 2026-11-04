@@ -21,18 +21,10 @@ import "server-only";
  * failure but continues; reconciliation cron will pick up the orphaned
  * Brevo contact when the integration ships.
  */
+import { BREVO_API_BASE, brevoHeaders as buildHeaders } from "../../brevo";
 import { optionalEnv } from "../../env";
 import type { VendorResult } from "./types";
 import { vendorNotConfigured } from "./types";
-
-const BREVO_API_BASE = "https://api.brevo.com/v3";
-
-function buildHeaders(apiKey: string): Record<string, string> {
-  return {
-    "api-key": apiKey,
-    Accept: "application/json",
-  };
-}
 
 export async function deleteBrevoContact(email: string): Promise<VendorResult> {
   const apiKey = optionalEnv("BREVO_API_KEY");

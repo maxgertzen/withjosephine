@@ -2,6 +2,8 @@ import { render } from "@react-email/render";
 import { headers } from "next/headers";
 import { type ErrorResponse, Resend, type WebhookEventPayload } from "resend";
 
+import type { EmailOneButtonContent } from "@/data/defaults";
+
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { isSandboxEmail } from "./booking/sandboxEmails";
@@ -25,6 +27,7 @@ import {
   josephineNotificationTitle,
 } from "./emails/JosephineNotification";
 import { MagicLink } from "./emails/MagicLink";
+import { OneButtonEmail } from "./emails/OneButtonEmail";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { ReadingDelivery } from "./emails/ReadingDelivery";
@@ -647,6 +650,65 @@ export async function sendMagicLink(args: {
     html,
     subType: "magic_link",
     submissionId: null,
+  });
+}
+
+async function sendOneButtonEmail(args: {
+  to: string;
+  buttonUrl: string;
+  vars: Record<string, string>;
+  defaults: EmailOneButtonContent;
+  sanityCopy: Promise<Partial<EmailOneButtonContent> | null>;
+  subType: Extract<EmailSubType, "download_link" | "newsletter_confirm">;
+  idempotencyKey: string;
+}): Promise<EmailSendResult> {
+  const [sanity, shell] = await Promise.all([args.sanityCopy.catch(() => null), fetchSharedShell()]);
+  const copy = { ...args.defaults, ...pickDefined(sanity ?? {}) };
+  const html = await render(<OneButtonEmail buttonUrl={args.buttonUrl} vars={args.vars} copy={copy} shell={shell} />);
+  return sendOrSkip({
+    to: args.to,
+    subject: applyTokens(copy.subject, args.vars),
+    html,
+    subType: args.subType,
+    submissionId: null,
+    idempotencyKey: args.idempotencyKey,
+  });
+}
+
+export async function sendDownloadLink(args: {
+  to: string;
+  signupId: string;
+  downloadUrl: string;
+  downloadName: string;
+}): Promise<EmailSendResult> {
+  const { EMAIL_DOWNLOAD_LINK_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailDownloadLink } = await import("@/lib/sanity/fetch");
+  return sendOneButtonEmail({
+    to: args.to,
+    buttonUrl: args.downloadUrl,
+    vars: { downloadName: args.downloadName },
+    defaults: EMAIL_DOWNLOAD_LINK_DEFAULTS,
+    sanityCopy: fetchEmailDownloadLink(),
+    subType: "download_link",
+    idempotencyKey: `download-link/${args.signupId}`,
+  });
+}
+
+export async function sendNewsletterConfirm(args: {
+  to: string;
+  signupId: string;
+  confirmUrl: string;
+}): Promise<EmailSendResult> {
+  const { EMAIL_NEWSLETTER_CONFIRM_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailNewsletterConfirm } = await import("@/lib/sanity/fetch");
+  return sendOneButtonEmail({
+    to: args.to,
+    buttonUrl: args.confirmUrl,
+    vars: {},
+    defaults: EMAIL_NEWSLETTER_CONFIRM_DEFAULTS,
+    sanityCopy: fetchEmailNewsletterConfirm(),
+    subType: "newsletter_confirm",
+    idempotencyKey: `newsletter-confirm/${args.signupId}`,
   });
 }
 

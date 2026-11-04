@@ -1,6 +1,9 @@
 import { draftMode } from "next/headers";
 
 import { DisableDraftMode } from "@/components/DisableDraftMode";
+import { footerNewsletterSlot } from "@/components/Footer/footerNewsletterSlot";
+import { NewsletterSlotProvider } from "@/components/Footer/NewsletterContext";
+import { fetchSiteSettings } from "@/lib/sanity/fetch";
 import { SanityLive } from "@/lib/sanity/live";
 
 import { PreviewLinkRouter } from "./PreviewLinkRouter";
@@ -8,10 +11,15 @@ import { PreviewVisualEditing } from "./PreviewVisualEditing";
 
 export default async function PreviewLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled: isDraftMode } = await draftMode();
+  const draftSettings = isDraftMode ? await fetchSiteSettings().catch(() => null) : null;
 
   return (
     <>
-      {children}
+      {draftSettings ? (
+        <NewsletterSlotProvider slot={footerNewsletterSlot(draftSettings.newsletter)}>{children}</NewsletterSlotProvider>
+      ) : (
+        children
+      )}
       {isDraftMode && (
         <>
           {/*

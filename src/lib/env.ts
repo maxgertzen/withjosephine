@@ -3,6 +3,7 @@ import { MAIN_SITE_ORIGIN } from "./constants";
 export type EnvVar =
   | "ADMIN_API_KEY"
   | "BREVO_API_KEY"
+  | "BREVO_NEWSLETTER_LIST_ID"
   | "CRON_SECRET"
   | "ENVIRONMENT"
   | "GIFT_CODE_SECRET"

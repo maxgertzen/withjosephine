@@ -2,6 +2,7 @@ import { defineArrayMember, defineField, defineType, type ValidationContext } fr
 
 import {
   LINKS_PAGE_DEFAULTS,
+  LINKS_PAGE_EMAIL_FORM_DEFAULTS,
   LINKS_PAGE_MAX_BUTTON_LETTERS,
   LINKS_PAGE_MAX_BUTTONS,
   LINKS_PAGE_MAX_SOCIAL_LINKS,
@@ -10,12 +11,13 @@ import {
   LINKS_PAGE_SITE_STYLE,
   type LinksPageButtonShape,
   type LinksPageContent,
+  type LinksPageEmailFormWords,
   type LinksPageLetterCase,
   type LinksPageNameSize,
   type LinksPageNameStyle,
   type LinksPageShareWords,
 } from "../../src/data/defaults";
-import type { LinkDestination } from "@/lib/links/linkKey";
+import { EMAIL_FIRST_LINK_DESTINATIONS, type LinkDestination } from "@/lib/links/linkKey";
 import { SOCIAL_PLATFORMS, socialPlatformTitle } from "@/lib/links/socialPlatforms";
 import { isTikTokVideoLink } from "@/lib/links/tiktokVideo";
 import {
@@ -29,6 +31,7 @@ import type { LinksPageColours } from "@/lib/theme/linksPageStyle";
 import { READINGS } from "../../src/data/readings";
 import { type FontSample, fontPickerInput } from "../components/FontPickerInput";
 import { pixelSliderInput } from "../components/PixelSliderInput";
+import { SIGNUP_FORM_WORD_TITLES } from "./_shared/signupFormWords";
 import { publishedValidationClient } from "../lib/draftsClient";
 import {
   bothColoursPicked,
@@ -159,6 +162,11 @@ const choiceField = <T extends string>(
     },
     initialValue: LINKS_PAGE_DEFAULTS[name],
   });
+
+const EMAIL_FORM_WORD_TITLES: Record<keyof LinksPageEmailFormWords, string> = {
+  prompt: "Line above the email box",
+  ...SIGNUP_FORM_WORD_TITLES,
+};
 
 const DESTINATION_TITLES = Object.fromEntries(DESTINATION_CHOICES.map((choice) => [choice.value, choice.title]));
 
@@ -292,6 +300,15 @@ const linkButton = defineArrayMember({
       validation: (rule) => rule.custom(targetRule("file")),
     }),
     defineField({
+      name: "askForEmail",
+      title: "Ask for an email first",
+      type: "boolean",
+      description:
+        "When on, tapping the button asks for the visitor's email and sends the link to that email. They can also tick a box to get your newsletter. This does not lock the file: anyone who already has the link can still open it.",
+      initialValue: false,
+      hidden: ({ parent }) => !EMAIL_FIRST_LINK_DESTINATIONS.has((parent as { destination?: LinkDestination } | undefined)?.destination ?? "home"),
+    }),
+    defineField({
       name: "standOut",
       title: "Make this button stand out",
       type: "boolean",
@@ -322,6 +339,15 @@ export const linksPage = defineType({
     { name: "sharing", title: "Link preview" },
   ],
   fields: [
+    defineField({
+      name: "showPage",
+      title: "Show this page",
+      type: "boolean",
+      group: "content",
+      description:
+        "When off, anyone who opens links.withjosephine.com goes to the home page instead. Nothing on this page is lost, and you can keep editing it. Changes show a minute or two after you press Publish.",
+      initialValue: false,
+    }),
     defineField({
       name: "photo",
       title: "Photo at the top",
@@ -357,6 +383,22 @@ export const linksPage = defineType({
         rule.max(LINKS_PAGE_MAX_BUTTONS).error(`You can have up to ${LINKS_PAGE_MAX_BUTTONS} buttons.`),
         rule.custom((buttons) => noButtonGoesToTheSamePlace(buttons as StoredLinkButton[] | undefined)),
       ],
+    }),
+    defineField({
+      name: "emailForm",
+      title: "Words when a button asks for an email",
+      type: "object",
+      group: "content",
+      description:
+        "Shown under a button that has \"Ask for an email first\" turned on. Leave any of these blank to use the words shown in grey. The newsletter tick box words are fixed and cannot be changed here.",
+      fields: (Object.keys(EMAIL_FORM_WORD_TITLES) as (keyof LinksPageEmailFormWords)[]).map((word) =>
+        defineField({
+          name: word,
+          title: EMAIL_FORM_WORD_TITLES[word],
+          type: "string",
+          placeholder: LINKS_PAGE_EMAIL_FORM_DEFAULTS[word],
+        }),
+      ),
     }),
     defineField({
       name: "showSocialLinks",

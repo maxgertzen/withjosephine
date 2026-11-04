@@ -104,3 +104,11 @@ const beaconsLook = args({
 });
 
 export const LINKS_PAGE_BEACONS_LOOK_ARGS: LinksPageViewProps = { ...beaconsLook, videoIds: BEACONS_VIDEO_IDS };
+
+export const LINKS_PAGE_EMAIL_FIRST_ARGS: LinksPageViewProps = {
+  ...LINKS_PAGE_BEACONS_LOOK_ARGS,
+  offersNewsletter: true,
+  buttons: LINKS_PAGE_BEACONS_LOOK_ARGS.buttons.map((button, index) =>
+    index === 0 ? { ...button, askForEmail: true, shareHref: undefined } : button,
+  ),
+};

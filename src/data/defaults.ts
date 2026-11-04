@@ -1006,6 +1006,83 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
   playVideo: "Play video",
 };
 
+export type SignupFormWords = {
+  emailLabel: string;
+  submit: string;
+  sending: string;
+  sent: string;
+  invalidEmail: string;
+  failed: string;
+};
+
+export type LinksPageEmailFormWords = SignupFormWords & { prompt: string };
+
+export const LINKS_PAGE_EMAIL_FORM_DEFAULTS: LinksPageEmailFormWords = {
+  prompt: "Where should I send it?",
+  emailLabel: "Your email",
+  submit: "Send it to me",
+  sending: "Sending…",
+  sent: "Sent. Check your inbox for the link.",
+  invalidEmail: "Please type a full email address.",
+  failed: "That did not work. Please try again.",
+};
+
+export type NewsletterContent = SignupFormWords & {
+  show: boolean;
+  title: string;
+  line: string;
+  confirmPromptTitle: string;
+  confirmButton: string;
+  confirmedTitle: string;
+  confirmedBody: string;
+  confirmFailedTitle: string;
+  confirmFailedBody: string;
+};
+
+export const NEWSLETTER_DEFAULTS: NewsletterContent = {
+  show: false,
+  title: "Letters from Josephine",
+  line: "Notes on astrology and the Akashic Records, now and then.",
+  emailLabel: "Your email",
+  submit: "Sign up",
+  sending: "Signing up…",
+  sent: "Almost there. Check your inbox and tap the link to confirm.",
+  invalidEmail: "Please type a full email address.",
+  failed: "That did not work. Please try again.",
+  confirmPromptTitle: "One more tap to join my newsletter",
+  confirmButton: "Yes, sign me up",
+  confirmedTitle: "You're signed up",
+  confirmedBody: "Thank you. My letters will come to your inbox now and then.",
+  confirmFailedTitle: "This link did not work",
+  confirmFailedBody: "It may be older than seven days. Sign up again at the bottom of any page.",
+};
+
+export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff">;
+
+export const EMAIL_DOWNLOAD_LINK_DEFAULTS: EmailOneButtonContent = {
+  subject: "Your download from Josephine",
+  preview: "Here is your link",
+  heroLine: "Your download",
+  buttonLabel: "Open {downloadName}",
+  body: [
+    ...stringToPortableTextBlocks("Thank you for asking. Tap the button below to open {downloadName}."),
+    ...stringToPortableTextBlocks("If you did not ask for this, you can ignore this email."),
+  ],
+};
+
+export const EMAIL_NEWSLETTER_CONFIRM_DEFAULTS: EmailOneButtonContent = {
+  subject: "Please confirm your email",
+  preview: "One tap to join my newsletter",
+  heroLine: "Confirm your email",
+  buttonLabel: "Yes, sign me up",
+  body: [
+    ...stringToPortableTextBlocks(
+      "Thank you for wanting to hear from me. Tap the button below to confirm your email and join my newsletter.",
+    ),
+    ...stringToPortableTextBlocks("If you did not ask for this, ignore this email and you will not be added."),
+  ],
+};
+
 export const LINKS_PAGE_MAX_BUTTONS = 8;
 export const LINKS_PAGE_MAX_BUTTON_LETTERS = 60;
 export const LINKS_PAGE_MAX_VIDEOS = 6;

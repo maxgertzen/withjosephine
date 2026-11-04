@@ -12,11 +12,13 @@ import {
   articlesQuery,
   bookingFormQuery,
   bookingPageQuery,
+  emailDownloadLinkQuery,
   emailGiftOpenedQuery,
   emailGiftPurchaseQuery,
   emailGiftRecipientConfirmationQuery,
   emailGiftToRecipientQuery,
   emailMagicLinkQuery,
+  emailNewsletterConfirmQuery,
   emailOrderConfirmationQuery,
   emailPrivacyExportQuery,
   emailReadingDeliveryQuery,
@@ -51,6 +53,7 @@ import type {
   SanityEmailGiftRecipientConfirmation,
   SanityEmailGiftToRecipient,
   SanityEmailMagicLink,
+  SanityEmailOneButton,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
   SanityEmailReadingDelivery,
@@ -194,6 +197,14 @@ export const fetchMagicLinkVerifyPage = cache(
 
 export const fetchEmailMagicLink = cache((): Promise<SanityEmailMagicLink | null> =>
   freshFetch<SanityEmailMagicLink>(emailMagicLinkQuery),
+);
+
+export const fetchEmailDownloadLink = cache((): Promise<SanityEmailOneButton | null> =>
+  freshFetch<SanityEmailOneButton>(emailDownloadLinkQuery),
+);
+
+export const fetchEmailNewsletterConfirm = cache((): Promise<SanityEmailOneButton | null> =>
+  freshFetch<SanityEmailOneButton>(emailNewsletterConfirmQuery),
 );
 
 export const fetchEmailPrivacyExport = cache((): Promise<SanityEmailPrivacyExport | null> =>

@@ -4,6 +4,13 @@ vi.mock("./LinksPageView", () => ({ LinksPageView: () => null }));
 vi.mock("./fonts", () => ({ linksPageFontVariables: () => ({}) }));
 
 vi.mock("@/lib/sanity/fetch", () => ({ fetchLinksPagePublished: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(() => {
+    throw new Error("NEXT_REDIRECT");
+  }),
+}));
+
+import { redirect } from "next/navigation";
 
 import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
 import { fetchLinksPagePublished } from "@/lib/sanity/fetch";
@@ -23,6 +30,7 @@ const linksPageState = (page: SanityLinksPageState["page"]): SanityLinksPageStat
 
 beforeEach(() => {
   mockFetchLinksPage.mockReset();
+  vi.mocked(redirect).mockClear();
 });
 
 describe("links page metadata", () => {
@@ -55,6 +63,7 @@ describe("links page buttons", () => {
   it("sends every button through the tap counter, and email buttons straight to the mail app", async () => {
     mockFetchLinksPage.mockResolvedValue(
       linksPageState({
+        showPage: true,
         buttons: [
           { _key: "a", label: "Home", destination: "home" },
           { _key: "b", label: "Email", destination: "email", email: "hello@withjosephine.com" },
@@ -64,5 +73,23 @@ describe("links page buttons", () => {
     const page = (await LinksPage()) as { props: { children: { props: { buttons: { key: string; href: string }[] } }[] } };
     const buttons = page.props.children[0].props.buttons;
     expect(buttons.map(({ href }) => href)).toEqual(["/tt/go/home", "mailto:hello@withjosephine.com"]);
+  });
+});
+
+describe("links page switch", () => {
+  it.each([
+    ["no links page document", null],
+    ["the switch never set", linksPageState({ name: "Josephine" })],
+    ["the switch off", linksPageState({ showPage: false })],
+  ])("sends visitors to the home page with %s", async (_case, state) => {
+    mockFetchLinksPage.mockResolvedValue(state);
+    await expect(LinksPage()).rejects.toThrow("NEXT_REDIRECT");
+    expect(redirect).toHaveBeenCalledWith("/");
+  });
+
+  it("shows the page when the switch is on", async () => {
+    mockFetchLinksPage.mockResolvedValue(linksPageState({ showPage: true }));
+    await expect(LinksPage()).resolves.toBeTruthy();
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

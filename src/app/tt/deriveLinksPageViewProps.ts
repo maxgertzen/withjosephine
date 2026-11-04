@@ -3,15 +3,17 @@ import { stegaClean } from "@sanity/client/stega";
 import {
   LINKS_PAGE_BUTTON_SHAPES,
   LINKS_PAGE_DEFAULTS,
+  LINKS_PAGE_EMAIL_FORM_DEFAULTS,
   LINKS_PAGE_LETTER_CASES,
   LINKS_PAGE_NAME_SIZES,
   LINKS_PAGE_NAME_STYLES,
   LINKS_PAGE_PHOTO_PX,
+  NEWSLETTER_DEFAULTS,
 } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
 import { nonBlank, withNonBlankOverrides } from "@/lib/content/nonBlank";
-import { linkKey } from "@/lib/links/linkKey";
+import { EMAIL_FIRST_LINK_DESTINATIONS, linkKey } from "@/lib/links/linkKey";
 import { linksPageAddresses, type LinksPageTarget } from "@/lib/links/linksPageHref";
 import { socialLinkHref, socialPlatformTitle } from "@/lib/links/socialPlatforms";
 import { isNotesVisible } from "@/lib/notes/notes";
@@ -33,6 +35,7 @@ type ButtonSource = {
   label: string;
   subtitle?: string;
   standOut: boolean;
+  askForEmail: boolean;
   target: LinksPageTarget;
 };
 
@@ -44,6 +47,7 @@ function defaultButtonSources(readings: SanityLinksPageReading[]): ButtonSource[
   return shown.map((reading) => ({
     label: reading.name,
     standOut: false,
+    askForEmail: false,
     target: { destination: "reading", documentId: reading.id, slug: reading.slug },
   }));
 }
@@ -51,7 +55,12 @@ function defaultButtonSources(readings: SanityLinksPageReading[]): ButtonSource[
 function pickedButtonSource(button: SanityLinksPageButton, notesVisible: boolean): ButtonSource | null {
   const label = nonBlank(button.label);
   if (!label || !button.destination) return null;
-  const common = { label, subtitle: nonBlank(button.subtitle), standOut: button.standOut === true };
+  const common = {
+    label,
+    subtitle: nonBlank(button.subtitle),
+    standOut: button.standOut === true,
+    askForEmail: button.askForEmail === true && EMAIL_FIRST_LINK_DESTINATIONS.has(button.destination),
+  };
   switch (button.destination) {
     case "reading":
       if (!button.reading || !isReadingOnSite(button.reading)) return null;
@@ -88,13 +97,16 @@ function toButtons(sources: ButtonSource[], siteOrigin: string): LinksPageButton
     const addresses = key ? linksPageAddresses(source.target, key, siteOrigin) : null;
     if (!key || !addresses || seen.has(key)) continue;
     seen.add(key);
+    const { askForEmail } = source;
     buttons.push({
       key,
       label: source.label,
       subtitle: source.subtitle,
       ...addresses,
+      shareHref: askForEmail ? undefined : addresses.shareHref,
       destination: source.target.destination,
       standOut: source.standOut,
+      askForEmail,
       position: buttons.length + 1,
     });
   }
@@ -152,6 +164,8 @@ export function deriveLinksPageViewProps(state: SanityLinksPageState | null, sit
       (page?.showShareButtons ?? LINKS_PAGE_DEFAULTS.showShareButtons)
         ? withNonBlankOverrides(LINKS_PAGE_DEFAULTS.shareWords, page?.shareWords)
         : undefined,
+    emailFormWords: withNonBlankOverrides(LINKS_PAGE_EMAIL_FORM_DEFAULTS, page?.emailForm),
+    offersNewsletter: state?.siteSettings?.newsletter?.show ?? NEWSLETTER_DEFAULTS.show,
     videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
     videoIds: [],
     playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,

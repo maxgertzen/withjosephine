@@ -134,7 +134,8 @@ export const siteSettingsQuery = groq`
     socialLinks,
     copyrightText,
     contactEmail,
-    consentBanner
+    consentBanner,
+    newsletter
   }
 `;
 
@@ -204,6 +205,12 @@ export const emailMagicLinkQuery = groq`
     signOff
   }
 `;
+
+const ONE_BUTTON_EMAIL_PROJECTION = `{ subject, preview, heroLine, buttonLabel, body }`;
+
+export const emailDownloadLinkQuery = groq`*[_type == "emailDownloadLink"][0] ${ONE_BUTTON_EMAIL_PROJECTION}`;
+
+export const emailNewsletterConfirmQuery = groq`*[_type == "emailNewsletterConfirm"][0] ${ONE_BUTTON_EMAIL_PROJECTION}`;
 
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
@@ -550,6 +557,7 @@ export const readingNotesQuery = groq`
 export const linksPageQuery = groq`
   {
     "page": *[_type == "linksPage"][0] {
+      showPage,
       "photoUrl": photo.asset->url,
       name,
       intro,
@@ -561,6 +569,7 @@ export const linksPageQuery = groq`
       playVideo,
       showShareButtons,
       shareWords,
+      emailForm,
       nameStyle,
       buttonLetterCase,
       pageColour,
@@ -579,6 +588,7 @@ export const linksPageQuery = groq`
         subtitle,
         destination,
         standOut,
+        askForEmail,
         email,
         url,
         "reading": select(destination == "reading" => reading->{ _id, "slug": slug.current, name, onSite }),
@@ -592,6 +602,6 @@ export const linksPageQuery = groq`
       "settings": *[_type == "notesSettings"][0] { enabled },
       "publishedCount": ${PUBLISHED_NOTES_COUNT}
     },
-    "siteSettings": *[_type == "siteSettings"][0] { socialLinks }
+    "siteSettings": *[_type == "siteSettings"][0] { socialLinks, newsletter { show } }
   }
 `;

@@ -1,9 +1,45 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 
 import { Footer } from "./Footer";
+import { footerNewsletterSlot } from "./footerNewsletterSlot";
+import { NewsletterSlotProvider } from "./NewsletterContext";
+
+describe("Footer newsletter box", () => {
+  it("is not shown when nothing provides newsletter content", () => {
+    render(<Footer />);
+
+    expect(screen.queryByRole("heading", { name: NEWSLETTER_DEFAULTS.title })).toBeNull();
+  });
+
+  it.each([
+    ["switch off", { show: false }],
+    ["switch never set", {}],
+  ])("is not shown with the %s", (_case, stored) => {
+    render(
+      <NewsletterSlotProvider slot={footerNewsletterSlot(stored)}>
+        <Footer />
+      </NewsletterSlotProvider>,
+    );
+
+    expect(screen.queryByRole("heading", { name: NEWSLETTER_DEFAULTS.title })).toBeNull();
+  });
+
+  it("shows Becky's words and an unticked box when the switch is on", async () => {
+    render(
+      <NewsletterSlotProvider slot={footerNewsletterSlot({ show: true, title: "Letters" })}>
+        <Footer />
+      </NewsletterSlotProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Letters" })).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: NEWSLETTER_DEFAULTS.submit })).toBeDisabled();
+  });
+});
 
 describe("Footer", () => {
   it("renders hardcoded defaults when no content is provided", () => {

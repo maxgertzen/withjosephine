@@ -50,6 +50,7 @@ import {
 } from "../gift/persistence/repository";
 import { sha256Hex } from "../hmac";
 import { getSanityWriteClient } from "../sanity/client";
+import { deleteEmailSignupsFor } from "../signup/emailSignups";
 import { retrieveCheckoutSession } from "../stripe";
 import { deleteBrevoContact, deleteBrevoSmtpLog } from "./vendors/brevoDelete";
 import { createMixpanelDataDeletion } from "./vendors/mixpanelDelete";
@@ -336,6 +337,11 @@ export async function cascadeDeleteUser(
     await dbExec(`DELETE FROM user WHERE id = ?`, [userId]);
   } catch (error) {
     partialFailures.push(`d1-user-rows: ${errorMessage(error)}`);
+  }
+  try {
+    await deleteEmailSignupsFor(email);
+  } catch (error) {
+    partialFailures.push(`d1-email-signups: ${errorMessage(error)}`);
   }
 
   const completedAt = options.now ?? Date.now();

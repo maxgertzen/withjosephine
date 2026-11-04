@@ -9,6 +9,8 @@ import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 
+import { NewsletterSlot } from "./NewsletterContext";
+
 const LEGAL_LINKS = [
   { label: "Privacy", href: ROUTES.privacy },
   { label: "Terms", href: ROUTES.terms },
@@ -36,6 +38,8 @@ export function Footer({ content, socialLinks, notesLink, className }: FooterPro
     <footer
       className={mergeClasses("border-t border-j-border-subtle py-8 px-6 text-center", className)}
     >
+      <NewsletterSlot />
+
       {logoUrl && (
         <Image
           src={logoUrl}

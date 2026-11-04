@@ -136,6 +136,18 @@ describe("cascadeDeleteUser — happy path", () => {
     expect(result.mixpanelTaskId).toBe("mp_task_7");
   });
 
+  it("deletes the address's email signups and leaves other people's", async () => {
+    happyPathMocks();
+    const { saveEmailSignup } = await import("../signup/emailSignups");
+    await saveEmailSignup({ email: "ADA@example.com", source: "footer", wantsNewsletter: true });
+    await saveEmailSignup({ email: "other@example.com", source: "footer", wantsNewsletter: true });
+
+    const result = await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(result.partialFailures).toEqual([]);
+    expect(await dbQuery("SELECT email FROM email_signups")).toEqual([{ email: "other@example.com" }]);
+  });
+
   it("invokes the cascade in the order: R2+D1 → Sanity doc → Sanity assets → vendors → user rows", async () => {
     happyPathMocks();
     await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });

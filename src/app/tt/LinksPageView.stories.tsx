@@ -1,6 +1,7 @@
 import {
   LINKS_PAGE_BEACONS_LOOK_ARGS,
   LINKS_PAGE_DARK_ARGS,
+  LINKS_PAGE_EMAIL_FIRST_ARGS,
   LINKS_PAGE_FULL_ARGS,
   LINKS_PAGE_MINIMAL_ARGS,
 } from "@story-fixtures/pages/linksPage";
@@ -25,6 +26,8 @@ export const NothingSetYet: Story = { args: LINKS_PAGE_MINIMAL_ARGS };
 export const DarkPage: Story = { args: LINKS_PAGE_DARK_ARGS };
 
 export const SquareButtonsWithSecondLine: Story = { args: LINKS_PAGE_BEACONS_LOOK_ARGS };
+
+export const AsksForEmailFirst: Story = { args: LINKS_PAGE_EMAIL_FIRST_ARGS };
 
 export const DifferentFont: Story = {
   args: { fontVariables: { "--font-display-source": "Georgia, serif", "--font-body-source": "Helvetica, sans-serif" } },

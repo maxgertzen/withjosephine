@@ -5,6 +5,7 @@ import {
   bytesToHex,
   sha256Hex,
   signHmacSha256,
+  timingSafeStringEqual,
   verifyHmacSha256,
 } from "@/lib/hmac";
 
@@ -136,4 +137,8 @@ export function createSignedTokenCodec<MintSource extends string>(config: {
   }
 
   return { mint, verify };
+}
+
+export async function recipientHashMatches(recipientUserIdHash: string, currentRecipientUserId: string): Promise<boolean> {
+  return timingSafeStringEqual(await sha256Hex(currentRecipientUserId), recipientUserIdHash);
 }

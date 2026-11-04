@@ -1,5 +1,34 @@
 import { defineField, defineType } from "sanity";
 
+import { NEWSLETTER_DEFAULTS, type NewsletterContent, type SignupFormWords } from "../../src/data/defaults";
+import { SIGNUP_FORM_WORD_TITLES } from "./_shared/signupFormWords";
+
+type NewsletterWordField = {
+  name: Exclude<keyof NewsletterContent, "show">;
+  title: string;
+  description?: string;
+  long?: true;
+};
+
+const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
+  { name: "title", title: "Title above the box" },
+  { name: "line", title: "Short line under the title", long: true },
+  ...(Object.keys(SIGNUP_FORM_WORD_TITLES) as (keyof SignupFormWords)[]).map((name) => ({
+    name,
+    title: SIGNUP_FORM_WORD_TITLES[name],
+    description:
+      name === "sent"
+        ? "Shown after they press the button. They still need to tap the link in the email we send them."
+        : undefined,
+  })),
+  { name: "confirmPromptTitle", title: "Title on the page the email link opens" },
+  { name: "confirmButton", title: "Button on the page the email link opens", description: "They join the newsletter when they press this button." },
+  { name: "confirmedTitle", title: "Title after they press that button" },
+  { name: "confirmedBody", title: "Words after they press that button", long: true },
+  { name: "confirmFailedTitle", title: "Title when the link in the email does not work" },
+  { name: "confirmFailedBody", title: "Words when the link in the email does not work", long: true },
+];
+
 export const siteSettings = defineType({
   name: "siteSettings",
   title: "Site Settings",
@@ -81,6 +110,31 @@ export const siteSettings = defineType({
       name: "contactEmail",
       title: "Contact Email",
       type: "string",
+    }),
+    defineField({
+      name: "newsletter",
+      title: "Newsletter sign-up at the bottom of every page",
+      type: "object",
+      description:
+        "A small box at the bottom of every page where visitors can type their email to get your newsletter. The tick box words next to it are fixed and cannot be changed here.",
+      fields: [
+        defineField({
+          name: "show",
+          title: "Show the newsletter box",
+          type: "boolean",
+          description: "Turn on to show the box at the bottom of every page.",
+          initialValue: NEWSLETTER_DEFAULTS.show,
+        }),
+        ...NEWSLETTER_WORD_FIELDS.map(({ name, title, description, long }) => {
+          const common = {
+            name,
+            title,
+            description: description ?? "Leave blank to use the words shown in grey.",
+            placeholder: NEWSLETTER_DEFAULTS[name],
+          };
+          return long ? defineField({ ...common, type: "text", rows: 2 }) : defineField({ ...common, type: "string" });
+        }),
+      ],
     }),
     defineField({
       name: "consentBanner",

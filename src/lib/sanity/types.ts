@@ -10,7 +10,7 @@ import type {
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
-import type { LinksPageShareWords } from "@/data/defaults";
+import type { LinksPageEmailFormWords, LinksPageShareWords, NewsletterContent } from "@/data/defaults";
 import type { StoredSection } from "@/lib/booking/bookingPageSections";
 import type { LinkDestination } from "@/lib/links/linkKey";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
@@ -129,6 +129,8 @@ export type SanityEmailMagicLink = {
   body: PortableTextBlock[];
   signOff: string | null;
 };
+
+export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff">;
 
 export type SanityEmailOrderConfirmation = {
   subject: string;
@@ -267,6 +269,7 @@ export type SanitySiteSettings = {
   copyrightText: string;
   contactEmail: string;
   consentBanner?: SanityConsentBanner;
+  newsletter?: Partial<NewsletterContent> | null;
 };
 
 export type SanityColor = {
@@ -481,6 +484,7 @@ export type SanityLinksPageButton = {
   subtitle?: string;
   destination?: LinkDestination;
   standOut?: boolean;
+  askForEmail?: boolean;
   email?: string;
   url?: string;
   reading?: { _id: string; slug: string; name?: string; onSite?: boolean | null } | null;
@@ -493,6 +497,7 @@ export type SanityLinksPageSocialLink = { _key: string; platform?: string; addre
 export type SanityLinksPageVideo = { _key: string; url?: string };
 
 export type SanityLinksPage = LinksPageColours & {
+  showPage?: boolean;
   photoUrl?: string;
   name?: string;
   intro?: string;
@@ -504,6 +509,7 @@ export type SanityLinksPage = LinksPageColours & {
   playVideo?: string;
   showShareButtons?: boolean;
   shareWords?: Partial<LinksPageShareWords>;
+  emailForm?: Partial<LinksPageEmailFormWords>;
   nameFont?: string;
   textFont?: string;
   nameSize?: string;
@@ -522,5 +528,5 @@ export type SanityLinksPageState = {
   aboutPhotoUrl: string | null;
   readings: SanityLinksPageReading[];
   notesState: SanityNotesState | null;
-  siteSettings: Pick<SanitySiteSettings, "socialLinks"> | null;
+  siteSettings: Pick<SanitySiteSettings, "socialLinks" | "newsletter"> | null;
 };

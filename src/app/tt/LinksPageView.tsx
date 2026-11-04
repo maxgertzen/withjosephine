@@ -5,6 +5,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { socialIcon } from "@/components/SocialLinks/socialIcons";
 import type {
   LinksPageButtonShape,
+  LinksPageEmailFormWords,
   LinksPageLetterCase,
   LinksPageNameSize,
   LinksPageNameStyle,
@@ -15,6 +16,7 @@ import { SHARE_APPS, type ShareApp } from "@/lib/links/shareTargets";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 import { mergeClasses } from "@/lib/utils";
 
+import { EmailFirstButton } from "./EmailFirstButton";
 import { ShareMenu } from "./ShareMenu";
 import { TikTokVideoCard } from "./TikTokVideoCard";
 
@@ -27,6 +29,7 @@ export type LinksPageButton = {
   countsTaps: boolean;
   destination: LinkDestination;
   standOut: boolean;
+  askForEmail: boolean;
   position: number;
 };
 
@@ -42,6 +45,8 @@ export type LinksPageViewProps = {
   buttonLetterCase: LinksPageLetterCase;
   buttons: LinksPageButton[];
   shareWords?: LinksPageShareWords;
+  emailFormWords: LinksPageEmailFormWords;
+  offersNewsletter: boolean;
   videosTitle: string;
   videoIds: string[];
   playVideo: string;
@@ -119,6 +124,8 @@ export function LinksPageView({
   buttonLetterCase,
   buttons,
   shareWords,
+  emailFormWords,
+  offersNewsletter,
   videosTitle,
   videoIds,
   playVideo,
@@ -171,23 +178,35 @@ export function LinksPageView({
               shareWords && button.shareHref
                 ? { words: shareWords, href: button.shareHref }
                 : undefined;
+            const buttonClasses = mergeClasses(
+              BUTTON_CLASSES,
+              BUTTON_SHAPE_CLASSES[buttonShape],
+              button.standOut && STAND_OUT_CLASSES,
+              share && "px-11",
+            );
+            const buttonWords = (
+              <>
+                <span className={BUTTON_WORDS_CLASSES[buttonLetterCase]}>{button.label}</span>
+                {button.subtitle ? <span className="text-[0.8rem] opacity-85">{button.subtitle}</span> : null}
+              </>
+            );
             return (
               <li key={button.key} className="relative">
-                <a
-                  href={button.href}
-                  className={mergeClasses(
-                    BUTTON_CLASSES,
-                    BUTTON_SHAPE_CLASSES[buttonShape],
-                    button.standOut && STAND_OUT_CLASSES,
-                    share && "px-11",
-                  )}
-                  {...trackingAttributes(button)}
-                >
-                  <span className={BUTTON_WORDS_CLASSES[buttonLetterCase]}>{button.label}</span>
-                  {button.subtitle ? (
-                    <span className="text-[0.8rem] opacity-85">{button.subtitle}</span>
-                  ) : null}
-                </a>
+                {button.askForEmail ? (
+                  <EmailFirstButton
+                    buttonKey={button.key}
+                    className={buttonClasses}
+                    words={emailFormWords}
+                    offersNewsletter={offersNewsletter}
+                    trackingAttributes={trackingAttributes(button)}
+                  >
+                    {buttonWords}
+                  </EmailFirstButton>
+                ) : (
+                  <a href={button.href} className={buttonClasses} {...trackingAttributes(button)}>
+                    {buttonWords}
+                  </a>
+                )}
                 {share ? (
                   <ShareMenu
                     label={button.label}

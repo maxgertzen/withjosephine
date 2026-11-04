@@ -11,6 +11,7 @@ import {
 import { deleteExpiredGift, listGiftsByStatusOlderThan, markGiftExpired } from "@/lib/gift/gifts";
 import { deleteTapsOlderThanAMonth } from "@/lib/links/tapCounts";
 import { deleteObject, listObjectsByPrefix } from "@/lib/r2";
+import { deleteSignupsNeverConfirmed } from "@/lib/signup/emailSignups";
 
 const PENDING_TO_EXPIRED_DAYS = 14;
 const EXPIRED_TO_DELETE_DAYS = 30;
@@ -51,9 +52,17 @@ async function cleanup(): Promise<{
   photosDeleted: number;
   orphansReaped: number;
   oldTapDaysDeleted: number;
+  unconfirmedSignupsDeleted: number;
 }> {
   const now = new Date();
-  const summary = { expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0 };
+  const summary = {
+    expired: 0,
+    deleted: 0,
+    photosDeleted: 0,
+    orphansReaped: 0,
+    oldTapDaysDeleted: 0,
+    unconfirmedSignupsDeleted: 0,
+  };
 
   const pendingCutoff = cutoffIso(PENDING_TO_EXPIRED_DAYS, now);
   const expiredCutoff = cutoffIso(EXPIRED_TO_DELETE_DAYS, now);
@@ -97,6 +106,7 @@ async function cleanup(): Promise<{
 
   summary.orphansReaped = await reapOrphanPhotos(now);
   summary.oldTapDaysDeleted = await deleteTapsOlderThanAMonth(now);
+  summary.unconfirmedSignupsDeleted = await deleteSignupsNeverConfirmed(now);
 
   return summary;
 }
