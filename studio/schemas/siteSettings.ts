@@ -13,6 +13,14 @@ type NewsletterWordField = {
 const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
   { name: "title", title: "Title above the box" },
   { name: "line", title: "Short line under the title", long: true },
+  {
+    name: "consentText",
+    title: "Words next to the tick box",
+    description:
+      "Visitors tick this box to say yes to your newsletter. Each sign-up saves the exact words shown at that moment, so change them only when you mean it. The box always shows.",
+    long: true,
+  },
+  { name: "privacyLinkText", title: "Link to the privacy page, after those words" },
   ...(Object.keys(SIGNUP_FORM_WORD_TITLES) as (keyof SignupFormWords)[]).map((name) => ({
     name,
     title: SIGNUP_FORM_WORD_TITLES[name],
@@ -116,7 +124,7 @@ export const siteSettings = defineType({
       title: "Newsletter sign-up at the bottom of every page",
       type: "object",
       description:
-        "A small box at the bottom of every page where visitors can type their email to get your newsletter. The tick box words next to it are fixed and cannot be changed here.",
+        "A small box at the bottom of every page where visitors can type their email to get your newsletter. The words next to the tick box also show on the links page form.",
       fields: [
         defineField({
           name: "show",

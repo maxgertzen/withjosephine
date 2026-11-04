@@ -206,7 +206,7 @@ export const emailMagicLinkQuery = groq`
   }
 `;
 
-const ONE_BUTTON_EMAIL_PROJECTION = `{ subject, preview, heroLine, buttonLabel, body }`;
+const ONE_BUTTON_EMAIL_PROJECTION = `{ subject, preview, heroLine, buttonLabel, copyLinkLabel, body }`;
 
 export const emailDownloadLinkQuery = groq`*[_type == "emailDownloadLink"][0] ${ONE_BUTTON_EMAIL_PROJECTION}`;
 
@@ -602,6 +602,6 @@ export const linksPageQuery = groq`
       "settings": *[_type == "notesSettings"][0] { enabled },
       "publishedCount": ${PUBLISHED_NOTES_COUNT}
     },
-    "siteSettings": *[_type == "siteSettings"][0] { socialLinks, newsletter { show } }
+    "siteSettings": *[_type == "siteSettings"][0] { socialLinks, newsletter { show, consentText, privacyLinkText } }
   }
 `;

@@ -3,8 +3,6 @@ import "server-only";
 import { normalizeEmail } from "@/lib/auth/users";
 import { dbExec, dbQuery } from "@/lib/booking/persistence/sqlClient";
 
-import { NEWSLETTER_CONSENT_TEXT } from "./newsletterConsent";
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NEVER_CONFIRMED_RETENTION_DAYS = 30;
 
@@ -46,15 +44,16 @@ function fromRow(row: EmailSignupRow): EmailSignup {
 export async function saveEmailSignup(args: {
   email: string;
   source: string;
-  wantsNewsletter: boolean;
+  consentText: string | null;
   now?: Date;
 }): Promise<EmailSignup> {
+  const wantsNewsletter = args.consentText !== null;
   const signup: EmailSignup = {
     id: crypto.randomUUID(),
     email: normalizeEmail(args.email),
     source: args.source,
-    wantsNewsletter: args.wantsNewsletter,
-    consentText: args.wantsNewsletter ? NEWSLETTER_CONSENT_TEXT : null,
+    wantsNewsletter,
+    consentText: args.consentText,
     createdAt: (args.now ?? new Date()).toISOString(),
     confirmedAt: null,
     providerSyncedAt: null,

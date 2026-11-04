@@ -1027,7 +1027,10 @@ export const LINKS_PAGE_EMAIL_FORM_DEFAULTS: LinksPageEmailFormWords = {
   failed: "That did not work. Please try again.",
 };
 
-export type NewsletterContent = SignupFormWords & {
+export type NewsletterConsentWords = { consentText: string; privacyLinkText: string };
+
+export type NewsletterContent = SignupFormWords &
+  NewsletterConsentWords & {
   show: boolean;
   title: string;
   line: string;
@@ -1049,6 +1052,8 @@ export const NEWSLETTER_DEFAULTS: NewsletterContent = {
   sent: "Almost there. Check your inbox and tap the link to confirm.",
   invalidEmail: "Please type a full email address.",
   failed: "That did not work. Please try again.",
+  consentText: "Yes, send me Josephine's newsletter by email. I can unsubscribe at any time.",
+  privacyLinkText: "How my email is used",
   confirmPromptTitle: "One more tap to join my newsletter",
   confirmButton: "Yes, sign me up",
   confirmedTitle: "You're signed up",
@@ -1057,13 +1062,16 @@ export const NEWSLETTER_DEFAULTS: NewsletterContent = {
   confirmFailedBody: "It may be older than seven days. Sign up again at the bottom of any page.",
 };
 
-export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff">;
+export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff"> & { copyLinkLabel: string };
+
+export const EMAIL_COPY_LINK_LABEL_DEFAULT = "Or copy this link:";
 
 export const EMAIL_DOWNLOAD_LINK_DEFAULTS: EmailOneButtonContent = {
   subject: "Your download from Josephine",
   preview: "Here is your link",
   heroLine: "Your download",
   buttonLabel: "Open {downloadName}",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
   body: [
     ...stringToPortableTextBlocks("Thank you for asking. Tap the button below to open {downloadName}."),
     ...stringToPortableTextBlocks("If you did not ask for this, you can ignore this email."),
@@ -1075,6 +1083,7 @@ export const EMAIL_NEWSLETTER_CONFIRM_DEFAULTS: EmailOneButtonContent = {
   preview: "One tap to join my newsletter",
   heroLine: "Confirm your email",
   buttonLabel: "Yes, sign me up",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
   body: [
     ...stringToPortableTextBlocks(
       "Thank you for wanting to hear from me. Tap the button below to confirm your email and join my newsletter.",

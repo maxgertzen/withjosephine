@@ -1,6 +1,11 @@
 import { deriveLinksPageViewProps } from "@/app/tt/deriveLinksPageViewProps";
 import type { LinksPageButton } from "@/app/tt/LinksPageView";
-import type { EmailOneButtonContent, LinksPageEmailFormWords, NewsletterContent } from "@/data/defaults";
+import type {
+  EmailOneButtonContent,
+  LinksPageEmailFormWords,
+  NewsletterConsentWords,
+  NewsletterContent,
+} from "@/data/defaults";
 import { stringToPortableTextBlocks } from "@/lib/emails/portableTextBuild";
 import type { SanityLinksPageState } from "@/lib/sanity/types";
 
@@ -14,6 +19,8 @@ const EMAIL_FORM_PLACE = "Josephine's Link Tree › Words when a button asks for
 const NEWSLETTER_TITLES: Record<Exclude<keyof NewsletterContent, "show">, string> = {
   title: "Title above the box",
   line: "Short line under the title",
+  consentText: "Words next to the tick box",
+  privacyLinkText: "Link to the privacy page, after those words",
   emailLabel: "Words inside the email box",
   submit: "Button words",
   sending: "Button words while it sends",
@@ -71,14 +78,18 @@ const FIELD_MAP_LINKS_PAGE_STATE: SanityLinksPageState = {
   aboutPhotoUrl: null,
   readings: [],
   notesState: null,
-  siteSettings: { socialLinks: [], newsletter: { show: true } },
+  siteSettings: { socialLinks: [], newsletter: FIELD_MAP_STORED_NEWSLETTER },
 };
 
-export function fieldMapLinksPageEmailForm(): { button: LinksPageButton; words: LinksPageEmailFormWords } {
+export function fieldMapLinksPageEmailForm(): {
+  button: LinksPageButton;
+  words: LinksPageEmailFormWords;
+  consent: NewsletterConsentWords;
+} {
   const props = deriveLinksPageViewProps(FIELD_MAP_LINKS_PAGE_STATE, "");
   const [button] = props.buttons;
   if (!button) throw new Error("field map fixture did not produce the email-first button");
-  return { button, words: props.emailFormWords };
+  return { button, words: props.emailFormWords, consent: props.newsletterConsent };
 }
 
 function fieldMapEmail(place: string): EmailOneButtonContent {
@@ -87,6 +98,7 @@ function fieldMapEmail(place: string): EmailOneButtonContent {
     preview: fieldLabel(place, "Preview text", "preview"),
     heroLine: fieldLabel(place, "Big line at the top", "heroLine"),
     buttonLabel: fieldLabel(place, "Button words", "buttonLabel"),
+    copyLinkLabel: fieldLabel(place, "Words before the link under the button", "copyLinkLabel"),
     body: stringToPortableTextBlocks(fieldLabel(place, "Words above the button", "body")),
   };
 }

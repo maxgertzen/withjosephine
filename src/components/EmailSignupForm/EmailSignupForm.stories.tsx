@@ -1,12 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { LINKS_PAGE_EMAIL_FORM_DEFAULTS, NEWSLETTER_DEFAULTS } from "@/data/defaults";
+import { newsletterConsentWords } from "@/lib/signup/newsletterContent";
 
 import { EmailSignupForm } from "./EmailSignupForm";
 
 const meta: Meta<typeof EmailSignupForm> = {
   title: "Components/Forms/EmailSignupForm",
   component: EmailSignupForm,
+  args: { consent: newsletterConsentWords(NEWSLETTER_DEFAULTS) },
   decorators: [
     (Story) => (
       <div className="mx-auto max-w-md p-6">

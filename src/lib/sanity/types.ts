@@ -130,7 +130,7 @@ export type SanityEmailMagicLink = {
   signOff: string | null;
 };
 
-export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff">;
+export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff"> & { copyLinkLabel?: string };
 
 export type SanityEmailOrderConfirmation = {
   subject: string;

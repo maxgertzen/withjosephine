@@ -1,7 +1,6 @@
 import "server-only";
 
 import { publishedEmailFirstButton } from "@/app/tt/publishedLinksPage";
-import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import { siteOrigin } from "@/lib/env";
 import { NEWSLETTER_CONFIRM_ROUTE } from "@/lib/http/routes";
 import { type EmailSendResult, sendDownloadLink, sendNewsletterConfirm } from "@/lib/resend";
@@ -9,12 +8,9 @@ import { fetchSiteSettingsPublished } from "@/lib/sanity/fetch";
 
 import { saveEmailSignup } from "./emailSignups";
 import { mintNewsletterConfirmToken } from "./newsletterConfirmToken";
+import { newsletterContent } from "./newsletterContent";
 
 export type SignupOutcome = "done" | "not_offered" | "email_failed";
-
-async function newsletterBoxIsShown(): Promise<boolean> {
-  return (await fetchSiteSettingsPublished())?.newsletter?.show ?? NEWSLETTER_DEFAULTS.show;
-}
 
 function sentOrSkipped(result: EmailSendResult): boolean {
   return result.kind === "sent" || result.kind === "dry_run";
@@ -25,18 +21,19 @@ export async function registerSignup(args: {
   wantsNewsletter: boolean;
   buttonKey?: string;
 }): Promise<SignupOutcome> {
-  const [download, newsletterOn] = await Promise.all([
+  const [download, settings] = await Promise.all([
     args.buttonKey ? publishedEmailFirstButton(args.buttonKey) : null,
-    newsletterBoxIsShown(),
+    fetchSiteSettingsPublished(),
   ]);
-  const wantsNewsletter = args.wantsNewsletter && newsletterOn;
+  const newsletter = newsletterContent(settings?.newsletter);
+  const wantsNewsletter = args.wantsNewsletter && newsletter.show;
   if (args.buttonKey && !download) return "not_offered";
   if (!download && !wantsNewsletter) return "not_offered";
 
   const signup = await saveEmailSignup({
     email: args.email,
     source: download ? `links:${download.key}` : "footer",
-    wantsNewsletter,
+    consentText: wantsNewsletter ? newsletter.consentText : null,
   });
 
   const origin = siteOrigin();

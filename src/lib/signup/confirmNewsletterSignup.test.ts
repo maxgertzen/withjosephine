@@ -10,6 +10,8 @@ import { confirmNewsletterSignup } from "./confirmNewsletterSignup";
 import { findEmailSignup, saveEmailSignup } from "./emailSignups";
 import { mintNewsletterConfirmToken, NEWSLETTER_CONFIRM_TTL_MS } from "./newsletterConfirmToken";
 
+const CONSENT = "Yes, send me the newsletter.";
+
 const addContact = vi.mocked(addNewsletterContact);
 const NOW = new Date("2026-11-04T10:00:00Z");
 
@@ -19,7 +21,7 @@ beforeEach(() => {
 });
 
 async function newsletterSignup() {
-  const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", wantsNewsletter: true });
+  const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT });
   return { signup, token: await mintNewsletterConfirmToken(signup.id, signup.email, NOW.getTime()) };
 }
 
@@ -62,7 +64,7 @@ describe("confirmNewsletterSignup", () => {
   });
 
   it("refuses a token minted for a different address than the stored signup", async () => {
-    const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", wantsNewsletter: true });
+    const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT });
     const token = await mintNewsletterConfirmToken(signup.id, "someone-else@example.com", NOW.getTime());
 
     expect(await confirmNewsletterSignup(token, NOW)).toBe(false);
@@ -70,7 +72,7 @@ describe("confirmNewsletterSignup", () => {
   });
 
   it("refuses a token for a download-only signup", async () => {
-    const signup = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", wantsNewsletter: false });
+    const signup = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", consentText: null });
     const token = await mintNewsletterConfirmToken(signup.id, signup.email, NOW.getTime());
 
     expect(await confirmNewsletterSignup(token, NOW)).toBe(false);

@@ -10,6 +10,7 @@ import type {
   LinksPageNameSize,
   LinksPageNameStyle,
   LinksPageShareWords,
+  NewsletterConsentWords,
 } from "@/data/defaults";
 import type { LinkDestination } from "@/lib/links/linkKey";
 import { SHARE_APPS, type ShareApp } from "@/lib/links/shareTargets";
@@ -47,6 +48,7 @@ export type LinksPageViewProps = {
   shareWords?: LinksPageShareWords;
   emailFormWords: LinksPageEmailFormWords;
   offersNewsletter: boolean;
+  newsletterConsent: NewsletterConsentWords;
   videosTitle: string;
   videoIds: string[];
   playVideo: string;
@@ -126,6 +128,7 @@ export function LinksPageView({
   shareWords,
   emailFormWords,
   offersNewsletter,
+  newsletterConsent,
   videosTitle,
   videoIds,
   playVideo,
@@ -198,6 +201,7 @@ export function LinksPageView({
                     className={buttonClasses}
                     words={emailFormWords}
                     offersNewsletter={offersNewsletter}
+                    consent={newsletterConsent}
                     trackingAttributes={trackingAttributes(button)}
                   >
                     {buttonWords}

@@ -13,16 +13,18 @@ describe("Sanity field map: email signup", () => {
     expect(words.title).toBe(`[${NEWSLETTER} › Title above the box · newsletter.title]`);
     expect(words.submit).toBe(`[${NEWSLETTER} › Button words · newsletter.submit]`);
     expect(words.confirmButton).toBe(`[${NEWSLETTER} › Button on the page the email link opens · newsletter.confirmButton]`);
+    expect(words.consentText).toBe(`[${NEWSLETTER} › Words next to the tick box · newsletter.consentText]`);
     expect(words.confirmFailedBody).toBe(
       `[${NEWSLETTER} › Words when the link in the email does not work · newsletter.confirmFailedBody]`,
     );
   });
 
   it("feeds the links page email form from Josephine's Link Tree › Words when a button asks for an email", () => {
-    const { button, words } = fieldMapLinksPageEmailForm();
+    const { button, words, consent } = fieldMapLinksPageEmailForm();
 
     expect(button.askForEmail).toBe(true);
     expect(words.prompt).toBe(`[${EMAIL_FORM} › Line above the email box · emailForm.prompt]`);
     expect(words.sent).toBe(`[${EMAIL_FORM} › Words after sending · emailForm.sent]`);
+    expect(consent.consentText).toBe(`[${NEWSLETTER} › Words next to the tick box · newsletter.consentText]`);
   });
 });

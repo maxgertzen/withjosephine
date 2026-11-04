@@ -78,6 +78,7 @@ export const LinksPageButtonAskingForEmail: Story = {
         className="w-full rounded-[50px] bg-j-bg-interactive px-6 py-3 font-body text-j-text-on-dark"
         words={LINKS_EMAIL_FORM.words}
         offersNewsletter
+        consent={LINKS_EMAIL_FORM.consent}
         trackingAttributes={{}}
       >
         {LINKS_EMAIL_FORM.button.label}

@@ -6,10 +6,10 @@ import { newsletterContent } from "@/lib/signup/newsletterContent";
 
 import { NewsletterConfirmView, type NewsletterConfirmViewState } from "./NewsletterConfirmView";
 
-export const metadata: Metadata = {
-  title: pageTitle("Newsletter"),
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const words = newsletterContent((await fetchSiteSettingsPublished().catch(() => null))?.newsletter);
+  return { title: pageTitle(words.title), robots: { index: false, follow: false } };
+}
 
 function viewState(params: { token?: string; status?: string }): NewsletterConfirmViewState {
   if (params.status === "confirmed") return { kind: "confirmed" };

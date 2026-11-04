@@ -8,7 +8,6 @@ import {
   LINKS_PAGE_NAME_SIZES,
   LINKS_PAGE_NAME_STYLES,
   LINKS_PAGE_PHOTO_PX,
-  NEWSLETTER_DEFAULTS,
 } from "@/data/defaults";
 import { READINGS } from "@/data/readings";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
@@ -25,6 +24,7 @@ import type {
   SanityLinksPageReading,
   SanityLinksPageState,
 } from "@/lib/sanity/types";
+import { newsletterConsentWords, newsletterContent } from "@/lib/signup/newsletterContent";
 import { linksPageColourVariables } from "@/lib/theme/linksPageStyle";
 
 import type { LinksPageButton, LinksPageViewProps } from "./LinksPageView";
@@ -136,6 +136,7 @@ function oneOf<T extends string>(choices: readonly T[], value: string | undefine
 
 export function deriveLinksPageViewProps(state: SanityLinksPageState | null, siteOrigin: string): LinksPageViewProps {
   const page = state?.page ?? null;
+  const newsletter = newsletterContent(state?.siteSettings?.newsletter);
   const notesVisible = isNotesVisible(state?.notesState ?? null);
   const pickedButtons = page?.buttons ?? [];
   const sources =
@@ -165,7 +166,8 @@ export function deriveLinksPageViewProps(state: SanityLinksPageState | null, sit
         ? withNonBlankOverrides(LINKS_PAGE_DEFAULTS.shareWords, page?.shareWords)
         : undefined,
     emailFormWords: withNonBlankOverrides(LINKS_PAGE_EMAIL_FORM_DEFAULTS, page?.emailForm),
-    offersNewsletter: state?.siteSettings?.newsletter?.show ?? NEWSLETTER_DEFAULTS.show,
+    offersNewsletter: newsletter.show,
+    newsletterConsent: newsletterConsentWords(newsletter),
     videosTitle: nonBlank(page?.videosTitle) ?? LINKS_PAGE_DEFAULTS.videosTitle,
     videoIds: [],
     playVideo: nonBlank(page?.playVideo) ?? LINKS_PAGE_DEFAULTS.playVideo,

@@ -140,6 +140,18 @@ describe("POST /api/signup", () => {
     expect((await post({ ...DOWNLOAD, buttonKey: "file:other" })).status).toBe(400);
   });
 
+  it("stores the tick box words Becky published in Site Settings", async () => {
+    vi.mocked(fetchSiteSettingsPublished).mockResolvedValue({
+      newsletter: { show: true, consentText: "Becky's published tick box words." },
+    } as SanitySiteSettings);
+
+    expect((await post(FOOTER)).status).toBe(200);
+
+    expect(await signupRows()).toEqual([
+      { email: "ada@example.com", source: "footer", wants_newsletter: 1, consent_text: "Becky's published tick box words." },
+    ]);
+  });
+
   it("refuses a footer signup without the newsletter box ticked", async () => {
     expect((await post({ ...FOOTER, wantsNewsletter: false })).status).toBe(400);
     expect(await signupRows()).toEqual([]);

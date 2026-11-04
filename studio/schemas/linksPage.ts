@@ -390,7 +390,7 @@ export const linksPage = defineType({
       type: "object",
       group: "content",
       description:
-        "Shown under a button that has \"Ask for an email first\" turned on. Leave any of these blank to use the words shown in grey. The newsletter tick box words are fixed and cannot be changed here.",
+        "Shown under a button that has \"Ask for an email first\" turned on. Leave any of these blank to use the words shown in grey. The newsletter tick box words come from Site Settings, Newsletter sign-up.",
       fields: (Object.keys(EMAIL_FORM_WORD_TITLES) as (keyof LinksPageEmailFormWords)[]).map((word) =>
         defineField({
           name: word,
