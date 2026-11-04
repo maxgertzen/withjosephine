@@ -29,6 +29,8 @@ export const SquareButtonsWithSecondLine: Story = { args: LINKS_PAGE_BEACONS_LOO
 
 export const AsksForEmailFirst: Story = { args: LINKS_PAGE_EMAIL_FIRST_ARGS };
 
+export const AsksForEmailFirstNewsletterOff: Story = { args: { ...LINKS_PAGE_EMAIL_FIRST_ARGS, offersNewsletter: false } };
+
 export const DifferentFont: Story = {
   args: { fontVariables: { "--font-display-source": "Georgia, serif", "--font-body-source": "Helvetica, sans-serif" } },
 };
