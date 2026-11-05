@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS email_signups (
   source             TEXT NOT NULL,
   consent_text       TEXT,
   created_at         TEXT NOT NULL,
-  emails_sent_at     TEXT,
+  download_sent_at   TEXT,
+  confirm_sent_at    TEXT,
   confirmed_at       TEXT,
   provider_synced_at TEXT
 );

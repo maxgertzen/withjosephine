@@ -52,7 +52,6 @@ import type {
   SanityEmailGiftPurchase,
   SanityEmailGiftRecipientConfirmation,
   SanityEmailGiftToRecipient,
-  SanityEmailMagicLink,
   SanityEmailOneButton,
   SanityEmailOrderConfirmation,
   SanityEmailPrivacyExport,
@@ -195,8 +194,8 @@ export const fetchMagicLinkVerifyPage = cache(
   },
 );
 
-export const fetchEmailMagicLink = cache((): Promise<SanityEmailMagicLink | null> =>
-  freshFetch<SanityEmailMagicLink>(emailMagicLinkQuery),
+export const fetchEmailMagicLink = cache((): Promise<SanityEmailOneButton | null> =>
+  freshFetch<SanityEmailOneButton>(emailMagicLinkQuery),
 );
 
 export const fetchEmailDownloadLink = cache((): Promise<SanityEmailOneButton | null> =>

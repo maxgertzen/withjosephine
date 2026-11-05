@@ -156,7 +156,8 @@ function buildReadme(): string {
     "  source               - where you signed up: footer, or links:<button> for a free download",
     "  consentText          - the newsletter tick box words you agreed to (null when you did not join the newsletter)",
     "  createdAt            - when you signed up (ISO 8601)",
-    "  emailsSentAt         - when we emailed you your download or the newsletter confirm link (null if not sent)",
+    "  downloadSentAt       - when we emailed you the free download (null if not sent)",
+    "  confirmSentAt        - when we emailed you the link to confirm the newsletter (null if not sent)",
     "  confirmedAt          - when you confirmed the newsletter from your email (null if not confirmed)",
     "  providerSyncedAt     - when we added your address to our newsletter service, Brevo (null if not added)",
     "",
@@ -344,7 +345,15 @@ export async function POST(request: Request): Promise<Response> {
   bundle[`${folder}/email-signups.json`] = strToU8(
     JSON.stringify(
       emailSignups.map((signup) =>
-        pick(signup, ["source", "consentText", "createdAt", "emailsSentAt", "confirmedAt", "providerSyncedAt"]),
+        pick(signup, [
+          "source",
+          "consentText",
+          "createdAt",
+          "downloadSentAt",
+          "confirmSentAt",
+          "confirmedAt",
+          "providerSyncedAt",
+        ]),
       ),
       null,
       2,

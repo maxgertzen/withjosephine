@@ -8,6 +8,7 @@ import {
   getResendId,
   redactEmail,
   sendContactMessage,
+  sendDownloadLink,
   sendGiftOpened,
   sendGiftPurchase,
   sendGiftRecipientConfirmation,
@@ -51,6 +52,7 @@ const sanityFetchMocks = vi.hoisted(() => ({
   fetchEmailGiftRecipientConfirmation: vi.fn(),
   fetchEmailGiftToRecipient: vi.fn(),
   fetchEmailMagicLink: vi.fn(),
+  fetchEmailDownloadLink: vi.fn(),
   fetchEmailReadingDelivery: vi.fn(),
   fetchEmailOrderConfirmation: vi.fn(),
   fetchEmailPrivacyExport: vi.fn(),
@@ -446,7 +448,6 @@ describe("sendPrivacyExportEmail", () => {
       ],
       bodyPostButton: stringToPortableTextBlocks("Link expires in {expiryDays} days."),
       ctaLabel: "Grab your ZIP",
-      signOff: null,
     });
 
     const result = await sendPrivacyExportEmail({
@@ -495,7 +496,6 @@ describe("sendPrivacyExportEmail", () => {
       bodyIntro: stringToPortableTextBlocks("Hi {firstName}, here it comes."),
       bodyPostButton: stringToPortableTextBlocks("Take care, {firstName}."),
       ctaLabel: "Download",
-      signOff: null,
     });
 
     await sendPrivacyExportEmail({
@@ -523,7 +523,6 @@ describe("sendPrivacyExportEmail", () => {
       bodyIntro: stringToPortableTextBlocks("Hi {firstName}."),
       bodyPostButton: stringToPortableTextBlocks("Bye {firstName}."),
       ctaLabel: "Download",
-      signOff: null,
     });
 
     await sendPrivacyExportEmail({
@@ -1040,6 +1039,29 @@ describe("sendGiftToRecipient", () => {
   });
 });
 
+describe("sendDownloadLink idempotency key", () => {
+  const DOWNLOAD = {
+    to: "ada@example.com",
+    signupId: "signup-1",
+    downloadUrl: "https://cdn.sanity.io/files/p/d/guide.pdf?dl=",
+    downloadName: "Free guide",
+  };
+  const sentKey = (call: number) => sendMock.mock.calls[call]![1]?.idempotencyKey as string;
+
+  it("keeps the same key for the same email and changes it when the email words change", async () => {
+    sendMock.mockResolvedValue({ data: { id: "re_1" }, error: null });
+
+    await sendDownloadLink(DOWNLOAD);
+    await sendDownloadLink(DOWNLOAD);
+    sanityFetchMocks.fetchEmailDownloadLink.mockResolvedValue({ heroLine: "Here it is" });
+    await sendDownloadLink(DOWNLOAD);
+
+    expect(sentKey(0)).toMatch(/^download-link\/signup-1\/[0-9a-f]{32}$/);
+    expect(sentKey(1)).toBe(sentKey(0));
+    expect(sentKey(2)).not.toBe(sentKey(0));
+  });
+});
+
 describe("sendMagicLink", () => {
   it("sends to the recipient with the magic-link URL embedded", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_ml" } });
@@ -1094,7 +1116,6 @@ describe("sendMagicLink", () => {
       body: stringToPortableTextBlocks(
         "Tap the button to open your {readingName} ({readingPriceDisplay}).",
       ),
-      signOff: null,
     });
 
     await sendMagicLink({
@@ -1123,7 +1144,6 @@ describe("sendMagicLink", () => {
       body: (await import("./emails/portableTextBuild")).stringToPortableTextBlocks(
         "Hi {firstName}, your link is below.",
       ),
-      signOff: null,
     });
 
     await sendMagicLink({

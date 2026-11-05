@@ -129,7 +129,7 @@ describe("POST /api/signup", () => {
     expect(fetchSiteSettingsPublished).not.toHaveBeenCalled();
   });
 
-  it("reuses the first signup when the visitor tries again after an email failed, so nothing is sent twice", async () => {
+  it("on a retry after the confirm email failed, sends only that email again for the same signup", async () => {
     vi.mocked(sendNewsletterConfirm).mockResolvedValueOnce({ kind: "failed", error: "down" });
     const ticked = { ...DOWNLOAD, consentText: SHOWN_WORDS };
 
@@ -137,10 +137,15 @@ describe("POST /api/signup", () => {
     expect((await post(ticked)).status).toBe(200);
 
     expect(await signupRows()).toHaveLength(1);
-    const [first, second] = vi.mocked(sendDownloadLink).mock.calls.map(([args]) => args);
-    expect(second).toEqual(first);
+    expect(sendDownloadLink).toHaveBeenCalledOnce();
     const [firstConfirm, secondConfirm] = vi.mocked(sendNewsletterConfirm).mock.calls.map(([args]) => args);
     expect(secondConfirm).toEqual(firstConfirm);
+  });
+
+  it("reports done when another request for the same signup is already sending the email", async () => {
+    vi.mocked(sendDownloadLink).mockResolvedValue({ kind: "failed", error: "concurrent_idempotent_requests", statusCode: 409 });
+
+    expect((await post(DOWNLOAD)).status).toBe(200);
   });
 
   it("sends again with a new signup when the visitor asks again after the emails went out", async () => {
@@ -236,13 +241,13 @@ describe("POST /api/signup", () => {
     const sqlClient = await import("@/lib/booking/persistence/sqlClient");
     const realExec = sqlClient.dbExec;
     const spy = vi.spyOn(sqlClient, "dbExec").mockImplementation((sql, params) =>
-      sql.startsWith("UPDATE email_signups SET emails_sent_at") ? Promise.reject(new Error("d1 down")) : realExec(sql, params),
+      sql.startsWith("UPDATE email_signups SET confirm_sent_at") ? Promise.reject(new Error("d1 down")) : realExec(sql, params),
     );
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect((await post(FOOTER)).status).toBe(200);
     expect(sendNewsletterConfirm).toHaveBeenCalledOnce();
-    expect(logged).toHaveBeenCalledWith("[signup] could not record sent emails", "Error");
+    expect(logged).toHaveBeenCalledWith("[signup] could not record a sent email", "Error");
     spy.mockRestore();
     logged.mockRestore();
   });

@@ -7,7 +7,7 @@ import { CelestialOrb } from "@/components/CelestialOrb";
 import { StarField } from "@/components/StarField";
 import { HERO_DEFAULTS, type HeroContent } from "@/data/defaults";
 import { HERO_ORBS } from "@/lib/celestialPresets";
-import { pickDefined } from "@/lib/sanity/pickDefined";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { mergeClasses } from "@/lib/utils";
 
 interface HeroProps {
@@ -24,10 +24,7 @@ function MoonCrescent({ className }: { className?: string }) {
 }
 
 export function Hero({ content, className }: HeroProps) {
-  const { tagline, introGreeting, introBody, ctaText } = {
-    ...HERO_DEFAULTS,
-    ...pickDefined(content ?? {}),
-  };
+  const { tagline, introGreeting, introBody, ctaText } = withNonBlankOverrides(HERO_DEFAULTS, content);
 
   const handleScrollToReadings = () => {
     document.getElementById("readings")?.scrollIntoView({ behavior: "smooth" });

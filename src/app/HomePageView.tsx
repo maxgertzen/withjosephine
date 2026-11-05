@@ -11,14 +11,14 @@ import type { NotesNavProps } from "@/components/Notes/NotesShell";
 import { ReadingCard, readingCardProps } from "@/components/ReadingCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TestimonialCard } from "@/components/TestimonialCard";
-import type { ReadingsSectionContent } from "@/data/defaults";
+import type { FooterContent, ReadingsSectionContent } from "@/data/defaults";
+import type { Overrides } from "@/lib/content/nonBlank";
 import { readingAnchorId } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type {
   MappedAbout,
   MappedFaqItem,
-  MappedFooterContent,
   MappedReading,
   MappedSocialLink,
   MappedTestimonial,
@@ -27,7 +27,7 @@ import type { SanityLandingPage } from "@/lib/sanity/types";
 
 export type HomePageViewProps = {
   nav: NotesNavProps;
-  footerContent?: MappedFooterContent;
+  footerContent?: Overrides<FooterContent>;
   socialLinks: MappedSocialLink[];
   notesLink?: NotesLink;
   about: MappedAbout;

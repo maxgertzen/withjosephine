@@ -190,8 +190,7 @@ export const emailPrivacyExportQuery = groq`
     heroLine,
     bodyIntro,
     bodyPostButton,
-    ctaLabel,
-    signOff
+    ctaLabel
   }
 `;
 
@@ -202,8 +201,7 @@ export const emailMagicLinkQuery = groq`
     heroLine,
     buttonLabel,
     copyLinkLabel,
-    body,
-    signOff
+    body
   }
 `;
 
@@ -217,23 +215,17 @@ export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,
     preview,
-    brandName,
-    brandSubtitle,
     heroLine,
     body,
     cardLabel,
     cardDeliveryLine,
     dataExportHeading,
-    dataExportBlurb,
-    dataExportButtonLabel,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
+    dataExportButtonLabel
   }
 `;
 
 export const emailReadingDeliveryQuery = groq`
-  coalesce(*[_type == "emailReadingDelivery"][0], *[_type == "emailDay7Delivery"][0]) {
+  *[_type == "emailReadingDelivery"][0] {
     subjectTemplate,
     preview,
     bodyIntro,
@@ -244,8 +236,7 @@ export const emailReadingDeliveryQuery = groq`
     openButtonLabel,
     signedInDisclosure,
     accessWindowLine,
-    comfortFollowUp,
-    signOff
+    comfortFollowUp
   }
 `;
 

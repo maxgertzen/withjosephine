@@ -38,7 +38,7 @@ describe("PrivacyExport email", () => {
     expect(linkHrefs(html).has(VARS.downloadUrl)).toBe(true);
   });
 
-  it("renders the default sign-off when copy.signOff is null", async () => {
+  it("renders the default sign-off from the shared shell", async () => {
     const text = visibleText(
       await render(<PrivacyExport vars={VARS} copy={EMAIL_PRIVACY_EXPORT_DEFAULTS} />),
     );

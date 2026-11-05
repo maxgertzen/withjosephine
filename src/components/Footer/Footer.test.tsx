@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
+import { FOOTER_DEFAULTS, NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 
 import { Footer } from "./Footer";
@@ -74,16 +74,10 @@ describe("Footer", () => {
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
   });
 
-  it("hides logo when content sets logoUrl to empty string (Becky-cleared field)", () => {
-    const content = {
-      brandName: "No Logo Brand",
-      logoUrl: "",
-      copyrightText: "No Logo Brand.",
-    };
+  it.each([null, "", "  "])("shows the built-in logo when no logo is set in Sanity (%j)", (logoUrl) => {
+    render(<Footer content={{ brandName: "No Logo Brand", logoUrl, copyrightText: "No Logo Brand." }} />);
 
-    render(<Footer content={content} />);
-
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("img").getAttribute("src")).toContain(encodeURIComponent(FOOTER_DEFAULTS.logoUrl));
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
   });
 

@@ -25,12 +25,12 @@ describe("linesWithText", () => {
 });
 
 describe("withNonBlankOverrides", () => {
-  it("keeps the built-in words for blank, spaces-only and missing values, takes real words and non-text values, and ignores unknown keys", () => {
+  it("keeps the built-in words for blank, spaces-only and missing values, takes real words exactly as typed and non-text values, and ignores unknown keys", () => {
     const defaults = { subject: "Hello", label: "Or copy this link:", heroLine: "Welcome", links: [{ _type: "default" }] };
 
     expect(
       withNonBlankOverrides(defaults, { subject: "  Hi there ", label: "   ", heroLine: null, links: [{ _type: "link" }], extra: "x" } as never),
-    ).toEqual({ subject: "Hi there", label: "Or copy this link:", heroLine: "Welcome", links: [{ _type: "link" }] });
+    ).toEqual({ subject: "  Hi there ", label: "Or copy this link:", heroLine: "Welcome", links: [{ _type: "link" }] });
     expect(withNonBlankOverrides(defaults, null)).toEqual(defaults);
   });
 
@@ -42,5 +42,11 @@ describe("withNonBlankOverrides", () => {
     expect(withNonBlankOverrides(defaults, { body: [] })).toEqual(defaults);
     expect(withNonBlankOverrides(defaults, { body: [emptyBlock] })).toEqual(defaults);
     expect(withNonBlankOverrides(defaults, { body: [emptyBlock, realBlock] })).toEqual({ body: [emptyBlock, realBlock] });
+  });
+
+  it("keeps an empty list Becky saved when the built-in value is a list of items, not text", () => {
+    const defaults = { navLinks: [{ label: "Readings", sectionId: "readings" }], showBadge: true };
+
+    expect(withNonBlankOverrides(defaults, { navLinks: [], showBadge: false })).toEqual({ navLinks: [], showBadge: false });
   });
 });

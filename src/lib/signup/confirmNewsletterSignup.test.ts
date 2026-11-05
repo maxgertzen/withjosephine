@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 async function newsletterSignup() {
-  const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT });
+  const signup = await saveEmailSignup({ email: "ada@example.com", buttonKey: null, consentText: CONSENT });
   return { signup, token: await mintNewsletterConfirmToken(signup.id, signup.email, NOW.getTime()) };
 }
 
@@ -65,7 +65,7 @@ describe("confirmNewsletterSignup", () => {
   });
 
   it("refuses a token minted for a different address than the stored signup", async () => {
-    const signup = await saveEmailSignup({ email: "ada@example.com", source: "footer", consentText: CONSENT });
+    const signup = await saveEmailSignup({ email: "ada@example.com", buttonKey: null, consentText: CONSENT });
     const token = await mintNewsletterConfirmToken(signup.id, "someone-else@example.com", NOW.getTime());
 
     expect(await confirmNewsletterSignup(token, NOW)).toBe(false);
@@ -73,7 +73,7 @@ describe("confirmNewsletterSignup", () => {
   });
 
   it("refuses a token for a download-only signup", async () => {
-    const signup = await saveEmailSignup({ email: "ada@example.com", source: "links:file:1", consentText: null });
+    const signup = await saveEmailSignup({ email: "ada@example.com", buttonKey: "file:1", consentText: null });
     const token = await mintNewsletterConfirmToken(signup.id, signup.email, NOW.getTime());
 
     expect(await confirmNewsletterSignup(token, NOW)).toBe(false);

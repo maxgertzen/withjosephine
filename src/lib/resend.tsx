@@ -37,6 +37,7 @@ import { isFlagEnabled, isStagingEnvironment } from "./env";
 import { giftClientReferenceId } from "./gift/clientReference";
 import { formatGiftCode } from "./gift/giftCodeFormat";
 import type { GiftEmailFiredType } from "./gift/types";
+import { sha256Hex } from "./hmac";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
@@ -633,6 +634,10 @@ export async function sendMagicLink(args: {
   });
 }
 
+async function idempotencyKeyForBody(key: string, subject: string, html: string): Promise<string> {
+  return `${key}/${(await sha256Hex(`${subject}\n${html}`)).slice(0, 32)}`;
+}
+
 async function sendOneButtonEmail(args: {
   to: string;
   buttonUrl: string;
@@ -645,13 +650,14 @@ async function sendOneButtonEmail(args: {
   const [sanity, shell] = await Promise.all([args.sanityCopy.catch(() => null), fetchSharedShell()]);
   const copy = withNonBlankOverrides(args.defaults, sanity);
   const html = await render(<OneButtonEmail buttonUrl={args.buttonUrl} vars={args.vars} copy={copy} shell={shell} />);
+  const subject = applyTokens(copy.subject, args.vars);
   return sendOrSkip({
     to: args.to,
-    subject: applyTokens(copy.subject, args.vars),
+    subject,
     html,
     subType: args.subType,
     submissionId: null,
-    idempotencyKey: args.idempotencyKey,
+    idempotencyKey: args.idempotencyKey && (await idempotencyKeyForBody(args.idempotencyKey, subject, html)),
   });
 }
 

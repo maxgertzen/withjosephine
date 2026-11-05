@@ -27,7 +27,7 @@ export const HERO_DEFAULTS: HeroContent = {
 
 export interface FooterContent {
   brandName: string;
-  logoUrl?: string | null;
+  logoUrl: string;
   copyrightText: string;
 }
 
@@ -518,19 +518,18 @@ export const UNDER_CONSTRUCTION_PAGE_DEFAULTS: SanityUnderConstructionPage = {
   contactText: "In the meantime, reach out at",
 };
 
-export interface EmailMagicLinkContent {
+export interface EmailOneButtonContent {
   subject: string;
   preview: string;
   heroLine: string;
   body: EmailRichText;
   buttonLabel: string;
   copyLinkLabel: string;
-  signOff: string | null;
 }
 
 const EMAIL_COPY_LINK_LABEL_DEFAULT = "Or copy this link:";
 
-export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
+export const EMAIL_MAGIC_LINK_DEFAULTS: EmailOneButtonContent = {
   subject: "Open your reading",
   preview: "Open your reading",
   heroLine: "Open your reading",
@@ -544,7 +543,6 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
       "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore. Nothing happens until someone clicks.",
     ),
   ],
-  signOff: null,
 };
 
 // Brand + footer fields shared across every customer-facing email template.
@@ -574,7 +572,6 @@ export interface EmailOrderConfirmationContent {
   cardLabel: string;
   cardDeliveryLine: string;
   dataExportHeading: string;
-  dataExportBlurb: string;
   dataExportButtonLabel: string;
 }
 
@@ -597,8 +594,6 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
   dataExportHeading: "Need a copy of your data?",
-  dataExportBlurb:
-    "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
   dataExportButtonLabel: "Request an export",
 };
 
@@ -611,7 +606,6 @@ export interface EmailReadingDeliveryContent {
   openButtonLabel: string;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOff: string | null;
 }
 
 export interface EmailPrivacyExportContent {
@@ -621,7 +615,6 @@ export interface EmailPrivacyExportContent {
   bodyIntro: EmailRichText;
   bodyPostButton: EmailRichText;
   ctaLabel: string;
-  signOff: string | null;
 }
 
 export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
@@ -639,7 +632,6 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
   ),
   ctaLabel: "Download your export (ZIP)",
-  signOff: null,
 };
 
 export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
@@ -668,7 +660,6 @@ export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
   openButtonLabel: "Open your reading",
   cardLabel: "Your reading",
   cardDeliveryLine: "Voice note + PDF",
-  signOff: null,
 };
 
 export interface EmailGiftPurchaseContent {
@@ -1068,7 +1059,6 @@ export const NEWSLETTER_DEFAULTS: NewsletterContent = {
   confirmFailedBody: "It may be older than seven days. Sign up again at the bottom of any page.",
 };
 
-export type EmailOneButtonContent = Omit<EmailMagicLinkContent, "signOff">;
 
 export const EMAIL_DOWNLOAD_LINK_DEFAULTS: EmailOneButtonContent = {
   subject: "Your download from Josephine",

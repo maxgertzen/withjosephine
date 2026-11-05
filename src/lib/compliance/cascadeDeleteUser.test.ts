@@ -142,8 +142,8 @@ describe("cascadeDeleteUser — happy path", () => {
   it("deletes the address's email signups and leaves other people's", async () => {
     happyPathMocks();
     const { saveEmailSignup } = await import("../signup/emailSignups");
-    await saveEmailSignup({ email: "ADA@example.com", source: "footer", consentText: CONSENT });
-    await saveEmailSignup({ email: "other@example.com", source: "footer", consentText: CONSENT });
+    await saveEmailSignup({ email: "ADA@example.com", buttonKey: null, consentText: CONSENT });
+    await saveEmailSignup({ email: "other@example.com", buttonKey: null, consentText: CONSENT });
 
     const result = await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
 

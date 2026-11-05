@@ -11,9 +11,9 @@ import {
 import { verifyListenToken } from "@/lib/auth/listenToken";
 import { isReadingExpired } from "@/lib/booking/readingRetention";
 import { findSubmissionById, SUBMISSION_STATUS } from "@/lib/booking/submissions";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import type { SubmissionRecord } from "@/lib/page-previews/types";
 import { fetchListenPage } from "@/lib/sanity/fetch";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 import { pageTitle } from "@/lib/seoMetadata";
 
 import { ListenTokenInterstitial } from "./ListenTokenInterstitial";
@@ -49,7 +49,7 @@ export default async function ListenPage({
     cookieValue ? getActiveSession({ cookieValue }) : Promise.resolve(null),
   ]);
 
-  const copy: ListenViewProps["copy"] = { ...LISTEN_PAGE_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy: ListenViewProps["copy"] = withNonBlankOverrides(LISTEN_PAGE_DEFAULTS, sanity);
 
   // One-tap token branch. The `?t=` arrives via the reading delivery email.
   // GET renders the interstitial (no redemption side effect); POST to the

@@ -50,12 +50,6 @@ export const emailMagicLink = defineType({
         "Body paragraphs. Bold/italic via the toolbar; links via the link button. Each block becomes one paragraph in the email.",
       validation: validateMagicLinkSlots,
     }),
-    defineField({
-      name: "signOff",
-      title: "Sign-off line",
-      type: "string",
-      description: 'Optional — leave blank to use the default "With love, Josephine ✦".',
-    }),
   ],
   preview: {
     prepare: () => ({

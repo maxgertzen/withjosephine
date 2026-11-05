@@ -300,17 +300,6 @@ describe("mapFooterContent", () => {
     });
   });
 
-  it("falls back to default logo when logoUrl is empty", () => {
-    const noLogo: SanitySiteSettings = {
-      ...SANITY_SITE_SETTINGS,
-      logoUrl: "",
-    };
-
-    const result = mapFooterContent(noLogo);
-
-    expect(result?.logoUrl).toBe("/images/logo-main.webp");
-  });
-
   it("reflects footer changes from CMS", () => {
     const updated: SanitySiteSettings = {
       ...SANITY_SITE_SETTINGS,

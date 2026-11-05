@@ -121,33 +121,25 @@ export type SanityMagicLinkVerifyPage = {
   restedCtaLabel: string;
 };
 
-export type SanityEmailMagicLink = {
+export type SanityEmailOneButton = {
   subject: string;
   preview: string;
   heroLine: string;
   buttonLabel: string;
   copyLinkLabel?: string | null;
   body: PortableTextBlock[];
-  signOff: string | null;
 };
 
-export type SanityEmailOneButton = Omit<SanityEmailMagicLink, "signOff">;
 
 export type SanityEmailOrderConfirmation = {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
   dataExportHeading?: string;
-  dataExportBlurb?: string;
   dataExportButtonLabel?: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 };
 
 export type SanityEmailPrivacyExport = {
@@ -157,7 +149,6 @@ export type SanityEmailPrivacyExport = {
   bodyIntro?: PortableTextBlock[];
   bodyPostButton?: PortableTextBlock[];
   ctaLabel: string;
-  signOff: string | null;
 };
 
 export type SanityEmailReadingDelivery = {
@@ -172,7 +163,6 @@ export type SanityEmailReadingDelivery = {
   signedInDisclosure?: PortableTextBlock[];
   accessWindowLine?: PortableTextBlock[];
   comfortFollowUp?: PortableTextBlock[];
-  signOff: string | null;
 };
 
 export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
@@ -262,7 +252,7 @@ export type SanityConsentBanner = {
 
 export type SanitySiteSettings = {
   brandName: string;
-  logoUrl: string;
+  logoUrl: string | null;
   faviconUrl: string;
   navLinks: { label: string; sectionId: string }[];
   navCtaText: string;
