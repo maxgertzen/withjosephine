@@ -67,6 +67,21 @@ describe("deriveNoteViewProps", () => {
     expect(moreNotes?.notes.map((note) => note.href)).toEqual(["/notes/what-to-ask"]);
   });
 
+  it("lists the newest other notes when none are picked", () => {
+    const newestNotes = NOTE_SUMMARIES.slice(1, 3);
+    const { moreNotes } = derive({ moreNotes: undefined, newestNotes });
+    expect(moreNotes?.notes.map((note) => note.slug)).toEqual(newestNotes.map((note) => note.slug));
+  });
+
+  it("shows only the picked notes when any are picked", () => {
+    const { moreNotes } = derive({ moreNotes: [NOTE_SUMMARIES[1]], newestNotes: [NOTE_SUMMARIES[0]] });
+    expect(moreNotes?.notes.map((note) => note.slug)).toEqual([NOTE_SUMMARIES[1].slug]);
+  });
+
+  it("drops More notes, See all included, when no other note can be listed", () => {
+    expect(derive({ moreNotes: [], newestNotes: [] }).moreNotes).toBeUndefined();
+  });
+
   it("shows See all notes only when more notes exist than the ones listed", () => {
     expect(derive().moreNotes?.seeAll).toBeUndefined();
     expect(derive({ moreNotes: [NOTE_SUMMARIES[1]] }).moreNotes?.seeAll).toBe(

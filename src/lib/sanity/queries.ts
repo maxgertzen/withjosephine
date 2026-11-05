@@ -1,5 +1,7 @@
 import { groq } from "next-sanity";
 
+export const MORE_NOTES_LIMIT = 2;
+
 const PUBLISHED_NOTES_COUNT = `count(*[_type == "article" && defined(slug.current)])`;
 
 const LINKS_PAGE_SEO_PROJECTION = `seo {
@@ -525,6 +527,8 @@ export const articleBySlugQuery = groq`
       notePromise
     },
     "moreNotes": moreNotes[]-> { title, "slug": slug.current },
+    "newestNotes": *[_type == "article" && defined(slug.current) && slug.current != $slug]
+      | order(publishedAt desc)[0...${MORE_NOTES_LIMIT}] { title, "slug": slug.current },
     hideReadingBox,
     hideCardLeadIn,
     hideMoreNotes,

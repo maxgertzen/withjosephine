@@ -147,6 +147,10 @@
   }
 }
 
+html:has(section[data-hero]) {
+  background-color: var(--j-bg-section);
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--j-below-nav);

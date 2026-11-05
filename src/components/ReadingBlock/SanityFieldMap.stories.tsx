@@ -5,6 +5,8 @@ import { userEvent, within } from "storybook/test";
 import { NewsletterConfirmView } from "@/app/newsletter/confirm/NewsletterConfirmView";
 import { EmailFirstButton } from "@/app/tt/EmailFirstButton";
 import { footerNewsletterSlot } from "@/components/Footer/footerNewsletterSlot";
+import { NewsletterSlotProvider } from "@/components/Footer/NewsletterContext";
+import { NewsletterSection } from "@/components/NewsletterSection";
 import { ReadingCard } from "@/components/ReadingCard";
 import type { EmailOneButtonContent } from "@/data/defaults";
 import { OneButtonEmail } from "@/lib/emails/OneButtonEmail";
@@ -68,7 +70,15 @@ const NEWSLETTER = fieldMapNewsletterContent();
 const LINKS_EMAIL_FORM = fieldMapLinksPageEmailForm();
 
 export const FooterNewsletterBox: Story = {
-  render: () => <div className="max-w-xl bg-j-cream p-6">{footerNewsletterSlot(FIELD_MAP_STORED_NEWSLETTER)}</div>,
+  render: () => <div className="max-w-xl bg-j-cream p-6">{footerNewsletterSlot(FIELD_MAP_STORED_NEWSLETTER)?.footerBox}</div>,
+};
+
+export const HomePageNewsletterSection: Story = {
+  render: () => (
+    <NewsletterSlotProvider slot={footerNewsletterSlot(FIELD_MAP_STORED_NEWSLETTER)}>
+      <NewsletterSection fallback={null} />
+    </NewsletterSlotProvider>
+  ),
 };
 
 export const LinksPageButtonAskingForEmail: Story = {

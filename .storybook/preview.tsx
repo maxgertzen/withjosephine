@@ -20,7 +20,7 @@ const preview: Preview = {
   },
   globalTypes: {
     newsletterBox: {
-      description: "Newsletter box in the footer",
+      description: "Newsletter box in the footer, and the newsletter section on the home page",
       toolbar: {
         title: "Newsletter box",
         icon: "email",

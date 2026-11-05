@@ -24,10 +24,23 @@ type Problem = keyof Pick<SignupFormWords, "invalidEmail" | "failed">;
 export type EmailSignupFormProps = {
   words: SignupFormWords;
   newsletter: { box: "optional" | "required"; consent: NewsletterConsentWords } | null;
-  look?: "pill" | "underline";
+  look?: keyof typeof LOOK;
   buttonKey?: string;
   className?: string;
 };
+
+const ON_LIGHT_TEXT = {
+  checkbox: "accent-j-bg-interactive",
+  consent: "text-j-text-muted",
+  link: "hover:text-j-text-gold",
+  sent: "text-j-text-heading",
+  error: errorClasses,
+};
+
+const UNDERLINE_ROW = "flex w-full items-center gap-3 border-b";
+const UNDERLINE_INPUT = "min-h-12 min-w-0 flex-1 border-0 bg-transparent px-0.5 font-body text-base focus:outline-none";
+const UNDERLINE_BUTTON =
+  "flex max-w-[50%] shrink-0 items-center gap-2 px-0 py-2 text-right text-[0.78rem] font-medium tracking-[0.16em] disabled:opacity-40";
 
 const LOOK = {
   pill: {
@@ -36,14 +49,25 @@ const LOOK = {
       "min-h-12 w-full rounded-full border border-j-border-subtle bg-white/70 px-5 font-body text-base text-j-text placeholder:text-j-text-muted focus:border-j-text-gold focus:outline-none aria-invalid:border-red-700",
     buttonVariant: "primary",
     button: "min-h-12 w-full break-words",
+    ...ON_LIGHT_TEXT,
   },
   underline: {
-    row: "flex w-full items-center gap-3 border-b border-j-deep focus-within:border-j-text-gold has-[input[aria-invalid=true]]:border-red-700!",
-    input:
-      "min-h-12 min-w-0 flex-1 border-0 bg-transparent px-0.5 font-body text-base text-j-text placeholder:text-j-text-muted focus:outline-none",
+    row: `${UNDERLINE_ROW} border-j-deep focus-within:border-j-text-gold has-[input[aria-invalid=true]]:border-red-700!`,
+    input: `${UNDERLINE_INPUT} text-j-text placeholder:text-j-text-muted`,
     buttonVariant: "ghost",
-    button:
-      "flex max-w-[50%] shrink-0 items-center gap-2 px-0 py-2 text-right text-[0.78rem] font-medium tracking-[0.16em] text-j-deep disabled:opacity-40 disabled:hover:text-j-deep",
+    button: `${UNDERLINE_BUTTON} text-j-deep disabled:hover:text-j-deep`,
+    ...ON_LIGHT_TEXT,
+  },
+  "underline-on-dark": {
+    row: `${UNDERLINE_ROW} border-j-text-on-dark/55 focus-within:border-j-text-gold-lg has-[input[aria-invalid=true]]:border-red-300!`,
+    input: `${UNDERLINE_INPUT} text-j-text-on-dark placeholder:text-j-text-on-dark/55`,
+    buttonVariant: "ghost",
+    button: `${UNDERLINE_BUTTON} text-j-text-gold-lg hover:text-j-text-on-dark focus-visible:outline-j-text-on-dark disabled:hover:text-j-text-gold-lg`,
+    checkbox: "accent-j-text-gold-lg",
+    consent: "text-j-text-on-dark/75",
+    link: "hover:text-j-text-gold-lg",
+    sent: "text-j-text-on-dark",
+    error: "font-body text-sm text-red-300",
   },
 } as const;
 
@@ -82,7 +106,7 @@ export function EmailSignupForm({ words, newsletter, look = "pill", buttonKey, c
 
   if (status === "sent") {
     return (
-      <p role="status" className={mergeClasses("font-body text-[0.95rem] text-j-text-heading", className)}>
+      <p role="status" className={mergeClasses("font-body text-[0.95rem]", LOOK[look].sent, className)}>
         {words.sent}
       </p>
     );
@@ -119,29 +143,29 @@ export function EmailSignupForm({ words, newsletter, look = "pill", buttonKey, c
         />
         <Button type="submit" variant={LOOK[look].buttonVariant} className={LOOK[look].button} disabled={submitOff}>
           {sending ? words.sending : words.submit}
-          {look === "underline" ? <span aria-hidden="true">→</span> : null}
+          {LOOK[look].buttonVariant === "ghost" ? <span aria-hidden="true">→</span> : null}
         </Button>
       </div>
       {newsletter === null ? null : (
-      <label className="flex items-start gap-3 font-body text-[0.82rem] leading-snug text-j-text-muted">
+      <label className={mergeClasses("flex items-start gap-3 font-body text-[0.82rem] leading-snug", LOOK[look].consent)}>
         <input
           type="checkbox"
           name="newsletter"
           checked={newsletterTicked}
           onChange={(event) => setNewsletterTicked(event.target.checked)}
           disabled={sending}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-j-bg-interactive"
+          className={mergeClasses("mt-0.5 h-4 w-4 shrink-0", LOOK[look].checkbox)}
         />
         <span>
           {newsletter.consent.consentText}{" "}
-          <Link href={ROUTES.privacy} className="underline underline-offset-2 hover:text-j-text-gold">
+          <Link href={ROUTES.privacy} className={mergeClasses("underline underline-offset-2", LOOK[look].link)}>
             {newsletter.consent.privacyLinkText}
           </Link>
         </span>
       </label>
       )}
       {problem ? (
-        <p id={problemId} role="alert" className={errorClasses}>
+        <p id={problemId} role="alert" className={LOOK[look].error}>
           {words[problem]}
         </p>
       ) : null}

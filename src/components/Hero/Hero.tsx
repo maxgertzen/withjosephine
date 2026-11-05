@@ -32,6 +32,7 @@ export function Hero({ content, className }: HeroProps) {
 
   return (
     <section
+      data-hero
       className={mergeClasses(
         "relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 py-28",
         className,

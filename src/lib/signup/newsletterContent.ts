@@ -8,11 +8,18 @@ export function newsletterContent(stored: Partial<NewsletterContent> | null | un
   return { show: show ?? defaultShow, ...withNonBlankOverrides(defaultWords, storedWords) };
 }
 
+export type NewsletterBlockWords = ReturnType<typeof newsletterBlockWords>;
+
+export function shownNewsletterWords(stored: Partial<NewsletterContent> | null | undefined): NewsletterBlockWords | null {
+  const content = newsletterContent(stored);
+  return content.show ? newsletterBlockWords(content) : null;
+}
+
 export function newsletterConsentWords(content: NewsletterContent): NewsletterConsentWords {
   return pick(content, ["consentText", "privacyLinkText"]);
 }
 
-export function footerNewsletterWords(content: NewsletterContent) {
+export function newsletterBlockWords(content: NewsletterContent) {
   return {
     title: content.title,
     line: content.line,

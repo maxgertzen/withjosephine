@@ -460,6 +460,7 @@ export type SanityArticle = SanityArticleBase & {
     notePromise?: string;
   } | null;
   moreNotes?: (NoteSummary | null)[];
+  newestNotes?: NoteSummary[];
   hideReadingBox?: boolean;
   hideCardLeadIn?: boolean;
   hideMoreNotes?: boolean;

@@ -10,6 +10,14 @@ function orbGradient(colorToken: OrbColorToken): string {
   return `radial-gradient(circle, var(--${colorToken}) 0%, transparent 70%)`;
 }
 
+export const NEWSLETTER_SECTION_ORB: OrbPreset = {
+  color: orbGradient("j-accent"),
+  size: 420,
+  top: "-160px",
+  right: "-120px",
+  opacity: 0.18,
+};
+
 export const PAGE_ORBS: OrbPreset[] = [
   {
     color: orbGradient("j-accent"),
