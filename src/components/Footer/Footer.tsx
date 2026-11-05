@@ -25,9 +25,10 @@ interface FooterProps {
   socialLinks?: MappedSocialLink[];
   notesLink?: NotesLink;
   className?: string;
+  showNewsletterBox?: boolean;
 }
 
-export function Footer({ content, socialLinks, notesLink, className }: FooterProps) {
+export function Footer({ content, socialLinks, notesLink, className, showNewsletterBox = true }: FooterProps) {
   const links = notesLink ? [notesLink, ...LEGAL_LINKS] : LEGAL_LINKS;
   const { brandName, logoUrl, copyrightText } = withNonBlankOverrides(FOOTER_DEFAULTS, content);
 
@@ -35,7 +36,7 @@ export function Footer({ content, socialLinks, notesLink, className }: FooterPro
     <footer
       className={mergeClasses("border-t border-j-border-subtle py-8 px-6 text-center", className)}
     >
-      <NewsletterSlot />
+      {showNewsletterBox ? <NewsletterSlot /> : null}
 
       <Image src={logoUrl} alt={brandName} width={80} height={80} className="mx-auto mb-4 opacity-60" />
 

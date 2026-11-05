@@ -39,6 +39,16 @@ describe("Footer newsletter box", () => {
     expect(await screen.findByRole("checkbox")).not.toBeChecked();
     expect(screen.getByRole("button", { name: NEWSLETTER_DEFAULTS.submit })).toBeDisabled();
   });
+
+  it("is not shown on a page that turns it off, even with the switch on", () => {
+    render(
+      <NewsletterSlotProvider slot={footerNewsletterSlot({ show: true, title: "Letters" })}>
+        <Footer showNewsletterBox={false} />
+      </NewsletterSlotProvider>,
+    );
+
+    expect(screen.queryByRole("heading", { name: "Letters" })).toBeNull();
+  });
 });
 
 describe("Footer", () => {

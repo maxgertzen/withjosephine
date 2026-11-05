@@ -7,7 +7,7 @@ import { NewsletterConfirmView } from "./NewsletterConfirmView";
 const meta: Meta<typeof NewsletterConfirmView> = {
   title: "Pages/NewsletterConfirm",
   component: NewsletterConfirmView,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   args: { words: NEWSLETTER_DEFAULTS },
 };
 

@@ -6,6 +6,8 @@ import type { NewsletterContent } from "@/data/defaults";
 import { PAGE_ORBS } from "@/lib/celestialPresets";
 import { NEWSLETTER_CONFIRM_API_ROUTE } from "@/lib/http/routes";
 
+import { GoHomeAfterDelay } from "./GoHomeAfterDelay";
+
 export type NewsletterConfirmStatus = "confirmed" | "failed";
 
 export type NewsletterConfirmViewState = { kind: "ask"; token: string } | { kind: NewsletterConfirmStatus };
@@ -47,8 +49,9 @@ export function NewsletterConfirmView({ words, state }: NewsletterConfirmViewPro
             </form>
           ) : null}
         </div>
-        <Footer />
+        {state.kind === "confirmed" ? <GoHomeAfterDelay /> : null}
       </main>
+      <Footer showNewsletterBox={state.kind === "failed"} />
     </div>
   );
 }

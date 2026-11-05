@@ -3,7 +3,6 @@ import Image from "next/image";
 import { ContactForm } from "@/components/ContactForm";
 import { FaqSection } from "@/components/FaqSection";
 import { Footer } from "@/components/Footer";
-import { NewsletterSlotProvider } from "@/components/Footer/NewsletterContext";
 import { GoldDivider } from "@/components/GoldDivider";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
@@ -158,9 +157,7 @@ export function HomePageView({
         <ContactForm content={contactSection ?? undefined} />
       </main>
 
-      <NewsletterSlotProvider slot={null}>
-        <Footer content={footerContent} socialLinks={socialLinks} notesLink={notesLink} />
-      </NewsletterSlotProvider>
+      <Footer content={footerContent} socialLinks={socialLinks} notesLink={notesLink} showNewsletterBox={false} />
     </>
   );
 }
