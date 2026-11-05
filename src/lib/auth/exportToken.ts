@@ -1,5 +1,4 @@
-import { createSignedTokenCodec } from "@/lib/auth/signedToken";
-import { sha256Hex, timingSafeStringEqual } from "@/lib/hmac";
+import { createSignedTokenCodec, recipientHashMatches } from "@/lib/auth/signedToken";
 
 // One-year TTL: the customer's own-order GDPR export link, live for the order's life.
 export const EXPORT_TOKEN_TTL_MS = 365 * 24 * 60 * 60 * 1000;
@@ -62,10 +61,4 @@ export function verifyExportToken(
 }
 
 // Constant-time; guards against a token surviving a recipient reassignment.
-export async function exportTokenRecipientMatches(
-  recipientUserIdHash: string,
-  currentRecipientUserId: string,
-): Promise<boolean> {
-  const currentHash = await sha256Hex(currentRecipientUserId);
-  return timingSafeStringEqual(currentHash, recipientUserIdHash);
-}
+export const exportTokenRecipientMatches = recipientHashMatches;

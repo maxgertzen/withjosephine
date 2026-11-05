@@ -52,7 +52,7 @@ describe("ReadingDelivery — UX-locked verbatim copy", () => {
     expect(() => assertBrandTokens(html, { ink: true })).not.toThrow();
   });
 
-  it("renders the italic-serif signOff lines from copy", async () => {
+  it("renders the sign-off lines from the shared shell", async () => {
     const text = visibleText(
       await render(<ReadingDelivery vars={VARS} copy={EMAIL_READING_DELIVERY_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );

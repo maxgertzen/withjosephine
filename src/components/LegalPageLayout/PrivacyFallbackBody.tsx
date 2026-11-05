@@ -49,6 +49,11 @@ export function PrivacyFallbackBody() {
           confirmation that you paid, along with the email you used at checkout.
         </li>
         <li>
+          <strong className="font-medium">Email sign-ups</strong>: the email you type to get a free
+          download or the newsletter, when you typed it, where on the site, and, if you ticked the
+          newsletter box, the exact words you agreed to.
+        </li>
+        <li>
           <strong className="font-medium">Basic technical data</strong>: IP address, browser, and
           referrer, logged by Cloudflare for abuse protection.
         </li>
@@ -63,8 +68,9 @@ export function PrivacyFallbackBody() {
       </h2>
       <p className="font-body text-base text-j-text leading-[1.9] font-light">
         Solely to create and deliver your reading, to contact you about it, and to comply with tax
-        and accounting obligations. Your information is not used for marketing and is not sold or
-        rented to anyone.
+        and accounting obligations. Your information is not sold or rented to anyone. It is used for
+        marketing only if you sign up for the newsletter: you tick the box, then confirm with the
+        link sent to your email. Every newsletter has an unsubscribe link.
       </p>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">
@@ -98,7 +104,7 @@ export function PrivacyFallbackBody() {
         </li>
         <li>
           <strong className="font-medium">Resend</strong>: sends Josephine&rsquo;s booking and admin
-          emails.
+          emails, free download links, and the email that asks you to confirm a newsletter sign-up.
         </li>
         <li>
           <strong className="font-medium">Brevo</strong>: sends customer emails and, if you
@@ -161,6 +167,11 @@ export function PrivacyFallbackBody() {
           <strong className="font-medium">30 days</strong>.
         </li>
         <li>Contact-form messages that do not lead to a booking are deleted once resolved.</li>
+        <li>
+          A confirmed <strong className="font-medium">newsletter sign-up</strong> is kept until you
+          unsubscribe or ask for it to be deleted. Download-only sign-ups and sign-ups that were never
+          confirmed are deleted within about <strong className="font-medium">30 days</strong>.
+        </li>
       </ul>
 
       <h2 className="font-display text-2xl italic text-j-text-heading mt-12 mb-4">

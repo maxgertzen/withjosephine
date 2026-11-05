@@ -27,7 +27,7 @@ export const HERO_DEFAULTS: HeroContent = {
 
 export interface FooterContent {
   brandName: string;
-  logoUrl?: string | null;
+  logoUrl: string;
   copyrightText: string;
 }
 
@@ -518,20 +518,23 @@ export const UNDER_CONSTRUCTION_PAGE_DEFAULTS: SanityUnderConstructionPage = {
   contactText: "In the meantime, reach out at",
 };
 
-export interface EmailMagicLinkContent {
+export interface EmailOneButtonContent {
   subject: string;
   preview: string;
   heroLine: string;
   body: EmailRichText;
   buttonLabel: string;
-  signOff: string | null;
+  copyLinkLabel: string;
 }
 
-export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
+const EMAIL_COPY_LINK_LABEL_DEFAULT = "Or copy this link:";
+
+export const EMAIL_MAGIC_LINK_DEFAULTS: EmailOneButtonContent = {
   subject: "Open your reading",
   preview: "Open your reading",
   heroLine: "Open your reading",
   buttonLabel: "Open your reading",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
   body: [
     ...stringToPortableTextBlocks(
       "Here’s a fresh link to open your reading. It’ll sign you in for the next seven days, so you can come back to the voice note and the PDF without asking again.",
@@ -540,7 +543,6 @@ export const EMAIL_MAGIC_LINK_DEFAULTS: EmailMagicLinkContent = {
       "This link expires in twenty-four hours. If you didn’t ask for it, it’s safe to ignore. Nothing happens until someone clicks.",
     ),
   ],
-  signOff: null,
 };
 
 // Brand + footer fields shared across every customer-facing email template.
@@ -570,7 +572,6 @@ export interface EmailOrderConfirmationContent {
   cardLabel: string;
   cardDeliveryLine: string;
   dataExportHeading: string;
-  dataExportBlurb: string;
   dataExportButtonLabel: string;
 }
 
@@ -593,8 +594,6 @@ export const EMAIL_ORDER_CONFIRMATION_DEFAULTS: EmailOrderConfirmationContent = 
   cardLabel: "Your reading",
   cardDeliveryLine: "Delivery within 7 days",
   dataExportHeading: "Need a copy of your data?",
-  dataExportBlurb:
-    "You can download everything we hold for this reading, your intake, consent, and payment records, whenever you like. It is your right under GDPR.",
   dataExportButtonLabel: "Request an export",
 };
 
@@ -607,7 +606,6 @@ export interface EmailReadingDeliveryContent {
   openButtonLabel: string;
   cardLabel: string;
   cardDeliveryLine: string;
-  signOff: string | null;
 }
 
 export interface EmailPrivacyExportContent {
@@ -617,7 +615,6 @@ export interface EmailPrivacyExportContent {
   bodyIntro: EmailRichText;
   bodyPostButton: EmailRichText;
   ctaLabel: string;
-  signOff: string | null;
 }
 
 export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
@@ -635,7 +632,6 @@ export const EMAIL_PRIVACY_EXPORT_DEFAULTS: EmailPrivacyExportContent = {
     "This link expires in {expiryDays} days. If you have any questions, reply to this email or write to hello@withjosephine.com.",
   ),
   ctaLabel: "Download your export (ZIP)",
-  signOff: null,
 };
 
 export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
@@ -664,7 +660,6 @@ export const EMAIL_READING_DELIVERY_DEFAULTS: EmailReadingDeliveryContent = {
   openButtonLabel: "Open your reading",
   cardLabel: "Your reading",
   cardDeliveryLine: "Voice note + PDF",
-  signOff: null,
 };
 
 export interface EmailGiftPurchaseContent {
@@ -1004,6 +999,91 @@ export const LINKS_PAGE_DEFAULTS: LinksPageContent = {
   },
   videosTitle: "TikToks",
   playVideo: "Play video",
+};
+
+export type SignupFormWords = {
+  emailLabel: string;
+  submit: string;
+  sending: string;
+  sent: string;
+  invalidEmail: string;
+  failed: string;
+};
+
+export type LinksPageEmailFormWords = SignupFormWords & { prompt: string };
+
+export const LINKS_PAGE_EMAIL_FORM_DEFAULTS: LinksPageEmailFormWords = {
+  prompt: "Where should I send it?",
+  emailLabel: "Your email",
+  submit: "Send it to me",
+  sending: "Sending…",
+  sent: "Sent. Check your inbox for the link.",
+  invalidEmail: "Please type a full email address.",
+  failed: "That did not work. Please try again.",
+};
+
+export type NewsletterConsentWords = { consentText: string; privacyLinkText: string };
+
+export type NewsletterContent = SignupFormWords &
+  NewsletterConsentWords & {
+  show: boolean;
+  title: string;
+  line: string;
+  confirmPromptTitle: string;
+  confirmButton: string;
+  confirmedTitle: string;
+  confirmedBody: string;
+  confirmFailedTitle: string;
+  confirmFailedBody: string;
+};
+
+export const NEWSLETTER_CONSENT_TEXT_MAX_LENGTH = 2000;
+
+export const NEWSLETTER_DEFAULTS: NewsletterContent = {
+  show: false,
+  title: "Letters from Josephine",
+  line: "Notes on astrology and the Akashic Records, now and then.",
+  emailLabel: "Your email",
+  submit: "Sign up",
+  sending: "Signing up…",
+  sent: "Almost there. Check your inbox and tap the link to confirm.",
+  invalidEmail: "Please type a full email address.",
+  failed: "That did not work. Please try again.",
+  consentText: "Yes, send me Josephine's newsletter by email. I can unsubscribe at any time.",
+  privacyLinkText: "How my email is used",
+  confirmPromptTitle: "One more tap to join my newsletter",
+  confirmButton: "Yes, sign me up",
+  confirmedTitle: "You're signed up",
+  confirmedBody: "Thank you. My letters will come to your inbox now and then.",
+  confirmFailedTitle: "This link did not work",
+  confirmFailedBody: "It may be older than seven days. Sign up again at the bottom of any page.",
+};
+
+
+export const EMAIL_DOWNLOAD_LINK_DEFAULTS: EmailOneButtonContent = {
+  subject: "Your download from Josephine",
+  preview: "Here is your link",
+  heroLine: "Your download",
+  buttonLabel: "Open {downloadName}",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
+  body: [
+    ...stringToPortableTextBlocks("Thank you for asking. Tap the button below to open {downloadName}."),
+    ...stringToPortableTextBlocks("If you did not ask for this, you can ignore this email."),
+  ],
+};
+
+export const EMAIL_NEWSLETTER_CONFIRM_DEFAULTS: EmailOneButtonContent = {
+  subject: "Please confirm your email",
+  preview: "One tap to join my newsletter",
+  heroLine: "Confirm your email",
+  buttonLabel: "Yes, sign me up",
+  copyLinkLabel: EMAIL_COPY_LINK_LABEL_DEFAULT,
+  body: [
+    ...stringToPortableTextBlocks(
+      "Thank you for wanting to hear from me. Tap the button below to confirm your email and join my newsletter.",
+    ),
+    ...stringToPortableTextBlocks("If you did not ask for this, ignore this email and you will not be added."),
+  ],
 };
 
 export const LINKS_PAGE_MAX_BUTTONS = 8;

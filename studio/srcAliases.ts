@@ -20,7 +20,6 @@ export const STUDIO_SRC_ALIASES = [
   { find: /^@\/hooks\//, replacement: `${SRC}/hooks/` },
   { find: /^@\/styles\/layers$/, replacement: `${SRC}/styles/layers.ts` },
   { find: /^@\/lib\/auth\/emailValidation$/, replacement: `${SRC}/lib/auth/emailValidation.ts` },
-  { find: /^@\/lib\/sanity\/pickDefined$/, replacement: `${SRC}/lib/sanity/pickDefined.ts` },
   { find: /^@\/lib\/links\/linkKey$/, replacement: `${SRC}/lib/links/linkKey.ts` },
   { find: /^@\/lib\/links\/socialPlatforms$/, replacement: `${SRC}/lib/links/socialPlatforms.ts` },
   { find: /^@\/lib\/links\/tiktokVideo$/, replacement: `${SRC}/lib/links/tiktokVideo.ts` },

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import type { SingletonContract } from "./sanity-validate-contract.mts";
 import {
   findSchemaDrift,
-  LEGACY_FIELDS_BY_SINGLETON,
   SANITY_META_FIELDS,
 } from "./sanity-validate-drift.mts";
 
@@ -85,23 +84,7 @@ describe("findSchemaDrift", () => {
     expect(SANITY_META_FIELDS.has("title")).toBe(false);
   });
 
-  it("ignores schema-declared legacy fields per LEGACY_FIELDS_BY_SINGLETON", () => {
-    const giftClaim: SingletonContract = {
-      id: "emailGiftClaim",
-      type: "emailGiftClaim",
-      fields: [{ name: "subjectFirstSend", type: "string" }],
-    };
-    const doc = {
-      _id: "emailGiftClaim",
-      _type: "emailGiftClaim",
-      subjectFirstSend: "x",
-      bodyFirstSend: [{ _type: "block" }],
-      greeting: "legacy text",
-    };
-    expect(findSchemaDrift(giftClaim, doc)).toEqual([]);
-  });
-
-  it("singletons not in LEGACY_FIELDS_BY_SINGLETON still surface every unknown field", () => {
+  it("surfaces every field the contract does not list", () => {
     const singleton: SingletonContract = {
       id: "singletonWithoutLegacy",
       type: "singletonWithoutLegacy",
@@ -112,11 +95,6 @@ describe("findSchemaDrift", () => {
     expect(result).toEqual([
       { singleton: "singletonWithoutLegacy", unknownField: "strayField", valueType: "string" },
     ]);
-  });
-
-  it("LEGACY_FIELDS_BY_SINGLETON only carries schema-declared legacy entries", () => {
-    expect(Object.keys(LEGACY_FIELDS_BY_SINGLETON)).toEqual(["emailGiftClaim"]);
-    expect(LEGACY_FIELDS_BY_SINGLETON.emailGiftClaim?.has("greeting")).toBe(true);
   });
 
   it("handles an empty doc gracefully", () => {

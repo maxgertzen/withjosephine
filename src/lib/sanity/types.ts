@@ -10,7 +10,7 @@ import type {
   ReadingPageContent,
   ReadingsSectionContent,
 } from "@/data/defaults";
-import type { LinksPageShareWords } from "@/data/defaults";
+import type { LinksPageEmailFormWords, LinksPageShareWords, NewsletterContent } from "@/data/defaults";
 import type { StoredSection } from "@/lib/booking/bookingPageSections";
 import type { LinkDestination } from "@/lib/links/linkKey";
 import type { NoteBodyBlock, NoteSummary } from "@/lib/notes/types";
@@ -121,30 +121,25 @@ export type SanityMagicLinkVerifyPage = {
   restedCtaLabel: string;
 };
 
-export type SanityEmailMagicLink = {
+export type SanityEmailOneButton = {
   subject: string;
   preview: string;
   heroLine: string;
   buttonLabel: string;
+  copyLinkLabel?: string | null;
   body: PortableTextBlock[];
-  signOff: string | null;
 };
+
 
 export type SanityEmailOrderConfirmation = {
   subject: string;
   preview: string;
-  brandName: string;
-  brandSubtitle: string;
   heroLine: string;
   body?: PortableTextBlock[];
   cardLabel: string;
   cardDeliveryLine: string;
   dataExportHeading?: string;
-  dataExportBlurb?: string;
   dataExportButtonLabel?: string;
-  signOffLine1: string;
-  signOffLine2: string;
-  footerDisclaimer: string;
 };
 
 export type SanityEmailPrivacyExport = {
@@ -154,7 +149,6 @@ export type SanityEmailPrivacyExport = {
   bodyIntro?: PortableTextBlock[];
   bodyPostButton?: PortableTextBlock[];
   ctaLabel: string;
-  signOff: string | null;
 };
 
 export type SanityEmailReadingDelivery = {
@@ -169,7 +163,6 @@ export type SanityEmailReadingDelivery = {
   signedInDisclosure?: PortableTextBlock[];
   accessWindowLine?: PortableTextBlock[];
   comfortFollowUp?: PortableTextBlock[];
-  signOff: string | null;
 };
 
 export type SanityEmailGiftPurchase = Partial<EmailGiftPurchaseContent>;
@@ -259,7 +252,7 @@ export type SanityConsentBanner = {
 
 export type SanitySiteSettings = {
   brandName: string;
-  logoUrl: string;
+  logoUrl: string | null;
   faviconUrl: string;
   navLinks: { label: string; sectionId: string }[];
   navCtaText: string;
@@ -267,6 +260,7 @@ export type SanitySiteSettings = {
   copyrightText: string;
   contactEmail: string;
   consentBanner?: SanityConsentBanner;
+  newsletter?: Partial<NewsletterContent> | null;
 };
 
 export type SanityColor = {
@@ -466,6 +460,7 @@ export type SanityArticle = SanityArticleBase & {
     notePromise?: string;
   } | null;
   moreNotes?: (NoteSummary | null)[];
+  newestNotes?: NoteSummary[];
   hideReadingBox?: boolean;
   hideCardLeadIn?: boolean;
   hideMoreNotes?: boolean;
@@ -481,6 +476,7 @@ export type SanityLinksPageButton = {
   subtitle?: string;
   destination?: LinkDestination;
   standOut?: boolean;
+  askForEmail?: boolean;
   email?: string;
   url?: string;
   reading?: { _id: string; slug: string; name?: string; onSite?: boolean | null } | null;
@@ -493,6 +489,7 @@ export type SanityLinksPageSocialLink = { _key: string; platform?: string; addre
 export type SanityLinksPageVideo = { _key: string; url?: string };
 
 export type SanityLinksPage = LinksPageColours & {
+  showPage?: boolean;
   photoUrl?: string;
   name?: string;
   intro?: string;
@@ -504,6 +501,7 @@ export type SanityLinksPage = LinksPageColours & {
   playVideo?: string;
   showShareButtons?: boolean;
   shareWords?: Partial<LinksPageShareWords>;
+  emailForm?: Partial<LinksPageEmailFormWords>;
   nameFont?: string;
   textFont?: string;
   nameSize?: string;
@@ -522,5 +520,5 @@ export type SanityLinksPageState = {
   aboutPhotoUrl: string | null;
   readings: SanityLinksPageReading[];
   notesState: SanityNotesState | null;
-  siteSettings: Pick<SanitySiteSettings, "socialLinks"> | null;
+  siteSettings: Pick<SanitySiteSettings, "socialLinks" | "newsletter"> | null;
 };

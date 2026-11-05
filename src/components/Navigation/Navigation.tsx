@@ -10,9 +10,9 @@ import { GoldDivider } from "@/components/GoldDivider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useScrolled } from "@/hooks/useScrolled";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { homeSectionAnchor } from "@/lib/http/routes";
 import type { NotesLink } from "@/lib/notes/notes";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
 import { LAYER } from "@/styles/layers";
 
@@ -134,10 +134,7 @@ type NavigationProps = {
 };
 
 export function Navigation({ content, notesLink, page = "home", className }: NavigationProps) {
-  const { navLinks, navCtaText } = {
-    ...NAV_DEFAULTS,
-    ...pickDefined(content ?? {}),
-  };
+  const { navLinks, navCtaText } = withNonBlankOverrides(NAV_DEFAULTS, content);
   const items = buildNavItems(navLinks, page, notesLink);
   const ctaHref = page === "home" ? undefined : homeSectionAnchor(READINGS_SECTION_ID);
   const scrolled = useScrolled();

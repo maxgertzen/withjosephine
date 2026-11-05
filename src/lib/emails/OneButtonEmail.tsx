@@ -1,0 +1,59 @@
+import { Button, Container, Link, Section } from "@react-email/components";
+
+import type { EmailOneButtonContent, EmailSharedShellContent } from "@/data/defaults";
+import { EMAIL_SHARED_SHELL_DEFAULTS } from "@/data/defaults";
+
+import { applyTokens } from "./applyTokens";
+import { BrandHeader } from "./BrandHeader";
+import { EmailFooter } from "./EmailFooter";
+import { EmailShell } from "./EmailShell";
+import { GoldHero } from "./GoldHero";
+import { PILL_BUTTON_STYLE } from "./pillButtonStyle";
+import { PortableTextBody } from "./PortableTextBody";
+
+export type OneButtonEmailProps = {
+  buttonUrl: string;
+  vars: Record<string, string>;
+  copy: Omit<EmailOneButtonContent, "subject">;
+  shell?: EmailSharedShellContent;
+};
+
+export function OneButtonEmail({ buttonUrl, vars, copy: rawCopy, shell = EMAIL_SHARED_SHELL_DEFAULTS }: OneButtonEmailProps) {
+  const copy = applyTokens(rawCopy, vars);
+  return (
+    <EmailShell preview={copy.preview} bareContainer>
+      <Container className="bg-cream border border-divider rounded" style={{ maxWidth: 600, margin: "0 auto" }}>
+        <BrandHeader shell={shell} />
+
+        <GoldHero text={copy.heroLine} />
+
+        <Section
+          className="font-sans text-body"
+          style={{ padding: "32px 48px 16px 48px", lineHeight: 1.75, fontSize: 16 }}
+        >
+          <PortableTextBody value={copy.body} />
+        </Section>
+
+        <div style={{ padding: "8px 48px 8px 48px", textAlign: "center" }}>
+          <Button href={buttonUrl} className="bg-ink text-cream font-sans no-underline" style={PILL_BUTTON_STYLE}>
+            {copy.buttonLabel}
+          </Button>
+        </div>
+
+        <Section
+          className="font-sans text-muted text-center"
+          style={{ padding: "16px 48px 0 48px", fontSize: 13, lineHeight: 1.6 }}
+        >
+          <p style={{ margin: 0 }}>
+            {copy.copyLinkLabel}{" "}
+            <Link href={buttonUrl} className="text-ink">
+              {buttonUrl}
+            </Link>
+          </p>
+        </Section>
+
+        <EmailFooter shell={shell} />
+      </Container>
+    </EmailShell>
+  );
+}

@@ -1,4 +1,5 @@
 import { READINGS_SECTION_DEFAULTS } from "@/data/defaults";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { faqNoteLink, notesFooterLink } from "@/lib/notes/notes";
 import { notesNav } from "@/lib/notes/notesChrome";
 import {
@@ -9,7 +10,6 @@ import {
   mapSocialLinks,
   mapTestimonials,
 } from "@/lib/sanity/mappers";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 import type {
   SanityFaqItem,
   SanityLandingPage,
@@ -53,7 +53,7 @@ export function toHomePageViewProps(input: {
     faqNonce,
     hero: landingPage?.hero ?? undefined,
     howItWorks: landingPage?.howItWorks ?? undefined,
-    readingsSection: { ...READINGS_SECTION_DEFAULTS, ...pickDefined(landingPage?.readingsSection ?? {}) },
+    readingsSection: withNonBlankOverrides(READINGS_SECTION_DEFAULTS, landingPage?.readingsSection),
     testimonialsSection: landingPage?.testimonialsSection ?? undefined,
     contactSection: landingPage?.contactSection ?? undefined,
   };

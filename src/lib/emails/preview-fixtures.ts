@@ -1,9 +1,11 @@
 import {
+  EMAIL_DOWNLOAD_LINK_DEFAULTS,
   EMAIL_GIFT_OPENED_DEFAULTS,
   EMAIL_GIFT_PURCHASE_DEFAULTS,
   EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS,
   EMAIL_GIFT_TO_RECIPIENT_DEFAULTS,
   EMAIL_MAGIC_LINK_DEFAULTS,
+  EMAIL_NEWSLETTER_CONFIRM_DEFAULTS,
   EMAIL_ORDER_CONFIRMATION_DEFAULTS,
   EMAIL_PRIVACY_EXPORT_DEFAULTS,
   EMAIL_READING_DELIVERY_DEFAULTS,
@@ -19,6 +21,9 @@ export const PREVIEW_FIXTURE = {
   downloadUrl: "https://images.withjosephine.com/exports/preview.zip",
   dataExportUrl: "https://withjosephine.com/privacy/export?t=preview",
   expiryDays: 7,
+  downloadName: "the free birth chart guide",
+  downloadLinkUrl: "https://cdn.sanity.io/files/preview/production/guide.pdf?dl=",
+  newsletterConfirmUrl: "https://withjosephine.com/newsletter/confirm?token=preview",
 } as const;
 
 export const PREVIEW_GIFT = {
@@ -42,4 +47,6 @@ export const PREVIEW_DEFAULTS = {
   emailGiftOpened: EMAIL_GIFT_OPENED_DEFAULTS,
   emailGiftRecipientConfirmation: EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS,
   emailGiftToRecipient: EMAIL_GIFT_TO_RECIPIENT_DEFAULTS,
+  emailDownloadLink: EMAIL_DOWNLOAD_LINK_DEFAULTS,
+  emailNewsletterConfirm: EMAIL_NEWSLETTER_CONFIRM_DEFAULTS,
 } as const;

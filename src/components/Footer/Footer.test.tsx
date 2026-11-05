@@ -1,9 +1,45 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { FOOTER_DEFAULTS, NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
 
 import { Footer } from "./Footer";
+import { footerNewsletterSlot } from "./footerNewsletterSlot";
+import { NewsletterSlotProvider } from "./NewsletterContext";
+
+describe("Footer newsletter box", () => {
+  it("is not shown when nothing provides newsletter content", () => {
+    render(<Footer />);
+
+    expect(screen.queryByRole("heading", { name: NEWSLETTER_DEFAULTS.title })).toBeNull();
+  });
+
+  it.each([
+    ["switch off", { show: false }],
+    ["switch never set", {}],
+  ])("is not shown with the %s", (_case, stored) => {
+    render(
+      <NewsletterSlotProvider slot={footerNewsletterSlot(stored)}>
+        <Footer />
+      </NewsletterSlotProvider>,
+    );
+
+    expect(screen.queryByRole("heading", { name: NEWSLETTER_DEFAULTS.title })).toBeNull();
+  });
+
+  it("shows Becky's words and an unticked box when the switch is on", async () => {
+    render(
+      <NewsletterSlotProvider slot={footerNewsletterSlot({ show: true, title: "Letters" })}>
+        <Footer />
+      </NewsletterSlotProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Letters" })).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: NEWSLETTER_DEFAULTS.submit })).toBeDisabled();
+  });
+});
 
 describe("Footer", () => {
   it("renders hardcoded defaults when no content is provided", () => {
@@ -38,16 +74,10 @@ describe("Footer", () => {
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
   });
 
-  it("hides logo when content sets logoUrl to empty string (Becky-cleared field)", () => {
-    const content = {
-      brandName: "No Logo Brand",
-      logoUrl: "",
-      copyrightText: "No Logo Brand.",
-    };
+  it.each([null, "", "  "])("shows the built-in logo when no logo is set in Sanity (%j)", (logoUrl) => {
+    render(<Footer content={{ brandName: "No Logo Brand", logoUrl, copyrightText: "No Logo Brand." }} />);
 
-    render(<Footer content={content} />);
-
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("img").getAttribute("src")).toContain(encodeURIComponent(FOOTER_DEFAULTS.logoUrl));
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
   });
 

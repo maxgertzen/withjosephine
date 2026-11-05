@@ -1,5 +1,7 @@
 import { groq } from "next-sanity";
 
+export const MORE_NOTES_LIMIT = 2;
+
 const PUBLISHED_NOTES_COUNT = `count(*[_type == "article" && defined(slug.current)])`;
 
 const LINKS_PAGE_SEO_PROJECTION = `seo {
@@ -134,7 +136,8 @@ export const siteSettingsQuery = groq`
     socialLinks,
     copyrightText,
     contactEmail,
-    consentBanner
+    consentBanner,
+    newsletter
   }
 `;
 
@@ -189,8 +192,7 @@ export const emailPrivacyExportQuery = groq`
     heroLine,
     bodyIntro,
     bodyPostButton,
-    ctaLabel,
-    signOff
+    ctaLabel
   }
 `;
 
@@ -200,32 +202,32 @@ export const emailMagicLinkQuery = groq`
     preview,
     heroLine,
     buttonLabel,
-    body,
-    signOff
+    copyLinkLabel,
+    body
   }
 `;
+
+const ONE_BUTTON_EMAIL_PROJECTION = `{ subject, preview, heroLine, buttonLabel, copyLinkLabel, body }`;
+
+export const emailDownloadLinkQuery = groq`*[_type == "emailDownloadLink"][0] ${ONE_BUTTON_EMAIL_PROJECTION}`;
+
+export const emailNewsletterConfirmQuery = groq`*[_type == "emailNewsletterConfirm"][0] ${ONE_BUTTON_EMAIL_PROJECTION}`;
 
 export const emailOrderConfirmationQuery = groq`
   *[_type == "emailOrderConfirmation"][0] {
     subject,
     preview,
-    brandName,
-    brandSubtitle,
     heroLine,
     body,
     cardLabel,
     cardDeliveryLine,
     dataExportHeading,
-    dataExportBlurb,
-    dataExportButtonLabel,
-    signOffLine1,
-    signOffLine2,
-    footerDisclaimer
+    dataExportButtonLabel
   }
 `;
 
 export const emailReadingDeliveryQuery = groq`
-  coalesce(*[_type == "emailReadingDelivery"][0], *[_type == "emailDay7Delivery"][0]) {
+  *[_type == "emailReadingDelivery"][0] {
     subjectTemplate,
     preview,
     bodyIntro,
@@ -236,8 +238,7 @@ export const emailReadingDeliveryQuery = groq`
     openButtonLabel,
     signedInDisclosure,
     accessWindowLine,
-    comfortFollowUp,
-    signOff
+    comfortFollowUp
   }
 `;
 
@@ -526,6 +527,8 @@ export const articleBySlugQuery = groq`
       notePromise
     },
     "moreNotes": moreNotes[]-> { title, "slug": slug.current },
+    "newestNotes": *[_type == "article" && defined(slug.current) && slug.current != $slug]
+      | order(publishedAt desc)[0...${MORE_NOTES_LIMIT}] { title, "slug": slug.current },
     hideReadingBox,
     hideCardLeadIn,
     hideMoreNotes,
@@ -550,6 +553,7 @@ export const readingNotesQuery = groq`
 export const linksPageQuery = groq`
   {
     "page": *[_type == "linksPage"][0] {
+      showPage,
       "photoUrl": photo.asset->url,
       name,
       intro,
@@ -561,6 +565,7 @@ export const linksPageQuery = groq`
       playVideo,
       showShareButtons,
       shareWords,
+      emailForm,
       nameStyle,
       buttonLetterCase,
       pageColour,
@@ -579,6 +584,7 @@ export const linksPageQuery = groq`
         subtitle,
         destination,
         standOut,
+        askForEmail,
         email,
         url,
         "reading": select(destination == "reading" => reading->{ _id, "slug": slug.current, name, onSite }),
@@ -592,6 +598,6 @@ export const linksPageQuery = groq`
       "settings": *[_type == "notesSettings"][0] { enabled },
       "publishedCount": ${PUBLISHED_NOTES_COUNT}
     },
-    "siteSettings": *[_type == "siteSettings"][0] { socialLinks }
+    "siteSettings": *[_type == "siteSettings"][0] { socialLinks, newsletter { show, consentText, privacyLinkText } }
   }
 `;

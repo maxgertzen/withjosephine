@@ -2,6 +2,9 @@ import { render } from "@react-email/render";
 import { headers } from "next/headers";
 import { type ErrorResponse, Resend, type WebhookEventPayload } from "resend";
 
+import type { EmailOneButtonContent } from "@/data/defaults";
+import type { SanityEmailOneButton } from "@/lib/sanity/types";
+
 import { generateAnonymousDistinctId, serverTrack } from "./analytics/server";
 import { EMAIL_LABELS, type EmailSubType } from "./analytics/server-events";
 import { isSandboxEmail } from "./booking/sandboxEmails";
@@ -11,6 +14,7 @@ import {
   FIRST_NAME_FALLBACK,
   type RenderedEmail,
 } from "./booking/submissions";
+import { withNonBlankOverrides } from "./content/nonBlank";
 import { applyTokens } from "./emails/applyTokens";
 import { ContactMessage } from "./emails/ContactMessage";
 import { GiftOpened, type GiftOpenedVars } from "./emails/GiftOpened";
@@ -24,7 +28,7 @@ import {
   JosephineNotification,
   josephineNotificationTitle,
 } from "./emails/JosephineNotification";
-import { MagicLink } from "./emails/MagicLink";
+import { OneButtonEmail } from "./emails/OneButtonEmail";
 import { OrderConfirmation } from "./emails/OrderConfirmation";
 import { PrivacyExport } from "./emails/PrivacyExport";
 import { ReadingDelivery } from "./emails/ReadingDelivery";
@@ -33,7 +37,7 @@ import { isFlagEnabled, isStagingEnvironment } from "./env";
 import { giftClientReferenceId } from "./gift/clientReference";
 import { formatGiftCode } from "./gift/giftCodeFormat";
 import type { GiftEmailFiredType } from "./gift/types";
-import { pickDefined } from "./sanity/pickDefined";
+import { sha256Hex } from "./hmac";
 
 const FROM_ADDRESS = "Josephine <hello@withjosephine.com>";
 
@@ -69,7 +73,7 @@ async function fetchSharedShell() {
   const { EMAIL_SHARED_SHELL_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailSharedShell } = await import("@/lib/sanity/fetch");
   const sanity = await fetchEmailSharedShell().catch(() => null);
-  return { ...EMAIL_SHARED_SHELL_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  return withNonBlankOverrides(EMAIL_SHARED_SHELL_DEFAULTS, sanity);
 }
 
 export function getResendId(result: EmailSendResult): string | null {
@@ -378,7 +382,7 @@ export async function sendOrderConfirmation(
     fetchEmailOrderConfirmation().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_ORDER_CONFIRMATION_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_ORDER_CONFIRMATION_DEFAULTS, sanity);
   const html = await render(
     <OrderConfirmation
       vars={{
@@ -414,7 +418,7 @@ export async function sendGiftRecipientConfirmation(
     fetchEmailGiftRecipientConfirmation().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_GIFT_RECIPIENT_CONFIRMATION_DEFAULTS, sanity);
   const vars = {
     firstName: submission.firstName,
     buyerFirstName: options.buyerFirstName,
@@ -496,7 +500,7 @@ export async function renderReadingDelivery(
     fetchEmailReadingDelivery().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_READING_DELIVERY_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_READING_DELIVERY_DEFAULTS, sanity);
   const subject = applyTokens(copy.subjectTemplate, {
     readingName: submission.readingName,
     readingPriceDisplay: submission.readingPriceDisplay,
@@ -525,7 +529,7 @@ export async function sendGiftPurchase(
     fetchEmailGiftPurchase().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_GIFT_PURCHASE_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_GIFT_PURCHASE_DEFAULTS, sanity);
   const html = await render(<GiftPurchase vars={vars} copy={copy} shell={shell} />);
   return sendOrSkip({
     to,
@@ -549,7 +553,7 @@ export async function sendGiftOpened(
     fetchEmailGiftOpened().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_GIFT_OPENED_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_GIFT_OPENED_DEFAULTS, sanity);
   const html = await render(<GiftOpened vars={vars} copy={copy} shell={shell} />);
   return sendOrSkip({
     to,
@@ -583,7 +587,7 @@ export async function sendGiftToRecipient(
     fetchEmailGiftToRecipient().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_GIFT_TO_RECIPIENT_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_GIFT_TO_RECIPIENT_DEFAULTS, sanity);
   const vars = {
     firstName: gift.recipientName,
     buyerName: gift.buyerName,
@@ -613,40 +617,84 @@ export async function sendMagicLink(args: {
   readingName?: string;
   readingPriceDisplay?: string;
 }): Promise<EmailSendResult> {
-  // Lazy imports scope the Sanity fetch to test runs that don't mock it.
   const { EMAIL_MAGIC_LINK_DEFAULTS } = await import("@/data/defaults");
   const { fetchEmailMagicLink } = await import("@/lib/sanity/fetch");
+  return sendOneButtonEmail({
+    to: args.to,
+    buttonUrl: args.magicLinkUrl,
+    vars: {
+      magicLinkUrl: args.magicLinkUrl,
+      firstName: args.firstName ?? FIRST_NAME_FALLBACK,
+      readingName: args.readingName ?? "",
+      readingPriceDisplay: args.readingPriceDisplay ?? "",
+    },
+    defaults: EMAIL_MAGIC_LINK_DEFAULTS,
+    sanityCopy: fetchEmailMagicLink(),
+    subType: "magic_link",
+  });
+}
 
-  const [sanity, shell] = await Promise.all([
-    fetchEmailMagicLink().catch(() => null),
-    fetchSharedShell(),
-  ]);
-  const copy = { ...EMAIL_MAGIC_LINK_DEFAULTS, ...pickDefined(sanity ?? {}) };
-  const vars = {
-    magicLinkUrl: args.magicLinkUrl,
-    firstName: args.firstName ?? FIRST_NAME_FALLBACK,
-    readingName: args.readingName ?? "",
-    readingPriceDisplay: args.readingPriceDisplay ?? "",
-  };
-  const subject = applyTokens(copy.subject, vars);
-  const html = await render(
-    <MagicLink
-      vars={vars}
-      copy={{
-        preview: copy.preview,
-        heroLine: copy.heroLine,
-        buttonLabel: copy.buttonLabel,
-        body: copy.body,
-      }}
-      shell={shell}
-    />,
-  );
+async function idempotencyKeyForBody(key: string, subject: string, html: string): Promise<string> {
+  return `${key}/${(await sha256Hex(`${subject}\n${html}`)).slice(0, 32)}`;
+}
+
+async function sendOneButtonEmail(args: {
+  to: string;
+  buttonUrl: string;
+  vars: Record<string, string>;
+  defaults: EmailOneButtonContent;
+  sanityCopy: Promise<SanityEmailOneButton | null>;
+  subType: Extract<EmailSubType, "download_link" | "newsletter_confirm" | "magic_link">;
+  idempotencyKey?: string;
+}): Promise<EmailSendResult> {
+  const [sanity, shell] = await Promise.all([args.sanityCopy.catch(() => null), fetchSharedShell()]);
+  const copy = withNonBlankOverrides(args.defaults, sanity);
+  const html = await render(<OneButtonEmail buttonUrl={args.buttonUrl} vars={args.vars} copy={copy} shell={shell} />);
+  const subject = applyTokens(copy.subject, args.vars);
   return sendOrSkip({
     to: args.to,
     subject,
     html,
-    subType: "magic_link",
+    subType: args.subType,
     submissionId: null,
+    idempotencyKey: args.idempotencyKey && (await idempotencyKeyForBody(args.idempotencyKey, subject, html)),
+  });
+}
+
+export async function sendDownloadLink(args: {
+  to: string;
+  signupId: string;
+  downloadUrl: string;
+  downloadName: string;
+}): Promise<EmailSendResult> {
+  const { EMAIL_DOWNLOAD_LINK_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailDownloadLink } = await import("@/lib/sanity/fetch");
+  return sendOneButtonEmail({
+    to: args.to,
+    buttonUrl: args.downloadUrl,
+    vars: { downloadName: args.downloadName },
+    defaults: EMAIL_DOWNLOAD_LINK_DEFAULTS,
+    sanityCopy: fetchEmailDownloadLink(),
+    subType: "download_link",
+    idempotencyKey: `download-link/${args.signupId}`,
+  });
+}
+
+export async function sendNewsletterConfirm(args: {
+  to: string;
+  signupId: string;
+  confirmUrl: string;
+}): Promise<EmailSendResult> {
+  const { EMAIL_NEWSLETTER_CONFIRM_DEFAULTS } = await import("@/data/defaults");
+  const { fetchEmailNewsletterConfirm } = await import("@/lib/sanity/fetch");
+  return sendOneButtonEmail({
+    to: args.to,
+    buttonUrl: args.confirmUrl,
+    vars: {},
+    defaults: EMAIL_NEWSLETTER_CONFIRM_DEFAULTS,
+    sanityCopy: fetchEmailNewsletterConfirm(),
+    subType: "newsletter_confirm",
+    idempotencyKey: `newsletter-confirm/${args.signupId}`,
   });
 }
 
@@ -662,7 +710,7 @@ export async function sendPrivacyExportEmail(args: {
     fetchEmailPrivacyExport().catch(() => null),
     fetchSharedShell(),
   ]);
-  const copy = { ...EMAIL_PRIVACY_EXPORT_DEFAULTS, ...pickDefined(sanity ?? {}) };
+  const copy = withNonBlankOverrides(EMAIL_PRIVACY_EXPORT_DEFAULTS, sanity);
   const subject = applyTokens(copy.subject, {
     firstName: args.firstName,
     expiryDays: args.expiryDays,

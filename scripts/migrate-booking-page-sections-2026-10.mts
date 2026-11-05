@@ -1,6 +1,5 @@
 import { READING_PAGE_DEFAULTS } from "../src/data/defaults";
-import { linesWithText } from "../src/lib/content/nonBlank";
-import { pickDefined } from "../src/lib/sanity/pickDefined";
+import { linesWithText, withNonBlankOverrides } from "../src/lib/content/nonBlank";
 import { loadDotenv } from "./_lib/loadDotenv.mts";
 import { isMainModule } from "./_lib/main.mts";
 import { rawPerspectiveClient } from "./_lib/sanity-write-client.mts";
@@ -74,7 +73,7 @@ const reference = (ref: Reference, key?: string) => ({ _type: "reference", _ref:
 
 export function buildSections(shared: SharedSettings, reading: ReadingRow | null): Section[] {
   const hidden = new Set([...(shared.hiddenParts ?? []), ...(reading?.hiddenParts ?? [])]);
-  const titles = { ...READING_PAGE_DEFAULTS, ...pickDefined(shared.readingPageContent ?? {}) };
+  const titles = withNonBlankOverrides(READING_PAGE_DEFAULTS, shared.readingPageContent);
   const order = oldOrder(reading?.pageLayout?.length ? reading.pageLayout : shared.pageLayout);
   const bookingLines = linesWithText(reading?.bookingIncludes);
 

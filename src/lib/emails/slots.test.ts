@@ -87,6 +87,8 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailGiftOpened",
         "emailGiftRecipientConfirmation",
         "emailGiftToRecipient",
+        "emailDownloadLink",
+        "emailNewsletterConfirm",
       ].sort(),
     );
   });

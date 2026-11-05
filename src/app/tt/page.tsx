@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { LINKS_PAGE_DEFAULTS } from "@/data/defaults";
-import { LINKS_PAGE_ORIGIN } from "@/lib/constants";
+import { LINKS_PAGE_ORIGIN, ROUTES } from "@/lib/constants";
 import { nonBlank } from "@/lib/content/nonBlank";
 import { buildTimeSiteOrigin } from "@/lib/env";
 import { tapCounterPath } from "@/lib/links/linksHostRouting";
@@ -30,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LinksPage() {
   const state = await fetchLinksPagePublished();
   const siteOrigin = buildTimeSiteOrigin();
+  if (state?.page?.showPage !== true) redirect(`${siteOrigin}${ROUTES.home}`);
   const props = deriveLinksPageViewProps(state, siteOrigin);
   const buttons = props.buttons.map((button) =>
     button.countsTaps ? { ...button, href: `${siteOrigin}${tapCounterPath(button.key)}` } : button,

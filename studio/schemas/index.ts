@@ -18,6 +18,8 @@ import { emailGiftOpened } from "./emailGiftOpened";
 import { emailGiftRecipientConfirmation } from "./emailGiftRecipientConfirmation";
 import { emailGiftToRecipient } from "./emailGiftToRecipient";
 import { emailPrivacyExport } from "./emailPrivacyExport";
+import { emailDownloadLink } from "./emailDownloadLink";
+import { emailNewsletterConfirm } from "./emailNewsletterConfirm";
 import { emailSharedShell } from "./emailSharedShell";
 import { listenPage } from "./listenPage";
 import { formField } from "./formField";
@@ -53,6 +55,8 @@ export const schemaTypes = [
   emailGiftRecipientConfirmation,
   emailGiftToRecipient,
   emailPrivacyExport,
+  emailDownloadLink,
+  emailNewsletterConfirm,
   emailSharedShell,
   listenPage,
   formField,

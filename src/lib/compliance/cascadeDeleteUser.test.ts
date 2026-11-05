@@ -31,6 +31,7 @@ vi.mock("./vendors/mixpanelDelete", () => ({
   createMixpanelDataDeletion: vi.fn(),
 }));
 
+import { NEWSLETTER_DEFAULTS } from "@/data/defaults";
 import type { GiftStatus } from "@/lib/gift/types";
 import { createTestGift } from "@/test/fixtures/gift";
 
@@ -43,6 +44,8 @@ import { cascadeDeleteUser, wasUserDeleted } from "./cascadeDeleteUser";
 import { deleteBrevoContact, deleteBrevoSmtpLog } from "./vendors/brevoDelete";
 import { createMixpanelDataDeletion } from "./vendors/mixpanelDelete";
 import { createStripeRedactionJob } from "./vendors/stripeRedaction";
+
+const CONSENT = NEWSLETTER_DEFAULTS.consentText;
 
 const mockFindUser = vi.mocked(findUserById);
 const mockListSubs = vi.mocked(listSubmissionsByRecipientUserId);
@@ -134,6 +137,18 @@ describe("cascadeDeleteUser — happy path", () => {
     expect(result.stripeRedactionJobId).toBe("redact_job_99");
     expect(result.brevoSmtpProcessId).toBe("proc_42");
     expect(result.mixpanelTaskId).toBe("mp_task_7");
+  });
+
+  it("deletes the address's email signups and leaves other people's", async () => {
+    happyPathMocks();
+    const { saveEmailSignup } = await import("../signup/emailSignups");
+    await saveEmailSignup({ email: "ADA@example.com", buttonKey: null, consentText: CONSENT });
+    await saveEmailSignup({ email: "other@example.com", buttonKey: null, consentText: CONSENT });
+
+    const result = await cascadeDeleteUser("user_a", { performedBy: "admin@withjosephine.com" });
+
+    expect(result.partialFailures).toEqual([]);
+    expect(await dbQuery("SELECT email FROM email_signups")).toEqual([{ email: "other@example.com" }]);
   });
 
   it("invokes the cascade in the order: R2+D1 → Sanity doc → Sanity assets → vendors → user rows", async () => {
