@@ -33,7 +33,7 @@ export interface FooterContent {
 
 export const FOOTER_DEFAULTS: FooterContent = {
   brandName: "Josephine",
-  logoUrl: "/images/logo-main.webp",
+  logoUrl: "/images/logo-main-240.webp",
   copyrightText: "Josephine. All rights reserved.",
 };
 

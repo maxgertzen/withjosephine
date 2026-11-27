@@ -12,7 +12,7 @@ describe("Navigation", () => {
   it("renders hardcoded defaults when no content is provided", () => {
     render(<Navigation />);
 
-    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(2); // mobile + desktop logo
+    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(1);
     expect(screen.getAllByText("Readings")).toHaveLength(2); // desktop + mobile
     expect(screen.getAllByText("About")).toHaveLength(2);
     expect(screen.getAllByText("How It Works")).toHaveLength(2);
@@ -31,7 +31,7 @@ describe("Navigation", () => {
 
     render(<Navigation content={content} />);
 
-    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(2);
+    expect(screen.getAllByAltText("Josephine Soul Readings")).toHaveLength(1);
     expect(screen.getAllByText("Services")).toHaveLength(2);
     expect(screen.getAllByText("Info")).toHaveLength(2);
     expect(screen.getAllByText("Get Started")).toHaveLength(2);
@@ -48,7 +48,9 @@ describe("Navigation Notes item and off-homepage links", () => {
     const desktop = screen.getByRole("navigation", { name: "Primary" });
     expect(within(desktop).getByRole("link", { name: "Notes" })).toHaveAttribute("href", "/notes");
     expect(within(desktop).getByRole("button", { name: "Readings" })).toBeInTheDocument();
-    expect(within(desktop).getByRole("link", { name: "Notes" })).not.toHaveAttribute("aria-current");
+    expect(within(desktop).getByRole("link", { name: "Notes" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("orders Notes directly before Contact", () => {

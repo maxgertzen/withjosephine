@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 
@@ -16,7 +15,7 @@ import type { NotesLink } from "@/lib/notes/notes";
 import { mergeClasses } from "@/lib/utils";
 import { LAYER } from "@/styles/layers";
 
-import { NAV_BAR_HEIGHT_CLASS } from "./navClearance";
+import { NAV_BAR_HEIGHT_CLASS, NAV_DESKTOP_MEDIA } from "./navClearance";
 
 interface NavLink {
   label: string;
@@ -174,23 +173,18 @@ export function Navigation({ content, notesLink, page = "home", className }: Nav
           className={`max-w-[1280px] mx-auto px-6 flex items-center justify-between ${NAV_BAR_HEIGHT_CLASS}`}
         >
           <Link href="/" className="block">
-            <Image
-              src="/images/logo-horizontal.webp"
-              alt="Josephine Soul Readings"
-              width={480}
-              height={160}
-              loading="eager"
-              fetchPriority="high"
-              className="h-auto w-[140px] nav:hidden"
-            />
-            <Image
-              src="/images/logo-horizontal-text.webp"
-              alt="Josephine Soul Readings"
-              width={480}
-              height={160}
-              fetchPriority="high"
-              className="hidden h-auto w-[clamp(120px,8vw,160px)] nav:block"
-            />
+            <picture>
+              <source media={NAV_DESKTOP_MEDIA} srcSet="/images/logo-horizontal-text.webp" />
+              <img
+                src="/images/logo-horizontal.webp"
+                alt="Josephine Soul Readings"
+                width={480}
+                height={160}
+                loading="eager"
+                decoding="async"
+                className="h-auto w-[140px] nav:w-[clamp(120px,8vw,160px)]"
+              />
+            </picture>
           </Link>
 
           <div className="flex items-center gap-3 nav:gap-6">
