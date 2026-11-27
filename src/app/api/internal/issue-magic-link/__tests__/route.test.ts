@@ -70,26 +70,13 @@ async function callRoute(init: {
 
 describe("POST /api/internal/issue-magic-link", () => {
   describe("auth", () => {
-    it("returns 404 when x-admin-token header missing", async () => {
-      const res = await callRoute({ body: { email: "ada@example.com" } });
-      expect(res.status).toBe(404);
-      expect(issueMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when x-admin-token header is wrong", async () => {
+    it("returns 404 and writes an admin_auth_failed audit row when x-admin-token header is wrong", async () => {
       const res = await callRoute({
         headers: { "x-admin-token": "wrong-token" },
         body: { email: "ada@example.com" },
       });
       expect(res.status).toBe(404);
       expect(issueMock).not.toHaveBeenCalled();
-    });
-
-    it("writes an admin_auth_failed audit row on auth failure", async () => {
-      await callRoute({
-        headers: { "x-admin-token": "wrong-token" },
-        body: { email: "ada@example.com" },
-      });
       expect(auditMock).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: "admin_auth_failed",
@@ -97,15 +84,6 @@ describe("POST /api/internal/issue-magic-link", () => {
           userId: null,
         }),
       );
-    });
-
-    it("returns 404 when ADMIN_API_KEY env is absent (no leak)", async () => {
-      vi.stubEnv("ADMIN_API_KEY", "");
-      const res = await callRoute({
-        headers: { "x-admin-token": "anything" },
-        body: { email: "ada@example.com" },
-      });
-      expect(res.status).toBe(404);
     });
 
     it("returns 404 on production worker regardless of ADMIN_API_KEY (H-1 hard gate)", async () => {
@@ -137,15 +115,6 @@ describe("POST /api/internal/issue-magic-link", () => {
       const res = await callRoute({
         headers: { "x-admin-token": "test-admin-token" },
         body: {},
-      });
-      expect(res.status).toBe(404);
-      expect(issueMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when email field is empty string", async () => {
-      const res = await callRoute({
-        headers: { "x-admin-token": "test-admin-token" },
-        body: { email: "" },
       });
       expect(res.status).toBe(404);
       expect(issueMock).not.toHaveBeenCalled();

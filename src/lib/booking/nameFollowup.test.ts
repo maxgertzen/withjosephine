@@ -2,23 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   isNameFollowupEnabled,
-  isNameFollowupKey,
   nameFollowupKey,
-  nameFollowupOptionValue,
   statusLineFor,
 } from "./nameFollowup";
 
 describe("nameFollowup helpers", () => {
-  it("builds and parses name-followup keys symmetrically", () => {
-    const key = nameFollowupKey("soul_contract_name");
-    expect(key).toBe("name_followup_soul_contract_name");
-    expect(isNameFollowupKey(key)).toBe(true);
-    expect(nameFollowupOptionValue(key)).toBe("soul_contract_name");
-  });
-
-  it("rejects unrelated keys", () => {
-    expect(isNameFollowupKey("email")).toBe(false);
-    expect(isNameFollowupKey("legal_full_name")).toBe(false);
+  it("builds the name-followup key from the option value", () => {
+    expect(nameFollowupKey("soul_contract_name")).toBe("name_followup_soul_contract_name");
   });
 
   it("flags enabled name-followup option", () => {

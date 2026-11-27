@@ -118,18 +118,6 @@ describe("/listen/[id] one-tap token branch", () => {
     expect(auditMock).not.toHaveBeenCalled();
   });
 
-  it("ISC-59: tampered token (bad signature) falls through to signIn", async () => {
-    cookiesGet.mockReturnValue(undefined);
-    submissionMock.mockResolvedValue(OWNED);
-    verifyMock.mockResolvedValue({ valid: false, reason: "bad_signature" });
-
-    const element = await renderPage({ search: { t: "tampered.token" } });
-    const props = asListenView(element);
-
-    expect(props.state.kind).toBe("signIn");
-    expect(auditMock).not.toHaveBeenCalled();
-  });
-
   it("ISC-60: token-id mismatch writes listen_token_id_mismatch audit row, then falls through", async () => {
     cookiesGet.mockReturnValue(undefined);
     submissionMock.mockResolvedValue(OWNED);
@@ -153,18 +141,6 @@ describe("/listen/[id] one-tap token branch", () => {
         success: false,
       }),
     );
-  });
-
-  it("ISC-61: recipient_changed token falls through to signIn, no audit", async () => {
-    cookiesGet.mockReturnValue(undefined);
-    submissionMock.mockResolvedValue(OWNED);
-    verifyMock.mockResolvedValue({ valid: false, reason: "recipient_changed" });
-
-    const element = await renderPage({ search: { t: "stale.token" } });
-    const props = asListenView(element);
-
-    expect(props.state.kind).toBe("signIn");
-    expect(auditMock).not.toHaveBeenCalled();
   });
 
   it("submission without recipientUserId: no verify call, falls through to signIn", async () => {

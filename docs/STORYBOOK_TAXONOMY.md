@@ -42,7 +42,6 @@ Locked 2026-06-06 via dex `z30nev3r` (epic `k7snhn1p` Tier 4d) and refined the s
 | Button | `Components/UI/Button` |
 | GoldDivider | `Components/UI/GoldDivider` |
 | SectionHeading | `Components/UI/SectionHeading` |
-| DateTimePicker | `Components/Forms/DateTimePicker` |
 | PickerStacking | `Components/Forms/PickerStacking` |
 | Select | `Components/Forms/Select` |
 | Footer | `Components/Navigation/Footer` |

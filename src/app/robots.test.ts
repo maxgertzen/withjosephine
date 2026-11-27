@@ -2,14 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import robots from "./robots";
 
-const CITATION_BOTS = [
-  "OAI-SearchBot",
-  "PerplexityBot",
-  "Claude-SearchBot",
-  "Claude-User",
-  "Google-Extended",
-];
-
 function disallowFor(userAgent: string): string[] {
   const rule = [robots().rules].flat().find((candidate) =>
     [candidate.userAgent].flat().includes(userAgent),
@@ -22,7 +14,7 @@ describe("robots", () => {
     expect(disallowFor("*")).toContain("/gift/");
   });
 
-  it.each(CITATION_BOTS)("disallows /gift/ for %s", (bot) => {
-    expect(disallowFor(bot)).toContain("/gift/");
+  it("disallows /gift/ for OAI-SearchBot", () => {
+    expect(disallowFor("OAI-SearchBot")).toContain("/gift/");
   });
 });

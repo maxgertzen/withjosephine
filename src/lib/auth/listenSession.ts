@@ -16,9 +16,7 @@ import {
  *
  * Identity model: email = user. A repeat customer + a gift recipient share
  * one user record. Sessions are scoped to user.id (not submission.id) at
- * the cookie/JWT level. Submission-scope is enforced per-call by
- * requireListenSession() resolving submission.recipient_user_id and
- * matching it against session.user_id.
+ * the cookie/JWT level.
  *
  * Flow:
  *   1. Reading delivery email links the customer to /listen/[submissionId].
@@ -27,9 +25,6 @@ import {
  *   3. Customer clicks emailed link → confirm-email form (Level 1
  *      hardening: claimedEmail must equal user.email) → redeemMagicLink
  *      → cookie set.
- *   4. Subsequent /listen/[id] + /api/listen/[id]/{audio,pdf} call
- *      requireListenSession to verify session.userId matches the
- *      submission's recipient_user_id.
  *
  * Security properties:
  *   - Tokens stored as SHA-256 hashes only; raw tokens never persist.
@@ -42,9 +37,6 @@ import {
  *   - IP + UA hashed with daily-rotating salt; raw values never persist.
  *   - Cookie name `__Host-` prefixed → strict scope (HTTPS, no subdomains).
  */
-import {
-  findSubmissionRecipientUserId,
-} from "@/lib/booking/submissions";
 import { sha256Hex } from "@/lib/hmac";
 
 import { findUserById, normalizeEmail } from "./users";
@@ -407,89 +399,6 @@ export async function getActiveSession(args: {
   if (row.expires_at < now) return null;
 
   return { userId: row.user_id, sessionId: row.id };
-}
-
-/**
- * Authoritative gate for listen-page + audio + pdf routes. Returns true ONLY
- * when the cookie maps to an active session AND that session's user is the
- * recipient_user_id of the requested submission.
- *
- * Emits an audit row on EVERY denial path so cross-user probes leave a
- * forensic trail. Pass `audit` with the request's ipHash + userAgentHash;
- * if omitted (e.g. internal callers), audit still writes with hash=NULL.
- *
- * Uses the narrow `findSubmissionRecipientUserId` (vs the full
- * `findSubmissionById`) — keeps the hot path off the SELECT * + JSON.parse
- * cost on every audio Range request.
- */
-export async function requireListenSession(args: {
-  cookieValue: string;
-  submissionId: string;
-  ipHash?: string | null;
-  userAgentHash?: string | null;
-  now?: number;
-}): Promise<boolean> {
-  const session = await getActiveSession({ cookieValue: args.cookieValue, now: args.now });
-  if (!session) {
-    await writeAudit({
-      userId: null,
-      submissionId: args.submissionId,
-      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
-      ipHash: args.ipHash,
-      userAgentHash: args.userAgentHash,
-      success: false,
-      now: args.now,
-    });
-    return false;
-  }
-  const submission = await findSubmissionRecipientUserId(args.submissionId);
-  if (!submission?.recipientUserId) {
-    await writeAudit({
-      userId: session.userId,
-      submissionId: args.submissionId,
-      eventType: AUDIT_EVENT_TYPE.listen_session_invalid,
-      ipHash: args.ipHash,
-      userAgentHash: args.userAgentHash,
-      success: false,
-      now: args.now,
-    });
-    return false;
-  }
-  if (session.userId !== submission.recipientUserId) {
-    await writeAudit({
-      userId: session.userId,
-      submissionId: args.submissionId,
-      eventType: AUDIT_EVENT_TYPE.listen_cross_user_denied,
-      ipHash: args.ipHash,
-      userAgentHash: args.userAgentHash,
-      success: false,
-      now: args.now,
-    });
-    return false;
-  }
-  return true;
-}
-
-export async function revokeSession(args: {
-  sessionId: string;
-  userId?: string | null;
-  ipHash?: string | null;
-  userAgentHash?: string | null;
-  now?: number;
-}): Promise<void> {
-  const now = args.now ?? Date.now();
-  await dbExec(
-    `UPDATE listen_session SET revoked_at = ? WHERE id = ?`,
-    [now, args.sessionId],
-  );
-  await writeAudit({
-    userId: args.userId ?? null,
-    eventType: AUDIT_EVENT_TYPE.listen_session_revoked,
-    ipHash: args.ipHash,
-    userAgentHash: args.userAgentHash,
-    success: true,
-    now,
-  });
 }
 
 /**

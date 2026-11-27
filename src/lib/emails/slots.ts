@@ -25,14 +25,6 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
 
 const SLOT_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
 
-export function extractSlots(value: string): string[] {
-  const found: string[] = [];
-  for (const match of value.matchAll(SLOT_PATTERN)) {
-    found.push(match[1]);
-  }
-  return found;
-}
-
 export function collectUnknownSlots(value: unknown, allowed: readonly string[]): string[] {
   const unknown = new Set<string>();
   const walk = (input: unknown) => {

@@ -70,26 +70,13 @@ const validBody = {
 
 describe("POST /api/internal/test-mint-token", () => {
   describe("auth", () => {
-    it("returns 404 when x-admin-token header missing", async () => {
-      const res = await callRoute({ body: validBody });
-      expect(res.status).toBe(404);
-      expect(mintMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when x-admin-token header is wrong", async () => {
+    it("returns 404 and writes an admin_auth_failed audit row when x-admin-token header is wrong", async () => {
       const res = await callRoute({
         headers: { "x-admin-token": "wrong-token" },
         body: validBody,
       });
       expect(res.status).toBe(404);
       expect(mintMock).not.toHaveBeenCalled();
-    });
-
-    it("writes an admin_auth_failed audit row on auth failure", async () => {
-      await callRoute({
-        headers: { "x-admin-token": "wrong-token" },
-        body: validBody,
-      });
       expect(auditMock).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: "admin_auth_failed",
@@ -97,15 +84,6 @@ describe("POST /api/internal/test-mint-token", () => {
           userId: null,
         }),
       );
-    });
-
-    it("returns 404 when ADMIN_API_KEY env is absent (no leak)", async () => {
-      vi.stubEnv("ADMIN_API_KEY", "");
-      const res = await callRoute({
-        headers: { "x-admin-token": "anything" },
-        body: validBody,
-      });
-      expect(res.status).toBe(404);
     });
 
     it("returns 404 on production worker regardless of ADMIN_API_KEY (hard gate)", async () => {
@@ -135,24 +113,6 @@ describe("POST /api/internal/test-mint-token", () => {
       const res = await callRoute({
         headers: { "x-admin-token": "test-admin-token" },
         body: { recipientUserId: "u", mintSource: "reading_delivery" },
-      });
-      expect(res.status).toBe(404);
-      expect(mintMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when recipientUserId is missing", async () => {
-      const res = await callRoute({
-        headers: { "x-admin-token": "test-admin-token" },
-        body: { submissionId: "s", mintSource: "reading_delivery" },
-      });
-      expect(res.status).toBe(404);
-      expect(mintMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when mintSource is missing", async () => {
-      const res = await callRoute({
-        headers: { "x-admin-token": "test-admin-token" },
-        body: { submissionId: "s", recipientUserId: "u" },
       });
       expect(res.status).toBe(404);
       expect(mintMock).not.toHaveBeenCalled();

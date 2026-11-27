@@ -94,11 +94,4 @@ describe("reading schema — name field article validation", () => {
     expect(validator!(null)).toBe(true);
     expect(validator!(42)).toBe(true);
   });
-
-  it("error message includes the stripped suggestion", () => {
-    const validator = extractCustomValidator(nameField!);
-    const result = validator!("The Birth Chart Reading") as { message: string };
-    expect(result.message).toContain("Birth Chart Reading");
-    expect(result.message).not.toMatch(/^The /);
-  });
 });

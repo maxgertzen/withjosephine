@@ -78,17 +78,6 @@ export function bytesToHex(buffer: ArrayBuffer | Uint8Array): string {
   return hex;
 }
 
-export function hexToBytes(hex: string, expectedByteLength?: number): Uint8Array<ArrayBuffer> | null {
-  if (expectedByteLength !== undefined && hex.length !== expectedByteLength * 2) return null;
-  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 2 !== 0) return null;
-  const buffer = new ArrayBuffer(hex.length / 2);
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.length; i += 1) {
-    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
 /**
  * SHA-256 hex digest. Shared util — used for daily-rotating IP/UA hashes in
  * listen-session auth and for stable email-hash audit identifiers in the

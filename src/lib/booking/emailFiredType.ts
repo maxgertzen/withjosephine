@@ -1,6 +1,6 @@
 import { CUSTOMER_EMAIL_TYPES, type CustomerEmailType, type EmailFiredType } from "../page-previews/types";
 
-export const LEGACY_EMAIL_FIRED_TYPES: ReadonlyMap<string, EmailFiredType> = new Map([
+const LEGACY_EMAIL_FIRED_TYPES: ReadonlyMap<string, EmailFiredType> = new Map([
   ["day7", "reading_delivery"],
   ["day7-overdue-alert", "reading_overdue_alert"],
 ]);

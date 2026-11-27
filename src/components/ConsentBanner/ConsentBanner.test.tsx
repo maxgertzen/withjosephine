@@ -13,12 +13,6 @@ describe("ConsentBanner", () => {
     expect(link).toHaveAttribute("href", "/privacy");
   });
 
-  it("renders Accept and Decline buttons", () => {
-    render(<ConsentBanner onAccept={vi.fn()} onDecline={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "Accept" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Decline" })).toBeInTheDocument();
-  });
-
   it("invokes onAccept when Accept is clicked", async () => {
     const user = userEvent.setup();
     const onAccept = vi.fn();

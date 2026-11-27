@@ -12,8 +12,6 @@ import {
   MAGIC_LINK_TTL_MS,
   MISMATCH_LIMIT,
   redeemMagicLink,
-  requireListenSession,
-  revokeSession,
   SESSION_TTL_MS,
 } from "./listenSession";
 import { getOrCreateUser } from "./users";
@@ -23,19 +21,6 @@ const SECRET = "test-secret-32-bytes-of-hex-here";
 async function seedUser(email = "alice@example.com"): Promise<string> {
   const { userId } = await getOrCreateUser({ email });
   return userId;
-}
-
-async function seedSubmissionForUser(
-  submissionId: string,
-  userId: string,
-  email = "alice@example.com",
-): Promise<void> {
-  await dbExec(
-    `INSERT INTO submissions
-       (id, email, status, reading_slug, responses_json, created_at, recipient_user_id)
-     VALUES (?, ?, 'paid', 'soul-blueprint', '[]', ?, ?)`,
-    [submissionId, email, new Date().toISOString(), userId],
-  );
 }
 
 describe("listenSession", () => {
@@ -367,205 +352,6 @@ describe("listenSession", () => {
     });
   });
 
-  describe("requireListenSession", () => {
-    it("returns true for a session whose user matches the submission's recipient_user_id", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_1",
-      });
-      expect(ok).toBe(true);
-    });
-
-    it("returns false for cross-user denial — Bob's session can't read Alice's submission", async () => {
-      const aliceId = await seedUser("alice@example.com");
-      const bobId = await seedUser("bob@example.com");
-      await seedSubmissionForUser("sub_alice", aliceId, "alice@example.com");
-      await seedSubmissionForUser("sub_bob", bobId, "bob@example.com");
-      const { token } = await issueMagicLink({ userId: bobId });
-      const result = await redeemMagicLink({ token, claimedEmail: "bob@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_alice",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false when cookie is empty", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      const ok = await requireListenSession({ cookieValue: "", submissionId: "sub_1" });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false when cookie does not map to any session", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      const ok = await requireListenSession({
-        cookieValue: "f".repeat(64),
-        submissionId: "sub_1",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false for an expired session", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      const past = Date.now() - 2 * SESSION_TTL_MS;
-      const { token } = await issueMagicLink({ userId, now: past });
-      const result = await redeemMagicLink({
-        token,
-        claimedEmail: "alice@example.com",
-        now: past,
-      });
-      if (!result.ok) throw new Error("typeguard");
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_1",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false after the session is explicitly revoked", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      await revokeSession({ sessionId: result.sessionId });
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_1",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false when the submission has no recipient_user_id (legacy/pre-paid)", async () => {
-      const userId = await seedUser();
-      await dbExec(
-        `INSERT INTO submissions
-           (id, email, status, reading_slug, responses_json, created_at, recipient_user_id)
-         VALUES (?, ?, 'pending', 'soul-blueprint', '[]', ?, NULL)`,
-        ["sub_orphan", "alice@example.com", new Date().toISOString()],
-      );
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_orphan",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("returns false when the submission does not exist", async () => {
-      const userId = await seedUser();
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      const ok = await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_does_not_exist",
-      });
-      expect(ok).toBe(false);
-    });
-
-    it("emits listen_cross_user_denied audit row on cross-user probe", async () => {
-      const aliceId = await seedUser("alice@example.com");
-      const bobId = await seedUser("bob@example.com");
-      await seedSubmissionForUser("sub_alice", aliceId, "alice@example.com");
-      await seedSubmissionForUser("sub_bob", bobId, "bob@example.com");
-      const { token } = await issueMagicLink({ userId: bobId });
-      const result = await redeemMagicLink({ token, claimedEmail: "bob@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_alice",
-        ipHash: "ip_hash_test",
-        userAgentHash: "ua_hash_test",
-      });
-      const audit = await dbQuery<{
-        event_type: string;
-        user_id: string | null;
-        submission_id: string | null;
-        ip_hash: string | null;
-        user_agent_hash: string | null;
-      }>(
-        `SELECT event_type, user_id, submission_id, ip_hash, user_agent_hash
-           FROM listen_audit WHERE event_type = 'listen_cross_user_denied'`,
-      );
-      expect(audit).toHaveLength(1);
-      expect(audit[0]).toEqual({
-        event_type: "listen_cross_user_denied",
-        user_id: bobId,
-        submission_id: "sub_alice",
-        ip_hash: "ip_hash_test",
-        user_agent_hash: "ua_hash_test",
-      });
-    });
-
-    it("emits listen_session_invalid audit row when cookie is empty/expired/missing", async () => {
-      const userId = await seedUser();
-      await seedSubmissionForUser("sub_1", userId);
-      await requireListenSession({
-        cookieValue: "f".repeat(64),
-        submissionId: "sub_1",
-        ipHash: "ip_hash_test",
-      });
-      const audit = await dbQuery<{ event_type: string; submission_id: string | null }>(
-        `SELECT event_type, submission_id FROM listen_audit WHERE event_type = 'listen_session_invalid'`,
-      );
-      expect(audit).toHaveLength(1);
-      expect(audit[0]).toEqual({
-        event_type: "listen_session_invalid",
-        submission_id: "sub_1",
-      });
-    });
-
-    it("emits listen_session_invalid for orphan/missing submission (no recipient_user_id)", async () => {
-      const userId = await seedUser();
-      await dbExec(
-        `INSERT INTO submissions
-           (id, email, status, reading_slug, responses_json, created_at, recipient_user_id)
-         VALUES (?, ?, 'pending', 'soul-blueprint', '[]', ?, NULL)`,
-        ["sub_orphan", "alice@example.com", new Date().toISOString()],
-      );
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      await requireListenSession({
-        cookieValue: result.cookieValue,
-        submissionId: "sub_orphan",
-      });
-      const audit = await dbQuery<{ event_type: string; user_id: string | null }>(
-        `SELECT event_type, user_id FROM listen_audit
-           WHERE event_type = 'listen_session_invalid' AND submission_id = 'sub_orphan'`,
-      );
-      expect(audit).toHaveLength(1);
-      expect(audit[0]?.user_id).toBe(userId);
-    });
-  });
-
-  describe("revokeSession", () => {
-    it("writes a listen_session_revoked audit row", async () => {
-      const userId = await seedUser();
-      const { token } = await issueMagicLink({ userId });
-      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
-      if (!result.ok) throw new Error("typeguard");
-      await revokeSession({ sessionId: result.sessionId, userId, ipHash: "ip_hash_test" });
-      const audit = await dbQuery<{ event_type: string; user_id: string | null }>(
-        `SELECT event_type, user_id FROM listen_audit WHERE event_type = 'listen_session_revoked'`,
-      );
-      expect(audit).toHaveLength(1);
-      expect(audit[0]?.user_id).toBe(userId);
-    });
-  });
-
   describe("getActiveSession", () => {
     it("returns userId + sessionId for a live cookie", async () => {
       const userId = await seedUser();
@@ -586,6 +372,19 @@ describe("listenSession", () => {
         now: past,
       });
       if (!result.ok) throw new Error("typeguard");
+      const session = await getActiveSession({ cookieValue: result.cookieValue });
+      expect(session).toBeNull();
+    });
+
+    it("returns null for a revoked session", async () => {
+      const userId = await seedUser();
+      const { token } = await issueMagicLink({ userId });
+      const result = await redeemMagicLink({ token, claimedEmail: "alice@example.com" });
+      if (!result.ok) throw new Error("typeguard");
+      await dbExec(`UPDATE listen_session SET revoked_at = ? WHERE id = ?`, [
+        Date.now(),
+        result.sessionId,
+      ]);
       const session = await getActiveSession({ cookieValue: result.cookieValue });
       expect(session).toBeNull();
     });

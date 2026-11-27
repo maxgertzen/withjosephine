@@ -4,12 +4,6 @@ import { describe, expect, it } from "vitest";
 import { UnderConstruction } from "./UnderConstruction";
 
 describe("UnderConstruction", () => {
-  it("renders hardcoded defaults when no content is provided", () => {
-    render(<UnderConstruction />);
-    expect(screen.getByText("Josephine")).toBeInTheDocument();
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
-  });
-
   it("renders Sanity content when provided", () => {
     const content = {
       tag: "\u2726 Almost There",

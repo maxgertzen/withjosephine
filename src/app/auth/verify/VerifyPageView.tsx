@@ -30,8 +30,8 @@ export function VerifyPageView({ copy, state }: VerifyPageViewProps) {
         ) : (
           <ConfirmEmailCard copy={copy} token={state.token} next={state.next} />
         )}
-        <Footer />
       </main>
+      <Footer />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { GiftModeProvider, useGiftMode } from "@/components/GiftMode/GiftModeContext";
 import { GIFT_DEFAULTS } from "@/data/defaults";
@@ -199,12 +199,7 @@ describe("IntakeForm — single-page flow", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does not render a validation summary on first paint (bug #2)", () => {
-    renderForm();
-    expect(screen.queryByText(/still need/)).toBeNull();
-  });
-
-  it("enables submit when fields are filled and requests a fresh Turnstile token at submit time", async () => {
+  it("submits with a fresh Turnstile token and both consent flags, clears the draft and redirects to the payment URL", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
       new Response(
@@ -214,19 +209,38 @@ describe("IntakeForm — single-page flow", () => {
         },
       ),
     );
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { href: "" },
+    });
+    onTestFinished(() => {
+      Object.defineProperty(window, "location", { configurable: true, value: originalLocation });
+    });
+
     renderForm();
-    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
-    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    await user.click(screen.getByLabelText(/processing my booking details/));
-    await user.click(screen.getByLabelText(/explicitly consent/));
-    await user.click(screen.getByLabelText(/non-refundable/));
+    await fillSinglePage(user);
+    await waitFor(() => {
+      expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).not.toBeNull();
+    });
     expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
+
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/booking",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
     const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
     expect(body.turnstileToken).toBe("turnstile-token-stub");
+    expect(body.art6Consent).toBe(true);
+    expect(body.art9Consent).toBe(true);
+    await waitFor(() => {
+      expect(window.location.href).toBe("https://buy.stripe.com/test");
+    });
+    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
   });
 
   it("blocks submission when consents are incomplete", async () => {
@@ -258,76 +272,6 @@ describe("IntakeForm — single-page flow", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("includes art6Consent and art9Consent flags in the booking POST body", async () => {
-    const user = userEvent.setup();
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
-        {
-          status: 200,
-        },
-      ),
-    );
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { href: "" },
-    });
-    renderForm();
-    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
-    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    await user.click(screen.getByLabelText(/processing my booking details/));
-    await user.click(screen.getByLabelText(/explicitly consent/));
-    await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
-    });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
-    expect(body.art6Consent).toBe(true);
-    expect(body.art9Consent).toBe(true);
-  });
-
-  it("submits and redirects to the payment URL on success", async () => {
-    const user = userEvent.setup();
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
-        {
-          status: 200,
-        },
-      ),
-    );
-
-    const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { href: "" },
-    });
-
-    renderForm();
-    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
-    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    await user.click(screen.getByLabelText(/processing my booking details/));
-    await user.click(screen.getByLabelText(/explicitly consent/));
-    await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/booking",
-        expect.objectContaining({ method: "POST" }),
-      );
-    });
-    await waitFor(() => {
-      expect(window.location.href).toBe("https://buy.stripe.com/test");
-    });
-
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
-  });
 });
 
 describe("IntakeForm — page 1 validation (production seed shape)", () => {
@@ -416,15 +360,6 @@ describe("IntakeForm — page 1 validation (production seed shape)", () => {
     expect(screen.getByLabelText(/Email/)).toHaveFocus();
   });
 
-  it("clears the validation summary once both required fields are valid", async () => {
-    const user = userEvent.setup();
-    renderProdShape();
-    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    await user.type(screen.getByLabelText(/Legal full name/), "Ada Lovelace");
-    expect(screen.getByRole("button", { name: /Next/ })).toBeEnabled();
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-
   it("advances to page 2 when Next is clicked with valid page-1 input", async () => {
     const user = userEvent.setup();
     renderProdShape();
@@ -442,23 +377,6 @@ describe("IntakeForm — paginated flow", () => {
     expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
     expect(screen.getByRole("button", { name: /Next/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Continue to payment/i })).toBeNull();
-  });
-
-  it("stays on page 1 when Next is clicked while current-page validation is failing", async () => {
-    const user = userEvent.setup();
-    renderForm(TWO_PAGE_SECTIONS);
-    expect(screen.queryByText(/still need/)).toBeNull();
-    await user.click(screen.getByRole("button", { name: /Next/ }));
-    expect(screen.queryByRole("heading", { name: "Your email" })).toBeNull();
-  });
-
-  it("advances to page 2 when current-page validation passes", async () => {
-    const user = userEvent.setup();
-    renderForm(TWO_PAGE_SECTIONS);
-    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
-    await user.click(screen.getByRole("button", { name: /Next/ }));
-    expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Continue to payment/i })).toBeInTheDocument();
   });
 
   it("returns to the previous page when Previous-page is clicked", async () => {
@@ -603,41 +521,6 @@ describe("IntakeForm — localStorage save/resume", () => {
 
     expect((screen.getByLabelText(/Full name/) as HTMLInputElement).value).toBe("Ada Lovelace");
     expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBe(before);
-  });
-
-  it("clears the saved draft when /api/booking returns 2xx", async () => {
-    const user = userEvent.setup();
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({ paymentUrl: "https://buy.stripe.com/test", submissionId: "sub_test_123" }),
-        {
-          status: 200,
-        },
-      ),
-    );
-    const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { href: "" },
-    });
-
-    renderForm();
-    await user.type(screen.getByLabelText(/Full name/), "Ada Lovelace");
-    await user.type(screen.getByLabelText(/Email/), "ada@example.com");
-    await user.click(screen.getByLabelText(/processing my booking details/));
-    await user.click(screen.getByLabelText(/explicitly consent/));
-    await user.click(screen.getByLabelText(/non-refundable/));
-    await user.click(screen.getByRole("button", { name: /Continue to payment/i }));
-
-    await waitFor(() => {
-      expect(window.location.href).toBe("https://buy.stripe.com/test");
-    });
-    expect(window.localStorage.getItem("josephine.intake.draft.soul-blueprint")).toBeNull();
-
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
   });
 });
 

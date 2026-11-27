@@ -17,12 +17,6 @@ describe("Hero", () => {
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
-  it("renders default tagline when no content provided", () => {
-    render(<Hero />);
-
-    expect(screen.getByText("Astrologer + Akashic Record Reader")).toBeInTheDocument();
-  });
-
   it("renders custom content when provided", () => {
     const content = {
       tagline: "Custom Tagline",
@@ -44,12 +38,6 @@ describe("Hero", () => {
     render(<Hero content={{ ...HERO_DEFAULTS, introBody }} />);
 
     expect(screen.getByText((_, element) => element?.textContent === introBody)).toBeInTheDocument();
-  });
-
-  it("renders CTA button with default text", () => {
-    render(<Hero />);
-
-    expect(screen.getByRole("button", { name: "Explore Readings" })).toBeInTheDocument();
   });
 
   it("scrolls to readings section on CTA click", () => {

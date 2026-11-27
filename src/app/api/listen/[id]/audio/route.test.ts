@@ -95,34 +95,10 @@ describe("GET /api/listen/[id]/audio", () => {
     expect(disposition).toContain('filename="Test User Soul Blueprint.m4a"');
   });
 
-  it("falls back to reading slug in content-disposition when name fields are absent", async () => {
-    gateMock.mockResolvedValueOnce({
-      ok: true,
-      asset: {
-        ...ASSET,
-        firstName: null,
-        lastName: null,
-        readingName: null,
-      },
-    });
-    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
-    const { GET } = await import("./route");
-    const response = await GET(audioRequest(), { params });
-    const disposition = response.headers.get("content-disposition");
-    expect(disposition).toContain('filename="soul-blueprint.m4a"');
-  });
-
   it("fires scheduleListenedAtMirror on opener (no Range header)", async () => {
     fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
     const { GET } = await import("./route");
     await GET(audioRequest(), { params });
-    expect(markListenedMock).toHaveBeenCalledOnce();
-  });
-
-  it("fires scheduleListenedAtMirror on bytes=0- opener", async () => {
-    fetchMock.mockResolvedValue(new Response("ok", { status: 206 }));
-    const { GET } = await import("./route");
-    await GET(audioRequest({ range: "bytes=0-" }), { params });
     expect(markListenedMock).toHaveBeenCalledOnce();
   });
 

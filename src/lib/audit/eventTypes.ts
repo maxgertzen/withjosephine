@@ -8,7 +8,6 @@ export const AUDIT_EVENT_TYPE = {
   link_mismatch_poisoned: "link_mismatch_poisoned",
   listen_session_started: "listen_session_started",
   listen_session_invalid: "listen_session_invalid",
-  listen_session_revoked: "listen_session_revoked",
   listen_token_id_mismatch: "listen_token_id_mismatch",
   listen_token_redeemed: "listen_token_redeemed",
   listen_cross_user_denied: "listen_cross_user_denied",

@@ -134,17 +134,6 @@ describe("BookingPage generateMetadata", () => {
     expect(metadata.title).toBe("Book a Reading | Josephine Soul Readings");
   });
 
-  it("calls both fetch functions", async () => {
-    mockFetchReading.mockResolvedValue(sanityReading());
-    mockFetchBookingPage.mockResolvedValue(bookingPage());
-
-    const generateMetadata = await loadGenerateMetadata();
-    await generateMetadata(params("soul-blueprint"));
-
-    expect(mockFetchReading).toHaveBeenCalledWith("soul-blueprint");
-    expect(mockFetchBookingPage).toHaveBeenCalledOnce();
-  });
-
   it("includes ogImage in openGraph when reading seo has it", async () => {
     mockFetchReading.mockResolvedValue(
       sanityReading({

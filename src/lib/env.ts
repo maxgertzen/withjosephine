@@ -69,15 +69,3 @@ export function siteOrigin(): string {
   if (isStagingEnvironment()) return STAGING_ORIGIN;
   return PRODUCTION_ORIGIN;
 }
-
-// Durable Objects receive env as a runtime binding, not via process.env.
-export type WorkerOriginEnv = {
-  NEXT_PUBLIC_SITE_ORIGIN?: string;
-  ENVIRONMENT?: string;
-};
-
-export function siteOriginFromEnv(env: WorkerOriginEnv): string {
-  if (env.NEXT_PUBLIC_SITE_ORIGIN) return env.NEXT_PUBLIC_SITE_ORIGIN;
-  if (env.ENVIRONMENT === "staging") return STAGING_ORIGIN;
-  return PRODUCTION_ORIGIN;
-}

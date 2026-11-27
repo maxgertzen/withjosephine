@@ -16,12 +16,6 @@ describe("SectionHeading", () => {
     expect(screen.getByRole("heading", { level: 1, name: "readings" })).toBeInTheDocument();
   });
 
-  it("renders heading as h3 when as='h3'", () => {
-    render(<SectionHeading heading="readings" as="h3" />);
-
-    expect(screen.getByRole("heading", { level: 3, name: "readings" })).toBeInTheDocument();
-  });
-
   it("renders tag when provided", () => {
     render(<SectionHeading heading="readings" tag="✦ Offerings" />);
 

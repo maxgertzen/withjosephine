@@ -1,12 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { AnimatedCollapse } from "@/components/AnimatedCollapse";
 import { JsonLd } from "@/components/JsonLd/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
-import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import type { MappedFaqItem } from "@/lib/sanity/mappers";
 import { goldLinkClasses } from "@/lib/textStyles";
 
@@ -24,7 +23,6 @@ export function FaqSection({
   nonce,
 }: FaqSectionProps) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const reduceMotion = useReducedMotion();
 
   if (items.length === 0) return null;
 
@@ -81,38 +79,28 @@ export function FaqSection({
                 </span>
               </button>
 
-              <AnimatePresence initial={false}>
-                {isOpen && (
-                  <motion.div
-                    key="content"
-                    id={`faq-answer-${item.id}`}
-                    role="region"
-                    aria-labelledby={`faq-question-${item.id}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.25, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <p className="px-6 pb-5 font-body text-sm text-j-text-muted leading-relaxed">
-                      {item.answer}
-                    </p>
-                    {item.noteLink ? (
-                      <p className="-mt-2 px-6 pb-5">
-                        <Link
-                          href={item.noteLink.href}
-                          data-mp-event="article_note_click"
-                          data-mp-position="faq"
-                          data-mp-target={item.noteLink.slug}
-                          className={`font-body text-[0.9375rem] font-medium ${goldLinkClasses}`}
-                        >
-                          {item.noteLink.label}&nbsp;&#8250;
-                        </Link>
-                      </p>
-                    ) : null}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <AnimatedCollapse
+                id={`faq-answer-${item.id}`}
+                open={isOpen}
+                labelledBy={`faq-question-${item.id}`}
+              >
+                <p className="px-6 pb-5 font-body text-sm text-j-text-muted leading-relaxed">
+                  {item.answer}
+                </p>
+                {item.noteLink ? (
+                  <p className="-mt-2 px-6 pb-5">
+                    <Link
+                      href={item.noteLink.href}
+                      data-mp-event="article_note_click"
+                      data-mp-position="faq"
+                      data-mp-target={item.noteLink.slug}
+                      className={`font-body text-[0.9375rem] font-medium ${goldLinkClasses}`}
+                    >
+                      {item.noteLink.label}&nbsp;&#8250;
+                    </Link>
+                  </p>
+                ) : null}
+              </AnimatedCollapse>
             </div>
           );
         })}

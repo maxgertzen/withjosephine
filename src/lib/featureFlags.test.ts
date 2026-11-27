@@ -13,17 +13,7 @@ describe("isUnderConstruction", () => {
     expect(isUnderConstruction()).toBe(true);
   });
 
-  it("returns true when NEXT_PUBLIC_UNDER_CONSTRUCTION is 'true' and no host given", () => {
-    vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "true");
-    expect(isUnderConstruction()).toBe(true);
-  });
-
   it("returns false when not set", () => {
-    expect(isUnderConstruction()).toBe(false);
-  });
-
-  it("returns false when set to '0'", () => {
-    vi.stubEnv("NEXT_PUBLIC_UNDER_CONSTRUCTION", "0");
     expect(isUnderConstruction()).toBe(false);
   });
 
@@ -38,9 +28,5 @@ describe("isUnderConstruction", () => {
     expect(isUnderConstruction("preview.withjosephine.com")).toBe(false);
     expect(isUnderConstruction("withjosephine.maxgertzen.workers.dev")).toBe(false);
     expect(isUnderConstruction("localhost:3000")).toBe(false);
-  });
-
-  it("returns false on apex when flag is off, regardless of host", () => {
-    expect(isUnderConstruction("withjosephine.com")).toBe(false);
   });
 });

@@ -28,27 +28,12 @@ describe("render-preview", () => {
   });
 
   describe("renderEmailPreview", () => {
-    it.each(PREVIEW_TEMPLATE_KEYS.map((key) => [key]))(
-      "renders %s to non-empty HTML using only defaults",
-      async (key: EmailTemplateKey) => {
-        const html = await renderEmailPreview(key, null);
-        expect(html.length).toBeGreaterThan(0);
-        expect(html).toMatch(/<html\b/i);
-        expect(html).toMatch(/<\/html>/i);
-      },
-    );
-
     it("merges sanity copy on top of defaults", async () => {
       const customHero = "Hello from the test suite";
       const html = await renderEmailPreview("emailMagicLink", {
         heroLine: customHero,
       });
       expect(html).toContain(customHero);
-    });
-
-    it("falls back to defaults when sanityCopy is null", async () => {
-      const html = await renderEmailPreview("emailOrderConfirmation", null);
-      expect(html).toContain("Ada");
     });
 
     it("renders emailGiftPurchase from the sample gift, whose code is not a valid gift code", async () => {

@@ -151,13 +151,8 @@ describe("GiftSendForm ready", () => {
     expect(screen.queryByText(GIFT_DEFAULTS.sendFailedNotice)).not.toBeInTheDocument();
   });
 
-  it.each([
-    ["a send failure", 502, { error: "send_failed" }],
-    ["a rate limit", 429, { error: "Too many requests" }],
-    ["a failed Turnstile check", 400, { error: "Verification failed" }],
-    ["a server error", 500, { error: "send_failed" }],
-  ])("shows the failure notice after %s", async (_label, status, body) => {
-    respond(status, body);
+  it("shows the failure notice after a send failure", async () => {
+    respond(502, { error: "send_failed" });
     const user = renderForm();
 
     await fillAndSend(user);

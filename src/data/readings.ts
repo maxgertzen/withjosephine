@@ -8,9 +8,6 @@ export type Reading = {
   briefDescription: string;
   includes: string[];
   howItWorks: string[];
-  requiresBirthChart: boolean;
-  requiresAkashic: boolean;
-  requiresQuestions: boolean;
   stripePaymentLink: string;
 };
 
@@ -48,9 +45,6 @@ export const READINGS: Reading[] = [
       "You fill in the form below with your birth details, your full name, a recent photo and the three questions you most want answered, then pay.",
       ...HOW_IT_WORKS_AFTER_FORM,
     ],
-    requiresBirthChart: true,
-    requiresAkashic: true,
-    requiresQuestions: true,
     stripePaymentLink: "",
   },
   {
@@ -73,9 +67,6 @@ export const READINGS: Reading[] = [
       "You fill in the form below with your date, time and place of birth, then pay.",
       ...HOW_IT_WORKS_AFTER_FORM,
     ],
-    requiresBirthChart: true,
-    requiresAkashic: false,
-    requiresQuestions: false,
     stripePaymentLink: "",
   },
   {
@@ -98,9 +89,6 @@ export const READINGS: Reading[] = [
       "You fill in the form below with your full name, a recent photo and the three questions you most want answered, then pay.",
       ...HOW_IT_WORKS_AFTER_FORM,
     ],
-    requiresBirthChart: false,
-    requiresAkashic: true,
-    requiresQuestions: true,
     stripePaymentLink: "",
   },
 ];
@@ -131,27 +119,4 @@ export const TESTIMONIALS: Testimonial[] = [
 
 export function getReadingById(id: string): Reading | undefined {
   return READINGS.find((reading) => reading.id === id);
-}
-
-export function getRequiredDetails(
-  reading: Pick<Reading, "requiresBirthChart" | "requiresAkashic" | "requiresQuestions">,
-): string[] {
-  const details = new Set<string>();
-
-  if (reading.requiresBirthChart) {
-    details.add("Date of birth");
-    details.add("Time of birth (as exact as possible)");
-    details.add("Place of birth");
-  }
-
-  if (reading.requiresAkashic) {
-    details.add("Full legal name");
-    details.add("A recent photo with your eyes open");
-  }
-
-  if (reading.requiresQuestions) {
-    details.add("Your three chosen questions");
-  }
-
-  return [...details];
 }

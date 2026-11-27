@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  R2_MULTIPART_MIN_PART_SIZE,
-  streamToR2Multipart,
-} from "./r2Multipart";
+import { streamToR2Multipart } from "./r2Multipart";
 import type { R2Bucket } from "./types";
 
 interface MockMultipartUpload {
@@ -168,9 +165,5 @@ describe("streamToR2Multipart", () => {
         partSize: TEST_PART_SIZE,
       }),
     ).rejects.toBe(uploadFailure);
-  });
-
-  it("uses the 5 MiB default part size when not specified", () => {
-    expect(R2_MULTIPART_MIN_PART_SIZE).toBe(5 * 1024 * 1024);
   });
 });

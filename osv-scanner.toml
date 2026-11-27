@@ -11,16 +11,6 @@ ignoreUntil = 2027-01-01
 reason = "Dev-only transitive dep (Storybook dev server via @storybook/builder-webpack5). Fix needs webpack-dev-middleware 7."
 
 [[IgnoredVulns]]
-id = "GHSA-vfj7-8cjw-p6xm"
-ignoreUntil = 2026-11-15
-reason = "braces 3.0.3 comes only from build and CLI tooling (@sanity/codegen, Storybook, eslint-config-next globbing), never from site code. No fixed version yet."
-
-[[IgnoredVulns]]
-id = "GHSA-gcqx-w48m-w2h4"
-ignoreUntil = 2026-12-15
-reason = "deepmerge 4.3.1 comes only through html-to-text inside @react-email/render, which merges its own fixed options with ours; no visitor data reaches the merge. No fixed version yet."
-
-[[IgnoredVulns]]
 id = "GHSA-g3hv-75wg-m249"
 ignoreUntil = 2026-12-15
 reason = "minimatch reaches production dependencies only through @sanity/cli (@oclif/core), which globs our own patterns, never visitor input; other paths are dev tooling. Fix needs minimatch 11, a major bump upstream."
@@ -29,3 +19,8 @@ reason = "minimatch reaches production dependencies only through @sanity/cli (@o
 id = "GHSA-3g3m-2fjr-6pw4"
 ignoreUntil = 2026-12-15
 reason = "glob is a dev-only transitive dep (build and test tooling); no production dependency path. Fix needs glob 14, a major bump upstream."
+
+[[IgnoredVulns]]
+id = "GHSA-6jcc-5g8w-32mx"
+ignoreUntil = 2027-01-15
+reason = "i18next comes only through sanity (Studio interface translations), which merges Sanity's own bundled locale resources; no visitor data reaches deepExtend. Fix needs sanity 6, a major bump."

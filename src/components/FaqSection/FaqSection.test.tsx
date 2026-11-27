@@ -37,8 +37,9 @@ describe("FaqSection", () => {
   it("answers are hidden by default", () => {
     render(<FaqSection items={FAQ_ITEMS} />);
 
-    const regions = screen.queryAllByRole("region");
-    expect(regions).toHaveLength(0);
+    const regions = screen.getAllByRole("region");
+    expect(regions).toHaveLength(FAQ_ITEMS.length);
+    regions.forEach((region) => expect(region).toHaveAttribute("inert"));
   });
 
   it("expands answer when question is clicked", async () => {
@@ -47,7 +48,9 @@ describe("FaqSection", () => {
 
     await user.click(screen.getByText("How long does a reading take?"));
 
-    expect(screen.getByRole("region")).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "How long does a reading take?" }),
+    ).not.toHaveAttribute("inert");
     expect(
       screen.getByText("You'll receive your reading within 7 business days."),
     ).toBeInTheDocument();

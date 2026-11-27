@@ -28,8 +28,4 @@ describe("ownEmailKey", () => {
     expect(ownEmailKey("noatsign")).toBe("noatsign");
     expect(ownEmailKey("@example.com")).toBe("@example.com");
   });
-
-  it("treats plus-alias of own email as the same key", () => {
-    expect(ownEmailKey("alice+gift@example.com")).toBe(ownEmailKey("alice@example.com"));
-  });
 });

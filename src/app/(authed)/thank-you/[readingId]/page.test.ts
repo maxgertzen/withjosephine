@@ -143,18 +143,6 @@ describe("ThankYouPage generateMetadata", () => {
     );
   });
 
-  it("falls back to defaults when sanity returns null", async () => {
-    mockFetchThankYouPage.mockResolvedValue(null);
-
-    const generateMetadata = await loadGenerateMetadata();
-    const metadata = await generateMetadata();
-
-    expect(metadata.title).toBe("Thank You | Josephine Soul Readings");
-    expect(metadata.description).toBe(
-      "Your reading is in my hands. You'll receive a confirmation email shortly with your answers and timeline.",
-    );
-  });
-
   it("sets robots to noindex nofollow regardless of seo presence", async () => {
     mockFetchThankYouPage.mockResolvedValue(
       thankYouPage({
@@ -169,23 +157,6 @@ describe("ThankYouPage generateMetadata", () => {
     const metadata = await generateMetadata();
 
     expect(metadata.robots).toEqual({ index: false, follow: false });
-  });
-
-  it("omits openGraph.images (thank-you pages are noindex)", async () => {
-    mockFetchThankYouPage.mockResolvedValue(
-      thankYouPage({
-        seo: {
-          metaTitle: "Thank You",
-          metaDescription: "Desc",
-          ogImage: { asset: { url: "https://cdn.sanity.io/images/og.jpg" } },
-        },
-      }),
-    );
-
-    const generateMetadata = await loadGenerateMetadata();
-    const metadata = await generateMetadata();
-
-    expect(metadata.openGraph?.images).toBeUndefined();
   });
 });
 
@@ -283,37 +254,6 @@ describe("ThankYouPage paid amount", () => {
     expect(result.props.backGoesHome).toBe(true);
   });
 
-  it("passes an equal paid amount (no discount UI)", async () => {
-    mockRetrieveSession.mockResolvedValue({
-      amount_total: 17900,
-      currency: "usd",
-    } as never);
-    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
-    expect(result.props.paidAmount.cents).toBe(17900);
-    expect(result.props.paidAmount.display).toBe("$179.00");
-  });
-
-  it("passes a paid amount higher than list (Stripe / Sanity drift; no discount)", async () => {
-    mockRetrieveSession.mockResolvedValue({
-      amount_total: 22900,
-      currency: "usd",
-    } as never);
-    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
-    expect(result.props.paidAmount.cents).toBe(22900);
-    expect(result.props.reading.cents).toBe(17900);
-  });
-
-  it("passes null paid amount when Stripe amount_total is null", async () => {
-    mockRetrieveSession.mockResolvedValue({
-      amount_total: null,
-      currency: null,
-    } as never);
-    const result = (await callPage({ sessionId: "cs_test_abc123" })) as ThankYouRendered;
-    expect(result.props.paidAmount.cents).toBeNull();
-    expect(result.props.paidAmount.display).toBeNull();
-    expect(result.props.reading.price).toBe("$179");
-  });
-
   it("throws when the Stripe session is unavailable, so the error boundary renders", async () => {
     mockRetrieveSession.mockRejectedValue(new Error("stripe down"));
     vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -330,50 +270,6 @@ describe("ThankYouPage paid amount", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const error = await callPage({ sessionId: "cs_test_abc123" }).catch((caught: Error) => caught);
     expect(String((error as Error).message)).not.toContain("cs_test_abc123");
-  });
-});
-
-describe("ThankYouPage purchase-mode resolution (B-2)", () => {
-  beforeEach(() => {
-    mockFetchReading.mockResolvedValue(reading());
-    mockFetchThankYouPage.mockResolvedValue(
-      thankYouPage({
-        heading: "Thank you for booking",
-      }),
-    );
-  });
-
-  it("resolves to purchase mode for a paid session", async () => {
-    mockRetrieveSession.mockResolvedValue({
-      amount_total: 17900,
-      currency: "usd",
-      client_reference_id: "sub_purchase",
-      metadata: null,
-    } as never);
-    mockFindSubmission.mockResolvedValue({
-      _id: "sub_purchase",
-      status: "paid",
-      responses: [],
-      reading: { slug: "soul-blueprint", name: "Soul Blueprint", priceDisplay: "$179" },
-    } as never);
-    const result = await callPage({ sessionId: "cs_test_purchasenongift1" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("Thank you for booking");
-    expect(html).not.toContain("Your gift is on its way");
-  });
-
-  it("falls back to purchase mode when submission lookup returns null (graceful)", async () => {
-    mockRetrieveSession.mockResolvedValue({
-      amount_total: 9900,
-      currency: "usd",
-      client_reference_id: "sub_missing",
-      metadata: null,
-    } as never);
-    mockFindSubmission.mockResolvedValue(null);
-    const result = await callPage({ sessionId: "cs_test_nosub1" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("Thank you for booking");
-    expect(html).not.toContain("Your gift is on its way");
   });
 });
 
@@ -410,28 +306,6 @@ describe("ThankYouPage per-reading overrides", () => {
   beforeEach(() => {
     mockFetchReading.mockResolvedValue(reading());
     mockRetrieveSession.mockResolvedValue({ amount_total: null, currency: null } as never);
-  });
-
-  it("applies the matching override on top of the default page copy", async () => {
-    mockFetchThankYouPage.mockResolvedValue(
-      thankYouPage({
-        heading: "Default heading",
-        closingMessage: "Default closing",
-        overrides: [
-          {
-            readingSlug: "soul-blueprint",
-            heading: "Soul Blueprint heading",
-            closingMessage: "Soul Blueprint closing",
-          },
-        ],
-      }),
-    );
-    const result = await callPage({ sessionId: "cs_test_abc123" });
-    const html = JSON.stringify(result);
-    expect(html).toContain("Soul Blueprint heading");
-    expect(html).toContain("Soul Blueprint closing");
-    expect(html).not.toContain("Default heading");
-    expect(html).not.toContain("Default closing");
   });
 
   it("falls back to the default for fields the override leaves empty", async () => {

@@ -86,19 +86,6 @@ export function clear(readingId: string): void {
   removeKey(draftKey(readingId));
 }
 
-export function clearAll(): void {
-  const draftKeys = withLocalStorage((storage) => {
-    const keys: string[] = [];
-    for (let i = 0; i < storage.length; i += 1) {
-      const key = storage.key(i);
-      if (key?.startsWith(DRAFT_KEY_PREFIX)) keys.push(key);
-    }
-    return keys;
-  }, []);
-  draftKeys.forEach(removeKey);
-  removeKey(LAST_READING_ID_KEY);
-}
-
 export function getLastReadingId(): string | null {
   return withLocalStorage((storage) => storage.getItem(LAST_READING_ID_KEY), null);
 }
