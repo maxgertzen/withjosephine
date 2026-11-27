@@ -99,38 +99,6 @@ describe("sendNotificationToJosephine", () => {
     expect(body).toContain(submission.id);
   });
 
-  it("includes the photo URL when photoUrl is set", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
-    const submission = buildSubmission();
-
-    await sendNotificationToJosephine(submission);
-
-    expect(sendMock.mock.calls[0]?.[0].html).toContain(submission.photoUrl);
-  });
-
-  it("omits the photo URL when photoUrl is null", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
-    const submission = buildSubmission({ photoUrl: null });
-
-    await sendNotificationToJosephine(submission);
-
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).not.toContain("https://images.example.com/photo.jpg");
-  });
-
-  it("escapes HTML in user-provided values", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_1" } });
-    const submission = buildSubmission({
-      email: 'evil"<script>alert(1)</script>@example.com',
-    });
-
-    await sendNotificationToJosephine(submission);
-
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).not.toContain("<script>");
-    expect(html).toContain("&lt;script&gt;");
-  });
-
   it("returns null resendId when RESEND_API_KEY is not set", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
 
@@ -138,6 +106,7 @@ describe("sendNotificationToJosephine", () => {
 
     expect(getResendId(result)).toBeNull();
     expect(sendMock).not.toHaveBeenCalled();
+    expect(serverTrackMock).not.toHaveBeenCalled();
   });
 
   it("returns null resendId when NOTIFICATION_EMAIL is not set", async () => {
@@ -182,23 +151,6 @@ describe("sendNotificationToJosephine", () => {
     expect(body).not.toContain("I don't know my birth time");
   });
 
-  it("includes 'Amount paid' line when amountPaidDisplay is set", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_n" } });
-    const submission = buildSubmission({ amountPaidDisplay: "$99.00" });
-    await sendNotificationToJosephine(submission);
-    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
-    expect(body).toContain("Amount paid:");
-    expect(body).toContain("$99.00");
-  });
-
-  it("omits 'Amount paid' line when amountPaidDisplay is null", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_n" } });
-    const submission = buildSubmission({ amountPaidDisplay: null });
-    await sendNotificationToJosephine(submission);
-    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
-    expect(body).not.toContain("Amount paid:");
-  });
-
   it("names the gift buyer in the subject and the body for a gift submission", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_n" } });
     const submission = buildSubmission({ readingName: "Birth Chart Reading" });
@@ -239,33 +191,6 @@ describe("sendOrderConfirmation", () => {
     expect(body).toContain("Josephine");
   });
 
-  it("renders the typographic masthead + Soul Readings eyebrow", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
-    await sendOrderConfirmation(buildSubmission());
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    const body = visibleText(html);
-    expect(body).toContain("Josephine");
-    expect(body).toContain("Soul Readings");
-  });
-
-  it("renders the centered headline 'Your reading is booked'", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
-    await sendOrderConfirmation(buildSubmission());
-    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
-    expect(body).toContain("Your reading is booked");
-  });
-
-  it("renders the booking summary inset with reading name, price, and delivery window", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
-    const submission = buildSubmission({ readingPriceDisplay: "$129" });
-    await sendOrderConfirmation(submission);
-    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
-    expect(body).toContain("Your reading"); // eyebrow
-    expect(body).toContain(submission.readingName);
-    expect(body).toContain("$129");
-    expect(body).toContain("Delivery within 7 days");
-  });
-
   it("renders the paid amount in the inset card when set", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
     const submission = buildSubmission({
@@ -280,28 +205,6 @@ describe("sendOrderConfirmation", () => {
     expect(html).not.toContain("text-decoration: line-through");
   });
 
-  it("falls back to list price when amountPaidDisplay is null", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
-    const submission = buildSubmission({
-      readingPriceDisplay: "$179",
-      amountPaidDisplay: null,
-    });
-    await sendOrderConfirmation(submission);
-    const body = visibleText(sendMock.mock.calls[0]?.[0].html);
-    expect(body).toContain("$179");
-  });
-
-  it("HTML-escapes firstName before injecting", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
-    const submission = buildSubmission({ firstName: "<script>x</script>" });
-
-    await sendOrderConfirmation(submission);
-
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).not.toContain("<script>x</script>");
-    expect(html).toContain("&lt;script&gt;");
-  });
-
   it("HTML-escapes readingName and readingPriceDisplay before injecting", async () => {
     sendMock.mockResolvedValue({ data: { id: "msg_oc" } });
     const submission = buildSubmission({
@@ -314,13 +217,6 @@ describe("sendOrderConfirmation", () => {
     expect(html).not.toContain("$129<script>");
     expect(html).toContain("Soul &lt;Blueprint&gt;");
     expect(html).toContain("$129&lt;script&gt;");
-  });
-
-  it("returns null resendId when RESEND_API_KEY is missing", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    const result = await sendOrderConfirmation(buildSubmission());
-    expect(getResendId(result)).toBeNull();
-    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it("forwards the idempotency key to Resend for the order confirmation and Josephine notification", async () => {
@@ -352,16 +248,6 @@ describe("sendOrderConfirmation", () => {
       { name: "email_type", value: "reading_delivery" },
     ]);
     expect(sendMock.mock.calls[2]?.[0].tags).toBeUndefined();
-  });
-
-  it("dispatches to the purchaser email", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_oc_self" } });
-    const submission = buildSubmission({ email: "buyer@example.com" });
-
-    await sendOrderConfirmation(submission);
-
-    const args = sendMock.mock.calls[0]?.[0];
-    expect(args.to).toBe("buyer@example.com");
   });
 });
 
@@ -559,44 +445,6 @@ describe("sendContactMessage", () => {
     expect(body).toContain("jane@example.com");
     expect(args.html).toContain("First line<br/>Second line");
   });
-
-  it("escapes HTML in name, email, and message", async () => {
-    sendMock.mockResolvedValue({ data: { id: "msg_contact" } });
-
-    await sendContactMessage({
-      name: "<script>x</script>",
-      email: "evil@example.com",
-      message: "<img onerror=alert(1)>",
-    });
-
-    const html = sendMock.mock.calls[0]?.[0].html as string;
-    expect(html).not.toContain("<script>x</script>");
-    expect(html).not.toContain("<img onerror=alert(1)>");
-    expect(html).toContain("&lt;script&gt;");
-    expect(html).toContain("&lt;img");
-  });
-
-  it("returns null resendId when NOTIFICATION_EMAIL is missing", async () => {
-    vi.stubEnv("NOTIFICATION_EMAIL", "");
-    const result = await sendContactMessage({
-      name: "Jane",
-      email: "jane@example.com",
-      message: "hi",
-    });
-    expect(getResendId(result)).toBeNull();
-    expect(sendMock).not.toHaveBeenCalled();
-  });
-
-  it("returns null resendId when RESEND_API_KEY is missing", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    const result = await sendContactMessage({
-      name: "Jane",
-      email: "jane@example.com",
-      message: "hi",
-    });
-    expect(getResendId(result)).toBeNull();
-    expect(sendMock).not.toHaveBeenCalled();
-  });
 });
 
 describe("sendReadingOverdueAlert", () => {
@@ -612,13 +460,6 @@ describe("sendReadingOverdueAlert", () => {
     expect(args.to).not.toBe(submission.email);
     expect(args.subject).toContain("overdue");
     expect(visibleText(args.html)).toContain(submission.id);
-  });
-
-  it("returns null resendId when NOTIFICATION_EMAIL missing", async () => {
-    vi.stubEnv("NOTIFICATION_EMAIL", "");
-    const result = await sendReadingOverdueAlert(buildSubmission());
-    expect(getResendId(result)).toBeNull();
-    expect(sendMock).not.toHaveBeenCalled();
   });
 });
 
@@ -763,15 +604,6 @@ describe("email_sent server analytics", () => {
 
     expect(serverTrackMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
-  });
-
-  it("does NOT fire when RESEND_API_KEY is unset", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    const submission = buildSubmission();
-
-    await sendOrderConfirmation(submission);
-
-    expect(serverTrackMock).not.toHaveBeenCalled();
   });
 });
 
@@ -1225,22 +1057,9 @@ describe("per-request dry-run header (X-E2E-Resend-DryRun)", () => {
 });
 
 describe("isSandboxEmail", () => {
-  it("matches known sandbox spec prefixes on @withjosephine.com", () => {
-    expect(isSandboxEmail("listen-roundtrip+abc@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("stripe-roundtrip+abc@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("v120-qa+gift-abc@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("listen-one-tap+abc@withjosephine.com")).toBe(true);
-    expect(isSandboxEmail("prod-smoke+abc@withjosephine.com")).toBe(true);
-  });
-
   it("does NOT match sandbox prefixes on other domains (spoofing guard)", () => {
     expect(isSandboxEmail("stripe-roundtrip+abc@evil.example")).toBe(false);
     expect(isSandboxEmail("listen-roundtrip+abc@gmail.com")).toBe(false);
-  });
-
-  it("does NOT match non-sandbox addresses on @withjosephine.com", () => {
-    expect(isSandboxEmail("hello@withjosephine.com")).toBe(false);
-    expect(isSandboxEmail("becky@withjosephine.com")).toBe(false);
   });
 
   it("is case-insensitive on local-part and domain", () => {

@@ -1,4 +1,4 @@
-export const invalidBorderClasses =
+const invalidBorderClasses =
   "aria-invalid:border-red-700 aria-invalid:focus:border-red-700 transition-colors";
 
 export const inputClasses =

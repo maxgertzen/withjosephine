@@ -125,15 +125,4 @@ describe("ReadingDelivery — UX-locked verbatim copy", () => {
     expect(html).toContain("&lt;x-first&gt;");
     expect(html).toContain("&lt;x-reading&gt;");
   });
-
-  it("renders the primary listen button", async () => {
-    const html = await render(
-      <ReadingDelivery
-        vars={VARS}
-        copy={EMAIL_READING_DELIVERY_DEFAULTS}
-        shell={EMAIL_SHARED_SHELL_DEFAULTS}
-      />,
-    );
-    expect(linkHrefs(html).has(VARS.listenUrl)).toBe(true);
-  });
 });

@@ -4,13 +4,11 @@ import { blockBrowserStorage, blockBrowserStorageProperty } from "@/lib/test-hel
 
 import {
   clear,
-  clearAll,
   clearGiftCode,
   DRAFT_KEY_PREFIX,
   DRAFT_TTL_MS,
   DRAFT_VERSION,
   getLastReadingId,
-  LAST_READING_ID_KEY,
   restore,
   save,
   setLastReadingId,
@@ -146,22 +144,12 @@ describe("localStorageDraft giftCode", () => {
   });
 });
 
-describe("localStorageDraft.clear / clearAll", () => {
+describe("localStorageDraft.clear", () => {
   it("removes the specified readingId key", () => {
     save(READING, { currentPage: 0, values: {} });
     expect(window.localStorage.getItem(KEY)).toBeTruthy();
     clear(READING);
     expect(window.localStorage.getItem(KEY)).toBeNull();
-  });
-
-  it("clearAll removes every josephine.intake.draft.* key and the lastReadingId", () => {
-    save("soul-blueprint", { currentPage: 0, values: {} });
-    save("akashic-record", { currentPage: 0, values: {} });
-    setLastReadingId("akashic-record");
-    clearAll();
-    expect(window.localStorage.getItem(`${DRAFT_KEY_PREFIX}soul-blueprint`)).toBeNull();
-    expect(window.localStorage.getItem(`${DRAFT_KEY_PREFIX}akashic-record`)).toBeNull();
-    expect(window.localStorage.getItem(LAST_READING_ID_KEY)).toBeNull();
   });
 });
 
@@ -193,6 +181,5 @@ describe("localStorageDraft with site data blocked", () => {
     expect(getLastReadingId()).toBeNull();
     expect(() => setLastReadingId(READING)).not.toThrow();
     expect(() => clear(READING)).not.toThrow();
-    expect(() => clearAll()).not.toThrow();
   });
 });

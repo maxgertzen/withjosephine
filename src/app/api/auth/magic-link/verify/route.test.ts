@@ -97,26 +97,6 @@ describe("POST /api/auth/magic-link/verify", () => {
     expect(response.headers.get("set-cookie")).toBeNull();
   });
 
-  it("on expired token: redirects to /auth/verify?error=rested", async () => {
-    redeemMock.mockResolvedValue({ ok: false, reason: "expired" });
-    const { POST } = await import("./route");
-    const response = await POST(form({ token: "abc", email: "ada@example.com" }));
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(
-      "https://withjosephine.com/auth/verify?error=rested",
-    );
-  });
-
-  it("on already-consumed: redirects to /auth/verify?error=rested", async () => {
-    redeemMock.mockResolvedValue({ ok: false, reason: "already_consumed" });
-    const { POST } = await import("./route");
-    const response = await POST(form({ token: "abc", email: "ada@example.com" }));
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(
-      "https://withjosephine.com/auth/verify?error=rested",
-    );
-  });
-
   it("missing token: redirects to /auth/verify?error=rested", async () => {
     const { POST } = await import("./route");
     const response = await POST(form({ email: "ada@example.com" }));

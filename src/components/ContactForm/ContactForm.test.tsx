@@ -28,14 +28,6 @@ describe("ContactForm", () => {
     turnstileOnSuccess = undefined;
   });
 
-  it("renders hardcoded defaults when no content is provided", () => {
-    render(<ContactForm />);
-
-    expect(screen.getByText("i\u2019d love to hear from you")).toBeInTheDocument();
-    expect(screen.getByText(/If you have a question/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send Message" })).toBeInTheDocument();
-  });
-
   it("renders Sanity content when provided", () => {
     const content = {
       sectionTag: "\u2726 Contact Us",

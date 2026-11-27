@@ -6,7 +6,7 @@
 
 import type { R2Bucket, R2HTTPMetadata, R2UploadedPart } from "./types";
 
-export const R2_MULTIPART_MIN_PART_SIZE = 5 * 1024 * 1024;
+const R2_MULTIPART_MIN_PART_SIZE = 5 * 1024 * 1024;
 
 export interface StreamToR2MultipartArgs {
   bucket: R2Bucket;

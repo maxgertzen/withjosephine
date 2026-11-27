@@ -319,7 +319,6 @@ export async function findSubmissionListenContext(
   };
 }
 
-/** Back-compat shim — auth gate only needs the user-id half. */
 export async function findSubmissionRecipientUserId(
   id: string,
 ): Promise<{ submissionId: string; recipientUserId: string | null } | null> {

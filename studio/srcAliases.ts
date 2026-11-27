@@ -29,7 +29,6 @@ export const STUDIO_SRC_ALIASES = [
   { find: /^@\/lib\/sanity\/imageUrl$/, replacement: `${SRC}/lib/sanity/imageUrl.ts` },
   { find: /^@\/lib\/booking\/constants$/, replacement: `${SRC}/lib/booking/constants.ts` },
   { find: /^@\/lib\/booking\/readingRetention$/, replacement: `${SRC}/lib/booking/readingRetention.ts` },
-  { find: /^@\/lib\/booking\/scheduling\//, replacement: `${SRC}/lib/booking/scheduling/` },
   { find: /^@\/components\//, replacement: `${SRC}/components/` },
   { find: /^@\/app\/\(authed\)\/listen\//, replacement: `${SRC}/app/(authed)/listen/` },
   { find: /^@\/app\/\(authed\)\/thank-you\//, replacement: `${SRC}/app/(authed)/thank-you/` },

@@ -25,22 +25,6 @@ describe("BookingFlowHeader", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 
-  it("no longer renders the Josephine Soul Readings wordmark", () => {
-    render(<BookingFlowHeader backHref="/" />);
-    expect(screen.queryByText(/Josephine Soul Readings/)).toBeNull();
-  });
-
-  it("no longer renders an account menu", () => {
-    render(<BookingFlowHeader backHref="/" />);
-    expect(screen.queryByTestId("account-menu")).toBeNull();
-    expect(screen.queryByRole("button", { name: /account/i })).toBeNull();
-  });
-
-  it("no longer renders an About Josephine link", () => {
-    render(<BookingFlowHeader backHref="/" />);
-    expect(screen.queryByRole("link", { name: "About Josephine" })).toBeNull();
-  });
-
   it("links to the page the visitor came from on this site and steps back on a click", async () => {
     const { traverseTo } = stubNavigationHistory([
       "/notes/what-your-chart-shows",

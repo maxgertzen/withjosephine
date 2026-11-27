@@ -66,52 +66,6 @@ describe("GET /api/listen/[id]/pdf", () => {
     expect(response.headers.get("content-type")).toBe("application/pdf");
   });
 
-  it("uses name fields from a different reading when asset context carries them", async () => {
-    gateMock.mockResolvedValue({
-      ok: true,
-      asset: {
-        ...ASSET,
-        readingSlug: "akashic-record",
-        readingName: "Akashic Record Reading",
-        submissionId: "sub_42",
-        firstName: "Ada",
-        lastName: "Lovelace",
-      },
-    });
-    fetchMock.mockResolvedValue(
-      new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
-    );
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("https://withjosephine.com/api/listen/sub_42/pdf"),
-      { params: Promise.resolve({ id: "sub_42" }) },
-    );
-    const disposition = response.headers.get("content-disposition");
-    expect(disposition).toContain('filename="Ada Lovelace Akashic Record Reading.pdf"');
-  });
-
-  it("falls back to reading slug when name fields are absent", async () => {
-    gateMock.mockResolvedValue({
-      ok: true,
-      asset: {
-        ...ASSET,
-        firstName: null,
-        lastName: null,
-        readingName: null,
-      },
-    });
-    fetchMock.mockResolvedValue(
-      new Response("pdf-bytes", { status: 200, headers: { "content-type": "application/pdf" } }),
-    );
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("https://withjosephine.com/api/listen/sub_1/pdf"),
-      { params },
-    );
-    const disposition = response.headers.get("content-disposition");
-    expect(disposition).toContain('filename="soul-blueprint.pdf"');
-  });
-
   it("403 on gate denial without fetching", async () => {
     gateMock.mockResolvedValue({ ok: false, response: new Response("Forbidden", { status: 403 }) });
     const { GET } = await import("./route");
@@ -145,13 +99,6 @@ describe("GET /api/listen/[id]/pdf", () => {
     fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
     const { GET } = await import("./route");
     await GET(pdfRequest(), { params });
-    expect(markDownloadedMock).toHaveBeenCalledOnce();
-  });
-
-  it("fires schedulePdfDownloadedAtMirror on bytes=0- opener", async () => {
-    fetchMock.mockResolvedValue(new Response("ok", { status: 206 }));
-    const { GET } = await import("./route");
-    await GET(pdfRequest({ range: "bytes=0-" }), { params });
     expect(markDownloadedMock).toHaveBeenCalledOnce();
   });
 

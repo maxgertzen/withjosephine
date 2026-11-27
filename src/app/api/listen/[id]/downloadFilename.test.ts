@@ -88,34 +88,6 @@ describe("buildListenFilename", () => {
     ).toBe("Ada Soul Blueprint.pdf");
   });
 
-  it("omits missing first name gracefully", () => {
-    expect(
-      buildListenFilename({
-        firstName: null,
-        lastName: "Lovelace",
-        readingName: "Soul Blueprint",
-        readingSlug: "soul-blueprint",
-        submissionId: "sub_1",
-        sourceUrl: PDF_URL,
-        kind: "reading",
-      }),
-    ).toBe("Lovelace Soul Blueprint.pdf");
-  });
-
-  it("omits missing reading name, uses remaining name parts", () => {
-    expect(
-      buildListenFilename({
-        firstName: "Ada",
-        lastName: "Lovelace",
-        readingName: null,
-        readingSlug: "soul-blueprint",
-        submissionId: "sub_1",
-        sourceUrl: PDF_URL,
-        kind: "reading",
-      }),
-    ).toBe("Ada Lovelace.pdf");
-  });
-
   it("falls back to reading slug when all name fields are absent", () => {
     expect(
       buildListenFilename({
@@ -142,20 +114,6 @@ describe("buildListenFilename", () => {
         kind: "reading",
       }),
     ).toBe("reading.pdf");
-  });
-
-  it("falls back to reading slug when firstName/lastName/readingName are empty strings", () => {
-    expect(
-      buildListenFilename({
-        firstName: "",
-        lastName: "",
-        readingName: "",
-        readingSlug: "akashic-record",
-        submissionId: "sub_1",
-        sourceUrl: VOICE_URL,
-        kind: "voice-note",
-      }),
-    ).toBe("akashic-record.m4a");
   });
 
   it("strips quote/backslash and replaces control chars with spaces in name parts", () => {

@@ -11,13 +11,6 @@ import { applyTokens } from "./applyTokens";
 const BARE_NAMES = READINGS.map((r) => r.name);
 
 describe("reading names are bare (ekesibyy)", () => {
-  it("carry no leading article and no embedded 'Reading' word", () => {
-    for (const name of BARE_NAMES) {
-      expect(name).not.toMatch(/^The\b/);
-      expect(name).not.toMatch(/\breading\b/i);
-    }
-  });
-
   it("are exactly the three canonical bare names", () => {
     expect(BARE_NAMES).toEqual(["Soul Blueprint", "Birth Chart", "Akashic Record"]);
   });

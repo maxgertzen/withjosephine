@@ -5,7 +5,6 @@ import {
   base64UrlDecodeToBytes,
   base64UrlEncodeBytes,
   bytesToHex,
-  hexToBytes,
   signHmacSha256,
   verifyHmacSha256,
 } from "./hmac";
@@ -37,25 +36,10 @@ describe("base64UrlEncodeBytes / base64UrlDecodeToBytes", () => {
   });
 });
 
-describe("bytesToHex / hexToBytes", () => {
-  it("round-trips bytes", () => {
+describe("bytesToHex", () => {
+  it("encodes bytes as lowercase hex", () => {
     const input = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-    const hex = bytesToHex(input);
-    expect(hex).toBe("deadbeef");
-    expect(hexToBytes(hex)).toEqual(input);
-  });
-
-  it("rejects odd-length hex", () => {
-    expect(hexToBytes("abc")).toBeNull();
-  });
-
-  it("rejects non-hex characters", () => {
-    expect(hexToBytes("zzzz")).toBeNull();
-  });
-
-  it("enforces expectedByteLength when provided", () => {
-    expect(hexToBytes("dead", 4)).toBeNull();
-    expect(hexToBytes("dead", 2)).toEqual(new Uint8Array([0xde, 0xad]));
+    expect(bytesToHex(input)).toBe("deadbeef");
   });
 });
 

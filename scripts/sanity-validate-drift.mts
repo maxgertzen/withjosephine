@@ -1,7 +1,7 @@
 import { describeValueShape } from "./_lib/sanityValueShape.mts";
 import type { SingletonContract } from "./sanity-validate-contract.mts";
 
-export const SANITY_META_FIELDS: ReadonlySet<string> = new Set([
+const SANITY_META_FIELDS: ReadonlySet<string> = new Set([
   "_id",
   "_type",
   "_rev",

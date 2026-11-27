@@ -49,9 +49,6 @@ importers:
 
   .:
     dependencies:
-      '@date-fns/tz':
-        specifier: ^1.5.0
-        version: 1.5.0
       '@marsidev/react-turnstile':
         specifier: ^1.6.2
         version: 1.6.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

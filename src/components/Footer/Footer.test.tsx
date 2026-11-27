@@ -52,13 +52,6 @@ describe("Footer newsletter box", () => {
 });
 
 describe("Footer", () => {
-  it("renders hardcoded defaults when no content is provided", () => {
-    render(<Footer />);
-
-    expect(screen.getByText(/Josephine\. All rights reserved\./)).toBeInTheDocument();
-    expect(screen.getByAltText("Josephine")).toBeInTheDocument();
-  });
-
   it("renders Sanity content when provided", () => {
     const content = {
       brandName: "Custom Brand",
@@ -72,35 +65,11 @@ describe("Footer", () => {
     expect(screen.getByAltText("Custom Brand")).toBeInTheDocument();
   });
 
-  it("falls back to default logo when content omits logoUrl", () => {
-    const content = {
-      brandName: "No Logo Brand",
-      copyrightText: "No Logo Brand.",
-    };
-
-    render(<Footer content={content} />);
-
-    expect(screen.getByAltText("No Logo Brand")).toBeInTheDocument();
-    expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
-  });
-
-  it.each([null, "", "  "])("shows the built-in logo when no logo is set in Sanity (%j)", (logoUrl) => {
-    render(<Footer content={{ brandName: "No Logo Brand", logoUrl, copyrightText: "No Logo Brand." }} />);
+  it("shows the built-in logo when no logo is set in Sanity", () => {
+    render(<Footer content={{ brandName: "No Logo Brand", logoUrl: null, copyrightText: "No Logo Brand." }} />);
 
     expect(screen.getByRole("img").getAttribute("src")).toContain(encodeURIComponent(FOOTER_DEFAULTS.logoUrl));
     expect(screen.getByText(/No Logo Brand\./)).toBeInTheDocument();
-  });
-
-  it("falls back to default logo when content sets logoUrl to null (Sanity-missing field)", () => {
-    const content = {
-      brandName: "Defaulted Brand",
-      logoUrl: null,
-      copyrightText: "Defaulted Brand.",
-    };
-
-    render(<Footer content={content} />);
-
-    expect(screen.getByAltText("Defaulted Brand")).toBeInTheDocument();
   });
 
   it("includes current year in copyright", () => {

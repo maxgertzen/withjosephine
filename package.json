@@ -47,7 +47,6 @@
     "sanity:validate": "tsx scripts/sanity-validate.mts"
   },
   "dependencies": {
-    "@date-fns/tz": "^1.5.0",
     "@marsidev/react-turnstile": "^1.6.2",
     "@microsoft/clarity": "^1.0.2",
     "@portabletext/react": "^6.2.0",

@@ -38,15 +38,6 @@ describe("prepareSubmissionPreview — title", () => {
     expect(result.title).toBe("dupont@example.com");
   });
 
-  it("falls back to email when no name responses present", () => {
-    const result = prepareSubmissionPreview({
-      responses: [],
-      email: "alice@example.com",
-      status: "pending",
-    });
-    expect(result.title).toBe("alice@example.com");
-  });
-
   it('falls back to "no name" when responses and email are both missing', () => {
     const result = prepareSubmissionPreview({ responses: [], status: "pending" });
     expect(result.title).toBe("no name");

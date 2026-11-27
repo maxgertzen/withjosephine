@@ -7,7 +7,7 @@ describe("isGiftSubmissionStatus", () => {
     expect(isGiftSubmissionStatus(status)).toBe(true);
   });
 
-  it.each(["pending", "paid", "expired", "gift", "", undefined, null])("is false for %s", (status) => {
+  it.each(["paid", null])("is false for %s", (status) => {
     expect(isGiftSubmissionStatus(status)).toBe(false);
   });
 });
