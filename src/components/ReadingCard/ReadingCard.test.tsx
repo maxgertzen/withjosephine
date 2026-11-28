@@ -1,35 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("motion/react", () => {
-  function createMotionComponent(tag: string) {
-    return function MotionComponent({
-      children,
-      className,
-      style,
-      onClick,
-    }: Record<string, unknown>) {
-      return React.createElement(tag, { className, style, onClick }, children as React.ReactNode);
-    };
-  }
-
-  return {
-    motion: {
-      div: createMotionComponent("div"),
-      p: createMotionComponent("p"),
-      section: createMotionComponent("section"),
-      span: createMotionComponent("span"),
-    },
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
-  };
-});
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: Record<string, unknown>) => (
     <a href={href as string} {...props}>
-      {children as React.ReactNode}
+      {children as ReactNode}
     </a>
   ),
   useLinkStatus: () => ({ pending: false }),
@@ -69,7 +46,7 @@ describe("ReadingCard", () => {
   it("does not show the checklist initially", () => {
     render(<ReadingCard {...defaultProps} />);
 
-    expect(screen.queryByText("Full birth chart analysis")).not.toBeInTheDocument();
+    expect(screen.getByText("Full birth chart analysis").closest("[inert]")).not.toBeNull();
   });
 
   it("shows the What's included checklist on Learn More click", async () => {
@@ -78,7 +55,7 @@ describe("ReadingCard", () => {
 
     await user.click(screen.getByText("Learn More ↓"));
 
-    expect(screen.getByText("Full birth chart analysis")).toBeInTheDocument();
+    expect(screen.getByText("Full birth chart analysis").closest("[inert]")).toBeNull();
     expect(screen.getByText("Akashic Record insights")).toBeInTheDocument();
     expect(screen.getByText("Voice note + PDF")).toBeInTheDocument();
   });

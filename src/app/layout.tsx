@@ -5,6 +5,8 @@ import type { Metadata, Viewport } from "next";
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
 import { DelegatedTracking } from "@/components/DelegatedTracking";
 import { EntryClickReset } from "@/components/EntryClickReset";
+import { footerNewsletterSlot } from "@/components/Footer/footerNewsletterSlot";
+import { NewsletterSlotProvider } from "@/components/Footer/NewsletterContext";
 import { PreviewModeNotice } from "@/components/PreviewModeNotice";
 import { styleProviderClassName } from "@/components/StyleProvider";
 import { siteOrigin } from "@/lib/env";
@@ -31,7 +33,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // No draftMode()/headers() here: the root layout must stay static so public
   // pages can prerender. The Sanity live tree lives in src/app/preview/layout.tsx;
   // consent gating moved to a region cookie read client-side in AnalyticsBootstrap.
-  const consentBannerContent = (await fetchSiteSettingsPublished())?.consentBanner ?? null;
+  const siteSettings = await fetchSiteSettingsPublished();
+  const consentBannerContent = siteSettings?.consentBanner ?? null;
 
   return (
     <html lang="en">
@@ -45,7 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           Skip to content
         </a>
-        {children}
+        <NewsletterSlotProvider slot={footerNewsletterSlot(siteSettings?.newsletter)}>{children}</NewsletterSlotProvider>
         <AnalyticsBootstrap consentBannerContent={consentBannerContent} />
         <DelegatedTracking />
         <EntryClickReset />

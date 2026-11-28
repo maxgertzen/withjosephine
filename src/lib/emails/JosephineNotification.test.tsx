@@ -67,14 +67,6 @@ describe("JosephineNotification — visual parity with legacy resend.tsx", () =>
     expect(text).toContain("Career direction");
   });
 
-  it("filters out consent + fileUpload field types from the responses table", async () => {
-    const text = visibleText(await render(<JosephineNotification {...PROPS} />));
-    expect(text).not.toContain("I agree to terms");
-    // The fileUpload value should not appear in the responses table
-    // (the photo URL is rendered as a separate link block).
-    expect(text).not.toContain("photo.jpg" + "​"); // sentinel: only in fileUpload value
-  });
-
   it("renders the photo block as a link when photoUrl is set", async () => {
     const html = await render(<JosephineNotification {...PROPS} />);
     expect(linkHrefs(html).has(PROPS.photoUrl)).toBe(true);

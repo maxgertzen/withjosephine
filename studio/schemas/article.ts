@@ -161,7 +161,7 @@ export const article = defineType({
       type: "array",
       group: "ending",
       description:
-        'Up to two notes, listed under "More notes" at the very end. A "See all notes" link is added when there are more notes than these.',
+        'Pick up to two notes to show under "More notes" at the very end. If you pick none, your two newest notes show there. A "See all notes" link shows when you have more notes than the ones listed.',
       of: [
         defineArrayMember({
           type: "reference",

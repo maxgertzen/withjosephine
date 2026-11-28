@@ -1,12 +1,13 @@
 import { render } from "@react-email/render";
 
-import { pickDefined } from "@/lib/sanity/pickDefined";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 
 import { GiftOpened } from "./GiftOpened";
 import { GiftPurchase } from "./GiftPurchase";
 import { GiftRecipientConfirmation } from "./GiftRecipientConfirmation";
 import { GiftToRecipient } from "./GiftToRecipient";
 import { MagicLink } from "./MagicLink";
+import { OneButtonEmail } from "./OneButtonEmail";
 import { OrderConfirmation } from "./OrderConfirmation";
 import { PREVIEW_DEFAULTS, PREVIEW_FIXTURE, PREVIEW_GIFT } from "./preview-fixtures";
 import { PrivacyExport } from "./PrivacyExport";
@@ -34,6 +35,8 @@ export const PREVIEW_TEMPLATE_KEYS: readonly EmailTemplateKey[] = [
   "emailGiftOpened",
   "emailGiftRecipientConfirmation",
   "emailGiftToRecipient",
+  "emailDownloadLink",
+  "emailNewsletterConfirm",
 ] as const;
 
 export function isPreviewTemplateKey(value: unknown): value is EmailTemplateKey {
@@ -53,10 +56,10 @@ async function renderRaw(
   sanityCopy: unknown,
 ): Promise<string> {
   type TemplateDefaults = (typeof PREVIEW_DEFAULTS)[typeof template];
-  const merged = {
-    ...PREVIEW_DEFAULTS[template],
-    ...pickDefined((sanityCopy as Partial<TemplateDefaults> | null) ?? {}),
-  };
+  const merged = withNonBlankOverrides<TemplateDefaults>(
+    PREVIEW_DEFAULTS[template],
+    sanityCopy as Partial<TemplateDefaults> | null,
+  );
   switch (template) {
     case "emailOrderConfirmation":
       return render(
@@ -92,12 +95,7 @@ async function renderRaw(
             readingName: PREVIEW_FIXTURE.readingName,
             readingPriceDisplay: PREVIEW_FIXTURE.readingPriceDisplay,
           }}
-          copy={{
-            preview: copy.preview,
-            heroLine: copy.heroLine,
-            buttonLabel: copy.buttonLabel,
-            body: copy.body,
-          }}
+          copy={copy}
         />,
       );
     }
@@ -162,6 +160,22 @@ async function renderRaw(
             note: PREVIEW_GIFT.note,
           }}
           copy={merged as typeof PREVIEW_DEFAULTS.emailGiftToRecipient}
+        />,
+      );
+    case "emailDownloadLink":
+      return render(
+        <OneButtonEmail
+          buttonUrl={PREVIEW_FIXTURE.downloadLinkUrl}
+          vars={{ downloadName: PREVIEW_FIXTURE.downloadName }}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailDownloadLink}
+        />,
+      );
+    case "emailNewsletterConfirm":
+      return render(
+        <OneButtonEmail
+          buttonUrl={PREVIEW_FIXTURE.newsletterConfirmUrl}
+          vars={{}}
+          copy={merged as typeof PREVIEW_DEFAULTS.emailNewsletterConfirm}
         />,
       );
     default: {

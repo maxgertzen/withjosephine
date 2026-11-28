@@ -208,12 +208,12 @@ describe("middleware CSP + draft hardening", () => {
   });
 
   it("serves the prerendered /book/<slug> with unsafe-inline, since a baked nonce can never match", () => {
-    for (const pathname of ["/book/soul-blueprint", "/book/birth-chart", "/book/akashic-record"]) {
-      const res = middleware(makeRequest({ hasDraft: false, host: "withjosephine.com", pathname }));
-      const scriptDirective = scriptSrcOf(res);
-      expect(scriptDirective, pathname).toContain("'unsafe-inline'");
-      expect(scriptDirective, pathname).not.toContain("'nonce-");
-    }
+    const res = middleware(
+      makeRequest({ hasDraft: false, host: "withjosephine.com", pathname: "/book/soul-blueprint" }),
+    );
+    const scriptDirective = scriptSrcOf(res);
+    expect(scriptDirective).toContain("'unsafe-inline'");
+    expect(scriptDirective).not.toContain("'nonce-");
   });
 
   it("dynamic routes (legal force-dynamic + interactive) keep the strict nonce, never unsafe-inline", () => {

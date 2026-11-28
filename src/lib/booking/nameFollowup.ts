@@ -1,18 +1,10 @@
 import type { SanityFormFieldOption } from "@/lib/sanity/types";
 
-export const NAME_FOLLOWUP_PREFIX = "name_followup_";
+const NAME_FOLLOWUP_PREFIX = "name_followup_";
 export const NAME_FOLLOWUP_MAX_LENGTH = 80;
 
 export function nameFollowupKey(optionValue: string) {
   return `${NAME_FOLLOWUP_PREFIX}${optionValue}`;
-}
-
-export function isNameFollowupKey(key: string) {
-  return key.startsWith(NAME_FOLLOWUP_PREFIX);
-}
-
-export function nameFollowupOptionValue(key: string) {
-  return key.slice(NAME_FOLLOWUP_PREFIX.length);
 }
 
 export function isNameFollowupEnabled(option: SanityFormFieldOption | undefined) {

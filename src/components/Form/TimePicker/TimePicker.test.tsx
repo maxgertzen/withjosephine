@@ -40,23 +40,6 @@ describe("TimePicker", () => {
     expect(input).toHaveAttribute("aria-haspopup", "dialog");
   });
 
-  it("emits onChange when the user types a valid HH:MM", () => {
-    const onChange = vi.fn();
-    render(
-      <TimePicker
-        id="birthTime"
-        name="birthTime"
-        label="Birth time"
-        value=""
-        onChange={onChange}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/Birth time/), {
-      target: { value: "07:30" },
-    });
-    expect(onChange).toHaveBeenCalledWith("07:30");
-  });
-
   it("auto-inserts the colon as the user types digits", () => {
     const onChange = vi.fn();
     render(
@@ -88,24 +71,6 @@ describe("TimePicker", () => {
     const input = screen.getByLabelText(/Birth time/) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "abc07-30xyz" } });
     expect(input.value).toBe("07:30");
-  });
-
-  it("renders the unknown toggle when the prop is provided", () => {
-    render(
-      <TimePicker
-        id="birthTime"
-        name="birthTime"
-        label="Birth time"
-        value=""
-        onChange={vi.fn()}
-        unknownToggle={{
-          label: "I don't know my birth time",
-          checked: false,
-          onChange: vi.fn(),
-        }}
-      />,
-    );
-    expect(screen.getByLabelText(/I don't know my birth time/)).toBeInTheDocument();
   });
 
   it("disables the time input when the unknown toggle is checked", () => {

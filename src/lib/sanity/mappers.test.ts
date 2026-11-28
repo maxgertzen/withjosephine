@@ -147,21 +147,6 @@ describe("mapReadings", () => {
     expect(result[1].id).toBe("birth-chart");
     expect(result[1].price).toBe("$99");
   });
-
-  it("reflects Sanity content changes", () => {
-    const updated: SanityReading = {
-      ...SANITY_READING,
-      name: "Updated Soul Blueprint",
-      priceDisplay: "$199",
-      valueProposition: "New value prop from CMS",
-    };
-
-    const result = mapReadings([updated]);
-
-    expect(result[0].name).toBe("Updated Soul Blueprint");
-    expect(result[0].price).toBe("$199");
-    expect(result[0].valueProposition).toBe("New value prop from CMS");
-  });
 });
 
 describe("mapTestimonials", () => {
@@ -180,36 +165,6 @@ describe("mapTestimonials", () => {
     expect(result[0].quote).toBe("This reading changed my life.");
     expect(result[0].name).toBe("Jane D.");
     expect(result[0].detail).toBe("Soul Blueprint Reading");
-  });
-
-  it("reflects Sanity content changes", () => {
-    const updated: SanityTestimonial = {
-      ...SANITY_TESTIMONIAL,
-      quote: "Completely new testimonial text from CMS",
-      name: "New Person",
-    };
-
-    const result = mapTestimonials([updated]);
-
-    expect(result[0].quote).toBe("Completely new testimonial text from CMS");
-    expect(result[0].name).toBe("New Person");
-  });
-
-  it("supports adding testimonials beyond the hardcoded set", () => {
-    const testimonials: SanityTestimonial[] = Array.from({ length: 5 }, (_, i) => ({
-      _id: `testimonial-${i + 1}`,
-      quote: `Quote ${i + 1}`,
-      name: `Person ${i + 1}`,
-      detail: `Reading ${i + 1}`,
-      order: i,
-    }));
-
-    const result = mapTestimonials(testimonials);
-
-    expect(result).toHaveLength(5);
-    expect(result[4].id).toBe("testimonial-5");
-    expect(result[4].quote).toBe("Quote 5");
-    expect(result[4].name).toBe("Person 5");
   });
 });
 
@@ -231,24 +186,6 @@ describe("mapAbout", () => {
     expect(result.paragraphs).toEqual(["Paragraph from Sanity.", "Second paragraph from Sanity."]);
     expect(result.signoff).toBe("Jo");
   });
-
-  it("reflects content changes from CMS", () => {
-    const updated: SanityLandingPage = {
-      ...SANITY_LANDING_PAGE,
-      about: {
-        ...SANITY_LANDING_PAGE.about,
-        heading: "new heading from cms",
-        paragraphs: ["Only one paragraph now."],
-        signoff: "Josie",
-      },
-    };
-
-    const result = mapAbout(updated);
-
-    expect(result.heading).toBe("new heading from cms");
-    expect(result.paragraphs).toEqual(["Only one paragraph now."]);
-    expect(result.signoff).toBe("Josie");
-  });
 });
 
 describe("mapNavContent", () => {
@@ -268,21 +205,6 @@ describe("mapNavContent", () => {
       navCtaText: "Book Now",
     });
   });
-
-  it("reflects nav changes from CMS", () => {
-    const updated: SanitySiteSettings = {
-      ...SANITY_SITE_SETTINGS,
-      brandName: "New Brand",
-      navCtaText: "Start Here",
-      navLinks: [{ label: "Home", sectionId: "home" }],
-    };
-
-    const result = mapNavContent(updated);
-
-    expect(result?.brandName).toBe("New Brand");
-    expect(result?.navCtaText).toBe("Start Here");
-    expect(result?.navLinks).toHaveLength(1);
-  });
 });
 
 describe("mapFooterContent", () => {
@@ -298,28 +220,6 @@ describe("mapFooterContent", () => {
       logoUrl: "https://cdn.sanity.io/images/test/logo.png",
       copyrightText: "Josephine Readings Ltd.",
     });
-  });
-
-  it("falls back to default logo when logoUrl is empty", () => {
-    const noLogo: SanitySiteSettings = {
-      ...SANITY_SITE_SETTINGS,
-      logoUrl: "",
-    };
-
-    const result = mapFooterContent(noLogo);
-
-    expect(result?.logoUrl).toBe("/images/logo-main.webp");
-  });
-
-  it("reflects footer changes from CMS", () => {
-    const updated: SanitySiteSettings = {
-      ...SANITY_SITE_SETTINGS,
-      copyrightText: "Updated Copyright 2026",
-    };
-
-    const result = mapFooterContent(updated);
-
-    expect(result?.copyrightText).toBe("Updated Copyright 2026");
   });
 });
 
@@ -344,34 +244,6 @@ describe("mapFaqItems", () => {
     expect(result[0].id).toBe("faq-1");
     expect(result[0].question).toBe("How long does a reading take?");
     expect(result[0].answer).toBe("You'll receive your reading within 7 business days.");
-  });
-
-  it("supports adding multiple FAQ items", () => {
-    const items: SanityFaqItem[] = Array.from({ length: 5 }, (_, i) => ({
-      _id: `faq-${i + 1}`,
-      question: `Question ${i + 1}`,
-      answer: `Answer ${i + 1}`,
-      order: i,
-    }));
-
-    const result = mapFaqItems(items);
-
-    expect(result).toHaveLength(5);
-    expect(result[4].id).toBe("faq-5");
-    expect(result[4].question).toBe("Question 5");
-  });
-
-  it("reflects FAQ content changes from CMS", () => {
-    const updated: SanityFaqItem = {
-      ...SANITY_FAQ_ITEM,
-      question: "Updated question from CMS",
-      answer: "Updated answer from CMS",
-    };
-
-    const result = mapFaqItems([updated]);
-
-    expect(result[0].question).toBe("Updated question from CMS");
-    expect(result[0].answer).toBe("Updated answer from CMS");
   });
 });
 

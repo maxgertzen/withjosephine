@@ -16,6 +16,8 @@ const TEMPLATE_LABELS: Record<EmailTemplateKey, string> = {
   emailGiftOpened: "Gift Opened (Buyer)",
   emailGiftRecipientConfirmation: "Gift Confirmation (Recipient)",
   emailGiftToRecipient: "Gift to Recipient",
+  emailDownloadLink: "Download Link (Links Page)",
+  emailNewsletterConfirm: "Newsletter Confirm",
 };
 
 async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> {
@@ -37,6 +39,10 @@ async function fetchPublishedCopy(template: EmailTemplateKey): Promise<unknown> 
       return fetch.fetchEmailGiftRecipientConfirmation().catch(() => null);
     case "emailGiftToRecipient":
       return fetch.fetchEmailGiftToRecipient().catch(() => null);
+    case "emailDownloadLink":
+      return fetch.fetchEmailDownloadLink().catch(() => null);
+    case "emailNewsletterConfirm":
+      return fetch.fetchEmailNewsletterConfirm().catch(() => null);
   }
 }
 

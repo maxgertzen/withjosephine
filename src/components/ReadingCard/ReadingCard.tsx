@@ -1,14 +1,13 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
+import { AnimatedCollapse } from "@/components/AnimatedCollapse";
 import { Button } from "@/components/Button";
 import { GoldDivider } from "@/components/GoldDivider";
 import { IncludedList } from "@/components/IncludedList";
 import { ReadingIcon } from "@/components/ReadingIcon";
 import type { ReadingCardLabels } from "@/data/defaults";
-import { useReducedMotion } from "@/lib/a11y/useReducedMotion";
 import { markEntryClickOnPlainLeftClick } from "@/lib/intake/entryMarker";
 import { eyebrowClasses } from "@/lib/textStyles";
 import { mergeClasses } from "@/lib/utils";
@@ -39,7 +38,6 @@ export function ReadingCard({
   className,
 }: ReadingCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const reduceMotion = useReducedMotion();
 
   return (
     <div
@@ -68,21 +66,13 @@ export function ReadingCard({
 
       {includes.length > 0 ? (
         <>
-          <AnimatePresence initial={false}>
-            {isExpanded && (
-              <motion.div
-                key="details"
-                id={`reading-details-${slug}`}
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: reduceMotion ? 0 : 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <IncludedList items={includes} size="card" className="mt-4" />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <AnimatedCollapse
+            id={`reading-details-${slug}`}
+            open={isExpanded}
+            className="duration-300"
+          >
+            <IncludedList items={includes} size="card" className="mt-4" />
+          </AnimatedCollapse>
 
           <button
             type="button"

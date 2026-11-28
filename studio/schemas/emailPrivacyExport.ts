@@ -52,12 +52,6 @@ export const emailPrivacyExport = defineType({
         'Body paragraphs shown below the download button. Use "{expiryDays}" to insert the link lifetime in days.',
       validation: slotValidation("emailPrivacyExport"),
     }),
-    defineField({
-      name: "signOff",
-      title: "Sign-off line",
-      type: "string",
-      description: 'Optional — leave blank to use the default "With love, Josephine ✦".',
-    }),
   ],
   preview: {
     prepare: () => ({

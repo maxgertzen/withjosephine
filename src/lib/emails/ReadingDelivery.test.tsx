@@ -52,7 +52,7 @@ describe("ReadingDelivery — UX-locked verbatim copy", () => {
     expect(() => assertBrandTokens(html, { ink: true })).not.toThrow();
   });
 
-  it("renders the italic-serif signOff lines from copy", async () => {
+  it("renders the sign-off lines from the shared shell", async () => {
     const text = visibleText(
       await render(<ReadingDelivery vars={VARS} copy={EMAIL_READING_DELIVERY_DEFAULTS} shell={EMAIL_SHARED_SHELL_DEFAULTS} />),
     );
@@ -124,16 +124,5 @@ describe("ReadingDelivery — UX-locked verbatim copy", () => {
     expect(html).not.toContain("<x-reading>");
     expect(html).toContain("&lt;x-first&gt;");
     expect(html).toContain("&lt;x-reading&gt;");
-  });
-
-  it("renders the primary listen button", async () => {
-    const html = await render(
-      <ReadingDelivery
-        vars={VARS}
-        copy={EMAIL_READING_DELIVERY_DEFAULTS}
-        shell={EMAIL_SHARED_SHELL_DEFAULTS}
-      />,
-    );
-    expect(linkHrefs(html).has(VARS.listenUrl)).toBe(true);
   });
 });

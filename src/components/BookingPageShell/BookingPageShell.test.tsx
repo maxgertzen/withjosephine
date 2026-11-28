@@ -25,8 +25,7 @@ describe("BookingPageShell", () => {
         <p>x</p>
       </BookingPageShell>,
     );
-    const backLink = container.querySelector('a[href="/specific-back"]');
-    expect(backLink).toBeTruthy();
+    expect(container.querySelector('a[href="/specific-back"]')).toBeTruthy();
   });
 
   it("passes the reading block through to the title block", () => {

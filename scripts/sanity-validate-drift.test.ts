@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SingletonContract } from "./sanity-validate-contract.mts";
-import {
-  findSchemaDrift,
-  LEGACY_FIELDS_BY_SINGLETON,
-  SANITY_META_FIELDS,
-} from "./sanity-validate-drift.mts";
+import { findSchemaDrift } from "./sanity-validate-drift.mts";
 
 const FIXTURE: SingletonContract = {
   id: "exampleSingleton",
@@ -68,55 +64,11 @@ describe("findSchemaDrift", () => {
       _createdAt: "2026-01-01",
       _updatedAt: "2026-01-02",
       _key: "k",
+      _system: { base: { id: "exampleSingleton" } },
       title: "x",
       subtitle: "y",
     };
     expect(findSchemaDrift(FIXTURE, doc)).toEqual([]);
-  });
-
-  it("SANITY_META_FIELDS allowlist covers the documented system-prefixed keys", () => {
-    expect(SANITY_META_FIELDS.has("_id")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_type")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_rev")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_createdAt")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_updatedAt")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_key")).toBe(true);
-    expect(SANITY_META_FIELDS.has("_system")).toBe(true);
-    expect(SANITY_META_FIELDS.has("title")).toBe(false);
-  });
-
-  it("ignores schema-declared legacy fields per LEGACY_FIELDS_BY_SINGLETON", () => {
-    const giftClaim: SingletonContract = {
-      id: "emailGiftClaim",
-      type: "emailGiftClaim",
-      fields: [{ name: "subjectFirstSend", type: "string" }],
-    };
-    const doc = {
-      _id: "emailGiftClaim",
-      _type: "emailGiftClaim",
-      subjectFirstSend: "x",
-      bodyFirstSend: [{ _type: "block" }],
-      greeting: "legacy text",
-    };
-    expect(findSchemaDrift(giftClaim, doc)).toEqual([]);
-  });
-
-  it("singletons not in LEGACY_FIELDS_BY_SINGLETON still surface every unknown field", () => {
-    const singleton: SingletonContract = {
-      id: "singletonWithoutLegacy",
-      type: "singletonWithoutLegacy",
-      fields: [{ name: "title", type: "string" }],
-    };
-    const doc = { title: "ok", strayField: "unexpected" };
-    const result = findSchemaDrift(singleton, doc);
-    expect(result).toEqual([
-      { singleton: "singletonWithoutLegacy", unknownField: "strayField", valueType: "string" },
-    ]);
-  });
-
-  it("LEGACY_FIELDS_BY_SINGLETON only carries schema-declared legacy entries", () => {
-    expect(Object.keys(LEGACY_FIELDS_BY_SINGLETON)).toEqual(["emailGiftClaim"]);
-    expect(LEGACY_FIELDS_BY_SINGLETON.emailGiftClaim?.has("greeting")).toBe(true);
   });
 
   it("handles an empty doc gracefully", () => {

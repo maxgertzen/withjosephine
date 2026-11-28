@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   PortableTextBody,
-  PortableTextInline,
   stringToPortableTextBlocks,
 } from "./PortableTextBody";
 
@@ -82,25 +81,5 @@ describe("PortableTextBody unknown marks", () => {
 
     warnSpy.mockRestore();
     errorSpy.mockRestore();
-  });
-});
-
-describe("PortableTextInline runtime defensive coercion", () => {
-  it("coerces a stray string into Portable Text blocks at render time", async () => {
-    const stringInput = "A small note for {firstName}.";
-    const ptInput = stringToPortableTextBlocks(stringInput);
-
-    const ptRender = await render(<PortableTextInline value={ptInput} />);
-    const stringRender = await render(
-      <PortableTextInline value={stringInput as unknown as PortableTextBlock[]} />,
-    );
-
-    expect(stripWhitespace(stringRender)).toBe(stripWhitespace(ptRender));
-  });
-
-  it("renders nothing for empty input", async () => {
-    const nullRender = await render(<PortableTextInline value={null} />);
-    const emptyArrayRender = await render(<PortableTextInline value={[]} />);
-    expect(nullRender).toBe(emptyArrayRender);
   });
 });

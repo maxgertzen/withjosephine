@@ -2,25 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   EMAIL_ALLOWED_SLOTS,
-  extractSlots,
   formatSlotValidationError,
   validateSlotsInValue,
 } from "./slots";
-
-describe("slots — extractSlots", () => {
-  it("returns slot names without braces", () => {
-    expect(extractSlots("Hi {firstName}, your {readingName} is ready.")).toEqual([
-      "firstName",
-      "readingName",
-    ]);
-  });
-  it("returns empty array when no slots present", () => {
-    expect(extractSlots("Hello world.")).toEqual([]);
-  });
-  it("ignores braces with non-identifier content", () => {
-    expect(extractSlots("Use {1} not {firstName}.")).toEqual(["firstName"]);
-  });
-});
 
 describe("slots — validateSlotsInValue (string fields)", () => {
   it("accepts strings using only allowed slots", () => {
@@ -87,6 +71,8 @@ describe("slots — EMAIL_ALLOWED_SLOTS", () => {
         "emailGiftOpened",
         "emailGiftRecipientConfirmation",
         "emailGiftToRecipient",
+        "emailDownloadLink",
+        "emailNewsletterConfirm",
       ].sort(),
     );
   });

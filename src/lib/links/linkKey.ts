@@ -1,5 +1,7 @@
 export type LinkDestination = "reading" | "note" | "home" | "email" | "web" | "file";
 
+export const EMAIL_FIRST_LINK_DESTINATIONS: ReadonlySet<LinkDestination> = new Set(["file", "web"]);
+
 export type LinkTarget = {
   destination: LinkDestination;
   documentId?: string;

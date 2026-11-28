@@ -14,8 +14,8 @@ const request = () => GET(new Request("https://withjosephine.com/api/tt/taps"));
 beforeEach(() => {
   vi.mocked(checkTapRateLimit).mockResolvedValue(true);
   vi.mocked(publishedLinksPageButtons).mockResolvedValue([
-    { key: "home", label: "Home", href: "/", destination: "home", standOut: false, countsTaps: true, position: 1 },
-    { key: "reading:r1", label: "Birth Chart", href: "/book/birth-chart", destination: "reading", standOut: false, countsTaps: true, position: 2 },
+    { key: "home", label: "Home", href: "/", destination: "home", standOut: false, askForEmail: false, countsTaps: true, position: 1 },
+    { key: "reading:r1", label: "Birth Chart", href: "/book/birth-chart", destination: "reading", standOut: false, askForEmail: false, countsTaps: true, position: 2 },
   ]);
 });
 

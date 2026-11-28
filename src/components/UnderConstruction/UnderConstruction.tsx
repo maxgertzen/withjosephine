@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { ContactEmailLink } from "@/components/ContactEmailLink";
 import { UNDER_CONSTRUCTION_PAGE_DEFAULTS } from "@/data/defaults";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import type { SanityUnderConstructionPage } from "@/lib/sanity/types";
 import { eyebrowClasses } from "@/lib/textStyles";
 
@@ -10,8 +11,10 @@ interface UnderConstructionProps {
 }
 
 export function UnderConstruction({ content }: UnderConstructionProps) {
-  const { tag, heading, description, imageUrl, imageAlt, contactText } =
-    content ?? UNDER_CONSTRUCTION_PAGE_DEFAULTS;
+  const { tag, heading, description, imageUrl, imageAlt, contactText } = withNonBlankOverrides(
+    UNDER_CONSTRUCTION_PAGE_DEFAULTS,
+    content,
+  );
 
   return (
     <div className="min-h-screen bg-j-cream flex flex-col items-center justify-center px-6 py-16 text-center">

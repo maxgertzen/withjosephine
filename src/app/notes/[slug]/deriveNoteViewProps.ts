@@ -12,17 +12,18 @@ import {
 import { notesFooter, notesNav } from "@/lib/notes/notesChrome";
 import type { NoteSummary } from "@/lib/notes/types";
 import { sanityImageUrl } from "@/lib/sanity/imageUrl";
+import { MORE_NOTES_LIMIT } from "@/lib/sanity/queries";
 import type { SanityArticle, SanityNotesState, SanitySiteSettings } from "@/lib/sanity/types";
 
 import type { NoteEnding, NoteViewProps } from "./NoteView";
 
-const MORE_NOTES_LIMIT = 2;
 const AUTHOR_PHOTO_PX = 210;
 
-function pickedNotes(article: SanityArticle): NoteSummary[] {
-  return (article.moreNotes ?? [])
+function suggestedNotes(article: SanityArticle): NoteSummary[] {
+  const picked = (article.moreNotes ?? [])
     .filter((note): note is NoteSummary => Boolean(note?.slug) && note?.slug !== article.slug)
     .slice(0, MORE_NOTES_LIMIT);
+  return picked.length > 0 ? picked : (article.newestNotes ?? []);
 }
 
 export function deriveNoteViewProps(input: {
@@ -33,7 +34,7 @@ export function deriveNoteViewProps(input: {
   const { article, notesState, siteSettings } = input;
   const content = notesContent(notesState);
   const reading = article.relatedReading;
-  const picked = pickedNotes(article);
+  const suggested = suggestedNotes(article);
   const otherNotesCount = (notesState?.publishedCount ?? 0) - 1;
   const authorPhoto = notesState?.settings?.authorPhotoUrl || ABOUT_DEFAULTS.imageUrl;
   const lastModified = noteLastModified(article);
@@ -50,8 +51,8 @@ export function deriveNoteViewProps(input: {
           href: bookingPath(reading.slug),
         }
       : undefined;
-  const seeAll = otherNotesCount > picked.length ? content.seeAllLabel : undefined;
-  const showMoreNotes = !article.hideMoreNotes && (picked.length > 0 || Boolean(seeAll));
+  const seeAll = otherNotesCount > suggested.length ? content.seeAllLabel : undefined;
+  const showMoreNotes = !article.hideMoreNotes && suggested.length > 0;
 
   return {
     slug: article.slug,
@@ -83,7 +84,7 @@ export function deriveNoteViewProps(input: {
     moreNotes: showMoreNotes
       ? {
           label: content.moreNotesLabel,
-          notes: picked.map((note) => ({ ...note, href: notePath(note.slug) })),
+          notes: suggested.map((note) => ({ ...note, href: notePath(note.slug) })),
           seeAll,
         }
       : undefined,

@@ -42,6 +42,9 @@ vi.mock("@/lib/compliance/cascadeDeleteUser", () => ({
 vi.mock("@/lib/booking/persistence/sqlClient", () => ({
   dbQuery: vi.fn().mockResolvedValue([]),
 }));
+vi.mock("@/lib/signup/emailSignups", () => ({
+  findEmailSignupsFor: vi.fn().mockResolvedValue([]),
+}));
 vi.mock("@/lib/sanity/client", () => ({
   getSanityWriteClient: vi.fn().mockResolvedValue({
     fetch: vi.fn().mockResolvedValue([]),
@@ -56,6 +59,7 @@ import { findSubmissionById, type SubmissionRecord } from "@/lib/booking/submiss
 import { wasUserDeleted } from "@/lib/compliance/cascadeDeleteUser";
 import { getSignedDownloadUrl, putObject } from "@/lib/r2";
 import { sendPrivacyExportEmail } from "@/lib/resend";
+import { findEmailSignupsFor } from "@/lib/signup/emailSignups";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const mockVerifyToken = vi.mocked(verifyExportToken);
@@ -69,6 +73,7 @@ const mockDbQuery = vi.mocked(dbQuery);
 const mockPutObject = vi.mocked(putObject);
 const mockSignedUrl = vi.mocked(getSignedDownloadUrl);
 const mockEmail = vi.mocked(sendPrivacyExportEmail);
+const mockFindSignups = vi.mocked(findEmailSignupsFor);
 
 const fetchMock = vi.fn();
 
@@ -119,6 +124,7 @@ beforeEach(() => {
   mockPutObject.mockReset().mockResolvedValue(undefined);
   mockSignedUrl.mockReset().mockResolvedValue("https://r2.example.com/exports/sub_1/1.zip?sig=abc");
   mockEmail.mockReset().mockResolvedValue({ kind: "sent", resendId: "resend_xyz" });
+  mockFindSignups.mockReset().mockResolvedValue([]);
   fetchMock
     .mockReset()
     .mockResolvedValue(new Response(new Uint8Array([1, 2, 3, 4]), { status: 200 }));
@@ -268,6 +274,37 @@ describe("POST /api/privacy/export", () => {
         success: true,
       }),
     );
+  });
+
+  it("includes every email signup for the order's address in email-signups.json", async () => {
+    mockFindSignups.mockResolvedValue([
+      {
+        id: "signup_1",
+        email: "ada@example.com",
+        source: "footer",
+        consentText: "Yes, send me the newsletter.",
+        createdAt: "2026-11-01T10:00:00Z",
+        downloadSentAt: null,
+        confirmSentAt: "2026-11-01T10:00:01Z",
+        confirmedAt: "2026-11-01T10:05:00Z",
+        providerSyncedAt: null,
+      },
+    ]);
+
+    expect((await callRoute()).status).toBe(202);
+
+    expect(mockFindSignups).toHaveBeenCalledWith("ada@example.com");
+    expect(readBundleJson("email-signups.json")).toEqual([
+      {
+        source: "footer",
+        consentText: "Yes, send me the newsletter.",
+        createdAt: "2026-11-01T10:00:00Z",
+        downloadSentAt: null,
+        confirmSentAt: "2026-11-01T10:00:01Z",
+        confirmedAt: "2026-11-01T10:05:00Z",
+        providerSyncedAt: null,
+      },
+    ]);
   });
 
   it("includes the order's failed sends in delivery.json", async () => {

@@ -12,6 +12,10 @@ describe("tap counter paths", () => {
 });
 
 describe("routeLinksHost", () => {
+  it("lets the email form on the links subdomain reach the signup API instead of redirecting it", () => {
+    expect(routeLinksHost("links.withjosephine.com", "/api/signup", "")).toBeNull();
+  });
+
   it("serves the links page at the root of links.withjosephine.com", () => {
     expect(routeLinksHost("links.withjosephine.com", "/", "")).toEqual({ kind: "rewrite", pathname: "/tt" });
   });

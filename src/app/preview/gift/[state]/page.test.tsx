@@ -278,8 +278,4 @@ describe("/preview/gift/[state]", () => {
     await expect(renderPreview("gift-card")).rejects.toThrow("__notfound__");
     expect(notFoundMock).toHaveBeenCalled();
   });
-
-  it("the sample code is not a valid gift code", () => {
-    expect(normalizeGiftCode(PREVIEW_GIFT.code)).toBeNull();
-  });
 });

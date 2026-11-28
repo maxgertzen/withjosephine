@@ -1,14 +1,18 @@
 "use client";
 
-import Image from "next/image";
+import { preload } from "react-dom";
 
 import { Button } from "@/components/Button";
 import { CelestialOrb } from "@/components/CelestialOrb";
 import { StarField } from "@/components/StarField";
 import { HERO_DEFAULTS, type HeroContent } from "@/data/defaults";
 import { HERO_ORBS } from "@/lib/celestialPresets";
-import { pickDefined } from "@/lib/sanity/pickDefined";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { mergeClasses } from "@/lib/utils";
+
+const HERO_LOGO_SIZES = "(min-width: 1200px) 480px, (min-width: 700px) 40vw, 280px";
+const HERO_LOGO_AVIF_SRCSET = "/images/logo-main-560.avif 560w, /images/logo-main.avif 960w";
+const HERO_LOGO_WEBP_SRCSET = "/images/logo-main-560.webp 560w, /images/logo-main.webp 960w";
 
 interface HeroProps {
   content?: HeroContent;
@@ -24,10 +28,15 @@ function MoonCrescent({ className }: { className?: string }) {
 }
 
 export function Hero({ content, className }: HeroProps) {
-  const { tagline, introGreeting, introBody, ctaText } = {
-    ...HERO_DEFAULTS,
-    ...pickDefined(content ?? {}),
-  };
+  const { tagline, introGreeting, introBody, ctaText } = withNonBlankOverrides(HERO_DEFAULTS, content);
+
+  preload("/images/logo-main.avif", {
+    as: "image",
+    type: "image/avif",
+    imageSrcSet: HERO_LOGO_AVIF_SRCSET,
+    imageSizes: HERO_LOGO_SIZES,
+    fetchPriority: "high",
+  });
 
   const handleScrollToReadings = () => {
     document.getElementById("readings")?.scrollIntoView({ behavior: "smooth" });
@@ -35,6 +44,7 @@ export function Hero({ content, className }: HeroProps) {
 
   return (
     <section
+      data-hero
       className={mergeClasses(
         "relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 py-28",
         className,
@@ -56,15 +66,21 @@ export function Hero({ content, className }: HeroProps) {
       <div className="relative z-10 flex max-w-[720px] flex-col items-center text-center">
         <h1 className="sr-only">Josephine Soul Readings</h1>
         <div className="j-hero-in-logo mb-6">
-          <Image
-            src="/images/logo-main.webp"
-            alt="Josephine Soul Readings"
-            width={960}
-            height={960}
-            loading="eager"
-            fetchPriority="high"
-            className="h-auto w-[clamp(280px,40vw,480px)]"
-          />
+          <picture>
+            <source type="image/avif" srcSet={HERO_LOGO_AVIF_SRCSET} sizes={HERO_LOGO_SIZES} />
+            <img
+              src="/images/logo-main.webp"
+              srcSet={HERO_LOGO_WEBP_SRCSET}
+              sizes={HERO_LOGO_SIZES}
+              alt="Josephine Soul Readings"
+              width={960}
+              height={960}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="h-auto w-[clamp(280px,40vw,480px)]"
+            />
+          </picture>
         </div>
 
         <p className="j-hero-in j-hero-delay-1 mb-12 font-body text-[clamp(0.65rem,1.8vw,0.8rem)] font-normal uppercase tracking-[0.26em] text-j-text-muted-warm">

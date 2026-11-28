@@ -48,14 +48,15 @@ describe("STATIC_CSP_PATHS integrity", () => {
     expect(stale).toEqual([]);
   });
 
-  // Prerendered HTML is replayed from cache, so its baked nonce can never equal
-  // the fresh response nonce. A nonce-only policy here blocks hydration outright:
-  // the booking form renders and takes zero submissions.
   it("treats the prerendered /book/<slug> route as a static-CSP path", () => {
-    expect(isStaticCspPath("/book/soul-blueprint")).toBe(true);
-    expect(isStaticCspPath("/book/birth-chart")).toBe(true);
-    expect(isStaticCspPath("/book/akashic-record")).toBe(true);
-    expect(isStaticCspPath("/book/a-reading-becky-adds-later")).toBe(true);
+    for (const pathname of [
+      "/book/soul-blueprint",
+      "/book/birth-chart",
+      "/book/akashic-record",
+      "/book/a-reading-becky-adds-later",
+    ]) {
+      expect(isStaticCspPath(pathname), pathname).toBe(true);
+    }
   });
 
   it("keeps the strict nonce for dynamic routes and non-booking paths", () => {

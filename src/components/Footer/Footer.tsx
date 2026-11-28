@@ -4,10 +4,13 @@ import Link from "next/link";
 import { SocialLinks } from "@/components/SocialLinks";
 import { FOOTER_DEFAULTS, type FooterContent } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
+import { type Overrides, withNonBlankOverrides } from "@/lib/content/nonBlank";
 import type { NotesLink } from "@/lib/notes/notes";
+import { sanityImageUrl } from "@/lib/sanity/imageUrl";
 import type { MappedSocialLink } from "@/lib/sanity/mappers";
-import { pickDefined } from "@/lib/sanity/pickDefined";
 import { mergeClasses } from "@/lib/utils";
+
+import { NewsletterSlot } from "./NewsletterContext";
 
 const LEGAL_LINKS = [
   { label: "Privacy", href: ROUTES.privacy },
@@ -19,32 +22,24 @@ const FOOTER_LINK_CLASSES =
   "text-j-text-muted hover:text-j-text-gold transition-colors opacity-60 hover:opacity-100";
 
 interface FooterProps {
-  content?: FooterContent;
+  content?: Overrides<FooterContent>;
   socialLinks?: MappedSocialLink[];
   notesLink?: NotesLink;
   className?: string;
+  showNewsletterBox?: boolean;
 }
 
-export function Footer({ content, socialLinks, notesLink, className }: FooterProps) {
+export function Footer({ content, socialLinks, notesLink, className, showNewsletterBox = true }: FooterProps) {
   const links = notesLink ? [notesLink, ...LEGAL_LINKS] : LEGAL_LINKS;
-  const { brandName, logoUrl, copyrightText } = {
-    ...FOOTER_DEFAULTS,
-    ...pickDefined(content ?? {}),
-  };
+  const { brandName, logoUrl, copyrightText } = withNonBlankOverrides(FOOTER_DEFAULTS, content);
 
   return (
     <footer
       className={mergeClasses("border-t border-j-border-subtle py-8 px-6 text-center", className)}
     >
-      {logoUrl && (
-        <Image
-          src={logoUrl}
-          alt={brandName}
-          width={80}
-          height={80}
-          className="mx-auto mb-4 opacity-60"
-        />
-      )}
+      {showNewsletterBox ? <NewsletterSlot /> : null}
+
+      <Image src={sanityImageUrl(logoUrl, { w: 240 })} alt={brandName} width={80} height={80} className="mx-auto mb-4 opacity-60" />
 
       <SocialLinks links={socialLinks ?? []} linkClassName={FOOTER_LINK_CLASSES} className="mb-4" />
 

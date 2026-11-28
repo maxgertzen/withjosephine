@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isFlagEnabled, optionalEnv, requireEnv, siteOrigin, siteOriginFromEnv } from "./env";
+import { isFlagEnabled, optionalEnv, requireEnv, siteOrigin } from "./env";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -94,21 +94,5 @@ describe("siteOrigin", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_ORIGIN", "");
     vi.stubEnv("ENVIRONMENT", "");
     expect(siteOrigin()).toBe("https://withjosephine.com");
-  });
-});
-
-describe("siteOriginFromEnv", () => {
-  it("returns NEXT_PUBLIC_SITE_ORIGIN when set on the worker binding", () => {
-    expect(
-      siteOriginFromEnv({ NEXT_PUBLIC_SITE_ORIGIN: "https://example.test", ENVIRONMENT: "staging" }),
-    ).toBe("https://example.test");
-  });
-
-  it("falls back to the staging origin when env.ENVIRONMENT=staging", () => {
-    expect(siteOriginFromEnv({ ENVIRONMENT: "staging" })).toBe("https://staging.withjosephine.com");
-  });
-
-  it("falls back to the production origin when neither binding is set", () => {
-    expect(siteOriginFromEnv({})).toBe("https://withjosephine.com");
   });
 });

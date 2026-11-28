@@ -10,7 +10,8 @@ export type RateLimitBindingName =
   | "LISTEN_ASSET_LIMITER"
   | "GIFT_CODE_LIMITER"
   | "DELIVERY_WAKE_LIMITER"
-  | "TT_TAP_LIMITER";
+  | "TT_TAP_LIMITER"
+  | "SIGNUP_LIMITER";
 
 type RateLimiter = {
   limit: (args: { key: string }) => Promise<{ success: boolean }>;
@@ -24,6 +25,7 @@ declare global {
     GIFT_CODE_LIMITER?: RateLimiter;
     DELIVERY_WAKE_LIMITER?: RateLimiter;
     TT_TAP_LIMITER?: RateLimiter;
+    SIGNUP_LIMITER?: RateLimiter;
   }
 }
 

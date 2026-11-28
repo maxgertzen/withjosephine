@@ -14,12 +14,7 @@ const VARS = {
   readingPriceDisplay: "$179",
 };
 
-const COPY = {
-  preview: EMAIL_MAGIC_LINK_DEFAULTS.preview,
-  heroLine: EMAIL_MAGIC_LINK_DEFAULTS.heroLine,
-  buttonLabel: EMAIL_MAGIC_LINK_DEFAULTS.buttonLabel,
-  body: EMAIL_MAGIC_LINK_DEFAULTS.body,
-};
+const COPY = EMAIL_MAGIC_LINK_DEFAULTS;
 
 describe("MagicLink email", () => {
   it("renders Sanity-supplied body paragraphs", async () => {
@@ -40,6 +35,13 @@ describe("MagicLink email", () => {
     const text = visibleText(html);
     expect(text).toContain(VARS.magicLinkUrl);
     expect(text).toContain("Or copy this link:");
+  });
+
+  it("shows the words before the link that Becky set in Sanity", async () => {
+    const html = await render(<MagicLink vars={VARS} copy={{ ...COPY, copyLinkLabel: "Or paste this into your browser:" }} />);
+    const text = visibleText(html);
+    expect(text).toContain("Or paste this into your browser:");
+    expect(text).not.toContain("Or copy this link:");
   });
 
   it("uses the ink color token for the button", async () => {

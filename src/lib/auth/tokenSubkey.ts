@@ -10,7 +10,8 @@ export type TokenSubkeyPurpose =
   | "library.v1"
   | "stepup.v1"
   | "new_device_revoke.v1"
-  | "export.v1";
+  | "export.v1"
+  | "newsletter.v1";
 
 export async function deriveTokenSubkeyHex(purpose: TokenSubkeyPurpose): Promise<string> {
   const secret = process.env.AUTH_TOKEN_SECRET;

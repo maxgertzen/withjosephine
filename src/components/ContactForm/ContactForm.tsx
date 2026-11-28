@@ -7,6 +7,7 @@ import { FloatingLabel } from "@/components/Form/FieldShell";
 import { SectionHeading } from "@/components/SectionHeading";
 import { TurnstileGate } from "@/components/TurnstileGate";
 import { CONTACT_DEFAULTS, type ContactFormContent } from "@/data/defaults";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { errorClasses, inputClasses, isValidEmail } from "@/lib/formStyles";
 import { CONTACT_API_ROUTE } from "@/lib/http/routes";
 import { mergeClasses } from "@/lib/utils";
@@ -21,7 +22,7 @@ type FormStatus = "idle" | "loading" | "success" | "error";
 const CONTACT_ERROR_ID = "contact-form-error";
 
 export function ContactForm({ content, className }: ContactFormProps) {
-  const merged = { ...CONTACT_DEFAULTS, ...content };
+  const merged = withNonBlankOverrides(CONTACT_DEFAULTS, content);
   const {
     sectionTag,
     heading,

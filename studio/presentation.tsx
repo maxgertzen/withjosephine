@@ -162,6 +162,8 @@ export const presentationResolve: PresentationPluginOptions["resolve"] = {
     emailReadingDelivery: emailLocation("Email: Reading Delivery Email"),
     emailMagicLink: emailLocation("Email: Magic Link (Listen Page)"),
     emailPrivacyExport: emailLocation("Email: Privacy Export (GDPR)"),
+    emailDownloadLink: emailLocation("Email: Download Link (Links Page)"),
+    emailNewsletterConfirm: emailLocation("Email: Newsletter Confirm"),
     emailSharedShell: emailLocation("Email: Shared Shell (brand + footer)"),
   },
 };

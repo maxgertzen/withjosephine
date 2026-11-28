@@ -3,6 +3,7 @@ import { MAIN_SITE_ORIGIN } from "./constants";
 export type EnvVar =
   | "ADMIN_API_KEY"
   | "BREVO_API_KEY"
+  | "BREVO_NEWSLETTER_LIST_ID"
   | "CRON_SECRET"
   | "ENVIRONMENT"
   | "GIFT_CODE_SECRET"
@@ -66,17 +67,5 @@ export function siteOrigin(): string {
   const fromBuild = buildTimeSiteOrigin();
   if (fromBuild) return fromBuild;
   if (isStagingEnvironment()) return STAGING_ORIGIN;
-  return PRODUCTION_ORIGIN;
-}
-
-// Durable Objects receive env as a runtime binding, not via process.env.
-export type WorkerOriginEnv = {
-  NEXT_PUBLIC_SITE_ORIGIN?: string;
-  ENVIRONMENT?: string;
-};
-
-export function siteOriginFromEnv(env: WorkerOriginEnv): string {
-  if (env.NEXT_PUBLIC_SITE_ORIGIN) return env.NEXT_PUBLIC_SITE_ORIGIN;
-  if (env.ENVIRONMENT === "staging") return STAGING_ORIGIN;
   return PRODUCTION_ORIGIN;
 }

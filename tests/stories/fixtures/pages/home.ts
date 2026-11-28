@@ -1,9 +1,8 @@
 import type { HomePageViewProps } from "@/app/HomePageView";
-import { ABOUT_DEFAULTS, CONTACT_DEFAULTS, HERO_DEFAULTS, READINGS_SECTION_DEFAULTS } from "@/data/defaults";
+import { ABOUT_DEFAULTS, CONTACT_DEFAULTS, type FooterContent, HERO_DEFAULTS, READINGS_SECTION_DEFAULTS } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import type {
   MappedFaqItem,
-  MappedFooterContent,
   MappedNavContent,
 } from "@/lib/sanity/mappers";
 
@@ -17,9 +16,9 @@ const NAV: MappedNavContent = {
   navCtaText: "Book a Reading",
 };
 
-const FOOTER: MappedFooterContent = {
+const FOOTER: FooterContent = {
   brandName: "Josephine",
-  logoUrl: "/images/logo-main.webp",
+  logoUrl: "/images/logo-main-240.webp",
   copyrightText: "Josephine. All rights reserved.",
 };
 

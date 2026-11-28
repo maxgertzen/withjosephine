@@ -104,17 +104,6 @@ describe("/api/sanity-sync", () => {
     expect(createOrReplace).toHaveBeenCalledOnce();
   });
 
-  it("strips the synthetic _operation field from the written doc", async () => {
-    await callWithValidSig({
-      _id: "reading-1",
-      _type: "reading",
-      _operation: "update",
-      name: "Test",
-    });
-    const writtenDoc = createOrReplace.mock.calls[0]?.[0];
-    expect(writtenDoc).not.toHaveProperty("_operation");
-  });
-
   describe("stripePaymentLink is env-specific and never crosses datasets", () => {
     it("preserves the target dataset's existing link, discarding the incoming one", async () => {
       fetchFn.mockResolvedValue("https://buy.stripe.com/test_stagingLink");

@@ -110,7 +110,7 @@ describe("/api/cron/cleanup", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body).toEqual({ expired: 2, deleted: 2, photosDeleted: 2, orphansReaped: 0, oldTapDaysDeleted: 0 });
+    expect(body).toEqual({ expired: 2, deleted: 2, photosDeleted: 2, orphansReaped: 0, oldTapDaysDeleted: 0, unconfirmedSignupsDeleted: 0 });
 
     expect(mockList).toHaveBeenNthCalledWith(1, "pending", expect.any(String));
     expect(mockList).toHaveBeenNthCalledWith(2, "expired", expect.any(String));
@@ -164,7 +164,7 @@ describe("/api/cron/cleanup gifts", () => {
     const res = await callRoute();
     const body = await res.json();
 
-    expect(body).toEqual({ expired: 2, deleted: 1, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0 });
+    expect(body).toEqual({ expired: 2, deleted: 1, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0, unconfirmedSignupsDeleted: 0 });
     expect(mockMarkGiftExpired).toHaveBeenCalledWith("gp1", { expiredAt: expect.any(String) });
     expect(mockDeleteExpiredGift).toHaveBeenCalledWith("ge1");
   });
@@ -180,7 +180,7 @@ describe("/api/cron/cleanup gifts", () => {
     const res = await callRoute();
     const body = await res.json();
 
-    expect(body).toEqual({ expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0 });
+    expect(body).toEqual({ expired: 0, deleted: 0, photosDeleted: 0, orphansReaped: 0, oldTapDaysDeleted: 0, unconfirmedSignupsDeleted: 0 });
     expect(mockMarkGiftExpired).toHaveBeenCalledOnce();
     expect(mockDeleteExpiredGift).toHaveBeenCalledOnce();
   });

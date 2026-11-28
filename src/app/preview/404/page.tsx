@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { NotFoundView } from "@/components/NotFoundView";
 import { NOT_FOUND_PAGE_DEFAULTS } from "@/data/defaults";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { fetchNotFoundPage } from "@/lib/sanity/fetch";
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NotFoundPagePreview() {
-  const content = (await fetchNotFoundPage()) ?? NOT_FOUND_PAGE_DEFAULTS;
+  const content = withNonBlankOverrides(NOT_FOUND_PAGE_DEFAULTS, await fetchNotFoundPage());
 
   return <NotFoundView content={content} />;
 }

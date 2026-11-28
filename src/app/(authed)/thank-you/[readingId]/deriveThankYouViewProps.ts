@@ -1,6 +1,7 @@
 import { type GiftContent, THANK_YOU_PAGE_DEFAULTS } from "@/data/defaults";
 import type { ThankYouPaidAmount } from "@/lib/booking/thankYouSession";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import { applyTokens } from "@/lib/emails/applyTokens";
 import type { SanitySiteSettings, SanityThankYouPage } from "@/lib/sanity/types";
 
@@ -50,28 +51,7 @@ export function deriveThankYouViewProps(input: DeriveThankYouViewPropsInput): Th
   const { reading, paidAmount } = context;
   const override = thankYouPageContent?.overrides?.find((o) => o.readingSlug === slugForOverride);
 
-  const heading =
-    override?.heading ?? thankYouPageContent?.heading ?? THANK_YOU_PAGE_DEFAULTS.heading;
-
-  const subheading =
-    override?.subheading ?? thankYouPageContent?.subheading ?? THANK_YOU_PAGE_DEFAULTS.subheading;
-
-  const readingLabel = thankYouPageContent?.readingLabel ?? THANK_YOU_PAGE_DEFAULTS.readingLabel;
-
-  const confirmationBody =
-    override?.confirmationBody ??
-    thankYouPageContent?.confirmationBody ??
-    THANK_YOU_PAGE_DEFAULTS.confirmationBody;
-
-  const timelineBody =
-    override?.timelineBody ??
-    thankYouPageContent?.timelineBody ??
-    THANK_YOU_PAGE_DEFAULTS.timelineBody;
-
-  const contactBody =
-    override?.contactBody ??
-    thankYouPageContent?.contactBody ??
-    THANK_YOU_PAGE_DEFAULTS.contactBody;
+  const words = withNonBlankOverrides(withNonBlankOverrides(THANK_YOU_PAGE_DEFAULTS, thankYouPageContent), override);
 
   return {
     ...(gift ? { icon: "gift" as const } : {}),
@@ -79,20 +59,7 @@ export function deriveThankYouViewProps(input: DeriveThankYouViewPropsInput): Th
     paidAmount,
     contactEmail: siteSettings?.contactEmail || CONTACT_EMAIL,
     copy: {
-      heading,
-      subheading,
-      readingLabel,
-      confirmationBody,
-      timelineBody,
-      contactBody,
-      closingMessage:
-        override?.closingMessage ??
-        thankYouPageContent?.closingMessage ??
-        THANK_YOU_PAGE_DEFAULTS.closingMessage,
-      returnButtonText:
-        thankYouPageContent?.returnButtonText ?? THANK_YOU_PAGE_DEFAULTS.returnButtonText,
-      deliveryDaysPhrase:
-        thankYouPageContent?.deliveryDaysPhrase ?? THANK_YOU_PAGE_DEFAULTS.deliveryDaysPhrase,
+      ...words,
       ...(gift ? recipientGiftCopy(gift) : {}),
     },
   };

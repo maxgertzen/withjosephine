@@ -6,7 +6,9 @@ export type EmailTemplateKey =
   | "emailGiftPurchase"
   | "emailGiftOpened"
   | "emailGiftRecipientConfirmation"
-  | "emailGiftToRecipient";
+  | "emailGiftToRecipient"
+  | "emailDownloadLink"
+  | "emailNewsletterConfirm";
 
 export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = {
   emailOrderConfirmation: ["firstName", "readingName", "readingPriceDisplay", "amountPaidDisplay"],
@@ -17,17 +19,11 @@ export const EMAIL_ALLOWED_SLOTS: Record<EmailTemplateKey, readonly string[]> = 
   emailGiftOpened: ["firstName", "recipientName", "readingName"],
   emailGiftRecipientConfirmation: ["firstName", "buyerName", "readingName"],
   emailGiftToRecipient: ["firstName", "buyerName", "readingName", "code"],
+  emailDownloadLink: ["downloadName"],
+  emailNewsletterConfirm: [],
 } as const;
 
 const SLOT_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
-
-export function extractSlots(value: string): string[] {
-  const found: string[] = [];
-  for (const match of value.matchAll(SLOT_PATTERN)) {
-    found.push(match[1]);
-  }
-  return found;
-}
 
 export function collectUnknownSlots(value: unknown, allowed: readonly string[]): string[] {
   const unknown = new Set<string>();

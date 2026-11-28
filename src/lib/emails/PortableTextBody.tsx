@@ -114,23 +114,6 @@ function getBlockKey(block: PortableTextBlock, idx: number): string {
   return block._key && block._key.length > 0 ? block._key : `block-${idx}`;
 }
 
-export type PortableTextInlineProps = {
-  value: PortableTextBlock[] | null | undefined;
-};
-
-export function PortableTextInline({ value }: PortableTextInlineProps) {
-  const blocks = sanitizeToPortableTextBlocks(value);
-  if (blocks.length === 0) return null;
-  return (
-    <>
-      {blocks.map((block, idx) => {
-        const key = getBlockKey(block, idx);
-        return <Fragment key={key}>{renderBlockChildren(block, key)}</Fragment>;
-      })}
-    </>
-  );
-}
-
 export type PortableTextBodyProps = {
   value: PortableTextBlock[] | null | undefined;
 };

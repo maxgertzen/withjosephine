@@ -8,7 +8,7 @@ vi.mock("next/font/google", () => ({
 
 import { bodyFont, displayFont } from "@/lib/fonts.generated";
 
-import { StyleProvider, styleProviderClassName } from "./StyleProvider";
+import { StyleProvider } from "./StyleProvider";
 
 describe("StyleProvider", () => {
   it("renders children", () => {
@@ -30,10 +30,5 @@ describe("StyleProvider", () => {
     expect(root).not.toBeNull();
     expect(root?.className).toContain(displayFont.variable);
     expect(root?.className).toContain(bodyFont.variable);
-  });
-
-  it("exports the same className the component applies", () => {
-    expect(styleProviderClassName).toContain(displayFont.variable);
-    expect(styleProviderClassName).toContain(bodyFont.variable);
   });
 });

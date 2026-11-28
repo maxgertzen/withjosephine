@@ -1,8 +1,8 @@
-import { ABOUT_DEFAULTS, type MappedAbout } from "@/data/defaults";
+import { ABOUT_DEFAULTS, type FooterContent, type MappedAbout } from "@/data/defaults";
 import { READINGS, TESTIMONIALS } from "@/data/readings";
 import { SANITY_READING_PRICES } from "@/data/readings.generated";
 import { isReadingOnSite } from "@/lib/booking/readingVisibility";
-import { linesWithText, nonBlank } from "@/lib/content/nonBlank";
+import { linesWithText, nonBlank, type Overrides, withNonBlankOverrides } from "@/lib/content/nonBlank";
 import type { NotesLink } from "@/lib/notes/notes";
 
 import type {
@@ -37,12 +37,6 @@ export type MappedNavContent = {
   brandName: string;
   navLinks: { label: string; sectionId: string }[];
   navCtaText: string;
-};
-
-export type MappedFooterContent = {
-  brandName: string;
-  logoUrl: string;
-  copyrightText: string;
 };
 
 export type MappedFaqItem = {
@@ -102,16 +96,7 @@ export function mapTestimonials(sanityTestimonials: SanityTestimonial[]): Mapped
 }
 
 export function mapAbout(landingPage: SanityLandingPage | null): MappedAbout {
-  const about = landingPage?.about;
-  if (!about) return ABOUT_DEFAULTS;
-
-  return {
-    sectionTag: about.sectionTag ?? ABOUT_DEFAULTS.sectionTag,
-    heading: about.heading ?? ABOUT_DEFAULTS.heading,
-    imageUrl: about.imageUrl ?? ABOUT_DEFAULTS.imageUrl,
-    paragraphs: about.paragraphs ?? ABOUT_DEFAULTS.paragraphs,
-    signoff: about.signoff ?? ABOUT_DEFAULTS.signoff,
-  };
+  return withNonBlankOverrides(ABOUT_DEFAULTS, landingPage?.about);
 }
 
 export function mapNavContent(
@@ -128,12 +113,12 @@ export function mapNavContent(
 
 export function mapFooterContent(
   siteSettings: SanitySiteSettings | null,
-): MappedFooterContent | undefined {
+): Overrides<FooterContent> | undefined {
   if (!siteSettings) return undefined;
 
   return {
     brandName: siteSettings.brandName,
-    logoUrl: siteSettings.logoUrl || "/images/logo-main.webp",
+    logoUrl: siteSettings.logoUrl,
     copyrightText: siteSettings.copyrightText,
   };
 }

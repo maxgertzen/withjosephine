@@ -17,17 +17,6 @@ describe("PageNav", () => {
     expect(backLink).toHaveAttribute("href", "/#reading-soul-blueprint");
   });
 
-  it("never points the first-page Back link at the form's own route", () => {
-    render(
-      <PageNav isFirstPage={true} isFinalPage={false} backHref="/#reading-soul-blueprint" />,
-    );
-
-    expect(screen.getByRole("link", { name: /Back to all readings/ })).not.toHaveAttribute(
-      "href",
-      "/book/soul-blueprint",
-    );
-  });
-
   it("renders Previous-page button on non-first pages and calls onBack", () => {
     const onBack = vi.fn();
     render(

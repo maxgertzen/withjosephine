@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { CONSENT_BANNER_DEFAULTS } from "@/data/defaults";
 import { ROUTES } from "@/lib/constants";
+import { withNonBlankOverrides } from "@/lib/content/nonBlank";
 import type { SanityConsentBanner } from "@/lib/sanity/types";
 import { LAYER } from "@/styles/layers";
 
@@ -14,11 +15,10 @@ interface ConsentBannerProps {
 }
 
 export function ConsentBanner({ onAccept, onDecline, content }: ConsentBannerProps) {
-  const title = content?.title || CONSENT_BANNER_DEFAULTS.title;
-  const body = content?.body || CONSENT_BANNER_DEFAULTS.body;
-  const privacyLinkText = content?.privacyLinkText || CONSENT_BANNER_DEFAULTS.privacyLinkText;
-  const acceptLabel = content?.acceptLabel || CONSENT_BANNER_DEFAULTS.acceptLabel;
-  const declineLabel = content?.declineLabel || CONSENT_BANNER_DEFAULTS.declineLabel;
+  const { title, body, privacyLinkText, acceptLabel, declineLabel } = withNonBlankOverrides(
+    CONSENT_BANNER_DEFAULTS,
+    content,
+  );
 
   return (
     <div

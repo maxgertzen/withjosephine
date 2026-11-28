@@ -1,4 +1,52 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, type StringRule } from "sanity";
+
+import {
+  NEWSLETTER_CONSENT_TEXT_MAX_LENGTH,
+  NEWSLETTER_DEFAULTS,
+  type NewsletterContent,
+  type SignupFormWords,
+} from "../../src/data/defaults";
+import { SIGNUP_FORM_WORD_TITLES } from "./_shared/signupFormWords";
+
+type NewsletterWordField = {
+  name: Exclude<keyof NewsletterContent, "show">;
+  title: string;
+  description?: string;
+  long?: true;
+  maxLength?: number;
+};
+
+const NEWSLETTER_WORD_FIELDS: NewsletterWordField[] = [
+  {
+    name: "title",
+    title: "Title above the box",
+    description: "Also the name on the browser tab of the page the email link opens. Leave blank to use the words shown in grey.",
+  },
+  { name: "line", title: "Short line under the title", long: true },
+  {
+    name: "consentText",
+    title: "Words next to the tick box",
+    description:
+      "Visitors tick this box to say yes to your newsletter. Each sign-up saves the exact words shown at that moment, so change them only when you mean it. The tick box shows on every sign-up form while \"Show the newsletter box\" is on.",
+    long: true,
+    maxLength: NEWSLETTER_CONSENT_TEXT_MAX_LENGTH,
+  },
+  { name: "privacyLinkText", title: "Link to the privacy page, after those words" },
+  ...(Object.keys(SIGNUP_FORM_WORD_TITLES) as (keyof SignupFormWords)[]).map((name) => ({
+    name,
+    title: SIGNUP_FORM_WORD_TITLES[name],
+    description:
+      name === "sent"
+        ? "Shown after they press the button. They still need to tap the link in the email we send them."
+        : undefined,
+  })),
+  { name: "confirmPromptTitle", title: "Title on the page the email link opens" },
+  { name: "confirmButton", title: "Button on the page the email link opens", description: "They join the newsletter when they press this button." },
+  { name: "confirmedTitle", title: "Title after they press that button" },
+  { name: "confirmedBody", title: "Words after they press that button", long: true },
+  { name: "confirmFailedTitle", title: "Title when the link in the email does not work" },
+  { name: "confirmFailedBody", title: "Words when the link in the email does not work", long: true },
+];
 
 export const siteSettings = defineType({
   name: "siteSettings",
@@ -81,6 +129,34 @@ export const siteSettings = defineType({
       name: "contactEmail",
       title: "Contact Email",
       type: "string",
+    }),
+    defineField({
+      name: "newsletter",
+      title: "Newsletter sign-up at the bottom of every page",
+      type: "object",
+      description:
+        "A small box at the bottom of every page where visitors can type their email to get your newsletter. The words next to the tick box also show on the links page form.",
+      fields: [
+        defineField({
+          name: "show",
+          title: "Show the newsletter box",
+          type: "boolean",
+          description: "Turn on to show the box at the bottom of every page.",
+          initialValue: NEWSLETTER_DEFAULTS.show,
+        }),
+        ...NEWSLETTER_WORD_FIELDS.map(({ name, title, description, long, maxLength }) => {
+          const common = {
+            name,
+            title,
+            description: description ?? "Leave blank to use the words shown in grey.",
+            placeholder: NEWSLETTER_DEFAULTS[name],
+            validation: maxLength
+              ? (rule: StringRule) => rule.max(maxLength).error(`Keep these words to ${maxLength} letters or fewer.`)
+              : undefined,
+          };
+          return long ? defineField({ ...common, type: "text", rows: 2 }) : defineField({ ...common, type: "string" });
+        }),
+      ],
     }),
     defineField({
       name: "consentBanner",

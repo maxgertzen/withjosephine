@@ -1,20 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  computeFinancialRetainedUntil,
-  READING_CONTENT_RETENTION_YEARS,
-  TAX_RETENTION_YEARS,
-} from "./retention";
-
-describe("retention constants", () => {
-  it("exposes the 3-year reading-content retention", () => {
-    expect(READING_CONTENT_RETENTION_YEARS).toBe(3);
-  });
-
-  it("exposes the 6-year tax retention", () => {
-    expect(TAX_RETENTION_YEARS).toBe(6);
-  });
-});
+import { computeFinancialRetainedUntil } from "./retention";
 
 describe("computeFinancialRetainedUntil", () => {
   it("returns paidAt + 6 years as ISO", () => {

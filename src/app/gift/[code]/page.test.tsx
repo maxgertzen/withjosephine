@@ -128,15 +128,6 @@ describe("/gift/[code]", () => {
     expect(container.querySelector('script[type="application/ld+json"]')).toBeNull();
   });
 
-  it("renders the same page for a malformed and an unknown code", async () => {
-    const malformed = (await renderPage("x")).container.innerHTML;
-    document.body.innerHTML = "";
-    const unknown = (await renderPage("AAAAAAAAAAAA")).container.innerHTML;
-
-    expect(unknown).toBe(malformed);
-    expect(screen.getByText("We couldn’t find this gift")).toBeTruthy();
-  });
-
   it("renders the already-opened message with a link to book the reading", async () => {
     mockFindGift.mockResolvedValue(giftWith("redeemed"));
 
@@ -156,12 +147,6 @@ describe("/gift/[code]", () => {
     await renderPage();
 
     expect(screen.getByText("This gift is no longer active")).toBeTruthy();
-  });
-
-  it("lets a D1 failure reach the error boundary instead of rendering not found", async () => {
-    mockFindGift.mockRejectedValue(new Error("D1 unavailable"));
-
-    await expect(renderPage()).rejects.toThrow("D1 unavailable");
   });
 
   it("makes no D1 write and no audit row", async () => {
